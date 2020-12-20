@@ -3,6 +3,16 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+*.cmake
+CMakeCache.txt
+*.out
+/main
+/profile
+/Makefile
+/resources/*
+/.vscode/*
+/build/*
+/CMakeFiles/*
 # Node artifact files
 node_modules/
 dist/

@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/sammael/study/grade/dependencies/include/Hydra/HydraVSGFExport.cpp
+HydraVSGFExport.h
+/home/sammael/study/grade/dependencies/include/Hydra/HydraVSGFExport.h
+fstream
+-
+sstream
+-
+
+/home/sammael/study/grade/dependencies/include/Hydra/HydraVSGFExport.h
+vector
+-
+string
+-
+map
+-
+cstring
+-
+cstdint
+-
+

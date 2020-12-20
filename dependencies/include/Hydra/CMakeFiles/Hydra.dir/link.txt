@@ -1,0 +1,2 @@
+/usr/bin/ar qc libHydra.a  CMakeFiles/Hydra.dir/HydraVSGFExport.cpp.o
+/usr/bin/ranlib libHydra.a
