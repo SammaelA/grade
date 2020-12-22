@@ -1,6 +1,7 @@
 
 #include "generated_tree.h"
 #include "tinyEngine/utility.h"
+#include "branch_clusterization.h"
 #include <math.h>
 #include <algorithm>
 #define PI 3.14159265f
@@ -31,7 +32,7 @@ glm::vec3 rand_planar_dir()
 {
     glm::vec3 dir;
     dir.x = (2.0*rand())/RAND_MAX - 1.0;
-    dir.y = 0;
+    dir.y = (2.0*rand())/RAND_MAX - 1.0;
     dir.z = (2.0*rand())/RAND_MAX - 1.0;
     return glm::normalize(dir);
 }
@@ -90,7 +91,7 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     new_joint(nb, nj);
     glm::vec3 prev_dir = glm::normalize(s.end - s.begin);
     glm::vec3 rnd = rand_planar_dir();
-    glm::vec3 N = glm::normalize(glm::cross(prev_dir, rnd)); //Normal Vector
+    glm::vec3 N = glm::normalize(rnd - dot(rnd,prev_dir)*rnd); //Normal Vector
     glm::vec3 up = glm::vec3(0, 1, 0);
 
     glm::vec3 dir = curParams.dir_conserv() * prev_dir + curParams.spread() * N + curParams.phototrop() * M + curParams.gravitrop() * up;
@@ -746,10 +747,26 @@ void TreeGenerator::branch_to_model(Branch &b, Model *m, bool leaves)
         joint_to_model(joint,m,leaves);
   }
 }
-bool TreeGenerator::tree_to_model(Tree &t, bool leaves)
+bool TreeGenerator::tree_to_model(Tree &t, bool leaves, bool debug)
 {
-
-    int sz = 4096;
+    if (false && debug)
+    {
+        Model *m = new Model();
+        for (int i = 0; i < 2/*t.branchHeaps.size()*/; i++)
+        {
+            for (auto &branch : t.branchHeaps[i]->branches)
+            {
+                if (!branch.dead)
+                    branch_to_model(branch, m, leaves);
+            }
+        }  
+        m->scale = glm::vec3(t.params.scale());
+        t.models.push_back(m);
+        BillboardCloud *cloud = new BillboardCloud(1, 1);
+        t.billboardClouds.push_back(cloud);
+        return true;
+    }
+    int sz = 1024;
     for (int level = 0; level < 3; level++)
     {
         Model *m = new Model();
@@ -771,7 +788,7 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves)
         BillboardCloud *cloud = new BillboardCloud(sz, sz);
         cloud->prepare(t, level);
         t.billboardClouds.push_back(cloud);
-        sz = sz / 2;
+        sz = sz * 2;
         t.models.push_back(m);
     }
     return true;
@@ -844,5 +861,7 @@ void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params)
     {
         grow_tree(t);
     }
-    tree_to_model(t,false);
+    Clusterizer cl;
+    cl.set_branches(t,2);
+    tree_to_model(t,false,false);
 }

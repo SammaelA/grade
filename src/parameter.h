@@ -187,7 +187,7 @@ struct TreeStructureParameters
     TreeStructureParameters():
     max_depth(4),
     max_segments(20,std::vector<int>{35,18,16,14,12}),
-    max_branching(2),
+    max_branching(1),
     growth_iterations(300),
 
     scale(3),

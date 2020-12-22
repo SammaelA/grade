@@ -3,9 +3,11 @@
 #include <vector>
 #include "volumetric_occlusion.h"
 #include "parameter.h"
+#include "marks.h"
 class Texture;
 class BillboardCloud;
 class Shader;
+class Model;
 struct Parameters
 {
     glm::vec3 pos = glm::vec3(0,0,0);
@@ -63,6 +65,7 @@ struct Joint;
 struct Segment;
 struct Branch;
 struct Leaf;
+struct BranchHeap;
 struct Segment
 {
     Joint *next;
@@ -70,17 +73,19 @@ struct Segment
     glm::vec3 end;
     float rel_r_begin;
     float rel_r_end;
+    Mark *mark = nullptr;
 
 };
 struct Joint
 {
-    enum JointType {NONE, END, MIDDLE, FORK,LEAF};
+    enum JointType {NONE, END, MIDDLE, FORK, LEAF};
     JointType type;
     Leaf *leaf = nullptr;
     glm::vec3 pos;
     std::list<Branch*> childBranches;
     int max_branching = 0;
     float light;
+    Mark *mark = nullptr;
 };
 struct Branch
 {
@@ -93,6 +98,8 @@ struct Branch
     float size;
     float base_r;
     bool dead = false;
+    void deep_copy(const Branch *b, BranchHeap &heap);
+    Mark *mark = nullptr;
 };
 struct Leaf
 {

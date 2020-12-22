@@ -10,13 +10,6 @@ class BillboardCloud
 {
 
     public:
-    BillboardCloud(int tex_w, int tex_h);
-    ~BillboardCloud();
-    void setup_preparation();
-    void prepare(Tree &t, int layer);
-    void render(glm::mat4 &projectionCamera);
-    void set_textures(Texture *wood);
-    private:
     struct BBox
     {
         glm::vec3 position;
@@ -27,6 +20,15 @@ class BillboardCloud
         float V(){return sizes.x*sizes.y*sizes.z;}
         bool special = false;
     };
+    BillboardCloud(int tex_w, int tex_h);
+    ~BillboardCloud();
+    void setup_preparation();
+    void prepare(Tree &t, int layer);
+    void render(glm::mat4 &projectionCamera);
+    void set_textures(Texture *wood);
+    static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
+
+    private:
     struct Billboard
     {
         int id = - 1;
@@ -72,8 +74,7 @@ class BillboardCloud
     void prepare_branch(Tree &t, Branch *b, BBox &min_box, TreeGenerator &tg, int billboards_count);
     void create_billboard(Tree &t, Branch *b, BBox &min_box, TreeGenerator &tg, int id, Billboard &bill);
     BBox get_minimal_bbox(Branch *b);
-    BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
-    void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
+    static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
     glm::mat4 get_viewproj(BBox &b);
     static bool BPD_comp(BranchProjectionData &a, BranchProjectionData &b);
     float projection_error_rec(Branch *b, glm::vec3 &n, float d);

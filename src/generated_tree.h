@@ -26,7 +26,7 @@ class TreeGenerator
     void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
     void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
     void seg_vertexes_to_model(SegmentVertexes &sv, Model *m);
-    bool tree_to_model(Tree &t, bool leaves);
+    bool tree_to_model(Tree &t, bool leaves, bool debug = false);
     void leaf_to_model(Leaf &l, Model *m);
     void recursive_branch_to_model(Branch &b, Model *m, bool leaves);
     void branch_to_model(Branch &b, Model *m, bool leaves);

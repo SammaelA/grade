@@ -120,14 +120,18 @@ void TextureAtlas::gen_mipmaps()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-        glBindTexture(GL_TEXTURE_2D, colorTex.texture);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glDisable(GL_DEPTH_TEST);	
+        glViewport(0, 0, w/2, h/2);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, level);
+        glClearColor(clearColor.x,clearColor.y,clearColor.z,clearColor.a);
+        glClear( GL_COLOR_BUFFER_BIT );
         bm.construct(_c_mip);
         mipMapRenderer.use();
         mipMapRenderer.texture("tex",ctex);
         mipMapRenderer.uniform("screen_size",glm::vec4(w,h,0,0));
         bm.render(GL_TRIANGLES);
-        
+        glEnable(GL_DEPTH_TEST);	
         w /= 2;
         h /= 2;
         level++;

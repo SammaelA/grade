@@ -269,6 +269,14 @@ int main( int argc, char* args[] )
 }
 void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 {
+  if (models.size() == 1 && billboardClouds.size() == 0)
+  {
+    //if (wood)
+		//  defaultShader.texture("tex",*wood);
+    //defaultShader.uniform("model", models[0]->model);
+    //models[0]->update();
+    //models[0]->render(GL_TRIANGLES);
+  }
 	if (models.size() != billboardClouds.size())
 		return;
 

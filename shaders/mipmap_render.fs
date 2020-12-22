@@ -13,6 +13,9 @@ void main(void)
   vec4 fc2 = texelFetch(tex,pos + ivec2(1,0),0);
   vec4 fc3 = texelFetch(tex,pos + ivec2(1,1),0);
   fragColor.rgb = (fc0.rgb*fc0.a + fc1.rgb*fc1.a + fc2.rgb*fc2.a + fc3.rgb*fc3.a)/max(1,fc0.a + fc1.a + fc2.a +fc3.a);
-  fragColor.a = max(max(fc0.a,fc1.a),max(fc2.a,fc3.a));
+  fragColor.a = max(max(fc0.a,fc1.a),max(fc2.a,fc3.a)) > 0.5 ? 1 : 0;
   fragColor.rgb = fragColor.aaa;
+  fragColor.r = 1 - fragColor.a;
+  fragColor = texture(tex,ex_Tex);
+  fragColor.r = 1;
 }
