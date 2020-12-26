@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "camera.h"
-#include "debug_visualizer.h"
+#include "visualizer.h"
 Camera camera;
 
 const int WIDTH = 1200;
@@ -17,8 +17,8 @@ const int HEIGHT = 800;
 int treecount = 0;
 int cloudnum = 1;
 int cur_tree = 0;
-Tree t[100];
-TreeGenerator gen(t[0]);
+Tree t[101];
+TreeGenerator gen(t[100]);
 DebugVisualizer debugVisualizer;
 glm::vec2 mousePos = glm::vec2(-1,-1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f),(float)WIDTH/HEIGHT,1.0f,3000.0f);
@@ -39,53 +39,15 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 1;
+  treecount = 20;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
   for (int i=0;i<treecount;i++)
   {
     TreeStructureParameters par;
-    t[i].pos += glm::vec3(100.0* (i % 10), 0, 100.0 *(i / 10));
-    /*int row = i % 10;
-    int column = i / 10;
-    switch(column)
-    {
-      case 0:
-        par.base_branch_feed = 20*(i+1);
-        par.base_seg_feed = 5*(i+1);
-        
-        break;
-      case 1:
-        par.feed_distribution_min_weight = 0.05 + 0.1*row;
-        break;
-      case 2:
-        par.top_growth_bonus = 0.04*(i+1);
-        break;
-      case 3:
-        par.base_branch_feed = 5000 + 1500*i;
-        break;
-      case 4:
-        par.base_seg_feed = 300 + 100*i;
-        break;
-
-      case 5:
-        par.seg_spread = 0.02 + 0.02*row;
-        break;
-      case 6:
-        par.seg_phototrop = 0.02 + 0.02*row;
-        break;
-      case 7:
-        par.seg_gravitrop = 0.02 + 0.02*row;
-        break;
-      case 8:
-        par.seg_dir_conserv = 0.2 + 0.2*row;
-        break;
-      
-      default:
-        break;
-    }*/
-    //t[i].id = i;
-    //gen.create_tree(t[i],par);
+    t[i].pos += glm::vec3(50.0* (i % 10), 0, 100.0 *(i / 10));
+    t[i].id = i;
+    gen.create_tree(t[i],par, debugVisualizer);
   }
 }
 
@@ -191,6 +153,7 @@ int main( int argc, char* args[] )
 	Texture wood(image::load("bark-1.jpg"));
 	for (int i=0;i<100;i++)
 	{
+    t[i] = Tree();
 		t[i].leaf = &tex;
 		t[i].wood = &wood;
 	}
@@ -254,14 +217,7 @@ int main( int argc, char* args[] )
 	//Loop over Stuff
 	Tiny::loop([&]()
 	{ /* ... */
-
 		floor.construct(construct_floor);
-		if (cur_tree<treecount)
-		{
-			TreeStructureParameters par;
-		    gen.create_tree(t[cur_tree],par, debugVisualizer);
-			cur_tree++;
-		}
 	});
 
 	Tiny::quit();
@@ -270,13 +226,10 @@ int main( int argc, char* args[] )
 }
 void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 {
-  if (models.size() == 1 && billboardClouds.size() == 0)
+  if (models.size() == 0 || billboardClouds.size() == 0)
   {
-    //if (wood)
-		//  defaultShader.texture("tex",*wood);
-    //defaultShader.uniform("model", models[0]->model);
-    //models[0]->update();
-    //models[0]->render(GL_TRIANGLES);
+    fprintf(stderr,"wtf empty tree id =  %d  %d %d\n",id, cloudnum,models.size(), billboardClouds.size());
+    return;
   }
 	if (models.size() != billboardClouds.size())
 		return;
@@ -287,6 +240,7 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 	else if (cloudnum >= billboardClouds.size())
 		cloudnum = billboardClouds.size() -1;
 
+  defaultShader.use();
 	if (wood)
 		defaultShader.texture("tex",*wood);
 	defaultShader.uniform("model", models[cloudnum]->model);

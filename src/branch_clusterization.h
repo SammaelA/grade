@@ -1,6 +1,6 @@
 #pragma once
 #include "tree.h"
-#include "debug_visualizer.h"
+#include "visualizer.h"
 #include <vector>
 #include <map>
 class Clusterizer

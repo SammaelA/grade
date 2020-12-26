@@ -6,6 +6,7 @@
 #include <list>
 #include <vector>
 class TreeGenerator;
+class Visualizer;
 class BillboardCloud
 {
 
@@ -71,8 +72,8 @@ class BillboardCloud
             parent = par;
         }
     };
-    void prepare_branch(Tree &t, Branch *b, BBox &min_box, TreeGenerator &tg, int billboards_count);
-    void create_billboard(Tree &t, Branch *b, BBox &min_box, TreeGenerator &tg, int id, Billboard &bill);
+    void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
+    void create_billboard(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill);
     BBox get_minimal_bbox(Branch *b);
     static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
     glm::mat4 get_viewproj(BBox &b);

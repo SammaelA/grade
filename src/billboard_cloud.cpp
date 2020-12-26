@@ -6,6 +6,7 @@
 #include "generated_tree.h"
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
+#include "visualizer.h"
 using namespace glm;
 BillboardCloud::BillboardCloud(int tex_w, int tex_h):
 atlas(tex_w,tex_h),
@@ -45,7 +46,7 @@ float BillboardCloud::projection_error_rec(Branch *b, vec3 &n, float d)
     }
     return err;
 }
-void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, TreeGenerator &tg, int num, Billboard &bill)
+void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
 {
     if (num < 0)
     {
@@ -102,7 +103,8 @@ void BillboardCloud::prepare(Tree &t, int layer)
     }    
     
     int add_billboards_count = 1 + layer*4;
-    TreeGenerator tg(t);
+    Visualizer tg(t.wood, t.leaf, nullptr);
+    tg.set_params(t.params);
     billboards.clear();
     atlas.set_clear_color(glm::vec4(0,0,0,0));
     glm::ivec4 sizes = atlas.get_sizes();

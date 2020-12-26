@@ -327,7 +327,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
     std::list<Dist> P_delta;
     float delta;
     Dist min = get_P_delta(n,current_clusters,P_delta,delta);
-    for (int i=1;i<size - n;i++)
+    for (int i=1; i<size; i++)
     {
         if (P_delta.empty())
             min = get_P_delta(n,current_clusters,P_delta,delta);
@@ -335,11 +335,21 @@ void Clusterizer::ClusterDendrogramm::make(int n)
         {
             for (Dist &d : P_delta)
             {
+                if (d.U == d.V)
+                    fprintf(stderr,"error in P_delta %d\n",d.U);
                 if (d.d < min.d)
+                {
                     min.U = d.U;
                     min.V = d.V;
                     min.d = d.d;
+                }
             }
+            fprintf(stderr, "min dist (%d %d %f)\n",min.U, min.V, min.d);
+        }
+        if (min.d > 0.999)
+        {
+            break;
+            //makes no sense to merge clusters with maximum distance between them.
         }
         current_clusters.remove(min.U);
         current_clusters.remove(min.V);
@@ -358,8 +368,6 @@ void Clusterizer::ClusterDendrogramm::make(int n)
         for (int S : current_clusters)
         {
             float d = clusters[W].ward_dist(&(clusters[S]));
-            if (d<0.0001)
-                return;
             if (d<delta)
             {
                 fprintf(stderr,"new D(%d %d %f)\n",W, S, d);
@@ -369,9 +377,19 @@ void Clusterizer::ClusterDendrogramm::make(int n)
         current_clusters.push_back(W);
         fprintf(stderr,"%d %d --> %d dist = %f\n", min.U, min.V, W, min.d);
         min = Dist(-1,-1,1000);
+        int sum = 0;
+        for (int S : current_clusters)
+        {
+            //fprintf(stderr,"cluster %d size = %d\n",S,clusters[S].size);
+            sum += clusters[S].size;
+        }
+        fprintf(stderr,"sum = %d %d \n",sum, size);
     }
+    int sum = 0;
     for (int S : current_clusters)
     {
         fprintf(stderr,"cluster %d size = %d\n",S,clusters[S].size);
+        sum += clusters[S].size;
     }
+    fprintf(stderr,"sum = %d %d \n",sum, size);
 }
