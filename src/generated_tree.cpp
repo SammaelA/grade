@@ -2,8 +2,10 @@
 #include "generated_tree.h"
 #include "tinyEngine/utility.h"
 #include "branch_clusterization.h"
+#include "debug_visualizer.h"
 #include <math.h>
 #include <algorithm>
+
 #define PI 3.14159265f
 int seg_count = 0;
 int iter = 0;
@@ -854,7 +856,7 @@ bool TreeGenerator::is_branch_productive(Branch *b)
 {
     return (b->level < curParams.max_depth() - 1);
 }
-void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params)
+void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug)
 {
     plant_tree(t,params);
     while (t.iter < params.growth_iterations())
@@ -862,6 +864,7 @@ void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params)
         grow_tree(t);
     }
     Clusterizer cl;
-    cl.set_branches(t,2);
+    cl.set_branches(t,2, debug);
+    debug.add_branch(t.root,glm::vec3(1,1,1),glm::vec3(0,100,0),3);
     tree_to_model(t,false,false);
 }

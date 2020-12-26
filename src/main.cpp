@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "camera.h"
-
+#include "debug_visualizer.h"
 Camera camera;
 
 const int WIDTH = 1200;
@@ -19,7 +19,7 @@ int cloudnum = 1;
 int cur_tree = 0;
 Tree t[100];
 TreeGenerator gen(t[0]);
-
+DebugVisualizer debugVisualizer;
 glm::vec2 mousePos = glm::vec2(-1,-1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f),(float)WIDTH/HEIGHT,1.0f,3000.0f);
 
@@ -202,7 +202,7 @@ int main( int argc, char* args[] )
 	Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
 	Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
 	Billboard shadow(1600, 1600, false);
-
+  debugVisualizer = DebugVisualizer(&wood, &defaultShader);
 	Tiny::view.pipeline = [&]()
 	{
 
@@ -247,6 +247,7 @@ int main( int argc, char* args[] )
 				{
 					t[i].render(defaultShader,cloudnum,prc);
 				}
+        debugVisualizer.render(prc);
 			
 	};
 
@@ -258,7 +259,7 @@ int main( int argc, char* args[] )
 		if (cur_tree<treecount)
 		{
 			TreeStructureParameters par;
-		    gen.create_tree(t[cur_tree],par);
+		    gen.create_tree(t[cur_tree],par, debugVisualizer);
 			cur_tree++;
 		}
 	});

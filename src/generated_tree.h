@@ -8,6 +8,7 @@
 #include "tinyEngine/utility/model.h"
 #include "billboard_cloud.h"
 #include "tree.h"
+class DebugVisualizer;
 class TreeGenerator
 {
     public:
@@ -15,7 +16,7 @@ class TreeGenerator
     bool random_tree(Tree &t);
     void plant_tree(Tree &t, TreeStructureParameters params);
     void grow_tree(Tree &t);
-    void create_tree(Tree &t, TreeStructureParameters params);
+    void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;
     Branch *test;

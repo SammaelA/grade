@@ -1,5 +1,6 @@
 #pragma once
 #include "tree.h"
+#include "debug_visualizer.h"
 #include <vector>
 #include <map>
 class Clusterizer
@@ -69,6 +70,16 @@ class Clusterizer
             U = _U;
             V = _V;
             size = U->size + V->size;
+        }
+        void to_branch_data(std::vector<Branch *> &branches)
+        {
+            if (branch)
+                branches.push_back(branch->b);
+            else if (U && V)
+            {
+                U->to_branch_data(branches);
+                V->to_branch_data(branches);
+            }
         }
         float ward_dist(Cluster *B)
         {
@@ -145,7 +156,7 @@ class Clusterizer
         void make(int n = 20);
         Dist get_P_delta(int n,std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
     };
-    bool set_branches(Tree &t, int layer);
+    bool set_branches(Tree &t, int layer, DebugVisualizer &debug);
     static bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, float min, float max);
     static bool match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, float min, float max);
     static Answer dist(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
