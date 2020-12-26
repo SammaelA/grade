@@ -564,3 +564,34 @@ void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params, DebugVi
     //debug.add_branch(t.root,glm::vec3(1,1,1),glm::vec3(0,100,0),3);
     tree_to_model(t,false,debug);
 }
+void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
+{
+    float r = sqrt(count);
+    TreeStructureParameters params = trees[0].params;
+    params.set_state(params.max_depth() - 1);
+    voxels = new LightVoxelsCube(glm::vec3(0,0,0),glm::vec3(40.0f*r+100,160,40.0f*r+100),params.seg_len_mult(),params.light_precision());
+    for (int i=0;i<count;i++)
+    {
+        float R = 40*r*(float)rand()/RAND_MAX;
+        float phi = 2*PI*(float)rand()/RAND_MAX;
+        glm::vec3 pos = glm::vec3(R*cos(phi),1,R*sin(phi));
+        trees[i].pos = pos;
+        plant_tree(trees[i],params);
+        for (int j=0;j<=i;j++)
+        {
+            grow_tree(trees[j]);
+        }
+    }
+    for (int i=0;i<count;i++)
+    {
+        while (trees[i].iter < params.growth_iterations())
+        {
+            grow_tree(trees[i]);
+        }
+        debug.set_params(trees[i].params);
+        tree_to_model(trees[i],false,debug);
+    }
+    Clusterizer cl;
+    cl.set_branches(trees,count,2);
+    cl.visualize_clusters(debug);
+}

@@ -39,16 +39,10 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 20;
+  treecount = 50;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
-  for (int i=0;i<treecount;i++)
-  {
-    TreeStructureParameters par;
-    t[i].pos += glm::vec3(50.0* (i % 10), 0, 100.0 *(i / 10));
-    t[i].id = i;
-    gen.create_tree(t[i],par, debugVisualizer);
-  }
+  gen.create_grove(t,treecount,debugVisualizer);
 }
 
 // Event Handler
@@ -151,13 +145,14 @@ int main( int argc, char* args[] )
 	Tiny::event.handler = eventHandler;
 	Texture tex(image::load("leaf_2.png"));
 	Texture wood(image::load("bark-1.jpg"));
+  TreeStructureParameters par;
 	for (int i=0;i<100;i++)
 	{
     t[i] = Tree();
 		t[i].leaf = &tex;
 		t[i].wood = &wood;
+    t[i].params = par;
 	}
-	setup();
 
 	Model floor(construct_floor);
 
@@ -166,6 +161,9 @@ int main( int argc, char* args[] )
 	Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
 	Billboard shadow(1600, 1600, false);
   debugVisualizer = DebugVisualizer(&wood, &defaultShader);
+
+  setup();
+    
 	Tiny::view.pipeline = [&]()
 	{
 

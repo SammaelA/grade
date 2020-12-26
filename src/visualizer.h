@@ -33,12 +33,12 @@ class DebugVisualizer : public Visualizer
 public:
     DebugVisualizer(Texture *_tree_tex = nullptr, Shader *_tree_shader = nullptr);
     void render(glm::mat4 view_proj);
-    void add_branch(Branch *b, glm::vec3 scale, glm::vec3 shift, int level = -1);
+    void add_branch_debug(Branch *b, glm::vec3 scale, glm::vec3 shift, int level = -1);
     void enable_all();
     void disable_all();
     ~DebugVisualizer();
+    std::vector<Model *> debugModels;
 private:
     void branch_to_model_debug(Branch *b, int level, Model &m);
-    std::vector<Model *> debugModels;
     std::vector<int> currentModes;
 };

@@ -68,10 +68,9 @@ bool dedicated_bbox(Branch *branch, BillboardCloud::BBox &bbox)
             b += br->joints.back().pos - br->joints.front().pos;
         }
     }
-    if (b.length()<0.01)
+    if (length(cross(a,b))<0.01)
         b = vec3(0,1,0);
-    else
-        b = normalize(b);
+    b = normalize(b - dot(a,b)*a);
     c = cross(a,b);
 
     bbox = BillboardCloud::get_bbox(branch,a,b,c);
@@ -198,13 +197,10 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
     
     return part_answer;
 }
-bool Clusterizer::set_branches(Tree &t, int layer, DebugVisualizer &debug)
+bool Clusterizer::set_branches(Tree &t, int layer)
 {
     if (layer<0 || layer>t.branchHeaps.size() || t.branchHeaps[layer]->branches.size() == 0)
     {
-        #if DEBUG
-            fprintf(stderr,"no branches for clusterization\n");
-        #endif
         return false;
     }
     else
@@ -212,12 +208,9 @@ bool Clusterizer::set_branches(Tree &t, int layer, DebugVisualizer &debug)
         int i = 0;
         for (Branch &b : t.branchHeaps[layer]->branches)
         {
-            //if (b.dead)
-            //    continue;
             BillboardCloud::BBox bbox;
             Branch *nb = branchHeap.new_branch();
             nb->deep_copy(&b,branchHeap);
-            //nb = &b;
             if (dedicated_bbox(nb,bbox)) 
             {
             
@@ -233,23 +226,6 @@ bool Clusterizer::set_branches(Tree &t, int layer, DebugVisualizer &debug)
                 i++;
                 
             }
-        }
-        ClusterDendrogramm Ddg;
-        Ddg.make_base_clusters(branches);
-        Ddg.make(20);
-        std::vector<Branch *>branches;
-        int k = 0;
-        for (int S : Ddg.current_clusters)
-        {
-            Ddg.clusters[S].to_branch_data(branches);
-            for (int i=0;i<branches.size();i++)
-            {
-                debug.add_branch(branches[i],vec3(1,1,1),vec3(k,0,0),layer);
-                debug.add_branch(branches[i],vec3(1,1,1),vec3(k,100,0),layer);
-                debug.add_branch(branches[i],vec3(1,1,1),vec3(k,100,0),layer+1);
-            }
-            branches.clear();
-            k+=100;
         }    
     }   
 }
@@ -264,6 +240,35 @@ void Clusterizer::calc_joints_count(Branch *b, std::vector<int> &counts)
         {
             calc_joints_count(br,counts);
         }
+    }
+}
+bool Clusterizer::set_branches(Tree *t, int count, int layer)
+{
+    for (int i=0;i<count;i++)
+    {
+        int prev_n = branches.size();
+        set_branches(t[i],layer);
+        fprintf(stderr," added %d branches from tree %d\n", branches.size() - prev_n, i);
+    }
+}
+void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
+{
+    ClusterDendrogramm Ddg;
+    Ddg.make_base_clusters(branches);
+    Ddg.make(20);
+    if (!need_debug)
+        return;
+    std::vector<Branch *> branches;
+    int k = 0;
+    for (int S : Ddg.current_clusters)
+    {
+        Ddg.clusters[S].to_branch_data(branches);
+        for (int i = 0; i < branches.size(); i++)
+        {
+            debug.add_branch_debug(branches[i], vec3(1, 1, 1), vec3(k, 0, 0), 2);
+        }
+        branches.clear();
+        k += 100;
     }
 }
 Clusterizer::ClusterDendrogramm::Dist 
@@ -315,11 +320,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
             }
         }
     }
-    fprintf(stderr, "P_delta size = %d md = (%d %d %f)\n",P_delta.size(), md.U, md.V, md.d);
-    for (Dist &d : P_delta)
-    {
-        //fprintf(stderr, "(%d %d %f)\n",d.U, d.V, d.d);
-    }
+    //fprintf(stderr, "P_delta size = %d md = (%d %d %f)\n",P_delta.size(), md.U, md.V, md.d);
     return md;
 }
 void Clusterizer::ClusterDendrogramm::make(int n)
@@ -344,7 +345,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
                     min.d = d.d;
                 }
             }
-            fprintf(stderr, "min dist (%d %d %f)\n",min.U, min.V, min.d);
+            //fprintf(stderr, "min dist (%d %d %f)\n",min.U, min.V, min.d);
         }
         if (min.d > 0.999)
         {
@@ -370,12 +371,12 @@ void Clusterizer::ClusterDendrogramm::make(int n)
             float d = clusters[W].ward_dist(&(clusters[S]));
             if (d<delta)
             {
-                fprintf(stderr,"new D(%d %d %f)\n",W, S, d);
+                //fprintf(stderr,"new D(%d %d %f)\n",W, S, d);
                 P_delta.push_back(Dist(W,S,d));
             }
         }
         current_clusters.push_back(W);
-        fprintf(stderr,"%d %d --> %d dist = %f\n", min.U, min.V, W, min.d);
+        //fprintf(stderr,"%d %d --> %d dist = %f\n", min.U, min.V, W, min.d);
         min = Dist(-1,-1,1000);
         int sum = 0;
         for (int S : current_clusters)
@@ -383,7 +384,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
             //fprintf(stderr,"cluster %d size = %d\n",S,clusters[S].size);
             sum += clusters[S].size;
         }
-        fprintf(stderr,"sum = %d %d \n",sum, size);
+        //fprintf(stderr,"sum = %d %d \n",sum, size);
     }
     int sum = 0;
     for (int S : current_clusters)

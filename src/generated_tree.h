@@ -17,6 +17,7 @@ class TreeGenerator
     void plant_tree(Tree &t, TreeStructureParameters params);
     void grow_tree(Tree &t);
     void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
+    void create_grove(Tree *trees, int count, DebugVisualizer &debug);
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;

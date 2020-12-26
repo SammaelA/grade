@@ -322,7 +322,10 @@ DebugVisualizer::~DebugVisualizer()
 void DebugVisualizer::render(glm::mat4 view_proj)
 {
     if (!tree_shader)
+    {
+        fprintf(stderr,"empty debug shader\n");
         return;
+    }
     tree_shader->use();
     if (tree_tex)
         tree_shader->texture("tex",*tree_tex);
@@ -373,14 +376,14 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
             branch_to_model_debug(branch, level, m);
     }
 }
-void DebugVisualizer::add_branch(Branch *b, glm::vec3 scale, glm::vec3 shift, int level)
+void DebugVisualizer::add_branch_debug(Branch *b, glm::vec3 scale, glm::vec3 shift, int level)
 {
     Model *m = new Model();
     debugModels.push_back(m);
     currentModes.push_back(1);
     branch_to_model_debug(b,level,*m);
     m->shift(shift);
-     m->scale = scale;
+    m->scale = scale;
 }
 void DebugVisualizer::enable_all()
 {

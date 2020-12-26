@@ -214,7 +214,7 @@ struct TreeStructureParameters
     feed_distribution_d_weight(0.1),
     top_growth_bonus(0.07),
 
-    light_precision(0.5),
+    light_precision(0.35),
     branch_removal(1.2,std::vector<float>{0,0.75,1,1.2,1.2}),
     branch_grow_decrease_q(0.9),
     segment_grow_decrease_q(0.09),

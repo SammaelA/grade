@@ -184,7 +184,7 @@ BillboardCloud::BBox BillboardCloud::get_minimal_bbox(Branch *branch)
     b.x = (float)rand()/RAND_MAX;
     b.y = (float)rand()/RAND_MAX;
     b.z = (float)rand()/RAND_MAX;
-    b = normalize(b);
+    b = normalize(b - a*dot(a,b));
     c = cross(a,b);
     mat4 br = rotate(mat4(1.0), (float)(2*PI/iterations), a);
     BBox min_bbox;
