@@ -28,3 +28,19 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap)
         joints.push_back(nj);
     }
 }
+void Branch::transform(glm::mat4 &trans_matrix)
+{
+    for (Segment &s : segments)
+    {
+        s.begin = trans_matrix*glm::vec4(s.begin,1.0f);
+        s.end = trans_matrix*glm::vec4(s.end,1.0f);
+    }
+    for (Joint &j : joints)
+    {
+        j.pos = trans_matrix*glm::vec4(j.pos,1.0f);
+        for (Branch *br : j.childBranches)
+        {
+            br->transform(trans_matrix);
+        }
+    }
+}

@@ -99,6 +99,7 @@ struct Branch
     float base_r;
     bool dead = false;
     void deep_copy(const Branch *b, BranchHeap &heap);
+    void transform(glm::mat4 &trans_matrix);
     Mark *mark = nullptr;
 };
 struct Leaf

@@ -40,7 +40,7 @@ glm::vec3 rand_planar_dir()
 }
 void TreeGenerator::new_joint(Branch *b, Joint &j)
 {
-    if (b->level == curParams.max_depth() -1)
+    if (b->level == curParams.max_depth() - 1)
     {
         j.type = j.LEAF;
         Leaf *l = curTree.leaves->new_leaf();
@@ -484,7 +484,7 @@ void TreeGenerator::grow_tree(Tree &t)
         float feed = 1;
         seg_count = 0;
         feed = calc_light(root);
-        root->light += 1000;
+        root->light += 100*t.iter;
         calc_size(root);
         root->size = 0.01;
         grow_branch(root,feed);
@@ -574,24 +574,27 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     {
         float R = 40*r*(float)rand()/RAND_MAX;
         float phi = 2*PI*(float)rand()/RAND_MAX;
+        R = 100* (i/10 + 1);
+        phi = 2*PI*i/10.0f;
         glm::vec3 pos = glm::vec3(R*cos(phi),1,R*sin(phi));
         trees[i].pos = pos;
         plant_tree(trees[i],params);
         for (int j=0;j<=i;j++)
         {
-            grow_tree(trees[j]);
+            for (int k=0;k<10;k++)
+                grow_tree(trees[j]);
         }
     }
     for (int i=0;i<count;i++)
     {
-        while (trees[i].iter < params.growth_iterations())
-        {
-            grow_tree(trees[i]);
-        }
+        //while (trees[i].iter < params.growth_iterations())
+        //{
+        //    grow_tree(trees[i]);
+        //}
         debug.set_params(trees[i].params);
         tree_to_model(trees[i],false,debug);
     }
     Clusterizer cl;
     cl.set_branches(trees,count,2);
-    cl.visualize_clusters(debug);
+    cl.visualize_clusters(debug,false);
 }

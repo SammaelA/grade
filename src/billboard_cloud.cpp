@@ -93,7 +93,14 @@ void BillboardCloud::prepare(Tree &t, int layer)
        return;
 
     std::vector<BillboardBox> billboard_boxes;
-    for (Branch &branch : t.branchHeaps[layer]->branches)
+    std::vector<Branch> branches;
+    BranchHeap heap;
+    for (Branch &b : t.branchHeaps[layer]->branches)
+    {
+        branches.push_back(Branch());
+        branches.back().deep_copy(&b,heap);
+    }
+    for (Branch &branch : branches)
     {
         if (branch.dead || branch.joints.empty())
             continue;
