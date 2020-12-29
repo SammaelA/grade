@@ -596,5 +596,5 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     }
     Clusterizer cl;
     cl.set_branches(trees,count,2);
-    cl.visualize_clusters(debug,false);
+    cl.visualize_clusters(debug,true);
 }

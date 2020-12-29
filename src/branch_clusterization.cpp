@@ -5,6 +5,16 @@
 using namespace glm;
 #define DEBUG 0
 #define PI 3.14159265f
+std::vector<std::pair<float, float>> optimization_quantiles = {
+    {0.01,0.7455902677},
+    {0.05,0.89963103},
+    {0.1,0.9682669918},
+    {0.15,0.9897940455},
+    {0.2,0.996278552},
+    {0.25,0.9984770934},
+    {0.3,0.9992320979}
+};//values got by experiments
+int distribution[110];
 std::vector<float> Clusterizer::weights = std::vector<float>{0.6, 0.25, 0.1, 0.035, 0.015};
 float Clusterizer::delta = 0.25;
 struct JSortData
@@ -32,6 +42,31 @@ struct compare
         return j1.dist < j2.dist;
     }
 };
+inline float AS_branch_min_dist(float part_min_dist, int num_quntile)
+{
+    return part_min_dist/(1 + optimization_quantiles[num_quntile].first);
+}
+inline float AS_branch_min_dist(float part_min_dist, float error)
+{
+    //while measuring distance between branches, we can rotate them and find minimal distance, 
+    //but we can estimate it from one measurment with particular angle - with this function
+    //we use optimization_quantiles to find min_distance so that real distance after rotations
+    //will be less than min distance with probability < error
+    int nc = -1;
+    error = 1 - error;
+    for (int i=0;i<optimization_quantiles.size();i++)
+    {
+        if (optimization_quantiles[i].second > error)
+        {
+            nc = i;
+            break;
+        }
+    }
+    if (nc == -1)
+        return 0;
+    else AS_branch_min_dist(part_min_dist,nc);
+}
+
 void transform_branch(Branch *b, mat4 transform)
 {
     b->base_seg_n = b->joints.size();
@@ -77,26 +112,49 @@ bool dedicated_bbox(Branch *branch, BillboardCloud::BBox &bbox)
     bbox = BillboardCloud::get_bbox(branch,a,b,c);
     return true;
 }
-float partial_dist(std::vector<int> &jc, std::vector<float> &matches,  const std::vector<float> &weights)
+Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std::vector<float> &matches,  const std::vector<float> &weights)
 {
-    float num=0.0;
+    float num_m=0.0;
+    float num_p=0.0;
     float denom = 0.0;
     for (int i=0;i<matches.size();i++)
     {
-        num += weights[i]*(2*matches[i]);
+        num_m += weights[i]*(2*matches[i]);
+        num_p += weights[i]*jp[i];
         denom +=weights[i]*jc[i];
     }
-    return denom > 0.001 ? 1 - num/denom : 0;
+    if (denom < 0.001)
+        return Clusterizer::Answer(true,0,0);
+    num_m /= denom;
+    num_p /= denom;
+    //fprintf(stderr,"numm nump %f %f\n",num_m, num_p);
+    return Clusterizer::Answer(num_p > 0.9999,num_p - num_m, 1 - num_m);
 }
-bool Clusterizer::match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, float min, float max)
+int pass_all_joints(std::vector<int> &jp, Branch *b)
+{
+    jp[b->level] += b->joints.size();
+    for (Joint &j1 : b->joints)
+    {
+        for (Branch *br : j1.childBranches)
+            pass_all_joints(jp,br);
+    }
+}
+bool Clusterizer::match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, 
+                                       std::vector<int> &jp, float min, float max)
 {
     int sz1 = j1->childBranches.size();
     int sz2 = j2->childBranches.size();
     if (sz1 == 0 || sz2 == 0)
+    {
+        for (Branch *b : j1->childBranches)
+            pass_all_joints(jp,b);
+        for (Branch *b : j2->childBranches)
+            pass_all_joints(jp,b);
         return true;
+    }
     else if (sz1 == 1 && sz2 == 1)
     {
-        return match_joints(j1->childBranches.front(), j2->childBranches.front(), matches, jc, min, max);
+        return match_joints(j1->childBranches.front(), j2->childBranches.front(), matches, jc, jp, min, max);
     }
     else if (sz1 == 1 || sz2 == 1)
     {
@@ -109,8 +167,10 @@ bool Clusterizer::match_child_branches(Joint *j1, Joint *j2, std::vector<float> 
 
     }
 }
-bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, float min, float max)
+bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
+                               float min, float max)
 {
+    jp[b1->level] += b1->joints.size() + b2->joints.size();
     if (b1->joints.size() == 1)
     {
         if (b2->joints.size() == 1)
@@ -124,7 +184,6 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
     std::multiset<JSortData,compare> distances;
     std::multiset<Joint *> matched_joints;
 
-
     for (Joint &j1 : b1->joints)
     {
         for (Joint &j2 : b2->joints)
@@ -136,6 +195,16 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
             }
         }
     }
+
+    for (Joint &j1 : b1->joints)
+    {
+        j1.max_branching = 0;
+    }
+    for (Joint &j2 : b2->joints)
+    {
+        j2.max_branching = 0;
+    }
+
     auto it = distances.begin();
     while (it != distances.end())
     {
@@ -148,20 +217,44 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
         {
             matched_joints.emplace(it->j1);
             matched_joints.emplace(it->j2);
+            it->j1->max_branching = -1;
+            it->j2->max_branching = -1;
             it++;
         }
     }
     //after it only correct matches remained here
     int matches_count = distances.size();
     matches[b1->level] += matches_count;
-    if (partial_dist(jc,matches,weights) > min)
-        return false;
+
     if (b1->level == matches.size() - 1)//this is the last branch level, no need to iterate over child branches
         return true;
+    
+    for (Joint &j1 : b1->joints)
+    {
+        if (j1.max_branching>=0)
+        {
+            for (Branch *br : j1.childBranches)
+            {
+                pass_all_joints(jp,br);
+            }
+        }
+    }
+    for (Joint &j1 : b2->joints)
+    {
+        if (j1.max_branching>=0)
+        {   
+            for (Branch *br : j1.childBranches)
+            {
+                pass_all_joints(jp,br);
+            }
+        }
+    }
+    if (partial_dist(jc,jp,matches,weights).from > min)
+        return false;
     it = distances.begin();
     while (it != distances.end())
     {
-        if (!match_child_branches(it->j1,it->j2,matches,jc,min,max))
+        if (!match_child_branches(it->j1,it->j2,matches,jc,jp,min,max))
         {
             //if child branches matching made early exit, it means that min distance limit
             //is already passed. No need to go further.
@@ -178,19 +271,19 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     Branch *b2 = bwd2.b;
     Answer part_answer;
     std::vector<int> joint_counts(bwd1.joint_counts);
+    std::vector<int> joint_passed(joint_counts.size(),0);
     std::vector<float> matches(joint_counts.size());
     for (int i = 0; i < joint_counts.size(); i++)
     {
         joint_counts[i] += bwd2.joint_counts[i];
     }
-    part_answer.exact = match_joints(b1, b2, matches, joint_counts, min, max);
-    part_answer.from = partial_dist(joint_counts, matches, weights);
-    part_answer.to = part_answer.exact ? part_answer.from : 1;
+    bool exact = match_joints(b1, b2, matches, joint_counts, joint_passed, min, max);
+    part_answer = partial_dist(joint_counts, joint_passed, matches, weights);
     return part_answer;
 }
 Clusterizer::Answer Clusterizer::dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
 {
-    float min_dist = 2;
+    /*float min_dist = 2;
     int min_i = 0;
     float dr = 2*PI/360;
     vec3 axis = bwd1.b->joints.back().pos - bwd1.b->joints.front().pos;
@@ -243,13 +336,19 @@ Clusterizer::Answer Clusterizer::dist_slow(BranchWithData &bwd1, BranchWithData 
         part_answer.from = partial_dist(joint_counts,matches,weights);
         part_answer.to = part_answer.exact ? part_answer.from : 1;
     //fprintf(stderr,"final dist = %f\n",part_answer.from);
-    return part_answer;
+    return part_answer;*/
 }
-Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
+Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
+    Answer fast_answer = dist_simple(bwd1,bwd2,min,max);
+    if (!fast_answer.exact)
+    {
+        return fast_answer;
+    }
+    min = min > fast_answer.from ? fast_answer.from : min;
     int N = 5;
     int iterations = 4;
-    float min_dist = 2;
+    float min_dist = fast_answer.from;
     float min_phi = 0;
     float base_step = 2*PI/N;
     vec3 axis = bwd1.b->joints.back().pos - bwd1.b->joints.front().pos;
@@ -293,11 +392,15 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
             rot_to_base = rotate(mat4(1.0f),1.0f*base_step,axis);
         }
     }
+    rot_to_base = rot_to_base*rotate(mat4(1.0f),-min_phi,axis);
+    bwd1.b->transform(rot_to_base);
+    if (data)
+        data->rotation = min_phi;
     return Answer(true,min_dist,min_dist);
 }
-Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
+Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
-    return dist_Nsection(bwd1,bwd2,min,max);
+    return dist_Nsection(bwd1,bwd2,min,max,data);
 }
 bool Clusterizer::set_branches(Tree &t, int layer)
 {
@@ -324,7 +427,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv*transl*rot;
                 transform_branch(nb,rot);
-                branches.push_back(BranchWithData(nb,t.params.max_depth(),i));
+                branches.push_back(BranchWithData(&b,nb,t.params.max_depth(),i,inverse(rot)));
                 i++;
                 
             }
@@ -358,6 +461,12 @@ void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
     ClusterDendrogramm Ddg;
     Ddg.make_base_clusters(branches);
     Ddg.make(20);
+    fprintf(stderr,"dist decreasion distribution:");
+    for (int i=0;i<100;i++)
+    {
+        fprintf(stderr," %d,",distribution[i]);
+    }
+    fprintf(stderr,"\n");
     if (!need_debug)
         return;
     std::vector<Branch *> branches;
@@ -381,6 +490,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
     fprintf(stderr, "get P delta\n");
     Dist md(-1,-1,1000);
     int k = n > current_clusters.size() ? current_clusters.size() : n;
+    k = n > current_clusters.size()/3 ? n : current_clusters.size()/3;
     int n1 = 0;
     auto i = current_clusters.begin();
     auto j = current_clusters.rbegin();
@@ -391,8 +501,8 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
         }
         else
         {
-            float distance = clusters[*i].ward_dist(&(clusters[*j]));
-            if (distance < md.d)
+            float distance = clusters[*i].ward_dist(&(clusters[*j]),md.d);
+            if (distance < md.d && distance > 0.001)
             {
                 md.d = distance;
                 md.U = *i;
@@ -411,7 +521,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
         {
             if (u == v)
                 continue;
-            float distance = clusters[u].ward_dist(&(clusters[v]));
+            float distance = clusters[u].ward_dist(&(clusters[v]),delta);
             if (distance <= delta)
             {
                 P_delta.push_back(Dist(u,v,distance));
@@ -424,7 +534,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
             }
         }
     }
-    //fprintf(stderr, "P_delta size = %d md = (%d %d %f)\n",P_delta.size(), md.U, md.V, md.d);
+    fprintf(stderr, "P_delta size = %d md = (%d %d %f)\n",P_delta.size(), md.U, md.V, md.d);
     return md;
 }
 void Clusterizer::ClusterDendrogramm::make(int n)
@@ -472,7 +582,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
         }
         for (int S : current_clusters)
         {
-            float d = clusters[W].ward_dist(&(clusters[S]));
+            float d = clusters[W].ward_dist(&(clusters[S]),delta);
             if (d<delta)
             {
                 //fprintf(stderr,"new D(%d %d %f)\n",W, S, d);
@@ -480,7 +590,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
             }
         }
         current_clusters.push_back(W);
-        fprintf(stderr,"%d %d --> %d dist = %f\n", min.U, min.V, W, min.d);
+        //fprintf(stderr,"%d %d --> %d dist = %f\n", min.U, min.V, W, min.d);
         min = Dist(-1,-1,1000);
         int sum = 0;
         for (int S : current_clusters)
