@@ -79,3 +79,18 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         return distance;
     }
 }
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transforms)
+{
+    std::vector<Cluster *> clusters;
+    to_base_clusters(clusters);
+    if (clusters.empty())
+        return nullptr;
+    BranchWithData *br = clusters[0]->branch;
+    glm::mat4 base_transform_inv = glm::inverse(br->transform);
+    for (Cluster *cl : clusters)
+    {
+        glm::mat4 tr = base_transform_inv*cl->branch->transform;
+        transforms.push_back(tr);
+    }
+    return br->original;
+}

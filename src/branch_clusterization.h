@@ -80,6 +80,7 @@ class Clusterizer
         void to_branch_data(std::vector<Branch *> &branches);
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
+        Branch *prepare_to_replace(std::vector<glm::mat4> &transforms);
         
     };
     struct ClusterDendrogramm
@@ -133,4 +134,5 @@ class Clusterizer
     std::vector<BranchWithData> branches;
     DistDataTable ddt;
     static std::vector<float> weights;
+    ClusterDendrogramm Ddg;
 }; 

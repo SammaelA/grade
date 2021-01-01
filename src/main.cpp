@@ -20,6 +20,7 @@ int cur_tree = 0;
 Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer debugVisualizer;
+BillboardCloud::RenderMode mode = BillboardCloud::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1,-1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f),(float)WIDTH/HEIGHT,1.0f,3000.0f);
 
@@ -39,7 +40,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 10;
+  treecount = 1;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
   gen.create_grove(t,treecount,debugVisualizer);
@@ -94,6 +95,14 @@ std::function<void()> eventHandler = [&]()
 		cloudnum=1;
   if(Tiny::event.active[SDLK_o])
 		cloudnum=2;
+  if(Tiny::event.active[SDLK_k])
+  {
+    mode = BillboardCloud::ONLY_INSTANCES;
+  }
+  if(Tiny::event.active[SDLK_l])
+  {
+    mode = BillboardCloud::ONLY_SINGLE;
+  }
   if(!Tiny::event.press.empty())
   {
 	
@@ -244,5 +253,6 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 	defaultShader.uniform("model", models[cloudnum]->model);
 	models[cloudnum]->update();
 	models[cloudnum]->render(GL_TRIANGLES);
+  billboardClouds[cloudnum]->set_render_mode(mode);
 	billboardClouds[cloudnum]->render(prc);
 }

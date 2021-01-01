@@ -2,7 +2,9 @@
 #include "texture_atlas.h"
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility/model.h"
+#include "tinyEngine/utility/instance.h"
 #include "tree.h"
+#include "branch_clusterization.h"
 #include <list>
 #include <vector>
 class TreeGenerator;
@@ -11,6 +13,13 @@ class BillboardCloud
 {
 
     public:
+    enum RenderMode
+    {
+        NOTHING,
+        ONLY_SINGLE,
+        ONLY_INSTANCES,
+        BOTH
+    };
     struct BBox
     {
         glm::vec3 position;
@@ -24,25 +33,34 @@ class BillboardCloud
     BillboardCloud(int tex_w, int tex_h);
     ~BillboardCloud();
     void setup_preparation();
+    void prepare(Tree &t, std::vector<Branch> &branches);
     void prepare(Tree &t, int layer);
+    void prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers);
     void render(glm::mat4 &projectionCamera);
     void set_textures(Texture *wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
-
+    void set_render_mode(RenderMode m)
+    {
+        renderMode = m;
+    }
     private:
     struct Billboard
     {
         int id = - 1;
+        int branch_id = -1;
         std::vector<glm::vec3> positions;
         glm::vec4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
+        bool instancing;
         void to_model(Model *m, TextureAtlas &atlas);
         Billboard() {};
         Billboard(const Billboard &b)
         {
             this->id = b.id;
+            this->branch_id = b.branch_id;
             this->positions = b.positions;
+            this->instancing = b.instancing;
         }
-        Billboard(const BBox &box, int id, int type, glm::vec3 base_joint);
+        Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
     };
     struct BranchProjectionData
     {
@@ -79,13 +97,15 @@ class BillboardCloud
     glm::mat4 get_viewproj(BBox &b);
     static bool BPD_comp(BranchProjectionData &a, BranchProjectionData &b);
     float projection_error_rec(Branch *b, glm::vec3 &n, float d);
-
     int billboard_count = 256;
     bool ready = false;
     TextureAtlas atlas;
     Shader rendererToTexture;
     Shader billboardRenderer;
+    Shader billboardRendererInstancing;
     Model *cloud;
+    std::vector<Instance *> instances;
     Texture *pwood = nullptr;
     std::vector<Billboard> billboards;
+    RenderMode renderMode = ONLY_SINGLE;
 };

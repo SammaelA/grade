@@ -38,5 +38,12 @@ void Instance::updateBuffer(std::vector<glm::mat4>& buf, int index){
 
 void Instance::render(GLenum mode){
   glBindVertexArray(m->vao);
-  glDrawArraysInstanced(mode, 0, m->SIZE, SIZE); //Instanced render
+  Model *model = dynamic_cast<Model *>(m);
+  if(model && model->indexed)
+  {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+    glDrawElementsInstanced(mode, model->SIZE, GL_UNSIGNED_INT, 0, SIZE);
+  }
+  else
+    glDrawArraysInstanced(mode, 0, m->SIZE, SIZE); //Instanced render
 }

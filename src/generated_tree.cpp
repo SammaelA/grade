@@ -587,14 +587,16 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     }
     for (int i=0;i<count;i++)
     {
-        //while (trees[i].iter < params.growth_iterations())
-        //{
-        //    grow_tree(trees[i]);
-        //}
+        while (trees[i].iter < params.growth_iterations())
+        {
+            grow_tree(trees[i]);
+        }
         debug.set_params(trees[i].params);
         tree_to_model(trees[i],false,debug);
     }
     Clusterizer cl;
     cl.set_branches(trees,count,2);
-    cl.visualize_clusters(debug,true);
+    cl.visualize_clusters(debug,false);
+
+    trees[0].billboardClouds[2]->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
 }

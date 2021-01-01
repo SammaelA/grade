@@ -458,7 +458,6 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer)
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
-    ClusterDendrogramm Ddg;
     Ddg.make_base_clusters(branches);
     Ddg.make(20);
     fprintf(stderr,"dist decreasion distribution:");

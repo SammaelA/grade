@@ -37,7 +37,7 @@ struct Primitive{
   GLuint vao;
   std::vector<GLuint> vbo;
   size_t SIZE = 4;
-
+  virtual int get_size() {return SIZE;}
   template<typename T>
   void bind(int index, int count, int size, T* data){
     glBindBuffer(GL_ARRAY_BUFFER, vbo[index]);
@@ -149,7 +149,10 @@ public:
 
   bool indexed = true;
 	GLuint ibo;
-
+  int get_size() override
+  {
+    return positions.size()/3;
+  }
   void update(){
     glBindVertexArray(vao);
     bindf(0, positions.size(), 3, &positions[0]);

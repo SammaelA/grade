@@ -11,7 +11,9 @@ using namespace glm;
 BillboardCloud::BillboardCloud(int tex_w, int tex_h):
 atlas(tex_w,tex_h),
 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
+                            {"in_Position", "in_Normal", "in_Tex", "in_Model"})
 {
     cloud = new Model();
 }
@@ -86,96 +88,6 @@ void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, V
     bm.render(GL_TRIANGLES);
 
     billboards.push_back(bill);
-}
-void BillboardCloud::prepare(Tree &t, int layer)
-{
-    if (ready)
-       return;
-
-    std::vector<BillboardBox> billboard_boxes;
-    std::vector<Branch> branches;
-    BranchHeap heap;
-    for (Branch &b : t.branchHeaps[layer]->branches)
-    {
-        branches.push_back(Branch());
-        branches.back().deep_copy(&b,heap);
-    }
-    for (Branch &branch : branches)
-    {
-        if (branch.dead || branch.joints.empty())
-            continue;
-        BBox min_bbox = get_minimal_bbox(&branch);
-        vec3 base_joint = branch.joints.front().pos;
-        billboard_boxes.push_back(BillboardBox(&branch,min_bbox,base_joint,-1));
-    }    
-    
-    int add_billboards_count = 1 + layer*4;
-    Visualizer tg(t.wood, t.leaf, nullptr);
-    tg.set_params(t.params);
-    billboards.clear();
-    atlas.set_clear_color(glm::vec4(0,0,0,0));
-    glm::ivec4 sizes = atlas.get_sizes();
-    int cnt = ceil(sqrt(billboard_boxes.size()) + add_billboards_count);
-    int tex_size = sizes.x/cnt-2;
-    atlas.set_grid(tex_size,tex_size);
-    atlas.clear();
-    std::vector<BranchProjectionData> projectionData;
-
-    int i = 0;
-    for (auto &p : billboard_boxes)
-    {
-        vec3 base_joint = p.b->joints.front().pos;
-        Billboard b(p.min_bbox, 0, 1, base_joint);
-        vec3 plane_n = vec3(b.planeCoef.x,b.planeCoef.y,b.planeCoef.z);
-        for (Joint &j : p.b->joints)
-        {
-            for (Branch *br : j.childBranches)
-            {
-                if (br->dead)
-                    continue;
-                float err = projection_error_rec(br,plane_n,b.planeCoef.w);
-                projectionData.push_back(BranchProjectionData(err,br,i));
-            }
-        }
-        i++;
-    }
-    std::sort(projectionData.begin(),projectionData.end(),BPD_comp);
-    add_billboards_count = MIN(cnt*cnt - billboard_boxes.size(), projectionData.size());
-    int k = 0;
-    for (auto &proj : projectionData)
-    {
-        if (k<add_billboards_count)
-        {
-            proj.br->level = -1;
-            BBox min_bbox = get_minimal_bbox(proj.br);
-            billboard_boxes.push_back(BillboardBox(proj.br, min_bbox,vec3(0,0,0),proj.parent_n));
-        }
-        else
-        {
-            break;
-        }
-        k++;
-    }
-    for (auto &p : billboard_boxes)
-    {
-        int num = atlas.add_tex();
-        vec3 base_joint = p.b->joints.front().pos;
-        Billboard b(p.min_bbox, num, 1, base_joint);
-        if (p.parent>=0 && p.parent < billboards.size())
-        {
-            //it is a secondary billboard
-            //it should be attached to projection of base joint
-            p.b->level = layer;
-            Billboard parent_billboard = billboards[p.parent];
-            vec3 n = parent_billboard.planeCoef;
-            vec3 proj = p.base_joint - (dot(n,p.base_joint) + parent_billboard.planeCoef.w)*n;
-            p.base_joint = proj;
-        }
-        create_billboard(t,p.b,p.min_bbox,tg,num,b);
-    }
-    glGenerateTextureMipmap(atlas.tex().texture);
-    //atlas.gen_mipmaps();
-    ready = true;
 }
 BillboardCloud::BBox BillboardCloud::get_minimal_bbox(Branch *branch)
 {
@@ -254,19 +166,35 @@ void BillboardCloud::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
 }
 void BillboardCloud::render(mat4 &projectionCamera)
 {
-    std::function<void(Model*)> _ce = [&](Model* h)
+    if (renderMode == ONLY_SINGLE || renderMode == BOTH)
     {
-        for (Billboard bill : billboards)
+        std::function<void(Model*)> _ce = [&](Model* h)
         {
-            bill.to_model(h,atlas);
+            for (Billboard bill : billboards)
+            {
+                bill.to_model(h,atlas);
+            }
+        };
+        cloud->construct(_ce);
+        billboardRenderer.use();
+        billboardRenderer.texture("tex",atlas.tex());
+        billboardRenderer.uniform("model", cloud->model);
+        billboardRenderer.uniform("projectionCamera", projectionCamera);
+        cloud->render(GL_TRIANGLES);
+    }
+    if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
+    {
+        billboardRendererInstancing.use();
+        billboardRendererInstancing.texture("tex",atlas.tex());
+        billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
+        for (Instance *in : instances)
+        {
+            Model *m = (Model *)(in->m);
+            m->update();
+            in->render(GL_TRIANGLES);
         }
-    };
-    cloud->construct(_ce);
-    billboardRenderer.use();
-    billboardRenderer.texture("tex",atlas.tex());
-    billboardRenderer.uniform("model", cloud->model);
-    billboardRenderer.uniform("projectionCamera", projectionCamera);
-    cloud->render(GL_TRIANGLES);
+
+    }
 }
 void BillboardCloud::set_textures(Texture *wood)
 {
@@ -307,9 +235,11 @@ void BillboardCloud::Billboard::to_model(Model *m, TextureAtlas &atlas)
         m->indices.push_back(_b+3);
     }
 }
-BillboardCloud::Billboard::Billboard(const BBox &box, int id, int type, glm::vec3 base_joint)
+BillboardCloud::Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing)
 {
     this->id = id;
+    this->branch_id = branch_id;
+    this->instancing = _instancing;
     mat4 rot_inv(vec4(box.a,0),vec4(box.b,0),vec4(box.c,0),vec4(0,0,0,1));
     mat4 rot = inverse(rot_inv);
     vec3 base_joint_rel = rot*vec4(base_joint,1.0f);
@@ -335,4 +265,132 @@ BillboardCloud::Billboard::Billboard(const BBox &box, int id, int type, glm::vec
         float d = -dot(box.c,npos);
         planeCoef = vec4(box.c.x,box.c.y,box.c.z,d);
     }
+}
+void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers)
+{
+    std::map<int, std::vector<glm::mat4>> all_transforms;
+    std::vector<Branch> base_branches;
+    BranchHeap heap;
+    for (int i : numbers)
+    {
+        std::vector<glm::mat4> transforms;
+        Branch *b = clusters[i].prepare_to_replace(transforms);
+        if (!b)
+            continue;
+        all_transforms.emplace(i,transforms);
+        base_branches.push_back(Branch());
+        base_branches.back().deep_copy(b,heap);
+        base_branches.back().base_seg_n = i;
+    }
+    prepare(t,base_branches);
+    for (Billboard &b : billboards)
+    {
+        b.instancing = true;
+        Model *m = new Model();
+        b.to_model(m,atlas);
+        m->update();
+        Instance *in = new Instance(m);
+        in->addBuffer(all_transforms[b.branch_id]);
+        instances.push_back(in);
+        fprintf(stderr, "positions %d (%f %f %f)",b.positions.size(),b.positions[0].x, b.positions[0].y, b.positions[0].z);
+    }
+}
+void BillboardCloud::prepare(Tree &t, int layer)
+{
+    if (ready)
+       return;
+
+    std::vector<Branch> branches;
+    BranchHeap heap;
+    for (Branch &b : t.branchHeaps[layer]->branches)
+    {
+        branches.push_back(Branch());
+        branches.back().deep_copy(&b,heap);
+    }
+    prepare(t,branches);
+    ready = true;
+}
+void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
+{
+    if (branches.empty())
+        return;
+    int layer = branches.front().level;
+    std::vector<BillboardBox> billboard_boxes;
+    for (Branch &branch : branches)
+    {
+        if (branch.dead || branch.joints.empty())
+            continue;
+        BBox min_bbox = get_minimal_bbox(&branch);
+        vec3 base_joint = branch.joints.front().pos;
+        billboard_boxes.push_back(BillboardBox(&branch,min_bbox,base_joint,-1));
+    }    
+    
+    int add_billboards_count = 1 + layer*4;
+    Visualizer tg(t.wood, t.leaf, nullptr);
+    tg.set_params(t.params);
+    billboards.clear();
+    atlas.set_clear_color(glm::vec4(0,0,0,0));
+    glm::ivec4 sizes = atlas.get_sizes();
+    int cnt = ceil(sqrt(billboard_boxes.size()) + add_billboards_count);
+    int tex_size = sizes.x/cnt-2;
+    atlas.set_grid(tex_size,tex_size);
+    atlas.clear();
+    std::vector<BranchProjectionData> projectionData;
+
+    int i = 0;
+    for (auto &p : billboard_boxes)
+    {
+        vec3 base_joint = p.b->joints.front().pos;
+        Billboard b(p.min_bbox, 0, 0, 1, base_joint);
+        vec3 plane_n = vec3(b.planeCoef.x,b.planeCoef.y,b.planeCoef.z);
+        for (Joint &j : p.b->joints)
+        {
+            for (Branch *br : j.childBranches)
+            {
+                if (br->dead)
+                    continue;
+                float err = projection_error_rec(br,plane_n,b.planeCoef.w);
+                projectionData.push_back(BranchProjectionData(err,br,i));
+            }
+        }
+        i++;
+    }
+    std::sort(projectionData.begin(),projectionData.end(),BPD_comp);
+    add_billboards_count = MIN(cnt*cnt - billboard_boxes.size(), projectionData.size());
+    add_billboards_count = 0;
+    int k = 0;
+    for (auto &proj : projectionData)
+    {
+        if (k<add_billboards_count)
+        {
+            proj.br->level = -1;
+            BBox min_bbox = get_minimal_bbox(proj.br);
+            billboard_boxes.push_back(BillboardBox(proj.br, min_bbox,vec3(0,0,0),proj.parent_n));
+        }
+        else
+        {
+            break;
+        }
+        k++;
+    }
+    for (auto &p : billboard_boxes)
+    {
+        int num = atlas.add_tex();
+        vec3 base_joint = p.b->joints.front().pos;
+        Billboard b(p.min_bbox, num,p.b->base_seg_n, 1, base_joint);
+        if (p.parent>=0 && p.parent < billboards.size())
+        {
+            //it is a secondary billboard
+            //it should be attached to projection of base joint
+            p.b->level = layer;
+            Billboard parent_billboard = billboards[p.parent];
+            vec3 n = parent_billboard.planeCoef;
+            vec3 proj = p.base_joint - (dot(n,p.base_joint) + parent_billboard.planeCoef.w)*n;
+            p.base_joint = proj;
+            b.branch_id = parent_billboard.branch_id;
+        }
+        create_billboard(t,p.b,p.min_bbox,tg,num,b);
+    }
+    glGenerateTextureMipmap(atlas.tex().texture);
+    //atlas.gen_mipmaps();
 }
