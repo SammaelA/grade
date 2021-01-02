@@ -186,12 +186,12 @@ struct TreeStructureParameters
 
     TreeStructureParameters():
     max_depth(4),
-    max_segments(20,std::vector<int>{35,18,16,14,12}),
+    max_segments(20,std::vector<int>{35,30,30,30,30}),
     max_branching(1),
     growth_iterations(300),
 
     scale(3),
-    seg_len_mult(4,std::vector<float>{3,1.5,1,0.55,0.4}),
+    seg_len_mult(4,std::vector<float>{3.5,1.75,1,0.55,0.4}),
     leaf_size_mult(2),
     base_r(1,std::vector<float>{1,0.5,0.3,0.2,0.12}),
     r_split_save_pow(2.7,std::vector<float>{2,3,3,4,4},EXPLICIT_REGENERATION, new Normal(0,0.25)),

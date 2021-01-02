@@ -569,7 +569,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     float r = sqrt(count);
     TreeStructureParameters params = trees[0].params;
     params.set_state(params.max_depth() - 1);
-    voxels = new LightVoxelsCube(glm::vec3(0,0,0),glm::vec3(40.0f*r+100,160,40.0f*r+100),params.seg_len_mult(),params.light_precision());
+    voxels = new LightVoxelsCube(glm::vec3(0,0,0),glm::vec3(40.0f*r+250,220,40.0f*r+250),params.seg_len_mult(),params.light_precision());
     for (int i=0;i<count;i++)
     {
         float R = 40*r*(float)rand()/RAND_MAX;
@@ -597,6 +597,10 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     Clusterizer cl;
     cl.set_branches(trees,count,2);
     cl.visualize_clusters(debug,false);
-
-    trees[0].billboardClouds[2]->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
+    BillboardCloud *cloud = new BillboardCloud(4096,4096);
+    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
+    trees[0].billboardClouds[3] = cloud;
+    int size = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size);
+    fprintf(stderr,"max size %d",size);
 }

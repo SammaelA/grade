@@ -131,6 +131,7 @@ class Clusterizer
     }
     static float delta;
     BranchHeap branchHeap;
+    LeafHeap leafHeap;
     std::vector<BranchWithData> branches;
     DistDataTable ddt;
     static std::vector<float> weights;

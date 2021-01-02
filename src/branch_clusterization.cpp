@@ -415,7 +415,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
         {
             BillboardCloud::BBox bbox;
             Branch *nb = branchHeap.new_branch();
-            nb->deep_copy(&b,branchHeap);
+            nb->deep_copy(&b,branchHeap, &leafHeap);
             if (dedicated_bbox(nb,bbox)) 
             {
             
@@ -426,7 +426,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC = scale(mat4(1.0f), vec3(0.01f*bbox.sizes.x,0.05f*bbox.sizes.y,0.05f*bbox.sizes.z));
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv*transl*rot;
-                transform_branch(nb,rot);
+                nb->transform(rot);
                 branches.push_back(BranchWithData(&b,nb,t.params.max_depth(),i,inverse(rot)));
                 i++;
                 

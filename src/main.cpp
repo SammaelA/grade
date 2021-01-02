@@ -97,7 +97,13 @@ std::function<void()> eventHandler = [&]()
 		cloudnum=2;
   if(Tiny::event.active[SDLK_k])
   {
-    mode = BillboardCloud::ONLY_INSTANCES;
+    if (mode == BillboardCloud::ONLY_SINGLE)
+      mode = BillboardCloud::ONLY_INSTANCES;
+    else
+      mode = BillboardCloud::ONLY_SINGLE;
+    BillboardCloud *b = t[0].billboardClouds[3];
+    t[0].billboardClouds[3] = t[0].billboardClouds[2];
+    t[0].billboardClouds[2] = b;
   }
   if(Tiny::event.active[SDLK_l])
   {

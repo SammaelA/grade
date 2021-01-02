@@ -271,6 +271,7 @@ void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &cluster
     std::map<int, std::vector<glm::mat4>> all_transforms;
     std::vector<Branch> base_branches;
     BranchHeap heap;
+    LeafHeap l_heap;
     for (int i : numbers)
     {
         std::vector<glm::mat4> transforms;
@@ -279,7 +280,7 @@ void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &cluster
             continue;
         all_transforms.emplace(i,transforms);
         base_branches.push_back(Branch());
-        base_branches.back().deep_copy(b,heap);
+        base_branches.back().deep_copy(b,heap, &l_heap);
         base_branches.back().base_seg_n = i;
     }
     prepare(t,base_branches);
@@ -302,10 +303,11 @@ void BillboardCloud::prepare(Tree &t, int layer)
 
     std::vector<Branch> branches;
     BranchHeap heap;
+    LeafHeap l_heap;
     for (Branch &b : t.branchHeaps[layer]->branches)
     {
         branches.push_back(Branch());
-        branches.back().deep_copy(&b,heap);
+        branches.back().deep_copy(&b,heap, &l_heap);
     }
     prepare(t,branches);
     ready = true;
@@ -325,7 +327,7 @@ void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
         billboard_boxes.push_back(BillboardBox(&branch,min_bbox,base_joint,-1));
     }    
     
-    int add_billboards_count = 1 + layer*4;
+    int add_billboards_count = 0;//1 + layer*4;
     Visualizer tg(t.wood, t.leaf, nullptr);
     tg.set_params(t.params);
     billboards.clear();
@@ -357,7 +359,6 @@ void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
     }
     std::sort(projectionData.begin(),projectionData.end(),BPD_comp);
     add_billboards_count = MIN(cnt*cnt - billboard_boxes.size(), projectionData.size());
-    add_billboards_count = 0;
     int k = 0;
     for (auto &proj : projectionData)
     {

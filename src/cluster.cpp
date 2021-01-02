@@ -89,8 +89,8 @@ Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transfo
     glm::mat4 base_transform_inv = glm::inverse(br->transform);
     for (Cluster *cl : clusters)
     {
-        glm::mat4 tr = base_transform_inv*cl->branch->transform;
+        glm::mat4 tr = cl->branch->transform;
         transforms.push_back(tr);
     }
-    return br->original;
+    return br->b;
 }

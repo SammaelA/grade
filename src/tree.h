@@ -66,6 +66,8 @@ struct Segment;
 struct Branch;
 struct Leaf;
 struct BranchHeap;
+struct LeafHeap;
+
 struct Segment
 {
     Joint *next;
@@ -98,7 +100,7 @@ struct Branch
     float size;
     float base_r;
     bool dead = false;
-    void deep_copy(const Branch *b, BranchHeap &heap);
+    void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     Mark *mark = nullptr;
 };
