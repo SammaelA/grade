@@ -53,7 +53,6 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
         glm::vec3 b = j.pos + 0.5f*curParams.leaf_size_mult()*rd2;
         glm::vec3 c = j.pos - 0.5f*curParams.leaf_size_mult()*rd2;
         glm::vec3 d = j.pos + curParams.leaf_size_mult()*rd1 - 0.5f*curParams.leaf_size_mult()*rd2;
-        ////fprintf(stderr,"(%f %f %f)(%f %f %f)(%f %f %f)\n",a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
         l->edges.push_back(a);
         l->edges.push_back(b);
         l->edges.push_back(c);
@@ -207,25 +206,9 @@ void TreeGenerator::distribute_feed(Branch *b)
                 feeds.push_back( &(ch_b->light));
         }
     }
-    if (false && b == test)
-    {
-        //fprintf(stderr,"id = %d)test feeds ",curTree.id);
-        for (auto f:feeds)
-        {
-            //fprintf(stderr,"%f ",*f);
-        }
-        //fprintf(stderr,"\n");
-    }
+
     std::sort(feeds.begin(),feeds.end(),comp);
-    if (false && b == test)
-    {
-        //fprintf(stderr,"test feeds ");
-        for (auto f:feeds)
-        {
-            //fprintf(stderr,"%f ",*f);
-        }
-        //fprintf(stderr,"\n");
-    }
+
     float w = 1.0;
     float w_sum = 0.0;
     float w_decay = 1 - curParams.feed_distribution_d_weight();
@@ -241,29 +224,10 @@ void TreeGenerator::distribute_feed(Branch *b)
     w_sum += top_bonus;
     *top += top_bonus;
     float mult = b->light/w_sum;
-    if (false && b == test)
-    {
-        //fprintf(stderr,"results feeds ");
-        for (auto f:feeds)
-        {
-            //fprintf(stderr,"%f ",*f);
-        }
-        //fprintf(stderr,"\n");
-    }
     for (auto f: feeds)
     {
         (*f) *=mult;
     }
-    if (false && b == test)
-    {
-        //fprintf(stderr,"mult feeds ");
-        for (auto f:feeds)
-        {
-            //fprintf(stderr,"%uud %f ",f,*f);
-        }
-        //fprintf(stderr,"\n");
-    }
-
 }
 void TreeGenerator::remove_branch(Branch *b)
 {
@@ -304,7 +268,6 @@ void TreeGenerator::grow_branch(Branch *b, float feed)
     if (b->size && (b->base_seg_n == 0) && !dice(average_feed,curParams.branch_removal()))
     {
         remove_branch(b);
-        //fprintf(stderr,"branch removed %f %f av_feed = %f\n",b->light, b->size, average_feed);
         return;
     }
     distribute_feed(b);
@@ -492,20 +455,20 @@ void TreeGenerator::grow_tree(Tree &t)
 
         if (!(t.iter % 10))
         {   
-            fprintf(stderr,"tree is growing  %d/%d iteration %d leaves\n",t.iter,curParams.growth_iterations(),t.leaves->leaves.size());
-            fprintf(stderr,"sum feed %f\n",feed);
-            fprintf(stderr,"average feed distribution:");
+            debug("tree is growing  %d/%d iteration %d leaves\n",t.iter,curParams.growth_iterations(),t.leaves->leaves.size());
+            debugl(2,"sum feed %f\n",feed);
+            debugl(2,"average feed distribution:");
             for (int j=0;j<10;j++)
             {
                 if (count_feed[j]<0.1)
-                    fprintf(stderr," nan");
+                    debugl(2," nan");
                 else
                 {
-                    fprintf(stderr," %f",sum_feed[j]/count_feed[j]);
+                    debugl(2," %f",sum_feed[j]/count_feed[j]);
                 }
                 
             }
-            fprintf(stderr,"\n");
+            debugl(2,"\n");
             voxels->print_average_occlusion();
         }
     }

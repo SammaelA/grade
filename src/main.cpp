@@ -8,8 +8,16 @@
 #include "tinyEngine/helpers/helper.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include <string>
 #include "camera.h"
 #include "visualizer.h"
+#include "texture_manager.h"
+#include "tinyEngine/utility.h"
+
+View Tiny::view;           //Window and Interface  (Requires Initialization)
+Event Tiny::event;         //Event Handler
+Audio Tiny::audio;         //Audio Processor       (Requires Initialization)
+
 Camera camera;
 
 const int WIDTH = 1200;
@@ -155,11 +163,12 @@ int main( int argc, char* args[] )
 {
 	glewInit();
 	Tiny::view.lineWidth = 1.0f;
-
+  std::string base_path_to_textures = std::string("resources/textures/");
 	Tiny::window("Procedural Tree", WIDTH, HEIGHT);
 	Tiny::event.handler = eventHandler;
-	Texture tex(image::load("leaf_2.png"));
-	Texture wood(image::load("bark-1.jpg"));
+  TextureManager textureManager = TextureManager(base_path_to_textures);
+	Texture &tex = textureManager.get("woodd");
+	Texture &wood = textureManager.get("wood");
   TreeStructureParameters par;
 	for (int i=0;i<100;i++)
 	{
@@ -177,11 +186,9 @@ int main( int argc, char* args[] )
 	Billboard shadow(1600, 1600, false);
   debugVisualizer = DebugVisualizer(&wood, &defaultShader);
 
-  setup();
-    
+  setup(); 
 	Tiny::view.pipeline = [&]()
 	{
-
 		shadow.target();
 		if(drawshadow)
 		{
@@ -192,8 +199,6 @@ int main( int argc, char* args[] )
 				t[i].render(defaultShader,cloudnum,lproj*lview);
 			}
 		}
-
-		t[0].billboardClouds[0]->prepare(t[0],0);
 		Tiny::view.target(glm::vec3(0.6,0.7,1));
 			defaultShader.use();
 			defaultShader.uniform("projectionCamera", projection*camera.camera());
@@ -224,7 +229,6 @@ int main( int argc, char* args[] )
 					t[i].render(defaultShader,cloudnum,prc);
 				}
         debugVisualizer.render(prc);
-			
 	};
 
 	//Loop over Stuff
@@ -241,7 +245,7 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 {
   if (models.size() == 0 || billboardClouds.size() == 0)
   {
-    fprintf(stderr,"wtf empty tree id =  %d  %d %d\n",id, cloudnum,models.size(), billboardClouds.size());
+    logerr("wtf empty tree id =  %d  %d %d\n",id, cloudnum,models.size(), billboardClouds.size());
     return;
   }
 	if (models.size() != billboardClouds.size())
