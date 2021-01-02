@@ -52,7 +52,7 @@ void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, V
 {
     if (num < 0)
     {
-        fprintf(stderr, "too many billboards = %d", billboard_count);
+        logerr("too many billboards = %d", billboard_count);
         return;
     }
     mat4 transl = translate(mat4(1.0f), -1.0f * min_bbox.position);
@@ -139,7 +139,6 @@ BillboardCloud::BBox BillboardCloud::get_bbox(Branch *branch, glm::vec3 a, glm::
     box.a = a;
     box.b = b;
     box.c = c;
-    //fprintf(stderr,"pos size (%f %f %f) (%f %f %f)",mn.x,mn.y,mn.z,box.sizes.x,box.sizes.y,box.sizes.z);
     return box;
 }
 void BillboardCloud::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
@@ -244,18 +243,10 @@ BillboardCloud::Billboard::Billboard(const BBox &box, int id, int branch_id, int
     mat4 rot = inverse(rot_inv);
     vec3 base_joint_rel = rot*vec4(base_joint,1.0f);
     base_joint_rel -= box.position;
-    if (base_joint_rel.x > box.sizes.x || base_joint_rel.y > box.sizes.y || base_joint_rel.z > box.sizes.z ||
-        base_joint_rel.x < 0 || base_joint_rel.y < 0 || base_joint_rel.z < 0 || true)
-    {
-        //fprintf(stderr,"wrong %f %f %f sizes + %f %f %f %f\n",base_joint_rel.x,base_joint_rel.y,base_joint_rel.z,
-        //box.sizes.x,box.sizes.y,box.sizes.z, box.sizes.y/box.sizes.z);
-    }
     vec4 pos = rot_inv*vec4(box.position,1.0f);
     if (type == 1)
     {
         vec3 npos = vec3(pos.x,pos.y,pos.z);
-        //if (base_joint_rel.x > 10)
-        //    return;//broken billboard TODO: fix me
         npos += base_joint_rel.z*box.c;
         positions.push_back(npos);
         positions.push_back(npos+box.sizes.x*box.a);
@@ -293,7 +284,6 @@ void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &cluster
         Instance *in = new Instance(m);
         in->addBuffer(all_transforms[b.branch_id]);
         instances.push_back(in);
-        fprintf(stderr, "positions %d (%f %f %f)",b.positions.size(),b.positions[0].x, b.positions[0].y, b.positions[0].z);
     }
 }
 void BillboardCloud::prepare(Tree &t, int layer)

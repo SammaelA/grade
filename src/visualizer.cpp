@@ -1,6 +1,6 @@
 #include "generated_tree.h"
 #include "visualizer.h"
-
+#include "tinyEngine/utility.h"
 #define PI 3.14159265f
 
 void Visualizer::leaf_to_model(Leaf &l, Model *m)
@@ -9,7 +9,6 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m)
     return;
   if (l.edges.size()<4)
   {
-    //fprintf(stderr,"empty leaf\n");
     return;
   }
   glm::vec3 a = l.edges[0];
@@ -63,9 +62,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
     vd.tex_coord.y = rel_ring_pos;
     sv.bigRing.push_back(vd);
     n = r*n;
-    ////fprintf(stderr,"size = %f\n",sv.bigRing.size());
   }
-  ////fprintf(stderr,"size = %d %d\n",ringsize, sv.bigRing.size());
 }
 void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
@@ -90,25 +87,6 @@ void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring
     vd.tex_coord.y = rel_ring_pos;
     sv.smallRing.push_back(vd);
     n = r*n;
-    ////fprintf(stderr,"size = %f\n",sv.bigRing.size());
-  }
-  ////fprintf(stderr,"size = %d %d\n",ringsize, sv.bigRing.size());
-}
-void pv(glm::vec3 pos)
-{
-  //fprintf(stderr,"(%f %f %f)",pos.x,pos.y,pos.z);
-}
-void pt(Model *m,int v)
-{
-  int t = m->indices[v];
-  if (3*t + 3>m->positions.size())
-  {
-    //fprintf(stderr,"wrong index ind[%d] = %d",v,t);
-  }
-  else
-  {
-    glm::vec3 pos = glm::vec3(m->positions[3*t],m->positions[3*t+1],m->positions[3*t+2]);
-    pv(pos);
   }
 }
 void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
@@ -117,10 +95,8 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
   int _b = h->positions.size()/3;
   if (sv.smallRing.size()<sv.ringsize || sv.bigRing.size()<sv.ringsize)
     return;
-  ////fprintf(stderr,"_b = %d",_b);
   for (auto pos: sv.smallRing)
       {
-        ////fprintf(stderr,"yy pos = %f %f %f\n",pos.pos.x,pos.pos.y,pos.pos.z);
         h->positions.push_back(pos.pos.x);
         h->positions.push_back(pos.pos.y);
         h->positions.push_back(pos.pos.z);
@@ -134,7 +110,6 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
       }
       for (auto pos: sv.bigRing)
       {
-        ////fprintf(stderr,"dd pos = %f %f %f\n",pos.pos.x,pos.pos.y,pos.pos.z);
         h->positions.push_back(pos.pos.x);
         h->positions.push_back(pos.pos.y);
         h->positions.push_back(pos.pos.z);
@@ -323,7 +298,7 @@ void DebugVisualizer::render(glm::mat4 view_proj)
 {
     if (!tree_shader)
     {
-        fprintf(stderr,"empty debug shader\n");
+        logerr("empty debug shader\n");
         return;
     }
     tree_shader->use();

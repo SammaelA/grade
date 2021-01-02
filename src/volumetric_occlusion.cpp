@@ -15,13 +15,13 @@ LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_si
     vox_z = (int)(size.x/voxel_size);
 
     int count = (2*vox_x+1)*(2*vox_y+1)*(2*vox_z+1);
-    fprintf(stderr,"trying to create light voxels cube with %dx%dx%d  %d voxels\n",vox_x,vox_y,vox_z,count);
+    debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n",vox_x,vox_y,vox_z,count);
     voxels = new float[count];
-    fprintf(stderr,"successfully created light voxels cube with %d voxels\n",count);
+    debug("successfully created light voxels cube with %d voxels\n",count);
 }
 void LightVoxelsCube::print_average_occlusion()
 {
-    fprintf(stderr,"average_occ %f\n",sum_occlusion/occ_count);
+    debugl(2,"average_occ %f\n",sum_occlusion/occ_count);
 }
 LightVoxelsCube::~LightVoxelsCube()
 {
@@ -45,7 +45,7 @@ void LightVoxelsCube::set_occluder(glm::vec3 pos, float strenght)
                 }
                 else
                 {
-                    fprintf(stderr,"missed pos = %f %f %f center = %f %f %f size = %f %f %f",pos.x,pos.y,pos.z,center.x,center.y,center.z,vox_x*voxel_size,vox_y*voxel_size,vox_z*voxel_size);
+                    debugl(2,"missed pos = %f %f %f center = %f %f %f size = %f %f %f",pos.x,pos.y,pos.z,center.x,center.y,center.z,vox_x*voxel_size,vox_y*voxel_size,vox_z*voxel_size);
                 }
                 
             }
@@ -117,17 +117,13 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float* occlusi
     }
     int min_sz = min_shifts.size();
     min_shift = min_shifts[rand() % min_sz];
-    //fprintf(stderr,"min occ %f\n",min_occ);
     if (occlusion)
         *occlusion = min_occ;
     return(glm::normalize(min_shift+glm::vec3(0.0,0.0001,0.0)));
 }
 inline bool LightVoxelsCube::in_voxel_cube(glm::ivec3 voxel)
 {
-    bool in = (abs(voxel.x)<=vox_x) && (abs(voxel.y)<=vox_y) && (abs(voxel.z)<=vox_z);
-    if (in && v_to_i(voxel)<0 || v_to_i(voxel)>=(2*vox_x+1)*(2*vox_y+1)*(2*vox_z+1))
-        fprintf(stderr,"wtf %d %d %d v_to_i = %d",voxel.x,voxel.y,voxel.z,v_to_i(voxel));
-    return in;
+    return (abs(voxel.x)<=vox_x) && (abs(voxel.y)<=vox_y) && (abs(voxel.z)<=vox_z);
 }
 inline float LightVoxelsCube::fast_voxel_occlusion(glm::ivec3 voxel)
 {

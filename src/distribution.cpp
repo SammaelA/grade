@@ -1,6 +1,7 @@
 #include "distribution.h"
 #include <random>
 #include <iostream>
+#include "tinyEngine/utility.h"
 
     Normal::Normal(double a, double sigma)
     {
@@ -27,7 +28,7 @@
         this->to = to;
         delta = to - from;
         if (delta<0)
-            fprintf(stderr,"wrong interval for uniform distribution [%lg %lg)",from,to);
+            logerr("wrong interval for uniform distribution [%lg %lg)",from,to);
     }
     double Uniform::get()
     {

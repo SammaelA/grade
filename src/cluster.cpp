@@ -43,7 +43,6 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
     { //dist between single branch and cluster. Reduce second cluster
         if (B->branch)
         { //dist between single branches.
-            //fprintf(stderr,"ward dist %f %f\n",min,max);
             DistData addData;
             Answer a = Clusterizer::dist(*branch, *(B->branch), min, max, &addData);
             float distance = a.to;
@@ -75,7 +74,6 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         float c = -(float)(B->size) / (size + B->size);
         float distance = a * d1 + b * d2 + c * d3;
         distances.emplace(B, distance);
-        //fprintf(stderr,"dist calc %f*%f %f*%f %f*%f \n",d1,a,d2,b,d3,c);
         return distance;
     }
 }
