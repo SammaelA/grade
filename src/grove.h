@@ -1,28 +1,101 @@
 #pragma once
-#include "tree.h"
-
+#include "tinyEngine/utility.h"
+#include "tinyEngine/utility/model.h"
+#include "tinyEngine/utility/instance.h"
+#include "tinyEngine/utility/shader.h"
+#include "tinyEngine/utility.h"
+class BillboardCloud;
+struct PackedLeaf
+{
+    std::vector<glm::vec3> edges;
+};
 struct PackedJoint
 {
     glm::vec3 pos;
     float r;
+    PackedJoint() {r = 0;}
+    PackedJoint(glm::vec3 &_pos, float _r)
+    {
+        pos = _pos;
+        r = _r;
+    }
 };
 struct PackedBranch
 {
     std::vector<PackedJoint> joints;
+    std::vector<PackedLeaf> leaves;
 };
 struct BranchCatalogue
 {
-    std::vector<std::vector<PackedBranch>> branches;
-    PackedBranch &get_branch(unsigned char level, unsigned pos)
-    { return branches[level][pos]; }
+    static const unsigned LEVEL_BITS = 3; 
+    std::vector<std::vector<PackedBranch> > branches;
+    BranchCatalogue(int levels)
+    {
+        if (levels >= (1 << LEVEL_BITS))
+        {
+            logerr("Branch catalogue created with too many branch levels: %d. Max value is %d",levels, (1 << LEVEL_BITS) - 1);
+            levels = (1 << LEVEL_BITS) - 1;
+        }
+        for (int i = 0;i<levels;i++)
+        {
+            branches.push_back(std::vector<PackedBranch>());
+        }
+    }
+    PackedBranch &get(unsigned pos)
+    { 
+        return branches[pos & ((1 << LEVEL_BITS) - 1)][pos >> LEVEL_BITS]; 
+    }
+    int add(PackedBranch &b, int level)
+    {
+        if (level<0 || level >=branches.size())
+            return -1;
+        branches[level].push_back(b);
+        return ((branches[level].size() -1) << LEVEL_BITS) + level;
+    }
+    std::vector<PackedBranch> &get_level(int level)
+    {
+        if (level<0)
+            level = 0;
+        if (level >=branches.size())
+            level = branches.size() - 1;
+        return branches[level];
+    }
 };
 struct BranchStructure
 {
-    unsigned char level;
     unsigned pos;
-    std::vector<BranchStructure *> childBranches;
+    unsigned transform;
+    std::vector<BranchStructure> childBranches;
 };
-class Grove
+struct InstancedBranch
 {
+    std::vector<unsigned> branches;
+    std::vector<unsigned> transforms;
+};
+struct GrovePacked
+{
+    BranchCatalogue branchCatalogue;
+    std::vector<glm::mat4> transforms;
 
+    std::vector<InstancedBranch> instancedBranches;
+    std::vector<BillboardCloud *> clouds;//TODO: replace with packed billboard cloud data 
+    GrovePacked(): branchCatalogue(7) {};
+};
+class GroveRenderer
+{
+public:
+    struct LOD
+    {
+        Model *m;
+        BillboardCloud *cloud;
+        std::vector<Instance> instances;
+    };
+    void render(int lod, glm::mat4 prc);
+    GroveRenderer(GrovePacked *_source, int LODs_count);
+private:
+    std::vector<LOD> LODs;
+    Shader renderer;
+    GrovePacked *source;
+    Texture &wood;
+    Texture &leaf;
 };

@@ -2,6 +2,7 @@
 #include "generated_tree.h"
 #include "tinyEngine/utility.h"
 #include "branch_clusterization.h"
+#include "texture_manager.h"
 #include "visualizer.h"
 #include <math.h>
 #include <algorithm>
@@ -500,6 +501,23 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
         sz = sz * 2;
         t.models.push_back(m);
     }
+    BillboardCloud *cloud = new BillboardCloud(1, 1);
+    Model *m = new Model();
+    for (int i = 0; i < t.branchHeaps.size(); i++)
+    {
+        for (auto &branch : t.branchHeaps[i]->branches)
+        {
+            debug.branch_to_model(branch, m, leaves);
+        }
+    }
+    Model *m2 = new Model();
+    for (auto &leaf : t.leaves->leaves)
+    {
+        debug.leaf_to_model(leaf, m2);
+    }
+    t.billboardClouds.push_back(cloud);
+    t.models.push_back(m);
+    t.models.push_back(m2);
     return true;
 }
 void LeafHeap::clear_removed()
@@ -557,13 +575,69 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
         debug.set_params(trees[i].params);
         tree_to_model(trees[i],false,debug);
     }
-    Clusterizer cl;
+    /*Clusterizer cl;
     cl.set_branches(trees,count,2);
     cl.visualize_clusters(debug,false);
     BillboardCloud *cloud = new BillboardCloud(4096,4096);
     cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
-    trees[0].billboardClouds[3] = cloud;
-    int size = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size);
-    fprintf(stderr,"max size %d",size);
+    trees[0].billboardClouds.push_back(cloud);
+    int size = trees[0].billboardClouds.size();
+    fprintf(stderr,"max size %d",size);*/
+}
+void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids)
+{
+    if (b->dead)
+        return;
+    PackedBranch pb;
+    b->pack(pb);
+    ids.push_back(grove.branchCatalogue.add(pb, b->level));
+    for (Joint &j : b->joints)
+    {
+        for (Branch *br : j.childBranches)
+            pack_branch_recursively(br,grove,ids);
+    }
+}
+void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove)
+{
+    std::vector<glm::mat4> transforms;
+    Branch *base = cluster.prepare_to_replace(transforms);
+}
+void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug)
+{
+    Tree *trees = new Tree[count];
+    Texture wood = textureManager.get("wood");
+    Texture leaf = textureManager.get("leaf");
+    for (int i=0;i<count;i++)
+    {
+        trees[i] = Tree();
+        trees[i].params = params;
+        trees[i].wood = &wood;
+        trees[i].leaf = &leaf;
+    }
+    create_grove(trees,count,debug);
+
+    Clusterizer cl;
+    cl.set_branches(trees,count,1);
+    cl.visualize_clusters(debug,false);
+
+    grove.clouds.push_back(new BillboardCloud(1,1));
+    BillboardCloud *cloud = new BillboardCloud(4096,4096);
+    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
+    grove.clouds.push_back(cloud);
+    for (int i=0;i<count;i++)
+    {
+        pack_tree(trees[i],grove,0);
+    }
+}
+void TreeGenerator::pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
+{
+    for (int i=0;i<=up_to_level;i++)
+    {
+        for (Branch &branch : t.branchHeaps[i]->branches)
+        {
+            PackedBranch b;
+            branch.pack(b);
+            grove.branchCatalogue.add(b, branch.level);
+        }
+    }
 }

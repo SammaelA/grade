@@ -39,13 +39,9 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m)
   m->indices.push_back(_b+3);
   m->indices.push_back(_b);
 }
-void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
   sv.ringsize = ring_size;
-  glm::vec3 start = s.begin;
-  glm::vec3 end   = s.end;
-  glm::vec3 dir = end - start;
-  
   //Get Some Normal Vector
   glm::vec3 x = glm::normalize(dir + glm::vec3(1.0, 1.0, 1.0));
   glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, x)), 1.0);
@@ -56,7 +52,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
   for (int i = 0; i < ring_size; i++)
   {
     VertexData vd;
-    vd.pos = start + s.rel_r_begin*glm::vec3(n.x,n.y,n.z);
+    vd.pos = start + radius*glm::vec3(n.x,n.y,n.z);
     vd.normal = n;
     vd.tex_coord.x = ((float)i)/ring_size;
     vd.tex_coord.y = rel_ring_pos;
@@ -64,30 +60,20 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
     n = r*n;
   }
 }
-void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
-  sv.ringsize = ring_size;
   glm::vec3 start = s.begin;
   glm::vec3 end   = s.end;
   glm::vec3 dir = end - start;
-  
-  //Get Some Normal Vector
-  glm::vec3 x = glm::normalize(dir + glm::vec3(1.0, 1.0, 1.0));
-  glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, x)), 1.0);
+  get_ring(start, dir, s.rel_r_begin, sv, ring_size, rel_ring_pos);
 
-  //Add the Correct Number of Indices
-  glm::mat4 r = glm::rotate(glm::mat4(1.0), (float)(2*PI/ring_size), dir);
-
-  for (int i = 0; i < ring_size; i++)
-  {
-    VertexData vd;
-    vd.pos = end + s.rel_r_end*glm::vec3(n.x,n.y,n.z);
-    vd.normal = n;
-    vd.tex_coord.x = ((float)i)/ring_size;
-    vd.tex_coord.y = rel_ring_pos;
-    sv.smallRing.push_back(vd);
-    n = r*n;
-  }
+}
+void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+{
+glm::vec3 start = s.begin;
+  glm::vec3 end   = s.end;
+  glm::vec3 dir = end - start;
+  get_ring(start, dir, s.rel_r_end, sv, ring_size, rel_ring_pos);
 }
 void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
 {
@@ -276,6 +262,38 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Model *m)
                 branch_to_model(branch, m, false);
         }
     }
+}
+void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
+{
+    if (!leaves)
+    {
+        if (b.joints.size()<2)
+            return;
+        std::vector<SegmentVertexes> vets;
+        int i = 0;
+        int ringsize = 8;
+        glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
+        for (int i=0;i< b.joints.size();i++)
+        {
+            if (i != 0)
+                dir = b.joints[i].pos - b.joints[i-1].pos;
+            SegmentVertexes vt;
+            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3);
+            if (!vets.empty())
+                vets.back().smallRing = vt.bigRing;
+            vets.push_back(vt);
+            i++;
+        }
+        for (auto &vt : vets)
+        {
+            seg_vertexes_to_model(vt, m);
+        }
+    }
+    else
+    {
+        /* code */
+    }
+    
 }
 Visualizer::Visualizer(Texture *_tree_tex, Texture *_leaves_tex, Shader *_tree_shader)
 {

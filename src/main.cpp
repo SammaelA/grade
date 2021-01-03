@@ -13,11 +13,12 @@
 #include "visualizer.h"
 #include "texture_manager.h"
 #include "tinyEngine/utility.h"
+#include "grove.h"
 
 View Tiny::view;           //Window and Interface  (Requires Initialization)
 Event Tiny::event;         //Event Handler
 Audio Tiny::audio;         //Audio Processor       (Requires Initialization)
-
+TextureManager textureManager;
 Camera camera;
 
 const int WIDTH = 1200;
@@ -28,6 +29,7 @@ int cur_tree = 0;
 Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer debugVisualizer;
+GrovePacked grove;
 BillboardCloud::RenderMode mode = BillboardCloud::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1,-1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f),(float)WIDTH/HEIGHT,1.0f,3000.0f);
@@ -48,10 +50,11 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 1;
+  treecount = 2;
+  TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
-  gen.create_grove(t,treecount,debugVisualizer);
+  gen.create_grove(params,treecount,grove,debugVisualizer);
 }
 
 // Event Handler
@@ -103,14 +106,16 @@ std::function<void()> eventHandler = [&]()
 		cloudnum=1;
   if(Tiny::event.active[SDLK_o])
 		cloudnum=2;
+  if(Tiny::event.active[SDLK_p])
+		cloudnum=3;
   if(Tiny::event.active[SDLK_k])
   {
     if (mode == BillboardCloud::ONLY_SINGLE)
       mode = BillboardCloud::ONLY_INSTANCES;
     else
       mode = BillboardCloud::ONLY_SINGLE;
-    BillboardCloud *b = t[0].billboardClouds[3];
-    t[0].billboardClouds[3] = t[0].billboardClouds[2];
+    BillboardCloud *b = t[0].billboardClouds.back();
+    t[0].billboardClouds.back() = t[0].billboardClouds[2];
     t[0].billboardClouds[2] = b;
   }
   if(Tiny::event.active[SDLK_l])
@@ -163,10 +168,9 @@ int main( int argc, char* args[] )
 {
 	glewInit();
 	Tiny::view.lineWidth = 1.0f;
-  std::string base_path_to_textures = std::string("resources/textures/");
 	Tiny::window("Procedural Tree", WIDTH, HEIGHT);
 	Tiny::event.handler = eventHandler;
-  TextureManager textureManager = TextureManager(base_path_to_textures);
+  textureManager = TextureManager("resources/textures/");
 	Texture &tex = textureManager.get("woodd");
 	Texture &wood = textureManager.get("wood");
   TreeStructureParameters par;
@@ -185,19 +189,22 @@ int main( int argc, char* args[] )
 	Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
 	Billboard shadow(1600, 1600, false);
   debugVisualizer = DebugVisualizer(&wood, &defaultShader);
-
   setup(); 
+  GroveRenderer groveRenderer = GroveRenderer(&grove,2);
 	Tiny::view.pipeline = [&]()
 	{
+    //Tiny::view.target(glm::vec3(0.6,0.7,1));
+    groveRenderer.render(1, projection*camera.camera());
+
 		shadow.target();
 		if(drawshadow)
 		{
 			depth.use();
 			depth.uniform("dvp", lproj*lview);
-			for (int i=0;i<0*treecount;i++)
-			{
-				t[i].render(defaultShader,cloudnum,lproj*lview);
-			}
+		//	for (int i=0;i<0*treecount;i++)
+		//	{
+		//		t[i].render(defaultShader,cloudnum,lproj*lview);
+		//	}
 		}
 		Tiny::view.target(glm::vec3(0.6,0.7,1));
 			defaultShader.use();
@@ -218,6 +225,8 @@ int main( int argc, char* args[] )
 			defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0],floor.colors[1],floor.colors[2],1));
 			defaultShader.uniform("model", floor.model);
 			floor.render(GL_TRIANGLES);
+      groveRenderer.render(1, projection*camera.camera());
+      /*
 			defaultShader.uniform("drawfloor", false);
 
 
@@ -228,7 +237,8 @@ int main( int argc, char* args[] )
 				{
 					t[i].render(defaultShader,cloudnum,prc);
 				}
-        debugVisualizer.render(prc);
+        debugVisualizer.render(prc);*/
+    
 	};
 
 	//Loop over Stuff
@@ -248,8 +258,6 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
     logerr("wtf empty tree id =  %d  %d %d\n",id, cloudnum,models.size(), billboardClouds.size());
     return;
   }
-	if (models.size() != billboardClouds.size())
-		return;
 
 	if (cloudnum<0)
 		cloudnum = 0;
@@ -263,6 +271,17 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
 	defaultShader.uniform("model", models[cloudnum]->model);
 	models[cloudnum]->update();
 	models[cloudnum]->render(GL_TRIANGLES);
-  billboardClouds[cloudnum]->set_render_mode(mode);
-	billboardClouds[cloudnum]->render(prc);
+  if (cloudnum == 3 && models.size() >= 5)
+  {
+    if (leaf)
+		  defaultShader.texture("tex",*leaf);
+    defaultShader.uniform("model", models[cloudnum+1]->model);
+    models[cloudnum+1]->update();
+    models[cloudnum+1]->render(GL_TRIANGLES);
+  }
+  else
+  {
+    billboardClouds[cloudnum]->set_render_mode(mode);
+	  billboardClouds[cloudnum]->render(prc);
+  }
 }

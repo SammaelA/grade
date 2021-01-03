@@ -1,4 +1,3 @@
-//Parameters
 #pragma once
 #include "tinyEngine/TinyEngine.h"
 #include "generated_tree.h"

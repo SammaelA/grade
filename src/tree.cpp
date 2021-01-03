@@ -63,3 +63,30 @@ void Branch::transform(glm::mat4 &trans_matrix)
         }
     }
 }
+void Branch::pack(PackedBranch &branch)
+{
+    if (dead || joints.size() <= 1 || (joints.size() != segments.size() + 1))
+        return;
+    
+    auto jit = joints.begin();
+    auto sit = segments.begin();
+
+    branch.joints.clear();
+    branch.leaves.clear();
+
+    branch.joints.push_back(PackedJoint(sit->begin,sit->rel_r_begin));
+    jit++;
+    while (jit != joints.end())
+    {
+        PackedLeaf l;
+        if (jit->leaf && !(jit->leaf->dead) && (jit->leaf->edges.size() >= 3))
+        {
+            l.edges = jit->leaf->edges;
+
+        }
+        branch.joints.push_back(PackedJoint(sit->end,sit->rel_r_end));
+        branch.leaves.push_back(l);
+        jit++;
+        sit++;
+    }
+}

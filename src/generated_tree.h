@@ -8,6 +8,7 @@
 #include "tinyEngine/utility/model.h"
 #include "billboard_cloud.h"
 #include "tree.h"
+#include "grove.h"
 class DebugVisualizer;
 class TreeGenerator
 {
@@ -18,6 +19,8 @@ class TreeGenerator
     void grow_tree(Tree &t);
     void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
     void create_grove(Tree *trees, int count, DebugVisualizer &debug);
+    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove);
+    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug);
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;
@@ -42,4 +45,5 @@ class TreeGenerator
     LightVoxelsCube *create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
+    void pack_tree(Tree &t, GrovePacked &grove, int up_to_level);
 };
