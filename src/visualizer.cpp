@@ -70,7 +70,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
 }
 void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
-glm::vec3 start = s.begin;
+  glm::vec3 start = s.begin;
   glm::vec3 end   = s.end;
   glm::vec3 dir = end - start;
   get_ring(start, dir, s.rel_r_end, sv, ring_size, rel_ring_pos);

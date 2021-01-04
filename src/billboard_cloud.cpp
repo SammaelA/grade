@@ -349,6 +349,7 @@ void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
     }
     std::sort(projectionData.begin(),projectionData.end(),BPD_comp);
     add_billboards_count = MIN(cnt*cnt - billboard_boxes.size(), projectionData.size());
+    add_billboards_count = 0;
     int k = 0;
     for (auto &proj : projectionData)
     {
@@ -382,6 +383,7 @@ void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
         }
         create_billboard(t,p.b,p.min_bbox,tg,num,b);
     }
+    logerr("created %d billboards\n", billboard_boxes.size());
     glGenerateTextureMipmap(atlas.tex().texture);
     //atlas.gen_mipmaps();
 }

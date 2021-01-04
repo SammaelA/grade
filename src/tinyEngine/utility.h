@@ -5,7 +5,7 @@
 #define PI 3.14159265f  
 #define MIN(a,b) a<b ? a : b
 #define MAX(a,b) a>b ? a : b
-#define DEBUG_LEVEL -1
+#define DEBUG_LEVEL 0
 
 void debugnl();
 void debug(const char *__restrict __fmt, glm::vec2 vec);

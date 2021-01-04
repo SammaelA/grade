@@ -91,6 +91,7 @@ public:
         std::vector<Instance> instances;
     };
     void render(int lod, glm::mat4 prc);
+    Texture *pwood = nullptr;
     GroveRenderer(GrovePacked *_source, int LODs_count);
 private:
     std::vector<LOD> LODs;

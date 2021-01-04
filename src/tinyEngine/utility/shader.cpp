@@ -5,7 +5,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <sstream>
-
+#include "../utility.h"
 void Shader::setup(slist _s){
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   std::vector<std::string> s = _s;

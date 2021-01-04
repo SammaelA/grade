@@ -2,14 +2,14 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <functional>
-
+#include "../utility.h"
 class Texture{
 public:
   GLuint texture;               //Texture int (OpenGL: everything is an int!)
   GLenum type = GL_TEXTURE_2D;  //Texture type (default is this)
   void set_default_paramaters(Texture *tex);
   void bind() {glBindTexture( type, texture );}
-  Texture(){ glGenTextures( 1, &texture ); };         //Default constructor
+  Texture(){ glGenTextures( 1, &texture ); debug("texture created %d\n",texture);};         //Default constructor
   Texture(SDL_Surface* s):Texture(){ raw(s); };     //Load raw surface data into texture
   Texture(int W, int H, bool d = false):Texture(){  //Create empty texture of defined size 
     if(!d) empty(W, H);

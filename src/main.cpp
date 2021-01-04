@@ -50,7 +50,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 2;
+  treecount = 15;
   TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
@@ -114,9 +114,9 @@ std::function<void()> eventHandler = [&]()
       mode = BillboardCloud::ONLY_INSTANCES;
     else
       mode = BillboardCloud::ONLY_SINGLE;
-    BillboardCloud *b = t[0].billboardClouds.back();
-    t[0].billboardClouds.back() = t[0].billboardClouds[2];
-    t[0].billboardClouds[2] = b;
+    //BillboardCloud *b = t[0].billboardClouds.back();
+    //t[0].billboardClouds.back() = t[0].billboardClouds[2];
+    //t[0].billboardClouds[2] = b;
   }
   if(Tiny::event.active[SDLK_l])
   {
@@ -191,11 +191,9 @@ int main( int argc, char* args[] )
   debugVisualizer = DebugVisualizer(&wood, &defaultShader);
   setup(); 
   GroveRenderer groveRenderer = GroveRenderer(&grove,2);
+  groveRenderer.pwood = &wood;
 	Tiny::view.pipeline = [&]()
 	{
-    //Tiny::view.target(glm::vec3(0.6,0.7,1));
-    groveRenderer.render(1, projection*camera.camera());
-
 		shadow.target();
 		if(drawshadow)
 		{

@@ -3,7 +3,7 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count):
-renderer({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+renderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 leaf(textureManager.get("leaf")),
 wood(textureManager.get("wood"))
 {
@@ -14,6 +14,7 @@ wood(textureManager.get("wood"))
     {
         LODs.emplace_back();
         LODs.back().cloud = _source->clouds[i];
+        LODs.back().cloud->set_render_mode(BillboardCloud::ONLY_INSTANCES);
         Model *m = new Model();
         for (int j=0;j<i;j++)
         {
@@ -35,9 +36,8 @@ void GroveRenderer::render(int lod, glm::mat4 prc)
     }
     Model *m = LODs[lod].m;
     renderer.use();
-	renderer.uniform("projectionCamera", prc);
     renderer.texture("tex",wood);
-	renderer.uniform("wireframe", false);
+	renderer.uniform("projectionCamera", prc);
     renderer.uniform("model", m->model);
 	m->update();
 	m->render(GL_TRIANGLES);

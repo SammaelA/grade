@@ -15,4 +15,5 @@ TextureManager::TextureManager(std::string base_path)
     textures.emplace("leaf", image::load("leaf_2.png"));
     textures.emplace("wood", image::load("bark-1.jpg"));
     textures.emplace("texture not found", image::load("leaf_2.png"));
+    debug("textures loaded");
 }

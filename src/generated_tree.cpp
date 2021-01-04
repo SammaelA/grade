@@ -572,8 +572,8 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
         {
             grow_tree(trees[i]);
         }
-        debug.set_params(trees[i].params);
-        tree_to_model(trees[i],false,debug);
+        //debug.set_params(trees[i].params);
+        //tree_to_model(trees[i],false,debug);
     }
     /*Clusterizer cl;
     cl.set_branches(trees,count,2);
@@ -605,8 +605,8 @@ void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove)
 void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug)
 {
     Tree *trees = new Tree[count];
-    Texture wood = textureManager.get("wood");
-    Texture leaf = textureManager.get("leaf");
+    Texture &wood = textureManager.get("wood");
+    Texture &leaf = textureManager.get("leaf");
     for (int i=0;i<count;i++)
     {
         trees[i] = Tree();
