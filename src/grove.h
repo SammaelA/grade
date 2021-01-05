@@ -41,6 +41,10 @@ struct BranchCatalogue
             branches.push_back(std::vector<PackedBranch>());
         }
     }
+    int levels() const
+    {
+        return branches.size();
+    }
     PackedBranch &get(unsigned pos)
     { 
         return branches[pos & ((1 << LEVEL_BITS) - 1)][pos >> LEVEL_BITS]; 
@@ -70,16 +74,16 @@ struct BranchStructure
 struct InstancedBranch
 {
     std::vector<unsigned> branches;
-    std::vector<unsigned> transforms;
+    std::vector<glm::mat4> transforms;
 };
 struct GrovePacked
 {
-    BranchCatalogue branchCatalogue;
-    std::vector<glm::mat4> transforms;
+    BranchCatalogue instancedCatalogue;
+    BranchCatalogue uniqueCatalogue;
 
     std::vector<InstancedBranch> instancedBranches;
     std::vector<BillboardCloud *> clouds;//TODO: replace with packed billboard cloud data 
-    GrovePacked(): branchCatalogue(7) {};
+    GrovePacked(): uniqueCatalogue(7), instancedCatalogue(7) {};
 };
 class GroveRenderer
 {
@@ -88,14 +92,16 @@ public:
     {
         Model *m;
         BillboardCloud *cloud;
-        std::vector<Instance> instances;
+        std::vector<Instance *> instances;
     };
     void render(int lod, glm::mat4 prc);
     Texture *pwood = nullptr;
     GroveRenderer(GrovePacked *_source, int LODs_count);
 private:
+    void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch);
     std::vector<LOD> LODs;
     Shader renderer;
+    Shader rendererInstancing;
     GrovePacked *source;
     Texture &wood;
     Texture &leaf;

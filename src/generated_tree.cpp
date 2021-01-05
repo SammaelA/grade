@@ -510,10 +510,14 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
             debug.branch_to_model(branch, m, leaves);
         }
     }
+
     Model *m2 = new Model();
-    for (auto &leaf : t.leaves->leaves)
+    if (leaves)
     {
-        debug.leaf_to_model(leaf, m2);
+        for (auto &leaf : t.leaves->leaves)
+        {
+            debug.leaf_to_model(leaf, m2);
+        }
     }
     t.billboardClouds.push_back(cloud);
     t.models.push_back(m);
@@ -590,7 +594,7 @@ void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned
         return;
     PackedBranch pb;
     b->pack(pb);
-    ids.push_back(grove.branchCatalogue.add(pb, b->level));
+    ids.push_back(grove.instancedCatalogue.add(pb, b->level));
     for (Joint &j : b->joints)
     {
         for (Branch *br : j.childBranches)
@@ -599,12 +603,17 @@ void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned
 }
 void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove)
 {
-    std::vector<glm::mat4> transforms;
+    grove.instancedBranches.push_back(InstancedBranch());
+    std::vector<glm::mat4> &transforms= grove.instancedBranches.back().transforms;
+    std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
     Branch *base = cluster.prepare_to_replace(transforms);
+    pack_branch_recursively(base,grove,ids);
+    debugl(4,"cluster added %d branches %d transforms",grove.instancedBranches.back().branches.size(),
+                                                       grove.instancedBranches.back().transforms.size());
 }
-void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug)
+void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
 {
-    Tree *trees = new Tree[count];
+    //Tree *trees = new Tree[count];
     Texture &wood = textureManager.get("wood");
     Texture &leaf = textureManager.get("leaf");
     for (int i=0;i<count;i++)
@@ -614,7 +623,14 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
         trees[i].wood = &wood;
         trees[i].leaf = &leaf;
     }
+
     create_grove(trees,count,debug);
+
+    for (int i=0;i<count;i++)
+    {
+        debug.set_params(trees[i].params);
+        tree_to_model(trees[i],false,debug);
+    }
 
     Clusterizer cl;
     cl.set_branches(trees,count,1);
@@ -628,6 +644,10 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     {
         pack_tree(trees[i],grove,0);
     }
+    for (int c_num : cl.Ddg.current_clusters)
+    {
+        pack_cluster(cl.Ddg.clusters[c_num],grove);
+    }
 }
 void TreeGenerator::pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
 {
@@ -637,7 +657,7 @@ void TreeGenerator::pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
         {
             PackedBranch b;
             branch.pack(b);
-            grove.branchCatalogue.add(b, branch.level);
+            grove.uniqueCatalogue.add(b, branch.level);
         }
     }
 }

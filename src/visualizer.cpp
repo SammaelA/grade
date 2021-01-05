@@ -73,7 +73,10 @@ void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring
   glm::vec3 start = s.begin;
   glm::vec3 end   = s.end;
   glm::vec3 dir = end - start;
-  get_ring(start, dir, s.rel_r_end, sv, ring_size, rel_ring_pos);
+  std::vector<VertexData> data = sv.bigRing;
+  get_ring(end, dir, s.rel_r_end, sv, ring_size, rel_ring_pos);
+  sv.smallRing = sv.bigRing;
+  sv.bigRing = data;
 }
 void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
 {

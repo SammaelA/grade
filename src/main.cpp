@@ -25,6 +25,7 @@ const int WIDTH = 1200;
 const int HEIGHT = 800;
 int treecount = 0;
 int cloudnum = 1;
+bool draw_clusterized = true;
 int cur_tree = 0;
 Tree t[101];
 TreeGenerator gen(t[100]);
@@ -50,11 +51,11 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0,1,0));
 
 void setup()
 {
-  treecount = 15;
+  treecount = 12;
   TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5,1,1.5,2,3,4,5,6,8,10}; 
-  gen.create_grove(params,treecount,grove,debugVisualizer);
+  gen.create_grove(params,treecount,grove,debugVisualizer,t);
 }
 
 // Event Handler
@@ -110,17 +111,11 @@ std::function<void()> eventHandler = [&]()
 		cloudnum=3;
   if(Tiny::event.active[SDLK_k])
   {
-    if (mode == BillboardCloud::ONLY_SINGLE)
-      mode = BillboardCloud::ONLY_INSTANCES;
-    else
-      mode = BillboardCloud::ONLY_SINGLE;
-    //BillboardCloud *b = t[0].billboardClouds.back();
-    //t[0].billboardClouds.back() = t[0].billboardClouds[2];
-    //t[0].billboardClouds[2] = b;
+    draw_clusterized = true;
   }
   if(Tiny::event.active[SDLK_l])
   {
-    mode = BillboardCloud::ONLY_SINGLE;
+    draw_clusterized = false;
   }
   if(!Tiny::event.press.empty())
   {
@@ -223,11 +218,13 @@ int main( int argc, char* args[] )
 			defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0],floor.colors[1],floor.colors[2],1));
 			defaultShader.uniform("model", floor.model);
 			floor.render(GL_TRIANGLES);
-      groveRenderer.render(1, projection*camera.camera());
-      /*
-			defaultShader.uniform("drawfloor", false);
-
-
+      if (draw_clusterized)
+      {
+        groveRenderer.render(cloudnum, projection*camera.camera());
+      }
+      else
+      {
+			  defaultShader.uniform("drawfloor", false);
 				defaultShader.texture("tex",wood);
 				defaultShader.uniform("wireframe", false);
 				glm::mat4 prc = projection*camera.camera();
@@ -235,8 +232,8 @@ int main( int argc, char* args[] )
 				{
 					t[i].render(defaultShader,cloudnum,prc);
 				}
-        debugVisualizer.render(prc);*/
-    
+        debugVisualizer.render(prc);
+      }
 	};
 
 	//Loop over Stuff

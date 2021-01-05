@@ -1,5 +1,18 @@
 #include "instance.h"
 
+void Instance::addBufferCopy(std::vector<glm::mat4>& buf){
+  buffer = new std::vector<glm::mat4>;
+  *buffer = buf;
+  GLuint instance;
+  glGenBuffers(1, &instance);
+  SIZE = buf.size();              //Update the Number of Instances
+
+  glBindVertexArray(m->vao);
+  glBindBuffer(GL_ARRAY_BUFFER, instance);  //Bind Instance Buffer and Data
+  glBufferData(GL_ARRAY_BUFFER, SIZE*sizeof(glm::mat4), &(*buffer)[0], GL_STATIC_DRAW);
+
+  configBuffer(instance,*buffer);
+}
 void Instance::addBuffer(std::vector<glm::mat4>& buf){
   GLuint instance;
   glGenBuffers(1, &instance);

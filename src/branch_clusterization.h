@@ -111,7 +111,7 @@ class Clusterizer
                 current_clusters.push_back(i);
             }
         }
-        void make(int n = 20);
+        void make(int n = 20, int clusters_num = 1);
         Dist get_P_delta(int n,std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
     };
     bool set_branches(Tree &t, int layer);

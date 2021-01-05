@@ -406,7 +406,7 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer)
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
     Ddg.make_base_clusters(branches);
-    Ddg.make(20);
+    Ddg.make(20,25);
     if (!need_debug)
         return;
     std::vector<Branch *> branches;
@@ -477,7 +477,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n,std::list<int> &current_clust
     debugl(1, "P_delta size = %d md = (%d %d %f)\n",P_delta.size(), md.U, md.V, md.d);
     return md;
 }
-void Clusterizer::ClusterDendrogramm::make(int n)
+void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
 {
     std::list<Dist> P_delta;
     float delta;
@@ -500,7 +500,7 @@ void Clusterizer::ClusterDendrogramm::make(int n)
                 }
             }
         }
-        if (min.d > 0.999)
+        if (min.d > 0.999 || current_clusters.size() <= clusters_num)
         {
             break;
             //makes no sense to merge clusters with maximum distance between them.
