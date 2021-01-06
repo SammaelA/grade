@@ -1,5 +1,5 @@
 #include "branch_clusterization.h"
-
+Clusterizer *Clusterizer::Cluster::currentClusterizer = nullptr;
 Clusterizer::Cluster::Cluster(BranchWithData *bwd)
 {
     branch = bwd;
@@ -44,7 +44,7 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         if (B->branch)
         { //dist between single branches.
             DistData addData;
-            Answer a = Clusterizer::dist(*branch, *(B->branch), min, max, &addData);
+            Answer a = currentClusterizer->dist(*branch, *(B->branch), min, max, &addData);
             float distance = a.to;
             addData.dist = distance;
             if (a.exact)

@@ -3,6 +3,7 @@
 #include "generated_tree.h"
 #include "tinyEngine/utility.h"
 #include <set>
+#include "tinyEngine/utility.h"
 using namespace glm;
 #define DEBUG 0
 #define PI 3.14159265f
@@ -14,9 +15,13 @@ std::vector<std::pair<float, float>> optimization_quantiles = {
     {0.2, 0.996278552},
     {0.25, 0.9984770934},
     {0.3, 0.9992320979}}; //values got by experiments
-int distribution[110];
-std::vector<float> Clusterizer::weights = std::vector<float>{0.6, 0.25, 0.1, 0.035, 0.015};
+float distribution[110];
+float distribution2[110];
+std::vector<float> Clusterizer::weights = std::vector<float>{5000,800,40,1,0.01};
+std::vector<float> Clusterizer::light_weights = std::vector<float>{1,1,1,1,1};
 float Clusterizer::delta = 0.25;
+float Clusterizer::light_importance = 0.4;
+glm::vec3 Clusterizer::voxels_size = glm::vec3(64,32,32);
 struct JSortData
 {
     float dist;
@@ -263,11 +268,75 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
     }
     return true;
 }
+void Clusterizer::get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform)
+{
+    for (Joint &j : b->joints)
+    {
+        glm::vec3 ps = transform*glm::vec4(j.pos,1.0f);
+        light[b->level] += current_light->get_occlusion(transform*glm::vec4(j.pos,1.0f));
+        //debug("%f (%f %f %f)\n",current_light->get_occlusion(transform*glm::vec4(j.pos,1.0f)),ps.x,ps.y,ps.z);
+        for (Branch *br : j.childBranches)
+        {
+            get_light(br,light,transform);
+        }
+    }
+}
+Clusterizer::Answer Clusterizer::light_difference(BranchWithData &bwd1, BranchWithData &bwd2)
+{
+    float ress[360];
+    if (bwd1.leavesDensity && bwd2.leavesDensity)
+    {
+        for (int i=0;i<360;i++)
+        {
+            ress[i] = bwd1.leavesDensity[i]->NMSE(bwd2.leavesDensity[0]);
+            //debug("ress = %f ",ress[i]);
+        }
+        //debugnl();
+        for (int j=1;j<40;j++)
+        {
+            float k = 0;
+            float div = 0;
+            for (int i=j;i<360;i+=j)
+            {
+                k++;
+                div += abs(ress[i] - ress[i-j]);
+            }
+            distribution[j] += div/k;
+            distribution2[j]++;
+        }
+        debug("distr + %f\n",distribution[2]);
+        float res = bwd1.leavesDensity[(int)(2*PI*bwd1.rot_angle/360.0f) % 360]->NMSE(bwd2.leavesDensity[0]);
+        return Answer(true, res, res);
+    }
+    else
+        return Answer(true,0,0);
+    if (!current_light)
+        return Answer(true,0,0);
+    std::vector<float> _l11(light_weights.size(),0);
+    std::vector<float> _l12(light_weights.size(),0);
+    std::vector<float> _l21(light_weights.size(),0);
+    std::vector<float> _l22(light_weights.size(),0);
+    glm::mat4 t1 = bwd1.transform; 
+    glm::mat4 t2 = bwd2.transform; 
+    get_light(bwd1.b,_l11,t1);//real b1
+    get_light(bwd2.b,_l22,t2);//real b2
+    get_light(bwd1.b,_l12,t2);//b1 placed instead of b2
+    get_light(bwd2.b,_l21,t1);//b2 placed instead of b1
+    double l11 = 0, l12 = 0, l21 = 0 ,l22 = 0;
+    for (int i=0;i<light_weights.size();i++)
+    {
+        l11 += light_weights[i]*_l11[i];
+        l12 += light_weights[i]*_l12[i];
+        l21 += light_weights[i]*_l21[i];
+        l22 += light_weights[i]*_l22[i];
+    }
+    double res = (abs(l12 - l11) + abs(l21 - l22))/(l11 + l12 + l21 + l22);
+    return Answer(true, res, res);
+}
 Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
 {
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
-    Answer part_answer;
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
     std::vector<float> matches(joint_counts.size());
@@ -275,15 +344,23 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     {
         joint_counts[i] += bwd2.joint_counts[i];
     }
-    bool exact = match_joints(b1, b2, matches, joint_counts, joint_passed, min, max);
-    part_answer = partial_dist(joint_counts, joint_passed, matches, weights);
-    return part_answer;
+    bool exact = match_joints(b1, b2, matches, joint_counts, joint_passed, min/(1 - light_importance), max);
+    Answer part_answer = partial_dist(joint_counts, joint_passed, matches, weights);
+    if (exact)
+    {
+        Answer light_answer = light_difference(bwd1, bwd2);
+        //debug("light answer %f %f\n",light_answer.from, light_answer.to);
+        return light_answer*(light_importance) + part_answer*(1 - light_importance);
+    }
+    else
+        return part_answer;
 }
 Clusterizer::Answer Clusterizer::dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
 {
 }
 Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
+    bwd1.rot_angle = 0;
     Answer fast_answer = dist_simple(bwd1, bwd2, min, max);
     if (!fast_answer.exact)
     {
@@ -300,6 +377,7 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
     for (int i = 1; i <= N; i++)
     {
         bwd1.b->transform(rot);
+        bwd1.rot_angle = i * base_step;
         float md = dist_simple(bwd1, bwd2, min, max).from;
         if (md < min_dist)
         {
@@ -314,10 +392,12 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
 
         rot = rot_to_base * rotate(mat4(1.0f), base_step, axis);
         bwd1.b->transform(rot);
+        bwd1.rot_angle = min_phi + base_step;
         float md_plus = dist_simple(bwd1, bwd2, min, max).from;
 
         rot = rotate(mat4(1.0f), -2.0f * base_step, axis);
         bwd1.b->transform(rot);
+        bwd1.rot_angle = min_phi - base_step;
         float md_minus = dist_simple(bwd1, bwd2, min, max).from;
         if (md_plus < md_minus && md_plus < min_dist)
         {
@@ -390,8 +470,9 @@ void Clusterizer::calc_joints_count(Branch *b, std::vector<int> &counts)
         }
     }
 }
-bool Clusterizer::set_branches(Tree *t, int count, int layer)
+bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light)
 {
+    current_light = _light;
     for (int i = 0; i < count; i++)
     {
         int prev_n = branches.size();
@@ -402,7 +483,13 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer)
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
     Ddg.make_base_clusters(branches);
-    Ddg.make(20, 25);
+    Ddg.make(20, 5);
+    ::debug("NMSE difference:");
+    for (int i=0;i<50;i++)
+    {
+        ::debug("%f ",distribution2[i] == 0 ? -1 : distribution[i]/distribution2[i]);
+    }
+    debugnl();
     if (!need_debug)
         return;
     std::vector<Branch *> branches;

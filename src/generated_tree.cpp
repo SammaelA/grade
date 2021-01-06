@@ -628,7 +628,7 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     }
 
     Clusterizer cl;
-    cl.set_branches(trees, count, 1);
+    cl.set_branches(trees, count, 1, voxels);
     cl.visualize_clusters(debug, false);
 
     grove.clouds.push_back(new BillboardCloud(1, 1));

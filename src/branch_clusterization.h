@@ -1,6 +1,7 @@
 #pragma once
 #include "tree.h"
 #include "visualizer.h"
+#include "volumetric_occlusion.h"
 #include <vector>
 #include <map>
 class Clusterizer
@@ -18,6 +19,22 @@ public:
             to = t;
         }
         Answer() : Answer(false, 0, 1){};
+        Answer(Answer &a)
+        {
+            Answer(a.exact, a.from, a.to);
+        }
+        Answer operator*(const float mult)
+        {
+            return Answer(exact, MIN(from*mult, to*mult), MAX(from*mult, to*mult));
+        }
+        Answer operator+(const Answer &add)
+        {
+            return Answer(exact && add.exact, from + add.from, to + add.to);
+        }
+        Answer operator-(const Answer &sub)
+        {
+            return Answer(exact && sub.exact, from - sub.to, to -sub.from);
+        }
     };
     struct DistDataTable
     {
@@ -44,9 +61,23 @@ public:
         Branch *original;
         Branch *b;
         int pos;
+        float rot_angle = 0.0;
         std::vector<int> joint_counts;
         glm::mat4 transform;
-        BranchWithData(Branch *_original, Branch *_b = nullptr, int levels = 0, int _pos = 0, glm::mat4 _transform = glm::mat4(1.0f))
+        LightVoxelsCube *leavesDensity[360];
+        void set_occlusion(Branch *b, LightVoxelsCube *light)
+        {
+            for (Joint &j : b->joints)
+            {
+                if (j.type == j.LEAF)
+                    light->set_occluder_trilinear(j.pos,1);
+                for (Branch *br : j.childBranches)
+                {
+                    set_occlusion(br, light);
+                }
+            }
+        }
+        BranchWithData(Branch *_original, Branch *_b, int levels, int _pos, glm::mat4 _transform)
         {
             original = _original;
             b = _b;
@@ -56,6 +87,15 @@ public:
                 joint_counts.push_back(0);
             if (b)
                 calc_joints_count(b, joint_counts);
+
+            glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
+            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/360.0f, axis);
+            for (int i=0;i<360;i++)
+            {
+                b->transform(rot);
+                leavesDensity[i] = new LightVoxelsCube(glm::vec3(50,10,10),glm::vec3(51,11,11),1,0.85);
+                set_occlusion(b,leavesDensity[i]);
+            }
         }
     };
     struct DistData
@@ -70,6 +110,7 @@ public:
     };
     struct Cluster
     {
+        static Clusterizer *currentClusterizer; 
         BranchWithData *branch = nullptr;
         Cluster *U = nullptr;
         Cluster *V = nullptr;
@@ -114,25 +155,32 @@ public:
         Dist get_P_delta(int n, std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
     };
     bool set_branches(Tree &t, int layer);
-    bool set_branches(Tree *t, int count, int layer);
+    bool set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
-    static bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
+    void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
+    Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);
+    bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
                              float min, float max);
-    static bool match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
+    bool match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
                                      float min, float max);
-    static Answer dist(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
-    static Answer dist_simple(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
-    static Answer dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
-    static Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
+    Answer dist(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
+    Answer dist_simple(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
+    Answer dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
+    Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
     Answer cluster_dist_min(Cluster &c1, Cluster &c2, float min = 1.0, float max = 0.0);
     Clusterizer()
     {
+        Cluster::currentClusterizer = this;
     }
     static float delta;
+    static float light_importance;
+    static std::vector<float> light_weights;
+    static std::vector<float> weights;
+    static glm::vec3 voxels_size;
     BranchHeap branchHeap;
     LeafHeap leafHeap;
     std::vector<BranchWithData> branches;
     DistDataTable ddt;
-    static std::vector<float> weights;
+    LightVoxelsCube *current_light = nullptr;
     ClusterDendrogramm Ddg;
 };

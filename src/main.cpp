@@ -47,7 +47,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 12;
+  treecount = 2;
   TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10};
