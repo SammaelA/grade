@@ -1,5 +1,5 @@
 #pragma once
-#include <GL/glew.h>  
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include "tinyEngine/utility/texture.h"
@@ -7,7 +7,7 @@
 
 class TextureAtlas
 {
-    public:
+public:
     TextureAtlas(int w, int h);
     ~TextureAtlas()
     {
@@ -23,11 +23,12 @@ class TextureAtlas
     void process_tc_array(int num, std::vector<float> &tc);
     bool target(int num);
     glm::mat4 tex_transform(int num);
-    glm::ivec4 get_sizes() {return glm::ivec4(width,height,gridWN, gridHN);}
+    glm::ivec4 get_sizes() { return glm::ivec4(width, height, gridWN, gridHN); }
     bool clear();
-    Texture &tex() {return colorTex;}
+    Texture &tex() { return colorTex; }
     void gen_mipmaps();
-    private:
+
+private:
     bool bind();
     int curNum = 0;
     int width = 0;
@@ -36,7 +37,7 @@ class TextureAtlas
     int gridHN = 0;
     bool isGrid = false;
     glm::vec4 clearColor;
-    GLuint fbo;  
+    GLuint fbo;
     Texture colorTex;
     Shader mipMapRenderer;
     Shader copy;

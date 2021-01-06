@@ -24,10 +24,10 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
             Leaf *l = leaf_heap->new_leaf();
             *l = *(j.leaf);
             nj.leaf = l;
-        }   
+        }
         else
         {
-            nj.leaf = nullptr;//TODO: it's temporal
+            nj.leaf = nullptr; //TODO: it's temporal
         }
         nj.childBranches.clear();
         for (Branch *br : j.childBranches)
@@ -43,18 +43,18 @@ void Branch::transform(glm::mat4 &trans_matrix)
 {
     for (Segment &s : segments)
     {
-        s.begin = trans_matrix*glm::vec4(s.begin,1.0f);
-        s.end = trans_matrix*glm::vec4(s.end,1.0f);
+        s.begin = trans_matrix * glm::vec4(s.begin, 1.0f);
+        s.end = trans_matrix * glm::vec4(s.end, 1.0f);
     }
     for (Joint &j : joints)
     {
-        j.pos = trans_matrix*glm::vec4(j.pos,1.0f);
+        j.pos = trans_matrix * glm::vec4(j.pos, 1.0f);
         if (j.leaf && !(j.leaf->dead))
         {
-            j.leaf->pos = trans_matrix*glm::vec4(j.leaf->pos,1.0f);
+            j.leaf->pos = trans_matrix * glm::vec4(j.leaf->pos, 1.0f);
             for (glm::vec3 &vec : j.leaf->edges)
             {
-                vec = trans_matrix*glm::vec4(vec,1.0f);
+                vec = trans_matrix * glm::vec4(vec, 1.0f);
             }
         }
         for (Branch *br : j.childBranches)
@@ -67,14 +67,14 @@ void Branch::pack(PackedBranch &branch)
 {
     if (dead || joints.size() <= 1 || (joints.size() != segments.size() + 1))
         return;
-    
+
     auto jit = joints.begin();
     auto sit = segments.begin();
 
     branch.joints.clear();
     branch.leaves.clear();
 
-    branch.joints.push_back(PackedJoint(sit->begin,sit->rel_r_begin));
+    branch.joints.push_back(PackedJoint(sit->begin, sit->rel_r_begin));
     jit++;
     while (jit != joints.end())
     {
@@ -82,9 +82,8 @@ void Branch::pack(PackedBranch &branch)
         if (jit->leaf && !(jit->leaf->dead) && (jit->leaf->edges.size() >= 3))
         {
             l.edges = jit->leaf->edges;
-
         }
-        branch.joints.push_back(PackedJoint(sit->end,sit->rel_r_end));
+        branch.joints.push_back(PackedJoint(sit->end, sit->rel_r_end));
         branch.leaves.push_back(l);
         jit++;
         sit++;

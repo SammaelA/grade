@@ -12,7 +12,7 @@ class Visualizer;
 class BillboardCloud
 {
 
-    public:
+public:
     enum RenderMode
     {
         NOTHING,
@@ -27,7 +27,7 @@ class BillboardCloud
         glm::vec3 a;
         glm::vec3 b;
         glm::vec3 c;
-        float V(){return sizes.x*sizes.y*sizes.z;}
+        float V() { return sizes.x * sizes.y * sizes.z; }
         bool special = false;
     };
     BillboardCloud(int tex_w, int tex_h);
@@ -43,16 +43,17 @@ class BillboardCloud
     {
         renderMode = m;
     }
-    private:
+
+private:
     struct Billboard
     {
-        int id = - 1;
+        int id = -1;
         int branch_id = -1;
         std::vector<glm::vec3> positions;
         glm::vec4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
         bool instancing;
         void to_model(Model *m, TextureAtlas &atlas);
-        Billboard() {};
+        Billboard(){};
         Billboard(const Billboard &b)
         {
             this->id = b.id;
@@ -72,9 +73,7 @@ class BillboardCloud
             projection_err = err;
             br = b;
             parent_n = p_n;
-
         }
-
     };
     struct BillboardBox
     {
@@ -82,8 +81,7 @@ class BillboardCloud
         BBox min_bbox;
         glm::vec3 base_joint;
         int parent;
-        BillboardBox(Branch *_b, BBox &_bbox, glm::vec3 _base_joint, int par = -1):
-        min_bbox(_bbox)
+        BillboardBox(Branch *_b, BBox &_bbox, glm::vec3 _base_joint, int par = -1) : min_bbox(_bbox)
         {
             b = _b;
             base_joint = _base_joint;

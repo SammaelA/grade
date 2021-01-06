@@ -5,7 +5,7 @@
 #include <map>
 class Clusterizer
 {
-    public:
+public:
     struct Answer
     {
         bool exact;
@@ -17,7 +17,7 @@ class Clusterizer
             from = fr;
             to = t;
         }
-        Answer(): Answer(false,0,1){};
+        Answer() : Answer(false, 0, 1){};
     };
     struct DistDataTable
     {
@@ -26,19 +26,19 @@ class Clusterizer
         void create(int _n)
         {
             n = _n;
-            data = new Answer[n*n];
+            data = new Answer[n * n];
         }
         void clear()
         {
             if (data)
                 delete[] data;
         }
-        inline Answer get(int x, int y){return data[x*n+y];}
-        inline void set(int x, int y, Answer &a){data[x*n+y] = a;}
-        int size() {return n;}
-        ~DistDataTable() {clear();}
+        inline Answer get(int x, int y) { return data[x * n + y]; }
+        inline void set(int x, int y, Answer &a) { data[x * n + y] = a; }
+        int size() { return n; }
+        ~DistDataTable() { clear(); }
     };
-    static void calc_joints_count(Branch *b, std::vector<int>  &counts);
+    static void calc_joints_count(Branch *b, std::vector<int> &counts);
     struct BranchWithData
     {
         Branch *original;
@@ -52,10 +52,10 @@ class Clusterizer
             b = _b;
             pos = _pos;
             transform = _transform;
-            for (int i=0;i<levels;i++)
+            for (int i = 0; i < levels; i++)
                 joint_counts.push_back(0);
             if (b)
-                calc_joints_count(b,joint_counts);
+                calc_joints_count(b, joint_counts);
         }
     };
     struct DistData
@@ -74,14 +74,13 @@ class Clusterizer
         Cluster *U = nullptr;
         Cluster *V = nullptr;
         int size = 0;
-        std::map<Cluster *,DistData> distances;
+        std::map<Cluster *, DistData> distances;
         Cluster(BranchWithData *bwd);
         Cluster(Cluster *_U, Cluster *_V);
         void to_branch_data(std::vector<Branch *> &branches);
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
         Branch *prepare_to_replace(std::vector<glm::mat4> &transforms);
-        
     };
     struct ClusterDendrogramm
     {
@@ -104,15 +103,15 @@ class Clusterizer
         void make_base_clusters(std::vector<BranchWithData> &branches)
         {
             size = branches.size();
-            clusters.reserve(branches.size()*2);
-            for (int i=0;i<branches.size();i++)
+            clusters.reserve(branches.size() * 2);
+            for (int i = 0; i < branches.size(); i++)
             {
                 clusters.push_back(Cluster(&(branches[i])));
                 current_clusters.push_back(i);
             }
         }
         void make(int n = 20, int clusters_num = 1);
-        Dist get_P_delta(int n,std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
+        Dist get_P_delta(int n, std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
     };
     bool set_branches(Tree &t, int layer);
     bool set_branches(Tree *t, int count, int layer);
@@ -136,4 +135,4 @@ class Clusterizer
     DistDataTable ddt;
     static std::vector<float> weights;
     ClusterDendrogramm Ddg;
-}; 
+};

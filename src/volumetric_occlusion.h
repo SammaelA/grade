@@ -4,7 +4,7 @@
 
 struct LightVoxelsCube
 {
-    public:
+public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision);
     ~LightVoxelsCube();
     void set_occluder(glm::vec3 pos, float strenght);
@@ -13,7 +13,8 @@ struct LightVoxelsCube
     float get_occlusion(glm::vec3 pos);
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
     void print_average_occlusion();
-    private:
+
+private:
     struct LightParams
     {
         int penumbraDepth = 5;
@@ -35,7 +36,7 @@ struct LightVoxelsCube
     };
     glm::vec3 center;
     float voxel_size;
-    int vox_x,vox_y,vox_z;
+    int vox_x, vox_y, vox_z;
     float *voxels;
     std::list<Light> point_lights;
     std::list<Light> directed_lights;

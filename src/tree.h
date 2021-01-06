@@ -25,15 +25,21 @@ struct Segment
     float rel_r_begin;
     float rel_r_end;
     Mark *mark = nullptr;
-
 };
 struct Joint
 {
-    enum JointType {NONE, END, MIDDLE, FORK, LEAF};
+    enum JointType
+    {
+        NONE,
+        END,
+        MIDDLE,
+        FORK,
+        LEAF
+    };
     JointType type;
     Leaf *leaf = nullptr;
     glm::vec3 pos;
-    std::list<Branch*> childBranches;
+    std::list<Branch *> childBranches;
     int max_branching = 0;
     float light;
     Mark *mark = nullptr;
@@ -64,26 +70,32 @@ struct Leaf
 struct LeafHeap
 {
     std::list<Leaf> leaves;
-    Leaf *new_leaf() {leaves.push_back(Leaf()); return &leaves.back();}
+    Leaf *new_leaf()
+    {
+        leaves.push_back(Leaf());
+        return &leaves.back();
+    }
     void clear_removed();
 };
 struct BranchHeap
 {
     std::list<Branch> branches;
-    Branch *new_branch() {branches.push_back(Branch()); return &branches.back();}
+    Branch *new_branch()
+    {
+        branches.push_back(Branch());
+        return &branches.back();
+    }
     void clear_removed();
 };
 struct TreeStructure
 {
-
 };
 struct TreeData
 {
-
 };
 struct Tree
 {
-    std::vector<BranchHeap*> branchHeaps;
+    std::vector<BranchHeap *> branchHeaps;
     LeafHeap *leaves;
     glm::vec3 pos;
     TreeStructureParameters params;

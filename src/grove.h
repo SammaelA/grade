@@ -13,7 +13,7 @@ struct PackedJoint
 {
     glm::vec3 pos;
     float r;
-    PackedJoint() {r = 0;}
+    PackedJoint() { r = 0; }
     PackedJoint(glm::vec3 &_pos, float _r)
     {
         pos = _pos;
@@ -27,16 +27,16 @@ struct PackedBranch
 };
 struct BranchCatalogue
 {
-    static const unsigned LEVEL_BITS = 3; 
-    std::vector<std::vector<PackedBranch> > branches;
+    static const unsigned LEVEL_BITS = 3;
+    std::vector<std::vector<PackedBranch>> branches;
     BranchCatalogue(int levels)
     {
         if (levels >= (1 << LEVEL_BITS))
         {
-            logerr("Branch catalogue created with too many branch levels: %d. Max value is %d",levels, (1 << LEVEL_BITS) - 1);
+            logerr("Branch catalogue created with too many branch levels: %d. Max value is %d", levels, (1 << LEVEL_BITS) - 1);
             levels = (1 << LEVEL_BITS) - 1;
         }
-        for (int i = 0;i<levels;i++)
+        for (int i = 0; i < levels; i++)
         {
             branches.push_back(std::vector<PackedBranch>());
         }
@@ -46,21 +46,21 @@ struct BranchCatalogue
         return branches.size();
     }
     PackedBranch &get(unsigned pos)
-    { 
-        return branches[pos & ((1 << LEVEL_BITS) - 1)][pos >> LEVEL_BITS]; 
+    {
+        return branches[pos & ((1 << LEVEL_BITS) - 1)][pos >> LEVEL_BITS];
     }
     int add(PackedBranch &b, int level)
     {
-        if (level<0 || level >=branches.size())
+        if (level < 0 || level >= branches.size())
             return -1;
         branches[level].push_back(b);
-        return ((branches[level].size() -1) << LEVEL_BITS) + level;
+        return ((branches[level].size() - 1) << LEVEL_BITS) + level;
     }
     std::vector<PackedBranch> &get_level(int level)
     {
-        if (level<0)
+        if (level < 0)
             level = 0;
-        if (level >=branches.size())
+        if (level >= branches.size())
             level = branches.size() - 1;
         return branches[level];
     }
@@ -82,8 +82,8 @@ struct GrovePacked
     BranchCatalogue uniqueCatalogue;
 
     std::vector<InstancedBranch> instancedBranches;
-    std::vector<BillboardCloud *> clouds;//TODO: replace with packed billboard cloud data 
-    GrovePacked(): uniqueCatalogue(7), instancedCatalogue(7) {};
+    std::vector<BillboardCloud *> clouds; //TODO: replace with packed billboard cloud data
+    GrovePacked() : uniqueCatalogue(7), instancedCatalogue(7){};
 };
 class GroveRenderer
 {
@@ -97,6 +97,7 @@ public:
     void render(int lod, glm::mat4 prc);
     Texture *pwood = nullptr;
     GroveRenderer(GrovePacked *_source, int LODs_count);
+
 private:
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch);
     std::vector<LOD> LODs;
