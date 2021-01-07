@@ -45,5 +45,4 @@ public:
     LightVoxelsCube *create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
-    void pack_tree(Tree &t, GrovePacked &grove, int up_to_level);
 };

@@ -80,6 +80,10 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
 Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transforms)
 {
     std::vector<Cluster *> clusters;
+    return prepare_to_replace(transforms, clusters);
+}
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transforms, std::vector<Cluster *> &clusters)
+{
     to_base_clusters(clusters);
     if (clusters.empty())
         return nullptr;

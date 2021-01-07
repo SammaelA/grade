@@ -7,7 +7,7 @@
 #include "grove.h"
 
 class Texture;
-class BillboardCloud;
+class BillboardCloudRaw;
 class Shader;
 class Model;
 struct Joint;
@@ -105,7 +105,7 @@ struct Tree
     LightVoxelsCube *voxels;
     Texture *wood = nullptr;
     Texture *leaf = nullptr;
-    std::vector<BillboardCloud *> billboardClouds;
+    std::vector<BillboardCloudRaw *> billboardClouds;
     std::vector<Model *> models;
     void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
 };

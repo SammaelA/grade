@@ -95,7 +95,7 @@ void transform_branch(Branch *b, mat4 transform)
         }
     }
 }
-bool dedicated_bbox(Branch *branch, BillboardCloud::BBox &bbox)
+bool dedicated_bbox(Branch *branch, BBox &bbox)
 {
     if (!branch || false && branch->dead || branch->segments.empty())
         return false;
@@ -115,7 +115,7 @@ bool dedicated_bbox(Branch *branch, BillboardCloud::BBox &bbox)
     b = normalize(b - dot(a, b) * a);
     c = cross(a, b);
 
-    bbox = BillboardCloud::get_bbox(branch, a, b, c);
+    bbox = BillboardCloudRaw::get_bbox(branch, a, b, c);
     return true;
 }
 Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std::vector<float> &matches, const std::vector<float> &weights)
@@ -274,7 +274,6 @@ void Clusterizer::get_light(Branch *b, std::vector<float> &light, glm::mat4 &tra
     {
         glm::vec3 ps = transform*glm::vec4(j.pos,1.0f);
         light[b->level] += current_light->get_occlusion(transform*glm::vec4(j.pos,1.0f));
-        //debug("%f (%f %f %f)\n",current_light->get_occlusion(transform*glm::vec4(j.pos,1.0f)),ps.x,ps.y,ps.z);
         for (Branch *br : j.childBranches)
         {
             get_light(br,light,transform);
@@ -283,29 +282,12 @@ void Clusterizer::get_light(Branch *b, std::vector<float> &light, glm::mat4 &tra
 }
 Clusterizer::Answer Clusterizer::light_difference(BranchWithData &bwd1, BranchWithData &bwd2)
 {
-    float ress[360];
     if (bwd1.leavesDensity && bwd2.leavesDensity)
     {
-        for (int i=0;i<360;i++)
-        {
-            ress[i] = bwd1.leavesDensity[i]->NMSE(bwd2.leavesDensity[0]);
-            //debug("ress = %f ",ress[i]);
-        }
-        //debugnl();
-        for (int j=1;j<40;j++)
-        {
-            float k = 0;
-            float div = 0;
-            for (int i=j;i<360;i+=j)
-            {
-                k++;
-                div += abs(ress[i] - ress[i-j]);
-            }
-            distribution[j] += div/k;
-            distribution2[j]++;
-        }
-        debug("distr + %f\n",distribution[2]);
-        float res = bwd1.leavesDensity[(int)(2*PI*bwd1.rot_angle/360.0f) % 360]->NMSE(bwd2.leavesDensity[0]);
+        if (bwd1.rot_angle < 0)
+            bwd1.rot_angle += 2*PI;
+        int index = ((int)floor(bwd1.rot_angle/(2*PI) * BWD_ROTATIONS)) % BWD_ROTATIONS;
+        float res = bwd1.leavesDensity[index]->NMSE(bwd2.leavesDensity[0]);
         return Answer(true, res, res);
     }
     else
@@ -437,7 +419,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
         int i = 0;
         for (Branch &b : t.branchHeaps[layer]->branches)
         {
-            BillboardCloud::BBox bbox;
+            BBox bbox;
             Branch *nb = branchHeap.new_branch();
             nb->deep_copy(&b, branchHeap, &leafHeap);
             if (dedicated_bbox(nb, bbox))

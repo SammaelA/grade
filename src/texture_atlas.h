@@ -17,6 +17,7 @@ public:
     {
         clearColor = color;
     }
+    TextureAtlas &operator=(TextureAtlas &atlas);
     void set_grid(int w, int h);
     int add_tex();
     void process_tc(int num, glm::vec2 &tc);

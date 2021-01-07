@@ -8,7 +8,7 @@
 #include "tinyEngine/utility.h"
 #include "visualizer.h"
 using namespace glm;
-BillboardCloud::BillboardCloud(int tex_w, int tex_h) : atlas(tex_w, tex_h),
+BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h),
                                                        rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
@@ -16,22 +16,22 @@ BillboardCloud::BillboardCloud(int tex_w, int tex_h) : atlas(tex_w, tex_h),
 {
     cloud = new Model();
 }
-BillboardCloud::~BillboardCloud()
+BillboardCloudRaw::~BillboardCloudRaw()
 {
     delete (cloud);
 }
-void BillboardCloud::setup_preparation()
+void BillboardCloudRaw::setup_preparation()
 {
 }
 void matprint()
 {
 }
 
-bool BillboardCloud::BPD_comp(BranchProjectionData &a, BranchProjectionData &b)
+bool BillboardCloudRaw::BPD_comp(BranchProjectionData &a, BranchProjectionData &b)
 {
     return a.projection_err > b.projection_err;
 }
-float BillboardCloud::projection_error_rec(Branch *b, vec3 &n, float d)
+float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
 {
     if (!b || b->joints.size() == 0)
         return 0;
@@ -44,7 +44,7 @@ float BillboardCloud::projection_error_rec(Branch *b, vec3 &n, float d)
     }
     return err;
 }
-void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
+void BillboardCloudRaw::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
 {
     if (num < 0)
     {
@@ -85,7 +85,7 @@ void BillboardCloud::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, V
 
     billboards.push_back(bill);
 }
-BillboardCloud::BBox BillboardCloud::get_minimal_bbox(Branch *branch)
+BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
 {
     int iterations = 360;
     vec3 a(0, 0, 0);
@@ -118,7 +118,7 @@ BillboardCloud::BBox BillboardCloud::get_minimal_bbox(Branch *branch)
     }
     return min_bbox;
 }
-BillboardCloud::BBox BillboardCloud::get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c)
+BBox BillboardCloudRaw::get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c)
 {
     vec4 bias = vec4(1, 1, 1, 0);
     mat4 rot_inv(vec4(a, 0), vec4(b, 0), vec4(c, 0), vec4(0, 0, 0, 1));
@@ -137,7 +137,7 @@ BillboardCloud::BBox BillboardCloud::get_bbox(Branch *branch, glm::vec3 a, glm::
     box.c = c;
     return box;
 }
-void BillboardCloud::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
+void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
 {
     if (branch->dead)
         return;
@@ -159,7 +159,7 @@ void BillboardCloud::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
             update_bbox(br, rot, mn, mx);
     }
 }
-void BillboardCloud::render(mat4 &projectionCamera)
+void BillboardCloudRaw::render(mat4 &projectionCamera)
 {
     if (renderMode == ONLY_SINGLE || renderMode == BOTH)
     {
@@ -189,11 +189,11 @@ void BillboardCloud::render(mat4 &projectionCamera)
         }
     }
 }
-void BillboardCloud::set_textures(Texture *wood)
+void BillboardCloudRaw::set_textures(Texture *wood)
 {
     pwood = wood;
 }
-void BillboardCloud::Billboard::to_model(Model *m, TextureAtlas &atlas)
+void Billboard::to_model(Model *m, TextureAtlas &atlas)
 {
     if (positions.size() == 4)
     {
@@ -228,7 +228,7 @@ void BillboardCloud::Billboard::to_model(Model *m, TextureAtlas &atlas)
         m->indices.push_back(_b + 3);
     }
 }
-BillboardCloud::Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing)
+Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing)
 {
     this->id = id;
     this->branch_id = branch_id;
@@ -251,7 +251,7 @@ BillboardCloud::Billboard::Billboard(const BBox &box, int id, int branch_id, int
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
     }
 }
-void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers)
+void BillboardCloudRaw::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
 {
     std::map<int, std::vector<glm::mat4>> all_transforms;
     std::vector<Branch> base_branches;
@@ -269,6 +269,11 @@ void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &cluster
         base_branches.back().base_seg_n = i;
     }
     prepare(t, base_branches);
+    if (data)
+    {
+        data->valid = true;
+        data->atlas = &atlas;
+    }
     for (Billboard &b : billboards)
     {
         b.instancing = true;
@@ -278,9 +283,15 @@ void BillboardCloud::prepare(Tree &t, std::vector<Clusterizer::Cluster> &cluster
         Instance *in = new Instance(m);
         in->addBuffer(all_transforms[b.branch_id]);
         instances.push_back(in);
+        if (data)
+        {
+            data->billboards.push_back(BillboardCloudData::BillboardData());
+            data->billboards.back().billboard = b;
+            data->billboards.back().transforms = all_transforms[b.branch_id];
+        }
     }
 }
-void BillboardCloud::prepare(Tree &t, int layer)
+void BillboardCloudRaw::prepare(Tree &t, int layer)
 {
     if (ready)
         return;
@@ -296,7 +307,7 @@ void BillboardCloud::prepare(Tree &t, int layer)
     prepare(t, branches);
     ready = true;
 }
-void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
+void BillboardCloudRaw::prepare(Tree &t, std::vector<Branch> &branches)
 {
     if (branches.empty())
         return;
@@ -380,4 +391,60 @@ void BillboardCloud::prepare(Tree &t, std::vector<Branch> &branches)
     logerr("created %d billboards\n", billboard_boxes.size());
     glGenerateTextureMipmap(atlas.tex().texture);
     //atlas.gen_mipmaps();
+}
+BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
+rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
+                            {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+{
+    this->data = data;
+    if (!data || !data->valid)
+    {
+        logerr("empty billboard data %uud",data);
+        return;
+    }
+    for (BillboardCloudData::BillboardData &bill : data->billboards)
+    {
+        bill.billboard.instancing = true;
+        Model *m = new Model();
+        bill.billboard.to_model(m, *data->atlas);
+        m->update();
+        Instance *in = new Instance(m);
+        in->addBuffer(bill.transforms);
+        instances.push_back(in);
+    }
+}
+void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
+{
+    if (!data || !data->valid)
+        return;
+    
+    if (renderMode == ONLY_SINGLE || renderMode == BOTH)
+    {
+        std::function<void(Model *)> _ce = [&](Model *h) {
+            for (BillboardCloudData::BillboardData &bill : data->billboards)
+            {
+                bill.billboard.to_model(h, *data->atlas);
+            }
+        };
+        cloud->construct(_ce);
+        billboardRenderer.use();
+        billboardRenderer.texture("tex", data->atlas->tex());
+        billboardRenderer.uniform("model", cloud->model);
+        billboardRenderer.uniform("projectionCamera", projectionCamera);
+        cloud->render(GL_TRIANGLES);
+    }
+    if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
+    {
+        billboardRendererInstancing.use();
+        billboardRendererInstancing.texture("tex", data->atlas->tex());
+        billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
+        for (Instance *in : instances)
+        {
+            Model *m = (Model *)(in->m);
+            m->update();
+            in->render(GL_TRIANGLES);
+        }
+    }
 }

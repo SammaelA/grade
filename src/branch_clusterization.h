@@ -4,6 +4,7 @@
 #include "volumetric_occlusion.h"
 #include <vector>
 #include <map>
+#define BWD_ROTATIONS 100
 class Clusterizer
 {
 public:
@@ -64,7 +65,7 @@ public:
         float rot_angle = 0.0;
         std::vector<int> joint_counts;
         glm::mat4 transform;
-        LightVoxelsCube *leavesDensity[360];
+        LightVoxelsCube *leavesDensity[BWD_ROTATIONS];
         void set_occlusion(Branch *b, LightVoxelsCube *light)
         {
             for (Joint &j : b->joints)
@@ -89,8 +90,8 @@ public:
                 calc_joints_count(b, joint_counts);
 
             glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/360.0f, axis);
-            for (int i=0;i<360;i++)
+            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/BWD_ROTATIONS, axis);
+            for (int i=0;i<BWD_ROTATIONS;i++)
             {
                 b->transform(rot);
                 leavesDensity[i] = new LightVoxelsCube(glm::vec3(50,10,10),glm::vec3(51,11,11),1,0.85);
@@ -122,6 +123,7 @@ public:
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
         Branch *prepare_to_replace(std::vector<glm::mat4> &transforms);
+        Branch *prepare_to_replace(std::vector<glm::mat4> &transforms, std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm
     {

@@ -64,7 +64,7 @@ glm::mat4 lproj = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, -200.0f, 2000
 glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 Tree t[100];
 TreeGenerator gen(t[0]);
-BillboardCloud *cloud = nullptr;
+BillboardCloudRaw *cloud = nullptr;
 
 void setup()
 {

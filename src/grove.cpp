@@ -15,8 +15,8 @@ GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count) : renderer({"
     for (int i = 0; i < _source->clouds.size(); i++)
     {
         LODs.emplace_back();
-        LODs.back().cloud = _source->clouds[i];
-        LODs.back().cloud->set_render_mode(BillboardCloud::ONLY_INSTANCES);
+        LODs.back().cloud = new BillboardCloudRenderer(&_source->clouds[i]);
+        LODs.back().cloud->set_render_mode(BillboardCloudRenderer::ONLY_INSTANCES);
         Model *m = new Model();
         for (int j = 0; j < i; j++)
         {

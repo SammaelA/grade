@@ -141,3 +141,15 @@ void TextureAtlas::gen_mipmaps()
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
+{
+    curNum = atlas.curNum;
+    width = atlas.width;
+    height = atlas.height;
+    gridWN = atlas.gridWN;
+    gridHN = atlas.gridHN;
+    isGrid = atlas.isGrid;
+    clearColor = atlas.clearColor;
+    fbo = atlas.fbo;
+    colorTex = atlas.colorTex;
+}

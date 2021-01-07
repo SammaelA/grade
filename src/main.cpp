@@ -31,7 +31,7 @@ Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer debugVisualizer;
 GrovePacked grove;
-BillboardCloud::RenderMode mode = BillboardCloud::ONLY_SINGLE;
+BillboardCloudRaw::RenderMode mode = BillboardCloudRaw::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1, -1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
 
@@ -182,7 +182,7 @@ int main(int argc, char *args[])
   Shader particleShader({"particle.vs", "particle.fs"}, {"in_Quad", "in_Tex", "in_Model"});
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
-  Billboard shadow(1600, 1600, false);
+  BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = DebugVisualizer(&wood, &defaultShader);
   setup();
   GroveRenderer groveRenderer = GroveRenderer(&grove, 2);

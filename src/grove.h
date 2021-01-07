@@ -4,7 +4,8 @@
 #include "tinyEngine/utility/instance.h"
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
-class BillboardCloud;
+#include "billboard_cloud_data.h"
+class BillboardCloudRenderer;
 struct PackedLeaf
 {
     std::vector<glm::vec3> edges;
@@ -68,8 +69,9 @@ struct BranchCatalogue
 struct BranchStructure
 {
     unsigned pos;
-    unsigned transform;
     std::vector<BranchStructure> childBranches;
+    std::vector<std::pair<glm::mat4, BranchStructure>> childBranchesInstanced;
+    explicit BranchStructure(unsigned _pos = 0) {pos = _pos;}
 };
 struct InstancedBranch
 {
@@ -78,11 +80,12 @@ struct InstancedBranch
 };
 struct GrovePacked
 {
+    std::vector<BranchStructure> roots;
     BranchCatalogue instancedCatalogue;
     BranchCatalogue uniqueCatalogue;
 
     std::vector<InstancedBranch> instancedBranches;
-    std::vector<BillboardCloud *> clouds; //TODO: replace with packed billboard cloud data
+    std::vector<BillboardCloudData> clouds;
     GrovePacked() : uniqueCatalogue(7), instancedCatalogue(7){};
 };
 class GroveRenderer
@@ -91,7 +94,7 @@ public:
     struct LOD
     {
         Model *m;
-        BillboardCloud *cloud;
+        BillboardCloudRenderer *cloud;
         std::vector<Instance *> instances;
     };
     void render(int lod, glm::mat4 prc);

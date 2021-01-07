@@ -491,13 +491,13 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
             }
         }
         m->scale = glm::vec3(t.params.scale());
-        BillboardCloud *cloud = new BillboardCloud(sz, sz);
+        BillboardCloudRaw *cloud = new BillboardCloudRaw(sz, sz);
         cloud->prepare(t, level);
         t.billboardClouds.push_back(cloud);
         sz = sz * 2;
         t.models.push_back(m);
     }
-    BillboardCloud *cloud = new BillboardCloud(1, 1);
+    BillboardCloudRaw *cloud = new BillboardCloudRaw(1, 1);
     Model *m = new Model();
     for (int i = 0; i < t.branchHeaps.size(); i++)
     {
@@ -583,28 +583,76 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     int size = trees[0].billboardClouds.size();
     fprintf(stderr,"max size %d",size);*/
 }
-void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids)
+void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct)
 {
     if (b->dead)
         return;
     PackedBranch pb;
     b->pack(pb);
     ids.push_back(grove.instancedCatalogue.add(pb, b->level));
+    b_struct.childBranches.push_back(BranchStructure(ids.back()));
     for (Joint &j : b->joints)
     {
         for (Branch *br : j.childBranches)
-            pack_branch_recursively(br, grove, ids);
+            pack_branch_recursively(br, grove, ids, b_struct.childBranches.back());
     }
 }
-void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove)
+void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector<BranchStructure> &instanced_structures)
 {
+    instanced_structures.push_back(BranchStructure());
     grove.instancedBranches.push_back(InstancedBranch());
     std::vector<glm::mat4> &transforms = grove.instancedBranches.back().transforms;
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
-    Branch *base = cluster.prepare_to_replace(transforms);
-    pack_branch_recursively(base, grove, ids);
-    debugl(4, "cluster added %d branches %d transforms", grove.instancedBranches.back().branches.size(),
+    std::vector<Clusterizer::Cluster *> base_clusters;
+    Branch *base = cluster.prepare_to_replace(transforms, base_clusters);
+    pack_branch_recursively(base, grove, ids,instanced_structures.back());
+    if (instanced_structures.back().childBranches.size() == 1)
+        instanced_structures.back() = instanced_structures.back().childBranches[0];
+    debugl(4, "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
            grove.instancedBranches.back().transforms.size());
+
+    for (int i=0;i<base_clusters.size();i++)//leave marks on branch to construct tree structure in future
+    {
+        base_clusters[i]->branch->original->base_seg_n = instanced_structures.size() - 1;
+        base_clusters[i]->branch->original->max_seg_count = - i - 100;
+    }
+}
+void pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
+{
+    for (int i = 0; i <= up_to_level; i++)
+    {
+        for (Branch &branch : t.branchHeaps[i]->branches)
+        {
+            PackedBranch b;
+            branch.pack(b);
+            branch.max_seg_count = grove.uniqueCatalogue.add(b, branch.level);
+        }
+    }
+}
+void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::vector<BranchStructure> &instanced_structures)
+{
+    str.pos = rt->max_seg_count;
+    for (Joint &j : rt->joints)
+    {
+        for (Branch *br : j.childBranches)
+        {
+            if (br->max_seg_count < 0)//it is a mark made by pack_cluster
+            {
+                unsigned transform_n = - (br->max_seg_count + 100);
+                unsigned instance_n = br->base_seg_n;
+                BranchStructure bs = instanced_structures[instance_n];
+                glm::mat4 tr = grove.instancedBranches[instance_n].transforms[transform_n];
+                str.childBranchesInstanced.push_back(std::pair<glm::mat4,BranchStructure>(tr,bs));
+            }
+            else
+            {
+                BranchStructure bs;
+                pack_structure(br,grove,bs,instanced_structures);
+                str.childBranches.push_back(bs);
+            }
+            
+        }
+    }
 }
 void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
 {
@@ -631,28 +679,23 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     cl.set_branches(trees, count, 1, voxels);
     cl.visualize_clusters(debug, false);
 
-    grove.clouds.push_back(new BillboardCloud(1, 1));
-    BillboardCloud *cloud = new BillboardCloud(4096, 4096);
-    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
-    grove.clouds.push_back(cloud);
+    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
+    grove.clouds.push_back(BillboardCloudData());//main cloud
+    BillboardCloudRaw *cloud = new BillboardCloudRaw(4096, 4096);
+    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+
+    std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
     {
         pack_tree(trees[i], grove, 0);
     }
     for (int c_num : cl.Ddg.current_clusters)
     {
-        pack_cluster(cl.Ddg.clusters[c_num], grove);
+        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures);
     }
-}
-void TreeGenerator::pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
-{
-    for (int i = 0; i <= up_to_level; i++)
+    for (int i = 0; i < count; i++)
     {
-        for (Branch &branch : t.branchHeaps[i]->branches)
-        {
-            PackedBranch b;
-            branch.pack(b);
-            grove.uniqueCatalogue.add(b, branch.level);
-        }
+        grove.roots.push_back(BranchStructure());
+        pack_structure(trees[i].root,grove,grove.roots.back(),instanced_structures);
     }
 }
