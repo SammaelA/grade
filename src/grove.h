@@ -98,7 +98,6 @@ public:
         std::vector<Instance *> instances;
     };
     void render(int lod, glm::mat4 prc);
-    Texture *pwood = nullptr;
     GroveRenderer(GrovePacked *_source, int LODs_count);
 
 private:
@@ -107,6 +106,6 @@ private:
     Shader renderer;
     Shader rendererInstancing;
     GrovePacked *source;
-    Texture &wood;
-    Texture &leaf;
+    Texture wood;
+    Texture leaf;
 };

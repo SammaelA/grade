@@ -84,7 +84,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     }
     m->update();
     Instance *in = new Instance(m);
-    debugl(4, "transforms size %d\n", branch.transforms.size());
     in->addBufferCopy(branch.transforms);
     lod.instances.push_back(in);
 }

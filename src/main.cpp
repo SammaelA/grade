@@ -166,14 +166,14 @@ int main(int argc, char *args[])
   Tiny::window("Procedural Tree", WIDTH, HEIGHT);
   Tiny::event.handler = eventHandler;
   textureManager = TextureManager("resources/textures/");
-  Texture &tex = textureManager.get("woodd");
-  Texture &wood = textureManager.get("wood");
+  Texture tex = textureManager.get("woodd");
+  Texture wood = textureManager.get("wood");
   TreeStructureParameters par;
   for (int i = 0; i < 100; i++)
   {
     t[i] = Tree();
-    t[i].leaf = &tex;
-    t[i].wood = &wood;
+    t[i].leaf = tex;
+    t[i].wood = wood;
     t[i].params = par;
   }
 
@@ -183,10 +183,9 @@ int main(int argc, char *args[])
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
   BillboardTiny shadow(1600, 1600, false);
-  debugVisualizer = DebugVisualizer(&wood, &defaultShader);
+  debugVisualizer = DebugVisualizer(wood, &defaultShader);
   setup();
   GroveRenderer groveRenderer = GroveRenderer(&grove, 2);
-  groveRenderer.pwood = &wood;
   Tiny::view.pipeline = [&]() {
     shadow.target();
     if (drawshadow)
@@ -259,15 +258,13 @@ void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
     cloudnum = billboardClouds.size() - 1;
 
   defaultShader.use();
-  if (wood)
-    defaultShader.texture("tex", *wood);
+  defaultShader.texture("tex", wood);
   defaultShader.uniform("model", models[cloudnum]->model);
   models[cloudnum]->update();
   models[cloudnum]->render(GL_TRIANGLES);
   if (cloudnum == 3 && models.size() >= 5)
   {
-    if (leaf)
-      defaultShader.texture("tex", *leaf);
+    defaultShader.texture("tex", leaf);
     defaultShader.uniform("model", models[cloudnum + 1]->model);
     models[cloudnum + 1]->update();
     models[cloudnum + 1]->render(GL_TRIANGLES);

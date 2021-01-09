@@ -2,7 +2,9 @@
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "tinyEngine/utility/model.h"
-TextureAtlas::TextureAtlas(int w, int h) : colorTex(w, h),
+#include "texture_manager.h"
+
+TextureAtlas::TextureAtlas(int w, int h) : colorTex(textureManager.create_unnamed(w, h)),
                                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
@@ -103,7 +105,7 @@ void TextureAtlas::gen_mipmaps()
         glBindTexture(GL_TEXTURE_2D, colorTex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, level - 1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level - 1);
-        Texture ctex(w, h, false);
+        Texture ctex(textureManager.create_unnamed(w, h));
         glBindTexture(GL_TEXTURE_2D, ctex.texture);
         glViewport(0, 0, w, h);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);

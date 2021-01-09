@@ -1,6 +1,8 @@
 #include "generated_tree.h"
 #include "visualizer.h"
 #include "tinyEngine/utility.h"
+#include "texture_manager.h"
+
 #define PI 3.14159265f
 
 void Visualizer::leaf_to_model(Leaf &l, Model *m)
@@ -296,13 +298,26 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
         /* code */
     }
 }
-Visualizer::Visualizer(Texture *_tree_tex, Texture *_leaves_tex, Shader *_tree_shader)
+Visualizer::Visualizer():
+tree_tex(textureManager.empty()),
+leaves_tex(textureManager.empty())
 {
-    tree_tex = _tree_tex;
-    tree_shader = _tree_shader;
-    leaves_tex = _leaves_tex;
+
 }
-DebugVisualizer::DebugVisualizer(Texture *_tree_tex, Shader *_tree_shader) : Visualizer(_tree_tex, nullptr, _tree_shader)
+Visualizer::Visualizer(Texture _tree_tex, Texture _leaves_tex, Shader *_tree_shader):
+tree_tex(_tree_tex),
+leaves_tex(_leaves_tex)
+
+{
+    tree_shader = _tree_shader;
+}
+DebugVisualizer::DebugVisualizer():
+Visualizer()
+{
+
+}
+DebugVisualizer::DebugVisualizer(Texture _tree_tex, Shader *_tree_shader) : 
+Visualizer(_tree_tex, textureManager.empty(), _tree_shader)
 {
 }
 DebugVisualizer::~DebugVisualizer()
@@ -320,8 +335,7 @@ void DebugVisualizer::render(glm::mat4 view_proj)
         return;
     }
     tree_shader->use();
-    if (tree_tex)
-        tree_shader->texture("tex", *tree_tex);
+    tree_shader->texture("tex", tree_tex);
     tree_shader->uniform("projectionCamera", view_proj);
 
     for (int i = 0; i < debugModels.size(); i++)

@@ -1,4 +1,12 @@
 #include "tree.h"
+#include "texture_manager.h"
+
+Tree::Tree():
+wood(textureManager.empty()),
+leaf(textureManager.empty())
+{
+
+}
 void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
     level = b->level;

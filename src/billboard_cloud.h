@@ -27,7 +27,7 @@ public:
     void prepare(Tree &t, int layer);
     void prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data = nullptr);
     void render(glm::mat4 &projectionCamera);
-    void set_textures(Texture *wood);
+    void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
     void set_render_mode(RenderMode m)
     {
@@ -74,7 +74,7 @@ private:
     Shader billboardRendererInstancing;
     Model *cloud;
     std::vector<Instance *> instances;
-    Texture *pwood = nullptr;
+    Texture wood;
     std::vector<Billboard> billboards;
     RenderMode renderMode = ONLY_SINGLE;
 };

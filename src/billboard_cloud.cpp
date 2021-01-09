@@ -7,8 +7,11 @@
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
 #include "visualizer.h"
+#include "texture_manager.h"
+
 using namespace glm;
 BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h),
+                                                       wood(textureManager.empty()),
                                                        rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
@@ -70,15 +73,13 @@ void BillboardCloudRaw::create_billboard(Tree &t, Branch *branch, BBox &min_bbox
     rendererToTexture.use();
 
     bm.construct(_c_wood);
-    if (t.wood)
-        rendererToTexture.texture("tex", *(t.wood));
+    rendererToTexture.texture("tex", t.wood);
     rendererToTexture.uniform("model", bm.model);
     rendererToTexture.uniform("projectionCamera", result);
     bm.render(GL_TRIANGLES);
 
     bm.construct(_c_leaves);
-    if (t.leaf)
-        rendererToTexture.texture("tex", *(t.leaf));
+    rendererToTexture.texture("tex", t.leaf);
     rendererToTexture.uniform("model", bm.model);
     rendererToTexture.uniform("projectionCamera", result);
     bm.render(GL_TRIANGLES);
@@ -189,9 +190,9 @@ void BillboardCloudRaw::render(mat4 &projectionCamera)
         }
     }
 }
-void BillboardCloudRaw::set_textures(Texture *wood)
+void BillboardCloudRaw::set_textures(Texture _wood)
 {
-    pwood = wood;
+    wood = _wood;
 }
 void Billboard::to_model(Model *m, TextureAtlas &atlas)
 {

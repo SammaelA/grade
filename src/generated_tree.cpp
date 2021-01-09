@@ -657,14 +657,14 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
 void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
 {
     //Tree *trees = new Tree[count];
-    Texture &wood = textureManager.get("wood");
-    Texture &leaf = textureManager.get("leaf");
+    Texture wood = textureManager.get("wood");
+    Texture leaf = textureManager.get("leaf");
     for (int i = 0; i < count; i++)
     {
         trees[i] = Tree();
         trees[i].params = params;
-        trees[i].wood = &wood;
-        trees[i].leaf = &leaf;
+        trees[i].wood = wood;
+        trees[i].leaf = leaf;
     }
 
     create_grove(trees, count, debug);

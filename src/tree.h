@@ -103,11 +103,12 @@ struct Tree
     int iter = 0;
     uint id = 0;
     LightVoxelsCube *voxels;
-    Texture *wood = nullptr;
-    Texture *leaf = nullptr;
+    Texture wood;
+    Texture leaf;
     std::vector<BillboardCloudRaw *> billboardClouds;
     std::vector<Model *> models;
     void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
+    Tree();
 };
 struct VertexData
 {

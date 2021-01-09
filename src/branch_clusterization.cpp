@@ -466,12 +466,6 @@ void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
     Ddg.make_base_clusters(branches);
     Ddg.make(20, 5);
-    ::debug("NMSE difference:");
-    for (int i=0;i<50;i++)
-    {
-        ::debug("%f ",distribution2[i] == 0 ? -1 : distribution[i]/distribution2[i]);
-    }
-    debugnl();
     if (!need_debug)
         return;
     std::vector<Branch *> branches;

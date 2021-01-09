@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include "texture.h"
 #include <iostream>
+#include "../../texture_manager.h"
 class Target {
 public:
   Target(){ glGenFramebuffers(1, &fbo); };              //Default constructor
@@ -55,26 +56,34 @@ public:
   Texture texture, depth;         //Two normal textures
 
   BillboardTiny(int W, int H, bool c = true, bool d = true):
-  Target(W, H, c, d){
-    if(dAttach) depth.depth(WIDTH, HEIGHT);
-    if(cAttach) texture.empty(WIDTH, HEIGHT);
+  depth(textureManager.create_unnamed(WIDTH, HEIGHT,true)),
+  texture(textureManager.create_unnamed(WIDTH, HEIGHT,false)),
+  Target(W, H, c, d)
+  {
     setup(texture, depth);        //Bind the two normal textures to the billboard
   }
 
   BillboardTiny(SDL_Surface* s):      //Render target preloaded with an image
-  BillboardTiny(s->w, s->h, true, false){
-    texture.raw(s);               //Construct the texture from raw surface data
+  depth(textureManager.create_unnamed(WIDTH, HEIGHT,true)),
+  texture(textureManager.create_unnamed(s)),
+  Target(s->w, s->h, true, false)
+  {                               //Construct the texture from raw surface data
     bind(texture, false);         //Bind it to the billboard as color texture
   }
 };
 
-class Cubemap: public Target{     //Cubemap specialization
+/*class Cubemap: public Target
+      {     //Cubemap specialization
 public:
   Cubetexture texture, depth;     //Two cubemap textures
 
-  Cubemap(int W, int H, bool c = true, bool d = true):Target(W, H, c, d){
+  Cubemap(int W, int H, bool c = true, bool d = true):  
+  depth(textureManager.create_unnamed(WIDTH, HEIGHT,true)),
+  texture(textureManager.create_unnamed(WIDTH, HEIGHT,false)),
+  Target(W, H, c, d)
+  {
     if(dAttach) depth.depth(WIDTH, HEIGHT);
     if(cAttach) texture.empty(WIDTH, HEIGHT);
     setup(texture, depth);
   }
-};
+};*/
