@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <vector>
 #include "tinyEngine/utility.h"
+#include "distribution.h"
 
 LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision)
 {
@@ -42,15 +43,14 @@ inline void LightVoxelsCube::set_directed_light(glm::vec3 direction, float stren
 }
 float LightVoxelsCube::get_occlusion(glm::vec3 pos)
 {
-    return get_occlusion_view_ray(pos);
+    return get_occlusion_trilinear(pos);
 }
-glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusion = nullptr)
+glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ext(glm::vec3 pos, int light_test_r, float *occlusion = nullptr)
 {
     float min_occ = 1e10;
     const float BIAS = 0.001;
     glm::vec3 min_shift(1, 1, 1);
     std::vector<glm::vec3> min_shifts;
-    int light_test_r = lightParams.searchDepth;
     for (int i = -light_test_r; i <= light_test_r; i++)
     {
         for (int j = -light_test_r; j <= light_test_r; j++)
@@ -73,10 +73,14 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusi
         }
     }
     int min_sz = min_shifts.size();
-    min_shift = min_shifts[rand() % min_sz];
+    min_shift = min_shifts[urandi(0,min_sz)];
     if (occlusion)
         *occlusion = min_occ;
     return (glm::normalize(min_shift + glm::vec3(0.0, 0.0001, 0.0)));
+}
+glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusion = nullptr)
+{
+    return get_dir_to_bright_place_ext(pos, lightParams.searchDepth, occlusion);
 }
 inline bool LightVoxelsCube::in_voxel_cube(glm::ivec3 voxel)
 {

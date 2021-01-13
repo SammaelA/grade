@@ -8,6 +8,7 @@
 #include "tinyEngine/utility.h"
 #include "visualizer.h"
 #include "texture_manager.h"
+#include "distribution.h"
 
 using namespace glm;
 BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h),
@@ -97,9 +98,9 @@ BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
         a += (seg.end - seg.begin);
     }
     a = normalize(a); //average branch direction
-    b.x = (float)rand() / RAND_MAX;
-    b.y = (float)rand() / RAND_MAX;
-    b.z = (float)rand() / RAND_MAX;
+    b.x = urand();
+    b.y = urand();
+    b.z = urand();
     b = normalize(b - a * dot(a, b));
     c = cross(a, b);
     mat4 br = rotate(mat4(1.0), (float)(2 * PI / iterations), a);

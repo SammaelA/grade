@@ -25,9 +25,30 @@ class Uniform : public Distribution
     double from;
     double to;
     double delta;
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::uniform_real_distribution<double> d;
 
 public:
     Uniform(double from = 0, double to = 1);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 };
+class UniformInt : public Distribution
+{
+    double from;
+    double to;
+    double delta;
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::uniform_int_distribution<long> d;
+
+public:
+    UniformInt(double from = 0, double to = 1);
+    virtual double get() override;
+    virtual double *get_series(unsigned size) override;
+    long geti();
+    long *get_seriesi(unsigned size);
+};
+double urand(double from = 0.0, double to = 1.0);
+double urandi(int from = 0, int to = 1);

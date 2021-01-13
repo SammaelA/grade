@@ -18,6 +18,7 @@ public:
     float get_occlusion_simple(glm::vec3 pos);
     float get_occlusion_trilinear(glm::vec3 pos);
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
+    glm::vec3 get_dir_to_bright_place_ext(glm::vec3 pos, int steps, float *occlusion);
     void print_average_occlusion();
     float NMSE(LightVoxelsCube *B);
 private:

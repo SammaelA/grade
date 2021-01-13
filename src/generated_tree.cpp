@@ -4,6 +4,7 @@
 #include "branch_clusterization.h"
 #include "texture_manager.h"
 #include "visualizer.h"
+#include "distribution.h"
 #include <math.h>
 #include <algorithm>
 
@@ -14,7 +15,7 @@ float sum_feed[10];
 float count_feed[10];
 bool dice(float x, float base)
 {
-    float f = (float)rand() / RAND_MAX;
+    float f = urand();
     return f < (x / base);
 }
 bool dice_min(float x, float min)
@@ -26,17 +27,17 @@ bool dice_min(float x, float min)
 glm::vec3 TreeGenerator::rand_dir()
 {
     glm::vec3 dir;
-    dir.x = (2.0 * rand()) / RAND_MAX - 1.0;
-    dir.y = (2.0 * rand()) / RAND_MAX - 1.0;
-    dir.z = (2.0 * rand()) / RAND_MAX - 1.0;
+    dir.x = urand(-1,1);
+    dir.y = urand(-1,1);
+    dir.z = urand(-1,1);
     return glm::normalize(dir);
 }
 glm::vec3 rand_planar_dir()
 {
     glm::vec3 dir;
-    dir.x = (2.0 * rand()) / RAND_MAX - 1.0;
-    dir.y = (2.0 * rand()) / RAND_MAX - 1.0;
-    dir.z = (2.0 * rand()) / RAND_MAX - 1.0;
+    dir.x = urand(-1,1);
+    dir.y = urand(-1,1);
+    dir.z = urand(-1,1);
     return glm::normalize(dir);
 }
 void TreeGenerator::new_joint(Branch *b, Joint &j)
@@ -72,7 +73,7 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
         if (dice(b_ch, 1.0))
         {
             j.type = j.FORK;
-            j.max_branching = 1 + (curParams.max_branching() - 1) * floor((float)rand() / RAND_MAX);
+            j.max_branching = 1 + (curParams.max_branching() - 1) * floor(urand());
         }
         else
             j.type = j.MIDDLE;
@@ -116,7 +117,7 @@ void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_en
     if ((b->level < curParams.max_depth() - 1) && ((j.type == j.FORK && &j != &(b->joints.back()) && (bs < j.max_branching)) || from_end) && dice(feed, exp(bs) * curParams.base_branch_feed()))
     {
         float occ = 0.0;
-        glm::vec3 M = voxels->get_dir_to_bright_place(j.pos, &occ);
+        glm::vec3 M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams.max_depth() - b->level), &occ);
         if (dice(1, occ * curParams.branch_grow_decrease_q()))
         {
             new_branch(b, j, s, M, from_end);
@@ -177,7 +178,7 @@ void TreeGenerator::try_new_segment(Branch *base)
         float occ = 0.0;
         sum_feed[base->level] += feed;
         count_feed[base->level] += 1;
-        glm::vec3 M = voxels->get_dir_to_bright_place(base->segments.back().end, &occ);
+        glm::vec3 M = voxels->get_dir_to_bright_place_ext(base->segments.back().end, 1, &occ);
         if (dice(1, occ * curParams.segment_grow_decrease_q()))
         {
             new_segment(base, M);
@@ -552,10 +553,10 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::vec3(40.0f * r + 250, 220, 40.0f * r + 250), params.seg_len_mult(), params.light_precision());
     for (int i = 0; i < count; i++)
     {
-        float R = 40 * r * (float)rand() / RAND_MAX;
-        float phi = 2 * PI * (float)rand() / RAND_MAX;
-        R = 100 * (i / 10 + 1);
-        phi = 2 * PI * i / 10.0f;
+        float R = urand(0,40*r);
+        float phi = urand(0, 2*PI);
+        //R = 100 * (i / 10 + 1);
+        //phi = 2 * PI * i / 10.0f;
         glm::vec3 pos = glm::vec3(R * cos(phi), 1, R * sin(phi));
         trees[i].pos = pos;
         plant_tree(trees[i], params);

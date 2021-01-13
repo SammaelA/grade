@@ -169,6 +169,7 @@ int main(int argc, char *args[])
   Texture tex = textureManager.get("woodd");
   Texture wood = textureManager.get("wood");
   TreeStructureParameters par;
+  camera.pos = glm::vec3(-200,50,0);
   for (int i = 0; i < 100; i++)
   {
     t[i] = Tree();
