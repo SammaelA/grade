@@ -22,7 +22,13 @@ BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h)
 }
 BillboardCloudRaw::~BillboardCloudRaw()
 {
-    delete (cloud);
+    if (cloud)
+        delete (cloud);
+    for (int i=0;i<instances.size();i++)
+    {
+        delete instances[i]->m;
+        delete instances[i];
+    }
 }
 void BillboardCloudRaw::setup_preparation()
 {
@@ -274,7 +280,7 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clus
     if (data)
     {
         data->valid = true;
-        data->atlas = &atlas;
+        data->atlas = atlas;
     }
     for (Billboard &b : billboards)
     {
@@ -410,11 +416,24 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
     {
         bill.billboard.instancing = true;
         Model *m = new Model();
-        bill.billboard.to_model(m, *data->atlas);
+        bill.billboard.to_model(m, data->atlas);
         m->update();
         Instance *in = new Instance(m);
         in->addBuffer(bill.transforms);
         instances.push_back(in);
+    }
+}
+BillboardCloudRenderer::~BillboardCloudRenderer()
+{
+    logerr("deleting BCR");
+    if (cloud)
+        delete (cloud);
+    logerr("cloud deleted");
+    for (int i=0;i<instances.size();i++)
+    {
+        delete instances[i]->m;
+        delete instances[i];
+        logerr("instance %d deleted",i);
     }
 }
 void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
@@ -427,12 +446,12 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
         std::function<void(Model *)> _ce = [&](Model *h) {
             for (BillboardCloudData::BillboardData &bill : data->billboards)
             {
-                bill.billboard.to_model(h, *data->atlas);
+                bill.billboard.to_model(h, data->atlas);
             }
         };
         cloud->construct(_ce);
         billboardRenderer.use();
-        billboardRenderer.texture("tex", data->atlas->tex());
+        billboardRenderer.texture("tex", data->atlas.tex());
         billboardRenderer.uniform("model", cloud->model);
         billboardRenderer.uniform("projectionCamera", projectionCamera);
         cloud->render(GL_TRIANGLES);
@@ -440,7 +459,7 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
-        billboardRendererInstancing.texture("tex", data->atlas->tex());
+        billboardRendererInstancing.texture("tex", data->atlas.tex());
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         for (Instance *in : instances)
         {

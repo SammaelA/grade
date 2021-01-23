@@ -32,7 +32,7 @@
         }
         Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
     };
-    struct BillboardCloudData
+struct BillboardCloudData
 {
     struct BillboardData
     {
@@ -41,6 +41,6 @@
     };
     bool valid = false;
     std::vector<BillboardData> billboards;
-    TextureAtlas *atlas;
+    TextureAtlas atlas;
     BillboardCloudData() {};
 };

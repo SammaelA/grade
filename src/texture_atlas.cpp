@@ -4,6 +4,37 @@
 #include "tinyEngine/utility/model.h"
 #include "texture_manager.h"
 
+TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
+                              mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
+                              copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
+{
+
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    bind();
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer Incomplete" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+TextureAtlas::TextureAtlas(const TextureAtlas &atlas):
+mipMapRenderer(atlas.mipMapRenderer),
+copy(atlas.copy),
+colorTex(atlas.colorTex)
+{
+    curNum = atlas.curNum;
+    width = atlas.width;
+    height = atlas.height;
+    gridWN = atlas.gridWN;
+    gridHN = atlas.gridHN;
+    isGrid = atlas.isGrid;
+    clearColor = atlas.clearColor;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    bind();
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer Incomplete" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 TextureAtlas::TextureAtlas(int w, int h) : colorTex(textureManager.create_unnamed(w, h)),
                                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
@@ -16,6 +47,10 @@ TextureAtlas::TextureAtlas(int w, int h) : colorTex(textureManager.create_unname
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Framebuffer Incomplete" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+TextureAtlas::~TextureAtlas()
+{
+    glDeleteFramebuffers(1, &fbo);
 }
 void TextureAtlas::set_grid(int w, int h)
 {
@@ -152,6 +187,6 @@ TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
     gridHN = atlas.gridHN;
     isGrid = atlas.isGrid;
     clearColor = atlas.clearColor;
-    fbo = atlas.fbo;
     colorTex = atlas.colorTex;
+    bind();
 }

@@ -99,7 +99,8 @@ public:
     };
     void render(int lod, glm::mat4 prc);
     GroveRenderer(GrovePacked *_source, int LODs_count);
-
+    GroveRenderer();
+    ~GroveRenderer();
 private:
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch);
     std::vector<LOD> LODs;

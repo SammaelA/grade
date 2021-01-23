@@ -402,9 +402,13 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     glm::vec3 sun_dir(-1, -1, -1);
     t.params = params;
     //voxels->set_directed_light(sun_dir,1.0);
-    t.leaves = new LeafHeap();
+    LeafHeap *lh = new LeafHeap();
+    t.leaves = lh;
     for (int i = 0; i < params.max_depth(); i++)
-        t.branchHeaps.push_back(new BranchHeap());
+    {
+        BranchHeap *bh = new BranchHeap();
+        t.branchHeaps.push_back(bh);
+    }
     curParams.set_state(0);
     root = t.branchHeaps[0]->new_branch();
     root->level = 0;
@@ -572,17 +576,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
         {
             grow_tree(trees[i]);
         }
-        //debug.set_params(trees[i].params);
-        //tree_to_model(trees[i],false,debug);
     }
-    /*Clusterizer cl;
-    cl.set_branches(trees,count,2);
-    cl.visualize_clusters(debug,false);
-    BillboardCloud *cloud = new BillboardCloud(4096,4096);
-    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters);
-    trees[0].billboardClouds.push_back(cloud);
-    int size = trees[0].billboardClouds.size();
-    fprintf(stderr,"max size %d",size);*/
 }
 void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct)
 {
@@ -657,7 +651,6 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
 }
 void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
 {
-    //Tree *trees = new Tree[count];
     Texture wood = textureManager.get("wood");
     Texture leaf = textureManager.get("leaf");
     for (int i = 0; i < count; i++)
@@ -698,5 +691,11 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     {
         grove.roots.push_back(BranchStructure());
         pack_structure(trees[i].root,grove,grove.roots.back(),instanced_structures);
+    }
+
+    delete(voxels);
+    for (int i = 0; i < count; i++)
+    {
+        trees[i].voxels = nullptr;
     }
 }

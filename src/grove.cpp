@@ -3,6 +3,14 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 
+GroveRenderer::GroveRenderer(): renderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+                                                                     rendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
+                                                                                        {"in_Position", "in_Normal", "in_Tex", "in_Model"}),
+                                                                     leaf(textureManager.get("leaf")),
+                                                                     wood(textureManager.get("wood"))
+{
+
+}
 GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count) : renderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                                      rendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
                                                                                         {"in_Position", "in_Normal", "in_Tex", "in_Model"}),
@@ -46,8 +54,27 @@ GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count) : renderer({"
         add_instance_model(LODs.back(), source, b);
     }
 }
+GroveRenderer::~GroveRenderer()
+{
+    for (int i=0;i<LODs.size();i++)
+    {
+        if (LODs[i].m)
+            delete LODs[i].m;
+        if (LODs[i].cloud)
+            delete LODs[i].cloud;
+        for (int j=0;j<LODs[i].instances.size();j++)
+        {
+            delete LODs[i].instances[j]->m;
+            delete LODs[i].instances[j];
+        }
+    }
+    LODs.clear();
+    source = nullptr;
+}
 void GroveRenderer::render(int lod, glm::mat4 prc)
 {
+    if (LODs.size()==0)
+        return;
     if (lod < 0 || lod >= LODs.size())
     {
         //logerr("trying to render grove with wrong LOD number %d. Grove has %d LODs",lod, LODs.size());

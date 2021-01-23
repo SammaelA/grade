@@ -88,17 +88,18 @@ struct BillboardCloudRenderer
         BOTH
     };
     BillboardCloudRenderer(BillboardCloudData *data = nullptr);
+    ~BillboardCloudRenderer();
     void render(glm::mat4 &projectionCamera);
     void set_render_mode(RenderMode m)
     {
         renderMode = m;
     }
     private:
-    BillboardCloudData *data;
+    BillboardCloudData *data= nullptr;
     Shader rendererToTexture;
     Shader billboardRenderer;
     Shader billboardRendererInstancing;
-    Model *cloud;
+    Model *cloud = nullptr;
     std::vector<Instance *> instances;
     RenderMode renderMode = ONLY_SINGLE;
 

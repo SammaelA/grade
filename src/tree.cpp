@@ -1,11 +1,22 @@
 #include "tree.h"
 #include "texture_manager.h"
-
+#include "billboard_cloud.h"
 Tree::Tree():
 wood(textureManager.empty()),
 leaf(textureManager.empty())
 {
-
+    leaves = nullptr;
+}
+Tree::~Tree()
+{
+    if (leaves)
+        leaves->leaves.clear();
+    for (int i=0;i<models.size();i++)
+        delete models[i];
+    //for (int i=0;i<branchHeaps.size();i++)
+    //    delete branchHeaps[i];
+    for (int i=0;i<billboardClouds.size();i++)
+        delete billboardClouds[i];
 }
 void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {

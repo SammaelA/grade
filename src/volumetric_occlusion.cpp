@@ -17,9 +17,9 @@ LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_si
     vox_z = (int)(size.z / voxel_size);
 
     int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
-    debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
+    //debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
     voxels = new float[count];
-    debug("successfully created light voxels cube with %d voxels\n", count);
+    //debug("successfully created light voxels cube with %d voxels\n", count);
 }
 void LightVoxelsCube::print_average_occlusion()
 {

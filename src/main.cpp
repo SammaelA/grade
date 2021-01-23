@@ -34,7 +34,7 @@ GrovePacked grove;
 BillboardCloudRaw::RenderMode mode = BillboardCloudRaw::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1, -1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
-
+GroveRenderer *GR = nullptr;
 bool drawshadow = true;
 glm::vec3 lightpos = glm::vec3(200);
 glm::mat4 bias = glm::mat4(
@@ -112,6 +112,18 @@ std::function<void()> eventHandler = [&]() {
   {
     draw_clusterized = false;
   }
+  if (Tiny::event.active[SDLK_r])
+  {
+    for (int i=0;i<101;i++)
+    {
+      t[i] = Tree();
+    }
+    if (GR)
+    {
+      GR->~GroveRenderer();
+      GR = nullptr;
+    }
+  }
   if (!Tiny::event.press.empty())
   {
   }
@@ -187,6 +199,7 @@ int main(int argc, char *args[])
   debugVisualizer = DebugVisualizer(wood, &defaultShader);
   setup();
   GroveRenderer groveRenderer = GroveRenderer(&grove, 2);
+  GR = &groveRenderer;
   Tiny::view.pipeline = [&]() {
     shadow.target();
     if (drawshadow)

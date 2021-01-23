@@ -8,11 +8,10 @@
 class TextureAtlas
 {
 public:
+    TextureAtlas();
+    TextureAtlas(const TextureAtlas &a);
     TextureAtlas(int w, int h);
-    ~TextureAtlas()
-    {
-        glDeleteFramebuffers(1, &fbo);
-    }
+    ~TextureAtlas();
     void set_clear_color(glm::vec4 color)
     {
         clearColor = color;

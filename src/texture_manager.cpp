@@ -53,3 +53,8 @@ Texture TextureManager::empty()
 {
     return get("empty");
 }
+void TextureManager::clear_unnamed()
+{
+    for (auto const &p : unnamed_textures)
+        glDeleteTextures(1, &(p.second.texture));
+}

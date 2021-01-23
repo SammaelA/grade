@@ -12,6 +12,7 @@ public:
     Texture empty();
     TextureManager();
     TextureManager(std::string base_path);
+    void clear_unnamed();
 
 private:
     std::map<std::string, Texture> textures;

@@ -76,6 +76,12 @@ struct LeafHeap
         return &leaves.back();
     }
     void clear_removed();
+    ~LeafHeap()
+    {
+        leaves.clear();
+    }
+    LeafHeap(){};
+
 };
 struct BranchHeap
 {
@@ -96,19 +102,20 @@ struct TreeData
 struct Tree
 {
     std::vector<BranchHeap *> branchHeaps;
-    LeafHeap *leaves;
+    LeafHeap *leaves = nullptr;
     glm::vec3 pos;
     TreeStructureParameters params;
-    Branch *root;
+    Branch *root= nullptr;
     int iter = 0;
     uint id = 0;
-    LightVoxelsCube *voxels;
+    LightVoxelsCube *voxels= nullptr;
     Texture wood;
     Texture leaf;
     std::vector<BillboardCloudRaw *> billboardClouds;
     std::vector<Model *> models;
     void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
     Tree();
+    ~Tree();
 };
 struct VertexData
 {
