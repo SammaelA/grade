@@ -10,7 +10,7 @@
 class Shader{
 using slist = std::initializer_list<std::string>;
 public:
-  const std::string base_shader_path = "shaders/";
+  const std::string base_shader_path = "/home/sammael/study/bit_bucket/grade/shaders/";
   template<typename... Args>
   Shader(slist shaders, slist in){
     program = glCreateProgram();        //Generate Shader

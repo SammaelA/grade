@@ -24,7 +24,7 @@ TextureManager::TextureManager(std::string base_path)
     {
         try
         {
-            auto ptr = image::load(paths[i]);
+            auto ptr = image::load(image::base_img_path + paths[i]);
             if (!ptr)
                 continue;
             Texture t(ptr);

@@ -311,6 +311,136 @@ leaves_tex(_leaves_tex)
 {
     tree_shader = _tree_shader;
 }
+void Visualizer::box_to_model(Box *box, Model *m)
+{
+    std::vector<glm::vec3> pos;
+    std::vector<glm::vec2> colors;
+    for (int i = 0; i <= 1; i++)
+    {
+        for (int j = 0; j <= 1; j++)
+        {
+            for (int k = 0; k <= 1; k++)
+            {
+                pos.push_back(box->pos + (float)i * box->a + (float)j * box->b + (float)k * box->c);
+                colors.push_back(glm::vec2(k, j));
+            }
+        }
+    }
+    int indicies[36] = {0, 2, 1, 3, 1, 2, 2, 3, 6, 7, 6, 3, 7, 5, 6, 4, 6, 5, 0, 1, 4, 5, 1, 4, 0, 4, 2, 6, 2, 4, 1, 5, 3, 7, 3, 5};
+    int _b = m->positions.size() / 3;
+    for (int i = 0; i < pos.size(); i++)
+    {
+        m->positions.push_back(pos[i].x);
+        m->positions.push_back(pos[i].y);
+        m->positions.push_back(pos[i].z);
+
+        m->colors.push_back(colors[i].x);
+        m->colors.push_back(colors[i].y);
+        m->colors.push_back(0.0);
+        m->colors.push_back(1.0);
+    }
+    for (int i = 0; i < 36; i++)
+    {
+        m->indices.push_back(_b + indicies[i]);
+    }
+}
+void Visualizer::ellipsoid_to_model(Ellipsoid *b, Model *m, int sectors, int stacks, bool smooth)
+{
+    float x, y, z, xy;                              // vertex position
+    float nx, ny, nz, lengthInv = 1.0f;             // normal
+    float s, t;                                     // texCoord
+
+    float sectorStep = 2 * PI / sectors;
+    float stackStep = PI / stacks;
+    float sectorAngle, stackAngle;
+    int _b = m->positions.size() / 3;
+
+    for(int i = 0; i <= stacks; ++i)
+    {
+        stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+        xy = cosf(stackAngle);             // r * cos(u)
+        z = sinf(stackAngle);              // r * sin(u)
+
+        // add (sectorCount+1) vertices per stack
+        // the first and last vertices have same position and normal, but different tex coords
+        for(int j = 0; j <= sectors; ++j)
+        {
+            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+            // vertex position
+            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+            glm::vec3 pos = glm::inverse(b->transform)*glm::vec4(x,y,z,1); 
+            logerr("%f %f %f",pos.x,pos.y,pos.z);  
+            m->positions.push_back(pos.x);
+            m->positions.push_back(pos.y);
+            m->positions.push_back(pos.z);
+
+            // normalized vertex normal
+            nx = x * lengthInv;
+            ny = y * lengthInv;
+            nz = z * lengthInv;
+            m->normals.push_back(nx);
+            m->normals.push_back(ny);
+            m->normals.push_back(nz);
+
+            // vertex tex coord between [0, 1]
+            s = (float)j / sectors;
+            t = (float)i / stacks;
+            m->colors.push_back(s);
+            m->colors.push_back(t);
+            m->colors.push_back(0.0);
+            m->colors.push_back(1.0);
+        }
+    }
+
+    // indices
+    //  k1--k1+1
+    //  |  / |
+    //  | /  |
+    //  k2--k2+1
+    unsigned int k1, k2;
+
+    for(int i = 0; i < stacks; ++i)
+    {
+        k1 = i * (sectors + 1);     // beginning of current stack
+        k2 = k1 + sectors + 1;      // beginning of next stack
+
+        for(int j = 0; j < sectors; ++j, ++k1, ++k2)
+        {
+            // 2 triangles per sector excluding 1st and last stacks
+            if(i != 0)
+            {
+                m->indices.push_back(_b + k1);
+                m->indices.push_back(_b + k2);
+                m->indices.push_back(_b + k1 + 1);
+            }
+
+            if(i != (stacks-1))
+            {
+                m->indices.push_back(_b + k1 + 1);
+                m->indices.push_back(_b + k2);
+                m->indices.push_back(_b + k2 + 1);
+            }
+        }
+    }
+}
+void Visualizer::cylinder_to_model(Cylinder *b, Model *m)
+{
+    
+}
+void Visualizer::body_to_model(Body *b, Model *m)
+{
+    Box *box = dynamic_cast<Box *>(b);
+    if (box)
+        box_to_model(box,m);
+    Ellipsoid *el = dynamic_cast<Ellipsoid *>(b);
+    if (el)
+        ellipsoid_to_model(el,m,20,20);
+    Cylinder *cyl = dynamic_cast<Cylinder *>(b);
+    if (cyl)
+        cylinder_to_model(cyl,m);
+}
 DebugVisualizer::DebugVisualizer():
 Visualizer()
 {
@@ -401,4 +531,14 @@ void DebugVisualizer::disable_all()
 {
     for (int i = 0; i < currentModes.size(); i++)
         currentModes[i] = 0;
+}
+void DebugVisualizer::add_bodies(Body *b_ptr, int count)
+{
+    Model *m = new Model();
+    debugModels.push_back(m);
+    currentModes.push_back(1);
+    for (int i=0;i<count;i++)
+    {
+        body_to_model(b_ptr + i,m);
+    }
 }

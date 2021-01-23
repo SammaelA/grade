@@ -7,6 +7,7 @@
 #include "distribution.h"
 #include <math.h>
 #include <algorithm>
+#include "body.h"
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -118,7 +119,8 @@ void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_en
     {
         float occ = 0.0;
         glm::vec3 M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams.max_depth() - b->level), &occ);
-        if (dice(1, occ * curParams.branch_grow_decrease_q()))
+        M *= occ;
+        if (dice(1, occ * curParams.branch_grow_decrease_q()) && (occ < 100000))
         {
             new_branch(b, j, s, M, from_end);
         }
@@ -179,7 +181,8 @@ void TreeGenerator::try_new_segment(Branch *base)
         sum_feed[base->level] += feed;
         count_feed[base->level] += 1;
         glm::vec3 M = voxels->get_dir_to_bright_place_ext(base->segments.back().end, 1, &occ);
-        if (dice(1, occ * curParams.segment_grow_decrease_q()))
+        M *= occ;
+        if (dice(1, occ * curParams.segment_grow_decrease_q()) && (occ < 100000))
         {
             new_segment(base, M);
         }
@@ -554,7 +557,13 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     float r = sqrt(count);
     TreeStructureParameters params = trees[0].params;
     params.set_state(params.max_depth() - 1);
+    Box b = Box(glm::vec3(30,30,0),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
+    Ellipsoid el = Ellipsoid(glm::vec3(100,50,-20),glm::vec3(70,0,0),glm::vec3(0,50,0),glm::vec3(0,0,50));
     voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::vec3(40.0f * r + 250, 220, 40.0f * r + 250), params.seg_len_mult(), params.light_precision());
+    voxels->add_body(&b);
+    debug.add_bodies(&b,1);
+    voxels->add_body(&el);
+    debug.add_bodies(&el,1);
     for (int i = 0; i < count; i++)
     {
         float R = urand(0,40*r);
@@ -698,4 +707,8 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     {
         trees[i].voxels = nullptr;
     }
+    //Box b = Box(glm::vec3(0,200,0),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
+    //Ellipsoid el = Ellipsoid(glm::vec3(0,200,0),glm::mat3(1.0f),25);
+    //Body *bptr = &b;
+    //debug.add_bodies(bptr,1);
 }

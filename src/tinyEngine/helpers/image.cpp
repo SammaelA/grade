@@ -3,7 +3,6 @@
 namespace image {
   std::string base_img_path = "resources/textures/";
   SDL_Surface* load(std::string path){
-    path = base_img_path + path;
     SDL_Surface* loaded = IMG_Load(path.c_str());
     if(loaded == nullptr)
     {
@@ -16,7 +15,6 @@ namespace image {
   }
 
   void save(SDL_Surface* surface, std::string path){
-    path = base_img_path + path;
     IMG_SavePNG(surface, path.c_str());
   }
 

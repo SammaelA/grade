@@ -177,7 +177,7 @@ int main(int argc, char *args[])
   Tiny::view.lineWidth = 1.0f;
   Tiny::window("Procedural Tree", WIDTH, HEIGHT);
   Tiny::event.handler = eventHandler;
-  textureManager = TextureManager("resources/textures/");
+  textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
   Texture tex = textureManager.get("woodd");
   Texture wood = textureManager.get("wood");
   TreeStructureParameters par;

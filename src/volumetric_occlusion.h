@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <list>
-
+#include "body.h"
 struct LightVoxelsCube
 {
 public:
@@ -20,6 +20,7 @@ public:
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ext(glm::vec3 pos, int steps, float *occlusion);
     void print_average_occlusion();
+    void add_body(Body *b, float opacity = 1e9);
     float NMSE(LightVoxelsCube *B);
 private:
     struct LightParams

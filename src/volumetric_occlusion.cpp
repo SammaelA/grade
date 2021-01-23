@@ -255,3 +255,21 @@ float LightVoxelsCube::NMSE(LightVoxelsCube *B)
     //debug("NMSE = %f %f %f\n", MSE, SQ, MSE/SQ);
     return MSE/SQ;
 }
+void LightVoxelsCube::add_body(Body *b, float opacity)
+{
+    glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
+    for (int i=-vox_x;i<=vox_x;i++)
+    {
+        for (int j=-vox_y;j<=vox_y;j++)
+        {
+            for (int k=-vox_z;k<=vox_z;k++)
+            {
+                if (b->in_body(center + voxel_size*glm::vec3(i,j,k)))   
+                {
+                    logerr("in body %d %d %d",i,j,k);
+                    voxels[v_to_i(i,j,k)] += opacity;
+                }
+            }
+        }
+    }
+}

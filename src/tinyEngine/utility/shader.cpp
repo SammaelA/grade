@@ -7,7 +7,7 @@
 #include <sstream>
 #include "../utility.h"
 void Shader::setup(slist _s){
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  boost::filesystem::path data_dir("");
   std::vector<std::string> s = _s;
   for (std::string &path : s)
   {
