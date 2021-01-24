@@ -371,7 +371,6 @@ void Visualizer::ellipsoid_to_model(Ellipsoid *b, Model *m, int sectors, int sta
             x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
             y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
             glm::vec3 pos = glm::inverse(b->transform)*glm::vec4(x,y,z,1); 
-            logerr("%f %f %f",pos.x,pos.y,pos.z);  
             m->positions.push_back(pos.x);
             m->positions.push_back(pos.y);
             m->positions.push_back(pos.z);
@@ -425,9 +424,99 @@ void Visualizer::ellipsoid_to_model(Ellipsoid *b, Model *m, int sectors, int sta
         }
     }
 }
-void Visualizer::cylinder_to_model(Cylinder *b, Model *m)
+void Visualizer::cylinder_to_model(Cylinder *b, Model *m, int sectors)
 {
+    int v0 = m->positions.size()/3;
+    for (int i=0;i<sectors;i++)
+    {
+        glm::vec3 vert = b->pos - b->c + cos(2*PI*i/sectors)*b->a + sin(2*PI*i/sectors)*b->b;
+        m->positions.push_back(vert.x);
+        m->positions.push_back(vert.y);
+        m->positions.push_back(vert.z);
+
+        glm::vec3 n = glm::normalize(cos(2*PI*i/sectors)*b->a + sin(2*PI*i/sectors)*b->b);
+        m->normals.push_back(n.x);
+        m->normals.push_back(n.y);
+        m->normals.push_back(n.z);
+
+        float col_x = 1 - abs(2.0f*i/sectors - 1);
+        m->colors.push_back(col_x);
+        m->colors.push_back(0.0);
+        m->colors.push_back(0.0);
+        m->colors.push_back(1.0);
+    }
+    int v1 = m->positions.size()/3;
+    for (int i=0;i<sectors;i++)
+    {
+        glm::vec3 vert = b->pos + b->c + cos(2*PI*i/sectors)*b->a + sin(2*PI*i/sectors)*b->b;
+        m->positions.push_back(vert.x);
+        m->positions.push_back(vert.y);
+        m->positions.push_back(vert.z);
+
+        glm::vec3 n = glm::normalize(cos(2*PI*i/sectors)*b->a + sin(2*PI*i/sectors)*b->b);
+        m->normals.push_back(n.x);
+        m->normals.push_back(n.y);
+        m->normals.push_back(n.z);
+
+        float col_x = 1 - abs(2.0f*i/sectors - 1);
+        m->colors.push_back(col_x);
+        m->colors.push_back(1.0);
+        m->colors.push_back(0.0);
+        m->colors.push_back(1.0);
+    }
+    int v_down = m->positions.size()/3;
+
+    glm::vec3 vert = b->pos - b->c;
+    m->positions.push_back(vert.x);
+    m->positions.push_back(vert.y);
+    m->positions.push_back(vert.z);
+
+    glm::vec3 n = glm::normalize(-b->c);
+    m->normals.push_back(n.x);
+    m->normals.push_back(n.y);
+    m->normals.push_back(n.z);
     
+    m->colors.push_back(0.0);
+    m->colors.push_back(1.0);
+    m->colors.push_back(0.0);
+    m->colors.push_back(1.0);
+
+    int v_up = m->positions.size()/3;
+
+    vert = b->pos + b->c;
+    m->positions.push_back(vert.x);
+    m->positions.push_back(vert.y);
+    m->positions.push_back(vert.z);
+
+    n = glm::normalize(b->c);
+    m->normals.push_back(n.x);
+    m->normals.push_back(n.y);
+    m->normals.push_back(n.z);
+    
+    m->colors.push_back(0.0);
+    m->colors.push_back(0.0);
+    m->colors.push_back(0.0);
+    m->colors.push_back(1.0);
+
+    for (int i=0;i<sectors;i++)
+    {
+        int i1 = (i+1)%sectors;
+        m->indices.push_back(v0 + i);
+        m->indices.push_back(v1 + i1);
+        m->indices.push_back(v0 + i1);
+
+        m->indices.push_back(v1 + i);
+        m->indices.push_back(v1 + i1);
+        m->indices.push_back(v0 + i);
+
+        m->indices.push_back(v_down);
+        m->indices.push_back(v0 + i1);
+        m->indices.push_back(v0 + i);
+
+        m->indices.push_back(v_up);
+        m->indices.push_back(v1 + i);
+        m->indices.push_back(v1 + i1);
+    }
 }
 void Visualizer::body_to_model(Body *b, Model *m)
 {
@@ -439,7 +528,7 @@ void Visualizer::body_to_model(Body *b, Model *m)
         ellipsoid_to_model(el,m,20,20);
     Cylinder *cyl = dynamic_cast<Cylinder *>(b);
     if (cyl)
-        cylinder_to_model(cyl,m);
+        cylinder_to_model(cyl,m,20);
 }
 DebugVisualizer::DebugVisualizer():
 Visualizer()

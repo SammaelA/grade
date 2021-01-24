@@ -27,7 +27,7 @@ protected:
     void joint_to_model(Joint &j, Model *m, bool leaves);
     void box_to_model(Box *b, Model *m);
     void ellipsoid_to_model(Ellipsoid *b, Model *m, int sectors, int stacks, bool smooth = true);
-    void cylinder_to_model(Cylinder *b, Model *m);
+    void cylinder_to_model(Cylinder *b, Model *m, int sectors);
     TreeStructureParameters curParams;
     Texture tree_tex;
     Texture leaves_tex;

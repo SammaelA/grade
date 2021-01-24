@@ -558,7 +558,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     TreeStructureParameters params = trees[0].params;
     params.set_state(params.max_depth() - 1);
     Box b = Box(glm::vec3(30,30,0),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
-    Ellipsoid el = Ellipsoid(glm::vec3(100,50,-20),glm::vec3(70,0,0),glm::vec3(0,50,0),glm::vec3(0,0,50));
+    Cylinder el = Cylinder(glm::vec3(100,50,-20),glm::vec3(70,0,0),glm::vec3(0,50,0),glm::vec3(0,0,50));
     voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::vec3(40.0f * r + 250, 220, 40.0f * r + 250), params.seg_len_mult(), params.light_precision());
     voxels->add_body(&b);
     debug.add_bodies(&b,1);
