@@ -518,8 +518,9 @@ void Visualizer::cylinder_to_model(Cylinder *b, Model *m, int sectors)
         m->indices.push_back(v1 + i1);
     }
 }
-void Visualizer::body_to_model(Body *b, Model *m)
+void Visualizer::body_to_model(Body *b, Model *m, bool fixed_tc, glm::vec4 tc)
 {
+    int last_tc = m->colors.size();
     Box *box = dynamic_cast<Box *>(b);
     if (box)
         box_to_model(box,m);
@@ -529,14 +530,26 @@ void Visualizer::body_to_model(Body *b, Model *m)
     Cylinder *cyl = dynamic_cast<Cylinder *>(b);
     if (cyl)
         cylinder_to_model(cyl,m,20);
+    if (fixed_tc)
+    {
+        for (int i=last_tc;i<m->colors.size() - 3;i+=4)
+        {
+            m->colors[i] = tc.x;
+            m->colors[i+1] = tc.y;
+            m->colors[i+2] = tc.z;
+            m->colors[i+3] = tc.w;
+        }
+    }
 }
 DebugVisualizer::DebugVisualizer():
-Visualizer()
+Visualizer(),
+debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
 
 }
 DebugVisualizer::DebugVisualizer(Texture _tree_tex, Shader *_tree_shader) : 
-Visualizer(_tree_tex, textureManager.empty(), _tree_shader)
+Visualizer(_tree_tex, textureManager.empty(), _tree_shader),
+debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
 }
 DebugVisualizer::~DebugVisualizer()
@@ -546,24 +559,40 @@ DebugVisualizer::~DebugVisualizer()
         delete (debugModels[i]);
     }
 }
-void DebugVisualizer::render(glm::mat4 view_proj)
+void DebugVisualizer::render(glm::mat4 view_proj, int mode)
 {
     if (!tree_shader)
     {
-        logerr("empty debug shader\n");
-        return;
+        logerr("empty tree shader in debug visualizer\n");
     }
-    tree_shader->use();
-    tree_shader->texture("tex", tree_tex);
-    tree_shader->uniform("projectionCamera", view_proj);
-
-    for (int i = 0; i < debugModels.size(); i++)
+    else if ((mode == -1) || (mode == 1))
     {
-        if (currentModes[i] == 0)
-            continue;
-        tree_shader->uniform("model", debugModels[i]->model);
-        debugModels[i]->update();
-        debugModels[i]->render(GL_TRIANGLES);
+        tree_shader->use();
+        tree_shader->texture("tex", tree_tex);
+        tree_shader->uniform("projectionCamera", view_proj);
+
+        for (int i = 0; i < debugModels.size(); i++)
+        {
+            if (currentModes[i] != 1)
+                continue;
+            tree_shader->uniform("model", debugModels[i]->model);
+            debugModels[i]->update();
+            debugModels[i]->render(GL_TRIANGLES);
+        }
+    }
+    if ((mode == -1) || (mode == 2))
+    {
+        debugShader.use();
+        debugShader.uniform("projectionCamera", view_proj);
+
+        for (int i = 0; i < debugModels.size(); i++)
+        {
+            if (currentModes[i] != 2)
+                continue;
+            debugShader.uniform("model", debugModels[i]->model);
+            debugModels[i]->update();
+            debugModels[i]->render(GL_TRIANGLES);
+        }
     }
 }
 void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
@@ -629,5 +658,40 @@ void DebugVisualizer::add_bodies(Body *b_ptr, int count)
     for (int i=0;i<count;i++)
     {
         body_to_model(b_ptr + i,m);
+    }
+}
+DebugVisualizer& DebugVisualizer::operator=(const DebugVisualizer& dv)
+{
+    curParams = dv.curParams;
+    tree_tex = dv.tree_tex;
+    leaves_tex = dv.leaves_tex;
+    tree_shader = dv.tree_shader;
+}
+void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step,
+                                             float dot_size, float threshold)
+{
+    int count = ((int)(size.x/step.x)) * ((int)(size.y/step.y)) * ((int)(size.z/step.z));
+    Model *m = new Model();
+    debugModels.push_back(m);
+    currentModes.push_back(2);
+
+    for (float x = pos.x; x < pos.x + size.x; x += step.x)
+    {
+        for (float y = pos.y; y < pos.y + size.y; y += step.y)
+        {
+            for (float z = pos.z; z < pos.z + size.z; z += step.z)
+            {
+                float occ = voxels->get_occlusion_trilinear(glm::vec3(x,y,z));
+                if (occ < threshold)
+                    continue;
+                glm::vec4 tex;
+                tex.w = 1;
+                tex.z = MIN(1,occ/10);
+                tex.y = MIN(1,occ/100);
+                tex.x = MIN(1,occ/1000);
+                Box b = Box(glm::vec3(x,y,z),glm::vec3(dot_size,0,0),glm::vec3(0,dot_size,0),glm::vec3(0,0,dot_size));
+                body_to_model(&b,m,true,tex);
+            }
+        }
     }
 }

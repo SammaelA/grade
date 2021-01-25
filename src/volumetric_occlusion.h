@@ -19,13 +19,14 @@ public:
     float get_occlusion_trilinear(glm::vec3 pos);
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ext(glm::vec3 pos, int steps, float *occlusion);
+    glm::vec3 get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion);
     void print_average_occlusion();
-    void add_body(Body *b, float opacity = 1e9);
+    void add_body(Body *b, float opacity = 1e9, bool solid = true);
     float NMSE(LightVoxelsCube *B);
 private:
     struct LightParams
     {
-        int penumbraDepth = 5;
+        int penumbraDepth = 20;
         float penumbraWidthInc = 1;
         float penumbraDepthDecay = 0.4;
         float penumbraWidthDecay = 0.8;

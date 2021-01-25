@@ -27,9 +27,10 @@ int treecount = 0;
 int cloudnum = 1;
 bool draw_clusterized = true;
 int cur_tree = 0;
+int render_mode = -1;
 Tree t[101];
 TreeGenerator gen(t[100]);
-DebugVisualizer debugVisualizer;
+DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 BillboardCloudRaw::RenderMode mode = BillboardCloudRaw::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1, -1);
@@ -51,7 +52,7 @@ void setup()
   TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10};
-  gen.create_grove(params, treecount, grove, debugVisualizer, t);
+  gen.create_grove(params, treecount, grove, *debugVisualizer, t);
 }
 
 // Event Handler
@@ -124,8 +125,16 @@ std::function<void()> eventHandler = [&]() {
       GR = nullptr;
     }
   }
+  if (Tiny::event.active[SDLK_m])
+  {
+    render_mode++;
+    if (render_mode > DebugVisualizer::MAX_RENDER_MODE)
+      render_mode = -1;
+    Tiny::event.active[SDLK_m] = false;
+  }
   if (!Tiny::event.press.empty())
   {
+
   }
 };
 
@@ -196,7 +205,7 @@ int main(int argc, char *args[])
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
   BillboardTiny shadow(1600, 1600, false);
-  debugVisualizer = DebugVisualizer(wood, &defaultShader);
+  debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
   GroveRenderer groveRenderer = GroveRenderer(&grove, 2);
   GR = &groveRenderer;
@@ -244,7 +253,7 @@ int main(int argc, char *args[])
       {
         t[i].render(defaultShader, cloudnum, prc);
       }
-      debugVisualizer.render(prc);
+      debugVisualizer->render(prc,render_mode);
     }
   };
 

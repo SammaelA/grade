@@ -180,24 +180,24 @@ struct TreeStructureParameters
     }
 
     TreeStructureParameters() : max_depth(4),
-                                max_segments(20, std::vector<int>{30, 24, 18, 14, 12}),
+                                max_segments(20, std::vector<int>{40, 24, 18, 14, 12}),
                                 max_branching(1),
                                 growth_iterations(100),
 
                                 scale(3),
-                                seg_len_mult(4, std::vector<float>{3.5, 1.75, 1, 0.55, 0.4}),
+                                seg_len_mult(4, std::vector<float>{2.25, 1.75, 1, 0.55, 0.4}),
                                 leaf_size_mult(2),
                                 base_r(1, std::vector<float>{1, 0.67, 0.4, 0.25, 0.12}),
                                 r_split_save_pow(2.7, std::vector<float>{2, 3, 3, 4, 4}, EXPLICIT_REGENERATION, new Normal(0, 0.25)),
 
                                 dir_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.4, 0.4), 0.1, 10),
                                 spread(1, std::vector<float>{1, 3, 2, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.25, 25), 0.1, 10),
-                                phototrop(1, std::vector<float>{2, 2, 2, 2, 3}, REGENERATE_ON_GET, new Uniform(-0.2, 0.2), 0.1, 10),
+                                phototrop(1, std::vector<float>{20, 20, 2, 0, 0}, REGENERATE_ON_GET, new Uniform(-0.2, 0.2), 0.1, 10),
                                 gravitrop(1, std::vector<float>{2, 2, 0.67, 0.25, 0.25}, REGENERATE_ON_GET, new Uniform(-0.1, 0.1), 0.1, 10),
 
                                 seg_dir_conserv(50, std::vector<float>{100, 65, 40, 20, 20}, REGENERATE_ON_GET, new Uniform(-0.05, 0.05), 0, 1000),
-                                seg_spread(0, std::vector<float>{0, 0, 0, 0.5, 1}),
-                                seg_phototrop(1, std::vector<float>{3, 2.5, 2, 2, 1}, REGENERATE_ON_GET, new Uniform(-1, 2), 0, 10),
+                                seg_spread(0, std::vector<float>{5, 5, 0, 0.5, 1}),
+                                seg_phototrop(1, std::vector<float>{50, 50, 1, 0.25, 0.1}, REGENERATE_ON_GET, new Uniform(-1, 2), 0, 10),
                                 seg_gravitrop(2, std::vector<float>{5, 3, 1.5, 0.5, 0.5}, REGENERATE_ON_GET, new Uniform(-2, 4), 0, 50),
                                 seg_bend(1, std::vector<float>{1, 1, 2, 3, 5}, REGENERATE_ON_GET, new Uniform(-1, 1), 0, 10),
                                 seg_bend_pow(2, std::vector<float>{2, 2, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.05, 0.05), 0, 10),
@@ -208,7 +208,7 @@ struct TreeStructureParameters
                                 feed_distribution_d_weight(0.07),
                                 top_growth_bonus(0.0),
 
-                                light_precision(0.35),
+                                light_precision(0.1),
                                 branch_removal(1.2, std::vector<float>{0, 0.75, 1, 1.2, 1.2}),
                                 branch_grow_decrease_q(0.9),
                                 segment_grow_decrease_q(0.09),
