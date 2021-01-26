@@ -45,4 +45,9 @@ public:
     LightVoxelsCube *create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
+    glm::vec3 get_optimal_branch_growth_direction(float &quality, Branch *base, Joint &j, Segment &s, bool from_end);
+    glm::vec3 get_optimal_segment_growth_direction(float &quality, Branch *base);
+    void calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, glm::vec3 sizes, glm::vec3 prev_dir, glm::vec4 plane,
+                            float dir_cons, float plane_cons, float rnd, float spread, float up, float to_light);
+
 };

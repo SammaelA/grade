@@ -4,22 +4,97 @@
 #include "tinyEngine/utility.h"
 #include "distribution.h"
 
-LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision)
+LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision):
+LightVoxelsCube(center, glm::ivec3(size.x/(base_size / light_precision), size.y/(base_size / light_precision),
+                                   size.z/(base_size / light_precision)),(base_size / light_precision))
 {
-    float voxel_size = base_size / light_precision;
+    //logerr("c1");
+    //    logerr("vc %f %f %f",base_size,light_precision,voxel_size);
     lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
-    this->center = center;
-    this->voxel_size = voxel_size;
+
+}
+LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size):
+voxel_size(vox_size)
+{
+    //logerr("c2");
+    center = cent;
     set_directed_light(glm::vec3(0, 1, 0), 1);
-    vox_x = (int)(size.x / voxel_size);
-    vox_y = (int)(size.y / voxel_size);
-    vox_z = (int)(size.z / voxel_size);
+    vox_x = sizes.x;
+    vox_y = sizes.y;
+    vox_z = sizes.z;
 
     int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
     //debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
     voxels = new float[count];
-    //debug("successfully created light voxels cube with %d voxels\n", count);
+    //debug("successfully created light voxels cube with %d voxels voxel size = %f\n", count, voxel_size);
+}
+LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
+LightVoxelsCube(source,
+                source->pos_to_voxel(pos),
+                glm::ivec3(sizes.x/source->voxel_size,sizes.y/source->voxel_size,sizes.z/source->voxel_size))
+
+{
+    //    logerr("sizes %f %f %f",sizes.x,sizes.y,sizes.z);
+    //logerr("c3");
+    center = pos;
+}
+LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes):
+LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
+{
+    //logerr("c4");
+    for (int i = vox_pos.x-vox_sizes.x; i <= vox_pos.x+vox_sizes.x; i++)
+    {
+        for (int j = vox_pos.y-vox_sizes.y; j <= vox_pos.y+vox_sizes.y; j++)
+        {
+            for (int k = vox_pos.z-vox_sizes.z; k <= vox_pos.z+vox_sizes.z; k++)
+            {
+                glm::ivec3 vx = glm::ivec3(i,j,k) - vox_pos;
+                replace_occluder_voxel(vx,source->get_occlusion_voxel(vx + vox_pos));
+                //logerr("copy %d %d %d %f --> %d %d %d %f",vx.x,vx.y,vx.z,source->get_occlusion_voxel(vx + vox_pos),i,j,k,
+                //get_occlusion_voxel(vx));
+            }
+        }
+    }
+}
+void LightVoxelsCube::set_occluder_voxel(glm::ivec3 voxel, float strength)
+{
+    if (in_voxel_cube(voxel))
+    {
+        voxels[v_to_i(voxel)] += strength;
+    }
+}
+void LightVoxelsCube::replace_occluder_voxel(glm::ivec3 voxel, float strength)
+{
+    if (in_voxel_cube(voxel))
+    {
+        voxels[v_to_i(voxel)] = strength;
+    }
+}
+float LightVoxelsCube::get_occlusion_voxel(glm::ivec3 voxel)
+{
+    if (in_voxel_cube(voxel))
+    {
+        return voxels[v_to_i(voxel)];
+    }
+    else 
+        return 1e9;
+}
+glm::vec3 LightVoxelsCube::get_center()
+{
+    return center;
+}
+float LightVoxelsCube::get_voxel_size()
+{
+    return voxel_size;
+}
+glm::vec3 LightVoxelsCube::voxel_to_pos(glm::ivec3 voxel)
+{
+    return center + voxel_size*glm::vec3(voxel.x,voxel.y,voxel.z);
+}
+glm::ivec3 LightVoxelsCube::get_vox_sizes()
+{
+    return glm::ivec3(vox_x,vox_y,vox_z);
 }
 void LightVoxelsCube::print_average_occlusion()
 {
@@ -98,8 +173,9 @@ inline float LightVoxelsCube::voxel_occlusion(glm::ivec3 voxel)
 }
 glm::ivec3 LightVoxelsCube::pos_to_voxel(glm::vec3 pos)
 {
+    //logerr("pos %f %f %f center %f %f %f vox size %f",pos.x,pos.y,pos.z,center.x,center.y,center.z,voxel_size);
     pos -= center;
-    glm::ivec3 voxel = glm::ivec3((int)(pos.x / voxel_size), (int)(pos.y / voxel_size), (int)(pos.z / voxel_size));
+    glm::ivec3 voxel = glm::ivec3((pos.x / voxel_size), (pos.y / voxel_size), (pos.z / voxel_size));
     return voxel;
 }
 int LightVoxelsCube::v_to_i(int x, int y, int z)
@@ -114,7 +190,7 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 {
     float base_str = strenght;
     glm::ivec3 voxel = pos_to_voxel(pos);
-    for (int i = 0; i < (int)lightParams.penumbraDepth + 4; i++)
+    for (int i = 0; i < (int)lightParams.penumbraDepth; i++)
     {
         int wd = i * lightParams.penumbraWidthInc;
         for (int j = -wd; j <= wd; j++)
@@ -125,6 +201,7 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
                 if (in_voxel_cube(vx))
                 {
                     //voxels[v_to_i(vx)] += base_str * powf(lightParams.penumbraWidthDecay, abs(j) + abs(k));
+                    //logerr("%d %d %d %d  %f %f %f sz = %f",voxel.x,voxel.y,voxel.z,v_to_i(vx),voxel_size,pos.x,pos.y,pos.z);
                     float dist_sq = (i*i + j*j + k*k) + 1;
                     voxels[v_to_i(vx)] += base_str / dist_sq;
                 }
@@ -210,6 +287,7 @@ float LightVoxelsCube::get_occlusion_simple(glm::vec3 pos)
 }
 float LightVoxelsCube::get_occlusion_trilinear(glm::vec3 pos)
 {
+    //logerr("%f %f %f vox size = %f",pos.x,pos.y,pos.z, voxel_size);
     glm::vec3 flpos = glm::vec3(floorf(pos.x),floorf(pos.y),floorf(pos.z));
     glm::vec3 dp = pos - flpos;
     glm::ivec3 voxel = pos_to_voxel(flpos);

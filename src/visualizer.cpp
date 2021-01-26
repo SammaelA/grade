@@ -44,13 +44,16 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m)
 void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
     sv.ringsize = ring_size;
-    //Get Some Normal Vector
-    glm::vec3 x = glm::normalize(dir + glm::vec3(1.0, 1.0, 1.0));
-    glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, x)), 1.0);
+    dir = glm::normalize(dir);
+    glm::vec3 p = glm::vec3(1,0,0);
+    if (abs(dot(dir,p)) > 0.9999)
+        p = glm::normalize(glm::vec3(1,0,0.001));
+    glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, p)), 1.0);
 
-    //Add the Correct Number of Indices
     glm::mat4 r = glm::rotate(glm::mat4(1.0), (float)(2 * PI / ring_size), dir);
 
+    if (ring_size == 0)
+        logerr("0 ringsize !!!");
     for (int i = 0; i < ring_size; i++)
     {
         VertexData vd;
@@ -64,6 +67,7 @@ void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, Segmen
 }
 void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
+    sv.s = s;
     glm::vec3 start = s.begin;
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
@@ -71,6 +75,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
 }
 void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
+    sv.s = s;
     glm::vec3 start = s.begin;
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
@@ -98,15 +103,27 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         h->colors.push_back(0.0);
         h->colors.push_back(1.0);
     }
-    for (auto pos : sv.bigRing)
+    int shift = 0;
+    float best_match = glm::length(sv.bigRing.front().pos - sv.smallRing.front().pos);
+    for (int i = 0;i<sv.bigRing.size();i++)
     {
+        if (glm::length(sv.bigRing[i].pos - sv.smallRing.front().pos) < best_match)
+        {
+            best_match = glm::length(sv.bigRing[i].pos - sv.smallRing.front().pos);
+            shift = i;
+        }
+    }
+    for (int i = 0;i<sv.bigRing.size();i++)
+    {
+        int real_i = (i + shift) % sv.bigRing.size();
+        VertexData pos = sv.bigRing[real_i];
         h->positions.push_back(pos.pos.x);
         h->positions.push_back(pos.pos.y);
         h->positions.push_back(pos.pos.z);
         h->normals.push_back(pos.normal.x);
         h->normals.push_back(pos.normal.y);
         h->normals.push_back(pos.normal.z);
-        h->colors.push_back(pos.tex_coord.x);
+        h->colors.push_back((float)i/sv.bigRing.size());
         h->colors.push_back(pos.tex_coord.y);
         h->colors.push_back(0.0);
         h->colors.push_back(1.0);
@@ -198,6 +215,28 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
         {
             seg_vertexes_to_model(vt, m);
         }
+        if (b.level == -1)
+        {
+            logerr("added %d/%d segments",vets.size(),b.segments.size());
+            for (auto &vt : vets)
+            {
+                debug("(%f %f %f) %d (%f)",vt.smallRing.front().pos.x,vt.smallRing.front().pos.y,vt.smallRing.front().pos.z,
+                ringsize,vt.s.end.x);
+            }
+            debugnl();
+        }
+        /*int cnt = 0;
+        for (auto &segment : b.segments)
+        {
+            if (segment.rel_r_end > segment.rel_r_begin)
+            debug("(%f %f %f) %f - (%f %f %f) %f",segment.begin.x,segment.begin.y,segment.begin.z,segment.rel_r_begin,
+                  segment.end.x,segment.end.y,segment.end.z,segment.rel_r_end);
+            if (segment.begin == b.segments.front().begin)
+                debug("front");
+            cnt++;
+        }
+        if (cnt)
+            debug("lvl = %d\n",b.level);*/
     }
     else
     {
