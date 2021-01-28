@@ -98,7 +98,9 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         h->normals.push_back(pos.normal.x);
         h->normals.push_back(pos.normal.y);
         h->normals.push_back(pos.normal.z);
-        h->colors.push_back(pos.tex_coord.x);
+        
+        float col_x = 1 - abs(2.0f*pos.tex_coord.x - 1);
+        h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
         h->colors.push_back(0.0);
         h->colors.push_back(1.0);
@@ -120,10 +122,13 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         h->positions.push_back(pos.pos.x);
         h->positions.push_back(pos.pos.y);
         h->positions.push_back(pos.pos.z);
+        
         h->normals.push_back(pos.normal.x);
         h->normals.push_back(pos.normal.y);
         h->normals.push_back(pos.normal.z);
-        h->colors.push_back((float)i/sv.bigRing.size());
+        
+        float col_x = 1 - abs(2.0f*i/sv.bigRing.size() - 1);
+        h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
         h->colors.push_back(0.0);
         h->colors.push_back(1.0);

@@ -107,6 +107,10 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     nb->light += j.light;
     j.light = 0;
 
+    glm::vec3 plane_n = glm::normalize(glm::cross(N,dir));
+    float d = -dot(plane_n, j.pos);
+    nb->plane_coef = glm::vec4(plane_n.x, plane_n.y, plane_n.z, d);
+
     j.childBranches.push_back(nb);
     test = nb;
 }
@@ -406,12 +410,14 @@ glm::vec3 TreeGenerator::get_optimal_segment_growth_direction(float &quality, Br
 {
     LightVoxelsCube *field = nullptr;
     glm::vec3 prev_dir = glm::normalize(base->segments.back().end - base->segments.back().begin);
-    calc_quality_field(field,base->joints.back().pos,glm::vec3(5*(curParams.max_depth() - base->level)),prev_dir,glm::vec4(0,0,0,0),
+    float bn = base->level * curParams.seg_bend() * powf((float)base->segments.size() / base->max_seg_count, curParams.seg_bend_pow());
+    
+    calc_quality_field(field,base->joints.back().pos,glm::vec3(5*(curParams.max_depth() - base->level)),prev_dir,base->plane_coef,
                       curParams.seg_dir_conserv(),
-                      0,
-                      0,
+                      curParams.seg_plane_conserv(),
+                      curParams.seg_dir_random(),
                       curParams.seg_spread(),
-                      curParams.seg_gravitrop(),
+                      curParams.seg_gravitrop() - bn,
                       curParams.seg_phototrop());
     
     glm::ivec3 vox_sizes = field->get_vox_sizes();
@@ -450,6 +456,7 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
     field = new LightVoxelsCube(voxels,pos,sizes);
     glm::ivec3 vox_sizes = field->get_vox_sizes();
     float voxel_size = field->get_voxel_size();
+    uint64_t w = 0,x = 0, s = (uint64_t)(1e4*pos.x + 1e6*pos.y + 1e8*pos.z);
     for (int i = -vox_sizes.x; i <= vox_sizes.x; i++)
     {
         for (int j = -vox_sizes.y; j <= vox_sizes.y; j++)
@@ -460,9 +467,9 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
                 glm::vec3 dir = glm::normalize(glm::vec3(i,j,k));
                 float len = voxel_size*sqrt(i*i + j*j + k*k);
 
-                float rnd_q = urand();
-                float dir_cons_q =  MAX(MIN(1,pow(1 - dot(dir,prev_dir), 2)),0);
-                float plane_cons_q = 0;
+                float rnd_q = srand(s,x,w);
+                float dir_cons_q = 1 - dot(dir,prev_dir);
+                float plane_cons_q = abs(dot(dir,glm::vec3(plane.x,plane.y,plane.z)));
                 float up_q =  1 - dot(dir, glm::vec3(0,1,0));
                 float spread_q = dot(dir,prev_dir);
                 float to_light_q = field->get_occlusion_voxel(vx);
@@ -470,8 +477,6 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
                 float quality = rnd*rnd_q + dir_cons*dir_cons_q + plane_cons*plane_cons_q + up*up_q + 
                                 spread*spread_q + to_light*to_light_q;
                 field->replace_occluder_voxel(vx,quality);
-                //logerr("%d %d %d %f %f",i,j,k,dot(dir,prev_dir), dir_cons_q);
-
             }
         }
     }
@@ -549,7 +554,7 @@ void TreeGenerator::grow_tree(Tree &t)
         float feed = 1;
         seg_count = 0;
         feed = calc_light(root);
-        root->light += 100 * t.iter;
+        root->light += 1000 + 100*sqrt(feed);
         calc_size(root);
         root->size = 0.01;
         grow_branch(root, feed);
@@ -632,7 +637,7 @@ void BranchHeap::clear_removed()
 }
 bool TreeGenerator::is_branch_productive(Branch *b)
 {
-    return (b->level < curParams.max_depth() - 1);
+    return false && (b->level < curParams.max_depth() - 1) && (b->max_seg_count > b->segments.size());
 }
 void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug)
 {

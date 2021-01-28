@@ -16,7 +16,7 @@ class Normal : public Distribution
     std::normal_distribution<double> d;
 
 public:
-    Normal(double a = 0, double sigma = 1);
+    Normal(double a = 0, double sigma = 1, int seed = 12345);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 };
@@ -30,7 +30,7 @@ class Uniform : public Distribution
     std::uniform_real_distribution<double> d;
 
 public:
-    Uniform(double from = 0, double to = 1);
+    Uniform(double from = 0, double to = 1, int seed = 12345);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 };
@@ -44,7 +44,7 @@ class UniformInt : public Distribution
     std::uniform_int_distribution<long> d;
 
 public:
-    UniformInt(double from = 0, double to = 1);
+    UniformInt(double from = 0, double to = 1, int seed = 12345);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
     long geti();
@@ -52,3 +52,5 @@ public:
 };
 double urand(double from = 0.0, double to = 1.0);
 double urandi(int from = 0, int to = 1);
+double srand(uint64_t seed, uint64_t &x, uint64_t&w, double from = 0.0, double to = 1.0);
+double srandi(uint64_t seed, uint64_t &x, uint64_t&w, int from = 0, int to = 1);

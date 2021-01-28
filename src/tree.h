@@ -56,6 +56,7 @@ struct Branch
     float size;
     float base_r;
     bool dead = false;
+    glm::vec4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     void pack(PackedBranch &branch);
