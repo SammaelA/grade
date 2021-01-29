@@ -3,19 +3,17 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 
-GroveRenderer::GroveRenderer(): renderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                                     rendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                                                                                        {"in_Position", "in_Normal", "in_Tex", "in_Model"}),
-                                                                     leaf(textureManager.get("leaf")),
-                                                                     wood(textureManager.get("wood"))
+GroveRenderer::GroveRenderer(): 
+renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
+                   {"in_Position", "in_Normal", "in_Tex", "in_Model"}),
+leaf(textureManager.get("leaf")),
+wood(textureManager.get("wood"))
 {
 
 }
-GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count) : renderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                                     rendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                                                                                        {"in_Position", "in_Normal", "in_Tex", "in_Model"}),
-                                                                     leaf(textureManager.get("leaf")),
-                                                                     wood(textureManager.get("wood"))
+GroveRenderer::GroveRenderer(GrovePacked *_source, int LODs_count) :
+GroveRenderer()
 {
     Visualizer v = Visualizer();
     source = _source;

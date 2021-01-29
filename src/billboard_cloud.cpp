@@ -11,7 +11,8 @@
 #include "distribution.h"
 
 using namespace glm;
-BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h),
+#define TEX_ATLAS_LAYERS 4
+BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h,TEX_ATLAS_LAYERS),
                                                        wood(textureManager.empty()),
                                                        rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
@@ -214,7 +215,7 @@ void Billboard::to_model(Model *m, TextureAtlas &atlas)
         for (int i = 0; i < 4; i++)
         {
             glm::vec3 v = positions[i];
-            glm::vec2 tc = vec2(tex_c[2 * i], tex_c[2 * i + 1]);
+            glm::vec3 tc = vec3(tex_c[2 * i], tex_c[2 * i + 1],0);
             atlas.process_tc(id, tc);
             m->positions.push_back(v.x);
             m->positions.push_back(v.y);
@@ -224,7 +225,7 @@ void Billboard::to_model(Model *m, TextureAtlas &atlas)
             m->normals.push_back(n.z);
             m->colors.push_back(tc.x);
             m->colors.push_back(tc.y);
-            m->colors.push_back(0);
+            m->colors.push_back(tc.z);
             m->colors.push_back(1);
         }
 
@@ -336,8 +337,8 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Branch> &branches)
     billboards.clear();
     atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
     glm::ivec4 sizes = atlas.get_sizes();
-    int cnt = ceil(sqrt(billboard_boxes.size()) + add_billboards_count);
-    int tex_size = sizes.x / cnt - 2;
+    int cnt = ceil(sqrt(billboard_boxes.size()/atlas.layers_count() + 1));
+    int tex_size = (sizes.x) / cnt - 2;
     atlas.set_grid(tex_size, tex_size);
     atlas.clear();
     std::vector<BranchProjectionData> projectionData;
@@ -361,7 +362,7 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Branch> &branches)
         i++;
     }
     std::sort(projectionData.begin(), projectionData.end(), BPD_comp);
-    add_billboards_count = MIN(cnt * cnt - billboard_boxes.size(), projectionData.size());
+    add_billboards_count = MIN(atlas.layers_count() * cnt * cnt - billboard_boxes.size(), projectionData.size());
     add_billboards_count = 0;
     int k = 0;
     for (auto &proj : projectionData)

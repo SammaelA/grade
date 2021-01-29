@@ -4,6 +4,18 @@
 #include "tinyEngine/utility/model.h"
 #include "texture_manager.h"
 
+void print_FB_status(GLuint status)
+{
+    if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+        logerr("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+    else if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS)
+        logerr("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+    else if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+        logerr("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+    else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
+        logerr("GL_FRAMEBUFFER_UNSUPPORTED");
+    else  logerr("GL_FRAMEBUFFER_INCOMPLETE %#010x",status);
+}
 TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
                               mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                               copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
@@ -11,9 +23,12 @@ TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
 
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind();
+
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer Incomplete" << std::endl;
+    {
+        print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        std::cout << "Framebuffer Incomplete1" << std::endl;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 TextureAtlas::TextureAtlas(const TextureAtlas &atlas):
@@ -30,22 +45,29 @@ colorTex(atlas.colorTex)
     clearColor = atlas.clearColor;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind();
+    bind(0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer Incomplete" << std::endl;
+    {
+        print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        std::cout << "Framebuffer Incomplete2" << std::endl;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h) : colorTex(textureManager.create_unnamed(w, h)),
+TextureAtlas::TextureAtlas(int w, int h, int l) : colorTex(textureManager.create_unnamed(w, h, false, l)),
                                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
     width = w;
     height = h;
+    layers = l;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind();
+    bind(0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer Incomplete" << std::endl;
+    {
+        print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        std::cout << "Framebuffer Incomplete3" << std::endl;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 TextureAtlas::~TextureAtlas()
@@ -62,38 +84,36 @@ void TextureAtlas::set_grid(int w, int h)
 int TextureAtlas::add_tex()
 {
     curNum++;
-    if (curNum > gridWN * gridHN)
+    if (curNum > layers * gridWN * gridHN)
         return -1;
     else
         return curNum - 1;
 }
-void TextureAtlas::process_tc_array(int num, std::vector<float> &tc)
+void TextureAtlas::process_tc(int num, glm::vec3 &tc)
 {
-    glm::vec2 tsc(1.0 / gridWN, 1.0 / gridHN);
-    glm::vec2 tsh(num % gridWN, num / gridWN);
-    for (int i = 1; i < tc.size(); i += 2)
-    {
-        tc[i] = tsc.x * (tc[i] + tsh.x);
-        tc[i - 1] = tsc.y * (tc[i - 1] + tsh.y);
-    }
-}
-void TextureAtlas::process_tc(int num, glm::vec2 &tc)
-{
+    int l = num / (gridHN*gridWN);
+    num = num % (gridHN*gridWN);
+
     glm::vec2 tsc(1.0 / gridWN, 1.0 / gridHN);
     glm::vec2 tsh(num % gridWN, num / gridWN);
     tc.x = tsc.x * (tc.x + tsh.x);
     tc.y = tsc.y * (tc.y + tsh.y);
+    tc.z = l;
 }
-bool TextureAtlas::bind()
+bool TextureAtlas::bind(int layer)
 {
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, 0);
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, 0, layer);
     return true;
 }
 bool TextureAtlas::target(int num)
-{
+{   
+    
+    int l = num / (gridHN*gridWN);
+    num = num % (gridHN*gridWN);
+
     glm::ivec2 tsh(num % gridWN, num / gridWN);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    //glViewport(tsh.x, tsh.y, gridWN, gridHN);
+    bind(l);
     glViewport(0, 0, width, height);
 
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
@@ -106,6 +126,9 @@ bool TextureAtlas::clear()
 }
 glm::mat4 TextureAtlas::tex_transform(int num)
 {
+    int l = num / (gridHN*gridWN);
+    num = num % (gridHN*gridWN);
+
     float a = num % gridWN;
     a /= gridWN;
     float b = num / gridWN;
@@ -183,10 +206,11 @@ TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
     curNum = atlas.curNum;
     width = atlas.width;
     height = atlas.height;
+    layers = atlas.layers;
     gridWN = atlas.gridWN;
     gridHN = atlas.gridHN;
     isGrid = atlas.isGrid;
     clearColor = atlas.clearColor;
     colorTex = atlas.colorTex;
-    bind();
+    bind(0);
 }

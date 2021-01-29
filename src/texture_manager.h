@@ -8,6 +8,7 @@ class TextureManager
 public:
     Texture get(std::string name);
     Texture create_unnamed(int w, int h, bool shadow = false);
+    Texture create_unnamed(int w, int h, bool shadow, int layers);
     Texture create_unnamed(SDL_Surface *s);
     Texture empty();
     TextureManager();

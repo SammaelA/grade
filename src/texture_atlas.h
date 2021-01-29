@@ -10,7 +10,7 @@ class TextureAtlas
 public:
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
-    TextureAtlas(int w, int h);
+    TextureAtlas(int w, int h, int layers = 2);
     ~TextureAtlas();
     void set_clear_color(glm::vec4 color)
     {
@@ -19,20 +19,20 @@ public:
     TextureAtlas &operator=(TextureAtlas &atlas);
     void set_grid(int w, int h);
     int add_tex();
-    void process_tc(int num, glm::vec2 &tc);
-    void process_tc_array(int num, std::vector<float> &tc);
+    void process_tc(int num, glm::vec3 &tc);
     bool target(int num);
     glm::mat4 tex_transform(int num);
     glm::ivec4 get_sizes() { return glm::ivec4(width, height, gridWN, gridHN); }
     bool clear();
     Texture &tex() { return colorTex; }
     void gen_mipmaps();
-
+    int layers_count() {return layers;}
 private:
-    bool bind();
+    bool bind(int layer);
     int curNum = 0;
     int width = 0;
     int height = 0;
+    int layers = 0;
     int gridWN = 0;
     int gridHN = 0;
     bool isGrid = false;

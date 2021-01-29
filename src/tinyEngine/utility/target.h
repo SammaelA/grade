@@ -34,7 +34,7 @@ public:
     }
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-      std::cout<<"Framebuffer Incomplete"<<std::endl;
+      std::cout<<"Framebuffer Incomplete tar"<<std::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }

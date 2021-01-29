@@ -43,6 +43,12 @@ Texture TextureManager::create_unnamed(int w, int h, bool shadow)
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
+Texture TextureManager::create_unnamed(int w, int h, bool shadow, int layers)
+{
+    Texture t(w,h,shadow,layers);
+    unnamed_textures.emplace(t.texture,t);
+    return t;
+}
 Texture TextureManager::create_unnamed(SDL_Surface *s)
 {
     Texture t(s);

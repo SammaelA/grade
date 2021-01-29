@@ -7,7 +7,7 @@ in mat4 in_Model;
 
 uniform mat4 projectionCamera;
 
-out vec3 ex_Tex;
+out vec2 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
 
@@ -21,5 +21,5 @@ void main(void) {
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
 
 	//Color from Normal Vector
-	ex_Tex = in_Tex.xyz;
+	ex_Tex = in_Tex.xy;
 }

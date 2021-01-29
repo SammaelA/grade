@@ -29,6 +29,10 @@ Texture::Texture(int W, int H, bool d) : Texture()
                 empty(W, H);
         else
                 depth(W, H);
+
+        this->W = W;
+        this->H = H;
+        this->layers = 1;
 }
 
 Texture::~Texture()
@@ -58,6 +62,10 @@ void Texture::raw(SDL_Surface *s, bool set_default)
                 set_default_paramaters(this); //Call the parameter setting function!
         glTexImage2D(type, 0, GL_RGBA, s->w, s->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->pixels);
         glGenerateMipmap(GL_TEXTURE_2D);
+        
+        this->W = s->w;
+        this->H = s->h;
+        this->layers = 1;
 }
 
   Texture::Texture(const Texture &t)
@@ -75,6 +83,42 @@ void Texture::raw(SDL_Surface *s, bool set_default)
   {
           glDeleteTextures(1, &texture);
   }
+Texture::Texture(int W, int H, bool d, int layers)
+{
+        const int mipLevelCount = 5;
+
+        this->W = W;
+        this->H = H;
+        this->layers = layers;
+        type = GL_TEXTURE_2D_ARRAY;
+                int err = glGetError();
+        if (err != GL_NO_ERROR)
+                logerr("Texture creation error 0 %d 0x%x",texture,err);
+        glGenTextures(1, &texture);
+        glBindTexture(type,texture);
+        err = glGetError();
+        if (err != GL_NO_ERROR)
+                logerr("Texture creation error 1 %d 0x%x",texture,err);
+        glTextureStorage3D(texture, mipLevelCount, GL_RGBA8, W, H, layers);
+        err = glGetError();
+        if (err != GL_NO_ERROR)
+                logerr("Texture creation error 2 %d 0x%x (%d %d %d)",texture,err,W, H, layers);
+         err = glGetError();
+        if (err != GL_NO_ERROR)
+                logerr("Texture creation error 3 %d 0x%x",texture,err);
+        glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR)
+                logerr("Texture creation error 4 %d 0x%x",texture,err);
+}
 Cubetexture::Cubetexture() : Texture()
 {
         type = GL_TEXTURE_CUBE_MAP;
