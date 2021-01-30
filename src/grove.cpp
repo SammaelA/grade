@@ -33,6 +33,10 @@ GroveRenderer()
             }
         }
         LODs.back().m = m;
+        for (InstancedBranch &b : source->instancedBranches)
+        {
+            add_instance_model(LODs.back(), source, b, i-1);
+        }
     }
 
     LODs.emplace_back();
@@ -49,7 +53,7 @@ GroveRenderer()
     LODs.back().m = m;
     for (InstancedBranch &b : source->instancedBranches)
     {
-        add_instance_model(LODs.back(), source, b);
+        add_instance_model(LODs.back(), source, b,1000);
     }
 }
 GroveRenderer::~GroveRenderer()
@@ -99,13 +103,15 @@ void GroveRenderer::render(int lod, glm::mat4 prc)
         in->render(GL_TRIANGLES);
     }
 }
-void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch)
+void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level)
 {
     Visualizer v = Visualizer();
     Model *m = new Model();
     for (int id : branch.branches)
     {
-        v.packed_branch_to_model(source->instancedCatalogue.get(id), m, false);
+        PackedBranch &b = source->instancedCatalogue.get(id);
+        if (b.level <= up_to_level)
+            v.packed_branch_to_model(b, m, false);
     }
     m->update();
     Instance *in = new Instance(m);

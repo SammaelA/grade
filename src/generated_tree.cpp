@@ -601,7 +601,7 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
         }
         m->scale = glm::vec3(t.params.scale());
         BillboardCloudRaw *cloud = new BillboardCloudRaw(sz, sz);
-        cloud->prepare(t, level);
+        cloud->prepare(t, level, level);
         t.billboardClouds.push_back(cloud);
         sz = sz * 2;
         t.models.push_back(m);
@@ -793,9 +793,11 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
 
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
     grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud = new BillboardCloudRaw(4096, 4096);
-    cloud->prepare(trees[0], cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
-
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096);
+    cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+    grove.clouds.push_back(BillboardCloudData());//main cloud
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096);
+    cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
     {

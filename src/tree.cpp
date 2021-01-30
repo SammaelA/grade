@@ -92,7 +92,7 @@ void Branch::pack(PackedBranch &branch)
 
     branch.joints.clear();
     branch.leaves.clear();
-
+    branch.level = level;
     branch.joints.push_back(PackedJoint(sit->begin, sit->rel_r_begin));
     jit++;
     while (jit != joints.end())

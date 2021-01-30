@@ -260,7 +260,7 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
     }
 }
-void BillboardCloudRaw::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
+void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
 {
     std::map<int, std::vector<glm::mat4>> all_transforms;
     std::vector<Branch> base_branches;
@@ -277,11 +277,20 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clus
         base_branches.back().deep_copy(b, heap, &l_heap);
         base_branches.back().base_seg_n = i;
     }
-    prepare(t, base_branches);
+    prepare(t, branch_level, base_branches);
+    
+    std::map<int,int> proj;
     if (data)
     {
         data->valid = true;
         data->atlas = atlas;
+        data->billboards.clear();
+        for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
+        {
+            proj.emplace(it->first,data->billboards.size());
+            data->billboards.push_back(BillboardCloudData::BillboardData());
+            data->billboards.back().transforms = it->second;
+        }
     }
     for (Billboard &b : billboards)
     {
@@ -294,13 +303,13 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Clusterizer::Cluster> &clus
         instances.push_back(in);
         if (data)
         {
-            data->billboards.push_back(BillboardCloudData::BillboardData());
-            data->billboards.back().billboard = b;
-            data->billboards.back().transforms = all_transforms[b.branch_id];
+            //data->billboards.push_back(BillboardCloudData::BillboardData());
+            data->billboards[proj.at(b.branch_id)].billboards.push_back(b);
+            //data->billboards.back().transforms = all_transforms[b.branch_id];
         }
     }
 }
-void BillboardCloudRaw::prepare(Tree &t, int layer)
+void BillboardCloudRaw::prepare(Tree &t, int branch_level, int layer)
 {
     if (ready)
         return;
@@ -313,14 +322,48 @@ void BillboardCloudRaw::prepare(Tree &t, int layer)
         branches.push_back(Branch());
         branches.back().deep_copy(&b, heap, &l_heap);
     }
-    prepare(t, branches);
+    prepare(t, branch_level, branches);
     ready = true;
 }
-void BillboardCloudRaw::prepare(Tree &t, std::vector<Branch> &branches)
+void expand_branches(std::vector<Branch> &oldb, std::vector<Branch> &newb, int d)
 {
-    if (branches.empty())
+    if (d == 0)
+    {
         return;
-    int layer = branches.front().level;
+    }
+    newb.clear();
+    for (Branch &branch : oldb)
+    {
+        for (Joint &j : branch.joints)
+        {
+            for (Branch *br : j.childBranches)
+            {
+                newb.push_back(*br);
+                newb.back().base_seg_n = branch.base_seg_n;
+            }
+        }
+    }
+    if (d>1)
+        expand_branches(newb, oldb, d-1);
+}
+void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &old_branches)
+{
+    if (old_branches.empty())
+        return;
+    int layer = old_branches.front().level;
+    if (layer > branch_level)
+        return;
+    
+    std::vector<Branch> branches;
+    if (layer < branch_level)
+    {
+        expand_branches(old_branches,branches, branch_level - layer);
+        if (branches.empty())
+            branches = old_branches;
+        layer = branch_level;
+    }
+    else if (layer == branch_level)
+        branches = old_branches;
     std::vector<BillboardBox> billboard_boxes;
     for (Branch &branch : branches)
     {
@@ -363,7 +406,6 @@ void BillboardCloudRaw::prepare(Tree &t, std::vector<Branch> &branches)
     }
     std::sort(projectionData.begin(), projectionData.end(), BPD_comp);
     add_billboards_count = MIN(atlas.layers_count() * cnt * cnt - billboard_boxes.size(), projectionData.size());
-    add_billboards_count = 0;
     int k = 0;
     for (auto &proj : projectionData)
     {
@@ -415,9 +457,12 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
     }
     for (BillboardCloudData::BillboardData &bill : data->billboards)
     {
-        bill.billboard.instancing = true;
         Model *m = new Model();
-        bill.billboard.to_model(m, data->atlas);
+        for (Billboard &b : bill.billboards)
+        {
+            b.instancing = true;
+            b.to_model(m, data->atlas);
+        }
         m->update();
         Instance *in = new Instance(m);
         in->addBuffer(bill.transforms);
@@ -447,7 +492,8 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
         std::function<void(Model *)> _ce = [&](Model *h) {
             for (BillboardCloudData::BillboardData &bill : data->billboards)
             {
-                bill.billboard.to_model(h, data->atlas);
+                for (Billboard &b : bill.billboards)
+                    b.to_model(h, data->atlas);
             }
         };
         cloud->construct(_ce);

@@ -27,7 +27,7 @@ struct BillboardCloudData
 {
     struct BillboardData
     {
-        Billboard billboard;
+        std::vector<Billboard> billboards;
         std::vector<glm::mat4> transforms; 
     };
     bool valid = false;

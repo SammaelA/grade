@@ -25,6 +25,7 @@ struct PackedBranch
 {
     std::vector<PackedJoint> joints;
     std::vector<PackedLeaf> leaves;
+    int level;
 };
 struct BranchCatalogue
 {
@@ -102,7 +103,7 @@ public:
     GroveRenderer();
     ~GroveRenderer();
 private:
-    void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch);
+    void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level);
     std::vector<LOD> LODs;
     Shader renderer;
     Shader rendererInstancing;

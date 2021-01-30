@@ -23,9 +23,9 @@ public:
     BillboardCloudRaw(int tex_w, int tex_h);
     ~BillboardCloudRaw();
     void setup_preparation();
-    void prepare(Tree &t, std::vector<Branch> &branches);
-    void prepare(Tree &t, int layer);
-    void prepare(Tree &t, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data = nullptr);
+    void prepare(Tree &t, int branch_level, std::vector<Branch> &branches);
+    void prepare(Tree &t, int branch_level, int layer);
+    void prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data = nullptr);
     void render(glm::mat4 &projectionCamera);
     void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
