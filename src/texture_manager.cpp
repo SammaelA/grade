@@ -12,7 +12,7 @@ Texture TextureManager::get(std::string name)
 }
 TextureManager::TextureManager()
 {
-    Texture t;
+    Texture t(false);
     textures.emplace("empty",t);
 }
 TextureManager::TextureManager(std::string base_path)

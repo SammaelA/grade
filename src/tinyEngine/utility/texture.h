@@ -9,7 +9,7 @@ class Texture
 {
   friend class TextureManager;
 public:
-  GLuint texture;               //Texture int (OpenGL: everything is an int!)
+  GLuint texture = ~0;               //Texture int (OpenGL: everything is an int!)
   GLenum type = GL_TEXTURE_2D;  //Texture type (default is this)
   void set_default_paramaters(Texture *tex);
   void bind();
@@ -22,6 +22,7 @@ protected:
   int W,H,layers;
   void clear();
   Texture();
+  Texture(bool empty) {texture = ~0;}
   Texture(SDL_Surface* s);
   Texture(int W, int H, bool d = false);
   Texture(int W, int H, bool d, int layers);
