@@ -27,7 +27,11 @@ int treecount = 0;
 int cloudnum = 1;
 bool draw_clusterized = true;
 int cur_tree = 0;
+const int DEBUG_RENDER_MODE = -2;
+const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
 int render_mode = -1;
+int debug_tex = 0;
+int debug_layer = 0;
 Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer *debugVisualizer = nullptr;
@@ -129,8 +133,27 @@ std::function<void()> eventHandler = [&]() {
   {
     render_mode++;
     if (render_mode > DebugVisualizer::MAX_RENDER_MODE)
-      render_mode = -1;
+      render_mode = ARRAY_TEX_DEBUG_RENDER_MODE;
     Tiny::event.active[SDLK_m] = false;
+    logerr("render mode %d",render_mode);
+  }
+  if (Tiny::event.active[SDLK_n])
+  {
+    if (render_mode <= DEBUG_RENDER_MODE)
+      debug_tex++;
+    Tiny::event.active[SDLK_n] = false;
+  }
+  if (Tiny::event.active[SDLK_b])
+  {
+    if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
+      debug_layer++;
+    Tiny::event.active[SDLK_b] = false;
+  }
+    if (Tiny::event.active[SDLK_v])
+  {
+    if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
+      debug_layer--;
+    Tiny::event.active[SDLK_v] = false;
   }
   if (!Tiny::event.press.empty())
   {
@@ -153,7 +176,7 @@ std::function<void(Model *m)> construct_floor = [&](Model *h) {
       0.0,
       100.0,
   };
-
+  float colors[8] = {0,0,0,1,1,0,1,1};
   for (int i = 0; i < 12; i++)
     h->positions.push_back(floor[i]);
 
@@ -173,9 +196,9 @@ std::function<void(Model *m)> construct_floor = [&](Model *h) {
     h->normals.push_back(1.0);
     h->normals.push_back(0.0);
 
-    h->colors.push_back(floorcolor.x);
-    h->colors.push_back(floorcolor.y);
-    h->colors.push_back(floorcolor.z);
+    h->colors.push_back(colors[2*i]);
+    h->colors.push_back(colors[2*i + 1]);
+    h->colors.push_back(0.0);
     h->colors.push_back(1.0);
   }
 };
@@ -204,6 +227,7 @@ int main(int argc, char *args[])
   Shader particleShader({"particle.vs", "particle.fs"}, {"in_Quad", "in_Tex", "in_Model"});
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
+  Shader debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
@@ -221,39 +245,68 @@ int main(int argc, char *args[])
       //	}
     }
     Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-    defaultShader.use();
-    defaultShader.uniform("projectionCamera", projection * camera.camera());
-    defaultShader.uniform("lightcolor", glm::vec3(1, 1, 1));
-    defaultShader.uniform("lookDir", camera.front);
-    defaultShader.uniform("lightDir", lightpos);
-
-    defaultShader.uniform("drawshadow", drawshadow);
-    if (drawshadow)
+    if (render_mode <= DEBUG_RENDER_MODE)
     {
-      defaultShader.uniform("dbvp", bias * lproj * lview);
-      defaultShader.texture("shadowMap", shadow.depth);
-      defaultShader.uniform("light", lightpos);
-    }
-
-    defaultShader.uniform("drawfloor", true);
-    defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0], floor.colors[1], floor.colors[2], 1));
-    defaultShader.uniform("model", floor.model);
-    floor.render(GL_TRIANGLES);
-    if (draw_clusterized)
-    {
-      groveRenderer.render(cloudnum, projection * camera.camera());
+      debugShader.use();
+      debugShader.uniform("projectionCamera", projection * camera.camera());
+      if (render_mode == DEBUG_RENDER_MODE)
+      {
+        debugShader.texture("tex", textureManager.get(debug_tex));
+        debugShader.texture("tex_arr", textureManager.get(debug_tex));
+        debugShader.uniform("need_tex",true);
+        debugShader.uniform("need_arr_tex",false);
+        debugShader.uniform("need_coord",false);
+        debugShader.uniform("slice",0);
+      }
+      else if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
+      {
+        debugShader.texture("tex", textureManager.get_arr(debug_tex));
+        debugShader.texture("tex_arr", textureManager.get_arr(debug_tex));
+        debugShader.uniform("need_tex",false);
+        debugShader.uniform("need_arr_tex",true);
+        debugShader.uniform("need_coord",false);
+        debugShader.uniform("slice", debug_layer);
+      }
+      debugShader.uniform("model", floor.model);
+      floor.render(GL_TRIANGLES);
     }
     else
     {
-      defaultShader.uniform("drawfloor", false);
-      defaultShader.texture("tex", wood);
-      defaultShader.uniform("wireframe", false);
-      glm::mat4 prc = projection * camera.camera();
-      for (int i = 0; i < treecount; i++)
+      defaultShader.use();
+      defaultShader.uniform("mult", 0);
+      defaultShader.uniform("projectionCamera", projection * camera.camera());
+      defaultShader.uniform("lightcolor", glm::vec3(1, 1, 1));
+      defaultShader.uniform("lookDir", camera.front);
+      defaultShader.uniform("lightDir", lightpos);
+
+      defaultShader.uniform("drawshadow", drawshadow);
+      if (drawshadow)
       {
-        t[i].render(defaultShader, cloudnum, prc);
+        defaultShader.uniform("dbvp", bias * lproj * lview);
+        defaultShader.texture("shadowMap", shadow.depth);
+        defaultShader.uniform("light", lightpos);
       }
-      debugVisualizer->render(prc,render_mode);
+
+      defaultShader.uniform("drawfloor", true);
+      defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0], floor.colors[1], floor.colors[2], 1));
+      defaultShader.uniform("model", floor.model);
+      floor.render(GL_TRIANGLES);
+      if (draw_clusterized)
+      {
+        groveRenderer.render(cloudnum, projection * camera.camera());
+      }
+      else
+      {
+        defaultShader.uniform("drawfloor", false);
+        defaultShader.texture("tex", wood);
+        defaultShader.uniform("wireframe", false);
+        glm::mat4 prc = projection * camera.camera();
+        for (int i = 0; i < treecount; i++)
+        {
+          t[i].render(defaultShader, cloudnum, prc);
+        }
+        debugVisualizer->render(prc,render_mode);
+      }
     }
   };
 

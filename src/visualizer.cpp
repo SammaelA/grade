@@ -628,7 +628,9 @@ void DebugVisualizer::render(glm::mat4 view_proj, int mode)
     {
         debugShader.use();
         debugShader.uniform("projectionCamera", view_proj);
-
+        debugShader.uniform("need_tex",false);
+        debugShader.uniform("need_arr_tex",false);
+        debugShader.uniform("need_coord",true);
         for (int i = 0; i < debugModels.size(); i++)
         {
             if (currentModes[i] != 2)

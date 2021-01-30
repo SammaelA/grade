@@ -10,6 +10,28 @@ Texture TextureManager::get(std::string name)
     else
         return textures.at(name);
 }
+Texture TextureManager::get(int n)
+{
+    n = n % textures.size();
+    int i =0;
+    for (auto it = textures.begin(); it != textures.end(); it++)
+    {
+        if (i == n)
+            return it->second;
+        i++;
+    }
+}
+Texture TextureManager::get_arr(int n)
+{
+    n = n % unnamed_array_textures.size();
+    int i =0;
+    for (auto it = unnamed_array_textures.begin(); it != unnamed_array_textures.end(); it++)
+    {
+        if (i == n)
+            return it->second;
+        i++;
+    }
+}
 TextureManager::TextureManager()
 {
     Texture t(false);
@@ -43,10 +65,10 @@ Texture TextureManager::create_unnamed(int w, int h, bool shadow)
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
-Texture TextureManager::create_unnamed(int w, int h, bool shadow, int layers)
+Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int layers)
 {
     Texture t(w,h,shadow,layers);
-    unnamed_textures.emplace(t.texture,t);
+    unnamed_array_textures.emplace(t.texture,t);
     return t;
 }
 Texture TextureManager::create_unnamed(SDL_Surface *s)

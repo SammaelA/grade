@@ -53,7 +53,7 @@ colorTex(atlas.colorTex)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h, int l) : colorTex(textureManager.create_unnamed(w, h, false, l)),
+TextureAtlas::TextureAtlas(int w, int h, int l) : colorTex(textureManager.create_unnamed_array(w, h, false, l)),
                                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
