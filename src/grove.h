@@ -81,6 +81,7 @@ struct InstancedBranch
 };
 struct GrovePacked
 {
+    glm::vec3 center;
     std::vector<BranchStructure> roots;
     BranchCatalogue instancedCatalogue;
     BranchCatalogue uniqueCatalogue;
@@ -97,13 +98,16 @@ public:
         Model *m;
         BillboardCloudRenderer *cloud;
         std::vector<Instance *> instances;
+        std::vector<Instance *> leaves_instances;
+        float max_dist;
     };
-    void render(int lod, glm::mat4 prc);
-    GroveRenderer(GrovePacked *_source, int LODs_count);
+    void render(int lod, glm::mat4 prc, glm::vec3 camera_pos);
+    void render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos);
+    GroveRenderer(GrovePacked *_source, int LODs_count, std::vector<float> &max_distances);
     GroveRenderer();
     ~GroveRenderer();
 private:
-    void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level);
+    void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
     std::vector<LOD> LODs;
     Shader renderer;
     Shader rendererInstancing;

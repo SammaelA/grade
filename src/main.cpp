@@ -52,7 +52,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 2;
+  treecount = 15;
   TreeStructureParameters params;
   srand(time(NULL));
   float bp[] = {0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10};
@@ -100,7 +100,8 @@ std::function<void()> eventHandler = [&]() {
     camera.pos += speed * camera.up;
   if (Tiny::event.active[SDLK_c])
     camera.pos -= speed * camera.up;
-
+  if (Tiny::event.active[SDLK_y])
+    cloudnum = -1;
   if (Tiny::event.active[SDLK_u])
     cloudnum = 0;
   if (Tiny::event.active[SDLK_i])
@@ -231,7 +232,8 @@ int main(int argc, char *args[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
-  GroveRenderer groveRenderer = GroveRenderer(&grove, 2);
+  std::vector<float> LODs_dists = {500,200,150,100};
+  GroveRenderer groveRenderer = GroveRenderer(&grove, 4, LODs_dists);
   GR = &groveRenderer;
   Tiny::view.pipeline = [&]() {
     shadow.target();
@@ -293,7 +295,7 @@ int main(int argc, char *args[])
       floor.render(GL_TRIANGLES);
       if (draw_clusterized)
       {
-        groveRenderer.render(cloudnum, projection * camera.camera());
+        groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos);
       }
       else
       {

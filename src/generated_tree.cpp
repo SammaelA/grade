@@ -778,7 +778,7 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
         trees[i].wood = wood;
         trees[i].leaf = leaf;
     }
-
+    grove.center = glm::vec3(0,0,0);
     create_grove(trees, count, debug);
 
     for (int i = 0; i < count; i++)
@@ -790,8 +790,12 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     Clusterizer cl;
     cl.set_branches(trees, count, 1, voxels);
     cl.visualize_clusters(debug, false);
-
+    Clusterizer cl2;
+    cl2.set_branches(trees, count, 0, voxels);
+    cl2.visualize_clusters(debug, false);
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
+    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048);
+    cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
     BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096);
     cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());

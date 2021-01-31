@@ -15,6 +15,7 @@ public:
     void add_branch_layer(Tree &t, int layer, Model *m);
     void recursive_branch_to_model(Branch &b, Model *m, bool leaves);
     void leaf_to_model(Leaf &l, Model *m);
+    void packed_leaf_to_model(PackedLeaf &l, Model *m);
     void branch_to_model(Branch &b, Model *m, bool leaves);
     void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves);
     void set_params(TreeStructureParameters &params) { curParams = params; }
