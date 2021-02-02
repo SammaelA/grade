@@ -98,6 +98,7 @@ void Branch::pack(PackedBranch &branch)
     branch.type_id = type_id;
     branch.joints.push_back(PackedJoint(sit->begin, sit->rel_r_begin));
     jit++;
+    bool has_deforms = false;
     while (jit != joints.end())
     {
         PackedLeaf l;
@@ -107,8 +108,14 @@ void Branch::pack(PackedBranch &branch)
         }
         branch.joints.push_back(PackedJoint(sit->end, sit->rel_r_end));
         branch.leaves.push_back(l);
+        branch.r_mults.push_back(sit->mults);
+        has_deforms = has_deforms || !sit->mults.empty();
         jit++;
         sit++;
+    }
+    if (!has_deforms)
+    {
+        branch.r_mults.clear();
     }
 }
 TreeTypeData::TreeTypeData(int id, TreeStructureParameters _params, std::string wood_tex_name, std::string leaf_tex_name):

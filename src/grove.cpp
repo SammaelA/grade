@@ -68,6 +68,26 @@ GroveRenderer()
     {
         add_instance_model(LODs.back(), source, b,1000,true);
     }
+
+    LODs.emplace_back();
+    LODs.back().cloud = nullptr;
+    LODs.back().max_dist = max_distances[LODs_count - 1];
+
+    for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
+    {
+        auto packed_branches = source->uniqueCatalogue.get_level(j);
+        for (PackedBranch &pb : packed_branches)
+        {
+            Model *m = new Model();
+            v.packed_branch_to_model(pb, m, false);
+            LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
+        }
+    }
+
+    for (InstancedBranch &b : source->instancedBranches)
+    {
+        add_instance_model(LODs.back(), source, b,1000,false);
+    }
 }
 GroveRenderer::~GroveRenderer()
 {

@@ -153,6 +153,9 @@ struct TreeStructureParameters
     Parameter<float> max_branching_chance;
     Parameter<float> branching_power;
 
+    Parameter<int> r_deformation_levels;
+    Parameter<int> r_deformation_points;
+    Parameter<float> r_deformation_power;
     void set_state(int state)
     {
         max_depth.set_state(state);
@@ -196,6 +199,10 @@ struct TreeStructureParameters
         min_branching_chance.set_state(state);
         max_branching_chance.set_state(state);
         branching_power.set_state(state);
+
+        r_deformation_levels.set_state(state);
+        r_deformation_points.set_state(state);
+        r_deformation_power.set_state(state);
     }
 
     TreeStructureParameters() : max_depth(4),
@@ -238,7 +245,10 @@ struct TreeStructureParameters
 
                                 min_branching_chance(0, std::vector<float>{-0.3, 0.1, 0.5, 0.75, 0.7}),
                                 max_branching_chance(1),
-                                branching_power(0.5, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4})
+                                branching_power(0.5, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4}),
+                                r_deformation_levels(2),
+                                r_deformation_points(0,std::vector<int>{8,3}),
+                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, new Normal(0,0.1))
     {
     }
 };

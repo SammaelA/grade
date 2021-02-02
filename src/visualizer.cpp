@@ -75,7 +75,22 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m)
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+float get_r(float phi, std::vector<float> &mults)
+{
+    if (mults.empty())
+        return 1;
+    else 
+    {
+        int b = (int)(phi/(2*PI)*mults.size());
+        float q = phi/(2*PI)*mults.size() - b;
+
+        return (1-q)*mults[b % mults.size()] + q*mults[(b + 1) % mults.size()];
+    }
+
+
+}
+void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
+                          float rel_ring_pos, std::vector<float> &mults)
 {
     sv.ringsize = ring_size;
     dir = glm::normalize(dir);
@@ -91,7 +106,7 @@ void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, Segmen
     for (int i = 0; i < ring_size; i++)
     {
         VertexData vd;
-        vd.pos = start + radius * glm::vec3(n.x, n.y, n.z);
+        vd.pos = start + radius*get_r( i*2*PI/ring_size,mults) * glm::vec3(n.x, n.y, n.z);
         vd.normal = n;
         vd.tex_coord.x = ((float)i) / ring_size;
         vd.tex_coord.y = rel_ring_pos;
@@ -105,7 +120,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
     glm::vec3 start = s.begin;
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
-    get_ring(start, dir, s.rel_r_begin, sv, ring_size, rel_ring_pos);
+    get_ring(start, dir, s.rel_r_begin, sv, ring_size, rel_ring_pos,s.mults);
 }
 void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
 {
@@ -114,7 +129,7 @@ void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
     std::vector<VertexData> data = sv.bigRing;
-    get_ring(end, dir, s.rel_r_end, sv, ring_size, rel_ring_pos);
+    get_ring(end, dir, s.rel_r_end, sv, ring_size, rel_ring_pos,s.mults);
     sv.smallRing = sv.bigRing;
     sv.bigRing = data;
 }
@@ -352,6 +367,7 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
         if (b.joints.size() < 2)
             return;
         std::vector<SegmentVertexes> vets;
+        std::vector<float> empty_mults;
         int i = 0;
         int ringsize = MAX(3,2*(4 - b.level)*(4 - b.level));
         glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
@@ -360,7 +376,8 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
             if (i != 0)
                 dir = b.joints[i].pos - b.joints[i - 1].pos;
             SegmentVertexes vt;
-            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3);
+            std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
+            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3, mults);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);

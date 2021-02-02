@@ -155,6 +155,24 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
     s.begin = pos;
     s.end = s.begin + len * dir;
     set_seg_r(base, s);
+    if (base->level < curParams.r_deformation_levels())
+    {
+        int deforms = curParams.r_deformation_points();
+        if (base->segments.empty() || base->segments.back().mults.size() != deforms)
+            s.mults = std::vector<float>(deforms,1);
+        else
+        {
+            s.mults = base->segments.back().mults;
+        }
+        
+        for (int i=0;i<deforms;i++)
+        {
+            float k = curParams.r_deformation_power();
+            k = k > 0 ? 1 + k : 1/(1-k);
+            s.mults[i] *= k;
+            logerr("set seg mult %f (%f*%f)",s.mults[i],k,s.mults[i]/k);
+        }
+    }
     Joint j;
     j.pos = s.end;
     base->segments.push_back(s);

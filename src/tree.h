@@ -19,12 +19,11 @@ struct LeafHeap;
 
 struct Segment
 {
-    Joint *next;
     glm::vec3 begin;
     glm::vec3 end;
     float rel_r_begin;
     float rel_r_end;
-    Mark *mark = nullptr;
+    std::vector<float> mults;
 };
 struct Joint
 {

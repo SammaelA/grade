@@ -53,7 +53,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 5;
+  treecount = 1;
   TreeStructureParameters params1,params2,params3;
   params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
   params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
@@ -120,6 +120,8 @@ std::function<void()> eventHandler = [&]() {
     cloudnum = 2;
   if (Tiny::event.active[SDLK_p])
     cloudnum = 3;
+  if (Tiny::event.active[SDLK_LEFTBRACKET])
+    cloudnum = 4;
   if (Tiny::event.active[SDLK_k])
   {
     draw_clusterized = true;

@@ -26,6 +26,7 @@ struct PackedBranch
 {
     std::vector<PackedJoint> joints;
     std::vector<PackedLeaf> leaves;
+    std::vector<std::vector<float>> r_mults;
     int level;
     uint type_id;
 };
