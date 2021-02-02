@@ -6,6 +6,7 @@
 #include "tinyEngine/utility.h"
 #include "billboard_cloud_data.h"
 class BillboardCloudRenderer;
+class GroveGenerationData;
 struct PackedLeaf
 {
     std::vector<glm::vec3> edges;
@@ -26,6 +27,7 @@ struct PackedBranch
     std::vector<PackedJoint> joints;
     std::vector<PackedLeaf> leaves;
     int level;
+    uint type_id;
 };
 struct BranchCatalogue
 {
@@ -95,15 +97,15 @@ class GroveRenderer
 public:
     struct LOD
     {
-        Model *m;
+        std::vector<std::pair<uint,Model *>> models;
         BillboardCloudRenderer *cloud;
-        std::vector<Instance *> instances;
-        std::vector<Instance *> leaves_instances;
+        std::vector<std::pair<uint,Instance *>> instances;
+        std::vector<std::pair<uint,Instance *>> leaves_instances;
         float max_dist;
     };
     void render(int lod, glm::mat4 prc, glm::vec3 camera_pos);
     void render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos);
-    GroveRenderer(GrovePacked *_source, int LODs_count, std::vector<float> &max_distances);
+    GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances);
     GroveRenderer();
     ~GroveRenderer();
 private:
@@ -112,6 +114,5 @@ private:
     Shader renderer;
     Shader rendererInstancing;
     GrovePacked *source;
-    Texture wood;
-    Texture leaf;
+    GroveGenerationData *ggd;
 };

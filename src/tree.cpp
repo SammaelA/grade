@@ -21,6 +21,8 @@ Tree::~Tree()
 void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
     level = b->level;
+    id = b->id;
+    type_id = b->type_id;
     base_seg_n = b->base_seg_n;
     max_seg_count = b->max_seg_count;
     light = b->light;
@@ -93,6 +95,7 @@ void Branch::pack(PackedBranch &branch)
     branch.joints.clear();
     branch.leaves.clear();
     branch.level = level;
+    branch.type_id = type_id;
     branch.joints.push_back(PackedJoint(sit->begin, sit->rel_r_begin));
     jit++;
     while (jit != joints.end())
@@ -107,4 +110,11 @@ void Branch::pack(PackedBranch &branch)
         jit++;
         sit++;
     }
+}
+TreeTypeData::TreeTypeData(int id, TreeStructureParameters _params, std::string wood_tex_name, std::string leaf_tex_name):
+wood(textureManager.get(wood_tex_name)),
+leaf(textureManager.get(leaf_tex_name))
+{
+    type_id = id;
+    params = _params;
 }

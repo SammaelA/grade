@@ -12,13 +12,15 @@
 
 using namespace glm;
 #define TEX_ATLAS_LAYERS 4
-BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h) : atlas(tex_w, tex_h,TEX_ATLAS_LAYERS),
+BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeData> &_ttd): 
+                                                       atlas(tex_w, tex_h,TEX_ATLAS_LAYERS),
                                                        wood(textureManager.empty()),
                                                        rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
                                                                                    {"in_Position", "in_Normal", "in_Tex", "in_Model"})
 {
+    ttd = _ttd;
     cloud = new Model();
 }
 BillboardCloudRaw::~BillboardCloudRaw()
@@ -55,7 +57,7 @@ float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
     }
     return err;
 }
-void BillboardCloudRaw::create_billboard(Tree &t, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
+void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
 {
     if (num < 0)
     {
@@ -81,13 +83,13 @@ void BillboardCloudRaw::create_billboard(Tree &t, Branch *branch, BBox &min_bbox
     rendererToTexture.use();
 
     bm.construct(_c_wood);
-    rendererToTexture.texture("tex", t.wood);
+    rendererToTexture.texture("tex", ttd.wood);
     rendererToTexture.uniform("model", bm.model);
     rendererToTexture.uniform("projectionCamera", result);
     bm.render(GL_TRIANGLES);
 
     bm.construct(_c_leaves);
-    rendererToTexture.texture("tex", t.leaf);
+    rendererToTexture.texture("tex", ttd.leaf);
     rendererToTexture.uniform("model", bm.model);
     rendererToTexture.uniform("projectionCamera", result);
     bm.render(GL_TRIANGLES);
@@ -437,7 +439,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
             p.base_joint = proj;
             b.branch_id = parent_billboard.branch_id;
         }
-        create_billboard(t, p.b, p.min_bbox, tg, num, b);
+        create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b);
     }
     logerr("created %d billboards\n", billboard_boxes.size());
     glGenerateTextureMipmap(atlas.tex().texture);

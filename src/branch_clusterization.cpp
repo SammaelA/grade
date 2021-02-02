@@ -319,6 +319,8 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
 {
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
+    if (b1->type_id != b2->type_id || b1->dead != b2->dead)
+        return Answer(true,1000,1000);
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
     std::vector<float> matches(joint_counts.size());

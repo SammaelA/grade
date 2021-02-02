@@ -40,9 +40,9 @@ TextureManager::TextureManager()
 TextureManager::TextureManager(std::string base_path)
 {
     image::base_img_path = base_path;
-    std::vector<std::string> names = {"leaf","wood","texture not found"};
-    std::vector<std::string> paths = {"leaf_2.png","bark-1.jpg","bark-1.jpg"};
-    for (int i=0;i<3;i++)
+    std::vector<std::string> names = {"leaf1","leaf2","leaf","wood","wood2","wood3","texture not found"};
+    std::vector<std::string> paths = {"leaf1.png","leaf2.png","leaf4.png","wood1.jpg","wood2.jpg","wood3.jpg","texture_not_found.png"};
+    for (int i=0;i<paths.size();i++)
     {
         try
         {

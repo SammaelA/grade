@@ -90,6 +90,7 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     nb->level = b->level + 1;
     nb->max_seg_count = curParams.max_segments();
     nb->base_r = curParams.base_r();
+    nb->type_id = b->type_id;
     Joint nj;
     nj.pos = j.pos;
     new_joint(nb, nj);
@@ -505,7 +506,6 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     t.voxels = voxels;
     glm::vec3 sun_dir(-1, -1, -1);
     t.params = params;
-    //voxels->set_directed_light(sun_dir,1.0);
     LeafHeap *lh = new LeafHeap();
     t.leaves = lh;
     for (int i = 0; i < params.max_depth(); i++)
@@ -519,6 +519,7 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     root->max_seg_count = curParams.max_segments();
     root->base_seg_n = 0;
     root->base_r = curParams.base_r();
+    root->type_id = t.type ? t.type->type_id : 0;
     Joint j1, j2;
     Segment ts;
     j1.pos = t.pos;
@@ -600,13 +601,13 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
             }
         }
         m->scale = glm::vec3(t.params.scale());
-        BillboardCloudRaw *cloud = new BillboardCloudRaw(sz, sz);
+        BillboardCloudRaw *cloud = new BillboardCloudRaw(sz, sz, curGgd.types);
         cloud->prepare(t, level, level);
         t.billboardClouds.push_back(cloud);
         sz = sz * 2;
         t.models.push_back(m);
     }
-    BillboardCloudRaw *cloud = new BillboardCloudRaw(1, 1);
+    BillboardCloudRaw *cloud = new BillboardCloudRaw(1, 1, curGgd.types);
     Model *m = new Model();
     for (int i = 0; i < t.branchHeaps.size(); i++)
     {
@@ -677,7 +678,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
         //phi = 2 * PI * i / 10.0f;
         glm::vec3 pos = glm::vec3(R * cos(phi), 1, R * sin(phi));
         trees[i].pos = pos;
-        plant_tree(trees[i], params);
+        plant_tree(trees[i], trees[i].params);
         for (int j = 0; j <= i; j++)
         {
             for (int k = 0; k < 10; k++)
@@ -794,13 +795,13 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     cl2.set_branches(trees, count, 0, voxels);
     cl2.visualize_clusters(debug, false);
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048);
+    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048, curGgd.types);
     cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096);
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096, curGgd.types);
     cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096);
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096, curGgd.types);
     cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
@@ -826,4 +827,63 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     //Ellipsoid el = Ellipsoid(glm::vec3(0,200,0),glm::mat3(1.0f),25);
     //Body *bptr = &b;
     //debug.add_bodies(bptr,1);
+}
+void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
+{
+    curGgd = ggd;
+    int count = ggd.trees_count;
+    for (int i = 0; i < count; i++)
+    {
+        int k = i % ggd.types.size();
+        auto &type = ggd.types[k];
+        trees[i] = Tree();
+        trees[i].type = &(ggd.types[k]);
+        trees[i].params = type.params;
+        trees[i].wood = type.wood;
+        trees[i].leaf = type.leaf;
+    }
+    grove.center = glm::vec3(0,0,0);
+    create_grove(trees, count, debug);
+
+    for (int i = 0; i < count; i++)
+    {
+        debug.set_params(trees[i].params);
+        tree_to_model(trees[i], false, debug);
+    }
+
+    Clusterizer cl;
+    cl.set_branches(trees, count, 1, voxels);
+    cl.visualize_clusters(debug, false);
+    Clusterizer cl2;
+    cl2.set_branches(trees, count, 0, voxels);
+    cl2.visualize_clusters(debug, false);
+    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
+    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048, curGgd.types);
+    cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
+    grove.clouds.push_back(BillboardCloudData());//main cloud
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096, curGgd.types);
+    cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+    grove.clouds.push_back(BillboardCloudData());//main cloud
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096, curGgd.types);
+    cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+    std::vector<BranchStructure> instanced_structures;
+    for (int i = 0; i < count; i++)
+    {
+        pack_tree(trees[i], grove, 0);
+    }
+    for (int c_num : cl.Ddg.current_clusters)
+    {
+        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures);
+    }
+    for (int i = 0; i < count; i++)
+    {
+        grove.roots.push_back(BranchStructure());
+        pack_structure(trees[i].root,grove,grove.roots.back(),instanced_structures);
+    }
+
+    delete(voxels);
+    for (int i = 0; i < count; i++)
+    {
+        trees[i].voxels = nullptr;
+    }
 }

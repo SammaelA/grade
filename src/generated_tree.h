@@ -14,19 +14,15 @@ class TreeGenerator
 {
 public:
     TreeGenerator(Tree &t) : curTree(t), curParams(){};
-    bool random_tree(Tree &t);
-    void plant_tree(Tree &t, TreeStructureParameters params);
-    void grow_tree(Tree &t);
-    void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
-    void create_grove(Tree *trees, int count, DebugVisualizer &debug);
-    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove);
-    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
+    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
+
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;
     Branch *test;
     TreeStructureParameters curParams;
     LightVoxelsCube *voxels;
+    GroveGenerationData curGgd;
     void grow_branch(Branch *b, float feed);
     void new_joint(Branch *b, Joint &j);
     void try_new_branch(Branch *base, Joint &j, Segment &s, bool from_end);
@@ -49,5 +45,14 @@ public:
     glm::vec3 get_optimal_segment_growth_direction(float &quality, Branch *base);
     void calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, glm::vec3 sizes, glm::vec3 prev_dir, glm::vec4 plane,
                             float dir_cons, float plane_cons, float rnd, float spread, float up, float to_light);
+    
+    private:
+    bool random_tree(Tree &t);
+    void plant_tree(Tree &t, TreeStructureParameters params);
+    void grow_tree(Tree &t);
+    void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
+    void create_grove(Tree *trees, int count, DebugVisualizer &debug);
+    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove);
+    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
 
 };

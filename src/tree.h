@@ -47,6 +47,7 @@ struct Joint
 struct Branch
 {
     int id = 0;
+    uint type_id = 0;
     int level;
     int base_seg_n;
     int max_seg_count;
@@ -100,6 +101,16 @@ struct TreeStructure
 struct TreeData
 {
 };
+struct TreeTypeData
+{
+    TreeTypeData(int id, TreeStructureParameters params, std::string wood_tex_name, std::string leaf_tex_name);
+    int type_id;
+    TreeStructureParameters params;
+    Texture wood;
+    Texture leaf;
+    std::vector<Texture> additional_textures;
+
+};
 struct Tree
 {
     std::vector<BranchHeap *> branchHeaps;
@@ -109,6 +120,7 @@ struct Tree
     Branch *root= nullptr;
     int iter = 0;
     uint id = 0;
+    TreeTypeData *type = nullptr;
     LightVoxelsCube *voxels= nullptr;
     Texture wood;
     Texture leaf;
@@ -117,6 +129,14 @@ struct Tree
     void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
     Tree();
     ~Tree();
+};
+struct GroveGenerationData
+{
+    std::vector<TreeTypeData> types;
+    int trees_count;
+    glm::vec3 pos;
+    glm::vec2 size;
+    std::vector<Body *> obstacles;
 };
 struct VertexData
 {

@@ -22,6 +22,17 @@ public:
         this->baseValue = baseValue;
         randomnessLevel = NO_RANDOM;
     }
+    Parameter &operator=(const Parameter &par)
+    {
+        baseValue = par.baseValue;
+        randomValue = par.randomValue;
+        maxValue = par.maxValue;
+        minValue = par.minValue;
+        stateParams = par.stateParams;
+        state = par.state;
+        randomizer = par.randomizer;
+        randomnessLevel = par.randomnessLevel;
+    }
     T get()
     {
         if (randomnessLevel == NO_RANDOM)

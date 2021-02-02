@@ -36,6 +36,7 @@ Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
+GroveGenerationData ggd;
 BillboardCloudRaw::RenderMode mode = BillboardCloudRaw::ONLY_SINGLE;
 glm::vec2 mousePos = glm::vec2(-1, -1);
 glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
@@ -52,11 +53,20 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 15;
-  TreeStructureParameters params;
+  treecount = 5;
+  TreeStructureParameters params1,params2,params3;
+  params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
+  params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
+  params2.base_branch_feed = Parameter<float>(300, std::vector<float>{20, 30, 200, 40, 40}, REGENERATE_ON_GET, new Uniform(-00, 00));
+  params2.min_branching_chance = Parameter<float>(0, std::vector<float>{1, 0.4, 0.5, 0.75, 0.7});
+  TreeTypeData ttd1(0,params1,std::string("wood"),std::string("leaf"));
+  TreeTypeData ttd2(1,params2,std::string("wood2"),std::string("leaf2"));
+  TreeTypeData ttd3(2,params3,std::string("wood3"),std::string("leaf2"));
+  ggd.pos = glm::vec3(0,0,0);
+  ggd.trees_count = treecount;
+  ggd.types = {ttd1,ttd2,ttd3};
   srand(time(NULL));
-  float bp[] = {0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10};
-  gen.create_grove(params, treecount, grove, *debugVisualizer, t);
+  gen.create_grove(ggd, grove, *debugVisualizer, t);
 }
 
 // Event Handler
@@ -165,13 +175,13 @@ std::function<void()> eventHandler = [&]() {
 std::function<void(Model *m)> construct_floor = [&](Model *h) {
   float floor[12] = {
       -100.0,
-      10.0,
+      0.0,
       -100.0,
       -100.0,
       0.0,
       100.0,
       100.0,
-      10.0,
+      0.0,
       -100.0,
       100.0,
       0.0,
@@ -233,7 +243,7 @@ int main(int argc, char *args[])
   debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
   std::vector<float> LODs_dists = {500,200,150,100};
-  GroveRenderer groveRenderer = GroveRenderer(&grove, 4, LODs_dists);
+  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
   GR = &groveRenderer;
   Tiny::view.pipeline = [&]() {
     shadow.target();
