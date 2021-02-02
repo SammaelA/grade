@@ -7,14 +7,14 @@
 void print_FB_status(GLuint status)
 {
     if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-        logerr("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
     else if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS)
-        logerr("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
     else if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-        logerr("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
     else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
-        logerr("GL_FRAMEBUFFER_UNSUPPORTED");
-    else  logerr("GL_FRAMEBUFFER_INCOMPLETE %#010x",status);
+        debugl(9,"GL_FRAMEBUFFER_UNSUPPORTED");
+    else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x",status);
 }
 TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
                               mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
@@ -27,7 +27,6 @@ TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-        std::cout << "Framebuffer Incomplete1" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -49,7 +48,6 @@ colorTex(atlas.colorTex)
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-        std::cout << "Framebuffer Incomplete2" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -66,7 +64,6 @@ TextureAtlas::TextureAtlas(int w, int h, int l) : colorTex(textureManager.create
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-        std::cout << "Framebuffer Incomplete3" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

@@ -4,7 +4,19 @@
 #include "volumetric_occlusion.h"
 #include <vector>
 #include <map>
-#define BWD_ROTATIONS 100
+struct ClusterizationParams
+{
+    int bwd_rotations = 18;
+    float delta = 0.2;
+    float light_importance = 0.4;
+    float voxels_size_mult = 1/2.5;
+    int ignore_structure_level = 1000;
+    int min_clusters = 1;
+    float max_individual_dist = 0.95;
+    std::vector<float> weights = std::vector<float>{5000,800,40,1,0.01};
+    std::vector<float> light_weights = std::vector<float>{5000,800,40,1,0.01};
+};
+extern ClusterizationParams clusterizationParams;
 class Clusterizer
 {
 public:
@@ -65,7 +77,7 @@ public:
         float rot_angle = 0.0;
         std::vector<int> joint_counts;
         glm::mat4 transform;
-        LightVoxelsCube *leavesDensity[BWD_ROTATIONS];
+        std::vector<LightVoxelsCube *> leavesDensity;
         void set_occlusion(Branch *b, LightVoxelsCube *light)
         {
             for (Joint &j : b->joints)
@@ -90,12 +102,22 @@ public:
                 calc_joints_count(b, joint_counts);
 
             glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/BWD_ROTATIONS, axis);
-            for (int i=0;i<BWD_ROTATIONS;i++)
+            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/clusterizationParams.bwd_rotations, axis);
+
+            for (int i=0;i<clusterizationParams.bwd_rotations;i++)
             {
                 b->transform(rot);
-                leavesDensity[i] = new LightVoxelsCube(glm::vec3(50,10,10),glm::vec3(51,11,11),1,0.85);
-                set_occlusion(b,leavesDensity[i]);
+                leavesDensity.emplace_back(new LightVoxelsCube(
+                    glm::vec3(50,10,10),glm::vec3(51,11,11),1/clusterizationParams.voxels_size_mult,0.85));
+                set_occlusion(b,leavesDensity.back());
+            }
+        }
+        ~BranchWithData()
+        {
+            for (int i=0;i<leavesDensity.size();i++)
+            {
+                //if (leavesDensity[i])
+                //    delete leavesDensity[i];
             }
         }
     };
@@ -158,6 +180,7 @@ public:
     };
     bool set_branches(Tree &t, int layer);
     bool set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light);
+    void set_clusterization_params(ClusterizationParams &params);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
     Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);
@@ -174,11 +197,8 @@ public:
     {
         Cluster::currentClusterizer = this;
     }
-    static float delta;
-    static float light_importance;
     static std::vector<float> light_weights;
     static std::vector<float> weights;
-    static glm::vec3 voxels_size;
     BranchHeap branchHeap;
     LeafHeap leafHeap;
     std::vector<BranchWithData> branches;

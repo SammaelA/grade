@@ -441,7 +441,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         }
         create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b);
     }
-    logerr("created %d billboards\n", billboard_boxes.size());
+    debugl(8,"created %d billboards\n", billboard_boxes.size());
     glGenerateTextureMipmap(atlas.tex().texture);
     //atlas.gen_mipmaps();
 }
@@ -473,15 +473,15 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
 }
 BillboardCloudRenderer::~BillboardCloudRenderer()
 {
-    logerr("deleting BCR");
+    debugl(11,"deleting BCR");
     if (cloud)
         delete (cloud);
-    logerr("cloud deleted");
+    debugl(11,"cloud deleted");
     for (int i=0;i<instances.size();i++)
     {
         delete instances[i]->m;
         delete instances[i];
-        logerr("instance %d deleted",i);
+       debugl(11,"instance %d deleted",i);
     }
 }
 void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)

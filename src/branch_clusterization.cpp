@@ -17,11 +17,9 @@ std::vector<std::pair<float, float>> optimization_quantiles = {
     {0.3, 0.9992320979}}; //values got by experiments
 float distribution[110];
 float distribution2[110];
-std::vector<float> Clusterizer::weights = std::vector<float>{5000,800,40,1,0.01};
-std::vector<float> Clusterizer::light_weights = std::vector<float>{1,1,1,1,1};
-float Clusterizer::delta = 0.25;
-float Clusterizer::light_importance = 0.4;
-glm::vec3 Clusterizer::voxels_size = glm::vec3(64,32,32);
+ClusterizationParams clusterizationParams;
+std::vector<float> Clusterizer::weights = clusterizationParams.weights;
+std::vector<float> Clusterizer::light_weights = clusterizationParams.light_weights;
 struct JSortData
 {
     float dist;
@@ -174,6 +172,11 @@ bool Clusterizer::match_child_branches(Joint *j1, Joint *j2, std::vector<float> 
 bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
                                float min, float max)
 {
+    if ((b1->level >= clusterizationParams.ignore_structure_level) &&
+        (b2->level >= clusterizationParams.ignore_structure_level))
+    {
+        return true;
+    }
     jp[b1->level] += b1->joints.size() + b2->joints.size();
     if (b1->joints.size() == 1)
     {
@@ -182,7 +185,7 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
         return true;
     }
     float av_len = 0.5 * (length(b1->joints.back().pos - b1->joints.front().pos) + length(b2->joints.back().pos - b2->joints.front().pos));
-    float cur_delta = delta * av_len;
+    float cur_delta = clusterizationParams.delta * av_len;
     float cur_dist = 0;
 
     std::multiset<JSortData, compare> distances;
@@ -282,11 +285,11 @@ void Clusterizer::get_light(Branch *b, std::vector<float> &light, glm::mat4 &tra
 }
 Clusterizer::Answer Clusterizer::light_difference(BranchWithData &bwd1, BranchWithData &bwd2)
 {
-    if (bwd1.leavesDensity && bwd2.leavesDensity)
+    if (!bwd1.leavesDensity.empty() && !bwd2.leavesDensity.empty())
     {
         if (bwd1.rot_angle < 0)
             bwd1.rot_angle += 2*PI;
-        int index = ((int)floor(bwd1.rot_angle/(2*PI) * BWD_ROTATIONS)) % BWD_ROTATIONS;
+        int index = ((int)floor(bwd1.rot_angle/(2*PI) * clusterizationParams.bwd_rotations)) % clusterizationParams.bwd_rotations;
         float res = bwd1.leavesDensity[index]->NMSE(bwd2.leavesDensity[0]);
         return Answer(true, res, res);
     }
@@ -324,6 +327,7 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
     std::vector<float> matches(joint_counts.size());
+    float light_importance = clusterizationParams.light_importance;
     for (int i = 0; i < joint_counts.size(); i++)
     {
         joint_counts[i] += bwd2.joint_counts[i];
@@ -467,7 +471,7 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
     Ddg.make_base_clusters(branches);
-    Ddg.make(20, 5);
+    Ddg.make(20, clusterizationParams.min_clusters);
     if (!need_debug)
         return;
     std::vector<Branch *> branches;
@@ -561,7 +565,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
                 }
             }
         }
-        if (min.d > 0.999 || current_clusters.size() <= clusters_num)
+        if (min.d > clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
         {
             break;
             //makes no sense to merge clusters with maximum distance between them.
@@ -602,4 +606,10 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         sum += clusters[S].size;
     }
     debugl(1, "sum = %d %d \n", sum, size);
+}
+void Clusterizer::set_clusterization_params(ClusterizationParams &params)
+{
+    clusterizationParams = params;
+    Clusterizer::weights = params.weights;
+    Clusterizer::light_weights = params.light_weights;
 }

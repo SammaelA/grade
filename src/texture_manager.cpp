@@ -2,6 +2,8 @@
 #include "tinyEngine/helpers/image.h"
 #include <exception>
 
+int tex_mem = 0;
+int tex_count = 0;
 Texture TextureManager::get(std::string name)
 {
     auto t_it = textures.find(name);
@@ -57,22 +59,31 @@ TextureManager::TextureManager(std::string base_path)
             logerr("texture not found %s",paths[i].c_str());
         }
     }
-    debug("textures loaded %d\n",textures.size());
+    debugl(1,"textures loaded %d\n",textures.size());
 }
 Texture TextureManager::create_unnamed(int w, int h, bool shadow)
 {
+    tex_mem += 4*w*h;
+    tex_count++;
+    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
     Texture t(w,h,shadow);
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
 Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int layers)
 {
+    tex_mem += 4*w*h*layers;
+    tex_count++;
+    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
     Texture t(w,h,shadow,layers);
     unnamed_array_textures.emplace(t.texture,t);
     return t;
 }
 Texture TextureManager::create_unnamed(SDL_Surface *s)
 {
+    tex_mem += 4*s->w*s->h;
+    tex_count++;
+    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
     Texture t(s);
     unnamed_textures.emplace(t.texture,t);
     return t;

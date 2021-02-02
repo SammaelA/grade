@@ -3,7 +3,8 @@
 #include <vector>
 #include "tinyEngine/utility.h"
 #include "distribution.h"
-
+int sum_memory = 0;
+int sum_allocs = 1;
 LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision):
 LightVoxelsCube(center, glm::ivec3(size.x/(base_size / light_precision), size.y/(base_size / light_precision),
                                    size.z/(base_size / light_precision)),(base_size / light_precision))
@@ -27,6 +28,9 @@ voxel_size(vox_size)
     int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
     //debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
     voxels = new float[count];
+    sum_memory += count*sizeof(float);
+    sum_allocs++;
+    //logerr("allocated %d bytes total for %d voxels cubes",sum_memory, sum_allocs);
     //debug("successfully created light voxels cube with %d voxels voxel size = %f\n", count, voxel_size);
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
@@ -102,6 +106,9 @@ void LightVoxelsCube::print_average_occlusion()
 }
 LightVoxelsCube::~LightVoxelsCube()
 {
+    int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
+    sum_memory -= count*sizeof(float);
+    sum_allocs--;
     delete (voxels);
 }
 void LightVoxelsCube::set_occluder(glm::vec3 pos, float strenght)

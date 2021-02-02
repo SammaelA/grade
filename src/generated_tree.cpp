@@ -8,6 +8,7 @@
 #include <math.h>
 #include <algorithm>
 #include "body.h"
+#include <chrono>
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -170,7 +171,7 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
             float k = curParams.r_deformation_power();
             k = k > 0 ? 1 + k : 1/(1-k);
             s.mults[i] *= k;
-            logerr("set seg mult %f (%f*%f)",s.mults[i],k,s.mults[i]/k);
+            //logerr("set seg mult %f (%f*%f)",s.mults[i],k,s.mults[i]/k);
         }
     }
     Joint j;
@@ -581,7 +582,7 @@ void TreeGenerator::grow_tree(Tree &t)
 
         if (!(t.iter % 10))
         {
-            debug("tree is growing  %d/%d iteration %d leaves\n", t.iter, curParams.growth_iterations(), t.leaves->leaves.size());
+            debugl(2,"tree is growing  %d/%d iteration %d leaves\n", t.iter, curParams.growth_iterations(), t.leaves->leaves.size());
             debugl(2, "sum feed %f\n", feed);
             debugl(2, "average feed distribution:");
             for (int j = 0; j < 10; j++)
@@ -848,6 +849,7 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
 }
 void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
 {
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     curGgd = ggd;
     int count = ggd.trees_count;
     for (int i = 0; i < count; i++)
@@ -863,26 +865,37 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     grove.center = glm::vec3(0,0,0);
     create_grove(trees, count, debug);
 
-    for (int i = 0; i < count; i++)
+    /*for (int i = 0; i < count; i++)
     {
         debug.set_params(trees[i].params);
         tree_to_model(trees[i], false, debug);
-    }
+    }*/
 
     Clusterizer cl;
+    ClusterizationParams cp;
+    cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
+    cp.ignore_structure_level = 3;
+    cp.delta = 0.3;
+    cp.max_individual_dist = 0.67;
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
     cl.set_branches(trees, count, 1, voxels);
+    cl.set_clusterization_params(cp);
     cl.visualize_clusters(debug, false);
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     Clusterizer cl2;
     cl2.set_branches(trees, count, 0, voxels);
+    cl2.set_clusterization_params(cp);
     cl2.visualize_clusters(debug, false);
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048, curGgd.types);
+    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(1024, 1024, curGgd.types);
     cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096, curGgd.types);
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(2048, 2048, curGgd.types);
     cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096, curGgd.types);
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(2048, 2048, curGgd.types);
     cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
@@ -904,4 +917,9 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     {
         trees[i].voxels = nullptr;
     }
+    std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
+    std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
+    std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;
+    std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
+    std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
 }

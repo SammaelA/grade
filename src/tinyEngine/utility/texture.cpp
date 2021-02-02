@@ -17,7 +17,7 @@ void Texture::bind()
 Texture::Texture()
 {
         glGenTextures(1, &texture);
-        debug("texture created %d\n", texture);
+        debugl(1,"texture created %d\n", texture);
 } //Default constructor
 Texture::Texture(SDL_Surface *s) : Texture()
 {
@@ -97,21 +97,9 @@ Texture::Texture(int W, int H, bool d, int layers)
         this->H = H;
         this->layers = layers;
         type = GL_TEXTURE_2D_ARRAY;
-                int err = glGetError();
-        if (err != GL_NO_ERROR)
-                logerr("Texture creation error 0 %d 0x%x",texture,err);
         glGenTextures(1, &texture);
         glBindTexture(type,texture);
-        err = glGetError();
-        if (err != GL_NO_ERROR)
-                logerr("Texture creation error 1 %d 0x%x",texture,err);
         glTextureStorage3D(texture, mipLevelCount, GL_RGBA8, W, H, layers);
-        err = glGetError();
-        if (err != GL_NO_ERROR)
-                logerr("Texture creation error 2 %d 0x%x (%d %d %d)",texture,err,W, H, layers);
-         err = glGetError();
-        if (err != GL_NO_ERROR)
-                logerr("Texture creation error 3 %d 0x%x",texture,err);
         glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -120,10 +108,6 @@ Texture::Texture(int W, int H, bool d, int layers)
         glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
         glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
-
-        err = glGetError();
-        if (err != GL_NO_ERROR)
-                logerr("Texture creation error 4 %d 0x%x",texture,err);
 }
 Cubetexture::Cubetexture() : Texture()
 {
