@@ -80,7 +80,7 @@ struct BranchStructure
 struct InstancedBranch
 {
     std::vector<unsigned> branches;
-    std::vector<glm::mat4> transforms;
+    InstanceDataArrays IDA;
 };
 struct GrovePacked
 {
@@ -96,6 +96,7 @@ struct GrovePacked
 class GroveRenderer
 {
 public:
+    static const int base_level = 1;
     struct LOD
     {
         std::vector<std::pair<uint,Model *>> models;

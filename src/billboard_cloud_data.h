@@ -5,6 +5,12 @@
 #include "texture_atlas.h"
 #include <glm/glm.hpp>
 #include "tinyEngine/bbox.h"
+struct InstanceDataArrays
+{
+    std::vector<glm::mat4> transforms;
+    std::vector<glm::vec3> centers_par;
+    std::vector<glm::vec3> centers_self;
+};
     struct Billboard
     {
         int id = -1;
@@ -28,9 +34,10 @@ struct BillboardCloudData
     struct BillboardData
     {
         std::vector<Billboard> billboards;
-        std::vector<glm::mat4> transforms; 
+        InstanceDataArrays IDA;
     };
     bool valid = false;
+    int level = 0;
     std::vector<BillboardData> billboards;
     TextureAtlas atlas;
     BillboardCloudData() {};

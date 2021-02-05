@@ -734,20 +734,40 @@ void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector
 {
     instanced_structures.push_back(BranchStructure());
     grove.instancedBranches.push_back(InstancedBranch());
-    std::vector<glm::mat4> &transforms = grove.instancedBranches.back().transforms;
+    InstanceDataArrays &IDA = grove.instancedBranches.back().IDA;
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
     std::vector<Clusterizer::Cluster *> base_clusters;
-    Branch *base = cluster.prepare_to_replace(transforms, base_clusters);
+    Branch *base = cluster.prepare_to_replace(IDA, base_clusters);
     pack_branch_recursively(base, grove, ids,instanced_structures.back());
     if (instanced_structures.back().childBranches.size() == 1)
         instanced_structures.back() = instanced_structures.back().childBranches[0];
     debugl(4, "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
-           grove.instancedBranches.back().transforms.size());
+           grove.instancedBranches.back().IDA.transforms.size());
 
     for (int i=0;i<base_clusters.size();i++)//leave marks on branch to construct tree structure in future
     {
         base_clusters[i]->branch->original->base_seg_n = instanced_structures.size() - 1;
         base_clusters[i]->branch->original->max_seg_count = - i - 100;
+    }
+}
+void pack_tree_as_singleton_instances(Tree &t, GrovePacked &grove, int up_to_level, std::vector<BranchStructure> &instanced_structures)
+{
+    for (int i = 0; i <= up_to_level; i++)
+    {
+        for (Branch &branch : t.branchHeaps[i]->branches)
+        {
+            PackedBranch b;
+            branch.pack(b);
+
+            instanced_structures.push_back(BranchStructure());
+            grove.instancedBranches.push_back(InstancedBranch());
+            InstanceDataArrays &IDA = grove.instancedBranches.back().IDA;
+            IDA.transforms.push_back(glm::mat4(1.0));
+            IDA.centers_par.push_back(branch.center_par);
+            IDA.centers_self.push_back(branch.center_self);
+            std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
+            ids.push_back(grove.instancedCatalogue.add(b, b.level));
+        }
     }
 }
 void pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
@@ -774,7 +794,7 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
                 unsigned transform_n = - (br->max_seg_count + 100);
                 unsigned instance_n = br->base_seg_n;
                 BranchStructure bs = instanced_structures[instance_n];
-                glm::mat4 tr = grove.instancedBranches[instance_n].transforms[transform_n];
+                glm::mat4 tr = grove.instancedBranches[instance_n].IDA.transforms[transform_n];
                 str.childBranchesInstanced.push_back(std::pair<glm::mat4,BranchStructure>(tr,bs));
             }
             else
@@ -864,7 +884,10 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     }
     grove.center = glm::vec3(0,0,0);
     create_grove(trees, count, debug);
-
+    for (int i = 0; i < count; i++)
+    {
+        post_process(ggd, trees[i]);
+    }
     /*for (int i = 0; i < count; i++)
     {
         debug.set_params(trees[i].params);
@@ -900,7 +923,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
     {
-        pack_tree(trees[i], grove, 0);
+        pack_tree_as_singleton_instances(trees[i], grove, 0, instanced_structures);
     }
     for (int c_num : cl.Ddg.current_clusters)
     {
@@ -922,4 +945,37 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;
     std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
     std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
+}
+void TreeGenerator::post_process(GroveGenerationData ggd, Tree &t)
+{
+    set_branches_centers(ggd, t, 1);
+}
+glm::vec3 b_center_self(Branch *b)
+{
+    glm::vec3 c;
+    for (Joint &j : b->joints)
+        c += j.pos;
+    c = c /(float)b->joints.size();
+    return c;
+}
+void b_center_rec(Branch *b, glm::vec3 center_par, int up_to_level)
+{
+    b->center_par = center_par;
+    if (b->level <= up_to_level)
+        b->center_self = b_center_self(b);
+    else
+        b->center_self = b->center_par;
+    for (Joint &j : b->joints)
+    {
+        for (Branch *br : j.childBranches)
+        {
+            b_center_rec(br,b->center_self,up_to_level);
+        }
+    }
+}
+void TreeGenerator::set_branches_centers(GroveGenerationData ggd, Tree &t, int up_to_level)
+{
+    if (!t.root)
+        return;
+    b_center_rec(t.root,ggd.pos,up_to_level);
 }

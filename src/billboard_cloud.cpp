@@ -264,17 +264,17 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
 }
 void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
 {
-    std::map<int, std::vector<glm::mat4>> all_transforms;
+    std::map<int, InstanceDataArrays> all_transforms;
     std::vector<Branch> base_branches;
     BranchHeap heap;
     LeafHeap l_heap;
     for (int i : numbers)
     {
-        std::vector<glm::mat4> transforms;
-        Branch *b = clusters[i].prepare_to_replace(transforms);
+        InstanceDataArrays IDA;
+        Branch *b = clusters[i].prepare_to_replace(IDA);
         if (!b)
             continue;
-        all_transforms.emplace(i, transforms);
+        all_transforms.emplace(i, IDA);
         base_branches.push_back(Branch());
         base_branches.back().deep_copy(b, heap, &l_heap);
         base_branches.back().base_seg_n = i;
@@ -284,6 +284,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
     std::map<int,int> proj;
     if (data)
     {
+        data->level = branch_level;
         data->valid = true;
         data->atlas = atlas;
         data->billboards.clear();
@@ -291,7 +292,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         {
             proj.emplace(it->first,data->billboards.size());
             data->billboards.push_back(BillboardCloudData::BillboardData());
-            data->billboards.back().transforms = it->second;
+            data->billboards.back().IDA = it->second;
         }
     }
     for (Billboard &b : billboards)
@@ -301,7 +302,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         b.to_model(m, atlas);
         m->update();
         Instance *in = new Instance(m);
-        in->addBuffer(all_transforms[b.branch_id]);
+        in->addBuffer(all_transforms[b.branch_id].transforms);
         instances.push_back(in);
         if (data)
         {
@@ -449,7 +450,7 @@ BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                            {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+                            {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"})
 {
     this->data = data;
     if (!data || !data->valid)
@@ -467,7 +468,18 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
         }
         m->update();
         Instance *in = new Instance(m);
-        in->addBuffer(bill.transforms);
+        std::vector<glm::vec4> t1,t2;
+        for (int i=0;i<bill.IDA.centers_par.size();i++)
+        {
+            if (data->level >= GroveRenderer::base_level)
+                t1.push_back(glm::vec4(bill.IDA.centers_self[i],1.0));
+            else
+                t1.push_back(glm::vec4(bill.IDA.centers_par[i],1.0));
+            t2.push_back(glm::vec4(bill.IDA.centers_self[i],1.0));
+        }
+        in->addBuffer(t1);
+        in->addBuffer(t2);
+        in->addBuffer(bill.IDA.transforms);
         instances.push_back(in);
     }
 }
@@ -484,7 +496,7 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
+void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max)
 {
     if (!data || !data->valid)
         return;
@@ -508,6 +520,8 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera)
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
+        billboardRendererInstancing.uniform("LOD_dist_min_max",LOD_min_max);
+        billboardRendererInstancing.uniform("camera_pos",camera_pos);
         billboardRendererInstancing.texture("tex", data->atlas.tex());
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         for (Instance *in : instances)

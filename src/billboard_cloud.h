@@ -90,7 +90,7 @@ struct BillboardCloudRenderer
     };
     BillboardCloudRenderer(BillboardCloudData *data = nullptr);
     ~BillboardCloudRenderer();
-    void render(glm::mat4 &projectionCamera);
+    void render(glm::mat4 &projectionCamera, glm::vec3 camera_pos = glm::vec3(0,0,0), glm::vec2 LOD_min_max = glm::vec2(0,0));
     void set_render_mode(RenderMode m)
     {
         renderMode = m;

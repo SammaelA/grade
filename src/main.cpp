@@ -244,7 +244,7 @@ int main(int argc, char *args[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
-  std::vector<float> LODs_dists = {500,200,150,100};
+  std::vector<float> LODs_dists = {1000,500,300,100};
   GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
   GR = &groveRenderer;
   Tiny::view.pipeline = [&]() {

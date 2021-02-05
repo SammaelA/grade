@@ -144,8 +144,8 @@ public:
         void to_branch_data(std::vector<Branch *> &branches);
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
-        Branch *prepare_to_replace(std::vector<glm::mat4> &transforms);
-        Branch *prepare_to_replace(std::vector<glm::mat4> &transforms, std::vector<Cluster *> &clusters);
+        Branch *prepare_to_replace(InstanceDataArrays &IDA);
+        Branch *prepare_to_replace(InstanceDataArrays &IDA, std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm
     {

@@ -60,7 +60,8 @@ struct Branch
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     void pack(PackedBranch &branch);
-    Mark *mark = nullptr;
+    glm::vec3 center_par;
+    glm::vec3 center_self;
 };
 struct Leaf
 {

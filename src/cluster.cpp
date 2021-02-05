@@ -77,12 +77,12 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         return distance;
     }
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transforms)
+Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA)
 {
     std::vector<Cluster *> clusters;
-    return prepare_to_replace(transforms, clusters);
+    return prepare_to_replace(IDA, clusters);
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transforms, std::vector<Cluster *> &clusters)
+Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, std::vector<Cluster *> &clusters)
 {
     to_base_clusters(clusters);
     if (clusters.empty())
@@ -92,7 +92,9 @@ Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<glm::mat4> &transfo
     for (Cluster *cl : clusters)
     {
         glm::mat4 tr = (cl->branch->transform) * base_transform_inv;
-        transforms.push_back(tr);
+        IDA.transforms.push_back(tr);
+        IDA.centers_par.push_back(cl->branch->original->center_par);
+        IDA.centers_self.push_back(cl->branch->original->center_self);
     }
     return br->original;
 }

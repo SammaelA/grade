@@ -45,7 +45,8 @@ public:
     glm::vec3 get_optimal_segment_growth_direction(float &quality, Branch *base);
     void calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, glm::vec3 sizes, glm::vec3 prev_dir, glm::vec4 plane,
                             float dir_cons, float plane_cons, float rnd, float spread, float up, float to_light);
-    
+    void post_process(GroveGenerationData ggd, Tree &t);
+    void set_branches_centers(GroveGenerationData ggd, Tree &t, int up_to_level);
     private:
     bool random_tree(Tree &t);
     void plant_tree(Tree &t, TreeStructureParameters params);
