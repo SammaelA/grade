@@ -12,8 +12,7 @@ uniform sampler2DArray tex;
 void main(void) 
 {
   fragColor = texture(tex,ex_Tex);
-  //fragColor.r += 0.4*(ex_Tex.z);
-  //fragColor.b += 0.4*(1 - ex_Tex.z);
   if (fragColor.a<0.33)
     discard;
+  fragColor.rgb /= fragColor.a;
 }

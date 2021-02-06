@@ -4,10 +4,11 @@
 #include <vector>
 #include "tinyEngine/utility/texture.h"
 #include "tinyEngine/utility/shader.h"
-
+class BillboardCloudRenderer;
 class TextureAtlas
 {
 public:
+    friend class BillboardCloudRaw;
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
     TextureAtlas(int w, int h, int layers = 2);
