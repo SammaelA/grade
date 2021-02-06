@@ -496,7 +496,7 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max)
+void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max, glm::vec4 screen_size)
 {
     if (!data || !data->valid)
         return;
@@ -522,7 +522,9 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camer
         billboardRendererInstancing.use();
         billboardRendererInstancing.uniform("LOD_dist_min_max",LOD_min_max);
         billboardRendererInstancing.uniform("camera_pos",camera_pos);
+        billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("tex", data->atlas.tex());
+        billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         for (Instance *in : instances)
         {

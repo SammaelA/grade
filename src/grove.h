@@ -105,8 +105,8 @@ public:
         std::vector<std::pair<uint,Instance *>> leaves_instances;
         float max_dist;
     };
-    void render(int lod, glm::mat4 prc, glm::vec3 camera_pos);
-    void render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos);
+    void render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
+    void render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances);
     GroveRenderer();
     ~GroveRenderer();

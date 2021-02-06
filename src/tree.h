@@ -135,7 +135,7 @@ struct GroveGenerationData
     std::vector<TreeTypeData> types;
     int trees_count;
     glm::vec3 pos;
-    glm::vec2 size;
+    glm::vec3 size;
     std::vector<Body *> obstacles;
 };
 struct VertexData

@@ -677,7 +677,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
 {
     float r = sqrt(count);
     glm::vec3 vox_center = glm::vec3(0, 100, 0);
-    glm::vec3 vox_size = glm::vec3(40.0f * r + 250, 120, 40.0f * r + 250);
+    glm::vec3 vox_size = curGgd.size;
     TreeStructureParameters params = trees[0].params;
     params.set_state(params.max_depth() - 1);
     Box b = Box(glm::vec3(12,0,-50),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
@@ -691,7 +691,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     //debug.add_bodies(&el,1);
     for (int i = 0; i < count; i++)
     {
-        float R = urand(0,15*r);
+        float R = urand(0,25*r);
         float phi = urand(0, 2*PI);
         //R = 100 * (i / 10 + 1);
         //phi = 2 * PI * i / 10.0f;

@@ -53,7 +53,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 4;
+  treecount = 3;
   TreeStructureParameters params1,params2,params3;
   params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
   params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
@@ -62,6 +62,8 @@ void setup()
   TreeTypeData ttd1(0,params1,std::string("wood"),std::string("leaf"));
   TreeTypeData ttd2(1,params2,std::string("wood2"),std::string("leaf2"));
   TreeTypeData ttd3(2,params3,std::string("wood3"),std::string("leaf2"));
+  float r = sqrt(treecount) + 1;
+  ggd.size = glm::vec3(40.0f * r + 250, 120, 40.0f * r + 250);
   ggd.pos = glm::vec3(0,0,0);
   ggd.trees_count = treecount;
   ggd.types = {ttd1,ttd2,ttd3};
@@ -307,7 +309,7 @@ int main(int argc, char *args[])
       floor.render(GL_TRIANGLES);
       if (draw_clusterized)
       {
-        groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos);
+        groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
       }
       else
       {

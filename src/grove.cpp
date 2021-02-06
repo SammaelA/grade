@@ -51,7 +51,7 @@ GroveRenderer()
 
     LODs.emplace_back();
     LODs.back().cloud = nullptr;
-    LODs.back().max_dist = 0*max_distances[LODs_count - 1];
+    LODs.back().max_dist = max_distances[LODs_count - 1];
 
     for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
     {
@@ -71,7 +71,7 @@ GroveRenderer()
 
     LODs.emplace_back();
     LODs.back().cloud = nullptr;
-    LODs.back().max_dist = max_distances[LODs_count - 1];
+    LODs.back().max_dist = 0*max_distances[LODs_count - 1];
 
     for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
     {
@@ -106,13 +106,16 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
-void GroveRenderer::render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos)
+void GroveRenderer::render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
 {
+    float len = glm::length(source->center - camera_pos);
+    float sz = sqrt(ggd->size.x*ggd->size.x + ggd->size.z*ggd->size.z);
     for (int i=0;i<LODs.size() - 1;i++)
     {
-        render(i,prc,camera_pos);
+        if (LODs[i + 1].max_dist < len + sz && LODs[i].max_dist >= len - sz)
+            render(i,prc,camera_pos, screen_size);
     }
-    return;
+    /*
     int lod = -1;
     float len = glm::length(source->center - camera_pos);
     for (int i=1;i<LODs.size();i++)
@@ -128,21 +131,21 @@ void GroveRenderer::render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos)
     if (lod == -1)
         return;
     else
-        render(lod,prc,camera_pos);
-    
+        render(lod,prc,camera_pos, screen_size);
+    */
 }
-void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos)
+void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
 {
     if (LODs.size()==0)
         return;
     if (lod == -1)
     {
-        render_auto_LOD(prc,camera_pos);
+        render_auto_LOD(prc,camera_pos, screen_size);
         return;
     }
     if (lod < 0 || lod >= LODs.size())
     {
-        //logerr("trying to render grove with wrong LOD number %d. Grove has %d LODs",lod, LODs.size());
+        logerr("trying to render grove with wrong LOD number %d. Grove has %d LODs",lod, LODs.size());
         //return;
         lod = LODs.size() - 1;
     }
@@ -159,12 +162,15 @@ void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos)
     float mx = LODs[lod].max_dist;
     float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
     glm::vec2 mn_mx = glm::vec2(mn,mx);
+    Texture noise = textureManager.get("noise");
+    glm::vec4 ss = glm::vec4(screen_size.x,screen_size.y,1/screen_size.x,1/screen_size.y);
     if (LODs[lod].cloud)
-        LODs[lod].cloud->render(prc,camera_pos,mn_mx);
+        LODs[lod].cloud->render(prc,camera_pos,mn_mx,ss);
     
     rendererInstancing.use();
     rendererInstancing.uniform("projectionCamera", prc);
-
+    rendererInstancing.uniform("screen_size",ss);
+    rendererInstancing.texture("noise",noise);
     rendererInstancing.uniform("LOD_dist_min_max",mn_mx);
     rendererInstancing.uniform("camera_pos",camera_pos);
     for (auto &in : LODs[lod].instances)
@@ -226,8 +232,11 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     in->addBufferCopy(pt1);
     in->addBufferCopy(pt2);
     in->addBufferCopy(branch.IDA.transforms);
-    lod.instances.push_back(std::pair<uint, Instance *>(type,in));
-
+    if (!m->positions.empty() && !branch.IDA.transforms.empty())
+        lod.instances.push_back(std::pair<uint, Instance *>(type,in));
+    else
+        delete in;
+    
     if (need_leaves)
     {
         lm->update();
@@ -235,6 +244,9 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         lin->addBufferCopy(pt1);
         lin->addBufferCopy(pt2);
         lin->addBufferCopy(branch.IDA.transforms);
-        lod.leaves_instances.push_back(std::pair<uint, Instance *>(type,lin));   
+        if (!lm->positions.empty() && !branch.IDA.transforms.empty())
+            lod.leaves_instances.push_back(std::pair<uint, Instance *>(type,lin));   
+        else
+            delete lin;
     }
 }
