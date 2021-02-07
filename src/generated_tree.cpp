@@ -946,8 +946,68 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
     std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
 }
+void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
+{
+    res.push_back(start);
+    if (count == 1)
+        return;
+    Normal gen = Normal(1,sigma);
+    float p, dp = 1/(float)(count - 1);
+    for (int i=1;i<count;i++)
+    {
+        float rel = gen.get()*pow(1-i*dp,pw);
+        rel = rel*(start - end) + end;
+        if (rel < end)
+            rel = end;
+        if (rel > res.back())
+            rel = res.back();
+        res.push_back(rel);
+    }
+}
+void TreeGenerator::deform_root(Branch *b)
+{
+    if (!b)
+        return;
+    if (b->segments.empty())
+        return;
+    int s = b->segments.back().mults.size();
+    if (s == 0)
+    {
+        logerr("no deforms");
+        return;
+    }
+    int stripes = 3;
+    for (int i=0;i<stripes;i++)
+    {
+        int p = s*i/stripes;
+        std::vector<float> res;
+        down_stripe(res,2.5,1,b->segments.size(),1.75,0.05);
+        int k = 0;
+        for (auto &seg : b->segments)
+        {
+            if (urandi(0,b->segments.size()/2) == 0)
+                p = (p + 1) % s;
+            if (k >= res.size())
+                break;
+            if (seg.mults.size() < s)
+            {
+                seg.mults = std::vector<float>(s,1);
+            }
+            seg.mults[p] *= res[k];
+            float dr = 1 + 0.4*(res[k] - 1);
+            float dr2 = 1 + 0.4*(dr - 1);
+            seg.mults[(p - 1 + s) % s] *= dr;
+            seg.mults[(p + 1 + s) % s] *= dr;
+            seg.mults[(p - 2 + s) % s] *= dr2;
+            seg.mults[(p + 2 + s) % s] *= dr2;
+            //logerr("mult by %f -> %f",res[k], seg.mults[p]);
+            k++;
+        }
+    }
+}
 void TreeGenerator::post_process(GroveGenerationData ggd, Tree &t)
 {
+    deform_root(t.root);
     set_branches_centers(ggd, t, 1);
 }
 glm::vec3 b_center_self(Branch *b)

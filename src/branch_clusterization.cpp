@@ -169,6 +169,27 @@ bool Clusterizer::match_child_branches(Joint *j1, Joint *j2, std::vector<float> 
         }
     }
 }
+float r_NMSE(Branch *b1, Branch *b2)
+{
+    double err = 0;
+    double sum = 0;
+    auto s1 = b1->segments.begin();
+    auto s2 = b2->segments.begin();
+    while (s1 != b1->segments.end() && s2 != b2->segments.end())
+    {
+        float rots = MAX(1,MAX(s1->mults.size(),s2->mults.size()));
+        for (int i = 0; i < rots;i++)
+        {
+            float r1 = s1->rel_r_begin*Branch::get_r_mult(2*PI*i/rots,s1->mults);
+            float r2 = s2->rel_r_begin*Branch::get_r_mult(2*PI*i/rots,s2->mults);
+            err += SQR(r1 - r2);
+            sum += SQR(r1) + SQR(r2);
+        }
+        s1++;
+        s2++;
+    }
+    return err/sum;
+}
 bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
                                float min, float max)
 {
@@ -322,7 +343,7 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
 {
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
-    if (b1->type_id != b2->type_id || b1->dead != b2->dead)
+    if (b1->type_id != b2->type_id || b1->dead != b2->dead || b1->level != b2->level)
         return Answer(true,1000,1000);
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
@@ -338,7 +359,14 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     {
         Answer light_answer = light_difference(bwd1, bwd2);
         //debug("light answer %f %f\n",light_answer.from, light_answer.to);
-        return light_answer*(light_importance) + part_answer*(1 - light_importance);
+        Answer res = light_answer*(light_importance) + part_answer*(1 - light_importance);
+        float r_importance = clusterizationParams.r_weights[CLAMP(b1->level,0,clusterizationParams.r_weights.size()-1)];
+        if (r_importance > 0)
+        {
+            float r_diff = r_importance*r_NMSE(b1,b2);
+            res.from += r_diff;
+            res.to += r_diff;
+        }
     }
     else
         return part_answer;

@@ -17,7 +17,7 @@ public:
     void leaf_to_model(Leaf &l, Model *m);
     void packed_leaf_to_model(PackedLeaf &l, Model *m);
     void branch_to_model(Branch &b, Model *m, bool leaves);
-    void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves);
+    void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level);
     void set_params(TreeStructureParameters &params) { curParams = params; }
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
 protected:

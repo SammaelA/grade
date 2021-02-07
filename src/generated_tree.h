@@ -47,6 +47,7 @@ public:
                             float dir_cons, float plane_cons, float rnd, float spread, float up, float to_light);
     void post_process(GroveGenerationData ggd, Tree &t);
     void set_branches_centers(GroveGenerationData ggd, Tree &t, int up_to_level);
+    void deform_root(Branch *b);
     private:
     bool random_tree(Tree &t);
     void plant_tree(Tree &t, TreeStructureParameters params);
@@ -55,5 +56,5 @@ public:
     void create_grove(Tree *trees, int count, DebugVisualizer &debug);
     void create_grove(TreeStructureParameters params, int count, GrovePacked &grove);
     void create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
-
+    
 };

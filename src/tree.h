@@ -57,11 +57,13 @@ struct Branch
     float base_r;
     bool dead = false;
     glm::vec4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
+    glm::vec3 center_par;
+    glm::vec3 center_self;
+    
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     void pack(PackedBranch &branch);
-    glm::vec3 center_par;
-    glm::vec3 center_self;
+    static float get_r_mult(float phi, std::vector<float> &mults);
 };
 struct Leaf
 {

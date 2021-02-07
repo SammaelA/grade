@@ -15,6 +15,7 @@ struct ClusterizationParams
     float max_individual_dist = 0.95;
     std::vector<float> weights = std::vector<float>{5000,800,40,1,0.01};
     std::vector<float> light_weights = std::vector<float>{5000,800,40,1,0.01};
+    std::vector<float> r_weights = std::vector<float>{0.5,0.2,0,0,0};
 };
 extern ClusterizationParams clusterizationParams;
 class Clusterizer

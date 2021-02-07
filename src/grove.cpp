@@ -39,7 +39,7 @@ GroveRenderer()
             for (PackedBranch &pb : packed_branches)
             {
                 Model *m = new Model();
-                v.packed_branch_to_model(pb, m, false);
+                v.packed_branch_to_model(pb, m, false, i-1);
                 LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
             }
         }
@@ -52,14 +52,20 @@ GroveRenderer()
     LODs.emplace_back();
     LODs.back().cloud = nullptr;
     LODs.back().max_dist = max_distances[LODs_count - 1];
-
+    int max_level = 0;
+    for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
+    {
+        if (source->uniqueCatalogue.get_level(j).empty())
+            break;
+        max_level++;
+    }
     for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
     {
         auto packed_branches = source->uniqueCatalogue.get_level(j);
         for (PackedBranch &pb : packed_branches)
         {
             Model *m = new Model();
-            v.packed_branch_to_model(pb, m, false);
+            v.packed_branch_to_model(pb, m, false,max_level);
             LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
         }
     }
@@ -79,7 +85,7 @@ GroveRenderer()
         for (PackedBranch &pb : packed_branches)
         {
             Model *m = new Model();
-            v.packed_branch_to_model(pb, m, false);
+            v.packed_branch_to_model(pb, m, false,max_level);
             LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
         }
     }
@@ -159,7 +165,7 @@ void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::ve
         m->update();
         m->render(GL_TRIANGLES);
     }
-    float mx = LODs[lod].max_dist;
+    float mx = LODs[lod].max_dist == -10 ? 1000 : LODs[lod].max_dist;
     float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
     glm::vec2 mn_mx = glm::vec2(mn,mx);
     Texture noise = textureManager.get("noise");
@@ -204,9 +210,9 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     {
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, m, false);
+            v.packed_branch_to_model(b, m, false, up_to_level);
         if (need_leaves)
-            v.packed_branch_to_model(b, lm, true);
+            v.packed_branch_to_model(b, lm, true, up_to_level);
     }
     m->update();
     Instance *in = new Instance(m);

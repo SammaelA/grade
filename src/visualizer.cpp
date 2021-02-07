@@ -75,20 +75,7 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m)
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-float get_r(float phi, std::vector<float> &mults)
-{
-    if (mults.empty())
-        return 1;
-    else 
-    {
-        int b = (int)(phi/(2*PI)*mults.size());
-        float q = phi/(2*PI)*mults.size() - b;
 
-        return (1-q)*mults[b % mults.size()] + q*mults[(b + 1) % mults.size()];
-    }
-
-
-}
 void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
                           float rel_ring_pos, std::vector<float> &mults)
 {
@@ -106,7 +93,7 @@ void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, Segmen
     for (int i = 0; i < ring_size; i++)
     {
         VertexData vd;
-        vd.pos = start + radius*get_r( i*2*PI/ring_size,mults) * glm::vec3(n.x, n.y, n.z);
+        vd.pos = start + radius*Branch::get_r_mult( i*2*PI/ring_size,mults) * glm::vec3(n.x, n.y, n.z);
         vd.normal = n;
         vd.tex_coord.x = ((float)i) / ring_size;
         vd.tex_coord.y = rel_ring_pos;
@@ -360,7 +347,7 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Model *m)
         }
     }
 }
-void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
+void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level)
 {
     if (!leaves)
     {
@@ -369,7 +356,7 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves)
         std::vector<SegmentVertexes> vets;
         std::vector<float> empty_mults;
         int i = 0;
-        int ringsize = MAX(3,2*(4 - b.level)*(4 - b.level));
+        int ringsize = MIN(32,MAX(3,3 + 2*(max_level - b.level)*(max_level - b.level)));
         glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
         for (int i = 0; i < b.joints.size(); i++)
         {

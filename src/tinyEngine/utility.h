@@ -3,8 +3,10 @@
 #include <glm/glm.hpp>
 #include <stdarg.h>
 #define PI 3.14159265f  
-#define MIN(a,b) a<b ? a : b
-#define MAX(a,b) a>b ? a : b
+#define MIN(a,b) (a<b ? a : b)
+#define MAX(a,b) (a>b ? a : b)
+#define CLAMP(a,b,c) (MIN(MAX(a,b),c))
+#define SQR(a) ((a)*(a))
 #define DEBUG_LEVEL 100
 
 void debugnl();
