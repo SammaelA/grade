@@ -22,7 +22,8 @@ public:
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
 protected:
     void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
-    void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos, std::vector<float> &mults);
+    void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos,
+                  std::vector<float> &mults, glm::vec3 p = glm::vec3(1,0,0));
     void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
     void seg_vertexes_to_model(SegmentVertexes &sv, Model *m);
     void segment_to_model(Segment &s, Model *m, bool leaves);

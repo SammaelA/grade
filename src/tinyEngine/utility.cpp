@@ -43,7 +43,7 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec)
 }
 void debugl(uint level, const char *__restrict __fmt, ...)
 {
-    if (DEBUG_LEVEL >= 0 && level && DEBUG_LEVEL != level)
+    if (DEBUG_LEVEL > 0 && level && DEBUG_LEVEL != level)
         return;
     va_list args;
     va_start(args, __fmt);

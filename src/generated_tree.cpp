@@ -196,6 +196,10 @@ void TreeGenerator::new_segment(Branch *base, glm::vec3 &M)
     dir = glm::normalize(dir);
     float q = 0;
     dir = get_optimal_segment_growth_direction(q,base);
+    if (glm::length(glm::cross(dir,glm::vec3(base->plane_coef))) < 0.001)
+        dir = glm::normalize(dir + glm::vec3(0.05,0,0));
+    if (glm::length(glm::cross(dir,glm::vec3(base->plane_coef))) < 0.001)
+        dir = glm::normalize(dir + glm::vec3(0.0,0.05,0));
     new_segment2(base, dir, last.pos);
 }
 void TreeGenerator::try_new_segment(Branch *base)
@@ -539,6 +543,7 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     root->base_seg_n = 0;
     root->base_r = curParams.base_r();
     root->type_id = t.type ? t.type->type_id : 0;
+
     Joint j1, j2;
     Segment ts;
     j1.pos = t.pos;
@@ -551,6 +556,9 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
 
     new_joint(root, j2);
     root->segments.push_back(ts);
+    root->plane_coef = glm::normalize(glm::vec4(urand(0,1),0,urand(0,1),0));
+    root->plane_coef.w = -glm::dot(glm::vec3(root->plane_coef),root->joints.front().pos);
+
     curTree = t;
     curParams = params;
     t.root = root;

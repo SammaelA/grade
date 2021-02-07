@@ -77,13 +77,14 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m)
 }
 
 void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
-                          float rel_ring_pos, std::vector<float> &mults)
+                          float rel_ring_pos, std::vector<float> &mults, glm::vec3 p)
 {
     sv.ringsize = ring_size;
     dir = glm::normalize(dir);
-    glm::vec3 p = glm::vec3(1,0,0);
     if (abs(dot(dir,p)) > 0.9999)
+    {
         p = glm::normalize(glm::vec3(1,0,0.001));
+    }
     glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, p)), 1.0);
 
     glm::mat4 r = glm::rotate(glm::mat4(1.0), (float)(2 * PI / ring_size), dir);
@@ -151,6 +152,7 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
             shift = i;
         }
     }
+    shift = 0;
     for (int i = 0;i<sv.bigRing.size();i++)
     {
         int real_i = (i + shift) % sv.bigRing.size();
@@ -164,6 +166,7 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         h->normals.push_back(pos.normal.z);
         
         float col_x = 1 - abs(2.0f*i/sv.bigRing.size() - 1);
+        //logerr("%f ",col_x);
         h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
         h->colors.push_back(0.0);
@@ -357,6 +360,8 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
         std::vector<float> empty_mults;
         int i = 0;
         int ringsize = MIN(32,MAX(3,3 + 2*(max_level - b.level)*(max_level - b.level)));
+        if (ringsize % 2 == 1)
+            ringsize++;
         glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
         for (int i = 0; i < b.joints.size(); i++)
         {
@@ -364,7 +369,7 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
                 dir = b.joints[i].pos - b.joints[i - 1].pos;
             SegmentVertexes vt;
             std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
-            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3, mults);
+            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3, mults, b.plane_coef);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);

@@ -29,6 +29,7 @@ struct PackedBranch
     std::vector<std::vector<float>> r_mults;
     int level;
     uint type_id;
+    glm::vec4 plane_coef;
 };
 struct BranchCatalogue
 {

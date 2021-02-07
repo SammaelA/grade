@@ -21,7 +21,7 @@ void main(void) {
 	ex_FragPos = (in_Model * vec4(in_Position, 1.0f)).xyz;
 	float mx_dist = LOD_dist_min_max.y - length(in_Center_par.xyz - camera_pos);
 	float mn_dist = length(in_Center_self.xyz - camera_pos) - LOD_dist_min_max.x;
-	float trans = 6;
+	float trans = 20;
 	if (mx_dist < -trans)
 	{
 		gl_Position = vec4(-1000,-1000,1,1);
@@ -34,17 +34,16 @@ void main(void) {
 	{
 		if (mn_dist < trans)
 		{
-			a_mult = vec2(0.5*(mn_dist/trans + 1), 0.67);
+			a_mult = vec2(0.5*(mn_dist/trans + 1), 1);
 		}
 		else if (mx_dist < trans)
 		{
-			a_mult = vec2(0.5*(mx_dist/trans + 1), -0.67);
+			a_mult = vec2(0.5*(mx_dist/trans + 1), -1);
 		}
 		else
 		{
 			a_mult = vec2(10,0);
 		}
-		
 		ex_Normal = in_Normal;	//Pass Normal
 
 		//Fragment in Screen Space

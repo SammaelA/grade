@@ -52,13 +52,9 @@ GroveRenderer()
     LODs.emplace_back();
     LODs.back().cloud = nullptr;
     LODs.back().max_dist = max_distances[LODs_count - 1];
-    int max_level = 0;
-    for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
-    {
-        if (source->uniqueCatalogue.get_level(j).empty())
-            break;
-        max_level++;
-    }
+
+    int max_level = 3;
+
     for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
     {
         auto packed_branches = source->uniqueCatalogue.get_level(j);
@@ -72,12 +68,12 @@ GroveRenderer()
 
     for (InstancedBranch &b : source->instancedBranches)
     {
-        add_instance_model(LODs.back(), source, b,1000,true);
+        add_instance_model(LODs.back(), source, b,max_level,true);
     }
 
     LODs.emplace_back();
     LODs.back().cloud = nullptr;
-    LODs.back().max_dist = 0*max_distances[LODs_count - 1];
+    LODs.back().max_dist = -10;
 
     for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
     {
@@ -92,7 +88,7 @@ GroveRenderer()
 
     for (InstancedBranch &b : source->instancedBranches)
     {
-        add_instance_model(LODs.back(), source, b,1000,false);
+        add_instance_model(LODs.back(), source, b,max_level,false);
     }
 }
 GroveRenderer::~GroveRenderer()
@@ -247,7 +243,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     {
         lm->update();
         Instance *lin = new Instance(lm);
-        lin->addBufferCopy(pt1);
+        lin->addBufferCopy(pt2);
         lin->addBufferCopy(pt2);
         lin->addBufferCopy(branch.IDA.transforms);
         if (!lm->positions.empty() && !branch.IDA.transforms.empty())

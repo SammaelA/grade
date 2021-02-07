@@ -1,6 +1,7 @@
 #include "tree.h"
 #include "texture_manager.h"
 #include "billboard_cloud.h"
+#include "spline.h"
 Tree::Tree():
 wood(textureManager.empty()),
 leaf(textureManager.empty())
@@ -62,6 +63,9 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 }
 void Branch::transform(glm::mat4 &trans_matrix)
 {
+    plane_coef.w = 0;
+    plane_coef = glm::normalize(trans_matrix * plane_coef);
+    plane_coef.w = -dot(glm::vec3(plane_coef),joints.front().pos);
     for (Segment &s : segments)
     {
         s.begin = trans_matrix * glm::vec4(s.begin, 1.0f);
@@ -96,6 +100,7 @@ void Branch::pack(PackedBranch &branch)
     branch.leaves.clear();
     branch.level = level;
     branch.type_id = type_id;
+    branch.plane_coef = plane_coef;
     branch.joints.push_back(PackedJoint(sit->begin, sit->rel_r_begin));
     jit++;
     bool has_deforms = false;
@@ -129,11 +134,24 @@ float Branch::get_r_mult(float phi, std::vector<float> &mults)
 {
     if (mults.empty())
         return 1;
-    else 
+    else
     {
+        std::vector<double> x,y;
+        for (int i=0;i<mults.size();i++)
+        {
+            x.push_back(2*PI*i/mults.size());
+            y.push_back(mults[i]);
+        }
+        x.push_back(2*PI);
+        y.push_back(mults[0]);
+        auto s = spline(x,y);
+        int b = (int)(phi/(2*PI)*mults.size());
+        return s[b].get(phi);
+    } 
+    /*{
         int b = (int)(phi/(2*PI)*mults.size());
         float q = phi/(2*PI)*mults.size() - b;
 
         return (1-q)*mults[b % mults.size()] + q*mults[(b + 1) % mults.size()];
-    }
+    }*/
 }

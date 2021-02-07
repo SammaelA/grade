@@ -24,7 +24,7 @@ Camera camera;
 const int WIDTH = 1200;
 const int HEIGHT = 800;
 int treecount = 0;
-int cloudnum = 0;
+int cloudnum = -1;
 bool draw_clusterized = true;
 int cur_tree = 0;
 const int DEBUG_RENDER_MODE = -2;
@@ -53,7 +53,7 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 3;
+  treecount = 20;
   TreeStructureParameters params1,params2,params3;
   params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
   params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
@@ -246,7 +246,7 @@ int main(int argc, char *args[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(wood, &defaultShader);
   setup();
-  std::vector<float> LODs_dists = {1000,500,300,50};
+  std::vector<float> LODs_dists = {1000,500,300,100};
   GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
   GR = &groveRenderer;
   Tiny::view.pipeline = [&]() {

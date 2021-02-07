@@ -440,6 +440,11 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
 }
 Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
+    //sdebugl(1,"[%d %d]",bwd1.b->type_id,bwd2.b->type_id);//
+    Branch *b1 = bwd1.b;
+    Branch *b2 = bwd2.b;
+    if (b1->type_id != b2->type_id || b1->dead != b2->dead || b1->level != b2->level)
+        return Answer(true,1000,1000);
     return dist_Nsection(bwd1, bwd2, min, max, data);
 }
 bool Clusterizer::set_branches(Tree &t, int layer)
@@ -552,18 +557,24 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clus
     {
         for (int v : current_clusters)
         {
-            if (u == v)
-                continue;
-            float distance = clusters[u].ward_dist(&(clusters[v]), delta);
-            if (distance <= delta)
+            if (u != v)
             {
-                P_delta.push_back(Dist(u, v, distance));
-                if (distance < md.d)
+                int k = -1,l = -1;
+                if (clusters[u].branch)
+                    k = clusters[u].branch->b->type_id;
+                if (clusters[v].branch)
+                    l = clusters[v].branch->b->type_id;
+                float distance = clusters[u].ward_dist(&(clusters[v]), delta);
+                if (distance <= delta)
                 {
-                    md.d = distance;
-                    md.U = u;
-                    md.V = v;
-                }
+                    P_delta.push_back(Dist(u, v, distance));
+                    if (distance < md.d)
+                    {
+                        md.d = distance;
+                        md.U = u;
+                        md.V = v;
+                    }
+            }
             }
         }
     }

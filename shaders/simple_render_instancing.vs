@@ -21,7 +21,7 @@ void main(void) {
 	ex_FragPos = (in_Model * vec4(in_Position, 1.0f)).xyz;
 	float mx_dist = LOD_dist_min_max.y - length(in_Center_par.xyz - camera_pos);
 	float mn_dist = length(in_Center_self.xyz - camera_pos) - LOD_dist_min_max.x;
-	float trans = 6;
+	float trans = 20;
 	if (mx_dist < -trans)
 	{
 		gl_Position = vec4(-1000,-1000,1,1);
