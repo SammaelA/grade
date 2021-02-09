@@ -297,7 +297,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
         {
             proj.emplace(it->first,data->billboards.size());
-            data->billboards.push_back(BillboardCloudData::BillboardData());
+            data->billboards.push_back(BillboardData());
             data->billboards.back().IDA = it->second;
         }
     }
@@ -312,7 +312,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         instances.push_back(in);
         if (data)
         {
-            //data->billboards.push_back(BillboardCloudData::BillboardData());
+            //data->billboards.push_back(BillboardData());
             data->billboards[proj.at(b.branch_id)].billboards.push_back(b);
             //data->billboards.back().transforms = all_transforms[b.branch_id];
         }
@@ -522,7 +522,7 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
         logerr("empty billboard data %uud",data);
         return;
     }
-    for (BillboardCloudData::BillboardData &bill : data->billboards)
+    for (BillboardData &bill : data->billboards)
     {
         Model *m = new Model();
         for (Billboard &b : bill.billboards)
@@ -572,7 +572,7 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camer
     if (renderMode == ONLY_SINGLE || renderMode == BOTH)
     {
         std::function<void(Model *)> _ce = [&](Model *h) {
-            for (BillboardCloudData::BillboardData &bill : data->billboards)
+            for (BillboardData &bill : data->billboards)
             {
                 for (Billboard &b : bill.billboards)
                     b.to_model(h, data->atlas);

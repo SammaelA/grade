@@ -3,11 +3,13 @@
 #include <SDL2/SDL.h>
 #include <functional>
 #include "../utility.h"
-
+#include "../../saver.h"
 class TextureManager;
 class Texture
 {
   friend class TextureManager;
+  friend bool saver::save(FILE *f, Texture &t);
+  friend bool saver::load(FILE *f, Texture &t);
 public:
   GLuint texture = ~0;               //Texture int (OpenGL: everything is an int!)
   GLenum type = GL_TEXTURE_2D;  //Texture type (default is this)
@@ -24,6 +26,7 @@ protected:
   Texture();
   Texture(bool empty) {texture = ~0;}
   Texture(SDL_Surface* s);
+  Texture(Texture &stub, unsigned char *data);
   Texture(int W, int H, bool d = false);
   Texture(int W, int H, bool d, int layers);
   void empty(int W, int H, bool set_default = true, GLenum F = GL_RGBA);

@@ -4,6 +4,38 @@
 
 int tex_mem = 0;
 int tex_count = 0;
+Texture TextureManager::get_unnamed(GLuint n)
+{
+    auto t_it = unnamed_textures.find(n);
+    if (t_it == unnamed_textures.end())
+        return textures.at("texture not found");
+    else
+        return t_it->second;
+}
+Texture TextureManager::get_unnamed_arr(GLuint n)
+{
+    auto t_it = unnamed_array_textures.find(n);
+    if (t_it == unnamed_array_textures.end())
+        return textures.at("texture not found");
+    else
+        return t_it->second;
+}
+    Texture TextureManager::load_unnamed(Texture &stub, unsigned char *data)
+    {
+        Texture t = Texture(stub,data);
+        unnamed_textures.emplace(t.texture,t);
+        return t;
+    }
+    Texture TextureManager::load_unnamed_arr(Texture &stub, unsigned char *data)
+    {
+        Texture t = Texture(stub,data);
+        unnamed_array_textures.emplace(t.texture,t);
+        return t;
+    }
+bool TextureManager::is_correct(Texture &t)
+{
+    return t.texture != textures.at("texture not found").texture;
+}
 Texture TextureManager::get(std::string name)
 {
     auto t_it = textures.find(name);

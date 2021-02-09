@@ -29,13 +29,13 @@ struct InstanceDataArrays
         }
         Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
     };
+struct BillboardData
+{
+    std::vector<Billboard> billboards;
+    InstanceDataArrays IDA;
+};
 struct BillboardCloudData
 {
-    struct BillboardData
-    {
-        std::vector<Billboard> billboards;
-        InstanceDataArrays IDA;
-    };
     bool valid = false;
     int level = 0;
     std::vector<BillboardData> billboards;

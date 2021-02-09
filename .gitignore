@@ -6,6 +6,8 @@
 *.cmake
 CMakeCache.txt
 *.out
+*.raw
+*.dat
 /main
 /profile
 /Makefile

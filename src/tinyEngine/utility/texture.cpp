@@ -1,4 +1,5 @@
 #include "texture.h"
+        const int mipLevelCount = 5;
 void Texture::set_default_paramaters(Texture *t)
 {
         glTexParameteri(t->type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -34,7 +35,37 @@ Texture::Texture(int W, int H, bool d) : Texture()
         this->H = H;
         this->layers = 1;
 }
+Texture::Texture(Texture &stub, unsigned char *data) :
+Texture()
+{
+        W = stub.W;
+        H = stub.H;
+        layers = stub.layers;
+        type = stub.type;
 
+        glBindTexture(type, texture);
+
+        glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+        if (type == GL_TEXTURE_2D)
+        {
+                glTexStorage2D(texture, mipLevelCount, GL_RGBA8, W, H);
+                glTexImage2D(type, 0, GL_RGBA, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
+        else 
+        {
+                glTexStorage3D(texture, mipLevelCount, GL_RGBA8, W, H, layers);
+                glTexImage3D(type, 0, GL_RGBA, W, H,layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
+        
+        glGenerateMipmap(type);
+}
 Texture::~Texture()
 {
         
@@ -91,7 +122,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
   }
 Texture::Texture(int W, int H, bool d, int layers)
 {
-        const int mipLevelCount = 5;
+
 
         this->W = W;
         this->H = H;

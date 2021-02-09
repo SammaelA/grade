@@ -4,11 +4,14 @@
 #include <vector>
 #include "tinyEngine/utility/texture.h"
 #include "tinyEngine/utility/shader.h"
+#include "saver.h"
 class BillboardCloudRenderer;
 class TextureAtlas
 {
 public:
     friend class BillboardCloudRaw;
+    friend bool saver::save(FILE *f, TextureAtlas &t); 
+    friend bool saver::load(FILE *f, TextureAtlas &t); 
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
     TextureAtlas(int w, int h, int layers = 2);
