@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include "tinyEngine/utility.h"
+#include "../utility.h"
 
 struct PackedBranch;
 struct PackedLeaf;

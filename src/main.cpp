@@ -14,11 +14,13 @@
 #include "texture_manager.h"
 #include "tinyEngine/utility.h"
 #include "grove.h"
+#include "tinyEngine/save_utils/config.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
+Config config;
 Camera camera;
 
 const int WIDTH = 1200;
@@ -53,12 +55,14 @@ glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
 void setup()
 {
-  treecount = 1;
+  treecount = 3;
   TreeStructureParameters params1,params2,params3;
   params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
   params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
   params2.base_branch_feed = Parameter<float>(300, std::vector<float>{20, 30, 200, 40, 40}, REGENERATE_ON_GET, new Uniform(-00, 00));
   params2.min_branching_chance = Parameter<float>(0, std::vector<float>{1, 0.4, 0.5, 0.75, 0.7});
+  params1 = config.get("default");
+  params2 = config.get("bush");
   TreeTypeData ttd1(0,params1,std::string("wood"),std::string("leaf"));
   TreeTypeData ttd2(1,params2,std::string("wood2"),std::string("leaf2"));
   TreeTypeData ttd3(2,params3,std::string("wood3"),std::string("leaf2"));
@@ -225,6 +229,7 @@ int main(int argc, char *args[])
   Tiny::window("Procedural Tree", WIDTH, HEIGHT);
   Tiny::event.handler = eventHandler;
   textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
+  config.load_config();
   Texture tex = textureManager.get("woodd");
   Texture wood = textureManager.get("wood");
   TreeStructureParameters par;

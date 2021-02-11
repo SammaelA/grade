@@ -9,10 +9,12 @@ enum RandomnessLevel
     REGENERATE_ON_STATE_CHANGE,
     REGENERATE_ON_GET
 };
+struct TreeStructureParameters;
 template <typename T>
 class Parameter
 {
 public:
+    friend struct TreeStructureParameters;
     void random_regenerate()
     {
         randomValue = (T)(randomizer->get());
@@ -87,6 +89,8 @@ public:
     {
         this->randomnessLevel = rand_level;
         this->randomizer = randomizer;
+        if (!randomizer)
+            rand_level = NO_RANDOM;
         if (rand_level != NO_RANDOM)
             random_regenerate();
     }
@@ -95,6 +99,8 @@ public:
     {
         this->randomnessLevel = rand_level;
         this->randomizer = randomizer;
+        if (!randomizer)
+            rand_level = NO_RANDOM;
         if (rand_level != NO_RANDOM)
             random_regenerate();
     }
@@ -111,6 +117,7 @@ private:
 };
 struct TreeStructureParameters
 {
+    static Parameter<int> from_float(Parameter<float> source);
     Parameter<int> max_depth;
     Parameter<int> max_segments;
     Parameter<int> max_branching;
