@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "parser.h"
+#include "ggd_parser.h"
 extern void start_preset(void);
 extern void end_preset(void);
 extern void start_param(void);
@@ -28,7 +29,7 @@ int parse_file(char *file)
 
 %}
 
-%token TOKPREEND TOKPREST TOKNORMAL TOKUNIFORM TOKNO_RANDOM TOKEXPLICIT_REGENERATION TOKREGENERATE_ON_STATE_CHANGE TOKREGENERATE_ON_GET TOKBS TOKBE TOKPS TOKPE TOKEQ TOKCOM TOKPARAMEND
+%token TST TEND TNAME TCOUNT TPOS TOB TEL TCYL TSIZE TOKPREEND TOKPREST TOKNORMAL TOKUNIFORM TOKNO_RANDOM TOKEXPLICIT_REGENERATION TOKREGENERATE_ON_STATE_CHANGE TOKREGENERATE_ON_GET TOKBS TOKBE TOKPS TOKPE TOKEQ TOKCOM TOKPARAMEND
 %union 
 {
         float number;
@@ -38,14 +39,16 @@ int parse_file(char *file)
 %token <number> NUMBER
 %token <string> NAME
 %%
-
 commands:
-	| commands command
+    prsts | groves
+    ;
+prsts:
+	| prsts prst
 
 	;
 
 
-command:
+prst:
 	preset_start preset_name preset_body preset_end
     {
 
@@ -167,3 +170,97 @@ list_elem:
         param_list[params] = $1;
         params++;
     };
+    groves:
+	grove | groves grove
+
+	;
+
+
+grove: ggd_head TOKBS count pos size presets obstacles TOKBE TEND
+{
+    dat.ggds_c++;
+};
+ggd_head: TST NAME
+
+{
+    CG.ttds_c = 0;
+    CG.obsts_c = 0;
+    CG.name = strdup($2);
+};
+count: TCOUNT TOKEQ NUMBER
+{
+    CG.count = $3;
+};
+pos: TPOS TOKEQ TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CG.pos[0] = $4;
+    CG.pos[1] = $5;
+    CG.pos[2] = $6;
+
+};
+size: TSIZE TOKEQ TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CG.size[0] = $4;
+    CG.size[1] = $5;
+    CG.size[2] = $6;
+};
+presets: preset | presets preset
+{
+
+};
+preset: TOKPREST TOKEQ TOKBS NAME NAME NAME TOKBE
+{
+    CT.id = CG.ttds_c;
+    CT.name = strdup($4);
+    CT.wood = strdup($5);
+    CT.leaf = strdup($6);
+    CG.ttds_c++;
+};
+obstacles: | obstacles obstacle
+{
+
+};
+obstacle: ob_type TOKEQ TOKBS opos oa ob oc TOKBE
+{
+    CG.obsts_c++;
+};
+ob_type: ob_b | ob_e | ob_c
+{
+
+};
+ob_b: TOB
+{
+    CO.type = 1;
+};
+ob_e: TEL
+{
+    CO.type = 2;
+};
+ob_c: TCYL
+{
+    CO.type = 3;
+};
+opos: TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CO.pos[0] = $2;
+    CO.pos[1] = $3;
+    CO.pos[2] = $4;
+};
+oa: TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CO.a[0] = $2;
+    CO.a[1] = $3;
+    CO.a[2] = $4;
+};
+ob: TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CO.b[0] = $2;
+    CO.b[1] = $3;
+    CO.b[2] = $4;
+};
+oc: TOKPS NUMBER  NUMBER  NUMBER TOKPE
+{
+    CO.c[0] = $2;
+    CO.c[1] = $3;
+    CO.c[2] = $4;
+};

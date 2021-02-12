@@ -72,7 +72,7 @@ void setup()
   ggd.trees_count = treecount;
   ggd.types = {ttd1,ttd2,ttd3};
   srand(time(NULL));
-  gen.create_grove(ggd, grove, *debugVisualizer, t);
+  gen.create_grove(config.get_ggd("bush_grove"), grove, *debugVisualizer, t);
 }
 
 // Event Handler
@@ -230,6 +230,7 @@ int main(int argc, char *args[])
   Tiny::event.handler = eventHandler;
   textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
   config.load_config();
+  config.load_ggds();
   Texture tex = textureManager.get("woodd");
   Texture wood = textureManager.get("wood");
   TreeStructureParameters par;

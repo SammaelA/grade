@@ -1,5 +1,7 @@
 #include "parser.h"
+#include "ggd_parser.h"
 #include "config.h"
+#include "../../tree.h"
 #include <malloc.h>
 extern "C" int parse_file(char *file);
 
@@ -11,10 +13,19 @@ TreeStructureParameters Config::get(std::string name)
     else
         return TreeStructureParameters();
 }
+GroveGenerationData Config::get_ggd(std::string name)
+{
+    auto it = ggds.find(name);
+    if (it != ggds.end())
+        return (*it).second;
+    else
+        return ggds.at("default");
+}
 bool Config::load_config()
 {
     pd.presets_n = 0;
-    parse_file("test.txt");
+    dat.ggds_c = 0;
+    parse_file("presets.txt");
     for (int i=0;i<pd.presets_n;i++)
     {
         TreeStructureParameters tsp;

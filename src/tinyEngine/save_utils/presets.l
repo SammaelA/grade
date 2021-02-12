@@ -3,7 +3,19 @@
 #include "y.tab.h"
 %}
 %%
-
+grove_end              return TEND;
+grove                  return TST;
+name                  return TNAME;
+trees_count return TCOUNT;
+pos return TPOS;
+count return TCOUNT;
+box return TOB;
+ellipsoid return TEL;
+cylinder return TCYL;
+Box return TOB;
+Ellipsoid return TEL;
+Cylinder return TCYL;
+size return TSIZE;
 preset_end              return TOKPREEND;
 preset                  return TOKPREST;
 normal                  return TOKNORMAL;

@@ -45,55 +45,73 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    TOKPREEND = 258,
-    TOKPREST = 259,
-    TOKNORMAL = 260,
-    TOKUNIFORM = 261,
-    TOKNO_RANDOM = 262,
-    TOKEXPLICIT_REGENERATION = 263,
-    TOKREGENERATE_ON_STATE_CHANGE = 264,
-    TOKREGENERATE_ON_GET = 265,
-    TOKBS = 266,
-    TOKBE = 267,
-    TOKPS = 268,
-    TOKPE = 269,
-    TOKEQ = 270,
-    TOKCOM = 271,
-    TOKPARAMEND = 272,
-    NUMBER = 273,
-    NAME = 274
+    TST = 258,
+    TEND = 259,
+    TNAME = 260,
+    TCOUNT = 261,
+    TPOS = 262,
+    TOB = 263,
+    TEL = 264,
+    TCYL = 265,
+    TSIZE = 266,
+    TOKPREEND = 267,
+    TOKPREST = 268,
+    TOKNORMAL = 269,
+    TOKUNIFORM = 270,
+    TOKNO_RANDOM = 271,
+    TOKEXPLICIT_REGENERATION = 272,
+    TOKREGENERATE_ON_STATE_CHANGE = 273,
+    TOKREGENERATE_ON_GET = 274,
+    TOKBS = 275,
+    TOKBE = 276,
+    TOKPS = 277,
+    TOKPE = 278,
+    TOKEQ = 279,
+    TOKCOM = 280,
+    TOKPARAMEND = 281,
+    NUMBER = 282,
+    NAME = 283
   };
 #endif
 /* Tokens.  */
-#define TOKPREEND 258
-#define TOKPREST 259
-#define TOKNORMAL 260
-#define TOKUNIFORM 261
-#define TOKNO_RANDOM 262
-#define TOKEXPLICIT_REGENERATION 263
-#define TOKREGENERATE_ON_STATE_CHANGE 264
-#define TOKREGENERATE_ON_GET 265
-#define TOKBS 266
-#define TOKBE 267
-#define TOKPS 268
-#define TOKPE 269
-#define TOKEQ 270
-#define TOKCOM 271
-#define TOKPARAMEND 272
-#define NUMBER 273
-#define NAME 274
+#define TST 258
+#define TEND 259
+#define TNAME 260
+#define TCOUNT 261
+#define TPOS 262
+#define TOB 263
+#define TEL 264
+#define TCYL 265
+#define TSIZE 266
+#define TOKPREEND 267
+#define TOKPREST 268
+#define TOKNORMAL 269
+#define TOKUNIFORM 270
+#define TOKNO_RANDOM 271
+#define TOKEXPLICIT_REGENERATION 272
+#define TOKREGENERATE_ON_STATE_CHANGE 273
+#define TOKREGENERATE_ON_GET 274
+#define TOKBS 275
+#define TOKBE 276
+#define TOKPS 277
+#define TOKPE 278
+#define TOKEQ 279
+#define TOKCOM 280
+#define TOKPARAMEND 281
+#define NUMBER 282
+#define NAME 283
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 33 "presets.y" /* yacc.c:1909  */
+#line 34 "presets.y" /* yacc.c:1909  */
 
         float number;
         char *string;
 
-#line 97 "y.tab.h" /* yacc.c:1909  */
+#line 115 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
