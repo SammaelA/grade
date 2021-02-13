@@ -4,7 +4,52 @@
 
 namespace saver
 {
-    
+std::string textures_path = ".";  
+void set_textures_path (std::string &tp) {textures_path = tp;} 
+bool save(FILE *f, std::string &t)
+{
+            try
+        {
+            short k = t.size();
+            int c = fwrite(&k, sizeof(short), 1, f);
+            bool ok = (c == 1);
+            if (k > 0)
+            {
+                c = fwrite(t.c_str(), sizeof(char), k, f);
+                ok = ok && (c == k);
+            }
+            return ok;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+}
+bool load(FILE *f, std::string &t)
+{
+        try
+        {
+            short k;
+            int c = fread(&k, sizeof(short), 1, f);
+            bool ok = (c == 1);
+            if (k > 0 && ok)
+            {
+                char *ptr = new char[k];
+                c = fread(ptr, sizeof(char), k, f);
+                ok = ok && (c == k);
+                t.clear();
+                t = std::string(ptr);
+                delete[] ptr;
+            }
+            return ok;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+}
 bool save(FILE *f, std::vector<GLfloat> &t)
 {
     return savesv(f,t);
@@ -109,7 +154,7 @@ bool save(FILE *f, Texture &t)
     unsigned char *pixels = new unsigned char[4*t.W*t.H*t.layers];
     glBindTexture(t.type,t.texture);
     glGetTexImage(t.type,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-    std::string name = "atlas" + std::to_string(t.texture) + ".raw";
+    std::string name = textures_path + "/atlas" + std::to_string(t.texture) + ".raw";
     FILE *tex = fopen(name.c_str(), "wb"); 
     fwrite(pixels,sizeof(unsigned char),4*t.W*t.H*t.layers,tex);
     fclose(tex);
@@ -126,7 +171,7 @@ bool load(FILE *f, Texture &t)
              load(f,t.H) && load(f,t.layers);
 
     unsigned char *pixels = new unsigned char[4*t.W*t.H*t.layers];
-    std::string name = "atlas" + std::to_string(t.texture) + ".raw";
+    std::string name = textures_path + "/atlas" + std::to_string(t.texture) + ".raw";
     FILE *tex = fopen(name.c_str(), "rb"); 
     int c = fread(pixels,sizeof(unsigned char),4*t.W*t.H*t.layers,tex);
     status = status && 4*t.W*t.H*t.layers;
@@ -225,14 +270,14 @@ bool save(FILE *f, GrovePacked &t)
 {
     bool status = true;
     status = status && save(f,t.center) && savev(f,t.clouds) && savev(f,t.instancedBranches) &&
-             save(f,t.instancedCatalogue) && savev(f,t.roots) && save(f,t.uniqueCatalogue);
+             save(f,t.instancedCatalogue) && savev(f,t.roots) && save(f,t.uniqueCatalogue) && save(f,t.ggd_name);
     return status;
 }
 bool load(FILE *f, GrovePacked &t)
 {
     bool status = true;
     status = status && load(f,t.center) && loadv(f,t.clouds) && loadv(f,t.instancedBranches) &&
-             load(f,t.instancedCatalogue) && loadv(f,t.roots) && load(f,t.uniqueCatalogue);
+             load(f,t.instancedCatalogue) && loadv(f,t.roots) && load(f,t.uniqueCatalogue) && load(f,t.ggd_name);
     return status; 
 }
 }

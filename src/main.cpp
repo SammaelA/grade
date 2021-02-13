@@ -15,6 +15,7 @@
 #include "tinyEngine/utility.h"
 #include "grove.h"
 #include "tinyEngine/save_utils/config.h"
+#include <sys/stat.h>
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -222,26 +223,85 @@ std::function<void(Model *m)> construct_floor = [&](Model *h) {
   }
 };
 
-int main(int argc, char *args[])
+int main(int argc, char *argv[])
 {
+  bool generation_needed = false;
+  bool saving_needed = false;
+  bool loading_needed = false;
+  std::string grove_type_name = "default";
+  std::string save_path = ".";
+  std::string load_path = ".";
+  int k = 1;
+  while (k<argc)
+  {
+    if (std::string(argv[k]) == "-g")
+    {
+      generation_needed = true;
+      if (argc == k + 1)
+      {
+        logerr("write grove type name after -g");
+        return 1;
+      }
+      else
+        grove_type_name = argv[k+1];
+      k+=2;
+    }
+    else if (std::string(argv[k]) == "-s")
+    {
+      saving_needed = true;
+      if (argc == k + 1)
+      {
+        logerr("write path to save after -s");
+        return 1;
+      }
+      else
+        save_path = argv[k+1];
+      k+=2;
+    }
+    else if (std::string(argv[k]) == "-l")
+    {
+      loading_needed = true;
+      if (argc == k + 1)
+      {
+        logerr("write path to load from after -l");
+        return 1;
+      }
+      else
+        load_path = argv[k+1];
+      k+=2;
+    }
+    else if (std::string(argv[k]) == "-h")
+    {
+      logerr("-g <grove type name> -s <save path> -l <load path>");
+      return 1;
+    }
+    else
+    {
+      logerr("unknown command \"%s\". Write -h for help",argv[k]);
+      return 1;
+    }
+  }
+  if (saving_needed && !generation_needed)
+  {
+    logerr("Error: -s should be used only with -g flag");
+    return 1;
+  }
+  if (!generation_needed && !loading_needed)
+  {
+    logerr("You choosed to do nothing. Program will be closed");
+    return 0;
+  }
+  //base initialization
   glewInit();
   Tiny::view.lineWidth = 1.0f;
   Tiny::window("Procedural Tree", WIDTH, HEIGHT);
   Tiny::event.handler = eventHandler;
   textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
+
   config.load_config();
   config.load_ggds();
-  Texture tex = textureManager.get("woodd");
-  Texture wood = textureManager.get("wood");
-  TreeStructureParameters par;
+
   camera.pos = glm::vec3(-200,50,0);
-  for (int i = 0; i < 100; i++)
-  {
-    t[i] = Tree();
-    t[i].leaf = tex;
-    t[i].wood = wood;
-    t[i].params = par;
-  }
 
   Model floor(construct_floor);
 
@@ -250,11 +310,57 @@ int main(int argc, char *args[])
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
   Shader debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   BillboardTiny shadow(1600, 1600, false);
-  debugVisualizer = new DebugVisualizer(wood, &defaultShader);
-  setup();
+  debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
+  srand(time(NULL));
   std::vector<float> LODs_dists = {1000,500,300,100};
+
+  if (generation_needed)
+  {
+    ggd = config.get_ggd(grove_type_name);
+    gen.create_grove(ggd, grove, *debugVisualizer, t);
+  }
+  if (saving_needed)
+  {
+    struct stat sb;
+    if (stat(save_path.c_str(), &sb) != 0)
+    {
+      mkdir(save_path.c_str(),0777);
+    }
+    if (!S_ISDIR(sb.st_mode))
+    {
+      logerr("given save path \"%s\" is not a directory",save_path.c_str());
+    }
+    std::string f_path = save_path + std::string("/grove.dat");
+    FILE *f = fopen(f_path.c_str(), "wb");
+    saver::set_textures_path(save_path);
+    saver::save(f,grove);
+    fclose(f);
+  }
+  if (loading_needed)
+  {
+    grove = GrovePacked();
+    struct stat sb;
+    if (stat(load_path.c_str(), &sb) != 0)
+    {
+      mkdir(load_path.c_str(),0777);
+    }
+    if (!S_ISDIR(sb.st_mode))
+    {
+      logerr("given load path \"%s\" is not a directory",load_path.c_str());
+    }
+    std::string f_path = load_path + std::string("/grove.dat");
+    FILE *f = fopen(f_path.c_str(), "rb");
+    saver::set_textures_path(load_path);
+    saver::load(f,grove);
+    ggd = config.get_ggd(grove.ggd_name);
+    fclose(f);
+  }
   GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
   GR = &groveRenderer;
+
+
+
+
   Tiny::view.pipeline = [&]() {
     shadow.target();
     if (drawshadow)
@@ -318,7 +424,8 @@ int main(int argc, char *args[])
         groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
       }
       else
-      {
+      {//deprecated
+      /*
         defaultShader.uniform("drawfloor", false);
         defaultShader.texture("tex", wood);
         defaultShader.uniform("wireframe", false);
@@ -327,7 +434,7 @@ int main(int argc, char *args[])
         {
           t[i].render(defaultShader, cloudnum, prc);
         }
-        debugVisualizer->render(prc,render_mode);
+        debugVisualizer->render(prc,render_mode);*/
       }
     }
   };

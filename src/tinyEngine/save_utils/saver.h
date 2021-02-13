@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <cstdio>
 #include <vector>
 #include <exception>
@@ -24,7 +25,12 @@ struct BillboardCloudData;
 struct GrovePacked;
 namespace saver
 {
-        bool save(FILE *f, std::vector<GLfloat> &t);
+    extern std::string textures_path;
+    void set_textures_path (std::string &tp);
+    bool save(FILE *f, std::string &t);
+    bool load(FILE *f, std::string &t);
+
+    bool save(FILE *f, std::vector<GLfloat> &t);
     bool load(FILE *f, std::vector<GLfloat> &t);
 
     bool save(FILE *f, std::vector<PackedBranch> &t);

@@ -950,13 +950,13 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         trees[i].voxels = nullptr;
     }
 
-    FILE *f = fopen("grove.dat", "wb");
-    saver::save(f,grove);
-    fclose(f);
-    f = fopen("grove.dat","rb");
-    grove = GrovePacked();
-    saver::load(f,grove);
-    fclose(f);
+    //FILE *f = fopen("grove.dat", "wb");
+    //saver::save(f,grove);
+    //fclose(f);
+    //f = fopen("grove.dat","rb");
+    //grove = GrovePacked();
+    //saver::load(f,grove);
+    //fclose(f);
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
     std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;

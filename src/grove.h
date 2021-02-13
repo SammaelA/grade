@@ -86,6 +86,7 @@ struct InstancedBranch
 struct GrovePacked
 {
     glm::vec3 center;
+    std::string ggd_name;
     std::vector<BranchStructure> roots;
     BranchCatalogue instancedCatalogue;
     BranchCatalogue uniqueCatalogue;

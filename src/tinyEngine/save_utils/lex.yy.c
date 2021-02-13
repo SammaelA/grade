@@ -889,7 +889,7 @@ return TEND;
 case 2:
 YY_RULE_SETUP
 #line 7 "presets.l"
-fprintf(stderr,"grove ");return TST;
+return TST;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
@@ -904,12 +904,12 @@ return TCOUNT;
 case 5:
 YY_RULE_SETUP
 #line 10 "presets.l"
-fprintf(stderr,"pos ");return TPOS;
+return TPOS;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 11 "presets.l"
-fprintf(stderr,"c ");return TCOUNT;
+return TCOUNT;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
@@ -944,7 +944,7 @@ return TCYL;
 case 13:
 YY_RULE_SETUP
 #line 18 "presets.l"
-fprintf(stderr,"s ");return TSIZE;
+return TSIZE;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
@@ -954,7 +954,7 @@ return TOKPREEND;
 case 15:
 YY_RULE_SETUP
 #line 20 "presets.l"
-fprintf(stderr,"pr ");return TOKPREST;
+return TOKPREST;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
@@ -1034,12 +1034,12 @@ return TOKPARAMEND;
 case 31:
 YY_RULE_SETUP
 #line 36 "presets.l"
-yylval.number=atof(yytext);fprintf(stderr,"val = %f \n",yylval.number); return NUMBER;
+yylval.number=atof(yytext); return NUMBER;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 37 "presets.l"
-yylval.string=strdup(yytext);fprintf(stderr,"str = %s \n",yytext); return NAME;
+yylval.string=strdup(yytext); return NAME;
 	YY_BREAK
 case 33:
 /* rule 33 can match eol */
