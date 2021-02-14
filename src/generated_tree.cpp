@@ -10,6 +10,7 @@
 #include "body.h"
 #include <chrono>
 #include "tinyEngine/save_utils/saver.h"
+#include "impostor.h"
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -921,8 +922,11 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     cl2.visualize_clusters(debug, false);
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(1024, 1024, curGgd.types);
-    cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
+    //BillboardCloudRaw *cloud0 = new BillboardCloudRaw(1024, 1024, curGgd.types);
+    //cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
+    ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
+    grove.impostors.push_back(ImpostorsData());
+    ib->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.impostors.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
     BillboardCloudRaw *cloud1 = new BillboardCloudRaw(2048, 2048, curGgd.types);
     cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());

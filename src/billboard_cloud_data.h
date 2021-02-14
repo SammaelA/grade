@@ -42,3 +42,23 @@ struct BillboardCloudData
     TextureAtlas atlas;
     BillboardCloudData() {};
 };
+struct BCyl
+{
+    glm::vec3 center;
+    float r;
+    float h_2;//distance from center to base, h/2;
+};
+struct Impostor
+{
+    std::vector<Billboard> slices;
+    Billboard top_slice;
+    BCyl bcyl;
+};
+struct ImpostorsData
+{
+    bool valid = false;
+    int level = 0;
+    std::vector<Impostor> impostors;
+    TextureAtlas atlas;
+    ImpostorsData() {};
+};

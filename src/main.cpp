@@ -357,7 +357,8 @@ int main(int argc, char *argv[])
   }
   GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
   GR = &groveRenderer;
-
+  for (int i=0;i<ggd.obstacles.size();i++)
+    debugVisualizer->add_bodies(ggd.obstacles[i],1);
 
 
 
@@ -422,6 +423,7 @@ int main(int argc, char *argv[])
       if (draw_clusterized)
       {
         groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
+        debugVisualizer->render(projection * camera.camera(),render_mode);
       }
       else
       {//deprecated

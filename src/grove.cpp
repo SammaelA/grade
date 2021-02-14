@@ -3,6 +3,7 @@
 #include "visualizer.h"
 #include "texture_manager.h"
 #include "billboard_cloud.h"
+#include "impostor.h"
 
 GroveRenderer::GroveRenderer(): 
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
@@ -90,6 +91,9 @@ GroveRenderer()
     {
         add_instance_model(LODs.back(), source, b,max_level,false);
     }
+
+    if (!source->impostors.empty())
+        LODs.front().imp_rend = new ImpostorRenderer(&(source->impostors[0]));
 }
 GroveRenderer::~GroveRenderer()
 {
@@ -168,7 +172,8 @@ void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::ve
     glm::vec4 ss = glm::vec4(screen_size.x,screen_size.y,1/screen_size.x,1/screen_size.y);
     if (LODs[lod].cloud)
         LODs[lod].cloud->render(prc,camera_pos,mn_mx,ss);
-    
+    if (LODs[lod].imp_rend)
+        LODs[lod].imp_rend->render(prc,camera_pos,mn_mx,ss);
     rendererInstancing.use();
     rendererInstancing.uniform("projectionCamera", prc);
     rendererInstancing.uniform("screen_size",ss);

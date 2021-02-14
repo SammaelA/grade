@@ -33,7 +33,7 @@ public:
     {
         renderMode = m;
     }
-private:
+protected:
     struct BranchProjectionData
     {
         float projection_err = 0.0;

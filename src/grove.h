@@ -5,6 +5,8 @@
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
 #include "billboard_cloud_data.h"
+
+class ImpostorRenderer;
 class BillboardCloudRenderer;
 class GroveGenerationData;
 struct PackedLeaf
@@ -93,6 +95,7 @@ struct GrovePacked
 
     std::vector<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
+    std::vector<ImpostorsData> impostors;
     GrovePacked() : uniqueCatalogue(7), instancedCatalogue(7){};
 };
 class GroveRenderer
@@ -102,7 +105,8 @@ public:
     struct LOD
     {
         std::vector<std::pair<uint,Model *>> models;
-        BillboardCloudRenderer *cloud;
+        BillboardCloudRenderer *cloud = nullptr;
+        ImpostorRenderer *imp_rend = nullptr;
         std::vector<std::pair<uint,Instance *>> instances;
         std::vector<std::pair<uint,Instance *>> leaves_instances;
         float max_dist;

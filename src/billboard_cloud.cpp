@@ -255,10 +255,11 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
     vec3 base_joint_rel = rot * vec4(base_joint, 1.0f);
     base_joint_rel -= box.position;
     vec4 pos = rot_inv * vec4(box.position, 1.0f);
-    if (type == 1)
+    if (type == 1 || type == 0)
     {
         vec3 npos = vec3(pos.x, pos.y, pos.z);
-        npos += base_joint_rel.z * box.c;
+        if (type == 1)
+            npos += base_joint_rel.z * box.c;
         positions.push_back(npos);
         positions.push_back(npos + box.sizes.x * box.a);
         positions.push_back(npos + box.sizes.x * box.a + box.sizes.y * box.b);
@@ -266,6 +267,10 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
 
         float d = -dot(box.c, npos);
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
+        for (vec3 pos : positions)
+        {
+            logerr("pos = %f %f %f",pos.x,pos.y,pos.z);
+        }
     }
 }
 void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
