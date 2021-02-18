@@ -86,6 +86,16 @@ int TextureAtlas::add_tex()
     else
         return curNum - 1;
 }
+glm::vec4 TextureAtlas::tc_transform(int num)
+{
+    int l = num / (gridHN*gridWN);
+    num = num % (gridHN*gridWN);
+
+    glm::vec2 tsc(1.0 / gridWN, 1.0 / gridHN);
+    glm::vec2 tsh(num % gridWN + l, num / gridWN);
+
+    return glm::vec4(tsc.x,tsc.y,tsh.x,tsh.y);
+}
 void TextureAtlas::process_tc(int num, glm::vec3 &tc)
 {
     int l = num / (gridHN*gridWN);

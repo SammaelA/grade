@@ -11,6 +11,10 @@ struct InstanceDataArrays
     std::vector<glm::vec3> centers_par;
     std::vector<glm::vec3> centers_self;
 };
+struct InstancingReadyModel
+{
+    int id = -1;
+};
     struct Billboard
     {
         int id = -1;
@@ -19,6 +23,7 @@ struct InstanceDataArrays
         glm::vec4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
         bool instancing;
         void to_model(Model *m, TextureAtlas &atlas);
+        std::vector<glm::vec3> get_tc(TextureAtlas &atlas);
         Billboard(){};
         Billboard(const Billboard &b)
         {
@@ -29,7 +34,7 @@ struct InstanceDataArrays
         }
         Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
     };
-struct BillboardData
+struct BillboardData : InstancingReadyModel
 {
     std::vector<Billboard> billboards;
     InstanceDataArrays IDA;
@@ -48,11 +53,12 @@ struct BCyl
     float r;
     float h_2;//distance from center to base, h/2;
 };
-struct Impostor
+struct Impostor : InstancingReadyModel
 {
     std::vector<Billboard> slices;
     Billboard top_slice;
     BCyl bcyl;
+    InstanceDataArrays IDA;
 };
 struct ImpostorsData
 {

@@ -24,6 +24,7 @@ public:
     void set_grid(int w, int h);
     int add_tex();
     void process_tc(int num, glm::vec3 &tc);
+    glm::vec4 tc_transform(int num);
     bool target(int num);
     glm::mat4 tex_transform(int num);
     glm::ivec4 get_sizes() { return glm::ivec4(width, height, gridWN, gridHN); }

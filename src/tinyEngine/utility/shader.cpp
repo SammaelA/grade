@@ -13,7 +13,12 @@ void Shader::setup(slist _s){
   {
     path = base_shader_path + path;
   }
-  if(s.size() == 2){
+  if (s.size() == 1)
+  {
+    computeShader = addProgram((data_dir/s[0]).string(), GL_COMPUTE_SHADER);
+  }
+  else if(s.size() == 2)
+  {
     vertexShader   = addProgram((data_dir/s[0]).string(), GL_VERTEX_SHADER);
     fragmentShader = addProgram((data_dir/s[1]).string(), GL_FRAGMENT_SHADER);
   }

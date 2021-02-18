@@ -80,7 +80,7 @@ struct BranchStructure
     std::vector<std::pair<glm::mat4, BranchStructure>> childBranchesInstanced;
     explicit BranchStructure(unsigned _pos = 0) {pos = _pos;}
 };
-struct InstancedBranch
+struct InstancedBranch : InstancingReadyModel
 {
     std::vector<unsigned> branches;
     InstanceDataArrays IDA;
@@ -112,15 +112,31 @@ public:
         float max_dist;
     };
     void render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
-    void render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances);
     GroveRenderer();
     ~GroveRenderer();
 private:
+    struct LOD_info
+    {
+        uint offset = 0;
+        uint pad = 0;
+        glm::vec2 min_max;
+    };
+    struct InstanceData
+    {
+        glm::vec4 center_self;
+        glm::vec4 center_par;
+        glm::mat4 projection_camera;
+    };
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
+    void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LOD_info> &lod_infos, std::vector<InstanceData> &instances,
+                      std::vector<glm::uvec2> &models_intervals);
     std::vector<LOD> LODs;
     Shader renderer;
     Shader rendererInstancing;
+    Shader lodCompute;
     GrovePacked *source;
     GroveGenerationData *ggd;
+    GLuint lods_buf, inst_buf, intervals_buf, indexes_buf, counts_buf;
+    int instance_models_count = 0;
 };

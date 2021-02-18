@@ -1,9 +1,10 @@
 grove bush_grove
 {
-count = 2
+count = 3
 pos = (0 0 0)
 size = (300 200 300)
-preset = {bush wood leaf}
+preset = {bush wood2 leaf2}
+preset = {default wood leaf}
 box = {(150 0 0) (100 0 0) (0 100 0) (0 0 100)}
 }
 grove_end

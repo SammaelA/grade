@@ -37,10 +37,11 @@ public:
     glDeleteShader(fragmentShader);
     glDeleteShader(geometryShader);
     glDeleteShader(vertexShader);
+    glDeleteShader(computeShader);
   }
 
   GLuint program;   //Shader Program ID
-  GLuint vertexShader, geometryShader, fragmentShader;
+  GLuint vertexShader, geometryShader, fragmentShader, computeShader;
   int boundtextures;
 
   std::unordered_map<std::string, GLuint> ssbo; //SSBO Storage
@@ -74,7 +75,10 @@ void Shader::buffer(std::string name, std::vector<T>& buf, bool update){
 
   void  uniform(std::string name, const int u){
   glUniform1i(glGetUniformLocation(program, name.c_str()), u); }
-
+  
+  void  uniform(std::string name, const uint u){
+  glUniform1ui(glGetUniformLocation(program, name.c_str()), u); }
+  
   void  uniform(std::string name, const float u){
   glUniform1f(glGetUniformLocation(program, name.c_str()), u); }
 

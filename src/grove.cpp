@@ -8,7 +8,8 @@
 GroveRenderer::GroveRenderer(): 
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
-                   {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"})
+                   {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
+lodCompute({"lod_compute.hlsl"},{})
 {
 
 }
@@ -94,6 +95,87 @@ GroveRenderer()
 
     if (!source->impostors.empty())
         LODs.front().imp_rend = new ImpostorRenderer(&(source->impostors[0]));
+    
+    std::vector<LOD_info> lod_infos;
+    std::vector<InstanceData> instances;
+    std::vector<glm::uvec2> models_intervals;
+
+    for (LOD &lod : LODs)
+    {
+        LOD_info Li;
+        Li.min_max.y = lod.max_dist;
+        Li.offset = instances.size();
+        if (!lod_infos.empty())
+        {
+            lod_infos.back().min_max.x = Li.min_max.y;
+        }
+        lod_infos.push_back(Li);
+        
+        if (lod.imp_rend)
+        {
+            for (Impostor &imp :lod.imp_rend->data->impostors)
+            {
+                imp.id = models_intervals.size()/2;
+                IDA_to_bufer(imp.IDA, lod_infos, instances, models_intervals);
+            }
+        }
+
+        if (lod.cloud)
+        {
+            for (BillboardData &bill :lod.cloud->data->billboards)
+            {
+                bill.id = models_intervals.size()/2;
+                IDA_to_bufer(bill.IDA, lod_infos, instances, models_intervals);
+            }
+        }
+        
+    }
+
+    //TODO - add billboards and models
+    instance_models_count = models_intervals.size()/2;
+    
+    glGenBuffers(1, &lods_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LOD_info)*lod_infos.size(), lod_infos.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &inst_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inst_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(InstanceData)*instances.size(), instances.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &indexes_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, indexes_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 16*sizeof(uint)*instances.size(), NULL, GL_DYNAMIC_COPY);
+
+    glGenBuffers(1, &intervals_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, intervals_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 2*sizeof(uint)*models_intervals.size(), models_intervals.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &counts_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 2*sizeof(uint)*models_intervals.size(), NULL, GL_DYNAMIC_READ);
+
+    lod_infos.clear();
+    instances.clear();
+    models_intervals.clear();
+}
+void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LOD_info> &lod_infos, 
+                                 std::vector<InstanceData> &instances, std::vector<glm::uvec2> &models_intervals)
+{
+    uint st = instances.size();
+    if (ida.centers_par.size() != ida.centers_self.size() || ida.centers_par.size() != ida.transforms.size())
+    {
+        logerr("invalid Instance Data Arrays");
+        return;
+    }
+    for (int i=0; i<ida.centers_self.size(); i++)
+    {
+        instances.push_back(InstanceData());
+        instances.back().projection_camera = ida.transforms[i];
+        instances.back().center_par = glm::vec4(ida.centers_par[i],1);
+        instances.back().center_self = glm::vec4(ida.centers_self[i],1);
+    }
+    models_intervals.push_back(glm::uvec2(st,instances.size()));
+    models_intervals.push_back(glm::uvec2(100,100));
 }
 GroveRenderer::~GroveRenderer()
 {
@@ -112,90 +194,108 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
-void GroveRenderer::render_auto_LOD(glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
+void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
 {
-    float len = glm::length(source->center - camera_pos);
-    float sz = sqrt(ggd->size.x*ggd->size.x + ggd->size.z*ggd->size.z);
-    for (int i=0;i<LODs.size() - 1;i++)
+    if (LODs.size() == 0)
+        return;
+    std::vector<int> lods_to_render;
+    std::vector<uint> counts;
+
+    if (explicit_lod == -1)
     {
-        if (LODs[i + 1].max_dist < len + sz && LODs[i].max_dist >= len - sz)
-            render(i,prc,camera_pos, screen_size);
-    }
-    /*
-    int lod = -1;
-    float len = glm::length(source->center - camera_pos);
-    for (int i=1;i<LODs.size();i++)
-    {
-        if (LODs[i].max_dist < len && LODs[i-1].max_dist >= len)
+        float len = glm::length(source->center - camera_pos);
+        float sz = sqrt(ggd->size.x * ggd->size.x + ggd->size.z * ggd->size.z);
+        for (int i = 0; i < LODs.size() - 1; i++)
         {
-            lod = i - 1;
-            break;
+            if (LODs[i + 1].max_dist < len + sz && LODs[i].max_dist >= len - sz)
+                lods_to_render.push_back(i);
         }
     }
-    if (LODs.back().max_dist > len)
-        lod = LODs.size() - 1;
-    if (lod == -1)
-        return;
     else
-        render(lod,prc,camera_pos, screen_size);
-    */
-}
-void GroveRenderer::render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
-{
-    if (LODs.size()==0)
-        return;
-    if (lod == -1)
     {
-        render_auto_LOD(prc,camera_pos, screen_size);
-        return;
+        if (explicit_lod >= LODs.size())
+        {
+            logerr("trying to render grove with wrong explicit LOD number %d. Grove has %d LODs", explicit_lod, LODs.size());
+            explicit_lod = LODs.size() - 1;
+        }
+        else if (explicit_lod < 0)
+        {
+            logerr("trying to render grove with wrong explicit LOD number %d. Grove has %d LODs", explicit_lod, LODs.size());
+            explicit_lod = 0;
+        }
+        lods_to_render.push_back(explicit_lod);
     }
-    if (lod < 0 || lod >= LODs.size())
-    {
-        logerr("trying to render grove with wrong LOD number %d. Grove has %d LODs",lod, LODs.size());
-        //return;
-        lod = LODs.size() - 1;
-    }
-    renderer.use();
-    renderer.uniform("projectionCamera", prc);
-    for (int j=0;j < LODs[lod].models.size();j++)
-    {
-        Model *m = LODs[lod].models[j].second;
-        renderer.texture("tex", ggd->types[LODs[lod].models[j].first].wood);
-        renderer.uniform("model", m->model);
-        m->update();
-        m->render(GL_TRIANGLES);
-    }
-    float mx = LODs[lod].max_dist == -10 ? 1000 : LODs[lod].max_dist;
-    float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
-    glm::vec2 mn_mx = glm::vec2(mn,mx);
-    Texture noise = textureManager.get("noise");
-    glm::vec4 ss = glm::vec4(screen_size.x,screen_size.y,1/screen_size.x,1/screen_size.y);
-    if (LODs[lod].cloud)
-        LODs[lod].cloud->render(prc,camera_pos,mn_mx,ss);
-    if (LODs[lod].imp_rend)
-        LODs[lod].imp_rend->render(prc,camera_pos,mn_mx,ss);
-    rendererInstancing.use();
-    rendererInstancing.uniform("projectionCamera", prc);
-    rendererInstancing.uniform("screen_size",ss);
-    rendererInstancing.texture("noise",noise);
-    rendererInstancing.uniform("LOD_dist_min_max",mn_mx);
-    rendererInstancing.uniform("camera_pos",camera_pos);
-    for (auto &in : LODs[lod].instances)
-    {
-        rendererInstancing.texture("tex", ggd->types[in.first].wood);
-        Model *m = (Model *)(in.second->m);
-        m->update();
-        in.second->render(GL_TRIANGLES);
-    }
+    lodCompute.use();
+    lodCompute.uniform("lods_count", (uint)LODs.size());
+    lodCompute.uniform("camera_pos", camera_pos);
+    lodCompute.uniform("trans", 20.0f);
 
-    for (auto &in : LODs[lod].leaves_instances)
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inst_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, indexes_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, intervals_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);
+
+    glDispatchCompute(instance_models_count, 1, 1);
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, counts_buf);
+    GLuint *ptr = nullptr;
+    ptr = (GLuint *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+    for (int i = 0; i < 4 * instance_models_count; i += 4)
     {
-        rendererInstancing.texture("tex", ggd->types[in.first].leaf);
-        Model *m = (Model *)(in.second->m);
-        m->update();
-        in.second->render(GL_TRIANGLES);
+        counts.push_back(ptr[i]);
+        //logerr("%d %d",counts.back(), instance_models_count);
+    }
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    for (int lod : lods_to_render)
+    {
+        renderer.use();
+        renderer.uniform("projectionCamera", prc);
+        for (int j = 0; j < LODs[lod].models.size(); j++)
+        {
+            Model *m = LODs[lod].models[j].second;
+            renderer.texture("tex", ggd->types[LODs[lod].models[j].first].wood);
+            renderer.uniform("model", m->model);
+            m->update();
+            m->render(GL_TRIANGLES);
+        }
+        float mx = LODs[lod].max_dist == -10 ? 1000 : LODs[lod].max_dist;
+        float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
+        glm::vec2 mn_mx = glm::vec2(mn, mx);
+        Texture noise = textureManager.get("noise");
+        glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
+        if (LODs[lod].cloud)
+            LODs[lod].cloud->render(prc, camera_pos, mn_mx, ss);
+        if (LODs[lod].imp_rend)
+            LODs[lod].imp_rend->render(counts, prc, camera_pos, mn_mx, ss);
+        rendererInstancing.use();
+        rendererInstancing.uniform("projectionCamera", prc);
+        rendererInstancing.uniform("screen_size", ss);
+        rendererInstancing.texture("noise", noise);
+        rendererInstancing.uniform("LOD_dist_min_max", mn_mx);
+        rendererInstancing.uniform("camera_pos", camera_pos);
+        for (auto &in : LODs[lod].instances)
+        {
+            rendererInstancing.texture("tex", ggd->types[in.first].wood);
+            Model *m = (Model *)(in.second->m);
+            m->update();
+            in.second->render(GL_TRIANGLES);
+        }
+
+        for (auto &in : LODs[lod].leaves_instances)
+        {
+            rendererInstancing.texture("tex", ggd->types[in.first].leaf);
+            Model *m = (Model *)(in.second->m);
+            m->update();
+            in.second->render(GL_TRIANGLES);
+        }
     }
 }
+
 void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves)
 {
     if (branch.branches.empty())

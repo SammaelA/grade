@@ -210,6 +210,20 @@ void BillboardCloudRaw::set_textures(Texture _wood)
 {
     wood = _wood;
 }
+std::vector<glm::vec3> Billboard::get_tc(TextureAtlas &atlas)
+{
+    if (positions.size() == 4)
+    {
+        std::vector<glm::vec3> tcs;
+        std::vector<float> tex_c{0,0, 1,0, 0,1, 1,1};
+        for (int i = 0; i < 4; i++)
+        {
+            tcs.push_back(vec3(tex_c[2 * i], tex_c[2 * i + 1],0));
+            atlas.process_tc(id, tcs.back());
+        }
+        return tcs;
+    }
+}
 void Billboard::to_model(Model *m, TextureAtlas &atlas)
 {
     if (positions.size() == 4)
@@ -267,10 +281,6 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
 
         float d = -dot(box.c, npos);
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
-        for (vec3 pos : positions)
-        {
-            logerr("pos = %f %f %f",pos.x,pos.y,pos.z);
-        }
     }
 }
 void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)

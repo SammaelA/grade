@@ -724,7 +724,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
             }
         }
     }
-    debug.visualize_light_voxels(voxels,glm::vec3(-100,-10,-100),glm::vec3(200,250,200),glm::vec3(single_voxel_size),0.5,0.001);
+    //debug.visualize_light_voxels(voxels,glm::vec3(-100,-10,-100),glm::vec3(200,250,200),glm::vec3(single_voxel_size),0.5,0.001);
 }
 void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct)
 {

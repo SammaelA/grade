@@ -1,4 +1,5 @@
 #include "impostor.h"
+#include "texture_manager.h"
 
 using glm::vec3;
 using glm::vec4;
@@ -26,7 +27,20 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
         base_branches.back().base_seg_n = i;
     }
     int slices_n = 8;
-
+    std::map<int,int> proj;
+    if (data)
+    {
+        data->level = branch_level;
+        data->valid = true;
+        data->atlas = atlas;
+        data->impostors.clear();
+        for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
+        {
+            proj.emplace(it->first,data->impostors.size());
+            data->impostors.push_back(Impostor());
+            data->impostors.back().IDA = it->second;
+        }
+    }
     atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
     glm::ivec4 sizes = atlas.get_sizes();
     int cnt = ceil(sqrt((base_branches.size()*(slices_n + 1))/atlas.layers_count() + 1));
@@ -36,8 +50,8 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
 
     for (Branch &b : base_branches)
     {
-        data->impostors.push_back(Impostor());
-        make_impostor(b,data->impostors.back(),slices_n); 
+        //data->impostors.push_back(Impostor());
+        make_impostor(b,data->impostors[proj.at(b.base_seg_n)],slices_n); 
     }
     data->valid = !data->impostors.empty();
     data->level = 0;
@@ -45,7 +59,6 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
 }
 void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
 {
-    logerr("!!!! %d",slices_n);
     BBox bbox = get_bbox(&br,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
     imp.bcyl.center = bbox.position + 0.5f*bbox.sizes;
     imp.bcyl.r = 0.5*sqrt(SQR(bbox.sizes.x) + SQR(bbox.sizes.z));
@@ -86,7 +99,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         in_rot = inverse(rot_inv);
         cur.position = in_rot * vec4(cur.position,1);
         num = atlas.add_tex();
-        logerr("!!!! %d",num);
+
         bill = Billboard(cur, num, br.base_seg_n, 0, base_joint);
         create_billboard(ttd[br.type_id], &br, cur, tg, num, bill);
 
@@ -103,7 +116,8 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     glGenerateTextureMipmap(atlas.tex().texture);
 }
 ImpostorRenderer::ImpostorRenderer(ImpostorsData *data):
-impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 //impostorRendererInstancing({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
     if (!data || !data->valid)
@@ -116,21 +130,37 @@ impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "
     std::vector<float> s_verts;
     for (Impostor &imp : data->impostors)
     {
-        offsets.push_back(s_verts.size()/4);
-        for (vec3 &pos : imp.top_slice.positions)
+        offsets.push_back(s_verts.size()/8);
+        std::vector<glm::vec3> tcs = imp.top_slice.get_tc(data->atlas);
+        for (int i = 0;i<MIN(imp.top_slice.positions.size(),tcs.size());i++)
         {
+            vec3 &pos = imp.top_slice.positions[i];
+            
             s_verts.push_back(pos.x);
             s_verts.push_back(pos.y);
             s_verts.push_back(pos.z);
             s_verts.push_back(1);
+
+            s_verts.push_back(tcs[i].x);
+            s_verts.push_back(tcs[i].y);
+            s_verts.push_back(tcs[i].z);
+            s_verts.push_back(1);
         }
         for (Billboard &b : imp.slices)
         {
-            for (vec3 &pos : b.positions)
+            tcs = b.get_tc(data->atlas);
+            for (int i = 0;i<MIN(b.positions.size(),tcs.size());i++)
             {
+                vec3 &pos = b.positions[i];
+
                 s_verts.push_back(pos.x);
                 s_verts.push_back(pos.y);
                 s_verts.push_back(pos.z);
+                s_verts.push_back(1);
+                            
+                s_verts.push_back(tcs[i].x);
+                s_verts.push_back(tcs[i].y);
+                s_verts.push_back(tcs[i].z);
                 s_verts.push_back(1);
             }
         }
@@ -153,38 +183,33 @@ impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "
 
 
 }
-void ImpostorRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max,
+void ImpostorRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max,
                               glm::vec4 screen_size)
 {
-    static float alpha = 0;
-    alpha += 0.01;
-    impostorRenderer.use();
-    impostorRenderer.uniform("projectionCamera", projectionCamera);
-    impostorRenderer.texture("tex", data->atlas.tex());
+    impostorRendererInstancing.use();
+    impostorRendererInstancing.uniform("projectionCamera", projectionCamera);
+    impostorRendererInstancing.texture("tex", data->atlas.tex());
+    impostorRendererInstancing.uniform("camera_pos", camera_pos);
+    impostorRendererInstancing.uniform("screen_size", screen_size);
+    impostorRendererInstancing.texture("noise", textureManager.get("noise"));
+
     for (int i=0;i<models.size();i++)
     {
-        impostorRenderer.uniform("slice_offset",(int)offsets[i]);
-        impostorRenderer.uniform("slice_verts",(int)data->impostors[i].slices[0].positions.size());
-        //impostorRenderer.uniform("slice_n",j);
-        vec3 center = data->impostors[i].bcyl.center;
-        vec3 viewdir = center - camera_pos;
-        viewdir.y = 0;
-        viewdir = glm::normalize(viewdir);
-        //viewdir = vec3(cos(alpha),0,sin(alpha));
-        float phi = acos(dot(vec3(0,0,-1),viewdir));
-        if (viewdir.x > 0)
-            phi = 2*PI - phi;
-        int slice_count = data->impostors[i].slices.size();
-        int slice_n = (int)round(phi*slice_count/(2*PI)) % 8; 
-        phi = phi - slice_n*2*PI/slice_count;
-        //slogerr("phi %f d_phi %f (%f) slice_n %d %d (%f %f %f)",phi + slice_n*2*PI/slice_count, phi, 
-        //dot(vec3(0,0,-1),viewdir), slice_n, slice_count, viewdir.x,viewdir.y,viewdir.z);
-        mat4 rot = glm::translate(glm::rotate(glm::translate(mat4(1.0f),center), phi,vec3(0,1,0)),-center);
-        impostorRenderer.uniform("rot", rot);
-        for (int j=1;j<9;j++)
+        impostorRendererInstancing.uniform("slice_offset",(int)offsets[i]);
+        impostorRendererInstancing.uniform("slice_verts",(int)data->impostors[i].slices[0].positions.size());
+        impostorRendererInstancing.uniform("slice_count", (int)(data->impostors[i].slices.size()));
+        impostorRendererInstancing.uniform("id",(uint)data->impostors[i].id);
+        impostorRendererInstancing.uniform("imp_center", data->impostors[i].bcyl.center);
+
+        if (data->impostors[i].id >= 0 && data->impostors[i].id < counts.size() && counts[data->impostors[i].id] > 0)
         {
-            impostorRenderer.uniform("slice_n", slice_n + 1);
-            models[i]->render(GL_TRIANGLES);
+            Model *m = models[i];
+            if(m && m->indexed)
+            {
+                glBindVertexArray(m->vao);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
+                glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[data->impostors[i].id]);
+            }
         }
     }
 }

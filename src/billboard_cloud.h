@@ -81,6 +81,7 @@ protected:
 };
 struct BillboardCloudRenderer
 {   
+    friend class GroveRenderer;
     enum RenderMode
     {
         NOTHING,

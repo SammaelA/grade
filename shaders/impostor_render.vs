@@ -3,6 +3,7 @@
 struct SliceVertexData 
 {
     vec4 position;
+	vec4 tcs;
 };
 layout(std140, binding=2) buffer Slices 
 {
@@ -39,8 +40,8 @@ void main(void) {
 	int sl_x = slice_n % 3;
 	int sl_y = slice_n / 3;
 
-	ex_Tex = in_Tex.xyz;
+	ex_Tex = sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].tcs.xyz;
 
-	ex_Tex.x = 0.333*(ex_Tex.x + sl_x);
-	ex_Tex.y = 0.333*(ex_Tex.y + sl_y);
+	//ex_Tex.x = 0.333*(ex_Tex.x + sl_x);
+	//ex_Tex.y = 0.333*(ex_Tex.y + sl_y);
 }
