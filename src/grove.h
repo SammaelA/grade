@@ -80,7 +80,7 @@ struct BranchStructure
     std::vector<std::pair<glm::mat4, BranchStructure>> childBranchesInstanced;
     explicit BranchStructure(unsigned _pos = 0) {pos = _pos;}
 };
-struct InstancedBranch : InstancingReadyModel
+struct InstancedBranch
 {
     std::vector<unsigned> branches;
     InstanceDataArrays IDA;
@@ -102,13 +102,21 @@ class GroveRenderer
 {
 public:
     static const int base_level = 1;
+    struct Instance2 : InstancingReadyModel
+    {
+        Model *m;
+        uint type;
+        InstanceDataArrays &ida;
+        Instance2(Model *m, uint type, InstanceDataArrays &ida);
+        ~Instance2();
+    };
     struct LOD
     {
         std::vector<std::pair<uint,Model *>> models;
         BillboardCloudRenderer *cloud = nullptr;
         ImpostorRenderer *imp_rend = nullptr;
-        std::vector<std::pair<uint,Instance *>> instances;
-        std::vector<std::pair<uint,Instance *>> leaves_instances;
+        std::vector<Instance2> instances;
+        std::vector<Instance2> leaves_instances;
         float max_dist;
     };
     void render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
@@ -135,6 +143,7 @@ private:
     Shader renderer;
     Shader rendererInstancing;
     Shader lodCompute;
+    Shader clearCompute;
     GrovePacked *source;
     GroveGenerationData *ggd;
     GLuint lods_buf, inst_buf, intervals_buf, indexes_buf, counts_buf;

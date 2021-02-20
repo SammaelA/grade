@@ -36,7 +36,7 @@ layout(std140, binding=0) buffer _LODs
 };
 layout(std140, binding=1) buffer _models_intervals
 {
-    readonly uvec2 models_intervals[];
+    readonly uvec4 models_intervals[];
 };
 layout(std140, binding=3) buffer _instances
 {
@@ -56,7 +56,7 @@ uniform vec3 camera_pos;
 uniform float trans;
 void main()
 {
-    uvec2 interval = models_intervals[gl_WorkGroupID.x];
+    uvec2 interval = models_intervals[gl_WorkGroupID.x].xy;
     int k = -1;
     for (int i=0;i<lods_count - 1;i++)
     {
@@ -88,7 +88,7 @@ void main()
 
         if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
         {
-            instance_indexes[i].index = i;
+            instance_indexes[st + inst_num].index = i;
             vec2 a_mult = vec2(0,0);
             if (mn_dist < trans)
             {
@@ -114,12 +114,12 @@ void main()
             //instance_indexes[i].mx = 0.0;
         }
     }
-    if (gl_LocalInvocationIndex == 0)
+    /*if (gl_LocalInvocationIndex == 0)
     {
         //models_instance_count[1] = 3;
         models_instance_count[gl_WorkGroupID.x] = inst_num;
     }
-    else
+    else*/
         atomicAdd(models_instance_count[gl_WorkGroupID.x], inst_num);
 }
 /*

@@ -546,20 +546,13 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
             b.to_model(m, data->atlas);
         }
         m->update();
-        Instance *in = new Instance(m);
-        std::vector<glm::vec4> t1,t2;
         for (int i=0;i<bill.IDA.centers_par.size();i++)
         {
             if (data->level >= GroveRenderer::base_level)
-                t1.push_back(glm::vec4(bill.IDA.centers_self[i],1.0));
-            else
-                t1.push_back(glm::vec4(bill.IDA.centers_par[i],1.0));
-            t2.push_back(glm::vec4(bill.IDA.centers_self[i],1.0));
+                bill.IDA.centers_par[i] = bill.IDA.centers_self[i];
         }
-        in->addBuffer(t1);
-        in->addBuffer(t2);
-        in->addBuffer(bill.IDA.transforms);
-        instances.push_back(in);
+
+        instances.push_back(m);
     }
 }
 BillboardCloudRenderer::~BillboardCloudRenderer()
@@ -570,17 +563,13 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
     debugl(11,"cloud deleted");
     for (int i=0;i<instances.size();i++)
     {
-        delete instances[i]->m;
         delete instances[i];
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max, glm::vec4 screen_size)
+void BillboardCloudRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCamera, glm::vec3 camera_pos, 
+                                    glm::vec2 LOD_min_max, glm::vec4 screen_size)
 {
-    /*//data->atlas.gen_mipmaps();
-    //return;
-    
-    return;*/
     if (!data || !data->valid)
         return;
     
@@ -609,11 +598,19 @@ void BillboardCloudRenderer::render(glm::mat4 &projectionCamera, glm::vec3 camer
         billboardRendererInstancing.texture("tex", data->atlas.tex());
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
-        for (Instance *in : instances)
+        for (int i = 0;i<instances.size();i++)
         {
-            Model *m = (Model *)(in->m);
-            m->update();
-            in->render(GL_TRIANGLES);
+            billboardRendererInstancing.uniform("id",(uint)data->billboards[i].id);
+            if (data->billboards[i].id >= 0 && data->billboards[i].id < counts.size() && counts[data->billboards[i].id] > 0)
+            {
+                Model *m = instances[i];
+                if(m && m->indexed)
+                {
+                    glBindVertexArray(m->vao);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
+                    glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[data->billboards[i].id]);
+                }
+            }
         }
     }
 }

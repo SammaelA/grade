@@ -91,8 +91,8 @@ struct BillboardCloudRenderer
     };
     BillboardCloudRenderer(BillboardCloudData *data = nullptr);
     ~BillboardCloudRenderer();
-    void render(glm::mat4 &projectionCamera, glm::vec3 camera_pos = glm::vec3(0,0,0), glm::vec2 LOD_min_max = glm::vec2(0,0),
-                glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600));
+    void render(std::vector<uint> &counts, glm::mat4 &projectionCamera, glm::vec3 camera_pos = glm::vec3(0,0,0), 
+    glm::vec2 LOD_min_max = glm::vec2(0,0), glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600));
     void set_render_mode(RenderMode m)
     {
         renderMode = m;
@@ -103,7 +103,7 @@ struct BillboardCloudRenderer
     Shader billboardRenderer;
     Shader billboardRendererInstancing;
     Model *cloud = nullptr;
-    std::vector<Instance *> instances;
+    std::vector<Model *> instances;
     RenderMode renderMode = ONLY_SINGLE;
 
 };

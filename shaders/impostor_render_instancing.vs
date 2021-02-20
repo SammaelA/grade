@@ -31,7 +31,7 @@ struct IndexData
 };
 layout(std140, binding=1) buffer _models_intervals
 {
-    readonly uvec2 models_intervals[];
+    readonly uvec4 models_intervals[];
 };
 layout(std140, binding=3) buffer _instances
 {
