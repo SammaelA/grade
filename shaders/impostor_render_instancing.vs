@@ -52,9 +52,14 @@ uniform vec3 imp_center;
 uniform vec3 camera_pos;
 uniform int slice_count;
 uniform int slice_offset;
+uniform float delta;
+uniform float angle_step;
 uniform uint id;
 
-out vec3 ex_Tex;
+out vec3 tc_a;
+out vec3 tc_b;
+out vec3 tc_t;
+out vec3 q_abt;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
 out vec2 a_mult;
@@ -88,23 +93,57 @@ void main(void) {
 	mat4 inst_mat = instances[instance_indexes[offset].index].projection_camera;
 	a_mult = vec2(instance_indexes[offset].mn, instance_indexes[offset].mx);
 	vec3 center = (inst_mat * vec4(imp_center,1.0f)).xyz;
-    vec3 viewdir = center - camera_pos;
+    vec3 viewdir = normalize(center - camera_pos);
+    mat3 MVI = mat3(transpose(inverse(inst_mat)));
+    vec3 front = normalize(MVI * vec3(0,0,1));
+    vec3 plane = normalize(MVI * vec3(1,0,0));
+    vec3 up = normalize(MVI * vec3(0,1,0));
+    float psi = -asin(abs(dot(up, viewdir)));
     viewdir.y = 0;
     viewdir = normalize(viewdir);
-    float phi = acos(dot(vec3(0,0,-1),viewdir));
-    if (viewdir.x > 0)
+    float phi = acos(-dot(front,viewdir));
+    if (dot(viewdir,plane) > 0)
         phi = 2*PI - phi;
-    int slice_n = int(round(slice_count*(phi/(2.0f*PI)))) % slice_count; 
-    phi = - phi + (2.0f*PI*float(slice_n))/float(slice_count);
-	mat4 rot = rotate(vec3(0,1,0),phi);
-	slice_n += 1;
+    float a_phi = phi;
+    
+    int slice_n = int(floor(slice_count*(phi/(2.0f*PI)))) % slice_count;
 
+    phi = - phi + (2.0f*PI*float(slice_n))/float(slice_count);
+    
+    int second_slice_n = (slice_n - int(sign(phi)) + slice_count) % slice_count; 
+
+    slice_n += 1;
+    second_slice_n += 1;
+
+	mat4 rot = rotate(up,phi);
+    mat4 rot_top = rotate(cross(up, viewdir),psi);
+	
 	vec4 pos = vec4(sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].position.xyz,1);
 	pos = vec4(center,0) + rot * (inst_mat * pos - vec4(center,0));
+
+    float s_phi =  sign(phi)*(angle_step - abs(phi));
+    mat4 rot_s = rotate(up, - s_phi);
+    vec4 pos_s = vec4(sliceVertexes[slice_offset + second_slice_n*4 + gl_VertexID].position.xyz,1);
+	pos_s = vec4(center,0) + rot_s * (inst_mat * pos_s - vec4(center,0));
+    q_abt.y = smoothstep(0, 1, 0.5*(1 + (abs(phi) - 0.5*angle_step)/delta));
+    q_abt.x = 1 - q_abt.y;
+    pos = q_abt.x * pos + q_abt.y * pos_s;
+
+    pos = vec4(center,0) + rot_top * (pos - vec4(center,0));
+    mat4 rot_top_s = rotate(cross(up, viewdir),-0.5*PI + psi);
+    mat4 rot_top_s2 = rotate(up, -a_phi);
+    vec4 top_pos = inst_mat * vec4(sliceVertexes[slice_offset + gl_VertexID].position.xyz,1);
+    top_pos = vec4(center,0) + rot_top_s2 * (top_pos - vec4(center,0));
+
+    q_abt.z = abs(psi)/(0.5*PI);
+    q_abt.xy *= (1 - q_abt.z);
+    pos = (1 - q_abt.z)*pos + q_abt.z*top_pos;
 	ex_FragPos = pos.xyz;
 	ex_Normal = in_Normal;	//Pass Normal
 
 	//Fragment in Screen Space
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
-	ex_Tex = sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].tcs.xyz;
+	tc_a = sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].tcs.xyz;
+    tc_b = sliceVertexes[slice_offset + second_slice_n*4 + gl_VertexID].tcs.xyz;
+    tc_t = sliceVertexes[slice_offset + gl_VertexID].tcs.xyz;
 }

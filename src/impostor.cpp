@@ -86,6 +86,12 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     Visualizer tg(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
     Billboard bill(cur, num, br.base_seg_n, 0, base_joint);
     create_billboard(ttd[br.type_id], &br, cur, tg, num, bill);
+
+    bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
+    bill.positions[1] = imp.bcyl.center + glm::vec3(a) + glm::vec3(c);
+    bill.positions[2] = imp.bcyl.center - glm::vec3(a) - glm::vec3(c);
+    bill.positions[3] = imp.bcyl.center + glm::vec3(a) - glm::vec3(c);
+
     imp.top_slice = bill;
 
     for (int i=0;i<slices_n;i++)
@@ -195,11 +201,15 @@ void ImpostorRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCa
 
     for (int i=0;i<models.size();i++)
     {
+        float a_step = (2*PI)/(data->impostors[i].slices.size());
+
         impostorRendererInstancing.uniform("slice_offset",(int)offsets[i]);
         impostorRendererInstancing.uniform("slice_verts",(int)data->impostors[i].slices[0].positions.size());
         impostorRendererInstancing.uniform("slice_count", (int)(data->impostors[i].slices.size()));
         impostorRendererInstancing.uniform("id",(uint)data->impostors[i].id);
         impostorRendererInstancing.uniform("imp_center", data->impostors[i].bcyl.center);
+        impostorRendererInstancing.uniform("angle_step",a_step);
+        impostorRendererInstancing.uniform("delta",0.5f*a_step);
 
         if (data->impostors[i].id >= 0 && data->impostors[i].id < counts.size() && counts[data->impostors[i].id] > 0)
         {

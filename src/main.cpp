@@ -35,6 +35,7 @@ const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
 int render_mode = -1;
 int debug_tex = 0;
 int debug_layer = 0;
+float rot_a;
 Tree t[101];
 TreeGenerator gen(t[100]);
 DebugVisualizer *debugVisualizer = nullptr;
@@ -312,7 +313,7 @@ int main(int argc, char *argv[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
-  std::vector<float> LODs_dists = {1000,500,300,100};
+  std::vector<float> LODs_dists = {1000,50,30,10};
 
   if (generation_needed)
   {
@@ -363,6 +364,9 @@ int main(int argc, char *argv[])
 
 
   Tiny::view.pipeline = [&]() {
+    rot_a += 0.01;
+    //camera.pos = glm::vec3(250*sin(rot_a),100,250*cos(rot_a));
+    //camera.front = glm::normalize(-camera.pos);
     shadow.target();
     if (drawshadow)
     {
