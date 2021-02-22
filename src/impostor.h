@@ -9,6 +9,8 @@ public:
     ImpostorBaker(int tex_w, int tex_h, std::vector<TreeTypeData> &ttd) : BillboardCloudRaw(tex_w,tex_h,ttd) {};
     void prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers,
                  ImpostorsData *data = nullptr);
+    void prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<Clusterizer::Cluster> &clusters,
+                           std::list<int> &numbers, ImpostorsData *data = nullptr);
     void make_impostor(Branch &b, Impostor &imp, int slices_n = 8);
 private:
 
@@ -30,4 +32,6 @@ class ImpostorRenderer
     
     std::vector<Model *> models;
     std::vector<uint> offsets;
+
+    float hth = 0,vth = 0;
 };

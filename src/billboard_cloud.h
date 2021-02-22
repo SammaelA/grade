@@ -60,7 +60,9 @@ protected:
         }
     };
     void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
-    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill);
+    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
+    void create_billboard(std::vector<TreeTypeData> &ttd, std::map<int, InstanceDataArrays> &all_transforms,
+                          std::vector<Branch> &brs, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
     BBox get_minimal_bbox(Branch *b);
     static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
     glm::mat4 get_viewproj(BBox &b);

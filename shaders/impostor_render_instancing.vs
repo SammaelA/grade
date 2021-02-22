@@ -54,6 +54,7 @@ uniform int slice_count;
 uniform int slice_offset;
 uniform float delta;
 uniform float angle_step;
+uniform vec2 hor_vert_transition_thr;
 uniform uint id;
 
 out vec3 tc_a;
@@ -98,7 +99,7 @@ void main(void) {
     vec3 front = normalize(MVI * vec3(0,0,1));
     vec3 plane = normalize(MVI * vec3(1,0,0));
     vec3 up = normalize(MVI * vec3(0,1,0));
-    float psi = -asin(abs(dot(up, viewdir)));
+    float psi = -asin(clamp(dot(up, viewdir),-1,0));
     viewdir.y = 0;
     viewdir = normalize(viewdir);
     float phi = acos(-dot(front,viewdir));
@@ -125,7 +126,8 @@ void main(void) {
     mat4 rot_s = rotate(up, - s_phi);
     vec4 pos_s = vec4(sliceVertexes[slice_offset + second_slice_n*4 + gl_VertexID].position.xyz,1);
 	pos_s = vec4(center,0) + rot_s * (inst_mat * pos_s - vec4(center,0));
-    q_abt.y = smoothstep(0, 1, 0.5*(1 + (abs(phi) - 0.5*angle_step)/delta));
+    float hth = clamp(hor_vert_transition_thr.x,0,0.5);
+    q_abt.y = smoothstep(hth, 1 - hth, 0.5*(1 + (abs(phi) - 0.5*angle_step)/delta));
     q_abt.x = 1 - q_abt.y;
     pos = q_abt.x * pos + q_abt.y * pos_s;
 
@@ -134,8 +136,9 @@ void main(void) {
     mat4 rot_top_s2 = rotate(up, -a_phi);
     vec4 top_pos = inst_mat * vec4(sliceVertexes[slice_offset + gl_VertexID].position.xyz,1);
     top_pos = vec4(center,0) + rot_top_s2 * (top_pos - vec4(center,0));
-
-    q_abt.z = abs(psi)/(0.5*PI);
+    
+    float vth = clamp(hor_vert_transition_thr.y,0,0.5);
+    q_abt.z = smoothstep(vth, 1-vth, abs(psi)/(0.5*PI));
     q_abt.xy *= (1 - q_abt.z);
     pos = (1 - q_abt.z)*pos + q_abt.z*top_pos;
 	ex_FragPos = pos.xyz;

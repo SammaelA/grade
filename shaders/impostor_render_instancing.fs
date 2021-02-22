@@ -16,7 +16,7 @@ uniform vec4 screen_size;
 
 void main(void) 
 {
-  vec2 noise_pos = vec2(fract(15*gl_FragCoord.x*screen_size.z), fract(15*gl_FragCoord.y*screen_size.w));
+  vec2 noise_pos = vec2(fract(3*gl_FragCoord.x*screen_size.z), fract(3*gl_FragCoord.y*screen_size.w));
   float ns = texture(noise,noise_pos).x;
   fragColor = ns <= q_abt.x ? texture(tex,tc_a) : (ns <= q_abt.x + q_abt.y ? texture(tex,tc_b) : texture(tex,tc_t));
   if (fragColor.a<0.33)

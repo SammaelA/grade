@@ -13,8 +13,8 @@ public:
     Visualizer(Texture _tree_tex, Texture _leaves_tex, Shader *_tree_shader);
     Visualizer();
     void add_branch_layer(Tree &t, int layer, Model *m);
-    void recursive_branch_to_model(Branch &b, Model *m, bool leaves);
-    void leaf_to_model(Leaf &l, Model *m);
+    void recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale = 1);
+    void leaf_to_model(Leaf &l, Model *m, float scale = 1);
     void packed_leaf_to_model(PackedLeaf &l, Model *m);
     void branch_to_model(Branch &b, Model *m, bool leaves);
     void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level);

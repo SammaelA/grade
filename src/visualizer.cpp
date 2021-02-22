@@ -5,7 +5,7 @@
 
 #define PI 3.14159265f
 
-void Visualizer::leaf_to_model(Leaf &l, Model *m)
+void Visualizer::leaf_to_model(Leaf &l, Model *m, float scale)
 {
     if (l.dead)
         return;
@@ -21,7 +21,7 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m)
     int _b = m->positions.size() / 3;
     for (int i = 0; i < 4; i++)
     {
-        glm::vec3 v = l.edges[i];
+        glm::vec3 v = scale*(l.edges[i] - l.edges[0]) + l.edges[0];
         m->positions.push_back(v.x);
         m->positions.push_back(v.y);
         m->positions.push_back(v.z);
@@ -188,7 +188,7 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
 void Visualizer::joint_to_model(Joint &j, Model *m, bool leaves)
 {
 }
-void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves)
+void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale)
 {
     if (b.level < 0)
         return;
@@ -223,13 +223,13 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves)
         for (auto &joint : b.joints)
         {
             if (joint.leaf)
-                leaf_to_model(*(joint.leaf), m);
+                leaf_to_model(*(joint.leaf), m, scale);
         }
     }
     for (auto &joint : b.joints)
     {
         for (auto branch : joint.childBranches)
-            recursive_branch_to_model(*branch, m, leaves);
+            recursive_branch_to_model(*branch, m, leaves, scale);
     }
 }
 void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)

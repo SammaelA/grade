@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
-  std::vector<float> LODs_dists = {1000,50,30,10};
+  std::vector<float> LODs_dists = {10000, 1000, 500, 300, 100};
 
   if (generation_needed)
   {
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     ggd = config.get_ggd(grove.ggd_name);
     fclose(f);
   }
-  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 4, LODs_dists);
+  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists);
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);

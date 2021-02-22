@@ -36,19 +36,19 @@ GroveRenderer()
         LODs.back().max_dist = max_distances[i];
         LODs.back().cloud = new BillboardCloudRenderer(&_source->clouds[i]);
         LODs.back().cloud->set_render_mode(BillboardCloudRenderer::ONLY_INSTANCES);
-        for (int j = 0; j < i; j++)
+        for (int j = 0; j < i - 1; j++)
         {
             auto packed_branches = _source->uniqueCatalogue.get_level(j);
             for (PackedBranch &pb : packed_branches)
             {
                 Model *m = new Model();
-                v.packed_branch_to_model(pb, m, false, i-1);
+                v.packed_branch_to_model(pb, m, false, i-2);
                 LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
             }
         }
         for (InstancedBranch &b : source->instancedBranches)
         {
-            add_instance_model(LODs.back(), source, b, i-1);
+            add_instance_model(LODs.back(), source, b, i-2);
         }
     }
 
@@ -94,9 +94,11 @@ GroveRenderer()
         add_instance_model(LODs.back(), source, b,max_level,false);
     }
 
-    if (!source->impostors.empty())
-        LODs.front().imp_rend = new ImpostorRenderer(&(source->impostors[0]));
-    
+    if (source->impostors.size() == 2 && LODs.size() >= 3)
+    {
+        LODs[0].imp_rend = new ImpostorRenderer(&(source->impostors[0]));
+        LODs[1].imp_rend = new ImpostorRenderer(&(source->impostors[1]));
+    }
     std::vector<LOD_info> lod_infos;
     std::vector<InstanceData> instances;
     std::vector<glm::uvec2> models_intervals;

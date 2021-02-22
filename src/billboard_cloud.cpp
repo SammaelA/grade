@@ -57,7 +57,66 @@ float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
     }
     return err;
 }
-void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill)
+void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::map<int, InstanceDataArrays> &all_transforms,
+                                         std::vector<Branch> &brs, BBox &min_bbox, Visualizer &tg, int num,
+                                         Billboard &bill, float leaf_scale)
+{
+    if (num < 0)
+    {
+        logerr("too many billboards = %d", billboard_count);
+        return;
+    }
+    mat4 transl = translate(mat4(1.0f), -1.0f * min_bbox.position);
+    mat4 SC = scale(mat4(1.0f), min_bbox.sizes);
+    mat4 SC_inv = inverse(SC);
+    mat4 rot_inv(vec4(min_bbox.a, 0), vec4(min_bbox.b, 0), vec4(min_bbox.c, 0), vec4(0, 0, 0, 1));
+    mat4 rot = inverse(rot_inv);
+    mat4 ort = ortho(-1, 1, -1, 1, 1, -1);
+
+    mat4 tex_sh = scale(mat4(1), vec3(2, 2, 2));
+    mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
+    mat4 atlas_tr = atlas.tex_transform(num);
+    mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv * transl * rot;
+    
+    Branch *branch = nullptr;
+    std::function<void(Model *)> _c_wood = [&](Model *h) { if (branch) tg.recursive_branch_to_model(*branch, h, false); };
+    std::function<void(Model *)> _c_leaves = [&](Model *h) { if (branch) tg.recursive_branch_to_model(*branch, h, true, leaf_scale); };
+
+    atlas.target(num);
+    rendererToTexture.use();
+    for (Branch &br : brs)
+    {
+        Texture &wood = ttd[br.type_id].wood;
+        Texture &leaf = ttd[br.type_id].leaf;
+        InstanceDataArrays &ida = all_transforms.at(br.base_seg_n);
+        Model bm;
+        branch = &br;
+        bm.construct(_c_wood);
+        rendererToTexture.texture("tex", wood);
+        rendererToTexture.uniform("projectionCamera", result);
+        for (glm::mat4 &model : ida.transforms)
+        {
+            rendererToTexture.uniform("model", model);
+            bm.render(GL_TRIANGLES);
+        }
+        bm.construct(_c_leaves);
+
+        glBindTexture(leaf.type,leaf.texture);
+        glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
+
+        rendererToTexture.texture("tex", leaf);
+        rendererToTexture.uniform("projectionCamera", result);
+        for (glm::mat4 &model : ida.transforms)
+        {
+            rendererToTexture.uniform("model", model);
+            bm.render(GL_TRIANGLES);
+        }
+    }
+    billboards.push_back(bill);
+}
+void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num,
+                                         Billboard &bill, float leaf_scale)
 {
     if (num < 0)
     {
@@ -77,7 +136,7 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv * transl * rot;
     Model bm;
     std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
-    std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true); };
+    std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
 
     atlas.target(num);
     rendererToTexture.use();
@@ -461,7 +520,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
             p.base_joint = proj;
             b.branch_id = parent_billboard.branch_id;
         }
-        create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b);
+        create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b, 1.5);
     }
     debugl(8,"created %d billboards\n", billboard_boxes.size());
     glGenerateTextureMipmap(atlas.tex().texture);
