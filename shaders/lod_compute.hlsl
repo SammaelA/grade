@@ -1,5 +1,5 @@
 #version 430
-#define THREADS 128
+#define THREADS 1
 layout( local_size_x = THREADS ) in;
 
 struct SliceVertexData 
@@ -79,7 +79,8 @@ void main()
     st = interval.x + cnt * gl_LocalInvocationIndex;
     en = interval.x + cnt * (gl_LocalInvocationIndex + 1);
     en = en > interval.y ? interval.y : en;
-
+    st = interval.x;
+    en = interval.y;
     uint inst_num = 0;
     for (uint i = st; i < en; i++)
     {
@@ -88,22 +89,22 @@ void main()
 
         if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
         {
-            instance_indexes[st + inst_num].index = i;
             vec2 a_mult = vec2(0,0);
             if (mn_dist < trans)
             {
-                a_mult = vec2(0.5*(mn_dist/trans + 1), 1);
+                a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_par.xyz - camera_pos));
             }
             else if (mx_dist < trans)
             {
-                a_mult = vec2(0.5*(mx_dist/trans + 1), -1);
+                a_mult = vec2(0.5*(mx_dist/trans + 1), -length(instances[i].center_self.xyz - camera_pos));
             }
             else
             {
                 a_mult = vec2(10,0);
             }
-            instance_indexes[i].mn = a_mult.x;
-            instance_indexes[i].mx = a_mult.y;
+            instance_indexes[st + inst_num].index = i;
+            instance_indexes[st + inst_num].mn = a_mult.x;
+            instance_indexes[st + inst_num].mx = a_mult.y;
             inst_num++;
         }
         else

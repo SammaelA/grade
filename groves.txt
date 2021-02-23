@@ -1,6 +1,6 @@
 grove bush_grove
 {
-count = 20
+count = 12
 pos = (0 0 0)
 size = (300 200 300)
 preset = {bush wood2 leaf2}
