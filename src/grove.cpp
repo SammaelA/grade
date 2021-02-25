@@ -240,17 +240,21 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
         }
         lods_to_render.push_back(explicit_lod);
     }
+
+    ts.start("clearCompute");
     clearCompute.use();
     clearCompute.uniform("count", (uint)instance_models_count);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);  
     glDispatchCompute(1, 1, 1);
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
+    ts.end("clearCompute");
+    ts.start("lodCompute");
     lodCompute.use();
     lodCompute.uniform("lods_count", (uint)LODs.size());
     lodCompute.uniform("camera_pos", camera_pos);
     lodCompute.uniform("trans", 20.0f);
+    lodCompute.uniform("objects_count", (uint)instance_models_count);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inst_buf);
@@ -258,9 +262,10 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, intervals_buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);
 
-    glDispatchCompute(instance_models_count, 1, 1);
+    glDispatchCompute((GLuint)ceil(instance_models_count/128.0), 1, 1);
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    ts.end("lodCompute");
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, 0);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, counts_buf);
@@ -275,6 +280,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     for (int lod : lods_to_render)
     {
+        ts.start("lod"+std::to_string(lod)+"_models");
         renderer.use();
         renderer.uniform("projectionCamera", prc);
         for (int j = 0; j < LODs[lod].models.size(); j++)
@@ -285,15 +291,24 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
             m->update();
             m->render(GL_TRIANGLES);
         }
+        ts.end("lod"+std::to_string(lod)+"_models");
         float mx = LODs[lod].max_dist == -10 ? 1000 : LODs[lod].max_dist;
         float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
         glm::vec2 mn_mx = glm::vec2(mn, mx);
         Texture noise = textureManager.get("noise");
         glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
+
+        ts.start("lod"+std::to_string(lod)+"_billboards");
         if (LODs[lod].cloud)
             LODs[lod].cloud->render(counts, prc, camera_pos, mn_mx, ss);
+        ts.end("lod"+std::to_string(lod)+"_billboards");
+
+        ts.start("lod"+std::to_string(lod)+"_imposters");
         if (LODs[lod].imp_rend)
             LODs[lod].imp_rend->render(counts, prc, camera_pos, mn_mx, ss);
+        ts.end("lod"+std::to_string(lod)+"_imposters");
+
+        ts.start("lod"+std::to_string(lod)+"_instances");
         rendererInstancing.use();
         rendererInstancing.uniform("projectionCamera", prc);
         rendererInstancing.uniform("screen_size", ss);
@@ -331,7 +346,9 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
                 }
             }
         }
+        ts.end("lod"+std::to_string(lod)+"_instances");
     }
+    ts.resolve();
 }
 
 void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves)

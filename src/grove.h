@@ -5,6 +5,7 @@
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
 #include "billboard_cloud_data.h"
+#include "timestamp.h"
 
 class ImpostorRenderer;
 class BillboardCloudRenderer;
@@ -148,4 +149,5 @@ private:
     GroveGenerationData *ggd;
     GLuint lods_buf, inst_buf, intervals_buf, indexes_buf, counts_buf;
     int instance_models_count = 0;
+    Timestamp ts;
 };

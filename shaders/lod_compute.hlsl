@@ -1,5 +1,5 @@
 #version 430
-#define THREADS 1
+#define THREADS 128
 layout( local_size_x = THREADS ) in;
 
 struct SliceVertexData 
@@ -52,11 +52,17 @@ layout(std140, binding=5) buffer _models_instance_count//same size as models_int
 };
 
 uniform uint lods_count;
+uniform uint objects_count;
 uniform vec3 camera_pos;
 uniform float trans;
 void main()
 {
-    uvec2 interval = models_intervals[gl_WorkGroupID.x].xy;
+    //for (uint i=0; i<THREADS; i++)
+    //{
+    uint object_id = THREADS*gl_WorkGroupID.x + gl_LocalInvocationIndex;
+    if (object_id >= objects_count)
+        return;
+    uvec2 interval = models_intervals[object_id].xy;
     int k = -1;
     for (int i=0;i<lods_count - 1;i++)
     {
@@ -121,8 +127,10 @@ void main()
         models_instance_count[gl_WorkGroupID.x] = inst_num;
     }
     else*/
-        atomicAdd(models_instance_count[gl_WorkGroupID.x], inst_num);
+        atomicAdd(models_instance_count[object_id], inst_num);
+    //}
 }
+
 /*
 uniform uint sv_size;
 
