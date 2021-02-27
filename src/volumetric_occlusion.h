@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <list>
 #include "body.h"
+#include "terrain.h"
 struct LightVoxelsCube
 {
 public:
@@ -28,6 +29,7 @@ public:
     glm::vec3 get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion);
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true);
+    void add_heightmap(Heightmap &h);
     float NMSE(LightVoxelsCube *B);
     glm::vec3 get_center();
     float get_voxel_size();

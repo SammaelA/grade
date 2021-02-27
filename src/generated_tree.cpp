@@ -11,6 +11,7 @@
 #include <chrono>
 #include "tinyEngine/save_utils/saver.h"
 #include "impostor.h"
+#include "terrain.h"
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -699,6 +700,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     //debug.add_bodies(&b,1);
     //voxels->add_body(&el,100);
     //debug.add_bodies(&el,1);
+    voxels->add_heightmap(*heightmap);
     for (int i = 0; i < count; i++)
     {
         float R = urand(0,25*r);
@@ -706,6 +708,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
         //R = 100 * (i / 10 + 1);
         //phi = 2 * PI * i / 10.0f;
         glm::vec3 pos = glm::vec3(R * cos(phi), 1, R * sin(phi));
+        pos.y = heightmap->get_height(pos) - 1;
         trees[i].pos = pos;
         plant_tree(trees[i], trees[i].params);
         for (int j = 0; j <= i; j++)
@@ -877,9 +880,11 @@ void TreeGenerator::create_grove(TreeStructureParameters params, int count, Grov
     //Body *bptr = &b;
     //debug.add_bodies(bptr,1);
 }
-void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
+void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees,
+                                 Heightmap *h)
 {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    heightmap = h;
     curGgd = ggd;
     int count = ggd.trees_count;
     for (int i = 0; i < count; i++)

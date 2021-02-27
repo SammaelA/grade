@@ -17,6 +17,7 @@
 #include "tinyEngine/save_utils/config.h"
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
+#include "terrain.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -56,6 +57,7 @@ glm::mat4 bias = glm::mat4(
 glm::mat4 lproj = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, -200.0f, 2000.0f);
 glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
+/*
 void setup()
 {
   treecount = 3;
@@ -76,7 +78,7 @@ void setup()
   ggd.types = {ttd1,ttd2,ttd3};
   srand(time(NULL));
   gen.create_grove(config.get_ggd("bush_grove"), grove, *debugVisualizer, t);
-}
+}*/
 
 // Event Handler
 std::function<void()> eventHandler = []() {
@@ -320,11 +322,12 @@ int main(int argc, char *argv[])
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
   std::vector<float> LODs_dists = {10000, 1000, 500, 300, 100};
-
+  Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
+  h.random_generate(0,1,50);
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    gen.create_grove(ggd, grove, *debugVisualizer, t);
+    gen.create_grove(ggd, grove, *debugVisualizer, t, &h);
   }
   if (saving_needed)
   {
@@ -413,8 +416,7 @@ int main(int argc, char *argv[])
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
-
-
+  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(1000,1000),glm::vec2(10,10));
 
   Tiny::view.pipeline = [&]() {
     rot_a += 0.01;
@@ -476,7 +478,8 @@ int main(int argc, char *argv[])
       defaultShader.uniform("drawfloor", true);
       defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0], floor.colors[1], floor.colors[2], 1));
       defaultShader.uniform("model", floor.model);
-      floor.render(GL_TRIANGLES);
+      //floor.render(GL_TRIANGLES);
+      tr.render(projection * camera.camera());
       if (draw_clusterized)
       {
         groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));

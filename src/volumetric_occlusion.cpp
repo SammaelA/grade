@@ -343,6 +343,26 @@ float LightVoxelsCube::NMSE(LightVoxelsCube *B)
     //debug("NMSE = %f %f %f\n", MSE, SQ, MSE/SQ);
     return MSE/SQ;
 }
+void LightVoxelsCube::add_heightmap(Heightmap &h)
+{
+    float thr = voxel_size + 0.01;
+    for (int i=-vox_x;i<=vox_x;i++)
+    {
+        for (int k=-vox_z;k<=vox_z;k++)
+        {
+            glm::vec3 terr_pos = center + voxel_size*glm::vec3(i,0,k);
+            terr_pos.y = h.get_height(terr_pos);
+            for (int j=-vox_y;j<=vox_y;j++)
+            {
+                glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
+                if (pos.y < terr_pos.y - thr)
+                {
+                    voxels[v_to_i(i,j,k)] += 1e9;
+                }
+            }
+        }
+    }
+}
 void LightVoxelsCube::add_body(Body *b, float opacity, bool solid)
 {
     glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);

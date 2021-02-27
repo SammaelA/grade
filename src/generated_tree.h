@@ -10,11 +10,12 @@
 #include "tree.h"
 #include "grove.h"
 class DebugVisualizer;
+class Heightmap;
 class TreeGenerator
 {
 public:
     TreeGenerator(Tree &t) : curTree(t), curParams(){};
-    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
+    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees, Heightmap *h);
 
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
@@ -22,6 +23,7 @@ public:
     Branch *test;
     TreeStructureParameters curParams;
     LightVoxelsCube *voxels;
+    Heightmap *heightmap;
     GroveGenerationData curGgd;
     void grow_branch(Branch *b, float feed);
     void new_joint(Branch *b, Joint &j);
