@@ -112,6 +112,9 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
             rendererToTexture.uniform("model", model);
             bm.render(GL_TRIANGLES);
         }
+
+        glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
     }
     billboards.push_back(bill);
 }
@@ -160,6 +163,9 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     bm.render(GL_TRIANGLES);
 
     billboards.push_back(bill);
+
+    glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
 }
 BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
 {
