@@ -121,7 +121,8 @@ public:
         float max_dist;
     };
     void render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
-    GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances);
+    GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
+                  bool print_perf);
     GroveRenderer();
     ~GroveRenderer();
 private:

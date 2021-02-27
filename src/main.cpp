@@ -16,6 +16,7 @@
 #include "grove.h"
 #include "tinyEngine/save_utils/config.h"
 #include <sys/stat.h>
+#include <boost/filesystem.hpp>
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -78,7 +79,7 @@ void setup()
 }
 
 // Event Handler
-std::function<void()> eventHandler = [&]() {
+std::function<void()> eventHandler = []() {
   float nx = Tiny::event.mouse.x;
   float ny = Tiny::event.mouse.y;
   GLfloat xoffset = nx - mousePos.x;
@@ -182,7 +183,7 @@ std::function<void()> eventHandler = [&]() {
   }
 };
 
-std::function<void(Model *m)> construct_floor = [&](Model *h) {
+std::function<void(Model *m)> construct_floor = [](Model *h) {
   float floor[12] = {
       -100.0,
       0.0,
@@ -229,6 +230,7 @@ int main(int argc, char *argv[])
   bool generation_needed = false;
   bool saving_needed = false;
   bool loading_needed = false;
+  bool print_perf = false;
   std::string grove_type_name = "default";
   std::string save_path = ".";
   std::string load_path = ".";
@@ -246,6 +248,10 @@ int main(int argc, char *argv[])
       else
         grove_type_name = argv[k+1];
       k+=2;
+    }
+    else if (std::string(argv[k]) == "-perf")
+    {
+      print_perf = true;
     }
     else if (std::string(argv[k]) == "-s")
     {
@@ -322,41 +328,88 @@ int main(int argc, char *argv[])
   }
   if (saving_needed)
   {
-    struct stat sb;
-    if (stat(save_path.c_str(), &sb) != 0)
+    bool status = true;
+    try 
     {
-      mkdir(save_path.c_str(),0777);
+      if (boost::filesystem::exists(save_path))
+      {
+        if (boost::filesystem::is_directory(save_path))
+        {
+          printf("replacing previous save\n");
+          boost::filesystem::remove_all(save_path);
+        }
+        else
+        {
+          logerr("path %s represents existing file. Can not save here",save_path.c_str());
+          status = false;
+        }
+      } 
+      if (status)
+      {
+        boost::filesystem::create_directory(save_path);
+        boost::filesystem::permissions(save_path,boost::filesystem::perms::all_all);
+      }
     }
-    if (!S_ISDIR(sb.st_mode))
+    catch(const std::exception& e)
     {
-      logerr("given save path \"%s\" is not a directory",save_path.c_str());
+      status = false;
+      std::cerr << e.what() << '\n';
     }
-    std::string f_path = save_path + std::string("/grove.dat");
-    FILE *f = fopen(f_path.c_str(), "wb");
-    saver::set_textures_path(save_path);
-    saver::save(f,grove);
-    fclose(f);
+    if (status)
+    {
+      std::string f_path = save_path + std::string("/grove.dat");
+      FILE *f = fopen(f_path.c_str(), "wb");
+      saver::set_textures_path(save_path);
+      saver::save(f,grove);
+      fclose(f);
+    }
+    else
+    {
+      logerr("error occured while saving to path %s",save_path.c_str());
+    }
   }
   if (loading_needed)
   {
-    grove = GrovePacked();
-    struct stat sb;
-    if (stat(load_path.c_str(), &sb) != 0)
+    try
     {
-      mkdir(load_path.c_str(),0777);
+      if (boost::filesystem::exists(load_path))
+      {
+        if (boost::filesystem::is_directory(load_path))
+        {
+          grove = GrovePacked();
+          struct stat sb;
+          if (stat(load_path.c_str(), &sb) != 0)
+          {
+            mkdir(load_path.c_str(), 0777);
+          }
+          if (!S_ISDIR(sb.st_mode))
+          {
+            logerr("given load path \"%s\" is not a directory", load_path.c_str());
+          }
+          std::string f_path = load_path + std::string("/grove.dat");
+          FILE *f = fopen(f_path.c_str(), "rb");
+          saver::set_textures_path(load_path);
+          saver::load(f, grove);
+          ggd = config.get_ggd(grove.ggd_name);
+          logerr("grove %s", grove.ggd_name.c_str());
+          fclose(f);
+        }
+        else
+        {
+          logerr("given load path %s is not a directory",load_path.c_str());
+        }
+      }
+      else
+      {
+        logerr("given load path %s does not exist",load_path.c_str());
+      }
     }
-    if (!S_ISDIR(sb.st_mode))
+    catch (const std::exception &e)
     {
-      logerr("given load path \"%s\" is not a directory",load_path.c_str());
+      std::cerr << e.what() << '\n';
     }
-    std::string f_path = load_path + std::string("/grove.dat");
-    FILE *f = fopen(f_path.c_str(), "rb");
-    saver::set_textures_path(load_path);
-    saver::load(f,grove);
-    ggd = config.get_ggd(grove.ggd_name);
-    fclose(f);
   }
-  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists);
+  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf);
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);

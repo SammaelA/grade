@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <vector>
+#include <string>
 #include "volumetric_occlusion.h"
 #include "parameter.h"
 #include "marks.h"
@@ -138,6 +139,7 @@ struct GroveGenerationData
     int trees_count;
     glm::vec3 pos;
     glm::vec3 size;
+    std::string name;
     std::vector<Body *> obstacles;
 };
 struct VertexData

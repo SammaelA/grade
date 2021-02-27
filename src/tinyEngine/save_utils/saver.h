@@ -23,6 +23,9 @@ struct Billboard;
 struct BillboardData;
 struct BillboardCloudData;
 struct GrovePacked;
+struct InstancingReadyModel;
+struct Impostor;
+struct ImpostorsData;
 namespace saver
 {
     extern std::string textures_path;
@@ -74,6 +77,12 @@ namespace saver
 
     bool save(FILE *f, GrovePacked &t);
     bool load(FILE *f, GrovePacked &t);
+
+    bool save(FILE *f, ImpostorsData &t);
+    bool load(FILE *f, ImpostorsData &t);
+
+    bool save(FILE *f, Impostor &t);
+    bool load(FILE *f, Impostor &t);
 
     template <typename T>
     bool save(FILE *f, T &t)

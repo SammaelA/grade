@@ -13,6 +13,7 @@ bool Config::load_ggds()
     def.pos = glm::vec3(0,0,0);
     def.trees_count = 1;
     def.types = {TreeTypeData(0,TreeStructureParameters(),std::string("wood"),std::string("leaf"))};
+    def.name = "default";
     ggds.emplace("default",def);
     pd.presets_n = 0;
     dat.ggds_c = 0;
@@ -46,6 +47,7 @@ bool Config::load_ggds()
             TreeTypeData ttd(cur_tt.id,p,cur_tt.wood,cur_tt.leaf);
             gen.types.push_back(ttd);
         }
+        gen.name = cur_g.name;
         ggds.emplace(cur_g.name,gen);
     }
     logerr("loaded %d grove data's",ggds.size());

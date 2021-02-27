@@ -893,6 +893,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         trees[i].leaf = type.leaf;
     }
     grove.center = glm::vec3(0,0,0);
+    grove.ggd_name = ggd.name;
     create_grove(trees, count, debug);
     for (int i = 0; i < count; i++)
     {

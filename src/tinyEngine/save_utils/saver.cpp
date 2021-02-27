@@ -1,7 +1,6 @@
 #include "saver.h"
 #include "../../texture_manager.h"
 #include "../../grove.h"
-
 namespace saver
 {
 std::string textures_path = ".";  
@@ -243,13 +242,13 @@ bool load(FILE *f, Billboard &t)
 bool save(FILE *f, BillboardData &t)
 {
     bool status = true;
-    status = status && save(f,t.IDA) && savev(f,t.billboards);
+    status = status && save(f,t.IDA) && savev(f,t.billboards) && save(f,t.id);
     return status;
 }
 bool load(FILE *f, BillboardData &t)
 {
     bool status = true;
-    status = status && load(f,t.IDA) && loadv(f,t.billboards);
+    status = status && load(f,t.IDA) && loadv(f,t.billboards) && load(f,t.id);
     return status;
 }
 
@@ -269,15 +268,40 @@ bool load(FILE *f, BillboardCloudData &t)
 bool save(FILE *f, GrovePacked &t)
 {
     bool status = true;
-    status = status && save(f,t.center) && savev(f,t.clouds) && savev(f,t.instancedBranches) &&
+    status = status && save(f,t.center) && savev(f,t.clouds) && savev(f,t.impostors) && savev(f,t.instancedBranches) &&
              save(f,t.instancedCatalogue) && savev(f,t.roots) && save(f,t.uniqueCatalogue) && save(f,t.ggd_name);
     return status;
 }
 bool load(FILE *f, GrovePacked &t)
 {
     bool status = true;
-    status = status && load(f,t.center) && loadv(f,t.clouds) && loadv(f,t.instancedBranches) &&
+    status = status && load(f,t.center) && loadv(f,t.clouds) &&loadv(f,t.impostors) && loadv(f,t.instancedBranches) &&
              load(f,t.instancedCatalogue) && loadv(f,t.roots) && load(f,t.uniqueCatalogue) && load(f,t.ggd_name);
     return status; 
+}
+bool save(FILE *f, ImpostorsData &t)
+{
+    bool status = true;
+    status = save(f, t.atlas) && save(f, t.level) && save(f, t.valid) && savev(f, t.impostors);
+    return status;
+}
+bool load(FILE *f, ImpostorsData &t)
+{
+    bool status = true;
+    status = load(f, t.atlas) && load(f, t.level) && load(f, t.valid) && loadv(f, t.impostors);
+    return status;
+}
+
+bool save(FILE *f, Impostor &t)
+{
+    bool status = true;
+    status = save(f, t.id) && save(f, t.bcyl) && save(f, t.IDA) && savev(f, t.slices) && save(f, t.top_slice);
+    return status;
+}
+bool load(FILE *f, Impostor &t)
+{
+    bool status = true;
+    status = load(f, t.id) && load(f, t.bcyl) && load(f, t.IDA) && loadv(f, t.slices) && load(f, t.top_slice);
+    return status;
 }
 }

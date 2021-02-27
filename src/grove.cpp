@@ -14,9 +14,11 @@ clearCompute({"clear_compute.hlsl"},{})
 {
 
 }
-GroveRenderer::GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances) :
+GroveRenderer::GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
+                             bool print_perf) :
 GroveRenderer()
 {
+    ts = Timestamp(print_perf);
     if (LODs_count != _source->clouds.size() + 1 || max_distances.size() != _source->clouds.size() + 1)
     {
         logerr("Can not calculate LODs count for GroveRenderer. Given LODs_count doesn't match given data");
