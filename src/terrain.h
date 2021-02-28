@@ -1,22 +1,17 @@
 #pragma once
 #include "tinyEngine/utility/model.h"
 #include "tinyEngine/utility/shader.h"
-class Heightmap
+#include "field_2d.h"
+class Heightmap : public Field_2d
 {
 public:
     Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size);
     Heightmap(glm::vec3 pos, int w, int h);
-    ~Heightmap();
+
     float get_height(glm::vec3 pos);
     void random_generate(float base, float min, float max);
-private:
-    float get(int x, int y);
-    int w, h;
-    glm::vec3 pos;
-    glm::vec2 size;
-    float cell_size = 1;
-    float *data;
-    float base_height;
+    glm::vec2 get_height_range() {return get_range();}
+    glm::vec2 get_grad(glm::vec3 pos);
 
 };
 

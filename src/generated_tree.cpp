@@ -12,6 +12,8 @@
 #include "tinyEngine/save_utils/saver.h"
 #include "impostor.h"
 #include "terrain.h"
+#include "field_2d.h"
+#include "grove_generation_utils.h"
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -701,7 +703,46 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     //voxels->add_body(&el,100);
     //debug.add_bodies(&el,1);
     voxels->add_heightmap(*heightmap);
-    for (int i = 0; i < count; i++)
+    GroveMask mask = GroveMask(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
+    mask.set_round(100);
+    HabitabilityMap hm = HabitabilityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
+    PlanarShadowsMap psm = PlanarShadowsMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
+    psm.clear();
+    DensityMap dsm = DensityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
+    hm.create(*heightmap,mask);
+    dsm.create(hm,psm);
+
+    int trees_planted = 0;
+    for (int j = 0; j < params.growth_iterations(); j++)
+    {
+        if (j % 10 == 0)
+        {
+            int cnt = j == 0 ? count : 0;
+            std::vector<Seed> seeds;
+            dsm.choose_places_for_seeds(cnt,seeds);
+            for (Seed &seed : seeds)
+            {
+                glm::vec3 pos = glm::vec3(seed.pos.x,0,seed.pos.y);
+                pos.y = heightmap->get_height(pos);
+                
+                trees[trees_planted].pos = pos;
+                plant_tree(trees[trees_planted], trees[trees_planted].params);
+                trees_planted++;
+                logerr("seed planted");
+            }
+        }
+    }
+    for (int j = 0; j < params.growth_iterations(); j++)
+    {
+        for (int i = 0; i < trees_planted; i++)
+        {
+            if (trees[i].iter < params.growth_iterations())
+            {
+                grow_tree(trees[i]);
+            }
+        }
+    }
+    /*for (int i = 0; i < count; i++)
     {
         float R = urand(0,25*r);
         float phi = urand(0, 2*PI);
@@ -726,7 +767,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
                 grow_tree(trees[i]);
             }
         }
-    }
+    }*/
     //debug.visualize_light_voxels(voxels,glm::vec3(-100,-10,-100),glm::vec3(200,250,200),glm::vec3(single_voxel_size),0.5,0.001);
 }
 void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct)

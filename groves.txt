@@ -1,9 +1,19 @@
 grove bush_grove
 {
-count = 5
+count = 15
 pos = (0 0 0)
 size = (300 200 300)
 preset = {bush wood2 leaf2}
+preset = {default wood leaf}
+box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
+}
+grove_end
+grove simple_grove
+{
+count = 15
+pos = (0 0 0)
+size = (300 200 300)
+preset = {default wood2 leaf2}
 preset = {default wood leaf}
 box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
 }
