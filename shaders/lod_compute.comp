@@ -1,0 +1,145 @@
+#version 430
+#define THREADS 128
+layout( local_size_x = THREADS ) in;
+
+struct LodData
+{
+    vec2 min_max;
+    vec2 offset;
+};
+layout(std140, binding=0) readonly buffer _LodData
+{
+    LodData lodData[];
+};
+struct TypeData
+{
+    uint offset;
+    uint pad1,pad2,pad3;
+};
+layout(std140, binding=1) readonly buffer _TypeData
+{
+    TypeData typeData[];
+};
+struct InstanceData
+{
+    vec4 center_self;
+    vec4 center_par;
+    mat4 projection_camera;
+};
+layout(std140, binding=3) readonly buffer _InstanceData
+{
+    InstanceData instances[];
+};
+struct ModelData
+{
+    uint LOD;
+    uint type;
+    uint vertexes;
+    uint first_index;
+    uvec2 interval;
+    uvec2 pad2;
+};
+layout(std140, binding=4) readonly buffer _ModelData
+{
+    ModelData modelData[];
+};
+struct currentInstancesData
+{
+    uint index;
+    uint pad;
+    float mn;
+    float mx;
+};
+layout(std140, binding=5) writeonly buffer _curInsts
+{
+    currentInstancesData curInsts[];
+};
+
+layout(std140, binding=6) writeonly buffer _curModels
+{
+    uvec4 curModels[];
+};
+struct DrawElementsIndirectCommand
+{
+    uint count;         // Num elements (vertices)
+    uint instanceCount; // Number of instances to draw (a.k.a primcount)
+    uint firstIndex;    // Specifies a byte offset (cast to a pointer type) into the buffer bound to GL_ELEMENT_ARRAY_BUFFER to start reading indices from.
+    uint baseVertex;    // Specifies a constant that should be added to each element of indices​ when chosing elements from the enabled vertex arrays.
+    uint baseInstance;  // Specifies the base instance for use in fetching instanced vertex attributes.
+    uint pad1,pad2,pad3;
+};
+layout(std140, binding=7) writeonly buffer _DrawElementsIndirectCommand
+{
+    DrawElementsIndirectCommand cmds[];
+};
+
+layout(std140, binding=8) buffer _curTypes
+{
+    uvec4 curTypes[];
+};
+
+uniform uint lods_count;
+uniform uint objects_count;
+uniform vec3 camera_pos;
+uniform float trans;
+void main()
+{
+    //for (uint i=0; i<THREADS; i++)
+    //{
+    uint object_id = THREADS*gl_WorkGroupID.x + gl_LocalInvocationIndex;
+    if (object_id >= objects_count)
+        return;
+    uvec2 interval = modelData[object_id].interval;
+    int k = int(modelData[object_id].LOD);
+
+    vec2 min_max = lodData[k].min_max;
+
+    uint cnt = (interval.y - interval.x)/ THREADS + 1;
+    uint st, en;
+    st = interval.x + cnt * gl_LocalInvocationIndex;
+    en = interval.x + cnt * (gl_LocalInvocationIndex + 1);
+    en = en > interval.y ? interval.y : en;
+    st = interval.x;
+    en = interval.y;
+    uint inst_num = 0;
+    for (uint i = st; i < en; i++)
+    {
+        float mx_dist = min_max.y - length(instances[i].center_par.xyz - camera_pos);
+	    float mn_dist = length(instances[i].center_self.xyz - camera_pos) - min_max.x;
+
+        if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
+        {
+            vec2 a_mult = vec2(0,0);
+            if (mn_dist < trans)
+            {
+                a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_par.xyz - camera_pos));
+            }
+            else if (mx_dist < trans)
+            {
+                a_mult = vec2(0.5*(mx_dist/trans + 1), -length(instances[i].center_self.xyz - camera_pos));
+            }
+            else
+            {
+                a_mult = vec2(10,0);
+            }
+            curInsts[st + inst_num].index = i;
+            curInsts[st + inst_num].mn = a_mult.x;
+            curInsts[st + inst_num].mx = a_mult.y;
+            inst_num++;
+        }
+    }
+    if (inst_num > 0)
+    {
+        uint type = modelData[object_id].type;
+        uint cmd_n = typeData[type].offset + atomicAdd(curTypes[type].x,1);
+
+        cmds[cmd_n].count = modelData[object_id].vertexes;
+        cmds[cmd_n].instanceCount = inst_num;
+        cmds[cmd_n].firstIndex = modelData[object_id].first_index;
+        cmds[cmd_n].baseVertex = 0;
+        cmds[cmd_n].baseInstance = 0;
+
+        curModels[cmd_n].x = st;
+    }
+
+}

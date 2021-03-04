@@ -15,6 +15,14 @@ struct InstancingReadyModel
 {
     int id = -1;
 };
+    struct MultiDrawRendDesc
+    {
+        int type_id;
+        int cmd_buffer_offset;
+        int current_types_offset;
+        int max_models;
+        int cmd_size;
+    };
     struct Billboard
     {
         int id = -1;

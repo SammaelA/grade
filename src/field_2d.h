@@ -15,6 +15,8 @@ protected:
     glm::vec2 get_grad(int x, int y);
     void set(int x, int y, float val);
     void set_safe(int x, int y, float val);
+    void add(int x, int y, float val);
+    void add_safe(int x, int y, float val);
     int w, h;
     float min_val, max_val;
     glm::vec3 pos;

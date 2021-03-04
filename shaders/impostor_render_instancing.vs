@@ -1,4 +1,4 @@
-#version 430
+#version 460
 
 struct SliceVertexData 
 {
@@ -9,12 +9,15 @@ layout(std140, binding=2) buffer Slices
 {
     SliceVertexData sliceVertexes[];
 };
-struct LOD_info
+
+struct TypeData
 {
     uint offset;
-    float min_dist;
-    float max_dist;
-    float pad;
+    uint pad1,pad2,pad3;
+};
+layout(std140, binding=1) readonly buffer _TypeData
+{
+    TypeData typeData[];
 };
 struct InstanceData
 {
@@ -22,26 +25,39 @@ struct InstanceData
     vec4 center_par;
     mat4 projection_camera;
 };
-struct IndexData
+layout(std140, binding=3) readonly buffer _InstanceData
+{
+    InstanceData instances[];
+};
+struct ModelData
+{
+    uint LOD;
+    uint type;
+    uint vertexes;
+    uint first_index;
+    uvec2 interval;
+    uvec2 pad2;
+};
+layout(std140, binding=4) readonly buffer _ModelData
+{
+    ModelData modelData[];
+};
+struct currentInstancesData
 {
     uint index;
-    //uint pad;
+    uint pad;
     float mn;
     float mx;
 };
-layout(std140, binding=1) buffer _models_intervals
+layout(std140, binding=5) readonly buffer _curInsts
 {
-    readonly uvec4 models_intervals[];
-};
-layout(std140, binding=3) buffer _instances
-{
-    readonly InstanceData instances[];
-};
-layout(std140, binding=4) buffer _instance_indexes//same size as instances
-{
-    readonly IndexData instance_indexes[];
+    currentInstancesData curInsts[];
 };
 
+layout(std140, binding=6) readonly buffer _curModels
+{
+    uvec4 curModels[];
+};
 
 in vec3 in_Position;
 in vec3 in_Normal;
@@ -55,7 +71,7 @@ uniform int slice_offset;
 uniform float delta;
 uniform float angle_step;
 uniform vec2 hor_vert_transition_thr;
-uniform uint id;
+uniform uint type_id;
 
 out vec3 tc_a;
 out vec3 tc_b;
@@ -90,9 +106,11 @@ mat4 rotate(vec3 axis, float angle)
 }
 void main(void) {
 	//Fragment Position in Model Space
-	uint offset = models_intervals[id].x + gl_InstanceID;
-	mat4 inst_mat = instances[instance_indexes[offset].index].projection_camera;
-	a_mult = vec2(instance_indexes[offset].mn, instance_indexes[offset].mx);
+	uint id = typeData[type_id].offset + gl_DrawID;
+	uint offset = curModels[id].x + gl_InstanceID;
+	mat4 inst_mat = instances[curInsts[offset].index].projection_camera;
+	a_mult = vec2(curInsts[offset].mn, curInsts[offset].mx);
+    
 	vec3 center = (inst_mat * vec4(imp_center,1.0f)).xyz;
     vec3 viewdir = normalize(center - camera_pos);
     mat3 MVI = mat3(transpose(inverse(inst_mat)));

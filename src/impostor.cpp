@@ -319,10 +319,10 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
 
 
 }
-void ImpostorRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCamera, glm::vec3 camera_pos, glm::vec2 LOD_min_max,
+void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
                               glm::vec4 screen_size)
 {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
+    /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
     impostorRendererInstancing.use();
     impostorRendererInstancing.uniform("projectionCamera", projectionCamera);
     impostorRendererInstancing.texture("tex", data->atlas.tex());
@@ -354,4 +354,5 @@ void ImpostorRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCa
             }
         }
     }
+    */
 }

@@ -187,3 +187,16 @@ float f_perlin(float x, float y)
             set(x,y,val);
         }
     }
+        void Field_2d::add(int x, int y, float val)
+    {
+        data[(2*w + 1)*(y + h) + x + w] += val;
+        min_val = MIN(min_val,val);
+        max_val = MAX(max_val,val);
+    }
+    void Field_2d::add_safe(int x, int y, float val)
+    {
+        if (x >= -w && x <= w && y >= -h && y <= h)
+        {
+            add(x,y,val);
+        }
+    }

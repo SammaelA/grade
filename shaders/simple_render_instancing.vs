@@ -1,34 +1,54 @@
-#version 430
+#version 460
 
+struct TypeData
+{
+    uint offset;
+    uint pad1,pad2,pad3;
+};
+layout(std140, binding=1) readonly buffer _TypeData
+{
+    TypeData typeData[];
+};
 struct InstanceData
 {
     vec4 center_self;
     vec4 center_par;
     mat4 projection_camera;
 };
-struct IndexData
+layout(std140, binding=3) readonly buffer _InstanceData
+{
+    InstanceData instances[];
+};
+struct ModelData
+{
+    uint LOD;
+    uint type;
+    uint vertexes;
+    uint first_index;
+    uvec2 interval;
+    uvec2 pad2;
+};
+layout(std140, binding=4) readonly buffer _ModelData
+{
+    ModelData modelData[];
+};
+struct currentInstancesData
 {
     uint index;
-    //uint pad;
+    uint pad;
     float mn;
     float mx;
 };
-layout(std140, binding=1) buffer _models_intervals
+layout(std140, binding=5) readonly buffer _curInsts
 {
-    readonly uvec4 models_intervals[];
+    currentInstancesData curInsts[];
 };
-layout(std140, binding=3) buffer _instances
+
+layout(std140, binding=6) readonly buffer _curModels
 {
-    readonly InstanceData instances[];
+    uvec4 curModels[];
 };
-layout(std140, binding=4) buffer _instance_indexes//same size as instances
-{
-    readonly IndexData instance_indexes[];
-};
-layout(std140, binding=5) buffer _models_instance_count//same size as models_intervals
-{
-    readonly uint models_instance_count[];
-};
+
 in vec3 in_Position;
 in vec3 in_Normal;
 in vec4 in_Tex;
@@ -36,7 +56,7 @@ in vec4 in_Tex;
 uniform mat4 projectionCamera;
 uniform vec2 LOD_dist_min_max;
 uniform vec3 camera_pos;
-uniform uint id;
+uniform uint type_id;
 
 out vec2 ex_Tex;
 out vec3 ex_Normal;
@@ -45,13 +65,14 @@ out vec2 a_mult;
 
 void main(void) 
 {
-	uint offset = models_intervals[id].x + gl_InstanceID;
-	mat4 inst_mat = instances[instance_indexes[offset].index].projection_camera;
+    uint id = typeData[type_id].offset + gl_DrawID;
+	uint offset = curModels[id].x + gl_InstanceID;
+	mat4 inst_mat = instances[curInsts[offset].index].projection_camera;
 	ex_FragPos = (inst_mat * vec4(in_Position, 1.0f)).xyz;
-	a_mult = vec2(instance_indexes[offset].mn, instance_indexes[offset].mx);
+	a_mult = vec2(curInsts[offset].mn, curInsts[offset].mx);
 	
 	ex_Normal = in_Normal;
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
 	ex_Tex = in_Tex.xy;
-	ex_Tex.x += 0.01*float(models_instance_count[id]);
+	//ex_Tex.x += 0.01*float(models_instance_count[id]);
 }

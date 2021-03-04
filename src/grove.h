@@ -6,6 +6,7 @@
 #include "tinyEngine/utility.h"
 #include "billboard_cloud_data.h"
 #include "timestamp.h"
+#include "rendering_SSBO_structs.h"
 
 class ImpostorRenderer;
 class BillboardCloudRenderer;
@@ -103,9 +104,11 @@ class GroveRenderer
 {
 public:
     static const int base_level = 1;
+
     struct Instance2 : InstancingReadyModel
     {
         Model *m;
+        DrawElementsIndirectCommand cmd;
         uint type;
         InstanceDataArrays &ida;
         Instance2(Model *m, uint type, InstanceDataArrays &ida);
@@ -126,29 +129,29 @@ public:
     GroveRenderer();
     ~GroveRenderer();
 private:
-    struct LOD_info
+    struct TypeDescriptionForRender
     {
-        uint offset = 0;
-        uint pad = 0;
-        glm::vec2 min_max;
-    };
-    struct InstanceData
-    {
-        glm::vec4 center_self;
-        glm::vec4 center_par;
-        glm::mat4 projection_camera;
+        ImpostorRenderer *imp = nullptr;
+        BillboardCloudRenderer *bill = nullptr;
+        MultiDrawRendDesc rendDesc;
+        
     };
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
-    void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LOD_info> &lod_infos, std::vector<InstanceData> &instances,
-                      std::vector<glm::uvec2> &models_intervals);
+    void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
+                      std::vector<ModelData> &models, std::vector<TypeData> &types);
+    DrawElementsIndirectCommand model_to_base(Model *m);
     std::vector<LOD> LODs;
+    std::vector<TypeDescriptionForRender> types_descs;
     Shader renderer;
     Shader rendererInstancing;
     Shader lodCompute;
     Shader clearCompute;
     GrovePacked *source;
     GroveGenerationData *ggd;
-    GLuint lods_buf, inst_buf, intervals_buf, indexes_buf, counts_buf;
-    int instance_models_count = 0;
+    GLuint lods_buf, instances_buf, models_buf, types_buf;
+    GLuint cur_insts_buf, cur_models_buf, cur_types_buf;
+    GLuint draw_indirect_buffer;
+    int total_models_count = 0;
     Timestamp ts;
+    Model *base_container;
 };

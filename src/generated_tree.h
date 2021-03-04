@@ -11,6 +11,7 @@
 #include "grove.h"
 class DebugVisualizer;
 class Heightmap;
+class PlanarShadowsMap;
 class TreeGenerator
 {
 public:
@@ -40,6 +41,8 @@ public:
     void distribute_feed(Branch *b);
     void remove_branch(Branch *b);
     void recalculate_thickness(Branch *b);
+    void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
+    int joints_count(Branch *b);
     LightVoxelsCube *create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);

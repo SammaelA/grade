@@ -11,7 +11,7 @@ void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r,
     {
         for (int j=-n_cells; j<n_cells; j++)
         {
-            set_safe(rp.x+i,rp.y+j,base_val/powf(sqrt(i*i + j*j),_pow));
+            add_safe(rp.x+i,rp.y+j,base_val/powf(sqrt(i*i + j*j) + 1,_pow));
         }
     }
 }
@@ -37,13 +37,19 @@ void HabitabilityMap::create(Heightmap &heightmap, GroveMask &mask)
                 float noise = 0.3 + 0.7*get(i,j);
                 float grad = CLAMP(grad_mult*length(heightmap.get_grad_bilinear(position)),0,1);
                 float height = CLAMP(abs(heightmap.get_height(position) - delta)/delta,0.5,1);
-
-                set(i,j,0.25*mask.get_bilinear(position)*(2*noise + grad + height));
+                
+                float res = 0.25*mask.get_bilinear(position)*(2*noise + grad + height);
+                                       if (abs(res) > 1000)
+                {
+                    logerr("set wrong %f (%d %d) %f %f %f mask %f",res,i,j, noise, grad, height, mask.get_bilinear(position));
+                }
+                set(i,j, res);
             }
         }
 }
 void GroveMask::set_round(float r)
 {
+    base_val = 0;
         for (int i = -w; i <= w; i++)
         {
             for (int j = -h; j <= h; j++)
@@ -73,33 +79,49 @@ void DensityMap::create(HabitabilityMap &hm, PlanarShadowsMap &psm)
                 glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
                 float sh = psm.get_bilinear(position);
                 float hab = hm.get_bilinear(position);
-                float res = (1-shadow_q)*hab + shadow_q*(1/(1 + sh));
+                float res = hab*(1/(1 + MAX(sh,0)));
                 set(i,j,res);
+                       if (abs(res) > 1000)
+                {
+                    logerr("set wrong %f (%d %d) %f %f",res,i,j, sh, hab);
+                }
             }
         }
 }
 void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
 {
+    logerr("field_2d with size %d %d",w, h);
     if (count <= 0)
         return;
     double sum = calc_sum();
     int mult = 1;
     while (seeds.size() < count)
     {
+        float rnd = urand(0,sum);
         for (int i = -w; i <= w; i++)
         {
+            if (rnd < 0)
+                break;
             for (int j = -h; j <= h; j++)
             {
-                float rnd = urand(0,sum);
-                if (mult*count*get(i,j) > rnd && seeds.size() < count)
+                if (rnd < 0)
+                    break;
+                float r = get(i,j);
+                if (r > rnd && seeds.size() < count)
                 {
+                    logerr("%d %d %f (%d/%d %d/%d) %f",mult,count,get(i,j),i,w,j,h, (float)sum);
                     Seed s;
-                    s.pos = glm::vec2(pos.x + cell_size*i, pos.z - cell_size*j);
+                    s.pos = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
                     s.roots_count = 1;
                     seeds.push_back(s);
+                    rnd = -1;
+                }
+                else
+                {
+                    rnd -= r;
                 }
             }
         }
-        mult *= 2;
+        //mult *= 2;
     }
 }

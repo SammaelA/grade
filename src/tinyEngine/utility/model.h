@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <functional>
 #include <iostream>
+#include <chrono>
 struct Primitive{
 
   Primitive(){
@@ -154,6 +155,7 @@ public:
     return positions.size()/3;
   }
   void update(){
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     glBindVertexArray(vao);
     bindf(0, positions.size(), 3, &positions[0]);
     if(!normals.empty()) bindf(1, normals.size(), 3, &normals[0]);
@@ -162,6 +164,8 @@ public:
     SIZE = indices.size();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, SIZE*sizeof(GLuint), &indices[0], GL_DYNAMIC_DRAW);
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    //std::cerr << "model updated " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << "[us]" << std::endl;
   }
 
   void construct(std::function<void(Model*)> constructor){

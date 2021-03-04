@@ -610,7 +610,7 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
             b.instancing = true;
             b.to_model(m, data->atlas);
         }
-        m->update();
+       // m->update();
         for (int i=0;i<bill.IDA.centers_par.size();i++)
         {
             if (data->level >= GroveRenderer::base_level)
@@ -632,8 +632,8 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(std::vector<uint> &counts, glm::mat4 &projectionCamera, glm::vec3 camera_pos, 
-                                    glm::vec2 LOD_min_max, glm::vec4 screen_size)
+void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
+                                    glm::vec4 screen_size)
 {
     if (!data || !data->valid)
         return;
@@ -657,25 +657,14 @@ void BillboardCloudRenderer::render(std::vector<uint> &counts, glm::mat4 &projec
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
-        billboardRendererInstancing.uniform("LOD_dist_min_max",LOD_min_max);
         billboardRendererInstancing.uniform("camera_pos",camera_pos);
         billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("tex", data->atlas.tex());
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
-        for (int i = 0;i<instances.size();i++)
-        {
-            billboardRendererInstancing.uniform("id",(uint)data->billboards[i].id);
-            if (data->billboards[i].id >= 0 && data->billboards[i].id < counts.size() && counts[data->billboards[i].id] > 0)
-            {
-                Model *m = instances[i];
-                if(m && m->indexed)
-                {
-                    glBindVertexArray(m->vao);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
-                    glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[data->billboards[i].id]);
-                }
-            }
-        }
+        billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);
+        
+        glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
+                                            mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
     }
 }

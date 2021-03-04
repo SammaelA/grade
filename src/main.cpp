@@ -57,28 +57,6 @@ glm::mat4 bias = glm::mat4(
 glm::mat4 lproj = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, -200.0f, 2000.0f);
 glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
 
-/*
-void setup()
-{
-  treecount = 3;
-  TreeStructureParameters params1,params2,params3;
-  params2.seg_len_mult = Parameter<float>(4, std::vector<float>{0.1, 1.75, 1, 0.55, 0.4});
-  params2.base_seg_feed = Parameter<float>(100, std::vector<float>{20, 20, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-0, 0));
-  params2.base_branch_feed = Parameter<float>(300, std::vector<float>{20, 30, 200, 40, 40}, REGENERATE_ON_GET, new Uniform(-00, 00));
-  params2.min_branching_chance = Parameter<float>(0, std::vector<float>{1, 0.4, 0.5, 0.75, 0.7});
-  params1 = config.get("default");
-  params2 = config.get("bush");
-  TreeTypeData ttd1(0,params1,std::string("wood"),std::string("leaf"));
-  TreeTypeData ttd2(1,params2,std::string("wood2"),std::string("leaf2"));
-  TreeTypeData ttd3(2,params3,std::string("wood3"),std::string("leaf2"));
-  float r = sqrt(treecount) + 1;
-  ggd.size = glm::vec3(40.0f * r + 250, 120, 40.0f * r + 250);
-  ggd.pos = glm::vec3(0,0,0);
-  ggd.trees_count = treecount;
-  ggd.types = {ttd1,ttd2,ttd3};
-  srand(time(NULL));
-  gen.create_grove(config.get_ggd("bush_grove"), grove, *debugVisualizer, t);
-}*/
 
 // Event Handler
 std::function<void()> eventHandler = []() {
@@ -254,6 +232,8 @@ int main(int argc, char *argv[])
     else if (std::string(argv[k]) == "-perf")
     {
       print_perf = true;
+      k++;
+      logerr("perf");
     }
     else if (std::string(argv[k]) == "-s")
     {
@@ -416,22 +396,28 @@ int main(int argc, char *argv[])
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
-  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(1000,1000),glm::vec2(10,10));
-
+  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(250,250),glm::vec2(25,25));
+  
+  std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();
+  float mu = 0.99;
+  float avg_fps = 100;
+  int frame = 0;
+  Timestamp ts;
   Tiny::view.pipeline = [&]() {
+    t_prev = t1;
+    t1 = std::chrono::steady_clock::now();
+    float frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t_prev).count();
+    frame_time = MAX(frame_time,0.1);
+    avg_fps = mu*avg_fps + (1 - mu)*(1000/frame_time);
+    frame++;
+    if (frame % 100 == 0)
+    {
+      fprintf(stderr,"FPS: %4.1f\n",avg_fps);
+    }
     rot_a += 0.01;
     //camera.pos = glm::vec3(250*sin(rot_a),100,250*cos(rot_a));
     //camera.front = glm::normalize(-camera.pos);
-    shadow.target();
-    if (drawshadow)
-    {
-      depth.use();
-      depth.uniform("dvp", lproj * lview);
-      //	for (int i=0;i<0*treecount;i++)
-      //	{
-      //		t[i].render(defaultShader,cloudnum,lproj*lview);
-      //	}
-    }
+
     Tiny::view.target(glm::vec3(0.6, 0.7, 1));
     if (render_mode <= DEBUG_RENDER_MODE)
     {
@@ -460,43 +446,14 @@ int main(int argc, char *argv[])
     }
     else
     {
-      defaultShader.use();
-      defaultShader.uniform("mult", 0);
-      defaultShader.uniform("projectionCamera", projection * camera.camera());
-      defaultShader.uniform("lightcolor", glm::vec3(1, 1, 1));
-      defaultShader.uniform("lookDir", camera.front);
-      defaultShader.uniform("lightDir", lightpos);
-
-      defaultShader.uniform("drawshadow", drawshadow);
-      if (drawshadow)
-      {
-        defaultShader.uniform("dbvp", bias * lproj * lview);
-        defaultShader.texture("shadowMap", shadow.depth);
-        defaultShader.uniform("light", lightpos);
-      }
-
-      defaultShader.uniform("drawfloor", true);
-      defaultShader.uniform("drawcolor", glm::vec4(floor.colors[0], floor.colors[1], floor.colors[2], 1));
-      defaultShader.uniform("model", floor.model);
-      //floor.render(GL_TRIANGLES);
+      ts.start("terrain");
       tr.render(projection * camera.camera());
+      ts.end("terrain");
+      ts.resolve();
       if (draw_clusterized)
       {
         groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
         debugVisualizer->render(projection * camera.camera(),render_mode);
-      }
-      else
-      {//deprecated
-      /*
-        defaultShader.uniform("drawfloor", false);
-        defaultShader.texture("tex", wood);
-        defaultShader.uniform("wireframe", false);
-        glm::mat4 prc = projection * camera.camera();
-        for (int i = 0; i < treecount; i++)
-        {
-          t[i].render(defaultShader, cloudnum, prc);
-        }
-        debugVisualizer->render(prc,render_mode);*/
       }
     }
   };

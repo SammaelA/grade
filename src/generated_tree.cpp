@@ -672,6 +672,44 @@ bool TreeGenerator::is_branch_productive(Branch *b)
 {
     return false && (b->level < curParams.max_depth() - 1) && (b->max_seg_count > b->segments.size());
 }
+void TreeGenerator::recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level)
+{
+    if (!b || b->level > level)
+        return;
+    if (b->level < level)
+    {
+        for (Joint &j : b->joints)
+        {
+            for (Branch *br : j.childBranches)
+                recalculate_planar_shadows(br,psm,level);
+        }
+    }
+    else //b->level == level
+    {
+        if (b->joints.size() < 2)
+            return;
+
+        int cnt = joints_count(b);
+        glm::vec3 pos = 0.5f*(b->joints.back().pos + b->joints.front().pos);
+        float height = MAX(0,pos.y - heightmap->get_height(pos));
+        float size = 0.5f*(length(b->joints.back().pos - b->joints.front().pos) + height);
+        //logerr("occluder set: pos = %f %f %f size %f val %f",pos.x,pos.y,pos.z,size,(float)cnt);
+        psm.set_occluder(pos,cnt,size,1);
+
+    }
+}
+int TreeGenerator::joints_count(Branch *b)
+{
+    if (!b)
+        return 0;
+    int cnt = b->joints.size();
+    for (Joint &j : b->joints)
+    {
+        for (Branch *br : j.childBranches)
+            cnt += joints_count(br);
+    }
+    return cnt;
+}
 void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug)
 {
     voxels = create_light_voxels_cube(params, t.pos);
@@ -707,17 +745,31 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     mask.set_round(100);
     HabitabilityMap hm = HabitabilityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
     PlanarShadowsMap psm = PlanarShadowsMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    psm.clear();
     DensityMap dsm = DensityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
     hm.create(*heightmap,mask);
-    dsm.create(hm,psm);
 
-    int trees_planted = 0;
+    const int growth_step = 10;
+    int trees_planted = 0;  
     for (int j = 0; j < params.growth_iterations(); j++)
     {
-        if (j % 10 == 0)
+        if (j % growth_step == 0)
         {
-            int cnt = j == 0 ? count : 0;
+            psm.clear();
+            for (int i = 0; i < trees_planted; i++)
+            {
+                recalculate_planar_shadows(trees[i].root,psm,1);
+            }
+            dsm.create(hm,psm);
+                            printf("planar shadows\n");
+                for (int px = -50; px <= 50; px += 10)
+                {
+                    for (int py = -50; py <= 50; py += 10)
+                    {
+                        printf("%5.4f ",psm.get_bilinear(curGgd.pos + glm::vec3(px,0,py)));
+                    }
+                    printf("\n");
+                }
+            int cnt = MAX((count - trees_planted < 3) ? count - trees_planted : (count - trees_planted)/2,0);
             std::vector<Seed> seeds;
             dsm.choose_places_for_seeds(cnt,seeds);
             for (Seed &seed : seeds)
@@ -729,6 +781,14 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
                 plant_tree(trees[trees_planted], trees[trees_planted].params);
                 trees_planted++;
                 logerr("seed planted");
+            }
+        }
+        
+        for (int i = 0; i < trees_planted; i++)
+        {
+            if (trees[i].iter < params.growth_iterations())
+            {
+                grow_tree(trees[i]);
             }
         }
     }

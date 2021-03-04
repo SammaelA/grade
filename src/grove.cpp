@@ -4,13 +4,14 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 #include "impostor.h"
+#include <chrono>
 
 GroveRenderer::GroveRenderer(): 
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
                    {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
-lodCompute({"lod_compute.hlsl"},{}),
-clearCompute({"clear_compute.hlsl"},{})
+lodCompute({"lod_compute.comp"},{}),
+clearCompute({"clear_compute.comp"},{})
 {
 
 }
@@ -28,10 +29,12 @@ GroveRenderer()
             max_distances.push_back(2*max_distances.back());
         }
     }
+    
     Visualizer v = Visualizer();
     source = _source;
     ggd = _ggd;
     debug("creating grove renderer with %d LODs\n", _source->clouds.size());
+    base_container = new Model();
     for (int i = 0; i < _source->clouds.size(); i++)
     {
         LODs.emplace_back();
@@ -101,82 +104,217 @@ GroveRenderer()
         LODs[0].imp_rend = new ImpostorRenderer(&(source->impostors[0]));
         LODs[1].imp_rend = new ImpostorRenderer(&(source->impostors[1]));
     }
-    std::vector<LOD_info> lod_infos;
+    std::vector<LodData> lods;
     std::vector<InstanceData> instances;
-    std::vector<glm::uvec2> models_intervals;
+    std::vector<ModelData> models;
+    std::vector<TypeData> types;
+
+    //fill LODs data
+    for (LOD &lod : LODs)
+    {
+        LodData Li;
+        Li.min_max.y = lod.max_dist;
+
+        if (!lods.empty())
+        {
+            lods.back().min_max.x = Li.min_max.y;
+        }
+        lods.push_back(Li);
+    }
+    //types - impostors;
+    int l;
+    l = 0;
+    for (LOD &lod : LODs)
+    {
+        if (!lod.imp_rend)
+            continue;
+        if (lod.imp_rend->data->impostors.size() != lod.imp_rend->models.size())
+        {
+            logerr("broken impostor data");
+            continue;
+        }
+        
+        types_descs.push_back(TypeDescriptionForRender());
+        types_descs.back().imp = lod.imp_rend;
+        types_descs.back().rendDesc.cmd_size = sizeof(DrawElementsIndirectCommand);
+        types_descs.back().rendDesc.current_types_offset = sizeof(currentTypesData)*types.size();
+        types_descs.back().rendDesc.cmd_buffer_offset = sizeof(DrawElementsIndirectCommand)*models.size();
+        types_descs.back().rendDesc.type_id = types.size();
+        types_descs.back().rendDesc.max_models = lod.imp_rend->models.size();
+        TypeData t;
+        t.offset = models.size();
+        
+        int i = 0;
+        for (Impostor &imp :lod.imp_rend->data->impostors)
+        {
+            Model *m = lod.imp_rend->models[i];
+            auto cmd = model_to_base(m);
+            imp.id = types.size();
+            IDA_to_bufer(imp.IDA, lods, instances, models, types);
+            models.back().LOD = l;
+            models.back().type = types.size();
+            models.back().vertexes = cmd.count;
+            models.back().first_index = cmd.firstIndex;
+            i++;
+        }
+        types.push_back(t);
+        l++;
+    }
+
+    l = 0;
+    for (LOD &lod : LODs)
+    {
+        if (!lod.cloud)
+            continue;
+
+        if (lod.cloud->data->billboards.size() != lod.cloud->instances.size())
+        {
+            logerr("broken impostor data");
+            continue;
+        }
+
+        types_descs.push_back(TypeDescriptionForRender());
+        types_descs.back().bill = lod.cloud;
+        types_descs.back().rendDesc.cmd_size = sizeof(DrawElementsIndirectCommand);
+        types_descs.back().rendDesc.current_types_offset = sizeof(currentTypesData)*types.size();
+        types_descs.back().rendDesc.cmd_buffer_offset = sizeof(DrawElementsIndirectCommand)*models.size();
+        types_descs.back().rendDesc.type_id = types.size();
+        types_descs.back().rendDesc.max_models = lod.cloud->instances.size();
+        TypeData t;
+        t.offset = models.size();
+        logerr("models size %d",models.size());
+        int i = 0;
+        for (BillboardData &bill :lod.cloud->data->billboards)
+        {
+            Model *m = lod.cloud->instances[i];
+            auto cmd = model_to_base(m);
+            bill.id = types.size();
+            IDA_to_bufer(bill.IDA, lods, instances, models, types);
+            models.back().LOD = l;
+            models.back().type = types.size();
+            models.back().vertexes = cmd.count;
+            models.back().first_index = cmd.firstIndex;
+            logerr("verts %d",models.back().vertexes);
+            i++;
+        }
+        types.push_back(t);
+        l++;
+    }
+
+    l = 0;
+    int mods = 0;
+    TypeData t;
+    t.offset = models.size();
+    types_descs.push_back(TypeDescriptionForRender());
+    types_descs.back().rendDesc.cmd_size = sizeof(DrawElementsIndirectCommand);
+    types_descs.back().rendDesc.current_types_offset = sizeof(currentTypesData)*types.size();
+    types_descs.back().rendDesc.cmd_buffer_offset = sizeof(DrawElementsIndirectCommand)*models.size();
+    types_descs.back().rendDesc.type_id = types.size();
 
     for (LOD &lod : LODs)
     {
-        LOD_info Li;
-        Li.min_max.y = lod.max_dist;
-        Li.offset = instances.size();
-        if (!lod_infos.empty())
+        for (Instance2 in : lod.instances)
         {
-            lod_infos.back().min_max.x = Li.min_max.y;
-        }
-        lod_infos.push_back(Li);
-        
-        if (lod.imp_rend)
-        {
-            for (Impostor &imp :lod.imp_rend->data->impostors)
-            {
-                imp.id = models_intervals.size()/2;
-                IDA_to_bufer(imp.IDA, lod_infos, instances, models_intervals);
-            }
-        }
+            in.id = types.size();
 
-        if (lod.cloud)
-        {
-            for (BillboardData &bill :lod.cloud->data->billboards)
-            {
-                bill.id = models_intervals.size()/2;
-                IDA_to_bufer(bill.IDA, lod_infos, instances, models_intervals);
-            }
+            IDA_to_bufer(in.ida, lods, instances, models, types);
+            models.back().LOD = l;
+            models.back().type = types.size();
+            models.back().vertexes = in.cmd.count;
+            models.back().first_index = in.cmd.firstIndex;
+            mods++;
         }
-
-
-            for (int i=0;i<lod.instances.size();i++)
-            {
-                lod.instances[i].id = models_intervals.size()/2;
-                IDA_to_bufer(lod.instances[i].ida, lod_infos, instances, models_intervals);
-            }
-        
-        for (int i=0;i<lod.leaves_instances.size();i++)
+        for (Instance2 in : lod.leaves_instances)
         {
-            lod.leaves_instances[i].id = lod.instances[lod.leaves_instances[i].id].id;
+            in.id = types.size();
+
+            IDA_to_bufer(in.ida, lods, instances, models, types);
+            models.back().LOD = l;
+            models.back().type = types.size();
+            models.back().vertexes = in.cmd.count;
+            models.back().first_index = in.cmd.firstIndex;
+            mods++;
         }
-        
+        l++;
     }
-
-    //TODO - add billboards and models
-    instance_models_count = models_intervals.size()/2;
-    
+    types.push_back(t);
+    types_descs.back().rendDesc.max_models = mods;
+    for (int i=0;i<types.size();i++)
+    {
+        logerr("%d offset %d",i,types[i].offset);
+    }
     glGenBuffers(1, &lods_buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LOD_info)*lod_infos.size(), lod_infos.data(), GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LodData)*lods.size(), lods.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &inst_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inst_buf);
+    glGenBuffers(1, &types_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TypeData)*types.size(), types.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &instances_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(InstanceData)*instances.size(), instances.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &indexes_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, indexes_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 16*sizeof(uint)*instances.size(), NULL, GL_DYNAMIC_COPY);
+    glGenBuffers(1, &models_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, models_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ModelData)*models.size(), models.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &intervals_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, intervals_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 2*sizeof(uint)*models_intervals.size(), models_intervals.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &cur_insts_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, cur_insts_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(currentInstancesData)*instances.size(), NULL, GL_STREAM_DRAW);
 
-    glGenBuffers(1, &counts_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 2*sizeof(uint)*models_intervals.size(), NULL, GL_DYNAMIC_READ);
+    glGenBuffers(1, &cur_models_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, cur_models_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(currentModelsData)*models.size(), NULL, GL_STREAM_DRAW);
 
-    lod_infos.clear();
+    glGenBuffers(1, &draw_indirect_buffer);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, draw_indirect_buffer);
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(DrawElementsIndirectCommand)*models.size(), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0); // unbind
+
+    glGenBuffers(1, &cur_types_buf);
+	glBindBuffer(GL_PARAMETER_BUFFER_ARB, cur_types_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);
+	glBufferData(GL_PARAMETER_BUFFER_ARB, sizeof(currentTypesData)*types.size(), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_PARAMETER_BUFFER_ARB, 0); // unbind
+
+    total_models_count = models.size();
+
+    lods.clear();
     instances.clear();
-    models_intervals.clear();
+    models.clear();
+    types.clear();
+
+    base_container->update();
 }
-void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LOD_info> &lod_infos, 
-                                 std::vector<InstanceData> &instances, std::vector<glm::uvec2> &models_intervals)
+DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m)
+{
+    DrawElementsIndirectCommand cmd;
+    int firstVertex = base_container->positions.size()/3;
+    cmd.firstIndex = base_container->indices.size();
+    cmd.count = m->positions.size()/3;
+    for (GLuint ind : m->indices)
+    {
+        base_container->indices.push_back(firstVertex + ind);
+    }
+    for (GLfloat pos : m->positions)
+    {
+        base_container->positions.push_back(pos);
+    }
+    for (GLfloat norm : m->normals)
+    {
+        base_container->normals.push_back(norm);
+    }
+    for (GLfloat tex : m->colors)
+    {
+        base_container->colors.push_back(tex);
+    }
+    logerr("%d ind", cmd.count );
+    return cmd;
+}
+void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
+                                 std::vector<ModelData> &models, std::vector<TypeData> &types)
 {
     uint st = instances.size();
     if (ida.centers_par.size() != ida.centers_self.size() || ida.centers_par.size() != ida.transforms.size())
@@ -191,8 +329,9 @@ void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LOD_info> 
         instances.back().center_par = glm::vec4(ida.centers_par[i],1);
         instances.back().center_self = glm::vec4(ida.centers_self[i],1);
     }
-    models_intervals.push_back(glm::uvec2(st,instances.size()));
-    models_intervals.push_back(glm::uvec2(100,100));
+    models.push_back(ModelData());
+    models.back().interval = glm::uvec2(st,instances.size());
+
 }
 GroveRenderer::~GroveRenderer()
 {
@@ -213,6 +352,7 @@ GroveRenderer::~GroveRenderer()
 }
 void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
 {
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (LODs.size() == 0)
         return;
     std::vector<int> lods_to_render;
@@ -245,112 +385,73 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
 
     ts.start("clearCompute");
     clearCompute.use();
-    clearCompute.uniform("count", (uint)instance_models_count);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);  
+    clearCompute.uniform("count", (uint)types_descs.size());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);  
     glDispatchCompute(1, 1, 1);
-
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+    
     ts.end("clearCompute");
+    
     ts.start("lodCompute");
     lodCompute.use();
     lodCompute.uniform("lods_count", (uint)LODs.size());
     lodCompute.uniform("camera_pos", camera_pos);
     lodCompute.uniform("trans", 20.0f);
-    lodCompute.uniform("objects_count", (uint)instance_models_count);
+    lodCompute.uniform("objects_count", (uint)total_models_count);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inst_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, indexes_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, intervals_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, counts_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, models_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, cur_insts_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, cur_models_buf);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, draw_indirect_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);
 
-    glDispatchCompute((GLuint)ceil(instance_models_count/128.0), 1, 1);
-
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glDispatchCompute((GLuint)ceil(total_models_count/128.0), 1, 1);
+    
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+    
     ts.end("lodCompute");
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, 0);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, counts_buf);
-    GLuint *ptr = nullptr;
-    ptr = (GLuint *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    std::chrono::steady_clock::time_point tt1 = std::chrono::steady_clock::now();
+    ts.start("bind");
+    glBindVertexArray(base_container->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, base_container->ibo);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
+    glBindBuffer(GL_PARAMETER_BUFFER_ARB, cur_types_buf);
+    ts.end("bind");
+    std::chrono::steady_clock::time_point tt2 = std::chrono::steady_clock::now();
+    glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
 
-    for (int i = 0; i < 4 * instance_models_count; i += 4)
+    for (auto &type : types_descs)
     {
-        counts.push_back(ptr[i]);
-        //logerr("%d) %d",i/4,counts.back());
-    }
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    for (int lod : lods_to_render)
-    {
-        ts.start("lod"+std::to_string(lod)+"_models");
-        renderer.use();
-        renderer.uniform("projectionCamera", prc);
-        for (int j = 0; j < LODs[lod].models.size(); j++)
+        if (type.imp)
         {
-            Model *m = LODs[lod].models[j].second;
-            renderer.texture("tex", ggd->types[LODs[lod].models[j].first].wood);
-            renderer.uniform("model", m->model);
-            m->update();
-            m->render(GL_TRIANGLES);
+            //TODO
         }
-        ts.end("lod"+std::to_string(lod)+"_models");
-        float mx = LODs[lod].max_dist == -10 ? 1000 : LODs[lod].max_dist;
-        float mn = lod + 1 == LODs.size() ? 0 : LODs[lod + 1].max_dist;
-        glm::vec2 mn_mx = glm::vec2(mn, mx);
-        Texture noise = textureManager.get("noise");
-        glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
-
-        ts.start("lod"+std::to_string(lod)+"_billboards");
-        if (LODs[lod].cloud)
-            LODs[lod].cloud->render(counts, prc, camera_pos, mn_mx, ss);
-        ts.end("lod"+std::to_string(lod)+"_billboards");
-
-        ts.start("lod"+std::to_string(lod)+"_imposters");
-        if (LODs[lod].imp_rend)
-            LODs[lod].imp_rend->render(counts, prc, camera_pos, mn_mx, ss);
-        ts.end("lod"+std::to_string(lod)+"_imposters");
-
-        ts.start("lod"+std::to_string(lod)+"_instances");
-        rendererInstancing.use();
-        rendererInstancing.uniform("projectionCamera", prc);
-        rendererInstancing.uniform("screen_size", ss);
-        rendererInstancing.texture("noise", noise);
-        rendererInstancing.uniform("LOD_dist_min_max", mn_mx);
-        rendererInstancing.uniform("camera_pos", camera_pos);
-        for (auto &in : LODs[lod].instances)
+        else if (type.bill)
         {
-            rendererInstancing.texture("tex", ggd->types[in.type].wood);
-            rendererInstancing.uniform("id",(uint)in.id);
-            if (in.id >= 0 && in.id < counts.size() && counts[in.id] > 0)
-            {
-                Model *m = in.m;
-                if(m && m->indexed)
-                {
-                    glBindVertexArray(m->vao);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
-                    glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[in.id]);
-                }
-            }
+            type.bill->render(type.rendDesc, prc, camera_pos, ss);
         }
-
-        for (auto &in : LODs[lod].leaves_instances)
+        else
         {
-            rendererInstancing.texture("tex", ggd->types[in.type].leaf);
-            rendererInstancing.uniform("id",(uint)in.id);
-            if (in.id >= 0 && in.id < counts.size() && counts[in.id] > 0)
-            {
-                Model *m = in.m;
-                if(m && m->indexed)
-                {
-                    glBindVertexArray(m->vao);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
-                    glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[in.id]);
-                }
-            }
+            auto &mdrd = type.rendDesc;
+            Texture noise = textureManager.get("noise");
+            rendererInstancing.use();
+            rendererInstancing.uniform("projectionCamera", prc);
+            rendererInstancing.uniform("screen_size", ss);
+            rendererInstancing.texture("noise", noise);
+            rendererInstancing.texture("tex", ggd->types[0].wood);
+            rendererInstancing.uniform("type_id", (uint)mdrd.type_id);
+            rendererInstancing.uniform("camera_pos", camera_pos);
+            glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
+                                                mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }
-        ts.end("lod"+std::to_string(lod)+"_instances");
     }
     ts.resolve();
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    //std::cerr << "grove rendered " << std::chrono::duration_cast<std::chrono::microseconds>(tt2 - tt1).count() << "[us]" << std::endl;
 }
 
 void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves)
@@ -362,17 +463,30 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
     glm::vec3 pos = source->instancedCatalogue.get(branch.branches.front()).joints.front().pos;
     Visualizer v = Visualizer();
-    Model *m = new Model();
-    Model *lm = need_leaves ? new Model() : nullptr;
+    //Model *m = new Model();
+    //Model *lm = need_leaves ? new Model() : nullptr;
+    uint ind_offset = base_container->indices.size();
     for (int id : branch.branches)
     {
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, m, false, up_to_level);
-        if (need_leaves)
-            v.packed_branch_to_model(b, lm, true, up_to_level);
+            v.packed_branch_to_model(b, base_container, false, up_to_level);
     }
-    m->update();
+
+    uint l_ind_offset = base_container->indices.size();
+    if (need_leaves)
+    {
+        for (int id : branch.branches)
+        {
+            PackedBranch &b = source->instancedCatalogue.get(id);
+            //if (b.level <= up_to_level)
+            v.packed_branch_to_model(b, base_container, true, up_to_level);
+        }
+    }
+    uint l_end = base_container->indices.size();
+    int count = l_ind_offset - ind_offset;
+    int l_count = l_end - l_ind_offset;
+    //m->update();
 
     if (branch.IDA.transforms.size() != branch.IDA.centers_par.size())
     {
@@ -393,25 +507,32 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         branch.IDA.centers_par[i] = center;
     }
 
-    if (!m->positions.empty() && !branch.IDA.transforms.empty())
+    if (count > 0 && !branch.IDA.transforms.empty())
     {
-        lod.instances.push_back(Instance2(m,type,branch.IDA));
+        lod.instances.push_back(Instance2(nullptr,type,branch.IDA));
+        lod.instances.back().cmd.firstIndex = ind_offset;
+        lod.instances.back().cmd.count = count;
+        lod.instances.back().cmd.instanceCount = lod.instances.back().ida.transforms.size();
     }
     else
     {   
-        delete m;
+        //delete m;
     }
     
     if (need_leaves)
     {
-        lm->update();
-        if (!lm->positions.empty() && !branch.IDA.transforms.empty())
+        //lm->update();
+        if (l_count > 0 && !branch.IDA.transforms.empty())
         {
-            lod.leaves_instances.push_back(Instance2(lm,type,branch.IDA));   
+            logerr("llllllaaaaaaa %d",l_count);
+            lod.leaves_instances.push_back(Instance2(nullptr,type,branch.IDA));   
             lod.leaves_instances.back().id = lod.instances.size() - 1;
+            lod.leaves_instances.back().cmd.firstIndex = l_ind_offset;
+            lod.leaves_instances.back().cmd.count = l_count;
+            lod.leaves_instances.back().cmd.instanceCount = lod.leaves_instances.back().ida.transforms.size();
         }
-        else
-            delete lm;
+        //else
+        //    delete lm;
     }
 }
 GroveRenderer::Instance2::Instance2(Model *_m, uint _type, InstanceDataArrays &_ida):
