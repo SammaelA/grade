@@ -529,66 +529,8 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b, 1.5);
     }
     debugl(8,"created %d billboards\n", billboard_boxes.size());
-    glGenerateTextureMipmap(atlas.tex().texture);
-    //atlas.gen_mipmaps();
-    return;
-    auto data = this;
-    Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
-    Shader mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"});
-    Model bm;
-    std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};
-    std::vector<float> tc = {0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0};
-    std::vector<GLuint> indices = {0, 1, 2, 2, 1, 3};
-
-    std::function<void(Model *)> _c_mip = [&](Model *h) {
-        bm.positions = vertexes;
-        bm.colors = tc;
-        bm.indices = indices;
-    };
-    GLuint fbo;
-    for (int j=0;j<data->atlas.get_sizes().z;j++)
-    {
-        int w = data->atlas.get_sizes().x;
-        int h =  data->atlas.get_sizes().y;
-        int mips = 5;
-        for (int i=1;i<mips;i++)
-        {
-            glBindTexture(data->atlas.tex().type, data->atlas.tex().texture);
-            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
-            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
-            Texture ctex(textureManager.create_unnamed(w,h));
-            glGenFramebuffers(1, &fbo);
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
-            glViewport(0, 0, w, h);
-            glClearColor(0,0,0,0);
-            glClear(GL_COLOR_BUFFER_BIT);
-                bm.construct(_c_mip);
-                copy.use();
-                copy.texture("tex", data->atlas.tex());
-                copy.uniform("layer",j);
-                bm.render(GL_TRIANGLES);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glBindTexture(ctex.type, ctex.texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-            glBindFramebuffer(GL_FRAMEBUFFER, data->atlas.fbo);
-            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, data->atlas.tex().texture, i, j);
-            glViewport(0, 0, w / 2, h / 2);
-            glClearColor(0,0,0,0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            bm.construct(_c_mip);
-            mipMapRenderer.use();
-            mipMapRenderer.texture("tex", ctex);
-            mipMapRenderer.uniform("screen_size", glm::vec4(w, h, 0, 0));
-            glDisable(GL_DEPTH_TEST);
-            bm.render(GL_TRIANGLES);
-            glEnable(GL_DEPTH_TEST);
-            glDeleteFramebuffers(1, &fbo);
-            w /= 2;
-            h /= 2;
-        }
-    }
+    //glGenerateTextureMipmap(atlas.tex().texture);
+    atlas.gen_mipmaps();
 }
 BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),

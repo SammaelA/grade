@@ -35,6 +35,7 @@ GroveRenderer()
     ggd = _ggd;
     debug("creating grove renderer with %d LODs\n", _source->clouds.size());
     base_container = new Model();
+    prepare_wood_types_atlas();
     for (int i = 0; i < _source->clouds.size(); i++)
     {
         LODs.emplace_back();
@@ -442,7 +443,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
             rendererInstancing.uniform("projectionCamera", prc);
             rendererInstancing.uniform("screen_size", ss);
             rendererInstancing.texture("noise", noise);
-            rendererInstancing.texture("tex", ggd->types[0].wood);
+            rendererInstancing.texture("tex", atlas->tex());
             rendererInstancing.uniform("type_id", (uint)mdrd.type_id);
             rendererInstancing.uniform("camera_pos", camera_pos);
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
@@ -470,7 +471,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     {
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, base_container, false, up_to_level);
+            v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(2*type, 0));
     }
 
     uint l_ind_offset = base_container->indices.size();
@@ -480,7 +481,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         {
             PackedBranch &b = source->instancedCatalogue.get(id);
             //if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, base_container, true, up_to_level);
+            v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(2*type + 1, 0));
         }
     }
     uint l_end = base_container->indices.size();
@@ -545,4 +546,47 @@ GroveRenderer::Instance2::~Instance2()
 {
     //if (m)
     //    delete m;
+}
+void GroveRenderer::prepare_wood_types_atlas()
+{
+    if (!ggd)
+        return;
+    logerr("lalala %d",ggd->types.size());
+    const int tex_size = 512;
+    int num_texs = 2*ggd->types.size();
+    if (num_texs <= 0)
+        return;
+    atlas = new TextureAtlas(tex_size,tex_size,num_texs);
+    atlas->set_grid(tex_size,tex_size);
+    int k = 0;
+    logerr("lalala");
+    Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
+
+    Model bm;
+    std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};
+    std::vector<float> tc = {0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0};
+    std::vector<GLuint> indices = {0, 1, 2, 2, 1, 3};
+
+    std::function<void(Model *)> _c_mip = [&](Model *h) {
+        bm.positions = vertexes;
+        bm.colors = tc;
+        bm.indices = indices;
+    };
+    for (auto &type : ggd->types)
+    {
+        k = atlas->add_tex();
+        atlas->target(k);
+        bm.construct(_c_mip);
+        copy.use();
+        copy.texture("tex", type.wood);
+        bm.render(GL_TRIANGLES);
+
+        k = atlas->add_tex();
+        atlas->target(k);
+        bm.construct(_c_mip);
+        copy.use();
+        copy.texture("tex", type.leaf);
+        bm.render(GL_TRIANGLES);
+    }
+    atlas->gen_mipmaps();
 }

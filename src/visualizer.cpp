@@ -41,7 +41,7 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m, float scale)
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m)
+void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw)
 {
     if (l.edges.size() < 4)
     {
@@ -64,8 +64,8 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m)
         m->normals.push_back(n.z);
         m->colors.push_back(tex_c[2 * i]);
         m->colors.push_back(tex_c[2 * i + 1]);
-        m->colors.push_back(0);
-        m->colors.push_back(1);
+        m->colors.push_back(tc_zw.x);
+        m->colors.push_back(tc_zw.y);
     }
 
     m->indices.push_back(_b);
@@ -121,7 +121,7 @@ void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring
     sv.smallRing = sv.bigRing;
     sv.bigRing = data;
 }
-void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
+void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m, glm::vec2 tc_zw)
 {
     Model *h = m;
     int _b = h->positions.size() / 3;
@@ -139,8 +139,8 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         float col_x = 1 - abs(2.0f*pos.tex_coord.x - 1);
         h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
-        h->colors.push_back(0.0);
-        h->colors.push_back(1.0);
+        h->colors.push_back(tc_zw.x);
+        h->colors.push_back(tc_zw.y);
     }
     int shift = 0;
     float best_match = glm::length(sv.bigRing.front().pos - sv.smallRing.front().pos);
@@ -169,8 +169,8 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m)
         //logerr("%f ",col_x);
         h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
-        h->colors.push_back(0.0);
-        h->colors.push_back(1.0);
+        h->colors.push_back(tc_zw.x);
+        h->colors.push_back(tc_zw.y);
     }
     int ringsize = sv.ringsize;
     for (int i = 0; i < ringsize; i++)
@@ -350,7 +350,7 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Model *m)
         }
     }
 }
-void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level)
+void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw)
 {
     if (!leaves)
     {
@@ -377,14 +377,14 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
         }
         for (auto &vt : vets)
         {
-            seg_vertexes_to_model(vt, m);
+            seg_vertexes_to_model(vt, m, tc_zw);
         }
     }
     else
     {
         for (auto &l : b.leaves)
         {
-            packed_leaf_to_model(l,m);
+            packed_leaf_to_model(l,m, tc_zw);
         }
     }
 }

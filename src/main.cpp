@@ -28,6 +28,7 @@ Camera camera;
 
 const int WIDTH = 1200;
 const int HEIGHT = 800;
+float avg_fps = 100;
 int treecount = 0;
 int cloudnum = -1;
 bool draw_clusterized = true;
@@ -83,7 +84,7 @@ std::function<void()> eventHandler = []() {
   camera.front = glm::normalize(front);
   mousePos = glm::vec2(nx, ny);
   //Pause Toggle
-  float speed = 2.0f;
+  float speed = 0.2;
   glm::vec3 cameraPerp = glm::normalize(glm::cross(camera.front, camera.up));
   if (Tiny::event.active[SDLK_w])
     camera.pos += speed * camera.front;
@@ -396,11 +397,10 @@ int main(int argc, char *argv[])
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
-  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(250,250),glm::vec2(25,25));
+  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
   
   std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();
   float mu = 0.99;
-  float avg_fps = 100;
   int frame = 0;
   Timestamp ts;
   Tiny::view.pipeline = [&]() {

@@ -1,12 +1,12 @@
 #version 330
 
-in vec2 ex_Tex;
+in vec3 ex_Tex;
 in vec3 ex_Normal;
 in vec3 ex_FragPos;
 in vec2 a_mult;
 out vec4 fragColor;
 
-uniform sampler2D tex;
+uniform sampler2DArray tex;
 uniform sampler2D noise;
 uniform vec4 screen_size;
 float gradientNoise(float x, float y)
@@ -14,17 +14,17 @@ float gradientNoise(float x, float y)
   float f = 0.06711056f * x + 0.00583715f * y;
   return fract(52.9829189f * fract(f));
 }
-vec4 get_tex(vec2 ex_Tex)
+/*vec4 get_tex(vec3 ex_Tex)
 {
-  vec2 dx = vec2(0.002,0);
-  vec2 dy = vec2(0,0.002);
+  vec3 dx = vec3(0.002,0,0);
+  vec3 dy = vec3(0,0.002,0);
   //vec4 b1 = texture(tex,ex_Tex);
   return 0.4*texture(tex,ex_Tex) + 
          0.15*texture(tex,ex_Tex + dx) +
          0.15*texture(tex,ex_Tex + dy) +
          0.15*texture(tex,ex_Tex - dx) +
          0.15*texture(tex,ex_Tex - dy);
-}
+}*/
 void main(void) 
 {
   fragColor = texture(tex, ex_Tex);

@@ -140,6 +140,7 @@ private:
     void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
                       std::vector<ModelData> &models, std::vector<TypeData> &types);
     DrawElementsIndirectCommand model_to_base(Model *m);
+    void prepare_wood_types_atlas();
     std::vector<LOD> LODs;
     std::vector<TypeDescriptionForRender> types_descs;
     Shader renderer;
@@ -154,4 +155,5 @@ private:
     int total_models_count = 0;
     Timestamp ts;
     Model *base_container;
+    TextureAtlas *atlas = nullptr;
 };

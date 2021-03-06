@@ -58,7 +58,7 @@ uniform vec2 LOD_dist_min_max;
 uniform vec3 camera_pos;
 uniform uint type_id;
 
-out vec2 ex_Tex;
+out vec3 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
 out vec2 a_mult;
@@ -73,6 +73,6 @@ void main(void)
 	
 	ex_Normal = in_Normal;
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
-	ex_Tex = in_Tex.xy;
+	ex_Tex = in_Tex.xyz;
 	//ex_Tex.x += 0.01*float(models_instance_count[id]);
 }
