@@ -96,9 +96,6 @@ void main()
 
     uint cnt = (interval.y - interval.x)/ THREADS + 1;
     uint st, en;
-    st = interval.x + cnt * gl_LocalInvocationIndex;
-    en = interval.x + cnt * (gl_LocalInvocationIndex + 1);
-    en = en > interval.y ? interval.y : en;
     st = interval.x;
     en = interval.y;
     uint inst_num = 0;
@@ -112,11 +109,11 @@ void main()
             vec2 a_mult = vec2(0,0);
             if (mn_dist < trans)
             {
-                a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_par.xyz - camera_pos));
+                a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_self.xyz - camera_pos));
             }
             else if (mx_dist < trans)
             {
-                a_mult = vec2(0.5*(mx_dist/trans + 1), -length(instances[i].center_self.xyz - camera_pos));
+                a_mult = vec2(0.5*(mx_dist/trans + 1), -length(instances[i].center_par.xyz - camera_pos));
             }
             else
             {
@@ -140,6 +137,7 @@ void main()
         cmds[cmd_n].baseInstance = 0;
 
         curModels[cmd_n].x = st;
+        curModels[cmd_n].y = object_id;
     }
 
 }

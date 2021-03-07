@@ -25,6 +25,7 @@ class ImpostorRenderer
                 glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600));
     private:
     GLuint slicesBuffer = 0;
+    GLuint impostorsDataBuffer = 0;
     ImpostorsData *data= nullptr;
 
     Shader impostorRenderer;

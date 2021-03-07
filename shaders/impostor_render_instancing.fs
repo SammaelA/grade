@@ -7,7 +7,7 @@ in vec3 q_abt;
 in vec3 ex_Normal;
 in vec3 ex_FragPos;
 in vec2 a_mult;
-
+in mat4 rot_m;
 out vec4 fragColor;
 
 uniform sampler2DArray tex;

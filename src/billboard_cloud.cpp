@@ -555,7 +555,7 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
        // m->update();
         for (int i=0;i<bill.IDA.centers_par.size();i++)
         {
-            if (data->level >= GroveRenderer::base_level)
+            if (data->level > GroveRenderer::base_level)
                 bill.IDA.centers_par[i] = bill.IDA.centers_self[i];
         }
 

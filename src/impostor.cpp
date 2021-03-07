@@ -19,6 +19,10 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
     {
         InstanceDataArrays IDA;
         Branch *b = clusters[i].prepare_to_replace(IDA);
+        if (IDA.transforms.size() == 1)
+            IDA.transforms.front() = glm::mat4(1.0f);
+        logerr("%f %f %f %f",IDA.transforms[0][0],IDA.transforms[0][1],
+            IDA.transforms[0][2], IDA.transforms[0][3]);
         if (!b)
             continue;
         all_transforms.emplace(i, IDA);
@@ -56,6 +60,8 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
     data->valid = !data->impostors.empty();
     data->level = 0;
     data->atlas = atlas;
+
+    glGenerateTextureMipmap(data->atlas.tex().texture);
 }
 void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
 {
@@ -119,7 +125,6 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         a = rot * a;
         c = rot * c;
     }
-    glGenerateTextureMipmap(atlas.tex().texture);
 }
 
 void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<Clusterizer::Cluster> &clusters,
@@ -305,7 +310,8 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
         std::vector<float> tc = {0,0,0,0, 1,0,0,0, 0,1,0,0, 1,1,0,0};
         std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3};
 
-        std::function<void(Model *)> _c_mip = [&](Model *h) {
+        std::function<void(Model *)> _c_mip = [&](Model *h) 
+        {
             bm->positions = vertexes;
             bm->colors = tc;
             bm->indices = indices;
@@ -313,16 +319,34 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
         bm->construct(_c_mip);
         models.push_back(bm);
     }
+    std::vector<ImpostorData> imp_data_buffer;
+    for (int i=0;i<models.size();i++)
+    {
+        ImpostorData dat;
+        dat.slice_count = (data->impostors[i].slices.size());
+        dat.slice_offset = offsets[i];
+        dat.slice_verts = data->impostors[i].slices[0].positions.size();
+        dat.imp_center = glm::vec4(data->impostors[i].bcyl.center,1);
+        imp_data_buffer.push_back(dat);
+    }
+    glGenBuffers(1, &impostorsDataBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, impostorsDataBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ImpostorData)*imp_data_buffer.size(), imp_data_buffer.data(), GL_STATIC_DRAW);
     glGenBuffers(1, &slicesBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*s_verts.size(), s_verts.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*s_verts.size(), s_verts.data(), GL_STATIC_DRAW);
 
 
 }
 void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
                               glm::vec4 screen_size)
 {
-    /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
+    if (!data || !data->valid)
+        return;
+    
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, impostorsDataBuffer);
+
     impostorRendererInstancing.use();
     impostorRendererInstancing.uniform("projectionCamera", projectionCamera);
     impostorRendererInstancing.texture("tex", data->atlas.tex());
@@ -330,7 +354,13 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     impostorRendererInstancing.uniform("screen_size", screen_size);
     impostorRendererInstancing.texture("noise", textureManager.get("noise"));
     impostorRendererInstancing.uniform("hor_vert_transition_thr", glm::vec2(hth,vth));
+    impostorRendererInstancing.uniform("delta",0.5f);
+    impostorRendererInstancing.uniform("type_id",(uint)mdrd.type_id);
+    impostorRendererInstancing.uniform("vertex_id_offset",mdrd.base_vertex_id);
 
+    glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
+                                        mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
+    /*
     for (int i=0;i<models.size();i++)
     {
         float a_step = (2*PI)/(data->impostors[i].slices.size());

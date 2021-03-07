@@ -142,6 +142,7 @@ GroveRenderer()
         types_descs.back().rendDesc.cmd_buffer_offset = sizeof(DrawElementsIndirectCommand)*models.size();
         types_descs.back().rendDesc.type_id = types.size();
         types_descs.back().rendDesc.max_models = lod.imp_rend->models.size();
+        types_descs.back().rendDesc.base_vertex_id = base_container->indices.size();
         TypeData t;
         t.offset = models.size();
         
@@ -149,9 +150,13 @@ GroveRenderer()
         for (Impostor &imp :lod.imp_rend->data->impostors)
         {
             Model *m = lod.imp_rend->models[i];
+            logerr("imp model %d %d\n",m->positions.size()/3,m->indices.size());
             auto cmd = model_to_base(m);
             imp.id = types.size();
             IDA_to_bufer(imp.IDA, lods, instances, models, types);
+            logerr("%f %f %f %f",imp.IDA.transforms[0][0][0],imp.IDA.transforms[0][0][1],
+            imp.IDA.transforms[0][0][2],imp.IDA.transforms[0][0][3]);
+            logerr("imp IDA size %d",imp.IDA.transforms.size());
             models.back().LOD = l;
             models.back().type = types.size();
             models.back().vertexes = cmd.count;
@@ -294,7 +299,7 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m)
     DrawElementsIndirectCommand cmd;
     int firstVertex = base_container->positions.size()/3;
     cmd.firstIndex = base_container->indices.size();
-    cmd.count = m->positions.size()/3;
+    cmd.count = m->indices.size();
     for (GLuint ind : m->indices)
     {
         base_container->indices.push_back(firstVertex + ind);
@@ -429,7 +434,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
     {
         if (type.imp)
         {
-            //TODO
+            type.imp->render(type.rendDesc, prc, camera_pos, ss);
         }
         else if (type.bill)
         {

@@ -22,6 +22,7 @@ struct InstancingReadyModel
         int current_types_offset;
         int max_models;
         int cmd_size;
+        int base_vertex_id;
     };
     struct Billboard
     {

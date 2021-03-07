@@ -5,11 +5,22 @@ struct SliceVertexData
     vec4 position;
 	vec4 tcs;
 };
-layout(std140, binding=2) buffer Slices 
+layout(std140, binding=2) readonly buffer Slices 
 {
     SliceVertexData sliceVertexes[];
 };
-
+struct ImpostorData
+{
+    int slice_offset;
+    int slice_verts;
+    int slice_count;
+    int pad1;
+    vec4 imp_center;
+};
+layout(std140, binding=9) readonly buffer _ImpostorData 
+{
+    ImpostorData impostorData[];
+};
 struct TypeData
 {
     uint offset;
@@ -64,14 +75,15 @@ in vec3 in_Normal;
 in vec4 in_Tex;
 
 uniform mat4 projectionCamera;
-uniform vec3 imp_center;
+//uniform vec3 imp_center;
 uniform vec3 camera_pos;
-uniform int slice_count;
-uniform int slice_offset;
+//uniform int slice_count;
+//uniform int slice_offset;
 uniform float delta;
-uniform float angle_step;
+//uniform float angle_step;
 uniform vec2 hor_vert_transition_thr;
 uniform uint type_id;
+uniform int vertex_id_offset;
 
 out vec3 tc_a;
 out vec3 tc_b;
@@ -81,6 +93,7 @@ out vec3 ex_Normal;
 out vec3 ex_FragPos;
 out vec2 a_mult;
 
+out mat4 rot_m;
 #define PI 3.1415926535897932384626433832795
 
 mat4 translate(vec3 d)
@@ -111,6 +124,14 @@ void main(void) {
 	mat4 inst_mat = instances[curInsts[offset].index].projection_camera;
 	a_mult = vec2(curInsts[offset].mn, curInsts[offset].mx);
     
+    uint model_rel_n = curModels[id].y - typeData[type_id].offset;
+    int vertex_id = (gl_VertexID - vertex_id_offset) % 4;
+    int slice_offset = impostorData[model_rel_n].slice_offset;
+    int slice_verts = impostorData[model_rel_n].slice_verts;
+    int slice_count = impostorData[model_rel_n].slice_count;
+    vec3 imp_center = impostorData[model_rel_n].imp_center.xyz;
+    float angle_step = (2*PI)/float(slice_count);
+    
 	vec3 center = (inst_mat * vec4(imp_center,1.0f)).xyz;
     vec3 viewdir = normalize(center - camera_pos);
     mat3 MVI = mat3(transpose(inverse(inst_mat)));
@@ -135,27 +156,32 @@ void main(void) {
     second_slice_n += 1;
 
 	mat4 rot = rotate(up,phi);
+    rot_m = inst_mat;
     mat4 rot_top = rotate(cross(up, viewdir),psi);
 	
-	vec4 pos = vec4(sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].position.xyz,1);
+	vec4 pos = vec4(sliceVertexes[slice_offset + slice_n*4 + vertex_id].position.xyz,1);
+
+    //ex_FragPos.z = float(vertex_id + 0.0);
+    //ex_FragPos.y = float(slice_offset + slice_n*4 + vertex_id + 0.0);
 	pos = vec4(center,0) + rot * (inst_mat * pos - vec4(center,0));
 
     float s_phi =  sign(phi)*(angle_step - abs(phi));
     mat4 rot_s = rotate(up, - s_phi);
-    vec4 pos_s = vec4(sliceVertexes[slice_offset + second_slice_n*4 + gl_VertexID].position.xyz,1);
+    vec4 pos_s = vec4(sliceVertexes[slice_offset + second_slice_n*4 + vertex_id].position.xyz,1);
 	pos_s = vec4(center,0) + rot_s * (inst_mat * pos_s - vec4(center,0));
-    float hth = clamp(hor_vert_transition_thr.x,0,0.5);
-    q_abt.y = smoothstep(hth, 1 - hth, 0.5*(1 + (abs(phi) - 0.5*angle_step)/delta));
+    float hth = clamp(hor_vert_transition_thr.x,0.0f,0.5f);
+    float rel_delta = delta*angle_step;
+    q_abt.y = smoothstep(hth, 1 - hth, 0.5*(1 + (abs(phi) - 0.5*angle_step)/rel_delta));
     q_abt.x = 1 - q_abt.y;
     pos = q_abt.x * pos + q_abt.y * pos_s;
 
     pos = vec4(center,0) + rot_top * (pos - vec4(center,0));
     mat4 rot_top_s = rotate(cross(up, viewdir),-0.5*PI + psi);
     mat4 rot_top_s2 = rotate(up, -a_phi);
-    vec4 top_pos = inst_mat * vec4(sliceVertexes[slice_offset + gl_VertexID].position.xyz,1);
+    vec4 top_pos = inst_mat * vec4(sliceVertexes[slice_offset + vertex_id].position.xyz,1);
     top_pos = vec4(center,0) + rot_top_s2 * (top_pos - vec4(center,0));
     
-    float vth = clamp(hor_vert_transition_thr.y,0,0.5);
+    float vth = clamp(hor_vert_transition_thr.y,0.0f,0.5f);
     q_abt.z = smoothstep(vth, 1-vth, abs(psi)/(0.5*PI));
     q_abt.xy *= (1 - q_abt.z);
     pos = (1 - q_abt.z)*pos + q_abt.z*top_pos;
@@ -164,7 +190,13 @@ void main(void) {
 
 	//Fragment in Screen Space
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
-	tc_a = sliceVertexes[slice_offset + slice_n*4 + gl_VertexID].tcs.xyz;
-    tc_b = sliceVertexes[slice_offset + second_slice_n*4 + gl_VertexID].tcs.xyz;
-    tc_t = sliceVertexes[slice_offset + gl_VertexID].tcs.xyz;
+	tc_a = sliceVertexes[slice_offset + slice_n*4 + vertex_id].tcs.xyz;
+    tc_b = sliceVertexes[slice_offset + second_slice_n*4 + vertex_id].tcs.xyz;
+    tc_t = sliceVertexes[slice_offset + vertex_id].tcs.xyz;
+
+    ex_FragPos = pos_s.xyz;
+    ex_FragPos.x = curInsts[offset].index;
+    ex_FragPos.y = offset;
+    //ex_FragPos.y = slice_n;
+    //ex_FragPos.z = gl_DrawID;
 }

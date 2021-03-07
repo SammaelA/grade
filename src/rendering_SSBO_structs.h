@@ -44,3 +44,11 @@ struct currentInstancesData
 };
 typedef glm::uvec4 currentModelsData;
 typedef glm::uvec4 currentTypesData;
+struct ImpostorData
+{
+    int slice_offset;
+    int slice_verts;
+    int slice_count;
+    int pad1;
+    glm::vec4 imp_center;
+};
