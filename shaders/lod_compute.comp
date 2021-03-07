@@ -37,7 +37,11 @@ struct ModelData
     uint vertexes;
     uint first_index;
     uvec2 interval;
-    uvec2 pad2;
+    uint culling;
+    uint pad;
+    vec4 x_s;
+    vec4 y_s;
+    vec4 z_s;
 };
 layout(std140, binding=4) readonly buffer _ModelData
 {
@@ -49,6 +53,7 @@ struct currentInstancesData
     uint pad;
     float mn;
     float mx;
+    vec4 dbg;
 };
 layout(std140, binding=5) writeonly buffer _curInsts
 {
@@ -82,6 +87,8 @@ uniform uint lods_count;
 uniform uint objects_count;
 uniform vec3 camera_pos;
 uniform float trans;
+uniform mat4 projectionCamera;
+
 void main()
 {
     //for (uint i=0; i<THREADS; i++)
@@ -103,10 +110,11 @@ void main()
     {
         float mx_dist = min_max.y - length(instances[i].center_par.xyz - camera_pos);
 	    float mn_dist = length(instances[i].center_self.xyz - camera_pos) - min_max.x;
+        int instance_visible = 0;
+        vec2 a_mult = vec2(0,0);
 
         if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
         {
-            vec2 a_mult = vec2(0,0);
             if (mn_dist < trans)
             {
                 a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_self.xyz - camera_pos));
@@ -119,6 +127,46 @@ void main()
             {
                 a_mult = vec2(10,0);
             }
+            instance_visible = 1;
+        }
+        if (instance_visible > 0 && modelData[object_id].culling > 0)
+        {
+            instance_visible = 1;
+            //a_mult.x*=0.25;
+            vec3 pos = vec3(modelData[object_id].x_s.x,modelData[object_id].y_s.x,modelData[object_id].z_s.x);
+            vec3 a = vec3(modelData[object_id].x_s.y,modelData[object_id].y_s.y,modelData[object_id].z_s.y);
+            vec3 b = vec3(modelData[object_id].x_s.z,modelData[object_id].y_s.z,modelData[object_id].z_s.z);
+            vec3 c = vec3(modelData[object_id].x_s.w,modelData[object_id].y_s.w,modelData[object_id].z_s.w);
+            
+            vec4 bbox_verts[8];
+            bbox_verts[0] = vec4(pos, 1);
+            bbox_verts[1] = vec4(pos+a+b+c, 1);
+            bbox_verts[2] = vec4(pos+a+b, 1);
+            bbox_verts[3] = vec4(pos+b+c, 1);
+
+            bbox_verts[4] = vec4(pos+a, 1);
+            bbox_verts[5] = vec4(pos+b, 1);
+            bbox_verts[6] = vec4(pos+c, 1);
+            bbox_verts[7] = vec4(pos+a+c, 1);
+
+            for (int k=0;k<8;k++)
+            {
+                bbox_verts[k] = projectionCamera*instances[i].projection_camera*bbox_verts[k];
+                bbox_verts[k].xyz = vec3(abs(bbox_verts[k].xyz/bbox_verts[k].w));
+                if (bbox_verts[k].x <= 1 && bbox_verts[k].y <= 1 && bbox_verts[k].z <= 1)
+                {
+                    instance_visible = 1;
+                    //a_mult.x*=4;
+                    break;
+                }
+
+            }
+            curInsts[st + inst_num].dbg = bbox_verts[0];
+            curInsts[st + inst_num].dbg.w = float((bbox_verts[0].x <= 1 && bbox_verts[0].y <= 1 && (bbox_verts[0].z <= 1 && bbox_verts[0].z > 0)));
+        }
+
+        if (instance_visible > 0)
+        {
             curInsts[st + inst_num].index = i;
             curInsts[st + inst_num].mn = a_mult.x;
             curInsts[st + inst_num].mx = a_mult.y;

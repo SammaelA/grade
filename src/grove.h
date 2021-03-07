@@ -11,6 +11,7 @@
 class ImpostorRenderer;
 class BillboardCloudRenderer;
 class GroveGenerationData;
+struct BBox;
 struct PackedLeaf
 {
     std::vector<glm::vec3> edges;
@@ -86,6 +87,7 @@ struct InstancedBranch
 {
     std::vector<unsigned> branches;
     InstanceDataArrays IDA;
+    BBox bbox;
 };
 struct GrovePacked
 {
@@ -111,6 +113,7 @@ public:
         DrawElementsIndirectCommand cmd;
         uint type;
         InstanceDataArrays &ida;
+        BBox bbox;
         Instance2(Model *m, uint type, InstanceDataArrays &ida);
         ~Instance2();
     };

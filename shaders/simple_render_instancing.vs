@@ -26,7 +26,11 @@ struct ModelData
     uint vertexes;
     uint first_index;
     uvec2 interval;
-    uvec2 pad2;
+    uint culling;
+    uint pad;
+    vec4 x_s;
+    vec4 y_s;
+    vec4 z_s;
 };
 layout(std140, binding=4) readonly buffer _ModelData
 {
@@ -38,6 +42,7 @@ struct currentInstancesData
     uint pad;
     float mn;
     float mx;
+    vec4 dbg;
 };
 layout(std140, binding=5) readonly buffer _curInsts
 {

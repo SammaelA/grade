@@ -228,6 +228,11 @@ GroveRenderer()
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
             models.back().first_index = in.cmd.firstIndex;
+            BBox bb = in.bbox;
+            models.back().x_s = glm::vec4(bb.position.x,bb.sizes.x*bb.a.x,bb.sizes.x*bb.b.x,bb.sizes.x*bb.c.x);
+            models.back().y_s = glm::vec4(bb.position.y,bb.sizes.y*bb.a.y,bb.sizes.y*bb.b.y,bb.sizes.y*bb.c.y);
+            models.back().z_s = glm::vec4(bb.position.z,bb.sizes.z*bb.a.z,bb.sizes.z*bb.b.z,bb.sizes.z*bb.c.z);
+            models.back().culling = 1;
             mods++;
         }
         for (Instance2 in : lod.leaves_instances)
@@ -239,6 +244,11 @@ GroveRenderer()
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
             models.back().first_index = in.cmd.firstIndex;
+            BBox bb = in.bbox;
+            models.back().x_s = glm::vec4(bb.position.x,bb.sizes.x*bb.a.x,bb.sizes.x*bb.b.x,bb.sizes.x*bb.c.x);
+            models.back().y_s = glm::vec4(bb.position.y,bb.sizes.y*bb.a.y,bb.sizes.y*bb.b.y,bb.sizes.y*bb.c.y);
+            models.back().z_s = glm::vec4(bb.position.z,bb.sizes.z*bb.a.z,bb.sizes.z*bb.b.z,bb.sizes.z*bb.c.z);
+            models.back().culling = 1;
             mods++;
         }
         l++;
@@ -403,6 +413,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
     lodCompute.uniform("lods_count", (uint)LODs.size());
     lodCompute.uniform("camera_pos", camera_pos);
     lodCompute.uniform("trans", 20.0f);
+    lodCompute.uniform("projectionCamera", prc);
     lodCompute.uniform("objects_count", (uint)total_models_count);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
@@ -519,6 +530,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         lod.instances.back().cmd.firstIndex = ind_offset;
         lod.instances.back().cmd.count = count;
         lod.instances.back().cmd.instanceCount = lod.instances.back().ida.transforms.size();
+        lod.instances.back().bbox = branch.bbox;
     }
     else
     {   
@@ -536,6 +548,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             lod.leaves_instances.back().cmd.firstIndex = l_ind_offset;
             lod.leaves_instances.back().cmd.count = l_count;
             lod.leaves_instances.back().cmd.instanceCount = lod.leaves_instances.back().ida.transforms.size();
+            lod.leaves_instances.back().bbox = branch.bbox;
         }
         //else
         //    delete lm;

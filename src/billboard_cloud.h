@@ -29,6 +29,7 @@ public:
     void render(glm::mat4 &projectionCamera);
     void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
+    static BBox get_minimal_bbox(Branch *b);
     void set_render_mode(RenderMode m)
     {
         renderMode = m;
@@ -63,7 +64,6 @@ protected:
     void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
     void create_billboard(std::vector<TreeTypeData> &ttd, std::map<int, InstanceDataArrays> &all_transforms,
                           std::vector<Branch> &brs, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
-    BBox get_minimal_bbox(Branch *b);
     static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
     glm::mat4 get_viewproj(BBox &b);
     static bool BPD_comp(BranchProjectionData &a, BranchProjectionData &b);

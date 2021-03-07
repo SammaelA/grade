@@ -863,6 +863,7 @@ void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector
         base_clusters[i]->branch->original->base_seg_n = instanced_structures.size() - 1;
         base_clusters[i]->branch->original->max_seg_count = - i - 100;
     }
+    grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
 }
 void pack_tree_as_singleton_instances(Tree &t, GrovePacked &grove, int up_to_level, std::vector<BranchStructure> &instanced_structures)
 {
@@ -881,6 +882,7 @@ void pack_tree_as_singleton_instances(Tree &t, GrovePacked &grove, int up_to_lev
             IDA.centers_self.push_back(branch.center_self);
             std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
             ids.push_back(grove.instancedCatalogue.add(b, b.level));
+            grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(&branch);
         }
     }
 }

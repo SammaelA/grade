@@ -28,7 +28,12 @@ struct ModelData
     uint vertexes;
     uint first_index;
     glm::uvec2 interval;
-    glm::uvec2 pad2;
+    uint culling;
+    uint pad;
+
+    glm::vec4 x_s;
+    glm::vec4 y_s;
+    glm::vec4 z_s;
 };
 struct TypeData
 {
@@ -41,6 +46,7 @@ struct currentInstancesData
     uint pad;
     float mn;
     float mx;
+    glm::vec4 dbg;
 };
 typedef glm::uvec4 currentModelsData;
 typedef glm::uvec4 currentTypesData;
