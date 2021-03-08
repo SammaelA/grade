@@ -623,7 +623,7 @@ void GroveRenderer::prepare_wood_types_atlas()
 {
     if (!ggd)
         return;
-    logerr("lalala %d",ggd->types.size());
+
     const int tex_size = 512;
     int num_texs = 2*ggd->types.size();
     if (num_texs <= 0)
@@ -631,7 +631,7 @@ void GroveRenderer::prepare_wood_types_atlas()
     atlas = new TextureAtlas(tex_size,tex_size,num_texs);
     atlas->set_grid(tex_size,tex_size);
     int k = 0;
-    logerr("lalala");
+
     Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
 
     Model bm;

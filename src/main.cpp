@@ -212,6 +212,7 @@ int main(int argc, char *argv[])
   bool saving_needed = false;
   bool loading_needed = false;
   bool print_perf = false;
+  bool only_gen = false;
   std::string grove_type_name = "default";
   std::string save_path = ".";
   std::string load_path = ".";
@@ -234,7 +235,11 @@ int main(int argc, char *argv[])
     {
       print_perf = true;
       k++;
-      logerr("perf");
+    }
+    else if (std::string(argv[k]) == "-only_gen")
+    {
+      only_gen = true;
+      k++;
     }
     else if (std::string(argv[k]) == "-s")
     {
@@ -403,6 +408,11 @@ int main(int argc, char *argv[])
   float mu = 0.99;
   int frame = 0;
   Timestamp ts;
+  if (only_gen)
+  {
+    logerr("Grove successfully generated. Exiting.");
+    return 0;
+  }
   Tiny::view.pipeline = [&]() {
     t_prev = t1;
     t1 = std::chrono::steady_clock::now();
@@ -410,7 +420,7 @@ int main(int argc, char *argv[])
     frame_time = MAX(frame_time,0.1);
     avg_fps = mu*avg_fps + (1 - mu)*(1000/frame_time);
     frame++;
-    if (frame % 100 == 0)
+    if (frame % 100 == 0 && print_perf)
     {
       fprintf(stderr,"FPS: %4.1f\n",avg_fps);
     }
@@ -446,10 +456,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-      ts.start("terrain");
       tr.render(projection * camera.camera());
-      ts.end("terrain");
-      ts.resolve();
       if (draw_clusterized)
       {
         groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));

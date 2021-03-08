@@ -21,8 +21,7 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
         Branch *b = clusters[i].prepare_to_replace(IDA);
         if (IDA.transforms.size() == 1)
             IDA.transforms.front() = glm::mat4(1.0f);
-        logerr("%f %f %f %f",IDA.transforms[0][0],IDA.transforms[0][1],
-            IDA.transforms[0][2], IDA.transforms[0][3]);
+
         if (!b)
             continue;
         all_transforms.emplace(i, IDA);

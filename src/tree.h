@@ -119,7 +119,7 @@ struct Tree
     std::vector<BranchHeap *> branchHeaps;
     LeafHeap *leaves = nullptr;
     glm::vec3 pos;
-    TreeStructureParameters params;
+    ParameterSetWrapper params;
     Branch *root= nullptr;
     int iter = 0;
     uint id = 0;

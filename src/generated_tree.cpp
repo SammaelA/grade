@@ -49,7 +49,7 @@ glm::vec3 rand_planar_dir()
 }
 void TreeGenerator::new_joint(Branch *b, Joint &j)
 {
-    if (b->level == curParams.max_depth() - 1)
+    if (b->level == curParams().max_depth() - 1)
     {
         j.type = j.LEAF;
         Leaf *l = curTree.leaves->new_leaf();
@@ -57,10 +57,10 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
         glm::vec3 rd1 = rand_dir();
         glm::vec3 rd2 = rand_dir();
 
-        glm::vec3 a = j.pos + curParams.leaf_size_mult() * rd1 + 0.5f * curParams.leaf_size_mult() * rd2;
-        glm::vec3 b = j.pos + 0.5f * curParams.leaf_size_mult() * rd2;
-        glm::vec3 c = j.pos - 0.5f * curParams.leaf_size_mult() * rd2;
-        glm::vec3 d = j.pos + curParams.leaf_size_mult() * rd1 - 0.5f * curParams.leaf_size_mult() * rd2;
+        glm::vec3 a = j.pos + curParams().leaf_size_mult() * rd1 + 0.5f * curParams().leaf_size_mult() * rd2;
+        glm::vec3 b = j.pos + 0.5f * curParams().leaf_size_mult() * rd2;
+        glm::vec3 c = j.pos - 0.5f * curParams().leaf_size_mult() * rd2;
+        glm::vec3 d = j.pos + curParams().leaf_size_mult() * rd1 - 0.5f * curParams().leaf_size_mult() * rd2;
         l->edges.push_back(a);
         l->edges.push_back(b);
         l->edges.push_back(c);
@@ -75,17 +75,17 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
     else
     {
         float b_ch = powf((b->base_seg_n + (float)b->joints.size() / (b->base_seg_n + b->max_seg_count)),
-                          curParams.branching_power());
-        b_ch = curParams.min_branching_chance() + b_ch * (curParams.max_branching_chance() - curParams.min_branching_chance());
+                          curParams().branching_power());
+        b_ch = curParams().min_branching_chance() + b_ch * (curParams().max_branching_chance() - curParams().min_branching_chance());
         if (dice(b_ch, 1.0))
         {
             j.type = j.FORK;
-            j.max_branching = 1 + (curParams.max_branching() - 1) * floor(urand());
+            j.max_branching = 1 + (curParams().max_branching() - 1) * floor(urand());
         }
         else
             j.type = j.MIDDLE;
     }
-    voxels->set_occluder(j.pos, powf(curParams.max_depth() - b->level,2));
+    voxels->set_occluder(j.pos, powf(curParams().max_depth() - b->level,2));
     calc_light(j);
     b->joints.push_back(j);
 }
@@ -94,8 +94,8 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     Branch *nb = curTree.branchHeaps[b->level + 1]->new_branch();
     nb->base_seg_n = from_end ? b->segments.size() : 0;
     nb->level = b->level + 1;
-    nb->max_seg_count = curParams.max_segments();
-    nb->base_r = curParams.base_r();
+    nb->max_seg_count = curParams().max_segments();
+    nb->base_r = curParams().base_r();
     nb->type_id = b->type_id;
     Joint nj;
     nj.pos = j.pos;
@@ -105,7 +105,7 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     glm::vec3 N = glm::normalize(rnd - dot(rnd, prev_dir) * rnd); //Normal Vector
     glm::vec3 up = glm::vec3(0, 1, 0);
 
-    glm::vec3 dir = curParams.dir_conserv() * prev_dir + curParams.spread() * N + curParams.phototrop() * M + curParams.gravitrop() * up;
+    glm::vec3 dir = curParams().dir_conserv() * prev_dir + curParams().spread() * N + curParams().phototrop() * M + curParams().gravitrop() * up;
     dir = from_end ? prev_dir : glm::normalize(dir);
 
     new_segment2(nb, dir, j.pos);
@@ -126,13 +126,13 @@ void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_en
     curParams.set_state(b->level + 1);
     float feed = j.light;
     int bs = j.childBranches.size();
-    if ((b->level < curParams.max_depth() - 1) && ((j.type == j.FORK && &j != &(b->joints.back()) && (bs < j.max_branching)) || from_end) && dice(feed, exp(bs) * curParams.base_branch_feed()))
+    if ((b->level < curParams().max_depth() - 1) && ((j.type == j.FORK && &j != &(b->joints.back()) && (bs < j.max_branching)) || from_end) && dice(feed, exp(bs) * curParams().base_branch_feed()))
     {
         float occ = 0.0;
-        glm::vec3 M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams.max_depth() - b->level), &occ);
-        //M = voxels->get_dir_to_bright_place_ray(j.pos,0.5*curParams.seg_len_mult()*curParams.max_segments(),4*(curParams.max_depth() - b->level),&occ);
+        glm::vec3 M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams().max_depth() - b->level), &occ);
+        //M = voxels->get_dir_to_bright_place_ray(j.pos,0.5*curParams().seg_len_mult()*curParams().max_segments(),4*(curParams().max_depth() - b->level),&occ);
         //M *= occ;
-        if (dice(1, occ * curParams.branch_grow_decrease_q()) && (occ < 100000))
+        if (dice(1, occ * curParams().branch_grow_decrease_q()) && (occ < 100000))
         {
             new_branch(b, j, s, M, from_end);
         }
@@ -145,25 +145,25 @@ inline float lfun(float v1, float v2, float a, float b)
 }
 void TreeGenerator::set_seg_r(Branch *base, Segment &s)
 {
-    float b_st = curParams.base_r();
-    if (base->level + 1 < curParams.max_depth())
+    float b_st = curParams().base_r();
+    if (base->level + 1 < curParams().max_depth())
         curParams.set_state(base->level + 1);
-    float b_end = curParams.base_r();
+    float b_end = curParams().base_r();
     curParams.set_state(base->level);
     int n = base->segments.size();
-    s.rel_r_end = lfun(curParams.max_segments() - n - 1, curParams.max_segments(), b_end, b_st);
-    s.rel_r_begin = lfun(curParams.max_segments() - n - 1, curParams.max_segments(), b_end, b_st);
+    s.rel_r_end = lfun(curParams().max_segments() - n - 1, curParams().max_segments(), b_end, b_st);
+    s.rel_r_begin = lfun(curParams().max_segments() - n - 1, curParams().max_segments(), b_end, b_st);
 }
 void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
 {
     Segment s;
-    float len = curParams.seg_len_mult();
+    float len = curParams().seg_len_mult();
     s.begin = pos;
     s.end = s.begin + len * dir;
     set_seg_r(base, s);
-    if (base->level < curParams.r_deformation_levels())
+    if (base->level < curParams().r_deformation_levels())
     {
-        int deforms = curParams.r_deformation_points();
+        int deforms = curParams().r_deformation_points();
         if (base->segments.empty() || base->segments.back().mults.size() != deforms)
             s.mults = std::vector<float>(deforms,1);
         else
@@ -173,7 +173,7 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
         
         for (int i=0;i<deforms;i++)
         {
-            float k = curParams.r_deformation_power();
+            float k = curParams().r_deformation_power();
             k = k > 0 ? 1 + k : 1/(1-k);
             s.mults[i] *= k;
             //logerr("set seg mult %f (%f*%f)",s.mults[i],k,s.mults[i]/k);
@@ -189,15 +189,15 @@ void TreeGenerator::new_segment(Branch *base, glm::vec3 &M)
     Joint &last = base->joints.back();
     Segment &last_s = base->segments.back();
 
-    float sp = curParams.seg_spread();
-    float bn = base->level * curParams.seg_bend() * powf((float)base->segments.size() / base->max_seg_count, curParams.seg_bend_pow());
+    float sp = curParams().seg_spread();
+    float bn = base->level * curParams().seg_bend() * powf((float)base->segments.size() / base->max_seg_count, curParams().seg_bend_pow());
     glm::vec3 prev_dir = glm::normalize(last_s.end - last_s.begin);
     glm::vec3 rnd = rand_dir();
     glm::vec3 N = glm::normalize(glm::cross(prev_dir, rnd)); //Normal Vector
     glm::vec3 dir = glm::normalize(glm::mix(prev_dir, N, sp));
     glm::vec3 up = glm::vec3(0, 1, 0);
 
-    dir = curParams.seg_dir_conserv() * prev_dir + curParams.seg_spread() * N + curParams.seg_phototrop() * M + curParams.seg_gravitrop() * up - bn * up;
+    dir = curParams().seg_dir_conserv() * prev_dir + curParams().seg_spread() * N + curParams().seg_phototrop() * M + curParams().seg_gravitrop() * up - bn * up;
     dir = glm::normalize(dir);
     float q = 0;
     dir = get_optimal_segment_growth_direction(q,base);
@@ -210,15 +210,15 @@ void TreeGenerator::new_segment(Branch *base, glm::vec3 &M)
 void TreeGenerator::try_new_segment(Branch *base)
 {
     float feed = base->joints.back().light;
-    if ((base->segments.size() < base->max_seg_count) && dice(feed, curParams.base_seg_feed()))
+    if ((base->segments.size() < base->max_seg_count) && dice(feed, curParams().base_seg_feed()))
     {
         float occ = 0.0;
         sum_feed[base->level] += feed;
         count_feed[base->level] += 1;
         glm::vec3 M = voxels->get_dir_to_bright_place_ext(base->segments.back().end, 1, &occ);
-        //M = voxels->get_dir_to_bright_place_ray(base->segments.back().end,0.5*curParams.seg_len_mult(),3*(curParams.max_depth() - base->level),&occ);
+        //M = voxels->get_dir_to_bright_place_ray(base->segments.back().end,0.5*curParams().seg_len_mult(),3*(curParams().max_depth() - base->level),&occ);
         //M *= occ;
-        if (true || dice(1, occ * curParams.segment_grow_decrease_q()) && (occ < 100000))
+        if (true || dice(1, occ * curParams().segment_grow_decrease_q()) && (occ < 100000))
         {
             new_segment(base, M);
         }
@@ -249,16 +249,16 @@ void TreeGenerator::distribute_feed(Branch *b)
 
     float w = 1.0;
     float w_sum = 0.0;
-    float w_decay = 1 - curParams.feed_distribution_d_weight();
+    float w_decay = 1 - curParams().feed_distribution_d_weight();
     for (auto f : feeds)
     {
         (*f) = 1 / w;
         w_sum += 1 / w;
         w++;
-        if (1 / w < curParams.feed_distribution_min_weight())
-            w = 1 / curParams.feed_distribution_min_weight();
+        if (1 / w < curParams().feed_distribution_min_weight())
+            w = 1 / curParams().feed_distribution_min_weight();
     }
-    float top_bonus = is_branch_productive(b) ? w_sum * curParams.top_growth_bonus() / (1 - curParams.top_growth_bonus()) : 0;
+    float top_bonus = is_branch_productive(b) ? w_sum * curParams().top_growth_bonus() / (1 - curParams().top_growth_bonus()) : 0;
     w_sum += top_bonus;
     *top += top_bonus;
     float mult = b->light / w_sum;
@@ -303,7 +303,7 @@ void TreeGenerator::grow_branch(Branch *b, float feed)
         return;
     curParams.set_state(b->level);
     float average_feed = b->light / (b->size + 0.001);
-    if (b->size && (b->base_seg_n == 0) && !dice(average_feed, curParams.branch_removal()))
+    if (b->size && (b->base_seg_n == 0) && !dice(average_feed, curParams().branch_removal()))
     {
         remove_branch(b);
         return;
@@ -354,7 +354,7 @@ float TreeGenerator::calc_size(Joint &j)
 }
 float TreeGenerator::calc_size(Branch *b)
 {
-    float sz = b->segments.size() * powf(2, curParams.max_depth() - b->level);
+    float sz = b->segments.size() * powf(2, curParams().max_depth() - b->level);
     for (auto &j : b->joints)
     {
         sz += calc_size(j);
@@ -402,16 +402,16 @@ void TreeGenerator::recalculate_thickness(Branch *b)
     while (s_it != b->segments.end())
     {
         float sum_r = s_prev->rel_r_begin;
-        s_it->rel_r_begin = sum_r * powf((weights[i] + j_it->light) / weights[i - 1], 1 / curParams.r_split_save_pow());
+        s_it->rel_r_begin = sum_r * powf((weights[i] + j_it->light) / weights[i - 1], 1 / curParams().r_split_save_pow());
         s_prev->rel_r_end = s_it->rel_r_begin;
         for (auto br : j_it->childBranches)
         {
-            br->base_r = s_it->rel_r_begin * powf(br->light / weights[i - 1], 1 / curParams.r_split_save_pow());
+            br->base_r = s_it->rel_r_begin * powf(br->light / weights[i - 1], 1 / curParams().r_split_save_pow());
         
             if (br->base_r > s_it->rel_r_begin)
             {
                 logerr("odd thing %f > %f (of %f)  %f %f %f %f",br->base_r,s_it->rel_r_begin,sum_r,weights[i],j_it->light,weights[i - 1],
-                curParams.r_split_save_pow());
+                curParams().r_split_save_pow());
                 for (int i=0;i<b->joints.size() + 1;i++)
                 {
                     debug("%f ",weights[i]);
@@ -424,7 +424,7 @@ void TreeGenerator::recalculate_thickness(Branch *b)
         i++;
         j_it++;
     }
-    s_prev->rel_r_end = s_prev->rel_r_begin * powf(weights[i] / weights[i - 1], 1 / curParams.r_split_save_pow());
+    s_prev->rel_r_end = s_prev->rel_r_begin * powf(weights[i] / weights[i - 1], 1 / curParams().r_split_save_pow());
     if (!b->joints.back().childBranches.empty())
     {
         b->joints.back().childBranches.front()->base_r = s_prev->rel_r_end;
@@ -439,15 +439,15 @@ glm::vec3 TreeGenerator::get_optimal_segment_growth_direction(float &quality, Br
 {
     LightVoxelsCube *field = nullptr;
     glm::vec3 prev_dir = glm::normalize(base->segments.back().end - base->segments.back().begin);
-    float bn = base->level * curParams.seg_bend() * powf((float)base->segments.size() / base->max_seg_count, curParams.seg_bend_pow());
+    float bn = base->level * curParams().seg_bend() * powf((float)base->segments.size() / base->max_seg_count, curParams().seg_bend_pow());
     
-    calc_quality_field(field,base->joints.back().pos,glm::vec3(5*(curParams.max_depth() - base->level)),prev_dir,base->plane_coef,
-                      curParams.seg_dir_conserv(),
-                      curParams.seg_plane_conserv(),
-                      curParams.seg_dir_random(),
-                      curParams.seg_spread(),
-                      curParams.seg_gravitrop() - bn,
-                      curParams.seg_phototrop());
+    calc_quality_field(field,base->joints.back().pos,glm::vec3(5*(curParams().max_depth() - base->level)),prev_dir,base->plane_coef,
+                      curParams().seg_dir_conserv(),
+                      curParams().seg_plane_conserv(),
+                      curParams().seg_dir_random(),
+                      curParams().seg_spread(),
+                      curParams().seg_gravitrop() - bn,
+                      curParams().seg_phototrop());
     
     glm::ivec3 vox_sizes = field->get_vox_sizes();
     std::vector<glm::vec3> best_pos;
@@ -510,21 +510,21 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
         }
     }
 }
-LightVoxelsCube *TreeGenerator::create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos)
+LightVoxelsCube *TreeGenerator::create_light_voxels_cube(ParameterSetWrapper params, glm::vec3 pos)
 {
     float max_size = 0.0;
     float wm = 0.7;
     float hm = 0.55;
-    for (int i = 0; i < params.max_depth(); i++)
+    for (int i = 0; i < params().max_depth(); i++)
     {
         params.set_state(i);
-        max_size += params.max_segments() * params.seg_len_mult();
+        max_size += params().max_segments() * params().seg_len_mult();
     }
-    params.set_state(params.max_depth() - 1);
+    params.set_state(params().max_depth() - 1);
     return new LightVoxelsCube(pos + glm::vec3(0, 0.5 * max_size, 0), glm::vec3(wm * max_size, hm * max_size, wm * max_size),
-                               params.seg_len_mult(), params.light_precision());
+                               params().seg_len_mult(), params().light_precision());
 }
-void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
+void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
 {
     for (int i = 0; i < 10; i++)
     {
@@ -536,7 +536,7 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     t.params = params;
     LeafHeap *lh = new LeafHeap();
     t.leaves = lh;
-    for (int i = 0; i < params.max_depth(); i++)
+    for (int i = 0; i < params().max_depth(); i++)
     {
         BranchHeap *bh = new BranchHeap();
         t.branchHeaps.push_back(bh);
@@ -544,9 +544,9 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     curParams.set_state(0);
     root = t.branchHeaps[0]->new_branch();
     root->level = 0;
-    root->max_seg_count = curParams.max_segments();
+    root->max_seg_count = curParams().max_segments();
     root->base_seg_n = 0;
-    root->base_r = curParams.base_r();
+    root->base_r = curParams().base_r();
     root->type_id = t.type ? t.type->type_id : 0;
 
     Joint j1, j2;
@@ -554,7 +554,7 @@ void TreeGenerator::plant_tree(Tree &t, TreeStructureParameters params)
     j1.pos = t.pos;
     new_joint(root, j1);
     ts.begin = j1.pos;
-    ts.end = j1.pos + glm::vec3(0, curParams.base_r(), 0);
+    ts.end = j1.pos + glm::vec3(0, curParams().base_r(), 0);
     j2.pos = ts.end;
     ts.rel_r_begin = 1;
     ts.rel_r_end = 1;
@@ -582,7 +582,7 @@ void TreeGenerator::grow_tree(Tree &t)
         sum_feed[i] = 0;
         count_feed[i] = 0;
     }
-    if (t.iter < curParams.growth_iterations() && root)
+    if (t.iter < curParams().growth_iterations() && root)
     {
         float feed = 1;
         seg_count = 0;
@@ -595,7 +595,7 @@ void TreeGenerator::grow_tree(Tree &t)
 
         if (!(t.iter % 10))
         {
-            debugl(2,"tree is growing  %d/%d iteration %d leaves\n", t.iter, curParams.growth_iterations(), t.leaves->leaves.size());
+            debugl(2,"tree is growing  %d/%d iteration %d leaves\n", t.iter, curParams().growth_iterations(), t.leaves->leaves.size());
             debugl(2, "sum feed %f\n", feed);
             debugl(2, "average feed distribution:");
             for (int j = 0; j < 10; j++)
@@ -632,7 +632,7 @@ bool TreeGenerator::tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug)
                 debug.leaf_to_model(leaf, m);
             }
         }
-        m->scale = glm::vec3(t.params.scale());
+        m->scale = glm::vec3(t.params().scale());
         BillboardCloudRaw *cloud = new BillboardCloudRaw(sz, sz, curGgd.types);
         cloud->prepare(t, level, level);
         t.billboardClouds.push_back(cloud);
@@ -670,7 +670,7 @@ void BranchHeap::clear_removed()
 }
 bool TreeGenerator::is_branch_productive(Branch *b)
 {
-    return false && (b->level < curParams.max_depth() - 1) && (b->max_seg_count > b->segments.size());
+    return false && (b->level < curParams().max_depth() - 1) && (b->max_seg_count > b->segments.size());
 }
 void TreeGenerator::recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level)
 {
@@ -710,17 +710,17 @@ int TreeGenerator::joints_count(Branch *b)
     }
     return cnt;
 }
-void TreeGenerator::create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug)
+void TreeGenerator::create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug)
 {
     voxels = create_light_voxels_cube(params, t.pos);
     plant_tree(t, params);
-    while (t.iter < params.growth_iterations())
+    while (t.iter < params().growth_iterations())
     {
         grow_tree(t);
     }
     //Clusterizer cl;
     //cl.set_branches(t,2, debug);
-    debug.set_params(t.params);
+    debug.set_params(t.params());
     //debug.add_branch(t.root,glm::vec3(1,1,1),glm::vec3(0,100,0),3);
     tree_to_model(t, false, debug);
 }
@@ -729,20 +729,20 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     float r = sqrt(count);
     glm::vec3 vox_center = glm::vec3(0, 100, 0);
     glm::vec3 vox_size = curGgd.size;
-    TreeStructureParameters params = trees[0].params;
-    params.set_state(params.max_depth() - 1);
+    ParameterSetWrapper params = trees[0].params;
+    params.set_state(params().max_depth() - 1);
     Box b = Box(glm::vec3(12,0,-50),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
     Cylinder el = Cylinder(glm::vec3(250,50,-20),glm::vec3(70,0,0),glm::vec3(0,50,0),glm::vec3(0,0,50));
-    float single_voxel_size = params.seg_len_mult()/ params.light_precision();
+    float single_voxel_size = params().seg_len_mult()/ params().light_precision();
     
-    voxels = new LightVoxelsCube(vox_center, vox_size, params.seg_len_mult(), params.light_precision());
+    voxels = new LightVoxelsCube(vox_center, vox_size, params().seg_len_mult(), params().light_precision());
     //voxels->add_body(&b,100);
     //debug.add_bodies(&b,1);
     //voxels->add_body(&el,100);
     //debug.add_bodies(&el,1);
     voxels->add_heightmap(*heightmap);
     GroveMask mask = GroveMask(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    mask.set_round(100);
+    mask.set_round(500);
     HabitabilityMap hm = HabitabilityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
     PlanarShadowsMap psm = PlanarShadowsMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
     DensityMap dsm = DensityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
@@ -750,7 +750,7 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
 
     const int growth_step = 10;
     int trees_planted = 0;  
-    for (int j = 0; j < params.growth_iterations(); j++)
+    for (int j = 0; j < params().growth_iterations(); j++)
     {
         if (j % growth_step == 0)
         {
@@ -760,15 +760,6 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
                 recalculate_planar_shadows(trees[i].root,psm,1);
             }
             dsm.create(hm,psm);
-                            printf("planar shadows\n");
-                for (int px = -50; px <= 50; px += 10)
-                {
-                    for (int py = -50; py <= 50; py += 10)
-                    {
-                        printf("%5.4f ",psm.get_bilinear(curGgd.pos + glm::vec3(px,0,py)));
-                    }
-                    printf("\n");
-                }
             int cnt = MAX((count - trees_planted < 3) ? count - trees_planted : (count - trees_planted)/2,0);
             std::vector<Seed> seeds;
             dsm.choose_places_for_seeds(cnt,seeds);
@@ -780,23 +771,23 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
                 trees[trees_planted].pos = pos;
                 plant_tree(trees[trees_planted], trees[trees_planted].params);
                 trees_planted++;
-                logerr("seed planted");
+                //logerr("seed planted");
             }
         }
         
         for (int i = 0; i < trees_planted; i++)
         {
-            if (trees[i].iter < params.growth_iterations())
+            if (trees[i].iter < params().growth_iterations())
             {
                 grow_tree(trees[i]);
             }
         }
     }
-    for (int j = 0; j < params.growth_iterations(); j++)
+    for (int j = 0; j < params().growth_iterations(); j++)
     {
         for (int i = 0; i < trees_planted; i++)
         {
-            if (trees[i].iter < params.growth_iterations())
+            if (trees[i].iter < params().growth_iterations())
             {
                 grow_tree(trees[i]);
             }
@@ -923,66 +914,7 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
         }
     }
 }
-void TreeGenerator::create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees)
-{
-    Texture wood = textureManager.get("wood");
-    Texture leaf = textureManager.get("leaf");
-    for (int i = 0; i < count; i++)
-    {
-        trees[i] = Tree();
-        trees[i].params = params;
-        trees[i].wood = wood;
-        trees[i].leaf = leaf;
-    }
-    grove.center = glm::vec3(0,0,0);
-    create_grove(trees, count, debug);
 
-    for (int i = 0; i < count; i++)
-    {
-        debug.set_params(trees[i].params);
-        tree_to_model(trees[i], false, debug);
-    }
-
-    Clusterizer cl;
-    cl.set_branches(trees, count, 1, voxels);
-    cl.visualize_clusters(debug, false);
-    Clusterizer cl2;
-    cl2.set_branches(trees, count, 0, voxels);
-    cl2.visualize_clusters(debug, false);
-    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-    BillboardCloudRaw *cloud0 = new BillboardCloudRaw(2048, 2048, curGgd.types);
-    cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
-    grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(4096, 4096, curGgd.types);
-    cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
-    grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(4096, 4096, curGgd.types);
-    cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
-    std::vector<BranchStructure> instanced_structures;
-    for (int i = 0; i < count; i++)
-    {
-        pack_tree(trees[i], grove, 0);
-    }
-    for (int c_num : cl.Ddg.current_clusters)
-    {
-        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures);
-    }
-    for (int i = 0; i < count; i++)
-    {
-        grove.roots.push_back(BranchStructure());
-        pack_structure(trees[i].root,grove,grove.roots.back(),instanced_structures);
-    }
-
-    delete(voxels);
-    for (int i = 0; i < count; i++)
-    {
-        trees[i].voxels = nullptr;
-    }
-    //Box b = Box(glm::vec3(0,200,0),glm::vec3(100,0,0),glm::vec3(0,100,0),glm::vec3(0,0,100));
-    //Ellipsoid el = Ellipsoid(glm::vec3(0,200,0),glm::mat3(1.0f),25);
-    //Body *bptr = &b;
-    //debug.add_bodies(bptr,1);
-}
 void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees,
                                  Heightmap *h)
 {
@@ -996,7 +928,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         auto &type = ggd.types[k];
         trees[i] = Tree();
         trees[i].type = &(ggd.types[k]);
-        trees[i].params = type.params;
+        trees[i].params = ParameterSetWrapper(type.params,type.params.max_depth() + 1);
         trees[i].wood = type.wood;
         trees[i].leaf = type.leaf;
     }

@@ -259,3 +259,23 @@ struct TreeStructureParameters
     {
     }
 };
+class ParameterSetWrapper
+{
+    std::vector<TreeStructureParameters> params;
+    int state = 0;
+    public:
+    ParameterSetWrapper()
+    {
+        params.push_back(TreeStructureParameters());
+    }
+    ParameterSetWrapper(TreeStructureParameters base, int n_params)
+    {
+        for (int i=0;i<n_params;i++)
+        {
+            params.push_back(base);
+            params.back().set_state(i);
+        }
+    }
+    void set_state(int _state) {state = _state;}
+    TreeStructureParameters &operator()() {return params[state];}
+};

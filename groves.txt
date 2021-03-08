@@ -1,6 +1,6 @@
 grove bush_grove
 {
-count = 9
+count = 10
 pos = (0 0 0)
 size = (300 200 300)
 preset = {default wood2 leaf2}
@@ -17,5 +17,53 @@ size = (300 200 300)
 preset = {default wood2 leaf2}
 preset = {default wood leaf}
 box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
+}
+grove_end
+grove grove10
+{
+count = 10
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove20
+{
+count = 20
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove40
+{
+count = 40
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove80
+{
+count = 80
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove160
+{
+count = 100
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove320
+{
+count = 320
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
 }
 grove_end

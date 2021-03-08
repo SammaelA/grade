@@ -465,7 +465,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
 
     int add_billboards_count = 0; //1 + layer*4;
     Visualizer tg(t.wood, t.leaf, nullptr);
-    tg.set_params(t.params);
+    tg.set_params(t.params());
     billboards.clear();
     atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
     glm::ivec4 sizes = atlas.get_sizes();

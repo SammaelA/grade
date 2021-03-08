@@ -93,7 +93,7 @@ float f_perlin(float x, float y)
     }
     Field_2d::Field_2d(glm::vec3 _pos, int _w, int _h)
     {
-        logerr("created field_2d with size %d %d",_w,_h);
+        //logerr("created field_2d with size %d %d",_w,_h);
         w = _w;
         h = _h;
         pos = _pos;

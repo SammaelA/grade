@@ -15,14 +15,14 @@ class PlanarShadowsMap;
 class TreeGenerator
 {
 public:
-    TreeGenerator(Tree &t) : curTree(t), curParams(){};
+    TreeGenerator(Tree &t) : curTree(t), curParams(TreeStructureParameters(),1){};
     void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees, Heightmap *h);
 
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;
     Branch *test;
-    TreeStructureParameters curParams;
+    ParameterSetWrapper curParams;
     LightVoxelsCube *voxels;
     Heightmap *heightmap;
     GroveGenerationData curGgd;
@@ -43,7 +43,7 @@ public:
     void recalculate_thickness(Branch *b);
     void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
     int joints_count(Branch *b);
-    LightVoxelsCube *create_light_voxels_cube(TreeStructureParameters params, glm::vec3 pos);
+    LightVoxelsCube *create_light_voxels_cube(ParameterSetWrapper params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
     glm::vec3 get_optimal_branch_growth_direction(float &quality, Branch *base, Joint &j, Segment &s, bool from_end);
@@ -55,11 +55,9 @@ public:
     void deform_root(Branch *b);
     private:
     bool random_tree(Tree &t);
-    void plant_tree(Tree &t, TreeStructureParameters params);
+    void plant_tree(Tree &t, ParameterSetWrapper params);
     void grow_tree(Tree &t);
-    void create_tree(Tree &t, TreeStructureParameters params, DebugVisualizer &debug);
+    void create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug);
     void create_grove(Tree *trees, int count, DebugVisualizer &debug);
-    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove);
-    void create_grove(TreeStructureParameters params, int count, GrovePacked &grove, DebugVisualizer &debug, Tree *trees);
     
 };

@@ -90,7 +90,7 @@ void DensityMap::create(HabitabilityMap &hm, PlanarShadowsMap &psm)
 }
 void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
 {
-    logerr("field_2d with size %d %d",w, h);
+    //logerr("field_2d with size %d %d",w, h);
     if (count <= 0)
         return;
     double sum = calc_sum();
@@ -109,7 +109,7 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
                 float r = get(i,j);
                 if (r > rnd && seeds.size() < count)
                 {
-                    logerr("%d %d %f (%d/%d %d/%d) %f",mult,count,get(i,j),i,w,j,h, (float)sum);
+                    //logerr("%d %d %f (%d/%d %d/%d) %f",mult,count,get(i,j),i,w,j,h, (float)sum);
                     Seed s;
                     s.pos = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
                     s.roots_count = 1;
