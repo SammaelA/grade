@@ -111,6 +111,8 @@ struct TreeTypeData
     TreeStructureParameters params;
     Texture wood;
     Texture leaf;
+    int wood_id;
+    int leaf_id;
     std::vector<Texture> additional_textures;
 
 };

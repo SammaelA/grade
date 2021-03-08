@@ -1,5 +1,5 @@
 #include "utility.h"
-
+#define DEBUG_LEVEL 1
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;

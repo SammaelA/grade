@@ -343,7 +343,8 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
 {
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
-    if (b1->type_id != b2->type_id || b1->dead != b2->dead || b1->level != b2->level)
+    if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
+        b1->dead != b2->dead || b1->level != b2->level)
         return Answer(true,1000,1000);
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
@@ -443,7 +444,8 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
     //sdebugl(1,"[%d %d]",bwd1.b->type_id,bwd2.b->type_id);//
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
-    if (b1->type_id != b2->type_id || b1->dead != b2->dead || b1->level != b2->level)
+    if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
+        b1->dead != b2->dead || b1->level != b2->level)
         return Answer(true,1000,1000);
     return dist_Nsection(bwd1, bwd2, min, max, data);
 }
@@ -594,6 +596,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         {
             for (Dist &d : P_delta)
             {
+                logerr("min %f %f",min.d,d.d);
                 if (d.U == d.V)
                     debugl(1, "error in P_delta %d\n", d.U);
                 if (d.d < min.d)
@@ -606,6 +609,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         }
         if (min.d > clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
         {
+            logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
             break;
             //makes no sense to merge clusters with maximum distance between them.
         }

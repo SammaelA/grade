@@ -18,7 +18,7 @@ void Texture::bind()
 Texture::Texture()
 {
         glGenTextures(1, &texture);
-        debugl(1,"texture created %d\n", texture);
+        debugl(2,"texture created %d\n", texture);
 } //Default constructor
 Texture::Texture(SDL_Surface *s) : Texture()
 {

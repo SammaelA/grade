@@ -95,6 +95,7 @@ Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, std::v
         IDA.transforms.push_back(tr);
         IDA.centers_par.push_back(cl->branch->original->center_par);
         IDA.centers_self.push_back(cl->branch->original->center_self);
+        IDA.type_ids.push_back(cl->branch->b->type_id);
     }
     return br->original;
 }

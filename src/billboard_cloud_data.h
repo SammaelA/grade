@@ -10,6 +10,7 @@ struct InstanceDataArrays
     std::vector<glm::mat4> transforms;
     std::vector<glm::vec3> centers_par;
     std::vector<glm::vec3> centers_self;
+    std::vector<int> type_ids;
 };
 struct InstancingReadyModel
 {

@@ -871,6 +871,7 @@ void pack_tree_as_singleton_instances(Tree &t, GrovePacked &grove, int up_to_lev
             IDA.transforms.push_back(glm::mat4(1.0));
             IDA.centers_par.push_back(branch.center_par);
             IDA.centers_self.push_back(branch.center_self);
+            IDA.type_ids.push_back(branch.type_id);
             std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
             ids.push_back(grove.instancedCatalogue.add(b, b.level));
             grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(&branch);

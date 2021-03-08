@@ -78,5 +78,6 @@ void main(void)
 	ex_Normal = in_Normal;
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
 	ex_Tex = in_Tex.xyz;
+    ex_Tex.z = instances[curInsts[offset].index].center_par.w;
 	//ex_Tex.x += 0.01*float(models_instance_count[id]);
 }

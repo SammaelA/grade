@@ -223,7 +223,7 @@ GroveRenderer()
         {
             in.id = types.size();
 
-            IDA_to_bufer(in.ida, lods, instances, models, types);
+            IDA_to_bufer(in.ida, lods, instances, models, types, false);
             models.back().LOD = l;
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
@@ -236,7 +236,7 @@ GroveRenderer()
         {
             in.id = types.size();
 
-            IDA_to_bufer(in.ida, lods, instances, models, types);
+            IDA_to_bufer(in.ida, lods, instances, models, types, true);
             models.back().LOD = l;
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
@@ -249,9 +249,9 @@ GroveRenderer()
     }
     types.push_back(t);
     types_descs.back().rendDesc.max_models = mods;
-    for (int i=0;i<types.size();i++)
+    for (int i=0;i<instances.size();i++)
     {
-        logerr("%d offset %d",i,types[i].offset);
+        //replace type_id 
     }
     glGenBuffers(1, &lods_buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
@@ -346,7 +346,7 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
     return cmd;
 }
 void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
-                                 std::vector<ModelData> &models, std::vector<TypeData> &types)
+                                 std::vector<ModelData> &models, std::vector<TypeData> &types, bool is_leaf)
 {
     uint st = instances.size();
     if (ida.centers_par.size() != ida.centers_self.size() || ida.centers_par.size() != ida.transforms.size())
@@ -356,9 +356,12 @@ void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &
     }
     for (int i=0; i<ida.centers_self.size(); i++)
     {
+        float type_slice = 0;
+        if (ida.type_ids.size() > i)
+            type_slice = is_leaf ? ggd->types[ida.type_ids[i]].leaf_id : ggd->types[ida.type_ids[i]].wood_id;
         instances.push_back(InstanceData());
         instances.back().projection_camera = ida.transforms[i];
-        instances.back().center_par = glm::vec4(ida.centers_par[i],1);
+        instances.back().center_par = glm::vec4(ida.centers_par[i], type_slice);
         instances.back().center_self = glm::vec4(ida.centers_self[i],1);
     }
     models.push_back(ModelData());
@@ -502,9 +505,10 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
     {
+        int type_slice = 0;//unused ggd->types[type].wood_id;
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(2*type, 0));
+            v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(type_slice, 0));
     }
 
     uint l_ind_offset = base_container->indices.size();
@@ -526,11 +530,12 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     verts = l_verts;
     if (need_leaves)
     {
+        int type_slice = 0;//unused ggd->types[type].leaf_id;
         for (int id : branch.branches)
         {
             PackedBranch &b = source->instancedCatalogue.get(id);
             //if (b.level <= up_to_level)
-            v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(2*type + 1, 0));
+            v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(type_slice, 0));
         }
     }
     uint l_end = base_container->indices.size();
@@ -596,7 +601,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         //lm->update();
         if (l_count > 0 && !branch.IDA.transforms.empty())
         {
-            logerr("llllllaaaaaaa %d",l_count);
             lod.leaves_instances.push_back(Instance2(nullptr,type,branch.IDA));   
             lod.leaves_instances.back().id = lod.instances.size() - 1;
             lod.leaves_instances.back().cmd.firstIndex = l_ind_offset;
@@ -625,7 +629,33 @@ void GroveRenderer::prepare_wood_types_atlas()
         return;
 
     const int tex_size = 512;
-    int num_texs = 2*ggd->types.size();
+    int num_texs = 0;
+    std::map<GLuint, std::pair<Texture,int>> tex_map;
+    for (auto &type : ggd->types)
+    {
+        auto it = tex_map.find(type.wood.texture);
+        if (it == tex_map.end())
+        {
+            tex_map.emplace(type.wood.texture,std::pair<Texture,int>(type.wood,num_texs));
+            type.wood_id = num_texs;
+            num_texs++;
+        }
+        else
+        {
+            type.wood_id = it->second.second;
+        }
+        it = tex_map.find(type.leaf.texture);
+        if (it == tex_map.end())
+        {
+            tex_map.emplace(type.leaf.texture,std::pair<Texture,int>(type.leaf,num_texs));
+            type.leaf_id = num_texs;
+            num_texs++;
+        }
+        else
+        {
+            type.leaf_id = it->second.second;
+        }
+    }
     if (num_texs <= 0)
         return;
     atlas = new TextureAtlas(tex_size,tex_size,num_texs);
@@ -644,21 +674,29 @@ void GroveRenderer::prepare_wood_types_atlas()
         bm.colors = tc;
         bm.indices = indices;
     };
-    for (auto &type : ggd->types)
+    for (auto &pr : tex_map)
     {
         k = atlas->add_tex();
         atlas->target(k);
         bm.construct(_c_mip);
         copy.use();
-        copy.texture("tex", type.wood);
+        copy.texture("tex", pr.second.first);
         bm.render(GL_TRIANGLES);
 
-        k = atlas->add_tex();
-        atlas->target(k);
-        bm.construct(_c_mip);
-        copy.use();
-        copy.texture("tex", type.leaf);
-        bm.render(GL_TRIANGLES);
+        for (auto &type : ggd->types)
+        {
+            if (type.leaf_id == pr.second.second)
+                type.leaf_id = k+1000;
+            
+            if (type.wood_id == pr.second.second)
+                type.wood_id = k+1000;
+        }
     }
+    for (auto &type : ggd->types)
+        {
+            type.leaf_id = -1000+type.leaf_id;
+            type.wood_id = -1000+type.wood_id;
+    }
+
     atlas->gen_mipmaps();
 }

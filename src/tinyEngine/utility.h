@@ -7,7 +7,7 @@
 #define MAX(a,b) (a>b ? a : b)
 #define CLAMP(a,b,c) (MIN(MAX(a,b),c))
 #define SQR(a) ((a)*(a))
-#define DEBUG_LEVEL 100
+
 
 void debugnl();
 void debug(const char *__restrict __fmt, glm::vec2 vec);
