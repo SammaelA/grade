@@ -150,13 +150,11 @@ GroveRenderer()
         for (Impostor &imp :lod.imp_rend->data->impostors)
         {
             Model *m = lod.imp_rend->models[i];
-            logerr("imp model %d %d\n",m->positions.size()/3,m->indices.size());
-            auto cmd = model_to_base(m);
+            BBox bb;
+            auto cmd = model_to_base(m,bb);
             imp.id = types.size();
             IDA_to_bufer(imp.IDA, lods, instances, models, types);
-            logerr("%f %f %f %f",imp.IDA.transforms[0][0][0],imp.IDA.transforms[0][0][1],
-            imp.IDA.transforms[0][0][2],imp.IDA.transforms[0][0][3]);
-            logerr("imp IDA size %d",imp.IDA.transforms.size());
+
             models.back().LOD = l;
             models.back().type = types.size();
             models.back().vertexes = cmd.count;
@@ -188,19 +186,21 @@ GroveRenderer()
         types_descs.back().rendDesc.max_models = lod.cloud->instances.size();
         TypeData t;
         t.offset = models.size();
-        logerr("models size %d",models.size());
+
         int i = 0;
         for (BillboardData &bill :lod.cloud->data->billboards)
         {
             Model *m = lod.cloud->instances[i];
-            auto cmd = model_to_base(m);
+            BBox bb;
+            auto cmd = model_to_base(m,bb);
             bill.id = types.size();
             IDA_to_bufer(bill.IDA, lods, instances, models, types);
             models.back().LOD = l;
             models.back().type = types.size();
             models.back().vertexes = cmd.count;
             models.back().first_index = cmd.firstIndex;
-            logerr("verts %d",models.back().vertexes);
+            pack_bb_to_model_data(models.back(), bb);
+
             i++;
         }
         types.push_back(t);
@@ -228,11 +228,8 @@ GroveRenderer()
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
             models.back().first_index = in.cmd.firstIndex;
-            BBox bb = in.bbox;
-            models.back().x_s = glm::vec4(bb.position.x,bb.sizes.x*bb.a.x,bb.sizes.x*bb.b.x,bb.sizes.x*bb.c.x);
-            models.back().y_s = glm::vec4(bb.position.y,bb.sizes.y*bb.a.y,bb.sizes.y*bb.b.y,bb.sizes.y*bb.c.y);
-            models.back().z_s = glm::vec4(bb.position.z,bb.sizes.z*bb.a.z,bb.sizes.z*bb.b.z,bb.sizes.z*bb.c.z);
-            models.back().culling = 1;
+
+            pack_bb_to_model_data(models.back(),in.bbox);
             mods++;
         }
         for (Instance2 in : lod.leaves_instances)
@@ -244,11 +241,8 @@ GroveRenderer()
             models.back().type = types.size();
             models.back().vertexes = in.cmd.count;
             models.back().first_index = in.cmd.firstIndex;
-            BBox bb = in.bbox;
-            models.back().x_s = glm::vec4(bb.position.x,bb.sizes.x*bb.a.x,bb.sizes.x*bb.b.x,bb.sizes.x*bb.c.x);
-            models.back().y_s = glm::vec4(bb.position.y,bb.sizes.y*bb.a.y,bb.sizes.y*bb.b.y,bb.sizes.y*bb.c.y);
-            models.back().z_s = glm::vec4(bb.position.z,bb.sizes.z*bb.a.z,bb.sizes.z*bb.b.z,bb.sizes.z*bb.c.z);
-            models.back().culling = 1;
+            
+            pack_bb_to_model_data(models.back(),in.bbox);
             mods++;
         }
         l++;
@@ -304,7 +298,14 @@ GroveRenderer()
 
     base_container->update();
 }
-DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m)
+void GroveRenderer::pack_bb_to_model_data(ModelData &md, BBox &bb)
+{
+    md.x_s = glm::vec4(bb.position.x, bb.sizes.x * bb.a.x, bb.sizes.x * bb.b.x, bb.sizes.x * bb.c.x);
+    md.y_s = glm::vec4(bb.position.y, bb.sizes.y * bb.a.y, bb.sizes.y * bb.b.y, bb.sizes.y * bb.c.y);
+    md.z_s = glm::vec4(bb.position.z, bb.sizes.z * bb.a.z, bb.sizes.z * bb.b.z, bb.sizes.z * bb.c.z);
+    md.culling = 1;
+}
+DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
 {
     DrawElementsIndirectCommand cmd;
     int firstVertex = base_container->positions.size()/3;
@@ -326,7 +327,22 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m)
     {
         base_container->colors.push_back(tex);
     }
-    logerr("%d ind", cmd.count );
+    //logerr("%d ind", cmd.count );
+    glm::vec3 mx, mn;
+    mx = glm::vec3(-1e9);
+    mn = glm::vec3(1e9);
+    for (int i = 0; i<m->positions.size(); i+=3)
+    {
+        mx = glm::max(mx,glm::vec3(m->positions[i],m->positions[i+1],m->positions[i+2]));
+        mn = glm::min(mn,glm::vec3(m->positions[i],m->positions[i+1],m->positions[i+2]));
+    }
+    BBox br_bbox;
+    br_bbox.position = mn;
+    br_bbox.sizes = mx - mn;
+    br_bbox.a = glm::vec3(1,0,0);
+    br_bbox.b = glm::vec3(0,1,0);
+    br_bbox.c = glm::vec3(0,0,1);
+    bb = br_bbox;
     return cmd;
 }
 void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,

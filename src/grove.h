@@ -142,7 +142,8 @@ private:
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
     void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
                       std::vector<ModelData> &models, std::vector<TypeData> &types);
-    DrawElementsIndirectCommand model_to_base(Model *m);
+    DrawElementsIndirectCommand model_to_base(Model *m, BBox &bb);
+    void pack_bb_to_model_data(ModelData &md, BBox &bb);
     void prepare_wood_types_atlas();
     std::vector<LOD> LODs;
     std::vector<TypeDescriptionForRender> types_descs;
