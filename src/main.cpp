@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
-  std::vector<float> LODs_dists = {10000, 1000, 500, 300, 100};
+  std::vector<float> LODs_dists = {10000, 1000, 700, 500, 300};
   Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
   h.random_generate(0,1,50);
   if (generation_needed)

@@ -63,7 +63,6 @@ struct currentInstancesData
     uint pad;
     float mn;
     float mx;
-    vec4 dbg;
 };
 layout(std140, binding=5) readonly buffer _curInsts
 {

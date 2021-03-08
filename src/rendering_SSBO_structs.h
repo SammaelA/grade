@@ -46,7 +46,6 @@ struct currentInstancesData
     uint pad;
     float mn;
     float mx;
-    glm::vec4 dbg;
 };
 typedef glm::uvec4 currentModelsData;
 typedef glm::uvec4 currentTypesData;

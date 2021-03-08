@@ -483,6 +483,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     //Model *m = new Model();
     //Model *lm = need_leaves ? new Model() : nullptr;
     uint ind_offset = base_container->indices.size();
+    uint verts = base_container->positions.size();
     for (int id : branch.branches)
     {
         PackedBranch &b = source->instancedCatalogue.get(id);
@@ -491,6 +492,22 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     }
 
     uint l_ind_offset = base_container->indices.size();
+    uint l_verts = base_container->positions.size();
+    glm::vec3 mx, mn;
+    mx = glm::vec3(-1e9);
+    mn = glm::vec3(1e9);
+    for (int i = verts; i<l_verts; i+=3)
+    {
+        mx = glm::max(mx,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+        mn = glm::min(mn,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+    }
+    BBox br_bbox;
+    br_bbox.position = mn;
+    br_bbox.sizes = mx - mn;
+    br_bbox.a = glm::vec3(1,0,0);
+    br_bbox.b = glm::vec3(0,1,0);
+    br_bbox.c = glm::vec3(0,0,1);
+    verts = l_verts;
     if (need_leaves)
     {
         for (int id : branch.branches)
@@ -501,8 +518,29 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         }
     }
     uint l_end = base_container->indices.size();
+    l_verts = base_container->positions.size();
     int count = l_ind_offset - ind_offset;
     int l_count = l_end - l_ind_offset;
+    
+    BBox l_bbox;
+    if (need_leaves)
+    {
+        mx = glm::vec3(-1e9);
+        mn = glm::vec3(1e9);
+        for (int i = verts; i<l_verts; i+=3)
+        {
+            //logerr("eee");
+            mx = glm::max(mx,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+            mn = glm::min(mn,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+        }
+
+        l_bbox.position = mn;
+        l_bbox.sizes = mx - mn;
+        l_bbox.a = glm::vec3(1,0,0);
+        l_bbox.b = glm::vec3(0,1,0);
+        l_bbox.c = glm::vec3(0,0,1);
+        //logerr("sizes %f %f %f", l_bbox.sizes.x,l_bbox.sizes.y,l_bbox.sizes.z);
+    }
     //m->update();
 
     if (branch.IDA.transforms.size() != branch.IDA.centers_par.size())
@@ -530,7 +568,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         lod.instances.back().cmd.firstIndex = ind_offset;
         lod.instances.back().cmd.count = count;
         lod.instances.back().cmd.instanceCount = lod.instances.back().ida.transforms.size();
-        lod.instances.back().bbox = branch.bbox;
+        lod.instances.back().bbox = br_bbox;
     }
     else
     {   
@@ -548,7 +586,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             lod.leaves_instances.back().cmd.firstIndex = l_ind_offset;
             lod.leaves_instances.back().cmd.count = l_count;
             lod.leaves_instances.back().cmd.instanceCount = lod.leaves_instances.back().ida.transforms.size();
-            lod.leaves_instances.back().bbox = branch.bbox;
+            lod.leaves_instances.back().bbox = l_bbox;
         }
         //else
         //    delete lm;
