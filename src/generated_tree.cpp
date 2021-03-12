@@ -945,12 +945,23 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         debug.set_params(trees[i].params);
         tree_to_model(trees[i], false, debug);
     }*/
+    Clusterizer tr_cl;
+    ClusterizationParams tr_cp;
+    tr_cp.weights = std::vector<float>{5000,0,0,0.0,0.0};
+    tr_cp.ignore_structure_level = 1;
+    tr_cp.delta = 0.25;
+    tr_cp.different_types_tolerance = true;
+    tr_cp.r_weights = std::vector<float>{5000,0,0,0.0,0.0}; 
+    tr_cp.max_individual_dist = 0.05;
+    tr_cl.set_branches(trees, count, 0, voxels);
+    tr_cl.set_clusterization_params(tr_cp);
+    tr_cl.visualize_clusters(debug, false);
 
     Clusterizer cl;
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
     cp.ignore_structure_level = 3;
-    cp.delta = 0.3;
+    cp.delta = 0.25;
     cp.max_individual_dist = 0.67;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -960,6 +971,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     Clusterizer cl2;
     cl2.set_branches(trees, count, 0, voxels);
+    cp.different_types_tolerance = false;
     cl2.set_clusterization_params(cp);
     cl2.visualize_clusters(debug, false);
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();

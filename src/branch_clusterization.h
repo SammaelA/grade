@@ -13,7 +13,7 @@ struct ClusterizationParams
     int ignore_structure_level = 1000;
     int min_clusters = 1;
     float max_individual_dist = 0.95;
-    bool different_types_tolerance = false;
+    bool different_types_tolerance = true;
     std::vector<float> weights = std::vector<float>{5000,800,40,1,0.01};
     std::vector<float> light_weights = std::vector<float>{5000,800,40,1,0.01};
     std::vector<float> r_weights = std::vector<float>{0.5,0.2,0,0,0};
@@ -34,10 +34,10 @@ public:
             to = t;
         }
         Answer() : Answer(false, 0, 1){};
-        Answer(Answer &a)
-        {
-            Answer(a.exact, a.from, a.to);
-        }
+        Answer(const Answer&) = default;
+        Answer(Answer&&) = default;
+        Answer& operator=(const Answer&) = default;
+        Answer& operator=(Answer&&) = default;
         Answer operator*(const float mult)
         {
             return Answer(exact, MIN(from*mult, to*mult), MAX(from*mult, to*mult));
@@ -191,6 +191,7 @@ public:
     bool match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
                                      float min, float max);
     Answer dist(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
+    Answer dist_trunc(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
     Answer dist_simple(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
     Answer dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
     Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);

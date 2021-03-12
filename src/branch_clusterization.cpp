@@ -71,28 +71,6 @@ inline float AS_branch_min_dist(float part_min_dist, float error)
         AS_branch_min_dist(part_min_dist, nc);
 }
 
-void transform_branch(Branch *b, mat4 transform)
-{
-    b->base_seg_n = b->joints.size();
-    //in clusterization process we use this variable
-    //for joints count is branch and child branches to speed-up
-    //calculations
-    for (Segment &s : b->segments)
-    {
-        s.begin = transform * vec4(s.begin, 1.0f);
-        s.end = transform * vec4(s.end, 1.0f);
-    }
-    for (Joint &j : b->joints)
-    {
-
-        j.pos = transform * vec4(j.pos, 1.0f);
-        for (Branch *br : j.childBranches)
-        {
-            transform_branch(br, transform);
-            b->base_seg_n += br->base_seg_n;
-        }
-    }
-}
 bool dedicated_bbox(Branch *branch, BBox &bbox)
 {
     if (!branch || false && branch->dead || branch->segments.empty())
@@ -121,16 +99,20 @@ Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std
     float num_m = 0.0;
     float num_p = 0.0;
     float denom = 0.0;
+    //debug("matches:");
     for (int i = 0; i < matches.size(); i++)
     {
         num_m += weights[i] * (2 * matches[i]);
         num_p += weights[i] * jp[i];
         denom += weights[i] * jc[i];
+        //debug(" (%f %f %f)",(float)2*matches[i],(float)jp[i],(float)jc[i]);
     }
+
     if (denom < 0.001)
         return Clusterizer::Answer(true, 0, 0);
     num_m /= denom;
     num_p /= denom;
+    //debug("%f/%f\n",num_p - num_m, 1 - num_m);
     return Clusterizer::Answer(num_p > 0.9999, num_p - num_m, 1 - num_m);
 }
 int pass_all_joints(std::vector<int> &jp, Branch *b)
@@ -356,10 +338,10 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     }
     bool exact = match_joints(b1, b2, matches, joint_counts, joint_passed, min/(1 - light_importance), max);
     Answer part_answer = partial_dist(joint_counts, joint_passed, matches, weights);
+
     if (exact)
     {
         Answer light_answer = light_difference(bwd1, bwd2);
-        //debug("light answer %f %f\n",light_answer.from, light_answer.to);
         Answer res = light_answer*(light_importance) + part_answer*(1 - light_importance);
         float r_importance = clusterizationParams.r_weights[CLAMP(b1->level,0,clusterizationParams.r_weights.size()-1)];
         if (r_importance > 0)
@@ -368,6 +350,8 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
             res.from += r_diff;
             res.to += r_diff;
         }
+
+        return res;
     }
     else
         return part_answer;
@@ -438,6 +422,34 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
     if (data)
         data->rotation = min_phi;
     return Answer(true, min_dist, min_dist);
+}
+Clusterizer::Answer Clusterizer::dist_trunc(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max,
+                                            DistData *data)
+{
+    Branch *b1 = bwd1.b;
+    Branch *b2 = bwd2.b;
+    if (data)
+        data->rotation = 0;
+    if (b1->joints.size() != b2->joints.size())
+        return Answer(true,1000,1000);
+    if (b1->joints.size()<2)
+        return Answer(true,0,0);
+    auto it1 = b1->joints.begin();
+    auto it2 = b2->joints.begin();
+    glm::vec3 prev1 = it1->pos;
+    glm::vec3 prev2 = it2->pos;
+    it1++;
+    it2++;
+    float av_len = 0.5 * (length(b1->joints.back().pos - b1->joints.front().pos) + length(b2->joints.back().pos - b2->joints.front().pos));
+    float cur_delta = clusterizationParams.delta * av_len;
+    
+    while (it1!=b1->joints.end() && it2!=b2->joints.end())
+    {
+        if (length(it1->pos-it2->pos) > cur_delta)
+            return Answer(true,1000,1000);
+        it1++;
+        it2++;
+    }
 }
 Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
@@ -596,9 +608,8 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         {
             for (Dist &d : P_delta)
             {
-                logerr("min %f %f",min.d,d.d);
                 if (d.U == d.V)
-                    debugl(1, "error in P_delta %d\n", d.U);
+                    debugl(0, "error in P_delta %d\n", d.U);
                 if (d.d < min.d)
                 {
                     min.U = d.U;
@@ -609,7 +620,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         }
         if (min.d > clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
         {
-            logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
+            debugl(3,"breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
             break;
             //makes no sense to merge clusters with maximum distance between them.
         }

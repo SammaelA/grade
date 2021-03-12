@@ -348,8 +348,39 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
     }
 }
+void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res)
+{
+    int sz = IDA.type_ids.size();
+    if (IDA.centers_par.size() != sz || IDA.centers_self.size() != sz || IDA.transforms.size() != sz)
+    {
+        logerr("trying to split corrupted IDA");
+        return;
+    }
+    std::vector<bool> need_change(sz,true);
+    bool work_left = (sz != 0);
+    while (work_left)
+    {
+        work_left = false;
+        int cur_type = -1;
+        res.push_back(InstanceDataArrays());
+        for (int i=0;i<sz;i++)
+        {
+            if (need_change[i] && (cur_type == -1 || cur_type == IDA.type_ids[i]))
+            {
+                work_left = true;
+                cur_type = IDA.type_ids[i];
+                need_change[i] = false;
+                res.back().type_ids.push_back(cur_type);
+                res.back().centers_par.push_back(IDA.centers_par[i]);
+                res.back().centers_self.push_back(IDA.centers_self[i]);
+                res.back().transforms.push_back(IDA.transforms[i]);
+            }
+        }
+    }
+}
 void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
 {
+    std::map<int, InstanceDataArrays> prev_transforms;
     std::map<int, InstanceDataArrays> all_transforms;
     std::vector<Branch> base_branches;
     BranchHeap heap;
@@ -360,10 +391,32 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         Branch *b = clusters[i].prepare_to_replace(IDA);
         if (!b)
             continue;
-        all_transforms.emplace(i, IDA);
-        base_branches.push_back(Branch());
-        base_branches.back().deep_copy(b, heap, &l_heap);
-        base_branches.back().base_seg_n = i;
+        prev_transforms.emplace(i, IDA);
+        //base_branches.push_back(Branch());
+        //base_branches.back().deep_copy(b, heap, &l_heap);
+        //base_branches.back().base_seg_n = i;
+    }
+
+    //cluster can contain branches with different types. We should 
+    //split it is groups with same type to make billboards correct
+
+    for (auto &pr : prev_transforms)
+    {
+        std::vector<InstanceDataArrays> idas;
+        split_IDA_by_type(pr.second,idas);
+        for (InstanceDataArrays &group_ida : idas)
+        {
+            if (group_ida.type_ids.empty())
+                continue;
+            int k = all_transforms.size();
+            all_transforms.emplace(k,group_ida);
+            InstanceDataArrays IDA;
+            Branch *b = clusters[pr.first].prepare_to_replace(IDA);
+            base_branches.push_back(Branch());
+            base_branches.back().deep_copy(b, heap, &l_heap);
+            base_branches.back().base_seg_n = k;
+            base_branches.back().type_id = group_ida.type_ids.front();
+        }
     }
     prepare(t, branch_level, base_branches);
     
@@ -429,6 +482,7 @@ void expand_branches(std::vector<Branch> &oldb, std::vector<Branch> &newb, int d
             {
                 newb.push_back(*br);
                 newb.back().base_seg_n = branch.base_seg_n;
+                newb.back().type_id = branch.type_id;
             }
         }
     }
@@ -489,6 +543,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
                     continue;
                 float err = projection_error_rec(br, plane_n, b.planeCoef.w);
                 projectionData.push_back(BranchProjectionData(err, br, i));
+                projectionData.back().br->type_id = p.b->type_id;
             }
         }
         i++;
@@ -501,6 +556,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         if (k < add_billboards_count)
         {
             proj.br->level = -1;
+            //proj.br->type_id = proj.
             BBox min_bbox = get_minimal_bbox(proj.br);
             billboard_boxes.push_back(BillboardBox(proj.br, min_bbox, vec3(0, 0, 0), proj.parent_n));
         }
@@ -529,7 +585,6 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b, 1.5);
     }
     debugl(8,"created %d billboards\n", billboard_boxes.size());
-    //glGenerateTextureMipmap(atlas.tex().texture);
     atlas.gen_mipmaps();
 }
 BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
