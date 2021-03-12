@@ -112,8 +112,8 @@ Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std
         return Clusterizer::Answer(true, 0, 0);
     num_m /= denom;
     num_p /= denom;
-    if (jc[0]>1)
-        debug("%f/%f\n",num_p - num_m, 1 - num_m);
+    //if (jc[0]>1)
+    //    debug("%f/%f\n",num_p - num_m, 1 - num_m);
     return Clusterizer::Answer(num_p > 0.9999, num_p - num_m, 1 - num_m);
 }
 int pass_all_joints(std::vector<int> &jp, Branch *b)
@@ -350,10 +350,11 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
             float r_diff = r_importance*r_NMSE(b1,b2);
             res.from += r_diff;
             res.to += r_diff;
+        
+            //if (bwd1.b->level==0)
+             //   logerr("dist = %f %f %f %f",res.from, part_answer.from, r_diff, r_importance);
         }
-        if (bwd1.b->level==0)
-            logerr("dist = %f %f",res.from, part_answer.from);
-        return part_answer;
+        return res;
     }
     else
         return part_answer;

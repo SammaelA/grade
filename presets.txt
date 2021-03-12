@@ -11,6 +11,13 @@ preset default
     seg_len_mult = 4,{2 1.75 1 0.55 0.4};
     max_segments = 20,{35 25 14 7 7};
     min_branching_chance = 0,{-0.2 0.15 0.5 0.75 0.7};
-    seg_dir_random = 0.5,{25 1 2 3 4};
+}
+preset_end
+preset gnarled
+{
+    seg_len_mult = 4,{2 2.25 1.5 0.75 0.4};
+    max_segments = 20,{35 25 14 7 7};
+    min_branching_chance = 0,{-0.2 0.15 0.5 0.75 0.7};
+    seg_dir_random = 0.5,{25 5 5 10 20};
 }
 preset_end

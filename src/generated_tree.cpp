@@ -988,10 +988,11 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     ClusterizationParams tr_cp;
     tr_cp.weights = std::vector<float>{5000,0,0,0.0,0.0};
     tr_cp.ignore_structure_level = 1;
-    tr_cp.delta = 0.25;
+    tr_cp.delta = 0.1;
+    tr_cp.light_importance = 0;
     tr_cp.different_types_tolerance = true;
-    tr_cp.r_weights = std::vector<float>{5000,0,0,0.0,0.0}; 
-    tr_cp.max_individual_dist = 1;
+    tr_cp.r_weights = std::vector<float>{0.5,0,0,0.0,0.0}; 
+    tr_cp.max_individual_dist = 0.4;
     tr_cl.set_branches(trees, count, 0, voxels);
     tr_cl.set_clusterization_params(tr_cp);
     tr_cl.visualize_clusters(debug, false);
