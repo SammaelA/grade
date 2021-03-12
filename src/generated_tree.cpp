@@ -821,21 +821,26 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     }*/
     //debug.visualize_light_voxels(voxels,glm::vec3(-100,-10,-100),glm::vec3(200,250,200),glm::vec3(single_voxel_size),0.5,0.001);
 }
-void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct)
+void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to)
 {
     if (b->dead)
         return;
-    PackedBranch pb;
-    b->pack(pb);
-    ids.push_back(grove.instancedCatalogue.add(pb, b->level));
-    b_struct.childBranches.push_back(BranchStructure(ids.back()));
+    if (b->level > lvl_to)
+        return;
+    if (b->level >= lvl_from)
+    {
+        PackedBranch pb;
+        b->pack(pb);
+        ids.push_back(grove.instancedCatalogue.add(pb, b->level));
+        b_struct.childBranches.push_back(BranchStructure(ids.back()));
+    }
     for (Joint &j : b->joints)
     {
         for (Branch *br : j.childBranches)
-            pack_branch_recursively(br, grove, ids, b_struct.childBranches.back());
+            pack_branch_recursively(br, grove, ids, b_struct.childBranches.back(), lvl_from, lvl_to);
     }
 }
-void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector<BranchStructure> &instanced_structures)
+void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector<BranchStructure> &instanced_structures, int lvl_from, int lvl_to)
 {
     instanced_structures.push_back(BranchStructure());
     grove.instancedBranches.push_back(InstancedBranch());
@@ -843,7 +848,7 @@ void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
     std::vector<Clusterizer::Cluster *> base_clusters;
     Branch *base = cluster.prepare_to_replace(IDA, base_clusters);
-    pack_branch_recursively(base, grove, ids,instanced_structures.back());
+    pack_branch_recursively(base, grove, ids,instanced_structures.back(), lvl_from, lvl_to);
     if (instanced_structures.back().childBranches.size() == 1)
         instanced_structures.back() = instanced_structures.back().childBranches[0];
     debugl(4, "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
@@ -915,7 +920,46 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
         }
     }
 }
-
+void transform_according_to_root(Clusterizer::Cluster &cluster)
+{
+    InstanceDataArrays IDA;
+    std::vector<Clusterizer::Cluster *> base_clusters;
+    Branch *base = cluster.prepare_to_replace(IDA, base_clusters);
+    if (base_clusters.size() != IDA.transforms.size())
+    {
+        logerr("Transform according to root failed: corrupted clusters data.");
+        return;
+    }
+    for (int i = 0; i< base_clusters.size(); i++)
+    {
+        if (base->joints.empty() || base_clusters[i]->branch->original->joints.empty())
+            continue;
+        std::vector<glm::vec3> replaced_joints;
+        for (Joint &j : base->joints)
+            replaced_joints.push_back(glm::vec3(IDA.transforms[i]*glm::vec4(j.pos,1)));
+        for (Joint &j : base_clusters[i]->branch->original->joints)
+        {
+            float d_min = 1e9;
+            glm::vec3 n_min = glm::vec3(0);
+            for (glm::vec3 &np : replaced_joints)
+            {
+                float d = glm::length(np - j.pos);
+                if (d<d_min)
+                {
+                    d_min = d;
+                    n_min = np;
+                }
+            }
+            glm::vec3 sh = n_min - j.pos;
+            //logerr("shifting after trunk clusterization %f %f %f",sh.x,sh.y,sh.z);
+            for (Branch *ch_b : j.childBranches)
+            {
+                glm::mat4 tr = glm::translate(glm::mat4(1.0f),sh);
+                ch_b->transform(tr);
+            }
+        }
+    }
+}
 void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees,
                                  Heightmap *h)
 {
@@ -940,11 +984,6 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     {
         post_process(ggd, trees[i]);
     }
-    /*for (int i = 0; i < count; i++)
-    {
-        debug.set_params(trees[i].params);
-        tree_to_model(trees[i], false, debug);
-    }*/
     Clusterizer tr_cl;
     ClusterizationParams tr_cp;
     tr_cp.weights = std::vector<float>{5000,0,0,0.0,0.0};
@@ -952,11 +991,14 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     tr_cp.delta = 0.25;
     tr_cp.different_types_tolerance = true;
     tr_cp.r_weights = std::vector<float>{5000,0,0,0.0,0.0}; 
-    tr_cp.max_individual_dist = 0.05;
+    tr_cp.max_individual_dist = 1;
     tr_cl.set_branches(trees, count, 0, voxels);
     tr_cl.set_clusterization_params(tr_cp);
     tr_cl.visualize_clusters(debug, false);
-
+    for (int c_num : tr_cl.Ddg.current_clusters)
+    {
+        transform_according_to_root(tr_cl.Ddg.clusters[c_num]);
+    }
     Clusterizer cl;
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
@@ -995,11 +1037,15 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::vector<BranchStructure> instanced_structures;
     for (int i = 0; i < count; i++)
     {
-        pack_tree_as_singleton_instances(trees[i], grove, 0, instanced_structures);
+        //pack_tree_as_singleton_instances(trees[i], grove, 0, instanced_structures);
+    }
+    for (int c_num : tr_cl.Ddg.current_clusters)
+    {
+        pack_cluster(tr_cl.Ddg.clusters[c_num], grove, instanced_structures, 0, 0);
     }
     for (int c_num : cl.Ddg.current_clusters)
     {
-        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures);
+        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures, 1, 1000);
     }
     for (int i = 0; i < count; i++)
     {
