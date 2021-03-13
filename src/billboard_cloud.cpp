@@ -378,23 +378,21 @@ void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> 
         }
     }
 }
-void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data)
+void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters, 
+                                BillboardCloudData *data)
 {
     std::map<int, InstanceDataArrays> prev_transforms;
     std::map<int, InstanceDataArrays> all_transforms;
     std::vector<Branch> base_branches;
     BranchHeap heap;
     LeafHeap l_heap;
-    for (int i : numbers)
+    for (int i = 0; i < clusters.size(); i++)
     {
-        InstanceDataArrays IDA;
-        Branch *b = clusters[i].prepare_to_replace(IDA);
+        InstanceDataArrays IDA = clusters[i].IDA;
+        Branch *b = clusters[i].base;
         if (!b)
             continue;
         prev_transforms.emplace(i, IDA);
-        //base_branches.push_back(Branch());
-        //base_branches.back().deep_copy(b, heap, &l_heap);
-        //base_branches.back().base_seg_n = i;
     }
 
     //cluster can contain branches with different types. We should 
@@ -410,8 +408,8 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
                 continue;
             int k = all_transforms.size();
             all_transforms.emplace(k,group_ida);
-            InstanceDataArrays IDA;
-            Branch *b = clusters[pr.first].prepare_to_replace(IDA);
+            InstanceDataArrays IDA = clusters[pr.first].IDA;
+            Branch *b = clusters[pr.first].base;
             base_branches.push_back(Branch());
             base_branches.back().deep_copy(b, heap, &l_heap);
             base_branches.back().base_seg_n = k;
@@ -444,11 +442,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Clusteriz
         in->addBuffer(all_transforms[b.branch_id].transforms);
         instances.push_back(in);
         if (data)
-        {
-            //data->billboards.push_back(BillboardData());
             data->billboards[proj.at(b.branch_id)].billboards.push_back(b);
-            //data->billboards.back().transforms = all_transforms[b.branch_id];
-        }
     }
 }
 void BillboardCloudRaw::prepare(Tree &t, int branch_level, int layer)

@@ -39,7 +39,7 @@ int render_mode = -1;
 int debug_tex = 0;
 int debug_layer = 0;
 float rot_a;
-Tree t[101];
+Tree t[MAX_TREES];
 TreeGenerator gen(t[100]);
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
@@ -122,7 +122,7 @@ std::function<void()> eventHandler = []() {
   }
   if (Tiny::event.active[SDLK_r])
   {
-    for (int i=0;i<101;i++)
+    for (int i=0;i<MAX_TREES;i++)
     {
       t[i] = Tree();
     }

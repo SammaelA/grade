@@ -19,6 +19,12 @@ struct ClusterizationParams
     std::vector<float> r_weights = std::vector<float>{0.5,0.2,0,0,0};
 };
 extern ClusterizationParams clusterizationParams;
+struct ClusterData
+{
+    Branch *base;
+    InstanceDataArrays IDA;
+    std::vector<Branch *> originals;
+};
 class Clusterizer
 {
 public:
@@ -184,6 +190,8 @@ public:
     bool set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light);
     void set_clusterization_params(ClusterizationParams &params);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
+    void clusterize(std::vector<ClusterData> &clusters);
+    ClusterData extract_data(Cluster &cl);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
     Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);
     bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,

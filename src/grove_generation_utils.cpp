@@ -1,5 +1,6 @@
 #include "grove_generation_utils.h"
 #include "distribution.h"
+#include "tree.h"
 
 void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
 {
@@ -124,4 +125,64 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
         }
         //mult *= 2;
     }
+}
+Seeder::Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h):
+mask(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
+hm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
+psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
+dsm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size)
+{
+    heightmap = h;
+    mask.set_round(ggd.size.x);
+    hm.create(*heightmap,mask);
+}
+int Seeder::joints_count(Branch *b)
+{
+    if (!b)
+        return 0;
+    int cnt = b->joints.size();
+    for (Joint &j : b->joints)
+    {
+        for (Branch *br : j.childBranches)
+            cnt += joints_count(br);
+    }
+    return cnt;
+}
+void Seeder::recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level)
+{
+    if (!b || b->level > level)
+        return;
+    if (b->level < level)
+    {
+        for (Joint &j : b->joints)
+        {
+            for (Branch *br : j.childBranches)
+                recalculate_planar_shadows(br,psm,level);
+        }
+    }
+    else //b->level == level
+    {
+        if (b->joints.size() < 2)
+            return;
+
+        int cnt = joints_count(b);
+        glm::vec3 pos = 0.5f*(b->joints.back().pos + b->joints.front().pos);
+        float height = MAX(0,pos.y - heightmap->get_height(pos));
+        float size = 0.5f*(length(b->joints.back().pos - b->joints.front().pos) + height);
+        psm.set_occluder(pos,cnt,size,1);
+
+    }
+}
+void Seeder::recalcuate_shadows(Tree *trees, int count)
+{
+    psm.clear();
+    for (int i = 0; i < count; i++)
+    {
+        recalculate_planar_shadows(trees[i].root, psm, 1);
+    }
+    dsm.create(hm, psm);
+}
+void Seeder::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
+{
+    dsm.choose_places_for_seeds(count, seeds);
 }

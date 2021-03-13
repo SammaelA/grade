@@ -1,6 +1,9 @@
 #pragma once
 #include "field_2d.h"
 #include "terrain.h"
+struct GroveGenerationData;
+struct Tree;
+struct Branch;
 struct Seed
 {
     glm::vec2 pos;
@@ -34,4 +37,20 @@ public:
     void choose_places_for_seeds(int count, std::vector<Seed> &seeds);
 private:
     double calc_sum();
+};
+class Seeder
+{
+public:
+    Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h);
+    void recalcuate_shadows(Tree *trees, int count);
+    void add_tree_shadow(Tree &t);
+    void choose_places_for_seeds(int count, std::vector<Seed> &seeds);
+private:
+    void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
+    int joints_count(Branch *b);
+    GroveMask mask;
+    HabitabilityMap hm;
+    PlanarShadowsMap psm;
+    DensityMap dsm;
+    Heightmap *heightmap;
 };

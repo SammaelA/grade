@@ -25,7 +25,7 @@ public:
     void setup_preparation();
     void prepare(Tree &t, int branch_level, std::vector<Branch> &branches);
     void prepare(Tree &t, int branch_level, int layer);
-    void prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers, BillboardCloudData *data = nullptr);
+    void prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters, BillboardCloudData *data = nullptr);
     void render(glm::mat4 &projectionCamera);
     void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);

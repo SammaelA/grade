@@ -5,8 +5,8 @@ using glm::vec3;
 using glm::vec4;
 using glm::mat4;
 
-void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::Cluster> &clusters, std::list<int> &numbers,
-                 ImpostorsData *data)
+void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters,
+                            ImpostorsData *data)
 {
     //BillboardCloudRaw::prepare(t,branch_level,clusters,numbers,data);
     if (!data)
@@ -15,10 +15,10 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<Clusterizer::
     std::vector<Branch> base_branches;
     BranchHeap heap;
     LeafHeap l_heap;
-    for (int i : numbers)
+    for (int i = 0; i < clusters.size(); i++)
     {
-        InstanceDataArrays IDA;
-        Branch *b = clusters[i].prepare_to_replace(IDA);
+        InstanceDataArrays IDA = clusters[i].IDA;
+        Branch *b = clusters[i].base;
         if (IDA.transforms.size() == 1)
             IDA.transforms.front() = glm::mat4(1.0f);
 
@@ -126,8 +126,8 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     }
 }
 
-void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<Clusterizer::Cluster> &clusters,
-                           std::list<int> &numbers, ImpostorsData *data)
+void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
+                                      ImpostorsData *data)
 {
     if (!data)
         return;
@@ -150,10 +150,10 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     std::vector<Branch> base_branches;
     BranchHeap heap;
     LeafHeap l_heap;
-        for (int i : numbers)
+    for (int i = 0; i < clusters.size(); i++)
     {
-        InstanceDataArrays IDA;
-        Branch *b = clusters[i].prepare_to_replace(IDA);
+        InstanceDataArrays IDA = clusters[i].IDA;
+        Branch *b = clusters[i].base;
         if (!b)
             continue;
         all_transforms.emplace(i, IDA);
@@ -245,7 +245,6 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     data->level = 0;
     data->atlas = atlas;
 }
-
 ImpostorRenderer::ImpostorRenderer(ImpostorsData *data):
 impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"})

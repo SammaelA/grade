@@ -518,10 +518,32 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_
         debugl(1, " added %d branches from tree %d\n", branches.size() - prev_n, i);
     }
 }
-void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
+ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
+{
+    ClusterData cd;
+    cd.base = cl.prepare_to_replace(cd.IDA);
+    std::vector<Cluster *> base_cls;
+    cl.to_base_clusters(base_cls);
+    for (Cluster *c : base_cls)
+    {
+        cd.originals.push_back(c->branch->original);
+    }
+    return cd;
+}
+void Clusterizer::clusterize(std::vector<ClusterData> &clusters)
 {
     Ddg.make_base_clusters(branches);
     Ddg.make(20, clusterizationParams.min_clusters);
+    for (int c_num : Ddg.current_clusters)
+    {
+        clusters.push_back(extract_data(Ddg.clusters[c_num]));
+    }
+}
+void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
+{
+    std::vector<ClusterData> _clusters;
+    clusterize(_clusters);
+
     if (!need_debug)
         return;
     std::vector<Branch *> branches;

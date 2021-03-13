@@ -672,44 +672,6 @@ bool TreeGenerator::is_branch_productive(Branch *b)
 {
     return false && (b->level < curParams().max_depth() - 1) && (b->max_seg_count > b->segments.size());
 }
-void TreeGenerator::recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level)
-{
-    if (!b || b->level > level)
-        return;
-    if (b->level < level)
-    {
-        for (Joint &j : b->joints)
-        {
-            for (Branch *br : j.childBranches)
-                recalculate_planar_shadows(br,psm,level);
-        }
-    }
-    else //b->level == level
-    {
-        if (b->joints.size() < 2)
-            return;
-
-        int cnt = joints_count(b);
-        glm::vec3 pos = 0.5f*(b->joints.back().pos + b->joints.front().pos);
-        float height = MAX(0,pos.y - heightmap->get_height(pos));
-        float size = 0.5f*(length(b->joints.back().pos - b->joints.front().pos) + height);
-        //logerr("occluder set: pos = %f %f %f size %f val %f",pos.x,pos.y,pos.z,size,(float)cnt);
-        psm.set_occluder(pos,cnt,size,1);
-
-    }
-}
-int TreeGenerator::joints_count(Branch *b)
-{
-    if (!b)
-        return 0;
-    int cnt = b->joints.size();
-    for (Joint &j : b->joints)
-    {
-        for (Branch *br : j.childBranches)
-            cnt += joints_count(br);
-    }
-    return cnt;
-}
 void TreeGenerator::create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug)
 {
     voxels = create_light_voxels_cube(params, t.pos);
@@ -736,17 +698,8 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     float single_voxel_size = params().seg_len_mult()/ params().light_precision();
     
     voxels = new LightVoxelsCube(vox_center, vox_size, params().seg_len_mult(), params().light_precision());
-    //voxels->add_body(&b,100);
-    //debug.add_bodies(&b,1);
-    //voxels->add_body(&el,100);
-    //debug.add_bodies(&el,1);
+
     voxels->add_heightmap(*heightmap);
-    GroveMask mask = GroveMask(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    mask.set_round(500);
-    HabitabilityMap hm = HabitabilityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    PlanarShadowsMap psm = PlanarShadowsMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    DensityMap dsm = DensityMap(curGgd.pos,glm::vec2(curGgd.size.x,curGgd.size.z),10);
-    hm.create(*heightmap,mask);
 
     const int growth_step = 10;
     int trees_planted = 0;  
@@ -754,15 +707,11 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     {
         if (j % growth_step == 0)
         {
-            psm.clear();
-            for (int i = 0; i < trees_planted; i++)
-            {
-                recalculate_planar_shadows(trees[i].root,psm,1);
-            }
-            dsm.create(hm,psm);
+            seeder->recalcuate_shadows(trees,trees_planted);
+
             int cnt = MAX((count - trees_planted < 3) ? count - trees_planted : (count - trees_planted)/2,0);
             std::vector<Seed> seeds;
-            dsm.choose_places_for_seeds(cnt,seeds);
+            seeder->choose_places_for_seeds(cnt,seeds);
             for (Seed &seed : seeds)
             {
                 glm::vec3 pos = glm::vec3(seed.pos.x,0,seed.pos.y);
@@ -771,7 +720,6 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
                 trees[trees_planted].pos = pos;
                 plant_tree(trees[trees_planted], trees[trees_planted].params);
                 trees_planted++;
-                //logerr("seed planted");
             }
         }
         
@@ -793,33 +741,6 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
             }
         }
     }
-    /*for (int i = 0; i < count; i++)
-    {
-        float R = urand(0,25*r);
-        float phi = urand(0, 2*PI);
-        //R = 100 * (i / 10 + 1);
-        //phi = 2 * PI * i / 10.0f;
-        glm::vec3 pos = glm::vec3(R * cos(phi), 1, R * sin(phi));
-        pos.y = heightmap->get_height(pos) - 1;
-        trees[i].pos = pos;
-        plant_tree(trees[i], trees[i].params);
-        for (int j = 0; j <= i; j++)
-        {
-            for (int k = 0; k < 10; k++)
-                grow_tree(trees[j]);
-        }
-    }
-    for (int j = 0; j < params.growth_iterations(); j++)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            if (trees[i].iter < params.growth_iterations())
-            {
-                grow_tree(trees[i]);
-            }
-        }
-    }*/
-    //debug.visualize_light_voxels(voxels,glm::vec3(-100,-10,-100),glm::vec3(200,250,200),glm::vec3(single_voxel_size),0.5,0.001);
 }
 void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to)
 {
@@ -840,48 +761,25 @@ void pack_branch_recursively(Branch *b, GrovePacked &grove, std::vector<unsigned
             pack_branch_recursively(br, grove, ids, b_struct.childBranches.back(), lvl_from, lvl_to);
     }
 }
-void pack_cluster(Clusterizer::Cluster &cluster, GrovePacked &grove, std::vector<BranchStructure> &instanced_structures, int lvl_from, int lvl_to)
+void pack_cluster(ClusterData &cluster, GrovePacked &grove, std::vector<BranchStructure> &instanced_structures, int lvl_from, int lvl_to)
 {
     instanced_structures.push_back(BranchStructure());
     grove.instancedBranches.push_back(InstancedBranch());
-    InstanceDataArrays &IDA = grove.instancedBranches.back().IDA;
+    grove.instancedBranches.back().IDA = cluster.IDA;
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
-    std::vector<Clusterizer::Cluster *> base_clusters;
-    Branch *base = cluster.prepare_to_replace(IDA, base_clusters);
+    Branch *base = cluster.base;
     pack_branch_recursively(base, grove, ids,instanced_structures.back(), lvl_from, lvl_to);
     if (instanced_structures.back().childBranches.size() == 1)
         instanced_structures.back() = instanced_structures.back().childBranches[0];
-    debugl(4, "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
+    logerr( "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
            grove.instancedBranches.back().IDA.transforms.size());
 
-    for (int i=0;i<base_clusters.size();i++)//leave marks on branch to construct tree structure in future
+    for (int i=0;i<cluster.originals.size();i++)//leave marks on branch to construct tree structure in future
     {
-        base_clusters[i]->branch->original->base_seg_n = instanced_structures.size() - 1;
-        base_clusters[i]->branch->original->max_seg_count = - i - 100;
+        cluster.originals[i]->base_seg_n = instanced_structures.size() - 1;
+        cluster.originals[i]->max_seg_count = - i - 100;
     }
     grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
-}
-void pack_tree_as_singleton_instances(Tree &t, GrovePacked &grove, int up_to_level, std::vector<BranchStructure> &instanced_structures)
-{
-    for (int i = 0; i <= up_to_level; i++)
-    {
-        for (Branch &branch : t.branchHeaps[i]->branches)
-        {
-            PackedBranch b;
-            branch.pack(b);
-
-            instanced_structures.push_back(BranchStructure());
-            grove.instancedBranches.push_back(InstancedBranch());
-            InstanceDataArrays &IDA = grove.instancedBranches.back().IDA;
-            IDA.transforms.push_back(glm::mat4(1.0));
-            IDA.centers_par.push_back(branch.center_par);
-            IDA.centers_self.push_back(branch.center_self);
-            IDA.type_ids.push_back(branch.type_id);
-            std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
-            ids.push_back(grove.instancedCatalogue.add(b, b.level));
-            grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(&branch);
-        }
-    }
 }
 void pack_tree(Tree &t, GrovePacked &grove, int up_to_level)
 {
@@ -920,24 +818,24 @@ void pack_structure(Branch *rt, GrovePacked &grove, BranchStructure &str, std::v
         }
     }
 }
-void transform_according_to_root(Clusterizer::Cluster &cluster)
+
+void transform_according_to_root(ClusterData &cluster)
 {
-    InstanceDataArrays IDA;
-    std::vector<Clusterizer::Cluster *> base_clusters;
-    Branch *base = cluster.prepare_to_replace(IDA, base_clusters);
-    if (base_clusters.size() != IDA.transforms.size())
+    InstanceDataArrays IDA = cluster.IDA;
+    Branch *base = cluster.base;
+    if (cluster.originals.size() != IDA.transforms.size())
     {
         logerr("Transform according to root failed: corrupted clusters data.");
         return;
     }
-    for (int i = 0; i< base_clusters.size(); i++)
+    for (int i = 0; i< cluster.originals.size(); i++)
     {
-        if (base->joints.empty() || base_clusters[i]->branch->original->joints.empty())
+        if (base->joints.empty() || cluster.originals[i]->joints.empty())
             continue;
         std::vector<glm::vec3> replaced_joints;
         for (Joint &j : base->joints)
             replaced_joints.push_back(glm::vec3(IDA.transforms[i]*glm::vec4(j.pos,1)));
-        for (Joint &j : base_clusters[i]->branch->original->joints)
+        for (Joint &j : cluster.originals[i]->joints)
         {
             float d_min = 1e9;
             glm::vec3 n_min = glm::vec3(0);
@@ -966,6 +864,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     heightmap = h;
     curGgd = ggd;
+    seeder = new Seeder(ggd,10,h);
     int count = ggd.trees_count;
     for (int i = 0; i < count; i++)
     {
@@ -979,11 +878,14 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     }
     grove.center = glm::vec3(0,0,0);
     grove.ggd_name = ggd.name;
+
     create_grove(trees, count, debug);
+
     for (int i = 0; i < count; i++)
     {
         post_process(ggd, trees[i]);
     }
+
     Clusterizer tr_cl;
     ClusterizationParams tr_cp;
     tr_cp.weights = std::vector<float>{5000,0,0,0.0,0.0};
@@ -995,58 +897,56 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     tr_cp.max_individual_dist = 0.4;
     tr_cl.set_branches(trees, count, 0, voxels);
     tr_cl.set_clusterization_params(tr_cp);
-    tr_cl.visualize_clusters(debug, false);
-    for (int c_num : tr_cl.Ddg.current_clusters)
+
+    std::vector<ClusterData> trunks_clusters, branches_clusters, full_tree_clusters;
+    tr_cl.clusterize(trunks_clusters);
+    for (ClusterData &cd : trunks_clusters)
     {
-        transform_according_to_root(tr_cl.Ddg.clusters[c_num]);
+        transform_according_to_root(cd);
     }
     Clusterizer cl;
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-    cp.ignore_structure_level = 3;
-    cp.delta = 0.25;
-    cp.max_individual_dist = 0.67;
+    cp.ignore_structure_level = 2;
+    cp.delta = 0.3;
+    cp.max_individual_dist = 0.9;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
     cl.set_branches(trees, count, 1, voxels);
     cl.set_clusterization_params(cp);
-    cl.visualize_clusters(debug, false);
+    cl.clusterize(branches_clusters);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     Clusterizer cl2;
     cl2.set_branches(trees, count, 0, voxels);
     cp.different_types_tolerance = false;
     cl2.set_clusterization_params(cp);
-    cl2.visualize_clusters(debug, false);
+    cl2.clusterize(full_tree_clusters);
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     grove.clouds.push_back(BillboardCloudData());
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-    //BillboardCloudRaw *cloud0 = new BillboardCloudRaw(1024, 1024, curGgd.types);
-    //cloud0->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.clouds.back());
+
     ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
     ImpostorBaker *ib2 = new ImpostorBaker(2048, 2048, curGgd.types);
     grove.impostors.push_back(ImpostorsData());
-    ib->prepare_all_grove(trees[0], ggd, 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.impostors.back());
+    ib->prepare_all_grove(trees[0], ggd, 0, full_tree_clusters, &grove.impostors.back());
     grove.impostors.push_back(ImpostorsData());
-    ib2->prepare(trees[0], 0, cl2.Ddg.clusters, cl2.Ddg.current_clusters, &grove.impostors.back());
+    ib2->prepare(trees[0], 0, full_tree_clusters, &grove.impostors.back());
     
     grove.clouds.push_back(BillboardCloudData());//main cloud
     BillboardCloudRaw *cloud1 = new BillboardCloudRaw(2048, 2048, curGgd.types);
-    cloud1->prepare(trees[0], 1, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+    cloud1->prepare(trees[0], 1, branches_clusters, &grove.clouds.back());
     grove.clouds.push_back(BillboardCloudData());//main cloud
     BillboardCloudRaw *cloud2 = new BillboardCloudRaw(2048, 2048, curGgd.types);
-    cloud2->prepare(trees[0], 2, cl.Ddg.clusters, cl.Ddg.current_clusters, &grove.clouds.back());
+    cloud2->prepare(trees[0], 2, branches_clusters, &grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
-    for (int i = 0; i < count; i++)
+
+    for (ClusterData &cd : trunks_clusters)
     {
-        //pack_tree_as_singleton_instances(trees[i], grove, 0, instanced_structures);
+        pack_cluster(cd, grove, instanced_structures, 0, 0);
     }
-    for (int c_num : tr_cl.Ddg.current_clusters)
+    for (ClusterData &cd : branches_clusters)
     {
-        pack_cluster(tr_cl.Ddg.clusters[c_num], grove, instanced_structures, 0, 0);
-    }
-    for (int c_num : cl.Ddg.current_clusters)
-    {
-        pack_cluster(cl.Ddg.clusters[c_num], grove, instanced_structures, 1, 1000);
+        pack_cluster(cd, grove, instanced_structures, 1, 1000);
     }
     for (int i = 0; i < count; i++)
     {
@@ -1060,13 +960,6 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         trees[i].voxels = nullptr;
     }
 
-    //FILE *f = fopen("grove.dat", "wb");
-    //saver::save(f,grove);
-    //fclose(f);
-    //f = fopen("grove.dat","rb");
-    //grove = GrovePacked();
-    //saver::load(f,grove);
-    //fclose(f);
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
     std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;

@@ -9,9 +9,11 @@
 #include "billboard_cloud.h"
 #include "tree.h"
 #include "grove.h"
+#include "grove_generation_utils.h"
 class DebugVisualizer;
 class Heightmap;
-class PlanarShadowsMap;
+
+#define MAX_TREES 512
 class TreeGenerator
 {
 public:
@@ -26,6 +28,8 @@ public:
     LightVoxelsCube *voxels;
     Heightmap *heightmap;
     GroveGenerationData curGgd;
+    Seeder *seeder;
+
     void grow_branch(Branch *b, float feed);
     void new_joint(Branch *b, Joint &j);
     void try_new_branch(Branch *base, Joint &j, Segment &s, bool from_end);
@@ -41,8 +45,6 @@ public:
     void distribute_feed(Branch *b);
     void remove_branch(Branch *b);
     void recalculate_thickness(Branch *b);
-    void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
-    int joints_count(Branch *b);
     LightVoxelsCube *create_light_voxels_cube(ParameterSetWrapper params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
