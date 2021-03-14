@@ -47,6 +47,7 @@ struct FullStat
     std::vector<RootStat> rootStats;
     std::vector<BranchStat> branchStats;
     FullStat() {};
+    ~FullStat();
 };
 class SyntheticTreeGenerator
 {

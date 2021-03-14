@@ -58,11 +58,11 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
         glm::vec3 dir = b->joints.size() > 2 ? b->joints.back().pos - b->joints.front().pos : glm::vec3(1,1,1);
         r_s.push_back(length(dir));
         dir = glm::normalize(dir);
-        psi_s.push_back(acos(dir.z));
+        psi_s.push_back(acos(dir.y));
         if (abs(dir.x) < 1e-9)
-            phi_s.push_back(dir.y > 0 ? PI/2 : -PI/2);
+            phi_s.push_back(dir.z > 0 ? PI/2 : -PI/2);
         else
-            phi_s.push_back(atan(dir.y/dir.x));
+            phi_s.push_back(atan(dir.z/dir.x));
     }
 
     std::vector<double> values;
@@ -72,17 +72,15 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
         values.push_back(pr.first);
         weights.push_back(pr.second);
     }
-    logerr("types distr calc %d %d (%f %f) (%f %f)",cd.base->level,values.size(),(float)values.front(),(float)weights.front(),
-    (float)(values.back()),(float)(weights.back()));
     bs.typeStat = new DiscreteGeneral(values,weights);
     double mean,dev;
     float sample_size = phi_s.size();
     float ssq = pow(sample_size,1.5);
     //calculate distribution of branch parameters. Increase deviation if sample size is small
     get_mean_and_stddev(phi_s,mean,dev);
-    bs.transformStat.phi = new Normal(mean, dev + PI/(2*ssq));
+    bs.transformStat.phi = new Normal(mean, dev + 2*PI/(ssq*ssq));
     get_mean_and_stddev(psi_s,mean,dev);
-    bs.transformStat.psi = new Normal(mean, dev + PI/(3*ssq));
+    bs.transformStat.psi = new Normal(mean, 0.5*dev + PI/(3*ssq*ssq));
     get_mean_and_stddev(r_s,mean,dev);
     bs.transformStat.r = new Normal(mean, dev + 0.25*mean/ssq);
     get_mean_and_stddev(rots,mean,dev);
@@ -113,12 +111,10 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
     }
     std::vector<double> values;
     std::vector<double> weights;
-    logerr("branch weights");
     for (auto &pr : cluster_id_and_count)
     {
         values.push_back(pr.first);
         weights.push_back(pr.second);
-        logerr("%f %f",values.back(), weights.back());
     }
     return new DiscreteGeneral(values,weights);
 }
@@ -141,17 +137,12 @@ void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<Dis
         }
     }
     std::vector<double> values;
-    //logerr("print");
     for (int i = 0; i< max_child_branches;i++)
     {
         values.push_back(i);
     }
     for (auto &weights : cbs)
     {
-        for (int i = 0; i< max_child_branches;i++)
-    {
-        //logerr("(%f %f)",values[i],weights[i]);
-    }
         branchExistanceStat.push_back(new DiscreteGeneral(values,weights));
     }
 }
@@ -181,7 +172,6 @@ void SyntheticTreeGenerator::collect_statistics()
             weights.push_back(0);
         else
             weights.push_back(cd.IDA.transforms.size());
-        //logerr("wt ")
         types.push_back(i);
         i++;
     }
@@ -219,12 +209,12 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
         return glm::mat4(0);
     float scale = stat.transformStat.r->get()/glm::length(dir);
     dir = glm::normalize(dir);
-    float psi_s = stat.transformStat.psi->get() - acos(dir.z);
+    float psi_s = stat.transformStat.psi->get() - acos(dir.y);
     float phi_s = stat.transformStat.phi->get();
         if (abs(dir.x) < 1e-9)
-            phi_s -= (dir.y > 0 ? PI/2 : -PI/2);
+            phi_s -= (dir.z > 0 ? PI/2 : -PI/2);
         else
-            phi_s -= atan(dir.y/dir.x);
+            phi_s -= atan(dir.z/dir.x);
     if (base->level == 0)
     {
         //TODO replace with something better
@@ -232,7 +222,6 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
         psi_s *= 0.2;
     }
     float self_rot = stat.transformStat.rot_angle->get();
-    logerr("scale = %f",scale);
     glm::mat4 transf = glm::translate(
                        glm::rotate(
                        glm::rotate(
@@ -241,12 +230,11 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
                        glm::translate(glm::mat4(1.0f),pos),
                        glm::vec3(scale)),
                        self_rot,dir),
-                       phi_s,glm::vec3(0,0,1)),
+                       phi_s,glm::vec3(0,1,0)),
                        psi_s,glm::vec3(1,0,0)),
                        -(base->joints.front().pos));
     glm::vec4 p = transf*glm::vec4(base->joints.front().pos,1);
-    //p /= p.w;
-    logerr("%f %f %f) (%f %f %f",p.x,p.y,p.z,pos.x,pos.y,pos.z);
+
     return transf;
 }
 void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
@@ -262,7 +250,6 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
     auto &root_stat = stat.rootStats[root_cl];
     synt.trunk = &(trunks_clusters[root_cl]);
     synt.trunk_instance_data.type_ids.push_back(root_stat.selfBranchStat.typeStat->get());
-    logerr("type chosen %d",synt.trunk_instance_data.type_ids.back());
     synt.trunk_instance_data.centers_par.push_back(ggd.pos);
     synt.trunk_instance_data.centers_self.push_back(pos);
     synt.trunk_instance_data.transforms.push_back(get_transform(synt.trunk->base, pos, root_stat.selfBranchStat));
@@ -282,7 +269,6 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
             int br_cl = CLAMP(c,0,(branches_clusters.size() - 1));
             auto b_stat = stat.branchStats[br_cl];
             synt.branches.push_back(&(branches_clusters[br_cl]));
-            logerr("ch b count %d",br_cl);
             synt.branches_instance_data.push_back(InstanceDataArrays());
             synt.branches_instance_data.back().centers_par.push_back(pos);
             synt.branches_instance_data.back().centers_self.push_back(bpos);
@@ -292,5 +278,31 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
             bpos,b_stat));
         }
         i++;
+    }
+}
+FullStat::~FullStat()
+{
+    #define DEL(a) if (a) delete (a);
+    DEL(rootClusterStat);
+    for (auto &st : rootStats)
+    {
+        DEL(st.childBranchesClusterStat);
+        for (auto *st2 : st.branchExistanceStat)
+        {
+            DEL(st2);
+        }
+        DEL(st.selfBranchStat.typeStat);
+        DEL(st.selfBranchStat.transformStat.phi);
+        DEL(st.selfBranchStat.transformStat.psi);
+        DEL(st.selfBranchStat.transformStat.r);
+        DEL(st.selfBranchStat.transformStat.rot_angle);
+    }
+    for (auto &st : branchStats)
+    {
+        DEL(st.typeStat);
+        DEL(st.transformStat.phi);
+        DEL(st.transformStat.psi);
+        DEL(st.transformStat.r);
+        DEL(st.transformStat.rot_angle);
     }
 }

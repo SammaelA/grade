@@ -177,7 +177,6 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
             float k = curParams().r_deformation_power();
             k = k > 0 ? 1 + k : 1/(1-k);
             s.mults[i] *= k;
-            //logerr("set seg mult %f (%f*%f)",s.mults[i],k,s.mults[i]/k);
         }
     }
     Joint j;
@@ -922,30 +921,23 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     {
         for (Branch *br : branches_clusters[i].ACDA.originals)
         {
-            logerr("b %u",br);
             br->base_seg_n = i;
         }
     }
-    /*for (int i = 0;i<trunks_clusters.size();i++)
-    {
-        for (Branch *br : trunks_clusters[i].ACDA.originals)
-            for (Joint &j : br->joints)
-                for (Branch *chb : j.childBranches)
-                {
-                    logerr("tchb %u",chb);
-                    chb->base_seg_n = i;
-                }
-    }*/
 
     SyntheticTreeGenerator stg = SyntheticTreeGenerator(*seeder, trunks_clusters, branches_clusters, curGgd);
-    stg.generate(trees + count, 50);
-
+    stg.generate(trees + count, 200);
+    
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+    
     Clusterizer cl2;
     cl2.set_branches(trees, count, 0, voxels);
     cp.different_types_tolerance = false;
     cl2.set_clusterization_params(cp);
     cl2.clusterize(full_tree_clusters);
-    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+
+    std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
+
     grove.clouds.push_back(BillboardCloudData());
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
 
@@ -984,11 +976,12 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         trees[i].voxels = nullptr;
     }
 
-    std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
     std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;
-    std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
-    std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
+    std::cerr << "Syntetic trees generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
+    std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
+    std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count() << "[ms]" << std::endl;
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
 {

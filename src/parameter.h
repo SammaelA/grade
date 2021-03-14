@@ -219,8 +219,8 @@ struct TreeStructureParameters
 
                                 scale(3),
                                 seg_len_mult(4, std::vector<float>{2.25, 1.75, 1, 0.55, 0.4}),
-                                leaf_size_mult(2),
-                                base_r(1, std::vector<float>{1.3, 0.75, 0.35, 0.15, 0.12}),
+                                leaf_size_mult(2.25),
+                                base_r(1, std::vector<float>{0.9, 0.75, 0.35, 0.15, 0.12}),
                                 r_split_save_pow(2.7, std::vector<float>{1.5, 1.7, 2.3, 3, 2}, EXPLICIT_REGENERATION, new Normal(0, 0.25)),
 
                                 dir_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.4, 0.4), 0.1, 10),
@@ -255,7 +255,7 @@ struct TreeStructureParameters
                                 branching_power(0.5, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4}),
                                 r_deformation_levels(2),
                                 r_deformation_points(0,std::vector<int>{8,3}),
-                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, new Normal(0,0.1))
+                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, new Normal(0,0.025))
     {
     }
 };

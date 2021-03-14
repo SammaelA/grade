@@ -350,9 +350,6 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
             float r_diff = r_importance*r_NMSE(b1,b2);
             res.from += r_diff;
             res.to += r_diff;
-        
-            //if (bwd1.b->level==0)
-             //   logerr("dist = %f %f %f %f",res.from, part_answer.from, r_diff, r_importance);
         }
         return res;
     }
@@ -489,7 +486,6 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
-                logerr("set origin %u",&b);
                 branches.push_back(BranchWithData(&b, nb, t.params().max_depth(), i, inverse(rot)));
                 i++;
             }

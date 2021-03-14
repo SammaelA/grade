@@ -590,7 +590,7 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
     this->data = data;
     if (!data || !data->valid)
     {
-        logerr("empty billboard data %uud",data);
+        //logerr("empty billboard data %uud",data);
         return;
     }
     for (BillboardData &bill : data->billboards)
