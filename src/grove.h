@@ -7,7 +7,7 @@
 #include "billboard_cloud_data.h"
 #include "timestamp.h"
 #include "rendering_SSBO_structs.h"
-
+#include "camera.h"
 class ImpostorRenderer;
 class BillboardCloudRenderer;
 class GroveGenerationData;
@@ -126,7 +126,7 @@ public:
         std::vector<Instance2> leaves_instances;
         float max_dist;
     };
-    void render(int lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size);
+    void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
                   bool print_perf);
     GroveRenderer();
@@ -160,4 +160,6 @@ private:
     Timestamp ts;
     Model *base_container;
     TextureAtlas *atlas = nullptr;
+    Camera prev_camera;
+    uint64_t frames = 0;
 };

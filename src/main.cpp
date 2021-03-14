@@ -459,7 +459,7 @@ int main(int argc, char *argv[])
       tr.render(projection * camera.camera());
       if (draw_clusterized)
       {
-        groveRenderer.render(cloudnum, projection * camera.camera(),camera.pos,glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
+        groveRenderer.render(cloudnum, projection * camera.camera(),camera, glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
         debugVisualizer->render(projection * camera.camera(),render_mode);
       }
     }

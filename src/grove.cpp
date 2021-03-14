@@ -4,6 +4,7 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 #include "impostor.h"
+#include "camera.h"
 #include <chrono>
 
 GroveRenderer::GroveRenderer(): 
@@ -385,8 +386,9 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
-void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos, glm::vec2 screen_size)
+void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size)
 {
+    glm::vec3 camera_pos = camera.pos;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (LODs.size() == 0)
         return;
@@ -417,39 +419,43 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
         }
         lods_to_render.push_back(explicit_lod);
     }
+    bool camera_changed = (length(camera.pos - prev_camera.pos) > 1e-4) || 
+                          (length(camera.front - prev_camera.front) > 1e-4) || 
+                          (length(camera.up - prev_camera.up) > 1e-4);
+    if (frames<10 || (frames % 3 == 0 && camera_changed))
+    {
+        ts.start("clearCompute");
+        clearCompute.use();
+        clearCompute.uniform("count", (uint)types_descs.size());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);  
+        glDispatchCompute(1, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+        
+        ts.end("clearCompute");
+        
+        ts.start("lodCompute");
+        lodCompute.use();
+        lodCompute.uniform("lods_count", (uint)LODs.size());
+        lodCompute.uniform("camera_pos", camera_pos);
+        lodCompute.uniform("trans", 20.0f);
+        lodCompute.uniform("projectionCamera", prc);
+        lodCompute.uniform("objects_count", (uint)total_models_count);
 
-    ts.start("clearCompute");
-    clearCompute.use();
-    clearCompute.uniform("count", (uint)types_descs.size());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);  
-    glDispatchCompute(1, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-    
-    ts.end("clearCompute");
-    
-    ts.start("lodCompute");
-    lodCompute.use();
-    lodCompute.uniform("lods_count", (uint)LODs.size());
-    lodCompute.uniform("camera_pos", camera_pos);
-    lodCompute.uniform("trans", 20.0f);
-    lodCompute.uniform("projectionCamera", prc);
-    lodCompute.uniform("objects_count", (uint)total_models_count);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, models_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, cur_insts_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, cur_models_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, draw_indirect_buffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, models_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, cur_insts_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, cur_models_buf);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, draw_indirect_buffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);
-
-    glDispatchCompute((GLuint)ceil(total_models_count/128.0), 1, 1);
-    
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-    
-    ts.end("lodCompute");
-
+        glDispatchCompute((GLuint)ceil(total_models_count/128.0), 1, 1);
+        
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+        
+        ts.end("lodCompute");
+    }
     std::chrono::steady_clock::time_point tt1 = std::chrono::steady_clock::now();
     ts.start("bind");
     glBindVertexArray(base_container->vao);
@@ -487,6 +493,8 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, glm::vec3 camera_pos
     }
     ts.resolve();
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    prev_camera = camera;
+    frames++;
     //std::cerr << "grove rendered " << std::chrono::duration_cast<std::chrono::microseconds>(tt2 - tt1).count() << "[us]" << std::endl;
 }
 
