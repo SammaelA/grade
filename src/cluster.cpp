@@ -77,12 +77,12 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         return distance;
     }
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA)
+Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA)
 {
     std::vector<Cluster *> clusters;
-    return prepare_to_replace(IDA, clusters);
+    return prepare_to_replace(IDA, ADCA, clusters);
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, std::vector<Cluster *> &clusters)
+Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters)
 {
     to_base_clusters(clusters);
     if (clusters.empty())
@@ -96,6 +96,8 @@ Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, std::v
         IDA.centers_par.push_back(cl->branch->original->center_par);
         IDA.centers_self.push_back(cl->branch->original->center_self);
         IDA.type_ids.push_back(cl->branch->b->type_id);
+        ADCA.rotations.push_back(cl->branch->rot_angle);
+        ADCA.originals.push_back(cl->branch->original);
     }
     return br->original;
 }

@@ -489,6 +489,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
+                logerr("set origin %u",&b);
                 branches.push_back(BranchWithData(&b, nb, t.params().max_depth(), i, inverse(rot)));
                 i++;
             }
@@ -521,13 +522,13 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_
 ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
 {
     ClusterData cd;
-    cd.base = cl.prepare_to_replace(cd.IDA);
-    std::vector<Cluster *> base_cls;
+    cd.base = cl.prepare_to_replace(cd.IDA, cd.ACDA);
+    /*std::vector<Cluster *> base_cls;
     cl.to_base_clusters(base_cls);
     for (Cluster *c : base_cls)
     {
-        cd.originals.push_back(c->branch->original);
-    }
+        cd.ACDA.originals.push_back(c->branch->original);
+    }*/
     return cd;
 }
 void Clusterizer::clusterize(std::vector<ClusterData> &clusters)

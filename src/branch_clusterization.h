@@ -19,11 +19,16 @@ struct ClusterizationParams
     std::vector<float> r_weights = std::vector<float>{0.5,0.2,0,0,0};
 };
 extern ClusterizationParams clusterizationParams;
+struct AdditionalClusterDataArrays
+{
+    std::vector<float> rotations;
+    std::vector<Branch *> originals;
+};
 struct ClusterData
 {
     Branch *base;
     InstanceDataArrays IDA;
-    std::vector<Branch *> originals;
+    AdditionalClusterDataArrays ACDA;
 };
 class Clusterizer
 {
@@ -152,8 +157,8 @@ public:
         void to_branch_data(std::vector<Branch *> &branches);
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
-        Branch *prepare_to_replace(InstanceDataArrays &IDA);
-        Branch *prepare_to_replace(InstanceDataArrays &IDA, std::vector<Cluster *> &clusters);
+        Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA);
+        Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm
     {

@@ -14,6 +14,7 @@
 #include "terrain.h"
 #include "field_2d.h"
 #include "grove_generation_utils.h"
+#include "synthetic_trees_generator.h"
 
 #define PI 3.14159265f
 int seg_count = 0;
@@ -774,10 +775,10 @@ void pack_cluster(ClusterData &cluster, GrovePacked &grove, std::vector<BranchSt
     logerr( "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
            grove.instancedBranches.back().IDA.transforms.size());
 
-    for (int i=0;i<cluster.originals.size();i++)//leave marks on branch to construct tree structure in future
+    for (int i=0;i<cluster.ACDA.originals.size();i++)//leave marks on branch to construct tree structure in future
     {
-        cluster.originals[i]->base_seg_n = instanced_structures.size() - 1;
-        cluster.originals[i]->max_seg_count = - i - 100;
+        cluster.ACDA.originals[i]->base_seg_n = instanced_structures.size() - 1;//cluster id
+        cluster.ACDA.originals[i]->max_seg_count = - i - 100;//i is number in cluster
     }
     grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
 }
@@ -823,19 +824,19 @@ void transform_according_to_root(ClusterData &cluster)
 {
     InstanceDataArrays IDA = cluster.IDA;
     Branch *base = cluster.base;
-    if (cluster.originals.size() != IDA.transforms.size())
+    if (cluster.ACDA.originals.size() != IDA.transforms.size())
     {
         logerr("Transform according to root failed: corrupted clusters data.");
         return;
     }
-    for (int i = 0; i< cluster.originals.size(); i++)
+    for (int i = 0; i< cluster.ACDA.originals.size(); i++)
     {
-        if (base->joints.empty() || cluster.originals[i]->joints.empty())
+        if (base->joints.empty() || cluster.ACDA.originals[i]->joints.empty())
             continue;
         std::vector<glm::vec3> replaced_joints;
         for (Joint &j : base->joints)
             replaced_joints.push_back(glm::vec3(IDA.transforms[i]*glm::vec4(j.pos,1)));
-        for (Joint &j : cluster.originals[i]->joints)
+        for (Joint &j : cluster.ACDA.originals[i]->joints)
         {
             float d_min = 1e9;
             glm::vec3 n_min = glm::vec3(0);
@@ -888,13 +889,13 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
 
     Clusterizer tr_cl;
     ClusterizationParams tr_cp;
-    tr_cp.weights = std::vector<float>{5000,0,0,0.0,0.0};
+    tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
     tr_cp.ignore_structure_level = 1;
-    tr_cp.delta = 0.1;
+    tr_cp.delta = 0.05;
     tr_cp.light_importance = 0;
     tr_cp.different_types_tolerance = true;
     tr_cp.r_weights = std::vector<float>{0.5,0,0,0.0,0.0}; 
-    tr_cp.max_individual_dist = 0.4;
+    tr_cp.max_individual_dist = 0.1;
     tr_cl.set_branches(trees, count, 0, voxels);
     tr_cl.set_clusterization_params(tr_cp);
 
@@ -916,6 +917,29 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     cl.set_clusterization_params(cp);
     cl.clusterize(branches_clusters);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+
+    for (int i = 0;i<branches_clusters.size();i++)
+    {
+        for (Branch *br : branches_clusters[i].ACDA.originals)
+        {
+            logerr("b %u",br);
+            br->base_seg_n = i;
+        }
+    }
+    /*for (int i = 0;i<trunks_clusters.size();i++)
+    {
+        for (Branch *br : trunks_clusters[i].ACDA.originals)
+            for (Joint &j : br->joints)
+                for (Branch *chb : j.childBranches)
+                {
+                    logerr("tchb %u",chb);
+                    chb->base_seg_n = i;
+                }
+    }*/
+
+    SyntheticTreeGenerator stg = SyntheticTreeGenerator(*seeder, trunks_clusters, branches_clusters, curGgd);
+    stg.generate(trees + count, 50);
+
     Clusterizer cl2;
     cl2.set_branches(trees, count, 0, voxels);
     cp.different_types_tolerance = false;

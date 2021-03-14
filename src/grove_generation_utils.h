@@ -45,6 +45,7 @@ public:
     void recalcuate_shadows(Tree *trees, int count);
     void add_tree_shadow(Tree &t);
     void choose_places_for_seeds(int count, std::vector<Seed> &seeds);
+    Heightmap *heightmap;
 private:
     void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
     int joints_count(Branch *b);
@@ -52,5 +53,4 @@ private:
     HabitabilityMap hm;
     PlanarShadowsMap psm;
     DensityMap dsm;
-    Heightmap *heightmap;
 };
