@@ -17,8 +17,8 @@ struct LodData
 };
 struct InstanceData
 {
-    glm::vec4 center_self;
-    glm::vec4 center_par;
+    glm::vec4 center_self;//xyz is center_self, w is cell_id
+    glm::vec4 center_par;//xyz is center_par, w is texCoord.z in atlas
     glm::mat4 projection_camera;
 };
 struct ModelData
@@ -56,4 +56,11 @@ struct ImpostorData
     int slice_count;
     int pad1;
     glm::vec4 imp_center;
+};
+struct CellInfo
+{
+    uint lod_from;
+    uint lod_to;
+    uint pad1;
+    uint pad2;
 };

@@ -139,6 +139,14 @@ private:
         MultiDrawRendDesc rendDesc;
         
     };
+    struct CellsParams
+    {
+        int x_cells;
+        int y_cells;
+        float x_size;
+        float y_size;
+        glm::vec3 start_pos;
+    };
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
     void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
                       std::vector<ModelData> &models, std::vector<TypeData> &types, bool is_leaf = false);
@@ -150,16 +158,18 @@ private:
     Shader renderer;
     Shader rendererInstancing;
     Shader lodCompute;
-    Shader clearCompute;
+    Shader cellsCompute;
     GrovePacked *source;
     GroveGenerationData *ggd;
     GLuint lods_buf, instances_buf, models_buf, types_buf;
     GLuint cur_insts_buf, cur_models_buf, cur_types_buf;
-    GLuint draw_indirect_buffer;
+    GLuint draw_indirect_buffer, cells_buf;
     int total_models_count = 0;
     Timestamp ts;
     Model *base_container;
     TextureAtlas *atlas = nullptr;
     Camera prev_camera;
     uint64_t frames = 0;
+    CellsParams cellsInfo;
+
 };

@@ -2,6 +2,13 @@
 #define THREADS 128
 layout( local_size_x = THREADS ) in;
 
+struct CellInfo
+{
+    uint lod_from;
+    uint lod_to;
+    uint pad1;
+    uint pad2;
+};
 struct LodData
 {
     vec2 min_max;
@@ -81,6 +88,10 @@ layout(std140, binding=8) buffer _curTypes
 {
     uvec4 curTypes[];
 };
+layout(std140, binding=10) readonly buffer _cells
+{
+    CellInfo cells[];
+};
 
 uniform uint lods_count;
 uniform uint objects_count;
@@ -107,8 +118,15 @@ void main()
     uint inst_num = 0;
     for (uint i = st; i < en; i++)
     {
-        float mx_dist = min_max.y - length(instances[i].center_par.xyz - camera_pos);
-	    float mn_dist = length(instances[i].center_self.xyz - camera_pos) - min_max.x;
+        int c = int(instances[i].center_self.w);
+        if (c >= 0 &&(cells[c].lod_from > k || cells[c].lod_to < k))
+        {
+            continue;   
+        }
+        float l1 = length(instances[i].center_par.xz - camera_pos.xz);
+        float l2 = length(instances[i].center_self.xz - camera_pos.xz);
+        float mx_dist = min_max.y - l1;
+	    float mn_dist = l2 - min_max.x;
         int instance_visible = 0;
         vec2 a_mult = vec2(0,0);
 
@@ -116,11 +134,11 @@ void main()
         {
             if (mn_dist < trans)
             {
-                a_mult = vec2(0.5*(mn_dist/trans + 1), length(instances[i].center_self.xyz - camera_pos));
+                a_mult = vec2(0.5*(mn_dist/trans + 1), l2);
             }
             else if (mx_dist < trans)
             {
-                a_mult = vec2(0.5*(mx_dist/trans + 1), -length(instances[i].center_par.xyz - camera_pos));
+                a_mult = vec2(0.5*(mx_dist/trans + 1), -l1);
             }
             else
             {
