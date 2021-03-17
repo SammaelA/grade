@@ -201,6 +201,34 @@ void SyntheticTreeGenerator::synt_tree_to_real(SyntheticTree &synt, Tree &t)
             synt.branches[j]->IDA.transforms.push_back(synt.branches_instance_data[j].transforms[i]);
         }
     }
+    
+    t.leaves = new LeafHeap();
+    BranchHeap *bh = new BranchHeap();
+    t.branchHeaps.push_back(bh);
+    BranchHeap *bh1 = new BranchHeap();
+    t.branchHeaps.push_back(bh1);
+    t.root = bh->new_branch();
+    t.root->norecursive_copy(synt.trunk->base,*bh1,t.leaves);
+    t.root->transform(synt.trunk_instance_data.transforms.front());
+    t.root->type_id = synt.trunk_instance_data.type_ids.front();
+    t.root->center_par = synt.trunk_instance_data.centers_par.front();
+    t.root->center_self = synt.trunk_instance_data.centers_self.front();
+    t.type = &(ggd.types[t.root->type_id]);
+    int k = 0;
+    for (Joint &j : t.root->joints)
+    {
+        for (int i = 0; i<synt.branches.size(); i++)
+        {
+            if (synt.joints_ns[i] == k)
+            {
+                Branch *ch = bh1->new_branch();
+                ch->deep_copy(synt.branches[i]->base,*bh1,t.leaves);
+                ch->transform(synt.branches_instance_data[i].transforms.front());
+                j.childBranches.push_back(ch);
+            }
+        }
+        k++;
+    }
 }
 glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, BranchStat &stat)
 {

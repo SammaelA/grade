@@ -866,7 +866,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     curGgd = ggd;
     seeder = new Seeder(ggd,10,h);
     int count = ggd.trees_count;
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < count + 200; i++)
     {
         int k = i % ggd.types.size();
         auto &type = ggd.types[k];
@@ -926,12 +926,14 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     }
 
     SyntheticTreeGenerator stg = SyntheticTreeGenerator(*seeder, trunks_clusters, branches_clusters, curGgd);
-    stg.generate(trees + count, 200);
+    stg.generate(trees + count, 100);
     
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     
     Clusterizer cl2;
-    cl2.set_branches(trees, count, 0, voxels);
+    cl2.set_branches(trees, count + 200, 0, voxels);
+    cp.ignore_structure_level = 1;
+    cp.light_importance = 0.8;
     cp.different_types_tolerance = false;
     cl2.set_clusterization_params(cp);
     cl2.clusterize(full_tree_clusters);
@@ -1037,7 +1039,6 @@ void TreeGenerator::deform_root(Branch *b)
             seg.mults[(p + 1 + s) % s] *= dr;
             seg.mults[(p - 2 + s) % s] *= dr2;
             seg.mults[(p + 2 + s) % s] *= dr2;
-            //logerr("mult by %f -> %f",res[k], seg.mults[p]);
             k++;
         }
     }

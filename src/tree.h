@@ -62,6 +62,7 @@ struct Branch
     glm::vec3 center_self;
     
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
+    void norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     void pack(PackedBranch &branch);
     static float get_r_mult(float phi, std::vector<float> &mults);

@@ -19,8 +19,49 @@ Tree::~Tree()
     for (int i=0;i<billboardClouds.size();i++)
         delete billboardClouds[i];
 }
+void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
+{
+    
+    level = b->level;
+    id = b->id;
+    type_id = b->type_id;
+    base_seg_n = b->base_seg_n;
+    max_seg_count = b->max_seg_count;
+    light = b->light;
+    size = b->size;
+    base_r = b->base_r;
+    dead = b->dead;
+    segments.clear();
+    joints.clear();
+
+    for (const Segment &s : b->segments)
+    {
+        Segment seg = s;
+        segments.push_back(seg);
+    }
+    for (const Joint &j : b->joints)
+    {
+        Joint nj = j;
+
+        if (leaf_heap && j.leaf)
+        {
+            Leaf *l = leaf_heap->new_leaf();
+            *l = *(j.leaf);
+            nj.leaf = l;
+        }
+        else
+        {
+            nj.leaf = nullptr; //TODO: it's temporal
+        }
+        nj.childBranches.clear();
+
+        joints.push_back(nj);
+    }
+}
 void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
+    if (!b)
+        return;
     level = b->level;
     id = b->id;
     type_id = b->type_id;

@@ -453,7 +453,6 @@ Clusterizer::Answer Clusterizer::dist_trunc(BranchWithData &bwd1, BranchWithData
 }
 Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
-    //sdebugl(1,"[%d %d]",bwd1.b->type_id,bwd2.b->type_id);//
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
     if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
@@ -463,7 +462,7 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
 }
 bool Clusterizer::set_branches(Tree &t, int layer)
 {
-    if (layer < 0 || layer > t.branchHeaps.size() || t.branchHeaps[layer]->branches.size() == 0)
+    if (layer < 0 || layer >= t.branchHeaps.size() || t.branchHeaps[layer]->branches.size() == 0)
     {
         return false;
     }
@@ -519,12 +518,6 @@ ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
 {
     ClusterData cd;
     cd.base = cl.prepare_to_replace(cd.IDA, cd.ACDA);
-    /*std::vector<Cluster *> base_cls;
-    cl.to_base_clusters(base_cls);
-    for (Cluster *c : base_cls)
-    {
-        cd.ACDA.originals.push_back(c->branch->original);
-    }*/
     return cd;
 }
 void Clusterizer::clusterize(std::vector<ClusterData> &clusters)

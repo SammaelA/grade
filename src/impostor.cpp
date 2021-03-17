@@ -47,7 +47,8 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
     atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
     glm::ivec4 sizes = atlas.get_sizes();
     int cnt = ceil(sqrt((base_branches.size()*(slices_n + 1))/atlas.layers_count() + 1));
-    int tex_size = (sizes.x) / 3;
+    logerr("impostor cnt %d",cnt);
+    int tex_size = (sizes.x) / cnt;
     atlas.set_grid(tex_size, tex_size);
     atlas.clear();
 
