@@ -11,7 +11,7 @@ box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
 grove_end
 grove simple_grove
 {
-count = 5
+count = 10
 pos = (0 0 0)
 size = (300 200 300)
 preset = {default wood leaf}

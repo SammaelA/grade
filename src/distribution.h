@@ -9,13 +9,14 @@ public:
 };
 class Normal : public Distribution
 {
+    public:
     double a;
     double sigma;
     std::random_device rd{};
     std::mt19937 gen{rd()};
-    std::normal_distribution<double> d;
+    std::uniform_real_distribution<double> d;
 
-public:
+
     Normal(double a = 0, double sigma = 1, int seed = 12345);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
@@ -54,7 +55,7 @@ class DiscreteGeneral : public Distribution
 {
 public:
     DiscreteGeneral();
-    DiscreteGeneral(const std::vector<double> &values, const std::vector<double> &weights, int seed = 12345);
+    DiscreteGeneral(std::vector<double> &values, std::vector<double> &weights, int seed = 12345);
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 private:

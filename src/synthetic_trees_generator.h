@@ -34,12 +34,14 @@ struct BranchStat
 {
     DiscreteGeneral *typeStat = nullptr;
     TransformStat transformStat;
+    bool valid = false;
 };
 struct RootStat
 {
     std::vector<DiscreteGeneral *> branchExistanceStat;
     BranchStat selfBranchStat;
     DiscreteGeneral *childBranchesClusterStat;
+    int child_branches_count;
 };
 struct FullStat
 {

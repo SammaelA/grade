@@ -9,12 +9,16 @@ Normal::Normal(double a, double sigma, int seed)
 {
     this->a = a;
     this->sigma = sigma;
-    d = std::normal_distribution<double>(a, sigma);
+    d = std::uniform_real_distribution<double>(0,1);
     gen.seed(base_seed);
 }
 double Normal::get()
 {
-    return d(gen);
+    //Box–Muller transform
+    double U1 = d(gen);
+    double U2 = d(gen);
+    
+    return sqrt(-2*log(U1))*cos(2*PI*U2)*sigma + a;
 }
 double *Normal::get_series(unsigned size)
 {
@@ -112,12 +116,13 @@ DiscreteGeneral::DiscreteGeneral()
     cumulative_prob.push_back(1);
     values.push_back(0);
 }
-DiscreteGeneral::DiscreteGeneral(const std::vector<double> &values, const std::vector<double> &weights,
+DiscreteGeneral::DiscreteGeneral(std::vector<double> &values, std::vector<double> &weights,
                                  int seed) : u(0, 1, seed)
 {
     if (values.size() != weights.size() || values.empty())
     {
         logerr("wrong parameters for general discrete distribution - vectors of values and weights should have same size bigger than zero");
+        logerr("%d %d",values.size(),weights.size());
         this->values = {0};
         cumulative_prob.push_back(1);
     }

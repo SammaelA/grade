@@ -1,4 +1,5 @@
 #include "synthetic_trees_generator.h"
+#include <iostream>
 SyntheticTreeGenerator::SyntheticTreeGenerator(Seeder &_seeder, std::vector<ClusterData> &_trunks_clusters,
                                                std::vector<ClusterData> &_branches_clusters, GroveGenerationData &_ggd):
 seeder(_seeder),
@@ -20,6 +21,7 @@ void SyntheticTreeGenerator::get_mean_and_stddev(std::vector<float> &values, dou
         debugl(5, "stat warning - cannot calculate stddev by 1 sample");
         mean = values.front();
         stddev = 0;
+        return;
     }
     mean = 0;
     stddev = 0;
@@ -37,23 +39,29 @@ void SyntheticTreeGenerator::get_mean_and_stddev(std::vector<float> &values, dou
 BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
 {
     BranchStat bs;
+    bs.valid = true;
     std::vector<float> phi_s,psi_s,r_s,rots;
     std::map<int,int> type_id_and_count;
-
+    
     for (int i = 0;i<cd.ACDA.originals.size();i++)
     {
         Branch *b = cd.ACDA.originals[i];
-
-        auto it = type_id_and_count.find(b->type_id);
-        if (it == type_id_and_count.end())
+        if (type_id_and_count.empty())
         {
             type_id_and_count.emplace(b->type_id, 1);
         }
         else
         {
-            it->second++;
+            auto it = type_id_and_count.find(b->type_id);
+            if (it == type_id_and_count.end())
+            {
+                type_id_and_count.emplace(b->type_id, 1);
+            }
+            else
+            {
+                it->second++;
+            }
         }
-
         rots.push_back(cd.ACDA.rotations[i]);
         glm::vec3 dir = b->joints.size() > 2 ? b->joints.back().pos - b->joints.front().pos : glm::vec3(1,1,1);
         r_s.push_back(length(dir));
@@ -74,7 +82,7 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
     }
     bs.typeStat = new DiscreteGeneral(values,weights);
     double mean,dev;
-    float sample_size = phi_s.size();
+    float sample_size = phi_s.size() + 1;
     float ssq = pow(sample_size,1.5);
     //calculate distribution of branch parameters. Increase deviation if sample size is small
     get_mean_and_stddev(phi_s,mean,dev);
@@ -90,6 +98,7 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
 DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(ClusterData &cd)
 {
     std::map<int,int> cluster_id_and_count;
+    int child_branches_count = 0;
     for (int i = 0;i<cd.ACDA.originals.size();i++)
     {
         Branch *b = cd.ACDA.originals[i];
@@ -97,14 +106,15 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
         {
             for (Branch *chb : j.childBranches)
             {
+                child_branches_count ++;
                 auto it = cluster_id_and_count.find(chb->base_seg_n);
                 if (it == cluster_id_and_count.end())
                 {
-                    cluster_id_and_count.emplace(chb->base_seg_n,(int)(!chb->dead));
+                    cluster_id_and_count.emplace(chb->base_seg_n,1);
                 }
                 else
                 {
-                    it->second+=(int)(!chb->dead);
+                    it->second+=1;
                 }
             }
         }
@@ -116,7 +126,10 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
         values.push_back(pr.first);
         weights.push_back(pr.second);
     }
-    return new DiscreteGeneral(values,weights);
+    if (values.empty())
+        return nullptr;
+    else
+        return new DiscreteGeneral(values,weights);
 }
 void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<DiscreteGeneral *> &branchExistanceStat)
 {
@@ -188,11 +201,21 @@ void SyntheticTreeGenerator::collect_statistics()
         stat.rootStats.back().selfBranchStat = get_branch_stat(cd);
         stat.rootStats.back().childBranchesClusterStat = get_child_branches_cluster_stat(cd);
         get_existance_stat(cd, stat.rootStats.back().branchExistanceStat);
-        if (false && cd.base->dead)
+        if (cd.base->dead || !stat.rootStats.back().childBranchesClusterStat)
+        {
+            std::vector<double> v = {0};
+            std::vector<double> w = {0};
+            stat.rootStats.back().childBranchesClusterStat = new DiscreteGeneral(v,w);
             weights.push_back(0);
+            types.push_back(i);
+            stat.rootStats.back().child_branches_count = 0;
+        }
         else
+        {
             weights.push_back(cd.IDA.transforms.size());
-        types.push_back(i);
+            types.push_back(i);
+            stat.rootStats.back().child_branches_count = cd.base->joints.size();
+        }
         i++;
     }
     stat.rootClusterStat = new DiscreteGeneral(types,weights);
@@ -255,7 +278,8 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
     glm::vec3 dir = base->joints.back().pos - base->joints.front().pos;
     if (glm::length(dir)<1e-4)
         return glm::mat4(0);
-    float scale = stat.transformStat.r->get()/glm::length(dir);
+    float scale = stat.transformStat.r->get();
+    scale /= glm::length(dir);
     dir = glm::normalize(dir);
     float psi_s = stat.transformStat.psi->get() - acos(dir.y);
     float phi_s = stat.transformStat.phi->get();
@@ -281,97 +305,140 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
                        phi_s,glm::vec3(0,1,0)),
                        psi_s,glm::vec3(1,0,0)),
                        -(base->joints.front().pos));
-    glm::vec4 p = transf*glm::vec4(base->joints.front().pos,1);
-
+    glm::vec4 ps = glm::vec4(base->joints.front().pos,1);
+    glm::vec4 p = transf*ps;
+    if (p.x != p.x || p.y != p.y || p.z != p.z)
+    {
+        logerr("matrix is NAN %f %f %f) pos = (%f %f %f) scale = %f, self_rot = %f, dir = (%f %f %f),phi_s = %f %f",
+        ps.x,ps.y,ps.z, pos.x,pos.y,pos.z,scale,self_rot,dir.x,dir.y,dir.z,psi_s,phi_s);
+    }
     return transf;
 }
 void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
 {
-    std::vector<Seed> seeds;
-    seeder.choose_places_for_seeds(1,seeds);
-    if (seeds.empty())
-        return;
-    glm::vec3 pos = glm::vec3(seeds.front().pos.x,0,seeds.front().pos.y);
-    pos.y = seeder.heightmap->get_height(pos);
+    const int max_general_iters = 1024;
+    const int max_tries = 1024;
+    const int max_root_iters = 1024;
 
-    int root_cl = CLAMP(stat.rootClusterStat->get(),0,trunks_clusters.size()-1);
-    auto &root_stat = stat.rootStats[root_cl];
-    synt.trunk = &(trunks_clusters[root_cl]);
-    synt.trunk_instance_data.type_ids.push_back(root_stat.selfBranchStat.typeStat->get());
-    synt.trunk_instance_data.centers_par.push_back(ggd.pos);
-    synt.trunk_instance_data.centers_self.push_back(pos);
-    synt.trunk_instance_data.transforms.push_back(get_transform(synt.trunk->base, pos, root_stat.selfBranchStat));
-    
-    int i = 0;
-    for (Joint &base_j : trunks_clusters[root_cl].base->joints)
+    for (int k = 0;k<max_general_iters; k++)
     {
-        int chb_count = root_stat.branchExistanceStat[MIN(root_stat.branchExistanceStat.size(),i)]->get();
-        if (i == trunks_clusters[root_cl].base->joints.size() - 1)
-            chb_count = MAX(1,chb_count);
-        glm::vec3 bpos =  synt.trunk_instance_data.transforms.front()*glm::vec4(base_j.pos,1);
-        for (int j = 0;j < chb_count; j++)
+        synt = SyntheticTree();
+        std::vector<Seed> seeds;
+        seeder.choose_places_for_seeds(1,seeds);
+        if (seeds.empty())
+            continue;
+        glm::vec3 pos = glm::vec3(seeds.front().pos.x,0,seeds.front().pos.y);
+        pos.y = seeder.heightmap->get_height(pos);
+
+        int root_cl;
+        RootStat *root_stat = nullptr; 
+        for (int i=0;i<max_root_iters;i++)
         {
-            int child_branches_added = 0;
-            const int max_tries = 512;
-            float max_occlusion = 1e6;
-            struct Bdata
+            root_cl = CLAMP(stat.rootClusterStat->get(),0,trunks_clusters.size()-1);
+            root_stat = &(stat.rootStats[root_cl]);
+            if (root_stat->child_branches_count > 0 && trunks_clusters[root_cl].base->joints.size() > 0)
+                break;
+        }
+        if (!root_stat)
+        {
+            logerr("synthetic tree creation failed - impossible to find source root with child branches");
+            continue;
+        }
+        synt.trunk = &(trunks_clusters[root_cl]);
+        synt.trunk_instance_data.type_ids.push_back(root_stat->selfBranchStat.typeStat->get());
+        synt.trunk_instance_data.centers_par.push_back(ggd.pos);
+        synt.trunk_instance_data.centers_self.push_back(pos);
+        synt.trunk_instance_data.transforms.push_back(get_transform(synt.trunk->base, pos, root_stat->selfBranchStat));
+        
+        int i = 0;
+        int synt_child_branches_count = 0;
+        float threshold = 0.5;
+        for (Joint &base_j : trunks_clusters[root_cl].base->joints)
+        {
+            int chb_count = root_stat->branchExistanceStat[MIN(root_stat->branchExistanceStat.size(),i)]->get();
+            if (i == trunks_clusters[root_cl].base->joints.size() - 1)
+                chb_count = MAX(1,chb_count);
+            glm::vec3 bpos =  synt.trunk_instance_data.transforms.front()*glm::vec4(base_j.pos,1);
+            for (int j = 0;j < chb_count; j++)
             {
-                int br_cl = -1;
-                glm::mat4 transform = glm::mat4(0);
-                float occlusion = 1e9;
-            };
-            Bdata min_bdata;
-            for (int k=0;k<max_tries;k++)
-            {
-                Bdata bdata;
-                int c = root_stat.childBranchesClusterStat->get();
-                int br_cl = CLAMP(c,0,branches_clusters.size() - 1);
-                Branch *base = branches_clusters[br_cl].base;
-                auto b_stat = stat.branchStats[br_cl];
-                glm::mat4 transform = get_transform(base,bpos,b_stat);
-                float occ = 0;
-                if (voxels != nullptr)
+                int child_branches_added = 0;
+                float max_occlusion = 1e6;
+                float eps = 0.01;
+                struct Bdata
                 {
-                    for (Joint &j : base->joints)
+                    int br_cl = -1;
+                    glm::mat4 transform = glm::mat4(0);
+                    float occlusion = 1e9;
+                };
+                std::vector<Bdata> min_bdata;
+                float min_occl = max_occlusion;
+                for (int k=0;k<max_tries;k++)
+                {
+                    Bdata bdata;
+                    int c = root_stat->childBranchesClusterStat->get();
+                    int br_cl = CLAMP(c,0,branches_clusters.size() - 1);
+                    Branch *base = branches_clusters[br_cl].base;
+                    auto b_stat = stat.branchStats[br_cl];
+                    //if (!b_stat.valid)
+                    //   continue;
+                    glm::mat4 transform = get_transform(base,bpos,b_stat);
+                    float occ = 0;
+                    if (voxels != nullptr)
                     {
-                        glm::vec3 ps = transform*glm::vec4(j.pos,1);
-                        occ += voxels->get_occlusion(ps);
-                        for (Branch *br : j.childBranches)
+                        for (Joint &j : base->joints)
                         {
-                            Joint &j1 = br->joints.front();
-                            glm::vec3 ps1 = transform*glm::vec4(j1.pos,1);
-                            occ += voxels->get_occlusion(ps1);
+                            glm::vec3 ps = transform*glm::vec4(j.pos,1);
+                            occ += voxels->get_occlusion(ps);
+                            for (Branch *br : j.childBranches)
+                            {
+                                Joint &j1 = br->joints.front();
+                                glm::vec3 ps1 = transform*glm::vec4(j1.pos,1);
+                                occ += voxels->get_occlusion(ps1);
+                            }
                         }
                     }
-                }
 
-                bdata.br_cl = br_cl;
-                bdata.transform = transform;
-                bdata.occlusion = occ;
-                if (min_bdata.occlusion > bdata.occlusion)
-                {
-                    min_bdata = bdata;
+                    bdata.br_cl = br_cl;
+                    bdata.transform = transform;
+                    bdata.occlusion = occ;
+                    if (bdata.occlusion < (1-eps)*min_occl)
+                    {
+                        min_occl = bdata.occlusion;
+                        min_bdata.clear();
+                        min_bdata.push_back(bdata);
+                    }
+                    else if (bdata.occlusion < (1+eps)*min_occl)
+                    {
+                        min_occl = MIN(min_occl,bdata.occlusion);
+                        min_bdata.push_back(bdata);
+                    }
                 }
-                //logerr("occlusion for branch %f min %f",occ,min_bdata.occlusion);
+                if (min_occl < max_occlusion)
+                {
+                    int rnd = urandi(0,min_bdata.size());
+                    Bdata rnd_min = min_bdata[rnd];
+                    if (child_branches_added == 0)
+                        synt.joints_ns.push_back(i);
+                    int c = root_stat->childBranchesClusterStat->get();
+                    int br_cl = rnd_min.br_cl;
+                    auto b_stat = stat.branchStats[br_cl];
+                    synt.branches.push_back(&(branches_clusters[br_cl]));
+                    synt.branches_instance_data.push_back(InstanceDataArrays());
+                    synt.branches_instance_data.back().centers_par.push_back(pos);
+                    synt.branches_instance_data.back().centers_self.push_back(bpos);
+                    int id = synt.trunk_instance_data.type_ids.back();
+                    synt.branches_instance_data.back().type_ids.push_back(id);
+                    synt.branches_instance_data.back().transforms.push_back(rnd_min.transform);
+                    child_branches_added++;
+                    synt_child_branches_count++;
+                }
             }
-            if (min_bdata.occlusion < max_occlusion)
-            {
-                if (child_branches_added == 0)
-                    synt.joints_ns.push_back(i);
-                int c = root_stat.childBranchesClusterStat->get();
-                int br_cl = min_bdata.br_cl;
-                auto b_stat = stat.branchStats[br_cl];
-                synt.branches.push_back(&(branches_clusters[br_cl]));
-                synt.branches_instance_data.push_back(InstanceDataArrays());
-                synt.branches_instance_data.back().centers_par.push_back(pos);
-                synt.branches_instance_data.back().centers_self.push_back(bpos);
-                int id = synt.trunk_instance_data.type_ids.back();
-                synt.branches_instance_data.back().type_ids.push_back(id);
-                synt.branches_instance_data.back().transforms.push_back(min_bdata.transform);
-                child_branches_added++;
-            }
+            i++;
         }
-        i++;
+        if (synt_child_branches_count > threshold*trunks_clusters[root_cl].base->joints.size())
+        {
+            return;
+        }
     }
 }
 FullStat::~FullStat()
