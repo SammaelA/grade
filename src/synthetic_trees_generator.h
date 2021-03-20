@@ -54,7 +54,7 @@ class SyntheticTreeGenerator
 public:
     SyntheticTreeGenerator(Seeder &seeder, std::vector<ClusterData> &trunks_clusters, 
                            std::vector<ClusterData> &branches_clusters, GroveGenerationData &ggd);
-    void generate(Tree *_trees, int count);
+    void generate(Tree *_trees, int count, LightVoxelsCube *voxels);
 private:
     void synt_tree_to_real(SyntheticTree &synt, Tree &t);
     glm::mat4 get_transform(Branch *base, glm::vec3 pos, BranchStat &stat);
@@ -64,10 +64,13 @@ private:
     void get_existance_stat(ClusterData &cd, std::vector<DiscreteGeneral *> &branchExistanceStat);
     void get_mean_and_stddev(std::vector<float> &values, double &mean, double &stddev);
     void collect_statistics();
+    void add_shadow(Branch *b);
+    void add_shadow(Tree &t);
     Seeder &seeder;
     GroveGenerationData &ggd;
     std::vector<ClusterData> &trunks_clusters;
     std::vector<ClusterData> &branches_clusters;
     Tree *trees;
+    LightVoxelsCube *voxels = nullptr;
     FullStat stat;
 };

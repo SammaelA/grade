@@ -200,3 +200,16 @@ float f_perlin(float x, float y)
             add(x,y,val);
         }
     }
+    void Field_2d::print()
+    {
+        debug("field 2d\n-------\n");
+        for (int i = -w;i<=w;i++)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                debug("(%f %f) = %f %d %d|",ps.x,ps.y,get(i,j),i,j);
+            }
+            debugnl();
+        }
+    }

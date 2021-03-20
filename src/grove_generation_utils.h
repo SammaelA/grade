@@ -4,6 +4,7 @@
 struct GroveGenerationData;
 struct Tree;
 struct Branch;
+class Body;
 struct Seed
 {
     glm::vec2 pos;
@@ -15,6 +16,9 @@ public:
     PlanarShadowsMap(glm::vec3 pos, glm::vec2 size, float cell_size) : Field_2d(pos, size, cell_size) {};
     void set_occluder(glm::vec3 position, float base_val, float r, float pow);
     void clear();
+    void add(PlanarShadowsMap &src);
+    void set(PlanarShadowsMap &src);
+    void add_body(Body *b, float opacity = 1e9, bool solid = true);
 };
 class GroveMask : public Field_2d
 {
@@ -45,6 +49,7 @@ public:
     void recalcuate_shadows(Tree *trees, int count);
     void add_tree_shadow(Tree &t);
     void choose_places_for_seeds(int count, std::vector<Seed> &seeds);
+    void add_body(Body *b, float opacity = 1e9, bool solid = true);
     Heightmap *heightmap;
 private:
     void recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int level);
@@ -52,5 +57,6 @@ private:
     GroveMask mask;
     HabitabilityMap hm;
     PlanarShadowsMap psm;
+    PlanarShadowsMap const_psm;
     DensityMap dsm;
 };

@@ -1,7 +1,7 @@
 #include "grove_generation_utils.h"
 #include "distribution.h"
 #include "tree.h"
-
+#include "body.h"
 void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
 {
     glm::ivec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
@@ -20,6 +20,34 @@ void PlanarShadowsMap::clear()
 {
     for (int i =0;i<(2*w + 1)*(2*h + 1);i++)
         data[i] = 0;
+}
+void PlanarShadowsMap::add(PlanarShadowsMap &src)
+{
+    int size = (2*w + 1)*(2*h + 1);
+    int src_size = (2*src.w + 1)*(2*src.h + 1);
+    if (size == src_size)
+    {
+        for (int i =0;i<size;i++)
+            data[i] += src.data[i];
+    }
+    else
+    {
+        logerr("PSM add(..) from shadow map with different size is not implemented");
+    }
+}
+void PlanarShadowsMap::set(PlanarShadowsMap &src)
+{
+    int size = (2*w + 1)*(2*h + 1);
+    int src_size = (2*src.w + 1)*(2*src.h + 1);
+    if (size == src_size)
+    {
+        for (int i =0;i<size;i++)
+            data[i] = src.data[i];
+    }
+    else
+    {
+        logerr("PSM set(..) from shadow map with different size is not implemented");
+    }
 }
 void HabitabilityMap::create(Heightmap &heightmap, GroveMask &mask)
 {
@@ -77,12 +105,13 @@ void DensityMap::create(HabitabilityMap &hm, PlanarShadowsMap &psm)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
+                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z + cell_size*j);
                 float sh = psm.get_bilinear(position);
                 float hab = hm.get_bilinear(position);
                 float res = hab*(1/(1 + MAX(sh,0)));
                 set(i,j,res);
-                       if (abs(res) > 1000)
+                
+                if (abs(res) > 1000)
                 {
                     logerr("set wrong %f (%d %d) %f %f",res,i,j, sh, hab);
                 }
@@ -91,7 +120,6 @@ void DensityMap::create(HabitabilityMap &hm, PlanarShadowsMap &psm)
 }
 void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
 {
-    //logerr("field_2d with size %d %d",w, h);
     if (count <= 0)
         return;
     double sum = calc_sum();
@@ -110,7 +138,6 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
                 float r = get(i,j);
                 if (r > rnd && seeds.size() < count)
                 {
-                    //logerr("%d %d %f (%d/%d %d/%d) %f",mult,count,get(i,j),i,w,j,h, (float)sum);
                     Seed s;
                     s.pos = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
                     s.roots_count = 1;
@@ -123,18 +150,45 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
                 }
             }
         }
-        //mult *= 2;
     }
 }
 Seeder::Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h):
 mask(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 hm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
+const_psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 dsm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size)
 {
     heightmap = h;
-    mask.set_round(ggd.size.x);
+    mask.set_round(ggd.size.x/2);
     hm.create(*heightmap,mask);
+}
+void Seeder::add_body(Body *b, float opacity, bool solid)
+{
+    const_psm.add_body(b,opacity,solid);
+}
+void PlanarShadowsMap::add_body(Body *b, float opacity, bool solid)
+{
+    if (!b)
+        return;
+    const int iters = 100;
+    BBox bb = b->get_Bbox();
+
+        for (int i = -w; i <= w; i++)
+        {
+            for (int j = -h; j <= h; j++)
+            {
+                float y_start = bb.position.y;
+                float step = bb.sizes.y/iters;
+                glm::vec3 ps = glm::vec3(pos.x + cell_size*i, y_start, pos.z + cell_size*j);
+                for (int k = 0;k<iters;k++)
+                {
+                    if (b->in_body(ps))
+                        Field_2d::add(i,j,opacity);
+                }
+
+            }
+        }
 }
 int Seeder::joints_count(Branch *b)
 {
@@ -175,14 +229,20 @@ void Seeder::recalculate_planar_shadows(Branch *b, PlanarShadowsMap &psm, int le
 }
 void Seeder::recalcuate_shadows(Tree *trees, int count)
 {
-    psm.clear();
+    psm.set(const_psm);
     for (int i = 0; i < count; i++)
     {
         recalculate_planar_shadows(trees[i].root, psm, 1);
     }
+   
     dsm.create(hm, psm);
 }
 void Seeder::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
 {
     dsm.choose_places_for_seeds(count, seeds);
+}
+void Seeder::add_tree_shadow(Tree &t)
+{
+    recalculate_planar_shadows(t.root, psm, 1);
+    dsm.create(hm, psm);
 }

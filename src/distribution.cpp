@@ -115,9 +115,11 @@ DiscreteGeneral::DiscreteGeneral()
 DiscreteGeneral::DiscreteGeneral(const std::vector<double> &values, const std::vector<double> &weights,
                                  int seed) : u(0, 1, seed)
 {
-    if (values.size() != weights.size() && values.empty())
+    if (values.size() != weights.size() || values.empty())
     {
         logerr("wrong parameters for general discrete distribution - vectors of values and weights should have same size bigger than zero");
+        this->values = {0};
+        cumulative_prob.push_back(1);
     }
     else
     {

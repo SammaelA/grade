@@ -57,6 +57,7 @@ private:
     glm::vec3 center;
     const float voxel_size;
     int vox_x, vox_y, vox_z;
+    int count;
     float *voxels;
     std::list<Light> point_lights;
     std::list<Light> directed_lights;

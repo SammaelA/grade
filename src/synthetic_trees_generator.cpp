@@ -146,14 +146,34 @@ void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<Dis
         branchExistanceStat.push_back(new DiscreteGeneral(values,weights));
     }
 }
-void SyntheticTreeGenerator::generate(Tree *_trees, int count)
+void SyntheticTreeGenerator::add_shadow(Branch *b)
 {
+    if (!b)
+        return;
+    for (Joint &j : b->joints)
+    {
+        voxels->set_occluder(j.pos, powf(4 - b->level,2));
+        for (Branch *br : j.childBranches)
+        {
+            add_shadow(br);
+        }
+    }
+}
+void SyntheticTreeGenerator::add_shadow(Tree &t)
+{
+    add_shadow(t.root);
+    seeder.add_tree_shadow(t);
+}
+void SyntheticTreeGenerator::generate(Tree *_trees, int count, LightVoxelsCube *_voxels)
+{
+    voxels = _voxels;
     collect_statistics();
     for (int i=0; i<count ;i++)
     {
         SyntheticTree t;
         make_synt_tree(t);
         synt_tree_to_real(t,_trees[i]);
+        add_shadow(_trees[i]);
     }
 }
 void SyntheticTreeGenerator::collect_statistics()
@@ -291,19 +311,65 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
         glm::vec3 bpos =  synt.trunk_instance_data.transforms.front()*glm::vec4(base_j.pos,1);
         for (int j = 0;j < chb_count; j++)
         {
-            if (j == 0)
-                synt.joints_ns.push_back(i);
-            int c = root_stat.childBranchesClusterStat->get();
-            int br_cl = CLAMP(c,0,(branches_clusters.size() - 1));
-            auto b_stat = stat.branchStats[br_cl];
-            synt.branches.push_back(&(branches_clusters[br_cl]));
-            synt.branches_instance_data.push_back(InstanceDataArrays());
-            synt.branches_instance_data.back().centers_par.push_back(pos);
-            synt.branches_instance_data.back().centers_self.push_back(bpos);
-            int id = synt.trunk_instance_data.type_ids.back();
-            synt.branches_instance_data.back().type_ids.push_back(id);
-            synt.branches_instance_data.back().transforms.push_back(get_transform(synt.branches.back()->base,
-            bpos,b_stat));
+            int child_branches_added = 0;
+            const int max_tries = 512;
+            float max_occlusion = 1e6;
+            struct Bdata
+            {
+                int br_cl = -1;
+                glm::mat4 transform = glm::mat4(0);
+                float occlusion = 1e9;
+            };
+            Bdata min_bdata;
+            for (int k=0;k<max_tries;k++)
+            {
+                Bdata bdata;
+                int c = root_stat.childBranchesClusterStat->get();
+                int br_cl = CLAMP(c,0,branches_clusters.size() - 1);
+                Branch *base = branches_clusters[br_cl].base;
+                auto b_stat = stat.branchStats[br_cl];
+                glm::mat4 transform = get_transform(base,bpos,b_stat);
+                float occ = 0;
+                if (voxels != nullptr)
+                {
+                    for (Joint &j : base->joints)
+                    {
+                        glm::vec3 ps = transform*glm::vec4(j.pos,1);
+                        occ += voxels->get_occlusion(ps);
+                        for (Branch *br : j.childBranches)
+                        {
+                            Joint &j1 = br->joints.front();
+                            glm::vec3 ps1 = transform*glm::vec4(j1.pos,1);
+                            occ += voxels->get_occlusion(ps1);
+                        }
+                    }
+                }
+
+                bdata.br_cl = br_cl;
+                bdata.transform = transform;
+                bdata.occlusion = occ;
+                if (min_bdata.occlusion > bdata.occlusion)
+                {
+                    min_bdata = bdata;
+                }
+                //logerr("occlusion for branch %f min %f",occ,min_bdata.occlusion);
+            }
+            if (min_bdata.occlusion < max_occlusion)
+            {
+                if (child_branches_added == 0)
+                    synt.joints_ns.push_back(i);
+                int c = root_stat.childBranchesClusterStat->get();
+                int br_cl = min_bdata.br_cl;
+                auto b_stat = stat.branchStats[br_cl];
+                synt.branches.push_back(&(branches_clusters[br_cl]));
+                synt.branches_instance_data.push_back(InstanceDataArrays());
+                synt.branches_instance_data.back().centers_par.push_back(pos);
+                synt.branches_instance_data.back().centers_self.push_back(bpos);
+                int id = synt.trunk_instance_data.type_ids.back();
+                synt.branches_instance_data.back().type_ids.push_back(id);
+                synt.branches_instance_data.back().transforms.push_back(min_bdata.transform);
+                child_branches_added++;
+            }
         }
         i++;
     }

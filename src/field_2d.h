@@ -10,6 +10,7 @@ public:
     void fill_perlin(float base, float min, float max, glm::ivec2 sh = glm::ivec2(0,0));
     glm::vec2 get_range() {return glm::vec2(min_val,max_val);}
     glm::vec2 get_grad_bilinear(glm::vec3 pos);
+    void print();
 protected:
     float get(int x, int y);
     glm::vec2 get_grad(int x, int y);

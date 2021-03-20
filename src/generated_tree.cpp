@@ -689,7 +689,7 @@ void TreeGenerator::create_tree(Tree &t, ParameterSetWrapper params, DebugVisual
 void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
 {
     float r = sqrt(count);
-    glm::vec3 vox_center = glm::vec3(0, 100, 0);
+    glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
     glm::vec3 vox_size = curGgd.size;
     ParameterSetWrapper params = trees[0].params;
     params.set_state(params().max_depth() - 1);
@@ -700,7 +700,11 @@ void TreeGenerator::create_grove(Tree *trees, int count, DebugVisualizer &debug)
     voxels = new LightVoxelsCube(vox_center, vox_size, params().seg_len_mult(), params().light_precision());
 
     voxels->add_heightmap(*heightmap);
-
+    for (int i=0;i<curGgd.obstacles.size();i++)
+    {
+        voxels->add_body(curGgd.obstacles[i]);
+        seeder->add_body(curGgd.obstacles[i]);
+    }
     const int growth_step = 10;
     int trees_planted = 0;  
     for (int j = 0; j < params().growth_iterations(); j++)
@@ -865,8 +869,9 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     heightmap = h;
     curGgd = ggd;
     seeder = new Seeder(ggd,10,h);
+    int synts = 50;
     int count = ggd.trees_count;
-    for (int i = 0; i < count + 200; i++)
+    for (int i = 0; i < count + synts; i++)
     {
         int k = i % ggd.types.size();
         auto &type = ggd.types[k];
@@ -926,12 +931,12 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     }
 
     SyntheticTreeGenerator stg = SyntheticTreeGenerator(*seeder, trunks_clusters, branches_clusters, curGgd);
-    stg.generate(trees + count, 100);
+    stg.generate(trees + count, synts, voxels);
     
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     
     Clusterizer cl2;
-    cl2.set_branches(trees, count + 200, 0, voxels);
+    cl2.set_branches(trees, count + synts, 0, voxels);
     cp.ignore_structure_level = 1;
     cp.light_importance = 0.8;
     cp.different_types_tolerance = false;
