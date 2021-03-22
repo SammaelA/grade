@@ -131,7 +131,7 @@ float LightVoxelsCube::get_occlusion(glm::vec3 pos)
 }
 glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ext(glm::vec3 pos, int light_test_r, float *occlusion = nullptr)
 {
-    float min_occ = -1e10;
+    float min_occ = 1e10;
     const float BIAS = 0.001;
     glm::vec3 min_shift(1, 1, 1);
     std::vector<glm::vec3> min_shifts;
@@ -147,7 +147,7 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ext(glm::vec3 pos, int light_
                 {
                     min_shifts.push_back(shift);
                 }
-                if (cur_occ > min_occ)
+                if (cur_occ < min_occ)
                 {
                     min_occ = cur_occ;
                     min_shifts.clear();
@@ -158,9 +158,84 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ext(glm::vec3 pos, int light_
     }
     int min_sz = min_shifts.size();
     min_shift = min_shifts[urandi(0,min_sz)];
-    min_shift = glm::normalize(-min_shift + glm::vec3(0.0, 0.0001, 0.0));
+    min_shift = glm::normalize(min_shift + glm::vec3(0.0, 0.0001, 0.0));
     if (occlusion)
         *occlusion = get_occlusion(pos - voxel_size*light_test_r*min_shift);
+    return min_shift;
+}
+float LightVoxelsCube::get_occlusion_cone(glm::vec3 pos, glm::vec3 dir, glm::vec3 n, float H, float R, 
+                         int num_samples, Uniform &phi_distr, Uniform &h_distr, Uniform &l_distr)
+{
+    float occ = 0;
+    float w_sum = 0;
+    for (int i = 0; i<num_samples; i++)
+    {
+        float phi = phi_distr.get();
+        float h = h_distr.get();
+        float l = l_distr.get();
+        float wl = l/R;
+        l /= (h/H);
+        float wh = (h/H)*(h/H);
+        glm::vec3 nr = glm::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
+        glm::vec3 sample = pos + h*dir + l*nr;
+        occ += wl*wh*get_occlusion_trilinear(sample);
+        w_sum += wl*wh;
+    }
+    if (w_sum < 1e-6)
+        return 10000;
+    else
+        return occ/w_sum;
+}
+glm::vec3 LightVoxelsCube::get_dir_to_bright_place_cone(glm::vec3 pos, float r, int cones, float *occlusion)
+{
+    const int num_samples = 64;
+    const float BIAS = 0.01;
+    float alpha = PI/10;
+    float cone_R = r*sin(alpha); 
+    float cone_H = r;
+    Uniform phi_distr = Uniform(0,2*PI);
+    Uniform h_distr = Uniform(0,cone_H);
+    Uniform l_distr = Uniform(0,cone_R);
+    Uniform box_distr = Uniform(-r,r);
+    float min_occ = 1e10;
+
+    glm::vec3 min_shift = glm::normalize(glm::vec3(1,1,1));
+    std::vector<glm::vec3> min_shifts;
+    glm::vec3 prev_dir = glm::normalize(glm::vec3(1,1,1));
+    for (int i = 0; i < cones; i++)
+    {
+        bool in_sph = false;
+        glm::vec3 dir; 
+        while (!in_sph)
+        {
+            dir.x = box_distr.get();
+            dir.y = box_distr.get();
+            dir.z = box_distr.get();
+            in_sph = (glm::length(dir) < r) && (glm::dot(glm::normalize(dir),prev_dir) < 0.9);
+        }
+
+        dir = glm::normalize(dir);
+        glm::vec3 n = glm::cross(dir,prev_dir);
+
+        float occ = get_occlusion_cone(pos,dir,n,cone_H,cone_R,num_samples,phi_distr,h_distr,l_distr);
+        if (occ < (1-BIAS)*min_occ)
+        {
+            min_shifts.clear();
+            min_shifts.push_back(dir);
+            min_occ = occ;
+        }
+        else if (occ < (1+BIAS)*min_occ)
+        {
+            min_shifts.push_back(dir);
+            min_occ = MIN(occ,min_occ);
+        }
+    }
+
+    int min_sz = min_shifts.size();
+    min_shift = min_shifts[urandi(0,min_sz)];
+    min_shift = glm::normalize(min_shift + glm::vec3(0.0, 0.0001, 0.0));
+    if (occlusion)
+        *occlusion = min_occ;
     return min_shift;
 }
 glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusion = nullptr)

@@ -129,8 +129,17 @@ void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_en
     int bs = j.childBranches.size();
     if ((b->level < curParams().max_depth() - 1) && ((j.type == j.FORK && &j != &(b->joints.back()) && (bs < j.max_branching)) || from_end) && dice(feed, exp(bs) * curParams().base_branch_feed()))
     {
+        float len = curParams().max_segments()*curParams().seg_len_mult();
         float occ = 0.0;
-        glm::vec3 M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams().max_depth() - b->level), &occ);
+        glm::vec3 M;
+        if (b->level == 0)
+            M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len,256, &occ);
+        else if (b->level == 1)
+            M = voxels->get_dir_to_bright_place_cone(j.pos,0.25*len, 64, &occ);
+        else if (b->level == 2)
+            M = voxels->get_dir_to_bright_place_cone(j.pos,0.5*len, 16, &occ);
+        else
+            M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams().max_depth() - b->level), &occ);
         //M = voxels->get_dir_to_bright_place_ray(j.pos,0.5*curParams().seg_len_mult()*curParams().max_segments(),4*(curParams().max_depth() - b->level),&occ);
         //M *= occ;
         if (dice(1, occ * curParams().branch_grow_decrease_q()) && (occ < 100000))
@@ -869,7 +878,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     heightmap = h;
     curGgd = ggd;
     seeder = new Seeder(ggd,10,h);
-    int synts = 25;
+    int synts = 0;
     int count = ggd.trees_count;
     for (int i = 0; i < count + synts; i++)
     {

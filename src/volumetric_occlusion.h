@@ -3,6 +3,7 @@
 #include <list>
 #include "body.h"
 #include "terrain.h"
+#include "distribution.h"
 struct LightVoxelsCube
 {
 public:
@@ -24,7 +25,10 @@ public:
     float get_occlusion_view_ray(glm::vec3 pos);
     float get_occlusion_simple(glm::vec3 pos);
     float get_occlusion_trilinear(glm::vec3 pos);
+    float get_occlusion_cone(glm::vec3 pos, glm::vec3 dir, glm::vec3 n, float H, float R, 
+                             int num_samples, Uniform &phi_distr, Uniform &h_distr, Uniform &l_distr);
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
+    glm::vec3 get_dir_to_bright_place_cone(glm::vec3 pos, float r, int cones, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ext(glm::vec3 pos, int steps, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion);
     void print_average_occlusion();

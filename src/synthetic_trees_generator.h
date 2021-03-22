@@ -66,8 +66,8 @@ private:
     void get_existance_stat(ClusterData &cd, std::vector<DiscreteGeneral *> &branchExistanceStat);
     void get_mean_and_stddev(std::vector<float> &values, double &mean, double &stddev);
     void collect_statistics();
-    void add_shadow(Branch *b);
-    void add_shadow(Tree &t);
+    void add_shadow(Branch *b, glm::mat4 &transform);
+    void add_planar_shadow(Tree &t);
     Seeder &seeder;
     GroveGenerationData &ggd;
     std::vector<ClusterData> &trunks_clusters;
