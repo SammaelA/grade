@@ -633,13 +633,15 @@ void Visualizer::body_to_model(Body *b, Model *m, bool fixed_tc, glm::vec4 tc)
 }
 DebugVisualizer::DebugVisualizer():
 Visualizer(),
-debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+bodyShader({"debug.vs", "body.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
 
 }
 DebugVisualizer::DebugVisualizer(Texture _tree_tex, Shader *_tree_shader) : 
 Visualizer(_tree_tex, textureManager.empty(), _tree_shader),
-debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+bodyShader({"debug.vs", "body.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
 }
 DebugVisualizer::~DebugVisualizer()
@@ -677,6 +679,7 @@ void DebugVisualizer::render(glm::mat4 view_proj, int mode)
         debugShader.uniform("need_tex",false);
         debugShader.uniform("need_arr_tex",false);
         debugShader.uniform("need_coord",true);
+        debugShader.uniform("need_color",false);
         for (int i = 0; i < debugModels.size(); i++)
         {
             if (currentModes[i] != 2)
@@ -686,6 +689,17 @@ void DebugVisualizer::render(glm::mat4 view_proj, int mode)
             debugModels[i]->render(GL_TRIANGLES);
         }
     }
+        bodyShader.use();
+        bodyShader.uniform("projectionCamera", view_proj);
+        for (int i = 0; i < debugModels.size(); i++)
+        {
+            if (currentModes[i] != 3)
+                continue;
+            bodyShader.uniform("main_color",glm::vec3((i % 3)/3.0,(i % 5)/5.0,(i % 7)/7.0));
+            bodyShader.uniform("model", debugModels[i]->model);
+            debugModels[i]->update();
+            debugModels[i]->render(GL_TRIANGLES);
+        }
 }
 void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
 {
@@ -746,7 +760,7 @@ void DebugVisualizer::add_bodies(Body *b_ptr, int count)
 {
     Model *m = new Model();
     debugModels.push_back(m);
-    currentModes.push_back(1);
+    currentModes.push_back(3);
     for (int i=0;i<count;i++)
     {
         body_to_model(b_ptr + i,m);

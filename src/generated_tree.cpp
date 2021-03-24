@@ -135,9 +135,9 @@ void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_en
         if (b->level == 0)
             M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len,256, &occ);
         else if (b->level == 1)
-            M = voxels->get_dir_to_bright_place_cone(j.pos,0.25*len, 64, &occ);
-        else if (b->level == 2)
-            M = voxels->get_dir_to_bright_place_cone(j.pos,0.5*len, 16, &occ);
+            M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len, 64, &occ);
+        //else if (b->level == 2)
+        //  M = voxels->get_dir_to_bright_place_cone(j.pos,0.5*len, 16, &occ);
         else
             M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams().max_depth() - b->level), &occ);
         //M = voxels->get_dir_to_bright_place_ray(j.pos,0.5*curParams().seg_len_mult()*curParams().max_segments(),4*(curParams().max_depth() - b->level),&occ);
@@ -1074,7 +1074,7 @@ void b_center_rec(Branch *b, glm::vec3 center_par, int up_to_level)
 {
     b->center_par = center_par;
     if (b->level <= up_to_level)
-        b->center_self = b_center_self(b);
+        b->center_self = 0.5f*(b->joints.front().pos + b->joints.back().pos);
     else
         b->center_self = b->center_par;
     for (Joint &j : b->joints)

@@ -51,7 +51,8 @@ public:
     ~DebugVisualizer();
     std::vector<Model *> debugModels;
     Shader debugShader;
-
+    Shader bodyShader; 
+    
     DebugVisualizer& operator=(const DebugVisualizer& dv);
 
 private:
