@@ -9,6 +9,8 @@ name                  return TNAME;
 trees_count return TCOUNT;
 pos return TPOS;
 count return TCOUNT;
+synthetic_precision return TSYNTSPRES;
+synthetic_count return TSYNTS;
 box return TOB;
 ellipsoid return TEL;
 cylinder return TCYL;

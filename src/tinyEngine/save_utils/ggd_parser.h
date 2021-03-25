@@ -19,6 +19,8 @@ typedef struct _ggd
 {
     char *name;
     int count;
+    int synts_count;
+    int synts_precision;
     float pos[3];
     float size[3];
     ttd ttds[10];

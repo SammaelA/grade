@@ -49,28 +49,30 @@ extern int yydebug;
     TEND = 259,
     TNAME = 260,
     TCOUNT = 261,
-    TPOS = 262,
-    TOB = 263,
-    TEL = 264,
-    TCYL = 265,
-    TSIZE = 266,
-    TOKPREEND = 267,
-    TOKPREST = 268,
-    TOKNORMAL = 269,
-    TOKUNIFORM = 270,
-    TOKNO_RANDOM = 271,
-    TOKEXPLICIT_REGENERATION = 272,
-    TOKREGENERATE_ON_STATE_CHANGE = 273,
-    TOKREGENERATE_ON_GET = 274,
-    TOKBS = 275,
-    TOKBE = 276,
-    TOKPS = 277,
-    TOKPE = 278,
-    TOKEQ = 279,
-    TOKCOM = 280,
-    TOKPARAMEND = 281,
-    NUMBER = 282,
-    NAME = 283
+    TSYNTS = 262,
+    TSYNTSPRES = 263,
+    TPOS = 264,
+    TOB = 265,
+    TEL = 266,
+    TCYL = 267,
+    TSIZE = 268,
+    TOKPREEND = 269,
+    TOKPREST = 270,
+    TOKNORMAL = 271,
+    TOKUNIFORM = 272,
+    TOKNO_RANDOM = 273,
+    TOKEXPLICIT_REGENERATION = 274,
+    TOKREGENERATE_ON_STATE_CHANGE = 275,
+    TOKREGENERATE_ON_GET = 276,
+    TOKBS = 277,
+    TOKBE = 278,
+    TOKPS = 279,
+    TOKPE = 280,
+    TOKEQ = 281,
+    TOKCOM = 282,
+    TOKPARAMEND = 283,
+    NUMBER = 284,
+    NAME = 285
   };
 #endif
 /* Tokens.  */
@@ -78,28 +80,30 @@ extern int yydebug;
 #define TEND 259
 #define TNAME 260
 #define TCOUNT 261
-#define TPOS 262
-#define TOB 263
-#define TEL 264
-#define TCYL 265
-#define TSIZE 266
-#define TOKPREEND 267
-#define TOKPREST 268
-#define TOKNORMAL 269
-#define TOKUNIFORM 270
-#define TOKNO_RANDOM 271
-#define TOKEXPLICIT_REGENERATION 272
-#define TOKREGENERATE_ON_STATE_CHANGE 273
-#define TOKREGENERATE_ON_GET 274
-#define TOKBS 275
-#define TOKBE 276
-#define TOKPS 277
-#define TOKPE 278
-#define TOKEQ 279
-#define TOKCOM 280
-#define TOKPARAMEND 281
-#define NUMBER 282
-#define NAME 283
+#define TSYNTS 262
+#define TSYNTSPRES 263
+#define TPOS 264
+#define TOB 265
+#define TEL 266
+#define TCYL 267
+#define TSIZE 268
+#define TOKPREEND 269
+#define TOKPREST 270
+#define TOKNORMAL 271
+#define TOKUNIFORM 272
+#define TOKNO_RANDOM 273
+#define TOKEXPLICIT_REGENERATION 274
+#define TOKREGENERATE_ON_STATE_CHANGE 275
+#define TOKREGENERATE_ON_GET 276
+#define TOKBS 277
+#define TOKBE 278
+#define TOKPS 279
+#define TOKPE 280
+#define TOKEQ 281
+#define TOKCOM 282
+#define TOKPARAMEND 283
+#define NUMBER 284
+#define NAME 285
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -111,7 +115,7 @@ union YYSTYPE
         float number;
         char *string;
 
-#line 115 "y.tab.h" /* yacc.c:1909  */
+#line 119 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

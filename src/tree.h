@@ -140,6 +140,8 @@ struct GroveGenerationData
 {
     std::vector<TreeTypeData> types;
     int trees_count;
+    int synts_count;
+    int synts_precision;
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;

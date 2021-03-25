@@ -878,7 +878,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     heightmap = h;
     curGgd = ggd;
     seeder = new Seeder(ggd,10,h);
-    int synts = 50;
+    int synts = ggd.synts_count;
     int count = ggd.trees_count;
     for (int i = 0; i < count + synts; i++)
     {

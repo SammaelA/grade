@@ -348,9 +348,9 @@ float calc_occ_non_rec(Branch *b, glm::mat4 &transform, LightVoxelsCube *voxels)
 }
 void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
 {
-    const int max_general_iters = 1;
-    const int max_tries = 1024;
-    const int max_root_iters = 1024;
+    int max_general_iters = 1;
+    int max_tries = pow(2,ggd.synts_precision);
+    int max_root_iters = pow(2,ggd.synts_precision);
     float threshold = 0.1;
     float max_occlusion = 1e6;
     float eps = 0.01;

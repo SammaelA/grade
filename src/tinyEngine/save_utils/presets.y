@@ -29,7 +29,7 @@ int parse_file(char *file)
 
 %}
 
-%token TST TEND TNAME TCOUNT TPOS TOB TEL TCYL TSIZE TOKPREEND TOKPREST TOKNORMAL TOKUNIFORM TOKNO_RANDOM TOKEXPLICIT_REGENERATION TOKREGENERATE_ON_STATE_CHANGE TOKREGENERATE_ON_GET TOKBS TOKBE TOKPS TOKPE TOKEQ TOKCOM TOKPARAMEND
+%token TST TEND TNAME TCOUNT TSYNTS TSYNTSPRES TPOS TOB TEL TCYL TSIZE TOKPREEND TOKPREST TOKNORMAL TOKUNIFORM TOKNO_RANDOM TOKEXPLICIT_REGENERATION TOKREGENERATE_ON_STATE_CHANGE TOKREGENERATE_ON_GET TOKBS TOKBE TOKPS TOKPE TOKEQ TOKCOM TOKPARAMEND
 %union 
 {
         float number;
@@ -176,7 +176,7 @@ list_elem:
 	;
 
 
-grove: ggd_head TOKBS count pos size presets obstacles TOKBE TEND
+grove: ggd_head TOKBS grove_params_list presets obstacles TOKBE TEND
 {
     dat.ggds_c++;
 };
@@ -187,9 +187,21 @@ ggd_head: TST NAME
     CG.obsts_c = 0;
     CG.name = strdup($2);
 };
+grove_params_list: grove_param | grove_params_list grove_param
+;
+grove_param: count | synts | syntspres | pos | size
+;
 count: TCOUNT TOKEQ NUMBER
 {
     CG.count = $3;
+};
+synts: TSYNTS TOKEQ NUMBER
+{
+    CG.synts_count = $3;
+};
+syntspres: TSYNTSPRES TOKEQ NUMBER
+{
+    CG.synts_precision = $3;
 };
 pos: TPOS TOKEQ TOKPS NUMBER  NUMBER  NUMBER TOKPE
 {
