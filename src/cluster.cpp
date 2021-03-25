@@ -87,7 +87,7 @@ Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, Additi
     to_base_clusters(clusters);
     if (clusters.empty())
         return nullptr;
-    BranchWithData *br = clusters[0]->branch;
+    BranchWithData *br = get_typical(clusters);
     glm::mat4 base_transform_inv = glm::inverse(br->transform);
     for (Cluster *cl : clusters)
     {
@@ -100,4 +100,29 @@ Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, Additi
         ADCA.originals.push_back(cl->branch->original);
     }
     return br->original;
+}
+Clusterizer::BranchWithData *Clusterizer::Cluster::get_typical(std::vector<Cluster *> &clusters)
+{
+    float min_d = 1e9;
+    int min_pos = 0;
+    float d_0;
+    for (int i = 0; i<clusters.size();i++)
+    {
+        float d = 0;
+        for (int j = 0; j<clusters.size();j++)
+        {
+            if (i==j)
+                continue;
+            d += clusters[i]->ward_dist(clusters[j]);
+        }
+        if (d < min_d)
+        {
+            min_d = d;
+            min_pos = i;
+        }
+        if (i == 0)
+            d_0 = d;
+    }
+
+    return (clusters[min_pos])->branch;
 }

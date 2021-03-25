@@ -159,6 +159,7 @@ public:
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
         Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA);
         Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters);
+        BranchWithData *get_typical(std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm
     {
