@@ -35,7 +35,6 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
     {
         data->level = branch_level;
         data->valid = true;
-        data->atlas = atlas;
         data->impostors.clear();
         for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
         {
@@ -44,22 +43,34 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
             data->impostors.back().IDA = it->second;
         }
     }
-    atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
-    glm::ivec4 sizes = atlas.get_sizes();
-    int cnt = ceil(sqrt((base_branches.size()*(slices_n + 1))/atlas.layers_count() + 1));
-    logerr("impostor cnt %d",cnt);
-    int tex_size = (sizes.x) / cnt;
-    atlas.set_grid(tex_size, tex_size);
-    atlas.clear();
+    if (atlas)
+    {
+        atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+        glm::ivec4 sizes = atlas->get_sizes();
+        int cnt = ceil(sqrt((base_branches.size()*(slices_n + 1))/atlas->layers_count() + 1));
+        int tex_size = (sizes.x) / cnt;
+        atlas->set_grid(tex_size, tex_size);
+        atlas->clear();
+    }
+    else
+    {
+        AtlasParams params = set_atlas_params(quality, (slices_n + 1)*base_branches.size());
+        int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
+        atlas = new TextureAtlas(params.x,params.y,params.layers);
+        atlas->set_grid(params.grid_x,params.grid_y);
+        atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+        atlas->clear();
+    }
 
     for (Branch &b : base_branches)
     {
         //data->impostors.push_back(Impostor());
         make_impostor(b,data->impostors[proj.at(b.base_seg_n)],slices_n); 
     }
+
     data->valid = !data->impostors.empty();
     data->level = 0;
-    data->atlas = atlas;
+    data->atlas = *atlas;
 
     glGenerateTextureMipmap(data->atlas.tex().texture);
 }
@@ -86,8 +97,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     mat4 rot_inv(vec4(cur.a, 0), vec4(cur.b, 0), vec4(cur.c, 0), vec4(0, 0, 0, 1));
     mat4 in_rot = inverse(rot_inv);
     cur.position = in_rot * vec4(cur.position,1);
-
-    int num = atlas.add_tex();
+    int num = atlas->add_tex();
     vec3 base_joint = vec3(0, 0, 0);
     Visualizer tg(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
     Billboard bill(cur, num, br.base_seg_n, 0, base_joint);
@@ -110,7 +120,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         rot_inv = mat4(vec4(cur.a, 0), vec4(cur.b, 0), vec4(cur.c, 0), vec4(0, 0, 0, 1));
         in_rot = inverse(rot_inv);
         cur.position = in_rot * vec4(cur.position,1);
-        num = atlas.add_tex();
+        num = atlas->add_tex();
 
         bill = Billboard(cur, num, br.base_seg_n, 0, base_joint);
         create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 0.67);
@@ -135,7 +145,7 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     
     data->level = branch_level;
     data->valid = true;
-    data->atlas = atlas;
+    data->atlas = *atlas;
     data->impostors.clear();
     data->impostors.push_back(Impostor());
     data->impostors.back().id = 0;
@@ -164,11 +174,11 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     }
     int slices_n = 8;
 
-    atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
-    glm::ivec4 sizes = atlas.get_sizes();
+    atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+    glm::ivec4 sizes = atlas->get_sizes();
     int tex_size = (sizes.x)/3;
-    atlas.set_grid(tex_size, tex_size);
-    atlas.clear();
+    atlas->set_grid(tex_size, tex_size);
+    atlas->clear();
 
     BBox bbox = BBox();
     bbox.a = glm::vec3(1,0,0);
@@ -201,7 +211,7 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     mat4 in_rot = inverse(rot_inv);
     cur.position = in_rot * vec4(cur.position,1);
 
-    int num = atlas.add_tex();
+    int num = atlas->add_tex();
     vec3 base_joint = vec3(0, 0, 0);
     Visualizer tg(ttd[base_branches.front().type_id].wood, ttd[base_branches.front().type_id].leaf, nullptr);
     Billboard bill(cur, num, 0, 0, base_joint);
@@ -224,7 +234,7 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
         rot_inv = mat4(vec4(cur.a, 0), vec4(cur.b, 0), vec4(cur.c, 0), vec4(0, 0, 0, 1));
         in_rot = inverse(rot_inv);
         cur.position = in_rot * vec4(cur.position,1);
-        num = atlas.add_tex();
+        num = atlas->add_tex();
 
         bill = Billboard(cur, num, 0, 0, base_joint);
         create_billboard(ttd, all_transforms, base_branches, cur, tg, num, bill, 0.8);
@@ -239,12 +249,12 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
         a = rot * a;
         c = rot * c;
     }
-    glGenerateTextureMipmap(atlas.tex().texture);
+    glGenerateTextureMipmap(atlas->tex().texture);
 
     
     data->valid = !data->impostors.empty();
     data->level = 0;
-    data->atlas = atlas;
+    data->atlas = *atlas;
 }
 ImpostorRenderer::ImpostorRenderer(ImpostorsData *data):
 impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),

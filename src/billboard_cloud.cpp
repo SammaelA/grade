@@ -12,8 +12,15 @@
 
 using namespace glm;
 #define TEX_ATLAS_LAYERS 4
+BillboardCloudRaw::BillboardCloudRaw() : wood(textureManager.empty()),
+                                         rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+                                         billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+                                         billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
+                                                                     {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+{
+}
 BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeData> &_ttd): 
-                                                       atlas(tex_w, tex_h,TEX_ATLAS_LAYERS),
+                                                       atlas(new TextureAtlas(tex_w, tex_h,TEX_ATLAS_LAYERS)),
                                                        wood(textureManager.empty()),
                                                        rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
                                                        billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
@@ -22,6 +29,20 @@ BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeD
 {
     ttd = _ttd;
     cloud = new Model();
+}
+BillboardCloudRaw::BillboardCloudRaw(Quality _quality, int branch_level, std::vector<ClusterData> &clusters,
+                                     std::vector<TreeTypeData> &_ttd, BillboardCloudData *data) :
+                                                                 wood(textureManager.empty()),
+                                                                 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+                                                                 billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+                                                                 billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
+                                                                                             {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+{
+    quality = _quality;
+    ttd = _ttd;
+    cloud = new Model();
+    Tree t;
+    prepare(t,branch_level,clusters,data);
 }
 BillboardCloudRaw::~BillboardCloudRaw()
 {
@@ -32,6 +53,54 @@ BillboardCloudRaw::~BillboardCloudRaw()
         delete instances[i]->m;
         delete instances[i];
     }
+}
+BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quality, int cnt)
+{
+    const int fallback_size = 1024, fallback_layers = 4;
+    int groups = cnt;
+    Quality qual = quality;
+    GLint max_tex_size, max_layers;
+
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE,&max_tex_size);
+    glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_layers);
+
+    int cnt_x = MIN(max_tex_size/quality,ceil(sqrt(groups)));
+    int cnt_y = MIN(max_tex_size/quality,ceil(sqrt(groups)));
+    if (cnt_x*cnt_y == 0)
+    {
+        logerr("Unable to create texture array with billboard size = %d. It is more that max texture size",quality);
+        AtlasParams par;
+        par.x = fallback_size;
+        par.y = fallback_size;
+        par.layers = fallback_layers;
+        par.valid = false;
+        return par;
+    }
+    int tex_x = cnt_x * qual;
+    int tex_y = cnt_y * qual;
+    int layers = ceil((float)groups/(cnt_x*cnt_y));
+    if (layers > max_layers)
+    {
+        logerr("Unable to create texture atlas for %d billboards. It requires too many layers",groups);
+        AtlasParams par;
+        par.x = fallback_size;
+        par.y = fallback_size;
+        par.layers = fallback_layers;
+        par.valid = false;
+        return par;
+    }
+
+    AtlasParams par;
+    par.x = tex_x;
+    par.y = tex_y;
+    par.layers = layers;
+    par.valid = true;
+    par.grid_x = qual;
+    par.grid_y = qual;
+    debug("successfully created atlas %dx%dx%d for %d (max = %d) billboards\n",
+          par.x,par.y,par.layers,groups,cnt_x*cnt_y*layers);
+    
+    return par;
 }
 void BillboardCloudRaw::setup_preparation()
 {
@@ -75,14 +144,14 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
 
     mat4 tex_sh = scale(mat4(1), vec3(2, 2, 2));
     mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
-    mat4 atlas_tr = atlas.tex_transform(num);
+    mat4 atlas_tr = atlas->tex_transform(num);
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv * transl * rot;
     
     Branch *branch = nullptr;
     std::function<void(Model *)> _c_wood = [&](Model *h) { if (branch) tg.recursive_branch_to_model(*branch, h, false); };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { if (branch) tg.recursive_branch_to_model(*branch, h, true, leaf_scale); };
 
-    atlas.target(num);
+    atlas->target(num);
     rendererToTexture.use();
     for (Branch &br : brs)
     {
@@ -135,13 +204,13 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
 
     mat4 tex_sh = scale(mat4(1), vec3(2, 2, 2));
     mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
-    mat4 atlas_tr = atlas.tex_transform(num);
+    mat4 atlas_tr = atlas->tex_transform(num);
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv * transl * rot;
     Model bm;
     std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
 
-    atlas.target(num);
+    atlas->target(num);
     rendererToTexture.use();
 
     bm.construct(_c_wood);
@@ -248,12 +317,12 @@ void BillboardCloudRaw::render(mat4 &projectionCamera)
         std::function<void(Model *)> _ce = [&](Model *h) {
             for (Billboard bill : billboards)
             {
-                bill.to_model(h, atlas);
+                bill.to_model(h, *atlas);
             }
         };
         cloud->construct(_ce);
         billboardRenderer.use();
-        billboardRenderer.texture("tex", atlas.tex());
+        billboardRenderer.texture("tex", atlas->tex());
         billboardRenderer.uniform("model", cloud->model);
         billboardRenderer.uniform("projectionCamera", projectionCamera);
         cloud->render(GL_TRIANGLES);
@@ -261,7 +330,7 @@ void BillboardCloudRaw::render(mat4 &projectionCamera)
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
-        billboardRendererInstancing.texture("tex", atlas.tex());
+        billboardRendererInstancing.texture("tex", atlas->tex());
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         for (Instance *in : instances)
         {
@@ -348,7 +417,7 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
         planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
     }
 }
-void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res)
+void BillboardCloudRaw::split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res)
 {
     int sz = IDA.type_ids.size();
     if (IDA.centers_par.size() != sz || IDA.centers_self.size() != sz || IDA.transforms.size() != sz)
@@ -423,7 +492,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<ClusterDa
     {
         data->level = branch_level;
         data->valid = true;
-        data->atlas = atlas;
+        data->atlas = *atlas;
         data->billboards.clear();
         for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
         {
@@ -436,7 +505,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<ClusterDa
     {
         b.instancing = true;
         Model *m = new Model();
-        b.to_model(m, atlas);
+        b.to_model(m, *atlas);
         m->update();
         Instance *in = new Instance(m);
         in->addBuffer(all_transforms[b.branch_id].transforms);
@@ -515,12 +584,12 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     Visualizer tg(t.wood, t.leaf, nullptr);
     tg.set_params(t.params());
     billboards.clear();
-    atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
-    glm::ivec4 sizes = atlas.get_sizes();
-    int cnt = ceil(sqrt(billboard_boxes.size()/atlas.layers_count() + 1));
-    int tex_size = (sizes.x) / cnt - 2;
-    atlas.set_grid(tex_size, tex_size);
-    atlas.clear();
+    AtlasParams params = set_atlas_params(quality, billboard_boxes.size());
+    int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
+    atlas = new TextureAtlas(params.x,params.y,params.layers);
+    atlas->set_grid(params.grid_x,params.grid_y);
+    atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+    atlas->clear();
     std::vector<BranchProjectionData> projectionData;
 
     int i = 0;
@@ -543,7 +612,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         i++;
     }
     std::sort(projectionData.begin(), projectionData.end(), BPD_comp);
-    add_billboards_count = MIN(atlas.layers_count() * cnt * cnt - billboard_boxes.size(), projectionData.size());
+    add_billboards_count = MIN(atlas_capacity - billboard_boxes.size(), projectionData.size());
     int k = 0;
     for (auto &proj : projectionData)
     {
@@ -562,7 +631,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     }
     for (auto &p : billboard_boxes)
     {
-        int num = atlas.add_tex();
+        int num = atlas->add_tex();
         vec3 base_joint = p.b->joints.front().pos;
         Billboard b(p.min_bbox, num, p.b->base_seg_n, 1, base_joint);
         if (p.parent >= 0 && p.parent < billboards.size())
@@ -579,7 +648,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b, 1.5);
     }
     debugl(8,"created %d billboards\n", billboard_boxes.size());
-    atlas.gen_mipmaps();
+    atlas->gen_mipmaps();
 }
 BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),

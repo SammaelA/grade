@@ -178,8 +178,6 @@ void SyntheticTreeGenerator::add_planar_shadow(Tree &t)
 }
 void SyntheticTreeGenerator::generate(Tree *_trees, int count, LightVoxelsCube *_voxels)
 {
-    if (count<=0)
-        return;
     voxels = _voxels;
     collect_statistics();
     for (int i = 0; i < count; i++)

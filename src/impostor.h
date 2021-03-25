@@ -6,6 +6,14 @@
 class ImpostorBaker : public BillboardCloudRaw
 {
 public:
+    ImpostorBaker(Quality _quality, int branch_level, std::vector<ClusterData> &clusters,
+                                     std::vector<TreeTypeData> &_ttd, ImpostorsData *data)
+    {
+        quality = _quality;
+        ttd = _ttd;
+        Tree t;
+        prepare(t,branch_level,clusters,data);
+    }
     ImpostorBaker(int tex_w, int tex_h, std::vector<TreeTypeData> &ttd) : BillboardCloudRaw(tex_w,tex_h,ttd) {};
     void prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters,
                  ImpostorsData *data = nullptr);

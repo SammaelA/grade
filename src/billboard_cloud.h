@@ -13,6 +13,12 @@ class BillboardCloudRaw
 {
 
 public:
+    enum Quality
+    {
+        LOW = 256,
+        MEDIUM = (512+256)/2,
+        HIGH = 512
+    };
     enum RenderMode
     {
         NOTHING,
@@ -20,7 +26,10 @@ public:
         ONLY_INSTANCES,
         BOTH
     };
+    BillboardCloudRaw(Quality quality, int branch_level, std::vector<ClusterData> &clusters, std::vector<TreeTypeData> &_ttd,
+                      BillboardCloudData *data = nullptr);
     BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeData> &ttd);
+    BillboardCloudRaw();
     ~BillboardCloudRaw();
     void setup_preparation();
     void prepare(Tree &t, int branch_level, std::vector<Branch> &branches);
@@ -60,6 +69,17 @@ protected:
             parent = par;
         }
     };
+    struct AtlasParams
+    {
+        int x;
+        int y;
+        int layers;
+        int grid_x;
+        int grid_y;
+        bool valid = false;
+    };
+    AtlasParams set_atlas_params(Quality quality, int cnt);
+    void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res);
     void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
     void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
     void create_billboard(std::vector<TreeTypeData> &ttd, std::map<int, InstanceDataArrays> &all_transforms,
@@ -70,7 +90,8 @@ protected:
     float projection_error_rec(Branch *b, glm::vec3 &n, float d);
     int billboard_count = 256;
     bool ready = false;
-    TextureAtlas atlas;
+    Quality quality;
+    TextureAtlas *atlas = nullptr;
     std::vector<TreeTypeData> ttd;
     Shader rendererToTexture;
     Shader billboardRenderer;

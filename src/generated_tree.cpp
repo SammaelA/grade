@@ -878,7 +878,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     heightmap = h;
     curGgd = ggd;
     seeder = new Seeder(ggd,10,h);
-    int synts = 0;
+    int synts = 50;
     int count = ggd.trees_count;
     for (int i = 0; i < count + synts; i++)
     {
@@ -958,18 +958,19 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
 
     ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
-    ImpostorBaker *ib2 = new ImpostorBaker(2048, 2048, curGgd.types);
     grove.impostors.push_back(ImpostorsData());
     ib->prepare_all_grove(trees[0], ggd, 0, full_tree_clusters, &grove.impostors.back());
     grove.impostors.push_back(ImpostorsData());
-    ib2->prepare(trees[0], 0, full_tree_clusters, &grove.impostors.back());
+    ImpostorBaker *ib2 = new ImpostorBaker(BillboardCloudRaw::Quality::MEDIUM,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
+
     
-    grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(2048, 2048, curGgd.types);
-    cloud1->prepare(trees[0], 1, branches_clusters, &grove.clouds.back());
-    grove.clouds.push_back(BillboardCloudData());//main cloud
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(2048, 2048, curGgd.types);
-    cloud2->prepare(trees[0], 2, branches_clusters, &grove.clouds.back());
+    grove.clouds.push_back(BillboardCloudData());//main cloud 1
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(BillboardCloudRaw::Quality::HIGH, 1,
+                                                      branches_clusters,curGgd.types,&grove.clouds.back());
+    
+    grove.clouds.push_back(BillboardCloudData());//main cloud 2
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(BillboardCloudRaw::Quality::LOW, 2,
+                                                      branches_clusters,curGgd.types,&grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
 
     for (ClusterData &cd : trunks_clusters)
