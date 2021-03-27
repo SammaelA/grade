@@ -98,7 +98,7 @@ uniform uint objects_count;
 uniform vec3 camera_pos;
 uniform float trans;
 uniform mat4 projectionCamera;
-
+uniform int forced_lod;
 void main()
 {
     //for (uint i=0; i<THREADS; i++)
@@ -119,89 +119,97 @@ void main()
     for (uint i = st; i < en; i++)
     {
         int c = int(instances[i].center_self.w);
-        if (c >= 0 &&(cells[c].lod_from > k || cells[c].lod_to < k))
+        if ((forced_lod == -1) && (c >= 0) && (cells[c].lod_from > k || cells[c].lod_to < k))
         {
             continue;   
         }
-        float l1 = length(instances[i].center_par.xz - camera_pos.xz);
-        float l2 = length(instances[i].center_self.xz - camera_pos.xz);
-        float mx_dist = min_max.y - l1;
-	    float mn_dist = l2 - min_max.x;
         int instance_visible = 0;
-        vec2 a_mult = vec2(0,0);
-
-        if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
+        vec2 a_mult = vec2(10,0);
+        if (forced_lod != -1)
         {
-            if (mn_dist < trans)
-            {
-                a_mult = vec2(0.5*(mn_dist/trans + 1), l2);
-            }
-            else if (mx_dist < trans)
-            {
-                a_mult = vec2(0.5*(mx_dist/trans + 1), -l1);
-            }
-            else
-            {
-                a_mult = vec2(10,0);
-            }
-            instance_visible = 1;
+            instance_visible = int(k == forced_lod);
         }
-        if (instance_visible > 0 && modelData[object_id].culling > 0)
+        else
         {
-            instance_visible = 1;
+            float l1 = length(instances[i].center_par.xz - camera_pos.xz);
+            float l2 = length(instances[i].center_self.xz - camera_pos.xz);
+            float mx_dist = min_max.y - l1;
+            float mn_dist = l2 - min_max.x;
 
-            vec3 pos = vec3(modelData[object_id].x_s.x,modelData[object_id].y_s.x,modelData[object_id].z_s.x);
-            vec3 a = vec3(modelData[object_id].x_s.y,modelData[object_id].y_s.y,modelData[object_id].z_s.y);
-            vec3 b = vec3(modelData[object_id].x_s.z,modelData[object_id].y_s.z,modelData[object_id].z_s.z);
-            vec3 c = vec3(modelData[object_id].x_s.w,modelData[object_id].y_s.w,modelData[object_id].z_s.w);
-            
-            vec4 bbv[8];
-            bbv[0] = vec4(pos, 1);
-            bbv[1] = vec4(pos+a+b+c, 1);
-            bbv[2] = vec4(pos+a+b, 1);
-            bbv[3] = vec4(pos+b+c, 1);
 
-            bbv[4] = vec4(pos+a, 1);
-            bbv[5] = vec4(pos+b, 1);
-            bbv[6] = vec4(pos+c, 1);
-            bbv[7] = vec4(pos+a+c, 1);
-            for (int k=0;k<8;k++)
+
+            if ((mx_dist >= -trans) && (mn_dist >= -trans))//test if we need this to draw this instance
             {
-                bbv[k] = projectionCamera*instances[i].projection_camera*bbv[k];
-                bbv[k].xyz /= bbv[k].w;
+                if (mn_dist < trans)
+                {
+                    a_mult = vec2(0.5*(mn_dist/trans + 1), l2);
+                }
+                else if (mx_dist < trans)
+                {
+                    a_mult = vec2(0.5*(mx_dist/trans + 1), -l1);
+                }
+                else
+                {
+                    a_mult = vec2(10,0);
+                }
+                instance_visible = 1;
             }
-            if (bbv[0].x > 1 && bbv[1].x > 1 && bbv[2].x > 1 && bbv[3].x > 1 &&
-                bbv[4].x > 1 && bbv[5].x > 1 && bbv[6].x > 1 && bbv[7].x > 1)
+            if (instance_visible > 0 && modelData[object_id].culling > 0)
             {
-                instance_visible = 0;
-            }
-            else if (bbv[0].y > 1 && bbv[1].y > 1 && bbv[2].y > 1 && bbv[3].y > 1 &&
-                bbv[4].y > 1 && bbv[5].y > 1 && bbv[6].y > 1 && bbv[7].y > 1)
-            {
-                instance_visible = 0;
-            }
-            else if (bbv[0].z > 1 && bbv[1].z > 1 && bbv[2].z > 1 && bbv[3].z > 1 &&
-                bbv[4].z > 1 && bbv[5].z > 1 && bbv[6].z > 1 && bbv[7].z > 1)
-            {
-                instance_visible = 0;
-            }
-            else if (bbv[0].x < -1 && bbv[1].x < -1 && bbv[2].x < -1 && bbv[3].x < -1 &&
-                bbv[4].x < -1 && bbv[5].x < -1 && bbv[6].x < -1 && bbv[7].x < -1)
-            {
-                instance_visible = 0;
-            }
-            else if (bbv[0].y < -1 && bbv[1].y < -1 && bbv[2].y < -1 && bbv[3].y < -1 &&
-                bbv[4].y < -1 && bbv[5].y < -1 && bbv[6].y < -1 && bbv[7].y < -1)
-            {
-                instance_visible = 0;
-            }
-            else if (bbv[0].z < -1 && bbv[1].z < -1 && bbv[2].z < -1 && bbv[3].z < -1 &&
-                bbv[4].z < -1 && bbv[5].z < -1 && bbv[6].z < -1 && bbv[7].z < -1)
-            {
-                instance_visible = 0;
+                instance_visible = 1;
+
+                vec3 pos = vec3(modelData[object_id].x_s.x,modelData[object_id].y_s.x,modelData[object_id].z_s.x);
+                vec3 a = vec3(modelData[object_id].x_s.y,modelData[object_id].y_s.y,modelData[object_id].z_s.y);
+                vec3 b = vec3(modelData[object_id].x_s.z,modelData[object_id].y_s.z,modelData[object_id].z_s.z);
+                vec3 c = vec3(modelData[object_id].x_s.w,modelData[object_id].y_s.w,modelData[object_id].z_s.w);
+                
+                vec4 bbv[8];
+                bbv[0] = vec4(pos, 1);
+                bbv[1] = vec4(pos+a+b+c, 1);
+                bbv[2] = vec4(pos+a+b, 1);
+                bbv[3] = vec4(pos+b+c, 1);
+
+                bbv[4] = vec4(pos+a, 1);
+                bbv[5] = vec4(pos+b, 1);
+                bbv[6] = vec4(pos+c, 1);
+                bbv[7] = vec4(pos+a+c, 1);
+                for (int k=0;k<8;k++)
+                {
+                    bbv[k] = projectionCamera*instances[i].projection_camera*bbv[k];
+                    bbv[k].xyz /= bbv[k].w;
+                }
+                if (bbv[0].x > 1 && bbv[1].x > 1 && bbv[2].x > 1 && bbv[3].x > 1 &&
+                    bbv[4].x > 1 && bbv[5].x > 1 && bbv[6].x > 1 && bbv[7].x > 1)
+                {
+                    instance_visible = 0;
+                }
+                else if (bbv[0].y > 1 && bbv[1].y > 1 && bbv[2].y > 1 && bbv[3].y > 1 &&
+                    bbv[4].y > 1 && bbv[5].y > 1 && bbv[6].y > 1 && bbv[7].y > 1)
+                {
+                    instance_visible = 0;
+                }
+                else if (bbv[0].z > 1 && bbv[1].z > 1 && bbv[2].z > 1 && bbv[3].z > 1 &&
+                    bbv[4].z > 1 && bbv[5].z > 1 && bbv[6].z > 1 && bbv[7].z > 1)
+                {
+                    instance_visible = 0;
+                }
+                else if (bbv[0].x < -1 && bbv[1].x < -1 && bbv[2].x < -1 && bbv[3].x < -1 &&
+                    bbv[4].x < -1 && bbv[5].x < -1 && bbv[6].x < -1 && bbv[7].x < -1)
+                {
+                    instance_visible = 0;
+                }
+                else if (bbv[0].y < -1 && bbv[1].y < -1 && bbv[2].y < -1 && bbv[3].y < -1 &&
+                    bbv[4].y < -1 && bbv[5].y < -1 && bbv[6].y < -1 && bbv[7].y < -1)
+                {
+                    instance_visible = 0;
+                }
+                else if (bbv[0].z < -1 && bbv[1].z < -1 && bbv[2].z < -1 && bbv[3].z < -1 &&
+                    bbv[4].z < -1 && bbv[5].z < -1 && bbv[6].z < -1 && bbv[7].z < -1)
+                {
+                    instance_visible = 0;
+                }
             }
         }
-
         if (instance_visible > 0)
         {
             curInsts[st + inst_num].index = i;

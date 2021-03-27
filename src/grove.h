@@ -111,7 +111,12 @@ class GroveRenderer
 {
 public:
     static const int base_level = 1;
-
+    enum Precision
+    {
+        LOW = 0,
+        MEDIUM = 1,
+        DEBUG = 2
+    };
     struct Instance2 : InstancingReadyModel
     {
         Model *m;
@@ -133,7 +138,7 @@ public:
     };
     void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, GroveRendererDebugParams dbgpar);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
-                  bool print_perf);
+                  bool print_perf, Precision precision);
     GroveRenderer();
     ~GroveRenderer();
 private:

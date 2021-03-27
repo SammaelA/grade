@@ -114,6 +114,8 @@ std::function<void()> eventHandler = []() {
     cloudnum = 3;
   if (Tiny::event.active[SDLK_LEFTBRACKET])
     cloudnum = 4;
+  if (Tiny::event.active[SDLK_RIGHTBRACKET])
+    cloudnum = 5;
   if (Tiny::event.active[SDLK_k])
   {
     draw_clusterized = true;
@@ -225,6 +227,7 @@ int main(int argc, char *argv[])
   bool loading_needed = false;
   bool print_perf = false;
   bool only_gen = false;
+  GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
   std::string grove_type_name = "default";
   std::string save_path = ".";
   std::string load_path = ".";
@@ -277,6 +280,16 @@ int main(int argc, char *argv[])
         load_path = argv[k+1];
       k+=2;
     }
+    else if (std::string(argv[k]) == "-low_precision")
+    {
+      pres = GroveRenderer::LOW;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-high_precision")
+    {
+      pres = GroveRenderer::DEBUG;
+      k++;
+    }
     else if (std::string(argv[k]) == "-h")
     {
       logerr("-g <grove type name> -s <save path> -l <load path>");
@@ -320,6 +333,8 @@ int main(int argc, char *argv[])
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
   std::vector<float> LODs_dists = {15000, 10000, 700, 500, 300};
+  if (pres == GroveRenderer::Precision::LOW)
+    LODs_dists.back() = -10;
   Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
   h.random_generate(0,1,50);
   if (generation_needed)
@@ -410,7 +425,7 @@ int main(int argc, char *argv[])
       std::cerr << e.what() << '\n';
     }
   }
-  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf);
+  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
   GR = &groveRenderer;
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);

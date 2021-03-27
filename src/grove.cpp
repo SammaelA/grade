@@ -17,7 +17,7 @@ cellsCompute({"cells_compute.comp"},{})
 
 }
 GroveRenderer::GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
-                             bool print_perf) :
+                             bool print_perf, Precision precision) :
 GroveRenderer()
 {
     ts = Timestamp(print_perf);
@@ -58,49 +58,52 @@ GroveRenderer()
             add_instance_model(LODs.back(), source, b, i-2);
         }
     }
-
-    LODs.emplace_back();
-    LODs.back().cloud = nullptr;
-    LODs.back().max_dist = max_distances[LODs_count - 1];
-
-    int max_level = 3;
-
-    for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
+    if (precision >= Precision::MEDIUM)
     {
-        auto packed_branches = source->uniqueCatalogue.get_level(j);
-        for (PackedBranch &pb : packed_branches)
+        LODs.emplace_back();
+        LODs.back().cloud = nullptr;
+        LODs.back().max_dist = max_distances[LODs_count - 1];
+
+        int max_level = 3;
+
+        for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
         {
-            Model *m = new Model();
-            v.packed_branch_to_model(pb, m, false,max_level);
-            LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
+            auto packed_branches = source->uniqueCatalogue.get_level(j);
+            for (PackedBranch &pb : packed_branches)
+            {
+                Model *m = new Model();
+                v.packed_branch_to_model(pb, m, false,max_level);
+                LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
+            }
+        }
+
+        for (InstancedBranch &b : source->instancedBranches)
+        {
+            add_instance_model(LODs.back(), source, b,max_level,true);
         }
     }
-
-    for (InstancedBranch &b : source->instancedBranches)
+    if (precision >= Precision::DEBUG)
     {
-        add_instance_model(LODs.back(), source, b,max_level,true);
-    }
-
-    LODs.emplace_back();
-    LODs.back().cloud = nullptr;
-    LODs.back().max_dist = -10;
-
-    for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
-    {
-        auto packed_branches = source->uniqueCatalogue.get_level(j);
-        for (PackedBranch &pb : packed_branches)
+        LODs.emplace_back();
+        LODs.back().cloud = nullptr;
+        LODs.back().max_dist = -10;
+        int max_level = 3;
+        for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
         {
-            Model *m = new Model();
-            v.packed_branch_to_model(pb, m, false,max_level);
-            LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
+            auto packed_branches = source->uniqueCatalogue.get_level(j);
+            for (PackedBranch &pb : packed_branches)
+            {
+                Model *m = new Model();
+                v.packed_branch_to_model(pb, m, false,max_level);
+                LODs.back().models.push_back(std::pair<uint,Model *>(pb.type_id,m));
+            }
+        }
+
+        for (InstancedBranch &b : source->instancedBranches)
+        {
+            add_instance_model(LODs.back(), source, b,max_level,false);
         }
     }
-
-    for (InstancedBranch &b : source->instancedBranches)
-    {
-        add_instance_model(LODs.back(), source, b,max_level,false);
-    }
-
     if (source->impostors.size() == 2 && LODs.size() >= 3)
     {
         LODs[0].imp_rend = new ImpostorRenderer(&(source->impostors[0]));
@@ -485,7 +488,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
         lodCompute.uniform("trans", 20.0f);
         lodCompute.uniform("projectionCamera", prc);
         lodCompute.uniform("objects_count", (uint)total_models_count);
-
+        lodCompute.uniform("forced_lod",explicit_lod);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
