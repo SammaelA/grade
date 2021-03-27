@@ -417,7 +417,7 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
-void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size)
+void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, GroveRendererDebugParams dbgpar)
 {
     glm::vec3 camera_pos = camera.pos;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -534,6 +534,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
             rendererInstancing.texture("tex", atlas->tex());
             rendererInstancing.uniform("type_id", (uint)mdrd.type_id);
             rendererInstancing.uniform("camera_pos", camera_pos);
+            rendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                                 mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }

@@ -160,7 +160,7 @@ const_psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 dsm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size)
 {
     heightmap = h;
-    mask.set_round(ggd.size.x/2);
+    mask.set_round(ggd.size.x);
     hm.create(*heightmap,mask);
 }
 void Seeder::add_body(Body *b, float opacity, bool solid)

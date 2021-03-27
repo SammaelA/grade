@@ -38,6 +38,8 @@ const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
 int render_mode = -1;
 int debug_tex = 0;
 int debug_layer = 0;
+int debug_model_focus = 0;
+bool debug_need_focus = false;
 float rot_a;
 Tree t[MAX_TREES];
 TreeGenerator gen(t[100]);
@@ -148,15 +150,25 @@ std::function<void()> eventHandler = []() {
   }
   if (Tiny::event.active[SDLK_b])
   {
+    if (debug_need_focus)
+      debug_model_focus++;
     if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
       debug_layer++;
     Tiny::event.active[SDLK_b] = false;
   }
     if (Tiny::event.active[SDLK_v])
   {
+    if (debug_need_focus)
+      debug_model_focus--;
     if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
       debug_layer--;
     Tiny::event.active[SDLK_v] = false;
+  }
+  if (Tiny::event.active[SDLK_f])
+  {
+    debug_need_focus = !debug_need_focus;
+    render_mode = -1;
+    Tiny::event.active[SDLK_f] = false;
   }
   if (!Tiny::event.press.empty())
   {
@@ -459,7 +471,11 @@ int main(int argc, char *argv[])
       tr.render(projection * camera.camera());
       if (draw_clusterized)
       {
-        groveRenderer.render(cloudnum, projection * camera.camera(),camera, glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT));
+        GroveRendererDebugParams dbgpar;
+        dbgpar.need_focus_model = debug_need_focus;
+        dbgpar.model_focused = debug_model_focus;
+        groveRenderer.render(cloudnum, projection * camera.camera(),camera, 
+        glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), dbgpar);
         debugVisualizer->render(projection * camera.camera(),render_mode);
       }
     }

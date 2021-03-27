@@ -693,7 +693,7 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
     }
 }
 void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
-                                    glm::vec4 screen_size)
+                                    glm::vec4 screen_size, GroveRendererDebugParams dbgpar)
 {
     if (!data || !data->valid)
         return;
@@ -712,6 +712,7 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRenderer.texture("tex", data->atlas.tex());
         billboardRenderer.uniform("model", cloud->model);
         billboardRenderer.uniform("projectionCamera", projectionCamera);
+     
         cloud->render(GL_TRIANGLES);
     }
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
@@ -723,6 +724,7 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);
+        billboardRendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
         
         glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                             mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);

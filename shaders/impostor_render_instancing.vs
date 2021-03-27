@@ -96,7 +96,7 @@ out vec3 q_abt;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
 out vec2 a_mult;
-
+flat out uint model_id;
 out mat4 rot_m;
 #define PI 3.1415926535897932384626433832795
 
@@ -203,4 +203,5 @@ void main(void) {
     ex_FragPos.y = offset;
     //ex_FragPos.y = slice_n;
     //ex_FragPos.z = gl_DrawID;
+    model_id = curModels[id].y;
 }

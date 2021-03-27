@@ -348,7 +348,7 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
 
 }
 void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
-                              glm::vec4 screen_size)
+                              glm::vec4 screen_size, GroveRendererDebugParams dbgpar)
 {
     if (!data || !data->valid)
         return;
@@ -366,7 +366,7 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     impostorRendererInstancing.uniform("delta",0.5f);
     impostorRendererInstancing.uniform("type_id",(uint)mdrd.type_id);
     impostorRendererInstancing.uniform("vertex_id_offset",mdrd.base_vertex_id);
-
+    impostorRendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
     glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                         mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
     /*

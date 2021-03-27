@@ -66,7 +66,7 @@ out vec3 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
 out vec2 a_mult;
-
+flat out uint model_id;
 void main(void) 
 {
     uint id = typeData[type_id].offset + gl_DrawID;
@@ -79,5 +79,6 @@ void main(void)
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
 	ex_Tex = in_Tex.xyz;
     ex_Tex.z = instances[curInsts[offset].index].center_par.w;
+    model_id = curModels[id].y;
 	//ex_Tex.x += 0.01*float(models_instance_count[id]);
 }

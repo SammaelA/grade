@@ -102,6 +102,11 @@ struct GrovePacked
     std::vector<ImpostorsData> impostors;
     GrovePacked() : uniqueCatalogue(7), instancedCatalogue(7){};
 };
+struct GroveRendererDebugParams
+{
+    bool need_focus_model = false;
+    int model_focused = 0;
+};
 class GroveRenderer
 {
 public:
@@ -126,7 +131,7 @@ public:
         std::vector<Instance2> leaves_instances;
         float max_dist;
     };
-    void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size);
+    void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, GroveRendererDebugParams dbgpar);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
                   bool print_perf);
     GroveRenderer();
