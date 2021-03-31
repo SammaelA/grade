@@ -9,10 +9,19 @@ preset = {default wood leaf2}
 box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
 }
 grove_end
+grove preset_tester
+{
+count = 2
+synthetic_count = 0
+synthetic_precision = 1
+pos = (0 0 0)
+preset = {default wood leaf}
+}
+grove_end
 grove oak_grove
 {
-count = 5
-synthetic_count = 25
+count = 1
+synthetic_count = 0
 synthetic_precision = 5
 pos = (0 0 0)
 size = (300 200 300)
@@ -57,7 +66,7 @@ preset = {default wood2 leaf2}
 grove_end
 grove grove40
 {
-count = 40
+count = 41
 pos = (0 0 0)
 size = (500 200 500)
 preset = {default wood2 leaf2}

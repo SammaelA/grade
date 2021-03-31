@@ -358,8 +358,9 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
             return;
         std::vector<SegmentVertexes> vets;
         std::vector<float> empty_mults;
-        int i = 0;
+
         int ringsize = MIN(32,MAX(3,3 + 2*(max_level - b.level)*(max_level - b.level)));
+        int tex_step = 4;
         if (ringsize % 2 == 1)
             ringsize++;
         glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
@@ -369,12 +370,18 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
                 dir = b.joints[i].pos - b.joints[i - 1].pos;
             SegmentVertexes vt;
             std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
-            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % 3) / 3, mults, b.plane_coef);
+            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % tex_step) / tex_step, mults, b.plane_coef);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);
             i++;
         }
+        SegmentVertexes vt;
+        int i = b.joints.size() - 1;
+        std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
+        get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, (float)(i % tex_step) / tex_step, mults, b.plane_coef);
+        vets.back().smallRing = vt.bigRing;
+
         for (auto &vt : vets)
         {
             seg_vertexes_to_model(vt, m, tc_zw);

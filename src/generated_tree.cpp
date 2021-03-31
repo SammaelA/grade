@@ -392,8 +392,6 @@ void TreeGenerator::recalculate_thickness(Branch *b)
     while (rev_it != b->joints.rend())
     {
         weights[i] = weights[i + 1] + rev_it->light;
-        //if (b->level == 0)
-        //    debug("(%f + %f) ",weights[i + 1],rev_it->light);
         for (auto br : rev_it->childBranches)
         {
             weights[i] += br->light;
@@ -416,17 +414,9 @@ void TreeGenerator::recalculate_thickness(Branch *b)
         for (auto br : j_it->childBranches)
         {
             br->base_r = s_it->rel_r_begin * powf(br->light / weights[i - 1], 1 / curParams().r_split_save_pow());
-        
-            if (br->base_r > s_it->rel_r_begin)
-            {
-                logerr("odd thing %f > %f (of %f)  %f %f %f %f",br->base_r,s_it->rel_r_begin,sum_r,weights[i],j_it->light,weights[i - 1],
-                curParams().r_split_save_pow());
-                for (int i=0;i<b->joints.size() + 1;i++)
-                {
-                    debug("%f ",weights[i]);
-                }
-                debugnl();
-            }
+            curParams.set_state(br->level);
+            br->base_r *= curParams().base_r();
+            curParams.set_state(b->level);
         }
         s_prev++;
         s_it++;
@@ -436,7 +426,11 @@ void TreeGenerator::recalculate_thickness(Branch *b)
     s_prev->rel_r_end = s_prev->rel_r_begin * powf(weights[i] / weights[i - 1], 1 / curParams().r_split_save_pow());
     if (!b->joints.back().childBranches.empty())
     {
-        b->joints.back().childBranches.front()->base_r = s_prev->rel_r_end;
+        Branch *cont = b->joints.back().childBranches.front();
+        curParams.set_state(cont->level);
+        s_prev->rel_r_end = MIN(s_prev->rel_r_begin, s_prev->rel_r_end*curParams().base_r());
+        cont->base_r = s_prev->rel_r_end;
+         curParams.set_state(b->level);
     }
     delete[](weights);
 }
@@ -563,7 +557,7 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
     j1.pos = t.pos;
     new_joint(root, j1);
     ts.begin = j1.pos;
-    ts.end = j1.pos + glm::vec3(0, curParams().base_r(), 0);
+    ts.end = j1.pos + glm::vec3(0, 3*curParams().base_r(), 0);
     j2.pos = ts.end;
     ts.rel_r_begin = 1;
     ts.rel_r_end = 1;

@@ -68,4 +68,5 @@ void main()
             curTypes[i] = uvec4(0);
         }
     }
+    memoryBarrier();
 }
