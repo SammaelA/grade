@@ -18,7 +18,8 @@ class TreeGenerator
 {
 public:
     TreeGenerator(Tree &t) : curTree(t), curParams(TreeStructureParameters(),1){};
-    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees, Heightmap *h);
+    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees, 
+                      Heightmap *h, bool visualize_voxels = false);
 
     bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;

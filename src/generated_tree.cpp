@@ -866,7 +866,7 @@ void transform_according_to_root(ClusterData &cluster)
     }
 }
 void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees,
-                                 Heightmap *h)
+                                 Heightmap *h, bool visualize_voxels)
 {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     heightmap = h;
@@ -980,7 +980,10 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
         grove.roots.push_back(BranchStructure());
         pack_structure(trees[i].root,grove,grove.roots.back(),instanced_structures);
     }
-
+    if (visualize_voxels)
+    {
+        debug.visualize_light_voxels(voxels,ggd.pos-ggd.size + glm::vec3(0,ggd.size.y,0),2.0f*ggd.size - glm::vec3(0,ggd.size.y,0),glm::vec3(2),0.8,0.1);
+    }
     delete(voxels);
     for (int i = 0; i < count; i++)
     {

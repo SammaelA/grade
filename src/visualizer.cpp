@@ -681,23 +681,22 @@ void DebugVisualizer::render(glm::mat4 view_proj, int mode)
     }
     if ((mode == -1) || (mode == 2))
     {
-        debugShader.use();
-        debugShader.uniform("projectionCamera", view_proj);
-        debugShader.uniform("need_tex",false);
-        debugShader.uniform("need_arr_tex",false);
-        debugShader.uniform("need_coord",true);
-        debugShader.uniform("need_color",false);
+        bodyShader.use();
+        bodyShader.uniform("projectionCamera", view_proj);
+        bodyShader.uniform("need_coord",true);
         for (int i = 0; i < debugModels.size(); i++)
         {
             if (currentModes[i] != 2)
                 continue;
-            debugShader.uniform("model", debugModels[i]->model);
+            bodyShader.uniform("main_color",glm::vec3((i % 3)/3.0,(i % 5)/5.0,(i % 7)/7.0));
+            bodyShader.uniform("model", debugModels[i]->model);
             debugModels[i]->update();
             debugModels[i]->render(GL_TRIANGLES);
         }
     }
         bodyShader.use();
         bodyShader.uniform("projectionCamera", view_proj);
+        bodyShader.uniform("need_coord",false);
         for (int i = 0; i < debugModels.size(); i++)
         {
             if (currentModes[i] != 3)
@@ -795,7 +794,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
             for (float z = pos.z; z < pos.z + size.z; z += step.z)
             {
                 float occ = voxels->get_occlusion_trilinear(glm::vec3(x,y,z));
-                if (occ < threshold)
+                if (occ < threshold || occ > 1e5)
                     continue;
                 glm::vec4 tex;
                 tex.w = 1;

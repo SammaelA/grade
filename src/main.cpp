@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
   bool loading_needed = false;
   bool print_perf = false;
   bool only_gen = false;
+  bool visualize_voxels = false;
   GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
   std::string grove_type_name = "default";
   std::string save_path = ".";
@@ -249,6 +250,11 @@ int main(int argc, char *argv[])
     else if (std::string(argv[k]) == "-perf")
     {
       print_perf = true;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-visualize_voxels")
+    {
+      visualize_voxels = true;
       k++;
     }
     else if (std::string(argv[k]) == "-only_gen")
@@ -340,7 +346,7 @@ int main(int argc, char *argv[])
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    gen.create_grove(ggd, grove, *debugVisualizer, t, &h);
+    gen.create_grove(ggd, grove, *debugVisualizer, t, &h, visualize_voxels);
   }
   if (saving_needed)
   {
@@ -484,15 +490,16 @@ int main(int argc, char *argv[])
     else
     {
       tr.render(projection * camera.camera());
-      if (draw_clusterized)
+      if (draw_clusterized && render_mode != 2)
       {
         GroveRendererDebugParams dbgpar;
         dbgpar.need_focus_model = debug_need_focus;
         dbgpar.model_focused = debug_model_focus;
         groveRenderer.render(cloudnum, projection * camera.camera(),camera, 
         glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), dbgpar);
-        debugVisualizer->render(projection * camera.camera(),render_mode);
+        
       }
+      debugVisualizer->render(projection * camera.camera(),render_mode);
     }
   };
 
