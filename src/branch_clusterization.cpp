@@ -4,6 +4,7 @@
 #include "tinyEngine/utility.h"
 #include <set>
 #include "tinyEngine/utility.h"
+int dist_calls = 0;
 using namespace glm;
 #define DEBUG 0
 #define PI 3.14159265f
@@ -453,6 +454,7 @@ Clusterizer::Answer Clusterizer::dist_trunc(BranchWithData &bwd1, BranchWithData
 }
 Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
+    dist_calls++;
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
     if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
@@ -485,7 +487,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
-                branches.push_back(BranchWithData(&b, nb, t.params().max_depth(), i, inverse(rot)));
+                branches.push_back(BranchWithData(&b, nb, t.params().max_depth(), branches.size(), inverse(rot)));
                 i++;
             }
         }
@@ -522,12 +524,16 @@ ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
 }
 void Clusterizer::clusterize(std::vector<ClusterData> &clusters)
 {
+    dist_calls = 0;
+    prepare_ddt();
     Ddg.make_base_clusters(branches);
     Ddg.make(20, clusterizationParams.min_clusters);
     for (int c_num : Ddg.current_clusters)
     {
         clusters.push_back(extract_data(Ddg.clusters[c_num]));
     }
+    logerr("clusterization %d branches %d/%d (%f %) distances calculated",branches.size(),
+    dist_calls,SQR(branches.size()),dist_calls/(float)SQR(branches.size()));
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
@@ -681,4 +687,42 @@ void Clusterizer::set_clusterization_params(ClusterizationParams &params)
     clusterizationParams = params;
     Clusterizer::weights = params.weights;
     Clusterizer::light_weights = params.light_weights;
+}
+Clusterizer::Answer Clusterizer::get_dist(BranchWithData &bwd1, BranchWithData &bwd2, DistData *data)
+{
+    auto p = ddt.get(bwd1.id,bwd2.id);
+    if (data)
+        *data = p.second;
+    return p.first;
+}
+void Clusterizer::prepare_ddt()
+{
+    ddt.create(branches.size());
+    for (int i = 0; i < branches.size(); i++)
+    {
+        for (int j = 0; j < branches.size(); j++)
+        {
+            Answer a;
+            DistData d;
+            if (i == j)
+            {
+                a.exact = true;
+                a.from = 0;
+                a.to = 0;
+                d.dist = 0;
+                d.rotation = 0;
+            }
+            else if (j < i)
+            {
+                auto p = ddt.get(j,i);
+                a = p.first;
+                d = p.second;
+            }
+            else
+            {
+                a = dist(branches[i],branches[j],clusterizationParams.max_individual_dist,0,&d);
+            }
+            ddt.set(i,j,a,d);
+        }
+    }
 }

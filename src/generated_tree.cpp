@@ -122,29 +122,43 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     j.childBranches.push_back(nb);
     test = nb;
 }
+int branch_try_schedule(int k)
+{
+    return k <= 3 ? 1 : powf(2,(k-3)/2) + 1;
+}
 void TreeGenerator::try_new_branch(Branch *b, Joint &j, Segment &s, bool from_end)
 {
     curParams.set_state(b->level + 1);
     float feed = j.light;
     int bs = j.childBranches.size();
-    if ((b->level < curParams().max_depth() - 1) && ((j.type == j.FORK && &j != &(b->joints.back()) && (bs < j.max_branching)) || from_end) && dice(feed, exp(bs) * curParams().base_branch_feed()))
+    if ((b->level < curParams().max_depth() - 1) && 
+        ((j.type == j.FORK && &j != &(b->joints.back()) && 
+        (bs < j.max_branching)) || from_end))
     {
-        float len = curParams().max_segments()*curParams().seg_len_mult();
-        float occ = 0.0;
-        glm::vec3 M;
-        if (b->level == 0)
-            M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len,256, &occ);
-        else if (b->level == 1)
-            M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len, 64, &occ);
-        //else if (b->level == 2)
-        //  M = voxels->get_dir_to_bright_place_cone(j.pos,0.5*len, 16, &occ);
-        else
-            M = voxels->get_dir_to_bright_place_ext(j.pos, 2*(curParams().max_depth() - b->level), &occ);
-        //M = voxels->get_dir_to_bright_place_ray(j.pos,0.5*curParams().seg_len_mult()*curParams().max_segments(),4*(curParams().max_depth() - b->level),&occ);
-        //M *= occ;
-        if (dice(1, occ * curParams().branch_grow_decrease_q()) && (occ < 100000))
+        j.iters_to_next_branch_try--;
+        if (j.iters_to_next_branch_try <= 0)
         {
-            new_branch(b, j, s, M, from_end);
+            j.tries_from_last_grown_branch++;
+            if (dice(feed, exp(bs) * curParams().base_branch_feed()))
+            {
+                float len = curParams().max_segments()*curParams().seg_len_mult();
+                float occ = 0.0;
+                glm::vec3 M;
+                if (b->level == 0)
+                    M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len,256, &occ);
+                else if (b->level == 1)
+                    M = voxels->get_dir_to_bright_place_cone(j.pos,0.33*len, 64, &occ);
+                else if (b->level == 2)
+                    M = voxels->get_dir_to_bright_place_ext(j.pos, 3, &occ);
+                else 
+                    M = voxels->get_dir_to_bright_place_ext(j.pos, 1, &occ);
+                if (dice(1, occ * curParams().branch_grow_decrease_q()) && (occ < 100000))
+                {
+                    new_branch(b, j, s, M, from_end);
+                    j.tries_from_last_grown_branch = 0;
+                }
+            }
+            j.iters_to_next_branch_try = branch_try_schedule(j.tries_from_last_grown_branch);
         }
     }
     curParams.set_state(b->level);
@@ -216,20 +230,32 @@ void TreeGenerator::new_segment(Branch *base, glm::vec3 &M)
         dir = glm::normalize(dir + glm::vec3(0.0,0.05,0));
     new_segment2(base, dir, last.pos);
 }
+int segment_try_schedule(int k)
+{
+    return k <= 3 ? 1 : 1.5*k - 4;
+}
 void TreeGenerator::try_new_segment(Branch *base)
 {
     float feed = base->joints.back().light;
-    if ((base->segments.size() < base->max_seg_count) && dice(feed, curParams().base_seg_feed()))
+    if (base->segments.size() < base->max_seg_count)
     {
-        float occ = 0.0;
-        sum_feed[base->level] += feed;
-        count_feed[base->level] += 1;
-        glm::vec3 M = voxels->get_dir_to_bright_place_ext(base->segments.back().end, 1, &occ);
-        //M = voxels->get_dir_to_bright_place_ray(base->segments.back().end,0.5*curParams().seg_len_mult(),3*(curParams().max_depth() - base->level),&occ);
-        //M *= occ;
-        if (true || dice(1, occ * curParams().segment_grow_decrease_q()) && (occ < 100000))
+        base->iters_to_next_segment_try--;
+        if (base->iters_to_next_segment_try <= 0)
         {
-            new_segment(base, M);
+            base->tries_from_last_grown_segment++;
+            if (dice(feed, curParams().base_seg_feed()))
+            {
+                float occ = 0.0;
+                sum_feed[base->level] += feed;
+                count_feed[base->level] += 1;
+                glm::vec3 M = voxels->get_dir_to_bright_place_ext(base->segments.back().end, 1, &occ);
+                if (dice(1, occ * curParams().segment_grow_decrease_q()) && (occ < 100000))
+                {
+                    new_segment(base, M);
+                    base->tries_from_last_grown_segment = 0;
+                }
+            }
+            base->iters_to_next_segment_try = segment_try_schedule(base->tries_from_last_grown_segment);
         }
     }
 }

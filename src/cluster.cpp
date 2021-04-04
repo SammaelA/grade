@@ -44,7 +44,7 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         if (B->branch)
         { //dist between single branches.
             DistData addData;
-            Answer a = currentClusterizer->dist(*branch, *(B->branch), min, max, &addData);
+            Answer a = currentClusterizer->get_dist(*branch, *(B->branch), &addData);
             float distance = a.to;
             addData.dist = distance;
             if (a.exact)

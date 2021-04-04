@@ -62,31 +62,13 @@ public:
             return Answer(exact && sub.exact, from - sub.to, to -sub.from);
         }
     };
-    struct DistDataTable
-    {
-        Answer *data = nullptr;
-        int n;
-        void create(int _n)
-        {
-            n = _n;
-            data = new Answer[n * n];
-        }
-        void clear()
-        {
-            if (data)
-                delete[] data;
-        }
-        inline Answer get(int x, int y) { return data[x * n + y]; }
-        inline void set(int x, int y, Answer &a) { data[x * n + y] = a; }
-        int size() { return n; }
-        ~DistDataTable() { clear(); }
-    };
+
     static void calc_joints_count(Branch *b, std::vector<int> &counts);
     struct BranchWithData
     {
         Branch *original;
         Branch *b;
-        int pos;
+        int id;
         float rot_angle = 0.0;
         std::vector<int> joint_counts;
         glm::mat4 transform;
@@ -103,11 +85,11 @@ public:
                 }
             }
         }
-        BranchWithData(Branch *_original, Branch *_b, int levels, int _pos, glm::mat4 _transform)
+        BranchWithData(Branch *_original, Branch *_b, int levels, int _id, glm::mat4 _transform)
         {
             original = _original;
             b = _b;
-            pos = _pos;
+            id = _id;
             transform = _transform;
             for (int i = 0; i < levels; i++)
                 joint_counts.push_back(0);
@@ -192,10 +174,31 @@ public:
         void make(int n = 20, int clusters_num = 1);
         Dist get_P_delta(int n, std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
     };
+    struct DistDataTable
+    {
+        std::pair<Answer, DistData> *data = nullptr;
+        int n;
+        void create(int _n)
+        {
+            n = _n;
+            data = new std::pair<Answer, DistData>[n * n];
+        }
+        void clear()
+        {
+            if (data)
+                delete[] data;
+        }
+        inline std::pair<Answer, DistData> get(int x, int y) { return data[x * n + y]; }
+        inline void set(int x, int y, Answer &a, DistData &d) 
+        { data[x * n + y] = std::pair<Answer, DistData>(a,d); }
+        int size() { return n; }
+        ~DistDataTable() { clear(); }
+    };
     bool set_branches(Tree &t, int layer);
     bool set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light);
     void set_clusterization_params(ClusterizationParams &params);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
+    void prepare_ddt();
     void clusterize(std::vector<ClusterData> &clusters);
     ClusterData extract_data(Cluster &cl);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
@@ -210,6 +213,7 @@ public:
     Answer dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0);
     Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
     Answer cluster_dist_min(Cluster &c1, Cluster &c2, float min = 1.0, float max = 0.0);
+    Answer get_dist(BranchWithData &bwd1, BranchWithData &bwd2, DistData *data = nullptr);
     Clusterizer()
     {
         Cluster::currentClusterizer = this;

@@ -40,17 +40,20 @@ struct Joint
     Leaf *leaf = nullptr;
     glm::vec3 pos;
     std::list<Branch *> childBranches;
-    int max_branching = 0;
+    short max_branching = 0;
+    short iters_to_next_branch_try = 0;
+    short tries_from_last_grown_branch = 0;
     float light;
-    Mark *mark = nullptr;
 };
 struct Branch
 {
     int id = 0;
-    uint type_id = 0;
-    int level;
-    int base_seg_n;
-    int max_seg_count;
+    ushort type_id = 0;
+    short level;
+    short base_seg_n;
+    short max_seg_count;
+    short iters_to_next_segment_try = 0;
+    short tries_from_last_grown_segment = 0;
     std::list<Segment> segments;
     std::list<Joint> joints;
     float light;
