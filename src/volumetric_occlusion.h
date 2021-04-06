@@ -34,6 +34,7 @@ public:
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true);
     void add_heightmap(Heightmap &h);
+    void get_data(float **data, glm::ivec3 &size);
     float NMSE(LightVoxelsCube *B);
     glm::vec3 get_center();
     float get_voxel_size();

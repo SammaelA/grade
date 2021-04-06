@@ -102,7 +102,7 @@ public:
             for (int i=0;i<clusterizationParams.bwd_rotations;i++)
             {
                 b->transform(rot);
-                leavesDensity.emplace_back(new LightVoxelsCube(
+                leavesDensity.push_back(new LightVoxelsCube(
                     glm::vec3(50,10,10),glm::vec3(51,11,11),1/clusterizationParams.voxels_size_mult,0.85));
                 set_occlusion(b,leavesDensity.back());
             }
@@ -226,4 +226,6 @@ public:
     DistDataTable ddt;
     LightVoxelsCube *current_light = nullptr;
     ClusterDendrogramm Ddg;
+
+    static glm::vec3 canonical_bbox;
 };

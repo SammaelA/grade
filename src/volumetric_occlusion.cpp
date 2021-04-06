@@ -28,6 +28,7 @@ voxel_size(vox_size)
     count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
     //debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
     voxels = new float[count];
+    std::fill(voxels,voxels+count,0);
     sum_memory += count*sizeof(float);
     sum_allocs++;
     //logerr("allocated %d bytes total for %d voxels cubes",sum_memory, sum_allocs);
@@ -60,6 +61,20 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
             }
         }
     }
+}
+void LightVoxelsCube::get_data(float **data, glm::ivec3 &size)
+{
+    *data = voxels;
+    for (int i=0;i<voxels_count();i++)
+    {
+        if (voxels[i] < 0)
+        {
+            logerr("VOL error %d %f ",i,voxels[i]);
+        }
+    }
+    size.x = vox_x;
+    size.y = vox_y;
+    size.z = vox_z;
 }
 void LightVoxelsCube::set_occluder_voxel(glm::ivec3 voxel, float strength)
 {
@@ -309,8 +324,12 @@ void LightVoxelsCube::set_occluder_trilinear(glm::vec3 pos, float strenght)
     int x = voxel.x;
     int y = voxel.y;
     int z = voxel.z;
+    if (dp.x < 0 || dp.x > 1 || dp.y < 0 ||dp.y > 1|| dp.z<0 || dp.z >1)
+    {
+        logerr("trilinear error %f %f %f pos =  %f %f %f",dp.x,dp.y,dp.z,pos.x,pos.y,pos.z);
+    }
     #define C(i,j,k) voxels[v_to_i(x+i,y+j,z+k)]
-    if (in_voxel_cube(voxel) && in_voxel_cube(voxel + glm::ivec3(1,1,1)))
+    if (false && in_voxel_cube(voxel) && in_voxel_cube(voxel + glm::ivec3(1,1,1)))
     {
         C(0,0,0) += strenght*(1 - dp.x)*(1 - dp.y)*(1 - dp.z);
         C(0,0,1) += strenght*(1 - dp.x)*(1 - dp.y)*(dp.z);
@@ -324,7 +343,13 @@ void LightVoxelsCube::set_occluder_trilinear(glm::vec3 pos, float strenght)
     }
     else if (in_voxel_cube(voxel))
     {
-        C(0,0,0) += strenght;
+
+        if (strenght<0 || C(0,0,0) < 0)
+        {
+            logerr("wrong value %f %f",strenght,C(0,0,0));
+        }
+        else
+                C(0,0,0) += strenght;
     }
     
 }

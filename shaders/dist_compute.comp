@@ -1,0 +1,360 @@
+#version 430
+#define THREADS 8
+layout( local_size_x = THREADS, local_size_y = THREADS) in;
+
+#define CNT_bytes 8
+#define MAX_CHILD_BRANCHES 2
+#define MAX_JOINTS 42
+#define _cnt(x) ((x) & (1<<CNT_bytes))
+#define _id(x) ((x) >> CNT_bytes)
+#define id_cnt_pack(id, cnt) ((id>>CNT_bytes) | cnt)
+#define MAX_BRANCH_LEVELS 5
+
+#define PI 3.14159265f  
+
+    struct gJoint
+    {
+        uint r_id;
+        uint pos_id;
+        uint child_branches_ids[MAX_CHILD_BRANCHES];
+    };// = uint4
+    struct gBranch
+    {
+        uint joint_offset;
+        uint joint_count;
+        float self_weight;
+        float cumulative_weight;
+    };
+    struct gBranchWithData
+    {
+        uvec4 voxels_xyz_rots;
+        
+        uint branch_pos;//position of root gBranch in buffer
+        uint branch_id;
+        uint voxels_offset;
+        uint voxels_size;
+        
+        uint level;
+        uint type_id;
+        uint dead;
+        uint pad1;
+        
+        uint joints_counts[MAX_BRANCH_LEVELS];
+        uint pad[4*(MAX_BRANCH_LEVELS/4 + 1) - MAX_BRANCH_LEVELS];
+    };
+    struct gClusterizationParams
+    {
+        int bwd_rotations;
+        int r_samples;
+        float delta;
+        float light_importance;
+        float voxels_size_mult;
+        int ignore_structure_level;
+        int min_clusters;
+        float max_individual_dist;
+        bool different_types_tolerance;
+        float weights[MAX_BRANCH_LEVELS];
+        float light_weights[MAX_BRANCH_LEVELS];
+        float r_weights[MAX_BRANCH_LEVELS];
+    };
+
+    layout(std430, binding=0) readonly buffer pos_buf
+    {
+        vec4 positions[];
+    };
+    layout(std430, binding=1) readonly buffer voxels_buf
+    {
+        float all_voxels[];
+    };
+    layout(std430, binding=2) readonly buffer rs_buf
+    {
+        float joint_rs[];
+    };
+    layout(std430, binding=3) readonly buffer sticks_buf
+    {
+        gBranch sticks[];
+    };
+    layout(std430, binding=4) readonly buffer branches_buf
+    {
+        gBranchWithData branches[];
+    };
+    layout(std430, binding=5) writeonly buffer dist_data_buf
+    {
+        float dist_data[];
+    };
+    layout(std430, binding=6) readonly buffer params_buf
+    {
+        gClusterizationParams params_p[];
+    };
+    layout(std430, binding=7) readonly buffer joints_buf
+    {
+        gJoint joints[];
+    };
+
+
+uniform int branches_size;
+uniform int start_x;
+uniform int start_y;
+#define dd_r(i,j) (dist_data[2*(i*branches_size + j) + 1])
+#define dd_dist(i,j) (dist_data[2*(i*branches_size + j)])
+gClusterizationParams params;
+
+
+float calculate_dist_structure(int i, int j, int rot, float max_dist)
+    {
+        float e = -11;
+        #define STACK_SIZE (MAX_CHILD_BRANCHES*MAX_JOINTS*MAX_JOINTS)
+        uvec3 ring_stack[STACK_SIZE];//id1,id2,level
+        uint joints_passed[MAX_BRANCH_LEVELS];
+        float matches[MAX_BRANCH_LEVELS];
+        bool pair_found[MAX_JOINTS];
+        int bottom = 0;
+        int top = 1;
+        float kd = 0;
+        float fd = 0;
+        bool more_than_max = false;
+        int rot1 = 0;
+        int rot2 = rot;
+        ring_stack[bottom].x = branches[i].branch_pos;
+        ring_stack[bottom].y = branches[j].branch_pos;
+        ring_stack[bottom].z = branches[i].level;
+        for (int k=0;k<MAX_BRANCH_LEVELS;k++)
+        {
+            joints_passed[k] = 0;
+            matches[k] = 0;
+        }
+        for (int k=0;k<MAX_BRANCH_LEVELS;k++)
+        {
+            if (k > params.ignore_structure_level)
+                break;
+            fd += params.weights[k]*(branches[i].joints_counts[k] + branches[j].joints_counts[k]);
+        }
+        while (top != bottom && !more_than_max)
+        {
+            for (int j1 = 0;j1<MAX_JOINTS;j1++)
+            {
+                pair_found[j1] = false;
+            }
+            uint bid_1 = ring_stack[bottom].x;
+            uint bid_2 = ring_stack[bottom].y;
+
+            #define POS1(j1) positions[joints[sticks[bid_1].joint_offset + j1].pos_id + rot1].xyz
+            #define POS2(j2) positions[joints[sticks[bid_2].joint_offset + j2].pos_id + rot2].xyz
+            #define JJ1(j1)  joints[sticks[bid_1].joint_offset + j1]
+            #define JJ2(j2)  joints[sticks[bid_2].joint_offset + j2]
+            uint b_level = ring_stack[bottom].z;
+            uint j1_sz = sticks[bid_1].joint_count;
+            uint j2_sz = sticks[bid_2].joint_count;
+            
+            float not_matched = j1_sz + j2_sz;
+
+            if (j1_sz < j2_sz)
+            {
+                uint t = j1_sz;
+                j1_sz = j2_sz;
+                j2_sz = t;
+                bid_1 = ring_stack[bottom].y;
+                bid_2 = ring_stack[bottom].x;
+                rot1 = rot;
+                rot2 = 0;
+            }
+            if (j1_sz <= 1)
+            {
+                if (j2_sz == j1_sz)
+                {
+                    matches[b_level] += j1_sz + j2_sz;
+                    not_matched = 0;
+                }
+                
+            }
+            else
+            {
+                float l1 = length(POS1(j1_sz - 1) - POS1(0));
+                float l2 = length(POS2(j2_sz - 1) - POS2(0));
+                float delta = params.delta*(l1+l2)/2;
+
+                for (int j1 = 0; j1 < j1_sz; j1++)
+                {
+                    float min_dist = delta;
+                    int min_pos = -1;
+                    vec3 pos1 = POS1(j1);
+                    for (int j2 = 0; j2 < j2_sz; j2++)
+                    {
+                        if (pair_found[j2])
+                            continue;
+                        float l = length(pos1 - vec3(POS2(j2)));
+                        if (l < min_dist)
+                        {
+                            min_dist = l;
+                            min_pos = j2;
+                        }
+                    }
+                    if (min_pos >= 0)
+                    {
+                        pair_found[min_pos] = true;
+                        float r_diff = 0;
+                        if (JJ1(j1).r_id > 0 && JJ2(min_pos).r_id > 0 && params.r_samples > 0)
+                        {
+                            for (int t = 0;t<params.r_samples;t++)
+                            {
+                                float r1 = joint_rs[JJ1(j1).r_id + t];
+                                float r2 = joint_rs[JJ2(min_pos).r_id + t];
+                                r_diff += sqrt(abs(r1-r2)/(r1+r2+1e-6));
+                            }
+                            r_diff /= params.r_samples;
+                        }
+                        float match = 2*(1-r_diff);
+                        matches[b_level] += match;
+                        not_matched -= match;
+                        if (b_level < params.ignore_structure_level)
+                        {
+                            uint chbid1 = JJ1(j1).child_branches_ids[0];
+                            uint chbid2 = JJ2(min_pos).child_branches_ids[0];
+                            if (chbid1 > 0 && chbid2 > 0)
+                            {
+                                ring_stack[top].x = chbid1;
+                                ring_stack[top].y = chbid2;
+                                ring_stack[top].z = b_level + 1;
+                                top = (top + 1) % STACK_SIZE;
+                            }
+                            else if (chbid1 > 0)
+                            {
+                                kd += sticks[chbid1].cumulative_weight;
+                            }
+                            else if (chbid2 > 0)
+                            {
+                                kd += sticks[chbid2].cumulative_weight;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        uint chbid1 = JJ1(j1).child_branches_ids[0];
+                        if (chbid1 > 0)
+                        {
+                            kd += sticks[chbid1].cumulative_weight;
+                        }
+                    }
+                }
+                for (int j2 = 0; j2 < j2_sz; j2++)
+                {
+                    if (!pair_found[j2])
+                    {
+                        uint chbid2 = JJ2(j2).child_branches_ids[0];
+                        if (chbid2 > 0)
+                        {
+                            kd += sticks[chbid2].cumulative_weight;
+                        }
+                    }
+                }
+            }
+            kd += params.weights[b_level]*not_matched;
+            if (kd/fd > max_dist)
+            {
+                if (e < 0)
+                    e = kd/fd;
+                more_than_max = true;
+            }
+            bottom = (bottom + 1) % STACK_SIZE;
+        }
+        if (more_than_max)
+        {
+            return 1;
+        }
+        else
+        {
+            
+            float r = 0;
+            float d = 0;
+            for (int k=0;k<MAX_BRANCH_LEVELS;k++)
+            {
+                if (k > params.ignore_structure_level)
+                    break;
+                uint jk = (branches[i].joints_counts[k] + branches[j].joints_counts[k]);
+                if (jk > 0)
+                {
+                    r += params.weights[k]*matches[k];
+                    d += params.weights[k]*jk;
+                }
+            }
+            return kd/fd;
+        }
+    }
+    float calculate_dist_light(int i, int j, int rot, float max_dist)
+    {
+        if (branches[i].voxels_size != branches[j].voxels_size || 
+            branches[i].voxels_xyz_rots.w != branches[j].voxels_xyz_rots.w)
+            return 1;
+        uint vs = branches[i].voxels_size/branches[i].voxels_xyz_rots.w;
+        float a = 0;
+        float b = 0.01;
+        uint off1 = branches[i].voxels_offset;
+        uint off2 = branches[j].voxels_offset + rot*vs;
+        ////logerr("CL %d %d %d",off1,off2,vs);
+        for (uint k = 0; k<vs;k++)
+        {
+            a += abs(all_voxels[off1 + k] - all_voxels[off2 + k]);
+
+            b += (all_voxels[off1 + k] + all_voxels[off2 + k]);
+            if (b<0)
+            {
+                ////logerr("errror!!! %f %f %d %d %d",all_voxels[off1 + k], all_voxels[off2 + k],i,j,rot);
+            }
+        }
+        return a/b;
+    }
+    vec2 calculate_dist_simple(int i, int j, int rot, float min_dist_struct)
+    {
+        #define EPS 0.025
+        //empirically got that if structure distance is > 1.1*min_dist_struct then
+        //the full distance is probably more that min_dist
+        #define MAX_STR_DIST_MULT 1.1
+        float MS = 0, ML = 0, a = params.light_importance;
+        if (a > EPS)
+        {
+            ML = calculate_dist_light(i,j,rot,1);
+        }
+        if (1 - a > EPS)
+        {
+            MS = calculate_dist_structure(i,j,rot,MAX_STR_DIST_MULT*min_dist_struct);
+        }
+        if (a*ML + (1-a)*MS < 0)
+        {
+            //logerr("ERROR %f %f %f",a,ML,MS);
+        }
+        return vec2(a*ML + (1-a)*MS,MS);
+    }
+void main()
+{
+
+    uint i = gl_GlobalInvocationID.x + uint(start_x);
+    uint j = gl_GlobalInvocationID.y + uint(start_y);
+    if (i >= branches_size || j>= branches_size || j <= i)
+        return;
+    params = params_p[0];
+        if  ((branches[i].type_id != branches[j].type_id && !params.different_types_tolerance)|| 
+             branches[i].dead != branches[j].dead || 
+             branches[i].level != branches[j].level)
+        {
+            dd_r(i,j) = 0;
+            dd_dist(i,j) = 1000;
+            return;
+        }
+
+        float min_dist = params.max_individual_dist;
+        float min_structure_dist = 1;
+        int rot = 0;
+        for (int k =0;k<params.bwd_rotations;k++)
+        {
+            vec2 dist = calculate_dist_simple(int(i),int(j),k,min_structure_dist);
+            if (dist.x<min_dist)
+            {
+                min_dist = dist.x;
+                min_structure_dist = dist.y;
+                rot = k;
+            }
+        }
+
+        dd_r(i,j) = (2*PI*rot)/params.bwd_rotations;
+        dd_dist(i,j) = min_dist;
+}

@@ -18,6 +18,8 @@
 
 #define PI 3.14159265f
 int seg_count = 0;
+int j_count = 0;
+int b_count = 0;
 int iter = 0;
 float sum_feed[10];
 float count_feed[10];
@@ -89,6 +91,7 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
     voxels->set_occluder(j.pos, powf(curParams().max_depth() - b->level,2));
     calc_light(j);
     b->joints.push_back(j);
+    j_count++;
 }
 void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bool from_end)
 {
@@ -121,6 +124,7 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
 
     j.childBranches.push_back(nb);
     test = nb;
+    b_count++;
 }
 int branch_try_schedule(int k)
 {
@@ -804,8 +808,6 @@ void pack_cluster(ClusterData &cluster, GrovePacked &grove, std::vector<BranchSt
     pack_branch_recursively(base, grove, ids,instanced_structures.back(), lvl_from, lvl_to);
     if (instanced_structures.back().childBranches.size() == 1)
         instanced_structures.back() = instanced_structures.back().childBranches[0];
-    logerr( "cluster added %d branches %d transforms\n", grove.instancedBranches.back().branches.size(),
-           grove.instancedBranches.back().IDA.transforms.size());
 
     for (int i=0;i<cluster.ACDA.originals.size();i++)//leave marks on branch to construct tree structure in future
     {
@@ -929,8 +931,9 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     tr_cp.different_types_tolerance = true;
     tr_cp.r_weights = std::vector<float>{0.5,0,0,0.0,0.0}; 
     tr_cp.max_individual_dist = 0.1;
-    tr_cl.set_branches(trees, count, 0, voxels);
+    tr_cp.bwd_rotations = 4;
     tr_cl.set_clusterization_params(tr_cp);
+    tr_cl.set_branches(trees, count, 0, voxels);
 
     std::vector<ClusterData> trunks_clusters, branches_clusters, full_tree_clusters;
     tr_cl.clusterize(trunks_clusters);
@@ -941,13 +944,15 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     Clusterizer cl;
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-    cp.ignore_structure_level = 2;
+    cp.ignore_structure_level = 1;
     cp.delta = 0.3;
     cp.max_individual_dist = 0.9;
+    cp.bwd_rotations = 4;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-    cl.set_branches(trees, count, 1, voxels);
     cl.set_clusterization_params(cp);
+    cl.set_branches(trees, count, 1, voxels);
+
     cl.clusterize(branches_clusters);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
 
@@ -965,11 +970,11 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     
     Clusterizer cl2;
-    cl2.set_branches(trees, count + synts, 0, voxels);
     cp.ignore_structure_level = 1;
     cp.light_importance = 0.8;
     cp.different_types_tolerance = false;
     cl2.set_clusterization_params(cp);
+    cl2.set_branches(trees, count + synts, 0, voxels);
     cl2.clusterize(full_tree_clusters);
 
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
@@ -1022,6 +1027,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     std::cerr << "Syntetic trees generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
     std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
     std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count() << "[ms]" << std::endl;
+    logerr("created %d joints %d branches totally",j_count, b_count);
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
 {

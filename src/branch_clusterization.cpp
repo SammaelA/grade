@@ -4,6 +4,7 @@
 #include "tinyEngine/utility.h"
 #include <set>
 #include "tinyEngine/utility.h"
+#include "GPU_clusterization.h"
 int dist_calls = 0;
 using namespace glm;
 #define DEBUG 0
@@ -21,6 +22,7 @@ float distribution2[110];
 ClusterizationParams clusterizationParams;
 std::vector<float> Clusterizer::weights = clusterizationParams.weights;
 std::vector<float> Clusterizer::light_weights = clusterizationParams.light_weights;
+glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,20,20);
 struct JSortData
 {
     float dist;
@@ -375,6 +377,7 @@ Clusterizer::Answer Clusterizer::dist_Nsection(BranchWithData &bwd1, BranchWithD
     float min_phi = 0;
     float base_step = 2 * PI / N;
     vec3 axis = bwd1.b->joints.back().pos - bwd1.b->joints.front().pos;
+    logerr("axis = %f %f %f",axis.x,axis.y,axis.z);
     mat4 rot = rotate(mat4(1.0f), base_step, axis);
     for (int i = 1; i <= N; i++)
     {
@@ -478,12 +481,12 @@ bool Clusterizer::set_branches(Tree &t, int layer)
             nb->deep_copy(&b, branchHeap, &leafHeap);
             if (dedicated_bbox(nb, bbox))
             {
-
+                glm::vec3 cbb = canonical_bbox;
                 mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
                 mat4 rot = inverse(rot_inv);
                 vec3 base_joint_pos = rot * vec4(b.joints.front().pos, 1.0f);
                 mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
-                mat4 SC = scale(mat4(1.0f), vec3(0.01f * bbox.sizes.x, 0.05f * bbox.sizes.y, 0.05f * bbox.sizes.z));
+                mat4 SC = scale(mat4(1.0f), vec3((1/cbb.x) * bbox.sizes.x, (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z));
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
@@ -532,8 +535,6 @@ void Clusterizer::clusterize(std::vector<ClusterData> &clusters)
     {
         clusters.push_back(extract_data(Ddg.clusters[c_num]));
     }
-    logerr("clusterization %d branches %d/%d (%f %) distances calculated",branches.size(),
-    dist_calls,SQR(branches.size()),dist_calls/(float)SQR(branches.size()));
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
@@ -698,6 +699,9 @@ Clusterizer::Answer Clusterizer::get_dist(BranchWithData &bwd1, BranchWithData &
 void Clusterizer::prepare_ddt()
 {
     ddt.create(branches.size());
+    GPUClusterizationHelper gpuch;
+    gpuch.prepare_ddt(branches,ddt,clusterizationParams);
+    return;
     for (int i = 0; i < branches.size(); i++)
     {
         for (int j = 0; j < branches.size(); j++)
