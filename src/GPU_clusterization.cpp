@@ -1,4 +1,6 @@
 #include "GPU_clusterization.h"
+#include "tinyEngine/TinyEngine.h"
+
 int min_count = 0;
 double error_full = 0;
 int missed = 0;
@@ -72,7 +74,9 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
                 Clusterizer::DistData d;
                 a.exact = true;
                 a.from = dd_dist(i,j);
-                a.to = dd_dist(i,j);
+                if (a.from > 0.999*params.max_individual_dist)
+                    a.from = 1e9;
+                a.to = a.from;
                 d.dist = a.from;
                 d.rotation = dd_r(i,j);
                 ddt.set(i,j,a,d);
@@ -106,11 +110,8 @@ void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &bran
         branch.leavesDensity[k]->get_data(&ptr,sizes);
         int sz = br.voxels_size/br.voxels_xyz_rots.w;
         memcpy(&(all_voxels[br.voxels_offset + k*sz]),ptr,sizeof(float)*sz);
-        /*for (int j=0;j<sz;j++)
-        {
-            if (ptr[j]<0)
-            logerr("%d[%f]",j,ptr[j]);
-        }*/
+        delete branch.leavesDensity[k];
+        branch.leavesDensity[k] = nullptr;
     }
     
     cur_voxels_pointer += br.voxels_size;
@@ -207,7 +208,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         setup_buffers();
         distCompute.use();
         distCompute.uniform("branches_size",branches_size);
-        static int max_dispatches = hardness > 0 ? 4 : 8;
+        static int max_dispatches = hardness > 0 ? 8 : 16;
         static int threads = 8;
         static int branches_per_thread = 1;
         int step = (max_dispatches*threads*branches_per_thread);
@@ -229,12 +230,12 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                 distCompute.uniform("start_y",start_y);
                 debugl(13,"GPU clusterization in process %d/%d\n",a,iters*iters);
                 glDispatchCompute(ceil((float)x_sz/threads),ceil((float)y_sz/threads), 1);
+
+                SDL_GL_SwapWindow(Tiny::view.gWindow);
             }
         }
-
         
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, dist_data_buf);
         GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
         memcpy(dist_data,p,sizeof(float)*2*branches_size*branches_size);
@@ -256,18 +257,26 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                 }
                 else
                 {
-                    float d = dd_dist(i,j);
-                    float r = dd_r(i,j);
-                    calculate_dist(i,j);
-                    if (abs(d - dd_dist(i,j)) > 1e-4)
-                        logerr("%d %d from %d compute shader error %f %f --> %f %f",i,j,branches_size,d,r,dd_dist(i,j),dd_r(i,j));
+                    //float d = dd_dist(i,j);
+                    //float r = dd_r(i,j);
+                    //calculate_dist(i,j);
+                    //if (abs(d - dd_dist(i,j)) > 1e-4)
+                    //    logerr("%d %d from %d compute shader error %f %f --> %f %f",i,j,branches_size,d,r,dd_dist(i,j),dd_r(i,j));
                 }
             }
         }
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-        debugl(13,"GPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count());
-        debugl(13,"CPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+        debugl(1,"GPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count());
+        debugl(1,"CPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+        
+        positions.clear();
+        delete all_voxels;
+        all_voxels = nullptr;
+        joint_rs.clear();
+        sticks.clear();
+        branches.clear();
+        joints.clear();
     }
     #define uvec3 glm::uvec3
     #define vec3 glm::vec3
@@ -318,28 +327,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
             int b_level = ring_stack[bottom].z;
             int j1_sz = sticks[bid_1].joint_count;
             int j2_sz = sticks[bid_2].joint_count;
-            
-            /*for (int j1 = 0;j1<MAX_JOINTS;j1++)
-            {
 
-                if (sticks[bid_1].joints[j1].pos_id == 0)
-                {
-                    j1_sz = j1;
-                    break;
-                }
-            }
-            for (int j2 = 0;j2<MAX_JOINTS;j2++)
-            {
-                if (b_level == 1 && i == 0 && rot == 0)
-                {
-                    //logerr("bid = %d find %d",bid_2,sticks[bid_2].joints[j2].pos_id);
-                }
-                if (sticks[bid_2].joints[j2].pos_id == 0 && j2_sz == MAX_JOINTS)
-                {
-                    j2_sz = j2;
-                    //break;
-                }
-            }*/
             float not_matched = j1_sz + j2_sz;
 
             if (j1_sz < j2_sz)
@@ -590,4 +578,6 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         glGenBuffers(1, &joints_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, joints_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(gJoint)*joints.size(), joints.data(), GL_STATIC_DRAW);
+
+
     }

@@ -329,8 +329,14 @@ void main()
 
     uint i = gl_GlobalInvocationID.x + uint(start_x);
     uint j = gl_GlobalInvocationID.y + uint(start_y);
-    if (i >= branches_size || j>= branches_size || j <= i)
+    if (i >= branches_size || j>= branches_size)
         return;
+    if (j <= i)
+    {
+        dd_r(i,j) = 1111;
+        dd_dist(i,j) = 2222;  
+        return;
+    }
     params = params_p[0];
         if  ((branches[i].type_id != branches[j].type_id && !params.different_types_tolerance)|| 
              branches[i].dead != branches[j].dead || 

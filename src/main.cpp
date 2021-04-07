@@ -39,7 +39,7 @@ int render_mode = -1;
 int debug_tex = 0;
 int debug_layer = 0;
 int debug_model_focus = 0;
-bool debug_need_focus = false;
+bool debug_need_focus = true;
 float rot_a;
 Tree t[MAX_TREES];
 TreeGenerator gen(t[100]);
@@ -88,6 +88,11 @@ std::function<void()> eventHandler = []() {
   //Pause Toggle
   float speed = 0.2;
   glm::vec3 cameraPerp = glm::normalize(glm::cross(camera.front, camera.up));
+  if (Tiny::event.active[SDLK_l])
+  {
+    camera = Camera();
+    camera.pos = glm::vec3(-200,70,0);
+  }
   if (Tiny::event.active[SDLK_w])
     camera.pos += speed * camera.front;
   if (Tiny::event.active[SDLK_s])
@@ -122,7 +127,7 @@ std::function<void()> eventHandler = []() {
   }
   if (Tiny::event.active[SDLK_l])
   {
-    draw_clusterized = false;
+    //draw_clusterized = false;
   }
   if (Tiny::event.active[SDLK_r])
   {
@@ -327,7 +332,7 @@ int main(int argc, char *argv[])
   config.load_config();
   config.load_ggds();
 
-  camera.pos = glm::vec3(-200,50,0);
+  camera.pos = glm::vec3(-300,70,0);
 
   Model floor(construct_floor);
 
@@ -338,7 +343,7 @@ int main(int argc, char *argv[])
   BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
-  std::vector<float> LODs_dists = {15000, 10000, 700, 500, 300};
+  std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
   if (pres == GroveRenderer::Precision::LOW)
     LODs_dists.back() = -10;
   Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);

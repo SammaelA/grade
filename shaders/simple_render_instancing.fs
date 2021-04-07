@@ -29,5 +29,12 @@ void main(void)
   if ((a_mult.y > 0.1 && ns > a_mult.x) || (a_mult.y < -0.1 && ns <  1  - a_mult.x))
     discard;
   if (int(model_id) == debug_model_id)
+  {
     fragColor = vec4(1,0,1,1);
+  }
+  else if (debug_model_id >= 0)
+  {
+    int id = (int(model_id) + 1)% 7 + 1;
+    fragColor = 0.5*fragColor + 0.5*vec4(id / 4 % 2, id / 2 % 2, id % 2,1);
+  }
 }

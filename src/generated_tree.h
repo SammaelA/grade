@@ -13,7 +13,7 @@
 class DebugVisualizer;
 class Heightmap;
 
-#define MAX_TREES 512
+#define MAX_TREES 1500
 class TreeGenerator
 {
 public:

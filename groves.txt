@@ -20,25 +20,30 @@ preset = {default wood leaf2}
 grove_end
 grove oak_grove
 {
-count = 50
+count = 20
 synthetic_count = 0
-synthetic_precision = 5
+synthetic_precision = 4
 pos = (0 0 0)
-size = (300 200 300)
+size = (100 200 100)
 preset = {default wood leaf2}
+preset = {gnarled wood leaf}
+box = {(100 0 200) (100 0 0) (0 30 0) (0 0 50)}
+box = {(0 0 100) (50 0 0) (0 100 0) (0 0 50)}
+box = {(0 0 -125) (50 0 0) (0 50 0) (0 0 100)}
 }
 grove_end
 grove simple_grove
 {
-count = 25
+count = 250
+synthetic_count = 1000
+synthetic_precision = 5
 pos = (0 0 0)
-size = (150 200 150)
-preset = {default wood leaf}
-preset = {gnarled wood2 leaf2}
+size = (600 200 600)
+preset = {default wood2 leaf2}
 preset = {bush wood leaf}
 
-box = {(0 0 0) (100 0 0) (0 50 0) (0 0 50)}
-box = {(0 0 100) (50 0 0) (0 50 0) (0 0 50)}
+box = {(0 0 0) (100 0 0) (0 30 0) (0 0 50)}
+box = {(0 0 100) (50 0 0) (0 100 0) (0 0 50)}
 box = {(0 0 -125) (50 0 0) (0 50 0) (0 0 100)}
 
 }
@@ -86,6 +91,54 @@ grove_end
 grove grove320
 {
 count = 320
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove50
+{
+count = 50
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove100
+{
+count = 100
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove150
+{
+count = 150
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove200
+{
+count = 200
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove250
+{
+count = 250
+pos = (0 0 0)
+size = (500 200 500)
+preset = {default wood2 leaf2}
+}
+grove_end
+grove grove300
+{
+count = 300
 pos = (0 0 0)
 size = (500 200 500)
 preset = {default wood2 leaf2}

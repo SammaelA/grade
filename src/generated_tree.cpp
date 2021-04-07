@@ -944,9 +944,9 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, GrovePacked &grove, De
     Clusterizer cl;
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-    cp.ignore_structure_level = 1;
+    cp.ignore_structure_level = 2;
     cp.delta = 0.3;
-    cp.max_individual_dist = 0.9;
+    cp.max_individual_dist = 0.57;
     cp.bwd_rotations = 4;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

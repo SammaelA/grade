@@ -516,7 +516,7 @@ bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_
     {
         int prev_n = branches.size();
         set_branches(t[i], layer);
-        debugl(1, " added %d branches from tree %d\n", branches.size() - prev_n, i);
+        debugl(3, " added %d branches from tree %d\n", branches.size() - prev_n, i);
     }
 }
 ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
@@ -640,9 +640,9 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
                 }
             }
         }
-        if (min.d > clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
+        if (min.d > 1000*clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
         {
-            debugl(3,"breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
+            logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
             break;
             //makes no sense to merge clusters with maximum distance between them.
         }
@@ -681,7 +681,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         debugl(1, "cluster %d size = %d\n", S, clusters[S].size);
         sum += clusters[S].size;
     }
-    debugl(1, "sum = %d %d \n", sum, size);
+    debugl(1, "%d clusters %d elements \n", current_clusters.size(), size);
 }
 void Clusterizer::set_clusterization_params(ClusterizationParams &params)
 {
