@@ -21,10 +21,10 @@ grove_end
 grove oak_grove
 {
 count = 20
-synthetic_count = 0
+synthetic_count = 100
 synthetic_precision = 4
 pos = (0 0 0)
-size = (100 200 100)
+size = (700 200 700)
 preset = {default wood leaf2}
 preset = {gnarled wood leaf}
 box = {(100 0 200) (100 0 0) (0 30 0) (0 0 50)}

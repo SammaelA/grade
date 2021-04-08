@@ -12,3 +12,12 @@ struct Camera
     float roll = 0;
     glm::mat4 camera() { return glm::lookAt(pos, pos + front, up); }
 };
+struct DirectedLight
+{
+    glm::vec3 dir;
+    float intensity;
+    glm::vec3 color;
+    float ambient_q;
+    float diffuse_q;
+    float specular_q;
+};

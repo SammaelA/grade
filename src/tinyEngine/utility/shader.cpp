@@ -108,4 +108,9 @@ void Shader::texture(std::string name, const Texture& t)
   glBindTexture(t.type, t.texture);
   uniform(name, boundtextures++);
 }
-
+void Shader::texture(std::string name, GLuint t)
+{
+  glActiveTexture(GL_TEXTURE0 + boundtextures);
+  glBindTexture(GL_TEXTURE_2D, t);
+  uniform(name, boundtextures++);
+}

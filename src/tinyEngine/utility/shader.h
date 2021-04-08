@@ -57,6 +57,7 @@ public:
   void addBuffer(std::string name);                          //General Buffer Addition
 
   void texture(std::string name, const Texture& t);
+  void texture(std::string name, GLuint t);
 /*  template<typename T> void buffer(std::string name, std::vector<T>& buf, bool update = false);
 
 template<typename T>

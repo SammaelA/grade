@@ -420,7 +420,8 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
-void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, GroveRendererDebugParams dbgpar)
+void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, 
+DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLuint shadow_tex)
 {
     glm::vec3 camera_pos = camera.pos;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -456,7 +457,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
     bool camera_changed = (length(camera.pos - prev_camera.pos) > 1e-4) || 
                           (length(camera.front - prev_camera.front) > 1e-4) || 
                           (length(camera.up - prev_camera.up) > 1e-4);
-    if (frames<10 || (frames % 2 == 0 && camera_changed))
+    if (true || frames<10 || (frames % 2 == 0 && camera_changed))
     {
         ts.start("cellsCompute");
         cellsCompute.use();
@@ -520,19 +521,27 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
     {
         if (type.imp)
         {
-            type.imp->render(type.rendDesc, prc, camera_pos, ss);
+            type.imp->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss);
         }
         else if (type.bill)
         {
-            type.bill->render(type.rendDesc, prc, camera_pos, ss);
+            type.bill->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss);
         }
         else
         {
             auto &mdrd = type.rendDesc;
             Texture noise = textureManager.get("noise");
             rendererInstancing.use();
+            rendererInstancing.uniform("need_shadow",shadow_tex != 0);
+            rendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
+            //if (shadow_tex)
+                rendererInstancing.texture("shadowMap",shadow_tex);
             rendererInstancing.uniform("projectionCamera", prc);
             rendererInstancing.uniform("screen_size", ss);
+            rendererInstancing.uniform("dir_to_sun", light.dir);
+            rendererInstancing.uniform("light_color", light.color);
+            rendererInstancing.uniform("camera_pos", camera.pos);
+            rendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
             rendererInstancing.texture("noise", noise);
             rendererInstancing.texture("tex", atlas->tex());
             rendererInstancing.uniform("type_id", (uint)mdrd.type_id);

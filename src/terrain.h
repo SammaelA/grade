@@ -2,6 +2,7 @@
 #include "tinyEngine/utility/model.h"
 #include "tinyEngine/utility/shader.h"
 #include "field_2d.h"
+class DirectedLight;
 class Heightmap : public Field_2d
 {
 public:
@@ -20,7 +21,8 @@ class TerrainRenderer
 public:
     TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step);
     ~TerrainRenderer();
-    void render(glm::mat4 prc);
+    void render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+                                 DirectedLight &light);
 private:
     float base_height = 0.0;
     Model *flat_terrain;

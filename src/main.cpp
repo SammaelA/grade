@@ -18,14 +18,15 @@
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
 #include "terrain.h"
-
+#include "tinyEngine/shadow.h"
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
 Config config;
 Camera camera;
-
+DirectedLight light;
+ShadowMap shadowMap;
 const int WIDTH = 1200;
 const int HEIGHT = 800;
 float avg_fps = 100;
@@ -333,7 +334,13 @@ int main(int argc, char *argv[])
   config.load_ggds();
 
   camera.pos = glm::vec3(-300,70,0);
-
+  light.dir = glm::normalize(glm::vec3(0.2,0.6,0.2));
+  light.color = glm::vec3(0.99,0.9,0.7);
+  light.intensity = 10;
+  light.ambient_q = 0.6;
+  light.diffuse_q = 0.4;
+  light.specular_q = 0.1;
+  shadowMap.create(2048,2048);
   Model floor(construct_floor);
 
   Shader particleShader({"particle.vs", "particle.fs"}, {"in_Quad", "in_Tex", "in_Model"});
@@ -465,7 +472,15 @@ int main(int argc, char *argv[])
     rot_a += 0.01;
     //camera.pos = glm::vec3(250*sin(rot_a),100,250*cos(rot_a));
     //camera.front = glm::normalize(-camera.pos);
-
+    shadowMap.use(light);
+    glm::mat4 sh_viewproj = shadowMap.get_transform();
+    GroveRendererDebugParams dbgpar;
+    dbgpar.need_focus_model = debug_need_focus;
+    dbgpar.model_focused = debug_model_focus;
+    //tr.render(sh_viewproj,sh_viewproj,0,camera.pos,light);
+    groveRenderer.render(cloudnum, sh_viewproj,camera,
+        glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), light, dbgpar,sh_viewproj,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
     Tiny::view.target(glm::vec3(0.6, 0.7, 1));
     if (render_mode <= DEBUG_RENDER_MODE)
     {
@@ -494,14 +509,14 @@ int main(int argc, char *argv[])
     }
     else
     {
-      tr.render(projection * camera.camera());
+      tr.render(projection * camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),camera.pos,light);
       if (draw_clusterized && render_mode != 2)
       {
         GroveRendererDebugParams dbgpar;
         dbgpar.need_focus_model = debug_need_focus;
         dbgpar.model_focused = debug_model_focus;
-        groveRenderer.render(cloudnum, projection * camera.camera(),camera, 
-        glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), dbgpar);
+        groveRenderer.render(cloudnum, projection * camera.camera(),camera,
+        glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light, dbgpar,shadowMap.get_transform(),shadowMap.getTex());
         
       }
       debugVisualizer->render(projection * camera.camera(),render_mode);

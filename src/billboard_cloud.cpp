@@ -692,7 +692,8 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, glm::vec3 camera_pos,
+void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, DirectedLight &light, 
+                                    glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                                     glm::vec4 screen_size, GroveRendererDebugParams dbgpar)
 {
     if (!data || !data->valid)
@@ -718,6 +719,14 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
+        billboardRendererInstancing.uniform("need_shadow",shadow_tex != 0);
+        billboardRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
+        ////if (shadow_tex)
+            billboardRendererInstancing.texture("shadowMap",shadow_tex);
+        billboardRendererInstancing.uniform("dir_to_sun", light.dir);
+        billboardRendererInstancing.uniform("light_color", light.color);
+        billboardRendererInstancing.uniform("camera_pos", camera_pos);
+        billboardRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
         billboardRendererInstancing.uniform("camera_pos",camera_pos);
         billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("tex", data->atlas.tex());
