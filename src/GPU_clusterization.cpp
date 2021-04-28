@@ -88,7 +88,7 @@ void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &bran
     branches.emplace_back();
     auto &br = branches.back();
     br.branch_id = branch.id;
-    br.dead = branch.original->dead;
+    br.dead = false;
     br.type_id = branch.original->type_id;
     br.level = branch.original->level;
 

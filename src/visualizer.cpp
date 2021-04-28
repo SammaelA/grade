@@ -7,8 +7,6 @@
 
 void Visualizer::leaf_to_model(Leaf &l, Model *m, float scale)
 {
-    if (l.dead)
-        return;
     if (l.edges.size() < 4)
     {
         return;
@@ -196,7 +194,7 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, curParams.max_depth() - b.level);
+        int ringsize = 3 * pow(2, 3 - b.level);
         for (auto &segment : b.segments)
         {
             SegmentVertexes vt;
@@ -238,7 +236,7 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, curParams.max_depth() - b.level);
+        int ringsize = 3 * pow(2, 3 - b.level);
         for (auto &segment : b.segments)
         {
             SegmentVertexes vt;
@@ -345,8 +343,7 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Model *m)
     {
         for (auto &branch : t.branchHeaps[layer]->branches)
         {
-            if (!branch.dead)
-                branch_to_model(branch, m, false);
+            branch_to_model(branch, m, false);
         }
     }
 }
@@ -715,7 +712,7 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, curParams.max_depth() - b->level);
+        int ringsize = 3 * pow(2, 3 - b->level);
         for (auto &segment : b->segments)
         {
             SegmentVertexes vt;
@@ -774,7 +771,6 @@ void DebugVisualizer::add_bodies(Body *b_ptr, int count)
 }
 DebugVisualizer& DebugVisualizer::operator=(const DebugVisualizer& dv)
 {
-    curParams = dv.curParams;
     tree_tex = dv.tree_tex;
     leaves_tex = dv.leaves_tex;
     tree_shader = dv.tree_shader;

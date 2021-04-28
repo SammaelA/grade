@@ -76,7 +76,7 @@ inline float AS_branch_min_dist(float part_min_dist, float error)
 
 bool dedicated_bbox(Branch *branch, BBox &bbox)
 {
-    if (!branch || false && branch->dead || branch->segments.empty())
+    if (!branch || branch->segments.empty())
         return false;
     vec3 a(0, 0, 0);
     vec3 b(0, 0, 0);
@@ -212,11 +212,11 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
 
     for (Joint &j1 : b1->joints)
     {
-        j1.max_branching = 0;
+        j1.mark_A = 0;
     }
     for (Joint &j2 : b2->joints)
     {
-        j2.max_branching = 0;
+        j2.mark_A = 0;
     }
 
     auto it = distances.begin();
@@ -231,8 +231,8 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
         {
             matched_joints.emplace(it->j1);
             matched_joints.emplace(it->j2);
-            it->j1->max_branching = -1;
-            it->j2->max_branching = -1;
+            it->j1->mark_A = -1;
+            it->j2->mark_A = -1;
             it++;
         }
     }
@@ -245,7 +245,7 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
 
     for (Joint &j1 : b1->joints)
     {
-        if (j1.max_branching >= 0)
+        if (j1.mark_A >= 0)
         {
             for (Branch *br : j1.childBranches)
             {
@@ -255,7 +255,7 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
     }
     for (Joint &j1 : b2->joints)
     {
-        if (j1.max_branching >= 0)
+        if (j1.mark_A >= 0)
         {
             for (Branch *br : j1.childBranches)
             {
@@ -330,7 +330,7 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
     if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
-        b1->dead != b2->dead || b1->level != b2->level)
+         b1->level != b2->level)
         return Answer(true,1000,1000);
     std::vector<int> joint_counts(bwd1.joint_counts);
     std::vector<int> joint_passed(joint_counts.size(), 0);
@@ -460,8 +460,7 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
     dist_calls++;
     Branch *b1 = bwd1.b;
     Branch *b2 = bwd2.b;
-    if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance)|| 
-        b1->dead != b2->dead || b1->level != b2->level)
+    if ((b1->type_id != b2->type_id && !clusterizationParams.different_types_tolerance) || b1->level != b2->level)
         return Answer(true,1000,1000);
     return dist_Nsection(bwd1, bwd2, min, max, data);
 }
@@ -490,7 +489,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
-                branches.push_back(BranchWithData(&b, nb, t.params().max_depth(), branches.size(), inverse(rot)));
+                branches.push_back(BranchWithData(&b, nb, 3, branches.size(), inverse(rot)));
                 i++;
             }
         }
@@ -498,8 +497,6 @@ bool Clusterizer::set_branches(Tree &t, int layer)
 }
 void Clusterizer::calc_joints_count(Branch *b, std::vector<int> &counts)
 {
-    if (b->dead)
-        return;
     for (Joint &j : b->joints)
     {
         counts[b->level]++;

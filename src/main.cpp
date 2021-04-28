@@ -43,7 +43,8 @@ int debug_model_focus = 0;
 bool debug_need_focus = true;
 float rot_a;
 Tree t[MAX_TREES];
-TreeGenerator gen(t[100]);
+mygen::Tree ttt;
+mygen::TreeGenerator gen(ttt);
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 GroveGenerationData ggd;
@@ -531,36 +532,4 @@ int main(int argc, char *argv[])
   Tiny::quit();
 
   return 0;
-}
-void Tree::render(Shader &defaultShader, int cloudnum, glm::mat4 prc)
-{
-  if (models.size() == 0 || billboardClouds.size() == 0)
-  {
-    logerr("wtf empty tree id =  %d  %d %d\n", id, cloudnum, models.size(), billboardClouds.size());
-    return;
-  }
-
-  if (cloudnum < 0)
-    cloudnum = 0;
-
-  else if (cloudnum >= billboardClouds.size())
-    cloudnum = billboardClouds.size() - 1;
-
-  defaultShader.use();
-  defaultShader.texture("tex", wood);
-  defaultShader.uniform("model", models[cloudnum]->model);
-  models[cloudnum]->update();
-  models[cloudnum]->render(GL_TRIANGLES);
-  if (cloudnum == 3 && models.size() >= 5)
-  {
-    defaultShader.texture("tex", leaf);
-    defaultShader.uniform("model", models[cloudnum + 1]->model);
-    models[cloudnum + 1]->update();
-    models[cloudnum + 1]->render(GL_TRIANGLES);
-  }
-  else
-  {
-    billboardClouds[cloudnum]->set_render_mode(mode);
-    billboardClouds[cloudnum]->render(prc);
-  }
 }

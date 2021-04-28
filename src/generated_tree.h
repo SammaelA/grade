@@ -14,14 +14,121 @@ class DebugVisualizer;
 class Heightmap;
 
 #define MAX_TREES 1500
+namespace mygen
+{
+    struct Segment;
+    struct Joint;
+    struct Leaf;
+    struct Branch;
+    struct Tree;
+
+    struct Segment
+{
+    glm::vec3 begin;
+    glm::vec3 end;
+    float rel_r_begin;
+    float rel_r_end;
+    std::vector<float> mults;
+};
+struct Joint
+{
+    enum JointType
+    {
+        NONE,
+        END,
+        MIDDLE,
+        FORK,
+        LEAF
+    };
+    JointType type;
+    Leaf *leaf = nullptr;
+    glm::vec3 pos;
+    std::list<Branch *> childBranches;
+    short max_branching = 0;
+    short iters_to_next_branch_try = 0;
+    short tries_from_last_grown_branch = 0;
+    float light;
+};
+struct Branch
+{
+    int id = 0;
+    ushort type_id = 0;
+    short level;
+    short base_seg_n;
+    short max_seg_count;
+    short iters_to_next_segment_try = 0;
+    short tries_from_last_grown_segment = 0;
+    std::list<Segment> segments;
+    std::list<Joint> joints;
+    float light;
+    float size;
+    float base_r;
+    bool dead = false;
+    glm::vec4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
+    glm::vec3 center_par;
+    glm::vec3 center_self;
+    
+};
+struct Leaf
+{
+    glm::vec3 pos;
+    std::vector<glm::vec3> edges;
+    bool dead = false;
+};
+struct LeafHeap
+{
+    std::list<Leaf> leaves;
+    Leaf *new_leaf()
+    {
+        leaves.push_back(Leaf());
+        return &leaves.back();
+    }
+    void clear_removed();
+    ~LeafHeap()
+    {
+        leaves.clear();
+    }
+    LeafHeap(){};
+
+};
+struct BranchHeap
+{
+    std::list<Branch> branches;
+    Branch *new_branch()
+    {
+        branches.push_back(Branch());
+        return &branches.back();
+    }
+    void clear_removed();
+};
+
+struct Tree
+{
+    std::vector<BranchHeap *> branchHeaps;
+    LeafHeap *leaves = nullptr;
+    glm::vec3 pos;
+    ParameterSetWrapper params;
+    Branch *root= nullptr;
+    int iter = 0;
+    uint id = 0;
+    uint type_id;
+    LightVoxelsCube *voxels= nullptr;
+    Texture wood;
+    Texture leaf;
+    std::vector<BillboardCloudRaw *> billboardClouds;
+    std::vector<Model *> models;
+    void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
+    Tree();
+    ~Tree();
+};
 class TreeGenerator
 {
 public:
     TreeGenerator(Tree &t) : curTree(t), curParams(TreeStructureParameters(),1){};
-    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, Tree *trees, 
+    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, ::Tree *trees, 
                       Heightmap *h, bool visualize_voxels = false);
 
-    bool tree_to_model(Tree &t, bool leaves, DebugVisualizer &debug);
+    bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
     Branch *root;
     Branch *test;
@@ -62,5 +169,6 @@ public:
     void grow_tree(Tree &t);
     void create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug);
     void create_grove(Tree *trees, int count, DebugVisualizer &debug);
-    
+    void convert(mygen::Tree *src, ::Tree *dst, int count) {};
 };
+}

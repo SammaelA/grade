@@ -27,7 +27,7 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
         all_transforms.emplace(i, IDA);
         base_branches.push_back(Branch());
         base_branches.back().deep_copy(b, heap, &l_heap);
-        base_branches.back().base_seg_n = i;
+        base_branches.back().mark_A = i;
     }
     int slices_n = 8;
     std::map<int,int> proj;
@@ -65,7 +65,7 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
     for (Branch &b : base_branches)
     {
         //data->impostors.push_back(Impostor());
-        make_impostor(b,data->impostors[proj.at(b.base_seg_n)],slices_n); 
+        make_impostor(b,data->impostors[proj.at(b.mark_A)],slices_n); 
     }
 
     data->valid = !data->impostors.empty();
@@ -100,7 +100,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     int num = atlas->add_tex();
     vec3 base_joint = vec3(0, 0, 0);
     Visualizer tg(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
-    Billboard bill(cur, num, br.base_seg_n, 0, base_joint);
+    Billboard bill(cur, num, br.mark_A, 0, base_joint);
     create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 0.67);
 
     bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
@@ -122,7 +122,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         cur.position = in_rot * vec4(cur.position,1);
         num = atlas->add_tex();
 
-        bill = Billboard(cur, num, br.base_seg_n, 0, base_joint);
+        bill = Billboard(cur, num, br.mark_A, 0, base_joint);
         create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 0.67);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) - b;
@@ -170,7 +170,7 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
         all_transforms.emplace(i, IDA);
         base_branches.push_back(Branch());
         base_branches.back().deep_copy(b, heap, &l_heap);
-        base_branches.back().base_seg_n = i;
+        base_branches.back().mark_A = i;
     }
     int slices_n = 8;
 

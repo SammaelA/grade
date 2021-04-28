@@ -1,22 +1,20 @@
 #pragma once
-#include <list>
-#include <vector>
+#include <map>
 #include <string>
-#include "volumetric_occlusion.h"
-#include "parameter.h"
-#include "marks.h"
-#include "grove.h"
+#include <glm/glm.hpp>
+#include <vector>
+#include <list>
 
 class Texture;
-class BillboardCloudRaw;
-class Shader;
-class Model;
 struct Joint;
 struct Segment;
 struct Branch;
 struct Leaf;
 struct BranchHeap;
 struct LeafHeap;
+struct Branch;
+struct PackedBranch;
+class Body;
 
 struct Segment
 {
@@ -31,11 +29,9 @@ struct Joint
     Leaf *leaf = nullptr;
     glm::vec3 pos;
     std::list<Branch *> childBranches;
-    short mark_A;
 };
 struct Branch
 {
-    int id = 0;
     ushort type_id = 0;
     short level;
     std::list<Segment> segments;
@@ -43,8 +39,11 @@ struct Branch
     glm::vec4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
     glm::vec3 center_par;
     glm::vec3 center_self;
-    int mark_A;
-    int mark_B;
+    
+    int id = 0;
+    int mark_a = 0;
+    float mark_b = 0;
+
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
@@ -101,10 +100,19 @@ struct Tree
     std::vector<BranchHeap *> branchHeaps;
     LeafHeap *leaves = nullptr;
     glm::vec3 pos;
+    ParameterSetWrapper params;
     Branch *root= nullptr;
+    int iter = 0;
     uint id = 0;
     TreeTypeData *type = nullptr;
-    Tree() {};
+    LightVoxelsCube *voxels= nullptr;
+    Texture wood;
+    Texture leaf;
+    std::vector<BillboardCloudRaw *> billboardClouds;
+    std::vector<Model *> models;
+    void render(Shader &defaultShader, int cloudnum, glm::mat4 projcam);
+    Tree();
+    ~Tree();
 };
 struct GroveGenerationData
 {
@@ -116,17 +124,4 @@ struct GroveGenerationData
     glm::vec3 size;
     std::string name;
     std::vector<Body *> obstacles;
-};
-struct VertexData
-{
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 tex_coord;
-};
-struct SegmentVertexes
-{
-    float ringsize = 0;
-    std::vector<VertexData> smallRing;
-    std::vector<VertexData> bigRing;
-    Segment s;
 };

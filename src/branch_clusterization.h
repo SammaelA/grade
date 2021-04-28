@@ -77,7 +77,7 @@ public:
         {
             for (Joint &j : b->joints)
             {
-                if (j.type == j.LEAF)
+                if (j.leaf)
                     light->set_occluder_trilinear(j.pos,1);
                 for (Branch *br : j.childBranches)
                 {

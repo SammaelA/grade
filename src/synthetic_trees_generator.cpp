@@ -105,10 +105,10 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
             for (Branch *chb : j.childBranches)
             {
                 child_branches_count++;
-                auto it = cluster_id_and_count.find(chb->base_seg_n);
+                auto it = cluster_id_and_count.find(chb->mark_A);
                 if (it == cluster_id_and_count.end())
                 {
-                    cluster_id_and_count.emplace(chb->base_seg_n, 1);
+                    cluster_id_and_count.emplace(chb->mark_A, 1);
                 }
                 else
                 {
@@ -200,7 +200,7 @@ void SyntheticTreeGenerator::collect_statistics()
         stat.rootStats.back().selfBranchStat = get_branch_stat(cd);
         stat.rootStats.back().childBranchesClusterStat = get_child_branches_cluster_stat(cd);
         get_existance_stat(cd, stat.rootStats.back().branchExistanceStat);
-        if (cd.base->dead || !stat.rootStats.back().childBranchesClusterStat)
+        if (!stat.rootStats.back().childBranchesClusterStat)
         {
             std::vector<double> v = {0};
             std::vector<double> w = {0};

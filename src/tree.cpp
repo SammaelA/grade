@@ -2,35 +2,16 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 #include "spline.h"
-Tree::Tree():
-wood(textureManager.empty()),
-leaf(textureManager.empty())
-{
-    leaves = nullptr;
-}
-Tree::~Tree()
-{
-    if (leaves)
-        leaves->leaves.clear();
-    for (int i=0;i<models.size();i++)
-        delete models[i];
-    //for (int i=0;i<branchHeaps.size();i++)
-    //    delete branchHeaps[i];
-    for (int i=0;i<billboardClouds.size();i++)
-        delete billboardClouds[i];
-}
+
 void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
     
     level = b->level;
     id = b->id;
     type_id = b->type_id;
-    base_seg_n = b->base_seg_n;
-    max_seg_count = b->max_seg_count;
-    light = b->light;
-    size = b->size;
-    base_r = b->base_r;
-    dead = b->dead;
+    mark_A = b->mark_A;
+    mark_B = b->mark_B;
+
     segments.clear();
     joints.clear();
 
@@ -65,12 +46,9 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
     level = b->level;
     id = b->id;
     type_id = b->type_id;
-    base_seg_n = b->base_seg_n;
-    max_seg_count = b->max_seg_count;
-    light = b->light;
-    size = b->size;
-    base_r = b->base_r;
-    dead = b->dead;
+    mark_A = b->mark_A;
+    mark_B = b->mark_B;
+
     segments.clear();
     joints.clear();
     for (const Segment &s : b->segments)
@@ -115,7 +93,7 @@ void Branch::transform(glm::mat4 &trans_matrix)
     for (Joint &j : joints)
     {
         j.pos = trans_matrix * glm::vec4(j.pos, 1.0f);
-        if (j.leaf && !(j.leaf->dead))
+        if (j.leaf)
         {
             j.leaf->pos = trans_matrix * glm::vec4(j.leaf->pos, 1.0f);
             for (glm::vec3 &vec : j.leaf->edges)
@@ -131,7 +109,7 @@ void Branch::transform(glm::mat4 &trans_matrix)
 }
 void Branch::pack(PackedBranch &branch)
 {
-    if (dead || joints.size() <= 1 || (joints.size() != segments.size() + 1))
+    if (joints.size() <= 1 || (joints.size() != segments.size() + 1))
         return;
 
     auto jit = joints.begin();
@@ -148,7 +126,7 @@ void Branch::pack(PackedBranch &branch)
     while (jit != joints.end())
     {
         PackedLeaf l;
-        if (jit->leaf && !(jit->leaf->dead) && (jit->leaf->edges.size() >= 3))
+        if (jit->leaf && (jit->leaf->edges.size() >= 3))
         {
             l.edges = jit->leaf->edges;
         }

@@ -18,7 +18,6 @@ public:
     void packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw = glm::vec2(1,0));
     void branch_to_model(Branch &b, Model *m, bool leaves);
     void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw = glm::vec2(1,0));
-    void set_params(TreeStructureParameters &params) { curParams = params; }
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
 protected:
     void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
@@ -31,7 +30,6 @@ protected:
     void box_to_model(Box *b, Model *m);
     void ellipsoid_to_model(Ellipsoid *b, Model *m, int sectors, int stacks, bool smooth = true);
     void cylinder_to_model(Cylinder *b, Model *m, int sectors);
-    TreeStructureParameters curParams;
     Texture tree_tex;
     Texture leaves_tex;
     Shader *tree_shader = nullptr;

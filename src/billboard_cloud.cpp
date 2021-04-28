@@ -157,7 +157,7 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
     {
         Texture &wood = ttd[br.type_id].wood;
         Texture &leaf = ttd[br.type_id].leaf;
-        InstanceDataArrays &ida = all_transforms.at(br.base_seg_n);
+        InstanceDataArrays &ida = all_transforms.at(br.mark_A);
         Model bm;
         branch = &br;
         bm.construct(_c_wood);
@@ -290,14 +290,12 @@ BBox BillboardCloudRaw::get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::
 }
 void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
 {
-    if (branch->dead)
-        return;
     for (Joint &j : branch->joints)
     {
         vec4 pos = rot * vec4(j.pos, 1);
         mn = min(mn, pos);
         mx = max(mx, pos);
-        if (j.leaf && !(j.leaf->dead))
+        if (j.leaf)
         {
             for (auto &vert : j.leaf->edges)
             {
@@ -481,7 +479,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<ClusterDa
             Branch *b = clusters[pr.first].base;
             base_branches.push_back(Branch());
             base_branches.back().deep_copy(b, heap, &l_heap);
-            base_branches.back().base_seg_n = k;
+            base_branches.back().mark_A = k;
             base_branches.back().type_id = group_ida.type_ids.front();
         }
     }
@@ -544,7 +542,7 @@ void expand_branches(std::vector<Branch> &oldb, std::vector<Branch> &newb, int d
             for (Branch *br : j.childBranches)
             {
                 newb.push_back(*br);
-                newb.back().base_seg_n = branch.base_seg_n;
+                newb.back().mark_A = branch.mark_A;
                 newb.back().type_id = branch.type_id;
             }
         }
@@ -573,7 +571,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     std::vector<BillboardBox> billboard_boxes;
     for (Branch &branch : branches)
     {
-        if (branch.dead || branch.joints.empty())
+        if (branch.joints.empty())
             continue;
         BBox min_bbox = get_minimal_bbox(&branch);
         vec3 base_joint = branch.joints.front().pos;
@@ -581,8 +579,8 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     }
 
     int add_billboards_count = 0; //1 + layer*4;
-    Visualizer tg(t.wood, t.leaf, nullptr);
-    tg.set_params(t.params());
+    Visualizer tg(ttd[0].wood, ttd[0].leaf, nullptr);
+
     billboards.clear();
     AtlasParams params = set_atlas_params(quality, billboard_boxes.size());
     int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
@@ -602,8 +600,6 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         {
             for (Branch *br : j.childBranches)
             {
-                if (br->dead)
-                    continue;
                 float err = projection_error_rec(br, plane_n, b.planeCoef.w);
                 projectionData.push_back(BranchProjectionData(err, br, i));
                 projectionData.back().br->type_id = p.b->type_id;
@@ -633,7 +629,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     {
         int num = atlas->add_tex();
         vec3 base_joint = p.b->joints.front().pos;
-        Billboard b(p.min_bbox, num, p.b->base_seg_n, 1, base_joint);
+        Billboard b(p.min_bbox, num, p.b->mark_A, 1, base_joint);
         if (p.parent >= 0 && p.parent < billboards.size())
         {
             //it is a secondary billboard
