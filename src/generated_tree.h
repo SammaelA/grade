@@ -125,8 +125,7 @@ class TreeGenerator
 {
 public:
     TreeGenerator(Tree &t) : curTree(t), curParams(TreeStructureParameters(),1){};
-    void create_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, ::Tree *trees, 
-                      Heightmap *h, bool visualize_voxels = false);
+    void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap *h);
 
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     Tree &curTree;
@@ -168,7 +167,7 @@ public:
     void plant_tree(Tree &t, ParameterSetWrapper params);
     void grow_tree(Tree &t);
     void create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug);
-    void create_grove(Tree *trees, int count, DebugVisualizer &debug);
+    void create_grove(Tree *trees, int count);
     void convert(mygen::Tree *src, ::Tree *dst, int count);
     void convert(mygen::Tree &src, ::Tree &dst);
     void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst);

@@ -19,6 +19,8 @@
 #include <boost/filesystem.hpp>
 #include "terrain.h"
 #include "tinyEngine/shadow.h"
+#include "grove_packer.h"
+
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
@@ -356,10 +358,12 @@ int main(int argc, char *argv[])
     LODs_dists.back() = -10;
   Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
   h.random_generate(0,1,50);
+  GrovePacker packer;
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    gen.create_grove(ggd, grove, *debugVisualizer, t, &h, visualize_voxels);
+    gen.create_grove(ggd, t, &h);
+    packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
   }
   if (saving_needed)
   {
