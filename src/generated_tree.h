@@ -169,6 +169,11 @@ public:
     void grow_tree(Tree &t);
     void create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug);
     void create_grove(Tree *trees, int count, DebugVisualizer &debug);
-    void convert(mygen::Tree *src, ::Tree *dst, int count) {};
+    void convert(mygen::Tree *src, ::Tree *dst, int count);
+    void convert(mygen::Tree &src, ::Tree &dst);
+    void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst);
+    void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Joint &src, ::Joint &dst);
+    void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Segment &src, ::Segment &dst);
+    void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Leaf &src, ::Leaf &dst);
 };
 }

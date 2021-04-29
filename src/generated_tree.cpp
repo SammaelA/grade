@@ -1083,5 +1083,78 @@ Tree::~Tree()
     for (int i=0;i<billboardClouds.size();i++)
         delete billboardClouds[i];
 }
+    void TreeGenerator::convert(mygen::Tree *src, ::Tree *dst, int count)
+    {
+        for (int i=0;i<count;i++)
+        {
+            convert(src[i],dst[i]);
+        }
+    }
+    void TreeGenerator::convert(mygen::Tree &src, ::Tree &dst)
+    {
+        dst.id = src.id;
+        dst.leaves = new ::LeafHeap();
+        dst.pos = src.pos;
+        for (int i = 0;i<src.branchHeaps.size();i++)
+        {
+            dst.branchHeaps.push_back(new ::BranchHeap());
+        }
+        if (src.root)
+        {
+            dst.root = dst.branchHeaps[src.root->level]->new_branch();
+            convert(src, dst,*src.root,*dst.root);
+        }
+    }
+    void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst)
+    {
+        dst.center_par = src.center_par;
+        dst.center_self = src.center_self;
+        dst.id = src.id;
+        dst.level = src.level;
+        dst.plane_coef = src.plane_coef;
+        dst.type_id = src.type_id;
+        for (Joint &j : src.joints)
+        {
+            dst.joints.emplace_back();
+            convert(src_tree,dst_tree,j,dst.joints.back());
+        }
+        for (Segment &s : src.segments)
+        {
+            dst.segments.emplace_back();
+            convert(src_tree,dst_tree,s,dst.segments.back());
+        }
+    }
+    void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Joint &src, ::Joint &dst)
+    {
+        dst.pos = src.pos;
+        if (src.leaf && !src.leaf->dead)
+        {
+            ::Leaf *l = dst_tree.leaves->new_leaf();
+            convert(src_tree,dst_tree,*src.leaf,*l);
+            dst.leaf = l;
+        }
+        for (auto *b : src.childBranches)
+        {
+            if (b->dead)
+                continue;
+            ::Branch *br = dst_tree.branchHeaps[b->level]->new_branch();
+            convert(src_tree,dst_tree,*b,*br);
+            dst.childBranches.push_back(br);
+        }
+    }
+    void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Segment &src, ::Segment &dst)
+    {
+        dst.begin = src.begin;
+        dst.end = src.end;
+        dst.mults = src.mults;
+        dst.rel_r_begin =src.rel_r_begin;
+        dst.rel_r_end = src.rel_r_end;
+    }
+    void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Leaf &src, ::Leaf &dst)
+    {
+        dst.pos = src.pos;
+        dst.type = 0;
+        dst.edges = src.edges;
+    }
 }
 //namespace mygen
