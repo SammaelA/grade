@@ -64,7 +64,7 @@ GroveRenderer()
         LODs.back().cloud = nullptr;
         LODs.back().max_dist = max_distances[LODs_count - 1];
 
-        int max_level = 3;
+        int max_level = 12;
 
         for (int j = 0; j < source->uniqueCatalogue.levels(); j++)
         {
@@ -577,7 +577,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         if (b.level <= up_to_level)
             v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(type_slice, 0));
     }
-
     uint l_ind_offset = base_container->indices.size();
     uint l_verts = base_container->positions.size();
     glm::vec3 mx, mn;
@@ -609,7 +608,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     l_verts = base_container->positions.size();
     int count = l_ind_offset - ind_offset;
     int l_count = l_end - l_ind_offset;
-    
     BBox l_bbox;
     if (need_leaves)
     {
@@ -629,8 +627,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         l_bbox.c = glm::vec3(0,0,1);
         //logerr("sizes %f %f %f", l_bbox.sizes.x,l_bbox.sizes.y,l_bbox.sizes.z);
     }
-    //m->update();
-
     if (branch.IDA.transforms.size() != branch.IDA.centers_par.size())
     {
         logerr("sizes do not match %d %d",branch.IDA.transforms.size(),branch.IDA.centers_par.size());
@@ -649,7 +645,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         
         branch.IDA.centers_par[i] = center;
     }
-
     if (count > 0 && !branch.IDA.transforms.empty())
     {
         lod.instances.push_back(Instance2(nullptr,type,branch.IDA));
@@ -662,7 +657,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     {   
         //delete m;
     }
-    
     if (need_leaves)
     {
         //lm->update();

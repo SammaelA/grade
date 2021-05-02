@@ -489,7 +489,7 @@ bool Clusterizer::set_branches(Tree &t, int layer)
                 mat4 SC_inv = inverse(SC);
                 rot = SC_inv * transl * rot;
                 nb->transform(rot);
-                branches.push_back(BranchWithData(&b, nb, 3, branches.size(), inverse(rot)));
+                branches.push_back(BranchWithData(&b, nb, MAX_BRANCH_LEVELS, branches.size(), inverse(rot)));
                 i++;
             }
         }

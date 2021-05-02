@@ -8,6 +8,7 @@
 #include "timestamp.h"
 #include "rendering_SSBO_structs.h"
 #include "camera.h"
+#include "limits.h"
 class ImpostorRenderer;
 class BillboardCloudRenderer;
 class GroveGenerationData;
@@ -38,7 +39,7 @@ struct PackedBranch
 };
 struct BranchCatalogue
 {
-    static const unsigned LEVEL_BITS = 3;
+    static const unsigned LEVEL_BITS = 4;
     std::vector<std::vector<PackedBranch>> branches;
     BranchCatalogue(int levels)
     {
@@ -100,7 +101,7 @@ struct GrovePacked
     std::vector<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
     std::vector<ImpostorsData> impostors;
-    GrovePacked() : uniqueCatalogue(7), instancedCatalogue(7){};
+    GrovePacked() : uniqueCatalogue(MAX_BRANCH_LEVELS), instancedCatalogue(MAX_BRANCH_LEVELS){};
 };
 struct GroveRendererDebugParams
 {

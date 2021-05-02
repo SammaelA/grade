@@ -194,7 +194,7 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, 3 - b.level);
+        int ringsize = 3 * pow(2, MAX(3 - b.level,0));
         for (auto &segment : b.segments)
         {
             SegmentVertexes vt;
@@ -236,7 +236,7 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, 3 - b.level);
+        int ringsize = 3 * pow(2, MAX(3 - b.level,0));
         for (auto &segment : b.segments)
         {
             SegmentVertexes vt;
@@ -712,7 +712,7 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
     {
         std::vector<SegmentVertexes> vets;
         int i = 0;
-        int ringsize = 3 * pow(2, 3 - b->level);
+        int ringsize = 3 * pow(2, MAX(3 - b->level,0));
         for (auto &segment : b->segments)
         {
             SegmentVertexes vt;

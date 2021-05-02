@@ -8,7 +8,7 @@ layout( local_size_x = THREADS, local_size_y = THREADS) in;
 #define _cnt(x) ((x) & (1<<CNT_bytes))
 #define _id(x) ((x) >> CNT_bytes)
 #define id_cnt_pack(id, cnt) ((id>>CNT_bytes) | cnt)
-#define MAX_BRANCH_LEVELS 5
+#define MAX_BRANCH_LEVELS 12
 
 #define PI 3.14159265f  
 

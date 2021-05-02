@@ -1,13 +1,13 @@
 #include "branch_clusterization.h"
+#include "limits.h"
 #define uint unsigned //CPU
 #define uvec4 glm::uvec4 //CPU
 #define CNT_bytes 8
-#define MAX_CHILD_BRANCHES 2
 #define MAX_JOINTS 42
 #define _cnt(x) ((x) & (1<<CNT_bytes))
 #define _id(x) ((x) >> CNT_bytes)
 #define id_cnt_pack(id, cnt) ((id>>CNT_bytes) | cnt)
-#define MAX_BRANCH_LEVELS 5
+
 class GPUClusterizationHelper
 {
 public:

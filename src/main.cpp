@@ -20,6 +20,7 @@
 #include "terrain.h"
 #include "tinyEngine/shadow.h"
 #include "grove_packer.h"
+#include "proctree.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -362,8 +363,11 @@ int main(int argc, char *argv[])
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    gen.create_grove(ggd, t, &h);
+    //gen.create_grove(ggd, t, &h);
+    Proctree::create_grove(ggd,t,h);
     packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
+
+    
   }
   if (saving_needed)
   {
