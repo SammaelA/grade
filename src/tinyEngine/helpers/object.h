@@ -70,12 +70,6 @@ namespace obj{
 
       else if(line.substr(0,3) == "vt"){
         vt = true;
-        /*
-        std::istringstream s(line.substr(3));
-        glm::vec3 v;
-        s >> v.x; s >> v.y; s >> v.z;
-        ex_tex.push_back(v); //???
-        */
       }
 
       //Extract Normal Information

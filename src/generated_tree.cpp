@@ -272,7 +272,7 @@ void TreeGenerator::distribute_feed(Branch *b)
 {
     std::vector<float *> feeds;
     float *top = &(b->joints.back().light);
-    //feeds.push_back(top);
+
     float min_light = 1.05;
     for (auto &j : b->joints)
     {

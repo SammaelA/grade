@@ -9,16 +9,12 @@ LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_si
 LightVoxelsCube(center, glm::ivec3(size.x/(base_size / light_precision), size.y/(base_size / light_precision),
                                    size.z/(base_size / light_precision)),(base_size / light_precision))
 {
-    //logerr("c1");
-    //    logerr("vc %f %f %f",base_size,light_precision,voxel_size);
     lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
-
 }
 LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size):
 voxel_size(vox_size)
 {
-    //logerr("c2");
     center = cent;
     set_directed_light(glm::vec3(0, 1, 0), 1);
     vox_x = sizes.x;
@@ -26,13 +22,10 @@ voxel_size(vox_size)
     vox_z = sizes.z;
 
     count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
-    //debug("trying to create light voxels cube with %dx%dx%d  %d voxels\n", vox_x, vox_y, vox_z, count);
     voxels = new float[count];
     std::fill(voxels,voxels+count,0);
     sum_memory += count*sizeof(float);
     sum_allocs++;
-    //logerr("allocated %d bytes total for %d voxels cubes",sum_memory, sum_allocs);
-    //debug("successfully created light voxels cube with %d voxels voxel size = %f\n", count, voxel_size);
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
 LightVoxelsCube(source,
@@ -40,14 +33,11 @@ LightVoxelsCube(source,
                 glm::ivec3(sizes.x/source->voxel_size,sizes.y/source->voxel_size,sizes.z/source->voxel_size))
 
 {
-    //    logerr("sizes %f %f %f",sizes.x,sizes.y,sizes.z);
-    //logerr("c3");
     center = pos;
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes):
 LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
 {
-    //logerr("c4");
     for (int i = vox_pos.x-vox_sizes.x; i <= vox_pos.x+vox_sizes.x; i++)
     {
         for (int j = vox_pos.y-vox_sizes.y; j <= vox_pos.y+vox_sizes.y; j++)
@@ -56,8 +46,6 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
             {
                 glm::ivec3 vx = glm::ivec3(i,j,k) - vox_pos;
                 replace_occluder_voxel(vx,source->get_occlusion_voxel(vx + vox_pos));
-                //logerr("copy %d %d %d %f --> %d %d %d %f",vx.x,vx.y,vx.z,source->get_occlusion_voxel(vx + vox_pos),i,j,k,
-                //get_occlusion_voxel(vx));
             }
         }
     }
@@ -393,7 +381,6 @@ float LightVoxelsCube::get_occlusion_simple(glm::vec3 pos)
 }
 float LightVoxelsCube::get_occlusion_trilinear(glm::vec3 pos)
 {
-    //logerr("%f %f %f vox size = %f",pos.x,pos.y,pos.z, voxel_size);
     glm::vec3 flpos = glm::vec3(floorf(pos.x),floorf(pos.y),floorf(pos.z));
     glm::vec3 dp = pos - flpos;
     glm::ivec3 voxel = pos_to_voxel(flpos);
@@ -439,7 +426,6 @@ float LightVoxelsCube::NMSE(LightVoxelsCube *B)
         MSE += abs((voxels[i] - B->voxels[i])*(voxels[i] - B->voxels[i]));
         SQ += voxels[i]*voxels[i] + (B->voxels[i])*(B->voxels[i]);
     }
-    //debug("NMSE = %f %f %f\n", MSE, SQ, MSE/SQ);
     return MSE/SQ;
 }
 void LightVoxelsCube::add_heightmap(Heightmap &h)
@@ -505,7 +491,6 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
                 float y = pos.y + r*sinf(phi)*cosf(psi);
                 float z = pos.z + r*sinf(psi);
                 occlusions[((int)(phi/step))*rays_sqrt + (int)(psi/step)] += get_occlusion_trilinear(glm::vec3(x,y,z))/(r*r);
-                logerr("%d occ[%d] = %f",rays_sqrt,(int)(phi/step*rays_sqrt + psi/step),occlusions[(int)(phi/step*rays_sqrt + psi/step)]);
             }
         }
     }
@@ -531,7 +516,6 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     float z = sinf(psi);
 
     *occlusion = mo;
-    logerr("occ = %f",mo);
     delete[] occlusions;
     return glm::vec3(x,y,z);
 }

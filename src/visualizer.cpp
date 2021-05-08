@@ -164,7 +164,7 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m, glm::vec2 
         h->normals.push_back(pos.normal.z);
         
         float col_x = 1 - abs(2.0f*i/sv.bigRing.size() - 1);
-        //logerr("%f ",col_x);
+
         h->colors.push_back(col_x);
         h->colors.push_back(pos.tex_coord.y);
         h->colors.push_back(tc_zw.x);
@@ -267,18 +267,6 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
             }
             debugnl();
         }
-        /*int cnt = 0;
-        for (auto &segment : b.segments)
-        {
-            if (segment.rel_r_end > segment.rel_r_begin)
-            debug("(%f %f %f) %f - (%f %f %f) %f",segment.begin.x,segment.begin.y,segment.begin.z,segment.rel_r_begin,
-                  segment.end.x,segment.end.y,segment.end.z,segment.rel_r_end);
-            if (segment.begin == b.segments.front().begin)
-                debug("front");
-            cnt++;
-        }
-        if (cnt)
-            debug("lvl = %d\n",b.level);*/
     }
     else
     {
@@ -719,7 +707,6 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
             get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
-            //segment_to_model(segment,m,leaves);
             vets.push_back(vt);
             i++;
         }
@@ -727,8 +714,6 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
         {
             get_last_seg_vertexes(b->segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
         }
-
-        //seg_vertexes_to_model(vets.front(),m);
         for (auto &vt : vets)
         {
             seg_vertexes_to_model(vt, &m);

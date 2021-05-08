@@ -46,7 +46,7 @@
                 terr_pos1.y = h.get_height(terr_pos1);
                 terr_pos2.y = h.get_height(terr_pos2);
                 glm::vec3 n = glm::normalize(glm::cross(terr_pos1 - terr_pos,terr_pos2 - terr_pos));
-                //logerr("%f",terr_pos.y);
+
                 flat_terrain->positions.push_back(terr_pos.x);
                 flat_terrain->positions.push_back(terr_pos.y);
                 flat_terrain->positions.push_back(terr_pos.z);
@@ -81,10 +81,6 @@
     void TerrainRenderer::render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                                  DirectedLight &light)
     {
-        /*uniform vec3 dir_to_sun;
-uniform vec3 camera_pos;
-uniform vec3 ambient_diffuse_specular;
-uniform vec3 light_color;*/
         terrain.use();
         terrain.uniform("dir_to_sun",light.dir);
         terrain.uniform("camera_pos",camera_pos);
@@ -93,8 +89,7 @@ uniform vec3 light_color;*/
         terrain.uniform("projectionCamera",prc);
         terrain.uniform("need_shadow",shadow_tex != 0);
         terrain.uniform("lightSpaceMatrix",shadow_tr);
-        //if (shadow_tex)
-            terrain.texture("shadowMap",shadow_tex);
+        terrain.texture("shadowMap",shadow_tex);
         terrain.uniform("model",flat_terrain->model);
         flat_terrain->render();
     }

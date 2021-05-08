@@ -46,7 +46,6 @@ void transform_according_to_root(ClusterData &cluster)
                 }
             }
             glm::vec3 sh = n_min - j.pos;
-            //logerr("shifting after trunk clusterization %f %f %f",sh.x,sh.y,sh.z);
             for (::Branch *ch_b : j.childBranches)
             {
                 glm::mat4 tr = glm::translate(glm::mat4(1.0f),sh);

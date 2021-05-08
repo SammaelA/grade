@@ -615,7 +615,6 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
         if (k < add_billboards_count)
         {
             proj.br->level = -1;
-            //proj.br->type_id = proj.
             BBox min_bbox = get_minimal_bbox(proj.br);
             billboard_boxes.push_back(BillboardBox(proj.br, min_bbox, vec3(0, 0, 0), proj.parent_n));
         }
@@ -655,7 +654,6 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
     this->data = data;
     if (!data || !data->valid)
     {
-        //logerr("empty billboard data %uud",data);
         return;
     }
     for (BillboardData &bill : data->billboards)
@@ -666,7 +664,6 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
             b.instancing = true;
             b.to_model(m, data->atlas);
         }
-       // m->update();
         for (int i=0;i<bill.IDA.centers_par.size();i++)
         {
             if (data->level > GroveRenderer::base_level)
@@ -717,8 +714,7 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRendererInstancing.use();
         billboardRendererInstancing.uniform("need_shadow",shadow_tex != 0);
         billboardRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-        ////if (shadow_tex)
-            billboardRendererInstancing.texture("shadowMap",shadow_tex);
+        billboardRendererInstancing.texture("shadowMap",shadow_tex);
         billboardRendererInstancing.uniform("dir_to_sun", light.dir);
         billboardRendererInstancing.uniform("light_color", light.color);
         billboardRendererInstancing.uniform("camera_pos", camera_pos);

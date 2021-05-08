@@ -101,13 +101,13 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         glViewport(0, 0, w, h);
         glClearColor(1,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
-            bm.construct(_c_mip);
-            copy.use();
-            copy.texture("tex", t);
-            copy.uniform("layer",0);
-            //copy.uniform("model", bm.model);
-            //copy.uniform("projectionCamera", glm::mat4(1.0f));
-            bm.render(GL_TRIANGLES);
+        
+        bm.construct(_c_mip);
+        copy.use();
+        copy.texture("tex", t);
+        copy.uniform("layer",0);
+        bm.render(GL_TRIANGLES);
+        
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glBindTexture(ctex.type, ctex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);

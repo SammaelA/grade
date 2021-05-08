@@ -56,7 +56,6 @@ public:
             value = maxValue;
         else if (value < minValue)
             value = minValue;
-        //printf("my val = %f\n",(float)value);
         return value;
     }
     T operator()()

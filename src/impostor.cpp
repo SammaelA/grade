@@ -8,7 +8,6 @@ using glm::mat4;
 void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters,
                             ImpostorsData *data)
 {
-    //BillboardCloudRaw::prepare(t,branch_level,clusters,numbers,data);
     if (!data)
         return;
     std::map<int, InstanceDataArrays> all_transforms;
@@ -64,7 +63,6 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
 
     for (Branch &b : base_branches)
     {
-        //data->impostors.push_back(Impostor());
         make_impostor(b,data->impostors[proj.at(b.mark_A)],slices_n); 
     }
 
@@ -259,7 +257,6 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
 ImpostorRenderer::ImpostorRenderer(ImpostorsData *data):
 impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"})
-//impostorRendererInstancing({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
     if (!data || !data->valid)
     {
@@ -360,8 +357,7 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     impostorRendererInstancing.use();
     impostorRendererInstancing.uniform("need_shadow",shadow_tex != 0);
     impostorRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-    //if (shadow_tex)
-        impostorRendererInstancing.texture("shadowMap",shadow_tex);
+    impostorRendererInstancing.texture("shadowMap",shadow_tex);
     impostorRendererInstancing.uniform("dir_to_sun", light.dir);
     impostorRendererInstancing.uniform("light_color", light.color);
     impostorRendererInstancing.uniform("camera_pos", camera_pos);
@@ -378,29 +374,4 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     impostorRendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
     glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                         mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
-    /*
-    for (int i=0;i<models.size();i++)
-    {
-        float a_step = (2*PI)/(data->impostors[i].slices.size());
-
-        impostorRendererInstancing.uniform("slice_offset",(int)offsets[i]);
-        impostorRendererInstancing.uniform("slice_verts",(int)data->impostors[i].slices[0].positions.size());
-        impostorRendererInstancing.uniform("slice_count", (int)(data->impostors[i].slices.size()));
-        impostorRendererInstancing.uniform("id",(uint)data->impostors[i].id);
-        impostorRendererInstancing.uniform("imp_center", data->impostors[i].bcyl.center);
-        impostorRendererInstancing.uniform("angle_step",a_step);
-        impostorRendererInstancing.uniform("delta",0.5f*a_step);
-
-        if (data->impostors[i].id >= 0 && data->impostors[i].id < counts.size() && counts[data->impostors[i].id] > 0)
-        {
-            Model *m = models[i];
-            if(m && m->indexed)
-            {
-                glBindVertexArray(m->vao);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
-                glDrawElementsInstanced(GL_TRIANGLES, m->SIZE, GL_UNSIGNED_INT, 0, counts[data->impostors[i].id]);
-            }
-        }
-    }
-    */
 }

@@ -49,15 +49,13 @@ void print_FB_status2(GLuint status)
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tm->texture, 0);
-        //glDrawBuffer(GL_NONE);
-        //glReadBuffer(GL_NONE);
-            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        print_FB_status2(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-    }
-    else
-    {
-        logerr("Shadow map created %d %d",SHADOW_HEIGHT,SHADOW_WIDTH);
-    }
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            print_FB_status2(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        }
+        else
+        {
+            logerr("Shadow map created %d %d",SHADOW_HEIGHT,SHADOW_WIDTH);
+        }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);  
     }

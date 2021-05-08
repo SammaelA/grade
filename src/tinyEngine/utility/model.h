@@ -165,7 +165,6 @@ public:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, SIZE*sizeof(GLuint), &indices[0], GL_DYNAMIC_DRAW);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    //std::cerr << "model updated " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << "[us]" << std::endl;
   }
 
   void construct(std::function<void(Model*)> constructor){

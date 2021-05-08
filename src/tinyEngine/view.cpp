@@ -34,10 +34,7 @@ bool View::init(std::string _name, int W, int H){
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_DEPTH_TEST);        //Setup Global OpenGL State!
   glDepthFunc(GL_LEQUAL);
-  //glAlphaFunc(GL_GREATER,0.1f);  // Настройка альфа теста (запрет смешивания)
   glEnable(GL_ALPHA_TEST); 
-  //glEnable(GL_BLEND) ;
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_CULL_FACE);
   if(ccw) glFrontFace(GL_CCW);
   else glFrontFace(GL_CW);
@@ -71,7 +68,6 @@ void View::drawInterface(){
   ImGui::NewFrame();
 
   (interface)();  //Draw user-defined interface
-  //ImGui::ShowDemoWindow();  //Demo-Window (if you want)
 
   ImGui::Render();
   glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

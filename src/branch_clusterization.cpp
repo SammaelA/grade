@@ -102,21 +102,18 @@ Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std
     float num_m = 0.0;
     float num_p = 0.0;
     float denom = 0.0;
-    //debug("matches:");
+
     for (int i = 0; i < matches.size(); i++)
     {
         num_m += weights[i] * (2 * matches[i]);
         num_p += weights[i] * jp[i];
         denom += weights[i] * jc[i];
-        //debug(" (%f %f %f)",(float)2*matches[i],(float)jp[i],(float)jc[i]);
     }
 
     if (denom < 0.001)
         return Clusterizer::Answer(true, 0, 0);
     num_m /= denom;
     num_p /= denom;
-    //if (jc[0]>1)
-    //    debug("%f/%f\n",num_p - num_m, 1 - num_m);
     return Clusterizer::Answer(num_p > 0.9999, num_p - num_m, 1 - num_m);
 }
 int pass_all_joints(std::vector<int> &jp, Branch *b)

@@ -60,11 +60,6 @@ void Instance::configBuffer(GLuint instance, std::vector<glm::mat4>& buf)
     glVertexAttribDivisor(m->vbo.size()+instances.size(), 1);
     instances.push_back(instance);
   }
-  /*for other types
-  glEnableVertexAttribArray(m->vbo.size()+instances.size());
-  glVertexAttribPointer(m->vbo.size()+instances.size(), sizeof(glm::mat4)/sizeof(GLfloat), GL_FLOAT, GL_FALSE, 0, (void*)0);
-  glVertexAttribDivisor(m->vbo.size()+instances.size(), 1);
-  instances.push_back(instance);*/
 }
 
 

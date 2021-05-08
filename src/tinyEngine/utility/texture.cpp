@@ -88,7 +88,6 @@ void Texture::raw(SDL_Surface *s, bool set_default)
 { //Generate a texture from raw surface data
         glBindTexture(type, texture);
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-        //glTexImage2D(type, 0, GL_RGBA, s->w, s->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->pixels);
         if (set_default)
                 set_default_paramaters(this); //Call the parameter setting function!
         glTexImage2D(type, 0, GL_RGBA, s->w, s->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->pixels);

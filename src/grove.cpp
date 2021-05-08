@@ -362,7 +362,7 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
     {
         base_container->colors.push_back(tex);
     }
-    //logerr("%d ind", cmd.count );
+
     glm::vec3 mx, mn;
     mx = glm::vec3(-1e9);
     mn = glm::vec3(1e9);
@@ -534,8 +534,7 @@ DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLui
             rendererInstancing.use();
             rendererInstancing.uniform("need_shadow",shadow_tex != 0);
             rendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-            //if (shadow_tex)
-                rendererInstancing.texture("shadowMap",shadow_tex);
+            rendererInstancing.texture("shadowMap",shadow_tex);
             rendererInstancing.uniform("projectionCamera", prc);
             rendererInstancing.uniform("screen_size", ss);
             rendererInstancing.uniform("dir_to_sun", light.dir);
@@ -554,7 +553,6 @@ DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLui
     ts.resolve();
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     frames++;
-    //std::cerr << "grove rendered " << std::chrono::duration_cast<std::chrono::microseconds>(tt2 - tt1).count() << "[us]" << std::endl;
 }
 
 void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves)
@@ -566,8 +564,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
     glm::vec3 pos = source->instancedCatalogue.get(branch.branches.front()).joints.front().pos;
     Visualizer v = Visualizer();
-    //Model *m = new Model();
-    //Model *lm = need_leaves ? new Model() : nullptr;
     uint ind_offset = base_container->indices.size();
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
@@ -600,7 +596,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         for (int id : branch.branches)
         {
             PackedBranch &b = source->instancedCatalogue.get(id);
-            //if (b.level <= up_to_level)
             v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(type_slice, 0));
         }
     }
@@ -615,7 +610,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         mn = glm::vec3(1e9);
         for (int i = verts; i<l_verts; i+=3)
         {
-            //logerr("eee");
             mx = glm::max(mx,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
             mn = glm::min(mn,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
         }
@@ -625,7 +619,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         l_bbox.a = glm::vec3(1,0,0);
         l_bbox.b = glm::vec3(0,1,0);
         l_bbox.c = glm::vec3(0,0,1);
-        //logerr("sizes %f %f %f", l_bbox.sizes.x,l_bbox.sizes.y,l_bbox.sizes.z);
     }
     if (branch.IDA.transforms.size() != branch.IDA.centers_par.size())
     {
@@ -653,13 +646,9 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         lod.instances.back().cmd.instanceCount = lod.instances.back().ida.transforms.size();
         lod.instances.back().bbox = br_bbox;
     }
-    else
-    {   
-        //delete m;
-    }
+
     if (need_leaves)
     {
-        //lm->update();
         if (l_count > 0 && !branch.IDA.transforms.empty())
         {
             lod.leaves_instances.push_back(Instance2(nullptr,type,branch.IDA));   
@@ -669,8 +658,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             lod.leaves_instances.back().cmd.instanceCount = lod.leaves_instances.back().ida.transforms.size();
             lod.leaves_instances.back().bbox = l_bbox;
         }
-        //else
-        //    delete lm;
     }
 }
 GroveRenderer::Instance2::Instance2(Model *_m, uint _type, InstanceDataArrays &_ida):

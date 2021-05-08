@@ -104,7 +104,7 @@ void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &bran
     branch.leavesDensity.front()->get_data(&ptr,sizes);
     br.voxels_xyz_rots = uvec4(sizes.x,sizes.y,sizes.z,branch.leavesDensity.size());
     br.voxels_size = (2*sizes.x + 1)*(2*sizes.y + 1)*(2*sizes.z + 1)*branch.leavesDensity.size();
-    //logerr("copy voxels %d %d %d",br.voxels_size,branch.leavesDensity.size(),params.bwd_rotations);
+
     for (int k=0;k<branch.leavesDensity.size();k++)
     {
         branch.leavesDensity[k]->get_data(&ptr,sizes);
@@ -159,8 +159,7 @@ uint GPUClusterizationHelper::fill_branch_data(Branch *branch)
             break;
         }  
         joints[sticks[pos].joint_offset + i].pos_id = positions.size();
-        //if (branch->level == 1)
-        //logerr("bid = %d set %d",pos,sticks[pos].joints[i].pos_id);
+
         joints[sticks[pos].joint_offset + i].r_id = joint_rs.size();
         for (int k = 0;k<params.bwd_rotations;k++)
         {
@@ -255,14 +254,6 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                     dd_r(i,j) = dd_r(j,i);
                     dd_dist(i,j) = dd_dist(j,i);
                 }
-                else
-                {
-                    //float d = dd_dist(i,j);
-                    //float r = dd_r(i,j);
-                    //calculate_dist(i,j);
-                    //if (abs(d - dd_dist(i,j)) > 1e-4)
-                    //    logerr("%d %d from %d compute shader error %f %f --> %f %f",i,j,branches_size,d,r,dd_dist(i,j),dd_r(i,j));
-                }
             }
         }
 
@@ -312,7 +303,6 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         }
         while (top != bottom && !more_than_max)
         {
-            //logerr("top bottom %d %d",top,bottom);
             for (int j1 = 0;j1<MAX_JOINTS;j1++)
             {
                 pair_found[j1] = false;
@@ -459,10 +449,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                     d += params.weights[k]*jk;
                 }
             }
-            //if ((i == 0 && j == 1 && rot == 0) || (kd < 0))
-            //    logerr("early exit at %f %f %f %f/%f %f/%f",e,1-r/d,kd/fd, kd, fd, d-r,d);
-            if (abs(kd/fd - (d-r)/d) > 1e-5)
-                logerr("AUF %f %f %f %f/%f %f/%f",e,1-r/d,kd/fd, kd, fd, d-r,d);
+
             return kd/fd;
         }
     }
@@ -476,16 +463,11 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         float b = 0.01;
         int off1 = branches[i].voxels_offset;
         int off2 = branches[j].voxels_offset + rot*vs;
-        //logerr("CL %d %d %d",off1,off2,vs);
+
         for (int k = 0; k<vs;k++)
         {
             a += abs(all_voxels[off1 + k] - all_voxels[off2 + k]);
-
             b += (all_voxels[off1 + k] + all_voxels[off2 + k]);
-            if (b<0)
-            {
-                //logerr("errror!!! %f %f %d %d %d",all_voxels[off1 + k], all_voxels[off2 + k],i,j,rot);
-            }
         }
         return a/b;
     }
@@ -546,7 +528,6 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     }
     void GPUClusterizationHelper::setup_buffers()
     {
-        //GLuint pos_buf,voxels_buf,rs_buf,sticks_buf,branches_buf,dist_data_buf params_buf;
         glGenBuffers(1, &pos_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, pos_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*positions.size(), positions.data(), GL_STATIC_DRAW);

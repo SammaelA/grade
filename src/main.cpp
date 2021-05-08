@@ -479,14 +479,11 @@ int main(int argc, char *argv[])
       fprintf(stderr,"FPS: %4.1f\n",avg_fps);
     }
     rot_a += 0.01;
-    //camera.pos = glm::vec3(250*sin(rot_a),100,250*cos(rot_a));
-    //camera.front = glm::normalize(-camera.pos);
     shadowMap.use(light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
     GroveRendererDebugParams dbgpar;
     dbgpar.need_focus_model = debug_need_focus;
     dbgpar.model_focused = debug_model_focus;
-    //tr.render(sh_viewproj,sh_viewproj,0,camera.pos,light);
     groveRenderer.render(cloudnum, sh_viewproj,camera,
         glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), light, dbgpar,sh_viewproj,0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); 

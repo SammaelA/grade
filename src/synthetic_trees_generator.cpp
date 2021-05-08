@@ -173,7 +173,6 @@ void SyntheticTreeGenerator::add_shadow(Branch *b, glm::mat4 &transform)
 }
 void SyntheticTreeGenerator::add_planar_shadow(Tree &t)
 {
-    //add_shadow(t.root);
     seeder.add_tree_shadow(t);
 }
 void SyntheticTreeGenerator::generate(Tree *_trees, int count, LightVoxelsCube *_voxels)
@@ -450,8 +449,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
                     int br_cl = CLAMP(c, 0, branches_clusters.size() - 1);
                     Branch *base = branches_clusters[br_cl].base;
                     auto b_stat = stat.branchStats[br_cl];
-                    //if (!b_stat.valid)
-                    //   continue;
+
                     glm::mat4 transform = get_transform(base, bpos, b_stat);
                     float occ = calc_occ(base,transform,voxels,2);
 

@@ -167,10 +167,4 @@ float Branch::get_r_mult(float phi, std::vector<float> &mults)
         int b = (int)(phi/(2*PI)*mults.size());
         return s[b].get(phi);
     } 
-    /*{
-        int b = (int)(phi/(2*PI)*mults.size());
-        float q = phi/(2*PI)*mults.size() - b;
-
-        return (1-q)*mults[b % mults.size()] + q*mults[(b + 1) % mults.size()];
-    }*/
 }

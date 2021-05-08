@@ -58,16 +58,6 @@ public:
 
   void texture(std::string name, const Texture& t);
   void texture(std::string name, GLuint t);
-/*  template<typename T> void buffer(std::string name, std::vector<T>& buf, bool update = false);
-
-template<typename T>
-void Shader::buffer(std::string name, std::vector<T>& buf, bool update){
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo[name]);
-  if(update) glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, buf.size()*sizeof(T), &buf[0]);
-  else glBufferData(GL_SHADER_STORAGE_BUFFER, buf.size()*sizeof(T), &buf[0], GL_STATIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, sbpi[name], ssbo[name]);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}*/
 
 /* Uniform Setters */
 

@@ -71,19 +71,3 @@ public:
     bind(texture, false);         //Bind it to the billboard as color texture
   }
 };
-
-/*class Cubemap: public Target
-      {     //Cubemap specialization
-public:
-  Cubetexture texture, depth;     //Two cubemap textures
-
-  Cubemap(int W, int H, bool c = true, bool d = true):  
-  depth(textureManager.create_unnamed(WIDTH, HEIGHT,true)),
-  texture(textureManager.create_unnamed(WIDTH, HEIGHT,false)),
-  Target(W, H, c, d)
-  {
-    if(dAttach) depth.depth(WIDTH, HEIGHT);
-    if(cAttach) texture.empty(WIDTH, HEIGHT);
-    setup(texture, depth);
-  }
-};*/

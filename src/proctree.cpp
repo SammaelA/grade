@@ -273,7 +273,6 @@ namespace Proctree
 		fvec3 normal = cross(dir, a);
 		fvec3 tangent = cross(dir, normal);
 		float r = aProperties.random(rLevel * 10 + aL1 * 5.0f + aL2 + aProperties.mSeed);
-		//float r2 = aProperties.random(rLevel * 10 + aL1 * 5.0f + aL2 + 1 + aProperties.seed); // never used
 
 		fvec3 adj = add(scaleVec(normal, r), scaleVec(tangent, 1 - r));
 		if (r > 0.5) adj = scaleVec(adj, -1);
@@ -437,8 +436,6 @@ namespace Proctree
 		doFaces(0);
 		calcNormals();
 		fixUVs();
-		//delete mRoot;
-		//mRoot = 0;
 	}
 
 	void Tree::fixUVs()
@@ -1035,43 +1032,5 @@ namespace Proctree
 }
 void Proctree::basic_use(Tree &tree)
 {
-	// 1) Create the tree object
-
-	//Proctree::Tree tree;
-
-	// 2) Change properties here for different kinds of trees
-	/*
-	tree.mProperties.mSeed = 7;
-	tree.mProperties.mTreeSteps = 7;
-	tree.mProperties.mLevels = 3;
-	// etc.
-	*/
-
-	// 3) Call generate
 	tree.generate();
-
-	// 4) Use the data
-	int i;
-
-	/*for (i = 0; i < tree.mVertCount; i++)
-	{
-		printf("%+3.3f, %+3.3f, %+3.3f,    %+3.3f, %+3.3f, %+3.3f,    %+3.3f, %+3.3f,\n",
-			tree.mVert[i].x, tree.mVert[i].y, tree.mVert[i].z,
-			tree.mNormal[i].x, tree.mNormal[i].y, tree.mNormal[i].z,
-			tree.mUV[i].u, tree.mUV[i].v);
-	}
-	printf("\n");
-
-	for (i = 0; i < tree.mTwigVertCount; i++)
-	{
-		printf("%+3.3f, %+3.3f, %+3.3f,    %+3.3f, %+3.3f, %+3.3f,    %+3.3f, %+3.3f,\n",
-			tree.mTwigVert[i].x, tree.mTwigVert[i].y, tree.mTwigVert[i].z,
-			tree.mTwigNormal[i].x, tree.mTwigNormal[i].y, tree.mTwigNormal[i].z,
-			tree.mTwigUV[i].u, tree.mTwigUV[i].v);
-	}*/
-
-	// 5) Profit.
-
-	// Note: You can change the properties and call generate to change the data, 
-	// no need to delete the tree object in between.
 }
