@@ -78,19 +78,19 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
         values.push_back(pr.first);
         weights.push_back(pr.second);
     }
-    bs.typeStat = new DiscreteGeneral(values, weights);
+    bs.typeStat = distibutionGenerator.get_discrete_general(values, weights);
     double mean, dev;
     float sample_size = phi_s.size() + 1;
     float ssq = pow(sample_size, 1.5);
     //calculate distribution of branch parameters. Increase deviation if sample size is small
     get_mean_and_stddev(phi_s, mean, dev);
-    bs.transformStat.phi = new Normal(mean, dev + 2 * PI / (ssq * ssq));
+    bs.transformStat.phi = distibutionGenerator.get_normal(mean, dev + 2 * PI / (ssq * ssq));
     get_mean_and_stddev(psi_s, mean, dev);
-    bs.transformStat.psi = new Normal(mean, 0.5 * dev + PI / (3 * ssq * ssq));
+    bs.transformStat.psi = distibutionGenerator.get_normal(mean, 0.5 * dev + PI / (3 * ssq * ssq));
     get_mean_and_stddev(r_s, mean, dev);
-    bs.transformStat.r = new Normal(mean, dev + 0.25 * mean / ssq);
+    bs.transformStat.r = distibutionGenerator.get_normal(mean, dev + 0.25 * mean / ssq);
     get_mean_and_stddev(rots, mean, dev);
-    bs.transformStat.rot_angle = new Normal(mean, dev + PI / (2 * ssq));
+    bs.transformStat.rot_angle = distibutionGenerator.get_normal(mean, dev + PI / (2 * ssq));
     return bs;
 }
 DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(ClusterData &cd)
@@ -127,7 +127,7 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
     if (values.empty())
         return nullptr;
     else
-        return new DiscreteGeneral(values, weights);
+        return distibutionGenerator.get_discrete_general(values, weights);
 }
 void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<DiscreteGeneral *> &branchExistanceStat)
 {
@@ -154,7 +154,7 @@ void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<Dis
     }
     for (auto &weights : cbs)
     {
-        branchExistanceStat.push_back(new DiscreteGeneral(values, weights));
+        branchExistanceStat.push_back(distibutionGenerator.get_discrete_general(values, weights));
     }
 }
 void SyntheticTreeGenerator::add_shadow(Branch *b, glm::mat4 &transform)
@@ -203,7 +203,7 @@ void SyntheticTreeGenerator::collect_statistics()
         {
             std::vector<double> v = {0};
             std::vector<double> w = {0};
-            stat.rootStats.back().childBranchesClusterStat = new DiscreteGeneral(v, w);
+            stat.rootStats.back().childBranchesClusterStat = distibutionGenerator.get_discrete_general(v, w);
             weights.push_back(0);
             types.push_back(i);
             stat.rootStats.back().child_branches_count = 0;
@@ -216,7 +216,7 @@ void SyntheticTreeGenerator::collect_statistics()
         }
         i++;
     }
-    stat.rootClusterStat = new DiscreteGeneral(types, weights);
+    stat.rootClusterStat = distibutionGenerator.get_discrete_general(types, weights);
 
     for (ClusterData &cd : branches_clusters)
     {
@@ -499,6 +499,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
 }
 FullStat::~FullStat()
 {
+    /*
 #define DEL(a) \
     if (a)     \
         delete (a);
@@ -523,5 +524,5 @@ FullStat::~FullStat()
         DEL(st.transformStat.psi);
         DEL(st.transformStat.r);
         DEL(st.transformStat.rot_angle);
-    }
+    }*/
 }

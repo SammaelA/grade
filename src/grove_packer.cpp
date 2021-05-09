@@ -64,8 +64,10 @@ void pack_cluster(ClusterData &cluster, GrovePacked &grove, std::vector<BranchSt
     ::Branch *base = cluster.base;
     pack_branch_recursively(base, grove, ids,instanced_structures.back(), lvl_from, lvl_to);
     if (instanced_structures.back().childBranches.size() == 1)
-        instanced_structures.back() = instanced_structures.back().childBranches[0];
-
+    {
+        BranchStructure bs = instanced_structures.back().childBranches[0];
+        instanced_structures.back() = bs;
+    }
     for (int i=0;i<cluster.ACDA.originals.size();i++)//leave marks on branch to construct tree structure in future
     {
         cluster.ACDA.originals[i]->mark_A = instanced_structures.size() - 1;//cluster id
@@ -271,6 +273,10 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     delete(post_voxels);
     delete(post_seeder);
 
+    delete(ib);
+    delete(ib2);
+    delete(cloud1);
+    delete(cloud2);
     std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
     std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;

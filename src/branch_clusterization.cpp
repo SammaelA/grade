@@ -529,6 +529,10 @@ void Clusterizer::clusterize(std::vector<ClusterData> &clusters)
     {
         clusters.push_back(extract_data(Ddg.clusters[c_num]));
     }
+    for (auto &b : branches)
+    {
+        b.clear();
+    }
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {

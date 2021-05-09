@@ -109,11 +109,19 @@ public:
         }
         ~BranchWithData()
         {
+
+        }
+        void clear()
+        {
             for (int i=0;i<leavesDensity.size();i++)
             {
-                //if (leavesDensity[i])
-                //    delete leavesDensity[i];
+                if (leavesDensity[i])
+                {
+                    delete leavesDensity[i];
+                    leavesDensity[i] = nullptr;
+                }
             }
+            leavesDensity.clear();
         }
     };
     struct DistData

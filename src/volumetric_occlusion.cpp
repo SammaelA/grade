@@ -107,12 +107,20 @@ void LightVoxelsCube::print_average_occlusion()
 {
     debugl(2, "average_occ %f\n", sum_occlusion / occ_count);
 }
+void LightVoxelsCube::clear()
+{
+    if (voxels)
+    {
+        int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
+        sum_memory -= count*sizeof(float);
+        sum_allocs--;
+        delete[] (voxels);
+        voxels = nullptr;
+    }
+}
 LightVoxelsCube::~LightVoxelsCube()
 {
-    int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
-    sum_memory -= count*sizeof(float);
-    sum_allocs--;
-    delete (voxels);
+    clear();
 }
 void LightVoxelsCube::set_occluder(glm::vec3 pos, float strenght)
 {

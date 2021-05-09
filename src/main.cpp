@@ -21,214 +21,24 @@
 #include "tinyEngine/shadow.h"
 #include "grove_packer.h"
 #include "proctree.h"
+#include "app.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
 Config config;
-Camera camera;
-DirectedLight light;
+AppContext appContext;
 ShadowMap shadowMap;
-const int WIDTH = 1200;
-const int HEIGHT = 800;
-float avg_fps = 100;
-int treecount = 0;
-int cloudnum = -1;
-bool draw_clusterized = true;
-int cur_tree = 0;
-const int DEBUG_RENDER_MODE = -2;
-const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
-int render_mode = -1;
-int debug_tex = 0;
-int debug_layer = 0;
-int debug_model_focus = 0;
-bool debug_need_focus = true;
-float rot_a;
+
+
 Tree t[MAX_TREES];
 mygen::Tree ttt;
 mygen::TreeGenerator gen(ttt);
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 GroveGenerationData ggd;
-BillboardCloudRaw::RenderMode mode = BillboardCloudRaw::ONLY_SINGLE;
-glm::vec2 mousePos = glm::vec2(-1, -1);
-glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
 GroveRenderer *GR = nullptr;
-bool drawshadow = true;
-glm::vec3 lightpos = glm::vec3(200);
-glm::mat4 bias = glm::mat4(
-    0.5, 0.0, 0.0, 0.0,
-    0.0, 0.5, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.5, 0.5, 0.5, 1.0);
-glm::mat4 lproj = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, -200.0f, 2000.0f);
-glm::mat4 lview = glm::lookAt(lightpos, glm::vec3(0), glm::vec3(0, 1, 0));
-
-
-// Event Handler
-std::function<void()> eventHandler = []() {
-  float nx = Tiny::event.mouse.x;
-  float ny = Tiny::event.mouse.y;
-  GLfloat xoffset = nx - mousePos.x;
-  GLfloat yoffset = mousePos.y - ny;
-
-  GLfloat sensitivity = 0.1;
-  xoffset *= sensitivity;
-  yoffset *= sensitivity;
-
-  camera.yaw += xoffset;
-  camera.pitch += yoffset;
-
-  if (camera.pitch > 89.0f)
-    camera.pitch = 89.0f;
-  if (camera.pitch < -89.0f)
-    camera.pitch = -89.0f;
-  glm::vec3 front;
-  front.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-  front.y = sin(glm::radians(camera.pitch));
-  front.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-  camera.front = glm::normalize(front);
-  mousePos = glm::vec2(nx, ny);
-  //Pause Toggle
-  float speed = 0.2;
-  glm::vec3 cameraPerp = glm::normalize(glm::cross(camera.front, camera.up));
-  if (Tiny::event.active[SDLK_l])
-  {
-    camera = Camera();
-    camera.pos = glm::vec3(-200,70,0);
-  }
-  if (Tiny::event.active[SDLK_w])
-    camera.pos += speed * camera.front;
-  if (Tiny::event.active[SDLK_s])
-    camera.pos -= speed * camera.front;
-
-  if (Tiny::event.active[SDLK_a])
-    camera.pos -= speed * cameraPerp;
-  if (Tiny::event.active[SDLK_d])
-    camera.pos += speed * cameraPerp;
-
-  if (Tiny::event.active[SDLK_e])
-    camera.pos += speed * camera.up;
-  if (Tiny::event.active[SDLK_c])
-    camera.pos -= speed * camera.up;
-  if (Tiny::event.active[SDLK_y])
-    cloudnum = -1;
-  if (Tiny::event.active[SDLK_u])
-    cloudnum = 0;
-  if (Tiny::event.active[SDLK_i])
-    cloudnum = 1;
-  if (Tiny::event.active[SDLK_o])
-    cloudnum = 2;
-  if (Tiny::event.active[SDLK_p])
-    cloudnum = 3;
-  if (Tiny::event.active[SDLK_LEFTBRACKET])
-    cloudnum = 4;
-  if (Tiny::event.active[SDLK_RIGHTBRACKET])
-    cloudnum = 5;
-  if (Tiny::event.active[SDLK_k])
-  {
-    draw_clusterized = true;
-  }
-  if (Tiny::event.active[SDLK_l])
-  {
-    //draw_clusterized = false;
-  }
-  if (Tiny::event.active[SDLK_r])
-  {
-    for (int i=0;i<MAX_TREES;i++)
-    {
-      t[i] = Tree();
-    }
-    if (GR)
-    {
-      GR->~GroveRenderer();
-      GR = nullptr;
-    }
-  }
-  if (Tiny::event.active[SDLK_m])
-  {
-    render_mode++;
-    if (render_mode > DebugVisualizer::MAX_RENDER_MODE)
-      render_mode = ARRAY_TEX_DEBUG_RENDER_MODE;
-    Tiny::event.active[SDLK_m] = false;
-    logerr("render mode %d",render_mode);
-  }
-  if (Tiny::event.active[SDLK_n])
-  {
-    if (render_mode <= DEBUG_RENDER_MODE)
-      debug_tex++;
-    Tiny::event.active[SDLK_n] = false;
-  }
-  if (Tiny::event.active[SDLK_b])
-  {
-    if (debug_need_focus)
-      debug_model_focus++;
-    if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
-      debug_layer++;
-    Tiny::event.active[SDLK_b] = false;
-  }
-    if (Tiny::event.active[SDLK_v])
-  {
-    if (debug_need_focus)
-      debug_model_focus--;
-    if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
-      debug_layer--;
-    Tiny::event.active[SDLK_v] = false;
-  }
-  if (Tiny::event.active[SDLK_f])
-  {
-    debug_need_focus = !debug_need_focus;
-    render_mode = -1;
-    Tiny::event.active[SDLK_f] = false;
-  }
-  if (!Tiny::event.press.empty())
-  {
-
-  }
-};
-
-std::function<void(Model *m)> construct_floor = [](Model *h) {
-  float floor[12] = {
-      -100.0,
-      0.0,
-      -100.0,
-      -100.0,
-      0.0,
-      100.0,
-      100.0,
-      0.0,
-      -100.0,
-      100.0,
-      0.0,
-      100.0,
-  };
-  float colors[8] = {0,0,0,1,1,0,1,1};
-  for (int i = 0; i < 12; i++)
-    h->positions.push_back(floor[i]);
-
-  h->indices.push_back(0);
-  h->indices.push_back(1);
-  h->indices.push_back(2);
-
-  h->indices.push_back(1);
-  h->indices.push_back(3);
-  h->indices.push_back(2);
-
-  glm::vec3 floorcolor = glm::vec3(0.1, 0.3, 0.1);
-
-  for (int i = 0; i < 4; i++)
-  {
-    h->normals.push_back(0.0);
-    h->normals.push_back(1.0);
-    h->normals.push_back(0.0);
-
-    h->colors.push_back(colors[2*i]);
-    h->colors.push_back(colors[2*i + 1]);
-    h->colors.push_back(0.0);
-    h->colors.push_back(1.0);
-  }
-};
 
 int main(int argc, char *argv[])
 {
@@ -330,28 +140,25 @@ int main(int argc, char *argv[])
   //base initialization
   glewInit();
   Tiny::view.lineWidth = 1.0f;
-  Tiny::window("Procedural Tree", WIDTH, HEIGHT);
-  Tiny::event.handler = eventHandler;
+  Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
+  Tiny::event.handler = [&](){eventHandler(appContext,Tiny::event);};
   textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
 
   config.load_config();
   config.load_ggds();
 
-  camera.pos = glm::vec3(-300,70,0);
-  light.dir = glm::normalize(glm::vec3(0.2,0.6,0.2));
-  light.color = glm::vec3(0.99,0.9,0.7);
-  light.intensity = 10;
-  light.ambient_q = 0.6;
-  light.diffuse_q = 0.4;
-  light.specular_q = 0.1;
+  appContext.camera.pos = glm::vec3(-300,70,0);
+  appContext.light.dir = glm::normalize(glm::vec3(0.2,0.6,0.2));
+  appContext.light.color = glm::vec3(0.99,0.9,0.7);
+  appContext.light.intensity = 10;
+  appContext.light.ambient_q = 0.6;
+  appContext.light.diffuse_q = 0.4;
+  appContext.light.specular_q = 0.1;
   shadowMap.create(2048,2048);
-  Model floor(construct_floor);
 
-  Shader particleShader({"particle.vs", "particle.fs"}, {"in_Quad", "in_Tex", "in_Model"});
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
   Shader debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
-  BillboardTiny shadow(1600, 1600, false);
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
   srand(time(NULL));
   std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
@@ -366,8 +173,7 @@ int main(int argc, char *argv[])
     //gen.create_grove(ggd, t, &h);
     Proctree::create_grove(ggd,t,h);
     packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
-
-    
+    distibutionGenerator.clear();
   }
   if (saving_needed)
   {
@@ -467,73 +273,69 @@ int main(int argc, char *argv[])
     logerr("Grove successfully generated. Exiting.");
     return 0;
   }
-  Tiny::view.pipeline = [&]() {
-    t_prev = t1;
-    t1 = std::chrono::steady_clock::now();
-    float frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t_prev).count();
-    frame_time = MAX(frame_time,0.1);
-    avg_fps = mu*avg_fps + (1 - mu)*(1000/frame_time);
-    frame++;
-    if (frame % 100 == 0 && print_perf)
+  Tiny::view.pipeline = [&]() 
+  {
+    auto &ctx = appContext;
+
+    ctx.fpsCounter.tick();
+    if (ctx.fpsCounter.get_frame_n() % 100 == 0 && print_perf)
     {
-      fprintf(stderr,"FPS: %4.1f\n",avg_fps);
+      fprintf(stderr,"FPS: %4.1f\n",ctx.fpsCounter.get_average_fps());
     }
-    rot_a += 0.01;
-    shadowMap.use(light);
+    shadowMap.use(ctx.light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
-    GroveRendererDebugParams dbgpar;
-    dbgpar.need_focus_model = debug_need_focus;
-    dbgpar.model_focused = debug_model_focus;
-    groveRenderer.render(cloudnum, sh_viewproj,camera,
-        glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), light, dbgpar,sh_viewproj,0);
+
+    groveRenderer.render(ctx.forced_LOD, sh_viewproj,ctx.camera,
+                         glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
+                         ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); 
     Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-    if (render_mode <= DEBUG_RENDER_MODE)
+    if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
     {
       debugShader.use();
-      debugShader.uniform("projectionCamera", projection * camera.camera());
-      if (render_mode == DEBUG_RENDER_MODE)
+      debugShader.uniform("projectionCamera", ctx.projection * ctx.camera.camera());
+      if (ctx.render_mode == ctx.DEBUG_RENDER_MODE)
       {
-        debugShader.texture("tex", textureManager.get(debug_tex));
-        debugShader.texture("tex_arr", textureManager.get(debug_tex));
+        debugShader.texture("tex", textureManager.get(ctx.debug_tex));
+        debugShader.texture("tex_arr", textureManager.get(ctx.debug_tex));
         debugShader.uniform("need_tex",true);
         debugShader.uniform("need_arr_tex",false);
         debugShader.uniform("need_coord",false);
         debugShader.uniform("slice",0);
       }
-      else if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
+      else if (ctx.render_mode == ctx.ARRAY_TEX_DEBUG_RENDER_MODE)
       {
-        debugShader.texture("tex", textureManager.get_arr(debug_tex));
-        debugShader.texture("tex_arr", textureManager.get_arr(debug_tex));
+        debugShader.texture("tex", textureManager.get_arr(ctx.debug_tex));
+        debugShader.texture("tex_arr", textureManager.get_arr(ctx.debug_tex));
         debugShader.uniform("need_tex",false);
         debugShader.uniform("need_arr_tex",true);
         debugShader.uniform("need_coord",false);
-        debugShader.uniform("slice", debug_layer);
+        debugShader.uniform("slice", ctx.debug_layer);
       }
-      debugShader.uniform("model", floor.model);
-      floor.render(GL_TRIANGLES);
     }
     else
     {
-      tr.render(projection * camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),camera.pos,light);
-      if (draw_clusterized && render_mode != 2)
+      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+                ctx.camera.pos,ctx.light);
+      if (ctx.render_mode != 2)
       {
-        GroveRendererDebugParams dbgpar;
-        dbgpar.need_focus_model = debug_need_focus;
-        dbgpar.model_focused = debug_model_focus;
-        groveRenderer.render(cloudnum, projection * camera.camera(),camera,
-        glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light, dbgpar,shadowMap.get_transform(),shadowMap.getTex());
-        
+        groveRenderer.render(ctx.forced_LOD, ctx.projection * ctx.camera.camera(),ctx.camera,
+                             glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), ctx.light, 
+                             ctx.groveRendererDebugParams, shadowMap.get_transform(),shadowMap.getTex());  
       }
-      debugVisualizer->render(projection * camera.camera(),render_mode);
+      debugVisualizer->render(ctx.projection * ctx.camera.camera(),ctx.render_mode);
     }
   };
 
-  //Loop over Stuff
-  Tiny::loop([&]() { /* ... */
-                     floor.construct(construct_floor);
-  });
-
+  Tiny::loop([&]() {});
+  {
+    for (int i=0;i<ggd.obstacles.size();i++)
+    {
+      delete ggd.obstacles[i];
+      ggd.obstacles[i] = nullptr;
+    }
+    ggd.obstacles.clear();
+  }
   Tiny::quit();
 
   return 0;

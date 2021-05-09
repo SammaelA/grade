@@ -3,8 +3,9 @@
 #include <iostream>
 #include "tinyEngine/utility.h"
 int base_seed = 1234;
-Uniform base = Uniform(0, 1, base_seed);
-UniformInt basei = UniformInt(0, INT_MAX, base_seed);
+DistributionGenerator distibutionGenerator;
+Uniform *base = distibutionGenerator.get_uniform(0, 1, base_seed);
+UniformInt *basei = distibutionGenerator.get_uniform_int(0, INT_MAX, base_seed);
 Normal::Normal(double a, double sigma, int seed)
 {
     this->a = a;
@@ -90,11 +91,11 @@ double *UniformInt::get_series(unsigned size)
 }
 double urand(double from, double to)
 {
-    return base.get() * (to - from) + from;
+    return base->get() * (to - from) + from;
 }
 double urandi(int from, int to)
 {
-    return basei.geti() % (to - from) + from;
+    return basei->geti() % (to - from) + from;
 }
 double srand(uint64_t s, uint64_t &x, uint64_t &w, double from, double to)
 {

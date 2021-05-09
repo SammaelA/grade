@@ -53,9 +53,9 @@ bool Config::load_config()
             if (p.param_type > 2)
             {
                 if (p.dist_type == 1)
-                    randomizer = new Normal(p.distr_a,p.distr_b);
+                    randomizer = distibutionGenerator.get_normal(p.distr_a,p.distr_b);
                 else
-                    randomizer = new Uniform(p.distr_a,p.distr_b);
+                    randomizer = distibutionGenerator.get_uniform(p.distr_a,p.distr_b);
                 switch (p.regen_type)
                 {
                 case 1:

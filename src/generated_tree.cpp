@@ -776,11 +776,11 @@ void down_stripe(std::vector<float> &res, float start, float end, int count, flo
     res.push_back(start);
     if (count == 1)
         return;
-    Normal gen = Normal(1,sigma);
+    Normal *gen = distibutionGenerator.get_normal(1,sigma);
     float p, dp = 1/(float)(count - 1);
     for (int i=1;i<count;i++)
     {
-        float rel = gen.get()*pow(1-i*dp,pw);
+        float rel = gen->get()*pow(1-i*dp,pw);
         rel = rel*(start - end) + end;
         if (rel < end)
             rel = end;

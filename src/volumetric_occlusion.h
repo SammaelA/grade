@@ -12,6 +12,7 @@ public:
     LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes);
     LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes);
     ~LightVoxelsCube();
+    void clear();
     void replace_occluder_voxel(glm::ivec3 voxel, float strength);
     void set_occluder_voxel(glm::ivec3 voxel, float strength);
     void set_occluder(glm::vec3 pos, float strenght);

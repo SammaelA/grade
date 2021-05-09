@@ -105,6 +105,16 @@ struct Tree
     uint id = 0;
     TreeTypeData *type = nullptr;
     Tree() {};
+    void clear()
+    {
+        delete leaves;
+        for (int i=0;i<branchHeaps.size();i++)
+        {
+            delete branchHeaps[i];
+            branchHeaps[i] = nullptr;
+        }
+        branchHeaps.clear();
+    }
 };
 struct GroveGenerationData
 {

@@ -46,8 +46,8 @@ BillboardCloudRaw::BillboardCloudRaw(Quality _quality, int branch_level, std::ve
 }
 BillboardCloudRaw::~BillboardCloudRaw()
 {
-    if (cloud)
-        delete (cloud);
+    //if (cloud)
+    //    delete (cloud);
     for (int i=0;i<instances.size();i++)
     {
         delete instances[i]->m;

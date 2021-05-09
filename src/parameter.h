@@ -220,26 +220,26 @@ struct TreeStructureParameters
                                 seg_len_mult(4, std::vector<float>{2.25, 1.75, 1, 0.55, 0.4}),
                                 leaf_size_mult(2.25),
                                 base_r(1, std::vector<float>{0.9, 0.75, 0.35, 0.15, 0.12}),
-                                r_split_save_pow(2.7, std::vector<float>{1.5, 1.7, 2.3, 3, 2}, EXPLICIT_REGENERATION, new Normal(0, 0.25)),
+                                r_split_save_pow(2.7, std::vector<float>{1.5, 1.7, 2.3, 3, 2}, EXPLICIT_REGENERATION, distibutionGenerator.get_normal(0, 0.25)),
 
-                                dir_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.4, 0.4), 0.1, 10),
-                                plane_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.4, 0.4), 0.1, 10),
-                                spread(1, std::vector<float>{1, 3, 2, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.25, 25), 0.1, 10),
-                                phototrop(1, std::vector<float>{5, 3, 2, 0, 0}, REGENERATE_ON_GET, new Uniform(-0.2, 0.2), 0.1, 10),
-                                gravitrop(1, std::vector<float>{5, 5, 2, 0.75, 0.25}, REGENERATE_ON_GET, new Uniform(-0.1, 0.1), 0.1, 10),
-                                dir_random(1, std::vector<float>{1, 1, 1, 1, 1}, REGENERATE_ON_GET, new Uniform(-0.4, 0.4), 0.1, 10),
+                                dir_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
+                                plane_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
+                                spread(1, std::vector<float>{1, 3, 2, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.25, 25), 0.1, 10),
+                                phototrop(1, std::vector<float>{5, 3, 2, 0, 0}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.2, 0.2), 0.1, 10),
+                                gravitrop(1, std::vector<float>{5, 5, 2, 0.75, 0.25}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.1, 0.1), 0.1, 10),
+                                dir_random(1, std::vector<float>{1, 1, 1, 1, 1}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
                                 
-                                seg_dir_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, new Uniform(-0.05, 0.05), 0, 1000),
-                                seg_plane_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, new Uniform(-0.05, 0.05), 0, 1000),
+                                seg_dir_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.05, 0.05), 0, 1000),
+                                seg_plane_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.05, 0.05), 0, 1000),
                                 seg_spread(0, std::vector<float>{1, 1, 0.5, 0.5, 1}),
-                                seg_phototrop(1, std::vector<float>{7, 3.5, 1.5, 0.4, 0.1}, REGENERATE_ON_GET, new Uniform(-1, 2), 0, 10),
-                                seg_gravitrop(2, std::vector<float>{0.5, 0.2, 0.07, 0.04, 0.5}, REGENERATE_ON_GET, new Uniform(-2, 4), 0, 50),
-                                seg_dir_random(1, std::vector<float>{0.5, 1, 2, 3, 5}, REGENERATE_ON_GET, new Uniform(-1, 1), 0, 10),
-                                seg_bend(1, std::vector<float>{1, 1, 2, 3, 5}, REGENERATE_ON_GET, new Uniform(-1, 1), 0, 10),
-                                seg_bend_pow(2, std::vector<float>{2, 2, 2, 2}, REGENERATE_ON_GET, new Uniform(-0.05, 0.05), 0, 10),
+                                seg_phototrop(1, std::vector<float>{7, 3.5, 1.5, 0.4, 0.1}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-1, 2), 0, 10),
+                                seg_gravitrop(2, std::vector<float>{0.5, 0.2, 0.07, 0.04, 0.5}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-2, 4), 0, 50),
+                                seg_dir_random(1, std::vector<float>{0.5, 1, 2, 3, 5}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-1, 1), 0, 10),
+                                seg_bend(1, std::vector<float>{1, 1, 2, 3, 5}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-1, 1), 0, 10),
+                                seg_bend_pow(2, std::vector<float>{2, 2, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.05, 0.05), 0, 10),
 
-                                base_branch_feed(300, std::vector<float>{800, 350, 200, 40, 40}, REGENERATE_ON_GET, new Uniform(-200, 200)),
-                                base_seg_feed(100, std::vector<float>{200, 150, 120, 40, 30}, REGENERATE_ON_GET, new Uniform(-30, 30)),
+                                base_branch_feed(300, std::vector<float>{800, 350, 200, 40, 40}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-200, 200)),
+                                base_seg_feed(100, std::vector<float>{200, 150, 120, 40, 30}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-30, 30)),
                                 feed_distribution_min_weight(0.07),
                                 feed_distribution_d_weight(0.05),
                                 top_growth_bonus(0.0),
@@ -254,7 +254,7 @@ struct TreeStructureParameters
                                 branching_power(0.5, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4}),
                                 r_deformation_levels(2),
                                 r_deformation_points(0,std::vector<int>{8,3}),
-                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, new Normal(0,0.025))
+                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025))
     {
     }
 };
