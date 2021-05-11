@@ -143,7 +143,8 @@ void add_occluder(LightVoxelsCube *voxels, Tree *trees, int count)
 {
     for (int i=0;i<count;i++)
     {
-        add_occluder(voxels,trees[i].root);
+        if (trees[i].root)
+            add_occluder(voxels,trees[i].root);
     }
 }
 
@@ -184,11 +185,11 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     ClusterizationParams tr_cp;
     tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
     tr_cp.ignore_structure_level = 1;
-    tr_cp.delta = 0.05;
+    tr_cp.delta = 0.1;
     tr_cp.light_importance = 0;
     tr_cp.different_types_tolerance = true;
-    tr_cp.r_weights = std::vector<float>{0.5,0,0,0.0,0.0}; 
-    tr_cp.max_individual_dist = 0.1;
+    tr_cp.r_weights = std::vector<float>{0.4,0,0,0.0,0.0}; 
+    tr_cp.max_individual_dist = 0.4;
     tr_cp.bwd_rotations = 4;
     tr_cl.set_clusterization_params(tr_cp);
     tr_cl.set_branches(trees_external, count, 0, post_voxels);
@@ -266,8 +267,11 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     }
     for (int i = 0; i < count; i++)
     {
-        grove.roots.push_back(BranchStructure());
-        pack_structure(trees_external[i].root,grove,grove.roots.back(),instanced_structures);
+        if (trees_external[i].root)
+        {
+            grove.roots.push_back(BranchStructure());
+            pack_structure(trees_external[i].root,grove,grove.roots.back(),instanced_structures);
+        }
     }
 
     delete(post_voxels);

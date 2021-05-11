@@ -34,13 +34,12 @@ box = {(0 0 -125) (50 0 0) (0 50 0) (0 0 100)}
 grove_end
 grove simple_grove
 {
-count = 250
-synthetic_count = 1000
-synthetic_precision = 5
+count = 750
+synthetic_count = 10
+synthetic_precision = 3
 pos = (0 0 0)
-size = (600 200 600)
-preset = {default wood2 leaf2}
-preset = {bush wood leaf}
+size = (500 200 500)
+preset = {simple wood2 leaf2}
 
 box = {(0 0 0) (100 0 0) (0 30 0) (0 0 50)}
 box = {(0 0 100) (50 0 0) (0 100 0) (0 0 50)}

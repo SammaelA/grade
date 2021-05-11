@@ -733,13 +733,13 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
     }
 }
 
-void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap *h)
+void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
     Tree trees[MAX_TREES];
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    heightmap = h;
+    heightmap = &h;
     curGgd = ggd;
-    seeder = new Seeder(ggd,10,h);
+    seeder = new Seeder(ggd,10,&h);
     int synts = ggd.synts_count;
     int count = ggd.trees_count;
     for (int i = 0; i < count; i++)

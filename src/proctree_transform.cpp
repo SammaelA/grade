@@ -77,16 +77,17 @@ void br_transform(Proctree::Tree &src_tree, ::Tree &dst_tree, Proctree::Branch *
 
         dst->joints.emplace_back();
         dst->joints.back().pos = to1;
-        ::Branch *chb1 = dst_tree.branchHeaps[level + 1]->new_branch();
+        int next_level = level >= 3 ? 3 : level + 1;
+        ::Branch *chb1 = dst_tree.branchHeaps[next_level]->new_branch();
         src->mHead = Proctree::fvec3{to1.x,to1.y,to1.z};
-        br_transform(src_tree,dst_tree,src->mChild0,chb1,level+1);
+        br_transform(src_tree,dst_tree,src->mChild0,chb1,next_level);
         dst->joints.back().childBranches.push_back(chb1);
 
         dst->joints.emplace_back();
         dst->joints.back().pos = to2;
-        ::Branch *chb2 = dst_tree.branchHeaps[level + 1]->new_branch();
+        ::Branch *chb2 = dst_tree.branchHeaps[next_level]->new_branch();
         src->mHead = Proctree::fvec3{to2.x,to2.y,to2.z};
-        br_transform(src_tree,dst_tree,src->mChild1,chb2,level+1);
+        br_transform(src_tree,dst_tree,src->mChild1,chb2,next_level);
         dst->joints.back().childBranches.push_back(chb2);
     }
 

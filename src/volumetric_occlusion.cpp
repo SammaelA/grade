@@ -5,9 +5,12 @@
 #include "distribution.h"
 int sum_memory = 0;
 int sum_allocs = 1;
+glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
+{
+    return glm::ivec3(MAX(1,sizes.x/voxel_size),MAX(1,sizes.y/voxel_size),MAX(1,sizes.z/voxel_size));
+}
 LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision):
-LightVoxelsCube(center, glm::ivec3(size.x/(base_size / light_precision), size.y/(base_size / light_precision),
-                                   size.z/(base_size / light_precision)),(base_size / light_precision))
+LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size / light_precision)
 {
     lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
@@ -30,7 +33,7 @@ voxel_size(vox_size)
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
 LightVoxelsCube(source,
                 source->pos_to_voxel(pos),
-                glm::ivec3(sizes.x/source->voxel_size,sizes.y/source->voxel_size,sizes.z/source->voxel_size))
+                vox_sizes(sizes,source->voxel_size))
 
 {
     center = pos;

@@ -170,8 +170,8 @@ int main(int argc, char *argv[])
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    //gen.create_grove(ggd, t, &h);
-    Proctree::create_grove(ggd,t,h);
+    gen.create_grove(ggd, t, h);
+    //Proctree::create_grove(ggd,t,h);
     packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
     distibutionGenerator.clear();
   }

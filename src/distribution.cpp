@@ -95,7 +95,7 @@ double urand(double from, double to)
 }
 double urandi(int from, int to)
 {
-    return basei->geti() % (to - from) + from;
+    return to > from ? basei->geti() % (to - from) + from : to;
 }
 double srand(uint64_t s, uint64_t &x, uint64_t &w, double from, double to)
 {
