@@ -12,35 +12,21 @@
 
 using namespace glm;
 #define TEX_ATLAS_LAYERS 4
-BillboardCloudRaw::BillboardCloudRaw() : wood(textureManager.empty()),
-                                         rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                         billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                         billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                                                                     {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+BillboardCloudRaw::BillboardCloudRaw() : rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"})                            
 {
 }
 BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeData> &_ttd): 
                                                        atlas(new TextureAtlas(tex_w, tex_h,TEX_ATLAS_LAYERS)),
-                                                       wood(textureManager.empty()),
-                                                       rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                       billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                       billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                                                                                   {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+                                                       rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
     ttd = _ttd;
-    cloud = new Model();
 }
 BillboardCloudRaw::BillboardCloudRaw(Quality _quality, int branch_level, std::vector<ClusterData> &clusters,
                                      std::vector<TreeTypeData> &_ttd, BillboardCloudData *data) :
-                                                                 wood(textureManager.empty()),
-                                                                 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                                 billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-                                                                 billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
-                                                                                             {"in_Position", "in_Normal", "in_Tex", "in_Model"})
+                                                                 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"})
 {
     quality = _quality;
     ttd = _ttd;
-    cloud = new Model();
     Tree t;
     prepare(t,branch_level,clusters,data);
 }
@@ -308,40 +294,7 @@ void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &m
             update_bbox(br, rot, mn, mx);
     }
 }
-void BillboardCloudRaw::render(mat4 &projectionCamera)
-{
-    if (renderMode == ONLY_SINGLE || renderMode == BOTH)
-    {
-        std::function<void(Model *)> _ce = [&](Model *h) {
-            for (Billboard bill : billboards)
-            {
-                bill.to_model(h, *atlas);
-            }
-        };
-        cloud->construct(_ce);
-        billboardRenderer.use();
-        billboardRenderer.texture("tex", atlas->tex());
-        billboardRenderer.uniform("model", cloud->model);
-        billboardRenderer.uniform("projectionCamera", projectionCamera);
-        cloud->render(GL_TRIANGLES);
-    }
-    if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
-    {
-        billboardRendererInstancing.use();
-        billboardRendererInstancing.texture("tex", atlas->tex());
-        billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
-        for (Instance *in : instances)
-        {
-            Model *m = (Model *)(in->m);
-            m->update();
-            in->render(GL_TRIANGLES);
-        }
-    }
-}
-void BillboardCloudRaw::set_textures(Texture _wood)
-{
-    wood = _wood;
-}
+
 std::vector<glm::vec3> Billboard::get_tc(TextureAtlas &atlas)
 {
     if (positions.size() == 4)

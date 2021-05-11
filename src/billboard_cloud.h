@@ -35,14 +35,14 @@ public:
     void prepare(Tree &t, int branch_level, std::vector<Branch> &branches);
     void prepare(Tree &t, int branch_level, int layer);
     void prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters, BillboardCloudData *data = nullptr);
-    void render(glm::mat4 &projectionCamera);
+    //void render(glm::mat4 &projectionCamera);
     void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
     static BBox get_minimal_bbox(Branch *b);
-    void set_render_mode(RenderMode m)
-    {
-        renderMode = m;
-    }
+    //void set_render_mode(RenderMode m)
+    //{
+        //renderMode = m;
+    //}
 protected:
     struct BranchProjectionData
     {
@@ -94,13 +94,11 @@ protected:
     TextureAtlas *atlas = nullptr;
     std::vector<TreeTypeData> ttd;
     Shader rendererToTexture;
-    Shader billboardRenderer;
-    Shader billboardRendererInstancing;
-    Model *cloud;
+    //Shader billboardRenderer;
+    //Shader billboardRendererInstancing;
+    //Model *cloud;
     std::vector<Instance *> instances;
-    Texture wood;
     std::vector<Billboard> billboards;
-    RenderMode renderMode = ONLY_SINGLE;
 };
 struct BillboardCloudRenderer
 {   

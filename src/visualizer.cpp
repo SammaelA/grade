@@ -73,7 +73,6 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw)
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-
 void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
                           float rel_ring_pos, std::vector<float> &mults, glm::vec3 p)
 {

@@ -544,20 +544,7 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
         }
     }
 }
-LightVoxelsCube *TreeGenerator::create_light_voxels_cube(ParameterSetWrapper params, glm::vec3 pos)
-{
-    float max_size = 0.0;
-    float wm = 0.7;
-    float hm = 0.55;
-    for (int i = 0; i < params().max_depth(); i++)
-    {
-        params.set_state(i);
-        max_size += params().max_segments() * params().seg_len_mult();
-    }
-    params.set_state(params().max_depth() - 1);
-    return new LightVoxelsCube(pos + glm::vec3(0, 0.5 * max_size, 0), glm::vec3(wm * max_size, hm * max_size, wm * max_size),
-                               params().seg_len_mult(), params().light_precision());
-}
+
 void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
 {
     for (int i = 0; i < 10; i++)
@@ -645,12 +632,6 @@ void TreeGenerator::grow_tree(Tree &t)
             voxels->print_average_occlusion();
         }
     }
-}
-void LeafHeap::clear_removed()
-{
-}
-void BranchHeap::clear_removed()
-{
 }
 bool TreeGenerator::is_branch_productive(Branch *b)
 {

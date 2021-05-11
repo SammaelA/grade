@@ -83,7 +83,6 @@ struct LeafHeap
         leaves.push_back(Leaf());
         return &leaves.back();
     }
-    void clear_removed();
     ~LeafHeap()
     {
         leaves.clear();
@@ -99,7 +98,6 @@ struct BranchHeap
         branches.push_back(Branch());
         return &branches.back();
     }
-    void clear_removed();
 };
 
 struct Tree
@@ -152,7 +150,6 @@ public:
     void distribute_feed(Branch *b);
     void remove_branch(Branch *b);
     void recalculate_thickness(Branch *b);
-    LightVoxelsCube *create_light_voxels_cube(ParameterSetWrapper params, glm::vec3 pos);
     glm::vec3 rand_dir();
     bool is_branch_productive(Branch *b);
     glm::vec3 get_optimal_branch_growth_direction(float &quality, Branch *base, Joint &j, Segment &s, bool from_end);
