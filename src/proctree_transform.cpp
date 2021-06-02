@@ -1,6 +1,7 @@
 #include "proctree.h"
 #include "tree.h"
 #include "terrain.h"
+#include "grove_generation_utils.h"
 
 float scl = 1;
 void br_transform(Proctree::Tree &src_tree, ::Tree &dst_tree, Proctree::Branch *src, ::Branch *dst, int level)
@@ -117,6 +118,7 @@ void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h
 
     int synts = ggd.synts_count;
     int count = ggd.trees_count;
+    Seeder s = Seeder(ggd,10,&h);
     for (int i = 0; i < count + synts; i++)
     {
         int k = i % ggd.types.size();
@@ -126,9 +128,12 @@ void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h
     }   
     for (int i = 0; i < count; i++)
     {
+        std::vector<Seed> seeds;
         Proctree::Tree tree;
         basic_use(tree);
-        glm::vec3 pos = glm::vec3(100*i,0,0);
+        //s.choose_places_for_seeds(1,seeds);
+        glm::vec3 pos = glm::vec3(urand(-300,300), 0,urand(-300,300));
+        pos = glm::vec3(10000*i, 0, 0);
         pos.y = h.get_height(pos);
         transform(tree,trees[i],pos,glm::vec3(40,40,40));
     }

@@ -18,7 +18,7 @@ void print_FB_status2(GLuint status)
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);    
         shadow_camera.pos = 500.f*light.dir;
-        shadow_camera.front = - shadow_camera.pos;
+        shadow_camera.front =  -shadow_camera.pos;
         shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
         glm::mat4 lightView = shadow_camera.camera();
         float near_plane = 1.0f, far_plane = 7.5f;
@@ -55,7 +55,7 @@ void print_FB_status2(GLuint status)
         }
         else
         {
-            logerr("Shadow map created %d %d",SHADOW_HEIGHT,SHADOW_WIDTH);
+            debugl(10,"Shadow map created %d %d",SHADOW_HEIGHT,SHADOW_WIDTH);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);  
     }

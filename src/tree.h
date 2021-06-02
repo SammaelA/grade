@@ -122,6 +122,7 @@ struct GroveGenerationData
     int trees_count;
     int synts_count;
     int synts_precision;
+    float clustering_max_individual_distance = 0.7;
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;

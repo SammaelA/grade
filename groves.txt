@@ -11,34 +11,30 @@ box = {(1500 0 0) (100 0 0) (0 100 0) (0 0 100)}
 grove_end
 grove preset_tester
 {
-count = 50
-synthetic_count = 0
-synthetic_precision = 1
+count = 30
+synthetic_count = 1
+synthetic_precision = 5
 pos = (0 0 0)
 preset = {default wood leaf2}
 }
 grove_end
 grove oak_grove
 {
-count = 5
-synthetic_count = 25
-synthetic_precision = 4
+count = 20
+synthetic_count = 1
+synthetic_precision = 8
 pos = (0 0 0)
-size = (700 200 700)
+size = (400 200 400)
 preset = {default wood leaf2}
-preset = {gnarled wood leaf}
-box = {(100 0 200) (100 0 0) (0 30 0) (0 0 50)}
-box = {(0 0 100) (50 0 0) (0 100 0) (0 0 50)}
-box = {(0 0 -125) (50 0 0) (0 50 0) (0 0 100)}
 }
 grove_end
 grove simple_grove
 {
-count = 750
-synthetic_count = 10
+count = 10
+synthetic_count = 0
 synthetic_precision = 3
 pos = (0 0 0)
-size = (500 200 500)
+size = (700 200 700)
 preset = {simple wood2 leaf2}
 
 box = {(0 0 0) (100 0 0) (0 30 0) (0 0 50)}

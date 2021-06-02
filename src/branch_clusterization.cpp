@@ -640,7 +640,7 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         }
         if (min.d > 1000*clusterizationParams.max_individual_dist || current_clusters.size() <= clusters_num)
         {
-            logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
+            //logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
             break;
             //makes no sense to merge clusters with maximum distance between them.
         }
@@ -679,7 +679,8 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
         debugl(1, "cluster %d size = %d\n", S, clusters[S].size);
         sum += clusters[S].size;
     }
-    debugl(1, "%d clusters %d elements \n", current_clusters.size(), size);
+    float comp = (float)size/current_clusters.size();
+    debugl(17, "%d %d %f clusters elements compression\n", current_clusters.size(), size, comp);
 }
 void Clusterizer::set_clusterization_params(ClusterizationParams &params)
 {

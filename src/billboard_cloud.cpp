@@ -83,7 +83,7 @@ BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quali
     par.valid = true;
     par.grid_x = qual;
     par.grid_y = qual;
-    debug("successfully created atlas %dx%dx%d for %d (max = %d) billboards\n",
+    debugl(10,"successfully created atlas %dx%dx%d for %d (max = %d) billboards\n",
           par.x,par.y,par.layers,groups,cnt_x*cnt_y*layers);
     
     return par;

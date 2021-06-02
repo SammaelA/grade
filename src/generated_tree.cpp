@@ -750,7 +750,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
 
     convert(trees,trees_external,count);
 
-    logerr("created %d joints %d branches totally",j_count, b_count);
+    debugl(10,"created %d joints %d branches totally",j_count, b_count);
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
 {
@@ -779,7 +779,7 @@ void TreeGenerator::deform_root(Branch *b)
     int s = b->segments.back().mults.size();
     if (s == 0)
     {
-        logerr("no deforms");
+        //logerr("no deforms");
         return;
     }
     int stripes = 3;

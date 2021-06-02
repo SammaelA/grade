@@ -54,5 +54,5 @@ bool Config::load_ggds()
         gen.name = cur_g.name;
         ggds.emplace(cur_g.name,gen);
     }
-    logerr("loaded %d grove data's",ggds.size());
+    debugl(10,"loaded %d grove data's",ggds.size());
 }

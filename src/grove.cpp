@@ -34,7 +34,7 @@ GroveRenderer()
     Visualizer v = Visualizer();
     source = _source;
     ggd = _ggd;
-    debug("creating grove renderer with %d LODs\n", _source->clouds.size());
+    debugl(10,"creating grove renderer with %d LODs\n", _source->clouds.size());
     base_container = new Model();
     prepare_wood_types_atlas();
     for (int i = 0; i < _source->clouds.size(); i++)

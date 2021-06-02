@@ -176,27 +176,27 @@ namespace Proctree
 	Properties::Properties()
 	{
 		mSeed = 262;
-		mSegments = 6;
+		mSegments = 8;
 		mLevels = 5;
-		mVMultiplier = 0.36f;
-		mTwigScale = 0.39f;
-		mInitialBranchLength = 0.49f;
-		mLengthFalloffFactor = 0.85f;
-		mLengthFalloffPower = 0.99f;
-		mClumpMax = 0.454f;
-		mClumpMin = 0.404f;
-		mBranchFactor = 2.45f;
-		mDropAmount = -0.1f;
-		mGrowAmount = 0.235f;
+		mVMultiplier = 1.0f;
+		mTwigScale = 0.28f;
+		mInitialBranchLength = 0.5f;
+		mLengthFalloffFactor = 0.98f;
+		mLengthFalloffPower = 1.08f;
+		mClumpMax = 0.414f;
+		mClumpMin = 0.282f;
+		mBranchFactor = 2.2f;
+		mDropAmount = 0.24f;
+		mGrowAmount = 0.044f;
 		mSweepAmount = 0.01f;
-		mMaxRadius = 0.139f;
-		mClimbRate = 0.371f;
-		mTrunkKink = 0.093f;
+		mMaxRadius = 0.096f;
+		mClimbRate = 0.39f;
+		mTrunkKink = 0.0f;
 		mTreeSteps = 5;
-		mTaperRate = 0.947f;
-		mRadiusFalloffRate = 0.73f;
-		mTwistRate = 3.02f;
-		mTrunkLength = 2.4f;
+		mTaperRate = 0.958f;
+		mRadiusFalloffRate = 0.71f;
+		mTwistRate = 2.97f;
+		mTrunkLength = 1.95f;
 	}
 
 	float Properties::random(float aFixed)
@@ -420,7 +420,11 @@ namespace Proctree
 
 	void Tree::generate()
 	{
+		static int seed = 0;
+		seed++;
 		init();
+		//mProperties.
+		mProperties.mSeed += (rand() % (seed+10));
 		mProperties.mRseed = mProperties.mSeed;
 		fvec3 starthead = { 0, mProperties.mTrunkLength, 0 };
 		mRoot = new Branch(starthead, 0);

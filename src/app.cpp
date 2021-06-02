@@ -42,10 +42,29 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   //Pause Toggle
   float speed = 0.2;
   glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
-  if (event.active[SDLK_l])
+  if (event.active[SDLK_1])
   {
     ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-200,70,0);
+    ctx.camera.pos = glm::vec3(-400,70,0);
+    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+  }
+  if (event.active[SDLK_2])
+  {
+    ctx.camera = Camera();
+    ctx.camera.pos = glm::vec3(0,70,400);
+    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+  }
+  if (event.active[SDLK_3])
+  {
+    ctx.camera = Camera();
+    ctx.camera.pos = glm::vec3(400,70,0);
+    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+  }
+  if (event.active[SDLK_4])
+  {
+    ctx.camera = Camera();
+    ctx.camera.pos = glm::vec3(0,70,-400);
+    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
   }
   if (event.active[SDLK_w])
     ctx.camera.pos += speed * ctx.camera.front;

@@ -382,6 +382,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
 
             glm::vec3 pos = glm::vec3(seeds.front().pos.x, 0, seeds.front().pos.y);
             pos.y = seeder.heightmap->get_height(pos);
+            //pos.z += 200;
             int root_cl;
             RootStat *root_stat = nullptr;
             root_cl = CLAMP(stat.rootClusterStat->get(), 0, trunks_clusters.size() - 1);

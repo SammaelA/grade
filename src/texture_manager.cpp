@@ -151,7 +151,7 @@ TextureManager::TextureManager(std::string base_path)
             logerr("texture not found %s",paths[i].c_str());
         }
     }
-    debugl(1,"textures loaded %d\n",textures.size());
+    debugl(10,"textures loaded %d\n",textures.size());
 }
 
 Texture TextureManager::create_unnamed(int w, int h, bool shadow)

@@ -205,7 +205,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
     cp.ignore_structure_level = 2;
     cp.delta = 0.3;
-    cp.max_individual_dist = 0.7;
+    cp.max_individual_dist = ggd.clustering_max_individual_distance;
     cp.bwd_rotations = 4;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -282,9 +282,10 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     delete(cloud1);
     delete(cloud2);
     std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
-    std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
+    /*std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;
     std::cerr << "Syntetic trees generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
     std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
     std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count() << "[ms]" << std::endl;
+    */
 }

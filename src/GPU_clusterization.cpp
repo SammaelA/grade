@@ -258,7 +258,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         }
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-        debugl(1,"GPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count());
+        debugl(17,"GPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count());
         debugl(1,"CPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
         
         positions.clear();

@@ -48,6 +48,12 @@ int main(int argc, char *argv[])
   bool print_perf = false;
   bool only_gen = false;
   bool visualize_voxels = false;
+  bool statistics_run = false;
+  struct StatRunLaunchParams
+  {
+    int trees = 1;
+    float max_ind_dist = 0.7;
+  } statRunLaunchParams;
   GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
   std::string grove_type_name = "default";
   std::string save_path = ".";
@@ -121,6 +127,23 @@ int main(int argc, char *argv[])
       logerr("-g <grove type name> -s <save path> -l <load path>");
       return 1;
     }
+    else if (std::string(argv[k]) == "-stat_run")
+    {
+      if (argc <= k + 2)
+      {
+        logerr("-stat_run <num_tree> <max_individual distance>");
+      }
+      else
+      {
+        statRunLaunchParams.trees = atoi(argv[k+1]);
+        statRunLaunchParams.max_ind_dist = atof(argv[k+2]);
+        statistics_run = true;
+        //only_gen = true;
+        generation_needed = true;
+        debug("stat run %d trees %f MID\n",statRunLaunchParams.trees,statRunLaunchParams.max_ind_dist);
+        k+=3;
+      }
+    }
     else
     {
       logerr("unknown command \"%s\". Write -h for help",argv[k]);
@@ -167,9 +190,18 @@ int main(int argc, char *argv[])
   Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
   h.random_generate(0,1,50);
   GrovePacker packer;
+
+
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
+    
+    if (statistics_run)
+    {
+      ggd.clustering_max_individual_distance = statRunLaunchParams.max_ind_dist;
+      ggd.trees_count = statRunLaunchParams.trees;
+    }
+
     gen.create_grove(ggd, t, h);
     //Proctree::create_grove(ggd,t,h);
     packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
@@ -270,7 +302,7 @@ int main(int argc, char *argv[])
   Timestamp ts;
   if (only_gen)
   {
-    logerr("Grove successfully generated. Exiting.");
+    debug("Grove successfully generated. Exiting.");
     return 0;
   }
   Tiny::view.pipeline = [&]() 
