@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
   appContext.light.ambient_q = 0.6;
   appContext.light.diffuse_q = 0.4;
   appContext.light.specular_q = 0.1;
-  shadowMap.create(2048,2048);
+  shadowMap.create(4096,4096);
 
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});

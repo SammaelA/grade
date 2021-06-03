@@ -116,7 +116,7 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
                                          std::vector<Branch> &brs, BBox &min_bbox, Visualizer &tg, int num,
                                          Billboard &bill, float leaf_scale)
 {
-    if (num < 0)
+    /*if (num < 0)
     {
         logerr("too many billboards = %d", billboard_count);
         return;
@@ -171,7 +171,7 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
         glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
     }
-    billboards.push_back(bill);
+    billboards.push_back(bill);*/
 }
 void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num,
                                          Billboard &bill, float leaf_scale)
@@ -196,31 +196,35 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
 
-    atlas->target(num);
-    rendererToTexture.use();
+    for (int k = 0; k<atlas->tex_count();k++)
+    {
+        atlas->target(num,k);
+        rendererToTexture.use();
 
-    bm.construct(_c_wood);
-    rendererToTexture.texture("tex", ttd.wood);
-    rendererToTexture.uniform("model", bm.model);
-    rendererToTexture.uniform("projectionCamera", result);
-    bm.render(GL_TRIANGLES);
+        bm.construct(_c_wood);
+        rendererToTexture.texture("tex", ttd.wood);
+        rendererToTexture.uniform("model", bm.model);
+        rendererToTexture.uniform("projectionCamera", result);
+        rendererToTexture.uniform("state", k);
+        bm.render(GL_TRIANGLES);
 
-    bm.construct(_c_leaves);
+        bm.construct(_c_leaves);
 
-    Texture &leaf = ttd.leaf;
-    glBindTexture(leaf.type,leaf.texture);
-    glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
-    glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
+        Texture &leaf = ttd.leaf;
+        glBindTexture(leaf.type,leaf.texture);
+        glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
 
-    rendererToTexture.texture("tex", ttd.leaf);
-    rendererToTexture.uniform("model", bm.model);
-    rendererToTexture.uniform("projectionCamera", result);
-    bm.render(GL_TRIANGLES);
+        rendererToTexture.texture("tex", ttd.leaf);
+        rendererToTexture.uniform("model", bm.model);
+        rendererToTexture.uniform("projectionCamera", result);
+        bm.render(GL_TRIANGLES);
 
-    billboards.push_back(bill);
+        billboards.push_back(bill);
 
-    glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
-    glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
+        glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
+    }
 }
 BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
 {
@@ -656,7 +660,7 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         };
         cloud->construct(_ce);
         billboardRenderer.use();
-        billboardRenderer.texture("tex", data->atlas.tex());
+        billboardRenderer.texture("tex", data->atlas.tex(0));
         billboardRenderer.uniform("model", cloud->model);
         billboardRenderer.uniform("projectionCamera", projectionCamera);
      
@@ -674,7 +678,8 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
         billboardRendererInstancing.uniform("camera_pos",camera_pos);
         billboardRendererInstancing.uniform("screen_size",screen_size);
-        billboardRendererInstancing.texture("tex", data->atlas.tex());
+        billboardRendererInstancing.texture("color_tex", data->atlas.tex(0));
+        billboardRendererInstancing.texture("normal_tex", data->atlas.tex(1));
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
         billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);

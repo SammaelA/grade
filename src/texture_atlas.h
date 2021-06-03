@@ -25,15 +25,16 @@ public:
     int add_tex();
     void process_tc(int num, glm::vec3 &tc);
     glm::vec4 tc_transform(int num);
-    bool target(int num);
+    bool target(int num, int type);
     glm::mat4 tex_transform(int num);
     glm::ivec4 get_sizes() { return glm::ivec4(width, height, gridWN, gridHN); }
     bool clear();
-    Texture &tex() { return colorTex; }
+    Texture &tex(int type);
     void gen_mipmaps();
     int layers_count() {return layers;}
+    int tex_count() {return 2;}
 private:
-    bool bind(int layer);
+    bool bind(int layer, int type);
     int curNum = 0;
     int width = 0;
     int height = 0;
@@ -44,6 +45,7 @@ private:
     glm::vec4 clearColor;
     GLuint fbo;
     Texture colorTex;
+    Texture normalTex;
     Shader mipMapRenderer;
     Shader copy;
 };

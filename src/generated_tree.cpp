@@ -418,6 +418,8 @@ void TreeGenerator::recalculate_thickness(Branch *b)
 {
     float *weights = new float[b->joints.size() + 1];
     int i = b->joints.size() - 1;
+    float delta[5] = {0.2,0.25,0.3,0.5,0.5};
+    float muls[5] = {2,4,6,8,8};
     weights[i + 1] = 0.5;
     auto rev_it = b->joints.rbegin();
     while (rev_it != b->joints.rend())

@@ -69,8 +69,8 @@ void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> 
     data->valid = !data->impostors.empty();
     data->level = 0;
     data->atlas = *atlas;
-
-    glGenerateTextureMipmap(data->atlas.tex().texture);
+    for (int i=0;i<data->atlas.tex_count();i++)
+        glGenerateTextureMipmap(data->atlas.tex(i).texture);
 }
 void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
 {
@@ -247,8 +247,8 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
         a = rot * a;
         c = rot * c;
     }
-    glGenerateTextureMipmap(atlas->tex().texture);
-
+    for (int i=0;i<atlas->tex_count();i++)
+        glGenerateTextureMipmap(atlas->tex(i).texture);
     
     data->valid = !data->impostors.empty();
     data->level = 0;
@@ -363,7 +363,8 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     impostorRendererInstancing.uniform("camera_pos", camera_pos);
     impostorRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
     impostorRendererInstancing.uniform("projectionCamera", projectionCamera);
-    impostorRendererInstancing.texture("tex", data->atlas.tex());
+    impostorRendererInstancing.texture("color_tex", data->atlas.tex(0));
+    impostorRendererInstancing.texture("normal_tex", data->atlas.tex(1));
     impostorRendererInstancing.uniform("camera_pos", camera_pos);
     impostorRendererInstancing.uniform("screen_size", screen_size);
     impostorRendererInstancing.texture("noise", textureManager.get("noise"));

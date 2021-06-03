@@ -13,8 +13,10 @@ preset default
     base_seg_feed = 100,{20 20 20 5 5},NORMAL(0,10,REGENERATE_ON_GET),(1,100);
     base_branch_feed = 100,{50 50 50 50 50};
     seg_len_mult = 4,{2.25 1.5 1 0.55 0.25};
-    max_segments = 20,{30 25 10 5 10};
+    max_segments = 20,{30 25 10 6 10};
     min_branching_chance = 0,{-0.2 0.15 0.5 1.75 0.7};
+    r_split_save_pow = 3,{2.6 4 4 3 3};
+    base_r = 1,{1 1.5 0.65 0.25 0.12};
 }
 preset_end
 preset gnarled

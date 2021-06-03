@@ -17,6 +17,7 @@ void print_FB_status(GLuint status)
     else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x",status);
 }
 TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
+                              normalTex(textureManager.empty()),
                               mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                               copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
@@ -33,7 +34,8 @@ TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
 TextureAtlas::TextureAtlas(const TextureAtlas &atlas):
 mipMapRenderer(atlas.mipMapRenderer),
 copy(atlas.copy),
-colorTex(atlas.colorTex)
+colorTex(atlas.colorTex),
+normalTex(atlas.normalTex)
 {
     curNum = atlas.curNum;
     width = atlas.width;
@@ -44,23 +46,25 @@ colorTex(atlas.colorTex)
     clearColor = atlas.clearColor;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind(0);
+    bind(0,0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h, int l) : colorTex(textureManager.create_unnamed_array(w, h, false, l)),
-                                           mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
-                                           copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
+TextureAtlas::TextureAtlas(int w, int h, int l) : 
+                           colorTex(textureManager.create_unnamed_array(w, h, false, l)),
+                           normalTex(textureManager.create_unnamed_array(w, h, false, l)),
+                           mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
+                           copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
     width = w;
     height = h;
     layers = l;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind(0);
+    bind(0,0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
@@ -107,12 +111,15 @@ void TextureAtlas::process_tc(int num, glm::vec3 &tc)
     tc.y = tsc.y * (tc.y + tsh.y);
     tc.z = l;
 }
-bool TextureAtlas::bind(int layer)
+bool TextureAtlas::bind(int layer, int type)
 {
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, 0, layer);
+    if (type == 0)
+        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex.texture, 0, layer);
+    else if (type == 1)
+        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTex.texture, 0, layer);
     return true;
 }
-bool TextureAtlas::target(int num)
+bool TextureAtlas::target(int num, int type)
 {   
     
     int l = num / (gridHN*gridWN);
@@ -120,14 +127,18 @@ bool TextureAtlas::target(int num)
 
     glm::ivec2 tsh(num % gridWN, num / gridWN);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    bind(l);
+    bind(l, type);
     glViewport(0, 0, width, height);
 
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
 bool TextureAtlas::clear()
 {
-    target(0);
+    target(0,0);
+    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    target(0,1);
     glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -160,49 +171,53 @@ void TextureAtlas::gen_mipmaps()
         bm.colors = tc;
         bm.indices = indices;
     };
-    GLuint fbo1;
-    for (int j=0;j<layers;j++)
+
+    for (int k=0;k<tex_count();k++)
     {
-        int w = get_sizes().x;
-        int h =  get_sizes().y;
-        int mips = 4;
-        for (int i=1;i<mips;i++)
+        GLuint fbo1;
+        for (int j=0;j<layers;j++)
         {
-            glBindTexture(tex().type, tex().texture);
-            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
-            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
-            Texture ctex(textureManager.create_unnamed(w,h));
-            glGenFramebuffers(1, &fbo1);
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo1);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
-            glViewport(0, 0, w, h);
-            glClearColor(0,0,0,0);
-            glClear(GL_COLOR_BUFFER_BIT);
+            int w = get_sizes().x;
+            int h =  get_sizes().y;
+            int mips = 4;
+            for (int i=1;i<mips;i++)
+            {
+                glBindTexture(tex(k).type, tex(k).texture);
+                glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
+                glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
+                Texture ctex(textureManager.create_unnamed(w,h));
+                glGenFramebuffers(1, &fbo1);
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo1);
+                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
+                glViewport(0, 0, w, h);
+                glClearColor(0,0,0,0);
+                glClear(GL_COLOR_BUFFER_BIT);
+                    bm.construct(_c_mip);
+                    copy.use();
+                    copy.texture("tex", tex(k));
+                    copy.uniform("layer",(float)j);
+                    bm.render(GL_TRIANGLES);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glBindTexture(ctex.type, ctex.texture);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+                glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex(k).texture, i, j);
+                glViewport(0, 0, w / 2, h / 2);
+                glClearColor(0,0,0,0);
+                glClear(GL_COLOR_BUFFER_BIT);
                 bm.construct(_c_mip);
-                copy.use();
-                copy.texture("tex", tex());
-                copy.uniform("layer",(float)j);
+                mipMapRenderer.use();
+                mipMapRenderer.texture("tex", ctex);
+                mipMapRenderer.uniform("screen_size", glm::vec4(w, h, 0, 0));
+                glDisable(GL_DEPTH_TEST);
                 bm.render(GL_TRIANGLES);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glBindTexture(ctex.type, ctex.texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex().texture, i, j);
-            glViewport(0, 0, w / 2, h / 2);
-            glClearColor(0,0,0,0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            bm.construct(_c_mip);
-            mipMapRenderer.use();
-            mipMapRenderer.texture("tex", ctex);
-            mipMapRenderer.uniform("screen_size", glm::vec4(w, h, 0, 0));
-            glDisable(GL_DEPTH_TEST);
-            bm.render(GL_TRIANGLES);
-            glEnable(GL_DEPTH_TEST);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glDeleteFramebuffers(1, &fbo1);
-            w /= 2;
-            h /= 2;
+                glEnable(GL_DEPTH_TEST);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glDeleteFramebuffers(1, &fbo1);
+                w /= 2;
+                h /= 2;
+            }
         }
     }
 }
@@ -217,5 +232,13 @@ TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
     isGrid = atlas.isGrid;
     clearColor = atlas.clearColor;
     colorTex = atlas.colorTex;
-    bind(0);
+    normalTex = atlas.normalTex;
+    bind(0,0);
+}
+Texture &TextureAtlas::tex(int type)
+{
+    if (type == 0)
+        return colorTex;
+    else if (type == 1)
+        return normalTex;
 }

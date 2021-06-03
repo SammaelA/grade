@@ -542,7 +542,7 @@ DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLui
             rendererInstancing.uniform("camera_pos", camera.pos);
             rendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
             rendererInstancing.texture("noise", noise);
-            rendererInstancing.texture("tex", atlas->tex());
+            rendererInstancing.texture("tex", atlas->tex(0));
             rendererInstancing.uniform("type_id", (uint)mdrd.type_id);
             rendererInstancing.uniform("camera_pos", camera_pos);
             rendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
@@ -725,7 +725,7 @@ void GroveRenderer::prepare_wood_types_atlas()
     for (auto &pr : tex_map)
     {
         k = atlas->add_tex();
-        atlas->target(k);
+        atlas->target(k,0);
         bm.construct(_c_mip);
         copy.use();
         copy.texture("tex", pr.second.first);

@@ -8,6 +8,7 @@ in vec3 ex_Normal;
 in vec3 ex_FragPos;
 in vec2 a_mult;
 in mat4 rot_m;
+in mat4 normalTr;
 in vec4 FragPosLightSpace;
 flat in uint model_id;
 out vec4 fragColor;
@@ -15,7 +16,8 @@ uniform vec3 dir_to_sun;
 uniform vec3 camera_pos;
 uniform vec3 ambient_diffuse_specular;
 uniform vec3 light_color;
-uniform sampler2DArray tex;
+uniform sampler2DArray color_tex;
+uniform sampler2DArray normal_tex;
 uniform sampler2D noise;
 uniform vec4 screen_size;
 uniform int debug_model_id;
@@ -53,7 +55,8 @@ void main(void)
   vec2 noise_pos = vec2(fract(25*gl_FragCoord.x*screen_size.z), fract(25*gl_FragCoord.y*screen_size.w));
   float ns_imp = texture(noise,noise_pos).x;
   float ns = gradientNoise(float(gl_FragCoord.x),float(gl_FragCoord.y));
-  fragColor = ns_imp <= q_abt.x ? texture(tex,tc_a) : (ns_imp <= q_abt.x + q_abt.y ? texture(tex,tc_b) : texture(tex,tc_t));
+  vec3 tc = ns_imp <= q_abt.x ? tc_a : (ns_imp <= q_abt.x + q_abt.y ? tc_b : tc_t);
+  fragColor = texture(color_tex,tc);
   if (fragColor.a<0.33)
     discard;
 
@@ -65,7 +68,7 @@ void main(void)
   if (need_shadow)
   {
     float shadow = need_shadow ? ShadowCalculation(FragPosLightSpace) : 0;
-    vec3 n = ex_Normal;
+    vec3 n = (normalTr*vec4(texture(normal_tex,tc).xyz,0)).xyz;
     vec3 ads = ambient_diffuse_specular;
     vec3 dir = normalize(camera_pos - ex_FragPos);
     n = dot(n,dir_to_sun) > 0 ? n : -n;

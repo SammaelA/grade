@@ -98,6 +98,7 @@ out vec3 ex_FragPos;
 out vec2 a_mult;
 flat out uint model_id;
 out mat4 rot_m;
+out mat4 normalTr;
 #define PI 3.1415926535897932384626433832795
 uniform mat4 lightSpaceMatrix;
 out vec4 FragPosLightSpace;
@@ -191,9 +192,10 @@ void main(void) {
     q_abt.xy *= (1 - q_abt.z);
     pos = (1 - q_abt.z)*pos + q_abt.z*top_pos;
 	ex_FragPos = pos.xyz;
-    ex_Normal = (transpose(inverse(inst_mat))*vec4(normalize(camera_pos - pos.xyz),0)).xyz;
+    
+    normalTr = transpose(inverse(inst_mat));
+    ex_Normal = (normalTr*vec4(normalize(camera_pos - pos.xyz),0)).xyz;
 
-	//Fragment in Screen Space
 	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
 	tc_a = sliceVertexes[slice_offset + slice_n*4 + vertex_id].tcs.xyz;
     tc_b = sliceVertexes[slice_offset + second_slice_n*4 + vertex_id].tcs.xyz;
