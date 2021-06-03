@@ -15,7 +15,17 @@ public:
     glm::vec2 get_grad(glm::vec3 pos);
 
 };
-
+class HeightmapTex 
+{
+public:
+    GLuint get() {return hmtex;}
+    HeightmapTex(Heightmap &heightmap, int w = 1024, int h = 1024);
+    ~HeightmapTex();
+private:
+    GLuint hmtex;
+    float base_value = 0;
+    float size_x,size_y,height;
+};
 class TerrainRenderer
 {
 public:

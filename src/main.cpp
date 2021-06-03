@@ -22,6 +22,7 @@
 #include "grove_packer.h"
 #include "proctree.h"
 #include "app.h"
+#include "grass_renderer.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -295,10 +296,12 @@ int main(int argc, char *argv[])
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
   TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
-  
+  HeightmapTex ht = HeightmapTex(h);
+  GrassRenderer gr = GrassRenderer();
   std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();
   float mu = 0.99;
   int frame = 0;
+  bool regenerate_shadows = true;
   Timestamp ts;
   if (only_gen)
   {
@@ -314,13 +317,19 @@ int main(int argc, char *argv[])
     {
       fprintf(stderr,"FPS: %4.1f\n",ctx.fpsCounter.get_average_fps());
     }
-    shadowMap.use(ctx.light);
-    glm::mat4 sh_viewproj = shadowMap.get_transform();
+    if (regenerate_shadows)
+    {
+      //shadows pass
+      regenerate_shadows = false;
+      shadowMap.use(ctx.light);
+      glm::mat4 sh_viewproj = shadowMap.get_transform();
 
-    groveRenderer.render(ctx.forced_LOD, sh_viewproj,ctx.camera,
-                         glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
-                         ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+      groveRenderer.render(groveRenderer.get_max_LOD(), sh_viewproj,ctx.camera,
+                          glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
+                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+      shadowMap.blur();
+    }
     Tiny::view.target(glm::vec3(0.6, 0.7, 1));
     if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
     {
@@ -347,8 +356,10 @@ int main(int argc, char *argv[])
     }
     else
     {
-      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),ht.get(),
                 ctx.camera.pos,ctx.light);
+      gr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+                ctx.camera.pos, ht, ctx.light);
       if (ctx.render_mode != 2)
       {
         groveRenderer.render(ctx.forced_LOD, ctx.projection * ctx.camera.camera(),ctx.camera,

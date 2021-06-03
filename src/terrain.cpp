@@ -93,3 +93,45 @@
         terrain.uniform("model",flat_terrain->model);
         flat_terrain->render();
     }
+
+    /*class HeightmapTex 
+{
+public:
+    GLuint get() {return hmtex;}
+    HeightmapTex();
+    ~HeightmapTex();
+    void prepare(TerrainRenderer *tr);
+private:
+    GLuint hmtex;
+    float base_value = 0;
+    float size_x,size_y,height;
+};*/
+    HeightmapTex::HeightmapTex(Heightmap &heightmap, int w, int h)
+    {
+        float pres = 1;
+        glm::vec3 center = glm::vec3(0,0,0);
+        float *data = new float[w*h];
+        for (int i=0;i<w;i++)
+        {
+            for (int j=-0;j<h;j++)
+            {
+                glm::vec3 pos = center + glm::vec3((i - w/2)*pres,0,(j- w/2)*pres);
+                data[i*h + j] = 1e-3*heightmap.get_height(pos);
+            }
+        }
+        glGenTextures(1, &hmtex);
+        glBindTexture(GL_TEXTURE_2D, hmtex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        float borderColor[] = {base_value, base_value, base_value, base_value};
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+        delete[] data;
+    }
+    HeightmapTex::~HeightmapTex()
+    {
+        glDeleteTextures(1, &hmtex);
+    }

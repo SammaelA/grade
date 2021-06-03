@@ -137,6 +137,7 @@ public:
         std::vector<Instance2> leaves_instances;
         float max_dist;
     };
+    int get_max_LOD() {return MIN(4,LODs.size() - 1);}
     void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, DirectedLight &light, 
     GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLuint shadow_tex);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,

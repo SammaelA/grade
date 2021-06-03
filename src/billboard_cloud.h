@@ -15,9 +15,9 @@ class BillboardCloudRaw
 public:
     enum Quality
     {
-        LOW = 256,
-        MEDIUM = (512+256)/2,
-        HIGH = 512
+        LOW = 400,
+        MEDIUM = 600,
+        HIGH = 800
     };
     enum RenderMode
     {

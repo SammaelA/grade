@@ -566,6 +566,7 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<Branch> &
     }
     std::sort(projectionData.begin(), projectionData.end(), BPD_comp);
     add_billboards_count = MIN(atlas_capacity - billboard_boxes.size(), projectionData.size());
+    add_billboards_count = 0;
     int k = 0;
     for (auto &proj : projectionData)
     {

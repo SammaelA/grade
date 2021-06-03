@@ -23,27 +23,34 @@ uniform vec4 screen_size;
 uniform int debug_model_id;
 uniform sampler2D shadowMap;
 uniform bool need_shadow;
+#define VSM 1
+
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
-        // Выполняем деление перспективы
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
- 
-    // Преобразуем в диапазон [0,1]
-    projCoords = projCoords * 0.5 + 0.5;
- 
-    // Получаем наиболее близкое значение глубины исходя из перспективы глазами источника света (используя диапазон [0,1] fragPosLight в качестве координат)
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
- 
-    // Получаем глубину текущего фрагмента исходя из перспективы глазами источника света
-    float currentDepth = projCoords.z;
- 
-    // Проверяем, находится ли текущий фрагмент в тени
-  float bias = 1e-5;
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  projCoords = projCoords * 0.5 + 0.5;
 
-  float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-  if(projCoords.z > 1.0)
+  #if VSM == 1
+    vec2 vsm = texture(shadowMap, projCoords.xy).rg; 
+    if (projCoords.z >= vsm.x)
+    {
+      float mu = vsm.x;
+      float s2 = vsm.y - mu*mu;
+      float	pmax = s2 / ( s2 + (projCoords.z - mu)*(projCoords.z - mu) );
+      return 1 - pmax;
+    }
+    else
+      return 0;
+  #else
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    float currentDepth = projCoords.z;
+    float bias = 1e-5;
+
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    if(projCoords.z > 1.0)
         shadow = 0.0;
     return shadow;
+  #endif
 }
 float gradientNoise(float x, float y)
 {

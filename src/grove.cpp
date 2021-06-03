@@ -444,7 +444,12 @@ DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLui
     {
         if (explicit_lod >= LODs.size())
         {
-            logerr("trying to render grove with wrong explicit LOD number %d. Grove has %d LODs", explicit_lod, LODs.size());
+            static int last_lod_err = -1;
+            if (explicit_lod != last_lod_err)
+            {
+                last_lod_err = explicit_lod;
+                logerr("trying to render grove with wrong explicit LOD number %d. Grove has %d LODs", explicit_lod, LODs.size());
+            }
             explicit_lod = LODs.size() - 1;
         }
         else if (explicit_lod < 0)

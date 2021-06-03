@@ -133,8 +133,10 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
 TextureManager::TextureManager(std::string base_path)
 {
     image::base_img_path = base_path;
-    std::vector<std::string> names = {"noise","leaf1","leaf2","leaf","wood","wood2","wood3","texture not found"};
-    std::vector<std::string> paths = {"perlin.png","leaf1.png","leaf2.png","leaf4.png","wood1.jpg","wood2.jpg","wood3.jpg","texture_not_found.png"};
+    std::vector<std::string> names = {"noise","colored_noise","leaf1","leaf2","leaf","wood","wood2","wood3",
+                                      "grass","texture not found"};
+    std::vector<std::string> paths = {"perlin.png","noise.png","leaf1.png","leaf2.png","leaf4.png","wood1.jpg","wood2.jpg","wood3.jpg",
+                                      "grass.png", "texture_not_found.png"};
     for (int i=0;i<paths.size();i++)
     {
         try
