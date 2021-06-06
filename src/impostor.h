@@ -32,7 +32,9 @@ class ImpostorRenderer
     void render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, DirectedLight &light, 
                 glm::mat4 shadow_tr, GLuint shadow_tex,
                 glm::vec3 camera_pos = glm::vec3(0,0,0),
-                glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600), GroveRendererDebugParams dbgpar = GroveRendererDebugParams());
+                glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600), 
+                bool to_shadow = false,
+                GroveRendererDebugParams dbgpar = GroveRendererDebugParams());
     private:
     GLuint slicesBuffer = 0;
     GLuint impostorsDataBuffer = 0;

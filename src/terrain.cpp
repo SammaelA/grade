@@ -27,7 +27,8 @@
         return get_grad_bilinear(position);
     }
         TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step):
-        terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+        terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+        terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"})
         {
             flat_terrain = new Model();
             int x = (2*size.x/step.x) + 1;
@@ -79,18 +80,21 @@
             delete flat_terrain;
     }
     void TerrainRenderer::render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                 DirectedLight &light)
+                                 DirectedLight &light, bool to_shadow)
     {
-        terrain.use();
-        terrain.uniform("dir_to_sun",light.dir);
-        terrain.uniform("camera_pos",camera_pos);
-        terrain.uniform("ambient_diffuse_specular",glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
-        terrain.uniform("light_color",light.color);
-        terrain.uniform("projectionCamera",prc);
-        terrain.uniform("need_shadow",shadow_tex != 0);
-        terrain.uniform("lightSpaceMatrix",shadow_tr);
-        terrain.texture("shadowMap",shadow_tex);
-        terrain.uniform("model",flat_terrain->model);
+        Shader &shader = to_shadow ? terrainShadow : terrain;
+        shader.use();
+        shader.uniform("dir_to_sun",light.dir);
+        shader.uniform("camera_pos",camera_pos);
+        shader.uniform("ambient_diffuse_specular",glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
+        shader.uniform("light_color",light.color);
+        shader.uniform("projectionCamera",prc);
+        shader.uniform("need_shadow",shadow_tex != 0);
+        shader.uniform("lightSpaceMatrix",shadow_tr);
+        shader.texture("shadowMap",shadow_tex);
+        shader.uniform("model",flat_terrain->model);
+        if (light.has_shadow_map)
+            shader.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
         flat_terrain->render();
     }
 

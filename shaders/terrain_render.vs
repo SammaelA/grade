@@ -6,11 +6,11 @@ in vec4 in_Tex;
 
 uniform mat4 model;
 uniform mat4 projectionCamera;
+uniform mat4 lightSpaceMatrix;
 
 out vec3 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
-uniform mat4 lightSpaceMatrix;
 out vec4 FragPosLightSpace;
 
 void main(void) {

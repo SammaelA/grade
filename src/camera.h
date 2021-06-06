@@ -20,4 +20,6 @@ struct DirectedLight
     float ambient_q;
     float diffuse_q;
     float specular_q;
+    bool has_shadow_map;
+    glm::vec2 shadow_map_size;
 };

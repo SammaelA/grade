@@ -174,10 +174,12 @@ int main(int argc, char *argv[])
   appContext.camera.pos = glm::vec3(-300,70,0);
   appContext.light.dir = glm::normalize(glm::vec3(0.2,0.6,0.2));
   appContext.light.color = glm::vec3(0.99,0.9,0.7);
-  appContext.light.intensity = 10;
-  appContext.light.ambient_q = 0.6;
-  appContext.light.diffuse_q = 0.4;
-  appContext.light.specular_q = 0.1;
+  appContext.light.intensity = 1;
+  appContext.light.ambient_q = 0.5;
+  appContext.light.diffuse_q = 0.5;
+  appContext.light.specular_q = 0.0;
+  appContext.light.has_shadow_map = true;
+  appContext.light.shadow_map_size = glm::vec2(4096, 4096);
   shadowMap.create(4096,4096);
 
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
@@ -326,7 +328,11 @@ int main(int argc, char *argv[])
 
       groveRenderer.render(groveRenderer.get_max_LOD(), sh_viewproj,ctx.camera,
                           glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
-                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0);
+                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0,true);
+      tr.render(sh_viewproj,shadowMap.get_transform(),0,
+                ctx.camera.pos,ctx.light, true);
+      gr.render(sh_viewproj,shadowMap.get_transform(),0,
+                ctx.camera.pos, ht, ctx.light, true);
       glBindFramebuffer(GL_FRAMEBUFFER, 0); 
       shadowMap.blur();
     }
@@ -356,10 +362,16 @@ int main(int argc, char *argv[])
     }
     else
     {
-      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),ht.get(),
+      //depth prepass
+      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+                ctx.camera.pos,ctx.light, true);
+
+      //glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);
+      //color pass
+      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
                 ctx.camera.pos,ctx.light);
       gr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
-                ctx.camera.pos, ht, ctx.light);
+               ctx.camera.pos, ht, ctx.light);
       if (ctx.render_mode != 2)
       {
         groveRenderer.render(ctx.forced_LOD, ctx.projection * ctx.camera.camera(),ctx.camera,

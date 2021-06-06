@@ -11,6 +11,8 @@ GroveRenderer::GroveRenderer():
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
                    {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
+shadowRendererInstancing({"simple_render_instancing.vs", "depth_billboard_array.fs"},
+                   {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
 lodCompute({"lod_compute.comp"},{}),
 cellsCompute({"cells_compute.comp"},{})
 {
@@ -420,8 +422,10 @@ GroveRenderer::~GroveRenderer()
     LODs.clear();
     source = nullptr;
 }
+
 void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, 
-DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLuint shadow_tex)
+                           DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr,
+                           GLuint shadow_tex, bool to_shadow)
 {
     glm::vec3 camera_pos = camera.pos;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -526,31 +530,34 @@ DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLui
     {
         if (type.imp)
         {
-            type.imp->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss);
+            type.imp->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
         }
         else if (type.bill)
         {
-            type.bill->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss);
+            type.bill->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
         }
         else
         {
             auto &mdrd = type.rendDesc;
             Texture noise = textureManager.get("noise");
-            rendererInstancing.use();
-            rendererInstancing.uniform("need_shadow",shadow_tex != 0);
-            rendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-            rendererInstancing.texture("shadowMap",shadow_tex);
-            rendererInstancing.uniform("projectionCamera", prc);
-            rendererInstancing.uniform("screen_size", ss);
-            rendererInstancing.uniform("dir_to_sun", light.dir);
-            rendererInstancing.uniform("light_color", light.color);
-            rendererInstancing.uniform("camera_pos", camera.pos);
-            rendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
-            rendererInstancing.texture("noise", noise);
-            rendererInstancing.texture("tex", atlas->tex(0));
-            rendererInstancing.uniform("type_id", (uint)mdrd.type_id);
-            rendererInstancing.uniform("camera_pos", camera_pos);
-            rendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
+            Shader &shader = to_shadow ? shadowRendererInstancing : rendererInstancing;
+            shader.use();
+            shader.uniform("need_shadow",shadow_tex != 0);
+            shader.uniform("lightSpaceMatrix",shadow_tr);
+            shader.texture("shadowMap",shadow_tex);
+            shader.uniform("projectionCamera", prc);
+            shader.uniform("screen_size", ss);
+            shader.uniform("dir_to_sun", light.dir);
+            shader.uniform("light_color", light.color*light.intensity);
+            shader.uniform("camera_pos", camera.pos);
+            shader.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
+            shader.texture("noise", noise);
+            shader.texture("tex", atlas->tex(0));
+            shader.uniform("type_id", (uint)mdrd.type_id);
+            shader.uniform("camera_pos", camera_pos);
+            if (light.has_shadow_map)
+                shader.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
+            shader.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                                 mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }

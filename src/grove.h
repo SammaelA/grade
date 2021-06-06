@@ -139,7 +139,7 @@ public:
     };
     int get_max_LOD() {return MIN(4,LODs.size() - 1);}
     void render(int lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, DirectedLight &light, 
-    GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLuint shadow_tex);
+                GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr, GLuint shadow_tex, bool to_shadow = false);
     GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
                   bool print_perf, Precision precision);
     GroveRenderer();
@@ -172,6 +172,7 @@ private:
     Shader rendererInstancing;
     Shader lodCompute;
     Shader cellsCompute;
+    Shader shadowRendererInstancing;
     GrovePacked *source;
     GroveGenerationData *ggd;
     GLuint lods_buf, instances_buf, models_buf, types_buf;

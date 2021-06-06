@@ -187,11 +187,11 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     mat4 rot_inv(vec4(min_bbox.a, 0), vec4(min_bbox.b, 0), vec4(min_bbox.c, 0), vec4(0, 0, 0, 1));
     mat4 rot = inverse(rot_inv);
     mat4 ort = ortho(-1, 1, -1, 1, 1, -1);
-
+    vec4 rb = transl * rot * vec4(branch->joints.front().pos,1);
     mat4 tex_sh = scale(mat4(1), vec3(2, 2, 2));
     mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
     mat4 atlas_tr = atlas->tex_transform(num);
-    mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv * transl * rot;
+    mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
     Model bm;
     std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
@@ -203,9 +203,10 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
 
         bm.construct(_c_wood);
         rendererToTexture.texture("tex", ttd.wood);
-        rendererToTexture.uniform("model", bm.model);
+        rendererToTexture.uniform("model", transl * rot * bm.model);
         rendererToTexture.uniform("projectionCamera", result);
         rendererToTexture.uniform("state", k);
+        rendererToTexture.uniform("projection_zero", rb.z);
         bm.render(GL_TRIANGLES);
 
         bm.construct(_c_leaves);
@@ -216,8 +217,9 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
         glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
 
         rendererToTexture.texture("tex", ttd.leaf);
-        rendererToTexture.uniform("model", bm.model);
+        rendererToTexture.uniform("model", transl * rot * bm.model);
         rendererToTexture.uniform("projectionCamera", result);
+        rendererToTexture.uniform("projection_zero", rb.z);
         bm.render(GL_TRIANGLES);
 
         billboards.push_back(bill);
@@ -645,8 +647,10 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
 }
 void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, DirectedLight &light, 
                                     glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                    glm::vec4 screen_size, GroveRendererDebugParams dbgpar)
+                                    glm::vec4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
 {
+    if (to_shadow)
+        return;
     if (!data || !data->valid)
         return;
     
@@ -674,15 +678,16 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
         billboardRendererInstancing.texture("shadowMap",shadow_tex);
         billboardRendererInstancing.uniform("dir_to_sun", light.dir);
-        billboardRendererInstancing.uniform("light_color", light.color);
+        billboardRendererInstancing.uniform("light_color", light.color*light.intensity);
         billboardRendererInstancing.uniform("camera_pos", camera_pos);
         billboardRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
-        billboardRendererInstancing.uniform("camera_pos",camera_pos);
         billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("color_tex", data->atlas.tex(0));
         billboardRendererInstancing.texture("normal_tex", data->atlas.tex(1));
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
         billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
+        if (light.has_shadow_map)
+            billboardRendererInstancing.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
         billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);
         billboardRendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
         

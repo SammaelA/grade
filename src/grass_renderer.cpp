@@ -1,7 +1,9 @@
 #include "grass_renderer.h"
 #include "texture_manager.h"
+#include "camera.h"
 GrassRenderer::GrassRenderer():
- shader({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
+ grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
+ grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"}),
  grass_base(textureManager.get("grass")),
  grass_tall(textureManager.get("grass")),
  perlin(textureManager.get("noise")),
@@ -23,19 +25,25 @@ GrassRenderer::GrassRenderer():
 }
 
 void GrassRenderer::render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                           HeightmapTex &heightmap_tex, DirectedLight &light)
+                           HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow)
 {
+    Shader &shader = to_shadow ? grassShadow : grass;
     shader.use();
     shader.uniform("projectionCamera", prc);
     shader.texture("hmap",heightmap_tex.get());
     shader.texture("perlin",perlin);
     shader.texture("noise",noise);
-    shader.texture("tex1",grass_base);
-    shader.texture("tex2",grass_tall);
+    shader.texture("shadowMap",shadow_tex);
+    shader.uniform("sts_inv",1.0f/light.shadow_map_size);
+    shader.uniform("need_shadow",shadow_tex != 0);
+    shader.uniform("lightSpaceMatrix",shadow_tr);
+    shader.uniform("dir_to_sun", light.dir);
+    shader.uniform("light_color", light.color*light.intensity);
+    shader.uniform("camera_pos", camera_pos);
+    shader.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
     glBindVertexArray(m.vao);
-    if(m.indexed)
-    {
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibo);
-      glDrawElementsInstanced(GL_TRIANGLES, m.SIZE, GL_UNSIGNED_INT, 0, 40000);
-    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibo);
+
+    shader.texture("tex",grass_base);
+    glDrawElementsInstanced(GL_TRIANGLES, m.SIZE, GL_UNSIGNED_INT, 0, 40000);
 }
