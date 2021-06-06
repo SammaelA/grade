@@ -6,6 +6,7 @@ uniform sampler2D colorTex;
 uniform sampler2D normalsTex;
 uniform sampler2D viewPosTex;
 uniform sampler2D worldPosTex;
+uniform sampler2D aoTex;
 uniform int mode;
 uniform vec3 dir_to_sun;
 uniform vec3 camera_pos;
@@ -130,6 +131,7 @@ void main(void)
         vec4 normal_type = texture(normalsTex,ex_Tex);
         vec3 world_pos = texture(worldPosTex,ex_Tex).xyz;
         vec3 view_pos = texture(viewPosTex,ex_Tex).xyz;
+        float ao = texture(aoTex,ex_Tex).x;
         fragColor = vec4(color_none.xyz,1);
         float shadow = 0;
         if (need_shadow)
@@ -141,7 +143,7 @@ void main(void)
             if (type == 0)
                 samples = 16;
             else if (type == 2)
-                bias = 1.75*1e-4;
+                bias = 3*1e-4;
             vec4 FragPosLightSpace = shadow_mat * vec4(world_pos,1);
             shadow = need_shadow ? ShadowCalculation(FragPosLightSpace, world_pos, bias, samples) : 0;
         }

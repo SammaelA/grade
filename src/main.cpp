@@ -24,6 +24,7 @@
 #include "app.h"
 #include "grass_renderer.h"
 #include "tinyEngine/utility/deffered_target.h"
+#include "tinyEngine/ambient_occlusion.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -184,6 +185,8 @@ int main(int argc, char *argv[])
   shadowMap.create(4096,4096);
   defferedTarget.create(1920,1080);
   defferedTarget.set_clear_color(glm::vec4(0.6,0.75,1,1));
+  HBAORenderer hbaoRenderer;
+  hbaoRenderer.create(800,600);
 
   PostFx defferedLight = PostFx("deffered_light.fs");
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
@@ -397,13 +400,17 @@ uniform vec2 sts_inv;
 uniform sampler2D shadowMap;
 uniform bool need_shadow;
 uniform mat4 shadow_mat;*/
+  //hbaoRenderer.render(ctx,defferedTarget.get_view_pos());
+
+
   glm::vec3 ads = glm::vec3(ctx.light.ambient_q,ctx.light.diffuse_q,ctx.light.specular_q);
-    Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-    defferedLight.use();
+  Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+  defferedLight.use();
     defferedLight.get_shader().texture("colorTex",defferedTarget.get_color());
     defferedLight.get_shader().texture("normalsTex",defferedTarget.get_normals());
     defferedLight.get_shader().texture("viewPosTex",defferedTarget.get_view_pos());
     defferedLight.get_shader().texture("worldPosTex",defferedTarget.get_world_pos());
+    defferedLight.get_shader().texture("aoTex",hbaoRenderer.get_tex());
     defferedLight.get_shader().texture("shadowMap",shadowMap.getTex());
     defferedLight.get_shader().uniform("dir_to_sun",ctx.light.dir);
     defferedLight.get_shader().uniform("camera_pos",ctx.camera.pos);
