@@ -78,16 +78,14 @@ in vec3 in_Position;
 in vec3 in_Normal;
 in vec4 in_Tex;
 
-uniform mat4 projectionCamera;
-//uniform vec3 imp_center;
+uniform mat4 projection;
+uniform mat4 view;
 uniform vec3 camera_pos;
-//uniform int slice_count;
-//uniform int slice_offset;
 uniform float delta;
-//uniform float angle_step;
 uniform vec2 hor_vert_transition_thr;
 uniform uint type_id;
 uniform int vertex_id_offset;
+uniform mat4 lightSpaceMatrix;
 
 out vec3 tc_a;
 out vec3 tc_b;
@@ -95,13 +93,15 @@ out vec3 tc_t;
 out vec3 q_abt;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
+out vec4 ex_FragPosView;
 out vec2 a_mult;
 flat out uint model_id;
 out mat4 rot_m;
 out mat4 normalTr;
-#define PI 3.1415926535897932384626433832795
-uniform mat4 lightSpaceMatrix;
 out vec4 FragPosLightSpace;
+
+#define PI 3.1415926535897932384626433832795
+
 mat4 translate(vec3 d)
 {
 	return mat4(1, 0, 0, d.x,
@@ -196,7 +196,9 @@ void main(void) {
     normalTr = transpose(inverse(inst_mat));
     ex_Normal = (normalTr*vec4(normalize(camera_pos - pos.xyz),0)).xyz;
 
-	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
+	ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
+    gl_Position = projection * ex_FragPosView;
+     
 	tc_a = sliceVertexes[slice_offset + slice_n*4 + vertex_id].tcs.xyz;
     tc_b = sliceVertexes[slice_offset + second_slice_n*4 + vertex_id].tcs.xyz;
     tc_t = sliceVertexes[slice_offset + vertex_id].tcs.xyz;

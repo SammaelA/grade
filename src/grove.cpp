@@ -423,8 +423,8 @@ GroveRenderer::~GroveRenderer()
     source = nullptr;
 }
 
-void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm::vec2 screen_size, 
-                           DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 shadow_tr,
+void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &view, Camera &camera, glm::vec2 screen_size, 
+                           DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 &shadow_tr,
                            GLuint shadow_tex, bool to_shadow)
 {
     glm::vec3 camera_pos = camera.pos;
@@ -496,7 +496,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
         lodCompute.uniform("lods_count", (uint)LODs.size());
         lodCompute.uniform("camera_pos", camera_pos);
         lodCompute.uniform("trans", 20.0f);
-        lodCompute.uniform("projectionCamera", prc);
+        lodCompute.uniform("projectionCamera", projection * view);
         lodCompute.uniform("objects_count", (uint)total_models_count);
         lodCompute.uniform("forced_lod",explicit_lod);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
@@ -530,11 +530,11 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
     {
         if (type.imp)
         {
-            type.imp->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
+            type.imp->render(type.rendDesc, projection, view, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
         }
         else if (type.bill)
         {
-            type.bill->render(type.rendDesc, prc, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
+            type.bill->render(type.rendDesc, projection, view, light, shadow_tr, shadow_tex, camera_pos, ss, to_shadow);
         }
         else
         {
@@ -542,22 +542,16 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 prc, Camera &camera, glm:
             Texture noise = textureManager.get("noise");
             Shader &shader = to_shadow ? shadowRendererInstancing : rendererInstancing;
             shader.use();
-            shader.uniform("need_shadow",shadow_tex != 0);
-            shader.uniform("lightSpaceMatrix",shadow_tr);
-            shader.texture("shadowMap",shadow_tex);
-            shader.uniform("projectionCamera", prc);
+
+            shader.uniform("projection", projection);
+            shader.uniform("view", view);
             shader.uniform("screen_size", ss);
-            shader.uniform("dir_to_sun", light.dir);
-            shader.uniform("light_color", light.color*light.intensity);
-            shader.uniform("camera_pos", camera.pos);
-            shader.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
             shader.texture("noise", noise);
             shader.texture("tex", atlas->tex(0));
             shader.uniform("type_id", (uint)mdrd.type_id);
             shader.uniform("camera_pos", camera_pos);
-            if (light.has_shadow_map)
-                shader.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
             shader.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
+
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                                 mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }

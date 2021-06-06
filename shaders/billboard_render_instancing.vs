@@ -57,18 +57,21 @@ in vec3 in_Position;
 in vec3 in_Normal;
 in vec4 in_Tex;
 
-uniform mat4 projectionCamera;
+uniform mat4 projection;
+uniform mat4 view;
 uniform vec3 camera_pos;
 uniform uint type_id;
+uniform mat4 lightSpaceMatrix;
 
 out vec3 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
+out vec4 ex_FragPosView;
 out vec2 a_mult;
 flat out uint model_id;
-uniform mat4 lightSpaceMatrix;
 out vec4 FragPosLightSpace;
 out mat4 normalTr;
+
 void main(void) {
 
 	uint id = typeData[type_id].offset + gl_DrawID;
@@ -79,7 +82,8 @@ void main(void) {
 
 	ex_FragPos = (inst_mat * vec4(in_Position, 1.0f)).xyz;
 	ex_Normal = (normalTr*vec4(in_Normal,0)).xyz;
-	gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
+	ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
+    gl_Position = projection * ex_FragPosView;
 	ex_Tex = in_Tex.xyz;
 	model_id = curModels[id].y;
     FragPosLightSpace = lightSpaceMatrix * vec4(ex_FragPos, 1.0);

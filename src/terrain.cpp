@@ -79,37 +79,18 @@
         if (flat_terrain)
             delete flat_terrain;
     }
-    void TerrainRenderer::render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+    void TerrainRenderer::render(glm::mat4 projection, glm::mat4 view, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                                  DirectedLight &light, bool to_shadow)
     {
         Shader &shader = to_shadow ? terrainShadow : terrain;
         shader.use();
-        shader.uniform("dir_to_sun",light.dir);
-        shader.uniform("camera_pos",camera_pos);
-        shader.uniform("ambient_diffuse_specular",glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
-        shader.uniform("light_color",light.color);
-        shader.uniform("projectionCamera",prc);
-        shader.uniform("need_shadow",shadow_tex != 0);
-        shader.uniform("lightSpaceMatrix",shadow_tr);
-        shader.texture("shadowMap",shadow_tex);
+        shader.uniform("projection",projection);
+        shader.uniform("view",view);
         shader.uniform("model",flat_terrain->model);
-        if (light.has_shadow_map)
-            shader.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
+
         flat_terrain->render();
     }
 
-    /*class HeightmapTex 
-{
-public:
-    GLuint get() {return hmtex;}
-    HeightmapTex();
-    ~HeightmapTex();
-    void prepare(TerrainRenderer *tr);
-private:
-    GLuint hmtex;
-    float base_value = 0;
-    float size_x,size_y,height;
-};*/
     HeightmapTex::HeightmapTex(Heightmap &heightmap, int w, int h)
     {
         float pres = 1;

@@ -4,7 +4,8 @@ in vec3 in_Position;
 in vec3 in_Normal;
 in vec4 in_Tex;
 
-uniform mat4 projectionCamera;
+uniform mat4 projection;
+uniform mat4 view;
 uniform mat4 lightSpaceMatrix;
 
 uniform sampler2D hmap;
@@ -14,6 +15,7 @@ uniform sampler2D noise;
 out vec3 ex_Tex;
 out vec3 ex_Normal;
 out vec3 ex_FragPos;
+out vec4 ex_FragPosView;
 out vec4 FragPosLightSpace;
 
 void main(void) 
@@ -31,8 +33,9 @@ void main(void)
         float scale = 7*(per + 1);
         shift.xz += noise.xz;
         ex_FragPos = (vec4(scale*in_Position + shift, 1.0f)).xyz;
-        ex_Normal = normalize((transpose(inverse(projectionCamera))*vec4(in_Normal,0)).xyz);
-        gl_Position = projectionCamera * vec4(ex_FragPos, 1.0f);
+        ex_Normal = normalize((transpose(inverse(projection * view))*vec4(in_Normal,0)).xyz);
+        ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
+        gl_Position = projection * ex_FragPosView;
         FragPosLightSpace = lightSpaceMatrix * vec4(ex_FragPos, 1.0);
         ex_Tex.xy = in_Tex.xy;
         ex_Tex.z = 0;

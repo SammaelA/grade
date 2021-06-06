@@ -34,7 +34,7 @@ bool View::init(std::string _name, int W, int H){
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_DEPTH_TEST);        //Setup Global OpenGL State!
   glDepthFunc(GL_LEQUAL);
-  glEnable(GL_ALPHA_TEST); 
+  //glEnable(GL_ALPHA_TEST); 
   glDisable(GL_CULL_FACE);
   if(ccw) glFrontFace(GL_CCW);
   else glFrontFace(GL_CW);

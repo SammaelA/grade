@@ -23,6 +23,7 @@
 #include "proctree.h"
 #include "app.h"
 #include "grass_renderer.h"
+#include "tinyEngine/utility/deffered_target.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -31,7 +32,7 @@ TextureManager textureManager;
 Config config;
 AppContext appContext;
 ShadowMap shadowMap;
-
+DefferedTarget defferedTarget;
 
 Tree t[MAX_TREES];
 mygen::Tree ttt;
@@ -181,7 +182,10 @@ int main(int argc, char *argv[])
   appContext.light.has_shadow_map = true;
   appContext.light.shadow_map_size = glm::vec2(4096, 4096);
   shadowMap.create(4096,4096);
+  defferedTarget.create(1920,1080);
+  defferedTarget.set_clear_color(glm::vec4(0.6,0.75,1,1));
 
+  PostFx defferedLight = PostFx("deffered_light.fs");
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
   Shader debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
@@ -326,17 +330,20 @@ int main(int argc, char *argv[])
       shadowMap.use(ctx.light);
       glm::mat4 sh_viewproj = shadowMap.get_transform();
 
-      groveRenderer.render(groveRenderer.get_max_LOD(), sh_viewproj,ctx.camera,
+      groveRenderer.render(groveRenderer.get_max_LOD(), shadowMap.get_projection(), 
+                          shadowMap.get_view(),ctx.camera,
                           glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
                           ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0,true);
-      tr.render(sh_viewproj,shadowMap.get_transform(),0,
+      tr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
                 ctx.camera.pos,ctx.light, true);
-      gr.render(sh_viewproj,shadowMap.get_transform(),0,
+      gr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
                 ctx.camera.pos, ht, ctx.light, true);
       glBindFramebuffer(GL_FRAMEBUFFER, 0); 
       shadowMap.blur();
     }
-    Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+    //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+    defferedTarget.target();
+
     if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
     {
       debugShader.use();
@@ -363,23 +370,49 @@ int main(int argc, char *argv[])
     else
     {
       //depth prepass
-      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+      /*tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
                 ctx.camera.pos,ctx.light, true);
 
-      //glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);
+      glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
       //color pass
-      tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+      tr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
                 ctx.camera.pos,ctx.light);
-      gr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+      gr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
                ctx.camera.pos, ht, ctx.light);
       if (ctx.render_mode != 2)
       {
-        groveRenderer.render(ctx.forced_LOD, ctx.projection * ctx.camera.camera(),ctx.camera,
+        groveRenderer.render(ctx.forced_LOD, ctx.projection, ctx.camera.camera(),ctx.camera,
                              glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), ctx.light, 
-                             ctx.groveRendererDebugParams, shadowMap.get_transform(),shadowMap.getTex());  
+                             ctx.groveRendererDebugParams, shadowMap.get_transform(),0*shadowMap.getTex());  
       }
       debugVisualizer->render(ctx.projection * ctx.camera.camera(),ctx.render_mode);
     }
+
+    //postfx
+    /*uniform vec3 dir_to_sun;
+uniform vec3 camera_pos;
+uniform vec3 ambient_diffuse_specular;
+uniform vec3 light_color;
+uniform vec2 sts_inv;
+uniform sampler2D shadowMap;
+uniform bool need_shadow;
+uniform mat4 shadow_mat;*/
+  glm::vec3 ads = glm::vec3(ctx.light.ambient_q,ctx.light.diffuse_q,ctx.light.specular_q);
+    Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+    defferedLight.use();
+    defferedLight.get_shader().texture("colorTex",defferedTarget.get_color());
+    defferedLight.get_shader().texture("normalsTex",defferedTarget.get_normals());
+    defferedLight.get_shader().texture("viewPosTex",defferedTarget.get_view_pos());
+    defferedLight.get_shader().texture("worldPosTex",defferedTarget.get_world_pos());
+    defferedLight.get_shader().texture("shadowMap",shadowMap.getTex());
+    defferedLight.get_shader().uniform("dir_to_sun",ctx.light.dir);
+    defferedLight.get_shader().uniform("camera_pos",ctx.camera.pos);
+    defferedLight.get_shader().uniform("ambient_diffuse_specular",ads);
+    defferedLight.get_shader().uniform("light_color",ctx.light.color);
+    defferedLight.get_shader().uniform("need_shadow",shadowMap.getTex() != 0);
+    defferedLight.get_shader().uniform("shadow_mat",shadowMap.get_transform());
+    defferedLight.get_shader().uniform("sts_inv",1.0f/ctx.light.shadow_map_size);
+    defferedLight.render();
   };
 
   Tiny::loop([&]() {});

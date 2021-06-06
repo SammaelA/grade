@@ -7,10 +7,11 @@ struct Camera
     glm::vec3 pos = glm::vec3(0, 10, 10);
     glm::vec3 front = glm::vec3(0, 0, -10);
     glm::vec3 up = glm::vec3(0, 1, 0);
+    glm::mat4 camera_mat;
     float yaw = 0;
     float pitch = 0;
     float roll = 0;
-    glm::mat4 camera() { return glm::lookAt(pos, pos + front, up); }
+    glm::mat4 &camera() { camera_mat = glm::lookAt(pos, pos + front, up); return camera_mat;}
 };
 struct DirectedLight
 {

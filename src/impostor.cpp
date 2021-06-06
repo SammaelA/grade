@@ -344,8 +344,8 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
 
 
 }
-void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, DirectedLight &light,
-                              glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light,
+                              glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                               glm::vec4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
 {
     if (to_shadow)//we do not render impostors to shadow
@@ -357,15 +357,8 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCame
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, impostorsDataBuffer);
 
     impostorRendererInstancing.use();
-    impostorRendererInstancing.uniform("need_shadow",shadow_tex != 0);
-    impostorRendererInstancing.uniform("sts_inv",1.0f/light.shadow_map_size);
-    impostorRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-    impostorRendererInstancing.texture("shadowMap",shadow_tex);
-    impostorRendererInstancing.uniform("dir_to_sun", light.dir);
-    impostorRendererInstancing.uniform("light_color", light.color*light.intensity);
-    impostorRendererInstancing.uniform("camera_pos", camera_pos);
-    impostorRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
-    impostorRendererInstancing.uniform("projectionCamera", projectionCamera);
+    impostorRendererInstancing.uniform("projection", projection);
+    impostorRendererInstancing.uniform("view", view);
     impostorRendererInstancing.texture("color_tex", data->atlas.tex(0));
     impostorRendererInstancing.texture("normal_tex", data->atlas.tex(1));
     impostorRendererInstancing.uniform("camera_pos", camera_pos);

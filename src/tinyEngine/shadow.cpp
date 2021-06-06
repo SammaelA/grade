@@ -20,13 +20,13 @@ void print_FB_status2(GLuint status)
         shadow_camera.pos = 300.f*light.dir;
         shadow_camera.front =  -shadow_camera.pos;
         shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
-        glm::mat4 lightView = shadow_camera.camera();
+        view = shadow_camera.camera();
         float near_plane = 1.0f, far_plane = 7.5f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane); 
-        lightProjection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
-        viewproj = lightProjection * lightView;
+        projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane); 
+        projection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
+        viewproj = projection * view;
     }
-    glm::mat4 ShadowMap::get_transform()
+    glm::mat4 &ShadowMap::get_transform()
     {   
         return viewproj;
     }

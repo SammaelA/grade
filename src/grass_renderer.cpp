@@ -24,23 +24,17 @@ GrassRenderer::GrassRenderer():
     m.construct(_c_mip);
 }
 
-void GrassRenderer::render(glm::mat4 prc, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+void GrassRenderer::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                            HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow)
 {
     Shader &shader = to_shadow ? grassShadow : grass;
     shader.use();
-    shader.uniform("projectionCamera", prc);
+    shader.uniform("projection", projection);
+    shader.uniform("view", view);
     shader.texture("hmap",heightmap_tex.get());
     shader.texture("perlin",perlin);
     shader.texture("noise",noise);
-    shader.texture("shadowMap",shadow_tex);
-    shader.uniform("sts_inv",1.0f/light.shadow_map_size);
-    shader.uniform("need_shadow",shadow_tex != 0);
-    shader.uniform("lightSpaceMatrix",shadow_tr);
-    shader.uniform("dir_to_sun", light.dir);
-    shader.uniform("light_color", light.color*light.intensity);
-    shader.uniform("camera_pos", camera_pos);
-    shader.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
+    
     glBindVertexArray(m.vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibo);
 

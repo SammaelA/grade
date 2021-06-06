@@ -645,8 +645,8 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted",i);
     }
 }
-void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projectionCamera, DirectedLight &light, 
-                                    glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light, 
+                                    glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                                     glm::vec4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
 {
     if (to_shadow)
@@ -667,27 +667,20 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRenderer.use();
         billboardRenderer.texture("tex", data->atlas.tex(0));
         billboardRenderer.uniform("model", cloud->model);
-        billboardRenderer.uniform("projectionCamera", projectionCamera);
+        billboardRenderer.uniform("projectionCamera", projection *view);
      
         cloud->render(GL_TRIANGLES);
     }
     if (renderMode == ONLY_INSTANCES || renderMode == BOTH)
     {
         billboardRendererInstancing.use();
-        billboardRendererInstancing.uniform("need_shadow",shadow_tex != 0);
-        billboardRendererInstancing.uniform("lightSpaceMatrix",shadow_tr);
-        billboardRendererInstancing.texture("shadowMap",shadow_tex);
-        billboardRendererInstancing.uniform("dir_to_sun", light.dir);
-        billboardRendererInstancing.uniform("light_color", light.color*light.intensity);
         billboardRendererInstancing.uniform("camera_pos", camera_pos);
-        billboardRendererInstancing.uniform("ambient_diffuse_specular", glm::vec3(light.ambient_q,light.diffuse_q,light.specular_q));
         billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("color_tex", data->atlas.tex(0));
         billboardRendererInstancing.texture("normal_tex", data->atlas.tex(1));
         billboardRendererInstancing.texture("noise",textureManager.get("noise"));
-        billboardRendererInstancing.uniform("projectionCamera", projectionCamera);
-        if (light.has_shadow_map)
-            billboardRendererInstancing.uniform("sts_inv",glm::vec2(1.0f/light.shadow_map_size.x,1.0f/light.shadow_map_size.y));
+        billboardRendererInstancing.uniform("projection", projection);
+        billboardRendererInstancing.uniform("view", view);
         billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);
         billboardRendererInstancing.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
         
