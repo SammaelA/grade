@@ -93,6 +93,21 @@ void GroveMask::set_round(float r)
             }
         }
 }
+void GroveMask::set_square(float x, float z)
+{
+        base_val = 0;
+        for (int i = -w; i <= w; i++)
+        {
+            for (int j = -h; j <= h; j++)
+            {
+                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
+                if (abs(position.x) < x && abs(position.z) < z) 
+                    set(i,j,1);
+                else
+                    set(i,j,0);
+            }
+        }
+}
 double DensityMap::calc_sum()
 {
     double sum = 0;
@@ -162,7 +177,8 @@ const_psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 dsm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size)
 {
     heightmap = h;
-    mask.set_round(0.85*ggd.size.x);
+    //mask.set_round(0.85*ggd.size.x);
+    mask.set_square(0.85*ggd.size.x,0.85*ggd.size.z);
     hm.create(*heightmap,mask);
 }
 void Seeder::add_body(Body *b, float opacity, bool solid)

@@ -45,26 +45,32 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   if (event.active[SDLK_1])
   {
     ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-400,70,0);
-    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+    ctx.camera.pos = glm::vec3(-591.20,173.6,18.33);
+    ctx.camera.front = glm::vec3(0.995,-0.09,-0.03);
   }
   if (event.active[SDLK_2])
   {
     ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(0,70,400);
+    ctx.camera.pos = glm::vec3(-223.5,68,23);
     ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
   }
   if (event.active[SDLK_3])
   {
     ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(400,70,0);
-    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+    ctx.camera.pos = glm::vec3(-168,67.8,2.1);
+    ctx.camera.front = glm::vec3(0.996,-0.056,-0.07);
   }
   if (event.active[SDLK_4])
   {
     ctx.camera = Camera();
     ctx.camera.pos = glm::vec3(0,70,-400);
     ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
+  }
+  if (event.active[SDLK_5])
+  {
+    logerr("camera pos %f,%f,%f",ctx.camera.pos.x,ctx.camera.pos.y,ctx.camera.pos.z);
+    logerr("camera front %f,%f,%f",ctx.camera.front.x,ctx.camera.front.y,ctx.camera.front.z);
+    event.active[SDLK_5] = false;
   }
   if (event.active[SDLK_w])
     ctx.camera.pos += speed * ctx.camera.front;

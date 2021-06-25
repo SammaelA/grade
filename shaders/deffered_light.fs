@@ -7,6 +7,7 @@ uniform sampler2D normalsTex;
 uniform sampler2D viewPosTex;
 uniform sampler2D worldPosTex;
 uniform sampler2D aoTex;
+uniform sampler2D cubeTex;
 uniform int mode;
 uniform vec3 dir_to_sun;
 uniform vec3 camera_pos;
@@ -103,8 +104,9 @@ poissonDisk[63] = vec2(-0.178564, -0.596057);
 
     for (int i = 0;i< samples;i++)
     {
-      float closestDepth = texture(shadowMap, projCoords.xy + delta*sts_inv*poissonDisk[(start + 13*i) % 64]).b; 
-      float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+      vec2 cD_tD = texture(shadowMap, projCoords.xy + delta*sts_inv*poissonDisk[(start + 13*i) % 64]).zw; 
+      float trans_mult = cD_tD.y > 0.4 ? (2*cD_tD.y - 1) : 0;
+      float shadow = currentDepth - bias > cD_tD.x ? trans_mult : 0.0;
       res += shadow/samples;
     }
   
@@ -127,12 +129,19 @@ void main(void)
 {
     if (mode == 0)
     {
-        vec4 color_none = texture(colorTex,ex_Tex);
-        vec4 normal_type = texture(normalsTex,ex_Tex);
+      vec4 color_none = texture(colorTex,ex_Tex);
+      vec4 normal_type = texture(normalsTex,ex_Tex);
+      vec3 cube_color = texture(cubeTex, ex_Tex).xyz;
+      if (color_none.a < 0.01)
+      {
+        fragColor = vec4(cube_color,1);
+      }
+      else
+      {
         vec3 world_pos = texture(worldPosTex,ex_Tex).xyz;
         vec3 view_pos = texture(viewPosTex,ex_Tex).xyz;
         float ao = texture(aoTex,ex_Tex).x;
-        fragColor = vec4(color_none.xyz,1);
+        fragColor = vec4(color_none.xyz/color_none.a,1);
         float shadow = 0;
         if (need_shadow)
         {
@@ -142,18 +151,21 @@ void main(void)
 
             if (type == 0)
                 samples = 16;
-            else if (type == 2)
+            else 
                 bias = 3*1e-4;
             vec4 FragPosLightSpace = shadow_mat * vec4(world_pos,1);
             shadow = need_shadow ? ShadowCalculation(FragPosLightSpace, world_pos, bias, samples) : 0;
         }
-        vec3 n = normal_type.xyz;
+        vec3 n = normalize(normal_type.xyz);
         vec3 ads = ambient_diffuse_specular;
-        vec3 dir = normalize(view_pos.xyz);
+        vec3 dir = normalize(world_pos - camera_pos);
         n = dot(n,dir_to_sun) > 0 ? n : -n;
         vec3 h = reflect(-dir_to_sun,n);
-        vec3 color = vec3(1,1,1)*ads.x + (1-shadow)*light_color*(ads.y*dot(n,dir_to_sun)+ads.z*pow(dot(n,h),16));
+        vec3 color = vec3(1,1,1)*ads.x + (1-shadow)*light_color*(ads.y*clamp(dot(n,dir_to_sun),0,1));
         fragColor.xyz *= color;
+        fragColor.xyz = 1.2*pow(fragColor.xyz,vec3(1.0));
+        fragColor.xyz = fragColor.xyz*color_none.a + cube_color*(1 - color_none.a);
+      }
     }
     else
     {

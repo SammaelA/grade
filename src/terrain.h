@@ -36,6 +36,7 @@ public:
 private:
     float base_height = 0.0;
     Model *flat_terrain;
+    Texture terrain_tex;
     Shader terrain;
     Shader terrainShadow;
 };

@@ -34,7 +34,8 @@ void GrassRenderer::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &sh
     shader.texture("hmap",heightmap_tex.get());
     shader.texture("perlin",perlin);
     shader.texture("noise",noise);
-    
+    if (to_shadow)
+        shader.uniform("opaqueness",0.4f);
     glBindVertexArray(m.vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibo);
 

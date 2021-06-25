@@ -25,5 +25,6 @@ void main(void) {
 
 	//Color from Normal Vector
 	ex_Tex = in_Tex.xyz;
+	ex_Tex.xy = fract(0.3*ex_FragPos.xz);
 	FragPosLightSpace = lightSpaceMatrix * vec4(ex_FragPos, 1.0);
 }

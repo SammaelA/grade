@@ -2,6 +2,8 @@
 #include <cmath>
 #include "tinyEngine/utility.h"
 #include "camera.h"
+#include "texture_manager.h"
+
     Heightmap::Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size):
     Field_2d(pos, size, cell_size)
     {
@@ -28,7 +30,8 @@
     }
         TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step):
         terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-        terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"})
+        terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+        terrain_tex(textureManager.get("terrain"))
         {
             flat_terrain = new Model();
             int x = (2*size.x/step.x) + 1;
@@ -84,6 +87,7 @@
     {
         Shader &shader = to_shadow ? terrainShadow : terrain;
         shader.use();
+        shader.texture("terrain",terrain_tex);
         shader.uniform("projection",projection);
         shader.uniform("view",view);
         shader.uniform("model",flat_terrain->model);
@@ -101,7 +105,7 @@
             for (int j=-0;j<h;j++)
             {
                 glm::vec3 pos = center + glm::vec3((i - w/2)*pres,0,(j- w/2)*pres);
-                data[i*h + j] = 1e-3*heightmap.get_height(pos);
+                data[i*h + j] = (1e-3)*heightmap.get_height(pos);
             }
         }
         glGenTextures(1, &hmtex);

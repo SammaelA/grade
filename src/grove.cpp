@@ -334,6 +334,11 @@ GroveRenderer()
     types.clear();
 
     base_container->update();
+    long size = (base_container->SIZE)*8*sizeof(float) + sizeof(LodData)*lods.size() + sizeof(TypeData)*types.size() +
+                sizeof(InstanceData)*instances.size() + sizeof(ModelData)*models.size() +
+                sizeof(currentInstancesData)*instances.size() + sizeof(currentModelsData)*models.size() +
+                sizeof(DrawElementsIndirectCommand)*models.size() + sizeof(currentTypesData)*types.size();
+    logerr("total size %f Mbytes",1e-6*size);
 }
 void GroveRenderer::pack_bb_to_model_data(ModelData &md, BBox &bb)
 {
@@ -551,7 +556,8 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
             shader.uniform("type_id", (uint)mdrd.type_id);
             shader.uniform("camera_pos", camera_pos);
             shader.uniform("debug_model_id",dbgpar.need_focus_model ? dbgpar.model_focused : -1);
-
+            if (to_shadow)
+                shader.uniform("opaqueness",0.3f);
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                                 mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }

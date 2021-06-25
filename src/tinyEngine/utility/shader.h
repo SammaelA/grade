@@ -10,7 +10,7 @@
 class Shader{
 using slist = std::initializer_list<std::string>;
 public:
-  const std::string base_shader_path = "/home/sammael/study/bit_bucket/grade/shaders/";
+  const std::string base_shader_path = "./shaders/";
   template<typename... Args>
   Shader(slist shaders, slist in){
     program = glCreateProgram();        //Generate Shader
@@ -58,6 +58,7 @@ public:
 
   void texture(std::string name, const Texture& t);
   void texture(std::string name, GLuint t);
+  void textureCube(std::string name, GLuint t);
 
 /* Uniform Setters */
 

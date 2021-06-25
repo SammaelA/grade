@@ -14,5 +14,5 @@ void main(void)
   fragColor = texture(tex,ex_Tex);
   if (fragColor.a<0.33)
     discard;
-  fragColor.rgb /= fragColor.a;
+  fragColor /= fragColor.a;
 }

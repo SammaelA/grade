@@ -133,7 +133,7 @@ void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h
         basic_use(tree);
         //s.choose_places_for_seeds(1,seeds);
         glm::vec3 pos = glm::vec3(urand(-300,300), 0,urand(-300,300));
-        pos = glm::vec3(10000*i, 0, 0);
+        //pos = glm::vec3(10000*i, 0, 0);
         pos.y = h.get_height(pos);
         transform(tree,trees[i],pos,glm::vec3(40,40,40));
     }

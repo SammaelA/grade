@@ -25,7 +25,7 @@
 #include "grass_renderer.h"
 #include "tinyEngine/utility/deffered_target.h"
 #include "tinyEngine/ambient_occlusion.h"
-
+#include "tinyEngine/utility/cubemap.h"
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
@@ -168,25 +168,26 @@ int main(int argc, char *argv[])
   Tiny::view.lineWidth = 1.0f;
   Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
   Tiny::event.handler = [&](){eventHandler(appContext,Tiny::event);};
-  textureManager = TextureManager("/home/sammael/study/bit_bucket/grade/resources/textures/");
+  textureManager = TextureManager("./resources/textures/");
 
   config.load_config();
   config.load_ggds();
 
   appContext.camera.pos = glm::vec3(-300,70,0);
-  appContext.light.dir = glm::normalize(glm::vec3(0.2,0.6,0.2));
+  appContext.light.dir = glm::normalize(glm::vec3(-0.2,0.5,-0));
   appContext.light.color = glm::vec3(0.99,0.9,0.7);
   appContext.light.intensity = 1;
-  appContext.light.ambient_q = 0.5;
-  appContext.light.diffuse_q = 0.5;
+  appContext.light.ambient_q = 0.37;
+  appContext.light.diffuse_q = 0.63;
   appContext.light.specular_q = 0.0;
   appContext.light.has_shadow_map = true;
   appContext.light.shadow_map_size = glm::vec2(4096, 4096);
   shadowMap.create(4096,4096);
-  defferedTarget.create(1920,1080);
-  defferedTarget.set_clear_color(glm::vec4(0.6,0.75,1,1));
+  defferedTarget.create(2*1920,2*1080);
+  defferedTarget.set_clear_color(glm::vec4(0.0,0.0,0.0,0.0));
   HBAORenderer hbaoRenderer;
   hbaoRenderer.create(800,600);
+  Cubemap cubemap = Cubemap(1920, 1080);
 
   PostFx defferedLight = PostFx("deffered_light.fs");
   Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
@@ -197,7 +198,7 @@ int main(int argc, char *argv[])
   std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
   if (pres == GroveRenderer::Precision::LOW)
     LODs_dists.back() = -10;
-  Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(1000,1000),5);
+  Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(2000,2000),5);
   h.random_generate(0,1,50);
   GrovePacker packer;
 
@@ -305,7 +306,7 @@ int main(int argc, char *argv[])
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
   TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
-  HeightmapTex ht = HeightmapTex(h);
+  HeightmapTex ht = HeightmapTex(h,2048,2048);
   GrassRenderer gr = GrassRenderer();
   std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();
   float mu = 0.99;
@@ -341,7 +342,16 @@ int main(int argc, char *argv[])
                 ctx.camera.pos,ctx.light, true);
       gr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
                 ctx.camera.pos, ht, ctx.light, true);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+
+      shadowMap.start_trans_pass();
+      groveRenderer.render(groveRenderer.get_max_LOD(), shadowMap.get_projection(), 
+                          shadowMap.get_view(),ctx.camera,
+                          glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
+                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0,true);
+      gr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
+                ctx.camera.pos, ht, ctx.light, true);
+      shadowMap.finish_trans_pass();
+
       shadowMap.blur();
     }
     //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
@@ -378,6 +388,7 @@ int main(int argc, char *argv[])
 
       glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
       //color pass
+
       tr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
                 ctx.camera.pos,ctx.light);
       gr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
@@ -402,7 +413,7 @@ uniform bool need_shadow;
 uniform mat4 shadow_mat;*/
   //hbaoRenderer.render(ctx,defferedTarget.get_view_pos());
 
-
+  cubemap.render(ctx.projection, ctx.camera.camera(),ctx.camera);
   glm::vec3 ads = glm::vec3(ctx.light.ambient_q,ctx.light.diffuse_q,ctx.light.specular_q);
   Tiny::view.target(glm::vec3(0.6, 0.7, 1));
   defferedLight.use();
@@ -412,6 +423,7 @@ uniform mat4 shadow_mat;*/
     defferedLight.get_shader().texture("worldPosTex",defferedTarget.get_world_pos());
     defferedLight.get_shader().texture("aoTex",hbaoRenderer.get_tex());
     defferedLight.get_shader().texture("shadowMap",shadowMap.getTex());
+    defferedLight.get_shader().texture("cubeTex", cubemap.get_tex());
     defferedLight.get_shader().uniform("dir_to_sun",ctx.light.dir);
     defferedLight.get_shader().uniform("camera_pos",ctx.camera.pos);
     defferedLight.get_shader().uniform("ambient_diffuse_specular",ads);

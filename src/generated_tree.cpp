@@ -872,7 +872,7 @@ Tree::~Tree()
     {
         dst.id = src.id;
         dst.leaves = new ::LeafHeap();
-        dst.pos = src.pos;
+        dst.pos = src.pos + glm::vec3(0,-000,0);
         for (int i = 0;i<src.branchHeaps.size();i++)
         {
             dst.branchHeaps.push_back(new ::BranchHeap());
@@ -881,6 +881,8 @@ Tree::~Tree()
         {
             dst.root = dst.branchHeaps[src.root->level]->new_branch();
             convert(src, dst,*src.root,*dst.root);
+            glm::mat4 trans_matrix = glm::translate(glm::mat4(1.0f),glm::vec3(0,-000,0));
+            dst.root->transform(trans_matrix);
         }
     }
     void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst)

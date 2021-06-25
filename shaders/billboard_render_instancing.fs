@@ -31,7 +31,7 @@ void main(void)
   fragColor = texture(color_tex,ex_Tex);
   if (fragColor.a<0.33)
     discard;
-  fragColor.rgb /= fragColor.a;
+  fragColor /= fragColor.a;
   vec2 noise_pos = vec2(fract(25*gl_FragCoord.x*screen_size.z), fract(25*gl_FragCoord.y*screen_size.w));
   float ns = texture(noise,noise_pos).x;
   ns = gradientNoise(float(gl_FragCoord.x),float(gl_FragCoord.y));
