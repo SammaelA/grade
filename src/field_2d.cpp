@@ -27,7 +27,7 @@ typedef struct {
 vector2 randomGradient(int ix, int iy) {
     // Random float. No precomputed gradients mean this works for any number of grid coordinates
     float random = 2920.f * sin(ix * 21942.f + iy * 171324.f + 8912.f) * cos(ix * 23157.f * iy * 217832.f + 9758.f);
-    return (vector2) { .x = cos(random), .y = sin(random) };
+    return (vector2) { .x = cosf(random), .y = sinf(random) };
 }
 
 // Computes the dot product of the distance and gradient vectors.

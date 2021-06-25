@@ -25,7 +25,8 @@ bool Config::load_config()
 {
     pd.presets_n = 0;
     dat.ggds_c = 0;
-    parse_file("presets.txt");
+    char file[] = "presets.txt";
+    parse_file(file);
     for (int i=0;i<pd.presets_n;i++)
     {
         TreeStructureParameters tsp;

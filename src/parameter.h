@@ -23,6 +23,7 @@ public:
     {
         this->baseValue = baseValue;
         randomnessLevel = NO_RANDOM;
+        return *this;
     }
     Parameter &operator=(const Parameter &par)
     {
@@ -34,6 +35,7 @@ public:
         state = par.state;
         randomizer = par.randomizer;
         randomnessLevel = par.randomnessLevel;
+        return *this;
     }
     T get()
     {
@@ -64,7 +66,7 @@ public:
     }
     void set_state(int state)
     {
-        if (state < 0 || state >= stateParams.size())
+        if (state < 0 || (uint)state >= stateParams.size())
             state = -1;
         if (randomnessLevel == REGENERATE_ON_STATE_CHANGE && this->state != state)
             random_regenerate();

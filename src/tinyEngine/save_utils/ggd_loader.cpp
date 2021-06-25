@@ -19,7 +19,8 @@ bool Config::load_ggds()
     ggds.emplace("default",def);
     pd.presets_n = 0;
     dat.ggds_c = 0;
-    parse_file("groves.txt");
+    char file[] = "groves.txt";
+    parse_file(file);
     for (int i=0; i< dat.ggds_c;i++)
     {
         #define GETV(a) glm::vec3(a[0],a[1],a[2])
