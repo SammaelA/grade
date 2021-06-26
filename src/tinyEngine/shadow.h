@@ -1,4 +1,4 @@
-#include "../camera.h"
+#include "camera.h"
 #include "utility/texture.h"
 #include "utility/shader.h"
 #include "utility/postfx.h"

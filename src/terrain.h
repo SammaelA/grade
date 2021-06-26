@@ -33,9 +33,9 @@ public:
     ~TerrainRenderer();
     void render(glm::mat4 projection, glm::mat4 view, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                 DirectedLight &light, bool to_shadow = false);
+    Model *flat_terrain;
 private:
     float base_height = 0.0;
-    Model *flat_terrain;
     Texture terrain_tex;
     Shader terrain;
     Shader terrainShadow;

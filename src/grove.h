@@ -7,7 +7,7 @@
 #include "billboard_cloud_data.h"
 #include "timestamp.h"
 #include "rendering_SSBO_structs.h"
-#include "camera.h"
+#include "tinyEngine/camera.h"
 #include "limits.h"
 class ImpostorRenderer;
 class BillboardCloudRenderer;

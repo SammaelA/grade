@@ -1,6 +1,6 @@
 #include "grass_renderer.h"
 #include "texture_manager.h"
-#include "camera.h"
+#include "tinyEngine/camera.h"
 GrassRenderer::GrassRenderer():
  grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
  grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"}),

@@ -1,7 +1,7 @@
 #include "terrain.h"
 #include <cmath>
 #include "tinyEngine/utility.h"
-#include "camera.h"
+#include "tinyEngine/camera.h"
 #include "texture_manager.h"
 
     Heightmap::Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size):

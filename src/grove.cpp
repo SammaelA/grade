@@ -4,7 +4,7 @@
 #include "texture_manager.h"
 #include "billboard_cloud.h"
 #include "impostor.h"
-#include "camera.h"
+#include "tinyEngine/camera.h"
 #include <chrono>
 
 GroveRenderer::GroveRenderer(): 

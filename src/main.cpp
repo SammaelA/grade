@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
-#include "camera.h"
+#include "tinyEngine/camera.h"
 #include "visualizer.h"
 #include "texture_manager.h"
 #include "tinyEngine/utility.h"
@@ -26,6 +26,8 @@
 #include "tinyEngine/utility/deffered_target.h"
 #include "tinyEngine/ambient_occlusion.h"
 #include "tinyEngine/utility/cubemap.h"
+#include "tinyEngine/gltf_utils/general_gltf_writer.h"
+
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
@@ -306,6 +308,13 @@ int main(int argc, char *argv[])
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
   TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
+  
+  gltf::GeneralGltfWriter ggw;
+
+  ggw.add_model(debugVisualizer->debugModels[0]);
+  ggw.convert_to_gltf("terrain");
+  ggw.clear();
+
   HeightmapTex ht = HeightmapTex(h,2048,2048);
   GrassRenderer gr = GrassRenderer();
   std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();

@@ -4,7 +4,7 @@
 #include "shader.h"
 #include <vector>
 #include <string>
-#include "../../camera.h"
+#include "../camera.h"
 #include "model.h"
 class Cubemap
 {

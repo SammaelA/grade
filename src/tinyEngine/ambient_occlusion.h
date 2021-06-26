@@ -1,7 +1,7 @@
 #pragma once
 #include "utility/shader.h"
 #include "utility/postfx.h"
-#include "../camera.h"
+#include "camera.h"
 #include "../app.h"
 #include "../texture_manager.h"
 

@@ -2,7 +2,7 @@
 #include <functional>
 #include <chrono>
 #include "grove.h"
-#include "camera.h"
+#include "tinyEngine/camera.h"
 #include "tree.h"
 #include "tinyEngine/event.h"
 class FpsCounter

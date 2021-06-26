@@ -26,6 +26,7 @@ synthetic_precision = 8
 pos = (0 0 0)
 size = (100 200 100)
 preset = {default wood leaf2}
+box = {(0 0 0) (100 0 0) (0 100 0) (0 0 100)}
 }
 grove_end
 grove simple_grove
