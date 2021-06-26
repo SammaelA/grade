@@ -18,7 +18,7 @@ enum AccessorComponentType
     UNSIGNED_BYTE,
     SHORT,
     UNSIGNED_SHORT,
-    UNSIGNED_INT,
+    UNSIGNED_INT = 5125,
     FLOAT
 };
 
@@ -102,20 +102,20 @@ struct Scene
 };
 struct Node
 {
-    int camera;
+    int camera = -1;
     std::vector<int> child_nodes;
     glm::mat4 transform = glm::mat4(1.0f);
-    int mesh;
+    int mesh = -1;
     glm::vec4 rotation = glm::vec4(0,0,0,1);
-    glm::vec3 scale = glm::vec3(1,1,1);
+    glm::vec3 scale = glm::vec3(0.01,0.01,0.01);
     glm::vec3 translation = glm::vec3(0,0,0);
 };
 struct Primitive
 {
     std::map<primitiveAttributeType,int> attributes;//int is a number of accessor with data
     int indicies;
-    int material;
-    primitiveRenderingMode mode;
+    int material = -1;
+    primitiveRenderingMode mode = primitiveRenderingMode::TRIANGLES;
 
 };
 struct Mesh
@@ -131,13 +131,14 @@ struct BufferView
 {
     int buffer;
     int byte_length;
-    int byte_offset;
+    int byte_offset = 0;
+    int byte_stride = -1;
     BufferViewTargetType target;
 };
 struct Accessor
 {
     int buffer_view;
-    int byte_offset;
+    int byte_offset = 0;
     AccessorComponentType componentType;
     AccessorType type;
     int count;
