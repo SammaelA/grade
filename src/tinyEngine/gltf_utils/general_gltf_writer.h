@@ -4,6 +4,8 @@
 #include "gltf_structure_writer.h"
 #include "../utility/model.h"
 #include "../camera.h"
+#include "../../visualizer.h"
+
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -21,6 +23,7 @@ public:
         bool debug = true;
     } settings;
     void add_model(Model *m);
+    void add_packed_grove(GrovePacked &grove);
     void add_camera(Camera *c) {cameras.push_back(c);}
     void clear();
     void convert_to_gltf(std::string name);
@@ -32,6 +35,7 @@ private:
     std::vector<Model *> models;
     std::vector<std::pair<int, std::vector<glm::mat4>>> transforms;
     std::vector<Camera *> cameras;
+    std::vector<Model *> temp_models;
     std::string asset_name;
 };
 }

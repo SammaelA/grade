@@ -8,11 +8,36 @@ namespace gltf
         models.clear();
         cameras.clear();
         transforms.clear();
+
+        for (int i=0;i<temp_models.size();i++)
+        {
+            delete temp_models[i];
+        }
+        temp_models.clear();
     }
     void GeneralGltfWriter::add_model(Model *m)
     {
         models.push_back(m);
         transforms.push_back(std::pair<int, std::vector<glm::mat4>>(models.size() - 1, {m->model}));
+    }
+    void GeneralGltfWriter::add_packed_grove(GrovePacked &grove)
+    {
+        Visualizer v;
+        int start = temp_models.size();
+        for (auto &inst : grove.instancedBranches)
+        {
+            temp_models.push_back(new Model());
+            Model *m = temp_models.back();
+            models.push_back(m);
+            transforms.push_back(std::pair<int, std::vector<glm::mat4>>(models.size() - 1, inst.IDA.transforms));
+            for (int br_id : inst.branches)
+            {
+                auto &br = grove.instancedCatalogue.get(br_id);
+                v.packed_branch_to_model(br,m,false,3);
+                logerr("mod size %d",m->positions.size()/3);
+                v.packed_branch_to_model(br,m,true,3);
+            }
+        }
     }
     void GeneralGltfWriter::convert_to_gltf(std::string name)
     {
@@ -240,6 +265,8 @@ namespace gltf
             else
             {
                 n.child_nodes = {};
+                n.transform = glm::mat4(1.0f);
+                n.scale = glm::vec3(1,1,1);
                 int nn = fullData.gltf_file.nodes.size() - 1;
                 for (auto &tr : t.second)
                 {
