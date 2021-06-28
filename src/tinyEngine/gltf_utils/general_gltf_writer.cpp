@@ -34,8 +34,8 @@ namespace gltf
             {
                 auto &br = grove.instancedCatalogue.get(br_id);
                 v.packed_branch_to_model(br,m,false,3);
-                logerr("mod size %d",m->positions.size()/3);
-                v.packed_branch_to_model(br,m,true,3);
+                //logerr("mod size %d",m->positions.size()/3);
+                //v.packed_branch_to_model(br,m,true,3);
             }
         }
     }
@@ -165,7 +165,7 @@ namespace gltf
                     fullData.gltf_file.buffer_views.back().byte_length = fullData.gltf_file.buffers.back().byte_length;
                     fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ARRAY_BUFFER;  
                     pos_bv = fullData.gltf_file.buffer_views.size() - 1;
-                    /*
+                    
                     //normals
                     fullData.gltf_file.buffers.emplace_back();
                     fullData.gltf_file.buffers.back().data = &nbf;
@@ -178,7 +178,6 @@ namespace gltf
                     fullData.gltf_file.buffer_views.back().byte_length = fullData.gltf_file.buffers.back().byte_length;
                     fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ARRAY_BUFFER;
                     norm_bv = fullData.gltf_file.buffer_views.size() - 1;
-                    */
 
                     //indices
                     fullData.gltf_file.buffers.emplace_back();
@@ -210,7 +209,7 @@ namespace gltf
                         pos_acc.min_values = {-settings.max_bound, -settings.max_bound, -settings.max_bound};
                         pos_acc.max_values = {settings.max_bound, settings.max_bound, settings.max_bound};
                         pos_acc_n = fullData.gltf_file.accessors.size() - 1;
-                        /*
+                        
                         fullData.gltf_file.accessors.emplace_back();
                         Accessor &norm_acc = fullData.gltf_file.accessors.back();
                         norm_acc.buffer_view = norm_bv;
@@ -219,7 +218,7 @@ namespace gltf
                         norm_acc.componentType = AccessorComponentType::FLOAT;
                         norm_acc.type = AccessorType::VEC3;
                         norm_acc_n = fullData.gltf_file.accessors.size() - 1;
-                        */
+                        
                         fullData.gltf_file.accessors.emplace_back();
                         Accessor &ind_acc = fullData.gltf_file.accessors.back();
                         ind_acc.buffer_view = ind_bv;
@@ -237,7 +236,7 @@ namespace gltf
                         auto &pr = fullData.gltf_file.meshes.back().primitives.back();
                         pr.indicies = ind_acc_n;
                         pr.attributes.emplace(primitiveAttributeType::POSITION,pos_acc_n);
-                        //pr.attributes.emplace(primitiveAttributeType::NORMAL,norm_acc_n);
+                        pr.attributes.emplace(primitiveAttributeType::NORMAL,norm_acc_n);
                         
                         ind_byte_offset += sizeof(uint)*models[i]->indices.size();
                         pos_byte_offset += 3*sizeof(float)*verts;
@@ -286,50 +285,6 @@ namespace gltf
             if (camera_to_gltf(c,fullData, camera_id))
                 camera_id++;
         }
-
-        /*scene.nodes.push_back(0);
-
-        fullData.gltf_file.nodes.emplace_back();
-        fullData.gltf_file.nodes.back().mesh = 0;
-
-        fullData.gltf_file.meshes.emplace_back();
-        fullData.gltf_file.meshes.back().primitives.emplace_back();
-        auto &p = fullData.gltf_file.meshes.back().primitives.back();
-        p.attributes.emplace(primitiveAttributeType::POSITION,1);
-        p.indicies = 0;
-
-        fullData.gltf_file.buffers.emplace_back();
-        fullData.gltf_file.buffers.back().data = &(fullData.pos_binary_files[0]);
-        fullData.gltf_file.buffers.back().byte_length = fullData.pos_binary_files[0].cur_size;
-        fullData.gltf_file.buffers.emplace_back();
-        fullData.gltf_file.buffers.back().data = &(fullData.ind_binary_files[0]);
-        fullData.gltf_file.buffers.back().byte_length = fullData.ind_binary_files[0].cur_size;
-
-        fullData.gltf_file.buffer_views.emplace_back();
-        fullData.gltf_file.buffer_views.back().buffer = 0;
-        fullData.gltf_file.buffer_views.back().byte_offset = 0;
-        fullData.gltf_file.buffer_views.back().byte_length = 96;
-        fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ELEMENT_ARRAY_BUFFER;
-        fullData.gltf_file.buffer_views.emplace_back();
-        fullData.gltf_file.buffer_views.back().buffer = 1;
-        fullData.gltf_file.buffer_views.back().byte_offset = 0;
-        fullData.gltf_file.buffer_views.back().byte_length = 144;
-        fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ARRAY_BUFFER;
-
-        fullData.gltf_file.accessors.emplace_back();
-        fullData.gltf_file.accessors.back().buffer_view = 1;
-        fullData.gltf_file.accessors.back().byte_offset = 0;
-        fullData.gltf_file.accessors.back().componentType = AccessorComponentType::UNSIGNED_INT;
-        fullData.gltf_file.accessors.back().count = 36;
-        fullData.gltf_file.accessors.back().type = AccessorType::SCALAR;
-        fullData.gltf_file.accessors.back().max_values = {7};
-        fullData.gltf_file.accessors.back().min_values = {0};
-        fullData.gltf_file.accessors.emplace_back();
-        fullData.gltf_file.accessors.back().buffer_view = 0;
-        fullData.gltf_file.accessors.back().byte_offset = 0;
-        fullData.gltf_file.accessors.back().componentType = AccessorComponentType::FLOAT;
-        fullData.gltf_file.accessors.back().count = 8;
-        fullData.gltf_file.accessors.back().type = AccessorType::VEC3;*/
 
         GltfStructureWriter gsw;
         gsw.write_to_json(fullData,"test");

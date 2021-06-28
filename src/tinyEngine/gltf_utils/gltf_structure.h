@@ -107,7 +107,7 @@ struct Node
     glm::mat4 transform = glm::mat4(1.0f);
     int mesh = -1;
     glm::vec4 rotation = glm::vec4(0,0,0,1);
-    glm::vec3 scale = glm::vec3(0.01,0.01,0.01);
+    glm::vec3 scale = glm::vec3(0.1,0.1,0.1);
     glm::vec3 translation = glm::vec3(0,0,0);
 };
 struct Primitive

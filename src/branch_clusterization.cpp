@@ -479,12 +479,13 @@ bool Clusterizer::set_branches(Tree &t, int layer)
             {
                 glm::vec3 cbb = canonical_bbox;
                 mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
-                mat4 rot = inverse(rot_inv);
-                vec3 base_joint_pos = rot * vec4(b.joints.front().pos, 1.0f);
-                mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
-                mat4 SC = scale(mat4(1.0f), vec3((1/cbb.x) * bbox.sizes.x, (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z));
+                 mat4 rot = inverse(rot_inv);
+                vec3 sc_vert = vec3(MAX((1/cbb.x) * bbox.sizes.x,MAX( (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z)));
+                mat4 SC = scale(mat4(1.0f), sc_vert);
                 mat4 SC_inv = inverse(SC);
-                rot = SC_inv * transl * rot;
+                vec3 base_joint_pos = vec4(b.joints.front().pos, 1.0f);
+                mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
+                rot = SC_inv * rot * transl;
                 nb->transform(rot);
                 branches.push_back(BranchWithData(&b, nb, MAX_BRANCH_LEVELS, branches.size(), inverse(rot)));
                 i++;

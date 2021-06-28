@@ -11,6 +11,7 @@ CMakeCache.txt
 *.svg
 *.dat
 *.bin
+*.gltf
 /main
 /profile
 /Makefile

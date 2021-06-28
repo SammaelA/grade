@@ -311,8 +311,8 @@ int main(int argc, char *argv[])
   
   gltf::GeneralGltfWriter ggw;
 
-  ggw.add_model(debugVisualizer->debugModels[0]);
-  ggw.add_model(debugVisualizer->debugModels[1]);
+  //ggw.add_model(debugVisualizer->debugModels[0]);
+  //ggw.add_model(debugVisualizer->debugModels[1]);
   ggw.add_packed_grove(grove);
   ggw.add_model(tr.flat_terrain);
   ggw.convert_to_gltf("terrain");
