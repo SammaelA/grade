@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
   bool only_gen = false;
   bool visualize_voxels = false;
   bool statistics_run = false;
+  bool gltf_export = false;
   struct StatRunLaunchParams
   {
     int trees = 1;
@@ -91,6 +92,11 @@ int main(int argc, char *argv[])
     else if (std::string(argv[k]) == "-only_gen")
     {
       only_gen = true;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-export_gltf")
+    {
+      gltf_export = true;
       k++;
     }
     else if (std::string(argv[k]) == "-s")
@@ -308,15 +314,6 @@ int main(int argc, char *argv[])
   for (int i=0;i<ggd.obstacles.size();i++)
     debugVisualizer->add_bodies(ggd.obstacles[i],1);
   TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
-  
-  gltf::GeneralGltfWriter ggw;
-
-  //ggw.add_model(debugVisualizer->debugModels[0]);
-  //ggw.add_model(debugVisualizer->debugModels[1]);
-  ggw.add_packed_grove(grove);
-  ggw.add_model(tr.flat_terrain);
-  ggw.convert_to_gltf("terrain");
-  ggw.clear();
 
   HeightmapTex ht = HeightmapTex(h,2048,2048);
   GrassRenderer gr = GrassRenderer();
@@ -325,6 +322,16 @@ int main(int argc, char *argv[])
   int frame = 0;
   bool regenerate_shadows = true;
   Timestamp ts;
+
+  if (gltf_export)
+  {
+    gltf::GeneralGltfWriter ggw;
+    ggw.add_packed_grove(grove, ggd);
+    ggw.add_model(tr.flat_terrain);
+    ggw.convert_to_gltf("scene");
+    ggw.clear();
+    debug("Scene exported to .gltf format\n");
+  }
   if (only_gen)
   {
     debug("Grove successfully generated. Exiting.");

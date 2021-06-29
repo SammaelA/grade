@@ -89,6 +89,12 @@ enum cameraType
     ORTHOGRAPHIC
 };
 
+enum materialAlphaMode
+{
+    OPAQUE,
+    MASK,
+    BLEND
+};
 struct Asset
 {
     const std::string copyright{"2021 (c) Sammael"};
@@ -164,17 +170,31 @@ struct Camera
     cameraType type;
     PerspectiveCamera persp;
     OrthographicCamera ortho;
-
 };
 struct Image
 {
     TextureFile *picture;
+};
+struct TextureUsage
+{
+    int texture_index = -1;
+    int texCoord = 1;
 };
 struct Material
 {
     glm::vec3 emissive_factor = glm::vec3(0,0,0);
     float alpha_cutoff = 0.5;
     bool double_sided = false;
+    materialAlphaMode alpha_mode = materialAlphaMode::MASK;
+
+    TextureUsage baseColorTex;
+    TextureUsage metallicRoughnessTex;
+    TextureUsage normalTex;
+    TextureUsage occlusionTex;
+    TextureUsage emissiveTex;
+
+    float roughness = 0.95;
+    float metallic = 0.25;
 };
 struct Sampler
 {

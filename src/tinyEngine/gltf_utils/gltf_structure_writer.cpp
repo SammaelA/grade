@@ -11,7 +11,7 @@ std::string AccessorTypeNames[7] = {"SCALAR","VEC2","VEC3","VEC4","MAT2","MAT3",
 std::string primitiveAttributeTypeNames[8] = {"POSITION","NORMAL","TANGENT","TEXCOORD_0","TEXCOORD_1",
                                               "COLOR_0","JOINTS_0","WEIGHTS_0"};
 std::string cameraTypeNames[2]={"perspective","orthographic"};
-
+std::string materialAlphaModeNames[3] = {"OPAQUE", "MASK", "BLEND"};
 bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
 {
     std::string str;
@@ -301,10 +301,118 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
 
         str +="]";
     }
+    if (!a.images.empty())
+    {
+        str +=",\n\"images\" :[\n";
+        for (int i = 0;i<a.images.size();i++)
+        {
+            str += "{\n";
+            auto &b = a.images[i];
+            str += "\"uri\": \""+b.picture->file_name+"\"";
+            str += "}";
+            if (i != a.images.size() - 1)
+                str += ",\n";
+        }
 
+        str +="]";
+    }
+    if (!a.textures.empty())
+    {
+        str +=",\n\"textures\" :[\n";
+        for (int i = 0;i<a.textures.size();i++)
+        {
+            str += "{\n";
+            auto &b = a.textures[i];
+            str += "\"sampler\":" + std::to_string(b.sampler) + ",\n";
+            str += "\"source\":" + std::to_string(b.image);
+            str += "}";
+            if (i != a.textures.size() - 1)
+                str += ",\n";
+        }
+
+        str +="]";
+    }
+    if (!a.samplers.empty())
+    {
+        str +=",\n\"samplers\" :[\n";
+        for (int i = 0;i<a.samplers.size();i++)
+        {
+            str += "{\n";
+            auto &b = a.samplers[i];
+            str += "\"magFilter\":" + std::to_string((int)b.magFilter) + ",\n";
+            str += "\"minFilter\":" + std::to_string((int)b.minFilter) + ",\n";
+            str += "\"wrapS\":" + std::to_string((int)b.wrapS) + ",\n";
+            str += "\"wrapT\":" + std::to_string((int)b.wrapT) + "\n";
+            str += "}";
+            if (i != a.samplers.size() - 1)
+                str += ",\n";
+        }
+
+        str +="]";
+    }
+    if (!a.materials.empty())
+    {
+        str +=",\n\"materials\" :[\n";
+        for (int i = 0;i<a.materials.size();i++)
+        {
+            str += "{\n";
+            auto &b = a.materials[i];
+            
+            str += "\"emissiveFactor\": ["+std::to_string(b.emissive_factor.x)+","+std::to_string(b.emissive_factor.y)+
+                   ","+std::to_string(b.emissive_factor.z)+"],\n";
+            str += "\"alphaCutoff\": "+ std::to_string(b.alpha_cutoff) +",\n";
+            str += "\"doubleSided\": ";
+            b.double_sided ? str+="true,\n" : str+="false,\n";
+            str += "\"alphaMode\": \""+materialAlphaModeNames[(int)b.alpha_mode]+"\",";
+
+            if (b.normalTex.texture_index >= 0)
+            {
+                str += "\"normalTexture\": {\n";
+                str += "\"index\": "+ std::to_string(b.normalTex.texture_index) +",\n";
+                str += "\"texCoord\": "+ std::to_string(b.normalTex.texCoord) +"\n";
+                str +="},";
+            }
+            if (b.occlusionTex.texture_index >= 0)
+            {
+                str += "\"occlusionTexture\": {\n";
+                str += "\"index\": "+ std::to_string(b.occlusionTex.texture_index) +",\n";
+                str += "\"texCoord\": "+ std::to_string(b.occlusionTex.texCoord) +"\n";
+                str +="},";
+            }
+            if (b.emissiveTex.texture_index >= 0)
+            {
+                str += "\"emissiveTexture\": {\n";
+                str += "\"index\": "+ std::to_string(b.emissiveTex.texture_index) +",\n";
+                str += "\"texCoord\": "+ std::to_string(b.emissiveTex.texCoord) +"\n";
+                str +="},";
+            }
+
+            str += "\"pbrMetallicRoughness\": {\n";
+            if (b.baseColorTex.texture_index >= 0)
+            {
+                str += "\"baseColorTexture\": {\n";
+                str += "\"index\": "+ std::to_string(b.baseColorTex.texture_index) +",\n";
+                str += "\"texCoord\": "+ std::to_string(b.baseColorTex.texCoord) +"\n";
+                str +="},";
+            }
+            if (b.metallicRoughnessTex.texture_index >= 0)
+            {
+                str += "\"metallicRoughnessTexture\": {\n";
+                str += "\"index\": "+ std::to_string(b.metallicRoughnessTex.texture_index) +",\n";
+                str += "\"texCoord\": "+ std::to_string(b.metallicRoughnessTex.texCoord) +"\n";
+                str +="},";
+            }
+            str += "\"metallicFactor\": "+ std::to_string(b.metallic) +",\n";
+            str += "\"roughnessFactor\": "+ std::to_string(b.roughness) +"\n";
+            str +="}";
+            str += "}";
+            if (i != a.materials.size() - 1)
+                str += ",\n";
+        }
+
+        str +="]";
+    }
     str += "}";
-    logerr("Json string/n: %s",str.c_str());
-
 
     std::ofstream out(name + ".gltf");
     out << str;

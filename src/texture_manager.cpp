@@ -145,6 +145,7 @@ TextureManager::TextureManager(std::string base_path)
             if (!ptr)
                 continue;
             Texture t(ptr);
+            t.origin = paths[i];
             textures.emplace(names[i],t);
             mipmap(t,ptr->w,ptr->h,9);
         }

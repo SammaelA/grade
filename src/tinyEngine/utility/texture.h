@@ -13,6 +13,7 @@ class Texture
 public:
   GLuint texture = ~0;               //Texture int (OpenGL: everything is an int!)
   GLenum type = GL_TEXTURE_2D;  //Texture type (default is this)
+  std::string origin = "";//empty for runtime generated textures, path to file for loaded textures
   void set_default_paramaters(Texture *tex);
   void bind();
   ~Texture();

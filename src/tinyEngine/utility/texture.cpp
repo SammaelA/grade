@@ -105,6 +105,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
           this->W = t.W;
           this->H = t.H;
           this->layers = t.layers;
+          this->origin = t.origin;
   }
   Texture &Texture::operator=(const Texture &t)
   {
@@ -113,6 +114,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
           this->W = t.W;
           this->H = t.H;
           this->layers = t.layers;
+          this->origin = t.origin;
           return *this;
   }
   void Texture::clear()

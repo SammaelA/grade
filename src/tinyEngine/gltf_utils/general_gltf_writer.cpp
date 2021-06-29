@@ -7,35 +7,66 @@ namespace gltf
     {
         models.clear();
         cameras.clear();
-        transforms.clear();
 
         for (int i=0;i<temp_models.size();i++)
-        {
             delete temp_models[i];
-        }
         temp_models.clear();
     }
     void GeneralGltfWriter::add_model(Model *m)
     {
-        models.push_back(m);
-        transforms.push_back(std::pair<int, std::vector<glm::mat4>>(models.size() - 1, {m->model}));
+        models.push_back(ModelData{m,nullptr,{m->model}});
     }
-    void GeneralGltfWriter::add_packed_grove(GrovePacked &grove)
+    void GeneralGltfWriter::add_packed_grove(GrovePacked &grove, GroveGenerationData &ggd)
     {
         Visualizer v;
         int start = temp_models.size();
+
         for (auto &inst : grove.instancedBranches)
         {
-            temp_models.push_back(new Model());
-            Model *m = temp_models.back();
-            models.push_back(m);
-            transforms.push_back(std::pair<int, std::vector<glm::mat4>>(models.size() - 1, inst.IDA.transforms));
-            for (int br_id : inst.branches)
+            //TODO: support ofr different type ids
+            std::vector<int> type_ids = {inst.IDA.type_ids.front()};
+            InstanceDataArrays &ida = inst.IDA;
+            for (int type_id : type_ids)
             {
-                auto &br = grove.instancedCatalogue.get(br_id);
-                v.packed_branch_to_model(br,m,false,3);
-                //logerr("mod size %d",m->positions.size()/3);
-                //v.packed_branch_to_model(br,m,true,3);
+                //branches
+                Model *m = new Model();
+                
+                for (int br_id : inst.branches)
+                {
+                    auto &br = grove.instancedCatalogue.get(br_id);
+                    if (br.type_id != type_id)
+                        continue;
+                    v.packed_branch_to_model(br,m,false,3);
+                }
+                if (!m->positions.empty())
+                {
+                    temp_models.push_back(m);
+                    ModelData md;
+                    md.m = m;
+                    md.transforms = ida.transforms;
+                    md.t = &(ggd.types[type_id].wood);
+                    models.push_back(md);
+                }
+
+                //leaves
+                Model *m_l = new Model();
+                
+                for (int br_id : inst.branches)
+                {
+                    auto &br = grove.instancedCatalogue.get(br_id);
+                    if (br.type_id != type_id)
+                        continue;
+                    v.packed_branch_to_model(br,m_l,true,3);
+                }
+                if (!m_l->positions.empty())
+                {
+                    temp_models.push_back(m_l);
+                    ModelData md;
+                    md.m = m_l;
+                    md.transforms = ida.transforms;
+                    md.t = &(ggd.types[type_id].leaf);
+                    models.push_back(md);
+                }
             }
         }
     }
@@ -49,6 +80,56 @@ namespace gltf
 
         auto &scene = fullData.gltf_file.scenes[fullData.gltf_file.main_scene];
 
+        //create textures, samplers and materials
+        std::vector<::Texture *> unique_textures;
+        for (ModelData &md : models)
+        {
+            if (md.m && md.t && !md.transforms.empty() && !md.t->origin.empty())
+            {
+                bool exist = false;
+                for (int i=0;i<unique_textures.size();i++)
+                {
+                    if (unique_textures[i]->origin == md.t->origin)
+                    {
+                        exist = true;
+                        md.material_id = i;
+                        break;
+                    }
+                }
+                if (!exist)
+                {
+                    unique_textures.push_back(md.t);
+                    md.material_id = unique_textures.size() - 1;
+                }
+            }
+        }
+        if (!unique_textures.empty())
+        {
+            fullData.gltf_file.samplers.push_back(Sampler());
+            fullData.textures_files.resize(unique_textures.size());
+            fullData.gltf_file.images.resize(unique_textures.size());
+            fullData.gltf_file.textures.resize(unique_textures.size());
+            fullData.gltf_file.materials.resize(unique_textures.size());
+
+            for (int i = 0;i<unique_textures.size();i++)
+            {
+                auto *t = unique_textures[i];
+
+                fullData.textures_files[i].existed_texture = true;
+                fullData.textures_files[i].file_name = t->origin;
+
+                fullData.gltf_file.images[i].picture = &fullData.textures_files[i];
+                
+                fullData.gltf_file.textures[i].image = i;
+                fullData.gltf_file.textures[i].sampler = 0;
+
+                fullData.gltf_file.materials[i].alpha_cutoff = 0.5;
+                fullData.gltf_file.materials[i].alpha_mode = materialAlphaMode::MASK;
+                fullData.gltf_file.materials[i].double_sided =true;
+                fullData.gltf_file.materials[i].baseColorTex.texCoord = 0;
+                fullData.gltf_file.materials[i].baseColorTex.texture_index = i;
+            }
+        }
         int bin_file_id = 0;
         int model_n = 0;
         int max_model = MIN(settings.max_models,models.size());
@@ -61,7 +142,7 @@ namespace gltf
             bool correct_patch = true;
             while (end < max_model)
             {
-                Model *m = models[end];
+                Model *m = models[end].m;
                 
                 if (m->positions.empty())
                 {
@@ -111,6 +192,13 @@ namespace gltf
                 nbf.data = new char[nbf.max_size];
                 nbf.file_name = asset_name + "_" + std::to_string(bin_file_id) + "_norm.bin";
 
+                fullData.tc_binary_files.emplace_back();
+                auto &tbf = fullData.tc_binary_files.back();
+                tbf.max_size = 2*sizeof(GLfloat)*vert_count;
+                tbf.cur_size = 0;
+                tbf.data = new char[tbf.max_size];
+                tbf.file_name = asset_name + "_" + std::to_string(bin_file_id) + "_tc.bin";
+
                 fullData.ind_binary_files.emplace_back();
                 auto &ibf = fullData.ind_binary_files.back();
                 ibf.max_size = sizeof(GLuint)*ind_count;
@@ -120,7 +208,7 @@ namespace gltf
 
                 for (int i =start; i<end; i++)
                 {
-                    correct_patch = correct_patch && model_to_gltf(models[i],fullData, bin_file_id);
+                    correct_patch = correct_patch && model_to_gltf(models[i].m,fullData, bin_file_id);
                 }
 
                 if (correct_patch)
@@ -131,17 +219,15 @@ namespace gltf
                     b = write_to_binary_file(nbf.data, nbf.cur_size, nbf.file_name);
                     correct_patch = correct_patch && b;
 
+                    b = write_to_binary_file(tbf.data, tbf.cur_size, tbf.file_name);
+                    correct_patch = correct_patch && b;
+
                     b = write_to_binary_file(ibf.data, ibf.cur_size, ibf.file_name);
-                    int *data = reinterpret_cast<int *>(ibf.data);
-                    logerr("max = %d",ibf.max_size);
-                    for (int i=0;i<72;i++)
-                    {
-                        logerr("[%d] %d",i,data[i]);
-                    }
                     correct_patch = correct_patch && b;
                 }
                 delete[] pbf.data;
                 delete[] nbf.data;
+                delete[] tbf.data;
                 delete[] ibf.data;
 
                 //create buffers and buffer views for patch
@@ -152,6 +238,7 @@ namespace gltf
                     int pos_bv;
                     int norm_bv;
                     int ind_bv;
+                    int tc_bv;
 
                     //positions
                     fullData.gltf_file.buffers.emplace_back();
@@ -178,6 +265,19 @@ namespace gltf
                     fullData.gltf_file.buffer_views.back().byte_length = fullData.gltf_file.buffers.back().byte_length;
                     fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ARRAY_BUFFER;
                     norm_bv = fullData.gltf_file.buffer_views.size() - 1;
+                                        
+                    //texture coordinates
+                    fullData.gltf_file.buffers.emplace_back();
+                    fullData.gltf_file.buffers.back().data = &tbf;
+                    fullData.gltf_file.buffers.back().byte_length = tbf.cur_size;
+
+                    fullData.gltf_file.buffer_views.emplace_back();    
+                    fullData.gltf_file.buffer_views.back().buffer = fullData.gltf_file.buffers.size() - 1;
+                    fullData.gltf_file.buffer_views.back().byte_offset = 0;
+                    fullData.gltf_file.buffer_views.back().byte_stride = 2*sizeof(float);
+                    fullData.gltf_file.buffer_views.back().byte_length = fullData.gltf_file.buffers.back().byte_length;
+                    fullData.gltf_file.buffer_views.back().target = BufferViewTargetType::ARRAY_BUFFER;
+                    tc_bv = fullData.gltf_file.buffer_views.size() - 1;
 
                     //indices
                     fullData.gltf_file.buffers.emplace_back();
@@ -194,11 +294,31 @@ namespace gltf
 
                     int ind_byte_offset = 0;
                     int pos_byte_offset = 0;
+                    int tc_byte_offset = 0;
                     for (int i =start; i<end; i++)
                     {
-                        int verts = models[i]->positions.size()/3;
-                        int ind_acc_n, pos_acc_n, norm_acc_n;
+                        int verts = models[i].m->positions.size()/3;
+                        int ind_acc_n, pos_acc_n, norm_acc_n, tc_acc_n;
+                        
+                        glm::vec3 max_bounds = glm::vec3(settings.max_bound);
+                        glm::vec3 min_bounds = glm::vec3(-settings.max_bound);
+                        if (settings.calc_exact_bbox && verts > 0)
+                        {
+                            max_bounds = glm::vec3(-1e6);
+                            min_bounds = glm::vec3(1e6);
 
+                            for (int j = 0;j<models[i].m->positions.size(); j+=3)
+                            {
+                                max_bounds.x = MAX(max_bounds.x, models[i].m->positions[j]);
+                                max_bounds.y = MAX(max_bounds.y, models[i].m->positions[j+1]);
+                                max_bounds.z = MAX(max_bounds.z, models[i].m->positions[j+2]);
+                                
+                                min_bounds.x = MIN(min_bounds.x, models[i].m->positions[j]);
+                                min_bounds.y = MIN(min_bounds.y, models[i].m->positions[j+1]);
+                                min_bounds.z = MIN(min_bounds.z, models[i].m->positions[j+2]);
+                            }
+                        }
+                        //positions accessor
                         fullData.gltf_file.accessors.emplace_back();
                         Accessor &pos_acc = fullData.gltf_file.accessors.back();
                         pos_acc.buffer_view = pos_bv;
@@ -206,10 +326,11 @@ namespace gltf
                         pos_acc.count = verts;
                         pos_acc.componentType = AccessorComponentType::FLOAT;
                         pos_acc.type = AccessorType::VEC3;
-                        pos_acc.min_values = {-settings.max_bound, -settings.max_bound, -settings.max_bound};
-                        pos_acc.max_values = {settings.max_bound, settings.max_bound, settings.max_bound};
+                        pos_acc.max_values = {max_bounds.x, max_bounds.y, max_bounds.z};
+                        pos_acc.min_values = {min_bounds.x, min_bounds.y, min_bounds.z};
                         pos_acc_n = fullData.gltf_file.accessors.size() - 1;
                         
+                        //normals accessor
                         fullData.gltf_file.accessors.emplace_back();
                         Accessor &norm_acc = fullData.gltf_file.accessors.back();
                         norm_acc.buffer_view = norm_bv;
@@ -219,11 +340,22 @@ namespace gltf
                         norm_acc.type = AccessorType::VEC3;
                         norm_acc_n = fullData.gltf_file.accessors.size() - 1;
                         
+                        //tc accessor
+                        fullData.gltf_file.accessors.emplace_back();
+                        Accessor &tc_acc = fullData.gltf_file.accessors.back();
+                        tc_acc.buffer_view = tc_bv;
+                        tc_acc.byte_offset = tc_byte_offset;
+                        tc_acc.count = verts;
+                        tc_acc.componentType = AccessorComponentType::FLOAT;
+                        tc_acc.type = AccessorType::VEC2;
+                        tc_acc_n = fullData.gltf_file.accessors.size() - 1;
+
+                        //indices accessor
                         fullData.gltf_file.accessors.emplace_back();
                         Accessor &ind_acc = fullData.gltf_file.accessors.back();
                         ind_acc.buffer_view = ind_bv;
                         ind_acc.byte_offset = ind_byte_offset;
-                        ind_acc.count = models[i]->indices.size();
+                        ind_acc.count = models[i].m->indices.size();
                         ind_acc.componentType = AccessorComponentType::UNSIGNED_INT;
                         ind_acc.type = AccessorType::SCALAR;
                         ind_acc.min_values = {0};
@@ -237,9 +369,14 @@ namespace gltf
                         pr.indicies = ind_acc_n;
                         pr.attributes.emplace(primitiveAttributeType::POSITION,pos_acc_n);
                         pr.attributes.emplace(primitiveAttributeType::NORMAL,norm_acc_n);
+                        pr.attributes.emplace(primitiveAttributeType::TEXCOORD_0,tc_acc_n);
                         
-                        ind_byte_offset += sizeof(uint)*models[i]->indices.size();
+                        if (models[i].material_id >= 0)
+                            pr.material = models[i].material_id;
+                        
+                        ind_byte_offset += sizeof(uint)*models[i].m->indices.size();
                         pos_byte_offset += 3*sizeof(float)*verts;
+                        tc_byte_offset += 2*sizeof(float)*verts;
                     }
                 }
                 bin_file_id++;
@@ -247,19 +384,20 @@ namespace gltf
         }
 
         //create a node for each set of transforms
-        for (auto &t :transforms)
+        for (int i=0;i<models.size();i++)
         {
-            if (t.second.size() == 0)
+            auto &t = models[i].transforms;
+            if (t.size() == 0)
                 continue;
-            int mesh_id = t.first;
+            int mesh_id = i;
             fullData.gltf_file.nodes.emplace_back();
             Node &n = fullData.gltf_file.nodes.back();
             scene.nodes.push_back(fullData.gltf_file.nodes.size() - 1);
 
-            if (t.second.size() == 1)
+            if (t.size() == 1)
             {
                 n.mesh = mesh_id;
-                n.transform = t.second[0];
+                n.transform = t[0];
             }
             else
             {
@@ -267,12 +405,10 @@ namespace gltf
                 n.transform = glm::mat4(1.0f);
                 n.scale = glm::vec3(1,1,1);
                 int nn = fullData.gltf_file.nodes.size() - 1;
-                for (auto &tr : t.second)
+                for (auto &tr : t)
                 {
                     fullData.gltf_file.nodes.emplace_back();
-                    logerr("aa %d",n.child_nodes.size());
                     fullData.gltf_file.nodes[nn].child_nodes.push_back(fullData.gltf_file.nodes.size() - 1);
-                    logerr("bb");
                     fullData.gltf_file.nodes.back().mesh = mesh_id;
                     fullData.gltf_file.nodes.back().transform = tr;
                 }
@@ -287,17 +423,14 @@ namespace gltf
         }
 
         GltfStructureWriter gsw;
-        gsw.write_to_json(fullData,"test");
+        gsw.write_to_json(fullData,name);
     }
     bool GeneralGltfWriter::model_to_gltf(Model *m, FullData &full_data, int bin_file_id)
     {
-        logerr("model to gltf");
         bool ok = true;
 
         const char *pos_data = reinterpret_cast<const char *>(m->positions.data());
         ok = ok && add_to_binary_file(pos_data, m->positions.size()*sizeof(GLfloat), full_data.pos_binary_files[bin_file_id]);
-        //std::string pos_bin_name = asset_name + "_" + std::to_string(id) + "_pos.bin";
-        //ok = ok && write_to_binary_file(pos_data, m->positions.size()*sizeof(GLfloat), pos_bin_name);
 
         const char *ind_data = reinterpret_cast<const char *>(m->indices.data());
         ok = ok && add_to_binary_file(ind_data, m->indices.size()*sizeof(GLuint), full_data.ind_binary_files[bin_file_id]);
@@ -305,13 +438,17 @@ namespace gltf
         const char *norm_data = reinterpret_cast<const char *>(m->normals.data());
         ok = ok && add_to_binary_file(norm_data, m->normals.size()*sizeof(GLfloat), full_data.norm_binary_files[bin_file_id]);
 
-        /*float *tc_vec2 = new float[m->colors.size()/2];
+        float *tc_vec2 = new float[m->colors.size()/2];
         for (int i=0;i<m->colors.size();i+=4)
         {
             tc_vec2[i/2] = m->colors[i];
             tc_vec2[i/2 + 1] = m->colors[i+1];
-        }*/
+        }
+        const char *tc_data = reinterpret_cast<const char *>(tc_vec2);
+        ok = ok && add_to_binary_file(tc_data, (m->colors.size()/2)*sizeof(GLfloat), full_data.tc_binary_files[bin_file_id]);
+        delete[] tc_vec2;
 
+        return ok;
     }
     bool GeneralGltfWriter::camera_to_gltf(Camera *c, FullData &full_data, int id)
     {
