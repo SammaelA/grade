@@ -24,7 +24,7 @@ class View{
 
     ImGuiIO io;
     Handle interface = [](){};  //User defined Interface
-    bool showInterface = false;
+    bool showInterface = true;
     void drawInterface();
 
     Handle pipeline = [](){};           //User defined Pipeline

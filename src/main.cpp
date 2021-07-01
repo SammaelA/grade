@@ -45,27 +45,48 @@ GrovePacked grove;
 GroveGenerationData ggd;
 GroveRenderer *GR = nullptr;
 
-int main(int argc, char *argv[])
+struct RenderData
 {
-  bool generation_needed = false;
-  bool saving_needed = false;
-  bool loading_needed = false;
-  bool print_perf = false;
-  bool only_gen = false;
-  bool visualize_voxels = false;
-  bool statistics_run = false;
-  bool gltf_export = false;
-  struct StatRunLaunchParams
-  {
-    int trees = 1;
-    float max_ind_dist = 0.7;
-  } statRunLaunchParams;
-  GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
-  std::string grove_type_name = "default";
-  std::string save_path = ".";
-  std::string load_path = ".";
+  bool regenerate_shadows = true;
+
+  HBAORenderer *hbaoRenderer;
+  Cubemap *cubemap;
+  PostFx *defferedLight;
+  PostFx *startScreenShader;
+  Shader *defaultShader;
+  Shader *debugShader;
+
+  GroveRenderer *groveRenderer;
+  HeightmapTex *heightmapTex;
+  GrassRenderer *grassRenderer;
+  TerrainRenderer *terrainRenderer;
+
+  void clear();
+} data;
+
+bool generation_needed = false;
+bool saving_needed = false;
+bool loading_needed = false;
+bool print_perf = false;
+bool only_gen = false;
+bool visualize_voxels = false;
+bool statistics_run = false;
+bool gltf_export = false;
+bool need_initialization = true;
+struct StatRunLaunchParams
+{
+  int trees = 1;
+  float max_ind_dist = 0.7;
+} statRunLaunchParams;
+GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
+std::string grove_type_name = "default";
+std::string save_path = ".";
+std::string load_path = ".";
+
+int parse_arguments(int argc, char *argv[])
+{
   int k = 1;
-  while (k<argc)
+  while (k < argc)
   {
     if (std::string(argv[k]) == "-g")
     {
@@ -76,8 +97,8 @@ int main(int argc, char *argv[])
         return 1;
       }
       else
-        grove_type_name = argv[k+1];
-      k+=2;
+        grove_type_name = argv[k + 1];
+      k += 2;
     }
     else if (std::string(argv[k]) == "-perf")
     {
@@ -108,8 +129,8 @@ int main(int argc, char *argv[])
         return 1;
       }
       else
-        save_path = argv[k+1];
-      k+=2;
+        save_path = argv[k + 1];
+      k += 2;
     }
     else if (std::string(argv[k]) == "-l")
     {
@@ -120,8 +141,8 @@ int main(int argc, char *argv[])
         return 1;
       }
       else
-        load_path = argv[k+1];
-      k+=2;
+        load_path = argv[k + 1];
+      k += 2;
     }
     else if (std::string(argv[k]) == "-low_precision")
     {
@@ -146,18 +167,18 @@ int main(int argc, char *argv[])
       }
       else
       {
-        statRunLaunchParams.trees = atoi(argv[k+1]);
-        statRunLaunchParams.max_ind_dist = atof(argv[k+2]);
+        statRunLaunchParams.trees = atoi(argv[k + 1]);
+        statRunLaunchParams.max_ind_dist = atof(argv[k + 2]);
         statistics_run = true;
         //only_gen = true;
         generation_needed = true;
-        debug("stat run %d trees %f MID\n",statRunLaunchParams.trees,statRunLaunchParams.max_ind_dist);
-        k+=3;
+        debug("stat run %d trees %f MID\n", statRunLaunchParams.trees, statRunLaunchParams.max_ind_dist);
+        k += 3;
       }
     }
     else
     {
-      logerr("unknown command \"%s\". Write -h for help",argv[k]);
+      logerr("unknown command \"%s\". Write -h for help", argv[k]);
       return 1;
     }
   }
@@ -168,53 +189,62 @@ int main(int argc, char *argv[])
   }
   if (!generation_needed && !loading_needed)
   {
-    logerr("You choosed to do nothing. Program will be closed");
-    return 0;
+    need_initialization = false;
+    //logerr("You choosed to do nothing. Program will be closed");
+    //return 0;
   }
+  return -1;
+}
+int base_initialization()
+{
   //base initialization
   glewInit();
   Tiny::view.lineWidth = 1.0f;
   Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
-  Tiny::event.handler = [&](){eventHandler(appContext,Tiny::event);};
+  Tiny::event.handler = [&]()
+  { eventHandler(appContext, Tiny::event); };
   textureManager = TextureManager("./resources/textures/");
-
+  data.startScreenShader = new PostFx("simple_render.fs");
+  return -1;
+}
+int full_initialization()
+{
   config.load_config();
   config.load_ggds();
 
-  appContext.camera.pos = glm::vec3(-300,70,0);
-  appContext.light.dir = glm::normalize(glm::vec3(-0.2,0.5,-0));
-  appContext.light.color = glm::vec3(0.99,0.9,0.7);
+  appContext.camera.pos = glm::vec3(-300, 70, 0);
+  appContext.light.dir = glm::normalize(glm::vec3(-0.2, 0.5, -0));
+  appContext.light.color = glm::vec3(0.99, 0.9, 0.7);
   appContext.light.intensity = 1;
   appContext.light.ambient_q = 0.37;
   appContext.light.diffuse_q = 0.63;
   appContext.light.specular_q = 0.0;
   appContext.light.has_shadow_map = true;
   appContext.light.shadow_map_size = glm::vec2(4096, 4096);
-  shadowMap.create(4096,4096);
-  defferedTarget.create(2*1920,2*1080);
-  defferedTarget.set_clear_color(glm::vec4(0.0,0.0,0.0,0.0));
-  HBAORenderer hbaoRenderer;
-  hbaoRenderer.create(800,600);
-  Cubemap cubemap = Cubemap(1920, 1080);
+  shadowMap.create(4096, 4096);
+  defferedTarget.create(2 * 1920, 2 * 1080);
+  defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 
-  PostFx defferedLight = PostFx("deffered_light.fs");
-  Shader defaultShader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
-  Shader depth({"depth.vs", "depth.fs"}, {"in_Position"});
-  Shader debugShader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
-  debugVisualizer = new DebugVisualizer(textureManager.get("wood"), &defaultShader);
+  data.hbaoRenderer = new HBAORenderer();
+  data.hbaoRenderer->create(800, 600);
+  data.cubemap = new Cubemap(1920, 1080);
+  data.defferedLight = new PostFx("deffered_light.fs");
+  data.debugShader = new Shader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+  data.defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+  debugVisualizer = new DebugVisualizer(textureManager.get("wood"), data.defaultShader);
+
   srand(time(NULL));
   std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
   if (pres == GroveRenderer::Precision::LOW)
     LODs_dists.back() = -10;
-  Heightmap h = Heightmap(glm::vec3(0,0,0),glm::vec2(2000,2000),5);
-  h.random_generate(0,1,50);
+  Heightmap h = Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
+  h.random_generate(0, 1, 50);
   GrovePacker packer;
-
 
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    
+
     if (statistics_run)
     {
       ggd.clustering_max_individual_distance = statRunLaunchParams.max_ind_dist;
@@ -223,13 +253,13 @@ int main(int argc, char *argv[])
 
     gen.create_grove(ggd, t, h);
     //Proctree::create_grove(ggd,t,h);
-    packer.pack_grove(ggd,grove,*debugVisualizer, t,&h, visualize_voxels);
+    packer.pack_grove(ggd, grove, *debugVisualizer, t, &h, visualize_voxels);
     distibutionGenerator.clear();
   }
   if (saving_needed)
   {
     bool status = true;
-    try 
+    try
     {
       if (boost::filesystem::exists(save_path))
       {
@@ -240,17 +270,17 @@ int main(int argc, char *argv[])
         }
         else
         {
-          logerr("path %s represents existing file. Can not save here",save_path.c_str());
+          logerr("path %s represents existing file. Can not save here", save_path.c_str());
           status = false;
         }
-      } 
+      }
       if (status)
       {
         boost::filesystem::create_directory(save_path);
-        boost::filesystem::permissions(save_path,boost::filesystem::perms::all_all);
+        boost::filesystem::permissions(save_path, boost::filesystem::perms::all_all);
       }
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
       status = false;
       std::cerr << e.what() << '\n';
@@ -260,12 +290,12 @@ int main(int argc, char *argv[])
       std::string f_path = save_path + std::string("/grove.dat");
       FILE *f = fopen(f_path.c_str(), "wb");
       saver::set_textures_path(save_path);
-      saver::save(f,grove);
+      saver::save(f, grove);
       fclose(f);
     }
     else
     {
-      logerr("error occured while saving to path %s",save_path.c_str());
+      logerr("error occured while saving to path %s", save_path.c_str());
     }
   }
   if (loading_needed)
@@ -296,12 +326,12 @@ int main(int argc, char *argv[])
         }
         else
         {
-          logerr("given load path %s is not a directory",load_path.c_str());
+          logerr("given load path %s is not a directory", load_path.c_str());
         }
       }
       else
       {
-        logerr("given load path %s does not exist",load_path.c_str());
+        logerr("given load path %s does not exist", load_path.c_str());
       }
     }
     catch (const std::exception &e)
@@ -309,25 +339,20 @@ int main(int argc, char *argv[])
       std::cerr << e.what() << '\n';
     }
   }
-  GroveRenderer groveRenderer = GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
-  GR = &groveRenderer;
-  for (int i=0;i<ggd.obstacles.size();i++)
-    debugVisualizer->add_bodies(ggd.obstacles[i],1);
-  TerrainRenderer tr = TerrainRenderer(h,glm::vec3(0,0,0),glm::vec2(2500,2500),glm::vec2(25,25));
+  data.groveRenderer = new GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
+  GR = data.groveRenderer;
+  for (int i = 0; i < ggd.obstacles.size(); i++)
+    debugVisualizer->add_bodies(ggd.obstacles[i], 1);
+  data.terrainRenderer = new TerrainRenderer(h, glm::vec3(0, 0, 0), glm::vec2(2500, 2500), glm::vec2(25, 25));
 
-  HeightmapTex ht = HeightmapTex(h,2048,2048);
-  GrassRenderer gr = GrassRenderer();
-  std::chrono::steady_clock::time_point t1, t_prev = std::chrono::steady_clock::now();
-  float mu = 0.99;
-  int frame = 0;
-  bool regenerate_shadows = true;
-  Timestamp ts;
+  data.heightmapTex = new HeightmapTex(h, 2048, 2048);
+  data.grassRenderer = new GrassRenderer();
 
   if (gltf_export)
   {
     gltf::GeneralGltfWriter ggw;
     ggw.add_packed_grove(grove, ggd);
-    ggw.add_model(tr.flat_terrain);
+    ggw.add_model(data.terrainRenderer->flat_terrain);
     ggw.convert_to_gltf("scene");
     ggw.clear();
     debug("Scene exported to .gltf format\n");
@@ -337,92 +362,98 @@ int main(int argc, char *argv[])
     debug("Grove successfully generated. Exiting.");
     return 0;
   }
-  Tiny::view.pipeline = [&]() 
+
+  appContext.renderMode = RenderMode::Rendering;
+
+  return -1;
+}
+
+void simple_render_pipeline()
+{
+  auto &ctx = appContext;
+
+  ctx.fpsCounter.tick();
+  if (ctx.fpsCounter.get_frame_n() % 100 == 0 && print_perf)
   {
-    auto &ctx = appContext;
+    fprintf(stderr, "FPS: %4.1f\n", ctx.fpsCounter.get_average_fps());
+  }
+  if (data.regenerate_shadows)
+  {
+    //shadows pass
+    data.regenerate_shadows = false;
+    shadowMap.use(ctx.light);
+    glm::mat4 sh_viewproj = shadowMap.get_transform();
 
-    ctx.fpsCounter.tick();
-    if (ctx.fpsCounter.get_frame_n() % 100 == 0 && print_perf)
+    data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
+                               shadowMap.get_view(), ctx.camera,
+                               glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
+                               ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
+    data.terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
+                                 0, ctx.camera.pos, ctx.light, true);
+    data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                               ctx.camera.pos, *data.heightmapTex, ctx.light, true);
+
+    shadowMap.start_trans_pass();
+    data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
+                               shadowMap.get_view(), ctx.camera,
+                               glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
+                               ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
+    data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                               ctx.camera.pos, *data.heightmapTex, ctx.light, true);
+    shadowMap.finish_trans_pass();
+
+    shadowMap.blur();
+  }
+  //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+  defferedTarget.target();
+
+  if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
+  {
+    data.debugShader->use();
+    data.debugShader->uniform("projectionCamera", ctx.projection * ctx.camera.camera());
+    if (ctx.render_mode == ctx.DEBUG_RENDER_MODE)
     {
-      fprintf(stderr,"FPS: %4.1f\n",ctx.fpsCounter.get_average_fps());
+      data.debugShader->texture("tex", textureManager.get(ctx.debug_tex));
+      data.debugShader->texture("tex_arr", textureManager.get(ctx.debug_tex));
+      data.debugShader->uniform("need_tex", true);
+      data.debugShader->uniform("need_arr_tex", false);
+      data.debugShader->uniform("need_coord", false);
+      data.debugShader->uniform("slice", 0);
     }
-    if (regenerate_shadows)
+    else if (ctx.render_mode == ctx.ARRAY_TEX_DEBUG_RENDER_MODE)
     {
-      //shadows pass
-      regenerate_shadows = false;
-      shadowMap.use(ctx.light);
-      glm::mat4 sh_viewproj = shadowMap.get_transform();
-
-      groveRenderer.render(groveRenderer.get_max_LOD(), shadowMap.get_projection(), 
-                          shadowMap.get_view(),ctx.camera,
-                          glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
-                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0,true);
-      tr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
-                ctx.camera.pos,ctx.light, true);
-      gr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
-                ctx.camera.pos, ht, ctx.light, true);
-
-      shadowMap.start_trans_pass();
-      groveRenderer.render(groveRenderer.get_max_LOD(), shadowMap.get_projection(), 
-                          shadowMap.get_view(),ctx.camera,
-                          glm::vec2(shadowMap.SHADOW_WIDTH,shadowMap.SHADOW_HEIGHT), 
-                          ctx.light, ctx.groveRendererDebugParams,sh_viewproj,0,true);
-      gr.render(shadowMap.get_projection(), shadowMap.get_view(),shadowMap.get_transform(),0,
-                ctx.camera.pos, ht, ctx.light, true);
-      shadowMap.finish_trans_pass();
-
-      shadowMap.blur();
+      data.debugShader->texture("tex", textureManager.get_arr(ctx.debug_tex));
+      data.debugShader->texture("tex_arr", textureManager.get_arr(ctx.debug_tex));
+      data.debugShader->uniform("need_tex", false);
+      data.debugShader->uniform("need_arr_tex", true);
+      data.debugShader->uniform("need_coord", false);
+      data.debugShader->uniform("slice", ctx.debug_layer);
     }
-    //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-    defferedTarget.target();
-
-    if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
-    {
-      debugShader.use();
-      debugShader.uniform("projectionCamera", ctx.projection * ctx.camera.camera());
-      if (ctx.render_mode == ctx.DEBUG_RENDER_MODE)
-      {
-        debugShader.texture("tex", textureManager.get(ctx.debug_tex));
-        debugShader.texture("tex_arr", textureManager.get(ctx.debug_tex));
-        debugShader.uniform("need_tex",true);
-        debugShader.uniform("need_arr_tex",false);
-        debugShader.uniform("need_coord",false);
-        debugShader.uniform("slice",0);
-      }
-      else if (ctx.render_mode == ctx.ARRAY_TEX_DEBUG_RENDER_MODE)
-      {
-        debugShader.texture("tex", textureManager.get_arr(ctx.debug_tex));
-        debugShader.texture("tex_arr", textureManager.get_arr(ctx.debug_tex));
-        debugShader.uniform("need_tex",false);
-        debugShader.uniform("need_arr_tex",true);
-        debugShader.uniform("need_coord",false);
-        debugShader.uniform("slice", ctx.debug_layer);
-      }
-    }
-    else
-    {
-      //depth prepass
-      /*tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
+  }
+  else
+  {
+    //depth prepass
+    /*tr.render(ctx.projection * ctx.camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
                 ctx.camera.pos,ctx.light, true);
 
       glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
-      //color pass
+    //color pass
 
-      tr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
-                ctx.camera.pos,ctx.light);
-      gr.render(ctx.projection, ctx.camera.camera(),shadowMap.get_transform(),0*shadowMap.getTex(),
-               ctx.camera.pos, ht, ctx.light);
-      if (ctx.render_mode != 2)
-      {
-        groveRenderer.render(ctx.forced_LOD, ctx.projection, ctx.camera.camera(),ctx.camera,
-                             glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), ctx.light, 
-                             ctx.groveRendererDebugParams, shadowMap.get_transform(),0*shadowMap.getTex());  
-      }
-      debugVisualizer->render(ctx.projection * ctx.camera.camera(),ctx.render_mode);
+    data.terrainRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                                 ctx.camera.pos, ctx.light);
+    data.grassRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                               ctx.camera.pos, *data.heightmapTex, ctx.light);
+    if (ctx.render_mode != 2)
+    {
+      data.groveRenderer->render(ctx.forced_LOD, ctx.projection, ctx.camera.camera(), ctx.camera,
+                                 glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), ctx.light,
+                                 ctx.groveRendererDebugParams, shadowMap.get_transform(), 0 * shadowMap.getTex());
     }
+    debugVisualizer->render(ctx.projection * ctx.camera.camera(), ctx.render_mode);
+  }
 
-    //postfx
-    /*uniform vec3 dir_to_sun;
+  //postfx
+  /*uniform vec3 dir_to_sun;
 uniform vec3 camera_pos;
 uniform vec3 ambient_diffuse_specular;
 uniform vec3 light_color;
@@ -432,37 +463,118 @@ uniform bool need_shadow;
 uniform mat4 shadow_mat;*/
   //hbaoRenderer.render(ctx,defferedTarget.get_view_pos());
 
-  cubemap.render(ctx.projection, ctx.camera.camera(),ctx.camera);
-  glm::vec3 ads = glm::vec3(ctx.light.ambient_q,ctx.light.diffuse_q,ctx.light.specular_q);
+  data.cubemap->render(ctx.projection, ctx.camera.camera(), ctx.camera);
+  glm::vec3 ads = glm::vec3(ctx.light.ambient_q, ctx.light.diffuse_q, ctx.light.specular_q);
   Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-  defferedLight.use();
-    defferedLight.get_shader().texture("colorTex",defferedTarget.get_color());
-    defferedLight.get_shader().texture("normalsTex",defferedTarget.get_normals());
-    defferedLight.get_shader().texture("viewPosTex",defferedTarget.get_view_pos());
-    defferedLight.get_shader().texture("worldPosTex",defferedTarget.get_world_pos());
-    defferedLight.get_shader().texture("aoTex",hbaoRenderer.get_tex());
-    defferedLight.get_shader().texture("shadowMap",shadowMap.getTex());
-    defferedLight.get_shader().texture("cubeTex", cubemap.get_tex());
-    defferedLight.get_shader().uniform("dir_to_sun",ctx.light.dir);
-    defferedLight.get_shader().uniform("camera_pos",ctx.camera.pos);
-    defferedLight.get_shader().uniform("ambient_diffuse_specular",ads);
-    defferedLight.get_shader().uniform("light_color",ctx.light.color);
-    defferedLight.get_shader().uniform("need_shadow",shadowMap.getTex() != 0);
-    defferedLight.get_shader().uniform("shadow_mat",shadowMap.get_transform());
-    defferedLight.get_shader().uniform("sts_inv",1.0f/ctx.light.shadow_map_size);
-    defferedLight.render();
+  data.defferedLight->use();
+  data.defferedLight->get_shader().texture("colorTex", defferedTarget.get_color());
+  data.defferedLight->get_shader().texture("normalsTex", defferedTarget.get_normals());
+  data.defferedLight->get_shader().texture("viewPosTex", defferedTarget.get_view_pos());
+  data.defferedLight->get_shader().texture("worldPosTex", defferedTarget.get_world_pos());
+  data.defferedLight->get_shader().texture("aoTex", data.hbaoRenderer->get_tex());
+  data.defferedLight->get_shader().texture("shadowMap", shadowMap.getTex());
+  data.defferedLight->get_shader().texture("cubeTex", data.cubemap->get_tex());
+  data.defferedLight->get_shader().uniform("dir_to_sun", ctx.light.dir);
+  data.defferedLight->get_shader().uniform("camera_pos", ctx.camera.pos);
+  data.defferedLight->get_shader().uniform("ambient_diffuse_specular", ads);
+  data.defferedLight->get_shader().uniform("light_color", ctx.light.color);
+  data.defferedLight->get_shader().uniform("need_shadow", shadowMap.getTex() != 0);
+  data.defferedLight->get_shader().uniform("shadow_mat", shadowMap.get_transform());
+  data.defferedLight->get_shader().uniform("sts_inv", 1.0f / ctx.light.shadow_map_size);
+  data.defferedLight->render();
+}
+
+void start_screen_pipeline()
+{
+  Texture start_screen = textureManager.get("start_screen");
+  Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+  data.startScreenShader->use();
+  data.startScreenShader->get_shader().texture("tex", start_screen);
+  data.startScreenShader->get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
+  data.startScreenShader->render();
+}
+
+int main(int argc, char *argv[])
+{
+  int status = parse_arguments(argc, argv);
+  if (status >= 0)
+    return status;
+
+  status = base_initialization();
+  if (status >= 0)
+    return status;
+
+  if (false && need_initialization && appContext.renderMode != RenderMode::Rendering)
+  {
+    status = full_initialization();
+    if (status >= 0)
+      return status;
+  }
+
+  Tiny::view.pipeline = [&]()
+  {
+    if (need_initialization && appContext.renderMode != RenderMode::Rendering)
+    {
+      status = full_initialization();
+    }
+    if (appContext.renderMode == RenderMode::StartingScreen)
+      start_screen_pipeline();
+    else if (appContext.renderMode == RenderMode::Rendering)
+      simple_render_pipeline();
+  };
+
+  Tiny::view.interface = [&]()
+  {
+    bool p = true;
+    ImGui::ShowDemoWindow(&p);
   };
 
   Tiny::loop([&]() {});
   {
-    for (int i=0;i<ggd.obstacles.size();i++)
+    logerr("aaaa");
+    if (need_initialization && appContext.renderMode != RenderMode::Rendering)
+    {
+      logerr("eeeeee[");
+      //status = full_initialization();
+      //if (status >= 0)
+      //  return status;
+    }
+    for (int i = 0; i < ggd.obstacles.size(); i++)
     {
       delete ggd.obstacles[i];
       ggd.obstacles[i] = nullptr;
     }
     ggd.obstacles.clear();
   }
+
+  data.clear();
+
   Tiny::quit();
 
   return 0;
+}
+
+void RenderData::clear()
+{
+  regenerate_shadows = true;
+  if (hbaoRenderer)
+    delete hbaoRenderer;
+  if (cubemap)
+    delete cubemap;
+  if (defferedLight)
+    delete defferedLight;
+  if (startScreenShader)
+    delete startScreenShader;
+  if (defaultShader)
+    delete defaultShader;
+  if (debugShader)
+    delete debugShader;
+  if (groveRenderer)
+    delete groveRenderer;
+  if (heightmapTex)
+    delete heightmapTex;
+  if (grassRenderer)
+    delete grassRenderer;
+  if (terrainRenderer)
+    delete terrainRenderer;
 }

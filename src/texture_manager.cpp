@@ -134,9 +134,9 @@ TextureManager::TextureManager(std::string base_path)
 {
     image::base_img_path = base_path;
     std::vector<std::string> names = {"terrain","noise","colored_noise","leaf1","leaf2","leaf","wood","wood2","wood3",
-                                      "grass","texture not found"};
+                                      "grass","start_screen","texture not found"};
     std::vector<std::string> paths = {"terrain.png","perlin.png","noise.png","leaf1.png","leaf2.png","leaf4.png","wood1.jpg","wood2.jpg","wood3.jpg",
-                                      "grass.png", "texture_not_found.png"};
+                                      "grass.png","start_screen.png","texture_not_found.png"};
     for (int i=0;i<paths.size();i++)
     {
         try

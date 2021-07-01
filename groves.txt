@@ -32,7 +32,7 @@ box = {(200 0 0) (100 0 0) (0 100 0) (0 0 100)}
 grove_end
 grove simple_grove
 {
-count = 10
+count = 2
 synthetic_count = 0
 synthetic_precision = 3
 pos = (0 0 0)

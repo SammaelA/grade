@@ -17,10 +17,17 @@ public:
     float get_average_fps() {return average_fps;}
     int get_frame_n() {return frame;}
 };
+enum RenderMode
+{
+    StartingScreen,
+    Generating,
+    Rendering
+};
 struct AppContext
 {
     const int WIDTH = 1200;
     const int HEIGHT = 800;
+    RenderMode renderMode = StartingScreen;
     const int DEBUG_RENDER_MODE = -2;
     const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
     const int MAX_RENDER_MODE = 2;
