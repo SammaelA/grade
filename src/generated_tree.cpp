@@ -109,8 +109,13 @@ void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bo
     glm::vec3 rnd = rand_planar_dir();
     glm::vec3 N = glm::normalize(rnd - dot(rnd, prev_dir) * rnd); //Normal Vector
     glm::vec3 up = glm::vec3(0, 1, 0);
-
+    float base_angle = curParams().base_angle();
     glm::vec3 dir = curParams().dir_conserv() * prev_dir + curParams().spread() * N + curParams().phototrop() * M + curParams().gravitrop() * up;
+    
+    glm::vec3 perp = glm::normalize(dir - prev_dir*glm::dot(prev_dir,dir));
+    glm::vec3 base_dir = cos(base_angle)*prev_dir + sin(base_angle)*perp;
+    dir += curParams().base_angle_q()*base_dir;
+
     dir = from_end ? prev_dir : glm::normalize(dir);
 
     new_segment2(nb, dir, j.pos);
@@ -343,7 +348,8 @@ void TreeGenerator::grow_branch(Branch *b, float feed)
         return;
     curParams.set_state(b->level);
     float average_feed = b->light / (b->size + 0.001);
-    if (b->size && (b->base_seg_n == 0) && !dice(average_feed, curParams().branch_removal()))
+    float remove_chance = std::exp(-average_feed/curParams().branch_removal());
+    if (b->size && (b->base_seg_n == 0) && dice(remove_chance,1))
     {
         remove_branch(b);
         return;

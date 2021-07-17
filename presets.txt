@@ -18,8 +18,10 @@ preset default
     r_split_save_pow = 3,{2.6 4 6 6 3};
     base_r = 1,{1 1.5 0.65 0.25 0.12};
     seg_dir_random = 0.5,{5 5 5 10 20};
+    seg_dir_conserv = 25;
     seg_bend = 1,{1 5 5 5 5},UNIFORM(-3,3,REGENERATE_ON_GET),(1,10);
     seg_bend_pow = 1.5,{1.4 1.6 1.8 2 2};
+    branch_removal = 1,{0 0.67 0.85 1.04 1.1};
 }
 preset_end
 preset gnarled

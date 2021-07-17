@@ -136,6 +136,8 @@ struct TreeStructureParameters
     Parameter<float> phototrop;
     Parameter<float> gravitrop;
     Parameter<float> dir_random;
+    Parameter<float> base_angle;
+    Parameter<float> base_angle_q;
 
     Parameter<float> seg_dir_conserv;
     Parameter<float> seg_plane_conserv;
@@ -183,6 +185,8 @@ struct TreeStructureParameters
         phototrop.set_state(state);
         gravitrop.set_state(state);
         dir_random.set_state(state);
+        base_angle.set_state(state);
+        base_angle_q.set_state(state);
 
         seg_dir_conserv.set_state(state);
         seg_plane_conserv.set_state(state);
@@ -230,7 +234,9 @@ struct TreeStructureParameters
                                 phototrop(1, std::vector<float>{5, 3, 2, 0, 0}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.2, 0.2), 0.1, 10),
                                 gravitrop(1, std::vector<float>{5, 5, 2, 0.75, 0.25}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.1, 0.1), 0.1, 10),
                                 dir_random(1, std::vector<float>{1, 1, 1, 1, 1}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
-                                
+                                base_angle(3.141/4),
+                                base_angle_q(1, std::vector<float>{1, 3, 2, 2, 2}),
+
                                 seg_dir_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.05, 0.05), 0, 1000),
                                 seg_plane_conserv(10, std::vector<float>{10, 10, 10, 10, 20}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.05, 0.05), 0, 1000),
                                 seg_spread(0, std::vector<float>{1, 1, 0.5, 0.5, 1}),

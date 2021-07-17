@@ -144,6 +144,14 @@ bool Config::load_config()
             {
                 tsp.dir_random = res;
             }
+            else if (nm == "base_angle")
+            {
+                tsp.base_angle = res;
+            }
+            else if (nm == "base_angle_q")
+            {
+                tsp.base_angle_q = res;
+            }
 
             else if (nm == "seg_dir_conserv")
             {
