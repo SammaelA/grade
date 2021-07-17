@@ -27,6 +27,7 @@
 #include "tinyEngine/ambient_occlusion.h"
 #include "tinyEngine/utility/cubemap.h"
 #include "tinyEngine/gltf_utils/general_gltf_writer.h"
+#include <thread>
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -515,7 +516,9 @@ int main(int argc, char *argv[])
   {
     if (need_initialization && appContext.renderMode != RenderMode::Rendering)
     {
-      status = full_initialization();
+      full_initialization();
+      //std::thread t1([&]{full_initialization();});
+      //t1.join();
     }
     if (appContext.renderMode == RenderMode::StartingScreen)
       start_screen_pipeline();
@@ -531,14 +534,6 @@ int main(int argc, char *argv[])
 
   Tiny::loop([&]() {});
   {
-    logerr("aaaa");
-    if (need_initialization && appContext.renderMode != RenderMode::Rendering)
-    {
-      logerr("eeeeee[");
-      //status = full_initialization();
-      //if (status >= 0)
-      //  return status;
-    }
     for (int i = 0; i < ggd.obstacles.size(); i++)
     {
       delete ggd.obstacles[i];
