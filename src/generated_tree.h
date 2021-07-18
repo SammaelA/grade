@@ -126,6 +126,7 @@ public:
     void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h);
 
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
+    void reset();
     Tree &curTree;
     Branch *root;
     Branch *test;

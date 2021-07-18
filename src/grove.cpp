@@ -418,13 +418,25 @@ GroveRenderer::~GroveRenderer()
             delete LODs[i].models[j].second;
         if (LODs[i].cloud)
             delete LODs[i].cloud;
-        for (int j=0;j<LODs[i].instances.size();j++)
-        {
-            //if (LODs[i].instances[j].m)
-            //   delete LODs[i].instances[j].m;
-        }
+        if (LODs[i].imp_rend)
+            delete LODs[i].imp_rend;
     }
+
+    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+
+    DELBUF(lods_buf);
+    DELBUF(instances_buf);
+    DELBUF(models_buf);
+    DELBUF(types_buf);
+    DELBUF(cur_insts_buf);
+    DELBUF(cur_models_buf);
+    DELBUF(cur_types_buf);
+    DELBUF(draw_indirect_buffer);
+    DELBUF(cells_buf);
+
     LODs.clear();
+    delete base_container;
+    delete atlas;
     source = nullptr;
 }
 

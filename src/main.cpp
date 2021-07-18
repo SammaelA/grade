@@ -57,6 +57,7 @@ struct RenderData
   Shader *defaultShader;
   Shader *debugShader;
 
+  Heightmap *heightmap;
   GroveRenderer *groveRenderer;
   HeightmapTex *heightmapTex;
   GrassRenderer *grassRenderer;
@@ -75,6 +76,7 @@ bool visualize_initial_voxels = false;
 bool statistics_run = false;
 bool gltf_export = false;
 bool need_initialization = true;
+
 struct StatRunLaunchParams
 {
   int trees = 1;
@@ -202,6 +204,37 @@ int parse_arguments(int argc, char *argv[])
   }
   return -1;
 }
+void clear_current_grove()
+{
+  grove = GrovePacked();
+  if (GR)
+  {
+    delete GR;
+    GR = nullptr;
+    data.groveRenderer = nullptr;
+  }
+  gen.reset();
+  for (int i=0;i<MAX_TREES;i++)
+  {
+    t[i].clear();
+  }
+}
+void generate_grove()
+{
+    GrovePacker packer;
+
+    gen.create_grove(ggd, t, *data.heightmap);
+    logerr("%d branches",t[0].branchHeaps[1]->branches.size());
+    packer.pack_grove(ggd, grove, *debugVisualizer, t, data.heightmap, visualize_voxels);
+}
+void generate_grove_renderer()
+{
+  std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
+  if (pres == GroveRenderer::Precision::LOW)
+    LODs_dists.back() = -10;
+  data.groveRenderer = new GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
+  GR = data.groveRenderer;
+}
 int base_initialization()
 {
   //base initialization
@@ -241,12 +274,9 @@ int full_initialization()
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), data.defaultShader);
 
   srand(time(NULL));
-  std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
-  if (pres == GroveRenderer::Precision::LOW)
-    LODs_dists.back() = -10;
-  Heightmap h = Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
-  h.random_generate(0, 1, 50);
-  GrovePacker packer;
+
+  data.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
+  data.heightmap->random_generate(0, 1, 50);
 
   if (generation_needed)
   {
@@ -258,14 +288,12 @@ int full_initialization()
       ggd.trees_count = statRunLaunchParams.trees;
     }
 
-    gen.create_grove(ggd, t, h);
-    //Proctree::create_grove(ggd,t,h);
+    generate_grove();
+
     if (visualize_initial_voxels)
     {
       debugVisualizer->visualize_light_voxels(gen.voxels);
     }
-    packer.pack_grove(ggd, grove, *debugVisualizer, t, &h, visualize_voxels);
-    distibutionGenerator.clear();
   }
   if (saving_needed)
   {
@@ -350,13 +378,13 @@ int full_initialization()
       std::cerr << e.what() << '\n';
     }
   }
-  data.groveRenderer = new GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
-  GR = data.groveRenderer;
+  generate_grove_renderer();
+
   for (int i = 0; i < ggd.obstacles.size(); i++)
     debugVisualizer->add_bodies(ggd.obstacles[i], 1);
-  data.terrainRenderer = new TerrainRenderer(h, glm::vec3(0, 0, 0), glm::vec2(2500, 2500), glm::vec2(25, 25));
+  data.terrainRenderer = new TerrainRenderer(*data.heightmap, glm::vec3(0, 0, 0), glm::vec2(2500, 2500), glm::vec2(25, 25));
 
-  data.heightmapTex = new HeightmapTex(h, 2048, 2048);
+  data.heightmapTex = new HeightmapTex(*data.heightmap, 2048, 2048);
   data.grassRenderer = new GrassRenderer();
 
   if (gltf_export)
@@ -394,23 +422,36 @@ void simple_render_pipeline()
     data.regenerate_shadows = false;
     shadowMap.use(ctx.light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
-
-    data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
-                               shadowMap.get_view(), ctx.camera,
-                               glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
-                               ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
-    data.terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
-                                 0, ctx.camera.pos, ctx.light, true);
-    data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
-                               ctx.camera.pos, *data.heightmapTex, ctx.light, true);
-
+    if (data.groveRenderer)
+    {
+      data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
+                                shadowMap.get_view(), ctx.camera,
+                                glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
+                                ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
+    }
+    if (data.terrainRenderer)
+    {
+      data.terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
+                                  0, ctx.camera.pos, ctx.light, true);
+    }
+    if (data.grassRenderer)
+    {
+      data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                                ctx.camera.pos, *data.heightmapTex, ctx.light, true);
+    }
     shadowMap.start_trans_pass();
-    data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
-                               shadowMap.get_view(), ctx.camera,
-                               glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
-                               ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
-    data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
-                               ctx.camera.pos, *data.heightmapTex, ctx.light, true);
+    if (data.groveRenderer)
+    {
+      data.groveRenderer->render(data.groveRenderer->get_max_LOD(), shadowMap.get_projection(),
+                                shadowMap.get_view(), ctx.camera,
+                                glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
+                                ctx.light, ctx.groveRendererDebugParams, sh_viewproj, 0, true);
+    }
+    if (data.grassRenderer)
+    {
+      data.grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                                ctx.camera.pos, *data.heightmapTex, ctx.light, true);
+    }
     shadowMap.finish_trans_pass();
 
     shadowMap.blur();
@@ -449,18 +490,24 @@ void simple_render_pipeline()
 
       glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
     //color pass
-
-    data.terrainRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
-                                 ctx.camera.pos, ctx.light);
-    data.grassRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
-                               ctx.camera.pos, *data.heightmapTex, ctx.light);
-    if (ctx.render_mode != 2)
+    if (data.terrainRenderer)
+    {
+      data.terrainRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                                  ctx.camera.pos, ctx.light);
+    }
+    if (data.grassRenderer)
+    {
+      data.grassRenderer->render(ctx.projection, ctx.camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                                ctx.camera.pos, *data.heightmapTex, ctx.light);
+    }
+    if (ctx.render_mode != 2 && data.groveRenderer)
     {
       data.groveRenderer->render(ctx.forced_LOD, ctx.projection, ctx.camera.camera(), ctx.camera,
                                  glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), ctx.light,
                                  ctx.groveRendererDebugParams, shadowMap.get_transform(), 0 * shadowMap.getTex());
     }
-    debugVisualizer->render(ctx.projection * ctx.camera.camera(), ctx.render_mode);
+    if (debugVisualizer)
+      debugVisualizer->render(ctx.projection * ctx.camera.camera(), ctx.render_mode);
   }
 
   //postfx
@@ -530,6 +577,13 @@ int main(int argc, char *argv[])
       //std::thread t1([&]{full_initialization();});
       //t1.join();
     }
+    if (appContext.regeneration_needed)
+    {
+      clear_current_grove();
+      generate_grove();
+      generate_grove_renderer();
+      appContext.regeneration_needed = false;
+    }
     if (appContext.renderMode == RenderMode::StartingScreen)
       start_screen_pipeline();
     else if (appContext.renderMode == RenderMode::Rendering)
@@ -553,7 +607,7 @@ int main(int argc, char *argv[])
   }
 
   data.clear();
-
+  distibutionGenerator.clear();
   Tiny::quit();
 
   return 0;
@@ -582,4 +636,6 @@ void RenderData::clear()
     delete grassRenderer;
   if (terrainRenderer)
     delete terrainRenderer;
+  if (heightmap)
+    delete heightmap;
 }

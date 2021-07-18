@@ -50,7 +50,7 @@ private:
         float penumbraDepthDecay = 0.4;
         float penumbraWidthDecay = 0.8;
         float searchDepth = 5;
-        float sunPositions = 12;
+        float sunPositions = 0;
     } lightParams;
     struct Light
     {

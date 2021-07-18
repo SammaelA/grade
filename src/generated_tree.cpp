@@ -21,7 +21,6 @@ namespace mygen
 int seg_count = 0;
 int j_count = 0;
 int b_count = 0;
-int iter = 0;
 float sum_feed[10];
 float count_feed[10];
 bool dice(float x, float base)
@@ -349,7 +348,7 @@ void TreeGenerator::grow_branch(Branch *b, float feed)
     curParams.set_state(b->level);
     float average_feed = b->light / (b->size + 0.001);
     float remove_chance = std::exp(-average_feed/curParams().branch_removal());
-    if (b->size && (b->base_seg_n == 0) && dice(remove_chance,1))
+    if (b->size && (b->base_seg_n == 0) && (b->level > 0) && dice(remove_chance,1))
     {
         remove_branch(b);
         return;
@@ -722,7 +721,19 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
             pack_branch_recursively(br, grove, ids, b_struct.childBranches.back(), lvl_from, lvl_to);
     }
 }
-
+void TreeGenerator::reset()
+{
+    if (seeder)
+        delete seeder;
+    if (voxels)
+        delete voxels;
+    root = nullptr;
+    test = nullptr;
+    heightmap = nullptr;
+    seg_count = 0;
+    j_count = 0;
+    b_count = 0;
+}
 void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
     Tree trees[MAX_TREES];

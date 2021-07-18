@@ -254,6 +254,22 @@ void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int bra
     data->level = 0;
     data->atlas = *atlas;
 }
+ImpostorRenderer::~ImpostorRenderer()
+{
+    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+
+    DELBUF(slicesBuffer);
+    DELBUF(impostorsDataBuffer);
+
+    for (int i=0;i<models.size();i++)
+    {
+        if (models[i])
+        {
+            delete models[i];
+            models[i] = nullptr;
+        }
+    }
+}
 ImpostorRenderer::ImpostorRenderer(ImpostorsData *data):
 impostorRenderer({"impostor_render.vs", "impostor_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"})

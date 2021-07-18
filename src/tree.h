@@ -114,6 +114,8 @@ struct Tree
             branchHeaps[i] = nullptr;
         }
         branchHeaps.clear();
+        root = nullptr;
+        type = nullptr;
     }
 };
 struct GroveGenerationData

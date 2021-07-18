@@ -44,6 +44,8 @@ struct AppContext
     FpsCounter fpsCounter;
     Camera camera;
     DirectedLight light;
+
+    bool regeneration_needed = false;
 };
 
 extern std::function<void(AppContext &, Event &)> eventHandler;

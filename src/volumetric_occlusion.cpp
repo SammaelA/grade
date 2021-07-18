@@ -526,6 +526,8 @@ void LightVoxelsCube::calculte_precise_occlusion_from_bodies()
     glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
     std::vector<glm::vec3> sun_dirs;
     int steps = lightParams.sunPositions;
+    if (steps < 3)
+        return;
     for (int i=0;i<steps;i++)
     {
         EnvironmentParameters params;
