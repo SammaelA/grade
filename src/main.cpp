@@ -71,6 +71,7 @@ bool loading_needed = false;
 bool print_perf = false;
 bool only_gen = false;
 bool visualize_voxels = false;
+bool visualize_initial_voxels = false;
 bool statistics_run = false;
 bool gltf_export = false;
 bool need_initialization = true;
@@ -109,6 +110,11 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-visualize_voxels")
     {
       visualize_voxels = true;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-visualize_initial_voxels")
+    {
+      visualize_initial_voxels = true;
       k++;
     }
     else if (std::string(argv[k]) == "-only_gen")
@@ -254,6 +260,10 @@ int full_initialization()
 
     gen.create_grove(ggd, t, h);
     //Proctree::create_grove(ggd,t,h);
+    if (visualize_initial_voxels)
+    {
+      debugVisualizer->visualize_light_voxels(gen.voxels);
+    }
     packer.pack_grove(ggd, grove, *debugVisualizer, t, &h, visualize_voxels);
     distibutionGenerator.clear();
   }

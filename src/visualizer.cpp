@@ -759,6 +759,17 @@ DebugVisualizer& DebugVisualizer::operator=(const DebugVisualizer& dv)
     leaves_tex = dv.leaves_tex;
     tree_shader = dv.tree_shader;
 }
+void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels)
+{
+    visualize_light_voxels(voxels,
+                           voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
+                           voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
+                           5.0f*glm::vec3(voxels->get_voxel_size()),
+                           0.5f*voxels->get_voxel_size(),
+                           5);
+
+
+}
 void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step,
                                              float dot_size, float threshold)
 {
@@ -774,7 +785,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
             for (float z = pos.z; z < pos.z + size.z; z += step.z)
             {
                 float occ = voxels->get_occlusion_trilinear(glm::vec3(x,y,z));
-                if (occ < threshold || occ > 1e5)
+                if (occ < threshold || occ > 1e8)
                     continue;
                 glm::vec4 tex;
                 tex.w = 1;

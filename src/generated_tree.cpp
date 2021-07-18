@@ -663,6 +663,7 @@ void TreeGenerator::create_grove(Tree *trees, int count)
         voxels->add_body(curGgd.obstacles[i]);
         seeder->add_body(curGgd.obstacles[i]);
     }
+    voxels->calculte_precise_occlusion_from_bodies();
     const int growth_step = 10;
     int trees_planted = 0;  
     for (int j = 0; j < params().growth_iterations(); j++)

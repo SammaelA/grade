@@ -45,6 +45,7 @@ public:
     void enable_all();
     void disable_all();
     void add_bodies(Body *b_ptr, int count);
+    void visualize_light_voxels(LightVoxelsCube *voxels);
     void visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step, float dot_size, float threshold = 0);
     ~DebugVisualizer();
     std::vector<Model *> debugModels;

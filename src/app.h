@@ -4,6 +4,7 @@
 #include "grove.h"
 #include "tinyEngine/camera.h"
 #include "tree.h"
+#include "sun.h"
 #include "tinyEngine/event.h"
 class FpsCounter
 {

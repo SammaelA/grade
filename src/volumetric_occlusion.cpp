@@ -3,6 +3,8 @@
 #include <vector>
 #include "tinyEngine/utility.h"
 #include "distribution.h"
+#include "sun.h"
+
 int sum_memory = 0;
 int sum_allocs = 1;
 glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
@@ -23,8 +25,11 @@ voxel_size(vox_size)
     vox_x = sizes.x;
     vox_y = sizes.y;
     vox_z = sizes.z;
+    block_x = ceil((2*vox_x + 1.0)/block_size);
+    block_y = ceil((2*vox_y + 1.0)/block_size);
+    block_z = ceil((2*vox_z + 1.0)/block_size);
 
-    count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
+    count = block_x*block_y*block_z*block_size*block_size*block_size;
     voxels = new float[count];
     std::fill(voxels,voxels+count,0);
     sum_memory += count*sizeof(float);
@@ -275,6 +280,34 @@ glm::ivec3 LightVoxelsCube::pos_to_voxel(glm::vec3 pos)
     glm::ivec3 voxel = glm::ivec3((pos.x / voxel_size), (pos.y / voxel_size), (pos.z / voxel_size));
     return voxel;
 }
+/*
+#define LIN(x,y,z, mx, my, mz) (mx)*(my)*(z) + (mx)*(y) + (x)
+int LightVoxelsCube::v_to_i(int x, int y, int z)
+{
+    int bl_x = (x + vox_x) / block_size * block_size;
+    int bl_y = (y + vox_y) / block_size * block_size;
+    int bl_z = (z + vox_z) / block_size * block_size;
+
+    int self_x = (x + vox_x) % block_size;
+    int self_y = (y + vox_y) % block_size;
+    int self_z = (z + vox_z) % block_size;
+    return LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
+           LIN(self_x, self_y, self_z, block_size, block_size, block_size);
+}
+int LightVoxelsCube::v_to_i(glm::ivec3 voxel)
+{
+    int bl_x = (voxel.x + vox_x) / block_size * block_size;
+    int bl_y = (voxel.y + vox_y) / block_size * block_size;
+    int bl_z = (voxel.z + vox_z) / block_size * block_size;
+
+    int self_x = (voxel.x + vox_x) % block_size;
+    int self_y = (voxel.y + vox_y) % block_size;
+    int self_z = (voxel.z + vox_z) % block_size;
+    return LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
+           LIN(self_x, self_y, self_z, block_size, block_size, block_size);
+}
+*/
+
 int LightVoxelsCube::v_to_i(int x, int y, int z)
 {
     return (2 * vox_x + 1) * (2 * vox_y + 1) * (vox_z + z) + (2 * vox_x + 1) * (vox_y + y) + (vox_x + x);
@@ -352,26 +385,32 @@ void LightVoxelsCube::set_occluder_trilinear(glm::vec3 pos, float strenght)
     }
     
 }
+float LightVoxelsCube::get_occlusion_view_ray(glm::vec3 pos, glm::vec3 light)
+{
+    int prev_v = -1;
+    float sum_occ = 0;
+    glm::vec3 start = (pos - center) / voxel_size;
+    glm::vec3 step = light / (2 * voxel_size);
+    glm::ivec3 voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
+    while (in_voxel_cube(voxel))
+    {
+        int v = v_to_i(voxel);
+        if (v != prev_v)
+        {
+            sum_occ += voxels[v];
+            prev_v = v;
+        }
+        start += step;
+        voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
+    }
+    return sum_occ;
+}
 float LightVoxelsCube::get_occlusion_view_ray(glm::vec3 pos)
 {
     float sum_occ = 0.0;
-    int prev_v = -1;
     for (auto &light : directed_lights)
     {
-        glm::vec3 start = (pos - center) / voxel_size;
-        glm::vec3 step = glm::vec3(0, 1, 0) / (2 * voxel_size);
-        glm::ivec3 voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
-        while (in_voxel_cube(voxel))
-        {
-            int v = v_to_i(voxel);
-            if (v != prev_v)
-            {
-                sum_occ += voxels[v];
-                prev_v = v;
-            }
-            start += step;
-            voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
-        }
+        sum_occ += get_occlusion_view_ray(pos, light.vec);
     }
     sum_occlusion += sum_occ;
     occ_count += 1;
@@ -474,9 +513,57 @@ void LightVoxelsCube::add_body(Body *b, float opacity, bool solid)
                 if (b->in_body(pos))   
                 {
                     if (solid)
-                        voxels[v_to_i(i,j,k)] += 1e9;
+                        voxels[v_to_i(i,j,k)] += 1e7;
                     if (opacity > 0.1)
-                        set_occluder(pos,opacity);
+                        set_occluder_simple(pos,opacity);
+                }
+            }
+        }
+    }
+}
+void LightVoxelsCube::calculte_precise_occlusion_from_bodies()
+{
+    glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
+    std::vector<glm::vec3> sun_dirs;
+    int steps = lightParams.sunPositions;
+    for (int i=0;i<steps;i++)
+    {
+        EnvironmentParameters params;
+        params.hours = 24.0*i/steps;
+        glm::vec3 sun = Sun::sun_direction(params);
+        if (sun.y < 0) //sun above horizon
+            sun_dirs.push_back(-sun);   
+    }
+    if (sun_dirs.size() < 3)
+        return;
+    std::vector<glm::vec3> main_dirs = {sun_dirs.front(),sun_dirs[sun_dirs.size()/2],sun_dirs.back()};
+    for (int i=-vox_x;i<=vox_x;i++)
+    {
+        for (int j=-vox_y;j<=vox_y;j++)
+        {
+            for (int k=-vox_z;k<=vox_z;k++)
+            {
+                glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
+                float steps = 0;
+                float occs = 0;
+                float max_occ = 50;
+                for (glm::vec3 &dir : main_dirs)
+                {
+                    steps+=dir.y;
+                    float occ = get_occlusion_view_ray(pos,dir);
+                    if (occ > 1e6)//body intersected
+                        occs+=dir.y;
+                }
+                if (occs > 0)
+                {
+                    for (glm::vec3 &dir : sun_dirs)
+                    {
+                        steps+=dir.y;
+                        float occ = get_occlusion_view_ray(pos,dir);
+                        if (occ > 1e6)//body intersected
+                            occs+=dir.y;
+                    }
+                    set_occluder_simple(pos,max_occ*occs/(steps));
                 }
             }
         }
