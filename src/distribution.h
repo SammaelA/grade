@@ -20,7 +20,8 @@ class Normal : public Distribution
     std::uniform_real_distribution<double> d;
 public:
     Normal(double a = 0, double sigma = 1, int seed = 12345);
-
+    double get_a() {return a;}
+    double get_sigma() {return sigma;}
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 };
@@ -37,7 +38,8 @@ class Uniform : public Distribution
     std::uniform_real_distribution<double> d;
 public:
     Uniform(double from = 0, double to = 1, int seed = 12345);
-
+    double get_from() {return from;}
+    double get_to() {return to;}
     virtual double get() override;
     virtual double *get_series(unsigned size) override;
 };

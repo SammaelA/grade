@@ -9,6 +9,13 @@ enum RandomnessLevel
     REGENERATE_ON_STATE_CHANGE,
     REGENERATE_ON_GET
 };
+enum ParameterMaskValues
+{
+    CONSTANT,
+    ONE_VALUE,
+    LIST_OF_VALUES,
+    FULL
+};
 struct TreeStructureParameters;
 template <typename T>
 class Parameter
@@ -17,7 +24,12 @@ public:
     friend struct TreeStructureParameters;
     void random_regenerate()
     {
-        randomValue = (T)(randomizer->get());
+        if (normal_part < 1e-4)
+            randomValue = uniform->get();
+        else if (1 - normal_part < 1e-4)
+            randomValue = normal->get();
+        else 
+            randomValue = (T)(normal_part*normal->get() + (1-normal_part)*uniform->get());
     }
     Parameter &operator=(const T &base_value)
     {
@@ -31,10 +43,16 @@ public:
         randomValue = par.randomValue;
         maxValue = par.maxValue;
         minValue = par.minValue;
-        stateParams = par.stateParams;
+        state_qs = par.state_qs;
         state = par.state;
-        randomizer = par.randomizer;
+        normal = par.normal;
+        uniform = par.uniform;
         randomnessLevel = par.randomnessLevel;
+        a = par.a;
+        sigma = par.sigma;
+        from = par.from;
+        to = par.to;
+        normal_part = par.normal_part;
         return *this;
     }
     T get()
@@ -44,15 +62,13 @@ public:
             if (state == -1)
                 return baseValue;
             else
-                return stateParams[state];
+                return (T)(state_qs[state]*baseValue);
         }
         if (randomnessLevel == REGENERATE_ON_GET)
             random_regenerate();
-        T value = randomValue;
-        if (state == -1)
-            value += baseValue;
-        else
-            value += stateParams[state];
+        T value = baseValue + randomValue;
+        if (state != -1)
+            value *= state_qs[state];
 
         if (value > maxValue)
             value = maxValue;
@@ -66,7 +82,7 @@ public:
     }
     void set_state(int state)
     {
-        if (state < 0 || (uint)state >= stateParams.size())
+        if (state < 0 || (uint)state >= state_qs.size())
             state = -1;
         if (randomnessLevel == REGENERATE_ON_STATE_CHANGE && this->state != state)
             random_regenerate();
@@ -83,46 +99,135 @@ public:
     Parameter(T base, std::vector<T> stateParams,
               T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, minValue, maxValue)
     {
-        this->stateParams = stateParams;
+        for (T &par : stateParams)
+        {
+            state_qs.push_back(base > 0 ? ((double)par/base) : 1);
+        }
     }
-    Parameter(T base, std::vector<T> stateParams, RandomnessLevel rand_level, Distribution *randomizer,
+    Parameter(T base, std::vector<T> stateParams, RandomnessLevel rand_level, Normal *randomizer,
               T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, stateParams, minValue, maxValue)
     {
         this->randomnessLevel = rand_level;
-        this->randomizer = randomizer;
+        this->normal = randomizer;
         if (!randomizer)
             rand_level = NO_RANDOM;
+        else
+        {
+            a = randomizer->get_a();
+            sigma = randomizer->get_sigma();
+        }
+        from = 0;
+        to = 0;
+        normal_part = 1;
+
         if (rand_level != NO_RANDOM)
             random_regenerate();
     }
-    Parameter(T base, RandomnessLevel rand_level, Distribution *randomizer,
+    Parameter(T base, RandomnessLevel rand_level, Normal *randomizer,
               T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, minValue, maxValue)
     {
         this->randomnessLevel = rand_level;
-        this->randomizer = randomizer;
+        this->normal = randomizer;
         if (!randomizer)
             rand_level = NO_RANDOM;
+        else
+        {
+            a = randomizer->get_a();
+            sigma = randomizer->get_sigma();
+        }
+
+        a = randomizer->get_a();
+        sigma = randomizer->get_sigma();
+        from = 0;
+        to = 0;
+        normal_part = 1;
+        
+        if (rand_level != NO_RANDOM)
+            random_regenerate();
+
+    }
+        Parameter(T base, std::vector<T> stateParams, RandomnessLevel rand_level, Uniform *randomizer,
+              T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, stateParams, minValue, maxValue)
+    {
+        this->randomnessLevel = rand_level;
+        this->uniform = randomizer;
+        if (!randomizer)
+            rand_level = NO_RANDOM;
+        else
+        {
+            from = randomizer->get_from();
+            to = randomizer->get_to();
+        }
+        a = 0;
+        sigma = 0;
+        normal_part = 0;
+        
         if (rand_level != NO_RANDOM)
             random_regenerate();
     }
+    Parameter(T base, RandomnessLevel rand_level, Uniform *randomizer,
+              T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, minValue, maxValue)
+    {
+        this->randomnessLevel = rand_level;
+        this->uniform = randomizer;
+        if (!randomizer)
+            rand_level = NO_RANDOM;
+        else
+        {
+            from = randomizer->get_from();
+            to = randomizer->get_to();
+        }      
+        a = 0;
+        sigma = 0;
+        normal_part = 0;
 
+        if (rand_level != NO_RANDOM)
+            random_regenerate();
+    }
+    Parameter(T base, T min_val, T max_val, std::vector<float> state_qs, float a, float sigma, float from, float to,
+              float normal_part, RandomnessLevel rand_level, Normal *normal = nullptr, Uniform *uniform = nullptr)
+    {
+        baseValue = base;
+        minValue = min_val;
+        maxValue = max_val;
+        this->state_qs = state_qs;
+        this->a = a;
+        this->sigma = sigma;
+        this->from = from;
+        this->to = to;
+        this->normal_part = normal_part;
+        this->randomnessLevel = randomnessLevel;
+        this->normal = normal;
+        this->uniform = uniform;
+        if (randomnessLevel != RandomnessLevel::NO_RANDOM && normal_part > 1e-4 && !normal)
+        {
+            normal = distibutionGenerator.get_normal(a,sigma);
+        }
+        if (randomnessLevel != RandomnessLevel::NO_RANDOM && 1 - normal_part > 1e-4 && !uniform)
+        {
+            uniform = distibutionGenerator.get_uniform(from,to);
+        } 
+    }
 private:
     T baseValue;
     T randomValue;
     T maxValue;
     T minValue;
-    std::vector<T> stateParams;
+    std::vector<float> state_qs;
+    float a,sigma,from,to,normal_part;
     int state = -1;
-    Distribution *randomizer = nullptr;
+    Distribution *normal = nullptr;
+    Distribution *uniform = nullptr;
     RandomnessLevel randomnessLevel;
 };
 struct TreeStructureParameters
 {
     static Parameter<int> from_float(Parameter<float> source);
-    Parameter<int> max_depth;
-    Parameter<int> max_segments;
-    Parameter<int> max_branching;
-    Parameter<int> growth_iterations;
+    static Parameter<float> from_int(Parameter<int> source);
+    Parameter<float> max_depth;
+    Parameter<float> max_segments;
+    Parameter<float> max_branching;
+    Parameter<float> growth_iterations;
 
     Parameter<float> scale;
     Parameter<float> seg_len_mult;
@@ -163,8 +268,8 @@ struct TreeStructureParameters
     Parameter<float> max_branching_chance;
     Parameter<float> branching_power;
 
-    Parameter<int> r_deformation_levels;
-    Parameter<int> r_deformation_points;
+    Parameter<float> r_deformation_levels;
+    Parameter<float> r_deformation_points;
     Parameter<float> r_deformation_power;
     void set_state(int state)
     {
@@ -218,7 +323,7 @@ struct TreeStructureParameters
     }
 
     TreeStructureParameters() : max_depth(4),
-                                max_segments(20, std::vector<int>{40, 14, 14, 7, 7}),
+                                max_segments(20, std::vector<float>{40, 14, 14, 7, 7}),
                                 max_branching(1),
                                 growth_iterations(200),
 
@@ -261,10 +366,12 @@ struct TreeStructureParameters
                                 max_branching_chance(1),
                                 branching_power(0.5, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4}),
                                 r_deformation_levels(2),
-                                r_deformation_points(0,std::vector<int>{8,3}),
+                                r_deformation_points(0,std::vector<float>{8,3}),
                                 r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025))
     {
     }
+    void get_parameter_list(std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> &list);
+    void get_mask_and_data(std::vector<ParameterMaskValues> &mask, std::vector<double> &data);
 };
 class ParameterSetWrapper
 {

@@ -40,7 +40,8 @@ bool Config::load_config()
             float minValue = 1e10;
             std::vector<float> stateParams;
             int state = -1;
-            Distribution *randomizer = nullptr;
+            Normal *normal = nullptr;
+            Uniform *uniform = nullptr;
             RandomnessLevel randomnessLevel = NO_RANDOM;
             
             baseValue = p.param_base;
@@ -54,9 +55,16 @@ bool Config::load_config()
             if (p.param_type > 2)
             {
                 if (p.dist_type == 1)
-                    randomizer = distibutionGenerator.get_normal(p.distr_a,p.distr_b);
+                {
+                    normal = distibutionGenerator.get_normal(p.distr_a,p.distr_b);
+                    uniform = distibutionGenerator.get_uniform(0,0);
+                }
                 else
-                    randomizer = distibutionGenerator.get_uniform(p.distr_a,p.distr_b);
+                {
+                    normal = distibutionGenerator.get_normal(0,0);
+                    uniform = distibutionGenerator.get_uniform(p.distr_a,p.distr_b);
+                    
+                }
                 switch (p.regen_type)
                 {
                 case 1:
@@ -80,23 +88,25 @@ bool Config::load_config()
                 minValue = p.param_from;
                 maxValue = p.param_to;
             }
-            Parameter<float> res = Parameter<float>(baseValue,stateParams,randomnessLevel,randomizer,minValue,maxValue);
+            Parameter<float> res = Parameter<float>(baseValue,stateParams,randomnessLevel,normal,minValue,maxValue);
+            if (p.dist_type != 1)
+                res = Parameter<float>(baseValue,stateParams,randomnessLevel,uniform,minValue,maxValue);
             std::string nm = p.name;
             if (nm == "max_depth")
             {
-                tsp.max_depth = TreeStructureParameters::from_float(res);
+                tsp.max_depth = res;
             }
             else if (nm == "max_segments")
             {
-                tsp.max_segments = TreeStructureParameters::from_float(res);
+                tsp.max_segments = res;
             }
             else if (nm == "max_branching")
             {
-                tsp.max_branching = TreeStructureParameters::from_float(res);
+                tsp.max_branching = res;
             }
             else if (nm == "growth_iterations")
             {
-                tsp.growth_iterations = TreeStructureParameters::from_float(res);
+                tsp.growth_iterations = res;
             }
 
             else if (nm == "scale")
@@ -239,11 +249,11 @@ bool Config::load_config()
 
             else if (nm == "r_deformation_levels")
             {
-                tsp.r_deformation_levels = TreeStructureParameters::from_float(res);
+                tsp.r_deformation_levels = res;
             }
             else if (nm == "r_deformation_points")
             {
-                tsp.r_deformation_points = TreeStructureParameters::from_float(res);
+                tsp.r_deformation_points = res;
             }
             else if (nm == "r_deformation_power")
             {
@@ -251,7 +261,7 @@ bool Config::load_config()
             }
             else if (nm == "max_segments")
             {
-                tsp.max_segments = TreeStructureParameters::from_float(res);
+                tsp.max_segments = res;
             }
             else if (nm == "seg_len_mult")
             {
