@@ -28,6 +28,7 @@
 #include "tinyEngine/utility/cubemap.h"
 #include "tinyEngine/gltf_utils/general_gltf_writer.h"
 #include <thread>
+#include "parameter_selection.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -76,7 +77,7 @@ bool visualize_initial_voxels = false;
 bool statistics_run = false;
 bool gltf_export = false;
 bool need_initialization = true;
-
+bool parameter_selection = false;
 struct StatRunLaunchParams
 {
   int trees = 1;
@@ -107,6 +108,11 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-perf")
     {
       print_perf = true;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-parameter_selection")
+    {
+      parameter_selection = true;
       k++;
     }
     else if (std::string(argv[k]) == "-visualize_voxels")
@@ -222,10 +228,28 @@ void clear_current_grove()
 void generate_grove()
 {
     GrovePacker packer;
-
     gen.create_grove(ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
     packer.pack_grove(ggd, grove, *debugVisualizer, t, data.heightmap, visualize_voxels);
+}
+void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
+{
+    GrovePacker packer;
+    GroveGenerationData tree_ggd;
+    tree_ggd.trees_count = 1;
+    TreeTypeData type = ggd.types[0];
+    type.params = par;
+    tree_ggd.types = {type};
+    tree_ggd.synts_count = 0;
+    tree_ggd.synts_precision = 1;
+    tree_ggd.pos = glm::vec3(0,0,0);
+    tree_ggd.size = glm::vec3(150,150,250);
+    tree_ggd.obstacles = {};
+    tree_ggd.clustering_max_individual_distance = 0.25;
+    tree_ggd.name = "single_tree";
+    gen.create_grove(tree_ggd, t, *data.heightmap);
+    logerr("%d branches",t[0].branchHeaps[1]->branches.size());
+    packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
 }
 void generate_grove_renderer()
 {
@@ -281,7 +305,15 @@ int full_initialization()
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-
+    
+    if (parameter_selection)
+    {
+      std::function<void(TreeStructureParameters &, GrovePacked &)> _generate = generate_single_tree;
+      ParameterSelector sel(_generate);
+      TreeStructureParameters &start = ggd.types[0].params;
+      sel.select(start,SelectionType::BruteForce, Metric::CompressionRatio);
+    }
+    
     if (statistics_run)
     {
       ggd.clustering_max_individual_distance = statRunLaunchParams.max_ind_dist;

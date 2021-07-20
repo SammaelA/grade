@@ -1,4 +1,6 @@
 #include "parameter.h"
+#include "tinyEngine/utility.h"
+
 Parameter<int> TreeStructureParameters::from_float(Parameter<float> source)
 {
     std::vector<float> qs = source.state_qs;
@@ -69,7 +71,105 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {ParameterMaskValues::LIST_OF_VALUES, r_deformation_power},
     };  
 }
-void TreeStructureParameters::get_mask_and_data(std::vector<ParameterMaskValues> &mask, std::vector<double> &data)
+void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
 {
+    std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> list;
+    get_parameter_list(list);
+    for (auto &p: list)
+    {
+        ParameterDesc desc;
+        desc.mask = p.first;
+        desc.minValue = p.second.minValue;
+        desc.maxValue = p.second.maxValue;
+        desc.count = 0;
+        if (p.first != ParameterMaskValues::CONSTANT)
+        {
+            desc.count += 1;
+            data.push_back(p.second.baseValue);
+            
+            if (p.first == ParameterMaskValues::LIST_OF_VALUES)
+            {
+                desc.count += p.second.state_qs.size();
+                for (float &q : p.second.state_qs)
+                    data.push_back(q);
+            }
+            else if (p.first == ParameterMaskValues::FULL)
+            {
+                desc.count += p.second.state_qs.size();
+                for (float &q : p.second.state_qs)
+                    data.push_back(q);
 
+                desc.count += 5;
+                
+                data.push_back(p.second.a);
+                data.push_back(p.second.sigma);
+                data.push_back(p.second.from);
+                data.push_back(p.second.to);
+                data.push_back(p.second.normal_part);
+            }
+        }
+
+        mask.push_back(desc);
+    }
+}
+void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
+{
+    std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> list;
+    get_parameter_list(list);
+    if (mask.size() != list.size())
+    {
+        logerr("unable to load tree structure parameters. Mask size %d list size %d",mask.size(), list.size());
+        return;
+    }
+    int cur_pos = 0;
+    for (int i=0;i<mask.size();i++)
+    {
+        if (cur_pos + mask[i].count > data.size())
+        {
+            logerr("unable to load tree structure parameters. Data size %d, should be %d",
+                   data.size(), cur_pos + mask[i].count);
+            return;
+        }
+        if (mask[i].mask == ParameterMaskValues::CONSTANT)
+            continue;
+        else if (mask[i].mask == ParameterMaskValues::ONE_VALUE)
+        {
+            float val = data[cur_pos];
+            list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue);
+        }
+        else if (mask[i].mask == ParameterMaskValues::LIST_OF_VALUES)
+        {
+            float val = data[cur_pos];
+            std::vector<float> state_vals;
+            for (int j=1; j<mask[i].count; j++)
+            {
+                state_vals.push_back(val*data[cur_pos+j]);
+            }
+            list[i].second = Parameter<float>(val,state_vals, mask[i].minValue,mask[i].maxValue);
+        }
+        else if (mask[i].mask == ParameterMaskValues::FULL)
+        {
+            float val = data[cur_pos];
+            std::vector<float> state_qs;
+            for (int j=1; j<mask[i].count-5; j++)
+            {
+                state_qs.push_back(data[cur_pos+j]);
+            }
+            int p = cur_pos + mask[i].count-5;
+
+            float a = data[p];
+            float sigma = data[p+1];
+            float from = data[p+2];
+            float to = data[p+3];
+            float normal_part = data[p+4];
+
+            list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue,state_qs,a,sigma,from,to,
+                                              normal_part,RandomnessLevel::REGENERATE_ON_GET,nullptr,nullptr);
+            //if (state_qs.size() >=3 )
+            //logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
+            //else 
+            //logerr("%f (%d) %f %f %f %f %f",val,state_qs.size(),a,sigma,from,to,normal_part);
+        }
+        cur_pos += mask[i].count;
+    }
 }

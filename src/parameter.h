@@ -16,6 +16,13 @@ enum ParameterMaskValues
     LIST_OF_VALUES,
     FULL
 };
+struct ParameterDesc
+{
+    ParameterMaskValues mask;
+    int count;
+    float minValue;
+    float maxValue;
+};
 struct TreeStructureParameters;
 template <typename T>
 class Parameter
@@ -87,6 +94,23 @@ public:
         if (randomnessLevel == REGENERATE_ON_STATE_CHANGE && this->state != state)
             random_regenerate();
         this->state = state;
+    }
+    Parameter(const Parameter &par)
+    {
+        baseValue = par.baseValue;
+        randomValue = par.randomValue;
+        maxValue = par.maxValue;
+        minValue = par.minValue;
+        state_qs = par.state_qs;
+        state = par.state;
+        normal = par.normal;
+        uniform = par.uniform;
+        randomnessLevel = par.randomnessLevel;
+        a = par.a;
+        sigma = par.sigma;
+        from = par.from;
+        to = par.to;
+        normal_part = par.normal_part;
     }
     Parameter(T base, T minValue = (T)(-1e10), T maxValue = (T)(1e10))
     {
@@ -210,15 +234,15 @@ public:
     }
 private:
     T baseValue;
-    T randomValue;
+    T randomValue = 0;
     T maxValue;
     T minValue;
     std::vector<float> state_qs;
-    float a,sigma,from,to,normal_part;
+    float a = 0,sigma = 0,from = 0,to = 0,normal_part = 0;
     int state = -1;
     Distribution *normal = nullptr;
     Distribution *uniform = nullptr;
-    RandomnessLevel randomnessLevel;
+    RandomnessLevel randomnessLevel = NO_RANDOM;
 };
 struct TreeStructureParameters
 {
@@ -331,7 +355,7 @@ struct TreeStructureParameters
                                 seg_len_mult(4, std::vector<float>{2.25, 1.75, 1, 0.55, 0.4}),
                                 leaf_size_mult(2.25),
                                 base_r(1, std::vector<float>{0.9, 0.75, 0.35, 0.15, 0.12}),
-                                r_split_save_pow(2.7, std::vector<float>{1.5, 1.7, 2.3, 3, 2}, EXPLICIT_REGENERATION, distibutionGenerator.get_normal(0, 0.25)),
+                                r_split_save_pow(2.7, std::vector<float>{1.5, 1.7, 2.3, 3, 2}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0, 0.25)),
 
                                 dir_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
                                 plane_conserv(1, std::vector<float>{2, 2, 3, 2, 2}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.4, 0.4), 0.1, 10),
@@ -371,7 +395,8 @@ struct TreeStructureParameters
     {
     }
     void get_parameter_list(std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> &list);
-    void get_mask_and_data(std::vector<ParameterMaskValues> &mask, std::vector<double> &data);
+    void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
+    void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
 };
 class ParameterSetWrapper
 {
