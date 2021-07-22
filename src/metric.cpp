@@ -1,0 +1,128 @@
+#include "metric.h"
+
+double CompressionMetric::get(GrovePacked &g)
+{
+    int origins = 0;
+    int instances = g.instancedBranches.size();
+    for (int j = 0; j < g.instancedCatalogue.levels(); j++)
+    {
+        origins += g.instancedCatalogue.get_level(j).size();
+    }
+    float comp = (float)instances / origins;
+    logerr("instanced branches %d/%d = %f", instances, origins, comp);
+    return comp;
+}
+
+ImpostorMetric::ImpostorMetric(Texture &_reference_image):
+reference(_reference_image)
+{
+    if (reference.type != GL_TEXTURE_2D || !reference.is_valid())
+    {
+        logerr("only a valid 2d RGBA texture could be a reference for impostor metric");
+        reference_raw = nullptr;
+        w = 0;
+        h = 0;
+    }
+    else
+    {
+        w = reference.get_W();
+        h = reference.get_H();
+        reference_raw = new unsigned char[4*w*h];
+
+        glBindTexture(GL_TEXTURE_2D, reference.texture);
+
+        glGetTexImage(GL_TEXTURE_2D,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    reference_raw);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+ImpostorMetric::~ImpostorMetric()
+{
+    if (reference_raw)
+        delete[] reference_raw;
+}
+
+double ImpostorMetric::get(GrovePacked &g)
+{
+    if (g.impostors.size() < 1 || !g.impostors[1].valid)
+        return 0;
+    Texture &imp = g.impostors[1].atlas.tex(0);
+    int iw, ih;
+    unsigned char *imp_raw = nullptr;
+    if (imp.type != GL_TEXTURE_2D_ARRAY || !imp.is_valid())
+    {
+        logerr("only a valid 2d RGBA texture array with impostors could be used for impostor metric");
+        imp_raw = nullptr;
+        iw = 0;
+        ih = 0;
+        return 0;
+    }
+    else
+    {
+        iw = imp.get_W();
+        ih = imp.get_H();
+
+        imp_raw = new unsigned char[4*iw*ih];
+        glBindTexture(GL_TEXTURE_2D_ARRAY, imp.texture);
+
+        glGetTexImage(GL_TEXTURE_2D_ARRAY,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    imp_raw);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+        
+        float m = 1 - diff(imp_raw,reference_raw,iw,ih);
+        
+        delete[] imp_raw;
+        
+        return m;
+    }
+    return 0;
+}
+int ImpostorMetric::get_type(unsigned char r, unsigned char g)
+{
+    #define D(r,g,v) (abs((r/256.0) - v.x) + abs((g/256.0) - v.y))
+    float d1 = D(r,g,leaves_color);
+    float d2 = D(r,g,wood_color);
+    float d3 = D(r,g,empty_color);
+    if (d1 < d2)
+    {
+        if (d1 < d3)
+            return 1;
+        else 
+            return 3;
+    }
+    else
+    {
+        if (d2 < d3)
+            return 2;
+        else 
+            return 3;
+    }
+}
+float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h, int imp_offset)
+{
+    if (!reference || !imp || w <= 0 || h <= 0 || imp_tex_w < w || imp_tex_h < h)
+        return 1;
+    int sz = w*h;
+    int df = 0;
+            
+    for (int i=0;i<w;i++)
+    {
+        for (int j = 0;j<h;j++)
+        {
+            uint index = 4*(i*h + j);
+            uint imp_index = 4*(i*imp_tex_h + j) + imp_offset;
+            int t1 = get_type(reference_raw[index], reference_raw[index+1]);
+            int t2 = get_type(imp[imp_index], imp[imp_index+1]);
+            df += (t1 != t2);
+        }
+    }
+    logerr("difference calculated %f", (float)df/sz);
+    return (float)df/sz;
+}

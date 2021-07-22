@@ -311,7 +311,10 @@ int full_initialization()
       std::function<void(TreeStructureParameters &, GrovePacked &)> _generate = generate_single_tree;
       ParameterSelector sel(_generate);
       TreeStructureParameters &start = ggd.types[0].params;
-      sel.select(start,SelectionType::BruteForce, Metric::CompressionRatio);
+      Quality imp_qual = ggd.impostor_quality;
+      ggd.impostor_quality = Quality::ULTRALOW;
+      sel.select(start,SelectionType::BruteForce, MetricType::ImpostorSimilarity);
+      ggd.impostor_quality = imp_qual;
     }
     
     if (statistics_run)

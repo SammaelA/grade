@@ -118,6 +118,14 @@ struct Tree
         type = nullptr;
     }
 };
+enum Quality
+{
+    ULTRALOW = 256,
+    LOW = 400,
+    MEDIUM = 600,
+    HIGH = 800,
+    ULTRA = 1024
+};
 struct GroveGenerationData
 {
     std::vector<TreeTypeData> types;
@@ -125,6 +133,10 @@ struct GroveGenerationData
     int synts_count;
     int synts_precision;
     float clustering_max_individual_distance = 0.7;
+    Quality impostor_quality = Quality::MEDIUM;
+    Quality bill_1_quality = Quality::MEDIUM;
+    Quality bill_2_quality = Quality::LOW;
+
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;

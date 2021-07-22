@@ -21,6 +21,9 @@ public:
   Texture &operator=(const Texture &t);
   bool is_valid() {return W > 1 && H > 1 && layers > 0;}
   bool is_array() {return is_valid() && layers>0;}
+  int get_W() { return W; }
+  int get_H() { return H; }
+  int get_layers() { return layers; }
 protected:
   int W,H,layers;
   void clear();

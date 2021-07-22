@@ -6,9 +6,10 @@ enum SelectionType
 {
     BruteForce
 };
-enum Metric
+enum MetricType
 {
-    CompressionRatio
+    CompressionRatio,
+    ImpostorSimilarity
 };
 class ParameterSelector
 {
@@ -18,7 +19,7 @@ public:
     {
 
     }
-    void select(TreeStructureParameters &param, SelectionType sel_type, Metric metric);
+    void select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric);
 private:
     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate;
 };

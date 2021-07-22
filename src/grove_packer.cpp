@@ -245,15 +245,15 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     grove.impostors.push_back(ImpostorsData());
     ib->prepare_all_grove(trees_external[0], ggd, 0, full_tree_clusters, &grove.impostors.back());
     grove.impostors.push_back(ImpostorsData());
-    ImpostorBaker *ib2 = new ImpostorBaker(BillboardCloudRaw::Quality::MEDIUM,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
+    ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
 
     
     grove.clouds.push_back(BillboardCloudData());//main cloud 1
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(BillboardCloudRaw::Quality::HIGH, 1,
+    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, 1,
                                                       branches_clusters,curGgd.types,&grove.clouds.back());
     
     grove.clouds.push_back(BillboardCloudData());//main cloud 2
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(BillboardCloudRaw::Quality::LOW, 2,
+    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, 2,
                                                       branches_clusters,curGgd.types,&grove.clouds.back());
     std::vector<BranchStructure> instanced_structures;
 
