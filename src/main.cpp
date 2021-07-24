@@ -236,6 +236,9 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
 {
     GrovePacker packer;
     GroveGenerationData tree_ggd;
+    DistributionData dd;
+    distibutionGenerator.d = &dd;
+
     tree_ggd.trees_count = 1;
     TreeTypeData type = ggd.types[0];
     type.params = par;
@@ -250,6 +253,9 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     gen.create_grove(tree_ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
     packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
+
+    distibutionGenerator.d = nullptr;
+    dd.clear();
 }
 void generate_grove_renderer()
 {
@@ -313,7 +319,9 @@ int full_initialization()
       TreeStructureParameters &start = ggd.types[0].params;
       Quality imp_qual = ggd.impostor_quality;
       ggd.impostor_quality = Quality::ULTRALOW;
-      sel.select(start,SelectionType::BruteForce, MetricType::ImpostorSimilarity);
+      //ggd.bill_1_quality = Quality::ULTRALOW;
+      //ggd.bill_2_quality = Quality::ULTRALOW;
+      sel.select(start,SelectionType::SimulatedAnnealing, MetricType::ImpostorSimilarity);
       ggd.impostor_quality = imp_qual;
     }
     

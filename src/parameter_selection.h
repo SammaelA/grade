@@ -4,7 +4,8 @@
 #include "grove.h"
 enum SelectionType
 {
-    BruteForce
+    BruteForce,
+    SimulatedAnnealing
 };
 enum MetricType
 {

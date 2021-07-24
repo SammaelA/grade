@@ -69,7 +69,14 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {ParameterMaskValues::ONE_VALUE, r_deformation_levels},
         {ParameterMaskValues::LIST_OF_VALUES, r_deformation_points},
         {ParameterMaskValues::LIST_OF_VALUES, r_deformation_power},
-    };  
+    }; 
+    for (auto &p: list)
+    {
+        if ((double)(p.second.maxValue - p.second.minValue) < 1e-4)
+        {
+            p.first = ParameterMaskValues::CONSTANT;
+        }
+    } 
 }
 void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
 {
@@ -85,7 +92,18 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
         if (p.first != ParameterMaskValues::CONSTANT)
         {
             desc.count += 1;
-            data.push_back(p.second.baseValue);
+            float val = p.second.baseValue;
+            if ((double)(p.second.maxValue - p.second.minValue) < 1e-4)
+            {
+                logerr("max val should be bigger than min val for non-constant parameters. Min val will be ignored %f %f",
+                p.second.maxValue, p.second.minValue);
+                val = 1;
+            }
+            else
+            {
+                val = (val - p.second.minValue) / (p.second.maxValue - p.second.minValue);
+            }
+            data.push_back(val);
             
             if (p.first == ParameterMaskValues::LIST_OF_VALUES)
             {
@@ -99,18 +117,21 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
                 for (float &q : p.second.state_qs)
                     data.push_back(q);
 
-                desc.count += 5;
+                desc.count += 4;
                 
-                data.push_back(p.second.a);
+                //data.push_back(p.second.a);
                 data.push_back(p.second.sigma);
-                data.push_back(p.second.from);
-                data.push_back(p.second.to);
+                float from_n = CLAMP((p.second.from - p.second.minValue) / (p.second.maxValue - p.second.minValue), 0, 1);
+                float delta_n = CLAMP((p.second.to - p.second.from) / (p.second.maxValue - p.second.minValue), 0, 1);
+                data.push_back(from_n);
+                data.push_back(delta_n);
                 data.push_back(p.second.normal_part);
             }
         }
 
         mask.push_back(desc);
     }
+    logerr("data reated size %d",data.size());
 }
 void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
 {
@@ -134,12 +155,12 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
             continue;
         else if (mask[i].mask == ParameterMaskValues::ONE_VALUE)
         {
-            float val = data[cur_pos];
+            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
             list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue);
         }
         else if (mask[i].mask == ParameterMaskValues::LIST_OF_VALUES)
         {
-            float val = data[cur_pos];
+            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
             std::vector<float> state_vals;
             for (int j=1; j<mask[i].count; j++)
             {
@@ -149,7 +170,7 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
         }
         else if (mask[i].mask == ParameterMaskValues::FULL)
         {
-            float val = data[cur_pos];
+            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
             std::vector<float> state_qs;
             for (int j=1; j<mask[i].count-5; j++)
             {
@@ -157,18 +178,21 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
             }
             int p = cur_pos + mask[i].count-5;
 
-            float a = data[p];
-            float sigma = data[p+1];
-            float from = data[p+2];
-            float to = data[p+3];
-            float normal_part = data[p+4];
+            float a = 0;//data[p];
+            float sigma = data[p];
+            float from_n = data[p+1];
+            float delta_n = data[p+2];
+            float normal_part = data[p+3];  
+
+            float from = from_n*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
+            float to = from + delta_n*(mask[i].maxValue - mask[i].minValue);
 
             list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue,state_qs,a,sigma,from,to,
                                               normal_part,RandomnessLevel::REGENERATE_ON_GET,nullptr,nullptr);
-            //if (state_qs.size() >=3 )
-            //logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
+           // if (state_qs.size() >=3 )
+            //    logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
             //else 
-            //logerr("%f (%d) %f %f %f %f %f",val,state_qs.size(),a,sigma,from,to,normal_part);
+            //    logerr("%f (%d) %f %f %f %f %f",val,state_qs.size(),a,sigma,from,to,normal_part);
         }
         cur_pos += mask[i].count;
     }

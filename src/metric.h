@@ -31,5 +31,6 @@ private:
     glm::vec3 empty_color = glm::vec3(0,0,0);
     glm::vec3 wood_color = glm::vec3(75.0/256, 37.5/256, 0);
     int get_type(unsigned char r, unsigned char g);
-    float diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h, int imp_offset = 0);
+    float diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h,
+               int imp_offset_w = 0, int imp_offset_h = 0);
 };

@@ -76,11 +76,26 @@ double ImpostorMetric::get(GrovePacked &g)
                     imp_raw);
         glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         
-        float m = 1 - diff(imp_raw,reference_raw,iw,ih);
-        
+        float av_m = 0;
+
+        for (int i=0;i<3;i++)
+        {
+            for (int j=0;j<3;j++)
+            {
+                if (i == 2 && j == 2)
+                {
+                    //top view
+                    continue;
+                }
+                float m = 1 - diff(imp_raw,reference_raw,iw,ih,i*w,j*h);
+                av_m += m;
+            }
+        }
+        av_m /= 8;
+
         delete[] imp_raw;
         
-        return m;
+        return av_m;
     }
     return 0;
 }
@@ -105,9 +120,10 @@ int ImpostorMetric::get_type(unsigned char r, unsigned char g)
             return 3;
     }
 }
-float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h, int imp_offset)
+float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h, int imp_offset_w,
+                           int imp_offset_h)
 {
-    if (!reference || !imp || w <= 0 || h <= 0 || imp_tex_w < w || imp_tex_h < h)
+    if (!reference || !imp || w <= 0 || h <= 0 || imp_tex_w - imp_offset_w < w || imp_tex_h - imp_offset_h < h)
         return 1;
     int sz = w*h;
     int df = 0;
@@ -117,7 +133,7 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
         for (int j = 0;j<h;j++)
         {
             uint index = 4*(i*h + j);
-            uint imp_index = 4*(i*imp_tex_h + j) + imp_offset;
+            uint imp_index = 4*( i*(imp_tex_h + imp_offset_h) + (j + imp_offset_w) );
             int t1 = get_type(reference_raw[index], reference_raw[index+1]);
             int t2 = get_type(imp[imp_index], imp[imp_index+1]);
             df += (t1 != t2);
