@@ -253,8 +253,8 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     //gen.reset();
     gen.create_grove(tree_ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
-    //packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
-
+    packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
+    print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();
 }

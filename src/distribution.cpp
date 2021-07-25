@@ -23,7 +23,7 @@ double Normal::get()
 }
 double *Normal::get_series(unsigned size)
 {
-    double *p = new double[size];
+    double *p = safe_new<double>(size, "normal_series");
     for (unsigned i = 0; i < size; i++)
     {
         p[i] = d(gen);
@@ -46,7 +46,7 @@ double Uniform::get()
 }
 double *Uniform::get_series(unsigned size)
 {
-    double *p = new double[size];
+    double *p = safe_new<double>(size, "uniform_series");
     for (unsigned i = 0; i < size; i++)
     {
         p[i] = get();
@@ -69,7 +69,7 @@ long UniformInt::geti()
 }
 long *UniformInt::get_seriesi(unsigned size)
 {
-    long *p = new long[size];
+    long *p = safe_new<long>(size, "uniform_int_series");
     for (unsigned i = 0; i < size; i++)
     {
         p[i] = get();
@@ -82,7 +82,7 @@ double UniformInt::get()
 }
 double *UniformInt::get_series(unsigned size)
 {
-    double *p = new double[size];
+    double *p = safe_new<double>(size, "uniform_int_series_double");
     for (unsigned i = 0; i < size; i++)
     {
         p[i] = get();

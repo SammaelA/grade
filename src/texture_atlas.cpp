@@ -3,6 +3,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "tinyEngine/utility/model.h"
 #include "texture_manager.h"
+//long TextureAtlas::count = 0;
+int atlases_count = 0;
 
 void print_FB_status(GLuint status)
 {
@@ -60,6 +62,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l) :
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
     logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
+    //atlases_count++;
     width = w;
     height = h;
     layers = l;
@@ -74,6 +77,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l) :
 }
 TextureAtlas::~TextureAtlas()
 {
+    //atlases_count--;
     glDeleteFramebuffers(1, &fbo);
 }
 void TextureAtlas::set_grid(int w, int h)

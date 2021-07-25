@@ -13,7 +13,7 @@
 using namespace glm;
 #define TEX_ATLAS_LAYERS 4
 BillboardCloudRaw::BillboardCloudRaw() : rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"})                            
-{
+{   
 }
 BillboardCloudRaw::BillboardCloudRaw(int tex_w, int tex_h, std::vector<TreeTypeData> &_ttd): 
                                                        atlas(new TextureAtlas(tex_w, tex_h,TEX_ATLAS_LAYERS)),
@@ -39,6 +39,8 @@ BillboardCloudRaw::~BillboardCloudRaw()
         delete instances[i]->m;
         delete instances[i];
     }
+    if (atlas)
+        delete atlas;
 }
 BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quality, int cnt)
 {

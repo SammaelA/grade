@@ -438,7 +438,7 @@ namespace gltf
         const char *norm_data = reinterpret_cast<const char *>(m->normals.data());
         ok = ok && add_to_binary_file(norm_data, m->normals.size()*sizeof(GLfloat), full_data.norm_binary_files[bin_file_id]);
 
-        float *tc_vec2 = new float[m->colors.size()/2];
+        float *tc_vec2 = safe_new<float>(m->colors.size()/2, "tc_vec2");
         for (int i=0;i<m->colors.size();i+=4)
         {
             tc_vec2[i/2] = m->colors[i];
@@ -446,7 +446,7 @@ namespace gltf
         }
         const char *tc_data = reinterpret_cast<const char *>(tc_vec2);
         ok = ok && add_to_binary_file(tc_data, (m->colors.size()/2)*sizeof(GLfloat), full_data.tc_binary_files[bin_file_id]);
-        delete[] tc_vec2;
+        safe_delete(tc_vec2, "tc_vec2");
 
         return ok;
     }

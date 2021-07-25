@@ -3,7 +3,7 @@
 #include "model.h"
 #include <GL/glew.h>
 
-class Instance{
+class Instance : Countable{
 public:
 
   Instance(Primitive* _m);

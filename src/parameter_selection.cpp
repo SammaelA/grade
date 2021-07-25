@@ -65,7 +65,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
     {
         k++;
         logerr("T = %f", T);
-        for (int i = 0; i<2; i++) //This loop is for the process of iteration (or searching for new states)
+        for (int i = 0; i<10; i++) //This loop is for the process of iteration (or searching for new states)
         {
             int pos_changed = rand() % data.size();
             float val_changed = (rand() / (double)RAND_MAX);

@@ -189,12 +189,11 @@ public:
         void create(int _n)
         {
             n = _n;
-            data = new std::pair<Answer, DistData>[n * n];
+            data = safe_new<std::pair<Answer, DistData>>(n * n, "DistDataTable_data");
         }
         void clear()
         {
-            if (data)
-                delete[] data;
+            safe_delete<std::pair<Answer, DistData>>(data,"DistDataTable_data");
         }
         inline std::pair<Answer, DistData> get(int x, int y) { return data[x * n + y]; }
         inline void set(int x, int y, Answer &a, DistData &d) 

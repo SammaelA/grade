@@ -99,7 +99,7 @@
     {
         float pres = 1;
         glm::vec3 center = glm::vec3(0,0,0);
-        float *data = new float[w*h];
+        float *data = safe_new<float>(w*h, "heightmap_data");
         for (int i=0;i<w;i++)
         {
             for (int j=-0;j<h;j++)
@@ -118,7 +118,7 @@
         float borderColor[] = {base_value, base_value, base_value, base_value};
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-        delete[] data;
+        safe_delete<float>(data, "heightmap_data");
     }
     HeightmapTex::~HeightmapTex()
     {

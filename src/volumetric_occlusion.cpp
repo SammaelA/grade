@@ -30,7 +30,7 @@ voxel_size(vox_size)
     block_z = ceil((2*vox_z + 1.0)/block_size);
 
     count = block_x*block_y*block_z*block_size*block_size*block_size;
-    voxels = new float[count];
+    voxels = safe_new<float>(count,"voxels");
     std::fill(voxels,voxels+count,0);
     sum_memory += count*sizeof(float);
     sum_allocs++;
@@ -122,7 +122,7 @@ void LightVoxelsCube::clear()
         int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
         sum_memory -= count*sizeof(float);
         sum_allocs--;
-        delete[] (voxels);
+        safe_delete<float>(voxels, "voxels");
         voxels = nullptr;
     }
 }
@@ -576,7 +576,7 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     const float BIAS = 0.01;
     float step = 2*PI/rays_sqrt;
     float r_step = 0.75*voxel_size;
-    float *occlusions = new float[rays_sqrt*rays_sqrt]; 
+    float *occlusions = safe_new<float>(rays_sqrt*rays_sqrt, "dir_to_bright_place_occlusions"); 
     for (int i=0;i<rays_sqrt*rays_sqrt;i++)
     {
         occlusions[i] = 0;
@@ -616,6 +616,6 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     float z = sinf(psi);
 
     *occlusion = mo;
-    delete[] occlusions;
+    safe_delete<float>(occlusions, "dir_to_bright_place_occlusions");
     return glm::vec3(x,y,z);
 }

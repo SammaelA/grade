@@ -421,7 +421,7 @@ float TreeGenerator::calc_light(Branch *b)
 }
 void TreeGenerator::recalculate_thickness(Branch *b)
 {
-    float *weights = new float[b->joints.size() + 1];
+    float *weights = safe_new<float>(b->joints.size() + 1, "recalculate_thickness_weights");
     int i = b->joints.size() - 1;
     float delta[5] = {0.2,0.25,0.3,0.5,0.5};
     float muls[5] = {2,4,6,8,8};
@@ -470,7 +470,8 @@ void TreeGenerator::recalculate_thickness(Branch *b)
         cont->base_r = s_prev->rel_r_end;
          curParams.set_state(b->level);
     }
-    delete[](weights);
+    
+    safe_delete<float>(weights, "recalculate_thickness_weights");
 }
 glm::vec3 TreeGenerator::get_optimal_branch_growth_direction(float &quality, Branch *base, Joint &j, Segment &s, bool from_end)
 {
@@ -559,8 +560,23 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
         sum_feed[i] = 0;
         count_feed[i] = 0;
     }
+
+    /*if (t.leaves)
+        t.leaves->leaves.clear();
+    for (int i=0;i<t.models.size();i++)
+        delete t.models[i];
+    for (int i=0;i<t.billboardClouds.size();i++)
+        delete t.billboardClouds[i];
+    for (int i=0;i<t.branchHeaps.size();i++)
+    {
+        delete t.branchHeaps[i];
+    }
+    t.leaves = nullptr;
+    t.models.clear();
+    t.billboardClouds.clear();
+    t.branchHeaps.clear();*/
+
     t.voxels = voxels;
-    glm::vec3 sun_dir(-1, -1, -1);
     t.params = params;
     LeafHeap *lh = new LeafHeap();
     t.leaves = lh;
@@ -772,7 +788,8 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
 
     delete voxels;
     voxels = nullptr;
-    
+    delete seeder;
+    seeder = nullptr;
     debugl(10,"created %d joints %d branches totally",j_count, b_count);
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
@@ -876,14 +893,17 @@ leaf(textureManager.empty())
 Tree::~Tree()
 {
     if (leaves)
+    {
         leaves->leaves.clear();
+        delete leaves;
+    }
     for (int i=0;i<models.size();i++)
         delete models[i];
     for (int i=0;i<billboardClouds.size();i++)
         delete billboardClouds[i];
     for (int i=0;i<branchHeaps.size();i++)
     {
-        //branchHeaps[i].
+        delete branchHeaps[i];
     }
 }
     void TreeGenerator::convert(mygen::Tree *src, ::Tree *dst, int count)

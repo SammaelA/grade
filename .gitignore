@@ -12,6 +12,9 @@ CMakeCache.txt
 *.dat
 *.bin
 *.gltf
+*.md
+*.csv
+*.json
 /main
 /profile
 /Makefile

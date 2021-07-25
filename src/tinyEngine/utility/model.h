@@ -6,7 +6,9 @@
 #include <functional>
 #include <iostream>
 #include <chrono>
-struct Primitive{
+#include "../utility.h"
+
+struct Primitive : public Countable{
 
   Primitive(){
     glGenVertexArrays(1, &vao);

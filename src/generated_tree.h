@@ -75,7 +75,7 @@ struct Leaf
     std::vector<glm::vec3> edges;
     bool dead = false;
 };
-struct LeafHeap
+struct LeafHeap : Countable
 {
     std::list<Leaf> leaves;
     Leaf *new_leaf()
@@ -90,7 +90,7 @@ struct LeafHeap
     LeafHeap(){};
 
 };
-struct BranchHeap
+struct BranchHeap : Countable
 {
     std::list<Branch> branches;
     Branch *new_branch()

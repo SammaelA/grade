@@ -44,8 +44,8 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     cur_voxels_pointer = 1;
     glm::ivec3 vsz = _branches.front().leavesDensity.front()->get_vox_sizes();
     int all_voxels_count = branches_size*_branches.front().leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
-    all_voxels = new float[all_voxels_count + 1];
-    dist_data = new float[2*branches_size*branches_size];
+    all_voxels = safe_new<float>(all_voxels_count + 1, "all_voxels");
+    dist_data = safe_new<float>(2*branches_size*branches_size, "dist_data");
     for (auto &bwd : _branches)
     {
         fill_branch_data(bwd);
@@ -196,10 +196,8 @@ uint GPUClusterizationHelper::fill_branch_data(Branch *branch)
 
 GPUClusterizationHelper::~GPUClusterizationHelper()
 {
-    if (all_voxels)
-        delete[] all_voxels;
-    if (dist_data)
-        delete[] dist_data;
+    safe_delete<float>(all_voxels, "all_voxels");
+    safe_delete<float>(dist_data, "dist_data");
 }
     void GPUClusterizationHelper::calculate_distances(int hardness)
     {   
@@ -262,7 +260,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         debugl(1,"CPU distance calculation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
         
         positions.clear();
-        delete[] all_voxels;
+        safe_delete<float>(all_voxels, "all_voxels");
         all_voxels = nullptr;
         joint_rs.clear();
         sticks.clear();

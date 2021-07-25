@@ -4,7 +4,7 @@
 #include "body.h"
 #include "terrain.h"
 #include "distribution.h"
-struct LightVoxelsCube
+struct LightVoxelsCube : Countable
 {
 public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision);

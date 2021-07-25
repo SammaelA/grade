@@ -1,4 +1,5 @@
 #include "metric.h"
+#include "tinyEngine/utility.h"
 
 double CompressionMetric::get(GrovePacked &g)
 {
@@ -27,7 +28,7 @@ reference(_reference_image)
     {
         w = reference.get_W();
         h = reference.get_H();
-        reference_raw = new unsigned char[4*w*h];
+        reference_raw = safe_new<unsigned char>(4*w*h, "metric_reference_raw");
 
         glBindTexture(GL_TEXTURE_2D, reference.texture);
 
@@ -42,8 +43,7 @@ reference(_reference_image)
 
 ImpostorMetric::~ImpostorMetric()
 {
-    if (reference_raw)
-        delete[] reference_raw;
+    safe_delete<unsigned char>(reference_raw, "metric_reference_raw");
 }
 
 double ImpostorMetric::get(GrovePacked &g)
@@ -66,7 +66,7 @@ double ImpostorMetric::get(GrovePacked &g)
         iw = imp.get_W();
         ih = imp.get_H();
 
-        imp_raw = new unsigned char[4*iw*ih];
+        imp_raw = safe_new<unsigned char>(4*iw*ih, "metric_impostor_raw");
         glBindTexture(GL_TEXTURE_2D_ARRAY, imp.texture);
 
         glGetTexImage(GL_TEXTURE_2D_ARRAY,
@@ -93,7 +93,7 @@ double ImpostorMetric::get(GrovePacked &g)
         }
         av_m /= 8;
 
-        delete[] imp_raw;
+        safe_delete<unsigned char>(imp_raw, "metric_impostor_raw");
         
         return av_m;
     }

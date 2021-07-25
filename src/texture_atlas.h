@@ -6,7 +6,7 @@
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/save_utils/saver.h"
 class BillboardCloudRenderer;
-class TextureAtlas
+class TextureAtlas : public Countable
 {
 public:
     friend class BillboardCloudRaw;

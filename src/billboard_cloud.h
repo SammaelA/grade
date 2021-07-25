@@ -9,7 +9,7 @@
 #include <list>
 #include <vector>
 class Visualizer;
-class BillboardCloudRaw
+class BillboardCloudRaw : Countable
 {
 
 public:
@@ -94,7 +94,7 @@ protected:
     std::vector<Instance *> instances;
     std::vector<Billboard> billboards;
 };
-struct BillboardCloudRenderer
+struct BillboardCloudRenderer : Countable
 {   
     friend class GroveRenderer;
     enum RenderMode

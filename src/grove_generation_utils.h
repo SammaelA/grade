@@ -49,7 +49,7 @@ public:
 private:
     double calc_sum();
 };
-class Seeder
+class Seeder : Countable
 {
 public:
     Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h);
