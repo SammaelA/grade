@@ -21,10 +21,13 @@ public:
     TextureManager(std::string base_path);
     bool is_correct(Texture &t);
     void clear_unnamed();
-
+    void set_textures_tag(int tag);
+    void clear_unnamed_with_tag(int tag);
 private:
     std::map<std::string, Texture> textures;
     std::map<GLuint, Texture> unnamed_textures;
     std::map<GLuint, Texture> unnamed_array_textures;
+
+    int current_textures_tag = 0; 
 };
 extern TextureManager textureManager;

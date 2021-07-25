@@ -2,7 +2,7 @@
 #include "tinyEngine/helpers/image.h"
 #include <exception>
 
-int tex_mem = 0;
+long tex_mem = 0;
 int tex_count = 0;
 Texture TextureManager::get_unnamed(GLuint n)
 {
@@ -161,8 +161,9 @@ Texture TextureManager::create_unnamed(int w, int h, bool shadow)
 {
     tex_mem += 4*w*h;
     tex_count++;
-    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
+    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(w,h,shadow);
+    t.tag = current_textures_tag;
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
@@ -170,8 +171,9 @@ Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int laye
 {
     tex_mem += 4*w*h*layers;
     tex_count++;
-    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
+    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(w,h,shadow,layers);
+    t.tag = current_textures_tag;
     unnamed_array_textures.emplace(t.texture,t);
     return t;
 }
@@ -179,8 +181,9 @@ Texture TextureManager::create_unnamed(SDL_Surface *s)
 {
     tex_mem += 4*s->w*s->h;
     tex_count++;
-    debugl(10,"allocated %d bytes total for %d textures",tex_mem, tex_count);
+    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(s);
+    t.tag = current_textures_tag;
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
@@ -192,4 +195,47 @@ void TextureManager::clear_unnamed()
 {
     for (auto const &p : unnamed_textures)
         glDeleteTextures(1, &(p.second.texture));
+    
+    for (auto const &p : unnamed_array_textures)
+        glDeleteTextures(1, &(p.second.texture));
+}
+void TextureManager::set_textures_tag(int tag)
+{
+    current_textures_tag = tag;
+}
+void TextureManager::clear_unnamed_with_tag(int tag)
+{
+    std::map<GLuint, Texture> unnamed_new;
+    std::map<GLuint, Texture> unnamed_array_new;
+
+    for (auto const &p : unnamed_textures)
+    {
+        if (p.second.tag != tag)
+            unnamed_new.emplace(p);
+        else
+        {
+            tex_count--;
+            tex_mem -= 4*p.second.W*p.second.H;
+            debugl(10,"unnamed texture of size %dx%d deleted\n",p.second.W, p.second.H);
+            glDeleteTextures(1, &(p.second.texture));
+        }
+    }
+    
+    for (auto const &p : unnamed_array_textures)
+    {
+        if (p.second.tag != tag)
+            unnamed_array_new.emplace(p);
+        else
+        {
+            tex_count--;
+            tex_mem -= 4*p.second.W*p.second.H*p.second.layers;
+            debugl(10,"unnamed texture array of size %dx%dx%d deleted\n",p.second.W, p.second.H,p.second.layers);
+            glDeleteTextures(1, &(p.second.texture));
+        }
+    }
+
+    unnamed_textures = unnamed_new;
+    unnamed_array_textures = unnamed_array_new;
+    current_textures_tag = 0;
+    debugl(10, "texture clearing completed. %d Mb allocated memory left\n", (int)(1e-6*tex_mem));
 }

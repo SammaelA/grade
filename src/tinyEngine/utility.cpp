@@ -1,5 +1,5 @@
 #include "utility.h"
-#define DEBUG_LEVEL 13
+#define DEBUG_LEVEL 10
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;

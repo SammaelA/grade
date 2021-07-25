@@ -770,6 +770,9 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
 
     convert(trees,trees_external,count);
 
+    delete voxels;
+    voxels = nullptr;
+    
     debugl(10,"created %d joints %d branches totally",j_count, b_count);
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
@@ -878,6 +881,10 @@ Tree::~Tree()
         delete models[i];
     for (int i=0;i<billboardClouds.size();i++)
         delete billboardClouds[i];
+    for (int i=0;i<branchHeaps.size();i++)
+    {
+        //branchHeaps[i].
+    }
 }
     void TreeGenerator::convert(mygen::Tree *src, ::Tree *dst, int count)
     {

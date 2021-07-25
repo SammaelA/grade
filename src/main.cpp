@@ -250,9 +250,10 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     tree_ggd.obstacles = {};
     tree_ggd.clustering_max_individual_distance = 0.25;
     tree_ggd.name = "single_tree";
+    //gen.reset();
     gen.create_grove(tree_ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
-    packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
+    //packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
 
     distibutionGenerator.d = nullptr;
     dd.clear();

@@ -26,6 +26,7 @@ public:
   int get_layers() { return layers; }
 protected:
   int W,H,layers;
+  int tag = 0;//tag show to which part of program this texture belongs. Used by texture manager
   void clear();
   Texture();
   Texture(bool empty) {texture = ~0;}

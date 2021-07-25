@@ -48,12 +48,13 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
     GrovePacked tree;
 
     std::function<float(std::vector<double> &)> f = [&](std::vector<double> &d)
-    {
+    {   
+        textureManager.set_textures_tag(1);
         GrovePacked tree = GrovePacked();
         param.load_from_mask_and_data(mask, data);
         generate(param, tree);
         float metr = metric->get(tree);
-        //textureManager.clear_unnamed();
+        textureManager.clear_unnamed_with_tag(1);
         return metr;
     };
     //std::cout << "Initial State = " << x << "\t, and F(x)= " << f(x) << std::endl;
@@ -102,7 +103,8 @@ void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel
         ImpostorMetric im = ImpostorMetric(ref);
         metric = &im;
     }
-
+    DummyMetric dm;
+    metric = &dm;
     if (sel_type == BruteForce)
     {
         float m = brute_force_selection(param,metric,generate);

@@ -142,3 +142,8 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
     logerr("difference calculated %f", (float)df/sz);
     return (float)df/sz;
 }
+
+double DummyMetric::get(GrovePacked &g)
+{
+    return 1;
+}

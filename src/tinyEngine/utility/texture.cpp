@@ -102,6 +102,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
   {
           texture = t.texture;
           type = t.type;
+          tag = t.tag;
           this->W = t.W;
           this->H = t.H;
           this->layers = t.layers;
@@ -111,6 +112,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
   {
           texture = t.texture;
           type = t.type;
+          tag = t.tag;
           this->W = t.W;
           this->H = t.H;
           this->layers = t.layers;

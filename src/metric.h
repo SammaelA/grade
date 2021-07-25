@@ -34,3 +34,9 @@ private:
     float diff(unsigned char *imp, unsigned char *reference, int imp_tex_w, int imp_tex_h,
                int imp_offset_w = 0, int imp_offset_h = 0);
 };
+
+class DummyMetric : public Metric
+{
+public:
+    virtual double get(GrovePacked &g) override;
+};

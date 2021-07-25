@@ -9,6 +9,7 @@ enum SelectionType
 };
 enum MetricType
 {
+    Dummy,
     CompressionRatio,
     ImpostorSimilarity
 };
