@@ -4,20 +4,19 @@
 #include "tinyEngine/utility.h"
 int base_seed = 1234;
 DistributionGenerator distibutionGenerator;
+#define RND (distibutionGenerator.d_ur(distibutionGenerator.gen))
 Uniform *base = distibutionGenerator.get_uniform(0, 1, base_seed);
 UniformInt *basei = distibutionGenerator.get_uniform_int(0, INT_MAX, base_seed);
 Normal::Normal(double a, double sigma, int seed)
 {
     this->a = a;
     this->sigma = sigma;
-    d = std::uniform_real_distribution<double>(0,1);
-    gen.seed(base_seed);
 }
 double Normal::get()
 {
     //Box–Muller transform
-    double U1 = d(gen);
-    double U2 = d(gen);
+    double U1 = RND;
+    double U2 = RND;
     
     return sqrt(-2*log(U1))*cos(2*PI*U2)*sigma + a;
 }
@@ -26,7 +25,7 @@ double *Normal::get_series(unsigned size)
     double *p = safe_new<double>(size, "normal_series");
     for (unsigned i = 0; i < size; i++)
     {
-        p[i] = d(gen);
+        p[i] = RND;
     }
     return p;
 }
@@ -37,12 +36,10 @@ Uniform::Uniform(double from, double to, int seed)
     delta = to - from;
     if (delta < 0)
         logerr("wrong interval for uniform distribution [%lg %lg)", from, to);
-    d = std::uniform_real_distribution<double>(from, to);
-    gen.seed(base_seed);
 }
 double Uniform::get()
 {
-    return d(gen);
+    return (RND + from) /(to - from);
 }
 double *Uniform::get_series(unsigned size)
 {
@@ -60,12 +57,10 @@ UniformInt::UniformInt(double from, double to, int seed)
     delta = to - from;
     if (delta < 0)
         logerr("wrong interval for uniform distribution [%lg %lg)", from, to);
-    d = std::uniform_int_distribution<long>(from, to);
-    gen.seed(base_seed);
 }
 long UniformInt::geti()
 {
-    return d(gen);
+    return (long)(RND + from) /(to - from);
 }
 long *UniformInt::get_seriesi(unsigned size)
 {
@@ -78,7 +73,7 @@ long *UniformInt::get_seriesi(unsigned size)
 }
 double UniformInt::get()
 {
-    return d(gen);
+    return (long)(RND + from) /(to - from);
 }
 double *UniformInt::get_series(unsigned size)
 {

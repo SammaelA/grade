@@ -148,6 +148,7 @@ TextureManager::TextureManager(std::string base_path)
             t.origin = paths[i];
             textures.emplace(names[i],t);
             mipmap(t,ptr->w,ptr->h,9);
+            delete ptr;
         }
         catch(const std::exception& e)
         {

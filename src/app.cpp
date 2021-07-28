@@ -142,6 +142,11 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
     ctx.regeneration_needed = true;
     event.active[SDLK_r] = false;
   }
+  if (event.active[SDLK_ESCAPE])
+  {
+    exit(0);
+    event.active[SDLK_ESCAPE] = false;
+  }
   if (!event.press.empty())
   {
 

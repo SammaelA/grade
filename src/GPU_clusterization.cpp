@@ -198,6 +198,17 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
 {
     safe_delete<float>(all_voxels, "all_voxels");
     safe_delete<float>(dist_data, "dist_data");
+
+    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+
+    DELBUF(pos_buf);
+    DELBUF(voxels_buf);
+    DELBUF(rs_buf);
+    DELBUF(sticks_buf);
+    DELBUF(branches_buf);
+    DELBUF(dist_data_buf);
+    DELBUF(params_buf);
+    DELBUF(joints_buf);
 }
     void GPUClusterizationHelper::calculate_distances(int hardness)
     {   

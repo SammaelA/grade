@@ -463,12 +463,6 @@ void BillboardCloudRaw::prepare(Tree &t, int branch_level, std::vector<ClusterDa
     for (Billboard &b : billboards)
     {
         b.instancing = true;
-        Model *m = new Model();
-        b.to_model(m, *atlas);
-        m->update();
-        Instance *in = new Instance(m);
-        in->addBuffer(all_transforms[b.branch_id].transforms);
-        instances.push_back(in);
         if (data)
             data->billboards[proj.at(b.branch_id)].billboards.push_back(b);
     }

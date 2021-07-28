@@ -19,7 +19,7 @@ protected:
     void add(int x, int y, float val);
     void add_safe(int x, int y, float val);
     int w, h;
-    float min_val, max_val;
+    float min_val = 1e10, max_val = -1e10;
     glm::vec3 pos;
     glm::vec2 size;
     float cell_size = 1;

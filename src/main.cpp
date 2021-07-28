@@ -40,8 +40,7 @@ ShadowMap shadowMap;
 DefferedTarget defferedTarget;
 
 Tree t[MAX_TREES];
-mygen::Tree ttt;
-mygen::TreeGenerator gen(ttt);
+mygen::TreeGenerator gen;
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 GroveGenerationData ggd;
@@ -250,10 +249,11 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     tree_ggd.obstacles = {};
     tree_ggd.clustering_max_individual_distance = 0.25;
     tree_ggd.name = "single_tree";
-    //gen.reset();
-    gen.create_grove(tree_ggd, t, *data.heightmap);
-    logerr("%d branches",t[0].branchHeaps[1]->branches.size());
-    packer.pack_grove(ggd, res, *debugVisualizer, t, data.heightmap, visualize_voxels);
+
+    Tree single_tree;
+    gen.create_grove(tree_ggd, &single_tree, *data.heightmap);
+    packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
+
     print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();

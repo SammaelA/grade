@@ -57,7 +57,7 @@ struct Leaf
     std::vector<glm::vec3> edges;
     ushort type;
 };
-struct LeafHeap
+struct LeafHeap : Countable
 {
     std::list<Leaf> leaves;
     Leaf *new_leaf()
@@ -73,7 +73,7 @@ struct LeafHeap
     LeafHeap(){};
 
 };
-struct BranchHeap
+struct BranchHeap : Countable
 {
     std::list<Branch> branches;
     Branch *new_branch()
@@ -105,9 +105,14 @@ struct Tree
     uint id = 0;
     TreeTypeData *type = nullptr;
     Tree() {};
+    ~Tree() {clear();};
     void clear()
     {
-        delete leaves;
+        if (leaves)
+        {
+            delete leaves;
+            leaves = nullptr;
+        }
         for (int i=0;i<branchHeaps.size();i++)
         {
             delete branchHeaps[i];

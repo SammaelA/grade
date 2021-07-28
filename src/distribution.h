@@ -3,6 +3,7 @@
 
 class DistributionGenerator;
 class DiscreteGeneral;
+extern DistributionGenerator distibutionGenerator;
 class Distribution
 {
 public:
@@ -15,9 +16,6 @@ class Normal : public Distribution
     friend class DistributionGenerator;
     double a;
     double sigma;
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
-    std::uniform_real_distribution<double> d;
 public:
     Normal(double a = 0, double sigma = 1, int seed = 12345);
     double get_a() {return a;}
@@ -33,9 +31,6 @@ class Uniform : public Distribution
     double from;
     double to;
     double delta;
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
-    std::uniform_real_distribution<double> d;
 public:
     Uniform(double from = 0, double to = 1, int seed = 12345);
     double get_from() {return from;}
@@ -50,9 +45,6 @@ class UniformInt : public Distribution
     double from;
     double to;
     double delta;
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
-    std::uniform_int_distribution<long> d;
 
 public:
     UniformInt(double from = 0, double to = 1, int seed = 12345);
@@ -113,6 +105,10 @@ class DistributionGenerator
 {
     DistributionData basicData;
 public:
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::uniform_real_distribution<double> d_ur = std::uniform_real_distribution<double>(0,1);
+    //std::uniform_int_distribution<long> d_ul;
     DistributionData *d = nullptr;
 
     Normal *get_normal(double a = 0, double sigma = 1, int seed = 12345)
@@ -148,4 +144,3 @@ public:
         basicData.clear();
     }
 };
-extern DistributionGenerator distibutionGenerator;

@@ -85,7 +85,7 @@ struct LeafHeap : Countable
     }
     ~LeafHeap()
     {
-        leaves.clear();
+        //leaves.clear();
     }
     LeafHeap(){};
 
@@ -122,12 +122,12 @@ struct Tree
 class TreeGenerator
 {
 public:
-    TreeGenerator(Tree &t) : curTree(t), curParams(TreeStructureParameters(),1){};
+    TreeGenerator() : curTree(nullptr), curParams(TreeStructureParameters(),1){};
     void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h);
 
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     void reset();
-    Tree &curTree;
+    Tree *curTree = nullptr;
     Branch *root;
     Branch *test;
     ParameterSetWrapper curParams;

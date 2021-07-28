@@ -33,15 +33,20 @@ public:
   }
 
   ~Shader(){
-    glDeleteProgram(program);
-    glDeleteShader(fragmentShader);
-    glDeleteShader(geometryShader);
-    glDeleteShader(vertexShader);
-    glDeleteShader(computeShader);
+    if (program)
+      glDeleteProgram(program);
+    if (fragmentShader)
+      glDeleteShader(fragmentShader);
+    if (geometryShader)
+      glDeleteShader(geometryShader);
+    if (vertexShader)
+      glDeleteShader(vertexShader);
+    if (computeShader)
+      glDeleteShader(computeShader);
   }
 
-  GLuint program;   //Shader Program ID
-  GLuint vertexShader, geometryShader, fragmentShader, computeShader;
+  GLuint program = 0;   //Shader Program ID
+  GLuint vertexShader = 0, geometryShader = 0, fragmentShader = 0, computeShader = 0;
   int boundtextures;
 
   std::unordered_map<std::string, GLuint> ssbo; //SSBO Storage

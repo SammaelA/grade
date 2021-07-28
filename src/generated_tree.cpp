@@ -55,7 +55,7 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
     if (b->level == curParams().max_depth() - 1)
     {
         j.type = j.LEAF;
-        Leaf *l = curTree.leaves->new_leaf();
+        Leaf *l = curTree->leaves->new_leaf();
         l->pos = j.pos;
         glm::vec3 rd1 = rand_dir();
         glm::vec3 rd2 = rand_dir();
@@ -95,7 +95,7 @@ void TreeGenerator::new_joint(Branch *b, Joint &j)
 }
 void TreeGenerator::new_branch(Branch *b, Joint &j, Segment &s, glm::vec3 &M, bool from_end)
 {
-    Branch *nb = curTree.branchHeaps[b->level + 1]->new_branch();
+    Branch *nb = curTree->branchHeaps[b->level + 1]->new_branch();
     nb->base_seg_n = from_end ? b->segments.size() : 0;
     nb->level = b->level + 1;
     nb->max_seg_count = curParams().max_segments();
@@ -419,9 +419,10 @@ float TreeGenerator::calc_light(Branch *b)
     b->light = l;
     return l;
 }
+#define MAX_GEN_JOINTS 128
+float weights[128];
 void TreeGenerator::recalculate_thickness(Branch *b)
 {
-    float *weights = safe_new<float>(b->joints.size() + 1, "recalculate_thickness_weights");
     int i = b->joints.size() - 1;
     float delta[5] = {0.2,0.25,0.3,0.5,0.5};
     float muls[5] = {2,4,6,8,8};
@@ -470,8 +471,6 @@ void TreeGenerator::recalculate_thickness(Branch *b)
         cont->base_r = s_prev->rel_r_end;
          curParams.set_state(b->level);
     }
-    
-    safe_delete<float>(weights, "recalculate_thickness_weights");
 }
 glm::vec3 TreeGenerator::get_optimal_branch_growth_direction(float &quality, Branch *base, Joint &j, Segment &s, bool from_end)
 {
@@ -561,23 +560,10 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
         count_feed[i] = 0;
     }
 
-    /*if (t.leaves)
-        t.leaves->leaves.clear();
-    for (int i=0;i<t.models.size();i++)
-        delete t.models[i];
-    for (int i=0;i<t.billboardClouds.size();i++)
-        delete t.billboardClouds[i];
-    for (int i=0;i<t.branchHeaps.size();i++)
-    {
-        delete t.branchHeaps[i];
-    }
-    t.leaves = nullptr;
-    t.models.clear();
-    t.billboardClouds.clear();
-    t.branchHeaps.clear();*/
-
     t.voxels = voxels;
     t.params = params;
+    if (t.leaves)
+        delete t.leaves;
     LeafHeap *lh = new LeafHeap();
     t.leaves = lh;
     for (int i = 0; i < params().max_depth(); i++)
@@ -608,14 +594,14 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
     root->plane_coef = glm::normalize(glm::vec4(urand(0,1),0,urand(0,1),0));
     root->plane_coef.w = -glm::dot(glm::vec3(root->plane_coef),root->joints.front().pos);
 
-    curTree = t;
+    curTree = &t;
     curParams = params;
     t.root = root;
 }
 void TreeGenerator::grow_tree(Tree &t)
 {
     curParams = t.params;
-    curTree = t;
+    curTree = &t;
     root = t.root;
     if (t.branchHeaps.size() > 1 && !t.branchHeaps[1]->branches.empty())
         test = &(t.branchHeaps[1]->branches.front());
@@ -894,8 +880,8 @@ Tree::~Tree()
 {
     if (leaves)
     {
-        leaves->leaves.clear();
         delete leaves;
+        leaves = nullptr;
     }
     for (int i=0;i<models.size();i++)
         delete models[i];
@@ -915,6 +901,7 @@ Tree::~Tree()
     }
     void TreeGenerator::convert(mygen::Tree &src, ::Tree &dst)
     {
+        dst.clear();
         dst.id = src.id;
         dst.leaves = new ::LeafHeap();
         dst.pos = src.pos + glm::vec3(0,-000,0);
