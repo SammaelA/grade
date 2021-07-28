@@ -10,6 +10,7 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
     std::vector<double> data;
     std::vector<double> data_max;
     param.get_mask_and_data(mask, data);
+    data_max = data;
     GrovePacked tree;
     float max_metr = 0;
 
@@ -58,7 +59,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         return metr;
     };
     //std::cout << "Initial State = " << x << "\t, and F(x)= " << f(x) << std::endl;
-
+    data_max = data;
     double L = f(data);
     int k = 0;
     for (double T = 80; T > 0.08; T *= alpha) //T = T * alpha which used as a cooling schedule 
@@ -76,17 +77,15 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
 
             if (LNew > L || (rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T))
             {
-                L = LNew;
                 if (LNew > L)
                     data_max = data;
+                L = LNew;
             }
             else
             {
                 data[pos_changed] = prev_val;
             }
         }
-        if (k > 25)
-            break;
     }
 
     param.load_from_mask_and_data(mask, data_max);
@@ -95,16 +94,19 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
 void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric_type)
 {
     Metric *metric = nullptr;
-    CompressionMetric default_m;
+    DummyMetric default_m;
     metric = &default_m;
+    if (metric_type == CompressionRatio)
+    {
+        CompressionMetric cm;
+        metric = &cm;
+    }
     if (metric_type == ImpostorSimilarity)
     {
         Texture ref = textureManager.get("reference_tree_test");
         ImpostorMetric im = ImpostorMetric(ref);
         metric = &im;
     }
-    DummyMetric dm;
-    metric = &dm;
     if (sel_type == BruteForce)
     {
         float m = brute_force_selection(param,metric,generate);

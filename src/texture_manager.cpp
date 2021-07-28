@@ -1,5 +1,7 @@
 #include "texture_manager.h"
 #include "tinyEngine/helpers/image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tinyEngine/helpers/stb_image_write.h"
 #include <exception>
 
 long tex_mem = 0;
@@ -239,4 +241,45 @@ void TextureManager::clear_unnamed_with_tag(int tag)
     unnamed_array_textures = unnamed_array_new;
     current_textures_tag = 0;
     debugl(10, "texture clearing completed. %d Mb allocated memory left\n", (int)(1e-6*tex_mem));
+}
+
+void TextureManager::save_bmp(Texture &t, std::string name)
+{
+    unsigned char *data = nullptr;
+    int w,h;
+    if (!t.is_valid())
+    {
+        logerr("trying to save invalid texture");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    else if (t.type == GL_TEXTURE_2D || t.type == GL_TEXTURE_2D_ARRAY)
+    {
+        w = t.get_W();
+        h = t.get_H();
+        data = safe_new<unsigned char>(4*w*h, "save_png_data");
+
+        glBindTexture(t.type, t.texture);
+
+        glGetTexImage(t.type,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    data);
+        glBindTexture(t.type, 0);
+    }
+    else
+    {
+        logerr("invalid texture format");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    if (data)
+    {
+        std::string path = "saves/"+name+".bmp";
+        stbi_write_bmp(path.c_str(), w, h, 4, data);
+        safe_delete<unsigned char>(data, "save_png_data"); 
+    }
 }

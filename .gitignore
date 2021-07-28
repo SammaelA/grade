@@ -15,6 +15,7 @@ CMakeCache.txt
 *.md
 *.csv
 *.json
+
 /main
 /profile
 /Makefile
@@ -22,6 +23,7 @@ CMakeCache.txt
 /.vscode/*
 /build/*
 /CMakeFiles/*
+/saves/*
 # Node artifact files
 node_modules/
 dist/

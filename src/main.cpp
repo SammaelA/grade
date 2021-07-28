@@ -447,6 +447,7 @@ int full_initialization()
   }
 
   appContext.renderMode = RenderMode::Rendering;
+  textureManager.save_bmp(grove.impostors[1].atlas.tex(0),"impostor");
 
   return -1;
 }

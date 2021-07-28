@@ -17,6 +17,7 @@ public:
     Texture load_unnamed(Texture &stub, unsigned char *data);
     Texture load_unnamed_arr(Texture &stub, unsigned char *data);
     Texture empty();
+    void save_bmp(Texture &t, std::string name);
     TextureManager();
     TextureManager(std::string base_path);
     bool is_correct(Texture &t);
