@@ -94,190 +94,190 @@ bool Config::load_config()
             std::string nm = p.name;
             if (nm == "max_depth")
             {
-                tsp.max_depth = res;
+                tsp.max_depth.set_no_override_minmax(res);
             }
             else if (nm == "max_segments")
             {
-                tsp.max_segments = res;
+                tsp.max_segments.set_no_override_minmax(res);
             }
             else if (nm == "max_branching")
             {
-                tsp.max_branching = res;
+                tsp.max_branching.set_no_override_minmax(res);
             }
             else if (nm == "growth_iterations")
             {
-                tsp.growth_iterations = res;
+                tsp.growth_iterations.set_no_override_minmax(res);;
             }
 
             else if (nm == "scale")
             {
-                tsp.scale = res;
+                tsp.scale.set_no_override_minmax(res);
             }
             else if (nm == "seg_len_mult")
             {
-                tsp.seg_len_mult = res;
+                tsp.seg_len_mult.set_no_override_minmax(res);
             }
             else if (nm == "leaf_size_mult")
             {
-                tsp.leaf_size_mult = res;
+                tsp.leaf_size_mult.set_no_override_minmax(res);
             }
             else if (nm == "base_r")
             {
-                tsp.base_r = res;
+                tsp.base_r.set_no_override_minmax(res);
             }
             else if (nm == "r_split_save_pow")
             {
-                tsp.r_split_save_pow = res;
+                tsp.r_split_save_pow.set_no_override_minmax(res);
             }
 
             else if (nm == "dir_conserv")
             {
-                tsp.dir_conserv = res;
+                tsp.dir_conserv.set_no_override_minmax(res);
             }
             else if (nm == "plane_conserv")
             {
-                tsp.plane_conserv = res;
+                tsp.plane_conserv.set_no_override_minmax(res);
             }
             else if (nm == "spread")
             {
-                tsp.spread = res;
+                tsp.spread.set_no_override_minmax(res);
             }
             else if (nm == "phototrop")
             {
-                tsp.phototrop = res;
+                tsp.phototrop.set_no_override_minmax(res);
             }
             else if (nm == "gravitrop")
             {
-                tsp.gravitrop = res;
+                tsp.gravitrop.set_no_override_minmax(res);
             }
             else if (nm == "dir_random")
             {
-                tsp.dir_random = res;
+                tsp.dir_random.set_no_override_minmax(res);
             }
             else if (nm == "base_angle")
             {
-                tsp.base_angle = res;
+                tsp.base_angle.set_no_override_minmax(res);
             }
             else if (nm == "base_angle_q")
             {
-                tsp.base_angle_q = res;
+                tsp.base_angle_q.set_no_override_minmax(res);
             }
 
             else if (nm == "seg_dir_conserv")
             {
-                tsp.seg_dir_conserv = res;
+                tsp.seg_dir_conserv.set_no_override_minmax(res);
             }
             else if (nm == "seg_plane_conserv")
             {
-                tsp.seg_plane_conserv = res;
+                tsp.seg_plane_conserv.set_no_override_minmax(res);
             }
             else if (nm == "seg_spread")
             {
-                tsp.seg_spread = res;
+                tsp.seg_spread.set_no_override_minmax(res);
             }
             else if (nm == "seg_phototrop")
             {
-                tsp.seg_phototrop = res;
+                tsp.seg_phototrop.set_no_override_minmax(res);
             }
             else if (nm == "seg_gravitrop")
             {
-                tsp.seg_gravitrop = res;
+                tsp.seg_gravitrop.set_no_override_minmax(res);
             }
             else if (nm == "seg_dir_random")
             {
-                tsp.seg_dir_random = res;
+                tsp.seg_dir_random.set_no_override_minmax(res);
             }
             else if (nm == "seg_bend")
             {
-                tsp.seg_bend = res;
+                tsp.seg_bend.set_no_override_minmax(res);
             }
             else if (nm == "seg_bend_pow")
             {
-                tsp.seg_bend_pow = res;
+                tsp.seg_bend_pow.set_no_override_minmax(res);
             }
 
             else if (nm == "base_branch_feed")
             {
-                tsp.base_branch_feed = res;
+                tsp.base_branch_feed.set_no_override_minmax(res);
             }
             else if (nm == "base_seg_feed")
             {
-                tsp.base_seg_feed = res;
+                tsp.base_seg_feed.set_no_override_minmax(res);
             }
             else if (nm == "feed_distribution_min_weight")
             {
-                tsp.feed_distribution_min_weight = res;
+                tsp.feed_distribution_min_weight.set_no_override_minmax(res);
             }
             else if (nm == "feed_distribution_d_weight")
             {
-                tsp.feed_distribution_d_weight = res;
+                tsp.feed_distribution_d_weight.set_no_override_minmax(res);
             }
             else if (nm == "top_growth_bonus")
             {
-                tsp.top_growth_bonus = res;
+                tsp.top_growth_bonus.set_no_override_minmax(res);
             }
 
             else if (nm == "light_precision")
             {
-                tsp.light_precision = res;
+                tsp.light_precision.set_no_override_minmax(res);
             }
             else if (nm == "branch_removal")
             {
-                tsp.branch_removal = res;
+                tsp.branch_removal.set_no_override_minmax(res);
             }
             else if (nm == "branch_grow_decrease_q")
             {
-                tsp.branch_grow_decrease_q = res;
+                tsp.branch_grow_decrease_q.set_no_override_minmax(res);
             }
             else if (nm == "segment_grow_decrease_q")
             {
-                tsp.segment_grow_decrease_q = res;
+                tsp.segment_grow_decrease_q.set_no_override_minmax(res);
             }
 
             else if (nm == "min_branching_chance")
             {
-                tsp.min_branching_chance = res;
+                tsp.min_branching_chance.set_no_override_minmax(res);
             }
             else if (nm == "max_branching_chance")
             {
-                tsp.max_branching_chance = res;
+                tsp.max_branching_chance.set_no_override_minmax(res);
             }
             else if (nm == "branching_power")
             {
-                tsp.branching_power = res;
+                tsp.branching_power.set_no_override_minmax(res);
             }
 
             else if (nm == "r_deformation_levels")
             {
-                tsp.r_deformation_levels = res;
+                tsp.r_deformation_levels.set_no_override_minmax(res);
             }
             else if (nm == "r_deformation_points")
             {
-                tsp.r_deformation_points = res;
+                tsp.r_deformation_points.set_no_override_minmax(res);
             }
             else if (nm == "r_deformation_power")
             {
-                tsp.r_deformation_power = res;
+                tsp.r_deformation_power.set_no_override_minmax(res);
             }
             else if (nm == "max_segments")
             {
-                tsp.max_segments = res;
+                tsp.max_segments.set_no_override_minmax(res);
             }
             else if (nm == "seg_len_mult")
             {
-                tsp.seg_len_mult = res;
+                tsp.seg_len_mult.set_no_override_minmax(res);
             }
             else if (nm == "base_seg_feed")
             {
-                tsp.base_seg_feed = res;
+                tsp.base_seg_feed.set_no_override_minmax(res);
             }
             else if (nm == "base_branch_feed")
             {
-                tsp.base_branch_feed = res;
+                tsp.base_branch_feed.set_no_override_minmax(res);
             }
             else if (nm == "min_branching_chance")
             {
-                tsp.min_branching_chance = res;
+                tsp.min_branching_chance.set_no_override_minmax(res);
             }
             free(p.name);
             free(p.param_list);

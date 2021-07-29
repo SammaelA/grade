@@ -423,17 +423,17 @@ float TreeGenerator::calc_light(Branch *b)
 float weights[128];
 void TreeGenerator::recalculate_thickness(Branch *b)
 {
+    bool pr = (b->level == 0) && (curTree->iter % 10 == 0);
     int i = b->joints.size() - 1;
-    float delta[5] = {0.2,0.25,0.3,0.5,0.5};
-    float muls[5] = {2,4,6,8,8};
     weights[i + 1] = 0.5;
     auto rev_it = b->joints.rbegin();
+    //rev_it++;
     while (rev_it != b->joints.rend())
     {
-        weights[i] = weights[i + 1] + rev_it->light;
+        weights[i] = weights[i + 1] + MAX(rev_it->light,0);
         for (auto br : rev_it->childBranches)
         {
-            weights[i] += br->light;
+            weights[i] += MAX(br->light,0);
         }
         i--;
         rev_it++;
@@ -448,7 +448,7 @@ void TreeGenerator::recalculate_thickness(Branch *b)
     while (s_it != b->segments.end())
     {
         float sum_r = s_prev->rel_r_begin;
-        s_it->rel_r_begin = sum_r * powf((weights[i] + j_it->light) / weights[i - 1], 1 / curParams().r_split_save_pow());
+        s_it->rel_r_begin = sum_r * powf((weights[i+1] + j_it->light) / weights[i - 1], 1 / curParams().r_split_save_pow());
         s_prev->rel_r_end = s_it->rel_r_begin;
         for (auto br : j_it->childBranches)
         {
@@ -456,6 +456,12 @@ void TreeGenerator::recalculate_thickness(Branch *b)
             curParams.set_state(br->level);
             br->base_r *= curParams().base_r();
             curParams.set_state(b->level);
+        }
+        if (s_prev->rel_r_begin < s_prev->rel_r_end)
+        {
+            logerr("%f i weight[i-1] [i] sum_r j_it->light rel_r_begin %d %f %f %f %f %f",
+            (weights[i] + j_it->light) / weights[i - 1], i,
+                    weights[i-1],weights[i],sum_r,j_it->light,s_it->rel_r_begin);
         }
         s_prev++;
         s_it++;
@@ -838,7 +844,7 @@ void TreeGenerator::deform_root(Branch *b)
 }
 void TreeGenerator::post_process(GroveGenerationData ggd, Tree &t)
 {
-    deform_root(t.root);
+    //deform_root(t.root);
     set_branches_centers(ggd, t, 1);
 }
 glm::vec3 b_center_self(Branch *b)

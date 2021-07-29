@@ -1,5 +1,6 @@
 #include "parameter_selection.h"
 #include "metric.h"
+#include "distribution.h"
 #include <iostream>
 #include <functional>
 
@@ -58,37 +59,56 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         textureManager.clear_unnamed_with_tag(1);
         return metr;
     };
-    //std::cout << "Initial State = " << x << "\t, and F(x)= " << f(x) << std::endl;
+
     data_max = data;
     double L = f(data);
+    double max_T = 80;
     int k = 0;
-    for (double T = 80; T > 0.08; T *= alpha) //T = T * alpha which used as a cooling schedule 
+    bool *pos_changed = safe_new<bool>(data.size(),"pos_changed_arr");
+    float *prev_val = safe_new<float>(data.size(),"prev_val_arr");
+    for (double T = max_T; T > 1; T *= alpha)
     {
         k++;
         logerr("T = %f", T);
-        for (int i = 0; i<10; i++) //This loop is for the process of iteration (or searching for new states)
+        float pos_change_chance = CLAMP(sqrt(T/max_T), 0.05, 0.5);
+        for (int i=0;i<data.size();i++)
         {
-            int pos_changed = rand() % data.size();
-            float val_changed = (rand() / (double)RAND_MAX);
-            float prev_val = data[pos_changed];
-            data[pos_changed] = CLAMP(data[pos_changed] + val_changed, 0, 1);
-            //double xNew = x + ((rand() / (double)RAND_MAX) * 2 - 1);
-            double LNew = f(data);
-
-            if (LNew > L || (rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T))
+            if (urand()<pos_change_chance)
             {
-                if (LNew > L)
-                    data_max = data;
-                L = LNew;
+                pos_changed[i] = true;
+                float val_changed = sqrt(T/max_T)*urand(-1,1);
+                prev_val[i] = data[i];
+                data[i] = CLAMP(data[i] + val_changed, 0, 1);
+                logerr("pos changed %d %f --> %f", i, prev_val[i], data[i]);
             }
             else
             {
-                data[pos_changed] = prev_val;
+                pos_changed[i] = false;
+            }
+        }
+
+        double LNew = f(data);
+
+        if (LNew > L || (rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T))
+        {
+            if (LNew > L)
+                data_max = data;
+            L = LNew;
+        }
+        else
+        {
+            for (int i=0;i<data.size();i++)
+            {
+                if (pos_changed[i])
+                    data[i] = prev_val[i];
             }
         }
     }
-
+    safe_delete<bool>(pos_changed,"pos_changed_arr");
+    safe_delete<float>(prev_val,"prev_val_arr");
     param.load_from_mask_and_data(mask, data_max);
+    logerr("base r %s",param.base_r.to_string().c_str());
+    logerr("r_split save power %s",param.r_split_save_pow.to_string().c_str());
     return L;
 }
 void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric_type)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "distribution.h"
+#include "tinyEngine/utility.h"
 #include <vector>
 enum RandomnessLevel
 {
@@ -22,6 +23,12 @@ struct ParameterDesc
     int count;
     float minValue;
     float maxValue;
+    std::string name;
+};
+struct ParameterTinyDesc
+{
+    ParameterMaskValues val;
+    std::string name;
 };
 struct TreeStructureParameters;
 template <typename T>
@@ -29,6 +36,25 @@ class Parameter
 {
 public:
     friend struct TreeStructureParameters;
+    std::string to_string()
+    {
+        std::string str = "Parameter ";
+        str = str + std::to_string(baseValue);
+        str = str + " {";
+        for (auto q : state_qs)
+        {
+            str = str + std::to_string(q*baseValue);
+            str = str + " ";
+        }
+        str = str + "} ";
+        str = str + std::to_string(a) + " ";
+        str = str + std::to_string(sigma) + " ";
+        str = str + std::to_string(from) + " ";
+        str = str + std::to_string(to) + " ";
+        str = str + std::to_string(normal_part);
+
+        return str;
+    }   
     void random_regenerate()
     {
         if (normal_part < 1e-4)
@@ -50,6 +76,7 @@ public:
         randomValue = par.randomValue;
         maxValue = par.maxValue;
         minValue = par.minValue;
+        minMaxDefined = par.minMaxDefined;
         state_qs = par.state_qs;
         state = par.state;
         normal = par.normal;
@@ -61,6 +88,27 @@ public:
         to = par.to;
         normal_part = par.normal_part;
         return *this;
+    }
+    void set_no_override_minmax(const Parameter &par)
+    {
+        T mn,mx;
+        bool mmdef = minMaxDefined || par.minMaxDefined;
+        if (false && !minMaxDefined && par.minMaxDefined)
+        {
+            mn = par.minValue;
+            mx = par.maxValue;
+        }
+        else
+        {
+            mn = minValue;
+            mx = maxValue;
+        }
+        
+        *this = par;
+        minValue = mn;
+        maxValue = mx;
+        minMaxDefined = mmdef;
+        logerr("min max %f %f",minValue, maxValue);
     }
     T get()
     {
@@ -101,6 +149,7 @@ public:
         randomValue = par.randomValue;
         maxValue = par.maxValue;
         minValue = par.minValue;
+        minMaxDefined = par.minMaxDefined;
         state_qs = par.state_qs;
         state = par.state;
         normal = par.normal;
@@ -118,6 +167,8 @@ public:
         randomnessLevel = NO_RANDOM;
         this->maxValue = maxValue;
         this->minValue = minValue;
+        minMaxDefined = (minValue > -1e10 && maxValue < 1e10);
+        //logerr("created with minmax %f %f",minValue, maxValue);
         state = -1;
     }
     Parameter(T base, std::vector<T> stateParams,
@@ -214,6 +265,7 @@ public:
         baseValue = base;
         minValue = min_val;
         maxValue = max_val;
+        minMaxDefined = (minValue > -1e10 && maxValue < 1e10);
         this->state_qs = state_qs;
         this->a = a;
         this->sigma = sigma;
@@ -235,8 +287,9 @@ public:
 private:
     T baseValue;
     T randomValue = 0;
-    T maxValue;
-    T minValue;
+    T maxValue = 1e10;
+    T minValue = -1e10;
+    bool minMaxDefined = false;
     std::vector<float> state_qs;
     float a = 0,sigma = 0,from = 0,to = 0,normal_part = 0;
     int state = -1;
@@ -394,7 +447,7 @@ struct TreeStructureParameters
                                 r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025), 0, 1)
     {
     }
-    void get_parameter_list(std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> &list);
+    void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list);
     void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
     void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
 };

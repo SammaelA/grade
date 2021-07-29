@@ -19,77 +19,98 @@ Parameter<float> TreeStructureParameters::from_int(Parameter<int> source)
                        dynamic_cast<Normal*>(source.normal), dynamic_cast<Uniform*>(source.uniform));
     return par;
 }
-void TreeStructureParameters::get_parameter_list(std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> &list)
+
+void TreeStructureParameters::get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list)
 {
     list = {
-        {ParameterMaskValues::CONSTANT, max_depth},
-        {ParameterMaskValues::FULL, max_segments},
-        {ParameterMaskValues::CONSTANT, max_branching},
-        {ParameterMaskValues::CONSTANT, growth_iterations},
+        {{ParameterMaskValues::CONSTANT,"max_depth"}, max_depth},
+        {{ParameterMaskValues::FULL,"max_segments"}, max_segments},
+        {{ParameterMaskValues::CONSTANT,"max_branching"}, max_branching},
+        {{ParameterMaskValues::CONSTANT,"growth_iterations"}, growth_iterations},
 
-        {ParameterMaskValues::CONSTANT, scale},
-        {ParameterMaskValues::FULL, seg_len_mult},
-        {ParameterMaskValues::ONE_VALUE, leaf_size_mult},
-        {ParameterMaskValues::FULL, base_r},
-        {ParameterMaskValues::LIST_OF_VALUES, r_split_save_pow},
+        {{ParameterMaskValues::CONSTANT,"scale"}, scale},
+        {{ParameterMaskValues::FULL,"seg_len_mult"}, seg_len_mult},
+        {{ParameterMaskValues::ONE_VALUE,"leaf_size_mult"}, leaf_size_mult},
+        {{ParameterMaskValues::FULL,"base_r"}, base_r},
+        {{ParameterMaskValues::LIST_OF_VALUES,"r_split_save_pow"}, r_split_save_pow},
 
-        {ParameterMaskValues::FULL, dir_conserv},
-        {ParameterMaskValues::FULL, plane_conserv},
-        {ParameterMaskValues::FULL, spread},
-        {ParameterMaskValues::FULL, phototrop},
-        {ParameterMaskValues::FULL, gravitrop},
-        {ParameterMaskValues::FULL, dir_random},
-        {ParameterMaskValues::ONE_VALUE, base_angle},
-        {ParameterMaskValues::FULL, base_angle_q},
+        {{ParameterMaskValues::FULL,"dir_conserv"}, dir_conserv},
+        {{ParameterMaskValues::FULL,"plane_conserv"}, plane_conserv},
+        {{ParameterMaskValues::FULL,"spread"}, spread},
+        {{ParameterMaskValues::FULL,"phototrop"}, phototrop},
+        {{ParameterMaskValues::FULL,"gravitrop"}, gravitrop},
+        {{ParameterMaskValues::FULL,"dir_random"}, dir_random},
+        {{ParameterMaskValues::ONE_VALUE,"base_angle"}, base_angle},
+        {{ParameterMaskValues::FULL,"base_angle_q"}, base_angle_q},
 
-        {ParameterMaskValues::FULL, seg_dir_conserv},
-        {ParameterMaskValues::FULL, seg_plane_conserv},
-        {ParameterMaskValues::FULL, seg_spread},
-        {ParameterMaskValues::FULL, seg_phototrop},
-        {ParameterMaskValues::FULL, seg_gravitrop},
-        {ParameterMaskValues::FULL, seg_dir_random},
-        {ParameterMaskValues::FULL, seg_bend},
-        {ParameterMaskValues::FULL, seg_bend_pow},
+        {{ParameterMaskValues::FULL,"seg_dir_conserv"}, seg_dir_conserv},
+        {{ParameterMaskValues::FULL,"seg_plane_conserv"}, seg_plane_conserv},
+        {{ParameterMaskValues::FULL,"seg_spread"}, seg_spread},
+        {{ParameterMaskValues::FULL,"seg_phototrop"}, seg_phototrop},
+        {{ParameterMaskValues::FULL,"seg_gravitrop"}, seg_gravitrop},
+        {{ParameterMaskValues::FULL,"seg_bend"}, seg_dir_random},
+        {{ParameterMaskValues::FULL,"seg_bend"}, seg_bend},
+        {{ParameterMaskValues::FULL,"seg_bend_pow"}, seg_bend_pow},
         
-        {ParameterMaskValues::FULL, base_branch_feed},
-        {ParameterMaskValues::FULL, base_seg_feed},
-        {ParameterMaskValues::ONE_VALUE, feed_distribution_min_weight},
-        {ParameterMaskValues::ONE_VALUE, feed_distribution_d_weight},
-        {ParameterMaskValues::ONE_VALUE, top_growth_bonus},
+        {{ParameterMaskValues::FULL,"base_branch_feed"}, base_branch_feed},
+        {{ParameterMaskValues::FULL,"base_seg_feed"}, base_seg_feed},
+        {{ParameterMaskValues::ONE_VALUE,"feed_distribution_min_weight"}, feed_distribution_min_weight},
+        {{ParameterMaskValues::ONE_VALUE,"feed_distribution_d_weight"}, feed_distribution_d_weight},
+        {{ParameterMaskValues::ONE_VALUE,"top_growth_bonus"}, top_growth_bonus},
 
-        {ParameterMaskValues::ONE_VALUE, light_precision},
-        {ParameterMaskValues::FULL, branch_removal},
-        {ParameterMaskValues::ONE_VALUE, branch_grow_decrease_q},
-        {ParameterMaskValues::ONE_VALUE, segment_grow_decrease_q},
+        {{ParameterMaskValues::ONE_VALUE,"light_precision"}, light_precision},
+        {{ParameterMaskValues::FULL,"branch_removal"}, branch_removal},
+        {{ParameterMaskValues::ONE_VALUE,"branch_grow_decrease_q"}, branch_grow_decrease_q},
+        {{ParameterMaskValues::ONE_VALUE,"segment_grow_decrease_q"}, segment_grow_decrease_q},
 
-        {ParameterMaskValues::LIST_OF_VALUES, min_branching_chance},
-        {ParameterMaskValues::ONE_VALUE, max_branching_chance},
-        {ParameterMaskValues::LIST_OF_VALUES, branching_power},
+        {{ParameterMaskValues::LIST_OF_VALUES,"min_branching_chance"}, min_branching_chance},
+        {{ParameterMaskValues::ONE_VALUE,"max_branching_chance"}, max_branching_chance},
+        {{ParameterMaskValues::LIST_OF_VALUES,"branching_power"}, branching_power},
 
-        {ParameterMaskValues::ONE_VALUE, r_deformation_levels},
-        {ParameterMaskValues::LIST_OF_VALUES, r_deformation_points},
-        {ParameterMaskValues::LIST_OF_VALUES, r_deformation_power},
+        {{ParameterMaskValues::ONE_VALUE,"r_deformation_levels"}, r_deformation_levels},
+        {{ParameterMaskValues::LIST_OF_VALUES,"r_deformation_points"}, r_deformation_points},
+        {{ParameterMaskValues::LIST_OF_VALUES,"r_deformation_power"}, r_deformation_power},
     }; 
     for (auto &p: list)
     {
-        if ((double)(p.second.maxValue - p.second.minValue) < 1e-4)
+        if ((double)(p.second.maxValue - p.second.minValue) < 1e-4 || 
+            (double)abs(p.second.maxValue - p.second.minValue) > 1e10)
         {
-            p.first = ParameterMaskValues::CONSTANT;
+            p.first.val = ParameterMaskValues::CONSTANT;
         }
+        //logerr("%f %f",p.second.minValue, p.second.maxValue);
+        if (p.first.val == ParameterMaskValues::CONSTANT)
+        {
+            logerr("CONSTANT");
+        }
+        if (p.first.val == ParameterMaskValues::FULL)
+        {
+            logerr("FULL");
+        }
+        if (p.first.val == ParameterMaskValues::LIST_OF_VALUES)
+        {
+            logerr("LIST_OF_VALUES");
+        }
+        if (p.first.val == ParameterMaskValues::ONE_VALUE)
+        {
+            logerr("ONE_VALUE");
+        }
+        logerr("%s %s \n",p.first.name.c_str(), p.second.to_string().c_str());
     } 
 }
 void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
 {
-    std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> list;
+    std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
     get_parameter_list(list);
     for (auto &p: list)
     {
         ParameterDesc desc;
-        desc.mask = p.first;
+        desc.mask = p.first.val;
+        desc.name = p.first.name;
         desc.minValue = p.second.minValue;
         desc.maxValue = p.second.maxValue;
         desc.count = 0;
-        if (p.first != ParameterMaskValues::CONSTANT)
+        if (p.first.val != ParameterMaskValues::CONSTANT)
         {
             desc.count += 1;
             float val = p.second.baseValue;
@@ -105,13 +126,13 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
             }
             data.push_back(val);
             
-            if (p.first == ParameterMaskValues::LIST_OF_VALUES)
+            if (p.first.val == ParameterMaskValues::LIST_OF_VALUES)
             {
                 desc.count += p.second.state_qs.size();
                 for (float &q : p.second.state_qs)
                     data.push_back(q);
             }
-            else if (p.first == ParameterMaskValues::FULL)
+            else if (p.first.val == ParameterMaskValues::FULL)
             {
                 desc.count += p.second.state_qs.size();
                 for (float &q : p.second.state_qs)
@@ -135,7 +156,7 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
 }
 void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
 {
-    std::vector<std::pair<ParameterMaskValues,Parameter<float> &>> list;
+    std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
     get_parameter_list(list);
     if (mask.size() != list.size())
     {
@@ -188,7 +209,7 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
             float to = from + delta_n*(mask[i].maxValue - mask[i].minValue);
 
             list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue,state_qs,a,sigma,from,to,
-                                              normal_part,RandomnessLevel::REGENERATE_ON_GET,nullptr,nullptr);
+                                              normal_part,RandomnessLevel::NO_RANDOM,nullptr,nullptr);
            // if (state_qs.size() >=3 )
             //    logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
             //else 
