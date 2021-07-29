@@ -36,10 +36,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
                                     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
 {
     double first_run, second_run, third_run;        //(first, second and third run) are defined for the purpose of comparing the resulting
-    time_t systime;                                // solutions of the three runs will be chosen as the final solution
-    time(&systime);
-    srand((unsigned int)systime);
-    double  alpha = 0.75;                         //alpha is used for the cooling schedule of the temperature            
+    double  alpha = 0.975;                         //alpha is used for the cooling schedule of the temperature            
     const double e = 2.718281828;
 
 
@@ -66,24 +63,38 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
     int k = 0;
     bool *pos_changed = safe_new<bool>(data.size(),"pos_changed_arr");
     float *prev_val = safe_new<float>(data.size(),"prev_val_arr");
+    bool single_param = false;
     for (double T = max_T; T > 1; T *= alpha)
     {
         k++;
         logerr("T = %f", T);
-        float pos_change_chance = CLAMP(sqrt(T/max_T), 0.05, 0.5);
-        for (int i=0;i<data.size();i++)
+
+        if (single_param)
         {
-            if (urand()<pos_change_chance)
+            int och = urand(0, data.size());
+            pos_changed[och] = true;
+            float val_changed = sqrt(T/max_T)*urand(-1,1);
+            prev_val[och] = data[och];
+            data[och] = CLAMP(data[och] + val_changed, 0, 1);
+            logerr("pos changed %d %f --> %f", och, prev_val[och], data[och]);
+        }
+        else
+        {
+            float pos_change_chance = CLAMP(sqrt(T/max_T), 0.025, 0.025);
+            for (int i=0;i<data.size();i++)
             {
-                pos_changed[i] = true;
-                float val_changed = sqrt(T/max_T)*urand(-1,1);
-                prev_val[i] = data[i];
-                data[i] = CLAMP(data[i] + val_changed, 0, 1);
-                logerr("pos changed %d %f --> %f", i, prev_val[i], data[i]);
-            }
-            else
-            {
-                pos_changed[i] = false;
+                if (urand()<pos_change_chance)
+                {
+                    pos_changed[i] = true;
+                    float val_changed = sqrt(T/max_T)*urand(-1,1);
+                    prev_val[i] = data[i];
+                    data[i] = CLAMP(data[i] + val_changed, 0, 1);
+                    logerr("pos changed %d %f --> %f", i, prev_val[i], data[i]);
+                }
+                else
+                {
+                    pos_changed[i] = false;
+                }
             }
         }
 

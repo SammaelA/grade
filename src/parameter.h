@@ -163,20 +163,31 @@ public:
     }
     Parameter(T base, T minValue = (T)(-1e10), T maxValue = (T)(1e10))
     {
-        baseValue = base;
+        if (minValue > maxValue)
+        {
+            float t = minValue;
+            minValue = maxValue;
+            maxValue = t;
+        }
+        baseValue = CLAMP(base, minValue, maxValue);
         randomnessLevel = NO_RANDOM;
         this->maxValue = maxValue;
         this->minValue = minValue;
         minMaxDefined = (minValue > -1e10 && maxValue < 1e10);
-        //logerr("created with minmax %f %f",minValue, maxValue);
         state = -1;
     }
     Parameter(T base, std::vector<T> stateParams,
               T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, minValue, maxValue)
     {
+        if (minValue > maxValue)
+        {
+            float t = minValue;
+            minValue = maxValue;
+            maxValue = t;
+        }
         for (T &par : stateParams)
         {
-            state_qs.push_back(base > 0 ? ((double)par/base) : 1);
+            state_qs.push_back(base > 0 ? ((double)CLAMP(par, minValue, maxValue)/base) : 1);
         }
     }
     Parameter(T base, std::vector<T> stateParams, RandomnessLevel rand_level, Normal *randomizer,
@@ -262,11 +273,22 @@ public:
     Parameter(T base, T min_val, T max_val, std::vector<float> state_qs, float a, float sigma, float from, float to,
               float normal_part, RandomnessLevel rand_level, Normal *normal = nullptr, Uniform *uniform = nullptr)
     {
-        baseValue = base;
         minValue = min_val;
         maxValue = max_val;
+        if (minValue > maxValue)
+        {
+            float t = minValue;
+            minValue = maxValue;
+            maxValue = t;
+        }
+        baseValue = CLAMP(base, minValue, maxValue);
         minMaxDefined = (minValue > -1e10 && maxValue < 1e10);
         this->state_qs = state_qs;
+        for (float &q : this->state_qs)
+        {
+            T val = CLAMP(base*q, minValue, maxValue);
+            q = baseValue > 0 ? val/baseValue : 1;
+        }
         this->a = a;
         this->sigma = sigma;
         this->from = from;

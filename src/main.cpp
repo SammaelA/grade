@@ -304,7 +304,7 @@ int full_initialization()
   data.defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), data.defaultShader);
 
-  srand(time(NULL));
+  srand(1);
 
   data.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
   data.heightmap->random_generate(0, 1, 50);

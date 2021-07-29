@@ -4,7 +4,7 @@
 #include "tinyEngine/utility.h"
 int base_seed = 1234;
 DistributionGenerator distibutionGenerator;
-#define RND (distibutionGenerator.d_ur(distibutionGenerator.gen))
+#define RND ((float)rand()/RAND_MAX)
 Uniform *base = distibutionGenerator.get_uniform(0, 1, base_seed);
 UniformInt *basei = distibutionGenerator.get_uniform_int(0, INT_MAX, base_seed);
 Normal::Normal(double a, double sigma, int seed)
@@ -14,6 +14,7 @@ Normal::Normal(double a, double sigma, int seed)
 }
 double Normal::get()
 {
+    
     //Box–Muller transform
     double U1 = RND;
     double U2 = RND;
