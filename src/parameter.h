@@ -17,18 +17,11 @@ enum ParameterMaskValues
     LIST_OF_VALUES,
     FULL
 };
-struct ParameterDesc
+enum ParameterVariablesSet
 {
-    ParameterMaskValues mask;
-    int count;
-    float minValue;
-    float maxValue;
-    std::string name;
-};
-struct ParameterTinyDesc
-{
-    ParameterMaskValues val;
-    std::string name;
+    ONLY_BASE_VALUES,
+    BASE_VALUES_AND_QS,
+    ALL_VALUES
 };
 struct TreeStructureParameters;
 template <typename T>
@@ -108,7 +101,6 @@ public:
         minValue = mn;
         maxValue = mx;
         minMaxDefined = mmdef;
-        logerr("min max %f %f",minValue, maxValue);
     }
     T get()
     {
@@ -319,6 +311,19 @@ private:
     Distribution *uniform = nullptr;
     RandomnessLevel randomnessLevel = NO_RANDOM;
 };
+struct ParameterDesc
+{
+    ParameterMaskValues mask;
+    int var_count;
+    Parameter<float> original;
+    std::string name;
+    ParameterDesc(Parameter<float> &p):original(p) {};
+};
+struct ParameterTinyDesc
+{
+    ParameterMaskValues val;
+    std::string name;
+};
 struct TreeStructureParameters
 {
     static Parameter<int> from_float(Parameter<float> source);
@@ -470,8 +475,10 @@ struct TreeStructureParameters
     {
     }
     void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list);
-    void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
-    void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data);
+    void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, 
+                           ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
+    void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
+                                 ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
 };
 class ParameterSetWrapper
 {

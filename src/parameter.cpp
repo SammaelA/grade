@@ -98,21 +98,27 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         logerr("%s %s \n",p.first.name.c_str(), p.second.to_string().c_str());
     } 
 }
-void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
+void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, ParameterVariablesSet v_set)
 {
     std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
     get_parameter_list(list);
     for (auto &p: list)
     {
-        ParameterDesc desc;
+        ParameterDesc desc(p.second);
         desc.mask = p.first.val;
         desc.name = p.first.name;
-        desc.minValue = p.second.minValue;
-        desc.maxValue = p.second.maxValue;
-        desc.count = 0;
+        desc.var_count = 0;
+        if (v_set == ParameterVariablesSet::ONLY_BASE_VALUES && p.first.val != ParameterMaskValues::CONSTANT)
+        {
+            p.first.val = ParameterMaskValues::ONE_VALUE;
+        }
+        else if (v_set == ParameterVariablesSet::BASE_VALUES_AND_QS && p.first.val == ParameterMaskValues::FULL)
+        {
+            p.first.val = ParameterMaskValues::LIST_OF_VALUES;
+        }
         if (p.first.val != ParameterMaskValues::CONSTANT)
         {
-            desc.count += 1;
+            desc.var_count += 1;
             float val = p.second.baseValue;
             if ((double)(p.second.maxValue - p.second.minValue) < 1e-4)
             {
@@ -128,17 +134,17 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
             
             if (p.first.val == ParameterMaskValues::LIST_OF_VALUES)
             {
-                desc.count += p.second.state_qs.size();
+                desc.var_count += p.second.state_qs.size();
                 for (float &q : p.second.state_qs)
                     data.push_back(q);
             }
             else if (p.first.val == ParameterMaskValues::FULL)
             {
-                desc.count += p.second.state_qs.size();
+                desc.var_count += p.second.state_qs.size();
                 for (float &q : p.second.state_qs)
                     data.push_back(q);
 
-                desc.count += 4;
+                desc.var_count += 4;
                 
                 //data.push_back(p.second.a);
                 data.push_back(p.second.sigma);
@@ -154,7 +160,7 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
     }
     logerr("data reated size %d",data.size());
 }
-void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data)
+void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, ParameterVariablesSet v_set)
 {
     std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
     get_parameter_list(list);
@@ -166,55 +172,65 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
     int cur_pos = 0;
     for (int i=0;i<mask.size();i++)
     {
-        if (cur_pos + mask[i].count > data.size())
+        if (cur_pos + mask[i].var_count > data.size())
         {
             logerr("unable to load tree structure parameters. Data size %d, should be %d",
-                   data.size(), cur_pos + mask[i].count);
+                   data.size(), cur_pos + mask[i].var_count);
             return;
         }
+        float minValue = mask[i].original.minValue;
+        float maxValue = mask[i].original.maxValue;
+        float val = mask[i].original.baseValue;
+        std::vector<float> state_qs = mask[i].original.state_qs;
+        float a = mask[i].original.a;
+        float sigma = mask[i].original.sigma;
+        float from = mask[i].original.from;
+        float to = mask[i].original.to;
+        float normal_part = mask[i].original.normal_part;
+        RandomnessLevel rl = mask[i].original.randomnessLevel;
         if (mask[i].mask == ParameterMaskValues::CONSTANT)
             continue;
         else if (mask[i].mask == ParameterMaskValues::ONE_VALUE)
         {
-            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
-            list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue);
+            val = data[cur_pos]*(maxValue - minValue) + minValue;
+            list[i].second = Parameter<float>(val,minValue,maxValue);
         }
         else if (mask[i].mask == ParameterMaskValues::LIST_OF_VALUES)
         {
-            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
+            val = data[cur_pos]*(maxValue - minValue) + minValue;
             std::vector<float> state_vals;
-            for (int j=1; j<mask[i].count; j++)
-            {
-                state_vals.push_back(val*data[cur_pos+j]);
-            }
-            list[i].second = Parameter<float>(val,state_vals, mask[i].minValue,mask[i].maxValue);
-        }
-        else if (mask[i].mask == ParameterMaskValues::FULL)
-        {
-            float val = data[cur_pos]*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
-            std::vector<float> state_qs;
-            for (int j=1; j<mask[i].count-5; j++)
+            for (int j=1; j<mask[i].var_count; j++)
             {
                 state_qs.push_back(data[cur_pos+j]);
             }
-            int p = cur_pos + mask[i].count-5;
+        }
+        else if (mask[i].mask == ParameterMaskValues::FULL)
+        {
+            val = data[cur_pos]*(maxValue - minValue) + minValue;
 
-            float a = 0;//data[p];
-            float sigma = data[p];
+            for (int j=1; j<mask[i].var_count-5; j++)
+            {
+                state_qs.push_back(data[cur_pos+j]);
+            }
+
+            int p = cur_pos + mask[i].var_count-5;
+
+            a = 0;//data[p];
+            sigma = data[p];
             float from_n = data[p+1];
             float delta_n = data[p+2];
-            float normal_part = data[p+3];  
+            normal_part = data[p+3];  
 
-            float from = from_n*(mask[i].maxValue - mask[i].minValue) + mask[i].minValue;
-            float to = from + delta_n*(mask[i].maxValue - mask[i].minValue);
+            from = from_n*(maxValue - minValue) + minValue;
+            to = from + delta_n*(maxValue - minValue);
 
-            list[i].second = Parameter<float>(val,mask[i].minValue,mask[i].maxValue,state_qs,a,sigma,from,to,
-                                              normal_part,RandomnessLevel::NO_RANDOM,nullptr,nullptr);
            // if (state_qs.size() >=3 )
             //    logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
             //else 
             //    logerr("%f (%d) %f %f %f %f %f",val,state_qs.size(),a,sigma,from,to,normal_part);
         }
-        cur_pos += mask[i].count;
+        list[i].second = Parameter<float>(val,minValue,maxValue,state_qs,a,sigma,from,to,
+                                          normal_part,rl,nullptr,nullptr);
+        cur_pos += mask[i].var_count;
     }
 }
