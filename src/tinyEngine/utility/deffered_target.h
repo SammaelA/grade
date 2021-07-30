@@ -16,7 +16,6 @@ public:
     GLuint get_view_pos(){ return viewPosTex;}
     GLuint get_world_pos(){ return worldPosTex;}
 private:
-    void print_FB_status(GLuint status);
     glm::vec4 clear_color;
     int width, height;
     GLuint frBuffer;

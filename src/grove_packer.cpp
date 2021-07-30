@@ -143,11 +143,35 @@ void add_occluder(LightVoxelsCube *voxels, Tree *trees, int count)
 {
     for (int i=0;i<count;i++)
     {
-        if (trees[i].root)
+        if (trees[i].valid && trees[i].root)
             add_occluder(voxels,trees[i].root);
     }
 }
-
+bool is_valid_tree(::Tree &t)
+{
+    if (!t.valid)
+    {
+        logerr("tree %u was marked as not valid by a generator. Grove packer will ignore it",t.id);
+        return false;
+    }   
+    if (!(t.valid && t.leaves && t.branchHeaps.size() >= 2))
+    {
+        logerr("tree %u do not have some of essential data structures. %d Grove packer will ignore it",t.id,
+        t.branchHeaps.size());
+        return false;
+    }
+    if (t.branchHeaps[0]->branches.empty())
+    {
+        logerr("tree %u do not have trunk. Grove packer will ignore it",t.id);
+        return false;
+    }
+    if (t.branchHeaps[1]->branches.empty())
+    {
+        logerr("tree %u do not have branches instead of trunk. Grove packer will ignore it",t.id);
+        return false;
+    }
+    return true;
+}
 void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, 
                 ::Tree *trees_external, Heightmap *h, bool visualize_voxels)
 {
@@ -160,6 +184,26 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     Seeder *post_seeder = nullptr;
     GroveGenerationData &curGgd = ggd;
     
+    int valid_trees_cnt = 0;
+    for (int i=0;i<count;i++)
+    {
+        bool valid = is_valid_tree(trees_external[i]);
+        trees_external[i].valid = valid;
+        valid_trees_cnt += valid;
+    }
+    if (count == 0)
+    {
+        logerr("Grove %s is empty. ",ggd.name.c_str());
+        return;
+    }
+    if (valid_trees_cnt == 0)
+    {
+        logerr("Grove %s has %d tree(s) but none of them are valid.",ggd.name.c_str(), count);
+        return;
+    }
+
+    debugl(1,"Packing grove %s with %d/%d valid trees",ggd.name.c_str(),valid_trees_cnt, count);
+
     {
         float r = sqrt(count);
         glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
@@ -243,7 +287,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
 
     ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
     grove.impostors.push_back(ImpostorsData());
-    ib->prepare_all_grove(trees_external[0], ggd, 0, full_tree_clusters, &grove.impostors.back());
+    ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors.back());
     grove.impostors.push_back(ImpostorsData());
     ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
 

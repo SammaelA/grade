@@ -250,7 +250,8 @@ void Seeder::recalcuate_shadows(Tree *trees, int count)
     psm.set(const_psm);
     for (int i = 0; i < count; i++)
     {
-        recalculate_planar_shadows(trees[i].root, psm, 1);
+        if (trees[i].valid)
+            recalculate_planar_shadows(trees[i].root, psm, 1);
     }
    
     dsm.create(hm, psm);

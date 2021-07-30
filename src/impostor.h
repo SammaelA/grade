@@ -11,13 +11,12 @@ public:
     {
         quality = _quality;
         ttd = _ttd;
-        Tree t;
-        prepare(t,branch_level,clusters,data);
+        prepare(branch_level,clusters,data);
     }
     ImpostorBaker(int tex_w, int tex_h, std::vector<TreeTypeData> &ttd) : BillboardCloudRaw(tex_w,tex_h,ttd) {};
-    void prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters,
+    void prepare(int branch_level, std::vector<ClusterData> &clusters,
                  ImpostorsData *data = nullptr);
-    void prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
+    void prepare_all_grove(GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
                            ImpostorsData *data = nullptr);
     void make_impostor(Branch &b, Impostor &imp, int slices_n = 8);
 private:

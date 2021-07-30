@@ -463,6 +463,8 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
 }
 bool Clusterizer::set_branches(Tree &t, int layer)
 {
+    if (!t.valid)
+        return false;
     if (layer < 0 || layer >= t.branchHeaps.size() || t.branchHeaps[layer]->branches.size() == 0)
     {
         return false;

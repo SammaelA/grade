@@ -631,14 +631,14 @@ billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render
 }
 BillboardCloudRenderer::~BillboardCloudRenderer()
 {
-    debugl(11,"deleting BCR");
+    debugl(11,"deleting BCR\n");
     if (cloud)
         delete (cloud);
-    debugl(11,"cloud deleted");
+    debugl(11,"cloud deleted\n");
     for (int i=0;i<instances.size();i++)
     {
         delete instances[i];
-       debugl(11,"instance %d deleted",i);
+       debugl(11,"instance %d deleted\n",i);
     }
 }
 void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light, 

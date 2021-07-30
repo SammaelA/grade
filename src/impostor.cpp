@@ -5,7 +5,7 @@ using glm::vec3;
 using glm::vec4;
 using glm::mat4;
 
-void ImpostorBaker::prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters,
+void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters,
                             ImpostorsData *data)
 {
     if (!data)
@@ -135,7 +135,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     }
 }
 
-void ImpostorBaker::prepare_all_grove(Tree &t, GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
+void ImpostorBaker::prepare_all_grove(GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
                                       ImpostorsData *data)
 {
     if (!data)

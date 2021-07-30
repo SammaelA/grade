@@ -104,6 +104,7 @@ struct Tree
     Branch *root= nullptr;
     uint id = 0;
     TreeTypeData *type = nullptr;
+    bool valid = false;
     Tree() {};
     ~Tree() {clear();};
     void clear()

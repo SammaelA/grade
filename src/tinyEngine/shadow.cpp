@@ -1,17 +1,5 @@
 #include "shadow.h"
 #include "../texture_manager.h"
-void print_FB_status2(GLuint status)
-{
-    if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-    else if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
-    else if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-    else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
-        debugl(9,"GL_FRAMEBUFFER_UNSUPPORTED");
-    else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x",status);
-}
     void ShadowMap::use(DirectedLight &light)
     {
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -97,7 +85,7 @@ void print_FB_status2(GLuint status)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp, 0);
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            print_FB_status2(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+            print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
         }
         else
         {

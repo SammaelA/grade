@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string>
 #include <map>
+#include <GL/glew.h>
 
 #define PI 3.14159265f  
 #define MIN(a,b) ((a)<(b) ? (a) : (b))
@@ -22,7 +23,7 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec);
 void debugl(uint level, const char *__restrict __fmt, ...);
 void debug(const char *__restrict __fmt, ...);
 void logerr(const char *__restrict __fmt, ...);
-
+void print_FB_status(GLuint status);
 struct AllocData
 {
     long active_allocs = 0;

@@ -109,7 +109,7 @@ void Proctree::transform(Proctree::Tree &src, ::Tree &dst, glm::vec3 pos, glm::v
     
     glm::mat4 trans = glm::scale(glm::translate(glm::mat4(1.0f),pos),scale);
     dst.root->transform(trans);
-    
+    dst.valid = true;
     delete src.mRoot;
 	src.mRoot = 0;
 }

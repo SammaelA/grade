@@ -6,7 +6,7 @@
 
 #include "malloc.h"
 
-#define DEBUG_LEVEL 100
+#define DEBUG_LEVEL 0
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;
@@ -65,7 +65,18 @@ void logerr(const char *__restrict __fmt, ...)
     va_end(args);
     fprintf(stderr,"\n");
 }
-
+void print_FB_status(GLuint status)
+{
+    if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n");
+    else if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS)
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS\n");
+    else if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT\n");
+    else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
+        debugl(9,"GL_FRAMEBUFFER_UNSUPPORTED\n");
+    else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x\n",status);
+}
 std::map<std::string, AllocData> alloc_info;
 
 void print_alloc_info()

@@ -16,7 +16,7 @@ void SyntheticTreeGenerator::get_mean_and_stddev(std::vector<float> &values, dou
     }
     if (values.size() == 1)
     {
-        debugl(5, "stat warning - cannot calculate stddev by 1 sample");
+        debugl(5, "stat warning - cannot calculate stddev by 1 sample\n");
         mean = values.front();
         stddev = 0;
         return;

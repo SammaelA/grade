@@ -631,7 +631,8 @@ void TreeGenerator::grow_tree(Tree &t)
 
         if (!(t.iter % 10))
         {
-            debugl(2,"tree is growing  %d/%d iteration %d leaves\n", t.iter, curParams().growth_iterations(), t.leaves->leaves.size());
+            debugl(2,"tree is growing  %d/%d iteration %d leaves\n", t.iter, (int)curParams().growth_iterations(), 
+                  (int)(t.leaves->leaves.size()));
             debugl(2, "sum feed %f\n", feed);
             debugl(2, "average feed distribution:");
             for (int j = 0; j < 10; j++)
@@ -744,6 +745,7 @@ void TreeGenerator::reset()
 }
 void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
+    reset();
     Tree trees[MAX_TREES];
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     heightmap = &h;
@@ -782,7 +784,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
     voxels = nullptr;
     delete seeder;
     seeder = nullptr;
-    debugl(10,"created %d joints %d branches totally",j_count, b_count);
+    debugl(10,"created %d joints %d branches totally\n",j_count, b_count);
 }
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
 {
@@ -921,6 +923,7 @@ Tree::~Tree()
             convert(src, dst,*src.root,*dst.root);
             glm::mat4 trans_matrix = glm::translate(glm::mat4(1.0f),glm::vec3(0,-000,0));
             dst.root->transform(trans_matrix);
+            dst.valid = true;
         }
     }
     void TreeGenerator::convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst)

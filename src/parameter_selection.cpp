@@ -36,9 +36,9 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
                                     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
 {
     double first_run, second_run, third_run;        //(first, second and third run) are defined for the purpose of comparing the resulting
-    double  alpha = 0.975;                         //alpha is used for the cooling schedule of the temperature            
+    const double  alpha = 0.9;                         //alpha is used for the cooling schedule of the temperature            
     const double e = 2.718281828;
-
+    const double min_metric = 0.1;
 
     std::vector<ParameterDesc> mask;
     std::vector<double> data;
@@ -80,7 +80,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         }
         else
         {
-            float pos_change_chance = CLAMP(sqrt(T/max_T), 0.025, 0.025);
+            float pos_change_chance = CLAMP(sqrt(T/max_T), 0.025, 0.25);
             for (int i=0;i<data.size();i++)
             {
                 if (urand()<pos_change_chance)
@@ -100,14 +100,18 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
 
         double LNew = f(data);
 
-        if (LNew > L || (rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T))
+        if (LNew > L)
         {
-            if (LNew > L)
-                data_max = data;
+            data_max = data;
+            L = LNew;
+        }
+        else if (LNew > min_metric && ((rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T)))
+        {
             L = LNew;
         }
         else
         {
+            //restore data
             for (int i=0;i<data.size();i++)
             {
                 if (pos_changed[i])
