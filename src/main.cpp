@@ -447,8 +447,9 @@ int full_initialization()
   }
 
   appContext.renderMode = RenderMode::Rendering;
-  //textureManager.save_bmp(grove.impostors[1].atlas.tex(0),"impostor");
-
+  textureManager.save_bmp(grove.impostors[1].atlas.tex(0),"impostor");
+  Texture tex = textureManager.get("reference_tree_test");
+  textureManager.save_bmp(tex,"reference_tree_test");
   return -1;
 }
 

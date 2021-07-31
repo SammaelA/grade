@@ -77,7 +77,22 @@ double ImpostorMetric::get(GrovePacked &g)
         glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         
         float av_m = 0;
-
+        textureManager.save_bmp(imp,"imp");
+        
+        /*for (int i=0;i<iw;i+=19)
+        {
+            for (int j = 0;j<ih;j+=19)
+            {
+                uint imp_index = 4*( (iw - 1 - i)*(ih) + (ih - 1 - j) );
+                int t1 = get_type(imp_raw[imp_index], imp_raw[imp_index+1]);
+                if (t1 != 3)
+                    debug("%d|",t1);
+                else 
+                    debug(" |");
+            }
+            debugnl();
+        }*/
+        //tard.clear();
         for (int i=0;i<3;i++)
         {
             for (int j=0;j<3;j++)
@@ -102,6 +117,12 @@ double ImpostorMetric::get(GrovePacked &g)
 int ImpostorMetric::get_type(unsigned char r, unsigned char g)
 {
     #define D(r,g,v) (abs((r/256.0) - v.x) + abs((g/256.0) - v.y))
+    if (r + g < 10)
+        return 3;
+    else if (r < 10 || g/r > 2.5)
+        return 2;
+    else
+        return 1;
     float d1 = D(r,g,leaves_color);
     float d2 = D(r,g,wood_color);
     float d3 = D(r,g,empty_color);
@@ -133,11 +154,22 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
         for (int j = 0;j<h;j++)
         {
             uint index = 4*(i*h + j);
-            uint imp_index = 4*( i*(imp_tex_h + imp_offset_h) + (j + imp_offset_w) );
+            uint imp_w = (imp_tex_w - 1 - (i + imp_offset_w));
+            uint imp_h = (imp_tex_h - 1 - (j + imp_offset_h));
+            uint imp_index = 4*((imp_w)*(imp_tex_h) + imp_h);
             int t1 = get_type(reference_raw[index], reference_raw[index+1]);
             int t2 = get_type(imp[imp_index], imp[imp_index+1]);
             df += (t1 != t2);
+            /*if (i % 8 == 0 && j % 8 == 0)
+            {
+                if (t2 != 3)
+                    debug("[%d]",t2);
+                else 
+                    debug("[ ]",t2);
+            }*/
         }
+        //if (i % 8 == 0)
+        //    debugnl();
     }
     logerr("difference calculated %f", (float)df/sz);
     return (float)df/sz;

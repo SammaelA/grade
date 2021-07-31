@@ -246,7 +246,7 @@ void TextureManager::clear_unnamed_with_tag(int tag)
 void TextureManager::save_bmp(Texture &t, std::string name)
 {
     unsigned char *data = nullptr;
-    int w,h;
+    int w,h,layers = 1;
     if (!t.is_valid())
     {
         logerr("trying to save invalid texture");
@@ -258,7 +258,8 @@ void TextureManager::save_bmp(Texture &t, std::string name)
     {
         w = t.get_W();
         h = t.get_H();
-        data = safe_new<unsigned char>(4*w*h, "save_png_data");
+        layers = t.type == GL_TEXTURE_2D_ARRAY ? t.get_layers() : 1;
+        data = safe_new<unsigned char>(4*w*h*layers, "save_png_data");
 
         glBindTexture(t.type, t.texture);
 
@@ -279,7 +280,7 @@ void TextureManager::save_bmp(Texture &t, std::string name)
     if (data)
     {
         std::string path = "saves/"+name+".bmp";
-        stbi_write_bmp(path.c_str(), w, h, 4, data);
+        stbi_write_bmp(path.c_str(), w, h*layers, 4, data);
         safe_delete<unsigned char>(data, "save_png_data"); 
     }
 }

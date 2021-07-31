@@ -6,10 +6,45 @@
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/save_utils/saver.h"
 class BillboardCloudRenderer;
+class TextureAtlas;
+enum Channel
+{
+    R,
+    G,
+    B,
+    A
+};
+class TextureAtlasRawData
+{
+public:
+    unsigned char get_pixel_uc(int w, int h, Channel chan, int tex_id);
+    unsigned char get_pixel_uc_safe(int w, int h, Channel chan, int tex_id);
+    float get_pixel(int w, int h, Channel chan, int tex_id);
+    TextureAtlasRawData();
+    TextureAtlasRawData(TextureAtlas &atlas);
+    ~TextureAtlasRawData();
+    void clear();
+    
+    int get_w() { return w; }
+    int get_h() { return h; }
+    int get_slices() { return slices; }
+    int get_layers() { return layers; }
+    
+    bool is_valid() { return valid; }
+private:
+    bool valid = false;
+    int w = 0,h = 0, layers = 0, slices = 0;
+    int gridWN = 0;
+    int gridHN = 0;
+    int slice_h;
+    int slice_w;
+    unsigned char *raw_data = nullptr;
+};
 class TextureAtlas : public Countable
 {
 public:
     friend class BillboardCloudRaw;
+    friend class TextureAtlasRawData;
     friend bool saver::save(FILE *f, TextureAtlas &t); 
     friend bool saver::load(FILE *f, TextureAtlas &t); 
     TextureAtlas();
