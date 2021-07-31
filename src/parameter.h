@@ -314,6 +314,7 @@ private:
 struct ParameterDesc
 {
     ParameterMaskValues mask;
+    RandomnessLevel randomnessLevel;
     int var_count;
     Parameter<float> original;
     std::string name;
@@ -474,7 +475,8 @@ struct TreeStructureParameters
                                 r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025), 0, 1)
     {
     }
-    void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list);
+    void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
+                            ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES);
     void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, 
                            ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
     void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,

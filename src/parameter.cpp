@@ -20,7 +20,8 @@ Parameter<float> TreeStructureParameters::from_int(Parameter<int> source)
     return par;
 }
 
-void TreeStructureParameters::get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list)
+void TreeStructureParameters::get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
+                                                 ParameterVariablesSet v_set)
 {
     list = {
         {{ParameterMaskValues::CONSTANT,"max_depth"}, max_depth},
@@ -68,8 +69,8 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {{ParameterMaskValues::LIST_OF_VALUES,"branching_power"}, branching_power},
 
         {{ParameterMaskValues::ONE_VALUE,"r_deformation_levels"}, r_deformation_levels},
-        {{ParameterMaskValues::LIST_OF_VALUES,"r_deformation_points"}, r_deformation_points},
-        {{ParameterMaskValues::LIST_OF_VALUES,"r_deformation_power"}, r_deformation_power},
+        {{ParameterMaskValues::CONSTANT,"r_deformation_points"}, r_deformation_points},
+        {{ParameterMaskValues::CONSTANT,"r_deformation_power"}, r_deformation_power},
     }; 
     for (auto &p: list)
     {
@@ -78,8 +79,16 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {
             p.first.val = ParameterMaskValues::CONSTANT;
         }
-        //logerr("%f %f",p.second.minValue, p.second.maxValue);
-        if (p.first.val == ParameterMaskValues::CONSTANT)
+        if (v_set == ParameterVariablesSet::ONLY_BASE_VALUES && p.first.val != ParameterMaskValues::CONSTANT)
+        {
+            p.first.val = ParameterMaskValues::ONE_VALUE;
+        }
+        else if (v_set == ParameterVariablesSet::BASE_VALUES_AND_QS && p.first.val == ParameterMaskValues::FULL)
+        {
+            p.first.val = ParameterMaskValues::LIST_OF_VALUES;
+        }
+
+        /*if (p.first.val == ParameterMaskValues::CONSTANT)
         {
             logerr("CONSTANT");
         }
@@ -95,27 +104,22 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {
             logerr("ONE_VALUE");
         }
-        logerr("%s %s \n",p.first.name.c_str(), p.second.to_string().c_str());
+        logerr("%s %s %d \n",p.first.name.c_str(), p.second.to_string().c_str(),
+               (int)p.second.randomnessLevel);*/
     } 
 }
 void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, ParameterVariablesSet v_set)
 {
     std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
-    get_parameter_list(list);
+    get_parameter_list(list,v_set);
     for (auto &p: list)
     {
         ParameterDesc desc(p.second);
         desc.mask = p.first.val;
         desc.name = p.first.name;
+        desc.randomnessLevel = p.second.randomnessLevel;
         desc.var_count = 0;
-        if (v_set == ParameterVariablesSet::ONLY_BASE_VALUES && p.first.val != ParameterMaskValues::CONSTANT)
-        {
-            p.first.val = ParameterMaskValues::ONE_VALUE;
-        }
-        else if (v_set == ParameterVariablesSet::BASE_VALUES_AND_QS && p.first.val == ParameterMaskValues::FULL)
-        {
-            p.first.val = ParameterMaskValues::LIST_OF_VALUES;
-        }
+
         if (p.first.val != ParameterMaskValues::CONSTANT)
         {
             desc.var_count += 1;
@@ -163,7 +167,7 @@ void TreeStructureParameters::get_mask_and_data(std::vector<ParameterDesc> &mask
 void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, ParameterVariablesSet v_set)
 {
     std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
-    get_parameter_list(list);
+    get_parameter_list(list,v_set);
     if (mask.size() != list.size())
     {
         logerr("unable to load tree structure parameters. Mask size %d list size %d",mask.size(), list.size());
@@ -187,7 +191,7 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
         float from = mask[i].original.from;
         float to = mask[i].original.to;
         float normal_part = mask[i].original.normal_part;
-        RandomnessLevel rl = mask[i].original.randomnessLevel;
+        RandomnessLevel rl = mask[i].randomnessLevel;
         if (mask[i].mask == ParameterMaskValues::CONSTANT)
             continue;
         else if (mask[i].mask == ParameterMaskValues::ONE_VALUE)
@@ -223,11 +227,6 @@ void TreeStructureParameters::load_from_mask_and_data(std::vector<ParameterDesc>
 
             from = from_n*(maxValue - minValue) + minValue;
             to = from + delta_n*(maxValue - minValue);
-
-           // if (state_qs.size() >=3 )
-            //    logerr("%f (%f %f %f) %f %f %f %f %f",val,state_qs[0], state_qs[1], state_qs[2],a,sigma,from,to,normal_part);
-            //else 
-            //    logerr("%f (%d) %f %f %f %f %f",val,state_qs.size(),a,sigma,from,to,normal_part);
         }
         list[i].second = Parameter<float>(val,minValue,maxValue,state_qs,a,sigma,from,to,
                                           normal_part,rl,nullptr,nullptr);

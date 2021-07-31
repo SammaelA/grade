@@ -209,6 +209,7 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
             float k = curParams().r_deformation_power();
             k = k > 0 ? 1 + k : 1/(1-k);
             s.mults[i] *= k;
+            s.mults[i] = MAX(s.mults[i], 3);
         }
     }
     Joint j;
@@ -448,16 +449,20 @@ void TreeGenerator::recalculate_thickness(Branch *b)
     while (s_it != b->segments.end())
     {
         float sum_r = s_prev->rel_r_begin;
-        s_it->rel_r_begin = sum_r * powf((weights[i+1] + j_it->light) / weights[i - 1], 1 / curParams().r_split_save_pow());
+        float r = sum_r * powf((weights[i+1] + j_it->light) / weights[i - 1], 1 / curParams().r_split_save_pow());
+        float min_r = 0.05*curParams().base_r();
+        s_it->rel_r_begin = MAX(r,min_r);
         s_prev->rel_r_end = s_it->rel_r_begin;
         for (auto br : j_it->childBranches)
         {
-            br->base_r = s_it->rel_r_begin * powf(br->light / weights[i - 1], 1 / curParams().r_split_save_pow());
+            r = s_it->rel_r_begin * powf(br->light / weights[i - 1], 1 / curParams().r_split_save_pow());
             curParams.set_state(br->level);
+            min_r = 0.05*curParams().base_r();
+            br->base_r = MAX(r,min_r);
             br->base_r *= curParams().base_r();
             curParams.set_state(b->level);
         }
-        if (s_prev->rel_r_begin < s_prev->rel_r_end)
+        if (s_prev->rel_r_begin > 3)
         {
             logerr("%f i weight[i-1] [i] sum_r j_it->light rel_r_begin %d %f %f %f %f %f",
             (weights[i] + j_it->light) / weights[i - 1], i,
@@ -846,7 +851,7 @@ void TreeGenerator::deform_root(Branch *b)
 }
 void TreeGenerator::post_process(GroveGenerationData ggd, Tree &t)
 {
-    //deform_root(t.root);
+    deform_root(t.root);
     set_branches_centers(ggd, t, 1);
 }
 glm::vec3 b_center_self(Branch *b)

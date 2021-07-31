@@ -36,7 +36,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
                                     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
 {
     double first_run, second_run, third_run;        //(first, second and third run) are defined for the purpose of comparing the resulting
-    const double  alpha = 0.9;                         //alpha is used for the cooling schedule of the temperature            
+    const double  alpha = 0.75;                         //alpha is used for the cooling schedule of the temperature            
     const double e = 2.718281828;
     const double min_metric = 0.1;
 
@@ -59,6 +59,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
 
     data_max = data;
     double L = f(data);
+    double max_L = L;
     double max_T = 80;
     int k = 0;
     bool *pos_changed = safe_new<bool>(data.size(),"pos_changed_arr");
@@ -104,6 +105,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         {
             data_max = data;
             L = LNew;
+            max_L = LNew;
         }
         else if (LNew > min_metric && ((rand() / (double)RAND_MAX) <= pow(e, (LNew - L) / T)))
         {
@@ -124,7 +126,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
     param.load_from_mask_and_data(mask, data_max);
     logerr("base r %s",param.base_r.to_string().c_str());
     logerr("r_split save power %s",param.r_split_save_pow.to_string().c_str());
-    return L;
+    return max_L;
 }
 void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric_type)
 {

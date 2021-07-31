@@ -235,3 +235,63 @@ Texture &TextureAtlas::tex(int type)
     else if (type == 1)
         return normalTex;
 }
+
+unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, int tex_id)
+{
+    int grid_h = tex_id / gridWN;
+    int grid_w = tex_id % gridWN;
+
+    int id = 4*((hh + grid_h*slice_h)*w + (ww + grid_w*slice_w)) + (int)chan;
+
+    return raw_data[id];
+}
+unsigned char TextureAtlasRawData::get_pixel_uc_safe(int ww, int hh, Channel chan, int tex_id)
+{
+    if (!valid || !raw_data || ww < 0 || w >= w || hh < 0 || hh >=h || tex_id < 0 || tex_id >=slices)
+        return 0;
+    else 
+        return get_pixel_uc(ww,hh,chan,tex_id);
+}
+float TextureAtlasRawData::get_pixel(int w, int h, Channel chan, int tex_id)
+{
+    return (float)get_pixel_uc_safe(w, h, chan, tex_id)/255;
+}
+TextureAtlasRawData::TextureAtlasRawData()
+{
+    raw_data = nullptr;
+    valid = false;
+}
+TextureAtlasRawData::TextureAtlasRawData(TextureAtlas &atlas)
+{
+    w = atlas.width;
+    h = atlas.height;
+    gridWN = atlas.gridWN;
+    gridHN = atlas.gridHN;
+    slice_h = h/gridHN;
+    slice_w = w/gridWN;
+    slices = atlas.layers * atlas.gridWN * atlas.gridHN;
+    //raw_data = safe_new<unsigned char>(4*w*h*layers, "tex_atlas_raw_data");
+    raw_data = new unsigned char[4*w*h*layers+1];
+    glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
+
+    glGetTexImage(GL_TEXTURE_2D_ARRAY,
+                  0,
+                  GL_RGBA,
+                  GL_UNSIGNED_BYTE,
+                  raw_data);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    valid = true;
+}
+void TextureAtlasRawData::clear()
+{
+    //safe_delete<unsigned char>(raw_data, "tex_atlas_raw_data");
+    //if (raw_data)
+    //    delete raw_data;
+    raw_data = nullptr;
+    valid = false;
+}
+TextureAtlasRawData::~TextureAtlasRawData()
+{
+    clear();
+}
