@@ -210,6 +210,7 @@ void TreeGenerator::new_segment2(Branch *base, glm::vec3 &dir, glm::vec3 &pos)
             k = k > 0 ? 1 + k : 1/(1-k);
             s.mults[i] *= k;
             s.mults[i] = MAX(s.mults[i], 3);
+            s.mults[i] = 1;
         }
     }
     Joint j;

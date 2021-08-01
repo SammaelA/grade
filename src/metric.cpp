@@ -184,7 +184,7 @@ double ImpostorMetric::get(GrovePacked &g)
             }
         }
         //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
-        //textureManager.save_bmp(reference,"imp");
+        textureManager.save_bmp(imp,"imp");
         av_m /= 8;
 
         safe_delete<unsigned char>(imp_raw, "metric_impostor_raw");
@@ -227,7 +227,8 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
         return 1;
     int sz = w*h;
     int df = 0;
-            
+    int t1_pixels = 0, t2_pixels = 0, filled_pixels = 0;
+    int t1_hits = 0, t2_hits = 0, filled_hits = 0;
     for (int i=0;i<w;i++)
     {
         for (int j = 0;j<h;j++)
@@ -238,6 +239,15 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
             uint imp_index = 4*((imp_w)*(imp_tex_h) + imp_h);
             int t1 = get_type(reference_raw[index], reference_raw[index+1]);
             int t2 = get_type(imp[imp_index], imp[imp_index+1]);
+            
+            t1_pixels += (t1 == 1) + (t2 == 1);
+            t2_pixels += (t1 == 2) + (t2 == 2);
+            filled_pixels += (t1 != 3) + (t2 != 3);
+
+            t1_hits += (t1 == 1) && (t2 == 1);
+            t2_hits += (t1 == 2) && (t2 == 2);
+            filled_hits += (t1 != 3) && (t2 != 3);
+
             df += (t1 != t2);
             if (t1 == 1)
             {
@@ -271,7 +281,18 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
         //if (i % 8 == 0)
         //    debugnl();
     }
+    float d_t1 = 2.0f*t1_hits/t1_pixels;
+    float d_t2 = 2.0f*t2_hits/t2_pixels;
+    float d_fill = 2.0f*filled_hits/filled_pixels;
+
+    float q_t1 = 0;
+    float q_t2 = 0;
+    float q_fill = 1;
+    float norm_q = 3*(q_t1 + q_t2 + q_fill);
+    float new_diff = 1 - (q_t1*d_t1 + q_t2*d_t2+q_fill*d_fill)/norm_q;
+    logerr("difference calculated %f %f %f = %f", d_t1, d_t2, d_fill, new_diff);
     logerr("difference calculated %f", (float)df/sz);
+    return new_diff;
     return (float)df/sz;
 }
 

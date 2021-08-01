@@ -36,7 +36,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
                                     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
 {
     double first_run, second_run, third_run;        //(first, second and third run) are defined for the purpose of comparing the resulting
-    const double  alpha = 0.75;                         //alpha is used for the cooling schedule of the temperature            
+    const double  alpha = 0.995;                         //alpha is used for the cooling schedule of the temperature            
     const double e = 2.718281828;
     const double min_metric = 0.1;
 
