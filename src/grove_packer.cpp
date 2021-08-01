@@ -175,7 +175,6 @@ bool is_valid_tree(::Tree &t)
 void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, 
                 ::Tree *trees_external, Heightmap *h, bool visualize_voxels)
 {
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     grove.center = glm::vec3(0,0,0);
     grove.ggd_name = ggd.name;
     int synts = ggd.synts_count;
@@ -225,106 +224,143 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         post_seeder->recalcuate_shadows(trees_external,count);
         add_occluder(post_voxels,trees_external,count);
     }
-    Clusterizer tr_cl;
-    ClusterizationParams tr_cp;
-    tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
-    tr_cp.ignore_structure_level = 1;
-    tr_cp.delta = 0.1;
-    tr_cp.light_importance = 0;
-    tr_cp.different_types_tolerance = true;
-    tr_cp.r_weights = std::vector<float>{0.4,0,0,0.0,0.0}; 
-    tr_cp.max_individual_dist = 0.4;
-    tr_cp.bwd_rotations = 4;
-    tr_cl.set_clusterization_params(tr_cp);
-    tr_cl.set_branches(trees_external, count, 0, post_voxels);
-
     std::vector<ClusterData> trunks_clusters, branches_clusters, full_tree_clusters;
-    tr_cl.clusterize(trunks_clusters);
-    for (ClusterData &cd : trunks_clusters)
+    
+    
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    if (ggd.task & (GenerationTask::SYNTS|GenerationTask::CLUSTERIZE))
     {
-        transform_according_to_root(cd);
-    }
-    Clusterizer cl;
-    ClusterizationParams cp;
-    cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-    cp.ignore_structure_level = 2;
-    cp.delta = 0.3;
-    cp.max_individual_dist = ggd.clustering_max_individual_distance;
-    cp.bwd_rotations = 4;
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-    cl.set_clusterization_params(cp);
-    cl.set_branches(trees_external, count, 1, post_voxels);
-
-    cl.clusterize(branches_clusters);
-    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-
-    for (int i = 0;i<branches_clusters.size();i++)
-    {
-        for (::Branch *br : branches_clusters[i].ACDA.originals)
+        Clusterizer tr_cl;
+        ClusterizationParams tr_cp;
+        tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
+        tr_cp.ignore_structure_level = 1;
+        tr_cp.delta = 0.1;
+        tr_cp.light_importance = 0;
+        tr_cp.different_types_tolerance = true;
+        tr_cp.r_weights = std::vector<float>{0.4,0,0,0.0,0.0}; 
+        tr_cp.max_individual_dist = 0.4;
+        tr_cp.bwd_rotations = 4;
+        tr_cl.set_clusterization_params(tr_cp);
+        tr_cl.set_branches(trees_external, count, 0, post_voxels);
+        tr_cl.clusterize(trunks_clusters);
+        for (ClusterData &cd : trunks_clusters)
         {
-            br->mark_A = i;
+            transform_according_to_root(cd);
         }
     }
 
-    SyntheticTreeGenerator stg = SyntheticTreeGenerator(*post_seeder, trunks_clusters, branches_clusters, curGgd);
-    stg.generate(trees_external + count, synts, post_voxels);
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     
+    if (ggd.task & (GenerationTask::SYNTS|GenerationTask::CLUSTERIZE|GenerationTask::BILLBOARDS))
+    {
+        Clusterizer cl;
+        ClusterizationParams cp;
+        cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
+        cp.ignore_structure_level = 2;
+        cp.delta = 0.3;
+        cp.max_individual_dist = ggd.clustering_max_individual_distance;
+        cp.bwd_rotations = 4;
+
+        cl.set_clusterization_params(cp);
+        cl.set_branches(trees_external, count, 1, post_voxels);
+        cl.clusterize(branches_clusters);
+
+        for (int i = 0;i<branches_clusters.size();i++)
+        {
+            for (::Branch *br : branches_clusters[i].ACDA.originals)
+            {
+                br->mark_A = i;
+            }
+        }
+    }
+
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+
+    if (ggd.task & (GenerationTask::SYNTS))
+    {
+        SyntheticTreeGenerator stg = SyntheticTreeGenerator(*post_seeder, trunks_clusters, branches_clusters, curGgd);
+        stg.generate(trees_external + count, synts, post_voxels);
+    }
+
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     
-    Clusterizer cl2;
-    cp.ignore_structure_level = 1;
-    cp.light_importance = 0.8;
-    cp.different_types_tolerance = false;
-    cl2.set_clusterization_params(cp);
-    cl2.set_branches(trees_external, count + synts, 0, post_voxels);
-    cl2.clusterize(full_tree_clusters);
+    if (ggd.task & (GenerationTask::IMPOSTORS|GenerationTask::IMPOSTOR_FULL_GROVE))
+    {
+        Clusterizer cl2;
+        ClusterizationParams cp;
+        cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
+        cp.ignore_structure_level = 1;
+        cp.delta = 0.3;
+        cp.max_individual_dist = ggd.clustering_max_individual_distance;
+        cp.bwd_rotations = 4;
+        cp.light_importance = 0.8;
+        cp.different_types_tolerance = false;
+        cl2.set_clusterization_params(cp);
+        cl2.set_branches(trees_external, count + synts, 0, post_voxels);
+        cl2.clusterize(full_tree_clusters);
+    }
 
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
 
-    grove.clouds.push_back(BillboardCloudData());
-    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data
-
-    ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
     grove.impostors.push_back(ImpostorsData());
-    ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors.back());
-    grove.impostors.push_back(ImpostorsData());
-    ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
+    if (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE))
+    {
+        ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
+        
+        ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors.back());
 
+        delete(ib);
+    }
     
+    grove.impostors.push_back(ImpostorsData());
+    if (ggd.task & (GenerationTask::IMPOSTORS))
+    {
+        ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
+        delete(ib2);
+    }
+    
+    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data refers to full-grove-impostor LOD
+    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data refers to impostors LOD
     grove.clouds.push_back(BillboardCloudData());//main cloud 1
-    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, 1,
-                                                      branches_clusters,curGgd.types,&grove.clouds.back());
-    
+    if (ggd.task & (GenerationTask::BILLBOARDS))
+    {
+        BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, 1,
+                                                        branches_clusters,curGgd.types,&grove.clouds.back());
+        delete(cloud1);
+    }
     grove.clouds.push_back(BillboardCloudData());//main cloud 2
-    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, 2,
-                                                      branches_clusters,curGgd.types,&grove.clouds.back());
-    std::vector<BranchStructure> instanced_structures;
+    if (ggd.task & (GenerationTask::BILLBOARDS))
+    {    
+        BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, 2,
+                                                        branches_clusters,curGgd.types,&grove.clouds.back());
+        delete(cloud2);
+    }
+    
+    
+    if (ggd.task & (GenerationTask::CLUSTERIZE))
+    {
+        std::vector<BranchStructure> instanced_structures;
 
-    for (ClusterData &cd : trunks_clusters)
-    {
-        pack_cluster(cd, grove, instanced_structures, 0, 0);
-    }
-    for (ClusterData &cd : branches_clusters)
-    {
-        pack_cluster(cd, grove, instanced_structures, 1, 1000);
-    }
-    for (int i = 0; i < count; i++)
-    {
-        if (trees_external[i].root)
+        for (ClusterData &cd : trunks_clusters)
         {
-            grove.roots.push_back(BranchStructure());
-            pack_structure(trees_external[i].root,grove,grove.roots.back(),instanced_structures);
+            pack_cluster(cd, grove, instanced_structures, 0, 0);
+        }
+        for (ClusterData &cd : branches_clusters)
+        {
+            pack_cluster(cd, grove, instanced_structures, 1, 1000);
+        }
+        for (int i = 0; i < count; i++)
+        {
+            if (trees_external[i].root)
+            {
+                grove.roots.push_back(BranchStructure());
+                pack_structure(trees_external[i].root,grove,grove.roots.back(),instanced_structures);
+            }
         }
     }
-
     delete(post_voxels);
     delete(post_seeder);
 
-    delete(ib);
-    delete(ib2);
-    delete(cloud1);
-    delete(cloud2);
     std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
     /*std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
     std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;

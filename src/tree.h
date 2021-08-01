@@ -132,6 +132,15 @@ enum Quality
     HIGH = 800,
     ULTRA = 1024
 };
+enum GenerationTask
+{
+    GENERATE = 1,
+    CLUSTERIZE = 2,
+    BILLBOARDS = 4,
+    IMPOSTORS = 8,
+    IMPOSTOR_FULL_GROVE = 16,
+    SYNTS = 32
+};
 struct GroveGenerationData
 {
     std::vector<TreeTypeData> types;
@@ -142,7 +151,7 @@ struct GroveGenerationData
     Quality impostor_quality = Quality::MEDIUM;
     Quality bill_1_quality = Quality::MEDIUM;
     Quality bill_2_quality = Quality::LOW;
-
+    unsigned task = GENERATE | CLUSTERIZE | BILLBOARDS | IMPOSTORS | IMPOSTOR_FULL_GROVE;
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;

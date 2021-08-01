@@ -25,14 +25,14 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
 {
     list = {
         {{ParameterMaskValues::CONSTANT,"max_depth"}, max_depth},
-        {{ParameterMaskValues::FULL,"max_segments"}, max_segments},
+        {{ParameterMaskValues::CONSTANT,"max_segments"}, max_segments},
         {{ParameterMaskValues::CONSTANT,"max_branching"}, max_branching},
         {{ParameterMaskValues::CONSTANT,"growth_iterations"}, growth_iterations},
 
         {{ParameterMaskValues::CONSTANT,"scale"}, scale},
         {{ParameterMaskValues::FULL,"seg_len_mult"}, seg_len_mult},
         {{ParameterMaskValues::ONE_VALUE,"leaf_size_mult"}, leaf_size_mult},
-        {{ParameterMaskValues::FULL,"base_r"}, base_r},
+        {{ParameterMaskValues::CONSTANT,"base_r"}, base_r},
         {{ParameterMaskValues::LIST_OF_VALUES,"r_split_save_pow"}, r_split_save_pow},
 
         {{ParameterMaskValues::FULL,"dir_conserv"}, dir_conserv},

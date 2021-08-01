@@ -107,7 +107,7 @@ reference(_reference_image)
                     GL_UNSIGNED_BYTE,
                     reference_raw);
         glBindTexture(GL_TEXTURE_2D, 0);
-        textureManager.save_bmp(ref_resized,"imp");
+        //textureManager.save_bmp(ref_resized,"imp");
         glDeleteTextures(1, &ref_resized.texture);
     }
     
@@ -161,12 +161,12 @@ double ImpostorMetric::get(GrovePacked &g)
             {
                 uint imp_index = 4*( i*(h) + j);
                 int t1 = get_type(reference_raw[imp_index], reference_raw[imp_index+1]);
-                if (t1 != 3)
-                    debug("%d|",reference_raw[imp_index + 3]);
-                else 
-                    debug(" |");
+                //if (t1 != 3)
+                //    debug("%d|",reference_raw[imp_index + 3]);
+                //else 
+                //    debug(" |");
             }
-            debugnl();
+            //debugnl();
         }
         //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
         //tard.clear();

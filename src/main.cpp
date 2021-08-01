@@ -249,7 +249,7 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     tree_ggd.obstacles = {};
     tree_ggd.clustering_max_individual_distance = 0.25;
     tree_ggd.name = "single_tree";
-
+    tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::IMPOSTOR_FULL_GROVE;
     Tree single_tree;
     gen.create_grove(tree_ggd, &single_tree, *data.heightmap);
     packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
@@ -447,9 +447,7 @@ int full_initialization()
   }
 
   appContext.renderMode = RenderMode::Rendering;
-  textureManager.save_bmp(grove.impostors[1].atlas.tex(0),"impostor");
   Texture tex = textureManager.get("reference_tree_test");
-  textureManager.save_bmp(tex,"reference_tree_test");
   return -1;
 }
 
