@@ -99,7 +99,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
     vec3 base_joint = vec3(0, 0, 0);
     Visualizer tg(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
     Billboard bill(cur, num, br.mark_A, 0, base_joint);
-    create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 0.67);
+    create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 1.15);
 
     bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
     bill.positions[1] = imp.bcyl.center + glm::vec3(a) + glm::vec3(c);
@@ -121,7 +121,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         num = atlas->add_tex();
 
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
-        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 0.67);
+        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 1.15);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) - b;
         bill.positions[1] = imp.bcyl.center + glm::vec3(a) - b;

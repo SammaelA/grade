@@ -15,8 +15,8 @@ preset default
     seg_len_mult = 4,{2.25 1.15 0.9 0.35 0.25};
     max_segments = 20,{30 25 15 20 10};
     min_branching_chance = 0,{-0.3 0.3 0.5 0.7 0.7};
-    r_split_save_pow = 3,{2.6 4 6 6 3};
-    base_r = 2.5,{2.5 1.5 0.7 0.35 0.12};
+    r_split_save_pow = 3,{3 3 3 3 3};
+    base_r = 2.5,{1 1 1 1 1};
     seg_dir_random = 0.5,{5 5 5 10 20};
     seg_dir_conserv = 25;
     seg_bend = 1,{1 5 5 5 5},UNIFORM(-3,3,REGENERATE_ON_GET),(1,10);
