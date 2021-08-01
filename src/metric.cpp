@@ -232,7 +232,7 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
     {
         for (int j = 0;j<h;j++)
         {
-            uint index = 3*(i*h + j);
+            uint index = 4*(i*h + j);
             uint imp_w = (imp_tex_w - 1 - (i + imp_offset_w));
             uint imp_h = (imp_tex_h - 1 - (j + imp_offset_h));
             uint imp_index = 4*((imp_w)*(imp_tex_h) + imp_h);
