@@ -1,6 +1,10 @@
 #include "metric.h"
 #include "tinyEngine/utility.h"
-
+//#define STB_IMAGE_IMPLEMENTATION
+#include "tinyEngine/helpers/stb_image.h"
+#include "tree.h"
+#include "tinyEngine/utility/postfx.h"
+unsigned char reference_raw[4*256*256];
 double CompressionMetric::get(GrovePacked &g)
 {
     int origins = 0;
@@ -13,24 +17,89 @@ double CompressionMetric::get(GrovePacked &g)
     logerr("instanced branches %d/%d = %f", instances, origins, comp);
     return comp;
 }
+ImpostorMetric::ImpostorMetric(TreeSilhouette tree_sil):
+reference(textureManager.empty())
+{
+    w = (int)Quality::ULTRALOW;
+    h = (int)Quality::ULTRALOW;
+    //reference_raw = safe_new<unsigned char>(4*w*h, "metric_reference_raw");
+    int type = 3;
+    for (int i=0;i<w;i++)
+    {
+        for (int j = 0;j<h;j++)
+        {
+            type = 3;
+            uint index = 4*(i*h + j);
+            float x = (float)j/w;
+            float y = 1 - (float)i/h;
+            if (y <= tree_sil.trunk_height)
+            {
+                float d = y/tree_sil.trunk_height;
+                float trunk_r = d*tree_sil.trunk_up_r + (1-d)*tree_sil.trunk_down_r;
+                if (abs(0.5 - x) < trunk_r)
+                    type = 1;
+            }
+            float ellips = pow(abs(x-0.5)/tree_sil.crown_width_r, tree_sil.crown_ellipsoid_power) + 
+            pow(abs(y-tree_sil.crown_center_height)/tree_sil.crown_height_r, tree_sil.crown_ellipsoid_power); 
+            if (ellips < 1)
+                type = 2;
 
+            if (type == 1)
+            {
+                reference_raw[index] = 255;
+                reference_raw[index+1] = 0;
+                reference_raw[index+2] = 0;
+                reference_raw[index+3] = 255;
+            }
+            else if (type == 2)
+            {
+                reference_raw[index] = 0;
+                reference_raw[index+1] = 255;
+                reference_raw[index+2] = 0;
+                reference_raw[index+3] = 255;
+            }
+            else if (type == 3)
+            {
+                reference_raw[index] = 0;
+                reference_raw[index+1] = 0;
+                reference_raw[index+2] = 0;
+                reference_raw[index+3] = 0;
+            }
+            //if (i % 8 == 0 && j % 8 == 0)
+            //    debug("%d ",(int)(reference_raw[index+3] > 0));
+        }
+        //if (i % 8 == 0)
+        //    debugnl();
+    }
+}
 ImpostorMetric::ImpostorMetric(Texture &_reference_image):
 reference(_reference_image)
 {
     if (reference.type != GL_TEXTURE_2D || !reference.is_valid())
     {
         logerr("only a valid 2d RGBA texture could be a reference for impostor metric");
-        reference_raw = nullptr;
+        //reference_raw = nullptr;
         w = 0;
         h = 0;
     }
     else
     {
-        w = reference.get_W();
-        h = reference.get_H();
-        reference_raw = safe_new<unsigned char>(4*w*h, "metric_reference_raw");
+        w = (int)Quality::ULTRALOW;
+        h = (int)Quality::ULTRALOW;
+        GLuint fbo;
+        glGenFramebuffers(1, &fbo);
+        Texture ref_resized = textureManager.create_unnamed(w,h);
+        PostFx copy = PostFx("copy.fs");
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ref_resized.texture, 0);
+        copy.use();
+        copy.get_shader().texture("tex",reference.texture);
+        copy.render();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //reference_raw = safe_new<unsigned char>(4*w*h, "metric_reference_raw");
 
-        glBindTexture(GL_TEXTURE_2D, reference.texture);
+        glBindTexture(GL_TEXTURE_2D, ref_resized.texture);
 
         glGetTexImage(GL_TEXTURE_2D,
                     0,
@@ -38,12 +107,19 @@ reference(_reference_image)
                     GL_UNSIGNED_BYTE,
                     reference_raw);
         glBindTexture(GL_TEXTURE_2D, 0);
+        textureManager.save_bmp(ref_resized,"imp");
+        glDeleteTextures(1, &ref_resized.texture);
     }
+    
+    //int channels = 0;
+    //reference_raw = stbi_load("resources/textures/reference_tree_test.png",&w,&h,&channels,0);
+    //logerr("loaded channels = %d",channels);
 }
 
 ImpostorMetric::~ImpostorMetric()
 {
-    safe_delete<unsigned char>(reference_raw, "metric_reference_raw");
+    //stbi_image_free(reference_raw);
+    //safe_delete<unsigned char>(reference_raw, "metric_reference_raw");
 }
 
 double ImpostorMetric::get(GrovePacked &g)
@@ -77,21 +153,22 @@ double ImpostorMetric::get(GrovePacked &g)
         glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         
         float av_m = 0;
-        textureManager.save_bmp(imp,"imp");
+        //textureManager.save_bmp(imp,"imp");
         
-        /*for (int i=0;i<iw;i+=19)
+        for (int i=0;i<w;i+=8)
         {
-            for (int j = 0;j<ih;j+=19)
+            for (int j = 0;j<h;j+=8)
             {
-                uint imp_index = 4*( (iw - 1 - i)*(ih) + (ih - 1 - j) );
-                int t1 = get_type(imp_raw[imp_index], imp_raw[imp_index+1]);
+                uint imp_index = 4*( i*(h) + j);
+                int t1 = get_type(reference_raw[imp_index], reference_raw[imp_index+1]);
                 if (t1 != 3)
-                    debug("%d|",t1);
+                    debug("%d|",reference_raw[imp_index + 3]);
                 else 
                     debug(" |");
             }
             debugnl();
-        }*/
+        }
+        //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
         //tard.clear();
         for (int i=0;i<3;i++)
         {
@@ -106,6 +183,8 @@ double ImpostorMetric::get(GrovePacked &g)
                 av_m += m;
             }
         }
+        //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
+        //textureManager.save_bmp(reference,"imp");
         av_m /= 8;
 
         safe_delete<unsigned char>(imp_raw, "metric_impostor_raw");
@@ -153,13 +232,34 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
     {
         for (int j = 0;j<h;j++)
         {
-            uint index = 4*(i*h + j);
+            uint index = 3*(i*h + j);
             uint imp_w = (imp_tex_w - 1 - (i + imp_offset_w));
             uint imp_h = (imp_tex_h - 1 - (j + imp_offset_h));
             uint imp_index = 4*((imp_w)*(imp_tex_h) + imp_h);
             int t1 = get_type(reference_raw[index], reference_raw[index+1]);
             int t2 = get_type(imp[imp_index], imp[imp_index+1]);
             df += (t1 != t2);
+            if (t1 == 1)
+            {
+                imp[imp_index] = 0;
+                imp[imp_index+1] = 0;
+                imp[imp_index+2] = 255;
+                imp[imp_index+3] = 255;
+            }
+            else if (t1 == 2)
+            {
+                imp[imp_index] = 0;
+                imp[imp_index+1] = 255;
+                imp[imp_index+2] = 0;
+                imp[imp_index+3] = 255;
+            }
+            else if (t1 == 3)
+            {
+                imp[imp_index] = 0;
+                imp[imp_index+1] = 0;
+                imp[imp_index+2] = 0;
+                imp[imp_index+3] = 0;
+            }
             /*if (i % 8 == 0 && j % 8 == 0)
             {
                 if (t2 != 3)

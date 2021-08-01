@@ -242,7 +242,14 @@ void TextureManager::clear_unnamed_with_tag(int tag)
     current_textures_tag = 0;
     debugl(10, "texture clearing completed. %d Mb allocated memory left\n", (int)(1e-6*tex_mem));
 }
-
+void TextureManager::save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name)
+{
+    if (data)
+    {
+        std::string path = "saves/"+name+".bmp";
+        stbi_write_bmp(path.c_str(), w, h, channels, data);
+    }
+}
 void TextureManager::save_bmp(Texture &t, std::string name)
 {
     unsigned char *data = nullptr;
@@ -259,7 +266,7 @@ void TextureManager::save_bmp(Texture &t, std::string name)
         w = t.get_W();
         h = t.get_H();
         layers = t.type == GL_TEXTURE_2D_ARRAY ? t.get_layers() : 1;
-        data = safe_new<unsigned char>(4*w*h*layers, "save_png_data");
+        data = safe_new<unsigned char>(4*w*h*layers, "save_bmp_data");
 
         glBindTexture(t.type, t.texture);
 
@@ -279,8 +286,7 @@ void TextureManager::save_bmp(Texture &t, std::string name)
     }
     if (data)
     {
-        std::string path = "saves/"+name+".bmp";
-        stbi_write_bmp(path.c_str(), w, h*layers, 4, data);
-        safe_delete<unsigned char>(data, "save_png_data"); 
+        save_bmp_raw(data,w,h*layers,4,name);
+        safe_delete<unsigned char>(data, "save_bmp_data"); 
     }
 }

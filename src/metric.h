@@ -17,15 +17,26 @@ public:
     virtual double get(GrovePacked &g) override;
 };
 
+struct TreeSilhouette
+{
+    float trunk_down_r;
+    float trunk_up_r;
+    float trunk_height;
+    float crown_center_height;
+    float crown_height_r;
+    float crown_width_r;
+    float crown_ellipsoid_power;
+};
 class ImpostorMetric : public Metric
 {
 public:
     ImpostorMetric(Texture &reference_image);
+    ImpostorMetric(TreeSilhouette tree_sil);
     ~ImpostorMetric();
     virtual double get(GrovePacked &g) override;
 private:
     Texture reference;
-    unsigned char *reference_raw = nullptr;
+    //unsigned char *reference_raw = nullptr;
     int w, h;
     glm::vec3 leaves_color = glm::vec3(0,1,0);
     glm::vec3 empty_color = glm::vec3(0,0,0);

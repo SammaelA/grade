@@ -140,8 +140,17 @@ void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel
     }
     if (metric_type == ImpostorSimilarity)
     {
-        Texture ref = textureManager.get("reference_tree_test");
-        ImpostorMetric im = ImpostorMetric(ref);
+        //Texture ref = textureManager.get("leaf1");
+       //ImpostorMetric im = ImpostorMetric(ref);
+       TreeSilhouette sil;
+       sil.trunk_down_r = 0.04;
+       sil.trunk_height = 0.6;
+       sil.trunk_up_r = 0.02;
+       sil.crown_center_height = 0.6;
+       sil.crown_height_r = 0.3;
+       sil.crown_width_r = 0.2;
+       sil.crown_ellipsoid_power = 2;
+       ImpostorMetric im = ImpostorMetric(sil);
         metric = &im;
     }
     if (sel_type == BruteForce)
