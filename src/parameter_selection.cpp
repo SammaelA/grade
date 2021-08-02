@@ -408,13 +408,20 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         int par_count = set.size();
         if (par_count == 0)
             continue;
-        std::map<std::string, int> par_data_pos_by_name;
+        struct PdTmpData
+        {
+            int pos;
+            float mn;
+            float mx;
+
+        };
+        std::map<std::string, PdTmpData> par_data_pos_by_name;
         int cur_pos = 0;
         for (auto &desk : mask)
         {
             if (desk.mask != ParameterMaskValues::CONSTANT)
             {
-                par_data_pos_by_name.emplace(desk.name,cur_pos);
+                par_data_pos_by_name.emplace(desk.name,PdTmpData{cur_pos,desk.original.get_min(),desk.original.get_max()});
             }
             cur_pos += desk.var_count;
         }
@@ -430,12 +437,16 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
             {
                 ParamTmp ptmp;
                 ptmp.offset = next_offset;
-                ptmp.data_pos = it->second;
+                ptmp.data_pos = it->second.pos;
                 ptmp.values = set[i].base_values_set;
                 ptmp.count = set[i].base_values_set.size();
                 ptmp.name = it->first;
                 valid_params.push_back(ptmp);
                 next_offset *= ptmp.count;
+                for (float &val : ptmp.values)//normalize values
+                {
+                    val = (val - it->second.mn)/(it->second.mx - it->second.mn);
+                }
             }
             else
             {
@@ -496,7 +507,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
 
             textureManager.set_textures_tag(1);
             GrovePacked tree = GrovePacked();
-            param.load_from_mask_and_data(mask, data);
+            //param.load_from_mask_and_data(mask, data);
             generate(param, tree);
             global_iters++;
             float metr = metric->get(tree);
@@ -541,7 +552,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
         {
             if (local_finished || finished)
                 break;
-            param.load_from_mask_and_data(mask, data);
+            //param.load_from_mask_and_data(mask, data);
             int sa_iter = 0;
             float metr = simulated_annealing_selection(param, metric, generate, &sa_iter, 0.6, 0.1, 0.15);
             global_iters += sa_iter;
@@ -604,7 +615,7 @@ float simulated_annealing_selection(TreeStructureParameters &param, Metric *metr
     debugl(4, "Time spent: %d h %d m %d s\n",(int)dt_sec/3600, ((int)dt_sec)/60 % 60, ((int)dt_sec)%60);
 
 
-    param.load_from_mask_and_data(mask, data_max);
+    //param.load_from_mask_and_data(mask, data_max);
     return max_metr;
 }
 void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric_type)

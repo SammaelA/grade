@@ -226,6 +226,12 @@ void clear_current_grove()
 }
 void generate_grove()
 {
+    std::vector<ParameterDesc> mask;
+    std::vector<double> dt;
+
+    ggd.types[0].params.get_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
+    ggd.types[0].params.load_from_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
+
     GrovePacker packer;
     gen.create_grove(ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
