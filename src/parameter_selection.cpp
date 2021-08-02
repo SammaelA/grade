@@ -3,6 +3,7 @@
 #include "distribution.h"
 #include <iostream>
 #include <functional>
+#include <chrono>
 
 float brute_force_selection(TreeStructureParameters &param, Metric *metric,
                             std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
@@ -33,8 +34,10 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
 }
 float brute_force_selection(TreeStructureParameters &param, Metric *metric,
                             std::function<void(TreeStructureParameters &, GrovePacked &)> &generate,
-                            SetSelectionProgram &set_selection_program)
+                            SetSelectionProgram &set_selection_program,
+                            ExitConditions exit_conditions)
 {
+    std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     if (set_selection_program.selections.empty() || !metric)
         return 0;
     if (set_selection_program.schedule == AllInOne && set_selection_program.selections.size() > 1)
@@ -50,9 +53,30 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
     data_max = data;
     GrovePacked tree;
     float max_metr = 0;
-
-    for (auto &set : set_selection_program.selections)
+    int global_iters = 0;
+    std::vector<SelectionSet> &selections = set_selection_program.selections;
+    if (set_selection_program.schedule == UnitbyUnit)
     {
+        //make a new set from every unit;
+        std::vector<SelectionSet> new_selections;
+        for (auto &set : set_selection_program.selections)
+        {
+            for (auto &unit : set)
+            {
+                new_selections.push_back({unit});
+            }
+        }
+        selections = new_selections;
+    }
+    int set_count = 0;
+    bool finished = false;
+    for (auto &set : selections)
+    {
+        if (finished)
+            break;
+        bool local_finished = false;
+        std::vector<double> local_max;
+        float local_max_metr = 0;
         int par_count = set.size();
         if (par_count == 0)
             continue;
@@ -99,15 +123,51 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
             }
         }
         int val_count = next_offset;
-        debugl(4, "Brute force parameter selection set up with %d parameters totally\n",val_count);
+        set_count++;
+        debugl(4, "Brute force parameter selection set %d with %d parameters totally\n",set_count,val_count);
 
-        const int print_iter = 100;
-
+        const int print_iter = 10;
+        std::vector<bool> visited = {};
+        if (set_selection_program.schedule == SetbySetRandomized)
+        {
+            visited = std::vector<bool>(val_count, false);
+        }
         for (int i = 0; i<val_count;i++)
         {
+            int val_id = i;
+            if (set_selection_program.schedule == SetbySetRandomized)
+            {
+                int rnd_id = urand(0, val_count);
+                if (visited[rnd_id])
+                {
+                    bool all_visited = true;
+                    int add = 1;
+                    while (all_visited)
+                    {
+                        if (rnd_id - add >= 0 && !visited[rnd_id - add])
+                        {
+                            all_visited = false;
+                            val_id = rnd_id - add;
+                        }
+                        else
+                        if (rnd_id + add < val_count && !visited[rnd_id + add])
+                        {
+                            all_visited = false;
+                            val_id = rnd_id + add;
+                        }
+                        add++;
+                    }
+                }
+                else
+                {
+                    val_id = rnd_id;
+                }
+                visited[val_id] = true;
+                //logerr("%d visited", val_id);
+            }
             for (auto &ptmp : valid_params)
             {
-                int num = i / ptmp.offset % ptmp.count;
+                int num = val_id / ptmp.offset % ptmp.count;
                 data[ptmp.data_pos] = ptmp.values[num];
             }
 
@@ -115,19 +175,54 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
             GrovePacked tree = GrovePacked();
             param.load_from_mask_and_data(mask, data);
             generate(param, tree);
+            global_iters++;
             float metr = metric->get(tree);
-            if (metr > max_metr)
+            if (metr > local_max_metr)
             {
-                max_metr = metr;
-                data_max = data;
+                local_max_metr = metr;
+                local_max = data;
             }
             textureManager.clear_unnamed_with_tag(1);
 
-            if (i % print_iter == 0 || i == val_count - 1)
+            std::chrono::steady_clock::time_point t_cur = std::chrono::steady_clock::now();
+            auto delta_t = t_cur - t_start;
+            float dt_sec = 1e-9*delta_t.count();
+            if (dt_sec > exit_conditions.max_time_seconds)
             {
-                debugl(4,"iter %d/%d max_metric %f\n",i+1,val_count,max_metr);
+                finished = true;
+                debugl(4, "Maximum selection time exceeded. Finishing selection\n");
             }
+            else if (global_iters > exit_conditions.max_iters)
+            {
+                finished = true;
+                debugl(4, "Maximum selection iteration count exceeded. Finishing selection\n");
+            }
+            else if (local_max_metr > exit_conditions.metric_reached)
+            {
+                finished = true;
+                debugl(4, "Desired quality level reached. Finishing selection\n");
+            }
+            else if  ((float)i/val_count > exit_conditions.part_of_set_covered)
+            {
+                local_finished = true;
+                debugl(4, "Specified part of values tested. Moving to next set\n");
+            }
+            if ((i + 1) % print_iter == 0 || i == val_count - 1)
+            {
+                debugl(4,"iter %d/%d max_metric %f time spent %f\n",i+1,val_count,local_max_metr,dt_sec);
+            }
+
+            if (finished || local_finished)
+                break;
         }
+        if (local_max_metr > max_metr)
+        {
+            data_max = local_max;
+            max_metr = local_max_metr;
+        }
+        data = data_max;
+        debugl(4, "parameter set %d processed local_max = %f, global_max = %f\n",
+               set_count, local_max_metr, max_metr);
     }
 
     param.load_from_mask_and_data(mask, data_max);
@@ -263,7 +358,7 @@ void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel
     {
         //float m = simulated_annealing_selection(param,metric,generate);
         SetSelectionProgram set_p;
-        set_p.schedule = SelectionSchedule::SetbySet;
+        set_p.schedule = SelectionSchedule::SetbySetRandomized;
         SelectionSet set;
         SelectionUnit u1;
         u1.parameter_name = "base_branch_feed";
@@ -273,7 +368,10 @@ void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel
         u3.base_values_set = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
         set = {u1,u3};
         set_p.selections = {set};
-        float m = brute_force_selection(param, metric, generate, set_p);
+        ExitConditions ec;
+        ec.max_iters = 100;
+        ec.part_of_set_covered = 0.4;
+        float m = brute_force_selection(param, metric, generate, set_p, ec);
         logerr("simulated annealing parameter selection finished with max_metric %f", m);
     }
 }

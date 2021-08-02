@@ -19,6 +19,8 @@ enum SelectionSchedule
     AllInOne,//Metric for all possible values in set is calculated, values are sorted by metric and 
              //simulated annealing is repeated with new center in every value for best to worst
     SetbySet,//the same process independently for every set
+    SetbySetRandomized,//the same process independently for every set. Values in every set are taken 
+                      //in a random order
     UnitbyUnit//the same process independently for every unit in every set
 };
 struct SelectionUnit
@@ -31,6 +33,13 @@ struct SetSelectionProgram
 {
     std::vector<SelectionSet> selections;
     SelectionSchedule schedule;
+};
+struct ExitConditions
+{
+    float metric_reached = 10;
+    int max_iters = INT_MAX;
+    float max_time_seconds = 24*60*60;
+    float part_of_set_covered = 1;
 };
 class ParameterSelector
 {
