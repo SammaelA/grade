@@ -290,8 +290,8 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
     float q_fill = 1;
     float norm_q = 3*(q_t1 + q_t2 + q_fill);
     float new_diff = 1 - (q_t1*d_t1 + q_t2*d_t2+q_fill*d_fill)/norm_q;
-    logerr("difference calculated %f %f %f = %f", d_t1, d_t2, d_fill, new_diff);
-    logerr("difference calculated %f", (float)df/sz);
+    //logerr("difference calculated %f %f %f = %f", d_t1, d_t2, d_fill, new_diff);
+    //logerr("difference calculated %f", (float)df/sz);
     return new_diff;
     return (float)df/sz;
 }

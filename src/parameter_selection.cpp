@@ -31,7 +31,108 @@ float brute_force_selection(TreeStructureParameters &param, Metric *metric,
     param.load_from_mask_and_data(mask, data_max);
     return max_metr;
 }
+float brute_force_selection(TreeStructureParameters &param, Metric *metric,
+                            std::function<void(TreeStructureParameters &, GrovePacked &)> &generate,
+                            SetSelectionProgram &set_selection_program)
+{
+    if (set_selection_program.selections.empty() || !metric)
+        return 0;
+    if (set_selection_program.schedule == AllInOne && set_selection_program.selections.size() > 1)
+    {
+        logerr("AllInOne schedule for multiple sets is not yet implemented");
+        set_selection_program.schedule = SetbySet;
+    }
 
+    std::vector<ParameterDesc> mask;
+    std::vector<double> data;
+    std::vector<double> data_max;
+    param.get_mask_and_data(mask, data);
+    data_max = data;
+    GrovePacked tree;
+    float max_metr = 0;
+
+    for (auto &set : set_selection_program.selections)
+    {
+        int par_count = set.size();
+        if (par_count == 0)
+            continue;
+        std::map<std::string, int> par_data_pos_by_name;
+        int cur_pos = 0;
+        for (auto &desk : mask)
+        {
+            if (desk.mask != ParameterMaskValues::CONSTANT)
+            {
+                par_data_pos_by_name.emplace(desk.name,cur_pos);
+            }
+            cur_pos += desk.var_count;
+        }
+        struct ParamTmp
+        {
+            int offset = 0;
+            int count = 0;
+            int data_pos = 0; //pos of modified parameter in data vector
+            std::vector<float> values;
+            std::string name = "unknown";
+        };
+        std::vector<ParamTmp> valid_params;
+        int next_offset = 1;
+        for (int i=0;i<par_count;i++)
+        {
+            if (set[i].base_values_set.empty())
+                continue;
+            auto it = par_data_pos_by_name.find(set[i].parameter_name);
+            if (it != par_data_pos_by_name.end())
+            {
+                ParamTmp ptmp;
+                ptmp.offset = next_offset;
+                ptmp.data_pos = it->second;
+                ptmp.values = set[i].base_values_set;
+                ptmp.count = set[i].base_values_set.size();
+                ptmp.name = it->first;
+                valid_params.push_back(ptmp);
+                next_offset *= ptmp.count;
+            }
+            else
+            {
+                debugl(4, "warning: parameter %s in selection set is constant or does not exist\n",
+                       set[i].parameter_name);
+            }
+        }
+        int val_count = next_offset;
+        debugl(4, "Brute force parameter selection set up with %d parameters totally\n",val_count);
+
+        const int print_iter = 100;
+
+        for (int i = 0; i<val_count;i++)
+        {
+            for (auto &ptmp : valid_params)
+            {
+                int num = i / ptmp.offset % ptmp.count;
+                data[ptmp.data_pos] = ptmp.values[num];
+            }
+
+            textureManager.set_textures_tag(1);
+            GrovePacked tree = GrovePacked();
+            param.load_from_mask_and_data(mask, data);
+            generate(param, tree);
+            float metr = metric->get(tree);
+            if (metr > max_metr)
+            {
+                max_metr = metr;
+                data_max = data;
+            }
+            textureManager.clear_unnamed_with_tag(1);
+
+            if (i % print_iter == 0 || i == val_count - 1)
+            {
+                debugl(4,"iter %d/%d max_metric %f\n",i+1,val_count,max_metr);
+            }
+        }
+    }
+
+    param.load_from_mask_and_data(mask, data_max);
+    return max_metr;
+}
 float simulated_annealing_selection(TreeStructureParameters &param, Metric *metric,
                                     std::function<void(TreeStructureParameters &, GrovePacked &)> &generate)
 {
@@ -160,7 +261,19 @@ void ParameterSelector::select(TreeStructureParameters &param, SelectionType sel
     } 
     else if (sel_type == SimulatedAnnealing)
     {
-        float m = simulated_annealing_selection(param,metric,generate);
+        //float m = simulated_annealing_selection(param,metric,generate);
+        SetSelectionProgram set_p;
+        set_p.schedule = SelectionSchedule::SetbySet;
+        SelectionSet set;
+        SelectionUnit u1;
+        u1.parameter_name = "base_branch_feed";
+        u1.base_values_set = {50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
+        SelectionUnit u3;
+        u3.parameter_name = "base_seg_feed";
+        u3.base_values_set = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
+        set = {u1,u3};
+        set_p.selections = {set};
+        float m = brute_force_selection(param, metric, generate, set_p);
         logerr("simulated annealing parameter selection finished with max_metric %f", m);
     }
 }

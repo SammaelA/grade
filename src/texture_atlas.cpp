@@ -49,7 +49,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l) :
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
-    logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
+    //logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
     //atlases_count++;
     width = w;
     height = h;
