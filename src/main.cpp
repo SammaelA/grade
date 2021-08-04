@@ -253,7 +253,7 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     tree_ggd.pos = glm::vec3(0,0,0);
     tree_ggd.size = glm::vec3(150,150,250);
     tree_ggd.obstacles = {};
-    tree_ggd.clustering_max_individual_distance = 0.25;
+    tree_ggd.clustering_max_individual_distance = 0.0;
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::IMPOSTOR_FULL_GROVE;
     Tree single_tree;

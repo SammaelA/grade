@@ -378,6 +378,13 @@ struct TreeStructureParameters
     Parameter<float> r_deformation_levels;
     Parameter<float> r_deformation_points;
     Parameter<float> r_deformation_power;
+
+    Parameter<float> base_light;
+    Parameter<float> base_light_pow;
+
+    Parameter<float> dist_power;
+    Parameter<float> dist_mul;
+    Parameter<float> base_dist;
     void set_state(int state)
     {
         max_depth.set_state(state);
@@ -427,6 +434,13 @@ struct TreeStructureParameters
         r_deformation_levels.set_state(state);
         r_deformation_points.set_state(state);
         r_deformation_power.set_state(state);
+
+        base_light.set_state(state);
+        base_light_pow.set_state(state);
+        
+        dist_power.set_state(state);
+        dist_mul.set_state(state);
+        base_dist.set_state(state);
     }
 
     TreeStructureParameters() : max_depth(4,4,4),
@@ -474,7 +488,14 @@ struct TreeStructureParameters
                                 branching_power(1.2, std::vector<float>{1.2, 0.8, 0.5, 0.5, 0.4}, 0.5, 2.5),
                                 r_deformation_levels(2, 2, 2),
                                 r_deformation_points(8,std::vector<float>{8,3}, 8, 8),
-                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025), 0, 1)
+                                r_deformation_power(0, std::vector<float>{0,0}, REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.025), 0, 1),
+                        
+                                base_light(40,10,150),
+                                base_light_pow(1,0.5,2.5),
+                            
+                                dist_power(1,0.5,2.5),
+                                dist_mul(0.4,std::vector<float>{0, 0.3, 0.5, 0.4},REGENERATE_ON_GET, distibutionGenerator.get_normal(0,0.25),0,4),
+                                base_dist(40,0,150)
     {
     }
     void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,

@@ -20,7 +20,7 @@ void debugnl()
 }
 void debug(const char *__restrict __fmt, glm::vec2 vec)
 {
-    debug("[%f %f]",vec.x,vec.y);
+    debug("[%f %f] %s",vec.x,vec.y,__fmt);
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec2 vec)
 {
@@ -30,7 +30,7 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec2 vec)
 }
 void debug(const char *__restrict __fmt, glm::vec3 vec)
 {
-    debug("[%f %f %f]",vec.x,vec.y,vec.z);
+    debug("[%f %f %f] %s",vec.x,vec.y,vec.z, __fmt);
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec3 vec)
 {
@@ -40,7 +40,7 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec3 vec)
 }
 void debug(const char *__restrict __fmt, glm::vec4 vec)
 {
-    debug("[%f %f %f %f]",vec.x,vec.y,vec.z,vec.w);
+    debug("[%f %f %f %f] %s",vec.x,vec.y,vec.z,vec.w, __fmt);
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec)
 {

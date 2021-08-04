@@ -72,6 +72,13 @@ void TreeStructureParameters::get_parameter_list(std::vector<std::pair<Parameter
         {{ParameterMaskValues::ONE_VALUE,"r_deformation_levels"}, r_deformation_levels},
         {{ParameterMaskValues::CONSTANT,"r_deformation_points"}, r_deformation_points},
         {{ParameterMaskValues::CONSTANT,"r_deformation_power"}, r_deformation_power},
+
+        {{ParameterMaskValues::ONE_VALUE,"base_light"}, base_light},
+        {{ParameterMaskValues::ONE_VALUE,"base_light_pow"}, base_light_pow},
+        
+        {{ParameterMaskValues::ONE_VALUE,"dist_power"}, dist_power},
+        {{ParameterMaskValues::FULL,"dist_mul"}, dist_mul},
+        {{ParameterMaskValues::ONE_VALUE,"base_dist"}, base_dist},
     }; 
     for (auto &p: list)
     {

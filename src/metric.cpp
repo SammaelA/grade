@@ -183,8 +183,8 @@ double ImpostorMetric::get(GrovePacked &g)
                 av_m += m;
             }
         }
-        //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
-        textureManager.save_bmp(imp,"imp");
+        textureManager.save_bmp_raw(imp_raw,iw,ih,4,"imp");
+        //textureManager.save_bmp(imp,"imp");
         av_m /= 8;
 
         safe_delete<unsigned char>(imp_raw, "metric_impostor_raw");
@@ -249,21 +249,28 @@ float ImpostorMetric::diff(unsigned char *imp, unsigned char *reference, int imp
             filled_hits += (t1 != 3) && (t2 != 3);
 
             df += (t1 != t2);
-            if (t1 == 1)
+            if (t1 != 3 && t2 != 3)
             {
-                imp[imp_index] = 0;
-                imp[imp_index+1] = 0;
+                imp[imp_index] = 255;
+                imp[imp_index+1] = 255;
                 imp[imp_index+2] = 255;
                 imp[imp_index+3] = 255;
             }
-            else if (t1 == 2)
+            else if (t1 != 3 && t2 == 3)
             {
                 imp[imp_index] = 0;
                 imp[imp_index+1] = 255;
                 imp[imp_index+2] = 0;
                 imp[imp_index+3] = 255;
             }
-            else if (t1 == 3)
+            else if (t1 == 3 && t2 != 3)
+            {
+                imp[imp_index] = 0;
+                imp[imp_index+1] = 0;
+                imp[imp_index+2] = 255;
+                imp[imp_index+3] = 255;
+            }
+            else if (t1 == 3 && t2 == 3)
             {
                 imp[imp_index] = 0;
                 imp[imp_index+1] = 0;

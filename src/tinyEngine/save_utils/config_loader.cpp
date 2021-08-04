@@ -279,6 +279,32 @@ bool Config::load_config()
             {
                 tsp.min_branching_chance.set_no_override_minmax(res);
             }
+            else if (nm == "base_dist")
+            {
+                tsp.base_dist.set_no_override_minmax(res);
+            }
+            else if (nm == "dist_mul")
+            {
+                tsp.dist_mul.set_no_override_minmax(res);
+            }
+            else if (nm == "dist_power")
+            {
+                tsp.dist_power.set_no_override_minmax(res);
+            }
+            else if (nm == "base_light_pow")
+            {
+                tsp.base_light_pow.set_no_override_minmax(res);
+            }
+            else if (nm == "base_light")
+            {
+                tsp.base_light.set_no_override_minmax(res);
+            }
+            /*                                base_light(40,10,150),
+                                base_light_pow(1,0.5,2.5),
+                            
+                                dist_power(1,0.5,2.5),
+                                dist_mul(0.4,0,4),
+                                base_dist(40,0,150)*/
             free(p.name);
             free(p.param_list);
         }

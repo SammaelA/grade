@@ -40,7 +40,7 @@ Uniform::Uniform(double from, double to, int seed)
 }
 double Uniform::get()
 {
-    return (RND + from) /(to - from);
+    return (RND)*(to - from) + from;
 }
 double *Uniform::get_series(unsigned size)
 {

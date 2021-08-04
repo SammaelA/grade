@@ -247,7 +247,12 @@ int segment_try_schedule(int k)
 }
 void TreeGenerator::try_new_segment(Branch *base)
 {
-    float feed = base->joints.back().light;
+    float dist_power = curParams().dist_power();
+    float dist_mul = curParams().dist_mul();
+    float dist_base = curParams().base_dist();
+    float dist_fine = MAX(dist_mul*powf(base->joints.back().distance - dist_base,dist_power), 0);
+    float feed = base->joints.back().light - dist_fine;
+
     if (base->segments.size() < base->max_seg_count)
     {
         base->iters_to_next_segment_try--;
@@ -379,13 +384,16 @@ void TreeGenerator::grow_branch(Branch *b, float feed)
 }
 float TreeGenerator::calc_light(Joint &j)
 {
-    float l = j.childBranches.empty() ? voxels->get_occlusion(j.pos) : 0;
-    l = 50 - l;
+    float l = j.childBranches.empty() ? voxels->get_occlusion(j.pos) : 1e6;
+    float base_light = curParams().base_light();
+    float light_to_feed_pow = curParams().base_light_pow();
+    l = base_light*powf(base_light/(base_light + l),light_to_feed_pow);
     if (l < 1)
         l = 1;
     j.light = l;
     for (auto b : j.childBranches)
     {
+        b->distance = j.distance;
         l += calc_light(b);
     }
     return l;
@@ -414,8 +422,13 @@ float TreeGenerator::calc_light(Branch *b)
     if (b->dead)
         return 0;
     float l = 0.0;
+    float dist = b->distance;
+    glm::vec3 pr_pos = b->joints.front().pos;
     for (auto &j : b->joints)
     {
+        dist += glm::length(pr_pos - j.pos);
+        pr_pos = j.pos;
+        j.distance = dist;
         l += calc_light(j);
     }
     b->light = l;
@@ -628,6 +641,7 @@ void TreeGenerator::grow_tree(Tree &t)
     {
         float feed = 1;
         seg_count = 0;
+        root->distance = 0;
         feed = calc_light(root);
         root->light += 1000 + 100*sqrt(feed);
         calc_size(root);

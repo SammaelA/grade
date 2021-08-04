@@ -48,6 +48,7 @@ struct Joint
     short iters_to_next_branch_try = 0;
     short tries_from_last_grown_branch = 0;
     float light;
+    float distance;
 };
 struct Branch
 {
@@ -61,6 +62,7 @@ struct Branch
     std::list<Segment> segments;
     std::list<Joint> joints;
     float light;
+    float distance;
     float size;
     float base_r;
     bool dead = false;

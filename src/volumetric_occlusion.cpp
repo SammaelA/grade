@@ -208,7 +208,7 @@ float LightVoxelsCube::get_occlusion_cone(glm::vec3 pos, glm::vec3 dir, glm::vec
 glm::vec3 LightVoxelsCube::get_dir_to_bright_place_cone(glm::vec3 pos, float r, int cones, float *occlusion)
 {
     const int num_samples = 64;
-    const float BIAS = 0.01;
+    const float BIAS = 0.1;
     float alpha = PI/10;
     float cone_R = r*sin(alpha); 
     float cone_H = r;
@@ -248,6 +248,7 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_cone(glm::vec3 pos, float r, 
             min_shifts.push_back(dir);
             min_occ = MIN(occ,min_occ);
         }
+        prev_dir = dir;
     }
 
     int min_sz = min_shifts.size();
