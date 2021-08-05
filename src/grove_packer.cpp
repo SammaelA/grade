@@ -208,7 +208,8 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
         glm::vec3 vox_size = curGgd.size;
         auto &type = ggd.types[0];
-        ParameterSetWrapper params = ParameterSetWrapper(type.params,type.params.max_depth() + 1);
+        TreeStructureParameters base_params;
+        ParameterSetWrapper params = ParameterSetWrapper(base_params,base_params.max_depth() + 1);
         params.set_state(params().max_depth() - 1);
         float single_voxel_size = params().seg_len_mult()/ params().light_precision();
         

@@ -10,6 +10,7 @@
 #include "tree.h"
 #include "grove.h"
 #include "grove_generation_utils.h"
+#include "abstract_generator.h"
 class DebugVisualizer;
 class Heightmap;
 
@@ -121,22 +122,22 @@ struct Tree
     Tree();
     ~Tree();
 };
-class TreeGenerator
+class TreeGenerator : public AbstractTreeGenerator
 {
 public:
     TreeGenerator() : curTree(nullptr), curParams(TreeStructureParameters(),1){};
-    void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h);
+    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
 
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     void reset();
     Tree *curTree = nullptr;
-    Branch *root;
-    Branch *test;
+    Branch *root = nullptr;
+    Branch *test = nullptr;
     ParameterSetWrapper curParams;
-    LightVoxelsCube *voxels;
-    Heightmap *heightmap;
+    LightVoxelsCube *voxels = nullptr;
+    Heightmap *heightmap = nullptr;
     GroveGenerationData curGgd;
-    Seeder *seeder;
+    Seeder *seeder = nullptr;
 
     void grow_branch(Branch *b, float feed);
     void new_joint(Branch *b, Joint &j);

@@ -44,12 +44,12 @@ struct ExitConditions
 class ParameterSelector
 {
 public:
-    ParameterSelector(std::function<void(TreeStructureParameters &, GrovePacked &)> &_generate):
+    ParameterSelector(std::function<void(ParametersSet *, GrovePacked &)> &_generate):
     generate(_generate)
     {
 
     }
-    void select(TreeStructureParameters &param, SelectionType sel_type, MetricType metric);
+    void select(ParametersSet *param, SelectionType sel_type, MetricType metric);
 private:
-    std::function<void(TreeStructureParameters &, GrovePacked &)> &generate;
+    std::function<void(ParametersSet *, GrovePacked &)> &generate;
 };

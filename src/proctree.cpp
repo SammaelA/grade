@@ -116,7 +116,7 @@ namespace Proctree
 	fvec3 mirrorBranch(fvec3 aVec, fvec3 aNorm, Properties &aProperties)
 	{
 		fvec3 v = cross(aNorm, cross(aVec, aNorm));
-		float s = aProperties.mBranchFactor * dot(v, aVec);
+		float s = aProperties.mBranchFactor() * dot(v, aVec);
 		fvec3 res = {
 			aVec.x - v.x * s,
 			aVec.y - v.y * s,
@@ -147,56 +147,58 @@ namespace Proctree
 		float aGrowAmount,
 		float aVMultiplier,
 		float aTwigScale,
-		int aSeed)
+		int aSeed):
+	
+		mSeed(aSeed),
+		mSegments(aSegments),
+		mLevels(aLevels),
+		mVMultiplier(aVMultiplier),
+		mTwigScale(aTwigScale),
+		mInitialBranchLength(aInitialBranchLength),
+		mLengthFalloffFactor(aLengthFalloffFactor),
+		mLengthFalloffPower(aLengthFalloffPower),
+		mClumpMax(aClumpMax),
+		mClumpMin(aClumpMin),
+		mBranchFactor(aBranchFactor),
+		mDropAmount(aDropAmount),
+		mGrowAmount(aGrowAmount),
+		mSweepAmount(aSweepAmount),
+		mMaxRadius(aMaxRadius),
+		mClimbRate(aClimbRate),
+		mTrunkKink(aTrunkKink),
+		mTreeSteps(aTreeSteps),
+		mTaperRate(aTaperRate),
+		mRadiusFalloffRate(aRadiusFalloffRate),
+		mTwistRate(aTwistRate),
+		mTrunkLength(aTrunkLength)
 	{
-		mSeed = aSeed;
-		mSegments = aSegments;
-		mLevels = aLevels;
-		mVMultiplier = aVMultiplier;
-		mTwigScale = aTwigScale;
-		mInitialBranchLength = aInitialBranchLength;
-		mLengthFalloffFactor = aLengthFalloffFactor;
-		mLengthFalloffPower = aLengthFalloffPower;
-		mClumpMax = aClumpMax;
-		mClumpMin = aClumpMin;
-		mBranchFactor = aBranchFactor;
-		mDropAmount = aDropAmount;
-		mGrowAmount = aGrowAmount;
-		mSweepAmount = aSweepAmount;
-		mMaxRadius = aMaxRadius;
-		mClimbRate = aClimbRate;
-		mTrunkKink = aTrunkKink;
-		mTreeSteps = aTreeSteps;
-		mTaperRate = aTaperRate;
-		mRadiusFalloffRate = aRadiusFalloffRate;
-		mTwistRate = aTwistRate;
-		mTrunkLength = aTrunkLength;
 	}
 
-	Properties::Properties()
+	Properties::Properties():
+		
+		mSeed(262),
+		mSegments(8),
+		mLevels(5),
+		mVMultiplier(1.0f),
+		mTwigScale(0.28f),
+		mInitialBranchLength(0.5f),
+		mLengthFalloffFactor(0.98f),
+		mLengthFalloffPower(1.08f),
+		mClumpMax(0.414f),
+		mClumpMin(0.282f),
+		mBranchFactor(2.2f),
+		mDropAmount(0.24f),
+		mGrowAmount(0.044f),
+		mSweepAmount(0.01f),
+		mMaxRadius(0.096f),
+		mClimbRate(0.39f),
+		mTrunkKink(0.0f),
+		mTreeSteps(5),
+		mTaperRate(0.958f),
+		mRadiusFalloffRate(0.71f),
+		mTwistRate(2.97f),
+		mTrunkLength(1.95f)
 	{
-		mSeed = 262;
-		mSegments = 8;
-		mLevels = 5;
-		mVMultiplier = 1.0f;
-		mTwigScale = 0.28f;
-		mInitialBranchLength = 0.5f;
-		mLengthFalloffFactor = 0.98f;
-		mLengthFalloffPower = 1.08f;
-		mClumpMax = 0.414f;
-		mClumpMin = 0.282f;
-		mBranchFactor = 2.2f;
-		mDropAmount = 0.24f;
-		mGrowAmount = 0.044f;
-		mSweepAmount = 0.01f;
-		mMaxRadius = 0.096f;
-		mClimbRate = 0.39f;
-		mTrunkKink = 0.0f;
-		mTreeSteps = 5;
-		mTaperRate = 0.958f;
-		mRadiusFalloffRate = 0.71f;
-		mTwistRate = 2.97f;
-		mTrunkLength = 1.95f;
 	}
 
 	float Properties::random(float aFixed)
@@ -208,6 +210,54 @@ namespace Proctree
 		return std::abs(std::cos(aFixed + aFixed * aFixed));
 	}
 
+	void Properties::get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
+                                        ParameterVariablesSet v_set)
+	{
+		list = {
+			{{ParameterMaskValues::CONSTANT,"mClumpMax"}, mClumpMax},
+			{{ParameterMaskValues::CONSTANT,"mClumpMin"}, mClumpMin},
+			{{ParameterMaskValues::CONSTANT,"mLengthFalloffFactor"}, mLengthFalloffFactor},
+			{{ParameterMaskValues::CONSTANT,"mLengthFalloffPower"}, mLengthFalloffPower},
+			{{ParameterMaskValues::CONSTANT,"mBranchFactor"}, mBranchFactor},
+			{{ParameterMaskValues::CONSTANT,"mRadiusFalloffRate"}, mRadiusFalloffRate},
+			{{ParameterMaskValues::CONSTANT,"mClimbRate"}, mClimbRate},
+			{{ParameterMaskValues::CONSTANT,"mTrunkKink"}, mTrunkKink},
+			{{ParameterMaskValues::CONSTANT,"mMaxRadius"}, mMaxRadius},
+			{{ParameterMaskValues::CONSTANT,"mTreeSteps"}, mTreeSteps},
+			{{ParameterMaskValues::CONSTANT,"mTaperRate"}, mTaperRate},
+			{{ParameterMaskValues::CONSTANT,"mTwistRate"}, mTwistRate},
+			{{ParameterMaskValues::CONSTANT,"mSegments"}, mSegments},
+			{{ParameterMaskValues::CONSTANT,"mLevels"}, mLevels},
+			{{ParameterMaskValues::CONSTANT,"mSweepAmount"}, mSweepAmount},
+			{{ParameterMaskValues::CONSTANT,"mInitialBranchLength"}, mInitialBranchLength},
+			{{ParameterMaskValues::CONSTANT,"mTrunkLength"}, mTrunkLength},
+			{{ParameterMaskValues::CONSTANT,"mDropAmount"}, mDropAmount},
+			{{ParameterMaskValues::CONSTANT,"mGrowAmount"}, mGrowAmount},
+			{{ParameterMaskValues::CONSTANT,"mVMultiplier"}, mVMultiplier},
+			{{ParameterMaskValues::CONSTANT,"mTwigScale"}, mTwigScale}
+		}; 
+		for (auto &p: list)
+		{
+			if ((double)(p.second.get_max() - p.second.get_min()) < 1e-4 || 
+				(double)abs(p.second.get_max() - p.second.get_min()) > 1e10)
+			{
+				p.first.val = ParameterMaskValues::CONSTANT;
+			}
+			if (v_set == ParameterVariablesSet::ONLY_BASE_VALUES && p.first.val != ParameterMaskValues::CONSTANT)
+			{
+				p.first.val = ParameterMaskValues::ONE_VALUE;
+			}
+			else if (v_set == ParameterVariablesSet::BASE_VALUES_AND_QS && p.first.val == ParameterMaskValues::FULL)
+			{
+				p.first.val = ParameterMaskValues::LIST_OF_VALUES;
+			}
+		} 
+	}
+
+	void Properties::set_state(int state)
+	{
+
+	}
 
 	Branch::~Branch()
 	{
@@ -255,7 +305,7 @@ namespace Proctree
 
 	void Branch::split(int aLevel, int aSteps, Properties &aProperties, int aL1/* = 1*/, int aL2/* = 1*/)
 	{
-		int rLevel = aProperties.mLevels - aLevel;
+		int rLevel = aProperties.mLevels() - aLevel;
 		fvec3 po;
 		if (this->mParent)
 		{
@@ -277,7 +327,7 @@ namespace Proctree
 		fvec3 adj = add(scaleVec(normal, r), scaleVec(tangent, 1 - r));
 		if (r > 0.5) adj = scaleVec(adj, -1);
 
-		float clump = (aProperties.mClumpMax - aProperties.mClumpMin) * r + aProperties.mClumpMin;
+		float clump = (aProperties.mClumpMax() - aProperties.mClumpMin()) * r + aProperties.mClumpMin();
 		fvec3 newdir = normalize(add(scaleVec(adj, 1 - clump), scaleVec(dir, clump)));
 
 
@@ -291,14 +341,14 @@ namespace Proctree
 
 		if (aSteps > 0)
 		{
-			float angle = aSteps / (float)aProperties.mTreeSteps * 2 * M_PI * aProperties.mTwistRate;
+			float angle = aSteps / (float)aProperties.mTreeSteps() * 2 * M_PI * aProperties.mTwistRate();
 			a = { std::sin(angle), r, std::cos(angle) };
 			newdir2 = normalize(a);
 		}
 
-		float growAmount = aLevel * aLevel / (float)(aProperties.mLevels * aProperties.mLevels) * aProperties.mGrowAmount;
-		float dropAmount = rLevel * aProperties.mDropAmount;
-		float sweepAmount = rLevel * aProperties.mSweepAmount;
+		float growAmount = aLevel * aLevel / (float)(aProperties.mLevels() * aProperties.mLevels()) * aProperties.mGrowAmount();
+		float dropAmount = rLevel * aProperties.mDropAmount();
+		float sweepAmount = rLevel * aProperties.mSweepAmount();
 		a = { sweepAmount, dropAmount + growAmount, 0 };
 		newdir = normalize(add(newdir, a));
 		newdir2 = normalize(add(newdir2, a));
@@ -307,21 +357,21 @@ namespace Proctree
 		fvec3 head1 = add(so, scaleVec(newdir2, mLength));
 		mChild0 = new Branch(head0, this);
 		mChild1 = new Branch(head1, this);
-		mChild0->mLength = pow(mLength, aProperties.mLengthFalloffPower) * aProperties.mLengthFalloffFactor;
-		mChild1->mLength = pow(mLength, aProperties.mLengthFalloffPower) * aProperties.mLengthFalloffFactor;
+		mChild0->mLength = pow(mLength, aProperties.mLengthFalloffPower()) * aProperties.mLengthFalloffFactor();
+		mChild1->mLength = pow(mLength, aProperties.mLengthFalloffPower()) * aProperties.mLengthFalloffFactor();
 
 		if (aLevel > 0)
 		{
 			if (aSteps > 0)
 			{
 				a = {
-					(r - 0.5f) * 2 * aProperties.mTrunkKink,
-					aProperties.mClimbRate,
-					(r - 0.5f) * 2 * aProperties.mTrunkKink
+					(r - 0.5f) * 2 * aProperties.mTrunkKink(),
+					aProperties.mClimbRate(),
+					(r - 0.5f) * 2 * aProperties.mTrunkKink()
 				};
 				mChild0->mHead = add(mHead, a);
 				mChild0->mTrunktype = 1;
-				mChild0->mLength = mLength * aProperties.mTaperRate;
+				mChild0->mLength = mLength * aProperties.mTaperRate();
 				mChild0->split(aLevel, aSteps - 1, aProperties, aL1 + 1, aL2);
 			}
 			else
@@ -426,10 +476,10 @@ namespace Proctree
 		//mProperties.
 		mProperties.mSeed += (rand() % (seed+10));
 		mProperties.mRseed = mProperties.mSeed;
-		fvec3 starthead = { 0, mProperties.mTrunkLength, 0 };
+		fvec3 starthead = { 0, mProperties.mTrunkLength(), 0 };
 		mRoot = new Branch(starthead, 0);
-		mRoot->mLength = mProperties.mInitialBranchLength;
-		mRoot->split(mProperties.mLevels, mProperties.mTreeSteps, mProperties);
+		mRoot->mLength = mProperties.mInitialBranchLength();
+		mRoot->split(mProperties.mLevels(), mProperties.mTreeSteps(), mProperties);
 
 		calcVertSizes(0);
 		allocVertBuffers();
@@ -612,7 +662,7 @@ namespace Proctree
 
 	void Tree::calcVertSizes(Branch *aBranch)
 	{
-		int segments = mProperties.mSegments;
+		int segments = mProperties.mSegments();
 		if (!aBranch)
 			aBranch = mRoot;
 
@@ -643,7 +693,7 @@ namespace Proctree
 
 	void Tree::calcFaceSizes(Branch *aBranch)
 	{
-		int segments = mProperties.mSegments;
+		int segments = mProperties.mSegments();
 		if (!aBranch)
 			aBranch = mRoot;
 
@@ -708,7 +758,7 @@ namespace Proctree
 		{
 			aBranch = mRoot;
 		}
-		int segments = mProperties.mSegments;
+		int segments = mProperties.mSegments();
 		int i;
 		if (!aBranch->mParent)
 		{
@@ -736,7 +786,7 @@ namespace Proctree
 
 				mUV[(i + segOffset) % segments] = { i / (float)segments, 0 };
 
-				float len = length(sub(mVert[aBranch->mRing0[i]], mVert[aBranch->mRootRing[(i + segOffset) % segments]])) * mProperties.mVMultiplier;
+				float len = length(sub(mVert[aBranch->mRing0[i]], mVert[aBranch->mRootRing[(i + segOffset) % segments]])) * mProperties.mVMultiplier();
 				mUV[aBranch->mRing0[i]] = { i / (float)segments, len };
 				mUV[aBranch->mRing2[i]] = { i / (float)segments, len };
 			}
@@ -771,7 +821,7 @@ namespace Proctree
 				}
 			}
 
-			float UVScale = mProperties.mMaxRadius / aBranch->mRadius;
+			float UVScale = mProperties.mMaxRadius() / aBranch->mRadius;
 
 			for (i = 0; i < segments; i++)
 			{
@@ -798,14 +848,14 @@ namespace Proctree
 				float len1 = length(sub(mVert[aBranch->mChild0->mRing0[i]], mVert[aBranch->mRing1[(i + segOffset0) % segments]])) * UVScale;
 				fvec2 uv1 = mUV[aBranch->mRing1[(i + segOffset0 - 1) % segments]];
 
-				mUV[aBranch->mChild0->mRing0[i]] = { uv1.u, uv1.v + len1 * mProperties.mVMultiplier };
-				mUV[aBranch->mChild0->mRing2[i]] = { uv1.u, uv1.v + len1 * mProperties.mVMultiplier };
+				mUV[aBranch->mChild0->mRing0[i]] = { uv1.u, uv1.v + len1 * mProperties.mVMultiplier() };
+				mUV[aBranch->mChild0->mRing2[i]] = { uv1.u, uv1.v + len1 * mProperties.mVMultiplier() };
 
 				float len2 = length(sub(mVert[aBranch->mChild1->mRing0[i]], mVert[aBranch->mRing2[(i + segOffset1) % segments]])) * UVScale;
 				fvec2 uv2 = mUV[aBranch->mRing2[(i + segOffset1 - 1) % segments]];
 
-				mUV[aBranch->mChild1->mRing0[i]] = { uv2.u, uv2.v + len2 * mProperties.mVMultiplier };
-				mUV[aBranch->mChild1->mRing2[i]] = { uv2.u, uv2.v + len2 * mProperties.mVMultiplier };
+				mUV[aBranch->mChild1->mRing0[i]] = { uv2.u, uv2.v + len2 * mProperties.mVMultiplier() };
+				mUV[aBranch->mChild1->mRing2[i]] = { uv2.u, uv2.v + len2 * mProperties.mVMultiplier() };
 			}
 
 			doFaces(aBranch->mChild0);
@@ -830,9 +880,9 @@ namespace Proctree
 				mFace[mFaceCount++] = (a);
 
 				float len = length(sub(mVert[aBranch->mChild0->mEnd], mVert[aBranch->mRing1[i]]));
-				mUV[aBranch->mChild0->mEnd] = { i / (float)segments - 1, len * mProperties.mVMultiplier };
+				mUV[aBranch->mChild0->mEnd] = { i / (float)segments - 1, len * mProperties.mVMultiplier() };
 				len = length(sub(mVert[aBranch->mChild1->mEnd], mVert[aBranch->mRing2[i]]));
-				mUV[aBranch->mChild1->mEnd] = { i / (float)segments, len * mProperties.mVMultiplier };
+				mUV[aBranch->mChild1->mEnd] = { i / (float)segments, len * mProperties.mVMultiplier() };
 			}
 		}
 	}
@@ -851,22 +901,22 @@ namespace Proctree
 			//fvec3 normal = cross(tangent, binormal); //never used
 
 			int vert1 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale)), scaleVec(binormal, mProperties.mTwigScale * 2 - aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale())), scaleVec(binormal, mProperties.mTwigScale() * 2 - aBranch->mLength)));
 			int vert2 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale)), scaleVec(binormal, mProperties.mTwigScale * 2 - aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale())), scaleVec(binormal, mProperties.mTwigScale() * 2 - aBranch->mLength)));
 			int vert3 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale)), scaleVec(binormal, -aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale())), scaleVec(binormal, -aBranch->mLength)));
 			int vert4 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale)), scaleVec(binormal, -aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale())), scaleVec(binormal, -aBranch->mLength)));
 
 			int vert8 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale)), scaleVec(binormal, mProperties.mTwigScale * 2 - aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale())), scaleVec(binormal, mProperties.mTwigScale() * 2 - aBranch->mLength)));
 			int vert7 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale)), scaleVec(binormal, mProperties.mTwigScale * 2 - aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale())), scaleVec(binormal, mProperties.mTwigScale() * 2 - aBranch->mLength)));
 			int vert6 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale)), scaleVec(binormal, -aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, -mProperties.mTwigScale())), scaleVec(binormal, -aBranch->mLength)));
 			int vert5 = mTwigVertCount;
-			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale)), scaleVec(binormal, -aBranch->mLength)));
+			mTwigVert[mTwigVertCount++] = (add(add(aBranch->mHead, scaleVec(tangent, mProperties.mTwigScale())), scaleVec(binormal, -aBranch->mLength)));
 
 			mTwigFace[mTwigFaceCount++] = { vert1, vert2, vert3 };
 			mTwigFace[mTwigFaceCount++] = { vert4, vert1, vert3 };			
@@ -906,13 +956,13 @@ namespace Proctree
 	void Tree::createForks(Branch *aBranch, float aRadius)
 	{
 		if (!aBranch) aBranch = mRoot;
-		if (!aRadius) aRadius = mProperties.mMaxRadius;
+		if (!aRadius) aRadius = mProperties.mMaxRadius();
 
 		aBranch->mRadius = aRadius;
 
 		if (aRadius > aBranch->mLength) aRadius = aBranch->mLength;
 
-		int segments = mProperties.mSegments;
+		int segments = mProperties.mSegments();
 
 		float segmentAngle = M_PI * 2 / (float)segments;
 
@@ -928,7 +978,7 @@ namespace Proctree
 				fvec3 left = { -1, 0, 0 };
 				fvec3 vec = vecAxisAngle(left, axis, -segmentAngle * i);
 				aBranch->mRootRing[i] = mVertCount;
-				mVert[mVertCount++] = (scaleVec(vec, aRadius / mProperties.mRadiusFalloffRate));
+				mVert[mVertCount++] = (scaleVec(vec, aRadius / mProperties.mRadiusFalloffRate()));
 			}
 		}
 
@@ -953,7 +1003,7 @@ namespace Proctree
 
 			fvec3 axis3 = normalize(cross(tangent, normalize(add(scaleVec(axis1, -1), scaleVec(axis2, -1)))));
 			fvec3 dir = { axis2.x, 0, axis2.z };
-			fvec3 centerloc = add(aBranch->mHead, scaleVec(dir, -mProperties.mMaxRadius / 2));
+			fvec3 centerloc = add(aBranch->mHead, scaleVec(dir, -mProperties.mMaxRadius() / 2));
 
 			aBranch->mRing0 = new int[segments];
 			aBranch->mRing1 = new int[segments];
@@ -963,11 +1013,11 @@ namespace Proctree
 			int ring1count = 0;
 			int ring2count = 0;
 
-			float scale = mProperties.mRadiusFalloffRate;
+			float scale = mProperties.mRadiusFalloffRate();
 
 			if (aBranch->mChild0->mTrunktype || aBranch->mTrunktype)
 			{
-				scale = 1.0f / mProperties.mTaperRate;
+				scale = 1.0f / mProperties.mTaperRate();
 			}
 
 			//main segment ring
@@ -1016,11 +1066,11 @@ namespace Proctree
 			//float length0 = length(sub(aBranch->mHead, aBranch->mChild0->mHead)); // never used
 			//float length1 = length(sub(aBranch->mHead, aBranch->mChild1->mHead)); // never used
 
-			float radius0 = 1 * aRadius * mProperties.mRadiusFalloffRate;
-			float radius1 = 1 * aRadius * mProperties.mRadiusFalloffRate;
+			float radius0 = 1 * aRadius * mProperties.mRadiusFalloffRate();
+			float radius1 = 1 * aRadius * mProperties.mRadiusFalloffRate();
 			if (aBranch->mChild0->mTrunktype)
 			{
-				radius0 = aRadius * mProperties.mTaperRate;
+				radius0 = aRadius * mProperties.mTaperRate();
 			}
 			createForks(aBranch->mChild0, radius0);
 			createForks(aBranch->mChild1, radius1);

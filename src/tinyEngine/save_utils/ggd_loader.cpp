@@ -5,6 +5,22 @@
 #include "../../tree.h"
 #include "../../grove.h"
 extern "C" int parse_file(char *file);
+
+Config::Config()
+{
+    params.push_back(new TreeStructureParameters());
+}
+
+Config::~Config()
+{
+    for (auto *p : params)
+    {
+        if (p)
+            delete p;
+    }
+    params.clear();
+}
+
 bool Config::load_ggds()
 {
 
@@ -14,7 +30,7 @@ bool Config::load_ggds()
     def.trees_count = 1;
     def.synts_count = 0;
     def.synts_precision = 1;
-    def.types = {TreeTypeData(0,TreeStructureParameters(),std::string("wood"),std::string("leaf"))};
+    def.types = {TreeTypeData(0,params.front(),std::string("wood"),std::string("leaf"))};
     def.name = "default";
     ggds.emplace("default",def);
     pd.presets_n = 0;
@@ -48,7 +64,9 @@ bool Config::load_ggds()
         for (int j=0;j<cur_g.ttds_c;j++)
         {
             ttd &cur_tt = cur_g.ttds[j];
-            TreeStructureParameters p = get(cur_tt.name);
+            TreeStructureParameters *p = new TreeStructureParameters();
+            *p = get(cur_tt.name);
+            params.push_back(p);
             TreeTypeData ttd(cur_tt.id,p,cur_tt.wood,cur_tt.leaf);
             gen.types.push_back(ttd);
         }

@@ -142,12 +142,17 @@ void Branch::pack(PackedBranch &branch)
         branch.r_mults.clear();
     }
 }
-TreeTypeData::TreeTypeData(int id, TreeStructureParameters _params, std::string wood_tex_name, std::string leaf_tex_name):
+TreeTypeData::TreeTypeData(int id, ParametersSet *_params, std::string wood_tex_name, std::string leaf_tex_name):
 wood(textureManager.get(wood_tex_name)),
 leaf(textureManager.get(leaf_tex_name))
 {
     type_id = id;
     params = _params;
+}
+TreeTypeData::~TreeTypeData()
+{
+    //if (params)
+    //    delete params;
 }
 float Branch::get_r_mult(float phi, std::vector<float> &mults)
 {

@@ -773,13 +773,20 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
     seeder = new Seeder(ggd,10,&h);
     int synts = ggd.synts_count;
     int count = ggd.trees_count;
+    TreeStructureParameters default_params;
     for (int i = 0; i < count; i++)
     {
         int k = i % ggd.types.size();
         auto &type = ggd.types[k];
         trees[i] = Tree();
         trees[i].type_id = type.type_id;
-        trees[i].params = ParameterSetWrapper(type.params,type.params.max_depth() + 1);
+        TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters*>(type.params);
+        if (!ptr)
+        {
+            logerr("mygen::TreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");
+            ptr = &default_params;
+        }
+        trees[i].params = ParameterSetWrapper(*ptr,ptr->max_depth() + 1);
         trees[i].wood = type.wood;
         trees[i].leaf = type.leaf;
     }

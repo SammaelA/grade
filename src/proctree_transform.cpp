@@ -96,10 +96,10 @@ void br_transform(Proctree::Tree &src_tree, ::Tree &dst_tree, Proctree::Branch *
 void Proctree::transform(Proctree::Tree &src, ::Tree &dst, glm::vec3 pos, glm::vec3 scale)
 {
     scl = scale.x;
-    int segments = src.mProperties.mSegments;
+    int segments = src.mProperties.mSegments();
     
     dst.leaves = new LeafHeap();
-    for (int i=0;i<src.mProperties.mLevels + 25;i++)
+    for (int i=0;i<src.mProperties.mLevels() + 25;i++)
     {
         dst.branchHeaps.push_back(new BranchHeap());
     }
@@ -115,7 +115,16 @@ void Proctree::transform(Proctree::Tree &src, ::Tree &dst, glm::vec3 pos, glm::v
 }
 void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h)
 {
-
+    Properties base_properties;
+    Properties *ptr = dynamic_cast<Properties *>(ggd.types[0].params);
+    if (!ptr)
+    {
+        logerr("ProctreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");
+    }
+    else
+    {
+        base_properties = *ptr;
+    }
     int synts = ggd.synts_count;
     int count = ggd.trees_count;
     Seeder s = Seeder(ggd,10,&h);
@@ -130,6 +139,7 @@ void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h
     {
         std::vector<Seed> seeds;
         Proctree::Tree tree;
+        tree.mProperties = base_properties;
         basic_use(tree);
         //s.choose_places_for_seeds(1,seeds);
         glm::vec3 pos = glm::vec3(urand(-300,300), 0,urand(-300,300));

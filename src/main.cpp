@@ -40,7 +40,7 @@ ShadowMap shadowMap;
 DefferedTarget defferedTarget;
 
 Tree t[MAX_TREES];
-mygen::TreeGenerator gen;
+AbstractTreeGenerator *gen = nullptr;
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 GroveGenerationData ggd;
@@ -77,6 +77,7 @@ bool statistics_run = false;
 bool gltf_export = false;
 bool need_initialization = true;
 bool parameter_selection = false;
+std::string generator_name = "default";
 struct StatRunLaunchParams
 {
   int trees = 1;
@@ -190,6 +191,28 @@ int parse_arguments(int argc, char *argv[])
         k += 3;
       }
     }
+    else if (std::string(argv[k]) == "-generator")
+    {
+      bool ok = argc >= k+2;
+      if (ok)
+      {
+        if (std::string(argv[k+1]) == "=")
+          generator_name = std::string(argv[k+2]);
+        else
+          ok = false;
+      }
+      if (!ok)
+      {
+        logerr("-generator = <generator_name>");
+        logerr("possible names : default, proctree");
+      }
+      k += 3;
+    }
+    else if (std::string(argv[k]) == "-generator = proctree")
+    {
+      generator_name = "proctree";
+      k++;
+    }
     else
     {
       logerr("unknown command \"%s\". Write -h for help", argv[k]);
@@ -218,7 +241,6 @@ void clear_current_grove()
     GR = nullptr;
     data.groveRenderer = nullptr;
   }
-  gen.reset();
   for (int i=0;i<MAX_TREES;i++)
   {
     t[i].clear();
@@ -229,15 +251,15 @@ void generate_grove()
     std::vector<ParameterDesc> mask;
     std::vector<double> dt;
 
-    ggd.types[0].params.get_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
-    ggd.types[0].params.load_from_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
+    ggd.types[0].params->get_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
+    ggd.types[0].params->load_from_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
 
     GrovePacker packer;
-    gen.create_grove(ggd, t, *data.heightmap);
+    gen->create_grove(ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
     packer.pack_grove(ggd, grove, *debugVisualizer, t, data.heightmap, visualize_voxels);
 }
-void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
+void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {
     GrovePacker packer;
     GroveGenerationData tree_ggd;
@@ -257,10 +279,10 @@ void generate_single_tree(TreeStructureParameters &par, GrovePacked &res)
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::IMPOSTOR_FULL_GROVE;
     Tree single_tree;
-    gen.create_grove(tree_ggd, &single_tree, *data.heightmap);
+    gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
     packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
 
-    //print_alloc_info();
+    print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();
 }
@@ -313,6 +335,10 @@ int full_initialization()
   srand(1);
 
   data.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
+  if (generator_name == "proctree")
+    gen = new Proctree::ProctreeGenerator();
+  else
+    gen = new mygen::TreeGenerator();
   data.heightmap->random_generate(0, 1, 50);
 
   if (generation_needed)
@@ -321,9 +347,9 @@ int full_initialization()
     
     if (parameter_selection)
     {
-      std::function<void(TreeStructureParameters &, GrovePacked &)> _generate = generate_single_tree;
+      std::function<void(ParametersSet *, GrovePacked &)> _generate = generate_single_tree;
       ParameterSelector sel(_generate);
-      TreeStructureParameters &start = ggd.types[0].params;
+      ParametersSet *start = ggd.types[0].params;
       Quality imp_qual = ggd.impostor_quality;
       ggd.impostor_quality = Quality::ULTRALOW;
       //ggd.bill_1_quality = Quality::ULTRALOW;
@@ -342,7 +368,9 @@ int full_initialization()
 
     if (visualize_initial_voxels)
     {
-      debugVisualizer->visualize_light_voxels(gen.voxels);
+      mygen::TreeGenerator *mygen_gen = dynamic_cast<mygen::TreeGenerator *>(gen);
+      if (mygen_gen)
+        debugVisualizer->visualize_light_voxels(mygen_gen->voxels);
     }
   }
   if (saving_needed)

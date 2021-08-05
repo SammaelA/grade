@@ -1,6 +1,5 @@
 #pragma once
 #include <functional>
-#include "parameter.h"
 #include "grove.h"
 #include <string>
 #include "texture_manager.h"

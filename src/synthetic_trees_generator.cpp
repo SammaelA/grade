@@ -79,7 +79,7 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
         weights.push_back(pr.second);
     }
     bs.typeStat = distibutionGenerator.get_discrete_general(values, weights);
-    double mean, dev;
+    double mean = 0, dev = 0;
     float sample_size = phi_s.size() + 1;
     float ssq = pow(sample_size, 1.5);
     //calculate distribution of branch parameters. Increase deviation if sample size is small

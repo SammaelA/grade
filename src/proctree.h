@@ -27,6 +27,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
 #include <glm/glm.hpp>
+#include "parameter.h"
+#include "abstract_generator.h"
+
 struct Tree;
 class Heightmap;
 struct GroveGenerationData;
@@ -49,30 +52,31 @@ namespace Proctree
 		int x, y, z;
 	} ivec3;
 
-	class Properties
+	class Properties : ParametersSet
 	{
 	public:
-		float mClumpMax;
-		float mClumpMin;
-		float mLengthFalloffFactor;
-		float mLengthFalloffPower;
-		float mBranchFactor;
-		float mRadiusFalloffRate;
-		float mClimbRate;
-		float mTrunkKink;
-		float mMaxRadius;
-		int mTreeSteps;
-		float mTaperRate;
-		float mTwistRate;
-		int mSegments;
-		int mLevels;
-		float mSweepAmount;
-		float mInitialBranchLength;
-		float mTrunkLength;
-		float mDropAmount;
-		float mGrowAmount;
-		float mVMultiplier;
-		float mTwigScale;
+		Parameter<float> mClumpMax;
+		Parameter<float> mClumpMin;
+		Parameter<float> mLengthFalloffFactor;
+		Parameter<float> mLengthFalloffPower;
+		Parameter<float> mBranchFactor;
+		Parameter<float> mRadiusFalloffRate;
+		Parameter<float> mClimbRate;
+		Parameter<float> mTrunkKink;
+		Parameter<float> mMaxRadius;
+		Parameter<float> mTreeSteps;
+		Parameter<float> mTaperRate;
+		Parameter<float> mTwistRate;
+		Parameter<float> mSegments;
+		Parameter<float> mLevels;
+		Parameter<float> mSweepAmount;
+		Parameter<float> mInitialBranchLength;
+		Parameter<float> mTrunkLength;
+		Parameter<float> mDropAmount;
+		Parameter<float> mGrowAmount;
+		Parameter<float> mVMultiplier;
+		Parameter<float> mTwigScale;
+
 		int mSeed;
 		int mRseed;
 
@@ -101,6 +105,9 @@ namespace Proctree
 			float aTwigScale,
 			int aSeed);
 		float random(float aFixed);
+		virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
+                            ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override;
+		virtual void set_state(int state) override;
 	};
 
 
@@ -174,4 +181,13 @@ namespace Proctree
 	void basic_use(Tree &tree);
 	void transform(Proctree::Tree &src, ::Tree &dst, glm::vec3 pos, glm::vec3 scale);
 	void create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h);
+
+	class ProctreeGenerator : public AbstractTreeGenerator
+	{
+	public:
+		virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override
+		{
+			Proctree::create_grove(ggd, trees_external, h);
+		}
+	};
 }

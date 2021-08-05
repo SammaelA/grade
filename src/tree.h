@@ -4,6 +4,7 @@
 #include <string>
 #include "volumetric_occlusion.h"
 #include "parameter.h"
+#include "mygen_parameters.h"
 #include "marks.h"
 #include "grove.h"
 
@@ -86,9 +87,10 @@ struct BranchHeap : Countable
 
 struct TreeTypeData
 {
-    TreeTypeData(int id, TreeStructureParameters params, std::string wood_tex_name, std::string leaf_tex_name);
+    TreeTypeData(int id, ParametersSet *params, std::string wood_tex_name, std::string leaf_tex_name);
+    ~TreeTypeData();
     int type_id;
-    TreeStructureParameters params;
+    ParametersSet *params = nullptr;
     Texture wood;
     Texture leaf;
     int wood_id;
@@ -100,7 +102,7 @@ struct Tree
 {
     std::vector<BranchHeap *> branchHeaps;
     LeafHeap *leaves = nullptr;
-    glm::vec3 pos;
+    glm::vec3 pos = glm::vec3(0,0,0);
     Branch *root= nullptr;
     uint id = 0;
     TreeTypeData *type = nullptr;
