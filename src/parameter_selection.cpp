@@ -120,7 +120,7 @@ float brute_force_selection(ParametersSet *param, Metric *metric,
             else
             {
                 debugl(4, "warning: parameter %s in selection set is constant or does not exist\n",
-                       set[i].parameter_name);
+                       set[i].parameter_name.c_str());
             }
         }
         int val_count = next_offset;
@@ -451,7 +451,7 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
             else
             {
                 debugl(4, "warning: parameter %s in selection set is constant or does not exist\n",
-                       set[i].parameter_name);
+                       set[i].parameter_name.c_str());
             }
         }
         int val_count = next_offset;

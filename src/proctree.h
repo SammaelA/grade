@@ -52,7 +52,7 @@ namespace Proctree
 		int x, y, z;
 	} ivec3;
 
-	class Properties : ParametersSet
+	class Properties : public ParametersSet
 	{
 	public:
 		Parameter<float> mClumpMax;

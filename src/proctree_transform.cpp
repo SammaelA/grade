@@ -4,6 +4,14 @@
 #include "grove_generation_utils.h"
 
 float scl = 1;
+glm::vec3 rnd_dir()
+{
+    glm::vec3 dir;
+    dir.x = urand(-1,1);
+    dir.y = urand(-1,1);
+    dir.z = urand(-1,1);
+    return glm::normalize(dir);
+}
 void br_transform(Proctree::Tree &src_tree, ::Tree &dst_tree, Proctree::Branch *src, ::Branch *dst, int level)
 {
     Proctree::fvec3 from_p = src->mParent ? src->mParent->mHead : Proctree::fvec3{0,0,0};
@@ -36,6 +44,21 @@ void br_transform(Proctree::Tree &src_tree, ::Tree &dst_tree, Proctree::Branch *
 
         dst->joints.emplace_back();
         dst->joints.back().pos = to;
+
+        Leaf *l = dst_tree.leaves->new_leaf();
+        l->pos = dst->joints.back().pos;
+        float leaf_size_mult = 0.2;
+        glm::vec3 rd1 = rnd_dir();
+        glm::vec3 rd2 = rnd_dir();
+        glm::vec3 a = l->pos + leaf_size_mult * rd1 + 0.5f * leaf_size_mult * rd2;
+        glm::vec3 b = l->pos + 0.5f * leaf_size_mult * rd2;
+        glm::vec3 c = l->pos - 0.5f * leaf_size_mult * rd2;
+        glm::vec3 d = l->pos + leaf_size_mult * rd1 - 0.5f * leaf_size_mult * rd2;
+        l->edges.push_back(a);
+        l->edges.push_back(b);
+        l->edges.push_back(c);
+        l->edges.push_back(d);
+        dst->joints.back().leaf = l;
     }
 
     else if (!src->mChild0 || !src->mChild1)

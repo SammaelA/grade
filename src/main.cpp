@@ -344,7 +344,10 @@ int full_initialization()
   if (generation_needed)
   {
     ggd = config.get_ggd(grove_type_name);
-    
+    if (generator_name == "proctree")
+    {
+      ggd.types[0].params = new Proctree::Properties();
+    }
     if (parameter_selection)
     {
       std::function<void(ParametersSet *, GrovePacked &)> _generate = generate_single_tree;
