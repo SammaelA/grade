@@ -2,6 +2,8 @@
 #include <functional>
 #include "parameter.h"
 #include "grove.h"
+#include "tinyEngine/save_utils/blk.h"
+
 enum SelectionType
 {
     BruteForce,
@@ -50,6 +52,8 @@ public:
 
     }
     void select(ParametersSet *param, SelectionType sel_type, MetricType metric);
+    void save_to_blk(SetSelectionProgram &prog, std::string name, Block &blk);
+    void load_from_blk(SetSelectionProgram &prog, std::string name, Block &blk);
 private:
     std::function<void(ParametersSet *, GrovePacked &)> &generate;
 };

@@ -29,6 +29,7 @@
 #include "tinyEngine/gltf_utils/general_gltf_writer.h"
 #include <thread>
 #include "parameter_selection.h"
+#include "tinyEngine/save_utils/blk.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler

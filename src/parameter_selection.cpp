@@ -664,9 +664,102 @@ void ParameterSelector::select(ParametersSet *param, SelectionType sel_type, Met
         set3 = {u3};
         set_p.selections = {set};
         ExitConditions ec;
-        ec.max_iters = 10;
+        ec.max_iters = 2;
         ec.part_of_set_covered = 0.15;
+        BlkManager man;
+        Block blk;
+        save_to_blk(set_p,"default_selection_set",blk);
+        load_from_blk(set_p,"default_selection_set",blk);
+        man.save_block_to_file("parameter_selection.blk",blk);
+
         float m = simulated_annealing_selection(param, metric, generate, set_p, ec);
         logerr("simulated annealing parameter selection finished with max_metric %f", m);
+    }
+}
+
+std::vector<std::string> SelectionScheduleNames
+{
+    "AllInOne",
+    "SetbySet",
+    "SetbySetRandomized",
+    "UnitbyUnit"
+};
+void ParameterSelector::save_to_blk(SetSelectionProgram &prog, std::string name, Block &blk)
+{
+    Block *bl = new Block();
+    bl->add_string("schedule",SelectionScheduleNames[(int)prog.schedule]);
+    for (SelectionSet &set : prog.selections)
+    {
+        Block *set_bl = new Block();
+        for (SelectionUnit &unit : set)
+        {
+            set_bl->add_arr(unit.parameter_name,unit.base_values_set);
+        }
+        bl->add_block("selection_set",set_bl);
+        
+    }
+    blk.add_block(name,bl);
+}
+void ParameterSelector::load_from_blk(SetSelectionProgram &prog, std::string name, Block &blk)
+{
+    prog.selections.clear();
+    prog.schedule = SelectionSchedule::UnitbyUnit;
+
+    Block *bl = blk.get_block(name);
+    std::string schedule_name = bl ? bl->get_string("schedule","UnitbyUnit") : "";
+    if (!bl || schedule_name.empty())
+    {
+        logerr("cannot read SetSelectionProgram %s from block",name);
+        return;
+    }
+    for (int i=0;i<SelectionScheduleNames.size();i++)
+    {
+        if (SelectionScheduleNames[i] == schedule_name)
+        {
+            prog.schedule = (SelectionSchedule)i;
+        }
+    }
+    int id = bl->get_id("selection_set");
+    while (id >= 0)
+    {
+        Block *sel_set = bl->get_block(id);
+        if (!sel_set)
+        {
+            id = -1;
+        }
+        else
+        {
+            int params = sel_set->size();
+
+            if (params <= 0)
+            {
+                logerr("cannot read SetSelectionProgram %s from block. selection set is empty",name);
+                id = -1;
+            }
+            else
+            {
+                prog.selections.emplace_back();
+                SelectionSet &set = prog.selections.back();
+                for (int i=0;i<params;i++)
+                {
+                    set.emplace_back();
+                    SelectionUnit &unit = set.back();
+                    unit.parameter_name = sel_set->get_name(i);
+                    sel_set->get_arr(i,unit.base_values_set);
+                    if (unit.base_values_set.empty())
+                    {
+                        logerr("cannot read SetSelectionProgram %s from block. selection unit %s is empty",name,
+                                unit.parameter_name );
+                        id = -1;
+                    }
+                }
+            }
+        }
+        if (id >= 0)
+            id = sel_set->get_next_id("selection_set",id+1);
+    }
+    if (prog.selections.empty())
+    {
+        logerr("cannot read SetSelectionProgram %s from block. Empty selection program",name);
     }
 }
