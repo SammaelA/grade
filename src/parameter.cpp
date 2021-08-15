@@ -154,3 +154,61 @@ void ParametersSet::load_from_mask_and_data(std::vector<ParameterDesc> &mask, st
     }
     //get_parameter_list(list,v_set);
 }
+
+void ParametersSet::save_to_blk(Block &b)
+{
+    std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
+    this->get_parameter_list(list,ParameterVariablesSet::ALL_VALUES);
+
+    for (auto &p : list)
+    {
+        Block *par = new Block();
+        par->add_double("baseValue",p.second.baseValue);
+        par->add_arr("qs",p.second.state_qs);
+        par->add_double("minValue",p.second.minValue);
+        par->add_double("maxValue",p.second.maxValue);
+        par->add_double("a",p.second.a);
+        par->add_double("sigma",p.second.sigma);
+        par->add_double("from",p.second.from);
+        par->add_double("to",p.second.to);
+        par->add_double("normal_part",p.second.normal_part);
+        par->add_string("randomnessLevel",ToString(p.second.randomnessLevel));
+        b.add_block(p.first.name,par);
+    }
+}
+
+void ParametersSet::load_from_blk(Block &b)
+{
+    std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> list;
+    this->get_parameter_list(list,ParameterVariablesSet::ALL_VALUES);
+
+    for (auto &p : list)
+    {
+        Block *par = b.get_block(p.first.name);
+        if (!par)
+            continue;
+        
+        float val = par->get_double("baseValue",p.second.baseValue);
+        std::vector<float> state_qs;
+        par->get_arr("qs",state_qs);
+        float minValue = par->get_double("minValue",p.second.minValue);
+        float maxValue = par->get_double("maxValue",p.second.maxValue);
+        float a = par->get_double("a",p.second.a);
+        float sigma = par->get_double("sigma",p.second.sigma);
+        float from = par->get_double("from",p.second.from);
+        float to = par->get_double("to",p.second.to);
+        float normal_part = par->get_double("normal_part",p.second.normal_part);
+        std::string rl_str = par->get_string("randomnessLevel",ToString(p.second.randomnessLevel));
+        RandomnessLevel rl = RandomnessLevel::NO_RANDOM;
+        for (int i=0;i<(int)(RandomnessLevel::REGENERATE_ON_GET);i++)
+        {
+            if (ToString((RandomnessLevel)i) == rl_str) 
+            {
+                rl = (RandomnessLevel)i;
+                break;
+            }
+        }
+        p.second = Parameter<float>(val,minValue,maxValue,state_qs,a,sigma,from,to,
+                                    normal_part,rl,nullptr,nullptr);
+    }
+}

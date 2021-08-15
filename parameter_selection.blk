@@ -2,6 +2,10 @@
 test_selection {
 schedule:s = "SetbySetRandomized"
 selection_type:s = "PolycentricSimulatedAnnealing"
+tree_silhouette
+{
+    crown_ellipsoid_power:r = 1.4
+}
 metric_type:s = "ImpostorSimilarity"
 selection_set {
 base_branch_feed:arr = { 80.000000 }
@@ -17,6 +21,10 @@ part_of_set_covered:r = 0.150000
 default_selection {
 schedule:s = "SetbySetRandomized"
 selection_type:s = "PolycentricSimulatedAnnealing"
+tree_silhouette
+{
+    crown_ellipsoid_power:r = 1.4
+}
 metric_type:s = "ImpostorSimilarity"
 selection_set {
 base_branch_feed:arr = { 80.000000 }

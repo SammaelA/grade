@@ -289,7 +289,6 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
     packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
 
-    print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();
 }

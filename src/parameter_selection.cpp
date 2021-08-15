@@ -635,14 +635,20 @@ void ParameterSelector::select(ParametersSet *param, std::string selection_progr
     {
         //Texture ref = textureManager.get("leaf1");
        //ImpostorMetric im = ImpostorMetric(ref);
-       TreeSilhouette sil;
-       sil.trunk_down_r = 0.04;
-       sil.trunk_height = 0.6;
-       sil.trunk_up_r = 0.02;
-       sil.crown_center_height = 0.6;
-       sil.crown_height_r = 0.3;
-       sil.crown_width_r = 0.2;
-       sil.crown_ellipsoid_power = 2;
+        TreeSilhouette sil;
+       Block *bl = blk.get_block(selection_program_name);
+       Block *tree_sil = bl ? bl->get_block("tree_silhouette") : nullptr;
+       if (tree_sil)
+       {
+            sil.trunk_down_r = tree_sil->get_double("trunk_down_r",0.04);
+            sil.trunk_height = tree_sil->get_double("trunk_height",0.6);
+            sil.trunk_up_r = tree_sil->get_double("trunk_up_r",0.02);
+            sil.crown_center_height = tree_sil->get_double("crown_center_height",0.6);
+            sil.crown_height_r = tree_sil->get_double("crown_height_r",0.3);
+            sil.crown_width_r = tree_sil->get_double("crown_width_r",0.2);
+            sil.crown_ellipsoid_power = tree_sil->get_double("crown_ellipsoid_power",2);
+       }
+       logerr("crown_ellipsoid_power %f",sil.crown_ellipsoid_power);
        ImpostorMetric im = ImpostorMetric(sil);
         metric = &im;
     }
@@ -656,6 +662,12 @@ void ParameterSelector::select(ParametersSet *param, std::string selection_progr
         float m = simulated_annealing_selection(param, metric, generate, set_p);
         logerr("simulated annealing parameter selection finished with max_metric %f", m);
     }
+    
+    Block res_blk;
+    param->save_to_blk(res_blk);
+    BlkManager man;
+    man.save_block_to_file("selection_result.blk",res_blk);
+    res_blk.clear();
 }
 
 void ParameterSelector::save_to_blk(SetSelectionProgram &prog, std::string name, Block &blk)

@@ -2,14 +2,11 @@
 
 #include "distribution.h"
 #include "tinyEngine/utility.h"
+#include "tinyEngine/save_utils/blk.h"
+
 #include <vector>
-enum RandomnessLevel
-{
-    NO_RANDOM,
-    EXPLICIT_REGENERATION,
-    REGENERATE_ON_STATE_CHANGE,
-    REGENERATE_ON_GET
-};
+DEFINE_ENUM_WITH_STRING_CONVERSIONS(RandomnessLevel,(NO_RANDOM)(EXPLICIT_REGENERATION)(REGENERATE_ON_STATE_CHANGE)(REGENERATE_ON_GET))
+
 enum ParameterMaskValues
 {
     CONSTANT,
@@ -337,5 +334,7 @@ struct ParametersSet
                            ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
     virtual void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
                                  ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
+    virtual void save_to_blk(Block &b);
+    virtual void load_from_blk(Block &b);
     virtual void set_state(int state) = 0;
 };
