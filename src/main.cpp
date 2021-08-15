@@ -79,6 +79,7 @@ bool gltf_export = false;
 bool need_initialization = true;
 bool parameter_selection = false;
 std::string generator_name = "default";
+std::string parameter_selector_name = "default_selection";
 struct StatRunLaunchParams
 {
   int trees = 1;
@@ -114,6 +115,11 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-parameter_selection")
     {
       parameter_selection = true;
+      if (argc > k+1)
+      {
+        parameter_selector_name = std::string(argv[k+1]);
+        k++;
+      }
       k++;
     }
     else if (std::string(argv[k]) == "-visualize_voxels")
@@ -358,7 +364,7 @@ int full_initialization()
       ggd.impostor_quality = Quality::ULTRALOW;
       //ggd.bill_1_quality = Quality::ULTRALOW;
       //ggd.bill_2_quality = Quality::ULTRALOW;
-      sel.select(start,SelectionType::SimulatedAnnealing, MetricType::ImpostorSimilarity);
+      sel.select(start,parameter_selector_name);
       ggd.impostor_quality = imp_qual;
     }
     

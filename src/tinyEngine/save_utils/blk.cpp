@@ -216,7 +216,6 @@ bool read_value(const char *data, int &cur_pos, Value &v)
                         cur_line++;
                     len++;
                     cur_pos++;
-                    logerr("c %c",data[cur_pos]);
                 }
                 if (data[cur_pos] == 0)
                 {

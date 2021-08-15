@@ -35,8 +35,7 @@ float brute_force_selection(ParametersSet *param, Metric *metric,
 }
 float brute_force_selection(ParametersSet *param, Metric *metric,
                             std::function<void(ParametersSet *, GrovePacked &)> &generate,
-                            SetSelectionProgram &set_selection_program,
-                            ExitConditions exit_conditions)
+                            SetSelectionProgram &set_selection_program)
 {
     std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     if (set_selection_program.selections.empty() || !metric)
@@ -188,22 +187,22 @@ float brute_force_selection(ParametersSet *param, Metric *metric,
             std::chrono::steady_clock::time_point t_cur = std::chrono::steady_clock::now();
             auto delta_t = t_cur - t_start;
             float dt_sec = 1e-9*delta_t.count();
-            if (dt_sec > exit_conditions.max_time_seconds)
+            if (dt_sec > set_selection_program.exit_conditions.max_time_seconds)
             {
                 finished = true;
                 debugl(4, "Maximum selection time exceeded. Finishing selection\n");
             }
-            else if (global_iters > exit_conditions.max_iters)
+            else if (global_iters > set_selection_program.exit_conditions.max_iters)
             {
                 finished = true;
                 debugl(4, "Maximum selection iteration count exceeded. Finishing selection\n");
             }
-            else if (local_max_metr > exit_conditions.metric_reached)
+            else if (local_max_metr > set_selection_program.exit_conditions.metric_reached)
             {
                 finished = true;
                 debugl(4, "Desired quality level reached. Finishing selection\n");
             }
-            else if  ((float)i/val_count > exit_conditions.part_of_set_covered)
+            else if  ((float)i/val_count > set_selection_program.exit_conditions.part_of_set_covered)
             {
                 local_finished = true;
                 debugl(4, "Specified part of values tested. Moving to next set\n");
@@ -334,8 +333,7 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
 
 float simulated_annealing_selection(ParametersSet *param, Metric *metric,
                             std::function<void(ParametersSet *, GrovePacked &)> &generate,
-                            SetSelectionProgram &set_selection_program,
-                            ExitConditions exit_conditions)
+                            SetSelectionProgram &set_selection_program)
 {
     struct SACenter
     {
@@ -527,17 +525,17 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
             {
                 debugl(4,"preparing center %d/%d time spent %f\n",i+1,val_count,dt_sec);
             }
-            if (dt_sec > exit_conditions.max_time_seconds)
+            if (dt_sec > set_selection_program.exit_conditions.max_time_seconds)
             {
                 finished = true;
                 debugl(4, "Maximum selection time exceeded. Finishing selection\n");
             }
-            else if (global_iters > exit_conditions.max_iters)
+            else if (global_iters > set_selection_program.exit_conditions.max_iters)
             {
                 finished = true;
                 debugl(4, "Maximum selection iteration count exceeded. Finishing selection\n");
             }
-            else if (local_max_metr > exit_conditions.metric_reached)
+            else if (local_max_metr > set_selection_program.exit_conditions.metric_reached)
             {
                 finished = true;
                 debugl(4, "Desired quality level reached. Finishing selection\n");
@@ -569,22 +567,22 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
             auto delta_t = t_cur - t_start;
             float dt_sec = 1e-9*delta_t.count();
             debugl(4, "processed center %d, metr %f --> %f time spent %f\n",center.val_id, center.metr, metr, dt_sec);
-            if (dt_sec > exit_conditions.max_time_seconds)
+            if (dt_sec > set_selection_program.exit_conditions.max_time_seconds)
             {
                 finished = true;
                 debugl(4, "Maximum selection time exceeded. Finishing selection\n");
             }
-            else if (global_iters > exit_conditions.max_iters)
+            else if (global_iters > set_selection_program.exit_conditions.max_iters)
             {
                 finished = true;
                 debugl(4, "Maximum selection iteration count exceeded. Finishing selection\n");
             }
-            else if (local_max_metr > exit_conditions.metric_reached)
+            else if (local_max_metr > set_selection_program.exit_conditions.metric_reached)
             {
                 finished = true;
                 debugl(4, "Desired quality level reached. Finishing selection\n");
             }
-            if ((float)centers_processed/centers_count > exit_conditions.part_of_set_covered)
+            if ((float)centers_processed/centers_count > set_selection_program.exit_conditions.part_of_set_covered)
             {
                 local_finished = true;
                 debugl(4, "Specified part of values tested. Moving to next set\n");
@@ -618,17 +616,22 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
     //param->load_from_mask_and_data(mask, data_max);
     return max_metr;
 }
-void ParameterSelector::select(ParametersSet *param, SelectionType sel_type, MetricType metric_type)
+void ParameterSelector::select(ParametersSet *param, std::string selection_program_name)
 {
+    BlkManager man;
+    Block blk;
+    man.load_block_from_file("parameter_selection.blk",blk);
+    SetSelectionProgram set_p;
+    load_from_blk(set_p,selection_program_name,blk);
     Metric *metric = nullptr;
     DummyMetric default_m;
     metric = &default_m;
-    if (metric_type == CompressionRatio)
+    if (set_p.metr_type == CompressionRatio)
     {
         CompressionMetric cm;
         metric = &cm;
     }
-    if (metric_type == ImpostorSimilarity)
+    if (set_p.metr_type == ImpostorSimilarity)
     {
         //Texture ref = textureManager.get("leaf1");
        //ImpostorMetric im = ImpostorMetric(ref);
@@ -643,51 +646,24 @@ void ParameterSelector::select(ParametersSet *param, SelectionType sel_type, Met
        ImpostorMetric im = ImpostorMetric(sil);
         metric = &im;
     }
-    if (sel_type == BruteForce)
+    if (set_p.sel_type == BruteForce)
     {
         float m = brute_force_selection(param,metric,generate);
         logerr("bruteforce parameter selection finished with max_metric %f", m);
     } 
-    else if (sel_type == SimulatedAnnealing)
+    else if (set_p.sel_type == PolycentricSimulatedAnnealing)
     {
-        //float m = simulated_annealing_selection(param,metric,generate);
-        SetSelectionProgram set_p;
-        set_p.schedule = SelectionSchedule::SetbySetRandomized;
-        SelectionSet set, set3;
-        SelectionUnit u1;
-        u1.parameter_name = "base_branch_feed";
-        u1.base_values_set = {80};
-        SelectionUnit u3;
-        u3.parameter_name = "base_seg_feed";
-        u3.base_values_set = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
-        set = {u1, u3};
-        set3 = {u3};
-        set_p.selections = {set};
-        ExitConditions ec;
-        ec.max_iters = 2;
-        ec.part_of_set_covered = 0.15;
-        BlkManager man;
-        Block blk;
-        save_to_blk(set_p,"default_selection_set",blk);
-        load_from_blk(set_p,"default_selection_set",blk);
-        man.save_block_to_file("parameter_selection.blk",blk);
-
-        float m = simulated_annealing_selection(param, metric, generate, set_p, ec);
+        float m = simulated_annealing_selection(param, metric, generate, set_p);
         logerr("simulated annealing parameter selection finished with max_metric %f", m);
     }
 }
 
-std::vector<std::string> SelectionScheduleNames
-{
-    "AllInOne",
-    "SetbySet",
-    "SetbySetRandomized",
-    "UnitbyUnit"
-};
 void ParameterSelector::save_to_blk(SetSelectionProgram &prog, std::string name, Block &blk)
 {
     Block *bl = new Block();
-    bl->add_string("schedule",SelectionScheduleNames[(int)prog.schedule]);
+    bl->add_string("schedule",ToString(prog.schedule));
+    bl->add_string("selection_type",ToString(prog.sel_type));
+    bl->add_string("metric_type",ToString(prog.metr_type));
     for (SelectionSet &set : prog.selections)
     {
         Block *set_bl = new Block();
@@ -698,6 +674,12 @@ void ParameterSelector::save_to_blk(SetSelectionProgram &prog, std::string name,
         bl->add_block("selection_set",set_bl);
         
     }
+    Block *ec_bl = new Block();
+    ec_bl->add_double("max_iters",prog.exit_conditions.max_iters);
+    ec_bl->add_double("max_time_seconds",prog.exit_conditions.max_time_seconds);
+    ec_bl->add_double("metric_reached",prog.exit_conditions.metric_reached);
+    ec_bl->add_double("part_of_set_covered",prog.exit_conditions.part_of_set_covered);
+    bl->add_block("exit_conditions",ec_bl);
     blk.add_block(name,bl);
 }
 void ParameterSelector::load_from_blk(SetSelectionProgram &prog, std::string name, Block &blk)
@@ -712,12 +694,39 @@ void ParameterSelector::load_from_blk(SetSelectionProgram &prog, std::string nam
         logerr("cannot read SetSelectionProgram %s from block",name);
         return;
     }
-    for (int i=0;i<SelectionScheduleNames.size();i++)
+    std::string sel_type = bl->get_string("selection_type","BruteForce");
+    std::string metr_type = bl->get_string("metric_type","Dummy");
+    for (int i=0;i<=(int)SelectionSchedule::UnitbyUnit;i++)
     {
-        if (SelectionScheduleNames[i] == schedule_name)
+        if (ToString((SelectionSchedule)i) == schedule_name)
         {
             prog.schedule = (SelectionSchedule)i;
+            break;
         }
+    }
+    for (int i=0;i<=(int)SelectionType::PolycentricSimulatedAnnealing;i++)
+    {
+        if (ToString((SelectionType)i) == sel_type)
+        {
+            prog.sel_type = (SelectionType)i;
+            break;
+        }
+    }
+    for (int i=0;i<=(int)MetricType::ImpostorSimilarity;i++)
+    {
+        if (ToString((MetricType)i) == metr_type)
+        {
+            prog.metr_type = (MetricType)i;
+            break;
+        }
+    }
+    Block *ec_bl = bl->get_block("exit_conditions");
+    if (ec_bl)
+    {
+        prog.exit_conditions.max_iters = ec_bl->get_double("max_iters",prog.exit_conditions.max_iters);
+        prog.exit_conditions.max_time_seconds = ec_bl->get_double("max_time_seconds",prog.exit_conditions.max_time_seconds);
+        prog.exit_conditions.metric_reached = ec_bl->get_double("metric_reached",prog.exit_conditions.metric_reached);
+        prog.exit_conditions.part_of_set_covered = ec_bl->get_double("part_of_set_covered",prog.exit_conditions.part_of_set_covered);
     }
     int id = bl->get_id("selection_set");
     while (id >= 0)
