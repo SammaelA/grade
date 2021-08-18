@@ -20,8 +20,7 @@ std::vector<std::pair<float, float>> optimization_quantiles = {
 float distribution[110];
 float distribution2[110];
 ClusterizationParams clusterizationParams;
-std::vector<float> Clusterizer::weights = clusterizationParams.weights;
-std::vector<float> Clusterizer::light_weights = clusterizationParams.light_weights;
+
 glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,20,20);
 struct JSortData
 {
@@ -260,7 +259,7 @@ bool Clusterizer::match_joints(Branch *b1, Branch *b2, std::vector<float> &match
             }
         }
     }
-    if (partial_dist(jc, jp, matches, weights).from > min)
+    if (partial_dist(jc, jp, matches, current_data->weights).from > min)
         return false;
     it = distances.begin();
     while (it != distances.end())
@@ -301,10 +300,10 @@ Clusterizer::Answer Clusterizer::light_difference(BranchWithData &bwd1, BranchWi
         return Answer(true,0,0);
     if (!current_light)
         return Answer(true,0,0);
-    std::vector<float> _l11(light_weights.size(),0);
-    std::vector<float> _l12(light_weights.size(),0);
-    std::vector<float> _l21(light_weights.size(),0);
-    std::vector<float> _l22(light_weights.size(),0);
+    std::vector<float> _l11(current_data->light_weights.size(),0);
+    std::vector<float> _l12(current_data->light_weights.size(),0);
+    std::vector<float> _l21(current_data->light_weights.size(),0);
+    std::vector<float> _l22(current_data->light_weights.size(),0);
     glm::mat4 t1 = bwd1.transform; 
     glm::mat4 t2 = bwd2.transform; 
     get_light(bwd1.b,_l11,t1);//real b1
@@ -312,12 +311,12 @@ Clusterizer::Answer Clusterizer::light_difference(BranchWithData &bwd1, BranchWi
     get_light(bwd1.b,_l12,t2);//b1 placed instead of b2
     get_light(bwd2.b,_l21,t1);//b2 placed instead of b1
     double l11 = 0, l12 = 0, l21 = 0 ,l22 = 0;
-    for (int i=0;i<light_weights.size();i++)
+    for (int i=0;i<current_data->light_weights.size();i++)
     {
-        l11 += light_weights[i]*_l11[i];
-        l12 += light_weights[i]*_l12[i];
-        l21 += light_weights[i]*_l21[i];
-        l22 += light_weights[i]*_l22[i];
+        l11 += current_data->light_weights[i]*_l11[i];
+        l12 += current_data->light_weights[i]*_l12[i];
+        l21 += current_data->light_weights[i]*_l21[i];
+        l22 += current_data->light_weights[i]*_l22[i];
     }
     double res = (abs(l12 - l11) + abs(l21 - l22))/(l11 + l12 + l21 + l22);
     return Answer(true, res, res);
@@ -338,7 +337,7 @@ Clusterizer::Answer Clusterizer::dist_simple(BranchWithData &bwd1, BranchWithDat
         joint_counts[i] += bwd2.joint_counts[i];
     }
     bool exact = match_joints(b1, b2, matches, joint_counts, joint_passed, min/(1 - light_importance), max);
-    Answer part_answer = partial_dist(joint_counts, joint_passed, matches, weights);
+    Answer part_answer = partial_dist(joint_counts, joint_passed, matches, current_data->weights);
 
     if (exact)
     {
@@ -461,37 +460,26 @@ Clusterizer::Answer Clusterizer::dist(BranchWithData &bwd1, BranchWithData &bwd2
         return Answer(true,1000,1000);
     return dist_Nsection(bwd1, bwd2, min, max, data);
 }
-bool Clusterizer::set_branches(Tree &t, int layer)
+void Clusterizer::get_base_clusters(Tree &t, int layer, std::vector<ClusterData> &base_clusters)
 {
     if (!t.valid)
-        return false;
+        return;
     if (layer < 0 || layer >= t.branchHeaps.size() || t.branchHeaps[layer]->branches.size() == 0)
     {
-        return false;
+        return;
     }
     else
     {
-        int i = 0;
         for (Branch &b : t.branchHeaps[layer]->branches)
-        {
-            BBox bbox;
-            Branch *nb = branchHeap.new_branch();
-            nb->deep_copy(&b, branchHeap, &leafHeap);
-            if (dedicated_bbox(nb, bbox))
-            {
-                glm::vec3 cbb = canonical_bbox;
-                mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
-                 mat4 rot = inverse(rot_inv);
-                vec3 sc_vert = vec3(MAX((1/cbb.x) * bbox.sizes.x,MAX( (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z)));
-                mat4 SC = scale(mat4(1.0f), sc_vert);
-                mat4 SC_inv = inverse(SC);
-                vec3 base_joint_pos = vec4(b.joints.front().pos, 1.0f);
-                mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
-                rot = SC_inv * rot * transl;
-                nb->transform(rot);
-                branches.push_back(BranchWithData(&b, nb, MAX_BRANCH_LEVELS, branches.size(), inverse(rot)));
-                i++;
-            }
+        {                
+                base_clusters.push_back(ClusterData());
+                base_clusters.back().base = &b;
+                base_clusters.back().IDA.type_ids.push_back(b.type_id);
+                base_clusters.back().IDA.centers_par.push_back(b.center_par);
+                base_clusters.back().IDA.centers_self.push_back(b.center_self);
+                base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
+                base_clusters.back().ACDA.originals.push_back(&b);
+                base_clusters.back().ACDA.rotations.push_back(0);
         }
     }
 }
@@ -506,49 +494,97 @@ void Clusterizer::calc_joints_count(Branch *b, std::vector<int> &counts)
         }
     }
 }
-bool Clusterizer::set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light)
+void Clusterizer::get_base_clusters(Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters)
 {
-    current_light = _light;
+    ClusterizationTmpData data;
+    current_data = &data;
+    Cluster::currentClusterizer = this;
+    
     for (int i = 0; i < count; i++)
     {
-        int prev_n = branches.size();
-        set_branches(t[i], layer);
-        debugl(3, " added %d branches from tree %d\n", branches.size() - prev_n, i);
+        int prev_n = current_data->branches.size();
+        get_base_clusters(t[i], layer, base_clusters);
+        debugl(3, " added %d branches from tree %d\n", current_data->branches.size() - prev_n, i);
     }
 }
-ClusterData Clusterizer::extract_data(Clusterizer::Cluster &cl)
+void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
+{
+    int i = 0;
+    for (ClusterData &cd : base_clusters)
+    {
+        if (!cd.base || (cd.ACDA.originals.empty()) || cd.IDA.transforms.empty())
+            continue;
+            BBox bbox;
+            Branch &b = *(cd.base);
+            Branch *nb = current_data->branchHeap.new_branch();
+            nb->deep_copy(&b, current_data->branchHeap, &current_data->leafHeap);
+            if (dedicated_bbox(nb, bbox))
+            {
+                glm::vec3 cbb = canonical_bbox;
+                mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
+                 mat4 rot = inverse(rot_inv);
+                vec3 sc_vert = vec3(MAX((1/cbb.x) * bbox.sizes.x,MAX( (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z)));
+                mat4 SC = scale(mat4(1.0f), sc_vert);
+                mat4 SC_inv = inverse(SC);
+                vec3 base_joint_pos = vec4(b.joints.front().pos, 1.0f);
+                mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
+                rot = SC_inv * rot * transl;
+                nb->transform(rot);
+                current_data->branches.push_back(BranchWithData(&b, nb, i, MAX_BRANCH_LEVELS, current_data->branches.size(), inverse(rot)));
+            }
+            i++;
+    }
+}
+void Clusterizer::set_light(LightVoxelsCube *_light)
+{
+    current_light = _light;
+}
+ClusterData Clusterizer::extract_data(std::vector<ClusterData> &base_clusters, Clusterizer::Cluster &cl)
 {
     ClusterData cd;
-    cd.base = cl.prepare_to_replace(cd.IDA, cd.ACDA);
+    cd.base = cl.prepare_to_replace(base_clusters, cd.IDA, cd.ACDA);
     return cd;
 }
-void Clusterizer::clusterize(std::vector<ClusterData> &clusters)
+void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, 
+                             std::vector<ClusterData> &clusters)
 {
+    ClusterizationTmpData data;
+    data.light_weights = params.light_weights;
+    data.weights = params.weights;
+
+    current_data = &data;
+    Cluster::currentClusterizer = this;
+    clusterizationParams = params;
+
+    set_branches(base_clusters);
     dist_calls = 0;
     prepare_ddt();
-    Ddg.make_base_clusters(branches);
-    Ddg.make(20, clusterizationParams.min_clusters);
-    for (int c_num : Ddg.current_clusters)
+    current_data->Ddg.make_base_clusters(current_data->branches);
+    current_data->Ddg.make(20, clusterizationParams.min_clusters);
+    for (int c_num : current_data->Ddg.current_clusters)
     {
-        clusters.push_back(extract_data(Ddg.clusters[c_num]));
+        clusters.push_back(extract_data(base_clusters, current_data->Ddg.clusters[c_num]));
     }
-    for (auto &b : branches)
+    for (auto &b : current_data->branches)
     {
         b.clear();
     }
+    current_data->branches.clear();
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
+    std::vector<ClusterData> base_clusters;
     std::vector<ClusterData> _clusters;
-    clusterize(_clusters);
+    ClusterizationParams params;
+    clusterize(params, base_clusters, _clusters);
 
     if (!need_debug)
         return;
     std::vector<Branch *> branches;
     int k = 0;
-    for (int S : Ddg.current_clusters)
+    for (int S : current_data->Ddg.current_clusters)
     {
-        Ddg.clusters[S].to_branch_data(branches);
+        current_data->Ddg.clusters[S].to_branch_data(branches);
         for (int i = 0; i < branches.size(); i++)
         {
             debug.add_branch_debug(branches[i], vec3(1, 1, 1), vec3(k, -100, 0), -1);
@@ -685,28 +721,23 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
     float comp = (float)size/current_clusters.size();
     debugl(17, "%d %d %f clusters elements compression\n", current_clusters.size(), size, comp);
 }
-void Clusterizer::set_clusterization_params(ClusterizationParams &params)
-{
-    clusterizationParams = params;
-    Clusterizer::weights = params.weights;
-    Clusterizer::light_weights = params.light_weights;
-}
+
 Clusterizer::Answer Clusterizer::get_dist(BranchWithData &bwd1, BranchWithData &bwd2, DistData *data)
 {
-    auto p = ddt.get(bwd1.id,bwd2.id);
+    auto p = current_data->ddt.get(bwd1.id,bwd2.id);
     if (data)
         *data = p.second;
     return p.first;
 }
 void Clusterizer::prepare_ddt()
 {
-    ddt.create(branches.size());
+    current_data->ddt.create(current_data->branches.size());
     GPUClusterizationHelper gpuch;
-    gpuch.prepare_ddt(branches,ddt,clusterizationParams);
+    gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
     return;
-    for (int i = 0; i < branches.size(); i++)
+    for (int i = 0; i < current_data->branches.size(); i++)
     {
-        for (int j = 0; j < branches.size(); j++)
+        for (int j = 0; j < current_data->branches.size(); j++)
         {
             Answer a;
             DistData d;
@@ -720,15 +751,15 @@ void Clusterizer::prepare_ddt()
             }
             else if (j < i)
             {
-                auto p = ddt.get(j,i);
+                auto p = current_data->ddt.get(j,i);
                 a = p.first;
                 d = p.second;
             }
             else
             {
-                a = dist(branches[i],branches[j],clusterizationParams.max_individual_dist,0,&d);
+                a = dist(current_data->branches[i],current_data->branches[j],clusterizationParams.max_individual_dist,0,&d);
             }
-            ddt.set(i,j,a,d);
+            current_data->ddt.set(i,j,a,d);
         }
     }
 }

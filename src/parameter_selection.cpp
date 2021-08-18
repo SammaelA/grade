@@ -665,7 +665,6 @@ void ParameterSelector::select(ParametersSet *param, std::string selection_progr
     
     Block res_blk;
     param->save_to_blk(res_blk);
-    BlkManager man;
     man.save_block_to_file("selection_result.blk",res_blk);
     res_blk.clear();
 }

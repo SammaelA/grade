@@ -68,6 +68,7 @@ public:
     {
         Branch *original;
         Branch *b;
+        int base_cluster_id;
         int id;
         float rot_angle = 0.0;
         std::vector<int> joint_counts;
@@ -85,8 +86,9 @@ public:
                 }
             }
         }
-        BranchWithData(Branch *_original, Branch *_b, int levels, int _id, glm::mat4 _transform)
+        BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform)
         {
+            base_cluster_id = _base_cluster_id;
             original = _original;
             b = _b;
             id = _id;
@@ -147,8 +149,10 @@ public:
         void to_branch_data(std::vector<Branch *> &branches);
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
-        Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA);
-        Branch *prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters);
+        Branch *prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
+                                   AdditionalClusterDataArrays &ADCA);
+        Branch *prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
+                                   AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters);
         BranchWithData *get_typical(std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm
@@ -201,13 +205,25 @@ public:
         int size() { return n; }
         ~DistDataTable() { clear(); }
     };
-    bool set_branches(Tree &t, int layer);
-    bool set_branches(Tree *t, int count, int layer, LightVoxelsCube *_light);
-    void set_clusterization_params(ClusterizationParams &params);
+
+    struct ClusterizationTmpData
+    {
+        std::vector<float> light_weights;
+        std::vector<float> weights;
+        BranchHeap branchHeap;
+        LeafHeap leafHeap;
+        std::vector<BranchWithData> branches;
+        DistDataTable ddt;
+        ClusterDendrogramm Ddg;
+    };
+    void set_branches(std::vector<ClusterData> &base_clusters);
+    void set_light(LightVoxelsCube *_light);
+    void get_base_clusters(Tree &t, int layer, std::vector<ClusterData> &base_clusters);
+    void get_base_clusters(Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
     void prepare_ddt();
-    void clusterize(std::vector<ClusterData> &clusters);
-    ClusterData extract_data(Cluster &cl);
+    void clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters);
+    ClusterData extract_data(std::vector<ClusterData> &base_clusters, Cluster &cl);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
     Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);
     bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vector<int> &jc, std::vector<int> &jp,
@@ -221,18 +237,9 @@ public:
     Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min = 1.0, float max = 0.0, DistData *data = nullptr);
     Answer cluster_dist_min(Cluster &c1, Cluster &c2, float min = 1.0, float max = 0.0);
     Answer get_dist(BranchWithData &bwd1, BranchWithData &bwd2, DistData *data = nullptr);
-    Clusterizer()
-    {
-        Cluster::currentClusterizer = this;
-    }
-    static std::vector<float> light_weights;
-    static std::vector<float> weights;
-    BranchHeap branchHeap;
-    LeafHeap leafHeap;
-    std::vector<BranchWithData> branches;
-    DistDataTable ddt;
-    LightVoxelsCube *current_light = nullptr;
-    ClusterDendrogramm Ddg;
+    Clusterizer() {};
 
+    LightVoxelsCube *current_light = nullptr;
+    ClusterizationTmpData *current_data = nullptr;
     static glm::vec3 canonical_bbox;
 };

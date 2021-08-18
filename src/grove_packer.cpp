@@ -225,25 +225,33 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         post_seeder->recalcuate_shadows(trees_external,count);
         add_occluder(post_voxels,trees_external,count);
     }
+    std::vector<ClusterData> trunks_clusters_base, branches_clusters_base, full_tree_clusters_base;
     std::vector<ClusterData> trunks_clusters, branches_clusters, full_tree_clusters;
     
     
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    if (ggd.task & (GenerationTask::SYNTS|GenerationTask::CLUSTERIZE))
+    if (ggd.task & (GenerationTask::MODELS|GenerationTask::SYNTS|GenerationTask::CLUSTERIZE))
     {
         Clusterizer tr_cl;
-        ClusterizationParams tr_cp;
-        tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
-        tr_cp.ignore_structure_level = 1;
-        tr_cp.delta = 0.1;
-        tr_cp.light_importance = 0;
-        tr_cp.different_types_tolerance = true;
-        tr_cp.r_weights = std::vector<float>{0.4,0,0,0.0,0.0}; 
-        tr_cp.max_individual_dist = 0.4;
-        tr_cp.bwd_rotations = 4;
-        tr_cl.set_clusterization_params(tr_cp);
-        tr_cl.set_branches(trees_external, count, 0, post_voxels);
-        tr_cl.clusterize(trunks_clusters);
+        tr_cl.set_light(post_voxels);
+        tr_cl.get_base_clusters(trees_external, count, 0, trunks_clusters_base);
+        if (ggd.task & (GenerationTask::CLUSTERIZE))
+        {
+            ClusterizationParams tr_cp;
+            tr_cp.weights = std::vector<float>{1,0,0,0.0,0.0};
+            tr_cp.ignore_structure_level = 1;
+            tr_cp.delta = 0.1;
+            tr_cp.light_importance = 0;
+            tr_cp.different_types_tolerance = true;
+            tr_cp.r_weights = std::vector<float>{0.4,0,0,0.0,0.0}; 
+            tr_cp.max_individual_dist = 0.4;
+            tr_cp.bwd_rotations = 4;
+            tr_cl.clusterize(tr_cp, trunks_clusters_base, trunks_clusters);
+        }
+        else
+        {
+            trunks_clusters = trunks_clusters_base;
+        }
         for (ClusterData &cd : trunks_clusters)
         {
             transform_according_to_root(cd);
@@ -252,20 +260,29 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     
-    if (ggd.task & (GenerationTask::SYNTS|GenerationTask::CLUSTERIZE|GenerationTask::BILLBOARDS))
+    if (ggd.task & (GenerationTask::MODELS|GenerationTask::SYNTS|GenerationTask::CLUSTERIZE|GenerationTask::BILLBOARDS))
     {
+        
         Clusterizer cl;
-        ClusterizationParams cp;
-        cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-        cp.ignore_structure_level = 2;
-        cp.delta = 0.3;
-        cp.max_individual_dist = ggd.clustering_max_individual_distance;
-        cp.bwd_rotations = 4;
+        cl.set_light(post_voxels);
+        cl.get_base_clusters(trees_external, count, 1, branches_clusters_base);
+        if (ggd.task & (GenerationTask::CLUSTERIZE))
+        {
+            ClusterizationParams cp;
+            cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
+            cp.ignore_structure_level = 2;
+            cp.delta = 0.3;
+            cp.max_individual_dist = 0.4;
+            cp.bwd_rotations = 4;
 
-        cl.set_clusterization_params(cp);
-        cl.set_branches(trees_external, count, 1, post_voxels);
-        cl.clusterize(branches_clusters);
-
+            cl.clusterize(cp, branches_clusters_base, branches_clusters);
+            cl.clusterize(cp, branches_clusters, branches_clusters_base);
+            cl.clusterize(cp, branches_clusters_base, branches_clusters);
+        }
+        else
+        {
+            branches_clusters = branches_clusters_base;
+        }
         for (int i = 0;i<branches_clusters.size();i++)
         {
             for (::Branch *br : branches_clusters[i].ACDA.originals)
@@ -285,20 +302,27 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
 
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     
-    if (ggd.task & (GenerationTask::IMPOSTORS|GenerationTask::IMPOSTOR_FULL_GROVE))
+    if (ggd.task & (GenerationTask::CLUSTERIZE|GenerationTask::IMPOSTORS|GenerationTask::IMPOSTOR_FULL_GROVE))
     {
         Clusterizer cl2;
-        ClusterizationParams cp;
-        cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
-        cp.ignore_structure_level = 1;
-        cp.delta = 0.3;
-        cp.max_individual_dist = ggd.clustering_max_individual_distance;
-        cp.bwd_rotations = 4;
-        cp.light_importance = 0.8;
-        cp.different_types_tolerance = false;
-        cl2.set_clusterization_params(cp);
-        cl2.set_branches(trees_external, count + synts, 0, post_voxels);
-        cl2.clusterize(full_tree_clusters);
+        cl2.set_light(post_voxels);
+        cl2.get_base_clusters(trees_external, count + synts, 0, full_tree_clusters_base);
+        if (ggd.task & (GenerationTask::CLUSTERIZE))
+        {
+            ClusterizationParams cp;
+            cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
+            cp.ignore_structure_level = 1;
+            cp.delta = 0.3;
+            cp.max_individual_dist = ggd.clustering_max_individual_distance;
+            cp.bwd_rotations = 4;
+            cp.light_importance = 0.8;
+            cp.different_types_tolerance = false;
+            cl2.clusterize(cp, full_tree_clusters_base, full_tree_clusters);
+        }
+        else
+        {
+            full_tree_clusters = full_tree_clusters_base;
+        }
     }
 
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
@@ -338,7 +362,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
     }
     
     
-    if (ggd.task & (GenerationTask::CLUSTERIZE))
+    if (ggd.task & (GenerationTask::MODELS))
     {
         std::vector<BranchStructure> instanced_structures;
 

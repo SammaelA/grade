@@ -260,7 +260,7 @@ void generate_grove()
 
     ggd.types[0].params->get_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
     ggd.types[0].params->load_from_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
-
+    //ggd.task = MINIMUM_FOR_RENDER| IMPOSTORS | IMPOSTOR_FULL_GROVE;
     GrovePacker packer;
     gen->create_grove(ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
@@ -288,7 +288,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     Tree single_tree;
     gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
     packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
-
+    print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();
 }

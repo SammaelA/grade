@@ -12,8 +12,8 @@ base_branch_feed:arr = { 80.000000 }
 base_seg_feed:arr = { 10.000000, 20.000000, 30.000000, 40.000000, 50.000000, 60.000000, 70.000000, 80.000000, 90.000000, 100.000000, 110.000000, 120.000000, 130.000000, 140.000000, 150.000000 }
 }
 exit_conditions {
-max_iters:r = 3
-max_time_seconds:r = 86400.000000
+max_iters:r = 1000
+max_time_seconds:r = 180.000000
 metric_reached:r = 10.000000
 part_of_set_covered:r = 0.150000
 }

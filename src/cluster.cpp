@@ -77,12 +77,21 @@ float Clusterizer::Cluster::ward_dist(Cluster *B, float min, float max)
         return distance;
     }
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA)
+bool valid(ClusterData &cd)
+{
+    return (cd.base && !cd.ACDA.originals.empty() &&
+            cd.ACDA.originals.size() == cd.ACDA.rotations.size() &&
+            cd.ACDA.originals.size() == cd.IDA.centers_par.size() &&
+            cd.ACDA.originals.size() == cd.IDA.centers_self.size() &&
+            cd.ACDA.originals.size() == cd.IDA.transforms.size() &&
+            cd.ACDA.originals.size() == cd.IDA.type_ids.size());
+}
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA)
 {
     std::vector<Cluster *> clusters;
-    return prepare_to_replace(IDA, ADCA, clusters);
+    return prepare_to_replace(base_clusters, IDA, ADCA, clusters);
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters)
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters)
 {
     to_base_clusters(clusters);
     if (clusters.empty())
@@ -92,12 +101,31 @@ Branch *Clusterizer::Cluster::prepare_to_replace(InstanceDataArrays &IDA, Additi
     for (Cluster *cl : clusters)
     {
         glm::mat4 tr = (cl->branch->transform) * base_transform_inv;
-        IDA.transforms.push_back(tr);
-        IDA.centers_par.push_back(cl->branch->original->center_par);
-        IDA.centers_self.push_back(cl->branch->original->center_self);
-        IDA.type_ids.push_back(cl->branch->b->type_id);
-        ADCA.rotations.push_back(cl->branch->rot_angle);
-        ADCA.originals.push_back(cl->branch->original);
+        if (cl->branch->base_cluster_id < 0 || cl->branch->base_cluster_id >= base_clusters.size())
+        {
+            logerr("failed to merge clusters. Base cluster is not found in given array and will be ignored");
+        }
+        else
+        {
+            ClusterData &base = base_clusters[cl->branch->base_cluster_id];
+            if (!valid(base))
+            {
+                logerr("failed to merge clusters. Base cluster is not valid and will be ignored");
+            }
+            else
+            {
+                int sz = base.ACDA.originals.size();
+                for (int i=0;i<sz;i++)
+                {
+                    IDA.transforms.push_back(base.IDA.transforms[i]*tr);
+                    IDA.centers_par.push_back(base.IDA.centers_par[i]);
+                    IDA.centers_self.push_back(base.IDA.centers_self[i]);
+                    IDA.type_ids.push_back(base.IDA.type_ids[i]);
+                    ADCA.rotations.push_back(base.ACDA.rotations[i]);
+                    ADCA.originals.push_back(base.ACDA.originals[i]);
+                }
+            }
+        }
     }
     return br->original;
 }
