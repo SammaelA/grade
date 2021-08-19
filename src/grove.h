@@ -94,14 +94,12 @@ struct GrovePacked
 {
     glm::vec3 center;
     std::string ggd_name;
-    std::vector<BranchStructure> roots;
     BranchCatalogue instancedCatalogue;
-    BranchCatalogue uniqueCatalogue;
 
     std::vector<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
     std::vector<ImpostorsData> impostors;
-    GrovePacked() : uniqueCatalogue(MAX_BRANCH_LEVELS), instancedCatalogue(MAX_BRANCH_LEVELS){};
+    GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
 };
 struct GroveRendererDebugParams
 {

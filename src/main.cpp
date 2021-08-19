@@ -279,7 +279,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     tree_ggd.obstacles = {};
     tree_ggd.clustering_max_individual_distance = 0.0;
     tree_ggd.name = "single_tree";
-    tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::IMPOSTOR_FULL_GROVE;
+    tree_ggd.task = GenerationTask::IMPOSTORS;
     Tree single_tree;
     gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
     packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);

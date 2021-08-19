@@ -75,18 +75,6 @@ void pack_cluster(ClusterData &cluster, GrovePacked &grove, std::vector<BranchSt
     }
     grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
 }
-void pack_tree(::Tree &t, GrovePacked &grove, int up_to_level)
-{
-    for (int i = 0; i <= up_to_level; i++)
-    {
-        for (::Branch &branch : t.branchHeaps[i]->branches)
-        {
-            PackedBranch b;
-            branch.pack(b);
-            branch.mark_B = grove.uniqueCatalogue.add(b, branch.level);
-        }
-    }
-}
 
 void pack_structure(::Branch *rt, GrovePacked &grove, BranchStructure &str, std::vector<BranchStructure> &instanced_structures)
 {
@@ -272,7 +260,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
             cp.weights = std::vector<float>{5000,800,40,0.0,0.0};
             cp.ignore_structure_level = 2;
             cp.delta = 0.3;
-            cp.max_individual_dist = 0.4;
+            cp.max_individual_dist = ggd.clustering_max_individual_distance;
             cp.bwd_rotations = 4;
 
             cl.clusterize(cp, branches_clusters_base, branches_clusters);
@@ -331,11 +319,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         grove.impostors.push_back(ImpostorsData());  
     if (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE))
     {
-        ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
-        
-        ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors[0]);
-
-        delete(ib);
+        logerr("full grove impostors are temporary unavailable");
     }
     if (ggd.task & (GenerationTask::IMPOSTORS))
     {
@@ -370,14 +354,6 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         for (ClusterData &cd : branches_clusters)
         {
             pack_cluster(cd, grove, instanced_structures, 1, 1000);
-        }
-        for (int i = 0; i < count; i++)
-        {
-            if (trees_external[i].root)
-            {
-                grove.roots.push_back(BranchStructure());
-                pack_structure(trees_external[i].root,grove,grove.roots.back(),instanced_structures);
-            }
         }
     }
     delete(post_voxels);

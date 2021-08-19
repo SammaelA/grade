@@ -271,14 +271,14 @@ bool save(FILE *f, GrovePacked &t)
 {
     bool status = true;
     status = status && save(f,t.center) && savev(f,t.clouds) && savev(f,t.impostors) && savev(f,t.instancedBranches) &&
-             save(f,t.instancedCatalogue) && savev(f,t.roots) && save(f,t.uniqueCatalogue) && save(f,t.ggd_name);
+             save(f,t.instancedCatalogue) && save(f,t.ggd_name);
     return status;
 }
 bool load(FILE *f, GrovePacked &t)
 {
     bool status = true;
     status = status && load(f,t.center) && loadv(f,t.clouds) &&loadv(f,t.impostors) && loadv(f,t.instancedBranches) &&
-             load(f,t.instancedCatalogue) && loadv(f,t.roots) && load(f,t.uniqueCatalogue) && load(f,t.ggd_name);
+             load(f,t.instancedCatalogue) && load(f,t.ggd_name);
     return status; 
 }
 bool save(FILE *f, ImpostorsData &t)

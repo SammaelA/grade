@@ -156,7 +156,7 @@ struct GroveGenerationData
     Quality impostor_quality = Quality::MEDIUM;
     Quality bill_1_quality = Quality::MEDIUM;
     Quality bill_2_quality = Quality::LOW;
-    unsigned task = GENERATE | CLUSTERIZE | BILLBOARDS | IMPOSTORS | IMPOSTOR_FULL_GROVE | MODELS;
+    unsigned task = GENERATE | CLUSTERIZE | BILLBOARDS | IMPOSTORS | MODELS;
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;
