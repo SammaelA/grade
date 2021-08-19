@@ -255,11 +255,6 @@ void clear_current_grove()
 }
 void generate_grove()
 {
-    std::vector<ParameterDesc> mask;
-    std::vector<double> dt;
-
-    ggd.types[0].params->get_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
-    ggd.types[0].params->load_from_mask_and_data(mask, dt, ParameterVariablesSet::ALL_VALUES);
     //ggd.task = MINIMUM_FOR_RENDER| IMPOSTORS | IMPOSTOR_FULL_GROVE;
     GrovePacker packer;
     gen->create_grove(ggd, t, *data.heightmap);
@@ -667,6 +662,7 @@ int main(int argc, char *argv[])
     if (appContext.regeneration_needed)
     {
       clear_current_grove();
+      generate_grove();
       generate_grove();
       generate_grove_renderer();
       appContext.regeneration_needed = false;

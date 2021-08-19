@@ -327,37 +327,34 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
 
     std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
 
-    grove.impostors.push_back(ImpostorsData());
+    for (int i=grove.impostors.size();i<2;i++)
+        grove.impostors.push_back(ImpostorsData());  
     if (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE))
     {
         ImpostorBaker *ib = new ImpostorBaker(2048, 2048, curGgd.types);
         
-        ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors.back());
+        ib->prepare_all_grove(ggd, 0, full_tree_clusters, &grove.impostors[0]);
 
         delete(ib);
     }
-    
-    grove.impostors.push_back(ImpostorsData());
     if (ggd.task & (GenerationTask::IMPOSTORS))
     {
-        ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors.back());
+        ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality,0,full_tree_clusters,curGgd.types,&grove.impostors[1]);
         delete(ib2);
     }
     
-    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data refers to full-grove-impostor LOD
-    grove.clouds.push_back(BillboardCloudData());//empty 'zero' data refers to impostors LOD
-    grove.clouds.push_back(BillboardCloudData());//main cloud 1
+    for (int i=grove.clouds.size();i<4;i++)
+        grove.clouds.push_back(BillboardCloudData());
     if (ggd.task & (GenerationTask::BILLBOARDS))
     {
         BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, 1,
-                                                        branches_clusters,curGgd.types,&grove.clouds.back());
+                                                        branches_clusters,curGgd.types,&grove.clouds[2]);
         delete(cloud1);
     }
-    grove.clouds.push_back(BillboardCloudData());//main cloud 2
     if (ggd.task & (GenerationTask::BILLBOARDS))
     {    
         BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, 2,
-                                                        branches_clusters,curGgd.types,&grove.clouds.back());
+                                                        branches_clusters,curGgd.types,&grove.clouds[3]);
         delete(cloud2);
     }
     

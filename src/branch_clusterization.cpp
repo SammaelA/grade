@@ -502,9 +502,9 @@ void Clusterizer::get_base_clusters(Tree *t, int count, int layer, std::vector<C
     
     for (int i = 0; i < count; i++)
     {
-        int prev_n = current_data->branches.size();
+        int prev_n = base_clusters.size();
         get_base_clusters(t[i], layer, base_clusters);
-        debugl(3, " added %d branches from tree %d\n", current_data->branches.size() - prev_n, i);
+        debugl(3, " added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
 }
 void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
