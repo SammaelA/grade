@@ -20,7 +20,7 @@ std::vector<std::pair<float, float>> optimization_quantiles = {
 float distribution[110];
 float distribution2[110];
 ClusterizationParams clusterizationParams;
-
+long cur_cluster_id = 1;
 glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,20,20);
 struct JSortData
 {
@@ -47,6 +47,11 @@ struct compare
         return j1.dist < j2.dist;
     }
 };
+ClusterData::ClusterData()
+{
+    id = cur_cluster_id;
+    cur_cluster_id++;
+}
 inline float AS_branch_min_dist(float part_min_dist, int num_quntile)
 {
     return part_min_dist / (1 + optimization_quantiles[num_quntile].first);
@@ -542,7 +547,7 @@ void Clusterizer::set_light(LightVoxelsCube *_light)
 ClusterData Clusterizer::extract_data(std::vector<ClusterData> &base_clusters, Clusterizer::Cluster &cl)
 {
     ClusterData cd;
-    cd.base = cl.prepare_to_replace(base_clusters, cd.IDA, cd.ACDA);
+    cd.base = cl.prepare_to_replace(base_clusters, cd.IDA, cd.ACDA, cd.id);
     return cd;
 }
 void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, 

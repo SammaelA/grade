@@ -259,7 +259,7 @@ void generate_grove()
     GrovePacker packer;
     gen->create_grove(ggd, t, *data.heightmap);
     logerr("%d branches",t[0].branchHeaps[1]->branches.size());
-    packer.pack_grove(ggd, grove, *debugVisualizer, t, data.heightmap, visualize_voxels);
+    packer.add_trees_to_grove(ggd, grove, t, data.heightmap);
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {

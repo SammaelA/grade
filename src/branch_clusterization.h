@@ -26,9 +26,11 @@ struct AdditionalClusterDataArrays
 };
 struct ClusterData
 {
+    long id;
     Branch *base;
     InstanceDataArrays IDA;
     AdditionalClusterDataArrays ACDA;
+    ClusterData();
 };
 class Clusterizer
 {
@@ -150,9 +152,9 @@ public:
         void to_base_clusters(std::vector<Cluster *> &clusters);
         float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);
         Branch *prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
-                                   AdditionalClusterDataArrays &ADCA);
+                                   AdditionalClusterDataArrays &ADCA, long &cluster_id);
         Branch *prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
-                                   AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters);
+                                   AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters, long &cluster_id);
         BranchWithData *get_typical(std::vector<Cluster *> &clusters);
     };
     struct ClusterDendrogramm

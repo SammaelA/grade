@@ -86,12 +86,15 @@ bool valid(ClusterData &cd)
             cd.ACDA.originals.size() == cd.IDA.transforms.size() &&
             cd.ACDA.originals.size() == cd.IDA.type_ids.size());
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA)
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
+                                                 AdditionalClusterDataArrays &ADCA, long &cluster_id)
 {
     std::vector<Cluster *> clusters;
-    return prepare_to_replace(base_clusters, IDA, ADCA, clusters);
+    return prepare_to_replace(base_clusters, IDA, ADCA, clusters, cluster_id);
 }
-Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters)
+Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
+                                                 AdditionalClusterDataArrays &ADCA, std::vector<Cluster *> &clusters,
+                                                 long &cluster_id)
 {
     to_base_clusters(clusters);
     if (clusters.empty())
@@ -125,6 +128,8 @@ Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_
                     ADCA.originals.push_back(base.ACDA.originals[i]);
                 }
             }
+            if (br == cl->branch)
+                cluster_id = base.id;
         }
     }
     return br->original;

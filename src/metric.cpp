@@ -11,9 +11,9 @@ double CompressionMetric::get(GrovePacked &g)
     int instances = g.instancedBranches.size();
     for (int j = 0; j < g.instancedCatalogue.levels(); j++)
     {
-        origins += g.instancedCatalogue.get_level(j).size();
+        origins += g.instancedCatalogue.get_level_size(j);
     }
-    float comp = (float)instances / origins;
+    float comp = (float)instances / origins;//bullshit
     logerr("instanced branches %d/%d = %f", instances, origins, comp);
     return comp;
 }

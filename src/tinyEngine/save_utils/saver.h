@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdio>
 #include <vector>
+#include <list>
 #include <exception>
 #include <limits>
 #include <iostream>
@@ -249,6 +250,94 @@ namespace saver
                 delete[] ptr;
             }
             return ok;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+        template <typename T>
+    bool savelst(FILE *f, std::list<T> &t)
+    {
+        try
+        {
+            if (t.size() > USHRT_MAX)
+                throw std::out_of_range("list is too long. Use savellst() instead of savelst()");
+            unsigned short k = t.size();
+            bool status = true;
+            status = status && save(f, k);
+            for (T &val : t)
+            {
+                status = status && save(f, val);
+            }
+            return status;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+    template <typename T>
+    bool loadlst(FILE *f, std::list<T> &t)
+    {
+        try
+        {
+            unsigned short k = 0;
+            bool status = true;
+            t.clear();
+            status = status && load(f, k);
+            for (int i = 0; i < k; i++)
+            {
+                t.emplace_back();
+                status = status && load(f, t.back());
+            }
+            return status;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+    template <typename T>
+    bool savellst(FILE *f, std::vector<T> &t)
+    {
+        try
+        {
+            if (t.size() > UINT_MAX)
+                throw std::out_of_range("list is too long. You must be joking...");
+            unsigned k = t.size();
+            bool status = true;
+            status = status && save(f, k);
+            for (T &val : t)
+            {
+                status = status && save(f, val);
+            }
+            return status;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+    template <typename T>
+    bool loadllst(FILE *f, std::list<T> &t)
+    {
+        try
+        {
+            unsigned k = 0;
+            bool status = true;
+            t.clear();
+            status = status && load(f, k);
+            for (int i = 0; i < k; i++)
+            {
+                t.emplace_back();
+                status = status && load(f, t.back());
+            }
+            return status;
         }
         catch (const std::exception &e)
         {
