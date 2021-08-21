@@ -39,7 +39,8 @@ Config config;
 AppContext appContext;
 ShadowMap shadowMap;
 DefferedTarget defferedTarget;
-
+GrovePacker packer;
+int t_generated = 0;
 Tree t[MAX_TREES];
 AbstractTreeGenerator *gen = nullptr;
 DebugVisualizer *debugVisualizer = nullptr;
@@ -252,14 +253,15 @@ void clear_current_grove()
   {
     t[i].clear();
   }
+  t_generated = 0;
+  packer = GrovePacker();
 }
 void generate_grove()
 {
-    //ggd.task = MINIMUM_FOR_RENDER| IMPOSTORS | IMPOSTOR_FULL_GROVE;
-    GrovePacker packer;
-    gen->create_grove(ggd, t, *data.heightmap);
-    logerr("%d branches",t[0].branchHeaps[1]->branches.size());
-    packer.add_trees_to_grove(ggd, grove, t, data.heightmap);
+  gen->create_grove(ggd, t + t_generated, *data.heightmap);
+  logerr("%d branches",t[0].branchHeaps[1]->branches.size());
+  packer.add_trees_to_grove(ggd, grove, t + t_generated, data.heightmap);
+  t_generated+=ggd.trees_count;
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {
@@ -663,9 +665,14 @@ int main(int argc, char *argv[])
     {
       clear_current_grove();
       generate_grove();
-      generate_grove();
       generate_grove_renderer();
       appContext.regeneration_needed = false;
+    }
+    else if (appContext.add_generation_needed)
+    {
+      generate_grove();
+      generate_grove_renderer();
+      appContext.add_generation_needed = false;
     }
     if (appContext.renderMode == RenderMode::StartingScreen)
       start_screen_pipeline();

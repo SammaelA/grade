@@ -46,6 +46,7 @@ struct AppContext
     DirectedLight light;
 
     bool regeneration_needed = false;
+    bool add_generation_needed = false;
 };
 
 extern std::function<void(AppContext &, Event &)> eventHandler;

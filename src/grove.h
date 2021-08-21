@@ -86,7 +86,7 @@ struct BranchCatalogue
             first_free[level] = branches[level].size(); 
             for (int i=pos;i<branches[level].size();i++)
             {
-                if (occupied[level].get_unsafe(i))
+                if (!occupied[level].get_unsafe(i))
                 {
                     first_free[level] = i;
                     break;
