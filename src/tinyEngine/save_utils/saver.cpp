@@ -215,14 +215,14 @@ bool save(FILE *f, InstanceDataArrays &t)
 {
     bool status = true;
     status = status && savesv(f,t.centers_par) && savesv(f,t.centers_self) && savev(f,t.transforms) && 
-                       savesv(f,t.type_ids);
+                       savesv(f,t.type_ids) && savesv(f, t.tree_ids);
     return status;
 }
 bool load(FILE *f, InstanceDataArrays &t)
 {
         bool status = true;
     status = status && loadsv(f,t.centers_par) && loadsv(f,t.centers_self) && loadv(f,t.transforms) &&
-                       loadsv(f,t.type_ids) ;
+                       loadsv(f,t.type_ids) && loadsv(f, t.tree_ids);
     return status;
 }
 

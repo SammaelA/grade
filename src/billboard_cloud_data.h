@@ -11,6 +11,7 @@ struct InstanceDataArrays
     std::vector<glm::vec3> centers_par;
     std::vector<glm::vec3> centers_self;
     std::vector<int> type_ids;
+    std::vector<int> tree_ids;
 };
 struct InstancingReadyModel
 {

@@ -399,6 +399,7 @@ void BillboardCloudRaw::split_IDA_by_type(InstanceDataArrays &IDA, std::vector<I
                 cur_type = IDA.type_ids[i];
                 need_change[i] = false;
                 res.back().type_ids.push_back(cur_type);
+                res.back().tree_ids.push_back(IDA.tree_ids[i]);
                 res.back().centers_par.push_back(IDA.centers_par[i]);
                 res.back().centers_self.push_back(IDA.centers_self[i]);
                 res.back().transforms.push_back(IDA.transforms[i]);

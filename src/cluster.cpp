@@ -84,7 +84,8 @@ bool valid(ClusterData &cd)
             cd.ACDA.originals.size() == cd.IDA.centers_par.size() &&
             cd.ACDA.originals.size() == cd.IDA.centers_self.size() &&
             cd.ACDA.originals.size() == cd.IDA.transforms.size() &&
-            cd.ACDA.originals.size() == cd.IDA.type_ids.size());
+            cd.ACDA.originals.size() == cd.IDA.type_ids.size() &&
+            cd.ACDA.originals.size() == cd.IDA.tree_ids.size());
 }
 Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_clusters, InstanceDataArrays &IDA, 
                                                  AdditionalClusterDataArrays &ADCA, long &cluster_id)
@@ -124,6 +125,7 @@ Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_
                     IDA.centers_par.push_back(base.IDA.centers_par[i]);
                     IDA.centers_self.push_back(base.IDA.centers_self[i]);
                     IDA.type_ids.push_back(base.IDA.type_ids[i]);
+                    IDA.tree_ids.push_back(base.IDA.tree_ids[i]);
                     ADCA.rotations.push_back(base.ACDA.rotations[i]);
                     ADCA.originals.push_back(base.ACDA.originals[i]);
                 }

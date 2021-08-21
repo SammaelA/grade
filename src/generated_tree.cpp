@@ -576,7 +576,7 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
         }
     }
 }
-
+uint last_id = 0;
 void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
 {
     for (int i = 0; i < 10; i++)
@@ -584,7 +584,8 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
         sum_feed[i] = 0;
         count_feed[i] = 0;
     }
-
+    t.id = last_id;
+    last_id++;
     t.voxels = voxels;
     t.params = params;
     if (t.leaves)
@@ -957,7 +958,7 @@ Tree::~Tree()
     {
         dst.center_par = src.center_par;
         dst.center_self = src.center_self;
-        dst.id = src.id;
+        dst.id = src_tree.id;
         dst.level = src.level;
         dst.plane_coef = src.plane_coef;
         dst.type_id = src.type_id;

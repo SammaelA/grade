@@ -480,6 +480,7 @@ void Clusterizer::get_base_clusters(Tree &t, int layer, std::vector<ClusterData>
                 base_clusters.push_back(ClusterData());
                 base_clusters.back().base = &b;
                 base_clusters.back().IDA.type_ids.push_back(b.type_id);
+                base_clusters.back().IDA.tree_ids.push_back(t.id);
                 base_clusters.back().IDA.centers_par.push_back(b.center_par);
                 base_clusters.back().IDA.centers_self.push_back(b.center_self);
                 base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
