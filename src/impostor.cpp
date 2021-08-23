@@ -5,6 +5,38 @@ using glm::vec3;
 using glm::vec4;
 using glm::mat4;
 
+void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+                            ImpostorsData *data, std::list<Impostor>::iterator &impostor)
+{
+    static const int slices_n = 8;
+    if (!data)
+    {
+        logerr("empty data cannot create impostors");
+    }
+    if (!data->atlas.is_valid())
+    {
+        AtlasParams params = set_atlas_params(quality, (slices_n + 1)*4);
+        int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
+        TextureAtlas a = TextureAtlas(params.x,params.y,params.layers);
+        data->atlas = a;
+        atlas = &(data->atlas);
+        atlas->set_grid(params.grid_x,params.grid_y);
+        atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+    }
+    else
+    {
+        atlas = &(data->atlas);
+    }
+    quality = _quality;
+    ttd = _ttd;
+    std::vector<ClusterData> clusters = {cluster};
+    prepare(branch_level, clusters, data);
+    auto it = data->impostors.end();
+    it--;
+    impostor = it;
+    atlas = nullptr;
+}
+
 void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters,
                             ImpostorsData *data)
 {
@@ -34,7 +66,6 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     {
         data->level = branch_level;
         data->valid = true;
-        data->impostors.clear();
         for (auto it = all_transforms.begin(); it != all_transforms.end(); it++)
         {
             proj.emplace(it->first,data->impostors.size());
@@ -44,12 +75,14 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     }
     if (atlas)
     {
+        /*
         atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
         glm::ivec4 sizes = atlas->get_sizes();
         int cnt = ceil(sqrt((base_branches.size()*(slices_n + 1))/atlas->layers_count() + 1));
         int tex_size = (sizes.x) / cnt;
         atlas->set_grid(tex_size, tex_size);
         atlas->clear();
+        */
     }
     else
     {
@@ -60,17 +93,23 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
         atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
         atlas->clear();
     }
-
+    std::vector<std::list<Impostor>::iterator> its;
+    std::list<Impostor>::iterator it = data->impostors.begin();
+    while (it != data->impostors.end())
+    {
+        its.push_back(it);
+        it++;
+    }
     for (Branch &b : base_branches)
     {
-        make_impostor(b,data->impostors[proj.at(b.mark_A)],slices_n); 
+        make_impostor(b,*(its[proj.at(b.mark_A)]),slices_n); 
     }
 
     data->valid = !data->impostors.empty();
     data->level = 0;
     data->atlas = *atlas;
-    for (int i=0;i<data->atlas.tex_count();i++)
-        glGenerateTextureMipmap(data->atlas.tex(i).texture);
+    //for (int i=0;i<data->atlas.tex_count();i++)
+    //    glGenerateTextureMipmap(data->atlas.tex(i).texture);
 }
 void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
 {
@@ -342,14 +381,16 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
         models.push_back(bm);
     }
     std::vector<ImpostorData> imp_data_buffer;
+    auto it = data->impostors.begin();
     for (int i=0;i<models.size();i++)
     {
         ImpostorData dat;
-        dat.slice_count = (data->impostors[i].slices.size());
+        dat.slice_count = (it->slices.size());
         dat.slice_offset = offsets[i];
-        dat.slice_verts = data->impostors[i].slices[0].positions.size();
-        dat.imp_center = glm::vec4(data->impostors[i].bcyl.center,1);
+        dat.slice_verts = it->slices[0].positions.size();
+        dat.imp_center = glm::vec4(it->bcyl.center,1);
         imp_data_buffer.push_back(dat);
+        it++;
     }
     glGenBuffers(1, &impostorsDataBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, impostorsDataBuffer);

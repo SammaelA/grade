@@ -75,6 +75,9 @@ public:
     void destroy();
 private:
     bool bind(int layer, int type);
+    int new_layers_count();
+    void increase_capacity_tex(Texture &t, int layers);
+    void increase_capacity();
     int curNum = 0;
     int width = 0;
     int height = 0;

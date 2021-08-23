@@ -284,13 +284,13 @@ bool load(FILE *f, GrovePacked &t)
 bool save(FILE *f, ImpostorsData &t)
 {
     bool status = true;
-    status = save(f, t.atlas) && save(f, t.level) && save(f, t.valid) && savev(f, t.impostors);
+    status = save(f, t.atlas) && save(f, t.level) && save(f, t.valid) && savelst(f, t.impostors);
     return status;
 }
 bool load(FILE *f, ImpostorsData &t)
 {
     bool status = true;
-    status = load(f, t.atlas) && load(f, t.level) && load(f, t.valid) && loadv(f, t.impostors);
+    status = load(f, t.atlas) && load(f, t.level) && load(f, t.valid) && loadlst(f, t.impostors);
     return status;
 }
 

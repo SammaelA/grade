@@ -51,15 +51,15 @@ normalTex(atlas.normalTex)
 TextureAtlas::TextureAtlas(int w, int h, int l) :
                            Countable(1),
                            colorTex(textureManager.create_unnamed_array(w, h, false, 4*l)),
-                           normalTex(textureManager.create_unnamed_array(w, h, false, 4*l)),
+                           normalTex(textureManager.create_unnamed_array(w, h, false, l)),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
-    logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
-    //atlases_count++;
+    debugl(10, "atlas created %dx%d %f Mbytes\n",w,h,1e-6*2*w*h*4);
+
     width = w;
     height = h;
-    layers = 4*l;
+    layers = l;
     valid = true;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -103,7 +103,7 @@ int TextureAtlas::add_tex()
             return -1;
         else
         {
-            //TODO resize
+            increase_capacity();
         }
     }
     int pos = curNum;
@@ -280,6 +280,57 @@ Texture &TextureAtlas::tex(int type)
         return colorTex;
     else if (type == 1)
         return normalTex;
+}
+
+int TextureAtlas::new_layers_count()
+{
+    return 1.25*layers + 1;
+}
+void TextureAtlas::increase_capacity()
+{
+    int new_layers = new_layers_count();
+    int new_texs = (new_layers - layers)*gridHN*gridWN;
+
+    for (int i=0;i<new_texs;i++)
+    {
+        occupied.push_back(false);
+    }
+
+    for (int k=0;k<tex_count();k++)
+    {
+        increase_capacity_tex(tex(k), new_layers);
+    }
+    debugl(10,"increase atlas size %d --> %d layers\n",layers, new_layers);
+    layers = new_layers;
+}
+void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
+{
+    Texture new_tex = textureManager.create_unnamed_array(width, height, false, new_layers);
+    Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
+    Model bm;
+    std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};
+    std::vector<float> tc = {0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0};
+    std::vector<GLuint> indices = {0, 1, 2, 2, 1, 3};
+
+    std::function<void(Model *)> _c_mip = [&](Model *h) {
+        bm.positions = vertexes;
+        bm.colors = tc;
+        bm.indices = indices;
+    };
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    for (int i=0;i<layers;i++)
+    {
+        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, new_tex.texture, 0, i);
+        glViewport(0, 0, width, height);
+        bm.construct(_c_mip);
+        copy.use();
+        copy.texture("tex", t);
+        copy.uniform("layer",(float)i);
+        bm.render(GL_TRIANGLES);
+    }
+    
+    textureManager.delete_tex(t);
+    t = new_tex;
 }
 
 unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, int tex_id)

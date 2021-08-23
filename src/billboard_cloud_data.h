@@ -77,7 +77,7 @@ struct ImpostorsData
 {
     bool valid = false;
     int level = 0;
-    std::vector<Impostor> impostors;
+    std::list<Impostor> impostors;
     TextureAtlas atlas;
     ImpostorsData() {};
     ~ImpostorsData() {atlas.destroy();}
