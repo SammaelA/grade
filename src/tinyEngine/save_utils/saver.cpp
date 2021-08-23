@@ -244,26 +244,26 @@ bool load(FILE *f, Billboard &t)
 bool save(FILE *f, BillboardData &t)
 {
     bool status = true;
-    status = status && save(f,t.IDA) && savev(f,t.billboards) && save(f,t.id);
+    status = status && save(f,t.IDA) && savev(f,t.billboards) && save(f,t.id) && save(f, t.base_position);
     return status;
 }
 bool load(FILE *f, BillboardData &t)
 {
     bool status = true;
-    status = status && load(f,t.IDA) && loadv(f,t.billboards) && load(f,t.id);
+    status = status && load(f,t.IDA) && loadv(f,t.billboards) && load(f,t.id) && load(f, t.base_position);
     return status;
 }
 
 bool save(FILE *f, BillboardCloudData &t)
 {
     bool status = true;
-    status = status && save(f,t.atlas) && savev(f,t.billboards) && save(f,t.level) && save(f,t.valid);
+    status = status && save(f,t.atlas) && savelst(f,t.billboards) && save(f,t.level) && save(f,t.valid);
     return status;
 }
 bool load(FILE *f, BillboardCloudData &t)
 {
     bool status = true;
-    status = status && load(f,t.atlas) && loadv(f,t.billboards) && load(f,t.level) && load(f,t.valid);
+    status = status && load(f,t.atlas) && loadlst(f,t.billboards) && load(f,t.level) && load(f,t.valid);
     return status;
 }
 

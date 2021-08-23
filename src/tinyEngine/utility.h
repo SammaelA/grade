@@ -110,7 +110,9 @@ class Countable
 {
 public:
     static long count;
-    Countable();
+    unsigned char countable_type_num = 0;
+    Countable(int num = 0);
     ~Countable();
+    Countable &operator=(Countable &c);
     static void get_cur_count();
 };

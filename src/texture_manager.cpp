@@ -164,6 +164,7 @@ Texture TextureManager::create_unnamed(int w, int h, bool shadow)
 {
     tex_mem += 4*w*h;
     tex_count++;
+    debugl(10,"created unnamed %dx%d ",w,h);
     debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(w,h,shadow);
     t.tag = current_textures_tag;
@@ -174,6 +175,7 @@ Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int laye
 {
     tex_mem += 4*w*h*layers;
     tex_count++;
+    debugl(10,"created unnamed array %dx%dx%d ",w,h,layers);
     debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(w,h,shadow,layers);
     t.tag = current_textures_tag;
@@ -184,6 +186,7 @@ Texture TextureManager::create_unnamed(SDL_Surface *s)
 {
     tex_mem += 4*s->w*s->h;
     tex_count++;
+    debugl(10,"created unnamed from SDL surface %dx%d ",s->w,s->h);
     debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
     Texture t(s);
     t.tag = current_textures_tag;
@@ -288,5 +291,38 @@ void TextureManager::save_bmp(Texture &t, std::string name)
     {
         save_bmp_raw(data,w,h*layers,4,name);
         safe_delete<unsigned char>(data, "save_bmp_data"); 
+    }
+}
+void TextureManager::delete_tex(Texture &t)
+{
+    if (t.type == GL_TEXTURE_2D)
+    {
+        auto it = unnamed_textures.find(t.texture);
+        if (it == unnamed_textures.end())
+        {
+            logerr("trying to delete unregistered texture");
+        }
+        else
+        {
+            glDeleteTextures(1, &(it->second.texture));
+            tex_count--;
+            tex_mem -= 4*it->second.W*it->second.H*it->second.layers;
+            unnamed_textures.erase(it);
+        }
+    }
+    else if (t.type == GL_TEXTURE_2D_ARRAY)
+    {
+        auto it = unnamed_array_textures.find(t.texture);
+        if (it == unnamed_array_textures.end())
+        {
+            logerr("trying to delete unregistered texture array");
+        }
+        else
+        {
+            glDeleteTextures(1, &(it->second.texture));
+            tex_count--;
+            tex_mem -= 4*it->second.W*it->second.H*it->second.layers;
+            unnamed_array_textures.erase(it);
+        }
     }
 }

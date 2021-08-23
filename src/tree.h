@@ -71,7 +71,7 @@ struct LeafHeap : Countable
     {
         leaves.clear();
     }
-    LeafHeap(){};
+    LeafHeap():Countable(7){};
 
 };
 struct BranchHeap : Countable
@@ -82,6 +82,7 @@ struct BranchHeap : Countable
         branches.push_back(Branch());
         return &branches.back();
     }
+    BranchHeap():Countable(8){};
     void clear_removed();
 };
 

@@ -123,6 +123,41 @@ void GrovePacker::transform_all_according_to_root(GrovePacked &grove)
             //logerr("translated branch %f %f %f", shift.x, shift.y, shift.z);
         }
     }
+
+    for (auto &bc : grove.clouds)
+    {
+        for (auto &in_br : bc.billboards)
+        {
+            for (int j=0;j<in_br.IDA.tree_ids.size();j++)
+            {
+                glm::vec3 pos = glm::vec3(in_br.IDA.transforms[j] * glm::vec4(in_br.base_position,1));
+                auto tree_it = all_trees.find(in_br.IDA.tree_ids[j]);
+                if (tree_it == all_trees.end())
+                {
+                    logerr("found branch from tree with unknow id = %d", in_br.IDA.tree_ids[j]);
+                    continue;
+                }
+                glm::vec3 nearest_pos = pos + glm::vec3(0, 1000, 0);
+                float nearestDistSq = 1000;
+                for (std::vector<PackedJoint> *v1 : tree_it->second.joints)
+                {
+                    for (PackedJoint &j : *v1)
+                    {
+                        glm::vec3 jpos = glm::vec3(tree_it->second.transform * glm::vec4(j.pos,1));
+                        float distSq = glm::dot(jpos - pos, jpos - pos);
+                        if (distSq < nearestDistSq)
+                        {
+                            nearestDistSq = distSq;
+                            nearest_pos = jpos;
+                        }
+                    }
+                }
+                glm::vec3 shift = nearest_pos - pos;
+                in_br.IDA.transforms[j] = glm::translate(glm::mat4(1.0f), shift) * in_br.IDA.transforms[j];
+                //logerr("translated bill %f %f %f", shift.x, shift.y, shift.z);
+            }
+        }
+    }
 }
 
 void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to);
@@ -269,13 +304,6 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
             tr_cl.get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
         }
 
-        if (layer_from == 0 && layer_to == 0) //we clusterize trunks
-        {
-            for (int i = clusters_before; i < packingLayers[0].clusters.size();i++)
-            {
-                //transform_according_to_root(packingLayers[0].clusters[i]);
-            }
-        }
         struct ClusterInfo
         {
             int layer; 
@@ -304,8 +332,7 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
             for (int i=0;i<packingLayers.size();i++)
             {
                 int prev_size = packingLayers[i].clusters.size();
-                if (i<max_layer && prev_size > max_clusters_in_layer && 
-                    !(layer_from == 0 && layer_to == 0))
+                if (i<max_layer && prev_size > max_clusters_in_layer)
                 {
                     //TODO trunks recursive clusterization - transform according to root
                     cleared_layers.push_back(i);
@@ -353,6 +380,7 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
             }
         }
         bool first = true;
+
         for (auto &info : new_clusters)
         {
             if (first)
@@ -367,7 +395,7 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
                                                            ggd.types,&grove.impostors[1]);
                     delete(ib2);
                 }    
-                if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+                /*if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
                 {
                     BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, layer_from,
                                                                       packingLayers[0].clusters,ggd.types,&grove.clouds[2]);
@@ -376,7 +404,7 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
                     BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, layer_from + 1,
                                                                       packingLayers[0].clusters,ggd.types,&grove.clouds[3]);
                     delete(cloud2);
-                }
+                }*/
             }   
                 
                 if (models && (ggd.task & (GenerationTask::MODELS)))
@@ -386,6 +414,15 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
                     auto it = pack_cluster(packingLayers[info.layer].clusters[info.pos], grove, instanced_structures, layer_from, layer_to);
                     packingLayers[info.layer].additional_data[info.pos].instanced_branch = it;
                     packingLayers[info.layer].additional_data[info.pos].is_presented = true;
+                }
+                if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+                {
+                    BillboardCloudRaw cloud;
+                    cloud.prepare(ULTRALOW, layer_from, packingLayers[info.layer].clusters[info.pos], ggd.types,
+                                  &grove.clouds[2],packingLayers[info.layer].additional_data[info.pos].large_billboards);
+
+                    cloud.prepare(ULTRALOW, layer_from + 1, packingLayers[info.layer].clusters[info.pos], ggd.types,
+                                  &grove.clouds[3],packingLayers[info.layer].additional_data[info.pos].small_billboards);
                 }
 
             first = false;
@@ -400,10 +437,25 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
                 packingLayers[info.to.layer].additional_data[info.to.pos].instanced_branch = it;
                 packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
             }
+            if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+            {
+                BillboardCloudRaw cloud;
+                auto &from_a = packingLayers[info.from.layer].additional_data[info.from.pos];
+                auto &to_a = packingLayers[info.to.layer].additional_data[info.to.pos];
+                to_a.large_billboards = from_a.large_billboards;
+                to_a.small_billboards = from_a.small_billboards;
+
+                cloud.extend(ULTRALOW, layer_from, packingLayers[info.to.layer].clusters[info.to.pos], ggd.types,
+                                  &grove.clouds[2],to_a.large_billboards);
+                cloud.extend(ULTRALOW, layer_from + 1, packingLayers[info.to.layer].clusters[info.to.pos], ggd.types,
+                                  &grove.clouds[3],to_a.small_billboards);
+
+                packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
+            }
             debugl(6,"replaced cluster %d with %d\n",packingLayers[info.from.layer].clusters[info.from.pos].id,
                                                  packingLayers[info.to.layer].clusters[info.to.pos].id);
         }
-        for (auto &info : removed_clusters)
+                for (auto &info : removed_clusters)
         {
             if (models && (ggd.task & (GenerationTask::MODELS)))
             {
@@ -411,6 +463,26 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
                 for (unsigned &id : it->branches)
                     grove.instancedCatalogue.remove(id);
                 grove.instancedBranches.erase(it);
+            }
+            if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+            {
+                for (auto &it : packingLayers[info.layer].additional_data[info.pos].large_billboards)
+                {
+                    for (auto &bill : it->billboards)
+                    {
+                        grove.clouds[2].atlas.remove_tex(bill.id);
+                    }
+                    grove.clouds[2].billboards.erase(it);
+                }
+
+                for (auto &it : packingLayers[info.layer].additional_data[info.pos].small_billboards)
+                {
+                    for (auto &bill : it->billboards)
+                    {
+                        grove.clouds[3].atlas.remove_tex(bill.id);
+                    }
+                    grove.clouds[3].billboards.erase(it);
+                }
             }
             debugl(6,"removed cluster %d\n",packingLayers[info.layer].clusters[info.pos].id);
         }
@@ -425,7 +497,10 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
 {
     for (int i=grove.impostors.size();i<2;i++)
+    {
         grove.impostors.push_back(ImpostorsData()); 
+        grove.impostors.back().valid = true;
+    }
     for (int i=grove.clouds.size();i<4;i++)
         grove.clouds.push_back(BillboardCloudData());
     

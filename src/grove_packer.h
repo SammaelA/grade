@@ -18,6 +18,8 @@ class Heightmap;
 struct ClusterAdditionalData
 {
     std::list<InstancedBranch>::iterator instanced_branch;
+    std::vector<std::list<BillboardData>::iterator> small_billboards;
+    std::vector<std::list<BillboardData>::iterator> large_billboards;
     bool is_presented = false;
 };
 struct ClusterPackingLayer

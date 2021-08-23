@@ -170,6 +170,7 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
     }
 }
 Seeder::Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h):
+Countable(6),
 mask(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 hm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
 psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),

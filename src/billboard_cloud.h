@@ -26,9 +26,13 @@ public:
     BillboardCloudRaw();
     ~BillboardCloudRaw();
     void setup_preparation();
-    void prepare(Tree &t, int branch_level, std::vector<Branch> &branches);
+    void prepare(Tree &t, int branch_level, std::vector<Branch> &branches, TextureAtlas *atlas = nullptr);
     void prepare(Tree &t, int branch_level, int layer);
     void prepare(Tree &t, int branch_level, std::vector<ClusterData> &clusters, BillboardCloudData *data = nullptr);
+    void prepare(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+                 BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &out_billboards);
+    void  extend(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+                 BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards);
     //void render(glm::mat4 &projectionCamera);
     void set_textures(Texture _wood);
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);

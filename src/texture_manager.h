@@ -25,6 +25,7 @@ public:
     void clear_unnamed();
     void set_textures_tag(int tag);
     void clear_unnamed_with_tag(int tag);
+    void delete_tex(Texture &t);
 private:
     std::map<std::string, Texture> textures;
     std::map<GLuint, Texture> unnamed_textures;

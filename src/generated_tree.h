@@ -90,7 +90,7 @@ struct LeafHeap : Countable
     {
         //leaves.clear();
     }
-    LeafHeap(){};
+    LeafHeap():Countable(4){};
 
 };
 struct BranchHeap : Countable
@@ -101,6 +101,7 @@ struct BranchHeap : Countable
         branches.push_back(Branch());
         return &branches.back();
     }
+    BranchHeap():Countable(5){};
 };
 
 struct Tree

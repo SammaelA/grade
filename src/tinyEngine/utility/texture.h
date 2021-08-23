@@ -27,6 +27,7 @@ public:
 protected:
   int W,H,layers;
   int tag = 0;//tag show to which part of program this texture belongs. Used by texture manager
+  unsigned id = 0;
   void clear();
   Texture();
   Texture(bool empty) {texture = ~0;}

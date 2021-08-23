@@ -6,7 +6,9 @@
 //long TextureAtlas::count = 0;
 int atlases_count = 0;
 
-TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
+TextureAtlas::TextureAtlas(): 
+                              Countable(1),
+                              colorTex(textureManager.empty()),
                               normalTex(textureManager.empty()),
                               mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                               copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
@@ -22,6 +24,7 @@ TextureAtlas::TextureAtlas(): colorTex(textureManager.empty()),
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 TextureAtlas::TextureAtlas(const TextureAtlas &atlas):
+Countable(1),
 mipMapRenderer(atlas.mipMapRenderer),
 copy(atlas.copy),
 colorTex(atlas.colorTex),
@@ -34,6 +37,8 @@ normalTex(atlas.normalTex)
     gridHN = atlas.gridHN;
     isGrid = atlas.isGrid;
     clearColor = atlas.clearColor;
+    occupied = atlas.occupied;
+    valid = atlas.valid;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(0,0);
@@ -43,17 +48,19 @@ normalTex(atlas.normalTex)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h, int l) : 
-                           colorTex(textureManager.create_unnamed_array(w, h, false, l)),
-                           normalTex(textureManager.create_unnamed_array(w, h, false, l)),
+TextureAtlas::TextureAtlas(int w, int h, int l) :
+                           Countable(1),
+                           colorTex(textureManager.create_unnamed_array(w, h, false, 4*l)),
+                           normalTex(textureManager.create_unnamed_array(w, h, false, 4*l)),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
-    //logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
+    logerr("atlas created %dx%d %f Mbytes",w,h,1e-6*2*w*h*4);
     //atlases_count++;
     width = w;
     height = h;
-    layers = l;
+    layers = 4*l;
+    valid = true;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(0,0);
@@ -68,20 +75,55 @@ TextureAtlas::~TextureAtlas()
     //atlases_count--;
     glDeleteFramebuffers(1, &fbo);
 }
-void TextureAtlas::set_grid(int w, int h)
+void TextureAtlas::destroy()
 {
+    if (valid)
+    {
+        textureManager.delete_tex(colorTex);
+        textureManager.delete_tex(normalTex);
+        valid = false;
+        isGrid = false;
+    }
+}
+void TextureAtlas::set_grid(int w, int h, bool _resizable)
+{
+    resizable = _resizable;
     curNum = 0;
     isGrid = true;
     gridWN = width / w;
     gridHN = height / h;
+    occupied.resize(layers * gridWN * gridHN, false);
 }
 int TextureAtlas::add_tex()
 {
-    curNum++;
-    if (curNum > layers * gridWN * gridHN)
-        return -1;
-    else
-        return curNum - 1;
+    int sz = layers * gridWN * gridHN;
+    if (curNum >= sz)
+    {
+        if (!resizable)
+            return -1;
+        else
+        {
+            //TODO resize
+        }
+    }
+    int pos = curNum;
+    occupied.set(pos, true);
+    curNum = sz;
+
+    for (int i=pos+1;i<sz;i++)
+    {
+        if (!occupied.get_unsafe(i))
+        {
+            curNum = i;
+            break;
+        }
+    }
+    return pos;
+}
+void TextureAtlas::remove_tex(int pos)
+{
+    occupied.set(pos, false);
+    curNum = MIN(curNum, pos);
 }
 glm::vec4 TextureAtlas::tc_transform(int num)
 {
@@ -152,6 +194,7 @@ glm::mat4 TextureAtlas::tex_transform(int num)
 }
 void TextureAtlas::gen_mipmaps()
 {
+    debugl(10,"generate mipmaps\n");
     Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
     Shader mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"});
     Model bm;
@@ -210,9 +253,11 @@ void TextureAtlas::gen_mipmaps()
                 glDeleteFramebuffers(1, &fbo1);
                 w /= 2;
                 h /= 2;
+                textureManager.delete_tex(ctex);
             }
         }
     }
+    debugl(10,"generate mipmaps end\n");
 }
 TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
 {
@@ -226,6 +271,7 @@ TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
     clearColor = atlas.clearColor;
     colorTex = atlas.colorTex;
     normalTex = atlas.normalTex;
+    valid = atlas.valid;
     bind(0,0);
 }
 Texture &TextureAtlas::tex(int type)

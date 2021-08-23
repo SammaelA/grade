@@ -18,6 +18,7 @@ LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size /
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
 }
 LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size):
+Countable(9),
 voxel_size(vox_size)
 {
     center = cent;

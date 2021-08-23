@@ -258,6 +258,7 @@ void clear_current_grove()
 }
 void generate_grove()
 {
+  ggd.task = GenerationTask::GENERATE | GenerationTask::CLUSTERIZE | GenerationTask::MODELS | GenerationTask::BILLBOARDS;
   gen->create_grove(ggd, t + t_generated, *data.heightmap);
   logerr("%d branches",t[0].branchHeaps[1]->branches.size());
   packer.add_trees_to_grove(ggd, grove, t + t_generated, data.heightmap);
@@ -294,6 +295,10 @@ void generate_grove_renderer()
   std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
   if (pres == GroveRenderer::Precision::LOW)
     LODs_dists.back() = -10;
+  if (data.groveRenderer)
+  {
+    delete data.groveRenderer;
+  }
   data.groveRenderer = new GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
   GR = data.groveRenderer;
 }
@@ -666,12 +671,16 @@ int main(int argc, char *argv[])
       clear_current_grove();
       generate_grove();
       generate_grove_renderer();
+      print_alloc_info();
       appContext.regeneration_needed = false;
     }
     else if (appContext.add_generation_needed)
     {
+      print_alloc_info();
       generate_grove();
+      print_alloc_info();
       generate_grove_renderer();
+      print_alloc_info();
       appContext.add_generation_needed = false;
     }
     if (appContext.renderMode == RenderMode::StartingScreen)

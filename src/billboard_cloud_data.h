@@ -47,6 +47,7 @@ struct InstancingReadyModel
     };
 struct BillboardData : InstancingReadyModel
 {
+    glm::vec3 base_position;
     std::vector<Billboard> billboards;
     InstanceDataArrays IDA;
 };
@@ -54,9 +55,10 @@ struct BillboardCloudData
 {
     bool valid = false;
     int level = 0;
-    std::vector<BillboardData> billboards;
+    std::list<BillboardData> billboards;
     TextureAtlas atlas;
     BillboardCloudData() {};
+    ~BillboardCloudData() {atlas.destroy();}
 };
 struct BCyl
 {
@@ -78,4 +80,5 @@ struct ImpostorsData
     std::vector<Impostor> impostors;
     TextureAtlas atlas;
     ImpostorsData() {};
+    ~ImpostorsData() {atlas.destroy();}
 };

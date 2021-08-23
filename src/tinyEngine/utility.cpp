@@ -6,7 +6,7 @@
 
 #include "malloc.h"
 
-#define DEBUG_LEVEL 6
+#define DEBUG_LEVEL 1000
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;
@@ -78,21 +78,34 @@ void print_FB_status(GLuint status)
     else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x\n",status);
 }
 std::map<std::string, AllocData> alloc_info;
-
+long counts[256];
+long full_counts[256];
 void print_alloc_info()
 {
     for (auto &p : alloc_info)
     {
         logerr("%s : %ld %ld %ld", p.first.c_str(), p.second.active_allocs, p.second.all_allocs, p.second.alloc_size);
     }
+    for (int i=0;i<256;i++)
+    {
+        if (counts[i] || full_counts[i])
+            logerr("[%d]=%d %d",i,counts[i], full_counts[i]);
+    }
     Countable::get_cur_count();
 }
 int full_count = 0;
-Countable::Countable() 
+Countable::Countable(int num) 
 {
+    countable_type_num = num;
     count++;
     full_count++;
+    counts[countable_type_num]++;
+    full_counts[countable_type_num]++;
 };
-Countable::~Countable() {count--;};
+Countable &Countable::operator=(Countable &c)
+{
+    countable_type_num = c.countable_type_num;
+}
+Countable::~Countable() {count--;counts[countable_type_num]--;};
 void Countable::get_cur_count()  {logerr("count = %d %d",count, full_count);}
 long Countable::count = 0;

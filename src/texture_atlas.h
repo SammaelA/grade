@@ -4,6 +4,7 @@
 #include <vector>
 #include "tinyEngine/utility/texture.h"
 #include "tinyEngine/utility/shader.h"
+#include "tinyEngine/utility/bit_vector.h"
 #include "tinyEngine/save_utils/saver.h"
 class BillboardCloudRenderer;
 class TextureAtlas;
@@ -56,8 +57,9 @@ public:
         clearColor = color;
     }
     TextureAtlas &operator=(TextureAtlas &atlas);
-    void set_grid(int w, int h);
+    void set_grid(int w, int h, bool resizable = true);
     int add_tex();
+    void remove_tex(int pos);
     void process_tc(int num, glm::vec3 &tc);
     glm::vec4 tc_transform(int num);
     bool target(int num, int type);
@@ -68,6 +70,9 @@ public:
     void gen_mipmaps();
     int layers_count() {return layers;}
     int tex_count() {return 2;}
+    int capacity() { return gridWN*gridHN*layers;}
+    bool is_valid() {return valid && (capacity() > 0);}
+    void destroy();
 private:
     bool bind(int layer, int type);
     int curNum = 0;
@@ -77,10 +82,13 @@ private:
     int gridWN = 0;
     int gridHN = 0;
     bool isGrid = false;
+    bool resizable = false;
+    bool valid = false;
     glm::vec4 clearColor;
     GLuint fbo;
     Texture colorTex;
     Texture normalTex;
     Shader mipMapRenderer;
     Shader copy;
+    BitVector occupied;
 };
