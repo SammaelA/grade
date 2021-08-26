@@ -274,7 +274,7 @@ bool is_valid_tree(::Tree &t)
     return true;
 }
 
-void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                 std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
                 ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp)
 {
@@ -325,8 +325,8 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
 
     if (ggd.task & (GenerationTask::CLUSTERIZE))
     {
-        int max_clusters_in_layer = 7;
-        int max_layer = 2;
+        int max_clusters_in_layer = settings_block.get_int("max_clusters_in_layer",1000);
+        int max_layer = settings_block.get_int("recursive_clustering_layers",1);
 
         for (int i = 0; i < packingLayers.size(); i++)
         {
@@ -382,30 +382,6 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
 
     for (auto &info : new_clusters)
     {
-        if (first)
-        { //TODO change impostors and billboard rendering to proper process
-            /*if (imp && (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE)))
-            {
-                debugl(6, "full grove impostors are temporary unavailable\n");
-            }
-            if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
-            {
-                ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality, layer_from, packingLayers[0].clusters,
-                                                       ggd.types, &grove.impostors[1]);
-                delete (ib2);
-            }
-            if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
-                {
-                    BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, layer_from,
-                                                                      packingLayers[0].clusters,ggd.types,&grove.clouds[2]);
-                    delete(cloud1);   
-
-                    BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, layer_from + 1,
-                                                                      packingLayers[0].clusters,ggd.types,&grove.clouds[3]);
-                    delete(cloud2);
-                }*/
-        }
-
         if (models && (ggd.task & (GenerationTask::MODELS)))
         {
             std::vector<BranchStructure> instanced_structures;
@@ -523,6 +499,9 @@ void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_exter
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
 {
+    if (!inited)
+        init();
+    
     for (int i = grove.impostors.size(); i < 2; i++)
     {
         grove.impostors.push_back(ImpostorsData());
@@ -589,8 +568,9 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     tr_cp.light_importance = 0;
     tr_cp.different_types_tolerance = true;
     tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
-    tr_cp.max_individual_dist = 0.9;
+    tr_cp.max_individual_dist = 0.0;
     tr_cp.bwd_rotations = 4;
+    //tr_cp.load_from_block(settings_block.get_block("trunk_clusterization_params"));
 
     ClusterizationParams br_cp;
     br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
@@ -598,6 +578,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     br_cp.delta = 0.3;
     br_cp.max_individual_dist = 0.6;
     br_cp.bwd_rotations = 4;
+    //br_cp.load_from_block(settings_block.get_block("branch_clusterization_params"));
 
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
@@ -607,6 +588,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     cp.bwd_rotations = 4;
     cp.light_importance = 0.8;
     cp.different_types_tolerance = false;
+    //cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
 
     pack_layer(ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,
                tr_cp, 0, 0, true, false, false);
@@ -623,9 +605,19 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     delete (post_seeder);
 }
 
+void GrovePacker::init()
+{
+    inited = true;
+    BlkManager man;
+    man.load_block_from_file("settings.blk",settings_block);   
+}
+
 void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug,
                              ::Tree *trees_external, Heightmap *h, bool visualize_voxels)
 {
+    if (!inited)
+        init();
+    
     grove.center = glm::vec3(0, 0, 0);
     grove.ggd_name = ggd.name;
     int synts = ggd.synts_count;

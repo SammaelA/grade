@@ -8,6 +8,7 @@ using glm::mat4;
 void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                             ImpostorsData *data, std::list<Impostor>::iterator &impostor)
 {
+    quality = _quality;
     static const int slices_n = 8;
     if (!data)
     {

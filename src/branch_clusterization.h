@@ -4,6 +4,8 @@
 #include "volumetric_occlusion.h"
 #include <vector>
 #include <map>
+#include "tinyEngine/save_utils/blk.h"
+
 struct ClusterizationParams
 {
     int bwd_rotations = 18;
@@ -17,6 +19,7 @@ struct ClusterizationParams
     std::vector<float> weights = std::vector<float>{5000,800,40,1,0.01};
     std::vector<float> light_weights = std::vector<float>{5000,800,40,1,0.01};
     std::vector<float> r_weights = std::vector<float>{0.5,0.2,0,0,0};
+    void load_from_block(Block *b);
 };
 extern ClusterizationParams clusterizationParams;
 struct AdditionalClusterDataArrays

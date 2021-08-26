@@ -769,3 +769,21 @@ void Clusterizer::prepare_ddt()
         }
     }
 }
+
+void ClusterizationParams::load_from_block(Block *b)
+{
+    if (!b)
+        return;
+    
+    bwd_rotations = b->get_int("bwd_rotations",bwd_rotations);
+    delta = b->get_double("delta",delta);
+    light_importance = b->get_double("light_importance",light_importance);
+    voxels_size_mult = b->get_double("voxels_size_mult",voxels_size_mult);
+    ignore_structure_level = b->get_int("ignore_structure_level",ignore_structure_level);
+    min_clusters = b->get_int("min_clusters",min_clusters);
+    max_individual_dist = b->get_double("max_individual_dist",max_individual_dist);
+    different_types_tolerance = b->get_bool("different_types_tolerance",different_types_tolerance);
+    b->get_arr("weights",weights, true);
+    b->get_arr("light_weights",light_weights, true);
+    b->get_arr("r_weights",r_weights, true);
+}

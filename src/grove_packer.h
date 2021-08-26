@@ -12,6 +12,7 @@
 #include "grove.h"
 #include "grove_generation_utils.h"
 #include "branch_clusterization.h"
+#include "tinyEngine/save_utils/blk.h"
 
 class DebugVisualizer;
 class Heightmap;
@@ -35,9 +36,16 @@ public:
                     ::Tree *trees_external, Heightmap *h, bool visualize_voxels);
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
 private:
+    void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
+                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp);
     void transform_all_according_to_root(GrovePacked &grove);
-
+    void init();
     std::vector<ClusterPackingLayer> packingLayersBranches = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrunks = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrees = {ClusterPackingLayer()};
+
+    bool inited = false;
+    Block settings_block;
+    GroveGenerationData groveGenerationData;
 };

@@ -1,0 +1,8 @@
+{
+    max_clusters_in_layer:i = 5
+    recursive_clustering_layers:i = 3
+    trunk_clusterization_params
+    {
+        max_individual_dist:r = 0.8
+    }
+}

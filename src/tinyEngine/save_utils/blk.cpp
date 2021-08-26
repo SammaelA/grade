@@ -395,11 +395,13 @@ Block *Block::get_block(int id)
 {
     return (id >=0 && id <size() && values[id].type == ValueType::BLOCK) ? values[id].bl : nullptr;
 }
-    bool Block::get_arr(int id, std::vector<double> &_values)
+    bool Block::get_arr(int id, std::vector<double> &_values, bool replace)
     {
         if (id >=0 && id <size() && values[id].type == ValueType::ARRAY && values[id].a && 
            (values[id].a->type == DOUBLE))
         {
+            if (replace)
+                _values.clear();
             for (Value &v : values[id].a->values)
             {
                 _values.push_back(v.d);
@@ -408,11 +410,13 @@ Block *Block::get_block(int id)
         }
         return false;
     }
-    bool Block::get_arr(int id, std::vector<float> &_values)
+    bool Block::get_arr(int id, std::vector<float> &_values, bool replace)
     {
         if (id >=0 && id <size() && values[id].type == ValueType::ARRAY && values[id].a && 
            (values[id].a->type == DOUBLE))
         {
+            if (replace)
+                _values.clear();
             for (Value &v : values[id].a->values)
             {
                 _values.push_back(v.d);
@@ -421,11 +425,13 @@ Block *Block::get_block(int id)
         }
         return false;
     }
-    bool Block::get_arr(int id, std::vector<int> &_values)
+    bool Block::get_arr(int id, std::vector<int> &_values, bool replace)
     {
         if (id >=0 && id <size() && values[id].type == ValueType::ARRAY && values[id].a && 
            (values[id].a->type == DOUBLE))
         {
+            if (replace)
+                _values.clear();
             for (Value &v : values[id].a->values)
             {
                 _values.push_back(v.d);
@@ -468,17 +474,17 @@ Block *Block::get_block(std::string name)
 {
     return get_block(get_id(name));
 }
-    bool Block::get_arr(std::string name, std::vector<double> &_values)
+    bool Block::get_arr(std::string name, std::vector<double> &_values, bool replace)
     {
-        return get_arr(get_id(name), _values);
+        return get_arr(get_id(name), _values, replace);
     }
-    bool Block::get_arr(std::string name, std::vector<float> &_values)
+    bool Block::get_arr(std::string name, std::vector<float> &_values, bool replace)
     {
-        return get_arr(get_id(name), _values);
+        return get_arr(get_id(name), _values, replace);
     }
-    bool Block::get_arr(std::string name, std::vector<int> &_values)
+    bool Block::get_arr(std::string name, std::vector<int> &_values, bool replace)
     {
-        return get_arr(get_id(name), _values);
+        return get_arr(get_id(name), _values, replace);
     }
 
 void save_value(std::string &str, Value &v);

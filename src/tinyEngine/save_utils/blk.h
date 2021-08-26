@@ -103,9 +103,9 @@ struct Block
     glm::vec4 get_vec4(int id, glm::vec4 base_val = glm::vec4(0,0,0,0));
     std::string get_string(int id, std::string base_val = "");
     Block *get_block(int id);
-    bool get_arr(int id, std::vector<double> &values);
-    bool get_arr(int id, std::vector<float> &values);
-    bool get_arr(int id, std::vector<int> &values);
+    bool get_arr(int id, std::vector<double> &values, bool replace = false);
+    bool get_arr(int id, std::vector<float> &values, bool replace = false);
+    bool get_arr(int id, std::vector<int> &values, bool replace = false);
 
     int get_bool(std::string name, bool base_val = false);
     int get_int(std::string name, int base_val = 0);
@@ -115,9 +115,9 @@ struct Block
     glm::vec4 get_vec4(std::string name, glm::vec4 base_val = glm::vec4(0,0,0,0));
     std::string get_string(std::string name, std::string base_val = "");
     Block *get_block(std::string name);
-    bool get_arr(std::string name, std::vector<double> &values);
-    bool get_arr(std::string name, std::vector<float> &values);
-    bool get_arr(std::string name, std::vector<int> &values);
+    bool get_arr(std::string name, std::vector<double> &values, bool replace = false);
+    bool get_arr(std::string name, std::vector<float> &values, bool replace = false);
+    bool get_arr(std::string name, std::vector<int> &values, bool replace = false);
 
     void add_bool(std::string name, bool base_val = false);
     void add_int(std::string name, int base_val = 0);
