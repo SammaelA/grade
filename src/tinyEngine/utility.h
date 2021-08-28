@@ -119,3 +119,5 @@ public:
     Countable &operator=(Countable &&c);
     static void get_cur_count();
 };
+
+extern int debug_level;

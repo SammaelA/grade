@@ -100,10 +100,6 @@ bool dedicated_bbox(Branch *branch, BBox &bbox)
     c = cross(a, b);
 
     bbox = BillboardCloudRaw::get_bbox(branch, a, b, c);
-    if (branch->level == 0)
-    {
-        logerr("bbox sizes %f %f %f",bbox.sizes.x,bbox.sizes.y,bbox.sizes.z);
-    }
     return true;
 }
 Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std::vector<float> &matches, const std::vector<float> &weights)
@@ -848,10 +844,6 @@ void Clusterizer::BranchWithData::set_occlusion(Branch *b, LightVoxelsCube *ligh
 {
     for (Joint &j : b->joints)
     {
-        if (b->level == 0)
-        {
-            logerr("pos = %f %f %f", j.pos.x, j.pos.y, j.pos.z);
-        }
         if (j.leaf)
             light->set_occluder_trilinear(j.pos, 1);
         for (Branch *br : j.childBranches)
@@ -889,10 +881,6 @@ void voxelize_branch(Branch *b, LightVoxelsCube *light, int level_to)
     {
         for (Joint &j : b->joints)
         {
-            if (b->level == 0)
-        {
-            logerr("pos = %f %f %f", j.pos.x, j.pos.y, j.pos.z);
-        }
             for (Branch *br : j.childBranches)
             {
                 voxelize_branch(br, light, level_to);

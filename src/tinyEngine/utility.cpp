@@ -6,7 +6,7 @@
 
 #include "malloc.h"
 
-#define DEBUG_LEVEL 6
+int debug_level = 6;
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;
@@ -24,7 +24,7 @@ void debug(const char *__restrict __fmt, glm::vec2 vec)
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec2 vec)
 {
-    if (level && DEBUG_LEVEL != level)
+    if (level && debug_level != level)
         return;
     debug(__fmt, vec);
 }
@@ -34,7 +34,7 @@ void debug(const char *__restrict __fmt, glm::vec3 vec)
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec3 vec)
 {
-    if (level && DEBUG_LEVEL != level)
+    if (level && debug_level != level)
         return;
     debug(__fmt, vec);
 }
@@ -44,13 +44,13 @@ void debug(const char *__restrict __fmt, glm::vec4 vec)
 }
 void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec)
 {
-    if (level && DEBUG_LEVEL != level)
+    if (level && debug_level != level)
         return;
     debug(__fmt, vec);
 }
 void debugl(uint level, const char *__restrict __fmt, ...)
 {
-    if (DEBUG_LEVEL > 0 && level && DEBUG_LEVEL != level)
+    if (debug_level > 0 && level && debug_level != level)
         return;
     va_list args;
     va_start(args, __fmt);

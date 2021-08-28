@@ -187,7 +187,7 @@ float Branch::get_r_mult(float phi, std::vector<float> &mults)
 void BranchHeap::clear_removed()
 {
     auto it = branches.begin();
-    logerr("clearing branches: before %d",branches.size());
+    debugl(6,"clearing branches: before %d\n",branches.size());
     while (it != branches.end())
     {
         if (it->dead)
@@ -199,13 +199,13 @@ void BranchHeap::clear_removed()
             it++;
         }
     }
-    logerr("clearing branches: after %d",branches.size());
+    debugl(6,"clearing branches: after %d\n",branches.size());
 }
 
 void LeafHeap::clear_removed()
 {
     auto it = leaves.begin();
-    logerr("clearing leaves: before %d",leaves.size());
+    debugl(6,"clearing leaves: before %d\n",leaves.size());
     while (it != leaves.end())
     {
         if (it->edges.empty())
@@ -217,7 +217,7 @@ void LeafHeap::clear_removed()
             it++;
         }
     }
-    logerr("clearing leaves: after %d",leaves.size());
+    debugl(6,"clearing leaves: after %d\n",leaves.size());
 }
 
 void Branch::mark_dead()

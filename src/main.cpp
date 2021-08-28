@@ -30,6 +30,7 @@
 #include <thread>
 #include "parameter_selection.h"
 #include "tinyEngine/save_utils/blk.h"
+#include "clustering_benchmark.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -45,7 +46,7 @@ DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
 GroveGenerationData ggd;
 GroveRenderer *GR = nullptr;
-
+ClusteringBenchmark benchmark;
 struct RenderData
 {
   bool regenerate_shadows = true;
@@ -77,8 +78,10 @@ bool statistics_run = false;
 bool gltf_export = false;
 bool need_initialization = true;
 bool parameter_selection = false;
+bool clustering_benchmark = false;
 std::string generator_name = "default";
 std::string parameter_selector_name = "default_selection";
+std::string clustering_benchmark_path = "benchmark.blk";
 struct StatRunLaunchParams
 {
   int trees = 1;
@@ -117,6 +120,16 @@ int parse_arguments(int argc, char *argv[])
       if (argc > k+1)
       {
         parameter_selector_name = std::string(argv[k+1]);
+        k++;
+      }
+      k++;
+    }
+    else if (std::string(argv[k]) == "-benchmark")
+    {
+      clustering_benchmark = true;
+      if (argc > k+1)
+      {
+        clustering_benchmark_path = std::string(argv[k+1]);
         k++;
       }
       k++;
@@ -283,7 +296,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     distibutionGenerator.d = nullptr;
     dd.clear();
 }
-void generate_grove_renderer()
+void generate_grove_renderer(GrovePacked *source, GroveGenerationData *gen_data)
 {
   std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
   if (pres == GroveRenderer::Precision::LOW)
@@ -292,7 +305,7 @@ void generate_grove_renderer()
   {
     delete data.groveRenderer;
   }
-  data.groveRenderer = new GroveRenderer(&grove, &ggd, 5, LODs_dists, print_perf, pres);
+  data.groveRenderer = new GroveRenderer(source, gen_data, 5, LODs_dists, print_perf, pres);
   GR = data.groveRenderer;
 }
 int base_initialization()
@@ -367,9 +380,18 @@ int full_initialization()
       ggd.clustering_max_individual_distance = statRunLaunchParams.max_ind_dist;
       ggd.trees_count = statRunLaunchParams.trees;
     }
-
-    generate_grove();
-
+    if (clustering_benchmark)
+    {
+      benchmark.perform_benchmark(clustering_benchmark_path, gen, ggd, data.heightmap);
+      if (benchmark.grove_count() > 0)
+      {
+        appContext.benchmark_grove_needed = 0;
+      }
+    }
+    else
+    {
+      generate_grove();
+    }
     if (visualize_initial_voxels)
     {
       mygen::TreeGenerator *mygen_gen = dynamic_cast<mygen::TreeGenerator *>(gen);
@@ -470,7 +492,7 @@ int full_initialization()
       std::cerr << e.what() << '\n';
     }
   }
-  generate_grove_renderer();
+  generate_grove_renderer(&grove, &ggd);
 
   for (int i = 0; i < ggd.obstacles.size(); i++)
     debugVisualizer->add_bodies(ggd.obstacles[i], 1);
@@ -673,7 +695,7 @@ int main(int argc, char *argv[])
     {
       clear_current_grove();
       generate_grove();
-      generate_grove_renderer();
+      generate_grove_renderer(&grove, &ggd);
       //print_alloc_info();
       appContext.regeneration_needed = false;
     }
@@ -682,9 +704,16 @@ int main(int argc, char *argv[])
       //print_alloc_info();
       generate_grove();
       //print_alloc_info();
-      generate_grove_renderer();
+      generate_grove_renderer(&grove, &ggd);
       //print_alloc_info();
       appContext.add_generation_needed = false;
+    }
+    if (appContext.benchmark_grove_current != appContext.benchmark_grove_needed &&
+        appContext.benchmark_grove_needed >= 0)
+    {
+      int g = appContext.benchmark_grove_needed % benchmark.grove_count();
+      appContext.benchmark_grove_current = appContext.benchmark_grove_needed;
+      generate_grove_renderer(&(benchmark.get_grove(g)), &ggd);
     }
     if (appContext.renderMode == RenderMode::StartingScreen)
       start_screen_pipeline();

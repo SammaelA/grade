@@ -35,6 +35,7 @@ public:
     void pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, 
                     ::Tree *trees_external, Heightmap *h, bool visualize_voxels);
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
+    void init(Block &packing_params_block);
 private:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
     void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,

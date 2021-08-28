@@ -17,7 +17,7 @@ void FpsCounter::tick()
 
 std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Event &event)
 {
-    float nx = event.mouse.x;
+  float nx = event.mouse.x;
   float ny = event.mouse.y;
   GLfloat xoffset = nx - ctx.mousePos.x;
   GLfloat yoffset = ctx.mousePos.y - ny;
@@ -103,11 +103,18 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
 
   if (event.active[SDLK_m])
   {
-    ctx.render_mode++;
-    if (ctx.render_mode > ctx.MAX_RENDER_MODE)
-      ctx.render_mode = ctx.ARRAY_TEX_DEBUG_RENDER_MODE;
+    if (ctx.benchmark_grove_current == -1)
+    {
+      ctx.render_mode++;
+      if (ctx.render_mode > ctx.MAX_RENDER_MODE)
+        ctx.render_mode = ctx.ARRAY_TEX_DEBUG_RENDER_MODE;
+      logerr("render mode %d",ctx.render_mode);
+    }
+    else
+    {
+      ctx.benchmark_grove_needed = ctx.benchmark_grove_current + 1;
+    }
     event.active[SDLK_m] = false;
-    logerr("render mode %d",ctx.render_mode);
   }
   if (event.active[SDLK_n])
   {

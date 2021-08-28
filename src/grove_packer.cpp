@@ -647,7 +647,11 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     delete (post_voxels);
     delete (post_seeder);
 }
-
+void GrovePacker::init(Block &packing_params_block)
+{
+    inited = true;
+    settings_block = packing_params_block;
+}
 void GrovePacker::init()
 {
     inited = true;

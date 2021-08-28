@@ -37,6 +37,8 @@ struct AppContext
     int render_mode = -1;
     int debug_tex = 0;
     int debug_layer = 0;
+    int benchmark_grove_needed = -1;
+    int benchmark_grove_current = -1;
     glm::vec2 mousePos = glm::vec2(-1, -1);
     glm::mat4 projection = glm::perspective(fov, (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
 
