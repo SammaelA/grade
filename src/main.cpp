@@ -376,6 +376,16 @@ int full_initialization()
       if (mygen_gen)
         debugVisualizer->visualize_light_voxels(mygen_gen->voxels);
     }
+    if (test_voxels_cube)
+    {
+      auto *voxels = test_voxels_cube;
+      debugVisualizer->visualize_light_voxels(voxels,
+                           voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
+                           voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
+                           glm::vec3(voxels->get_voxel_size()),
+                           0.85f*voxels->get_voxel_size(),
+                           0.01,glm::vec3(0,100,0),glm::vec3(1,1,1));
+    }
   }
   if (saving_needed)
   {

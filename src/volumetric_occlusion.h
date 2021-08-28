@@ -9,6 +9,7 @@ struct LightVoxelsCube : Countable
 public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision);
     LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size);
+    LightVoxelsCube(LightVoxelsCube *source);
     LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes);
     LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes);
     ~LightVoxelsCube();

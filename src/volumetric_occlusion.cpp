@@ -36,6 +36,13 @@ voxel_size(vox_size)
     sum_memory += count*sizeof(float);
     sum_allocs++;
 }
+LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source):
+LightVoxelsCube(source,
+                glm::ivec3(0,0,0),
+                source->get_vox_sizes())
+{
+
+}
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
 LightVoxelsCube(source,
                 source->pos_to_voxel(pos),

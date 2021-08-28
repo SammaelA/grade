@@ -88,7 +88,7 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
         joints.push_back(nj);
     }
 }
-void Branch::transform(glm::mat4 &trans_matrix)
+void Branch::transform(glm::mat4 &trans_matrix, float r_transform)
 {
     plane_coef.w = 0;
     plane_coef = glm::normalize(trans_matrix * plane_coef);
@@ -97,6 +97,8 @@ void Branch::transform(glm::mat4 &trans_matrix)
     {
         s.begin = trans_matrix * glm::vec4(s.begin, 1.0f);
         s.end = trans_matrix * glm::vec4(s.end, 1.0f);
+        s.rel_r_begin = r_transform * s.rel_r_begin;
+        s.rel_r_end = r_transform * s.rel_r_end;
     }
     for (Joint &j : joints)
     {

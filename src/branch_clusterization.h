@@ -79,57 +79,10 @@ public:
         std::vector<int> joint_counts;
         glm::mat4 transform;
         std::vector<LightVoxelsCube *> leavesDensity;
-        void set_occlusion(Branch *b, LightVoxelsCube *light)
-        {
-            for (Joint &j : b->joints)
-            {
-                if (j.leaf)
-                    light->set_occluder_trilinear(j.pos,1);
-                for (Branch *br : j.childBranches)
-                {
-                    set_occlusion(br, light);
-                }
-            }
-        }
-        BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform)
-        {
-            base_cluster_id = _base_cluster_id;
-            original = _original;
-            b = _b;
-            id = _id;
-            transform = _transform;
-            for (int i = 0; i < levels; i++)
-                joint_counts.push_back(0);
-            if (b)
-                calc_joints_count(b, joint_counts);
-
-            glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2*PI/clusterizationParams.bwd_rotations, axis);
-
-            for (int i=0;i<clusterizationParams.bwd_rotations;i++)
-            {
-                b->transform(rot);
-                leavesDensity.push_back(new LightVoxelsCube(
-                    glm::vec3(50,10,10),glm::vec3(51,11,11),1/clusterizationParams.voxels_size_mult,0.85));
-                set_occlusion(b,leavesDensity.back());
-            }
-        }
-        ~BranchWithData()
-        {
-
-        }
-        void clear()
-        {
-            for (int i=0;i<leavesDensity.size();i++)
-            {
-                if (leavesDensity[i])
-                {
-                    delete leavesDensity[i];
-                    leavesDensity[i] = nullptr;
-                }
-            }
-            leavesDensity.clear();
-        }
+        void set_occlusion(Branch *b, LightVoxelsCube *light);
+        BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform);
+        ~BranchWithData();
+        void clear();
     };
     struct DistData
     {
@@ -248,3 +201,4 @@ public:
     ClusterizationTmpData *current_data = nullptr;
     static glm::vec3 canonical_bbox;
 };
+extern LightVoxelsCube *test_voxels_cube;

@@ -759,19 +759,21 @@ DebugVisualizer& DebugVisualizer::operator=(const DebugVisualizer& dv)
     leaves_tex = dv.leaves_tex;
     tree_shader = dv.tree_shader;
 }
-void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels)
+void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 shift, glm::vec3 scale)
 {
     visualize_light_voxels(voxels,
                            voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
                            voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
                            5.0f*glm::vec3(voxels->get_voxel_size()),
                            0.5f*voxels->get_voxel_size(),
-                           5);
+                           5,
+                           shift,
+                           scale);
 
 
 }
 void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step,
-                                             float dot_size, float threshold)
+                                             float dot_size, float threshold, glm::vec3 shift, glm::vec3 scale)
 {
     int count = ((int)(size.x/step.x)) * ((int)(size.y/step.y)) * ((int)(size.z/step.z));
     Model *m = new Model();
@@ -792,7 +794,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
                 tex.z = MIN(1,occ/10);
                 tex.y = MIN(1,occ/100);
                 tex.x = MIN(1,occ/1000);
-                Box b = Box(glm::vec3(x,y,z),glm::vec3(dot_size,0,0),glm::vec3(0,dot_size,0),glm::vec3(0,0,dot_size));
+                Box b = Box(shift + glm::vec3(scale.x*x,scale.y*y,scale.z*z),glm::vec3(dot_size,0,0),glm::vec3(0,dot_size,0),glm::vec3(0,0,dot_size));
                 body_to_model(&b,m,true,tex);
             }
         }

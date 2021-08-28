@@ -49,7 +49,7 @@ struct Branch
     int mark_B;
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
-    void transform(glm::mat4 &trans_matrix);
+    void transform(glm::mat4 &trans_matrix, float r_transform = 1.0);
     void pack(PackedBranch &branch);
     void mark_dead();
     static float get_r_mult(float phi, std::vector<float> &mults);

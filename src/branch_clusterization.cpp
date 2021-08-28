@@ -21,7 +21,8 @@ float distribution[110];
 float distribution2[110];
 ClusterizationParams clusterizationParams;
 long cur_cluster_id = 1;
-glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,20,20);
+glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,60,60);
+LightVoxelsCube *test_voxels_cube = nullptr;
 struct JSortData
 {
     float dist;
@@ -99,6 +100,10 @@ bool dedicated_bbox(Branch *branch, BBox &bbox)
     c = cross(a, b);
 
     bbox = BillboardCloudRaw::get_bbox(branch, a, b, c);
+    if (branch->level == 0)
+    {
+        logerr("bbox sizes %f %f %f",bbox.sizes.x,bbox.sizes.y,bbox.sizes.z);
+    }
     return true;
 }
 Clusterizer::Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std::vector<float> &matches, const std::vector<float> &weights)
@@ -529,14 +534,15 @@ void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
             {
                 glm::vec3 cbb = canonical_bbox;
                 mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
-                 mat4 rot = inverse(rot_inv);
+                mat4 rot = inverse(rot_inv);
                 vec3 sc_vert = vec3(MAX((1/cbb.x) * bbox.sizes.x,MAX( (1/cbb.y) * bbox.sizes.y, (1/cbb.z) * bbox.sizes.z)));
+                float r_transform = 1/sc_vert.x;
                 mat4 SC = scale(mat4(1.0f), sc_vert);
                 mat4 SC_inv = inverse(SC);
                 vec3 base_joint_pos = vec4(b.joints.front().pos, 1.0f);
                 mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
                 rot = SC_inv * rot * transl;
-                nb->transform(rot);
+                nb->transform(rot, r_transform);
                 current_data->branches.push_back(BranchWithData(&b, nb, i, MAX_BRANCH_LEVELS, current_data->branches.size(), inverse(rot)));
             }
             i++;
@@ -564,6 +570,10 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
     clusterizationParams = params;
 
     set_branches(base_clusters);
+    if (clusterizationParams.different_types_tolerance == false && !test_voxels_cube)
+    {
+        test_voxels_cube = new LightVoxelsCube(current_data->branches.front().leavesDensity.front());
+    }
     dist_calls = 0;
     prepare_ddt();
     current_data->Ddg.make_base_clusters(current_data->branches);
@@ -787,4 +797,106 @@ void ClusterizationParams::load_from_block(Block *b)
     b->get_arr("weights",weights, true);
     b->get_arr("light_weights",light_weights, true);
     b->get_arr("r_weights",r_weights, true);
+}
+
+Clusterizer::BranchWithData::~BranchWithData()
+{
+}
+
+void voxelize_branch(Branch *b, LightVoxelsCube *light, int level_to);
+Clusterizer::BranchWithData::BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform)
+{
+    base_cluster_id = _base_cluster_id;
+    original = _original;
+    b = _b;
+    id = _id;
+    transform = _transform;
+    for (int i = 0; i < levels; i++)
+        joint_counts.push_back(0);
+    if (b)
+        calc_joints_count(b, joint_counts);
+
+    glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
+    glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2 * PI / clusterizationParams.bwd_rotations, axis);
+
+    for (int i = 0; i < clusterizationParams.bwd_rotations; i++)
+    {
+        b->transform(rot);
+        leavesDensity.push_back(new LightVoxelsCube(
+            glm::vec3(0.5f*canonical_bbox.x,0,0),
+            glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
+            1 / clusterizationParams.voxels_size_mult, 1));
+        //set_occlusion(b, leavesDensity.back());
+        voxelize_branch(b, leavesDensity.back(), 1);
+    }
+}
+
+void Clusterizer::BranchWithData::clear()
+{
+    for (int i = 0; i < leavesDensity.size(); i++)
+    {
+        if (leavesDensity[i])
+        {
+            delete leavesDensity[i];
+            leavesDensity[i] = nullptr;
+        }
+    }
+    leavesDensity.clear();
+}
+
+void Clusterizer::BranchWithData::set_occlusion(Branch *b, LightVoxelsCube *light)
+{
+    for (Joint &j : b->joints)
+    {
+        if (b->level == 0)
+        {
+            logerr("pos = %f %f %f", j.pos.x, j.pos.y, j.pos.z);
+        }
+        if (j.leaf)
+            light->set_occluder_trilinear(j.pos, 1);
+        for (Branch *br : j.childBranches)
+        {
+            set_occlusion(br, light);
+        }
+    }
+}
+
+void voxelize_branch(Branch *b, LightVoxelsCube *light, int level_to)
+{
+    glm::vec3 second_vec = glm::vec3(b->plane_coef.x,b->plane_coef.y,b->plane_coef.z);
+    for (Segment &s : b->segments)
+    {
+        glm::vec3 dir = s.end - s.begin;
+        glm::vec3 n = glm::normalize(glm::cross(dir, second_vec));
+        float len = length(dir);
+        float v = (1/3.0)*PI*(SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end));
+        float R = 0.5*(s.rel_r_begin + s.rel_r_end);
+        int samples = MIN(5 + 0.25*v, 50);
+
+        //approximate partial cone with cylinder
+        //uniformly distributed points in cylinder
+        for (int i = 0; i<samples; i++)
+        {
+            float phi = urand(0, 2*PI);
+            float h = urand(0, 1);
+            float r = R*sqrtf(urand(0, 1));
+            glm::vec3 nr = glm::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
+            glm::vec3 sample = s.begin + h*dir + r*nr;
+            light->set_occluder_trilinear(sample, 25/samples);
+        } 
+    }
+    if (b->level < level_to)
+    {
+        for (Joint &j : b->joints)
+        {
+            if (b->level == 0)
+        {
+            logerr("pos = %f %f %f", j.pos.x, j.pos.y, j.pos.z);
+        }
+            for (Branch *br : j.childBranches)
+            {
+                voxelize_branch(br, light, level_to);
+            }
+        }
+    }
 }
