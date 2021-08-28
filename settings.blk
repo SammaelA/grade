@@ -1,6 +1,7 @@
 {
     max_clusters_in_layer:i = 5
     recursive_clustering_layers:i = 3
+    max_trees_in_patch:i = 10
     trunk_clusterization_params
     {
         max_individual_dist:r = 0.8

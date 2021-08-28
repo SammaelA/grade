@@ -40,8 +40,6 @@ AppContext appContext;
 ShadowMap shadowMap;
 DefferedTarget defferedTarget;
 GrovePacker packer;
-int t_generated = 0;
-Tree t[MAX_TREES];
 AbstractTreeGenerator *gen = nullptr;
 DebugVisualizer *debugVisualizer = nullptr;
 GrovePacked grove;
@@ -249,11 +247,6 @@ void clear_current_grove()
     GR = nullptr;
     data.groveRenderer = nullptr;
   }
-  for (int i=0;i<MAX_TREES;i++)
-  {
-    t[i].clear();
-  }
-  t_generated = 0;
   packer = GrovePacker();
 }
 void generate_grove()
@@ -262,13 +255,7 @@ void generate_grove()
   gen->create_grove(ggd, trees, *data.heightmap);
   logerr("%d branches",trees[0].branchHeaps[1]->branches.size());
   packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
-  t_generated+=ggd.trees_count;
-  for (BranchHeap *h : trees->branchHeaps)
-  {
-    //h->branches.clear();
-  }
   delete[] trees;
-  print_alloc_info();
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {

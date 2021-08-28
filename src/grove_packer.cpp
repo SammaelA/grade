@@ -519,6 +519,26 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
 {
+    int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
+    if (ggd.trees_count <= max_trees_in_patch)
+    {
+        add_trees_to_grove_internal(ggd, grove, trees_external, h);
+    }
+    else
+    {
+        int start_pos = 0;
+        int trees_count = ggd.trees_count;
+        ggd.trees_count = max_trees_in_patch;
+        while (start_pos < trees_count)
+        {
+            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h);
+            start_pos+=max_trees_in_patch;
+        }
+        ggd.trees_count = trees_count;
+    }
+}
+void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
+{
     if (!inited)
         init();
     
@@ -590,7 +610,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
     tr_cp.max_individual_dist = 0.0;
     tr_cp.bwd_rotations = 4;
-    //tr_cp.load_from_block(settings_block.get_block("trunk_clusterization_params"));
+    tr_cp.load_from_block(settings_block.get_block("trunk_clusterization_params"));
 
     ClusterizationParams br_cp;
     br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
@@ -598,7 +618,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     br_cp.delta = 0.3;
     br_cp.max_individual_dist = 0.6;
     br_cp.bwd_rotations = 4;
-    //br_cp.load_from_block(settings_block.get_block("branch_clusterization_params"));
+    br_cp.load_from_block(settings_block.get_block("branch_clusterization_params"));
 
     ClusterizationParams cp;
     cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
@@ -608,7 +628,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     cp.bwd_rotations = 4;
     cp.light_importance = 0.8;
     cp.different_types_tolerance = false;
-    //cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
+    cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
 
     pack_layer(ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,
                tr_cp, 0, 0, true, false, false);

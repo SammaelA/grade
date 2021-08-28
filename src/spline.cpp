@@ -12,14 +12,15 @@ vector<SplineSet> spline(vec &x, vec &y)
     a.insert(a.begin(), y.begin(), y.end());
     vec b(n);
     vec d(n);
-    vec h;
+    vec h(n);
 
     for(int i = 0; i < n; ++i)
-        h.push_back(x[i+1]-x[i]);
+        h[i] = (x[i+1]-x[i]);
 
-    vec alpha;
-    for(int i = 0; i < n; ++i)
-        alpha.push_back( 3*(a[i+1]-a[i])/h[i] - 3*(a[i]-a[i-1])/h[i-1]  );
+    vec alpha(n);
+    alpha[0] = 0;
+    for(int i = 1; i < n; ++i)
+        alpha[i] = 3*(a[i+1]-a[i])/h[i] - 3*(a[i]-a[i-1])/h[i-1];
 
     vec c(n+1);
     vec l(n+1);

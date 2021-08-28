@@ -13,9 +13,9 @@ public:
 private:
     struct Stamp
     {
-        GLuint   startQuery, endQuery;
-        GLuint64 startTime, endTime, avTime;  
-        bool started, ended, first = true;
+        GLuint   startQuery = 0, endQuery = 0;
+        GLuint64 startTime = 0, endTime = 0, avTime = 0;  
+        bool started = false, ended = false, first = true;
     };
 
     static constexpr float spike_mul = 3.0;
