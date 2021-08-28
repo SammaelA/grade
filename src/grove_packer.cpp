@@ -176,8 +176,11 @@ std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePac
     }
     for (int i = 0; i < cluster.ACDA.originals.size(); i++) //leave marks on branch to construct tree structure in future
     {
-        cluster.ACDA.originals[i]->mark_A = instanced_structures.size() - 1; //cluster id
-        cluster.ACDA.originals[i]->mark_B = -i - 100;                        //i is number in cluster
+        if (cluster.ACDA.originals[i])
+        {
+            cluster.ACDA.originals[i]->mark_A = instanced_structures.size() - 1; //cluster id
+            cluster.ACDA.originals[i]->mark_B = -i - 100;                        //i is number in cluster
+        }
     }
     grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
 
@@ -228,7 +231,6 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
     {
         for (::Branch *br : j.childBranches)
             pack_branch_recursively(br, grove, ids, b_struct, lvl_from, lvl_to);
-        //pack_branch_recursively(br, grove, ids, b_struct.childBranches.back(), lvl_from, lvl_to);
     }
 }
 void add_occluder(LightVoxelsCube *voxels, Branch *b)
@@ -382,6 +384,23 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
 
     for (auto &info : new_clusters)
     {
+        Branch *original = packingLayers[info.layer].clusters[info.pos].base;
+        Branch *new_original = originalBranches.new_branch();
+        for (auto &info : expanded_clusters)
+        {
+            if (packingLayers[info.from.layer].clusters[info.from.pos].base == original)
+            {
+                packingLayers[info.from.layer].clusters[info.from.pos].base = new_original;
+            }
+            if (packingLayers[info.to.layer].clusters[info.to.pos].base == original)
+            {
+                packingLayers[info.to.layer].clusters[info.to.pos].base = new_original;
+            }
+        }
+        new_original->deep_copy(original,originalBranches, &originalLeaves);
+        packingLayers[info.layer].clusters[info.pos].base = new_original;
+
+
         if (models && (ggd.task & (GenerationTask::MODELS)))
         {
             std::vector<BranchStructure> instanced_structures;
@@ -410,7 +429,6 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
                        &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostors);
         }
 
-        first = false;
         debugl(6, "added cluster %d\n", packingLayers[info.layer].clusters[info.pos].id);
     }
     for (auto &info : expanded_clusters)
@@ -487,6 +505,8 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
             grove.impostors[1].atlas.remove_tex(it->top_slice.id);
             grove.impostors[1].impostors.erase(it);
         }
+
+        packingLayers[info.layer].clusters[info.pos].base->mark_dead();
         debugl(6, "removed cluster %d\n", packingLayers[info.layer].clusters[info.pos].id);
     }
     for (auto i : cleared_layers)
@@ -600,6 +620,9 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
                cp, 0, 1000, false, false, true);
 
     transform_all_according_to_root(grove);
+    
+    originalBranches.clear_removed();
+    originalLeaves.clear_removed();
 
     delete (post_voxels);
     delete (post_seeder);
@@ -729,7 +752,8 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
         {
             for (::Branch *br : branches_clusters[i].ACDA.originals)
             {
-                br->mark_A = i;
+                if (br)
+                    br->mark_A = i;
             }
         }
     }

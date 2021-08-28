@@ -36,6 +36,7 @@ struct Joint
 };
 struct Branch
 {
+    bool dead = false;
     int id = 0;
     ushort type_id = 0;
     short level;
@@ -50,6 +51,7 @@ struct Branch
     void norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void transform(glm::mat4 &trans_matrix);
     void pack(PackedBranch &branch);
+    void mark_dead();
     static float get_r_mult(float phi, std::vector<float> &mults);
 };
 struct Leaf
@@ -72,6 +74,10 @@ struct LeafHeap : Countable
         leaves.clear();
     }
     LeafHeap():Countable(7){};
+    LeafHeap& operator=(LeafHeap&&h)
+    {
+        leaves = std::move(h.leaves);
+    }
 
 };
 struct BranchHeap : Countable
@@ -83,6 +89,10 @@ struct BranchHeap : Countable
         return &branches.back();
     }
     BranchHeap():Countable(8){};
+    BranchHeap& operator=(BranchHeap&&h)
+    {
+        branches = std::move(h.branches);
+    }
     void clear_removed();
 };
 

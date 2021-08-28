@@ -6,7 +6,7 @@
 
 #include "malloc.h"
 
-#define DEBUG_LEVEL 1000
+#define DEBUG_LEVEL 6
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;
@@ -102,6 +102,26 @@ Countable::Countable(int num)
     counts[countable_type_num]++;
     full_counts[countable_type_num]++;
 };
+Countable::Countable(const Countable &c)
+{
+    countable_type_num = c.countable_type_num;
+    count++;
+    full_count++;
+    counts[countable_type_num]++;
+    full_counts[countable_type_num]++;
+}
+Countable::Countable(Countable &&c)
+{
+    countable_type_num = c.countable_type_num;
+    count++;
+    full_count++;
+    counts[countable_type_num]++;
+    full_counts[countable_type_num]++;
+}
+Countable &Countable::operator=(Countable &&c)
+{
+    countable_type_num = c.countable_type_num;
+}
 Countable &Countable::operator=(Countable &c)
 {
     countable_type_num = c.countable_type_num;

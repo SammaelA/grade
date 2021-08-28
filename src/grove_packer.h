@@ -48,4 +48,6 @@ private:
     bool inited = false;
     Block settings_block;
     GroveGenerationData groveGenerationData;
+    BranchHeap originalBranches;
+    LeafHeap originalLeaves;
 };

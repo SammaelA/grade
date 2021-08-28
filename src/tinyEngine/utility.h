@@ -112,7 +112,10 @@ public:
     static long count;
     unsigned char countable_type_num = 0;
     Countable(int num = 0);
+    Countable(const Countable &c);
+    Countable(Countable &&c);
     ~Countable();
     Countable &operator=(Countable &c);
+    Countable &operator=(Countable &&c);
     static void get_cur_count();
 };

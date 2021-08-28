@@ -29,8 +29,8 @@ struct AdditionalClusterDataArrays
 };
 struct ClusterData
 {
-    long id;
-    Branch *base;
+    long id = -1;
+    Branch *base = nullptr;
     InstanceDataArrays IDA;
     AdditionalClusterDataArrays ACDA;
     ClusterData();

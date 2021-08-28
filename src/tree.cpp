@@ -11,6 +11,10 @@ void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_
     type_id = b->type_id;
     mark_A = b->mark_A;
     mark_B = b->mark_B;
+    dead = b->dead;
+    plane_coef = b->plane_coef;
+    center_par = b->center_par;
+    center_self = b->center_self;
 
     segments.clear();
     joints.clear();
@@ -48,6 +52,10 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
     type_id = b->type_id;
     mark_A = b->mark_A;
     mark_B = b->mark_B;
+    dead = b->dead;
+    plane_coef = b->plane_coef;
+    center_par = b->center_par;
+    center_self = b->center_self;
 
     segments.clear();
     joints.clear();
@@ -58,8 +66,9 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
     }
     for (const Joint &j : b->joints)
     {
-        Joint nj = j;
-
+        Joint nj;
+        nj.pos = j.pos;
+        nj.mark_A = j.mark_A;
         if (leaf_heap && j.leaf)
         {
             Leaf *l = leaf_heap->new_leaf();
@@ -70,7 +79,6 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
         {
             nj.leaf = nullptr; //TODO: it's temporal
         }
-        nj.childBranches.clear();
         for (Branch *br : j.childBranches)
         {
             Branch *nb = heap.new_branch();
@@ -172,4 +180,52 @@ float Branch::get_r_mult(float phi, std::vector<float> &mults)
         int b = (int)(phi/(2*PI)*mults.size());
         return s[b].get(phi);
     } 
+}
+
+void BranchHeap::clear_removed()
+{
+    auto it = branches.begin();
+    logerr("clearing branches: before %d",branches.size());
+    while (it != branches.end())
+    {
+        if (it->dead)
+        {
+            it = branches.erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+    logerr("clearing branches: after %d",branches.size());
+}
+
+void LeafHeap::clear_removed()
+{
+    auto it = leaves.begin();
+    logerr("clearing leaves: before %d",leaves.size());
+    while (it != leaves.end())
+    {
+        if (it->edges.empty())
+        {
+            it = leaves.erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+    logerr("clearing leaves: after %d",leaves.size());
+}
+
+void Branch::mark_dead()
+{
+    dead = true;
+    for (Joint &j : joints)
+    {
+        if (j.leaf)
+            j.leaf->edges.clear();
+        for (Branch *br : j.childBranches)
+            br->mark_dead();
+    }
 }

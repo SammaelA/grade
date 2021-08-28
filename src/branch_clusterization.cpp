@@ -484,7 +484,8 @@ void Clusterizer::get_base_clusters(Tree &t, int layer, std::vector<ClusterData>
                 base_clusters.back().IDA.centers_par.push_back(b.center_par);
                 base_clusters.back().IDA.centers_self.push_back(b.center_self);
                 base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
-                base_clusters.back().ACDA.originals.push_back(&b);
+                base_clusters.back().ACDA.originals.push_back(nullptr);
+                //since we delete full trees right after packing the in clusters originals now mean nothing
                 base_clusters.back().ACDA.rotations.push_back(0);
         }
     }
