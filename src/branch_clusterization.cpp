@@ -487,6 +487,7 @@ void Clusterizer::get_base_clusters(Tree &t, int layer, std::vector<ClusterData>
                 base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
                 base_clusters.back().ACDA.originals.push_back(nullptr);
                 //since we delete full trees right after packing the in clusters originals now mean nothing
+                base_clusters.back().ACDA.ids.push_back(b.self_id);
                 base_clusters.back().ACDA.rotations.push_back(0);
         }
     }
@@ -514,6 +515,7 @@ void Clusterizer::get_base_clusters(Tree *t, int count, int layer, std::vector<C
         get_base_clusters(t[i], layer, base_clusters);
         debugl(3, " added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
+    current_data = nullptr;
 }
 void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
 {
@@ -554,14 +556,19 @@ ClusterData Clusterizer::extract_data(std::vector<ClusterData> &base_clusters, C
     cd.base = cl.prepare_to_replace(base_clusters, cd.IDA, cd.ACDA, cd.id);
     return cd;
 }
-void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, 
-                             std::vector<ClusterData> &clusters)
+Clusterizer::~Clusterizer()
 {
-    ClusterizationTmpData data;
-    data.light_weights = params.light_weights;
-    data.weights = params.weights;
+    if (current_data)
+        delete current_data;
+}
+void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, 
+                             std::vector<ClusterData> &clusters, bool need_only_ddt)
+{
+    ClusterizationTmpData *data = new ClusterizationTmpData();
+    data->light_weights = params.light_weights;
+    data->weights = params.weights;
 
-    current_data = &data;
+    current_data = data;
     Cluster::currentClusterizer = this;
     clusterizationParams = params;
 
@@ -572,11 +579,14 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
     }
     dist_calls = 0;
     prepare_ddt();
-    current_data->Ddg.make_base_clusters(current_data->branches);
-    current_data->Ddg.make(20, clusterizationParams.min_clusters);
-    for (int c_num : current_data->Ddg.current_clusters)
+    if (!need_only_ddt)
     {
-        clusters.push_back(extract_data(base_clusters, current_data->Ddg.clusters[c_num]));
+        current_data->Ddg.make_base_clusters(current_data->branches);
+        current_data->Ddg.make(20, clusterizationParams.min_clusters);
+        for (int c_num : current_data->Ddg.current_clusters)
+        {
+            clusters.push_back(extract_data(base_clusters, current_data->Ddg.clusters[c_num]));
+        }
     }
     for (auto &b : current_data->branches)
     {
@@ -745,6 +755,10 @@ Clusterizer::Answer Clusterizer::get_dist(BranchWithData &bwd1, BranchWithData &
 void Clusterizer::prepare_ddt()
 {
     current_data->ddt.create(current_data->branches.size());
+    for (int i = 0; i < current_data->branches.size(); i++)
+    {
+        current_data->pos_in_table_by_id.emplace(current_data->branches[i].original->self_id,i);
+    }
     GPUClusterizationHelper gpuch;
     gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
     return;
@@ -886,5 +900,63 @@ void voxelize_branch(Branch *b, LightVoxelsCube *light, int level_to)
                 voxelize_branch(br, light, level_to);
             }
         }
+    }
+}
+void Clusterizer::get_current_ddt(Clusterizer::DistDataTable &ddt)
+{
+    if (current_data)
+    {
+        ddt.copy(current_data->ddt);
+    }
+}
+
+std::map<int,int> Clusterizer::get_id_pos_map()
+{
+    if (current_data)
+    {
+        return current_data->pos_in_table_by_id;
+    }
+    else
+    {
+        return std::map<int,int>();
+    }
+}
+
+void Clusterizer::set_default_clustering_params(ClusterizationParams &params, ClusteringStep step)
+{
+    if (step == ClusteringStep::TRUNKS)
+    {
+        ClusterizationParams tr_cp;
+        tr_cp.weights = std::vector<float>{1, 0, 0, 0.0, 0.0};
+        tr_cp.ignore_structure_level = 1;
+        tr_cp.delta = 0.1;
+        tr_cp.light_importance = 0;
+        tr_cp.different_types_tolerance = true;
+        tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
+        tr_cp.max_individual_dist = 0.6;
+        tr_cp.bwd_rotations = 4;
+        params = tr_cp;
+    }
+    else if (step == ClusteringStep::BRANCHES)
+    {
+        ClusterizationParams br_cp;
+        br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
+        br_cp.ignore_structure_level = 2;
+        br_cp.delta = 0.3;
+        br_cp.max_individual_dist = 0.6;
+        br_cp.bwd_rotations = 4;
+        params = br_cp;
+    }
+    else if (step == ClusteringStep::TRUNKS)
+    {
+        ClusterizationParams cp;
+        cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
+        cp.ignore_structure_level = 1;
+        cp.delta = 0.3;
+        cp.max_individual_dist = 0.7;
+        cp.bwd_rotations = 4;
+        cp.light_importance = 0.8;
+        cp.different_types_tolerance = false;
+        params = cp;
     }
 }

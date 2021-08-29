@@ -128,6 +128,7 @@ Branch *Clusterizer::Cluster::prepare_to_replace(std::vector<ClusterData> &base_
                     IDA.tree_ids.push_back(base.IDA.tree_ids[i]);
                     ADCA.rotations.push_back(base.ACDA.rotations[i]);
                     ADCA.originals.push_back(base.ACDA.originals[i]);
+                    ADCA.ids.push_back(base.ACDA.ids[i]);
                 }
             }
             if (br == cl->branch)

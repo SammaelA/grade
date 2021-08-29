@@ -12,3 +12,16 @@ public:
 private:
     std::vector<GrovePacked> groves;
 };
+
+class GrovePackerStat : public GrovePacker
+{
+public:
+    struct ClusterStructure
+    {
+        int base_id;
+        std::vector<int> ids;
+    };
+    void start_save_clusterizer() { save_clusterizer = true;}
+    std::vector<ClusterPackingLayer> &clusterLayers(Clusterizer::ClusteringStep step);
+    std::vector<ClusterStructure> clusterStructures(Clusterizer::ClusteringStep step);
+};

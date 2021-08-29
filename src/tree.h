@@ -37,6 +37,7 @@ struct Joint
 struct Branch
 {
     bool dead = false;
+    int self_id = 0;
     int id = 0;
     ushort type_id = 0;
     short level;

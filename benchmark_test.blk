@@ -1,5 +1,5 @@
 {
-    default
+    recursive
     {
         max_clusters_in_layer:i = 5
         recursive_clustering_layers:i = 3

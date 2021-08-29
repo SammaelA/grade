@@ -23,6 +23,7 @@ int j_count = 0;
 int b_count = 0;
 float sum_feed[10];
 float count_feed[10];
+int ids_counter = 0;
 bool dice(float x, float base)
 {
     float f = urand();
@@ -959,6 +960,8 @@ Tree::~Tree()
         dst.center_par = src.center_par;
         dst.center_self = src.center_self;
         dst.id = src_tree.id;
+        dst.self_id = ids_counter;
+        ids_counter++;
         dst.level = src.level;
         dst.plane_coef = src.plane_coef;
         dst.type_id = src.type_id;

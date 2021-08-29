@@ -26,6 +26,7 @@ struct AdditionalClusterDataArrays
 {
     std::vector<float> rotations;
     std::vector<Branch *> originals;
+    std::vector<int> ids;
 };
 struct ClusterData
 {
@@ -161,6 +162,12 @@ public:
         inline void set(int x, int y, Answer &a, DistData &d) 
         { data[x * n + y] = std::pair<Answer, DistData>(a,d); }
         int size() { return n; }
+        void copy(DistDataTable &ddt)
+        {
+            n = ddt.n;
+            data = safe_new<std::pair<Answer, DistData>>(n * n, "DistDataTable_data");
+            memcpy(data, ddt.data, n*n*sizeof(std::pair<Answer, DistData>));
+        }
         ~DistDataTable() { clear(); }
     };
 
@@ -172,15 +179,28 @@ public:
         LeafHeap leafHeap;
         std::vector<BranchWithData> branches;
         DistDataTable ddt;
+        std::map<int,int> pos_in_table_by_id;
         ClusterDendrogramm Ddg;
     };
+
+    enum ClusteringStep
+    {
+        TRUNKS,
+        BRANCHES,
+        TREES,
+        CLUSTERING_STEPS_COUNT
+    };
+    void get_current_ddt(DistDataTable &ddt);
+    std::map<int,int> get_id_pos_map();
+    static void set_default_clustering_params(ClusterizationParams &params, ClusteringStep step);
     void set_branches(std::vector<ClusterData> &base_clusters);
     void set_light(LightVoxelsCube *_light);
     void get_base_clusters(Tree &t, int layer, std::vector<ClusterData> &base_clusters);
     void get_base_clusters(Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
     void prepare_ddt();
-    void clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters);
+    void clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
+                    bool need_only_ddt = false);
     ClusterData extract_data(std::vector<ClusterData> &base_clusters, Cluster &cl);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
     Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);
@@ -196,7 +216,7 @@ public:
     Answer cluster_dist_min(Cluster &c1, Cluster &c2, float min = 1.0, float max = 0.0);
     Answer get_dist(BranchWithData &bwd1, BranchWithData &bwd2, DistData *data = nullptr);
     Clusterizer() {};
-
+    ~Clusterizer();
     LightVoxelsCube *current_light = nullptr;
     ClusterizationTmpData *current_data = nullptr;
     static glm::vec3 canonical_bbox;

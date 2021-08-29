@@ -36,7 +36,8 @@ public:
                     ::Tree *trees_external, Heightmap *h, bool visualize_voxels);
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
     void init(Block &packing_params_block);
-private:
+    std::vector<Clusterizer *> saved_clusterizers;
+protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
     void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                 std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
@@ -52,4 +53,6 @@ private:
     GroveGenerationData groveGenerationData;
     BranchHeap originalBranches;
     LeafHeap originalLeaves;
+
+    bool save_clusterizer = false;
 };

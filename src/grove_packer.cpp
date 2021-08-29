@@ -291,18 +291,22 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
 
     int count = ggd.trees_count;
     int clusters_before = packingLayers[0].clusters.size();
-    Clusterizer tr_cl;
-    tr_cl.set_light(post_voxels);
+    Clusterizer *tr_cl = new Clusterizer();
+    if (save_clusterizer)
+    {
+        saved_clusterizers.push_back(tr_cl);
+    }
+    tr_cl->set_light(post_voxels);
 
     if (ggd.task & (GenerationTask::CLUSTERIZE))
     {
         std::vector<ClusterData> clusters_base;
-        tr_cl.get_base_clusters(trees_external, count, layer_from, clusters_base);
-        tr_cl.clusterize(cl_p, clusters_base, packingLayers[0].clusters);
+        tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
+        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters);
     }
     else
     {
-        tr_cl.get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
+        tr_cl->get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
     }
 
     struct ClusterInfo
@@ -344,7 +348,7 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
                 std::map<long, int> old_cl_poses;
                 BitVector remains;
                 remains.resize(prev_size, false);
-                tr_cl.clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters);
+                tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters);
                 int new_size = packingLayers[i + 1].clusters.size();
 
                 for (int j = 0; j < prev_size; j++)
@@ -515,6 +519,10 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
         packingLayers[i].clusters.clear();
         debugl(6, "level cleared %d\n", i);
     }
+    if (!save_clusterizer && tr_cl)
+    {
+        delete tr_cl;
+    }
 }
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
@@ -601,33 +609,15 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         add_occluder(post_voxels, trees_external, count);
     }
 
-    ClusterizationParams tr_cp;
-    tr_cp.weights = std::vector<float>{1, 0, 0, 0.0, 0.0};
-    tr_cp.ignore_structure_level = 1;
-    tr_cp.delta = 0.1;
-    tr_cp.light_importance = 0;
-    tr_cp.different_types_tolerance = true;
-    tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
-    tr_cp.max_individual_dist = 0.0;
-    tr_cp.bwd_rotations = 4;
+    ClusterizationParams tr_cp, br_cp, cp;
+
+    Clusterizer::set_default_clustering_params(tr_cp, Clusterizer::ClusteringStep::TRUNKS);
     tr_cp.load_from_block(settings_block.get_block("trunk_clusterization_params"));
 
-    ClusterizationParams br_cp;
-    br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
-    br_cp.ignore_structure_level = 2;
-    br_cp.delta = 0.3;
-    br_cp.max_individual_dist = 0.6;
-    br_cp.bwd_rotations = 4;
+    Clusterizer::set_default_clustering_params(br_cp, Clusterizer::ClusteringStep::BRANCHES);
     br_cp.load_from_block(settings_block.get_block("branch_clusterization_params"));
 
-    ClusterizationParams cp;
-    cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
-    cp.ignore_structure_level = 1;
-    cp.delta = 0.3;
-    cp.max_individual_dist = ggd.clustering_max_individual_distance;
-    cp.bwd_rotations = 4;
-    cp.light_importance = 0.8;
-    cp.different_types_tolerance = false;
+    Clusterizer::set_default_clustering_params(cp, Clusterizer::ClusteringStep::TREES);
     cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
 
     pack_layer(ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,

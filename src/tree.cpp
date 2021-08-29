@@ -9,6 +9,7 @@ void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_
     level = b->level;
     id = b->id;
     type_id = b->type_id;
+    self_id = b->self_id;
     mark_A = b->mark_A;
     mark_B = b->mark_B;
     dead = b->dead;
@@ -49,6 +50,7 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
         return;
     level = b->level;
     id = b->id;
+    self_id = b->self_id;
     type_id = b->type_id;
     mark_A = b->mark_A;
     mark_B = b->mark_B;
