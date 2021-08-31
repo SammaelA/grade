@@ -2,11 +2,13 @@
 #include "limits.h"
 #define uint unsigned //CPU
 #define uvec4 glm::uvec4 //CPU
+
 #define CNT_bytes 8
 #define MAX_JOINTS 42
 #define _cnt(x) ((x) & (1<<CNT_bytes))
 #define _id(x) ((x) >> CNT_bytes)
 #define id_cnt_pack(id, cnt) ((id>>CNT_bytes) | cnt)
+#define IMPORTANCE_EPS 0.025
 
 class GPUClusterizationHelper
 {
@@ -32,7 +34,8 @@ private:
     struct gBranchWithData
     {
         uvec4 voxels_xyz_rots;
-        
+        uvec4 structure_voxels_xyz_and_size;
+
         uint branch_pos;//position of root gBranch in buffer
         uint branch_id;
         uint voxels_offset;
@@ -41,7 +44,7 @@ private:
         uint level;
         uint type_id;
         uint dead;
-        uint pad1;
+        uint structure_voxels_offset;
         
         uint joints_counts[MAX_BRANCH_LEVELS];
         uint pad[4*(MAX_BRANCH_LEVELS/4 + 1) - MAX_BRANCH_LEVELS];
@@ -53,6 +56,8 @@ private:
         float delta = 0.2;
         float light_importance = 0.4;
         float voxels_size_mult = 1/2.5;
+        bool voxelized_structure = false;
+        float structure_voxels_size_mult = 1;
         int ignore_structure_level = 1000;
         int min_clusters = 1;
         float max_individual_dist = 0.95;
@@ -63,6 +68,7 @@ private:
     };
     std::vector<glm::vec4> positions;
     float *all_voxels = nullptr;
+    float *all_structure_voxels = nullptr;
     std::vector<float> joint_rs;
     std::vector<gBranch> sticks;
     std::vector<gBranchWithData> branches;
@@ -70,9 +76,10 @@ private:
     float *dist_data = nullptr;
     int branches_size;
     int cur_voxels_pointer;
+    int cur_structure_voxels_pointer;
     gClusterizationParams params;
     GLuint pos_buf,voxels_buf,rs_buf,sticks_buf,branches_buf,dist_data_buf,params_buf,
-           joints_buf;
+           joints_buf, structure_voxels_buf;
     Shader distCompute;
     #define dd_r(i,j) (dist_data[2*(i*branches_size + j) + 1])
     #define dd_dist(i,j) (dist_data[2*(i*branches_size + j)])
@@ -80,13 +87,14 @@ private:
     //CPU-only data
     std::vector<glm::mat4> rotates_transforms;
 
-    void fill_branch_data(Clusterizer::BranchWithData &branch);
+    void fill_branch_data(Clusterizer::BranchWithData &branch, bool voxels_needed, bool voxelized_structure);
     uint fill_branch_data(Branch *branch);
     float calc_cumulative_weight(uint stick_id, int level);
-    void calculate_distances(int hardness);
+    void calculate_distances(int hardness, bool cpu_only = false, bool cpu_check = false);
     void calculate_dist(int i, int j);
     void setup_buffers();
     glm::vec2 calculate_dist_simple(int i, int j, int rot, float max_dist);
     float calculate_dist_structure(int i, int j, int rot, float max_dist);
     float calculate_dist_light(int i, int j, int rot, float max_dist);
+    float calculate_dist_voxelized_structure(int i, int j, int rot, float max_dist);
 };

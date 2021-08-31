@@ -761,13 +761,16 @@ void Clusterizer::prepare_ddt()
     }
     GPUClusterizationHelper gpuch;
     gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
-    return;
-    for (int i = 0; i < current_data->branches.size(); i++)
+    //return;
+    /*for (int i = 0; i < current_data->branches.size(); i++)
     {
         for (int j = 0; j < current_data->branches.size(); j++)
         {
             Answer a;
             DistData d;
+            auto p = current_data->ddt.get(i,j);
+            a = p.first;
+            d = p.second;
             if (i == j)
             {
                 a.exact = true;
@@ -778,17 +781,19 @@ void Clusterizer::prepare_ddt()
             }
             else if (j < i)
             {
-                auto p = current_data->ddt.get(j,i);
+                p = current_data->ddt.get(j,i);
                 a = p.first;
                 d = p.second;
             }
             else
             {
+                logerr("%d %d before %f",i,j,a.from);
                 a = dist(current_data->branches[i],current_data->branches[j],clusterizationParams.max_individual_dist,0,&d);
+                logerr("%d %d after %f",i,j,a.from);
             }
             current_data->ddt.set(i,j,a,d);
         }
-    }
+    }*/
 }
 
 void ClusterizationParams::load_from_block(Block *b)
@@ -804,6 +809,8 @@ void ClusterizationParams::load_from_block(Block *b)
     min_clusters = b->get_int("min_clusters",min_clusters);
     max_individual_dist = b->get_double("max_individual_dist",max_individual_dist);
     different_types_tolerance = b->get_bool("different_types_tolerance",different_types_tolerance);
+    voxelized_structure = b->get_bool("voxelized_structure",voxelized_structure);
+    structure_voxels_size_mult = b->get_double("structure_voxels_size_mult",structure_voxels_size_mult);
     b->get_arr("weights",weights, true);
     b->get_arr("light_weights",light_weights, true);
     b->get_arr("r_weights",r_weights, true);
@@ -832,12 +839,22 @@ Clusterizer::BranchWithData::BranchWithData(Branch *_original, Branch *_b, int _
     for (int i = 0; i < clusterizationParams.bwd_rotations; i++)
     {
         b->transform(rot);
+
         leavesDensity.push_back(new LightVoxelsCube(
             glm::vec3(0.5f*canonical_bbox.x,0,0),
             glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
             1 / clusterizationParams.voxels_size_mult, 1));
-        //set_occlusion(b, leavesDensity.back());
-        voxelize_branch(b, leavesDensity.back(), 1);
+        set_occlusion(b, leavesDensity.back());
+
+        if (clusterizationParams.voxelized_structure)
+        {
+            voxelizedStructures.push_back(new LightVoxelsCube(
+                glm::vec3(0.5f*canonical_bbox.x,0,0),
+                glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
+                1 / clusterizationParams.structure_voxels_size_mult, 1));
+            
+            voxelize_branch(b, voxelizedStructures.back(), 1);
+        }
     }
 }
 
@@ -933,7 +950,7 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         tr_cp.light_importance = 0;
         tr_cp.different_types_tolerance = true;
         tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
-        tr_cp.max_individual_dist = 0.6;
+        tr_cp.max_individual_dist = 0.5;
         tr_cp.bwd_rotations = 4;
         params = tr_cp;
     }
@@ -943,7 +960,7 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
         br_cp.ignore_structure_level = 2;
         br_cp.delta = 0.3;
-        br_cp.max_individual_dist = 0.6;
+        br_cp.max_individual_dist = 0.5;
         br_cp.bwd_rotations = 4;
         params = br_cp;
     }
@@ -953,9 +970,9 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
         cp.ignore_structure_level = 1;
         cp.delta = 0.3;
-        cp.max_individual_dist = 0.7;
+        cp.max_individual_dist = 0.5;
         cp.bwd_rotations = 4;
-        cp.light_importance = 0.8;
+        cp.light_importance = 0.7;
         cp.different_types_tolerance = false;
         params = cp;
     }

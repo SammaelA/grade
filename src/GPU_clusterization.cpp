@@ -24,6 +24,8 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     params.max_individual_dist = cp.max_individual_dist;
     params.min_clusters = cp.min_clusters;
     params.voxels_size_mult = cp.voxels_size_mult;
+    params.voxelized_structure = cp.voxelized_structure;
+    params.structure_voxels_size_mult = cp.structure_voxels_size_mult;
     for (int i = 0; i<MAX_BRANCH_LEVELS; i++)
     {
         params.light_weights[i] = cp.light_weights[MIN(i,cp.light_weights.size()-1)];
@@ -42,18 +44,34 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     sticks.emplace_back();
     joints.emplace_back();
     cur_voxels_pointer = 1;
-    glm::ivec3 vsz = _branches.front().leavesDensity.front()->get_vox_sizes();
-    int all_voxels_count = branches_size*_branches.front().leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
-    all_voxels = safe_new<float>(all_voxels_count + 1, "all_voxels");
+    cur_structure_voxels_pointer = 1;
+    int all_voxels_count = 0;
+    int all_structure_voxels_count = 0;
+    bool voxels_needed = params.light_importance > IMPORTANCE_EPS;
+    bool voxelized_structure = params.voxelized_structure && (1 - params.light_importance > IMPORTANCE_EPS);
+
     dist_data = safe_new<float>(2*branches_size*branches_size, "dist_data");
+    if (voxels_needed)
+    {
+        glm::ivec3 vsz = _branches.front().leavesDensity.front()->get_vox_sizes();
+        all_voxels_count = branches_size*_branches.front().leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
+        all_voxels = safe_new<float>(all_voxels_count + 1, "all_voxels");
+    }
+    if (voxelized_structure)
+    {
+        glm::ivec3 vsz = _branches.front().voxelizedStructures.front()->get_vox_sizes();
+        all_structure_voxels_count = branches_size*_branches.front().voxelizedStructures.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
+        all_structure_voxels = safe_new<float>(all_structure_voxels_count + 1, "all_structure_voxels");
+    }
     for (auto &bwd : _branches)
     {
-        fill_branch_data(bwd);
+        fill_branch_data(bwd, voxels_needed, voxelized_structure);
     }
     int m_pos = positions.size(),m_sti = sticks.size(),m_j = joint_rs.size();
     int m_vox = all_voxels_count + 1,m_bd = branches.size(),m_dd = 2*branches_size*branches_size;
+    int m_struct_vox = all_structure_voxels_count + 1;
     int bytes = m_pos*sizeof(glm::vec3) + m_sti*sizeof(gBranch) + m_j*sizeof(float) + m_vox*sizeof(float) +
-    m_bd*sizeof(gBranchWithData) + m_dd*sizeof(float);
+    m_bd*sizeof(gBranchWithData) + m_dd*sizeof(float) + m_struct_vox*sizeof(float);
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     debugl(13,"Intermediate data allocated %4.2f Mbytes\n",bytes/powf(2,20));
@@ -64,7 +82,7 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     {
         hardness = 1;
     }
-    calculate_distances(hardness);
+    calculate_distances(hardness, true, false);
 
         for (int i=0;i<branches_size;i++)
         {
@@ -83,7 +101,7 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
             }
         }
 }
-void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &branch)
+void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &branch, bool voxels_needed, bool voxelized_structure)
 {
     branches.emplace_back();
     auto &br = branches.back();
@@ -96,25 +114,51 @@ void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &bran
     {
         br.joints_counts[i] = branch.joint_counts[MIN(i,branch.joint_counts.size()-1)];
     }
-    br.branch_pos = fill_branch_data(branch.b);
-    calc_cumulative_weight(br.branch_pos,branch.b->level);
-    glm::ivec3 sizes;
-    float *ptr = nullptr;
-    br.voxels_offset = cur_voxels_pointer;
-    branch.leavesDensity.front()->get_data(&ptr,sizes);
-    br.voxels_xyz_rots = uvec4(sizes.x,sizes.y,sizes.z,branch.leavesDensity.size());
-    br.voxels_size = (2*sizes.x + 1)*(2*sizes.y + 1)*(2*sizes.z + 1)*branch.leavesDensity.size();
 
-    for (int k=0;k<branch.leavesDensity.size();k++)
+    if (voxelized_structure)
     {
-        branch.leavesDensity[k]->get_data(&ptr,sizes);
-        int sz = br.voxels_size/br.voxels_xyz_rots.w;
-        memcpy(&(all_voxels[br.voxels_offset + k*sz]),ptr,sizeof(float)*sz);
-        //delete branch.leavesDensity[k];
-        //branch.leavesDensity[k] = nullptr;
+        logerr("structure_voxels_offset %d %d", branch.voxelizedStructures.size(),cur_structure_voxels_pointer);
+        glm::ivec3 sizes;
+        float *ptr = nullptr;
+        br.structure_voxels_offset = cur_structure_voxels_pointer;
+        branch.voxelizedStructures.front()->get_data(&ptr,sizes);
+        br.voxels_xyz_rots.w = branch.voxelizedStructures.size();
+        br.structure_voxels_xyz_and_size = uvec4(sizes.x,sizes.y,sizes.z,
+                                           (2*sizes.x + 1)*(2*sizes.y + 1)*(2*sizes.z + 1)*branch.voxelizedStructures.size());
+
+        for (int k=0;k<branch.voxelizedStructures.size();k++)
+        {
+            branch.voxelizedStructures[k]->get_data(&ptr,sizes);
+            int sz = br.structure_voxels_xyz_and_size.w/br.voxels_xyz_rots.w;
+            memcpy(&(all_structure_voxels[br.structure_voxels_offset + k*sz]),ptr,sizeof(float)*sz);
+        }
+        
+        cur_structure_voxels_pointer += br.structure_voxels_xyz_and_size.w;
     }
-    
-    cur_voxels_pointer += br.voxels_size;
+    else if (1 - params.light_importance > IMPORTANCE_EPS)
+    {
+        br.branch_pos = fill_branch_data(branch.b);
+        calc_cumulative_weight(br.branch_pos,branch.b->level);
+    }
+
+    if (voxels_needed)
+    {
+        glm::ivec3 sizes;
+        float *ptr = nullptr;
+        br.voxels_offset = cur_voxels_pointer;
+        branch.leavesDensity.front()->get_data(&ptr,sizes);
+        br.voxels_xyz_rots = uvec4(sizes.x,sizes.y,sizes.z,branch.leavesDensity.size());
+        br.voxels_size = (2*sizes.x + 1)*(2*sizes.y + 1)*(2*sizes.z + 1)*branch.leavesDensity.size();
+
+        for (int k=0;k<branch.leavesDensity.size();k++)
+        {
+            branch.leavesDensity[k]->get_data(&ptr,sizes);
+            int sz = br.voxels_size/br.voxels_xyz_rots.w;
+            memcpy(&(all_voxels[br.voxels_offset + k*sz]),ptr,sizeof(float)*sz);
+        }
+        
+        cur_voxels_pointer += br.voxels_size;
+    }
 }
 float GPUClusterizationHelper::calc_cumulative_weight(uint stick_id, int level)
 {
@@ -197,12 +241,14 @@ uint GPUClusterizationHelper::fill_branch_data(Branch *branch)
 GPUClusterizationHelper::~GPUClusterizationHelper()
 {
     safe_delete<float>(all_voxels, "all_voxels");
+    safe_delete<float>(all_structure_voxels, "all_structure_voxels");
     safe_delete<float>(dist_data, "dist_data");
 
     #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
 
     DELBUF(pos_buf);
     DELBUF(voxels_buf);
+    DELBUF(structure_voxels_buf);
     DELBUF(rs_buf);
     DELBUF(sticks_buf);
     DELBUF(branches_buf);
@@ -210,45 +256,76 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     DELBUF(params_buf);
     DELBUF(joints_buf);
 }
-    void GPUClusterizationHelper::calculate_distances(int hardness)
+    void GPUClusterizationHelper::calculate_distances(int hardness, bool cpu_only, bool cpu_check)
     {   
         std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-        setup_buffers();
-        distCompute.use();
-        distCompute.uniform("branches_size",branches_size);
-        static int max_dispatches = hardness > 0 ? 8 : 16;
-        static int threads = 8;
-        static int branches_per_thread = 1;
-        int step = (max_dispatches*threads*branches_per_thread);
-        int iters = ceil((float)branches_size/step);
-        int a = 0;
-        for (int i=0;i<iters;i++)
+        if (!cpu_only)
         {
-            for (int j=0;j<iters;j++)
+            setup_buffers();
+            distCompute.use();
+            distCompute.uniform("branches_size",branches_size);
+            static int max_dispatches = hardness > 0 ? 8 : 16;
+            static int threads = 8;
+            static int branches_per_thread = 1;
+            int step = (max_dispatches*threads*branches_per_thread);
+            int iters = ceil((float)branches_size/step);
+            int a = 0;
+            for (int i=0;i<iters;i++)
             {
-                a++;
-                int x_sz = (i == iters - 1) ? branches_size - i*step : step;
-                int y_sz = (j == iters - 1) ? branches_size - j*step : step;
-                int start_x = i*step;
-                int start_y = j*step;
-                
-                if (start_y + y_sz < x_sz)
-                   continue;
-                distCompute.uniform("start_x",start_x);
-                distCompute.uniform("start_y",start_y);
-                debugl(13,"GPU clusterization in process %d/%d\n",a,iters*iters);
-                glDispatchCompute(ceil((float)x_sz/threads),ceil((float)y_sz/threads), 1);
+                for (int j=0;j<iters;j++)
+                {
+                    a++;
+                    int x_sz = (i == iters - 1) ? branches_size - i*step : step;
+                    int y_sz = (j == iters - 1) ? branches_size - j*step : step;
+                    int start_x = i*step;
+                    int start_y = j*step;
+                    
+                    if (start_y + y_sz < x_sz)
+                    continue;
+                    distCompute.uniform("start_x",start_x);
+                    distCompute.uniform("start_y",start_y);
+                    debugl(13,"GPU clusterization in process %d/%d\n",a,iters*iters);
+                    glDispatchCompute(ceil((float)x_sz/threads),ceil((float)y_sz/threads), 1);
 
-                SDL_GL_SwapWindow(Tiny::view.gWindow);
+                    SDL_GL_SwapWindow(Tiny::view.gWindow);
+                }
             }
+            
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, dist_data_buf);
+            GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+            memcpy(dist_data,p,sizeof(float)*2*branches_size*branches_size);
         }
-        
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, dist_data_buf);
-        GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        memcpy(dist_data,p,sizeof(float)*2*branches_size*branches_size);
         std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        if (cpu_only)
+        {
+            for (int i=0;i<branches_size;i++)
+            {
+                for (int j=0;j<branches_size;j++)
+                {
+                    if (j > i)
+                        calculate_dist(i,j);
+                }
+            }
+        }
+        else if (cpu_check)
+        {
+            for (int i=0;i<branches_size;i++)
+            {
+                for (int j=0;j<branches_size;j++)
+                {
+                    if (j > i)
+                    {
+                        float d = dd_dist(i,j);
+                        float r = dd_r(i,j);
+                        calculate_dist(i,j);
+                        if (abs(d - dd_dist(i,j)) > 1e-4)
+                        logerr("%d %d from %d compute shader error %f %f --> %f %f",i,j,branches_size,d,r,dd_dist(i,j),dd_r(i,j));
+                    }
+                }
+            }
+        }
         for (int i=0;i<branches_size;i++)
         {
             for (int j=0;j<branches_size;j++)
@@ -281,6 +358,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     #define uvec3 glm::uvec3
     #define vec3 glm::vec3
     #define vec2 glm::vec2
+    
     float GPUClusterizationHelper::calculate_dist_structure(int i, int j, int rot, float max_dist)
     {
         float e = -11;
@@ -480,25 +558,51 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         }
         return a/b;
     }
+    float GPUClusterizationHelper::calculate_dist_voxelized_structure(int i, int j, int rot, float max_dist)
+    {
+        if (branches[i].structure_voxels_xyz_and_size.w != branches[j].structure_voxels_xyz_and_size.w || 
+            branches[i].voxels_xyz_rots.w != branches[j].voxels_xyz_rots.w)
+            return 1;
+        int vs = branches[i].structure_voxels_xyz_and_size.w/branches[i].voxels_xyz_rots.w;
+        float a = 0;
+        float b = 0.01;
+        int off1 = branches[i].structure_voxels_offset;
+        int off2 = branches[j].structure_voxels_offset + rot*vs;
+
+        for (int k = 0; k<vs;k++)
+        {
+            a += abs(all_structure_voxels[off1 + k] - all_structure_voxels[off2 + k]);
+            b += (all_structure_voxels[off1 + k] + all_structure_voxels[off2 + k]);
+        }
+        //logerr("vox dist %f",a/b);
+        return a/b;
+    }
     vec2 GPUClusterizationHelper::calculate_dist_simple(int i, int j, int rot, float min_dist_struct)
     {
-        #define EPS 0.025
         //empirically got that if structure distance is > 1.1*min_dist_struct then
         //the full distance is probably more that min_dist
         #define MAX_STR_DIST_MULT 1.1
         float MS = 0, ML = 0, a = params.light_importance;
-        if (a > EPS)
+        if (a > IMPORTANCE_EPS)
         {
             ML = calculate_dist_light(i,j,rot,1);
         }
-        if (1 - a > EPS)
+        if (1 - a > IMPORTANCE_EPS)
         {
-            MS = calculate_dist_structure(i,j,rot,MAX_STR_DIST_MULT*min_dist_struct);
+            if (params.voxelized_structure)
+            {
+                MS = calculate_dist_voxelized_structure(i,j,rot,1);
+            }
+            else
+            {
+                MS = calculate_dist_structure(i,j,rot,MAX_STR_DIST_MULT*min_dist_struct);
+            }
         }
         if (a*ML + (1-a)*MS < 0)
         {
             logerr("ERROR %f %f %f",a,ML,MS);
         }
+        logerr("dist_simple[%d %d] = %f %f %f",i,j,a, ML, MS);
         return vec2(a*ML + (1-a)*MS,MS);
     }
     void GPUClusterizationHelper::calculate_dist(int _i, int _j)
@@ -534,6 +638,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
 
         dd_r(i,j) = (2*PI*rot)/params.bwd_rotations;
         dd_dist(i,j) = min_dist;
+        logerr("dist[%d %d] = %f",i,j,min_dist);
     }
     void GPUClusterizationHelper::setup_buffers()
     {
@@ -544,6 +649,10 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         glGenBuffers(1, &voxels_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxels_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*cur_voxels_pointer, all_voxels, GL_STATIC_DRAW);
+            
+        glGenBuffers(1, &structure_voxels_buf);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, structure_voxels_buf);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*cur_structure_voxels_pointer, all_structure_voxels, GL_STATIC_DRAW);
 
         glGenBuffers(1, &rs_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rs_buf);

@@ -1,30 +1,13 @@
 {
-    recursive
+    simplified
     {
-        max_clusters_in_layer:i = 5
-        recursive_clustering_layers:i = 3
-        max_trees_in_patch:i = 10
-        trunk_clusterization_params
+        branch_clusterization_params
         {
-            max_individual_dist:r = 0.8
-        }
-        tree_clusterization_params
-        {
-            voxels_size_mult:r = 1
+            voxelized_structure:b = true
         }
     }
     no_recursive
     {
-        max_clusters_in_layer:i = 1000
-        recursive_clustering_layers:i = 1
-        max_trees_in_patch:i = 1000
-        trunk_clusterization_params
-        {
-            max_individual_dist:r = 0.8
-        }
-        tree_clusterization_params
-        {
-            voxels_size_mult:r = 1
-        }
+        
     }
 }
