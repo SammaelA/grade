@@ -22,7 +22,8 @@ float distribution2[110];
 ClusterizationParams clusterizationParams;
 long cur_cluster_id = 1;
 glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,60,60);
-LightVoxelsCube *test_voxels_cube = nullptr;
+LightVoxelsCube *test_voxels_cube[10];
+int lvc_count = 0;
 struct JSortData
 {
     float dist;
@@ -573,9 +574,15 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
     clusterizationParams = params;
 
     set_branches(base_clusters);
-    if (clusterizationParams.different_types_tolerance == false && !test_voxels_cube)
+    if (clusterizationParams.ignore_structure_level == 2 && lvc_count < 10)
     {
-        test_voxels_cube = new LightVoxelsCube(current_data->branches.front().leavesDensity.front());
+        for (auto &br : current_data->branches)
+        {
+            test_voxels_cube[lvc_count] = new LightVoxelsCube(br.leavesDensity.front());
+            lvc_count++;
+            if (lvc_count >= 10)
+                break;
+        }
     }
     dist_calls = 0;
     prepare_ddt();
@@ -843,7 +850,7 @@ Clusterizer::BranchWithData::BranchWithData(Branch *_original, Branch *_b, int _
         leavesDensity.push_back(new LightVoxelsCube(
             glm::vec3(0.5f*canonical_bbox.x,0,0),
             glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
-            1 / clusterizationParams.voxels_size_mult, 1));
+            1 / clusterizationParams.voxels_size_mult, 1, 3, 2));
         set_occlusion(b, leavesDensity.back());
 
         if (clusterizationParams.voxelized_structure)
@@ -964,7 +971,7 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         br_cp.bwd_rotations = 4;
         params = br_cp;
     }
-    else if (step == ClusteringStep::TRUNKS)
+    else if (step == ClusteringStep::TREES)
     {
         ClusterizationParams cp;
         cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};

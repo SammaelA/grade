@@ -13,7 +13,7 @@ struct ClusterizationParams
     float light_importance = 0.4;
     float voxels_size_mult = 1/2.5;
     bool voxelized_structure = false;
-    float structure_voxels_size_mult = 1;
+    float structure_voxels_size_mult = 1/2.5;
     int ignore_structure_level = 1000;
     int min_clusters = 1;
     float max_individual_dist = 0.95;
@@ -224,4 +224,4 @@ public:
     ClusterizationTmpData *current_data = nullptr;
     static glm::vec3 canonical_bbox;
 };
-extern LightVoxelsCube *test_voxels_cube;
+extern LightVoxelsCube *test_voxels_cube[10];

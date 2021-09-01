@@ -11,17 +11,20 @@ glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
 {
     return glm::ivec3(MAX(1,sizes.x/voxel_size),MAX(1,sizes.y/voxel_size),MAX(1,sizes.z/voxel_size));
 }
-LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision):
-LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size / light_precision)
+LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision,
+                                 int mip_levels, int mip_decrease):
+LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size / light_precision, mip_levels, mip_decrease)
 {
     lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
 }
-LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size):
+LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size, int _mip_levels, int _mip_decrease):
 Countable(9),
 voxel_size(vox_size)
 {
     center = cent;
+    mip_levels = _mip_levels;
+    mip_decrease = _mip_decrease;
     set_directed_light(glm::vec3(0, 1, 0), 1);
     vox_x = sizes.x;
     vox_y = sizes.y;
@@ -30,7 +33,18 @@ voxel_size(vox_size)
     block_y = ceil((2*vox_y + 1.0)/block_size);
     block_z = ceil((2*vox_z + 1.0)/block_size);
 
-    count = block_x*block_y*block_z*block_size*block_size*block_size;
+    count = 0;
+    for (int i=0;i<mip_levels;i++)
+    {
+        int decrease = powf(mip_decrease,i);
+        int mip_x = ceil((float)(block_x*block_size)/decrease);
+        int mip_y = ceil((float)(block_y*block_size)/decrease);
+        int mip_z = ceil((float)(block_z*block_size)/decrease);
+        mip_offsets.push_back(count);
+        mip_vox_xyz.push_back(glm::ivec3(mip_x,mip_y,mip_z));
+        mip_size_decrease.push_back(decrease);
+        count+= mip_x*mip_y*mip_z;
+    }
     voxels = safe_new<float>(count,"voxels");
     std::fill(voxels,voxels+count,0);
     sum_memory += count*sizeof(float);
@@ -52,7 +66,7 @@ LightVoxelsCube(source,
     center = pos;
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes):
-LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
+LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size, source->mip_levels, source->mip_decrease)
 {
     for (int i = vox_pos.x-vox_sizes.x; i <= vox_pos.x+vox_sizes.x; i++)
     {
@@ -65,6 +79,7 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size)
             }
         }
     }
+    prepare_mip_levels();
 }
 void LightVoxelsCube::get_data(float **data, glm::ivec3 &size)
 {
@@ -119,6 +134,17 @@ glm::ivec3 LightVoxelsCube::get_vox_sizes()
 {
     return glm::ivec3(vox_x,vox_y,vox_z);
 }
+
+int LightVoxelsCube::get_mip_count()
+{
+    return mip_levels;
+}
+
+int LightVoxelsCube::get_mip_decrease()
+{
+    return mip_decrease;
+}
+
 void LightVoxelsCube::print_average_occlusion()
 {
     debugl(2, "average_occ %f\n", sum_occlusion / occ_count);
@@ -325,6 +351,34 @@ int LightVoxelsCube::v_to_i(glm::ivec3 voxel)
 {
     return (2 * vox_x + 1) * (2 * vox_y + 1) * (vox_z + voxel.z) + (2 * vox_x + 1) * (vox_y + voxel.y) + (vox_x + voxel.x);
 }
+int LightVoxelsCube::v_to_i_mip(glm::ivec3 voxel, int mip)
+{
+    return mip_offsets[mip] + 
+           mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (vox_z + voxel.z)/mip_size_decrease[mip] + 
+           mip_vox_xyz[mip].x * (vox_y + voxel.y)/mip_size_decrease[mip] + 
+           (vox_x + voxel.x)/mip_size_decrease[mip];   
+}
+int LightVoxelsCube::v_to_i_mip(int x, int y, int z, int mip)
+{
+    return mip_offsets[mip] + 
+           mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * ((vox_z + z)/mip_size_decrease[mip]) + 
+           mip_vox_xyz[mip].x * ((vox_y + y)/mip_size_decrease[mip]) + 
+           (vox_x + x)/mip_size_decrease[mip];    
+}
+int LightVoxelsCube::v_to_i_mip_no_offset(glm::ivec3 voxel, int mip)
+{
+    return mip_offsets[mip] + 
+           mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (voxel.z) + 
+           mip_vox_xyz[mip].x * (voxel.y) + 
+           (voxel.x);   
+}
+int LightVoxelsCube::v_to_i_mip_no_offset(int x, int y, int z, int mip)
+{
+    return mip_offsets[mip] + 
+           mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (z) + 
+           mip_vox_xyz[mip].x * (y) + 
+           (x);    
+}
 void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 {
     if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
@@ -355,6 +409,22 @@ void LightVoxelsCube::set_occluder_simple(glm::vec3 pos, float strenght)
     if (in_voxel_cube(voxel))
         voxels[v_to_i(voxel)] += strenght;
 }
+
+void LightVoxelsCube::set_occluder_voxel_mip(glm::ivec3 voxel, float strenght, int mip)
+{
+    mip = CLAMP(mip, 0, mip_levels);
+    if (in_voxel_cube(voxel))
+        voxels[v_to_i_mip(voxel, mip)] += strenght;
+}
+
+void LightVoxelsCube::set_occluder_simple_mip(glm::vec3 pos, float strenght, int mip)
+{
+    mip = CLAMP(mip, 0, mip_levels);
+    glm::ivec3 voxel = pos_to_voxel(pos);
+    if (in_voxel_cube(voxel))
+        voxels[v_to_i_mip(voxel, mip)] += strenght;
+}
+
 void LightVoxelsCube::set_occluder_trilinear(glm::vec3 pos, float strenght)
 {
     if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
@@ -438,6 +508,20 @@ float LightVoxelsCube::get_occlusion_simple(glm::vec3 pos)
         return 1000; 
     }
 }
+float LightVoxelsCube::get_occlusion_simple_mip(glm::vec3 pos, int mip)
+{
+    glm::ivec3 voxel = pos_to_voxel(pos);
+    mip = CLAMP(mip, 0, mip_levels);
+    if (in_voxel_cube(voxel))
+    {
+        int v = v_to_i_mip(voxel, mip);
+        return voxels[v];
+    }
+    else
+    {
+        return 1000; 
+    }
+}
 float LightVoxelsCube::get_occlusion_trilinear(glm::vec3 pos)
 {
     glm::vec3 flpos = glm::vec3(floorf(pos.x),floorf(pos.y),floorf(pos.z));
@@ -447,6 +531,40 @@ float LightVoxelsCube::get_occlusion_trilinear(glm::vec3 pos)
     int y = voxel.y;
     int z = voxel.z;
     #define C(i,j,k) voxels[v_to_i(x+i,y+j,z+k)]
+    if (in_voxel_cube(voxel) && in_voxel_cube(voxel + glm::ivec3(1,1,1)))
+    {
+        float c00 = C(0,0,0)*(1-dp.x) + C(1,0,0)*dp.x;
+        float c01 = C(0,0,1)*(1-dp.x) + C(1,0,1)*dp.x;
+        float c10 = C(0,1,0)*(1-dp.x) + C(1,1,0)*dp.x;
+        float c11 = C(0,1,1)*(1-dp.x) + C(1,1,1)*dp.x;
+
+        float c0 = c00*(1-dp.y) + c10*dp.y;
+        float c1 = c01*(1-dp.y) + c11*dp.y;
+
+        float c = c0*(1-dp.z) + c1*dp.z;
+
+        return c;
+    }
+    else if (in_voxel_cube(voxel))
+    {
+        return C(0,0,0);
+    }
+    else
+    {
+        return 1000; 
+    }
+}
+
+float LightVoxelsCube::get_occlusion_trilinear_mip(glm::vec3 pos, int mip)
+{
+    glm::vec3 flpos = glm::vec3(floorf(pos.x),floorf(pos.y),floorf(pos.z));
+    glm::vec3 dp = pos - flpos;
+    glm::ivec3 voxel = pos_to_voxel(flpos);
+    int x = voxel.x;
+    int y = voxel.y;
+    int z = voxel.z;
+    mip = CLAMP(mip, 0, mip_levels);
+    #define C(i,j,k) voxels[v_to_i_mip(x+i,y+j,z+k,mip)]
     if (in_voxel_cube(voxel) && in_voxel_cube(voxel + glm::ivec3(1,1,1)))
     {
         float c00 = C(0,0,0)*(1-dp.x) + C(1,0,0)*dp.x;
@@ -627,4 +745,48 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     *occlusion = mo;
     safe_delete<float>(occlusions, "dir_to_bright_place_occlusions");
     return glm::vec3(x,y,z);
+}
+
+void LightVoxelsCube::prepare_mip_levels()
+{
+    int p = mip_decrease;
+    for (int i=1;i<mip_levels;i++)
+    {
+        logerr("prepare mip level %d %d %d %d %d %d",
+        mip_vox_xyz[i].x,mip_vox_xyz[i].y, mip_vox_xyz[i].z,
+        mip_vox_xyz[i-1].x,mip_vox_xyz[i-1].y,mip_vox_xyz[i-1].z);
+        for (int x = 0;x<mip_vox_xyz[i].x;x++)
+        {
+            for (int y = 0;y<mip_vox_xyz[i].y;y++)
+            {
+                for (int z = 0;z<mip_vox_xyz[i].z;z++)
+                {
+                    if (i == 1)
+                    {
+                        int a = v_to_i_mip_no_offset(x,y,z,i-1);
+                        int b = v_to_i(x-vox_x,y-vox_y,z-vox_z);
+                        if (a!=b)
+                        logerr("%d %d",a,b);
+                    }
+                    int x1 = MIN(p*x+1,mip_vox_xyz[i-1].x - 1);
+                    int y1 = MIN(p*y+1,mip_vox_xyz[i-1].y - 1);
+                    int z1 = MIN(p*z+1,mip_vox_xyz[i-1].z - 1);
+
+                    voxels[v_to_i_mip_no_offset(x,y,z,i)] = 
+                    0.125*voxels[v_to_i_mip_no_offset(p*x  ,p*y  ,p*z  ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(p*x  ,p*y  ,z1   ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(p*x  ,y1   ,p*z  ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(p*x  ,y1   ,z1   ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(x1   ,p*y  ,p*z  ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(x1   ,p*y  ,z1   ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(x1   ,y1   ,p*z  ,i-1)] +
+                    0.125*voxels[v_to_i_mip_no_offset(x1   ,y1   ,z1   ,i-1)];
+                    debug("%.1f ",voxels[v_to_i_mip_no_offset(x,y,z,i)]);
+                }
+                debug("\n");
+            }
+            debug("\n");
+            debug("\n");
+        }
+    }
 }

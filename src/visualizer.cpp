@@ -773,7 +773,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 
 
 }
 void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step,
-                                             float dot_size, float threshold, glm::vec3 shift, glm::vec3 scale)
+                                             float dot_size, float threshold, glm::vec3 shift, glm::vec3 scale, int mip)
 {
     int count = ((int)(size.x/step.x)) * ((int)(size.y/step.y)) * ((int)(size.z/step.z));
     Model *m = new Model();
@@ -786,7 +786,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
         {
             for (float z = pos.z; z < pos.z + size.z; z += step.z)
             {
-                float occ = voxels->get_occlusion_trilinear(glm::vec3(x,y,z));
+                float occ = voxels->get_occlusion_simple_mip(glm::vec3(x,y,z),mip);
                 if (occ < threshold || occ > 1e8)
                     continue;
                 glm::vec4 tex;

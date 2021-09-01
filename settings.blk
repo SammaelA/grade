@@ -8,6 +8,6 @@
     }
     tree_clusterization_params
     {
-        voxels_size_mult:r = 1
+        voxels_size_mult:r = 0.33
     }
 }

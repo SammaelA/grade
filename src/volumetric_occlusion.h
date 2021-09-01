@@ -4,11 +4,12 @@
 #include "body.h"
 #include "terrain.h"
 #include "distribution.h"
+#include <vector>
 struct LightVoxelsCube : Countable
 {
 public:
-    LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision);
-    LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size);
+    LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);
+    LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size, int mip_levels = 1, int mip_decrease = 2);
     LightVoxelsCube(LightVoxelsCube *source);
     LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes);
     LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes);
@@ -16,9 +17,11 @@ public:
     void clear();
     void replace_occluder_voxel(glm::ivec3 voxel, float strength);
     void set_occluder_voxel(glm::ivec3 voxel, float strength);
+    void set_occluder_voxel_mip(glm::ivec3 voxel, float strenght, int mip);
     void set_occluder(glm::vec3 pos, float strenght);
     void set_occluder_pyramid(glm::vec3 pos, float strenght);
     void set_occluder_simple(glm::vec3 pos, float strenght);
+    void set_occluder_simple_mip(glm::vec3 pos, float strenght, int mip);
     void set_occluder_trilinear(glm::vec3 pos, float strenght);
     void set_point_light(glm::vec3 pos, float strength);
     void set_directed_light(glm::vec3 direction, float strength);
@@ -27,13 +30,16 @@ public:
     float get_occlusion_view_ray(glm::vec3 pos, glm::vec3 light);
     float get_occlusion_view_ray(glm::vec3 pos);
     float get_occlusion_simple(glm::vec3 pos);
+    float get_occlusion_simple_mip(glm::vec3 pos, int mip);
     float get_occlusion_trilinear(glm::vec3 pos);
+    float get_occlusion_trilinear_mip(glm::vec3 pos, int mip);
     float get_occlusion_cone(glm::vec3 pos, glm::vec3 dir, glm::vec3 n, float H, float R, 
                              int num_samples, Uniform &phi_distr, Uniform &h_distr, Uniform &l_distr);
     glm::vec3 get_dir_to_bright_place(glm::vec3 pos, float *occlusion);
     glm::vec3 get_dir_to_bright_place_cone(glm::vec3 pos, float r, int cones, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ext(glm::vec3 pos, int steps, float *occlusion);
     glm::vec3 get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion);
+    void prepare_mip_levels();
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true);
     void add_heightmap(Heightmap &h);
@@ -43,6 +49,8 @@ public:
     glm::vec3 get_center();
     float get_voxel_size();
     glm::ivec3 get_vox_sizes();
+    int get_mip_count();
+    int get_mip_decrease();
 private:
     struct LightParams
     {
@@ -68,8 +76,13 @@ private:
     const float voxel_size;
     int vox_x, vox_y, vox_z;
     int count;
-    int block_size = 4;
+    int block_size = 1;
     int block_x, block_y, block_z;
+    int mip_levels = 1;
+    int mip_decrease = 2;
+    std::vector<int> mip_offsets;
+    std::vector<int> mip_size_decrease;
+    std::vector<glm::ivec3> mip_vox_xyz;
     float *voxels;
     std::list<Light> point_lights;
     std::list<Light> directed_lights;
@@ -80,6 +93,10 @@ private:
     bool in_voxel_cube(glm::ivec3 voxel);
     int v_to_i(glm::ivec3 voxel);
     int v_to_i(int x, int y, int z);
+    int v_to_i_mip(glm::ivec3 voxel, int mip);
+    int v_to_i_mip(int x, int y, int z, int mip);
+    int v_to_i_mip_no_offset(glm::ivec3 voxel, int mip);
+    int v_to_i_mip_no_offset(int x, int y, int z, int mip);
     int voxels_count() {return vox_x*vox_y*vox_z;}
     float sum_occlusion = 0.0;
     float occ_count = 0.0;

@@ -398,15 +398,25 @@ int full_initialization()
       if (mygen_gen)
         debugVisualizer->visualize_light_voxels(mygen_gen->voxels);
     }
-    if (test_voxels_cube)
+    /*LightVoxelsCube *voxx = new LightVoxelsCube(glm::vec3(0,0,0), glm::ivec3(8,8,8),1,3,2);
+    for (int i=-8;i<=8;i++)
+    for (int j=-8;j<=8;j++)
+    for (int k=-8;k<=8;k++)
+    voxx->set_occluder_trilinear(glm::vec3(i,j,k),abs(10*i));
+    voxx->prepare_mip_levels();*/
+    for (int i=0;i<3;i++)
     {
-      auto *voxels = test_voxels_cube;
-      debugVisualizer->visualize_light_voxels(voxels,
-                           voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
-                           voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
-                           glm::vec3(voxels->get_voxel_size()),
-                           0.85f*voxels->get_voxel_size(),
-                           0.01,glm::vec3(0,100,0),glm::vec3(1,1,1));
+      logerr("visualize voxels");
+      if (test_voxels_cube[0])
+      {
+        auto *voxels = test_voxels_cube[0];
+        debugVisualizer->visualize_light_voxels(voxels,
+                            voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
+                            voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
+                            powf(2,i)*glm::vec3(voxels->get_voxel_size()),
+                            powf(2,i)*0.85f*voxels->get_voxel_size(),
+                            0.01,glm::vec3(0,100*(i+1),0),glm::vec3(1,1,1),i);
+      }
     }
   }
   if (saving_needed)
