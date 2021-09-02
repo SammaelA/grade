@@ -527,6 +527,7 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
 {
+    logerr("is has %d",clusterizationParams.hash_dist);
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
     if (ggd.trees_count <= max_trees_in_patch)
     {

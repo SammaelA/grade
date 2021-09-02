@@ -404,7 +404,7 @@ int full_initialization()
     for (int k=-8;k<=8;k++)
     voxx->set_occluder_trilinear(glm::vec3(i,j,k),abs(10*i));
     voxx->prepare_mip_levels();*/
-    for (int i=0;i<3;i++)
+    for (int i=0;i<1;i++)
     {
       logerr("visualize voxels");
       if (test_voxels_cube[0])

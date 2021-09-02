@@ -80,7 +80,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         }
         results.emplace_back();
         results.back().name = settings.get_name(i);
-        debugl(11,"starting clustering with settings %s\n",results.back().name.c_str());
+        debug("starting clustering with settings %s\n",results.back().name.c_str());
         GrovePackerStat packer;
         groves.emplace_back();
         

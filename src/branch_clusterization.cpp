@@ -5,6 +5,7 @@
 #include <set>
 #include "tinyEngine/utility.h"
 #include "GPU_clusterization.h"
+#include <boost/math/constants/constants.hpp>
 int dist_calls = 0;
 using namespace glm;
 #define DEBUG 0
@@ -21,7 +22,7 @@ float distribution[110];
 float distribution2[110];
 ClusterizationParams clusterizationParams;
 long cur_cluster_id = 1;
-glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,60,60);
+glm::vec3 Clusterizer::canonical_bbox = glm::vec3(100,50,50);
 LightVoxelsCube *test_voxels_cube[10];
 int lvc_count = 0;
 struct JSortData
@@ -54,6 +55,33 @@ ClusterData::ClusterData()
     id = cur_cluster_id;
     cur_cluster_id++;
 }
+
+inline float L2_dist(std::vector<float> h1, std::vector<float> h2)
+{
+    if (h1.size() != h2.size())
+    {
+        logerr("size of feature vectors mismatch %d %d",h1.size(), h2.size());
+        return 1000;
+    }
+    else
+    {
+        double a = 0, b = 0, c = 0;
+        for (int i = 0;i<h1.size();i++)
+        {
+            b += SQR(h1[i]);
+            c += SQR(h2[i]);
+        }
+        b = sqrt(b);
+        c = sqrt(c);
+        for (int i = 0;i<h1.size();i++)
+        {
+            a += SQR(h1[i]/b - h2[i]/c);
+        }
+
+        return sqrt(a);
+    }
+}
+
 inline float AS_branch_min_dist(float part_min_dist, int num_quntile)
 {
     return part_min_dist / (1 + optimization_quantiles[num_quntile].first);
@@ -574,7 +602,7 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
     clusterizationParams = params;
 
     set_branches(base_clusters);
-    if (clusterizationParams.ignore_structure_level == 2 && lvc_count < 10)
+    if (clusterizationParams.different_types_tolerance == false && lvc_count < 10)
     {
         for (auto &br : current_data->branches)
         {
@@ -766,10 +794,13 @@ void Clusterizer::prepare_ddt()
     {
         current_data->pos_in_table_by_id.emplace(current_data->branches[i].original->self_id,i);
     }
-    GPUClusterizationHelper gpuch;
-    gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
-    //return;
-    /*for (int i = 0; i < current_data->branches.size(); i++)
+    if (!clusterizationParams.hash_dist)
+    {
+        GPUClusterizationHelper gpuch;
+        gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
+        return;
+    }
+    for (int i = 0; i < current_data->branches.size(); i++)
     {
         for (int j = 0; j < current_data->branches.size(); j++)
         {
@@ -794,13 +825,32 @@ void Clusterizer::prepare_ddt()
             }
             else
             {
-                logerr("%d %d before %f",i,j,a.from);
-                a = dist(current_data->branches[i],current_data->branches[j],clusterizationParams.max_individual_dist,0,&d);
-                logerr("%d %d after %f",i,j,a.from);
+                //logerr("%d %d before %f",i,j,a.from);
+                //a = dist(current_data->branches[i],current_data->branches[j],clusterizationParams.max_individual_dist,0,&d);
+                int rots = current_data->branches[j].hashes.size();
+                float min_dist = 1000;
+                int min_rot = 0;
+                for (int r=0;r<rots;r++)
+                {
+                    float dist = 0.8*L2_dist(current_data->branches[i].hashes.front(),current_data->branches[j].hashes[r]);
+                    if (dist < min_dist)
+                    {
+                        min_dist = dist;
+                        min_rot = r;
+                    }
+                }
+                if (min_dist > clusterizationParams.max_individual_dist)
+                    min_dist = 1e9;
+                a.from = min_dist;
+                a.to = min_dist;
+                a.exact = true;
+                d.dist = min_dist;
+                d.rotation = (2*PI*min_rot)/rots;
+                //logerr("%d %d after %f",i,j,a.from);
             }
             current_data->ddt.set(i,j,a,d);
         }
-    }*/
+    }
 }
 
 void ClusterizationParams::load_from_block(Block *b)
@@ -817,6 +867,9 @@ void ClusterizationParams::load_from_block(Block *b)
     max_individual_dist = b->get_double("max_individual_dist",max_individual_dist);
     different_types_tolerance = b->get_bool("different_types_tolerance",different_types_tolerance);
     voxelized_structure = b->get_bool("voxelized_structure",voxelized_structure);
+    hash_dist = b->get_bool("hash_dist",hash_dist);
+    EV_hasing_voxels_per_cell = b->get_int("EV_hasing_voxels_per_cell",EV_hasing_voxels_per_cell);
+    EV_hasing_cells = b->get_int("EV_hasing_cells",EV_hasing_cells);
     structure_voxels_size_mult = b->get_double("structure_voxels_size_mult",structure_voxels_size_mult);
     b->get_arr("weights",weights, true);
     b->get_arr("light_weights",light_weights, true);
@@ -847,20 +900,55 @@ Clusterizer::BranchWithData::BranchWithData(Branch *_original, Branch *_b, int _
     {
         b->transform(rot);
 
-        leavesDensity.push_back(new LightVoxelsCube(
+        if (clusterizationParams.hash_dist)
+        {
+            int sz_per_cell = clusterizationParams.EV_hasing_voxels_per_cell; 
+            int cells = clusterizationParams.EV_hasing_cells;
+            int sz = 0.5*(sz_per_cell*cells - 1);
+            auto *l = new LightVoxelsCube(
+                            glm::vec3(0.5f*canonical_bbox.x,0,0),
+                            glm::ivec3(sz,sz,sz),
+                            0.5f*canonical_bbox.x/sz,
+                            1, 1);
+            
+            hashes.emplace_back();
+            set_occlusion(b, l);
+            set_eigen_values_hash(l, hashes.back(), cells, sz_per_cell, sz);
+
+            if (clusterizationParams.voxelized_structure)
+            {
+                auto *vb = new LightVoxelsCube(
+                                glm::vec3(0.5f*canonical_bbox.x,0,0),
+                                glm::ivec3(sz,sz,sz),
+                                0.5f*canonical_bbox.x/sz,
+                                1, 1);
+                
+                hashes.emplace_back();
+                voxelize_branch(b, vb, 1);
+                set_eigen_values_hash(vb, hashes.back(), cells, sz_per_cell, sz);
+
+                delete vb;
+            }
+
+            delete l;
+        }
+        else
+        {
+            leavesDensity.push_back(new LightVoxelsCube(
             glm::vec3(0.5f*canonical_bbox.x,0,0),
             glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
-            1 / clusterizationParams.voxels_size_mult, 1, 3, 2));
-        set_occlusion(b, leavesDensity.back());
+            1 / clusterizationParams.voxels_size_mult, 1, 1, 1));
 
-        if (clusterizationParams.voxelized_structure)
-        {
-            voxelizedStructures.push_back(new LightVoxelsCube(
-                glm::vec3(0.5f*canonical_bbox.x,0,0),
-                glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
-                1 / clusterizationParams.structure_voxels_size_mult, 1));
-            
-            voxelize_branch(b, voxelizedStructures.back(), 1);
+            set_occlusion(b, leavesDensity.back());
+            if (clusterizationParams.voxelized_structure)
+            {
+                voxelizedStructures.push_back(new LightVoxelsCube(
+                    glm::vec3(0.5f*canonical_bbox.x,0,0),
+                    glm::vec3(0.5f*canonical_bbox.x,canonical_bbox.y, canonical_bbox.z),
+                    1 / clusterizationParams.structure_voxels_size_mult, 1.0f));
+                
+                voxelize_branch(b, voxelizedStructures.back(), 1);
+            }
         }
     }
 }
@@ -887,6 +975,148 @@ void Clusterizer::BranchWithData::set_occlusion(Branch *b, LightVoxelsCube *ligh
         for (Branch *br : j.childBranches)
         {
             set_occlusion(br, light);
+        }
+    }
+}
+
+template<typename Real>
+std::vector<Real> eigenvalues(const Real A[3][3])
+{
+    using boost::math::constants::third;
+    using boost::math::constants::pi;
+    using boost::math::constants::half;
+
+    static_assert(std::numeric_limits<Real>::is_iec559,
+                  "Template argument must be a floating point type.\n");
+
+    std::vector<Real> eigs(3, std::numeric_limits<Real>::quiet_NaN());
+    auto p1 = A[0][1]*A[0][1] + A[0][2]*A[0][2] + A[1][2]*A[1][2];
+    auto diag_sq = A[0][0]*A[0][0] + A[1][1]*A[1][1] + A[2][2];
+    if (p1 == 0 || 2*p1/(2*p1 + diag_sq) < std::numeric_limits<Real>::epsilon())
+    {
+        eigs[0] = A[0][0];
+        eigs[1] = A[1][1];
+        eigs[2] = A[2][2];
+        return eigs;
+    }
+
+    auto q = third<Real>()*(A[0][0] + A[1][1] + A[2][2]);
+    auto p2 = (A[0][0] - q)*(A[0][0] - q) + (A[1][1] - q)*(A[1][1] -q) + (A[2][2] -q)*(A[2][2] -q) + 2*p1;
+    auto p = std::sqrt(p2/6);
+    auto invp = 1/p;
+    Real B[3][3];
+    B[0][0] = A[0][0] - q;
+    B[0][1] = A[0][1];
+    B[0][2] = A[0][2];
+    B[1][1] = A[1][1] - q;
+    B[1][2] = A[1][2];
+    B[2][2] = A[2][2] - q;
+    auto detB = B[0][0]*(B[1][1]*B[2][2] - B[1][2]*B[1][2])
+              - B[0][1]*(B[0][1]*B[2][2] - B[1][2]*B[0][2])
+              + B[0][2]*(B[0][1]*B[1][2] - B[1][1]*B[0][1]);
+    auto r = invp*invp*invp*half<Real>()*detB;
+    if (r >= 1)
+    {
+        eigs[0] = q + 2*p;
+        eigs[1] = q - p;
+        eigs[2] = 3*q - eigs[1] - eigs[0];
+        return eigs;
+    }
+
+    if (r <= -1)
+    {
+        eigs[0] = q + p;
+        eigs[1] = q - 2*p;
+        eigs[2] = 3*q - eigs[1] - eigs[0];
+        return eigs;
+    }
+
+    auto phi = third<Real>()*std::acos(r);
+    eigs[0] = q + 2*p*std::cos(phi);
+    eigs[1] = q + 2*p*std::cos(phi + 2*third<Real>()*pi<Real>());
+    eigs[2] = 3*q - eigs[0] - eigs[1];
+
+    return eigs;
+}
+
+void Clusterizer::BranchWithData::set_eigen_values_hash(LightVoxelsCube *voxels, std::vector<float> &hash, 
+                                                        int cells, int voxels_per_cell, int sz)
+{
+    for (int x_0 = -sz; x_0<sz; x_0+=voxels_per_cell)
+    {
+        for (int y_0 = -sz; y_0<sz; y_0+=voxels_per_cell)
+        {
+            for (int z_0 = -sz; z_0<sz; z_0+=voxels_per_cell)
+            {
+                double e_1 = 0, e_2 = 0, e_3 = 0;
+                #define EPS 0.01
+                double x_c = 0, y_c = 0, z_c = 0, sum = 0;
+                for (int x = x_0; x<x_0+voxels_per_cell;x++)
+                {
+                    for (int y = y_0; y<x_0+voxels_per_cell;y++)
+                    {
+                        for (int z = z_0; z<z_0+voxels_per_cell;z++)
+                        {
+                            float val = voxels->get_occlusion_voxel_unsafe(x,y,z);
+                            x_c += x*val;
+                            y_c += y*val;
+                            z_c += z*val;
+                            sum += val;
+                        }                    
+                    }
+                }
+                if (sum > EPS)
+                {
+                    x_c /= sum;
+                    y_c /= sum;
+                    z_c /= sum;
+                    double cov_mat[3][3];
+                    for (int i=0;i<3;i++)
+                    {
+                        for (int j=0;j<3;j++)
+                        {
+                            cov_mat[i][j] = 0;
+                        }
+                    }
+                    for (int x = x_0; x<x_0+voxels_per_cell;x++)
+                    {
+                        for (int y = y_0; y<x_0+voxels_per_cell;y++)
+                        {
+                            for (int z = z_0; z<z_0+voxels_per_cell;z++)
+                            {
+                                float val = voxels->get_occlusion_voxel_unsafe(x,y,z);
+                                cov_mat[0][0] += val*(x-x_c)*(x-x_c);
+                                cov_mat[0][1] += val*(x-x_c)*(y-y_c);
+                                cov_mat[0][2] += val*(x-x_c)*(z-z_c);
+
+                                cov_mat[1][0] += val*(x-x_c)*(y-y_c);
+                                cov_mat[1][1] += val*(y-y_c)*(y-y_c);
+                                cov_mat[1][2] += val*(y-y_c)*(z-z_c);
+
+                                cov_mat[2][0] += val*(z-z_c)*(x-x_c);
+                                cov_mat[2][1] += val*(y-y_c)*(z-z_c);
+                                cov_mat[2][2] += val*(z-z_c)*(z-z_c);
+                            }                    
+                        }
+                    }
+                    for (int i=0;i<3;i++)
+                    {
+                        for (int j=0;j<3;j++)
+                        {
+                            cov_mat[i][j] /= sum;
+                        }
+                    }
+                    std::vector<double> e_vals = eigenvalues(cov_mat);
+                    //logerr("eigen values %f %f %f",e_vals[0],e_vals[1],e_vals[2]);
+                    e_1 = e_vals[0];
+                    e_2 = e_vals[1];
+                    e_3 = e_vals[2];
+                }
+
+                hash.push_back(e_1);
+                hash.push_back(e_2);
+                hash.push_back(e_3);
+            }
         }
     }
 }
@@ -967,7 +1197,7 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
         br_cp.ignore_structure_level = 2;
         br_cp.delta = 0.3;
-        br_cp.max_individual_dist = 0.5;
+        br_cp.max_individual_dist = 0.57;
         br_cp.bwd_rotations = 4;
         params = br_cp;
     }

@@ -1,13 +1,25 @@
 {
-    simplified
+    hash1
     {
         branch_clusterization_params
         {
-            voxelized_structure:b = true
+            hash_dist:b = true
         }
     }
-    no_recursive
+    hash2
     {
-        
+        branch_clusterization_params
+        {
+            hash_dist:b = true
+            EV_hasing_cells:i = 3
+        }
+    }
+    hash3
+    {
+        branch_clusterization_params
+        {
+            hash_dist:b = true
+            EV_hasing_cells:i = 7
+        }
     }
 }

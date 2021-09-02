@@ -26,6 +26,7 @@ public:
     void set_point_light(glm::vec3 pos, float strength);
     void set_directed_light(glm::vec3 direction, float strength);
     float get_occlusion_voxel(glm::ivec3 voxel);
+    float get_occlusion_voxel_unsafe(int x, int y, int z);
     float get_occlusion(glm::vec3 pos);
     float get_occlusion_view_ray(glm::vec3 pos, glm::vec3 light);
     float get_occlusion_view_ray(glm::vec3 pos);

@@ -118,6 +118,12 @@ float LightVoxelsCube::get_occlusion_voxel(glm::ivec3 voxel)
     else 
         return 1e9;
 }
+
+float LightVoxelsCube::get_occlusion_voxel_unsafe(int x, int y, int z)
+{
+    return voxels[v_to_i(x, y, z)];
+}
+
 glm::vec3 LightVoxelsCube::get_center()
 {
     return center;

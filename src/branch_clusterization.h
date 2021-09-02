@@ -13,6 +13,9 @@ struct ClusterizationParams
     float light_importance = 0.4;
     float voxels_size_mult = 1/2.5;
     bool voxelized_structure = false;
+    bool hash_dist = false;
+    int EV_hasing_cells = 5;
+    int EV_hasing_voxels_per_cell = 25; 
     float structure_voxels_size_mult = 1/2.5;
     int ignore_structure_level = 1000;
     int min_clusters = 1;
@@ -83,6 +86,8 @@ public:
         glm::mat4 transform;
         std::vector<LightVoxelsCube *> leavesDensity;
         std::vector<LightVoxelsCube *> voxelizedStructures;
+        std::vector<std::vector<float>> hashes;
+        void set_eigen_values_hash(LightVoxelsCube *voxels, std::vector<float> &hash, int cells, int voxels_per_cell, int sz);
         void set_occlusion(Branch *b, LightVoxelsCube *light);
         BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform);
         ~BranchWithData();

@@ -602,8 +602,8 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         {
             logerr("ERROR %f %f %f",a,ML,MS);
         }
-        if (branches[i].level == 0)
-            logerr("dist_simple[%d %d] = %f %f %f",i,j,a, ML, MS);
+        //if (branches[i].level == 0)
+        //    logerr("dist_simple[%d %d] = %f %f %f",i,j,a, ML, MS);
         return vec2(a*ML + (1-a)*MS,MS);
     }
     void GPUClusterizationHelper::calculate_dist(int _i, int _j)
@@ -639,8 +639,8 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
 
         dd_r(i,j) = (2*PI*rot)/params.bwd_rotations;
         dd_dist(i,j) = min_dist;
-        if (branches[i].level == 0)
-            logerr("dist[%d %d] = %f",i,j,min_dist);
+        //if (branches[i].level == 0)
+        //    logerr("dist[%d %d] = %f",i,j,min_dist);
     }
     void GPUClusterizationHelper::setup_buffers()
     {
