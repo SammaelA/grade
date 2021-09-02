@@ -4,6 +4,10 @@
         branch_clusterization_params
         {
             hash_dist:b = true
+            EV_hasing_cells:i = 5
+            EV_hasing_voxels_per_cell:i = 15
+            light_importance:r = 0
+            voxelized_structure:b = true
         }
     }
     hash2
@@ -11,7 +15,10 @@
         branch_clusterization_params
         {
             hash_dist:b = true
-            EV_hasing_cells:i = 3
+            EV_hasing_cells:i = 5
+            EV_hasing_voxels_per_cell:i = 15
+            light_importance:r = 0.5
+            voxelized_structure:b = true
         }
     }
     hash3
@@ -19,7 +26,10 @@
         branch_clusterization_params
         {
             hash_dist:b = true
-            EV_hasing_cells:i = 7
+            EV_hasing_cells:i = 5
+            EV_hasing_voxels_per_cell:i = 15
+            light_importance:r = 1
+            voxelized_structure:b = true
         }
     }
 }

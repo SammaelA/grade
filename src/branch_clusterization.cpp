@@ -81,7 +81,31 @@ inline float L2_dist(std::vector<float> h1, std::vector<float> h2)
         return sqrt(a);
     }
 }
+inline float L1_dist(std::vector<float> h1, std::vector<float> h2)
+{
+    if (h1.size() != h2.size())
+    {
+        logerr("size of feature vectors mismatch %d %d",h1.size(), h2.size());
+        return 1000;
+    }
+    else
+    {
+        double a = 0, b = 0, c = 0;
+        for (int i = 0;i<h1.size();i++)
+        {
+            b += SQR(h1[i]);
+            c += SQR(h2[i]);
+        }
+        b = sqrt(b);
+        c = sqrt(c);
+        for (int i = 0;i<h1.size();i++)
+        {
+            a += abs(h1[i]/b - h2[i]/c);
+        }
 
+        return a;
+    }
+}
 inline float AS_branch_min_dist(float part_min_dist, int num_quntile)
 {
     return part_min_dist / (1 + optimization_quantiles[num_quntile].first);
@@ -613,6 +637,8 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
         }
     }
     dist_calls = 0;
+    if (clusterizationParams.average_cluster_size_goal > 1)
+        clusterizationParams.max_individual_dist = 1000;
     prepare_ddt();
     if (!need_only_ddt)
     {
@@ -714,6 +740,7 @@ Clusterizer::ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clus
 }
 void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
 {
+    int initial_clusters = current_clusters.size();
     std::list<Dist> P_delta;
     float delta;
     Dist min = get_P_delta(n, current_clusters, P_delta, delta);
@@ -740,6 +767,11 @@ void Clusterizer::ClusterDendrogramm::make(int n, int clusters_num)
             //logerr("breaking clusterization %f %d %d %d",min.d, (int)clusterizationParams.max_individual_dist, (int)(current_clusters.size()), clusters_num);
             break;
             //makes no sense to merge clusters with maximum distance between them.
+        }
+        else if ((float)initial_clusters/current_clusters.size() >= clusterizationParams.average_cluster_size_goal &&
+                 clusterizationParams.average_cluster_size_goal > 1)
+        {
+            break;
         }
         current_clusters.remove(min.U);
         current_clusters.remove(min.V);
@@ -832,7 +864,7 @@ void Clusterizer::prepare_ddt()
                 int min_rot = 0;
                 for (int r=0;r<rots;r++)
                 {
-                    float dist = 0.8*L2_dist(current_data->branches[i].hashes.front(),current_data->branches[j].hashes[r]);
+                    float dist = Hash::L2_dist(current_data->branches[i].hashes.front(),current_data->branches[j].hashes[r]);
                     if (dist < min_dist)
                     {
                         min_dist = dist;
@@ -871,6 +903,7 @@ void ClusterizationParams::load_from_block(Block *b)
     EV_hasing_voxels_per_cell = b->get_int("EV_hasing_voxels_per_cell",EV_hasing_voxels_per_cell);
     EV_hasing_cells = b->get_int("EV_hasing_cells",EV_hasing_cells);
     structure_voxels_size_mult = b->get_double("structure_voxels_size_mult",structure_voxels_size_mult);
+    average_cluster_size_goal = b->get_double("average_cluster_size_goal",average_cluster_size_goal);
     b->get_arr("weights",weights, true);
     b->get_arr("light_weights",light_weights, true);
     b->get_arr("r_weights",r_weights, true);
@@ -923,8 +956,11 @@ Clusterizer::BranchWithData::BranchWithData(Branch *_original, Branch *_b, int _
                                 0.5f*canonical_bbox.x/sz,
                                 1, 1);
                 
-                hashes.emplace_back();
-                voxelize_branch(b, vb, 1);
+                hashes.back().start_points.push_back(hashes.back().data.size());
+                hashes.back().weights.emplace_back();
+                hashes.back().weights[0] = clusterizationParams.light_importance;
+                hashes.back().weights[1] = 1 - clusterizationParams.light_importance;
+                voxelize_branch(b, vb, clusterizationParams.ignore_structure_level);
                 set_eigen_values_hash(vb, hashes.back(), cells, sz_per_cell, sz);
 
                 delete vb;
@@ -1039,7 +1075,7 @@ std::vector<Real> eigenvalues(const Real A[3][3])
     return eigs;
 }
 
-void Clusterizer::BranchWithData::set_eigen_values_hash(LightVoxelsCube *voxels, std::vector<float> &hash, 
+void Clusterizer::BranchWithData::set_eigen_values_hash(LightVoxelsCube *voxels, Hash &hash, 
                                                         int cells, int voxels_per_cell, int sz)
 {
     for (int x_0 = -sz; x_0<sz; x_0+=voxels_per_cell)
@@ -1113,9 +1149,9 @@ void Clusterizer::BranchWithData::set_eigen_values_hash(LightVoxelsCube *voxels,
                     e_3 = e_vals[2];
                 }
 
-                hash.push_back(e_1);
-                hash.push_back(e_2);
-                hash.push_back(e_3);
+                hash.data.push_back(e_1);
+                hash.data.push_back(e_2);
+                hash.data.push_back(e_3);
             }
         }
     }
@@ -1195,10 +1231,12 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
     {
         ClusterizationParams br_cp;
         br_cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
-        br_cp.ignore_structure_level = 2;
-        br_cp.delta = 0.3;
-        br_cp.max_individual_dist = 0.57;
+        br_cp.ignore_structure_level = 3;
+        br_cp.delta = 0.2;
+        br_cp.light_importance = 0.2;
+        br_cp.max_individual_dist = 0.53;
         br_cp.bwd_rotations = 4;
+        br_cp.average_cluster_size_goal = 25;
         params = br_cp;
     }
     else if (step == ClusteringStep::TREES)

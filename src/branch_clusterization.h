@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include "tinyEngine/save_utils/blk.h"
+#include "hash.h"
 
 struct ClusterizationParams
 {
@@ -19,6 +20,7 @@ struct ClusterizationParams
     float structure_voxels_size_mult = 1/2.5;
     int ignore_structure_level = 1000;
     int min_clusters = 1;
+    float average_cluster_size_goal = 0;
     float max_individual_dist = 0.95;
     bool different_types_tolerance = true;
     std::vector<float> weights = std::vector<float>{5000,800,40,1,0.01};
@@ -86,8 +88,8 @@ public:
         glm::mat4 transform;
         std::vector<LightVoxelsCube *> leavesDensity;
         std::vector<LightVoxelsCube *> voxelizedStructures;
-        std::vector<std::vector<float>> hashes;
-        void set_eigen_values_hash(LightVoxelsCube *voxels, std::vector<float> &hash, int cells, int voxels_per_cell, int sz);
+        std::vector<Hash> hashes;
+        void set_eigen_values_hash(LightVoxelsCube *voxels, Hash &hash, int cells, int voxels_per_cell, int sz);
         void set_occlusion(Branch *b, LightVoxelsCube *light);
         BranchWithData(Branch *_original, Branch *_b, int _base_cluster_id, int levels, int _id, glm::mat4 _transform);
         ~BranchWithData();
