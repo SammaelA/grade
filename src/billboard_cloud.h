@@ -79,7 +79,8 @@ protected:
     AtlasParams set_atlas_params(Quality quality, int cnt);
     void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res);
     void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
-    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
+    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale,
+                          bool monochrome = false);
     void create_billboard(std::vector<TreeTypeData> &ttd, std::map<int, InstanceDataArrays> &all_transforms,
                           std::vector<Branch> &brs, BBox &min_box, Visualizer &tg, int id, Billboard &bill, float leaf_scale);
     static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);

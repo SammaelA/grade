@@ -180,7 +180,7 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
     billboards.push_back(bill);*/
 }
 void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num,
-                                         Billboard &bill, float leaf_scale)
+                                         Billboard &bill, float leaf_scale, bool monochrome)
 {
     if (num < 0)
     {
@@ -202,7 +202,8 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
 
-    for (int k = 0; k<atlas->tex_count();k++)
+    int tex_count = monochrome ? 1 : atlas->tex_count();
+    for (int k = 0; k<tex_count;k++)
     {
         atlas->target(num,k);
         rendererToTexture.use();
@@ -211,8 +212,10 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
         rendererToTexture.texture("tex", ttd.wood);
         rendererToTexture.uniform("model", transl * rot * bm.model);
         rendererToTexture.uniform("projectionCamera", result);
-        rendererToTexture.uniform("state", k);
+        rendererToTexture.uniform("state", monochrome ? -1 : k);
         rendererToTexture.uniform("projection_zero", rb.z);
+        if (monochrome)
+            rendererToTexture.uniform("fixed_color",glm::vec4(1,0,0,1));
         bm.render(GL_TRIANGLES);
 
         bm.construct(_c_leaves);
@@ -226,6 +229,8 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
         rendererToTexture.uniform("model", transl * rot * bm.model);
         rendererToTexture.uniform("projectionCamera", result);
         rendererToTexture.uniform("projection_zero", rb.z);
+        if (monochrome)
+            rendererToTexture.uniform("fixed_color",glm::vec4(0,1,0,1));
         bm.render(GL_TRIANGLES);
 
         billboards.push_back(bill);

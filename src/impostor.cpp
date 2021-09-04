@@ -5,10 +5,18 @@ using glm::vec3;
 using glm::vec4;
 using glm::mat4;
 
-void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &cluster, 
+                            std::vector<TreeTypeData> &_ttd, ImpostorsData *data, std::list<Impostor>::iterator &impostor)
+{
+    ImpostorGenerationParams params;
+    params.quality = _quality;
+    prepare(params, branch_level, cluster, _ttd, data, impostor);
+}
+
+void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                             ImpostorsData *data, std::list<Impostor>::iterator &impostor)
 {
-    quality = _quality;
+    quality = params.quality;
     static const int slices_n = 8;
     if (!data)
     {
@@ -28,17 +36,17 @@ void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &clu
     {
         atlas = &(data->atlas);
     }
-    quality = _quality;
+
     ttd = _ttd;
     std::vector<ClusterData> clusters = {cluster};
-    prepare(branch_level, clusters, data);
+    prepare(branch_level, clusters, params, data);
     auto it = data->impostors.end();
     it--;
     impostor = it;
     atlas = nullptr;
 }
 
-void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters,
+void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters, ImpostorGenerationParams &params,
                             ImpostorsData *data)
 {
     if (!data)
@@ -103,7 +111,7 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     }
     for (Branch &b : base_branches)
     {
-        make_impostor(b,*(its[proj.at(b.mark_A)]),slices_n); 
+        make_impostor(b,*(its[proj.at(b.mark_A)]),params); 
     }
 
     data->valid = !data->impostors.empty();
@@ -112,43 +120,53 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     //for (int i=0;i<data->atlas.tex_count();i++)
     //    glGenerateTextureMipmap(data->atlas.tex(i).texture);
 }
-void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
+void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, ImpostorGenerationParams &params)
 {
     BBox bbox = get_bbox(&br,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
     imp.bcyl.center = bbox.position + 0.5f*bbox.sizes;
     imp.bcyl.r = 0.5*sqrt(SQR(bbox.sizes.x) + SQR(bbox.sizes.z));
     imp.bcyl.h_2 = 0.5*bbox.sizes.y;
 
-    glm::mat4 rot = glm::rotate(glm::mat4(1.0f),2*PI/slices_n,glm::vec3(0,1,0));
-    glm::vec4 a = glm::vec4(imp.bcyl.r,0,0,1);
+    glm::mat4 rot = glm::rotate(glm::mat4(1.0f),2*PI/params.slices_n,glm::vec3(0,1,0));
+    glm::mat4 base_rot = glm::rotate(glm::mat4(1.0f),params.add_rotation_y,glm::vec3(0,1,0));
+    glm::vec4 a = base_rot*glm::vec4(imp.bcyl.r,0,0,1);
     glm::vec3 b = glm::vec3(0,imp.bcyl.h_2,0);
-    glm::vec4 c = glm::vec4(0,0,imp.bcyl.r,1);
+    glm::vec4 c = base_rot*glm::vec4(0,0,imp.bcyl.r,1);
 
     BBox cur;
-    cur.position = imp.bcyl.center - glm::vec3(a) - b - glm::vec3(c);
+    mat4 rot_inv,in_rot;
+    int num;
+    vec3 base_joint;
+    Billboard bill;
+    Visualizer tg;
+    if (params.need_top_view)
+    {
+        cur.position = imp.bcyl.center - glm::vec3(a) - b - glm::vec3(c);
 
-    cur.sizes = glm::vec3(2 * length(c), 2 * length(a), 2 * length(b));
-    cur.a = glm::normalize(glm::vec3(2.0f*c));
-    cur.b = glm::normalize(glm::vec3(2.0f*a));
-    cur.c = glm::normalize(glm::vec3(2.0f*b));
+        cur.sizes = glm::vec3(2 * length(c), 2 * length(a), 2 * length(b));
+        cur.a = glm::normalize(glm::vec3(2.0f*c));
+        cur.b = glm::normalize(glm::vec3(2.0f*a));
+        cur.c = glm::normalize(glm::vec3(2.0f*b));
 
-    mat4 rot_inv(vec4(cur.a, 0), vec4(cur.b, 0), vec4(cur.c, 0), vec4(0, 0, 0, 1));
-    mat4 in_rot = inverse(rot_inv);
-    cur.position = in_rot * vec4(cur.position,1);
-    int num = atlas->add_tex();
-    vec3 base_joint = vec3(0, 0, 0);
-    Visualizer tg(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
-    Billboard bill(cur, num, br.mark_A, 0, base_joint);
-    create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 1.15);
+        rot_inv = mat4(vec4(cur.a, 0), vec4(cur.b, 0), vec4(cur.c, 0), vec4(0, 0, 0, 1));
+        in_rot = inverse(rot_inv);
+        cur.position = in_rot * vec4(cur.position,1);
 
-    bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
-    bill.positions[1] = imp.bcyl.center + glm::vec3(a) + glm::vec3(c);
-    bill.positions[2] = imp.bcyl.center - glm::vec3(a) - glm::vec3(c);
-    bill.positions[3] = imp.bcyl.center + glm::vec3(a) - glm::vec3(c);
+        num = atlas->add_tex();
+        base_joint = vec3(0, 0, 0);
+        tg = Visualizer(ttd[br.type_id].wood, ttd[br.type_id].leaf, nullptr);
+        bill = Billboard(cur, num, br.mark_A, 0, base_joint);
+        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, params.leaf_size_mult);
 
-    imp.top_slice = bill;
+        bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
+        bill.positions[1] = imp.bcyl.center + glm::vec3(a) + glm::vec3(c);
+        bill.positions[2] = imp.bcyl.center - glm::vec3(a) - glm::vec3(c);
+        bill.positions[3] = imp.bcyl.center + glm::vec3(a) - glm::vec3(c);
 
-    for (int i=0;i<slices_n;i++)
+        imp.top_slice = bill;
+    }
+
+    for (int i=0;i<params.slices_n;i++)
     {
         cur.position = imp.bcyl.center - glm::vec3(a) - b - glm::vec3(c);
         cur.sizes = glm::vec3(2*length(a),2*length(b),2*length(c));
@@ -161,7 +179,7 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, int slices_n)
         num = atlas->add_tex();
 
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
-        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, 1.15);
+        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, params.leaf_size_mult, params.fixed_colors);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) - b;
         bill.positions[1] = imp.bcyl.center + glm::vec3(a) - b;

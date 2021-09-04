@@ -125,7 +125,7 @@ void TextureAtlas::remove_tex(int pos)
     occupied.set(pos, false);
     curNum = MIN(curNum, pos);
 }
-glm::vec4 TextureAtlas::tc_transform(int num)
+glm::vec4 TextureAtlas::tc_transform(int num) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
@@ -135,7 +135,7 @@ glm::vec4 TextureAtlas::tc_transform(int num)
 
     return glm::vec4(tsc.x,tsc.y,tsh.x,tsh.y);
 }
-void TextureAtlas::process_tc(int num, glm::vec3 &tc)
+void TextureAtlas::process_tc(int num, glm::vec3 &tc) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
@@ -177,7 +177,7 @@ bool TextureAtlas::clear()
     glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
-glm::mat4 TextureAtlas::tex_transform(int num)
+glm::mat4 TextureAtlas::tex_transform(int num) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
@@ -274,7 +274,7 @@ TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
     valid = atlas.valid;
     bind(0,0);
 }
-Texture &TextureAtlas::tex(int type)
+Texture &TextureAtlas::tex(int type) 
 {
     if (type == 0)
         return colorTex;
@@ -335,10 +335,12 @@ void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
 
 unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, int tex_id)
 {
+    int l = tex_id / (gridHN*gridWN);
+    tex_id = tex_id % (gridHN*gridWN);
     int grid_h = tex_id / gridWN;
     int grid_w = tex_id % gridWN;
 
-    int id = 4*((hh + grid_h*slice_h)*w + (ww + grid_w*slice_w)) + (int)chan;
+    int id = 4*w*h*l + 4*((hh + grid_h*slice_h)*w + (ww + grid_w*slice_w)) + (int)chan;
 
     return raw_data[id];
 }
@@ -358,17 +360,22 @@ TextureAtlasRawData::TextureAtlasRawData()
     raw_data = nullptr;
     valid = false;
 }
-TextureAtlasRawData::TextureAtlasRawData(TextureAtlas &atlas)
+TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
 {
-    w = atlas.width;
-    h = atlas.height;
-    gridWN = atlas.gridWN;
-    gridHN = atlas.gridHN;
+    auto sizes = atlas.get_sizes();
+    w = sizes.x;
+    h = sizes.y;
+    gridWN = sizes.z;
+    gridHN = sizes.w;
     slice_h = h/gridHN;
     slice_w = w/gridWN;
-    slices = atlas.layers * atlas.gridWN * atlas.gridHN;
+    layers = atlas.layers_count();
+    logerr("sz %d %d %d %d ",w, h, sizes.x);
+    slices = layers * gridWN * gridHN;
+        logerr("create %d",4*w*h*layers+1);
     //raw_data = safe_new<unsigned char>(4*w*h*layers, "tex_atlas_raw_data");
     raw_data = new unsigned char[4*w*h*layers+1];
+    logerr("done %d",4*w*h*layers+1);
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
 
     glGetTexImage(GL_TEXTURE_2D_ARRAY,
@@ -383,8 +390,8 @@ TextureAtlasRawData::TextureAtlasRawData(TextureAtlas &atlas)
 void TextureAtlasRawData::clear()
 {
     //safe_delete<unsigned char>(raw_data, "tex_atlas_raw_data");
-    //if (raw_data)
-    //    delete raw_data;
+    if (raw_data)
+        delete[] raw_data;
     raw_data = nullptr;
     valid = false;
 }

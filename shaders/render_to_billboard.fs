@@ -7,7 +7,7 @@ out vec4 fragColor;
 
 uniform sampler2D tex;
 uniform int state;
-
+uniform vec4 fixed_color;
 void main(void) 
 {
   fragColor = texture(tex,ex_Tex);
@@ -15,4 +15,6 @@ void main(void)
     discard;
   if (state == 1)
     fragColor = vec4(ex_Normal,projection_error_packed);
+  else if (state == -1)
+    fragColor = fixed_color;
 }

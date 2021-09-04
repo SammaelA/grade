@@ -6,6 +6,9 @@
 #include "tinyEngine/utility.h"
 #include "GPU_clusterization.h"
 #include <boost/math/constants/constants.hpp>
+#include "impostor.h"
+#include "texture_manager.h"
+
 int dist_calls = 0;
 using namespace glm;
 #define DEBUG 0
@@ -570,9 +573,17 @@ void Clusterizer::get_base_clusters(Tree *t, int count, int layer, std::vector<C
     }
     current_data = nullptr;
 }
-void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
+void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters, std::vector<TreeTypeData> &ttd)
 {
     int i = 0;
+    ImpostorBaker ib;
+    ImpostorBaker::ImpostorGenerationParams params;
+    params.fixed_colors = true;
+    params.leaf_size_mult = 1;
+    params.need_top_view = false;
+    params.quality = Quality::ULTRALOW;
+    params.slices_n = clusterizationParams.bwd_rotations;
+
     for (ClusterData &cd : base_clusters)
     {
         if (!cd.base || (cd.ACDA.originals.empty()) || cd.IDA.transforms.empty())
@@ -595,6 +606,8 @@ void Clusterizer::set_branches(std::vector<ClusterData> &base_clusters)
                 rot = SC_inv * rot * transl;
                 nb->transform(rot, r_transform);
                 current_data->branches.push_back(BranchWithData(&b, nb, i, MAX_BRANCH_LEVELS, current_data->branches.size(), inverse(rot)));
+                if (clusterizationParams.ignore_structure_level >= 2)
+                    ib.prepare(params,1,cd,ttd,current_data->self_impostors_data,current_data->branches.back().self_impostor);
             }
             i++;
     }
@@ -615,17 +628,26 @@ Clusterizer::~Clusterizer()
         delete current_data;
 }
 void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, 
-                             std::vector<ClusterData> &clusters, bool need_only_ddt)
+                             std::vector<ClusterData> &clusters, std::vector<TreeTypeData> &ttd, bool need_only_ddt)
 {
     ClusterizationTmpData *data = new ClusterizationTmpData();
     data->light_weights = params.light_weights;
     data->weights = params.weights;
-
+    data->self_impostors_data = new ImpostorsData();
     current_data = data;
     Cluster::currentClusterizer = this;
     clusterizationParams = params;
 
-    set_branches(base_clusters);
+    set_branches(base_clusters, ttd);
+
+    float *f = new float[10000];
+    if (clusterizationParams.ignore_structure_level >= 2)
+    {
+        logerr("sz %d",data->self_impostors_data->atlas.get_sizes().x);
+        data->self_impostors_raw_atlas = new TextureAtlasRawData(data->self_impostors_data->atlas);
+        logerr("sz %d",data->self_impostors_data->atlas.get_sizes().x);
+        textureManager.save_bmp(data->self_impostors_data->atlas.tex(0),"monochrome_atlas");
+    }
     if (clusterizationParams.different_types_tolerance == false && lvc_count < 10)
     {
         for (auto &br : current_data->branches)
@@ -636,6 +658,7 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
                 break;
         }
     }
+    logerr("branches %d",current_data->branches.size());
     dist_calls = 0;
     if (clusterizationParams.average_cluster_size_goal > 1)
         clusterizationParams.max_individual_dist = 1000;
@@ -654,13 +677,21 @@ void Clusterizer::clusterize(ClusterizationParams &params, std::vector<ClusterDa
         b.clear();
     }
     current_data->branches.clear();
+
+    if (current_data->self_impostors_data)
+        delete current_data->self_impostors_data;   
+    if (current_data->self_impostors_raw_atlas)
+        delete current_data->self_impostors_raw_atlas;
+
+    delete[] f;
 }
 void Clusterizer::visualize_clusters(DebugVisualizer &debug, bool need_debug)
 {
     std::vector<ClusterData> base_clusters;
     std::vector<ClusterData> _clusters;
     ClusterizationParams params;
-    clusterize(params, base_clusters, _clusters);
+    std::vector<TreeTypeData> types;
+    clusterize(params, base_clusters, _clusters, types);
 
     if (!need_debug)
         return;
@@ -826,7 +857,7 @@ void Clusterizer::prepare_ddt()
     {
         current_data->pos_in_table_by_id.emplace(current_data->branches[i].original->self_id,i);
     }
-    if (!clusterizationParams.hash_dist)
+    if (!clusterizationParams.hash_dist && false)
     {
         GPUClusterizationHelper gpuch;
         gpuch.prepare_ddt(current_data->branches,current_data->ddt,clusterizationParams);
@@ -879,6 +910,8 @@ void Clusterizer::prepare_ddt()
                 d.dist = min_dist;
                 d.rotation = (2*PI*min_rot)/rots;
                 //logerr("%d %d after %f",i,j,a.from);
+                if (clusterizationParams.ignore_structure_level >= 2)
+                    a = dist_impostor(current_data->branches[i],current_data->branches[j],0,1,&d);
             }
             current_data->ddt.set(i,j,a,d);
         }
@@ -1251,4 +1284,99 @@ void Clusterizer::set_default_clustering_params(ClusterizationParams &params, Cl
         cp.different_types_tolerance = false;
         params = cp;
     }
+}
+int cnt = 0;
+float imp_dst(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *raw)
+{
+
+    int diff = 0;
+    int sum = 0;
+    unsigned char *data = nullptr;
+    if (cnt<0)
+    {
+        data = new unsigned char[4*w*h];
+        cnt++;
+    }
+    for (int i = 0; i < w; i++)
+    {
+        for (int j = 0; j < h; j++)
+        {
+            if (data)
+            {
+                data[4*(w*i + j)] = 0;
+                data[4*(w*i + j) + 1] = 0;
+                data[4*(w*i + j) + 2] = 0;
+                data[4*(w*i + j) + 3] = 255;
+            }
+            unsigned char a1 = raw->get_pixel_uc(i, j, Channel::A, b1.id);
+            unsigned char a2 = raw->get_pixel_uc(i, j, Channel::A, b2.id);
+            if (a1 == 0 && a2 == 0)
+                continue;
+            else if (a1 > 0 && a2 > 0)
+            {
+                if (data)
+                {
+                    data[4*(w*i + j)] = 255;
+                    data[4*(w*i + j) + 1] = 255;
+                    data[4*(w*i + j) + 2] = 255;
+                }
+                sum += 2;
+                unsigned char r1 = raw->get_pixel_uc(i, j, Channel::R, b1.id);
+                unsigned char r2 = raw->get_pixel_uc(i, j, Channel::R, b2.id);
+                if (r1 != r2)
+                {
+                    diff++;
+                }
+            }
+            else
+            {
+                if (data)
+                {
+                    data[4*(w*i + j)] = a1;
+                    data[4*(w*i + j) + 1] = a2;
+                }
+                diff += 2;
+                sum += 2;
+            }
+        }
+    }
+    if (data)
+    {
+        textureManager.save_bmp_raw(data,w,h,4,"imp_debug");
+        delete data;
+    }
+    //logerr("%d %d %d %d %f",w,h,diff,sum,(float)(diff/(sum+1)));
+    return (double)diff/(sum+1);
+}
+Clusterizer::Answer Clusterizer::dist_impostor(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
+{
+    if (!current_data->self_impostors_raw_atlas || !current_data->self_impostors_data)
+        return Answer(true,1000,1000);
+    glm::ivec4 sizes = current_data->self_impostors_data->atlas.get_sizes();
+    int w = sizes.x/sizes.z;
+    int h = sizes.y/sizes.w; 
+    
+    if (bwd1.self_impostor->slices.empty() || bwd1.self_impostor->slices.size() != bwd2.self_impostor->slices.size())
+        return Answer(true,1000,1000);
+    float min_av_dist = 1;
+    int best_rot = 0;
+    int sz = bwd1.self_impostor->slices.size();
+    for (int r=0;r<sz;r++)
+    {
+        float av_dst = 0;
+        for (int i=0;i<sz;i++)
+        {
+            av_dst += imp_dst(w,h,bwd1.self_impostor->slices[i],bwd2.self_impostor->slices[(i + r)%sz],
+                              current_data->self_impostors_raw_atlas);
+        }
+        av_dst /= sz;
+        if (av_dst < min_av_dist)
+        {
+            min_av_dist = av_dst;
+            best_rot = r;
+            logerr("new best %f",min_av_dist);
+        }
+    }
+    data->rotation = (2*PI*best_rot)/sz;
+    return Answer(true,min_av_dist,min_av_dist);
 }

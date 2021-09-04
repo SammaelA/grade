@@ -302,7 +302,7 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
     {
         std::vector<ClusterData> clusters_base;
         tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
-        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters);
+        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types);
     }
     else
     {
@@ -348,7 +348,7 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
                 std::map<long, int> old_cl_poses;
                 BitVector remains;
                 remains.resize(prev_size, false);
-                tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters);
+                tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters, ggd.types);
                 int new_size = packingLayers[i + 1].clusters.size();
 
                 for (int j = 0; j < prev_size; j++)
@@ -726,7 +726,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
             tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
             tr_cp.max_individual_dist = 0.4;
             tr_cp.bwd_rotations = 4;
-            tr_cl.clusterize(tr_cp, trunks_clusters_base, trunks_clusters);
+            tr_cl.clusterize(tr_cp, trunks_clusters_base, trunks_clusters, ggd.types);
         }
         else
         {
@@ -755,9 +755,9 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
             cp.max_individual_dist = ggd.clustering_max_individual_distance;
             cp.bwd_rotations = 4;
 
-            cl.clusterize(cp, branches_clusters_base, branches_clusters);
-            cl.clusterize(cp, branches_clusters, branches_clusters_base);
-            cl.clusterize(cp, branches_clusters_base, branches_clusters);
+            cl.clusterize(cp, branches_clusters_base, branches_clusters, ggd.types);
+            cl.clusterize(cp, branches_clusters, branches_clusters_base, ggd.types);
+            cl.clusterize(cp, branches_clusters_base, branches_clusters, ggd.types);
         }
         else
         {
@@ -798,7 +798,7 @@ void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugV
             cp.bwd_rotations = 4;
             cp.light_importance = 0.8;
             cp.different_types_tolerance = false;
-            cl2.clusterize(cp, full_tree_clusters_base, full_tree_clusters);
+            cl2.clusterize(cp, full_tree_clusters_base, full_tree_clusters, ggd.types);
         }
         else
         {

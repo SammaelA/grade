@@ -22,7 +22,7 @@ public:
     unsigned char get_pixel_uc_safe(int w, int h, Channel chan, int tex_id);
     float get_pixel(int w, int h, Channel chan, int tex_id);
     TextureAtlasRawData();
-    TextureAtlasRawData(TextureAtlas &atlas);
+    TextureAtlasRawData(const TextureAtlas &atlas);
     ~TextureAtlasRawData();
     void clear();
     
@@ -60,18 +60,18 @@ public:
     void set_grid(int w, int h, bool resizable = true);
     int add_tex();
     void remove_tex(int pos);
-    void process_tc(int num, glm::vec3 &tc);
-    glm::vec4 tc_transform(int num);
+    void process_tc(int num, glm::vec3 &tc) const;
+    glm::vec4 tc_transform(int num) const;
     bool target(int num, int type);
-    glm::mat4 tex_transform(int num);
-    glm::ivec4 get_sizes() { return glm::ivec4(width, height, gridWN, gridHN); }
+    glm::mat4 tex_transform(int num) const;
+    glm::ivec4 get_sizes() const { return glm::ivec4(width, height, gridWN, gridHN); }
     bool clear();
     Texture &tex(int type);
     void gen_mipmaps();
-    int layers_count() {return layers;}
-    int tex_count() {return 2;}
-    int capacity() { return gridWN*gridHN*layers;}
-    bool is_valid() {return valid && (capacity() > 0);}
+    int layers_count() const {return layers;}
+    int tex_count() const {return 2;}
+    int capacity() const { return gridWN*gridHN*layers;}
+    bool is_valid() const {return valid && (capacity() > 0);}
     void destroy();
 private:
     bool bind(int layer, int type);
