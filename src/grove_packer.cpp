@@ -278,7 +278,8 @@ bool is_valid_tree(::Tree &t)
 
 void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                 std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
-                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp)
+                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp,
+                bool visualize_clusters)
 {
     bool need_something = ggd.task & (GenerationTask::SYNTS | GenerationTask::CLUSTERIZE) ||
                           ((ggd.task & GenerationTask::MODELS) && models) ||
@@ -302,7 +303,7 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
     {
         std::vector<ClusterData> clusters_base;
         tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
-        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types);
+        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types, false, visualize_clusters);
     }
     else
     {
@@ -525,13 +526,14 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
     }
 }
 
-void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
+void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                                     bool visualize_clusters)
 {
     logerr("is has %d",clusterizationParams.hash_dist);
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
     if (ggd.trees_count <= max_trees_in_patch)
     {
-        add_trees_to_grove_internal(ggd, grove, trees_external, h);
+        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters);
     }
     else
     {
@@ -540,13 +542,14 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
         ggd.trees_count = max_trees_in_patch;
         while (start_pos < trees_count)
         {
-            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h);
+            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h, visualize_clusters);
             start_pos+=max_trees_in_patch;
         }
         ggd.trees_count = trees_count;
     }
 }
-void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h)
+void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                                              bool visualize_clusters)
 {
     if (!inited)
         init();
@@ -622,13 +625,13 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
 
     pack_layer(ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,
-               tr_cp, 0, 0, true, false, false);
+               tr_cp, 0, 0, true, false, false, false);
 
     pack_layer(ggd, grove, trees_external, h, packingLayersBranches, post_voxels,
-               br_cp, 1, 1000, true, true, false);
+               br_cp, 1, 1000, true, true, false, visualize_clusters);
 
     pack_layer(ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
-               cp, 0, 1000, false, false, true);
+               cp, 0, 1000, false, false, true, false);
 
     transform_all_according_to_root(grove);
     

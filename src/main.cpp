@@ -73,6 +73,7 @@ bool loading_needed = false;
 bool print_perf = false;
 bool only_gen = false;
 bool visualize_voxels = false;
+bool visualize_clusters = false;
 bool visualize_initial_voxels = false;
 bool statistics_run = false;
 bool gltf_export = false;
@@ -137,6 +138,11 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-visualize_voxels")
     {
       visualize_voxels = true;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-visualize_clusters")
+    {
+      visualize_clusters = true;
       k++;
     }
     else if (std::string(argv[k]) == "-visualize_initial_voxels")
@@ -267,7 +273,7 @@ void generate_grove()
   ::Tree *trees = new ::Tree[ggd.trees_count];
   gen->create_grove(ggd, trees, *data.heightmap);
   logerr("%d branches",trees[0].branchHeaps[1]->branches.size());
-  packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
+  packer.add_trees_to_grove(ggd, grove, trees, data.heightmap, visualize_clusters);
   delete[] trees;
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
@@ -734,7 +740,7 @@ int main(int argc, char *argv[])
   Tiny::view.interface = [&]()
   {
     bool p = true;
-    ImGui::ShowDemoWindow(&p);
+    //ImGui::ShowDemoWindow(&p);
   };
 
   Tiny::loop([&]() {});

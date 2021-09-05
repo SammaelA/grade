@@ -34,14 +34,17 @@ class GrovePacker
 public:
     void pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug, 
                     ::Tree *trees_external, Heightmap *h, bool visualize_voxels);
-    void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
+    void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                            bool visualize_clusters = false);
     void init(Block &packing_params_block);
     std::vector<Clusterizer *> saved_clusterizers;
 protected:
-    void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h);
+    void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                                     bool visualize_clusters);
     void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                 std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
-                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp);
+                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp,
+                bool visualize_clusters);
     void transform_all_according_to_root(GrovePacked &grove);
     void init();
     std::vector<ClusterPackingLayer> packingLayersBranches = {ClusterPackingLayer()};

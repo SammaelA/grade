@@ -15,6 +15,7 @@ struct ClusterizationParams
     float voxels_size_mult = 1/2.5;
     bool voxelized_structure = false;
     bool hash_dist = false;
+    int leaf_size_mult = 0;
     int EV_hasing_cells = 5;
     int EV_hasing_voxels_per_cell = 25; 
     float structure_voxels_size_mult = 1/2.5;
@@ -211,9 +212,10 @@ public:
     void get_base_clusters(Tree &t, int layer, std::vector<ClusterData> &base_clusters);
     void get_base_clusters(Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters);
     void visualize_clusters(DebugVisualizer &debug, bool need_debug = false);
+    void visualize_clusters(std::string file_name, int w, int h);
     void prepare_ddt();
     void clusterize(ClusterizationParams &params, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
-                    std::vector<TreeTypeData> &ttd, bool need_only_ddt = false);
+                    std::vector<TreeTypeData> &ttd, bool need_only_ddt = false, bool need_visualize_clusters = false);
     ClusterData extract_data(std::vector<ClusterData> &base_clusters, Cluster &cl);
     void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform);
     Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2);

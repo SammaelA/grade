@@ -370,12 +370,9 @@ TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
     slice_h = h/gridHN;
     slice_w = w/gridWN;
     layers = atlas.layers_count();
-    logerr("sz %d %d %d %d ",w, h, sizes.x);
     slices = layers * gridWN * gridHN;
-        logerr("create %d",4*w*h*layers+1);
-    //raw_data = safe_new<unsigned char>(4*w*h*layers, "tex_atlas_raw_data");
     raw_data = new unsigned char[4*w*h*layers+1];
-    logerr("done %d",4*w*h*layers+1);
+
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
 
     glGetTexImage(GL_TEXTURE_2D_ARRAY,
@@ -389,7 +386,6 @@ TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
 }
 void TextureAtlasRawData::clear()
 {
-    //safe_delete<unsigned char>(raw_data, "tex_atlas_raw_data");
     if (raw_data)
         delete[] raw_data;
     raw_data = nullptr;

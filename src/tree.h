@@ -140,6 +140,7 @@ struct Tree
 };
 enum Quality
 {
+    LOW_AS_F = 128,
     ULTRALOW = 256,
     LOW = 400,
     MEDIUM = 600,
