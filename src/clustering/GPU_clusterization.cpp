@@ -1,5 +1,5 @@
 #include "GPU_clusterization.h"
-#include "tinyEngine/TinyEngine.h"
+#include "../tinyEngine/TinyEngine.h"
 
 int min_count = 0;
 double error_full = 0;
@@ -9,8 +9,8 @@ distCompute({"dist_compute.comp"},{})
 {
 
 }
-void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithData> &_branches,
-                                          Clusterizer::DistDataTable &ddt, ClusterizationParams &cp)
+void GPUClusterizationHelper::prepare_ddt(std::vector<BranchWithData *> &_branches,
+                                          DistDataTable &ddt, ClassicStructureSimilarityParams &cp)
 {
 
     branches_size = _branches.size();
@@ -53,19 +53,19 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     dist_data = safe_new<float>(2*branches_size*branches_size, "dist_data");
     if (voxels_needed)
     {
-        glm::ivec3 vsz = _branches.front().leavesDensity.front()->get_vox_sizes();
-        all_voxels_count = branches_size*_branches.front().leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
+        glm::ivec3 vsz = _branches.front()->leavesDensity.front()->get_vox_sizes();
+        all_voxels_count = branches_size*_branches.front()->leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
         all_voxels = safe_new<float>(all_voxels_count + 1, "all_voxels");
     }
     if (voxelized_structure)
     {
-        glm::ivec3 vsz = _branches.front().voxelizedStructures.front()->get_vox_sizes();
-        all_structure_voxels_count = branches_size*_branches.front().voxelizedStructures.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
+        glm::ivec3 vsz = _branches.front()->voxelizedStructures.front()->get_vox_sizes();
+        all_structure_voxels_count = branches_size*_branches.front()->voxelizedStructures.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
         all_structure_voxels = safe_new<float>(all_structure_voxels_count + 1, "all_structure_voxels");
     }
     for (auto &bwd : _branches)
     {
-        fill_branch_data(bwd, voxels_needed, voxelized_structure);
+        fill_branch_data(*bwd, voxels_needed, voxelized_structure);
     }
     int m_pos = positions.size(),m_sti = sticks.size(),m_j = joint_rs.size();
     int m_vox = all_voxels_count + 1,m_bd = branches.size(),m_dd = 2*branches_size*branches_size;
@@ -77,19 +77,19 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
     debugl(13,"Intermediate data allocated %4.2f Mbytes\n",bytes/powf(2,20));
     debugl(13,"preparation finished. Took %u [ms]\n",std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
     int hardness = 0;
-    if ((_branches.front().b->level == 0 && params.ignore_structure_level > 0) ||
+    if ((_branches.front()->b->level == 0 && params.ignore_structure_level > 0) ||
        (params.ignore_structure_level > 2))
     {
         hardness = 1;
     }
-    calculate_distances(hardness, true, false);
+    calculate_distances(hardness, false, false);
 
         for (int i=0;i<branches_size;i++)
         {
             for (int j=0;j<branches_size;j++)
             {    
-                Clusterizer::Answer a;
-                Clusterizer::DistData d;
+                Answer a;
+                DistData d;
                 a.exact = true;
                 a.from = dd_dist(i,j);
                 if (a.from > 0.999*params.max_individual_dist)
@@ -101,7 +101,7 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<Clusterizer::BranchWithDat
             }
         }
 }
-void GPUClusterizationHelper::fill_branch_data(Clusterizer::BranchWithData &branch, bool voxels_needed, bool voxelized_structure)
+void GPUClusterizationHelper::fill_branch_data(BranchWithData &branch, bool voxels_needed, bool voxelized_structure)
 {
     branches.emplace_back();
     auto &br = branches.back();

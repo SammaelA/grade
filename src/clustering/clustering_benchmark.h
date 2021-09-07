@@ -1,7 +1,7 @@
 #pragma once
-#include "grove_packer.h"
-#include "terrain.h"
-#include "abstract_generator.h"
+#include "../grove_packer.h"
+#include "../terrain.h"
+#include "../abstract_generator.h"
 
 class ClusteringBenchmark
 {
@@ -22,6 +22,6 @@ public:
         std::vector<int> ids;
     };
     void start_save_clusterizer() { save_clusterizer = true;}
-    std::vector<ClusterPackingLayer> &clusterLayers(Clusterizer::ClusteringStep step);
-    std::vector<ClusterStructure> clusterStructures(Clusterizer::ClusteringStep step);
+    std::vector<ClusterPackingLayer> &clusterLayers(ClusteringStep step);
+    std::vector<ClusterStructure> clusterStructures(ClusteringStep step);
 };

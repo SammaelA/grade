@@ -1,7 +1,7 @@
 
 #include "generated_tree.h"
 #include "tinyEngine/utility.h"
-#include "branch_clusterization.h"
+#include "clustering/clustering.h"
 #include "texture_manager.h"
 #include "visualizer.h"
 #include "distribution.h"

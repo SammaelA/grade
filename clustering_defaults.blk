@@ -1,0 +1,65 @@
+{
+    trunks_default_params
+    {
+        hash_count:i = 4
+        impostor_similarity_slices:i = 4
+        bwd_rotations:i = 18
+        delta:r = 0.1
+        voxels_size_mult:r = 0.33
+        EV_hasing_voxels_per_cell:i = 17
+        EV_hasing_cells:i = 5
+        max_individual_dist:r = 0.5
+        voxelized_structure:b = true
+        different_types_tolerance:b = true
+        leaf_size_mult:i = 1
+        structure_voxels_size_mult:r = 0.4
+        light_importance:r = 0.0
+        ignore_structure_level:i = 1
+        average_cluster_size_goal:r = 3
+        weights:arr = {5000,800,40,1,0.01}
+        light_weights:arr = {5000,800,40,1,0.01}
+        r_weights:arr = {0.4, 0, 0, 0.0, 0.0}
+    }
+    branches_default_params
+    {
+        hash_count:i = 4
+        impostor_similarity_slices:i = 4
+        bwd_rotations:i = 4
+        delta:r = 0.2
+        voxels_size_mult:r = 0.33
+        EV_hasing_voxels_per_cell:i = 17
+        EV_hasing_cells:i = 5
+        max_individual_dist:r = 1
+        voxelized_structure:b = true
+        different_types_tolerance:b = false
+        leaf_size_mult:i = 1
+        structure_voxels_size_mult:r = 0.4
+        light_importance:r = 0.2
+        ignore_structure_level:i = 3
+        average_cluster_size_goal:r = 10
+        weights:arr = {5000,800,40,1,0.01}
+        light_weights:arr = {5000,800,40,1,0.01}
+        r_weights:arr = {0.5,0.2,0,0,0}
+    }
+    trees_default_params
+    {
+        hash_count:i = 4
+        impostor_similarity_slices:i = 4
+        bwd_rotations:i = 4
+        delta:r = 0.3
+        voxels_size_mult:r = 0.33
+        EV_hasing_voxels_per_cell:i = 17
+        EV_hasing_cells:i = 5
+        max_individual_dist:r = 0.5
+        voxelized_structure:b = true
+        different_types_tolerance:b = false
+        leaf_size_mult:i = 1
+        structure_voxels_size_mult:r = 0.4
+        light_importance:r = 0.7
+        ignore_structure_level:i = 1
+        average_cluster_size_goal:r = 3
+        weights:arr = {5000,800,40,1,0.01}
+        light_weights:arr = {5000,800,40,1,0.01}
+        r_weights:arr = {0.5,0.2,0,0,0}
+    }
+}

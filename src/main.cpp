@@ -30,7 +30,7 @@
 #include <thread>
 #include "parameter_selection.h"
 #include "tinyEngine/save_utils/blk.h"
-#include "clustering_benchmark.h"
+#include "clustering/clustering_benchmark.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -297,7 +297,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     tree_ggd.task = GenerationTask::IMPOSTORS;
     Tree single_tree;
     gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
-    packer.pack_grove(ggd, res, *debugVisualizer, &single_tree, data.heightmap, visualize_voxels);
+    packer.add_trees_to_grove(ggd, res, &single_tree, data.heightmap, false);
     print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();
@@ -409,8 +409,8 @@ int full_initialization()
     for (int j=-8;j<=8;j++)
     for (int k=-8;k<=8;k++)
     voxx->set_occluder_trilinear(glm::vec3(i,j,k),abs(10*i));
-    voxx->prepare_mip_levels();*/
-    for (int i=0;i<1;i++)
+    voxx->prepare_mip_levels();
+    for (int i=0;i<0;i++)
     {
       logerr("visualize voxels");
       if (test_voxels_cube[0])
@@ -423,7 +423,7 @@ int full_initialization()
                             powf(2,i)*0.85f*voxels->get_voxel_size(),
                             0.01,glm::vec3(0,100*(i+1),0),glm::vec3(1,1,1),i);
       }
-    }
+    }*/
   }
   if (saving_needed)
   {

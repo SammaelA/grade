@@ -1,5 +1,6 @@
-#include "branch_clusterization.h"
-#include "limits.h"
+#pragma once
+#include "structural_similarity.h"
+#include "../limits.h"
 #define uint unsigned //CPU
 #define uvec4 glm::uvec4 //CPU
 
@@ -13,7 +14,7 @@
 class GPUClusterizationHelper
 {
 public:
-    void prepare_ddt(std::vector<Clusterizer::BranchWithData> &branches, Clusterizer::DistDataTable &ddt, ClusterizationParams &cp);
+    void prepare_ddt(std::vector<BranchWithData *> &branches, DistDataTable &ddt, ClassicStructureSimilarityParams &cp);
     GPUClusterizationHelper();
     ~GPUClusterizationHelper();
 
@@ -87,7 +88,7 @@ private:
     //CPU-only data
     std::vector<glm::mat4> rotates_transforms;
 
-    void fill_branch_data(Clusterizer::BranchWithData &branch, bool voxels_needed, bool voxelized_structure);
+    void fill_branch_data(BranchWithData &branch, bool voxels_needed, bool voxelized_structure);
     uint fill_branch_data(Branch *branch);
     float calc_cumulative_weight(uint stick_id, int level);
     void calculate_distances(int hardness, bool cpu_only = false, bool cpu_check = false);

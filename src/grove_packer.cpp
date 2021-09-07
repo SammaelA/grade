@@ -1,5 +1,5 @@
 #include "tinyEngine/utility.h"
-#include "branch_clusterization.h"
+#include "clustering/clustering.h"
 #include "texture_manager.h"
 #include "visualizer.h"
 #include "distribution.h"
@@ -14,6 +14,7 @@
 #include "grove_generation_utils.h"
 #include "synthetic_trees_generator.h"
 #include "grove_packer.h"
+#include "clustering/default_clustering_params.h"
 
 void transform_according_to_root(ClusterData &cluster)
 {
@@ -278,7 +279,7 @@ bool is_valid_tree(::Tree &t)
 
 void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                 std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
-                ClusterizationParams cl_p, int layer_from, int layer_to, bool models, bool bill, bool imp,
+                int layer_from, int layer_to, bool models, bool bill, bool imp,
                 bool visualize_clusters)
 {
     bool need_something = ggd.task & (GenerationTask::SYNTS | GenerationTask::CLUSTERIZE) ||
@@ -292,22 +293,34 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
 
     int count = ggd.trees_count;
     int clusters_before = packingLayers[0].clusters.size();
-    Clusterizer *tr_cl = new Clusterizer();
-    if (save_clusterizer)
+    Clusterizer2 *cl = new Clusterizer2();
+
+    Block settings;
+    ctx.light = post_voxels;
+    ctx.types = &(ggd.types);
+    cl->prepare(settings);
+    
+    /*if (save_clusterizer)
     {
         saved_clusterizers.push_back(tr_cl);
-    }
-    tr_cl->set_light(post_voxels);
+    }*/
 
     if (ggd.task & (GenerationTask::CLUSTERIZE))
     {
         std::vector<ClusterData> clusters_base;
-        tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
-        tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types, false, visualize_clusters);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, &ctx);
+        cl->clusterize(settings, clusters_base, packingLayers[0].clusters,&ctx, save_clusterizer);
+        if (save_clusterizer)
+        {
+            saved_clustering_data.push_back(cl->get_full_data());
+        }
+        //tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
+        //tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types, false, visualize_clusters);
     }
     else
     {
-        tr_cl->get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[0].clusters, &ctx);
+        //tr_cl->get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
     }
 
     struct ClusterInfo
@@ -349,7 +362,8 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
                 std::map<long, int> old_cl_poses;
                 BitVector remains;
                 remains.resize(prev_size, false);
-                tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters, ggd.types);
+                //tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters, ggd.types);
+                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, &ctx);
                 int new_size = packingLayers[i + 1].clusters.size();
 
                 for (int j = 0; j < prev_size; j++)
@@ -520,16 +534,13 @@ void GrovePacker::pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree
         packingLayers[i].clusters.clear();
         debugl(6, "level cleared %d\n", i);
     }
-    if (!save_clusterizer && tr_cl)
-    {
-        delete tr_cl;
-    }
+    if (cl)
+        delete cl;
 }
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                      bool visualize_clusters)
 {
-    logerr("is has %d",clusterizationParams.hash_dist);
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
     if (ggd.trees_count <= max_trees_in_patch)
     {
@@ -613,25 +624,17 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         add_occluder(post_voxels, trees_external, count);
     }
 
-    ClusterizationParams tr_cp, br_cp, cp;
-
-    Clusterizer::set_default_clustering_params(tr_cp, Clusterizer::ClusteringStep::TRUNKS);
-    tr_cp.load_from_block(settings_block.get_block("trunk_clusterization_params"));
-
-    Clusterizer::set_default_clustering_params(br_cp, Clusterizer::ClusteringStep::BRANCHES);
-    br_cp.load_from_block(settings_block.get_block("branch_clusterization_params"));
-
-    Clusterizer::set_default_clustering_params(cp, Clusterizer::ClusteringStep::TREES);
-    cp.load_from_block(settings_block.get_block("tree_clusterization_params"));
-
+    current_clustering_step = ClusteringStep::TRUNKS;
     pack_layer(ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,
-               tr_cp, 0, 0, true, false, false, false);
+               0, 0, true, false, false, false);
 
+    current_clustering_step = ClusteringStep::BRANCHES;
     pack_layer(ggd, grove, trees_external, h, packingLayersBranches, post_voxels,
-               br_cp, 1, 1000, true, true, false, visualize_clusters);
+               1, 1000, true, true, false, visualize_clusters);
 
+    current_clustering_step = ClusteringStep::TREES;
     pack_layer(ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
-               cp, 0, 1000, false, false, true, false);
+               0, 1000, false, false, true, false);
 
     transform_all_according_to_root(grove);
     
@@ -651,214 +654,4 @@ void GrovePacker::init()
     inited = true;
     BlkManager man;
     man.load_block_from_file("settings.blk",settings_block);   
-}
-
-void GrovePacker::pack_grove(GroveGenerationData ggd, GrovePacked &grove, DebugVisualizer &debug,
-                             ::Tree *trees_external, Heightmap *h, bool visualize_voxels)
-{
-    if (!inited)
-        init();
-    
-    grove.center = glm::vec3(0, 0, 0);
-    grove.ggd_name = ggd.name;
-    int synts = ggd.synts_count;
-    int count = ggd.trees_count;
-    LightVoxelsCube *post_voxels = nullptr;
-    Seeder *post_seeder = nullptr;
-    GroveGenerationData &curGgd = ggd;
-
-    int valid_trees_cnt = 0;
-    for (int i = 0; i < count; i++)
-    {
-        bool valid = is_valid_tree(trees_external[i]);
-        trees_external[i].valid = valid;
-        valid_trees_cnt += valid;
-    }
-    if (count == 0)
-    {
-        logerr("Grove %s is empty. ", ggd.name.c_str());
-        return;
-    }
-    if (valid_trees_cnt == 0)
-    {
-        logerr("Grove %s has %d tree(s) but none of them are valid.", ggd.name.c_str(), count);
-        return;
-    }
-
-    debugl(1, "Packing grove %s with %d/%d valid trees\n", ggd.name.c_str(), valid_trees_cnt, count);
-
-    {
-        float r = sqrt(count);
-        glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
-        glm::vec3 vox_size = curGgd.size;
-        auto &type = ggd.types[0];
-        TreeStructureParameters base_params;
-        ParameterSetWrapper params = ParameterSetWrapper(base_params, base_params.max_depth() + 1);
-        params.set_state(params().max_depth() - 1);
-        float single_voxel_size = params().seg_len_mult() / params().light_precision();
-
-        post_voxels = new LightVoxelsCube(vox_center, vox_size, params().seg_len_mult(), params().light_precision());
-        post_seeder = new Seeder(ggd, 10, h);
-
-        post_voxels->add_heightmap(*h);
-        for (int i = 0; i < curGgd.obstacles.size(); i++)
-        {
-            post_voxels->add_body(curGgd.obstacles[i]);
-            post_seeder->add_body(curGgd.obstacles[i]);
-        }
-        post_seeder->recalcuate_shadows(trees_external, count);
-        add_occluder(post_voxels, trees_external, count);
-    }
-    std::vector<ClusterData> trunks_clusters_base, branches_clusters_base, full_tree_clusters_base;
-    std::vector<ClusterData> trunks_clusters, branches_clusters, full_tree_clusters;
-
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    if (ggd.task & (GenerationTask::MODELS | GenerationTask::SYNTS | GenerationTask::CLUSTERIZE))
-    {
-        Clusterizer tr_cl;
-        tr_cl.set_light(post_voxels);
-        tr_cl.get_base_clusters(trees_external, count, 0, trunks_clusters_base);
-        if (ggd.task & (GenerationTask::CLUSTERIZE))
-        {
-            ClusterizationParams tr_cp;
-            tr_cp.weights = std::vector<float>{1, 0, 0, 0.0, 0.0};
-            tr_cp.ignore_structure_level = 1;
-            tr_cp.delta = 0.1;
-            tr_cp.light_importance = 0;
-            tr_cp.different_types_tolerance = true;
-            tr_cp.r_weights = std::vector<float>{0.4, 0, 0, 0.0, 0.0};
-            tr_cp.max_individual_dist = 0.4;
-            tr_cp.bwd_rotations = 4;
-            tr_cl.clusterize(tr_cp, trunks_clusters_base, trunks_clusters, ggd.types);
-        }
-        else
-        {
-            trunks_clusters = trunks_clusters_base;
-        }
-        for (ClusterData &cd : trunks_clusters)
-        {
-            transform_according_to_root(cd);
-        }
-    }
-
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-    if (ggd.task & (GenerationTask::MODELS | GenerationTask::SYNTS | GenerationTask::CLUSTERIZE | GenerationTask::BILLBOARDS))
-    {
-
-        Clusterizer cl;
-        cl.set_light(post_voxels);
-        cl.get_base_clusters(trees_external, count, 1, branches_clusters_base);
-        if (ggd.task & (GenerationTask::CLUSTERIZE))
-        {
-            ClusterizationParams cp;
-            cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
-            cp.ignore_structure_level = 2;
-            cp.delta = 0.3;
-            cp.max_individual_dist = ggd.clustering_max_individual_distance;
-            cp.bwd_rotations = 4;
-
-            cl.clusterize(cp, branches_clusters_base, branches_clusters, ggd.types);
-            cl.clusterize(cp, branches_clusters, branches_clusters_base, ggd.types);
-            cl.clusterize(cp, branches_clusters_base, branches_clusters, ggd.types);
-        }
-        else
-        {
-            branches_clusters = branches_clusters_base;
-        }
-        for (int i = 0; i < branches_clusters.size(); i++)
-        {
-            for (::Branch *br : branches_clusters[i].ACDA.originals)
-            {
-                if (br)
-                    br->mark_A = i;
-            }
-        }
-    }
-
-    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-
-    if (ggd.task & (GenerationTask::SYNTS))
-    {
-        SyntheticTreeGenerator stg = SyntheticTreeGenerator(*post_seeder, trunks_clusters, branches_clusters, curGgd);
-        stg.generate(trees_external + count, synts, post_voxels);
-    }
-
-    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
-
-    if (ggd.task & (GenerationTask::CLUSTERIZE | GenerationTask::IMPOSTORS | GenerationTask::IMPOSTOR_FULL_GROVE))
-    {
-        Clusterizer cl2;
-        cl2.set_light(post_voxels);
-        cl2.get_base_clusters(trees_external, count + synts, 0, full_tree_clusters_base);
-        if (ggd.task & (GenerationTask::CLUSTERIZE))
-        {
-            ClusterizationParams cp;
-            cp.weights = std::vector<float>{5000, 800, 40, 0.0, 0.0};
-            cp.ignore_structure_level = 1;
-            cp.delta = 0.3;
-            cp.max_individual_dist = ggd.clustering_max_individual_distance;
-            cp.bwd_rotations = 4;
-            cp.light_importance = 0.8;
-            cp.different_types_tolerance = false;
-            cl2.clusterize(cp, full_tree_clusters_base, full_tree_clusters, ggd.types);
-        }
-        else
-        {
-            full_tree_clusters = full_tree_clusters_base;
-        }
-    }
-
-    std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
-
-    for (int i = grove.impostors.size(); i < 2; i++)
-        grove.impostors.push_back(ImpostorsData());
-    if (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE))
-    {
-        logerr("full grove impostors are temporary unavailable");
-    }
-    if (ggd.task & (GenerationTask::IMPOSTORS))
-    {
-        ImpostorBaker *ib2 = new ImpostorBaker(ggd.impostor_quality, 0, full_tree_clusters, curGgd.types, &grove.impostors[1]);
-        delete (ib2);
-    }
-
-    for (int i = grove.clouds.size(); i < 4; i++)
-        grove.clouds.push_back(BillboardCloudData());
-    if (ggd.task & (GenerationTask::BILLBOARDS))
-    {
-        BillboardCloudRaw *cloud1 = new BillboardCloudRaw(ggd.bill_1_quality, 1,
-                                                          branches_clusters, curGgd.types, &grove.clouds[2]);
-        delete (cloud1);
-    }
-    if (ggd.task & (GenerationTask::BILLBOARDS))
-    {
-        BillboardCloudRaw *cloud2 = new BillboardCloudRaw(ggd.bill_2_quality, 2,
-                                                          branches_clusters, curGgd.types, &grove.clouds[3]);
-        delete (cloud2);
-    }
-
-    if (ggd.task & (GenerationTask::MODELS))
-    {
-        std::vector<BranchStructure> instanced_structures;
-
-        for (ClusterData &cd : trunks_clusters)
-        {
-            pack_cluster(cd, grove, instanced_structures, 0, 0);
-        }
-        for (ClusterData &cd : branches_clusters)
-        {
-            pack_cluster(cd, grove, instanced_structures, 1, 1000);
-        }
-    }
-    delete (post_voxels);
-    delete (post_seeder);
-
-    std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
-    /*std::cerr << "Generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[ms]" << std::endl;
-    std::cerr << "Main clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "[ms]" << std::endl;
-    std::cerr << "Syntetic trees generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "[ms]" << std::endl;
-    std::cerr << "Secondary clusterization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count() << "[ms]" << std::endl;
-    std::cerr << "Finishing took " << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count() << "[ms]" << std::endl;
-    */
 }

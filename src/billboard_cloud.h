@@ -4,7 +4,7 @@
 #include "tinyEngine/utility/model.h"
 #include "tinyEngine/utility/instance.h"
 #include "tree.h"
-#include "branch_clusterization.h"
+#include "clustering/clustering.h"
 #include "billboard_cloud_data.h"
 #include <list>
 #include <vector>

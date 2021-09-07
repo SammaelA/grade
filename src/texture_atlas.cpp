@@ -362,6 +362,10 @@ TextureAtlasRawData::TextureAtlasRawData()
 }
 TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
 {
+    if (!atlas.is_valid())
+    {
+        logerr("error invalid atlas for TextureAtlasRawData");
+    }
     auto sizes = atlas.get_sizes();
     w = sizes.x;
     h = sizes.y;

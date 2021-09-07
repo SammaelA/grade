@@ -1,7 +1,8 @@
 #include "clustering_benchmark.h"
 #include <chrono>
+#include "dist_data_table.h"
 
-#define STEPS (Clusterizer::ClusteringStep::CLUSTERING_STEPS_COUNT)
+#define STEPS (ClusteringStep::CLUSTERING_STEPS_COUNT)
 struct ClusteringResult
 {
     std::string name;
@@ -66,8 +67,8 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
 
 
     std::map<int,int> pos_in_table_by_id[STEPS];
-    Clusterizer::DistDataTable DDTs[STEPS];
-    Clusterizer *clusts[STEPS];
+    DistDataTable DDTs[STEPS];
+    FullClusteringData *clusts[STEPS];
 
     for (int i=settings.size() - 1;i>=0;i--)
     {
@@ -90,18 +91,23 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         if (reference)
             packer.start_save_clusterizer();
         packer.add_trees_to_grove(ggd, groves.back(),trees,h);
-        if (reference && packer.saved_clusterizers.size() == STEPS)
+        if (reference && packer.saved_clustering_data.size() == STEPS)
         {
             for (int j=0;j<STEPS;j++)
             {
-                Clusterizer *clust = packer.saved_clusterizers[j];
+                auto *clust = packer.saved_clustering_data[j];
                 if (!clust)
                 {
                     logerr("empty clust");
                     continue;
                 }
-                clust->get_current_ddt(DDTs[j]);
-                pos_in_table_by_id[j] = clust->get_id_pos_map();
+                IntermediateClusteringDataDDT *ddt_data = dynamic_cast<IntermediateClusteringDataDDT *>(clust->id);
+                if (!ddt_data)
+                {
+                    logerr("reference clustring algorithm don't have DDT in intermediate data");
+                }
+                DDTs[j] = ddt_data->ddt;
+                pos_in_table_by_id[j] = clust->pos_in_table_by_id;
                 clusts[j] = clust;
                 for (auto &pair : pos_in_table_by_id[j])
                 {
@@ -122,7 +128,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         
         for (int j=0;j<STEPS;j++)
         {
-            auto structure = packer.clusterStructures((Clusterizer::ClusteringStep)j);
+            auto structure = packer.clusterStructures((ClusteringStep)j);
             int total_branches = 0;
             float total_dist = 0;
             for (auto &str : structure)
@@ -154,16 +160,16 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
     debug_level = d;
 }
 
-std::vector<ClusterPackingLayer> &GrovePackerStat::clusterLayers(Clusterizer::ClusteringStep step)
+std::vector<ClusterPackingLayer> &GrovePackerStat::clusterLayers(ClusteringStep step)
 {
-    if (step == Clusterizer::ClusteringStep::TRUNKS)
+    if (step == ClusteringStep::TRUNKS)
         return packingLayersTrunks;
-    else if (step == Clusterizer::ClusteringStep::BRANCHES)
+    else if (step == ClusteringStep::BRANCHES)
         return packingLayersBranches;
-    else if (step == Clusterizer::ClusteringStep::TREES)
+    else if (step == ClusteringStep::TREES)
         return packingLayersTrees;
 }
-std::vector<GrovePackerStat::ClusterStructure> GrovePackerStat::clusterStructures(Clusterizer::ClusteringStep step)
+std::vector<GrovePackerStat::ClusterStructure> GrovePackerStat::clusterStructures(ClusteringStep step)
 {
     std::vector<ClusterPackingLayer> &layers = clusterLayers(step);
     std::vector<GrovePackerStat::ClusterStructure> structures;
