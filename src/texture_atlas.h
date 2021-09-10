@@ -20,6 +20,7 @@ class TextureAtlasRawData
 public:
     unsigned char get_pixel_uc(int w, int h, Channel chan, int tex_id);
     unsigned char get_pixel_uc_safe(int w, int h, Channel chan, int tex_id);
+    unsigned char *get_raw_data() { return raw_data;}
     float get_pixel(int w, int h, Channel chan, int tex_id);
     TextureAtlasRawData();
     TextureAtlasRawData(const TextureAtlas &atlas);

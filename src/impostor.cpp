@@ -179,7 +179,8 @@ void ImpostorBaker::make_impostor(Branch &br, Impostor &imp, ImpostorGenerationP
         num = atlas->add_tex();
 
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
-        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, params.leaf_size_mult, params.fixed_colors);
+        create_billboard(ttd[br.type_id], &br, cur, tg, num, bill, params.leaf_size_mult, params.fixed_colors,
+                         params.level_from, params.level_to);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) - b;
         bill.positions[1] = imp.bcyl.center + glm::vec3(a) - b;

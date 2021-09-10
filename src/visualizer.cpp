@@ -185,48 +185,51 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Model *m, glm::vec2 
 void Visualizer::joint_to_model(Joint &j, Model *m, bool leaves)
 {
 }
-void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale)
+void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale, int level_from, int level_to)
 {
-    if (b.level < 0)
+    if (b.level < 0 || b.level > level_to)
         return;
-    if (!leaves)
-    {
-        std::vector<SegmentVertexes> vets;
-        int i = 0;
-        int ringsize = 3 * pow(2, MAX(3 - b.level,0));
-        for (auto &segment : b.segments)
-        {
-            SegmentVertexes vt;
-            get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
-            if (!vets.empty())
-                vets.back().smallRing = vt.bigRing;
-            //segment_to_model(segment,m,leaves);
-            vets.push_back(vt);
-            i++;
-        }
-        if (!vets.empty())
-        {
-            get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
-        }
 
-        //seg_vertexes_to_model(vets.front(),m);
-        for (auto &vt : vets)
-        {
-            seg_vertexes_to_model(vt, m);
-        }
-    }
-    else
+    if (b.level >= level_from)
     {
-        for (auto &joint : b.joints)
+        if (!leaves)
         {
-            if (joint.leaf)
-                leaf_to_model(*(joint.leaf), m, scale);
+            std::vector<SegmentVertexes> vets;
+            int i = 0;
+            int ringsize = 3 * pow(2, MAX(3 - b.level,0));
+            for (auto &segment : b.segments)
+            {
+                SegmentVertexes vt;
+                get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
+                if (!vets.empty())
+                    vets.back().smallRing = vt.bigRing;
+                //segment_to_model(segment,m,leaves);
+                vets.push_back(vt);
+                i++;
+            }
+            if (!vets.empty())
+            {
+                get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
+            }
+
+            for (auto &vt : vets)
+            {
+                seg_vertexes_to_model(vt, m);
+            }
+        }
+        else
+        {
+            for (auto &joint : b.joints)
+            {
+                if (joint.leaf)
+                    leaf_to_model(*(joint.leaf), m, scale);
+            }
         }
     }
     for (auto &joint : b.joints)
     {
         for (auto branch : joint.childBranches)
-            recursive_branch_to_model(*branch, m, leaves, scale);
+            recursive_branch_to_model(*branch, m, leaves, scale, level_from, level_to);
     }
 }
 void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)

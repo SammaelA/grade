@@ -1,6 +1,9 @@
 {
     trunks_default_params
     {
+        clustering_helper:s = "structural_similarity_gpu"
+
+
         hash_count:i = 4
         impostor_similarity_slices:i = 4
         bwd_rotations:i = 18
@@ -19,9 +22,14 @@
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.4, 0, 0, 0.0, 0.0}
+        impostor_metric_level_from:i = 0
+        impostor_metric_level_to:i = 0
     }
     branches_default_params
     {
+        clustering_helper:s = "impostor"
+
+
         hash_count:i = 4
         impostor_similarity_slices:i = 4
         bwd_rotations:i = 4
@@ -40,9 +48,14 @@
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.5,0.2,0,0,0}
+        impostor_metric_level_from:i = 1
+        impostor_metric_level_to:i = 1000
     }
     trees_default_params
     {
+        clustering_helper:s = "impostor"
+
+
         hash_count:i = 4
         impostor_similarity_slices:i = 4
         bwd_rotations:i = 4
@@ -61,5 +74,7 @@
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.5,0.2,0,0,0}
+        impostor_metric_level_from:i = 0
+        impostor_metric_level_to:i = 1000
     }
 }

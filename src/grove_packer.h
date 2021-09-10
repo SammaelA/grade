@@ -42,19 +42,24 @@ public:
 protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                      bool visualize_clusters);
-    void pack_layer(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
-                int layer_from, int layer_to, bool models, bool bill, bool imp,
-                bool visualize_clusters);
+    void pack_layer(Block &settings, GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                    std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
+                    int layer_from, int layer_to, bool models, bool bill, bool imp,
+                    bool visualize_clusters);
     void transform_all_according_to_root(GrovePacked &grove);
     void init();
+    void base_init();
     std::vector<ClusterPackingLayer> packingLayersBranches = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrunks = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrees = {ClusterPackingLayer()};
 
     bool inited = false;
     ClusteringContext ctx;
+    Block dummy_block;
     Block settings_block;
+    Block *trunks_params = &dummy_block;
+    Block *branches_params = &dummy_block;
+    Block *trees_params = &dummy_block;
     GroveGenerationData groveGenerationData;
     BranchHeap originalBranches;
     LeafHeap originalLeaves;

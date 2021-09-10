@@ -6,7 +6,7 @@
 
 #include "malloc.h"
 
-int debug_level = 6;
+int debug_level = 11;
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;

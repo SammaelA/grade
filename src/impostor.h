@@ -14,6 +14,8 @@ public:
         bool fixed_colors = false;
         float add_rotation_y = 0;
         float leaf_size_mult = 1.15;
+        int level_from = 0;
+        int level_to = 1000;
     }; 
     ImpostorBaker(Quality _quality, int branch_level, std::vector<ClusterData> &clusters,
                                      std::vector<TreeTypeData> &_ttd, ImpostorsData *data)

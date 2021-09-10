@@ -1,31 +1,20 @@
 {
     no_clust
     {
-        trunk_clusterization_params
+        trunks_params
         {
             average_cluster_size_goal:r = 1
         }
-        branch_clusterization_params
+        branches_params
         {
             average_cluster_size_goal:r = 1
         }
     }
     impostor2
     {
-        branch_clusterization_params
+        branches_params
         {
-            leaf_size_mult:i = 2
-        }
-    }
-    hash2
-    {
-        branch_clusterization_params
-        {
-            hash_dist:b = true
-            EV_hasing_cells:i = 5
-            EV_hasing_voxels_per_cell:i = 15
-            light_importance:r = 0.5
-            voxelized_structure:b = true
+            leaf_size_mult:r = 2
         }
     }
 }

@@ -49,7 +49,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
 {
     debug("starting clustering benchmark. Preparing grove.\n");
     int d = debug_level;
-    debug_level = 1000;
+    debug_level = 11;
     float generation_time = 0;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     ::Tree *trees = new ::Tree[ggd.trees_count];
@@ -90,7 +90,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         
         if (reference)
             packer.start_save_clusterizer();
-        packer.add_trees_to_grove(ggd, groves.back(),trees,h);
+        packer.add_trees_to_grove(ggd, groves.back(),trees,h,true);
         if (reference && packer.saved_clustering_data.size() == STEPS)
         {
             for (int j=0;j<STEPS;j++)
@@ -107,7 +107,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
                     logerr("reference clustring algorithm don't have DDT in intermediate data");
                 }
                 DDTs[j] = ddt_data->ddt;
-                pos_in_table_by_id[j] = clust->pos_in_table_by_id;
+                pos_in_table_by_id[j] = clust->pos_in_table_by_branch_id;
                 clusts[j] = clust;
                 for (auto &pair : pos_in_table_by_id[j])
                 {

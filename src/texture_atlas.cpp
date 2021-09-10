@@ -375,7 +375,7 @@ TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
     slice_w = w/gridWN;
     layers = atlas.layers_count();
     slices = layers * gridWN * gridHN;
-    raw_data = new unsigned char[4*w*h*layers+1];
+    raw_data = new unsigned char[8*w*h*layers+1];
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
 

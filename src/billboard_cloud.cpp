@@ -180,7 +180,7 @@ void BillboardCloudRaw::create_billboard(std::vector<TreeTypeData> &ttd, std::ma
     billboards.push_back(bill);*/
 }
 void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num,
-                                         Billboard &bill, float leaf_scale, bool monochrome)
+                                         Billboard &bill, float leaf_scale, bool monochrome, int level_from, int level_to)
 {
     if (num < 0)
     {
@@ -199,8 +199,12 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     mat4 atlas_tr = atlas->tex_transform(num);
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
     Model bm;
-    std::function<void(Model *)> _c_wood = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, false); };
-    std::function<void(Model *)> _c_leaves = [&](Model *h) { tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale); };
+    std::function<void(Model *)> _c_wood = [&](Model *h) { 
+        tg.recursive_branch_to_model(*branch, &bm, false, 1, level_from, level_to); 
+    };
+    std::function<void(Model *)> _c_leaves = [&](Model *h) { 
+        tg.recursive_branch_to_model(*branch, &bm, true, leaf_scale, level_from, level_to); 
+    };
 
     int tex_count = monochrome ? 1 : atlas->tex_count();
     for (int k = 0; k<tex_count;k++)

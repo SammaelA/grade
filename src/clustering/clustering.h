@@ -98,6 +98,7 @@ struct FullClusteringData
     std::vector<ClusterData> *result_clusters;
     Block *settings;
     std::map<int,int> pos_in_table_by_id;
+    std::map<int,int> pos_in_table_by_branch_id;
 };
 DEFINE_ENUM_WITH_STRING_CONVERSIONS(ClusteringStrtegy,(Merge)(Recreate))
 
@@ -116,6 +117,7 @@ private:
     struct ClusterizationTmpData
     {
         std::map<int,int> pos_in_table_by_id;
+        std::map<int,int> pos_in_table_by_branch_id;
     };
     void get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
                            ClusteringContext *ctx);

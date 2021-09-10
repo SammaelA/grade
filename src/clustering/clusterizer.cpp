@@ -19,8 +19,33 @@ ClusterData::ClusterData()
 }
 void Clusterizer2::prepare(Block &settings)
 {
-    clusteringHelper = new DDTHashBasedClusteringHelper();
-    clusteringBase = new HierarcialClusteringBase();
+    Block &def_b = get_default_block();
+    std::string c_helper_name = def_b.get_string("clustering_helper","impostor");
+    c_helper_name = settings.get_string("clustering_helper",c_helper_name);
+
+    std::string c_base_name = def_b.get_string("clustering_base","hierarcial");
+    c_base_name = settings.get_string("clustering_base",c_base_name);
+
+    if (c_helper_name == "impostor")
+        clusteringHelper = new ImpostorClusteringHelper();
+    else if (c_helper_name == "structural_similarity_cpu")
+        clusteringHelper = new CPUSSClusteringHelper();
+    else if (c_helper_name == "structural_similarity_gpu")
+        clusteringHelper = new GPUSSClusteringHelper();
+    else if (c_helper_name == "hash_simple")
+        clusteringHelper = new DDTHashBasedClusteringHelper();
+    else
+    {
+        logerr("given unknown clustering helper name %s",c_helper_name);
+        clusteringHelper = new ImpostorClusteringHelper();
+    }
+    if (c_base_name == "hierarcial")
+        clusteringBase = new HierarcialClusteringBase();
+    else
+    {
+        logerr("given unknown clustering base name %s",c_base_name);
+        clusteringBase = new HierarcialClusteringBase();
+    }
 }
 Clusterizer2::~Clusterizer2()
 {
@@ -119,6 +144,7 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
     for (int i = 0; i < base_clusters.size(); i++)
     {
         tmpData.pos_in_table_by_id.emplace(base_clusters[i].id, i);
+        tmpData.pos_in_table_by_branch_id.emplace(base_clusters[i].base->self_id, i);
     }
 }
 void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
@@ -135,7 +161,8 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
     clusteringBase->clusterize(settings, ICD, cluster_result);
 
     prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
-
+    if (current_clustering_step == ClusteringStep::BRANCHES)
+        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
     if (need_save_full_data)
     {
         fcd = new FullClusteringData();
@@ -146,7 +173,9 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
         fcd->ctx = ctx;
         fcd->settings = &settings;
         fcd->pos_in_table_by_id = tmpData.pos_in_table_by_id;
+        fcd->pos_in_table_by_branch_id = tmpData.pos_in_table_by_branch_id;
     }
+    else
     {
         delete ICD;
         if (cStrategy == ClusteringStrtegy::Merge)
@@ -158,7 +187,6 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
                 {
                     if (i == cl.base_pos)
                         continue;
-                    logerr("deleting %d",cl.ACDA.clustering_data[i]);
                     if (cl.ACDA.clustering_data[i])
                     {
                         clusteringHelper->clear_branch_data(cl.ACDA.clustering_data[i], ctx);

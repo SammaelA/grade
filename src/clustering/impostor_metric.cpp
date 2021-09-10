@@ -1,11 +1,14 @@
 #include "impostor_metric.h"
 #include "dist_data_table.h"
 #include "../billboard_cloud.h"
+#include "../texture_manager.h"
 
 struct ImpostorSimilarityParams
 {
     int impostor_similarity_slices = 4;
-
+    int impostor_metric_level_from = 0;
+    int impostor_metric_level_to = 1000;
+    float leaf_size_mult = 1;
     void load_from_block(Block *b);
     void load(Block *b);
 };
@@ -21,6 +24,9 @@ void ImpostorSimilarityParams::load(Block *b)
 void ImpostorSimilarityParams::load_from_block(Block *b)
 {
     impostor_similarity_slices = b->get_int("impostor_similarity_slices",impostor_similarity_slices);
+    impostor_metric_level_from = b->get_int("impostor_metric_level_from",impostor_metric_level_from);
+    impostor_metric_level_to = b->get_int("impostor_metric_level_to",impostor_metric_level_to);
+    leaf_size_mult = b->get_double("leaf_size_mult",leaf_size_mult);
 }
 
 ImpostorSimilarityParams isimParams;
@@ -72,6 +78,8 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     params.need_top_view = false;
     params.quality = Quality::LOW_AS_F;
     params.slices_n = isimParams.impostor_similarity_slices;
+    params.level_from = isimParams.impostor_metric_level_from;
+    params.level_to = isimParams.impostor_metric_level_to;
 
             ClusterData cd;
             cd.base = base;
@@ -116,7 +124,14 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
         real_branches.push_back(imp_dt);
     }
     ictx->self_impostors_raw_atlas = new TextureAtlasRawData(ictx->self_impostors_data->atlas);
-
+    /*if (current_clustering_step == ClusteringStep::BRANCHES)
+    {
+        textureManager.save_bmp_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
+                                    ictx->self_impostors_raw_atlas->get_w(),
+                                    ictx->self_impostors_raw_atlas->get_h(),
+                                    4,
+                                    "raw bmp");
+    }*/
     for (int i = 0; i < real_branches.size(); i++)
     {
         for (int j = 0; j < real_branches.size(); j++)
