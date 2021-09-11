@@ -1,0 +1,468 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{27a9777f-d548-4f76-8529-960e00c5c612}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{656fa00d-a810-4249-a2dc-91dcaa506ae0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\cluster">
+      <UniqueIdentifier>{e74ddeed-208b-4af4-a99e-05b5c5d6c1f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\container">
+      <UniqueIdentifier>{24cdfa26-f5f7-4e13-8d67-04ed66b2b202}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\differential">
+      <UniqueIdentifier>{d9188b45-3da8-41bc-a0d1-3a9f8d7f0f5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parallel">
+      <UniqueIdentifier>{d6976e8c-8206-4a67-bc3a-55497f9923bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils">
+      <UniqueIdentifier>{78477d0b-3b49-4c9e-961f-d6cd1b332287}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\nnet">
+      <UniqueIdentifier>{4ab057bd-88f1-4c2d-a98c-8663c1896b70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\cluster">
+      <UniqueIdentifier>{40dcd61f-59ff-429a-91d1-1d9417b63c21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\container">
+      <UniqueIdentifier>{44d0df1f-3fd6-40ac-bbc1-8976c39fe667}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\differential">
+      <UniqueIdentifier>{e12524b6-94f0-46ae-b811-560dc99f31dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\nnet">
+      <UniqueIdentifier>{bf9c6ade-57a9-4254-b21b-61213fec0e47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parallel">
+      <UniqueIdentifier>{9f76cd55-ba93-4801-9312-19f3eb8009b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{3822bba0-e57c-4699-976f-0a319bcee35f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cluster\agglomerative.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\bsas.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\clique.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\clique_block.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\cluster_data.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\cure.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\dbscan.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\fcm.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\gmeans.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\hsyncnet.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\kmeans.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\kmeans_data.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\kmeans_plus_plus.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\kmedians.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\kmedoids.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\mbsas.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\optics.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\optics_descriptor.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\ordering_analyser.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\random_center_initializer.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\rock.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\silhouette.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\silhouette_ksearch.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\silhouette_ksearch_data.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\somsc.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\syncnet.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\ttsas.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="cluster\xmeans.cpp">
+      <Filter>Source Files\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_bit_matrix.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_connector.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_factory.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_list.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_matrix.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\adjacency_weight_list.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\kdnode.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\kdtree.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\kdtree_balanced.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="container\kdtree_searcher.cpp">
+      <Filter>Source Files\container</Filter>
+    </ClCompile>
+    <ClCompile Include="differential\differ_factor.cpp">
+      <Filter>Source Files\differential</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\dynamic_analyser.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\hhn.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\legion.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\pcnn.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\som.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\sync.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="nnet\syncpr.cpp">
+      <Filter>Source Files\nnet</Filter>
+    </ClCompile>
+    <ClCompile Include="parallel\spinlock.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="parallel\task.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="parallel\thread_executor.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="parallel\thread_pool.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\linalg.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\math.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\metric.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\random.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\stats.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\pyclustering\cluster\agglomerative.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\bsas.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\bsas_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\center_initializer.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\clique.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\clique_block.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\clique_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\cluster_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\cure.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\cure_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\dbscan.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\dbscan_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\elbow.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\elbow_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\fcm.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\fcm_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\gmeans.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\gmeans_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\hsyncnet.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmeans.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmeans_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmeans_plus_plus.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmedians.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmedians_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmedoids.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\kmedoids_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\mbsas.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\mbsas_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\optics.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\optics_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\optics_descriptor.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\ordering_analyser.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\random_center_initializer.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\rock.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\silhouette.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\silhouette_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\silhouette_ksearch.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\silhouette_ksearch_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\somsc.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\somsc_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\syncnet.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\ttsas.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\ttsas_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\xmeans.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\cluster\xmeans_data.hpp">
+      <Filter>Header Files\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_bit_matrix.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_connector.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_factory.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_list.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_matrix.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\adjacency_weight_list.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\dynamic_data.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\ensemble_data.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\kdnode.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\kdtree.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\kdtree_balanced.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\container\kdtree_searcher.hpp">
+      <Filter>Header Files\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\differ_factor.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\differ_state.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\equation.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\runge_kutta_4.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\runge_kutta_fehlberg_45.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\differential\solve_type.hpp">
+      <Filter>Header Files\differential</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\algorithm.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\linalg.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\math.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\metric.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\random.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\stats.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\utils\traits.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\parallel\parallel.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\parallel\spinlock.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\parallel\task.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\parallel\thread_executor.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\parallel\thread_pool.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\dynamic_analyser.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\hhn.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\legion.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\network.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\pcnn.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\som.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\sync.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pyclustering\nnet\syncpr.hpp">
+      <Filter>Header Files\nnet</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
