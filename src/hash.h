@@ -9,6 +9,8 @@ struct Hash
     bool weighted = false;
     bool normalized = false;
     void weight_and_normalize();
+    void weight();
+    void normalize();
     static float L1_dist(Hash &h1, Hash &h2);
     static float L2_dist(Hash &h1, Hash &h2);
 };

@@ -31,6 +31,7 @@ struct BranchClusteringData
 };
 struct IntermediateClusteringData
 {
+    bool all_branches_can_be_centers = true; 
     int elements_count;
     std::vector<BranchClusteringData *> branches;
     virtual void clear() {};

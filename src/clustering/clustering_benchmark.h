@@ -21,6 +21,11 @@ public:
         int base_id;
         std::vector<int> ids;
     };
+    GrovePackerStat(bool shared_ctx): 
+    GrovePacker(shared_ctx)
+    {
+
+    }
     void start_save_clusterizer() { save_clusterizer = true;}
     std::vector<ClusterPackingLayer> &clusterLayers(ClusteringStep step);
     std::vector<ClusterStructure> clusterStructures(ClusteringStep step);

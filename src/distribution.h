@@ -72,6 +72,19 @@ double urandi(int from = 0, int to = 1);
 double srand(uint64_t seed, uint64_t &x, uint64_t&w, double from = 0.0, double to = 1.0);
 double srandi(uint64_t seed, uint64_t &x, uint64_t&w, int from = 0, int to = 1);
 
+template<class BidiIter >
+BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random) 
+{
+    size_t left = std::distance(begin, end);
+    while (num_random--) {
+        BidiIter r = begin;
+        std::advance(r, rand()%left);
+        std::swap(*begin, *r);
+        ++begin;
+        --left;
+    }
+    return begin;
+}
 struct DistributionData
 {
     std::vector<Normal *> n_allocs;

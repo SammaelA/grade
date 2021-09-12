@@ -55,6 +55,11 @@ void transform_according_to_root(ClusterData &cluster)
     }
 }
 
+GrovePacker::GrovePacker(bool shared_ctx)
+{
+    shared_context = shared_ctx;
+}
+
 void GrovePacker::transform_all_according_to_root(GrovePacked &grove)
 {
     const int needed_level = 1;
@@ -295,26 +300,23 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     int clusters_before = packingLayers[0].clusters.size();
     Clusterizer2 *cl = new Clusterizer2();
 
-    ctx.light = post_voxels;
-    ctx.types = &(ggd.types);
+    ctx->light = post_voxels;
+    ctx->types = &(ggd.types);
     cl->prepare(settings);
 
     if (ggd.task & (GenerationTask::CLUSTERIZE))
     {
         std::vector<ClusterData> clusters_base;
-        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, &ctx);
-        cl->clusterize(settings, clusters_base, packingLayers[0].clusters,&ctx, save_clusterizer);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, ctx);
+        cl->clusterize(settings, clusters_base, packingLayers[0].clusters, ctx, save_clusterizer);
         if (save_clusterizer)
         {
             saved_clustering_data.push_back(cl->get_full_data());
         }
-        //tr_cl->get_base_clusters(trees_external, count, layer_from, clusters_base);
-        //tr_cl->clusterize(cl_p, clusters_base, packingLayers[0].clusters, ggd.types, false, visualize_clusters);
     }
     else
     {
-        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[0].clusters, &ctx);
-        //tr_cl->get_base_clusters(trees_external, count, layer_from, packingLayers[0].clusters);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[0].clusters, ctx);
     }
 
     struct ClusterInfo
@@ -357,7 +359,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
                 BitVector remains;
                 remains.resize(prev_size, false);
                 //tr_cl->clusterize(cl_p, packingLayers[i].clusters, packingLayers[i + 1].clusters, ggd.types);
-                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, &ctx);
+                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, ctx);
                 int new_size = packingLayers[i + 1].clusters.size();
 
                 for (int j = 0; j < prev_size; j++)
@@ -641,6 +643,10 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 }
 void GrovePacker::base_init()
 {
+    if (shared_context)
+        ctx = new ClusteringContext();
+    else    
+        ctx = &self_ctx;
     Block *b;
     b = settings_block.get_block("trunks_params");
     if (b)

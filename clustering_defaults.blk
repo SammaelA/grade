@@ -40,7 +40,7 @@
         max_individual_dist:r = 1
         voxelized_structure:b = true
         different_types_tolerance:b = false
-        leaf_size_mult:i = 1
+        leaf_size_mult:i = 1.5
         structure_voxels_size_mult:r = 0.4
         light_importance:r = 0.2
         ignore_structure_level:i = 3

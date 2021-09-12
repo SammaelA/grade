@@ -1,6 +1,7 @@
 #include "clustering_benchmark.h"
 #include <chrono>
 #include "dist_data_table.h"
+#include "visualize_clusters.h"
 
 #define STEPS (ClusteringStep::CLUSTERING_STEPS_COUNT)
 struct ClusteringResult
@@ -48,8 +49,9 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
                                             GroveGenerationData &ggd, Heightmap *h)
 {
     debug("starting clustering benchmark. Preparing grove.\n");
+    bool need_visualize_clusters = true;
     int d = debug_level;
-    debug_level = 11;
+    debug_level = (debug_level == 11) ? 11 : 1000;
     float generation_time = 0;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     ::Tree *trees = new ::Tree[ggd.trees_count];
@@ -82,7 +84,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         results.emplace_back();
         results.back().name = settings.get_name(i);
         debug("starting clustering with settings %s\n",results.back().name.c_str());
-        GrovePackerStat packer;
+        GrovePackerStat packer(true);
         groves.emplace_back();
         
         t1 = std::chrono::steady_clock::now();
@@ -148,6 +150,18 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
             debugl(11,"\n");
             results.back().average_in_cluster_distance[j] = total_dist/total_branches;
             results.back().average_cluster_size[j] = (float)total_branches/(structure.size());
+            
+            if (need_visualize_clusters && ((ClusteringStep)j == ClusteringStep::BRANCHES))
+            {
+              auto *clust = packer.saved_clustering_data[j];
+              if (!clust)
+              {
+                logerr("empty clust");
+                continue;
+              }
+              std::string vis_name = results.back().name + "_clusters";
+              visualize_clusters(settings, clusts[j]->id->branches, clust->clusters, clusts[j]->ctx, vis_name,128,128);
+            }
         }
     }
 

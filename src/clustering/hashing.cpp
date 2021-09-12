@@ -166,6 +166,37 @@ IntermediateClusteringData *DDTHashBasedClusteringHelper::prepare_intermediate_d
     return data;
 }
 
+IntermediateClusteringData *SimpleHashBasedClusteringHelper::prepare_intermediate_data(Block &settings, 
+                                                                                       std::vector<BranchClusteringData *> branches,
+                                                                                       ClusteringContext *ctx)
+{
+    IntermediateClusteringDataVectorsList *data = new IntermediateClusteringDataVectorsList();
+    data->branches = branches;
+    data->elements_count = branches.size();
+    std::vector<BranchHash *> real_branches;
+    for (int i = 0; i < branches.size(); i++)
+    {
+        real_branches.push_back(dynamic_cast<BranchHash *>(branches[i]));
+        if (!real_branches.back())
+        {
+            logerr("CPUSSClusteringHelper error: wrong type of BranchClusteringData");
+            return data;
+        }
+    }
+    for (int i = 0; i < real_branches.size(); i++)
+    {
+        data->feature_vectors.emplace_back();
+        real_branches[i]->hashes[0].weight();
+        std::vector<GLfloat> &hash = real_branches[i]->hashes[0].data;
+        for (GLfloat &f : hash)
+        {
+            data->feature_vectors.back().push_back(f);
+        }
+    }
+    logerr("sz = %d",data->feature_vectors[0].size());
+    return data;
+}
+
 template<typename Real>
 std::vector<Real> eigen_values(const Real A[3][3])
 {

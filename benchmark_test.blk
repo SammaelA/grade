@@ -1,20 +1,11 @@
 {
-    no_clust
-    {
-        trunks_params
-        {
-            average_cluster_size_goal:r = 1
-        }
-        branches_params
-        {
-            average_cluster_size_goal:r = 1
-        }
-    }
-    impostor2
+    kmeans
     {
         branches_params
         {
-            leaf_size_mult:r = 2
+            clustering_helper:s = "hash_simple"
+            clustering_base:s = "py_kmeans"
+            average_cluster_size_goal:r = 10
         }
     }
 }

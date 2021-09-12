@@ -38,6 +38,8 @@ public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                             bool visualize_clusters = false);
     void init(Block &packing_params_block);
+    GrovePacker() = default;
+    explicit GrovePacker(bool shared_ctx);
     std::vector<FullClusteringData *> saved_clustering_data;
 protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
@@ -54,7 +56,8 @@ protected:
     std::vector<ClusterPackingLayer> packingLayersTrees = {ClusterPackingLayer()};
 
     bool inited = false;
-    ClusteringContext ctx;
+    ClusteringContext *ctx = nullptr;
+    ClusteringContext self_ctx;
     Block dummy_block;
     Block settings_block;
     Block *trunks_params = &dummy_block;
@@ -65,4 +68,5 @@ protected:
     LeafHeap originalLeaves;
 
     bool save_clusterizer = false;
+    bool shared_context = false;
 };

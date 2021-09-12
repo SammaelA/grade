@@ -9,7 +9,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
 {
     ctx->self_impostors_raw_atlas = new TextureAtlasRawData(ctx->self_impostors_data->atlas);
     int max_size = 0;
-    std::vector<std::pair<glm::ivec4, BranchClusteringDataImpostor *>> icons;
+    std::vector<std::pair<glm::ivec4, Billboard *>> icons;
     std::vector<ivec4> cluster_frames;
     int tex_w = 0, tex_h = 0;
     for (auto &cs : clusters)
@@ -22,11 +22,14 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
     int layer_h = 0;
     for (auto &cs : clusters)
     {
-        std::vector<BranchClusteringDataImpostor *> child_clusters;
+        std::vector<Billboard *> child_clusters;
         for (auto &p : cs.members)
         {
             BranchClusteringDataImpostor *imp = dynamic_cast<BranchClusteringDataImpostor *>(branches[p.first]);
-            child_clusters.push_back(imp);
+            
+            int pos = round(imp->self_impostor->slices.size()*p.second.rot/(2*PI));
+            Billboard *icon = &(imp->self_impostor->slices[pos]);
+            child_clusters.push_back(icon);
         }
 
         int sz = child_clusters.size();
@@ -49,7 +52,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
                 if (n < child_clusters.size())
                 {
                     glm::ivec4 bounds = glm::ivec4(cur_w + w * i, cur_h + h * j, w, h);
-                    icons.push_back(std::pair<glm::ivec4, BranchClusteringDataImpostor *>(bounds, child_clusters[n]));
+                    icons.push_back(std::pair<glm::ivec4, Billboard *>(bounds, child_clusters[n]));
                 }
             }
         }
@@ -79,7 +82,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         for (auto &p : icons)
         {
 
-            auto &bill = p.second->self_impostor->slices.front();
+            auto &bill = *(p.second);
             glm::vec3 tc_from = glm::vec3(0, 0, 0);
             glm::vec3 tc_to = glm::vec3(1, 1, 0);
             ctx->self_impostors_data->atlas.process_tc(bill.id, tc_from);
@@ -127,7 +130,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         {
             continue;
         }
-        auto &bill = p.second->self_impostor->slices.front();
+        auto &bill = *(p.second);
         glm::ivec4 sizes = ctx->self_impostors_data->atlas.get_sizes();
         sizes.x /= sizes.z;
         sizes.y /= sizes.w;

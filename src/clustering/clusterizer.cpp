@@ -7,6 +7,7 @@
 #include "impostor_metric.h"
 #include "clustering.h"
 #include "visualize_clusters.h"
+#include "pyclustering.h"
 
 ClusteringStrtegy cStrategy = ClusteringStrtegy::Merge;
 
@@ -32,8 +33,10 @@ void Clusterizer2::prepare(Block &settings)
         clusteringHelper = new CPUSSClusteringHelper();
     else if (c_helper_name == "structural_similarity_gpu")
         clusteringHelper = new GPUSSClusteringHelper();
-    else if (c_helper_name == "hash_simple")
+    else if (c_helper_name == "hash_ddt")
         clusteringHelper = new DDTHashBasedClusteringHelper();
+    else if (c_helper_name == "hash_simple")
+        clusteringHelper = new SimpleHashBasedClusteringHelper();
     else
     {
         logerr("given unknown clustering helper name %s",c_helper_name);
@@ -41,6 +44,10 @@ void Clusterizer2::prepare(Block &settings)
     }
     if (c_base_name == "hierarcial")
         clusteringBase = new HierarcialClusteringBase();
+    else if (c_base_name == "py_kmeans")
+        clusteringBase = new KmeansPyClusteringBase();
+    else if (c_base_name == "py_xmeans")
+        clusteringBase = new XmeansPyClusteringBase();
     else
     {
         logerr("given unknown clustering base name %s",c_base_name);
@@ -161,8 +168,8 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
     clusteringBase->clusterize(settings, ICD, cluster_result);
 
     prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
-    if (current_clustering_step == ClusteringStep::BRANCHES)
-        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
+    //if (current_clustering_step == ClusteringStep::BRANCHES)
+    //    visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
     if (need_save_full_data)
     {
         fcd = new FullClusteringData();
@@ -229,8 +236,9 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
             for (auto &p : str.members)
             {
                 BranchClusteringData *base_bcd = branches[p.first];
+                glm::mat4 rot = glm::rotate(glm::mat4(1.0f),p.second.rot,glm::vec3(1,0,0));
                 logerr("base bcd first %d %d %d",base_bcd, center, p.first);
-                glm::mat4 tr = (base_bcd->transform) * base_transform_inv;
+                glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
 
                 it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);
                 if (it == tmpData.pos_in_table_by_id.end())

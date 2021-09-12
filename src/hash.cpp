@@ -11,7 +11,6 @@ void Hash::weight_and_normalize()
     start_points.push_back(data.size());
     for (int i=0;i<weights.size();i++)
     {
-        logerr("%f %d %d",weights[i],start_points[i],start_points[i+1]);
         for (int j=start_points[i];j<start_points[i+1];j++)
         {
             data[j] *= weights[i];
@@ -25,6 +24,39 @@ void Hash::weight_and_normalize()
     }
 
     weighted = true;
+    normalized = true;
+}
+void Hash::weight()
+{
+    if (weights.size() != start_points.size())
+    {
+        logerr("hash weight and start_points size mismatch");
+    }
+    start_points.push_back(data.size());
+    for (int i=0;i<weights.size();i++)
+    {
+        for (int j=start_points[i];j<start_points[i+1];j++)
+        {
+            data[j] *= weights[i];
+        }
+    }
+    weighted = true;
+}
+void Hash::normalize()
+{
+    double s = 0;
+
+    for (int i=0;i<data.size();i++)
+    {
+        s += SQR(data[i]);
+    }
+
+    s = sqrt(s);
+    
+    for (int i=0;i<data.size();i++)
+    {
+        data[i] /= s;
+    }
     normalized = true;
 }
 float Hash::L2_dist(Hash &h1, Hash &h2)

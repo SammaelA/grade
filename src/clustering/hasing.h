@@ -24,3 +24,16 @@ public:
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                   ClusteringContext *ctx) override;
 };
+
+
+struct IntermediateClusteringDataVectorsList : public IntermediateClusteringData
+{
+    std::vector<std::vector<double>> feature_vectors;
+};
+
+class SimpleHashBasedClusteringHelper : public HashBasedClusteringHelper
+{
+public:
+    virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
+                                                                  ClusteringContext *ctx) override;
+};
