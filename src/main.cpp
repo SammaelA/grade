@@ -31,6 +31,7 @@
 #include "parameter_selection.h"
 #include "tinyEngine/save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
+#include "simple_generator.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -357,6 +358,8 @@ int full_initialization()
   data.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
   if (generator_name == "proctree")
     gen = new Proctree::ProctreeGenerator();
+  else if (generator_name == "simple")
+    gen = new SimpleTreeGenerator();
   else
     gen = new mygen::TreeGenerator();
   data.heightmap->random_generate(0, 1, 50);

@@ -177,16 +177,17 @@ struct TreeStructureParameters : public ParametersSet
    // virtual void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
     //                             ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES) override;
 };
-class ParameterSetWrapper
+template<typename T>
+class BaseParameterSetWrapper
 {
-    std::vector<TreeStructureParameters> params;
+    std::vector<T> params;
     int state = 0;
     public:
-    ParameterSetWrapper()
+    BaseParameterSetWrapper()
     {
-        params.push_back(TreeStructureParameters());
+        params.push_back(T());
     }
-    ParameterSetWrapper(TreeStructureParameters base, int n_params)
+    BaseParameterSetWrapper(T base, int n_params)
     {
         for (int i=0;i<n_params;i++)
         {
@@ -195,5 +196,7 @@ class ParameterSetWrapper
         }
     }
     void set_state(int _state) {state = _state;}
-    TreeStructureParameters &operator()() {return params[state];}
+    T &operator()() {return params[state];}
 };
+
+using ParameterSetWrapper = BaseParameterSetWrapper<TreeStructureParameters>;

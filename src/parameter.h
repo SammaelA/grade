@@ -26,6 +26,7 @@ class Parameter
 {
 public:
     friend struct ParametersSet;
+    float get_base() { return baseValue;} 
     float get_min() { return minValue;}
     float get_max() { return maxValue;}
     std::string to_string()
