@@ -1,0 +1,60 @@
+#version 430
+#define THREADS 8
+layout( local_size_x = THREADS, local_size_y = THREADS) in;
+
+struct Task
+{
+    uvec4 from;
+    uvec4 to;
+};
+//layout(rgba8, binding = 0) readonly uniform image3D atlas;
+
+layout(std430, binding = 1) readonly buffer tasks_buf
+{
+    Task tasks[];
+};
+layout(std430, binding = 2) writeonly buffer results_buf
+{
+    float results[];
+};
+layout(std430, binding = 3) readonly buffer raw_data_buf
+{
+    uint raw_data[];
+};
+uniform int tasks_count;
+uniform int impostor_x;
+uniform int impostor_y;
+uniform int start_id;
+uniform int tex_sz_x;
+uniform int tex_sz_y;
+void main()
+{
+    uint id = gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+              gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+              gl_GlobalInvocationID.x + start_id;
+    if (id >= tasks_count)
+    {
+        return;
+    }
+    if (tasks[id].from.w == 0)
+    {
+        return;
+    }
+    float sum = 0.001;
+    float diff = 0;
+    for (int i=0;i<impostor_x;i++)
+    {
+        for (int j=0;j<impostor_y;j++)
+        {
+            ivec3 pixel_coords = ivec3(tasks[id].from.xyz) + ivec3(i, j, 0);
+            //ivec4 p1 = ivec4(255*imageLoad(atlas, pixel_coords));
+            uint u1 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
+            pixel_coords = ivec3(tasks[id].to.xyz) + ivec3(i, j, 0);
+            //ivec4 p2 = ivec4(255*imageLoad(atlas, pixel_coords));
+            uint u2 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
+            sum += 2*int((u1 != 0) || (u2 != 0));
+            diff += int(u1 != u2) + int((u1 == 0) != (u2 == 0));
+        }
+    }
+    results[id] = diff/sum; 
+}

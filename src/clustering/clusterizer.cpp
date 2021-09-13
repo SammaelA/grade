@@ -8,6 +8,7 @@
 #include "clustering.h"
 #include "visualize_clusters.h"
 #include "pyclustering.h"
+#include "GPU_impostor_metric.h"
 
 ClusteringStrtegy cStrategy = ClusteringStrtegy::Merge;
 
@@ -29,6 +30,8 @@ void Clusterizer2::prepare(Block &settings)
 
     if (c_helper_name == "impostor")
         clusteringHelper = new ImpostorClusteringHelper();
+    else if (c_helper_name == "gpu_impostor")
+        clusteringHelper = new GPUImpostorClusteringHelper();
     else if (c_helper_name == "structural_similarity_cpu")
         clusteringHelper = new CPUSSClusteringHelper();
     else if (c_helper_name == "structural_similarity_gpu")

@@ -146,6 +146,18 @@ void TextureAtlas::process_tc(int num, glm::vec3 &tc) const
     tc.y = tsc.y * (tc.y + tsh.y);
     tc.z = l;
 }
+void TextureAtlas::pixel_offsets(int num, glm::ivec3 &pix_tc) const
+{
+    glm::vec3 tc;
+    process_tc(num, tc);
+    pix_tc = glm::ivec3(width*tc.x, height*tc.y, tc.z);
+}
+void TextureAtlas::pixel_offsets(int num, glm::uvec4 &pix_tc) const
+{
+    glm::vec3 tc;
+    process_tc(num, tc);
+    pix_tc = glm::uvec4(width*tc.x, height*tc.y, tc.z, 1);
+}
 bool TextureAtlas::bind(int layer, int type)
 {
     if (type == 0)

@@ -63,6 +63,8 @@ public:
     void remove_tex(int pos);
     void process_tc(int num, glm::vec3 &tc) const;
     glm::vec4 tc_transform(int num) const;
+    void pixel_offsets(int num, glm::ivec3 &tc) const;
+    void pixel_offsets(int num, glm::uvec4 &tc) const;
     bool target(int num, int type);
     glm::mat4 tex_transform(int num) const;
     glm::ivec4 get_sizes() const { return glm::ivec4(width, height, gridWN, gridHN); }

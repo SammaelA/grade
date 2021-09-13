@@ -250,21 +250,50 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
     float min_av_dist = 1;
     int best_rot = 0;
     int sz = bwd1.self_impostor->slices.size();
-    for (int r=0;r<sz;r++)
+    bool simple_comp = isimParams.impostor_metric_level_to > 500;
+    if (simple_comp)
     {
+        float best_d = 1;
+        int best_r = 0;
+        for (int r=0;r<sz;r++)
+        {
+            float dts = imp_dist(w,h,bwd1.self_impostor->slices[0],bwd2.self_impostor->slices[r],
+                              current_data->self_impostors_raw_atlas);
+            if (dts < best_d)
+            {
+                best_d = dts;
+                best_r = r;
+            }
+        }
         float av_dst = 0;
         for (int i=0;i<sz;i++)
         {
-            av_dst += imp_dist(w,h,bwd1.self_impostor->slices[i],bwd2.self_impostor->slices[(i + r)%sz],
+            av_dst += imp_dist(w,h,bwd1.self_impostor->slices[i],bwd2.self_impostor->slices[(i + best_r)%sz],
                               current_data->self_impostors_raw_atlas);
         }
         av_dst /= sz;
-        if (av_dst < min_av_dist)
+        min_av_dist = av_dst;
+        //logerr("av_dst = %f",av_dst);
+    }
+    else
+    {
+        for (int r=0;r<sz;r++)
         {
-            min_av_dist = av_dst;
-            best_rot = r;
+            float av_dst = 0;
+            for (int i=0;i<sz;i++)
+            {
+                av_dst += imp_dist(w,h,bwd1.self_impostor->slices[i],bwd2.self_impostor->slices[(i + r)%sz],
+                                current_data->self_impostors_raw_atlas);
+            }
+            av_dst /= sz;
+            if (av_dst < min_av_dist)
+            {
+                min_av_dist = av_dst;
+                best_rot = r;
+            }
         }
     }
+    //logerr("min av_dst = %f",min_av_dist);
     data->rotation = (2*PI*best_rot)/sz;
     return Answer(true,min_av_dist,min_av_dist);
 }
