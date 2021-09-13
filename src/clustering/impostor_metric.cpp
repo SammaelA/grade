@@ -74,20 +74,29 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     ImpostorBaker ib;
     ImpostorBaker::ImpostorGenerationParams params;
     params.fixed_colors = true;
-    params.leaf_size_mult = 1;
+    params.leaf_size_mult = isimParams.leaf_size_mult;
     params.need_top_view = false;
     params.quality = Quality::LOW_AS_F;
     params.slices_n = isimParams.impostor_similarity_slices;
     params.level_from = isimParams.impostor_metric_level_from;
     params.level_to = isimParams.impostor_metric_level_to;
 
+    BranchHeap bh;
+    LeafHeap lh;
+    Branch *tmp_b = bh.new_branch();
+    tmp_b->deep_copy(base, bh, &lh);
+    glm::mat4 tr = glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,0,1))*glm::inverse(data.transform);
+    //when we render impostor we assume that the main axis is y,
+    //while after glm::inverse(data.transform) the main axis is x
+    tmp_b->transform(tr, 1);
+
             ClusterData cd;
-            cd.base = base;
+            cd.base = tmp_b;
             cd.base_pos = 0;
             cd.IDA.type_ids.push_back(base->type_id);
             cd.IDA.tree_ids.push_back(0);
-            cd.IDA.centers_par.push_back(base->center_par);
-            cd.IDA.centers_self.push_back(base->center_self);
+            cd.IDA.centers_par.push_back(tmp_b->center_par);
+            cd.IDA.centers_self.push_back(tmp_b->center_self);
             cd.IDA.transforms.push_back(glm::mat4(1.0f));
             cd.ACDA.originals.push_back(nullptr);
             //since we delete full trees right after packing the in clusters originals now mean nothing
@@ -124,14 +133,14 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
         real_branches.push_back(imp_dt);
     }
     ictx->self_impostors_raw_atlas = new TextureAtlasRawData(ictx->self_impostors_data->atlas);
-    /*if (current_clustering_step == ClusteringStep::BRANCHES)
+    if (current_clustering_step == ClusteringStep::BRANCHES)
     {
         textureManager.save_bmp_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
                                     ictx->self_impostors_raw_atlas->get_w(),
                                     ictx->self_impostors_raw_atlas->get_h(),
                                     4,
                                     "raw bmp");
-    }*/
+    }
     for (int i = 0; i < real_branches.size(); i++)
     {
         for (int j = 0; j < real_branches.size(); j++)
