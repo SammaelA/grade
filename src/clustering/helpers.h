@@ -9,7 +9,7 @@
 
 glm::vec3 canonical_bbox();
 bool get_dedicated_bbox(Branch *branch, BBox &bbox);
-void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to);
+void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, float scale);
 void set_occlusion(Branch *b, LightVoxelsCube *light);
     struct Answer
     {

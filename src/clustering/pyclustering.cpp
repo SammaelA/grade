@@ -171,7 +171,7 @@ bool OpticsDBscanPyClusteringBase::clusterize_internal(Block &settings, Intermed
         float dbscan_radius_connectivity = get_default_block().get_double("dbscan_radius_connectivity",0.4);
         dbscan_radius_connectivity = settings.get_double("dbscan_radius_connectivity",dbscan_radius_connectivity);
 
-        int dbscan_minimum_neighbours = get_default_block().get_int("dbscan_minimum_neighbours",3);
+        int dbscan_minimum_neighbours = get_default_block().get_int("dbscan_minimum_neighbours",2);
         dbscan_minimum_neighbours = settings.get_int("dbscan_minimum_neighbours",dbscan_minimum_neighbours);
         pyclustering::clst::dbscan dbscan(dbscan_radius_connectivity, dbscan_minimum_neighbours);
         dbscan.process(main_data->feature_vectors, dbscan_data);
@@ -179,7 +179,7 @@ bool OpticsDBscanPyClusteringBase::clusterize_internal(Block &settings, Intermed
     }
     else if (type == OPTICS)
     {
-        int optics_minimum_neighbours = get_default_block().get_int("optics_minimum_neighbours",3);
+        int optics_minimum_neighbours = get_default_block().get_int("optics_minimum_neighbours",2);
         optics_minimum_neighbours = settings.get_int("optics_minimum_neighbours",optics_minimum_neighbours);
         pyclustering::clst::optics optics(0.0, optics_minimum_neighbours, clusters);
         optics.process(main_data->feature_vectors, optics_data);

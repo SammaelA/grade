@@ -70,7 +70,8 @@ public:
     virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
 private:
     void create_tree(Tree *tree, glm::vec3 pos);
-    void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, float base_r);
+    void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
+                       float base_r, float leaves_chance);
     BaseParameterSetWrapper<SimpleTreeStructureParameters> params;
     GroveGenerationData ggd;
     Heightmap *h;

@@ -40,11 +40,12 @@
         max_individual_dist:r = 1
         voxelized_structure:b = true
         different_types_tolerance:b = false
-        leaf_size_mult:i = 1.5
+        leaf_size_mult:r = 1.5
+        wood_size_mult:r = 7.5
         structure_voxels_size_mult:r = 0.4
         light_importance:r = 0.2
         ignore_structure_level:i = 3
-        average_cluster_size_goal:r = 20
+        average_cluster_size_goal:r = 25
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.5,0.2,0,0,0}

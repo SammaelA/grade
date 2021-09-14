@@ -6,10 +6,11 @@ struct HashingParams
     int hash_count = 4;
     int EV_hasing_voxels_per_cell = 17;
     int EV_hasing_cells = 5;
-    float max_individual_dist = 1;
+    float max_individual_dist = 1000;
     bool voxelized_structure = true;
     float light_importance = 0.5;
     int ignore_structure_level = 2;
+    float wood_size_mult = 1;
     void load_from_block(Block *b);
     void load(Block *b);
 };
@@ -31,6 +32,7 @@ void HashingParams::load_from_block(Block *b)
     voxelized_structure = b->get_bool("voxelized_structure",voxelized_structure);
     light_importance = b->get_double("light_importance",light_importance);
     ignore_structure_level = b->get_int("ignore_structure_level",ignore_structure_level);
+    wood_size_mult = b->get_double("wood_size_mult",wood_size_mult);
 }
 
 HashingParams isParams;
@@ -80,7 +82,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch(Block &settings,
                 branchHash->hashes.back().weights.emplace_back();
                 branchHash->hashes.back().weights[0] = isParams.light_importance;
                 branchHash->hashes.back().weights[1] = 1 - isParams.light_importance;
-                voxelize_original_branch(b, vb, isParams.ignore_structure_level);
+                voxelize_original_branch(b, vb, isParams.ignore_structure_level, isParams.wood_size_mult);
                 set_eigen_values_hash(vb, branchHash->hashes.back(), cells, sz_per_cell, sz);
 
                 delete vb;
@@ -151,8 +153,6 @@ IntermediateClusteringData *DDTHashBasedClusteringHelper::prepare_intermediate_d
                         min_rot = r;
                     }
                 }
-                if (min_dist > isParams.max_individual_dist)
-                    min_dist = 1e9;
                 a.from = min_dist;
                 a.to = min_dist;
                 a.exact = true;
@@ -193,7 +193,6 @@ IntermediateClusteringData *SimpleHashBasedClusteringHelper::prepare_intermediat
             data->feature_vectors.back().push_back(f);
         }
     }
-    logerr("sz = %d",data->feature_vectors[0].size());
     return data;
 }
 

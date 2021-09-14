@@ -53,7 +53,7 @@ BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationP
                 glm::vec3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
                 1 / clusterizationParams.structure_voxels_size_mult, 1.0f));
 
-            voxelize_original_branch(b, voxelizedStructures.back(), 1);
+            voxelize_original_branch(b, voxelizedStructures.back(), 1, 1);
         }
     }
 }

@@ -13,11 +13,20 @@ vec3 rand_dir()
 
 int ids = 0;
 
-void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_pos, vec3 base_dir, vec3 normal, int level, float base_r)
+void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_pos, vec3 base_dir, vec3 normal, int level, 
+                                        float base_r, float leaves_chance)
 {
+
     params.set_state(level);
 
     int seg_count = params().segment_count();
+    //more diversity to test clustering 
+    if (level == 1)
+    {
+        leaves_chance = urand();
+        float rnd = urand();
+        seg_count = rnd < 0.4 ? (rnd*seg_count + 2) : seg_count;
+    }
     branch->joints.emplace_back();
     branch->joints.back().pos = start_pos;
     base_r = 0.67*MIN(1, seg_count/params().segment_count.get_base())*base_r;
@@ -51,7 +60,7 @@ void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_p
         branch->joints.emplace_back();
         branch->joints.back().pos = new_pos;
 
-        if (level + 1 == params().max_depth() && urand() < params().leaves_chance())
+        if (level + 1 == params().max_depth() && urand() < leaves_chance)
         {
             //create leaf
             Joint &j = branch->joints.back();
@@ -103,7 +112,7 @@ void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_p
 
             glm::vec3 nb_dir = normalize(x*x_axis + y*y_axis + z*z_axis);
             glm::vec3 nb_norm = normalize(cross(base_dir, nb_dir));
-            create_branch(tree, ch_b, new_pos, nb_dir, nb_norm, level+1, r);
+            create_branch(tree, ch_b, new_pos, nb_dir, nb_norm, level+1, r, leaves_chance);
             params.set_state(level);
         }
     }
@@ -120,7 +129,7 @@ void SimpleTreeGenerator::create_tree(Tree *tree, vec3 pos)
     tree->root->center_par = vec3(0,0,0);
     tree->root->plane_coef = vec4(1,0,0,-pos.x);
     tree->root->id = tree->id;
-    create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params().base_thickness());
+    create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params().base_thickness(), 0);
 }
 
 void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_external, Heightmap &_h)

@@ -75,7 +75,7 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree *t, int count, int la
     {
         int prev_n = base_clusters.size();
         get_base_clusters(settings, t[i], layer, base_clusters, ctx);
-        debugl(3, " added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
+        debugl(3, "added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
 }
 BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx)
@@ -151,7 +151,7 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
         {
             branches.push_back(c.ACDA.clustering_data[c.base_pos]);
             branches.back()->base_cluster_id = c.id;
-            logerr("cluster id %d %d %d",c.id, c.base_pos, branches.back());
+            debugl(3, "cluster id %d %d %d\n",c.id, c.base_pos, branches.back());
         }
     }
 
@@ -221,7 +221,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
     {
         for (auto *b : branches)
         {
-            logerr("center %d", b->base_cluster_id);
+            debugl(3, "center %d\n", b->base_cluster_id);
         }
         for (auto &str : result)
         {
@@ -230,7 +230,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
             auto &IDA = res_cluster.IDA;
             auto &ACDA = res_cluster.ACDA;
             BranchClusteringData *center = branches[str.center];
-            logerr("center %d from %d id %d",str.center, branches.size(),center->base_cluster_id);
+            debugl(3, "center %d from %d id %d\n",str.center, branches.size(),center->base_cluster_id);
             auto it = tmpData.pos_in_table_by_id.find(center->base_cluster_id);
             if (it == tmpData.pos_in_table_by_id.end())
             {
@@ -244,7 +244,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
             {
                 BranchClusteringData *base_bcd = branches[p.first];
                 glm::mat4 rot = glm::rotate(glm::mat4(1.0f),p.second.rot,glm::vec3(1,0,0));
-                logerr("base bcd first %d %d %d",base_bcd, center, p.first);
+                debugl(3, "base bcd first %d %d %d\n",base_bcd, center, p.first);
                 glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
 
                 it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);

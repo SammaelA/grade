@@ -1,18 +1,11 @@
 {
-    dbscan
+    hasing
     {
         branches_params
         {
-            clustering_helper:s = "hash_simple"
-            clustering_base:s = "dbscan"
-        }
-    }
-    optics
-    {
-        branches_params
-        {
-            clustering_helper:s = "hash_simple"
-            clustering_base:s = "optics"
+            clustering_helper:s = "hash_ddt"
+            wood_size_mult:r = 4
+            light_importance:r = 0.5
         }
     }
 }

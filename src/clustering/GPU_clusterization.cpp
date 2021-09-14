@@ -117,7 +117,6 @@ void GPUClusterizationHelper::fill_branch_data(BranchWithData &branch, bool voxe
 
     if (voxelized_structure)
     {
-        logerr("structure_voxels_offset %d %d", branch.voxelizedStructures.size(),cur_structure_voxels_pointer);
         glm::ivec3 sizes;
         float *ptr = nullptr;
         br.structure_voxels_offset = cur_structure_voxels_pointer;

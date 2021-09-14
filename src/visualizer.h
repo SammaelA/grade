@@ -20,10 +20,10 @@ public:
     void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw = glm::vec2(1,0));
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
 protected:
-    void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
+    void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale);
     void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos,
                   std::vector<float> &mults, glm::vec3 p = glm::vec3(1,0,0));
-    void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos);
+    void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale);
     void seg_vertexes_to_model(SegmentVertexes &sv, Model *m, glm::vec2 tc_zw = glm::vec2(1,0));
     void segment_to_model(Segment &s, Model *m, bool leaves);
     void joint_to_model(Joint &j, Model *m, bool leaves);

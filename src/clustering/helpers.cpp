@@ -29,7 +29,7 @@ bool get_dedicated_bbox(Branch *branch, BBox &bbox)
     bbox = BillboardCloudRaw::get_bbox(branch, a, b, c);
     return true;
 }
-void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to)
+void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, float scale)
 {
     glm::vec3 second_vec = glm::vec3(b->plane_coef.x,b->plane_coef.y,b->plane_coef.z);
     for (Segment &s : b->segments)
@@ -38,7 +38,7 @@ void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to)
         glm::vec3 n = glm::normalize(glm::cross(dir, second_vec));
         float len = length(dir);
         float v = (1/3.0)*PI*(SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end));
-        float R = 0.5*(s.rel_r_begin + s.rel_r_end);
+        float R = 0.5*scale*(s.rel_r_begin + s.rel_r_end);
         int samples = MIN(5 + 0.25*v, 50);
 
         //approximate partial cone with cylinder
@@ -59,7 +59,7 @@ void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to)
         {
             for (Branch *br : j.childBranches)
             {
-                voxelize_original_branch(br, light, level_to);
+                voxelize_original_branch(br, light, level_to, scale);
             }
         }
     }

@@ -99,22 +99,22 @@ void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, Segmen
         n = r * n;
     }
 }
-void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
     glm::vec3 start = s.begin;
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
-    get_ring(start, dir, s.rel_r_begin, sv, ring_size, rel_ring_pos,s.mults);
+    get_ring(start, dir, scale*s.rel_r_begin, sv, ring_size, rel_ring_pos,s.mults);
 }
-void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos)
+void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
     glm::vec3 start = s.begin;
     glm::vec3 end = s.end;
     glm::vec3 dir = end - start;
     std::vector<VertexData> data = sv.bigRing;
-    get_ring(end, dir, s.rel_r_end, sv, ring_size, rel_ring_pos,s.mults);
+    get_ring(end, dir, scale*s.rel_r_end, sv, ring_size, rel_ring_pos,s.mults);
     sv.smallRing = sv.bigRing;
     sv.bigRing = data;
 }
@@ -200,7 +200,7 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
             for (auto &segment : b.segments)
             {
                 SegmentVertexes vt;
-                get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
+                get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3, scale);
                 if (!vets.empty())
                     vets.back().smallRing = vt.bigRing;
                 //segment_to_model(segment,m,leaves);
@@ -209,7 +209,7 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
             }
             if (!vets.empty())
             {
-                get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
+                get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3, scale);
             }
 
             for (auto &vt : vets)
@@ -242,7 +242,7 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
         for (auto &segment : b.segments)
         {
             SegmentVertexes vt;
-            get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
+            get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3, 1);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             //segment_to_model(segment,m,leaves);
@@ -251,7 +251,7 @@ void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
         }
         if (!vets.empty())
         {
-            get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
+            get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, (float)(i % 3) / 3, 1);
         }
 
         //seg_vertexes_to_model(vets.front(),m);
@@ -706,7 +706,7 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
         for (auto &segment : b->segments)
         {
             SegmentVertexes vt;
-            get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3);
+            get_base_ring(segment, vt, ringsize, (float)(i % 3) / 3, 1);
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);
@@ -714,7 +714,7 @@ void DebugVisualizer::branch_to_model_debug(Branch *b, int level, Model &m)
         }
         if (!vets.empty())
         {
-            get_last_seg_vertexes(b->segments.back(), vets.back(), ringsize, (float)(i % 3) / 3);
+            get_last_seg_vertexes(b->segments.back(), vets.back(), ringsize, (float)(i % 3) / 3, 1);
         }
         for (auto &vt : vets)
         {

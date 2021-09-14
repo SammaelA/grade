@@ -29,6 +29,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
         real_branches.push_back(imp_dt);
     }
     ictx->self_impostors_raw_atlas = new TextureAtlasRawData(ictx->self_impostors_data->atlas);
+    /*
     if (current_clustering_step == ClusteringStep::BRANCHES)
     {
         textureManager.save_bmp_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
@@ -37,6 +38,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                                     4,
                                     "raw bmp");
     }
+    */
     int tasks_cnt_per_impostor = real_branches[0]->self_impostor->slices.size();
     int sz = real_branches.size();
     int tasks_cnt = tasks_cnt_per_impostor*tasks_cnt_per_impostor*sz*sz;
