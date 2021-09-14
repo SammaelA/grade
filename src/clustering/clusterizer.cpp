@@ -51,6 +51,10 @@ void Clusterizer2::prepare(Block &settings)
         clusteringBase = new KmeansPyClusteringBase();
     else if (c_base_name == "py_xmeans")
         clusteringBase = new XmeansPyClusteringBase();
+    else if (c_base_name == "dbscan")
+        clusteringBase = new XmeansPyClusteringBase();
+    else if (c_base_name == "optics")
+        clusteringBase = new XmeansPyClusteringBase();
     else
     {
         logerr("given unknown clustering base name %s",c_base_name);

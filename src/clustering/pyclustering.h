@@ -29,3 +29,32 @@ public:
         return clusterize_internal(settings, data, result, XKmeans::X_MEANS, 0.5, true);
     }
 };
+
+
+enum Optics_DBscan
+{
+    OPTICS,
+    DBSCAN,
+};
+class OpticsDBscanPyClusteringBase : public ClusteringBase
+{
+protected:
+    virtual bool clusterize_internal(Block &settings, IntermediateClusteringData *data, std::vector<ClusterStruct> &result, 
+                                     Optics_DBscan type);
+};
+class DBscanPyClusteringBase : public OpticsDBscanPyClusteringBase
+{
+public:
+    virtual bool clusterize(Block &settings, IntermediateClusteringData *data, std::vector<ClusterStruct> &result) override
+    {
+        return clusterize_internal(settings, data, result, Optics_DBscan::DBSCAN);
+    }
+};
+class OpticsPyClusteringBase : public OpticsDBscanPyClusteringBase
+{
+public:
+    virtual bool clusterize(Block &settings, IntermediateClusteringData *data, std::vector<ClusterStruct> &result) override
+    {
+        return clusterize_internal(settings, data, result, Optics_DBscan::OPTICS);
+    }
+};

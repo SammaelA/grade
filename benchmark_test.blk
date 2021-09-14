@@ -1,34 +1,18 @@
 {
-    gpu_imp_6
+    dbscan
     {
         branches_params
         {
-            clustering_helper:s = "gpu_impostor"
-            max_dispatches: i = 6
+            clustering_helper:s = "hash_simple"
+            clustering_base:s = "dbscan"
         }
     }
-    gpu_imp_8
+    optics
     {
         branches_params
         {
-            clustering_helper:s = "gpu_impostor"
-            max_dispatches: i = 8
-        }
-    }
-    gpu_imp_12
-    {
-        branches_params
-        {
-            clustering_helper:s = "gpu_impostor"
-            max_dispatches: i = 12
-        }
-    }
-    gpu_imp_16
-    {
-        branches_params
-        {
-            clustering_helper:s = "gpu_impostor"
-            max_dispatches: i = 16
+            clustering_helper:s = "hash_simple"
+            clustering_base:s = "optics"
         }
     }
 }
