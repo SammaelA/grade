@@ -20,8 +20,9 @@ struct Cluster
     Cluster *U = nullptr;
     Cluster *V = nullptr;
     int size = 0;
+    bool can_be_center = true;
     std::map<Cluster *, DistData> distances;
-    Cluster(int n);
+    Cluster(int n, bool can_be_center);
     Cluster(Cluster *_U, Cluster *_V);
     void to_base_clusters(std::vector<Cluster *> &clusters);
     float ward_dist(Cluster *B, float min = 1.0, float max = 0.0);

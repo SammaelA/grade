@@ -21,18 +21,20 @@ struct ClusterDendrogramm
     Cluster *root;
     std::vector<Cluster> clusters;
     std::list<int> current_clusters;
-    void make_base_clusters(int count)
+    void make_base_clusters(std::vector<BranchClusteringData *> &branches)
     {
-        size = count;
-        clusters.reserve(count * 2);
-        for (int i = 0; i < count; i++)
+        size = branches.size();
+        clusters.reserve(size * 2);
+        for (int i = 0; i < size; i++)
         {
-            clusters.push_back(Cluster(i));
+            clusters.push_back(Cluster(i, branches[i]->can_be_center));
             current_clusters.push_back(i);
+            all_clusters_can_be_center = all_clusters_can_be_center && branches[i]->can_be_center;
         }
     }
     void make(int n = 20, int clusters_num = 1);
     Dist get_P_delta(int n, std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta);
+    bool all_clusters_can_be_center = true;
 };
 
 class HierarcialClusteringBase : public ClusteringBase

@@ -46,7 +46,7 @@ bool HierarcialClusteringBase::clusterize(Block &settings, IntermediateClusterin
 
     currentDdt = &(main_data->ddt);
     ClusterDendrogramm den;
-    den.make_base_clusters(main_data->elements_count);
+    den.make_base_clusters(main_data->branches);
     den.make();
 
     for (int c_num : den.current_clusters)
@@ -125,6 +125,45 @@ ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clusters, std::li
 void ClusterDendrogramm::make(int n, int clusters_num)
 {
     int initial_clusters = current_clusters.size();
+
+    if (!all_clusters_can_be_center)
+    {
+        //first we need to make clusters with at least one branch that
+        //can be center in each
+        std::list<int> no_centers_clusters;
+        std::list<int> centers_clusters;
+        for (int cl : current_clusters)
+        {
+            if (!clusters[cl].can_be_center)
+                no_centers_clusters.push_back(cl);
+            else
+                centers_clusters.push_back(cl);
+        }
+
+        for (int cl : no_centers_clusters)
+        {
+            float min = 1000;
+            int min_pos = -1;
+            for (int cent : centers_clusters)
+            {
+                float d = clusters[cl].ward_dist(&(clusters[cent]));
+                if (d < min)
+                {
+                    min = d;
+                    min_pos = cent;
+                }
+            }
+            current_clusters.remove(cl);
+            current_clusters.remove(min_pos);
+            clusters.push_back(Cluster(&(clusters[cl]),&(clusters[min_pos])));
+            int W = clusters.size() - 1;
+            current_clusters.push_back(W);
+
+            centers_clusters.remove(min_pos);
+            centers_clusters.push_back(W);
+        }
+    }
+
     std::list<Dist> P_delta;
     float delta;
     Dist min = get_P_delta(n, current_clusters, P_delta, delta);
@@ -179,11 +218,6 @@ void ClusterDendrogramm::make(int n, int clusters_num)
         }
         current_clusters.push_back(W);
         min = Dist(-1, -1, 1000);
-        int sum = 0;
-        for (int S : current_clusters)
-        {
-            sum += clusters[S].size;
-        }
     }
     int sum = 0;
     for (int S : current_clusters)
@@ -232,16 +266,18 @@ int HierarcialClusteringBase::get_typical(std::vector<Cluster *> &clusters)
     }
     return clusters[min_pos]->branch_n;
 }
-Cluster::Cluster(int n)
+Cluster::Cluster(int n, bool _can_be_center)
 {
     branch_n = n;
     size = 1;
+    can_be_center = _can_be_center;
 }
 Cluster::Cluster(Cluster *_U, Cluster *_V)
 {
     U = _U;
     V = _V;
     size = U->size + V->size;
+    can_be_center = _U->can_be_center || _V->can_be_center;
 }
 void Cluster::to_base_clusters(std::vector<Cluster *> &clusters)
 {

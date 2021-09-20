@@ -16,153 +16,9 @@
 #include "grove_packer.h"
 #include "clustering/default_clustering_params.h"
 
-void transform_according_to_root(ClusterData &cluster)
-{
-    InstanceDataArrays IDA = cluster.IDA;
-    ::Branch *base = cluster.base;
-    if (cluster.ACDA.originals.size() != IDA.transforms.size())
-    {
-        logerr("Transform according to root failed: corrupted clusters data.");
-        return;
-    }
-    for (int i = 0; i < cluster.ACDA.originals.size(); i++)
-    {
-        if (base->joints.empty() || cluster.ACDA.originals[i]->joints.empty())
-            continue;
-        std::vector<glm::vec3> replaced_joints;
-        for (::Joint &j : base->joints)
-            replaced_joints.push_back(glm::vec3(IDA.transforms[i] * glm::vec4(j.pos, 1)));
-        for (::Joint &j : cluster.ACDA.originals[i]->joints)
-        {
-            float d_min = 1e9;
-            glm::vec3 n_min = glm::vec3(0);
-            for (glm::vec3 &np : replaced_joints)
-            {
-                float d = glm::length(np - j.pos);
-                if (d < d_min)
-                {
-                    d_min = d;
-                    n_min = np;
-                }
-            }
-            glm::vec3 sh = n_min - j.pos;
-            for (::Branch *ch_b : j.childBranches)
-            {
-                glm::mat4 tr = glm::translate(glm::mat4(1.0f), sh);
-                ch_b->transform(tr);
-            }
-        }
-    }
-}
-
 GrovePacker::GrovePacker(bool shared_ctx)
 {
     shared_context = shared_ctx;
-}
-
-void GrovePacker::transform_all_according_to_root(GrovePacked &grove)
-{
-    const int needed_level = 1;
-    struct TreeInstance
-    {
-        std::vector<std::vector<PackedJoint> *> joints;
-        glm::mat4 transform;
-    };
-    std::map<int, TreeInstance> all_trees;
-
-    for (auto &layer : packingLayersTrunks)
-    {
-        for (int i = 0; i < layer.clusters.size(); i++)
-        {
-            auto &cl = layer.clusters[i];
-            auto &ids = layer.additional_data[i].instanced_branch->branches;
-            std::vector<std::vector<PackedJoint> *> joints;
-
-            for (uint br_id : ids)
-            {
-                auto &f = grove.instancedCatalogue.get(br_id);
-                joints.push_back(&(f.joints));
-            }
-
-            for (int j = 0; j < cl.IDA.tree_ids.size(); j++)
-            {
-                TreeInstance in;
-                in.joints = joints;
-                in.transform = cl.IDA.transforms[j];
-                all_trees.emplace(cl.IDA.tree_ids[j], in);
-            }
-        }
-    }
-
-    for (auto &in_br : grove.instancedBranches)
-    {
-        PackedBranch &base = grove.instancedCatalogue.get(in_br.branches[0]);
-        if (base.level != needed_level)
-            continue;
-        for (int j = 0; j < in_br.IDA.tree_ids.size(); j++)
-        {
-            glm::vec3 pos = glm::vec3(in_br.IDA.transforms[j] * glm::vec4(base.joints[0].pos, 1));
-            auto tree_it = all_trees.find(in_br.IDA.tree_ids[j]);
-            if (tree_it == all_trees.end())
-            {
-                logerr("found branch from tree with unknow id = %d", in_br.IDA.tree_ids[j]);
-                continue;
-            }
-            glm::vec3 nearest_pos = pos + glm::vec3(0, 1000, 0);
-            float nearestDistSq = 1000;
-            for (std::vector<PackedJoint> *v1 : tree_it->second.joints)
-            {
-                for (PackedJoint &j : *v1)
-                {
-                    glm::vec3 jpos = glm::vec3(tree_it->second.transform * glm::vec4(j.pos, 1));
-                    float distSq = glm::dot(jpos - pos, jpos - pos);
-                    if (distSq < nearestDistSq)
-                    {
-                        nearestDistSq = distSq;
-                        nearest_pos = jpos;
-                    }
-                }
-            }
-            glm::vec3 shift = nearest_pos - pos;
-            in_br.IDA.transforms[j] = glm::translate(glm::mat4(1.0f), shift) * in_br.IDA.transforms[j];
-            //logerr("translated branch %f %f %f", shift.x, shift.y, shift.z);
-        }
-    }
-
-    for (auto &bc : grove.clouds)
-    {
-        for (auto &in_br : bc.billboards)
-        {
-            for (int j = 0; j < in_br.IDA.tree_ids.size(); j++)
-            {
-                glm::vec3 pos = glm::vec3(in_br.IDA.transforms[j] * glm::vec4(in_br.base_position, 1));
-                auto tree_it = all_trees.find(in_br.IDA.tree_ids[j]);
-                if (tree_it == all_trees.end())
-                {
-                    logerr("found branch from tree with unknow id = %d", in_br.IDA.tree_ids[j]);
-                    continue;
-                }
-                glm::vec3 nearest_pos = pos + glm::vec3(0, 1000, 0);
-                float nearestDistSq = 1000;
-                for (std::vector<PackedJoint> *v1 : tree_it->second.joints)
-                {
-                    for (PackedJoint &j : *v1)
-                    {
-                        glm::vec3 jpos = glm::vec3(tree_it->second.transform * glm::vec4(j.pos, 1));
-                        float distSq = glm::dot(jpos - pos, jpos - pos);
-                        if (distSq < nearestDistSq)
-                        {
-                            nearestDistSq = distSq;
-                            nearest_pos = jpos;
-                        }
-                    }
-                }
-                glm::vec3 shift = nearest_pos - pos;
-                in_br.IDA.transforms[j] = glm::translate(glm::mat4(1.0f), shift) * in_br.IDA.transforms[j];
-                //logerr("translated bill %f %f %f", shift.x, shift.y, shift.z);
-            }
-        }
-    }
 }
 
 void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to);
@@ -231,7 +87,6 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
         PackedBranch pb;
         b->pack(pb);
         ids.push_back(grove.instancedCatalogue.add(pb, b->level));
-        logerr("packed %d", b->level);
         //b_struct.childBranches.push_back(BranchStructure(ids.back()));
     }
     for (::Joint &j : b->joints)
@@ -422,7 +277,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     {
         Branch *original = packingLayers[info.layer].clusters[info.pos].base;
         Branch *new_original = originalBranches.new_branch();
-        logerr("cluster size %d",packingLayers[info.layer].clusters[info.pos].IDA.transforms.size());
+
         for (auto &info : expanded_clusters)
         {
             if (packingLayers[info.from.layer].clusters[info.from.pos].base == original)
@@ -436,8 +291,12 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         }
         new_original->deep_copy(original,originalBranches, &originalLeaves);
         packingLayers[info.layer].clusters[info.pos].base = new_original;
-
-
+      
+        if (layer_from == 0 && layer_to == 0)
+            recalculate_nodes(packingLayers[info.layer].clusters[info.pos]); 
+        else if (layer_from == 1)
+            transform_by_nodes(packingLayers[info.layer].clusters[info.pos]);
+    
         if (models && (ggd.task & (GenerationTask::MODELS)))
         {
             std::vector<BranchStructure> instanced_structures;
@@ -468,7 +327,12 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         debugl(6, "added cluster %d\n", packingLayers[info.layer].clusters[info.pos].id);
     }
     for (auto &info : expanded_clusters)
-    {
+    {       
+        if (layer_from == 0 && layer_to == 0)
+            recalculate_nodes(packingLayers[info.to.layer].clusters[info.to.pos]); 
+        else if (layer_from == 1)
+            transform_by_nodes(packingLayers[info.to.layer].clusters[info.to.pos]);
+        
         if (models && (ggd.task & (GenerationTask::MODELS)))
         {
             auto &it = packingLayers[info.from.layer].additional_data[info.from.pos].instanced_branch;
@@ -559,6 +423,57 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         delete cl;
 }
 
+void GrovePacker::recalculate_nodes(ClusterData &cl)
+{
+    for (int k = 0; k < cl.IDA.transforms.size(); k++)
+    {
+        auto nit = trees_nodes.find(cl.IDA.tree_ids[k]);
+        if (nit == trees_nodes.end())
+        {
+            logerr("cannot find list of nodes for tree %d", cl.IDA.tree_ids[k]);
+        }
+        else
+        {
+            nit->second.clear();
+            for (Joint &j : cl.base->joints)
+            {
+                glm::vec3 pos = glm::vec3(cl.IDA.transforms[k] * glm::vec4(j.pos, 1));
+                nit->second.push_back({pos});
+            }
+        }
+    }
+}
+
+void GrovePacker::transform_by_nodes(ClusterData &cl)
+{
+    glm::vec4 base_pos = glm::vec4(cl.base->joints.front().pos, 1);
+    for (int i = 0; i < cl.IDA.transforms.size(); i++)
+    {
+        glm::vec3 pos = glm::vec3(cl.IDA.transforms[i] * base_pos);
+        float min_dist = 1000;
+        glm::vec3 min_vec = glm::vec3(0, 0, 0);
+        auto it = trees_nodes.find(cl.IDA.tree_ids[i]);
+        if (it == trees_nodes.end())
+        {
+            logerr("cannot find list of nodes for tree %d", cl.IDA.tree_ids[i]);
+        }
+        else
+        {
+            for (auto &node : it->second)
+            {
+                glm::vec3 dist = node.position - pos;
+                float d = glm::dot(dist, dist);
+                if (d < min_dist)
+                {
+                    min_dist = d;
+                    min_vec = dist;
+                }
+            }
+            cl.IDA.transforms[i] = glm::translate(glm::mat4(1.0f), min_vec) * cl.IDA.transforms[i];
+        }
+    }
+}
+
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                      bool visualize_clusters)
 {
@@ -645,6 +560,16 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         post_seeder->recalcuate_shadows(trees_external, count);
         add_occluder(post_voxels, trees_external, count);
     }
+
+    for (int i = 0; i < count; i++)
+    {
+        auto it = trees_nodes.emplace(trees_external[i].id,std::vector<Node>{});
+        for (Joint &j : trees_external[i].root->joints)
+        {
+            it.first->second.push_back({j.pos});
+        }
+    }
+
 
     current_clustering_step = ClusteringStep::TRUNKS;
     pack_layer(*trunks_params, ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,

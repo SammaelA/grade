@@ -49,7 +49,9 @@ protected:
                     std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
                     int layer_from, int layer_to, bool models, bool bill, bool imp,
                     bool visualize_clusters);
-    void transform_all_according_to_root(GrovePacked &grove);
+
+    void recalculate_nodes(ClusterData &cl);
+    void transform_by_nodes(ClusterData &cl);
     void init();
     void base_init();
     std::vector<ClusterPackingLayer> packingLayersBranches = {ClusterPackingLayer()};
@@ -71,4 +73,12 @@ protected:
     bool save_clusterizer = false;
     bool shared_context = false;
     int clustering_base_level = 0;
+
+    struct Node
+    {
+        glm::vec3 position;
+    };
+
+    std::map<int, std::vector<Node> > trees_nodes;//for each tree in grove it represents joints of current instance
+                                                  //for this tree
 };
