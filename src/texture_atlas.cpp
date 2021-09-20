@@ -50,7 +50,7 @@ normalTex(atlas.normalTex)
 }
 TextureAtlas::TextureAtlas(int w, int h, int l) :
                            Countable(1),
-                           colorTex(textureManager.create_unnamed_array(w, h, false, 4*l)),
+                           colorTex(textureManager.create_unnamed_array(w, h, false, l)),
                            normalTex(textureManager.create_unnamed_array(w, h, false, l)),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
@@ -387,8 +387,14 @@ TextureAtlasRawData::TextureAtlasRawData(const TextureAtlas &atlas)
     slice_w = w/gridWN;
     layers = atlas.layers_count();
     slices = layers * gridWN * gridHN;
-    raw_data = new unsigned char[8*w*h*layers+1];
+    raw_data = new unsigned char[4*w*h*layers+1];
 
+  /*int texDims[10];
+    glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_WIDTH, texDims);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_HEIGHT, texDims + 1);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_DEPTH, texDims + 2);
+    logerr("tex sizes real %d %d %d but layers %d",texDims[0], texDims[1], texDims[2], layers);*/
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.colorTex.texture);
 
     glGetTexImage(GL_TEXTURE_2D_ARRAY,

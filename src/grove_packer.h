@@ -40,6 +40,7 @@ public:
     void init(Block &packing_params_block);
     GrovePacker() = default;
     explicit GrovePacker(bool shared_ctx);
+    ClusteringStrategy get_clustering_strategy() { return cStrategy; }
     std::vector<FullClusteringData *> saved_clustering_data;
 protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
@@ -66,7 +67,8 @@ protected:
     GroveGenerationData groveGenerationData;
     BranchHeap originalBranches;
     LeafHeap originalLeaves;
-
+    ClusteringStrategy cStrategy = ClusteringStrategy::Merge;
     bool save_clusterizer = false;
     bool shared_context = false;
+    int clustering_base_level = 0;
 };

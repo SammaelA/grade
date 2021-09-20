@@ -101,7 +101,7 @@ struct FullClusteringData
     std::map<int,int> pos_in_table_by_id;
     std::map<int,int> pos_in_table_by_branch_id;
 };
-DEFINE_ENUM_WITH_STRING_CONVERSIONS(ClusteringStrtegy,(Merge)(Recreate))
+DEFINE_ENUM_WITH_STRING_CONVERSIONS(ClusteringStrategy,(Merge)(Recreate))
 
 class Clusterizer2
 {
@@ -112,6 +112,10 @@ public:
     void clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
                     ClusteringContext *ctx, bool need_save_full_data = false);
     FullClusteringData *get_full_data() { return fcd; }
+    explicit Clusterizer2(ClusteringStrategy _cStrategy = ClusteringStrategy::Merge)
+    {
+        cStrategy = _cStrategy;
+    }
     ~Clusterizer2();
     
 private:
@@ -122,7 +126,8 @@ private:
     };
     void get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
                            ClusteringContext *ctx);
-    void prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<BranchClusteringData *> &branches);
+    void prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<BranchClusteringData *> &branches,
+                          bool need_save_full_data = false);
     void prepare_result(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
                         std::vector<BranchClusteringData *> &branches, ClusteringContext *ctx, 
                         std::vector<ClusteringBase::ClusterStruct> &result);
@@ -131,4 +136,5 @@ private:
     ClusteringBase *clusteringBase = nullptr;
     ClusterizationTmpData tmpData;
     FullClusteringData *fcd = nullptr;
+    ClusteringStrategy cStrategy = ClusteringStrategy::Merge;
 };

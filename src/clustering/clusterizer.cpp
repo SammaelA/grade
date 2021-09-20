@@ -10,7 +10,6 @@
 #include "pyclustering.h"
 #include "GPU_impostor_metric.h"
 
-ClusteringStrtegy cStrategy = ClusteringStrtegy::Merge;
 
 using namespace glm;
 int cur_cluster_id = 0;
@@ -27,7 +26,7 @@ void Clusterizer2::prepare(Block &settings)
 
     std::string c_base_name = def_b.get_string("clustering_base","hierarcial");
     c_base_name = settings.get_string("clustering_base",c_base_name);
-
+    
     if (c_helper_name == "impostor")
         clusteringHelper = new ImpostorClusteringHelper();
     else if (c_helper_name == "gpu_impostor")
@@ -135,7 +134,7 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
     }
 }
 void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters,
-                                    std::vector<BranchClusteringData *> &branches)
+                                    std::vector<BranchClusteringData *> &branches, bool need_save_full_data)
 {
     /*for (auto &c : base_clusters)
     {
@@ -145,20 +144,42 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
                 branches.push_back(b);
         }
     }*/
-    if (cStrategy == ClusteringStrtegy::Merge)
+    if (cStrategy == ClusteringStrategy::Merge)
     {
         for (auto &c : base_clusters)
         {
             branches.push_back(c.ACDA.clustering_data[c.base_pos]);
             branches.back()->base_cluster_id = c.id;
+            branches.back()->id = 0;
+            tmpData.pos_in_table_by_branch_id.emplace(c.base->self_id, branches.size() - 1);
             debugl(3, "cluster id %d %d %d\n",c.id, c.base_pos, branches.back());
         }
     }
-
+    else if (cStrategy == ClusteringStrategy::Recreate)
+    {
+        for (auto &c : base_clusters)
+        {
+            for (int i=0;i<c.ACDA.clustering_data.size();i++)
+            {
+                BranchClusteringData *b = c.ACDA.clustering_data[i];
+                if (b)
+                {
+                    branches.push_back(b);
+                    branches.back()->can_be_center = (i == c.base_pos);
+                    branches.back()->base_cluster_id = c.id;
+                    branches.back()->id = i;
+                    tmpData.pos_in_table_by_branch_id.emplace(c.ACDA.ids[i], branches.size() - 1);
+                }
+                else
+                {
+                    logerr("Recreate clustering strategy failed - found empty branch data");
+                }
+            }
+        }
+    }
     for (int i = 0; i < base_clusters.size(); i++)
     {
         tmpData.pos_in_table_by_id.emplace(base_clusters[i].id, i);
-        tmpData.pos_in_table_by_branch_id.emplace(base_clusters[i].base->self_id, i);
     }
 }
 void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
@@ -173,8 +194,29 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
     ICD->elements_count = branches.size();
     std::vector<ClusteringBase::ClusterStruct> cluster_result;
     clusteringBase->clusterize(settings, ICD, cluster_result);
+                for (auto &str : cluster_result)
+            {
+                debugl(3,"cluster %d{",branches[str.center]->base_cluster_id);
+                for (auto p : str.members)
+                {
 
+                    debugl(3,"%d, ",branches[p.first]->base_cluster_id);
+                }
+                debugl(3,"}\n");
+            }
+            debugl(3,"\n");
     prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
+    for (auto &cl : clusters)
+    {
+        glm::vec4 pos;
+        glm::vec4 joint = glm::vec4(cl.base->center_self, 1);
+        debugl(3, "\n\ncenter center %f %f %f\n",joint.x, joint.y, joint.z);
+        for (auto &tr : cl.IDA.transforms)
+        {
+            pos = tr * joint;
+            debugl(3, "pos %f %f %f size %d\n", pos.x, pos.y, pos.z, cl.base->joints.size());
+        }
+    }
     //if (current_clustering_step == ClusteringStep::BRANCHES)
     //    visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
     if (need_save_full_data)
@@ -192,7 +234,7 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
     else
     {
         delete ICD;
-        if (cStrategy == ClusteringStrtegy::Merge)
+        if (cStrategy == ClusteringStrategy::Merge)
         {
             //we do not need clustering data for non-central branches
             for (auto &cl : clusters)
@@ -217,43 +259,39 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                                   std::vector<BranchClusteringData *> &branches, ClusteringContext *ctx,
                                   std::vector<ClusteringBase::ClusterStruct> &result)
 {
-    if (cStrategy == ClusteringStrtegy::Merge)
+    for (auto &str : result)
     {
-        for (auto *b : branches)
+        result_clusters.emplace_back();
+        auto &res_cluster = result_clusters.back();
+        auto &IDA = res_cluster.IDA;
+        auto &ACDA = res_cluster.ACDA;
+        BranchClusteringData *center = branches[str.center];
+        debugl(3, "center %d from %d id %d\n", str.center, branches.size(), center->base_cluster_id);
+        auto it = tmpData.pos_in_table_by_id.find(center->base_cluster_id);
+        if (it == tmpData.pos_in_table_by_id.end())
         {
-            debugl(3, "center %d\n", b->base_cluster_id);
+            logerr("cannot find central base cluster by it's id %d", center->base_cluster_id);
+            return;
         }
-        for (auto &str : result)
+        res_cluster.base = base_clusters[it->second].base;
+        res_cluster.id = base_clusters[it->second].id;
+        glm::mat4 base_transform_inv = glm::inverse(center->transform);
+        for (auto &p : str.members)
         {
-            result_clusters.emplace_back();
-            auto &res_cluster = result_clusters.back();
-            auto &IDA = res_cluster.IDA;
-            auto &ACDA = res_cluster.ACDA;
-            BranchClusteringData *center = branches[str.center];
-            debugl(3, "center %d from %d id %d\n",str.center, branches.size(),center->base_cluster_id);
-            auto it = tmpData.pos_in_table_by_id.find(center->base_cluster_id);
+            BranchClusteringData *base_bcd = branches[p.first];
+            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), p.second.rot, glm::vec3(1, 0, 0));
+            //debugl(3, "base bcd first %d %d %d\n", base_bcd, center, p.first);
+
+            it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);
             if (it == tmpData.pos_in_table_by_id.end())
             {
-                logerr("cannot find central base cluster by it's id %d", center->base_cluster_id);
+                logerr("cannot find central base cluster by it's id %d", base_bcd->base_cluster_id);
                 return;
             }
-            res_cluster.base = base_clusters[it->second].base;
-            res_cluster.id = base_clusters[it->second].id;
-            glm::mat4 base_transform_inv = glm::inverse(center->transform);
-            for (auto &p : str.members)
+            ClusterData &base = base_clusters[it->second];
+            if (cStrategy == ClusteringStrategy::Merge)
             {
-                BranchClusteringData *base_bcd = branches[p.first];
-                glm::mat4 rot = glm::rotate(glm::mat4(1.0f),p.second.rot,glm::vec3(1,0,0));
-                debugl(3, "base bcd first %d %d %d\n",base_bcd, center, p.first);
                 glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
-
-                it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);
-                if (it == tmpData.pos_in_table_by_id.end())
-                {
-                    logerr("cannot find central base cluster by it's id %d", base_bcd->base_cluster_id);
-                    return;
-                }
-                ClusterData &base = base_clusters[it->second];
                 if (base_bcd == center)
                 {
                     res_cluster.base_pos = ACDA.originals.size() + base.base_pos;
@@ -277,6 +315,31 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                         ACDA.ids.push_back(base.ACDA.ids[i]);
                         ACDA.clustering_data.push_back(base.ACDA.clustering_data[i]);
                     }
+                }
+            }
+            else if (cStrategy == ClusteringStrategy::Recreate)
+            {
+                glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
+                int i = base_bcd->id;
+                if (base_bcd == center)
+                {
+                    res_cluster.base_pos = ACDA.originals.size();
+                }
+                if (!base.is_valid())
+                {
+                    logerr("failed to merge clusters. Base cluster is not valid and will be ignored");
+                }
+                else
+                {
+                    IDA.transforms.push_back(tr);
+                    IDA.centers_par.push_back(base.IDA.centers_par[i]);
+                    IDA.centers_self.push_back(base.IDA.centers_self[i]);
+                    IDA.type_ids.push_back(base.IDA.type_ids[i]);
+                    IDA.tree_ids.push_back(base.IDA.tree_ids[i]);
+                    ACDA.rotations.push_back(base.ACDA.rotations[i]);
+                    ACDA.originals.push_back(base.ACDA.originals[i]);
+                    ACDA.ids.push_back(base.ACDA.ids[i]);
+                    ACDA.clustering_data.push_back(base.ACDA.clustering_data[i]);
                 }
             }
         }

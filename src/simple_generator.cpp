@@ -12,6 +12,7 @@ vec3 rand_dir()
 }
 
 int ids = 0;
+int t_ids = 0;
 
 void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_pos, vec3 base_dir, vec3 normal, int level, 
                                         float base_r, float leaves_chance)
@@ -141,7 +142,7 @@ void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_e
     params.set_state(0);
     for (int i=0;i<ggd.trees_count;i++)
     {
-        vec3 pos = vec3(50*(i % 10), 0, 50 * (i / 10));
+        vec3 pos = vec3(50*(t_ids % 10), 0, 50 * (t_ids / 10));
         pos.y = h->get_height(pos);
 
         for (int j=0;j<params().max_depth();j++)
@@ -151,11 +152,12 @@ void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_e
         }
 
         trees_external[i].leaves = new LeafHeap();
-        trees_external[i].id = i;
+        trees_external[i].id = t_ids;
         trees_external[i].pos = pos;
         trees_external[i].type = &(ggd.types[0]);
         trees_external[i].valid = true;
 
         create_tree(trees_external + i, pos);
+        t_ids++;
     }
 }

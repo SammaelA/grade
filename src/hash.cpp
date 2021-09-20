@@ -22,7 +22,7 @@ void Hash::weight_and_normalize()
     {
         data[i] /= s;
     }
-
+    start_points.pop_back();
     weighted = true;
     normalized = true;
 }
@@ -30,7 +30,7 @@ void Hash::weight()
 {
     if (weights.size() != start_points.size())
     {
-        logerr("hash weight and start_points size mismatch");
+        logerr("hash weight and start_points size mismatch %d != %d", weights.size(), start_points.size());
     }
     start_points.push_back(data.size());
     for (int i=0;i<weights.size();i++)
@@ -40,6 +40,7 @@ void Hash::weight()
             data[j] *= weights[i];
         }
     }
+    start_points.pop_back();
     weighted = true;
 }
 void Hash::normalize()

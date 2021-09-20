@@ -226,7 +226,10 @@ int HierarcialClusteringBase::get_typical(std::vector<Cluster *> &clusters)
         if (i == 0)
             d_0 = d;
     }
-
+    if (!main_data->branches[clusters[min_pos]->branch_n]->can_be_center)
+    {
+        logerr("H clustering error - created a cluster without possible centers!");
+    }
     return clusters[min_pos]->branch_n;
 }
 Cluster::Cluster(int n)
