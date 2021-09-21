@@ -37,8 +37,9 @@ void HashingParams::load_from_block(Block *b)
 
 HashingParams isParams;
 void set_eigen_values_hash(LightVoxelsCube *voxels, Hash &hash, int cells, int voxels_per_cell, int sz);
-BranchClusteringData *HashBasedClusteringHelper::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx, 
-                                                                BaseBranchClusteringData &data)
+BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Block &settings, Branch *base, 
+                                                                              ClusteringContext *ctx, 
+                                                                              BaseBranchClusteringData &data)
 {
     isParams.load(&settings);
     BranchHash *branchHash = new BranchHash();
@@ -99,9 +100,9 @@ void HashBasedClusteringHelper::clear_branch_data(BranchClusteringData *base, Cl
     delete base;
 }
 
-IntermediateClusteringData *DDTHashBasedClusteringHelper::prepare_intermediate_data(Block &settings, 
-                                                                                    std::vector<BranchClusteringData *> branches,
-                                                                                    ClusteringContext *ctx)
+IntermediateClusteringData *HashBasedClusteringHelper::prepare_intermediate_data_ddt(Block &settings, 
+                                                                                     std::vector<BranchClusteringData *> branches,
+                                                                                     ClusteringContext *ctx)
 {
     isParams.load(&settings);
     IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
@@ -166,9 +167,9 @@ IntermediateClusteringData *DDTHashBasedClusteringHelper::prepare_intermediate_d
     return data;
 }
 
-IntermediateClusteringData *SimpleHashBasedClusteringHelper::prepare_intermediate_data(Block &settings, 
-                                                                                       std::vector<BranchClusteringData *> branches,
-                                                                                       ClusteringContext *ctx)
+IntermediateClusteringData *HashBasedClusteringHelper::prepare_intermediate_data_simple(Block &settings, 
+                                                                                        std::vector<BranchClusteringData *> branches,
+                                                                                        ClusteringContext *ctx)
 {
     IntermediateClusteringDataVectorsList *data = new IntermediateClusteringDataVectorsList();
     data->branches = branches;

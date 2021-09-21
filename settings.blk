@@ -1,11 +1,10 @@
 {
-    max_trees_in_patch:i = 1000
     
     branches_params
     {
         wood_size_mult:r = 4
         light_importance:r = 0.5
-        clustering_strategy:s = "recreate"
+        clustering_strategy:s = "imp_hash_ddt"
         max_clusters_in_layer:i = 3
         recursive_clustering_layers:i = 2
         average_cluster_size_goal:r = 15

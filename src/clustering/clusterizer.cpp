@@ -39,6 +39,10 @@ void Clusterizer2::prepare(Block &settings)
         clusteringHelper = new DDTHashBasedClusteringHelper();
     else if (c_helper_name == "hash_simple")
         clusteringHelper = new SimpleHashBasedClusteringHelper();
+    else if (c_helper_name == "imp_hash_ddt")
+        clusteringHelper = new DDTImpostorHashClusteringHelper();
+    else if (c_helper_name == "imp_hash_simple")
+        clusteringHelper = new SimpleImpostorHashClusteringHelper();
     else
     {
         logerr("given unknown clustering helper name %s",c_helper_name);
