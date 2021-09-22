@@ -1,38 +1,10 @@
 {
-    imp_hash_ddt1
+    imp_dct_hash_ddt1
     {
         branches_params
         {
-            clustering_helper:s = "imp_hash_ddt"
+            clustering_helper:s = "imp_dct_hash_ddt"
             separate_colors:b = true
-            impostor_hash_size:i = 8
-        }
-    }
-    imp_hash_ddt2
-    {
-        branches_params
-        {
-            clustering_helper:s = "imp_hash_ddt"
-            separate_colors:b = true
-            impostor_hash_size:i = 16
-        }
-    }
-    imp_hash_ddt3
-    {
-        branches_params
-        {
-            clustering_helper:s = "imp_hash_ddt"
-            separate_colors:b = false
-            impostor_hash_size:i = 8
-        }
-    }
-    imp_hash_ddt4
-    {
-        branches_params
-        {
-            clustering_helper:s = "imp_hash_ddt"
-            separate_colors:b = false
-            impostor_hash_size:i = 16
         }
     }
 }

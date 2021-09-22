@@ -21,7 +21,8 @@ protected:
                                                   BaseBranchClusteringData &data);
     BranchClusteringData *convert_branch_eigin_vectors(Block &settings, Branch *base, ClusteringContext *ctx, 
                                                        BaseBranchClusteringData &data);
-    
+    BranchClusteringData *convert_branch_impostor_dct(Block &settings, Branch *base, ClusteringContext *ctx, 
+                                                      BaseBranchClusteringData &data);
     IntermediateClusteringData *prepare_intermediate_data_ddt(Block &settings, std::vector<BranchClusteringData *> branches,
                                                               ClusteringContext *ctx);
     IntermediateClusteringData *prepare_intermediate_data_simple(Block &settings, std::vector<BranchClusteringData *> branches,
@@ -91,5 +92,35 @@ public:
                                                  BaseBranchClusteringData &data) override
     {
         return convert_branch_impostor(settings, base, ctx, data);
+    }
+};
+
+class DDTImpostorDCTHashClusteringHelper : public HashBasedClusteringHelper
+{
+public:
+    virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
+                                                                  ClusteringContext *ctx) override
+    {
+        return prepare_intermediate_data_ddt(settings, branches, ctx);
+    }
+    virtual BranchClusteringData *convert_branch(Block &settings, Branch *base, ClusteringContext *ctx, 
+                                                 BaseBranchClusteringData &data) override
+    {
+        return convert_branch_impostor_dct(settings, base, ctx, data);
+    }
+};
+
+class SimpleImpostorDCTHashClusteringHelper : public HashBasedClusteringHelper
+{
+public:
+    virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
+                                                                  ClusteringContext *ctx) override
+    {
+        return prepare_intermediate_data_simple(settings, branches, ctx);
+    }
+    virtual BranchClusteringData *convert_branch(Block &settings, Branch *base, ClusteringContext *ctx, 
+                                                 BaseBranchClusteringData &data) override
+    {
+        return convert_branch_impostor_dct(settings, base, ctx, data);
     }
 };
