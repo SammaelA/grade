@@ -15,6 +15,7 @@
 #include "synthetic_trees_generator.h"
 #include "grove_packer.h"
 #include "clustering/default_clustering_params.h"
+#include <boost/filesystem.hpp>
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -495,6 +496,58 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
         ggd.trees_count = trees_count;
     }
 }
+
+void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, 
+                                                     Heightmap *h, std::string &save_path)
+
+{
+    add_trees_to_grove_internal(ggd, grove, trees_external, h, true);
+
+    int cnt = 0;
+    TextureAtlasRawData raw_atlas = TextureAtlasRawData(ctx->self_impostors_data->atlas);
+    unsigned char *sl_data = safe_new<unsigned char>(raw_atlas.get_slice_size(0), "sl_data");
+    int ww = 0, hh = 0;
+    try
+    {
+        for (int i = 0; i< packingLayersBranches.size();i++)
+        {
+            for (auto &c : packingLayersBranches[i].clusters)
+            {
+                std::string dir_path = save_path + "/" + std::to_string(cnt);
+                boost::filesystem::create_directory(dir_path);
+                boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all);
+                int sl = 0;
+                for (auto *cd : c.ACDA.clustering_data)
+                {
+                    auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
+                    if (imp_cd)
+                    {
+                        for (auto &bill : imp_cd->self_impostor->slices)
+                        {
+                            std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
+                            raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
+                            textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+                            sl++;
+                        }
+                    }
+                    else
+                    {
+                        logerr("error - trying to save to dataset branch without impostor. Check clustering settings");
+                    }
+                }
+                cnt++;
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
+    safe_delete<unsigned char>(sl_data, "sl_data");
+    raw_atlas.clear();
+}
+
 void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                               bool visualize_clusters)
 {

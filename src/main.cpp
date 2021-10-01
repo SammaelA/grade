@@ -81,6 +81,7 @@ bool gltf_export = false;
 bool need_initialization = true;
 bool parameter_selection = false;
 bool clustering_benchmark = false;
+bool prepare_dataset = false;
 std::string generator_name = "default";
 std::string parameter_selector_name = "default_selection";
 std::string clustering_benchmark_path = "benchmark.blk";
@@ -93,7 +94,7 @@ GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
 std::string grove_type_name = "default";
 std::string save_path = ".";
 std::string load_path = ".";
-
+std::string save_dataset_path = ".";
 int parse_arguments(int argc, char *argv[])
 {
   int k = 1;
@@ -230,15 +231,23 @@ int parse_arguments(int argc, char *argv[])
       if (!ok)
       {
         logerr("-generator = <generator_name>");
-        logerr("possible names : default, proctree");
+        logerr("possible names : default, proctree, simple");
       }
       k += 3;
     }
-    else if (std::string(argv[k]) == "-generator = proctree")
+    else if (std::string(argv[k]) == "-prepare_dataset")
     {
-      generator_name = "proctree";
-      k++;
+      prepare_dataset = true;
+      if (argc == k + 1)
+      {
+        logerr("write path to save after -prepare_dataset");
+        return 1;
+      }
+      else
+        save_dataset_path = argv[k + 1];
+      k += 2;
     }
+
     else
     {
       logerr("unknown command \"%s\". Write -h for help", argv[k]);
@@ -258,6 +267,38 @@ int parse_arguments(int argc, char *argv[])
   }
   return -1;
 }
+bool prepare_dictory(std::string &save_path)
+{
+  bool status = true;
+  try
+  {
+    if (boost::filesystem::exists(save_path))
+    {
+      if (boost::filesystem::is_directory(save_path))
+      {
+        printf("replacing previous save\n");
+        boost::filesystem::remove_all(save_path);
+      }
+      else
+      {
+        logerr("path %s represents existing file. Can not save here", save_path.c_str());
+        status = false;
+      }
+    }
+    if (status)
+    {
+      boost::filesystem::create_directory(save_path);
+      boost::filesystem::permissions(save_path, boost::filesystem::perms::all_all);
+    }
+  }
+  catch (const std::exception &e)
+  {
+    status = false;
+    std::cerr << e.what() << '\n';
+  }
+
+  return status;
+}
 void clear_current_grove()
 {
   grove = GrovePacked();
@@ -274,7 +315,18 @@ void generate_grove()
   ::Tree *trees = new ::Tree[ggd.trees_count];
   gen->create_grove(ggd, trees, *data.heightmap);
   logerr("%d branches",trees[0].branchHeaps[1]->branches.size());
-  packer.add_trees_to_grove(ggd, grove, trees, data.heightmap, visualize_clusters);
+  if (prepare_dataset)
+  {
+    bool status = prepare_dictory(save_dataset_path);
+    if (status)
+      packer.add_trees_to_grove_prepare_dataset(ggd, grove, trees, data.heightmap, save_dataset_path);
+    else
+    {
+      logerr("unable to create directory to save dataset. Exiting.");
+    }
+  }
+  else
+    packer.add_trees_to_grove(ggd, grove, trees, data.heightmap, visualize_clusters);
   delete[] trees;
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
@@ -362,7 +414,7 @@ int full_initialization()
     gen = new SimpleTreeGenerator();
   else
     gen = new mygen::TreeGenerator();
-  data.heightmap->random_generate(0, 1, 50);
+  data.heightmap->random_generate(0, 0, 0);
 
   if (generation_needed)
   {
@@ -430,33 +482,7 @@ int full_initialization()
   }
   if (saving_needed)
   {
-    bool status = true;
-    try
-    {
-      if (boost::filesystem::exists(save_path))
-      {
-        if (boost::filesystem::is_directory(save_path))
-        {
-          printf("replacing previous save\n");
-          boost::filesystem::remove_all(save_path);
-        }
-        else
-        {
-          logerr("path %s represents existing file. Can not save here", save_path.c_str());
-          status = false;
-        }
-      }
-      if (status)
-      {
-        boost::filesystem::create_directory(save_path);
-        boost::filesystem::permissions(save_path, boost::filesystem::perms::all_all);
-      }
-    }
-    catch (const std::exception &e)
-    {
-      status = false;
-      std::cerr << e.what() << '\n';
-    }
+    bool status = prepare_dictory(save_path);
     if (status)
     {
       std::string f_path = save_path + std::string("/grove.dat");

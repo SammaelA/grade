@@ -21,6 +21,8 @@ public:
     unsigned char get_pixel_uc(int w, int h, Channel chan, int tex_id);
     unsigned char get_pixel_uc_safe(int w, int h, Channel chan, int tex_id);
     unsigned char *get_raw_data() { return raw_data;}
+    int get_slice_size(int tex_id);
+    void get_slice(int tex_id, unsigned char *data, int *slice_w = nullptr, int *slice_h = nullptr);
     float get_pixel(int w, int h, Channel chan, int tex_id);
     TextureAtlasRawData();
     TextureAtlasRawData(const TextureAtlas &atlas);
@@ -34,6 +36,7 @@ public:
     
     bool is_valid() { return valid; }
 private:
+    int get_pixel_pos(int w, int h, int tex_id);
     bool valid = false;
     int w = 0,h = 0, layers = 0, slices = 0;
     int gridWN = 0;

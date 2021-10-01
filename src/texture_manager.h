@@ -19,6 +19,8 @@ public:
     Texture empty();
     void save_bmp(Texture &t, std::string name);
     void save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name);
+    void save_bmp_directly(Texture &t, std::string name);
+    void save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
     TextureManager();
     TextureManager(std::string base_path);
     bool is_correct(Texture &t);

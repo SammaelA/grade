@@ -37,6 +37,8 @@ class GrovePacker
 public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                             bool visualize_clusters = false);
+    void add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+                                            std::string &save_path);
     void init(Block &packing_params_block);
     GrovePacker() = default;
     explicit GrovePacker(bool shared_ctx);

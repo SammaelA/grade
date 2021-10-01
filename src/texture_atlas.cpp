@@ -344,15 +344,19 @@ void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
     textureManager.delete_tex(t);
     t = new_tex;
 }
-
-unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, int tex_id)
+int TextureAtlasRawData::get_pixel_pos(int ww, int hh, int tex_id)
 {
     int l = tex_id / (gridHN*gridWN);
     tex_id = tex_id % (gridHN*gridWN);
     int grid_h = tex_id / gridWN;
     int grid_w = tex_id % gridWN;
 
-    int id = 4*w*h*l + 4*((hh + grid_h*slice_h)*w + (ww + grid_w*slice_w)) + (int)chan;
+    return 4*w*h*l + 4*((hh + grid_h*slice_h)*w + (ww + grid_w*slice_w));
+}
+unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, int tex_id)
+{
+
+    int id =  get_pixel_pos(ww, hh, tex_id) + (int)chan;
 
     return raw_data[id];
 }
@@ -416,4 +420,21 @@ void TextureAtlasRawData::clear()
 TextureAtlasRawData::~TextureAtlasRawData()
 {
     clear();
+}
+int TextureAtlasRawData::get_slice_size(int tex_id)
+{
+    return 4*slice_h*slice_w;
+}
+void TextureAtlasRawData::get_slice(int tex_id, unsigned char *data, int *sw, int *sh)
+{
+    int ps = 0;
+    for (int i=0;i<slice_h;i++)
+    {
+        memcpy(data + ps, raw_data + get_pixel_pos(0,i,tex_id), 4*slice_w);
+        ps+=4*slice_w;
+    }
+    if (sw)
+        *sw = slice_w;
+    if (sh)
+        *sh = slice_h;
 }

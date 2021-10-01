@@ -247,13 +247,24 @@ void TextureManager::clear_unnamed_with_tag(int tag)
 }
 void TextureManager::save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name)
 {
-    if (data)
-    {
-        std::string path = "saves/"+name+".bmp";
-        stbi_write_bmp(path.c_str(), w, h, channels, data);
-    }
+    save_bmp_raw_directly(data, w, h, channels, "saves/"+name+".bmp");
 }
 void TextureManager::save_bmp(Texture &t, std::string name)
+{
+    save_bmp_directly(t, "saves/"+name+".bmp");
+}
+void TextureManager::save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name)
+{
+    if (data)
+    {
+        stbi_write_bmp(name.c_str(), w, h, channels, data);
+    }
+    else
+    {
+        logerr("trying to save empty data");
+    }
+}
+void TextureManager::save_bmp_directly(Texture &t, std::string name)
 {
     unsigned char *data = nullptr;
     int w,h,layers = 1;
@@ -289,7 +300,7 @@ void TextureManager::save_bmp(Texture &t, std::string name)
     }
     if (data)
     {
-        save_bmp_raw(data,w,h*layers,4,name);
+        save_bmp_raw_directly(data,w,h*layers,4,name);
         safe_delete<unsigned char>(data, "save_bmp_data"); 
     }
 }
