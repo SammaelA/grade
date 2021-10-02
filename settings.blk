@@ -4,7 +4,7 @@
     {
         wood_size_mult:r = 4
         light_importance:r = 0.5
-        max_clusters_in_layer:i = 1000
+        max_clusters_in_layer:i = 10000
         recursive_clustering_layers:i = 2
         average_cluster_size_goal:r = 15
     }

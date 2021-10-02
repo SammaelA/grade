@@ -16,6 +16,8 @@
 #include "grove_packer.h"
 #include "clustering/default_clustering_params.h"
 #include <boost/filesystem.hpp>
+#include <iostream>
+#include <fstream>
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -507,16 +509,59 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
     TextureAtlasRawData raw_atlas = TextureAtlasRawData(ctx->self_impostors_data->atlas);
     unsigned char *sl_data = safe_new<unsigned char>(raw_atlas.get_slice_size(0), "sl_data");
     int ww = 0, hh = 0;
+    bool info_files = true;
+    
+    std::string database_file;
+    std::string test_file;
+    std::string train_file;
+    
+    float train_part = 0.5;
+    float test_part = 0.05;
+    
+    std::string database_name = "database.txt";
+    std::string test_name = "test.txt";
+    std::string train_name = "train.txt";
+    
+    std::string folder_name = "images";
+
+    int sl = 0;
+    int train_elems = 0;
+    int test_elems = 0;
+
+    std::string dir_path;
     try
     {
+        int clusters_count = 0;
+        if (info_files)
+        {
+            dir_path = save_path + "/"+folder_name;
+            boost::filesystem::create_directory(dir_path);
+            boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all); 
+
+            for (int i = 0; i< packingLayersBranches.size();i++)
+            {
+                clusters_count += packingLayersBranches[i].clusters.size();
+            }         
+        }
         for (int i = 0; i< packingLayersBranches.size();i++)
         {
             for (auto &c : packingLayersBranches[i].clusters)
             {
-                std::string dir_path = save_path + "/" + std::to_string(cnt);
-                boost::filesystem::create_directory(dir_path);
-                boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all);
-                int sl = 0;
+                std::string cluster_labels;
+                if (info_files)
+                {
+                    for (int j=0;j<clusters_count;j++)
+                    {
+                        cluster_labels += ((j == cnt) ? " 1" : " 0");
+                    }
+                }
+                else
+                {
+                    dir_path = save_path + "/" + std::to_string(cnt);
+                    boost::filesystem::create_directory(dir_path);
+                    boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all);
+                    sl = 0;
+                }
                 for (auto *cd : c.ACDA.clustering_data)
                 {
                     auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
@@ -527,6 +572,22 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                             std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
                             raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
                             textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+                            if (info_files)
+                            {
+                                //add a record about images to database and (maybe) test or train lists;
+                                std::string record = folder_name + "/" + std::to_string(sl)+".bmp" + cluster_labels + "\n";
+                                database_file += record;
+                                if (urand() < train_part)
+                                {
+                                    train_file += record;
+                                    train_elems++;
+                                }
+                                if (urand() < test_part)
+                                {
+                                    test_file += record;
+                                    test_elems++;
+                                }
+                            }
                             sl++;
                         }
                     }
@@ -536,6 +597,30 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                     }
                 }
                 cnt++;
+                if (info_files)
+                {
+                    std::ofstream database_ofs;
+                    database_ofs.open(save_path+"/database.txt");
+                    database_ofs << database_file;
+                    database_ofs.close();
+
+                    std::ofstream test_ofs;
+                    test_ofs.open(save_path+"/test.txt");
+                    test_ofs << test_file;
+                    test_ofs.close();
+
+                    std::ofstream train_ofs;
+                    train_ofs.open(save_path+"/train.txt");
+                    train_ofs << train_file;
+                    train_ofs.close();
+
+                    std::ofstream info_ofs;
+                    info_ofs.open(save_path+"/info.txt");
+                    info_ofs << std::string(std::to_string(clusters_count)+" "+std::to_string(sl)+" "+
+                                            std::to_string(train_elems)+" "+std::to_string(test_elems));
+                    info_ofs.close();
+
+                }
             }
         }
     }
