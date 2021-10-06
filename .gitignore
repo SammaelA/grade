@@ -27,6 +27,8 @@ CMakeCache.txt
 # Node artifact files
 node_modules/
 dist/
+/trees/*
+/small_dataset/*
 
 # Compiled Java class files
 *.class
