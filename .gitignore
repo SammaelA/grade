@@ -29,7 +29,7 @@ node_modules/
 dist/
 /trees/*
 /small_dataset/*
-
+*.npy
 # Compiled Java class files
 *.class
 

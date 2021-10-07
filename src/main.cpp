@@ -26,6 +26,7 @@
 #include "tinyEngine/utility/deffered_target.h"
 #include "tinyEngine/ambient_occlusion.h"
 #include "tinyEngine/utility/cubemap.h"
+#include "tinyEngine/utility/python_interaction.h"
 #include "tinyEngine/gltf_utils/general_gltf_writer.h"
 #include <thread>
 #include "parameter_selection.h"
@@ -377,6 +378,9 @@ int base_initialization()
   { eventHandler(appContext, Tiny::event); };
   textureManager = TextureManager("./resources/textures/");
   data.startScreenShader = new PostFx("simple_render.fs");
+
+  PythonHelper ph;
+  ph.test();
   return -1;
 }
 int full_initialization()
@@ -721,7 +725,7 @@ int main(int argc, char *argv[])
   if (status >= 0)
     return status;
 
-  if (false && need_initialization && appContext.renderMode != RenderMode::Rendering)
+  if (need_initialization && appContext.renderMode != RenderMode::Rendering)
   {
     status = full_initialization();
     if (status >= 0)

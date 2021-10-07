@@ -18,6 +18,8 @@ message(PY_CLUSERING_LIBRARY=${PY_CLUSERING_LIBRARY})
 find_package(Boost REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(PythonLibs REQUIRED)
+
 message(opgllib = ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS})
 message(include =  ${OPENGL_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 set(CMAKE_CXX_STANDARD 17)
@@ -33,11 +35,12 @@ set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_tt
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 file(GLOB IMGUI_SRC src/imgui/*.cpp)
 include_directories(${OPENGL_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} 
-                    "dependencies/pyclustering/ccore/include")
+                    ${PYTHON_INCLUDE_DIRS} "dependencies/pyclustering/ccore/include")
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
 file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
 add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC})
 target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
                         ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} ${PY_CLUSERING_LIBRARY} 
-                        boost_serialization boost_system boost_filesystem)
+                        boost_serialization boost_system boost_filesystem
+                        ${PYTHON_LIBRARIES})
 
