@@ -251,6 +251,8 @@ bool PythonHelper::get_numpy_2d_array_double(std::string name, int *size_x, int 
 
     *data = new double[sx*sy];
     memcpy(*data, raw_data, sz);
+    logerr("data created %d %d", sx, sy);
+    return true;
 }
 bool PythonHelper::get_numpy_2d_array_double(std::string name, int *size_x, int *size_y, float **data)
 {

@@ -3,7 +3,8 @@
 #include "../impostor.h"
 #include "../texture_manager.h"
 
-void create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx, BaseBranchClusteringData &data,
+void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx, 
+                          BaseBranchClusteringData &data,
                           ImpostorSimilarityParams &isimParams, 
                           std::list<Impostor>::iterator &imp_iter, ImpostorsData &impData)
 {
@@ -41,11 +42,6 @@ void create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx,
     cd.ACDA.rotations.push_back(0);
     cd.ACDA.clustering_data.push_back(nullptr);
 
-    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
-    impData.atlas = atl;
-    impData.atlas.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
-    impData.atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
-
     ib.prepare(params, 1, cd, *(ctx->types), &impData, imp_iter);
 }
 
@@ -56,7 +52,13 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
     isimParams.load(&settings);
     BranchHash *id = new BranchHash();
     std::list<Impostor>::iterator imp_iter;
+    
     ImpostorsData impData;
+    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
+    impData.atlas = atl;
+    impData.atlas.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    impData.atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
+    
     create_impostor_temp(settings, base, ctx, data, isimParams, imp_iter, impData);
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(impData.atlas);
 
@@ -103,7 +105,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
                     H[cnt+1] = res_g/(255*step*step);
                     av_r += H[cnt];
                     av_g += H[cnt+1];
-                    debug("%d %d", (int)(255*id->hashes.back().data[cnt]), (int)(255*id->hashes.back().data[cnt+1]));
+
                     cnt+=2;
                 }
             }
@@ -184,6 +186,11 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor_dct(Blo
     BranchHash *id = new BranchHash();
     std::list<Impostor>::iterator imp_iter;
     ImpostorsData impData;
+    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
+    impData.atlas = atl;
+    impData.atlas.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    impData.atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
+
     create_impostor_temp(settings, base, ctx, data, isimParams, imp_iter, impData);
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(impData.atlas);
 

@@ -7,7 +7,7 @@ struct BranchHash : public BranchClusteringData
 {
     std::vector<Hash> hashes;
 };
-
+struct ImpostorSimilarityParams;
 class HashBasedClusteringHelper : public ClusteringHelper
 {
 public:
@@ -22,11 +22,14 @@ protected:
     BranchClusteringData *convert_branch_eigin_vectors(Block &settings, Branch *base, ClusteringContext *ctx, 
                                                        BaseBranchClusteringData &data);
     BranchClusteringData *convert_branch_impostor_dct(Block &settings, Branch *base, ClusteringContext *ctx, 
-                                                      BaseBranchClusteringData &data);
+                                                      BaseBranchClusteringData &data);  
     IntermediateClusteringData *prepare_intermediate_data_ddt(Block &settings, std::vector<BranchClusteringData *> branches,
                                                               ClusteringContext *ctx);
     IntermediateClusteringData *prepare_intermediate_data_simple(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                  ClusteringContext *ctx);
+    void create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx, BaseBranchClusteringData &data,
+                              ImpostorSimilarityParams &isimParams, 
+                              std::list<Impostor>::iterator &imp_iter, ImpostorsData &impData);
 };
 
 class DDTHashBasedClusteringHelper : public HashBasedClusteringHelper

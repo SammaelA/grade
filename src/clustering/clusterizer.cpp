@@ -9,7 +9,7 @@
 #include "visualize_clusters.h"
 #include "pyclustering.h"
 #include "GPU_impostor_metric.h"
-
+#include "deep_hashing.h"
 
 using namespace glm;
 int cur_cluster_id = 0;
@@ -47,6 +47,8 @@ void Clusterizer2::prepare(Block &settings)
         clusteringHelper = new DDTImpostorDCTHashClusteringHelper();
     else if (c_helper_name == "imp_dct_hash_simple")
         clusteringHelper = new SimpleImpostorDCTHashClusteringHelper();
+    else if (c_helper_name == "imp_deep_hash_ddt")
+        clusteringHelper = new DDTDeepHashBasedClusteringHelper();
     else
     {
         logerr("given unknown clustering helper name %s",c_helper_name);
@@ -84,6 +86,7 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree *t, int count, int la
         get_base_clusters(settings, t[i], layer, base_clusters, ctx);
         debugl(3, "added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
+    clusteringHelper->branch_conversion_flush(settings, ctx);
 }
 BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx)
 {

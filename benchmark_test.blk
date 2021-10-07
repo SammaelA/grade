@@ -1,9 +1,17 @@
 {
-    imp_dct_hash_ddt1
+    imp_deep_hash_ddt
     {
         branches_params
         {
-            clustering_helper:s = "imp_dct_hash_ddt"
+            clustering_helper:s = "imp_deep_hash_ddt"
+            separate_colors:b = true
+        }
+    }
+        imp_hash_ddt
+    {
+        branches_params
+        {
+            clustering_helper:s = "imp_hash_ddt"
             separate_colors:b = true
         }
     }

@@ -58,6 +58,9 @@ public:
     virtual void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) = 0;
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                   ClusteringContext *ctx) = 0;
+    //BranchClusteringData that is returned after convert_branch could be not fully initialized.
+    //call this function before using it.  
+    virtual void branch_conversion_flush(Block &settings, ClusteringContext *ctx) {};
 };
 class ClusteringBase
 {

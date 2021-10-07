@@ -379,8 +379,8 @@ int base_initialization()
   textureManager = TextureManager("./resources/textures/");
   data.startScreenShader = new PostFx("simple_render.fs");
 
-  PythonHelper ph;
-  ph.test();
+  //PythonHelper ph;
+  //ph.test();
   return -1;
 }
 int full_initialization()

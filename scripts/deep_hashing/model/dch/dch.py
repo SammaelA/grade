@@ -264,7 +264,7 @@ class DCH(object):
         self.val_batch_size = min(self.val_batch_size, img_query.n_samples)
         img_query.finish_epoch()
         print("%s totally %d query in %d batches" % (datetime.now(), img_query.n_samples, query_batch))
-        res_arr = np.zeros((img_query.n_samples, self.output_dim), dtype=np.float64)
+        res_arr = np.zeros((self.val_batch_size*query_batch, self.output_dim), dtype=np.float64)
         for i in range(query_batch):
             images, labels = img_query.next_batch(self.val_batch_size)
             output, loss = self.sess.run([self.img_last_layer, self.cos_loss],
@@ -272,9 +272,9 @@ class DCH(object):
                                               self.img_label: labels,
                                               self.stage: 1})
             img_query.feed_batch_output(self.val_batch_size, output)
-            print('Cosine Loss: %s'%loss)
-            print(output)
+            #print('Cosine Loss: %s'%loss)
+            #print(output)
             res_arr[i*self.val_batch_size : (i+1)*self.val_batch_size, : ] = output
-        print("%s getting hashes finished" % (datetime.now()))
-        print(res_arr)
+        #print("%s getting hashes finished" % (datetime.now()))
+        #print(res_arr)
         return res_arr
