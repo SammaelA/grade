@@ -361,7 +361,6 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);
-            i++;
         }
         SegmentVertexes vt;
         int i = b.joints.size() - 1;

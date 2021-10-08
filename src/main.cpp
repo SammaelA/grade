@@ -33,6 +33,7 @@
 #include "tinyEngine/save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
 #include "simple_generator.h"
+#include "load_tree_structure.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -313,6 +314,7 @@ void clear_current_grove()
 }
 void generate_grove()
 {
+  ggd.task = GenerationTask::GENERATE | GenerationTask::MODELS;
   ::Tree *trees = new ::Tree[ggd.trees_count];
   gen->create_grove(ggd, trees, *data.heightmap);
   logerr("%d branches",trees[0].branchHeaps[1]->branches.size());
@@ -416,6 +418,8 @@ int full_initialization()
     gen = new Proctree::ProctreeGenerator();
   else if (generator_name == "simple")
     gen = new SimpleTreeGenerator();
+  else if (generator_name == "load_from_file")
+    gen = new TreeLoaderBlk();
   else
     gen = new mygen::TreeGenerator();
   data.heightmap->random_generate(0, 0, 0);
