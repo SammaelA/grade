@@ -95,16 +95,28 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     database_ofs << database_file;
     database_ofs.close();
     
+
             double *data = nullptr;
             int hash_len = 0;
             int hash_count = 0;
             int expected_hash_len = 64;
+            std::string script_name = settings.get_string("script", "get_hashes");
+            std::string script_args = script_name;
+            std::string model_path = "./models/tm_1_dch.npy";
+            model_path = settings.get_string("model",model_path);
+            script_args = script_args + " --model-weights = " + model_path;
+            
             PythonHelper ph;
+
             ph.init("./scripts/deep_hashing");
-            ph.run_script("get_hashes");
+
+            ph.run_script(script_name, script_args);
             bool res = ph.get_numpy_2d_array_double("arr",&hash_count,  &hash_len, &data);
             ph.finish_script();
-            ph.finish();
+            //ph.run_script(script_name, script_args);
+            //bool res = ph.get_numpy_2d_array_double("arr",&hash_count,  &hash_len, &data);
+            //ph.finish_script();
+            //ph.finish();
             if (res)
             {
                 if (hash_len != expected_hash_len || hash_count < b_count*isimParams.impostor_similarity_slices)

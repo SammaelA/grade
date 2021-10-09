@@ -18,6 +18,7 @@ public:
 private:
     PyObject *python_init();
     void python_clear();
+    void python_func(std::string function_name, std::string input);
     char *python_func_get_str(char *val);
     int python_func_get_val(char *val);
     void get_int(std::string &name, int *val);

@@ -1,63 +1,20 @@
 #include "python_interaction.h"
 #include "../utility.h"
+#include <vector>
+#include <regex>
+#include <fcntl.h>
 
-/*
-PyObject *PythonHelper::python_init() 
+bool python_started = false;
+std::vector<std::string> split(const std::string& input, const std::string& regex) 
 {
-    // Инициализировать интерпретатор Python
-    Py_Initialize();
-
-    do {
-        // Загрузка модуля sys
-        sys = PyImport_ImportModule("sys");
-        sys_path = PyObject_GetAttrString(sys, "path");
-        // Путь до наших исходников Python
-        folder_path = PyUnicode_FromString((const char*) ".");
-        PyList_Append(sys_path, folder_path);
-
-        // Загрузка func.py
-        pName = PyUnicode_FromString("func");
-        if (!pName) {
-            break;
-        }
-
-        // Загрузить объект модуля
-        pModule = PyImport_Import(pName);
-        if (!pModule) {
-            break;
-        }
-
-        // Словарь объектов содержащихся в модуле
-        pDict = PyModule_GetDict(pModule);
-        if (!pDict) {
-            break;
-        }
-
-        return pDict;
-    } while (0);
-
-    // Печать ошибки
-    PyErr_Print();
+    // passing -1 as the submatch index parameter performs splitting
+    std::regex re(regex);
+    std::sregex_token_iterator
+        first{input.begin(), input.end(), re, -1},
+        last;
+    return {first, last};
 }
 
-void PythonHelper::python_clear() 
-{
-    // Вернуть ресурсы системе
-    Py_XDECREF(pDict);
-    Py_XDECREF(pModule);
-    Py_XDECREF(pName);
-
-    Py_XDECREF(folder_path);
-    Py_XDECREF(sys_path);
-    Py_XDECREF(sys);
-
-    // Выгрузка интерпретатора Python
-    Py_Finalize();
-}*/
-
-/**
- * Передача строки в качестве аргумента и получение строки назад
- */
 char *PythonHelper::python_func_get_str(char *val) 
 {
     char *ret = NULL;
@@ -81,7 +38,6 @@ char *PythonHelper::python_func_get_str(char *val)
             // Если полученную строку не скопировать, то после очистки ресурсов Python её не будет.
             // Для начала pResultRepr нужно привести к массиву байтов.
             printf("%d %d %d\n",PyBytes_Check(pResultRepr), PyBytes_CheckExact(pResultRepr), PyUnicode_Check(pResultRepr));
-            //ret = strdup(PyUnicode_AS_DATA(pResultRepr));
             ret = strdup(PyBytes_AS_STRING(PyUnicode_AsEncodedString(pResultRepr, "utf-8", "ERROR")));
 
             Py_XDECREF(pResultRepr);
@@ -93,7 +49,20 @@ char *PythonHelper::python_func_get_str(char *val)
 
     return ret;
 }
+void PythonHelper::python_func(std::string function_name, std::string input)
+{
 
+    // Загрузка объекта get_value из func.py
+    pObjct = PyDict_GetItemString(pDict, function_name.c_str());
+    if (!pObjct) 
+        return;
+
+    // Проверка pObjct на годность.
+    if (!PyCallable_Check(pObjct)) 
+        return;
+
+    pVal = PyObject_CallFunction(pObjct, (char *) "(s)", input.c_str());
+}
 /**
  * Получение значения переменной содержащей значение типа int
  */
@@ -118,18 +87,22 @@ int PythonHelper::python_func_get_val(char *val)
 }
 void PythonHelper::init(std::string _scripts_dir)
 {
-    Py_Initialize();
+    if (!python_started)
+    {
+        Py_Initialize();
+        python_started = true;
+    }
     scripts_dir = _scripts_dir;
 }
 void PythonHelper::finish()
 {
     Py_Finalize();
 }
-void PythonHelper::run_script(std::string script_file_name, std::string args)
-{
-    //TODO
-}
 void PythonHelper::run_script(std::string script_file_name)
+{
+    run_script(script_file_name, "get_hashes");
+}
+void PythonHelper::run_script(std::string script_file_name, std::string args)
 {
         do 
         {
@@ -140,15 +113,38 @@ void PythonHelper::run_script(std::string script_file_name)
         folder_path = PyUnicode_FromString(scripts_dir.c_str());
         PyList_Append(sys_path, folder_path);
 
+        auto *sys_args = PyList_New(0);
+        std::vector<std::string> splitted_args = split(args, "\\s+");
+        for (auto &s : splitted_args)
+        {
+            auto *obj = PyUnicode_FromString(s.c_str());
+            PyList_Append(sys_args, obj);
+            Py_XDECREF(obj);
+        }
+        PyObject_SetAttrString(sys, "argv",sys_args);
+        Py_XDECREF(sys_args);
+
         // Загрузка func.py
         pName = PyUnicode_FromString(script_file_name.c_str());
         if (!pName) 
         {
             break;
         }
-
+        bool block_print = true;
+        if (block_print)
+        {
+            PyRun_SimpleString("import os");
+            PyRun_SimpleString("import sys");
+            PyRun_SimpleString("sys.stdout = open(os.devnull, 'w')");
+            PyRun_SimpleString("sys.stderr = open(os.devnull, 'w')");
+        }
+        script_file_name = scripts_dir+"/" +script_file_name+".py";
+        //logerr("sfn %s", script_file_name.c_str());
+        FILE *f = fopen(script_file_name.c_str(), "rb");
+        PyRun_SimpleFile(f, script_file_name.c_str());
+        pModule = PyImport_AddModule("__main__");
         // Загрузить объект модуля
-        pModule = PyImport_Import(pName);
+        
         if (!pModule) 
         {
             break;
@@ -160,7 +156,10 @@ void PythonHelper::run_script(std::string script_file_name)
         {
             break;
         }
-
+        Py_XDECREF(sys_path);
+        Py_XDECREF(sys);
+        Py_XDECREF(folder_path);
+        Py_XDECREF(pName);
         return;
     } while (0);
 
@@ -170,13 +169,13 @@ void PythonHelper::run_script(std::string script_file_name)
 
 void PythonHelper::finish_script()
 {
-    Py_XDECREF(pDict);
-    Py_XDECREF(pModule);
-    Py_XDECREF(pName);
+    PyObject * poAttrList = PyObject_Dir(pModule);
 
-    Py_XDECREF(folder_path);
-    Py_XDECREF(sys_path);
-    Py_XDECREF(sys);
+    PyObject * poAttrIter = PyObject_GetIter(poAttrList);
+
+    PyObject * poAttrName;
+
+    Py_XDECREF(pDict);
 }
 
     void PythonHelper::get_int(std::string &name, int *res)
@@ -204,7 +203,7 @@ void PythonHelper::finish_script()
             if (PyBytes_Check(pVal)) 
             {
                 *sz = PyBytes_GET_SIZE(pVal);
-                printf("bytes size %d\n", *sz);
+                //printf("bytes size %d\n", *sz);
                 *data = PyBytes_AS_STRING(pVal);
             } 
             else 
@@ -251,7 +250,7 @@ bool PythonHelper::get_numpy_2d_array_double(std::string name, int *size_x, int 
 
     *data = new double[sx*sy];
     memcpy(*data, raw_data, sz);
-    logerr("data created %d %d", sx, sy);
+    //logerr("data created %d %d", sx, sy);
     return true;
 }
 bool PythonHelper::get_numpy_2d_array_double(std::string name, int *size_x, int *size_y, float **data)

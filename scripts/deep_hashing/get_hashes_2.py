@@ -1,8 +1,5 @@
 import os
 import sys
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import argparse
 import warnings
 import numpy as np
@@ -14,10 +11,9 @@ from pprint import pprint
 
 warnings.filterwarnings("ignore")
 
-#
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-#sys.argv = ["get_hashes"]
-print(sys.argv)
+sys.argv = ["get_hashes"]
 parser = argparse.ArgumentParser(description='Triplet Hashing')
 parser.add_argument('--lr', '--learning-rate', default=0.005, type=float)
 parser.add_argument('--output-dim', default=64, type=int)   # 256, 128
@@ -41,7 +37,7 @@ parser.set_defaults(with_tanh=True)
 
 parser.add_argument('--img-model', default='alexnet', type=str)
 parser.add_argument('--model-weights', type=str,
-                    default='./models/tm_1_dch.npy')
+                    default='./models/tm_2_dch.npy')
 parser.add_argument('--finetune-all', default=True, type=bool)
 parser.add_argument('--save-dir', default="./models/", type=str)
 parser.add_argument('--data-dir', default="./", type=str)
