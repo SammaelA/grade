@@ -11,8 +11,14 @@ struct SJoint
     glm::vec3 pos;
     float r;
     std::vector<int> child_splines;
+    std::vector<int> child_leaves;
 };
-
+struct SLeaf
+{
+    glm::vec3 pos;
+    glm::vec3 dir;
+    glm::vec3 right;
+};
 struct Spline
 {
     std::vector<SJoint> joints;
@@ -25,6 +31,7 @@ struct SavedTree
     glm::vec3 pos = glm::vec3(0,0,0);
     float scale = 1.0;
     std::vector<Spline> splines;
+    std::vector<SLeaf> leaves;
     bool on_heightmap = true;
 
     int joints_count = 0;
@@ -113,6 +120,28 @@ void restore_graph(SavedTree &t)
             t.splines[0].joints[1].child_splines.push_back(i);
         }*/
     }
+
+    for (int i=0;i<t.leaves.size();i++)
+    {
+        auto &bp = t.leaves[i].pos;
+        int hash_id = HASH(bp, 0, 0, 0);
+        float min_dist = 1e10;
+        std::pair<int,int> min_pair = {-1,-1};
+
+        for (auto &p : hash_table[hash_id])
+        {
+            auto &pos = t.splines[p.first].joints[p.second].pos;
+            float dist = dot(pos - bp, pos - bp);
+            if (dist < min_dist)
+            {
+                min_dist = dist;
+                min_pair = p;
+            }
+        }
+
+        t.splines[min_pair.first].joints[min_pair.second].child_leaves.push_back(i);
+        t.leaves[i].pos = t.splines[min_pair.first].joints[min_pair.second].pos;
+    }
 }
 
 SavedTree dummy_tree()
@@ -133,6 +162,7 @@ void load_tree(Block &blk, SavedTree &st)
     st.pos = blk.get_vec3("position", st.pos);
     st.on_heightmap = blk.get_bool("on_heightmap", st.on_heightmap);
     st.scale = blk.get_double("scale", st.scale);
+    glm::mat4 transform = glm::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
 
     Block *splines_bl = blk.get_block("splines");
     if (!splines_bl)
@@ -142,7 +172,6 @@ void load_tree(Block &blk, SavedTree &st)
     }
     else
     {
-        glm::mat4 transform = glm::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
         int splines_cnt  = splines_bl->size();
         for (int i=0;i<splines_cnt;i++)
         {
@@ -162,6 +191,28 @@ void load_tree(Block &blk, SavedTree &st)
             }
         }
     }
+
+    std::vector<float> leaves_arr;
+    blk.get_arr("leaves",leaves_arr);
+    if (leaves_arr.size() % 9)
+    {
+        for (int i=0;i<leaves_arr.size();i+=9)
+        {
+            st.leaves.emplace_back();
+            st.leaves.back().pos = glm::vec3(leaves_arr[i],leaves_arr[i+1],leaves_arr[i+2]);
+            st.leaves.back().dir = glm::vec3(leaves_arr[i+3],leaves_arr[i+4],leaves_arr[i+5]);
+            st.leaves.back().right = glm::vec3(leaves_arr[i+6],leaves_arr[i+7],leaves_arr[i+8]);
+
+            st.leaves.back().pos = st.pos + st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().pos,1));
+            st.leaves.back().dir = st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().dir,0));
+            st.leaves.back().right = st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().right,0));
+        }
+    }
+    else
+    {
+        logerr("tree has malformed leaves array");
+    }
+
     Block *struct_bl = blk.get_block("structure");
     if (struct_bl)
     {
@@ -223,6 +274,20 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
             ch_b->center_par = br->center_self;
             convert(st.splines[child_spline], ch_b, level+1, st, external_tree, s.joints[i].pos);
             br->joints.back().childBranches.push_back(ch_b);
+        }
+        
+        for (int child_leaf : s.joints[i].child_leaves)
+        {
+            if (br->joints.back().leaf == nullptr)
+            {
+                auto &leaf = st.leaves[child_leaf];
+                br->joints.back().leaf = external_tree.leaves->new_leaf();
+                br->joints.back().leaf->pos = leaf.pos + 0.5f*leaf.right;
+                br->joints.back().leaf->edges.push_back(leaf.pos);
+                br->joints.back().leaf->edges.push_back(leaf.pos + leaf.right);
+                br->joints.back().leaf->edges.push_back(leaf.pos + leaf.dir);
+                br->joints.back().leaf->edges.push_back(leaf.pos + leaf.dir + leaf.right);
+            }
         }
     }
 }

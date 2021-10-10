@@ -1,5 +1,4 @@
 import standalone_game
-from parametric.tree_params import black_oak
-print("creating tree black_oak")
-tr = standalone_game.construct(black_oak.params)
-print(tr)
+from parametric.tree_params import acer
+print("creating tree acer")
+tr = standalone_game.construct(acer.params)

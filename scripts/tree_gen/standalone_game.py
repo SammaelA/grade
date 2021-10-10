@@ -1270,6 +1270,12 @@ def construct(params, seed=0, generate_leaves=True):
                     print(p.co.x,",",p.co.y,",",p.co.z,",",p.radius,",", end = ' ')
                 print("}")
     print("}")
+    print("leaves:arr = {", end = ' ')
+    for leaf in t.leaves_array:
+        print(leaf.position.x,",",leaf.position.y,",",leaf.position.z,",",end = ' ')
+        print(leaf.direction.x,",",leaf.direction.y,",",leaf.direction.z,",",end = ' ')
+        print(leaf.right.x,",",leaf.right.y,",",leaf.right.z,",",end = ' ')
+    print("}")
     print("}")
 
     # Try to get unneeded data out of memory ASAP
