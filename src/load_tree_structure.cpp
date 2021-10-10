@@ -1,4 +1,5 @@
 #include "load_tree_structure.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 std::string TreeLoaderBlk::trees_directory = "./original_trees";
 std::string TreeLoaderBlk::blks_base_name = "tree";
@@ -9,7 +10,7 @@ struct SJoint
 {
     glm::vec3 pos;
     float r;
-    int child_spline = -1;
+    std::vector<int> child_splines;
 };
 
 struct Spline
@@ -25,12 +26,15 @@ struct SavedTree
     float scale = 1.0;
     std::vector<Spline> splines;
     bool on_heightmap = true;
+
+    int joints_count = 0;
+    int joints_transformed = 0;
 };
 
 void restore_graph(SavedTree &t)
 {
     constexpr int sp_hash_sz = 5;
-    constexpr float rel_eps = 1e-6;
+    constexpr float rel_eps = 1e-4;
 
     glm::vec3 min_pos = glm::vec3(1e9, 1e9, 1e9);
     glm::vec3 max_pos = glm::vec3(-1e9, -1e9, -1e9);
@@ -45,16 +49,17 @@ void restore_graph(SavedTree &t)
     }
     typedef std::list<std::pair<int,int>> hash_bucket;
     std::vector<hash_bucket> hash_table = std::vector<hash_bucket>(sp_hash_sz*sp_hash_sz*sp_hash_sz, hash_bucket());
-    
+    //glm::vec3 grid_sz = 
     #define P(a,mn,mx) (CLAMP( (int)(((a-mn)/(mx-mn))*sp_hash_sz),0,sp_hash_sz - 1))
-    #define HASH(pos) (sp_hash_sz*sp_hash_sz*P((pos).x,min_pos.x,max_pos.x)+sp_hash_sz*P((pos).y,min_pos.y,max_pos.y)+P((pos).z,min_pos.z,max_pos.z))
+    #define HASH(pos, dx, dy, dz) (sp_hash_sz*sp_hash_sz*CLAMP(P((pos).x,min_pos.x,max_pos.x) + dx,0,sp_hash_sz - 1) + \
+                                   sp_hash_sz*CLAMP(P((pos).y,min_pos.y,max_pos.y) + dy,0,sp_hash_sz - 1)+ \
+                                   CLAMP(P((pos).z,min_pos.z,max_pos.z) + dz,0,sp_hash_sz - 1))
     
     for (int i=0;i<t.splines.size();i++)
     {
         for (int j=0;j<t.splines[i].joints.size();j++)
         {
-            int hash_id = HASH(t.splines[i].joints[j].pos);
-            //TODO
+            int hash_id = HASH(t.splines[i].joints[j].pos,0,0,0);
             hash_table[hash_id].push_back({i,j});
         }
     }
@@ -63,26 +68,50 @@ void restore_graph(SavedTree &t)
     {
         auto &s = t.splines[i];
         auto &bp = s.joints.front().pos;
-        int hash_id = HASH(bp);
+        auto &br = s.joints.front().r;
+        bool found = false;
+        int radius = 0;
+        while (!found && radius <= 1)
+        {
 
-        float min_dist = rel_eps * glm::dot(max_pos - min_pos, max_pos - min_pos);
-        std::pair<int,int> min_pair = {-1,-1};
-        for (auto &p : hash_table[hash_id])
-        {
-            if (p.first == i)
-                continue;
-            auto &pos = t.splines[p.first].joints[p.second].pos;
-            float d = glm::dot(pos - bp, pos - bp);
-            if (d < min_dist)
+            float min_dist = pow(2,radius) * rel_eps * glm::dot(max_pos - min_pos, max_pos - min_pos);
+            std::pair<int,int> min_pair = {-1,-1};
+            for (int dx = -radius; dx <= radius; dx++)
             {
-                min_dist = d;
-                min_pair = p;
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    for (int dz = -radius; dz <= radius; dz++)
+                    {
+                        int hash_id = HASH(bp, dx, dy, dz);
+                        for (auto &p : hash_table[hash_id])
+                        {
+                            if (p.first == i)
+                                continue;
+                            auto &pos = t.splines[p.first].joints[p.second].pos;
+                            auto &r = t.splines[p.first].joints[p.second].r;
+                            float d = glm::dot(pos - bp, pos - bp);
+                            if (d < min_dist)
+                            {
+                                min_dist = d;
+                                min_pair = p;
+                            }
+                        }
+                    }
+                }
             }
+
+            if (min_pair.first >= 0 && min_pair.second >= 0)
+            {
+                //bp = t.splines[min_pair.first].joints[min_pair.second].pos;
+                t.splines[min_pair.first].joints[min_pair.second].child_splines.push_back(i);
+                found = true;
+            }
+            radius++;
         }
-        if (min_pair.first >= 0 && min_pair.second >= 0)
+        /*if (!found && i > 0)
         {
-            t.splines[min_pair.first].joints[min_pair.second].child_spline = i;
-        }
+            t.splines[0].joints[1].child_splines.push_back(i);
+        }*/
     }
 }
 
@@ -113,6 +142,7 @@ void load_tree(Block &blk, SavedTree &st)
     }
     else
     {
+        glm::mat4 transform = glm::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
         int splines_cnt  = splines_bl->size();
         for (int i=0;i<splines_cnt;i++)
         {
@@ -123,8 +153,11 @@ void load_tree(Block &blk, SavedTree &st)
                 st.splines.emplace_back();
                 for (int j=0;j<spline_raw.size();j+=4)
                 {
+                    glm::vec3 pos = st.pos + glm::vec3(transform * glm::vec4(spline_raw[j], spline_raw[j+1], spline_raw[j+2], 1));
+                    float r = spline_raw[j+3] * st.scale;
                     st.splines.back().joints.push_back(
-                    SJoint{glm::vec3(spline_raw[j], spline_raw[j+1], spline_raw[j+2]), spline_raw[j+3], -1});
+                    SJoint{pos, r, std::vector<int>()});
+                    st.joints_count++;
                 }
             }
         }
@@ -140,8 +173,9 @@ void load_tree(Block &blk, SavedTree &st)
     }
 }
 
-void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external_tree)
+void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external_tree, glm::vec3 &parent_joint_pos)
 {
+    #define EPS 1e-4
     br->level = level;
     br->dead = false;
     br->self_id = br_ids;
@@ -149,23 +183,37 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
     br->id = external_tree.id;
     br->center_self = s.joints[0].pos;
     br->plane_coef = glm::vec4(1,0,0,br->center_self.x);
+    if (glm::length(parent_joint_pos - s.joints[0].pos) > 0.5*s.joints[0].r + EPS)
+    {
+        br->joints.emplace_back();
+        br->joints.back().leaf = nullptr;
+        br->joints.back().pos = parent_joint_pos;   
+
+        br->segments.emplace_back();
+        br->segments.back().begin = parent_joint_pos;
+        br->segments.back().rel_r_begin = MAX(EPS,s.joints[0].r);
+
+        br->segments.back().end = s.joints[0].pos;
+        br->segments.back().rel_r_end = MAX(EPS,s.joints[0].r);    
+    }
     for (int i=0;i<s.joints.size();i++)
     {
         br->joints.emplace_back();
         br->joints.back().leaf = nullptr;
         br->joints.back().pos = s.joints[i].pos;
+        st.joints_transformed++;
         //logerr("added joint %f %f %f %f ",s.joints[i].pos.x, s.joints[i].pos.y, s.joints[i].pos.z, s.joints[i].r);
         if (i != s.joints.size()-1)
         {
             br->segments.emplace_back();
             br->segments.back().begin = s.joints[i].pos;
-            br->segments.back().rel_r_begin = s.joints[i].r;
+            br->segments.back().rel_r_begin = MAX(EPS,s.joints[i].r);
 
             br->segments.back().end = s.joints[i+1].pos;
-            br->segments.back().rel_r_end = s.joints[i+1].r;
+            br->segments.back().rel_r_end = MAX(EPS,s.joints[i+1].r);
         }
 
-        if (s.joints[i].child_spline >= 0)
+        for (int child_spline : s.joints[i].child_splines)
         {
             while (level + 1 >= external_tree.branchHeaps.size())
             {
@@ -173,7 +221,7 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
             }
             Branch *ch_b = external_tree.branchHeaps[level + 1]->new_branch();
             ch_b->center_par = br->center_self;
-            convert(st.splines[s.joints[i].child_spline], ch_b, level+1, st, external_tree);
+            convert(st.splines[child_spline], ch_b, level+1, st, external_tree, s.joints[i].pos);
             br->joints.back().childBranches.push_back(ch_b);
         }
     }
@@ -185,20 +233,25 @@ void convert_tree(SavedTree &st, GroveGenerationData ggd, ::Tree &external_tree,
     {
         external_tree.pos.y = h.get_height(st.pos);
     }
-    external_tree.pos = glm::vec3(0,0,0);
     external_tree.id = tlb_ids;
     external_tree.valid = true;
     external_tree.type = &(ggd.types[0]);
     external_tree.leaves = new LeafHeap();
     external_tree.branchHeaps.push_back(new BranchHeap());
     Branch *root = external_tree.branchHeaps[0]->new_branch();
-    root->center_par = glm::vec3(0,0,0);
+    root->center_par = external_tree.pos;
     external_tree.root = root;
-    convert(st.splines[st.trunk_n], root, 0, st, external_tree);
+    convert(st.splines[st.trunk_n], root, 0, st, external_tree, root->center_par);
 
     tlb_ids++;
 }
-
+void TreeLoaderBlk::load_tree(GroveGenerationData ggd, ::Tree &tree_external, Heightmap &h, Block &b)
+{
+    SavedTree st;
+    ::load_tree(b, st);
+    convert_tree(st, ggd, tree_external, h);
+    logerr("converted tree %d joints loaded %d joint transformed",st.joints_count,st.joints_transformed);
+}
 void TreeLoaderBlk::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
     BlkManager man;
@@ -206,10 +259,8 @@ void TreeLoaderBlk::create_grove(GroveGenerationData ggd, ::Tree *trees_external
     {
         std::string blk_path = trees_directory + "/" + blks_base_name + "_" + std::to_string(trees_taken) + ".bsg";
         Block b;
-        SavedTree st;
         man.load_block_from_file(blk_path, b);
-        load_tree(b, st);
-        convert_tree(st, ggd, trees_external[i], h);
+        load_tree(ggd,trees_external[i],h,b);
         trees_taken++;
         
         /*for (auto *bh : trees_external[i].branchHeaps)

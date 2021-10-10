@@ -17,7 +17,8 @@ public:
         trees_directory = _trees_directory;
     }
     static std::string blks_base_name;
-private:
+protected:
+    void load_tree(GroveGenerationData ggd, ::Tree &tree_external, Heightmap &h, Block &b);
     static int trees_taken;
     static std::string trees_directory;
 };

@@ -30,6 +30,7 @@ dist/
 /trees/*
 /tmp/*
 /small_dataset/*
+/original_trees/*
 *.npy
 # Compiled Java class files
 *.class

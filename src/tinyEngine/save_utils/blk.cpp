@@ -260,7 +260,7 @@ bool read_array(const char *data, int &cur_pos, DataArray &a)
             std::string tok = next_token(data, cur_pos);
             if (tok == "}")
             {
-                //empty array
+                a.type = ValueType::DOUBLE;
                 return true;
             }
             val.type = ValueType::DOUBLE;
