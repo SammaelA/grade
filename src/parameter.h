@@ -21,11 +21,14 @@ enum ParameterVariablesSet
     ALL_VALUES
 };
 struct ParametersSet;
+struct WeberPennParameters;
 template <typename T>
 class Parameter
 {
 public:
     friend struct ParametersSet;
+    friend struct WeberPennParameters;
+    
     float get_base() { return baseValue;} 
     float get_min() { return minValue;}
     float get_max() { return maxValue;}
@@ -167,6 +170,12 @@ public:
         this->minValue = minValue;
         minMaxDefined = (minValue > -1e10 && maxValue < 1e10);
         state = -1;
+    }
+    explicit Parameter(std::vector<T> stateParams,
+                       T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : 
+                       Parameter(stateParams.front(),stateParams, minValue, maxValue)
+    {
+
     }
     Parameter(T base, std::vector<T> stateParams,
               T minValue = (T)(-1e10), T maxValue = (T)(1e10)) : Parameter(base, minValue, maxValue)

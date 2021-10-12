@@ -6,7 +6,7 @@
         light_importance:r = 0.5
         max_clusters_in_layer:i = 10000
         recursive_clustering_layers:i = 2
-        average_cluster_size_goal:r = 100
+        average_cluster_size_goal:r = 1
     }
     trunks_params
     {

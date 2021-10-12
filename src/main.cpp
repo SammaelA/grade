@@ -35,6 +35,7 @@
 #include "simple_generator.h"
 #include "load_tree_structure.h"
 #include "python_tree_gen.h"
+#include "weber_penn_parameters.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -86,6 +87,7 @@ bool parameter_selection = false;
 bool clustering_benchmark = false;
 bool prepare_dataset = false;
 std::string generator_name = "default";
+std::string generator_fixed_preset_name = "";
 std::string parameter_selector_name = "default_selection";
 std::string clustering_benchmark_path = "benchmark.blk";
 struct StatRunLaunchParams
@@ -234,9 +236,25 @@ int parse_arguments(int argc, char *argv[])
       if (!ok)
       {
         logerr("-generator = <generator_name>");
-        logerr("possible names : default, proctree, simple");
+        logerr("possible names : default, proctree, simple, python_tree_gen");
       }
       k += 3;
+      if (generator_name == "python_tree_gen")
+      {
+        bool ok = argc >= k+2;
+        if (ok && std::string(argv[k]) == "-parameters")
+        {
+          if (std::string(argv[k+1]) == "=")
+            generator_fixed_preset_name = std::string(argv[k+2]);
+          else
+            ok = false;
+        }
+        else 
+          ok = false;
+
+        if (ok)
+          k += 3;
+      }
     }
     else if (std::string(argv[k]) == "-prepare_dataset")
     {
@@ -315,7 +333,6 @@ void clear_current_grove()
 }
 void generate_grove()
 {
-  //ggd.task = GenerationTask::GENERATE | GenerationTask::MODELS;
   ::Tree *trees = new ::Tree[ggd.trees_count];
   gen->create_grove(ggd, trees, *data.heightmap);
   logerr("%d branches",trees[0].branchHeaps[1]->branches.size());
@@ -433,6 +450,21 @@ int full_initialization()
     if (generator_name == "proctree")
     {
       ggd.types[0].params = new Proctree::Properties();
+    }
+    if (generator_name == "python_tree_gen")
+    {
+      auto *p = new WeberPennParameters();
+      if (!generator_fixed_preset_name.empty())
+      {
+        p->name = generator_fixed_preset_name;
+        p->settings_already_in_file = true;
+      }
+      else
+      {
+        p->name = "default";
+        p->settings_already_in_file = false;
+      }
+      ggd.types[0].params = p;
     }
     if (parameter_selection)
     {

@@ -40,7 +40,7 @@ struct SavedTree
 
 void restore_graph(SavedTree &t)
 {
-    constexpr int sp_hash_sz = 5;
+    constexpr int sp_hash_sz = 10;
     constexpr float rel_eps = 1e-4;
 
     glm::vec3 min_pos = glm::vec3(1e9, 1e9, 1e9);
@@ -81,7 +81,7 @@ void restore_graph(SavedTree &t)
         while (!found && radius <= 1)
         {
 
-            float min_dist = pow(2,radius) * rel_eps * glm::dot(max_pos - min_pos, max_pos - min_pos);
+            float min_dist = pow(100,radius) * rel_eps * glm::dot(max_pos - min_pos, max_pos - min_pos);
             std::pair<int,int> min_pair = {-1,-1};
             for (int dx = -radius; dx <= radius; dx++)
             {
@@ -92,12 +92,12 @@ void restore_graph(SavedTree &t)
                         int hash_id = HASH(bp, dx, dy, dz);
                         for (auto &p : hash_table[hash_id])
                         {
-                            if (p.first == i)
+                            if (p.first == i || p.second == 0)
                                 continue;
                             auto &pos = t.splines[p.first].joints[p.second].pos;
                             auto &r = t.splines[p.first].joints[p.second].r;
                             float d = glm::dot(pos - bp, pos - bp);
-                            if (d < min_dist)
+                            if (d < min_dist && r >= br)
                             {
                                 min_dist = d;
                                 min_pair = p;
@@ -138,9 +138,11 @@ void restore_graph(SavedTree &t)
                 min_pair = p;
             }
         }
-
-        t.splines[min_pair.first].joints[min_pair.second].child_leaves.push_back(i);
-        t.leaves[i].pos = t.splines[min_pair.first].joints[min_pair.second].pos;
+        if (min_pair.first >= 0 && min_pair.second >= 0)
+        {
+            t.splines[min_pair.first].joints[min_pair.second].child_leaves.push_back(i);
+            t.leaves[i].pos = t.splines[min_pair.first].joints[min_pair.second].pos;
+        }
     }
 }
 
@@ -194,18 +196,18 @@ void load_tree(Block &blk, SavedTree &st)
 
     std::vector<float> leaves_arr;
     blk.get_arr("leaves",leaves_arr);
-    if (leaves_arr.size() % 9)
+    if (leaves_arr.size() > 0)
     {
-        for (int i=0;i<leaves_arr.size();i+=9)
+        for (int i=0;i<leaves_arr.size()-8;i+=9)
         {
             st.leaves.emplace_back();
             st.leaves.back().pos = glm::vec3(leaves_arr[i],leaves_arr[i+1],leaves_arr[i+2]);
             st.leaves.back().dir = glm::vec3(leaves_arr[i+3],leaves_arr[i+4],leaves_arr[i+5]);
             st.leaves.back().right = glm::vec3(leaves_arr[i+6],leaves_arr[i+7],leaves_arr[i+8]);
 
-            st.leaves.back().pos = st.pos + st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().pos,1));
-            st.leaves.back().dir = st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().dir,0));
-            st.leaves.back().right = st.scale*glm::vec3(transform*glm::vec4(st.leaves.back().right,0));
+            st.leaves.back().pos = st.pos + glm::vec3(transform*glm::vec4(st.leaves.back().pos,1));
+            st.leaves.back().dir = glm::vec3(transform*glm::vec4(st.leaves.back().dir,0));
+            st.leaves.back().right = glm::vec3(transform*glm::vec4(st.leaves.back().right,0));
         }
     }
     else
@@ -280,7 +282,7 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
         {
             if (br->joints.back().leaf == nullptr)
             {
-                auto &leaf = st.leaves[child_leaf];
+                auto leaf = (child_leaf >= 0 && child_leaf < st.leaves.size()) ? st.leaves[child_leaf] : SLeaf();
                 br->joints.back().leaf = external_tree.leaves->new_leaf();
                 br->joints.back().leaf->pos = leaf.pos + 0.5f*leaf.right;
                 br->joints.back().leaf->edges.push_back(leaf.pos);

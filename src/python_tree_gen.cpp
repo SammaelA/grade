@@ -1,11 +1,55 @@
 #include "python_tree_gen.h"
 #include "tinyEngine/utility/python_interaction.h"
 #include "grove_generation_utils.h"
+#include "weber_penn_parameters.h"
+#include <iosfwd>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 void PythonTreeGen::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
+
+    std::string scripts_path = "./scripts/tree_gen"; 
+    std::string config_file_name = scripts_path + "/params.py";
+    std::string params_string;
+    WeberPennParameters dummy;
+    WeberPennParameters *params = dynamic_cast<WeberPennParameters *>(ggd.types[0].params);
+    if (!params)
+        params = &dummy;
+    if (params->settings_already_in_file)
+    {
+        std::string settings_path = scripts_path + "/" + params->name + ".py";
+        try
+        {
+            std::fstream f(settings_path);
+            std::stringstream iss;
+            if (f.fail())
+            {
+                logerr("unable to load file %s",settings_path.c_str());
+                throw std::exception();
+            }
+            iss << f.rdbuf();
+            params_string = iss.str();
+            f.close();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            logerr("cannot open file %s with settings for tree %s. Default parameters are used.",settings_path.c_str(),params->name.c_str());
+        }
+        
+    }
+    if (params_string.empty())
+    {
+        params_string = params->convert_to_python_list();
+    }
+    std::ofstream out(config_file_name);
+    out << params_string;
+    out.close();
+
     PythonHelper ph;
-    ph.init("./scripts/tree_gen");
+    ph.init(scripts_path);
     BlkManager man;
 
     for (int i=0;i<ggd.trees_count;i++)
