@@ -130,13 +130,14 @@ void PythonHelper::run_script(std::string script_file_name, std::string args)
         {
             break;
         }
-        bool block_print = true;
+        static bool block_print = true;
         if (block_print)
         {
             PyRun_SimpleString("import os");
             PyRun_SimpleString("import sys");
             PyRun_SimpleString("sys.stdout = open(os.devnull, 'w')");
             PyRun_SimpleString("sys.stderr = open(os.devnull, 'w')");
+            block_print = false;
         }
         script_file_name = scripts_dir+"/" +script_file_name+".py";
         //logerr("sfn %s", script_file_name.c_str());
@@ -169,13 +170,13 @@ void PythonHelper::run_script(std::string script_file_name, std::string args)
 
 void PythonHelper::finish_script()
 {
-    PyObject * poAttrList = PyObject_Dir(pModule);
+    //PyObject * poAttrList = PyObject_Dir(pModule);
 
-    PyObject * poAttrIter = PyObject_GetIter(poAttrList);
+    //PyObject * poAttrIter = PyObject_GetIter(poAttrList);
 
-    PyObject * poAttrName;
+    //PyObject * poAttrName;
 
-    Py_XDECREF(pDict);
+    //Py_XDECREF(pDict);
 }
 
     void PythonHelper::get_int(std::string &name, int *res)

@@ -113,7 +113,7 @@ public:
     void get_base_clusters(Block &settings, Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters,
                            ClusteringContext *ctx);
     void clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
-                    ClusteringContext *ctx, bool need_save_full_data = false);
+                    ClusteringContext *ctx, bool need_save_full_data = false, bool visualize_clusters = false);
     FullClusteringData *get_full_data() { return fcd; }
     explicit Clusterizer2(ClusteringStrategy _cStrategy = ClusteringStrategy::Merge)
     {

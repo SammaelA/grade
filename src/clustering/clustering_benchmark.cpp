@@ -92,7 +92,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
         
         if (reference)
             packer.start_save_clusterizer();
-        packer.add_trees_to_grove(ggd, groves.back(),trees,h,true);
+        packer.add_trees_to_grove(ggd, groves.back(),trees,h, false, true);
         if (reference && packer.saved_clustering_data.size() == STEPS)
         {
             for (int j=0;j<STEPS;j++)
@@ -159,7 +159,7 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
                 logerr("empty clust");
                 continue;
               }
-              std::string vis_name = results.back().name + "_clusters";
+              std::string vis_name = results.back().name + "_clusters_" + std::to_string(j);
               visualize_clusters(settings, clusts[j]->id->branches, clust->clusters, clusts[j]->ctx, vis_name,128,128);
             }
         }

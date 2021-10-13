@@ -200,7 +200,8 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, ctx);
         //clusterize this base clusters and put result at the end of cluster list
         //on zero level
-        cl->clusterize(settings, clusters_base, packingLayers[clustering_base_level].clusters, ctx, save_clusterizer);
+        cl->clusterize(settings, clusters_base, packingLayers[clustering_base_level].clusters, ctx, 
+                       save_clusterizer, visualize_clusters);
         if (save_clusterizer)
         {
             saved_clustering_data.push_back(cl->get_full_data());
@@ -238,7 +239,8 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
                 std::map<long, int> old_cl_poses;
                 BitVector remains;
                 remains.resize(prev_size, false);
-                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, ctx);
+                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, ctx,
+                               save_clusterizer, visualize_clusters);
                 int new_size = packingLayers[i + 1].clusters.size();
 
                 for (int j = 0; j < prev_size; j++)
@@ -478,12 +480,12 @@ void GrovePacker::transform_by_nodes(ClusterData &cl)
 }
 
 void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                                     bool visualize_clusters)
+                                     bool visualize_clusters, bool save_cluster_data)
 {
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
     if (ggd.trees_count <= max_trees_in_patch)
     {
-        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters);
+        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters, save_cluster_data);
     }
     else
     {
@@ -492,7 +494,7 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
         ggd.trees_count = max_trees_in_patch;
         while (start_pos < trees_count)
         {
-            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h, visualize_clusters);
+            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h, visualize_clusters, save_cluster_data);
             start_pos+=max_trees_in_patch;
         }
         ggd.trees_count = trees_count;
@@ -503,7 +505,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                                                      Heightmap *h, std::string &save_path)
 
 {
-    add_trees_to_grove_internal(ggd, grove, trees_external, h, true);
+    add_trees_to_grove_internal(ggd, grove, trees_external, h, false, true);
 
     int cnt = 0;
     TextureAtlasRawData raw_atlas = TextureAtlasRawData(ctx->self_impostors_data->atlas);
@@ -634,7 +636,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
 }
 
 void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                                              bool visualize_clusters)
+                                              bool visualize_clusters, bool save_cluster_data)
 {
     if (!inited)
         init();
@@ -647,7 +649,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     for (int i = grove.clouds.size(); i < 4; i++)
         grove.clouds.push_back(BillboardCloudData());
 
-    save_clusterizer = visualize_clusters;
+    save_clusterizer = save_cluster_data;
     grove.center = glm::vec3(0, 0, 0);
     grove.ggd_name = ggd.name;
     int synts = ggd.synts_count;
@@ -715,7 +717,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 
     current_clustering_step = ClusteringStep::BRANCHES;
     pack_layer(*branches_params, ggd, grove, trees_external, h, packingLayersBranches, post_voxels,
-               1, 1000, true, true, false, false);
+               1, 1000, true, true, false, visualize_clusters);
 
     current_clustering_step = ClusteringStep::TREES;
     pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,

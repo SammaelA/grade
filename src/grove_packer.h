@@ -36,7 +36,7 @@ class GrovePacker
 {
 public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                            bool visualize_clusters = false);
+                            bool visualize_clusters = false, bool save_cluster_data = false);
     void add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                             std::string &save_path);
     void init(Block &packing_params_block);
@@ -46,7 +46,7 @@ public:
     std::vector<FullClusteringData *> saved_clustering_data;
 protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                                     bool visualize_clusters);
+                                     bool visualize_clusters, bool save_cluster_data);
     void pack_layer(Block &settings, GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                     std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
                     int layer_from, int layer_to, bool models, bool bill, bool imp,

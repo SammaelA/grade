@@ -43,7 +43,7 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     }
     
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(impData.atlas);
-    textureManager.save_bmp(impData.atlas.tex(0),"flush_atlas");
+    //textureManager.save_bmp(impData.atlas.tex(0),"flush_atlas");
 
         int hash_size = get_default_block().get_int("impostor_hash_size", 8);
         hash_size = settings.get_int("impostor_hash_size", hash_size);

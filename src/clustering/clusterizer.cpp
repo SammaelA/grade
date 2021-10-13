@@ -194,7 +194,7 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
     }
 }
 void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
-                              ClusteringContext *ctx, bool need_save_full_data)
+                              ClusteringContext *ctx, bool need_save_full_data, bool need_visualize_clusters)
 {
     tmpData = ClusterizationTmpData();
     std::vector<BranchClusteringData *> branches;
@@ -228,8 +228,8 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
             debugl(3, "pos %f %f %f size %d\n", pos.x, pos.y, pos.z, cl.base->joints.size());
         }
     }
-    //if (current_clustering_step == ClusteringStep::BRANCHES)
-    //    visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
+    if (need_visualize_clusters)
+        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
     if (need_save_full_data)
     {
         fcd = new FullClusteringData();
