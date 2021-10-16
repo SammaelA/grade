@@ -28,8 +28,7 @@ protected:
     IntermediateClusteringData *prepare_intermediate_data_simple(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                  ClusteringContext *ctx);
     void create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx, BaseBranchClusteringData &data,
-                              ImpostorSimilarityParams &isimParams, 
-                              std::list<Impostor>::iterator &imp_iter, ImpostorsData &impData);
+                              ImpostorSimilarityParams &isimParams, TextureAtlas &temp_atlas, Impostor &imp);
 };
 
 class DDTHashBasedClusteringHelper : public HashBasedClusteringHelper

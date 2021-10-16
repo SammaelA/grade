@@ -6,28 +6,12 @@
 class ImpostorBaker : public BillboardCloudRaw
 {
 public:
-    struct ImpostorGenerationParams
+    struct ImpostorGenerationParams : public BillboardCloudRaw::BillboardGenerationParams
     {
-        Quality quality;
         int slices_n = 8;
         bool need_top_view = true;
-        bool fixed_colors = false;
         float add_rotation_y = 0;
-        float leaf_size_mult = 1.15;
-        float wood_size_mult = 1;
-        int level_from = 0;
-        int level_to = 1000;
     }; 
-    ImpostorBaker(Quality _quality, int branch_level, std::vector<ClusterData> &clusters,
-                                     std::vector<TreeTypeData> &_ttd, ImpostorsData *data)
-    {
-        ImpostorGenerationParams params;
-        params.quality = _quality;
-        quality = _quality;
-        ttd = _ttd;
-        prepare(branch_level,clusters,params,data);
-    }
-    ImpostorBaker(int tex_w, int tex_h, std::vector<TreeTypeData> &ttd) : BillboardCloudRaw(tex_w,tex_h,ttd) {};
     ImpostorBaker() {};
     void prepare(int branch_level, std::vector<ClusterData> &clusters,
                  ImpostorGenerationParams &params, ImpostorsData *data = nullptr);
@@ -37,7 +21,8 @@ public:
                  ImpostorsData *data, std::list<Impostor>::iterator &impostor);
     void prepare_all_grove(GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
                            ImpostorsData *data = nullptr);
-    void make_impostor(Branch &b, Impostor &imp, ImpostorGenerationParams &params);
+    void make_impostor(Branch &b, TreeTypeData &tree_type, Impostor &imp, ImpostorGenerationParams &params, 
+                       TextureAtlas &atlas, BBox &bbox);
 private:
 
 };

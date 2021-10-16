@@ -1,13 +1,4 @@
 {
-    imp_deep_hash_ddt_1
-    {
-        branches_params
-        {
-            clustering_helper:s = "imp_deep_hash_ddt"
-            separate_colors:b = true
-            script:s = "get_hashes"
-        }
-    }
     imp_hash_ddt
     {
         branches_params

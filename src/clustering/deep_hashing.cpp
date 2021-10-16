@@ -24,41 +24,27 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     isimParams.load(&settings);
     int b_count = res_branches.size();
         
-    ImpostorsData impData;
     TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
-    impData.atlas = atl;
-    impData.atlas.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
-    impData.atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
-    std::vector<std::list<Impostor>::iterator> imp_iters;
+    atl.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    atl.set_clear_color(glm::vec4(0, 0, 0, 0));
+    std::vector<Impostor> imp_iters;
+
     for (int br_n = 0; br_n<b_count;br_n++)
     {
         BranchHash *id = res_branches[br_n];
         Branch *base = src_branches[br_n];
         BaseBranchClusteringData &data = base_branches[br_n];
-        std::list<Impostor>::iterator imp_iter;
+        imp_iters.emplace_back();
         
-        create_impostor_temp(settings, base, ctx, data, isimParams, imp_iter, impData);
-
-        imp_iters.push_back(imp_iter);
+        create_impostor_temp(settings, base, ctx, data, isimParams, atl, imp_iters.back());
     }
     
-    TextureAtlasRawData rawAtlas = TextureAtlasRawData(impData.atlas);
+    TextureAtlasRawData rawAtlas = TextureAtlasRawData(atl);
     //textureManager.save_bmp(impData.atlas.tex(0),"flush_atlas");
-
-        int hash_size = get_default_block().get_int("impostor_hash_size", 8);
-        hash_size = settings.get_int("impostor_hash_size", hash_size);
         
-        bool separate_colors = get_default_block().get_bool("separate_colors", true);
-        separate_colors = settings.get_bool("separate_colors", separate_colors);
-        
-        bool relative_to_average = get_default_block().get_bool("relative_to_average", false);
-        relative_to_average = settings.get_bool("relative_to_average", relative_to_average);
+        int hash_discrete_steps = get_default_block().get_int("hash_discrete_steps", -1);
+        hash_discrete_steps = settings.get_int("hash_discrete_steps", hash_discrete_steps);
 
-        int step = (int)(Quality::LOW_AS_F)/hash_size;
-        if (step*hash_size != (int)(Quality::LOW_AS_F))
-        {
-            debug("warning: impostor_hash_size = %d is not a divider of impostor size = %d", hash_size, (int)(Quality::LOW_AS_F));
-        }
     std::string dir_path = "./tmp";
     std::string cluster_labels = " 1";
     for (int k =0;k<32;k++)
@@ -72,13 +58,13 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
 
     for (int br_n = 0; br_n<b_count;br_n++)
     {
-        std::list<Impostor>::iterator imp_iter = imp_iters[br_n];
+        Impostor &imp_iter = imp_iters[br_n];
         BranchHash *id = res_branches[br_n];
 
         for (int hash_n = 0;hash_n < isimParams.impostor_similarity_slices;hash_n++)
         {
             std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
-            auto &bill = imp_iter->slices[hash_n];
+            auto &bill = imp_iter.slices[hash_n];
             rawAtlas.get_slice(bill.id, sl_data, &ww, &hh);
             textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
             std::string record = "./" + std::to_string(sl)+".bmp" + cluster_labels + "\n";
@@ -113,10 +99,7 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
             ph.run_script(script_name, script_args);
             bool res = ph.get_numpy_2d_array_double("arr",&hash_count,  &hash_len, &data);
             ph.finish_script();
-            //ph.run_script(script_name, script_args);
-            //bool res = ph.get_numpy_2d_array_double("arr",&hash_count,  &hash_len, &data);
-            //ph.finish_script();
-            //ph.finish();
+
             if (res)
             {
                 if (hash_len != expected_hash_len || hash_count < b_count*isimParams.impostor_similarity_slices)
@@ -137,6 +120,11 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
                             for (int i=0;i<hash_len;i++)
                             {
                                 id->hashes[hash_n].data[i] = data[hash_len*cnt + i];
+                                if (hash_discrete_steps > 0)
+                                {
+                                    int h = (int)(0.5*(id->hashes[hash_n].data[i] + 1)*hash_discrete_steps);
+                                    data[hash_len*cnt + i] = ((float)h)/hash_discrete_steps;
+                                }
                             }
                             cnt++;
                         }
