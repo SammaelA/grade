@@ -45,7 +45,7 @@
         structure_voxels_size_mult:r = 0.4
         light_importance:r = 0.2
         ignore_structure_level:i = 3
-        average_cluster_size_goal:r = 25
+        average_cluster_size_goal:r = 10
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.5,0.2,0,0,0}

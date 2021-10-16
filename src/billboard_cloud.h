@@ -8,6 +8,7 @@
 #include "billboard_cloud_data.h"
 #include <list>
 #include <vector>
+#include "tinyEngine/utility/postfx.h"
 class Visualizer;
 class BillboardCloudRaw : Countable
 {

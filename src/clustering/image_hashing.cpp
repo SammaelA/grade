@@ -18,7 +18,8 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     params.slices_n = isimParams.impostor_similarity_slices;
     params.level_from = isimParams.impostor_metric_level_from;
     params.level_to = isimParams.impostor_metric_level_to;
-
+    params.leaf_opacity = isimParams.leaves_opacity;
+    
     BranchHeap bh;
     LeafHeap lh;
     Branch *tmp_b = bh.new_branch();

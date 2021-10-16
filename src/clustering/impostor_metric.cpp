@@ -33,6 +33,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
 {
     isimParams.load(&settings);
     BranchClusteringDataImpostor *id = new BranchClusteringDataImpostor();
+    id->min_bbox = BillboardCloudRaw::get_minimal_bbox(base);
     if (!ictx)
     {
         logerr("ImpostorClusteringHelper given clustering context with wrong type");
@@ -56,6 +57,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     params.slices_n = isimParams.impostor_similarity_slices;
     params.level_from = isimParams.impostor_metric_level_from;
     params.level_to = isimParams.impostor_metric_level_to;
+    params.leaf_opacity = isimParams.leaves_opacity;
 
     BranchHeap bh;
     LeafHeap lh;
@@ -162,8 +164,8 @@ int ccnt = 0;
 float imp_dist(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *raw)
 {
 
-    int diff = 0;
-    int sum = 0;
+    float diff = 0;
+    float sum = 0;
     unsigned char *data = nullptr;
     if (ccnt<0)
     {
@@ -185,36 +187,30 @@ float imp_dist(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *
             unsigned char a2 = raw->get_pixel_uc(i, j, Channel::A, b2.id);
             if (a1 == 0 && a2 == 0)
                 continue;
-            else if (a1 > 0 && a2 > 0)
+            else 
             {
-                if (data)
-                {
-                    data[4*(w*i + j)] = 255;
-                    data[4*(w*i + j) + 1] = 255;
-                    data[4*(w*i + j) + 2] = 255;
-                }
-                sum += 2;
                 unsigned char r1 = raw->get_pixel_uc(i, j, Channel::R, b1.id);
                 unsigned char r2 = raw->get_pixel_uc(i, j, Channel::R, b2.id);
-                if (r1 != r2)
-                {
-                    diff++;
-                }
-            }
-            else
-            {
+                unsigned char g1 = raw->get_pixel_uc(i, j, Channel::G, b1.id);
+                unsigned char g2 = raw->get_pixel_uc(i, j, Channel::G, b2.id);
+                
+                float f = (abs(r1-r2) + abs(g1-g2))/255.0;
+
+                diff += f;
+                sum += MAX(1,f);
+
                 if (data)
                 {
-                    data[4*(w*i + j)] = a1;
-                    data[4*(w*i + j) + 1] = a2;
+                    data[4*(w*i + j)] = abs(r1-r2);
+                    data[4*(w*i + j) + 1] = abs(g1-g2);
+                    data[4*(w*i + j) + 2] = 0;
                 }
-                diff += 2;
-                sum += 2;
             }
         }
     }
     if (data)
     {
+        textureManager.save_bmp_raw(data, w, h, 4, "debug_"+std::to_string(ccnt));
         delete data;
     }
     return (double)diff/(sum+1);
@@ -278,5 +274,11 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
     }
     //logerr("min av_dst = %f",min_av_dist);
     data->rotation = (2*PI*best_rot)/sz;
+    #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
+    glm::vec3 &s1 = bwd1.min_bbox.sizes;
+    glm::vec3 &s2 = bwd2.min_bbox.sizes;
+    float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
+                               SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
+    min_av_dist *= dist_discriminator;
     return Answer(true,min_av_dist,min_av_dist);
 }

@@ -7,6 +7,7 @@
         max_clusters_in_layer:i = 10000
         recursive_clustering_layers:i = 2
         average_cluster_size_goal:r = 3
+        leaves_opacity:r = 0.5
     }
     trunks_params
     {

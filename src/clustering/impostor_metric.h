@@ -6,6 +6,7 @@
 struct BranchClusteringDataImpostor : public BranchClusteringData
 {
     std::list<Impostor>::iterator self_impostor;
+    BBox min_bbox;
     virtual void clear() override;
 };
 

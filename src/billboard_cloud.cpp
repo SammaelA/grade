@@ -120,6 +120,8 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     int tex_count = params.normals_needed ? 1 : atlas.tex_count();
     for (int k = 0; k<tex_count;k++)
     {
+        bool transparent_pass = (k == 0 && params.leaf_opacity < 1);
+
         atlas.target(num,k);
         rendererToTexture.use();
 
@@ -133,8 +135,14 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
             rendererToTexture.uniform("fixed_color",glm::vec4(1,0,0,1));
         bm.render(GL_TRIANGLES);
         
-        if (k == 0 && params.leaf_opacity > 0)
+        if (params.leaf_opacity > 0)
         {
+            if (transparent_pass)
+            {
+                glEnable(GL_BLEND); 
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+                glDisable(GL_DEPTH_TEST); 
+            }
             bm.construct(_c_leaves);
 
             Texture &leaf = ttd.leaf;
@@ -147,11 +155,16 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
             rendererToTexture.uniform("projectionCamera", result);
             rendererToTexture.uniform("projection_zero", rb.z);
             if (params.monochrome)
-                rendererToTexture.uniform("fixed_color",glm::vec4(0,1,0,1));
+                rendererToTexture.uniform("fixed_color",glm::vec4(0,1,0,params.leaf_opacity));
             bm.render(GL_TRIANGLES);
 
             glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
             glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);
+            if (transparent_pass)
+            {
+                glDisable(GL_BLEND);   
+                glEnable(GL_DEPTH_TEST); 
+            }
         }
 
         billboards.push_back(bill);

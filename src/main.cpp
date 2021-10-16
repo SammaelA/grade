@@ -446,6 +446,7 @@ int full_initialization()
 
   if (generation_needed)
   {
+    SDL_GL_SwapWindow(Tiny::view.gWindow);
     ggd = config.get_ggd(grove_type_name);
     if (generator_name == "proctree")
     {
