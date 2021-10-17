@@ -25,8 +25,9 @@ uniform int tasks_count;
 uniform int impostor_x;
 uniform int impostor_y;
 uniform int start_id;
-uniform int tex_sz_x;
-uniform int tex_sz_y;
+uniform float tex_sz_x;
+uniform float tex_sz_y;
+uniform sampler2DArray atlas;
 void main()
 {
     uint id = gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
@@ -40,7 +41,7 @@ void main()
     {
         return;
     }
-    float sum = 0.001;
+    float sum = 1e-6;
     float diff = 0;
     for (int i=0;i<impostor_x;i++)
     {
@@ -48,13 +49,24 @@ void main()
         {
             ivec3 pixel_coords = ivec3(tasks[id].from.xyz) + ivec3(i, j, 0);
             //ivec4 p1 = ivec4(255*imageLoad(atlas, pixel_coords));
-            uint u1 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
+            vec3 coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
+            vec4 p1 = texture(atlas,coords);
+            p1 = texelFetch(atlas, pixel_coords, 0);
+            //uint u1 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
             pixel_coords = ivec3(tasks[id].to.xyz) + ivec3(i, j, 0);
+            coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
             //ivec4 p2 = ivec4(255*imageLoad(atlas, pixel_coords));
-            uint u2 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
-            sum += 2*int((u1 != 0) || (u2 != 0));
-            diff += int(u1 != u2) + int((u1 == 0) != (u2 == 0));
+            //uint u2 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
+            vec4 p2 = texture(atlas,coords);
+            p2 = texelFetch(atlas, pixel_coords, 0);
+            if (p1.a > 0 || p2.a > 0)
+            {
+                float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
+
+                diff += f;
+                sum += max(1,f);
+            }
         }
     }
-    results[id] = diff/sum; 
+   results[id] =  diff/sum; 
 }

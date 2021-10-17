@@ -148,13 +148,13 @@ void TextureAtlas::process_tc(int num, glm::vec3 &tc) const
 }
 void TextureAtlas::pixel_offsets(int num, glm::ivec3 &pix_tc) const
 {
-    glm::vec3 tc;
+    glm::vec3 tc = glm::vec3(0,0,0);
     process_tc(num, tc);
     pix_tc = glm::ivec3(width*tc.x, height*tc.y, tc.z);
 }
 void TextureAtlas::pixel_offsets(int num, glm::uvec4 &pix_tc) const
 {
-    glm::vec3 tc;
+    glm::vec3 tc = glm::vec3(0,0,0);
     process_tc(num, tc);
     pix_tc = glm::uvec4(width*tc.x, height*tc.y, tc.z, 1);
 }

@@ -2,6 +2,7 @@
 #include "clustering.h"
 #include "helpers.h"
 #include "../impostor.h"
+#include "impostor_similarity_params.h"
 
 struct BranchClusteringDataImpostor : public BranchClusteringData
 {
@@ -27,3 +28,5 @@ public:
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                   ClusteringContext *ctx) override;
 };
+
+extern ImpostorSimilarityParams isimParams;

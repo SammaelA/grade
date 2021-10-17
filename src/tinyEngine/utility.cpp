@@ -7,6 +7,8 @@
 #include "malloc.h"
 
 int debug_level = 1000;
+int show_progress = 0;
+
 void debug(const char *__restrict __fmt, ...)
 {
     va_list args;
@@ -129,3 +131,106 @@ Countable &Countable::operator=(Countable &c)
 Countable::~Countable() {count--;counts[countable_type_num]--;};
 void Countable::get_cur_count()  {logerr("count = %d %d",count, full_count);}
 long Countable::count = 0;
+typedef std::chrono::steady_clock::time_point TP;
+void print_time_interval(double ms)
+{
+    if (ms < 1)
+    {
+        debug("%f ms",(float)ms);
+        return;
+    }
+    if (ms < 10)
+    {
+        debug("%.2f ms",(float)ms);
+        return;
+    }
+    if (ms < 100)
+    {
+        debug("%.1f ms",(float)ms);
+        return;
+    }
+    float s = ms/1000;
+    if (s < 1)
+    {
+        debug("%.3f seconds",(float)s);
+        return;
+    }
+    if (s < 60)
+    {
+        debug("%.2f seconds",(float)s);
+        return;
+    }
+    float m = s/60;
+    if (m < 60)
+    {
+        debug("%.1f minutes",(float)m);
+        return;
+    }
+    float h = m/60;
+    debug("%.1f hours",(float)h);
+    return;
+}
+ProgressBar::ProgressBar(std::string _process, long _count, std::string _type, bool _estimate_time)
+{
+    process = _process;
+    count = _count;
+    type = _type;
+    estimate_time = _estimate_time;
+
+    if (show_progress)
+    {
+        debug("[P] Starting %s: %d %s\n", process.c_str(), count, type.c_str());
+        if (estimate_time)
+        {
+            t_start = std::chrono::steady_clock::now();
+            t_prev = t_start;
+        }
+    //float frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t_prev).count();
+    }
+}
+ProgressBar::~ProgressBar()
+{
+    finish();
+}
+void ProgressBar::finish()
+{
+    if (!finished)
+    {
+        if (show_progress)
+        {
+            debug("[P] Finished %s ", process.c_str());
+            if (estimate_time)
+            {
+                auto t_finish = std::chrono::steady_clock::now();
+                double ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_finish - t_start).count();
+                debug("took ");
+                print_time_interval(ms);
+            }
+            debugnl();
+        }
+        finished = true;
+    }
+}
+void ProgressBar::iter(long n)
+{
+    if (show_progress)
+    {
+        debug("[P] %s %d/%d ", process.c_str(), n, count);
+        if (estimate_time && n > prev_iter)
+        {
+            auto t_now = std::chrono::steady_clock::now();
+            double ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_prev).count();
+            ms = ms / (n - prev_iter);
+            at_per_iter = at_per_iter > 0 ? (t_estimate_q*at_per_iter + (1 - t_estimate_q)*ms) : ms;
+            debug("time left ", at_per_iter);
+            print_time_interval(at_per_iter*(count - n));
+            prev_iter = n;
+            t_prev = t_now;
+        }
+        else if (estimate_time)
+        {
+            t_prev = std::chrono::steady_clock::now();
+        }
+        debugnl();
+    }
+}

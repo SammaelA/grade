@@ -268,7 +268,11 @@ int parse_arguments(int argc, char *argv[])
         save_dataset_path = argv[k + 1];
       k += 2;
     }
-
+    else if (std::string(argv[k]) == "-progress_bar")
+    {
+      show_progress = 1;
+      k++;
+    }
     else
     {
       logerr("unknown command \"%s\". Write -h for help", argv[k]);

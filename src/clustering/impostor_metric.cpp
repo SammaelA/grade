@@ -95,6 +95,7 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
                                                                                 std::vector<BranchClusteringData *> branches,
                                                                                 ClusteringContext *ictx)
 {
+    isimParams.load(&settings);
     IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
     if (!ictx)
     {
@@ -126,6 +127,8 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
                                     "raw bmp");
     }
     */
+    ProgressBar pb = ProgressBar("Preparing DDT with imposter metric", SQR(real_branches.size()),"iterations", true);
+    int cnt = 0;
     for (int i = 0; i < real_branches.size(); i++)
     {
         for (int j = 0; j < real_branches.size(); j++)
@@ -154,6 +157,9 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
                 a = dist_impostor(*(real_branches[i]),*(real_branches[j]),ictx,0,1,&d);
             }
             data->ddt.set(i,j,a,d);
+            cnt++;
+            if (cnt % 1000 == 0)
+                pb.iter(cnt);
         }
     }
     delete ictx->self_impostors_raw_atlas;
@@ -252,7 +258,6 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
         }
         av_dst /= sz;
         min_av_dist = av_dst;
-        //logerr("av_dst = %f",av_dst);
     }
     else
     {
@@ -272,7 +277,7 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
             }
         }
     }
-    //logerr("min av_dst = %f",min_av_dist);
+
     data->rotation = (2*PI*best_rot)/sz;
     #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
     glm::vec3 &s1 = bwd1.min_bbox.sizes;

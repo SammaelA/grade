@@ -8,6 +8,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                                                                                    std::vector<BranchClusteringData *> branches,
                                                                                    ClusteringContext *ictx)
 {
+    isimParams.load(&settings);
     IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
     if (!ictx)
     {
@@ -28,24 +29,17 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
         }
         real_branches.push_back(imp_dt);
     }
-    ictx->self_impostors_raw_atlas = new TextureAtlasRawData(ictx->self_impostors_data->atlas);
-    /*
-    if (current_clustering_step == ClusteringStep::BRANCHES)
-    {
-        textureManager.save_bmp_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
-                                    ictx->self_impostors_raw_atlas->get_w(),
-                                    ictx->self_impostors_raw_atlas->get_h(),
-                                    4,
-                                    "raw bmp");
-    }
-    */
-    int tasks_cnt_per_impostor = real_branches[0]->self_impostor->slices.size();
+
+    int tasks_cnt_per_impostor = MIN(4,real_branches[0]->self_impostor->slices.size());
+    int bil_step = (real_branches[0]->self_impostor->slices.size())/tasks_cnt_per_impostor;
     int sz = real_branches.size();
     int tasks_cnt = tasks_cnt_per_impostor*tasks_cnt_per_impostor*sz*sz;
     Task *tasks = new Task[tasks_cnt];
     float *results = new float[tasks_cnt];
     int p = 0;
     auto &atlas = ictx->self_impostors_data->atlas;
+    ProgressBar pb_prepare = ProgressBar("GPU impostor clustering prepare tasks", SQR(sz)*SQR(tasks_cnt_per_impostor), "tasks");
+
     for (int i = 0; i < sz; i++)
     {
         for (int j = 0; j < sz; j++)
@@ -56,8 +50,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                 {
                     if (j>i)
                     {
-                        Billboard &b1 = real_branches[i]->self_impostor->slices[k];
-                        Billboard &b2 = real_branches[j]->self_impostor->slices[l];
+                        Billboard &b1 = real_branches[i]->self_impostor->slices[bil_step*k];
+                        Billboard &b2 = real_branches[j]->self_impostor->slices[bil_step*l];
                         atlas.pixel_offsets(b1.id,tasks[p].from);
                         atlas.pixel_offsets(b2.id,tasks[p].to);
                     }
@@ -67,10 +61,14 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                         tasks[p].to = glm::uvec4(0,0,0,0);
                     }
                     p++;
+                    if (p % 100000 == 0)
+                        pb_prepare.iter(p);
                 }
             }
         }
     }
+    pb_prepare.finish();
+    ProgressBar pb_buffers = ProgressBar("GPU impostor clustering prepare buffers",3,"buffers");
         glm::ivec4 sizes = atlas.get_sizes();
         int layers = atlas.layers_count();
         glGenBuffers(1, &tasks_buf);
@@ -83,34 +81,37 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
 
         glGenBuffers(1, &raw_data_buf);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, raw_data_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned)*sizes.x*sizes.y*layers, 
-                     ictx->self_impostors_raw_atlas->get_raw_data(), GL_STATIC_DRAW);
 
-        //glBindImageTexture(0, atlas.tex(0).texture, 0, true, 0, GL_READ_ONLY, GL_RGBA8);
-
+    pb_buffers.finish();
         
         Shader impMetric({"impostor_dist.comp"},{});
             impMetric.use();
-            impMetric.uniform("impostor_x", sizes.x);
-            impMetric.uniform("impostor_y", sizes.y);
+            impMetric.uniform("tex_sz_x", (float)sizes.x);
+            impMetric.uniform("tex_sz_y", (float)sizes.y);
             impMetric.uniform("tasks_count",tasks_cnt);
             impMetric.uniform("impostor_x",sizes.x/sizes.z);
             impMetric.uniform("impostor_y",sizes.y/sizes.w);
+            impMetric.texture("atlas", atlas.tex(0));
             static int max_dispatches = settings.get_int("max_dispatches",16);
             static int threads = 8;
             int step = (max_dispatches*threads);
             int iters = ceil((float)tasks_cnt/step);
 
             int start_id = 0;
+            ProgressBar pb_dispatch = ProgressBar("GPU impostor clustering", iters, "iterations");
             for (int i=0;i<iters;i++)
             {
                 impMetric.uniform("start_id",start_id);
                 glDispatchCompute(max_dispatches, max_dispatches, 1);
 
-                SDL_GL_SwapWindow(Tiny::view.gWindow);
                 start_id += step;
+                if (i % 100 == 0)
+                {
+                    pb_dispatch.iter(i);
+                    SDL_GL_SwapWindow(Tiny::view.gWindow);
+                }
             }
-        
+            pb_dispatch.finish();
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, results_buf);
             GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -120,11 +121,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
             glDeleteBuffers(1, &results_buf);
             glDeleteBuffers(1, &raw_data_buf);
 
-    /*for (int i=0;i<tasks_cnt;i++)
-    {
-        if (tasks[i].from.w > 0)
-            logerr("res[%d] = %f",i, results[i]);
-    }*/
+    int cnt = 0;
+    ProgressBar pb_finalize = ProgressBar("GPU impostor clustering finalize", SQR(real_branches.size()), "branches");
     for (int i = 0; i < real_branches.size(); i++)
     {
         for (int j = 0; j < real_branches.size(); j++)
@@ -169,14 +167,26 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                         best_rot = r;
                     }
                 }
+                #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
+                glm::vec3 &s1 = real_branches[i]->min_bbox.sizes;
+                glm::vec3 &s2 = real_branches[j]->min_bbox.sizes;
+                float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
+                                        SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
+                min_av_dist *= dist_discriminator;
                 a = Answer(true,min_av_dist,min_av_dist);
                 d = (2*PI*best_rot)/tasks_cnt_per_impostor;
             }
             data->ddt.set(i,j,a,d);
+            if (cnt % 10000 == 0)
+            {
+                pb_finalize.iter(cnt);
+            }
+            cnt++;
         }
     }
+    pb_finalize.finish();
+    
     delete tasks;
     delete results;
-    delete ictx->self_impostors_raw_atlas;
     return data;
 }

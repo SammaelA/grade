@@ -6,6 +6,7 @@
 #include <map>
 #include <GL/glew.h>
 #include <boost/preprocessor.hpp>
+#include <chrono>
 
 #define X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE(r, data, elem)    \
     case elem : return BOOST_PP_STRINGIZE(elem);
@@ -121,3 +122,28 @@ public:
 };
 
 extern int debug_level;
+extern int show_progress;
+class ProgressBar
+{
+public:
+    ProgressBar(std::string _process, long _count, std::string _type, bool _estimate_time = true);
+    ~ProgressBar();
+    void iter(long n);
+    void finish();
+    static void single_message(std::string message)
+    {
+        if (show_progress)
+            debug("[P] %s\n", message.c_str());
+    }
+private:
+    std::string process;
+    long count;
+    std::string type;
+    bool estimate_time;
+    std::chrono::steady_clock::time_point t_start;
+    std::chrono::steady_clock::time_point t_prev;
+    double at_per_iter = 0;
+    long prev_iter = 0;
+    float t_estimate_q = 0.9;
+    bool finished = false;
+};

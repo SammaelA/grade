@@ -80,12 +80,16 @@ Clusterizer2::~Clusterizer2()
 void Clusterizer2::get_base_clusters(Block &settings, Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters,
                                      ClusteringContext *ctx)
 {
+    ProgressBar pb("Preparing branches", count, "trees", true);
     for (int i = 0; i < count; i++)
     {
         int prev_n = base_clusters.size();
         get_base_clusters(settings, t[i], layer, base_clusters, ctx);
+        if (count < 500 || (i % 10 == 0))
+            pb.iter(i);
         debugl(3, "added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
+    pb.finish();
     clusteringHelper->branch_conversion_flush(settings, ctx);
 }
 BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx)

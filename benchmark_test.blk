@@ -7,4 +7,11 @@
             separate_colors:b = true
         }
     }
+    GPU_imp
+    {
+        branches_params
+        {
+            clustering_helper:s = "impostor"
+        }
+    }
 }
