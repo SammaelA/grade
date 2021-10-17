@@ -509,7 +509,9 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
 
     int cnt = 0;
     TextureAtlasRawData raw_atlas = TextureAtlasRawData(ctx->self_impostors_data->atlas);
-    unsigned char *sl_data = safe_new<unsigned char>(raw_atlas.get_slice_size(0), "sl_data");
+    unsigned char *sl_data = safe_new<unsigned char>(2*raw_atlas.get_slice_size(0), "sl_data");
+    memset(sl_data,0,2*raw_atlas.get_slice_size(0));
+    unsigned char *tmp_data = safe_new<unsigned char>(raw_atlas.get_slice_size(0), "tmp_data");
     int ww = 0, hh = 0;
     bool info_files = true;
     
@@ -531,6 +533,26 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
     int test_elems = 0;
 
     std::string dir_path;
+
+    //find largest branch to rescale dataset images properly
+    glm::vec3 max_sizes = glm::vec3(0,0,0);
+    for (int i = 0; i< packingLayersBranches.size();i++)
+    {
+        for (auto &c : packingLayersBranches[i].clusters)
+        {
+            for (auto *cd : c.ACDA.clustering_data)
+            {
+                auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
+                if (imp_cd)
+                {
+                    max_sizes = max(max_sizes, imp_cd->min_bbox.sizes);
+                }
+            }
+        }
+    }
+    float q = 0.85;
+    float max_size = q*MAX(max_sizes.x,MAX(max_sizes.y,max_sizes.z));
+    float need_rescale = true;
     try
     {
         int clusters_count = 0;
@@ -573,7 +595,52 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                         {
                             std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
                             raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
-                            textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+
+                            if (need_rescale)
+                            {
+                                float sz = MAX(imp_cd->min_bbox.sizes.x,MAX(imp_cd->min_bbox.sizes.y,imp_cd->min_bbox.sizes.z));
+                                float scale = max_size/sz;
+                                if (true)
+                                {
+                                    for (int y=0;y<hh;y++)
+                                    {
+                                        float y_src = scale*y;
+                                        int y0 = y_src;
+                                        float qy = y_src - y0;
+                                        for (int x=0;x<ww;x++)
+                                        {
+                                            float x_src = scale*x;
+                                            if (x_src > ww + 1 || y_src > hh + 1)
+                                            {
+                                                for (int ch = 0;ch < 3;ch++)
+                                                    tmp_data[4*(y*ww + x) + ch] = 0;
+                                            }
+                                            else
+                                            {
+                                                int x0 = x_src;
+                                                float qx = x_src - x0;
+                                                for (int ch = 0;ch < 3;ch++)
+                                                {
+                                                    tmp_data[4*(y*ww + x) + ch] = 
+                                                             (1-qy)*((1-qx)*sl_data[4*(y0*ww + x0) + ch] + 
+                                                                      qx*sl_data[4*(y0*ww + x0 + 1) + ch]) +
+                                                                qy*((1-qx)*sl_data[4*((y0+1)*ww + x0) + ch] + 
+                                                                      qx*sl_data[4*((y0+1)*ww + x0 + 1) + ch]);
+                                                    tmp_data[4*(y*ww + x) + ch] = sl_data[4*(y0*ww + x0) + ch];
+                                                }
+                                            }
+                                            tmp_data[4*(y*ww + x) + 3] = 255;
+                                        }
+                                    }
+                                    textureManager.save_bmp_raw_directly(tmp_data, ww, hh, 4, file_path);
+                                }
+                                else
+                                {
+                                    textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+                                }
+                            }
+                            else
+                                textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
                             if (info_files)
                             {
                                 //add a record about images to database and (maybe) test or train lists;
@@ -632,6 +699,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
     }
 
     safe_delete<unsigned char>(sl_data, "sl_data");
+    safe_delete<unsigned char>(tmp_data, "tmp_data");
     raw_atlas.clear();
 }
 
