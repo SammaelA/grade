@@ -162,6 +162,14 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
                 pb.iter(cnt);
         }
     }
+    /*for (int i = 0; i < real_branches.size(); i++)
+    {
+        for (int j = 0; j < real_branches.size(); j++)
+        {
+            debug("%.3f ", data->ddt.get(i,j).first.from);
+        }
+        debugnl();
+    }*/
     delete ictx->self_impostors_raw_atlas;
     return data;
 }

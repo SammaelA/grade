@@ -1,72 +1,75 @@
 #version 430
-#define THREADS 8
-layout( local_size_x = THREADS, local_size_y = THREADS) in;
+#define THREADS 64
+layout( local_size_x = THREADS, local_size_y = 1) in;
 
-struct Task
-{
-    uvec4 from;
-    uvec4 to;
-};
-//layout(rgba8, binding = 0) readonly uniform image3D atlas;
-
-layout(std430, binding = 1) readonly buffer tasks_buf
-{
-    Task tasks[];
-};
-layout(std430, binding = 2) writeonly buffer results_buf
+layout(std430, binding = 1) writeonly buffer results_buf
 {
     float results[];
 };
-layout(std430, binding = 3) readonly buffer raw_data_buf
+layout(std430, binding = 2) readonly buffer slices_info_buf
 {
-    uint raw_data[];
+    uvec4 slices_info[];
 };
-uniform int tasks_count;
 uniform int impostor_x;
 uniform int impostor_y;
-uniform int start_id;
 uniform float tex_sz_x;
 uniform float tex_sz_y;
+
+uniform int row;
+uniform int slice_count;
+uniform int start_column;
+uniform int branch_count;
 uniform sampler2DArray atlas;
+
 void main()
 {
-    uint id = gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
-              gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
-              gl_GlobalInvocationID.x + start_id;
-    if (id >= tasks_count)
-    {
+    int column =  int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_column;
+    if (column >= branch_count)
         return;
-    }
-    if (tasks[id].from.w == 0)
+    int best_rot = 0;
+    float best_dist = 1e9;
+    for (int r = 0;r<slice_count;r++)
     {
-        return;
-    }
-    float sum = 1e-6;
-    float diff = 0;
-    for (int i=0;i<impostor_x;i++)
-    {
-        for (int j=0;j<impostor_y;j++)
+        for (int d = 0; d<slice_count; d++)
         {
-            ivec3 pixel_coords = ivec3(tasks[id].from.xyz) + ivec3(i, j, 0);
-            //ivec4 p1 = ivec4(255*imageLoad(atlas, pixel_coords));
-            vec3 coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
-            vec4 p1 = texture(atlas,coords);
-            p1 = texelFetch(atlas, pixel_coords, 0);
-            //uint u1 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
-            pixel_coords = ivec3(tasks[id].to.xyz) + ivec3(i, j, 0);
-            coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
-            //ivec4 p2 = ivec4(255*imageLoad(atlas, pixel_coords));
-            //uint u2 = raw_data[pixel_coords.z*impostor_x*impostor_y + pixel_coords.y*impostor_x + pixel_coords.x];
-            vec4 p2 = texture(atlas,coords);
-            p2 = texelFetch(atlas, pixel_coords, 0);
-            if (p1.a > 0 || p2.a > 0)
-            {
-                float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
+            int slice_id_1 = slice_count*row + d;
+            int slice_id_2 = slice_count*column + (d+r)%slice_count;
 
-                diff += f;
-                sum += max(1,f);
+            float sum = 1e-6;
+            float dist = 0;
+            for (int i=0;i<impostor_x;i++)
+            {
+                for (int j=0;j<impostor_y;j++)
+                {
+                    ivec3 pixel_coords = ivec3(slices_info[slice_id_1].xyz) + ivec3(i, j, 0);
+                    vec3 coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
+                    //vec4 p1 = texture(atlas,coords);
+                    vec4 p1 = texelFetch(atlas, pixel_coords, 0);
+                    pixel_coords = ivec3(slices_info[slice_id_2].xyz) + ivec3(i, j, 0);
+                    coords = vec3(pixel_coords.x/tex_sz_x, pixel_coords.y/tex_sz_y,pixel_coords.z);
+                    //vec4 p2 = texture(atlas,coords);
+                    vec4 p2 = texelFetch(atlas, pixel_coords, 0);
+                    if (p1.a > 0 || p2.a > 0)
+                    {
+                        float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
+
+                        dist += f;
+                        sum += max(1,f);
+                    }
+                }
+            }
+            dist /= sum;
+            if (dist < best_dist)
+            {
+                best_dist = dist;
+                best_rot = r;
             }
         }
     }
-   results[id] =  diff/sum; 
+
+    int result_id = 2*(row*branch_count + column);
+    results[result_id] = best_dist;
+    results[result_id + 1] = best_rot;
 }
