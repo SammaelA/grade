@@ -16,7 +16,7 @@ class BillboardCloudRaw : Countable
 public:
     struct BillboardGenerationParams
     {
-        Quality quality = Quality::MEDIUM;
+        int quality = (int)(Quality::MEDIUM);
         int level_from = 0;
         int level_to = 1000;
         bool monochrome = false;
@@ -25,9 +25,9 @@ public:
         float leaf_opacity = 1;
         bool normals_needed = true;
     };
-    void prepare(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+    void prepare(int quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                  BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &out_billboards);
-    void  extend(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+    void  extend(int quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                  BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards);
     void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill,
                           TextureAtlas &atlas, BillboardGenerationParams params);
@@ -76,7 +76,7 @@ protected:
     void prepare(int branch_level, std::vector<Branch> &branches, TextureAtlas *atlas = nullptr);
     void prepare(int branch_level, std::vector<ClusterData> &clusters, BillboardCloudData *data = nullptr);
 
-    AtlasParams set_atlas_params(Quality quality, int cnt);
+    AtlasParams set_atlas_params(int quality, int cnt);
     void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res);
     void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
     void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, 
@@ -88,7 +88,7 @@ protected:
     float projection_error_rec(Branch *b, glm::vec3 &n, float d);
     int billboard_count = 256;
     bool ready = false;
-    Quality quality;
+    int quality;
     TextureAtlas *atlas = nullptr;
 
     Shader rendererToTexture;

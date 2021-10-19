@@ -187,12 +187,14 @@ void ClusterDendrogramm::make(int n, int clusters_num)
         }
         if (min.d >= 1000 || current_clusters.size() <= clusters_num)
         {
+            logerr("finished clustering %f %d %f",min.d, current_clusters.size(), hsParams.average_cluster_size_goal);
             break;
             //makes no sense to merge clusters with maximum distance between them.
         }
         else if ((float)initial_clusters/current_clusters.size() >= hsParams.average_cluster_size_goal &&
                  hsParams.average_cluster_size_goal > 0)
         {
+            logerr("finished clustering %f %f %d",min.d, current_clusters.size(), hsParams.average_cluster_size_goal);
             break;
         }
         current_clusters.remove(min.U);

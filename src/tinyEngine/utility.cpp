@@ -221,6 +221,7 @@ void ProgressBar::iter(long n)
             auto t_now = std::chrono::steady_clock::now();
             double ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_now - t_prev).count();
             ms = ms / (n - prev_iter);
+            float q = MAX(t_estimate_q, 1 - 10.0/count);
             at_per_iter = at_per_iter > 0 ? (t_estimate_q*at_per_iter + (1 - t_estimate_q)*ms) : ms;
             debug("time left ", at_per_iter);
             print_time_interval(at_per_iter*(count - n));

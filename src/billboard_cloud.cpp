@@ -23,11 +23,10 @@ BillboardCloudRaw::~BillboardCloudRaw()
     if (atlas)
         delete atlas;
 }
-BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quality, int cnt)
+BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(int quality, int cnt)
 {
     const int fallback_size = 1024, fallback_layers = 4;
     int groups = cnt;
-    Quality qual = quality;
     GLint max_tex_size, max_layers;
 
     glGetIntegerv(GL_MAX_TEXTURE_SIZE,&max_tex_size);
@@ -45,8 +44,8 @@ BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quali
         par.valid = false;
         return par;
     }
-    int tex_x = cnt_x * qual;
-    int tex_y = cnt_y * qual;
+    int tex_x = cnt_x * quality;
+    int tex_y = cnt_y * quality;
     int layers = ceil((float)groups/(cnt_x*cnt_y));
     if (layers > max_layers)
     {
@@ -64,8 +63,8 @@ BillboardCloudRaw::AtlasParams BillboardCloudRaw::set_atlas_params(Quality quali
     par.y = tex_y;
     par.layers = layers;
     par.valid = true;
-    par.grid_x = qual;
-    par.grid_y = qual;
+    par.grid_x = quality;
+    par.grid_y = quality;
     debugl(10,"successfully created atlas %dx%dx%d for %d (max = %d) billboards\n",
           par.x,par.y,par.layers,groups,cnt_x*cnt_y*layers);
     
@@ -454,7 +453,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<ClusterData> &clus
         }
     }
 }
-void BillboardCloudRaw::prepare(Quality _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void BillboardCloudRaw::prepare(int _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
              BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &out_billboards)
 {
     quality = _quality;
@@ -546,7 +545,7 @@ void BillboardCloudRaw::prepare(Quality _quality, int branch_level, ClusterData 
         }
     }
 }
-void BillboardCloudRaw::extend(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void BillboardCloudRaw::extend(int quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
              BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards)
 {
     std::vector<InstanceDataArrays> idas;

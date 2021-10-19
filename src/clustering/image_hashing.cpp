@@ -14,7 +14,7 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     params.leaf_scale = isimParams.leaf_size_mult;
     params.wood_scale = isimParams.wood_size_mult;
     params.need_top_view = false;
-    params.quality = Quality::LOW_AS_F;
+    params.quality = isimParams.impostor_texture_size;
     params.slices_n = isimParams.impostor_similarity_slices;
     params.level_from = isimParams.impostor_metric_level_from;
     params.level_to = isimParams.impostor_metric_level_to;
@@ -54,8 +54,8 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
     BranchHash *id = new BranchHash();
     Impostor imp;
     
-    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
-    atl.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*isimParams.impostor_texture_size, isimParams.impostor_texture_size, 1);
+    atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
     atl.set_clear_color(glm::vec4(0, 0, 0, 0));
     
     create_impostor_temp(settings, base, ctx, data, isimParams, atl, imp);
@@ -70,10 +70,10 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
     bool relative_to_average = get_default_block().get_bool("relative_to_average", false);
     relative_to_average = settings.get_bool("relative_to_average", relative_to_average);
 
-    int step = (int)(Quality::LOW_AS_F)/hash_size;
-    if (step*hash_size != (int)(Quality::LOW_AS_F))
+    int step = (int)(isimParams.impostor_texture_size)/hash_size;
+    if (step*hash_size != (int)(isimParams.impostor_texture_size))
     {
-        debug("warning: impostor_hash_size = %d is not a divider of impostor size = %d", hash_size, (int)(Quality::LOW_AS_F));
+        debug("warning: impostor_hash_size = %d is not a divider of impostor size = %d", hash_size, (int)(isimParams.impostor_texture_size));
     }
     for (int hash_n = 0;hash_n < isimParams.impostor_similarity_slices;hash_n++)
     {
@@ -185,8 +185,8 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor_dct(Blo
     BranchHash *id = new BranchHash();
     Impostor imp;
 
-    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
-    atl.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*isimParams.impostor_texture_size, isimParams.impostor_texture_size, 1);
+    atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
     atl.set_clear_color(glm::vec4(0, 0, 0, 0));
 
     create_impostor_temp(settings, base, ctx, data, isimParams, atl, imp);
@@ -194,7 +194,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor_dct(Blo
 
     int dct_block_size = get_default_block().get_int("dct_block_size", 32);
     dct_block_size = settings.get_int("dct_block_size", dct_block_size);
-    dct_block_size = MIN(dct_block_size, (int)(Quality::LOW_AS_F));
+    dct_block_size = MIN(dct_block_size, (int)(isimParams.impostor_texture_size));
 
     int dct_use_size = get_default_block().get_int("dct_use_size", 8);
     dct_use_size = settings.get_int("dct_use_size", dct_use_size);
@@ -203,7 +203,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor_dct(Blo
     bool separate_colors = get_default_block().get_bool("separate_colors", true);
     separate_colors = settings.get_bool("separate_colors", separate_colors);
 
-    int step = (int)(Quality::LOW_AS_F)/dct_block_size;
+    int step = (int)(isimParams.impostor_texture_size)/dct_block_size;
     for (int hash_n = 0;hash_n < isimParams.impostor_similarity_slices;hash_n++)
     {
         auto &bill = imp.slices[hash_n];

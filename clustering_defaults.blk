@@ -31,7 +31,7 @@
 
 
         hash_count:i = 4
-        impostor_similarity_slices:i = 8
+        impostor_similarity_slices:i = 4
         bwd_rotations:i = 4
         delta:r = 0.2
         voxels_size_mult:r = 0.33
@@ -45,12 +45,13 @@
         structure_voxels_size_mult:r = 0.4
         light_importance:r = 0.2
         ignore_structure_level:i = 3
-        average_cluster_size_goal:r = 15
+        average_cluster_size_goal:r = 100
         weights:arr = {5000,800,40,1,0.01}
         light_weights:arr = {5000,800,40,1,0.01}
         r_weights:arr = {0.5,0.2,0,0,0}
         impostor_metric_level_from:i = 1
         impostor_metric_level_to:i = 1000
+        impostor_texture_size:i = 64
     }
     trees_default_params
     {

@@ -12,6 +12,7 @@
         branches_params
         {
             clustering_helper:s = "impostor"
+            impostor_texture_size:i = 64
         }
     }
 }

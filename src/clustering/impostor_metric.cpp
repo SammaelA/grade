@@ -42,9 +42,9 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     if (!ictx->self_impostors_data)
     {
         ictx->self_impostors_data = new ImpostorsData();
-        TextureAtlas a = TextureAtlas(16*Quality::LOW_AS_F,16*Quality::LOW_AS_F,1);
+        TextureAtlas a = TextureAtlas(16*isimParams.impostor_texture_size,16*isimParams.impostor_texture_size,1);
         ictx->self_impostors_data->atlas = a;
-        ictx->self_impostors_data->atlas.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+        ictx->self_impostors_data->atlas.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
         ictx->self_impostors_data->atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
     }
     ImpostorBaker ib;
@@ -53,7 +53,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     params.leaf_scale = isimParams.leaf_size_mult;
     params.wood_scale = isimParams.wood_size_mult;
     params.need_top_view = false;
-    params.quality = Quality::LOW_AS_F;
+    params.quality = isimParams.impostor_texture_size;
     params.slices_n = isimParams.impostor_similarity_slices;
     params.level_from = isimParams.impostor_metric_level_from;
     params.level_to = isimParams.impostor_metric_level_to;

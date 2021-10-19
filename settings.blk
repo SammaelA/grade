@@ -4,10 +4,11 @@
     {
         wood_size_mult:r = 4
         light_importance:r = 0.5
-        max_clusters_in_layer:i = 10000
+        max_clusters_in_layer:i = 100000
         recursive_clustering_layers:i = 2
-        average_cluster_size_goal:r = 3
-        leaves_opacity:r = 0.5
+        average_cluster_size_goal:r = 30
+        impostor_similarity_slices:i = 4
+        leaves_opacity:r = 0.33
     }
     trunks_params
     {

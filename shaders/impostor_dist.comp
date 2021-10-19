@@ -21,23 +21,9 @@ uniform int start_column;
 uniform int branch_count;
 uniform sampler2DArray atlas;
 
-void main()
+float get_dist(int column, int slice_id_1, int slice_id_2)
 {
-    int column =  int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
-                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
-                  gl_GlobalInvocationID.x) + start_column;
-    if (column >= branch_count)
-        return;
-    int best_rot = 0;
-    float best_dist = 1e9;
-    for (int r = 0;r<slice_count;r++)
-    {
-        for (int d = 0; d<slice_count; d++)
-        {
-            int slice_id_1 = slice_count*row + d;
-            int slice_id_2 = slice_count*column + (d+r)%slice_count;
-
-            float sum = 1e-6;
+float sum = 1e-6;
             float dist = 0;
             for (int i=0;i<impostor_x;i++)
             {
@@ -61,13 +47,38 @@ void main()
                 }
             }
             dist /= sum;
-            if (dist < best_dist)
-            {
-                best_dist = dist;
-                best_rot = r;
-            }
+            return dist;
+}
+void main()
+{
+    int column =  int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_column;
+    if (column >= branch_count)
+        return;
+    int best_rot = 0;
+    float best_dist = 1e9;
+    for (int r = 0;r<slice_count;r++)
+    {
+        //find probably best rotation based on similarity to first slice.
+        int slice_id_1 = slice_count*row + 0;
+        int slice_id_2 = slice_count*column + (0+r)%slice_count;
+        float dist = get_dist(column, slice_id_1, slice_id_2);
+        if (dist < best_dist)
+        {
+            best_dist = dist;
+            best_rot = r;
         }
     }
+        for (int d = 1; d<slice_count; d++)
+        {
+            //calculate precise distant for this rotation as average distance between all slices
+            int slice_id_1 = slice_count*row + d;
+            int slice_id_2 = slice_count*column + (d+best_rot)%slice_count;
+
+            best_dist += get_dist(column, slice_id_1, slice_id_2);
+        }
+    best_dist /= slice_count;
 
     int result_id = 2*(row*branch_count + column);
     results[result_id] = best_dist;

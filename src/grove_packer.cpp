@@ -519,7 +519,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
     std::string test_file;
     std::string train_file;
     
-    float train_part = 0.5;
+    float train_part = 0.9;
     float test_part = 0.05;
     
     std::string database_name = "database.txt";

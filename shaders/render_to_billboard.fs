@@ -17,4 +17,6 @@ void main(void)
     fragColor = vec4(ex_Normal,projection_error_packed);
   else if (state == -1)
     fragColor = fixed_color;
+  else if (state == -2)
+    fragColor = vec4(fixed_color.x, fixed_color.y,  gl_FragCoord.z / gl_FragCoord.w, fixed_color.a);
 }

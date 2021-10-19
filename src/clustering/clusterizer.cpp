@@ -233,7 +233,11 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
         }
     }
     if (need_visualize_clusters)
-        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",128,128);
+    {
+        int cluster_size = get_default_block().get_int("impostor_texture_size",(int)Quality::LOW_AS_F);
+        cluster_size = settings.get_int("impostor_texture_size", cluster_size);
+        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",cluster_size,cluster_size);
+    }
     if (need_save_full_data)
     {
         fcd = new FullClusteringData();

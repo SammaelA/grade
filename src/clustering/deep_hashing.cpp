@@ -24,8 +24,9 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     isimParams.load(&settings);
     int b_count = res_branches.size();
         
-    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*Quality::LOW_AS_F, Quality::LOW_AS_F, 1);
-    atl.set_grid(Quality::LOW_AS_F, Quality::LOW_AS_F);
+    TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*isimParams.impostor_texture_size, 
+                                    isimParams.impostor_texture_size, 1);
+    atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
     atl.set_clear_color(glm::vec4(0, 0, 0, 0));
     std::vector<Impostor> imp_iters;
 

@@ -160,7 +160,9 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
                 continue;
               }
               std::string vis_name = results.back().name + "_clusters_" + std::to_string(j);
-              visualize_clusters(settings, clusts[j]->id->branches, clust->clusters, clusts[j]->ctx, vis_name,128,128);
+              int cluster_size = get_default_block().get_int("impostor_texture_size",(int)Quality::LOW_AS_F);
+              cluster_size = settings.get_int("impostor_texture_size", cluster_size);
+              visualize_clusters(settings, clusts[j]->id->branches, clust->clusters, clusts[j]->ctx, vis_name,cluster_size,cluster_size);
             }
         }
     }

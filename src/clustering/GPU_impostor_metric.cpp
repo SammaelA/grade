@@ -75,10 +75,20 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
             static int max_dispatches = settings.get_int("max_dispatches",16);
             static int threads = 64;
             int step = (max_dispatches*threads);
-            int iters_count = sz*sz - sz*(sz+1)/2;
-
+            int iters_count = 0;
+            for (int row = 0;row<sz;row++)
+            {
+                for (int column = row + 1; column < sz; column+=step)
+                {
+                    int dispatches_left = ceil(((float)(sz - column))/threads);
+                    int dispatches = MIN(dispatches_left, max_dispatches);
+                    iters_count += dispatches*threads;
+                }
+            }
             ProgressBar pb_dispatch = ProgressBar("GPU impostor clustering", iters_count, "iterations");
             p = 0;
+            int prev_p = 0;
+            int kk = 0;
             for (int row = 0;row<sz;row++)
             {
                 impMetric.uniform("row", row);
@@ -86,12 +96,16 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                 {
                     impMetric.uniform("start_column", column);
                     int dispatches_left = ceil(((float)(sz - column))/threads);
-                    glDispatchCompute(MIN(dispatches_left, max_dispatches), 1, 1);
-                    p++;
-                    if (p % 10)
+                    int dispatches = MIN(dispatches_left, max_dispatches);
+                    glDispatchCompute(dispatches, 1, 1);
+                    p += dispatches*threads;
+                    if (p - prev_p > 5000)
                     {
-                        pb_dispatch.iter(p);
+                        if (kk % 5 == 0)
+                            pb_dispatch.iter(p);
                         SDL_GL_SwapWindow(Tiny::view.gWindow);
+                        prev_p = p;
+                        kk++;
                     }
                 }
             }
@@ -144,10 +158,6 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                 d = (2*PI*best_rot)/tasks_cnt_per_impostor;
             }
             data->ddt.set(i,j,a,d);
-            if (cnt % 10000 == 0)
-            {
-                pb_finalize.iter(cnt);
-            }
             cnt++;
         }
     }
