@@ -18,6 +18,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>
+#include "tinyEngine/save_utils/csv.h"
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -552,7 +553,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
     }
     float q = 0.85;
     float max_size = q*MAX(max_sizes.x,MAX(max_sizes.y,max_sizes.z));
-    float need_rescale = true;
+    bool need_rescale = true;
     try
     {
         int clusters_count = 0;
@@ -567,6 +568,18 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                 clusters_count += packingLayersBranches[i].clusters.size();
             }         
         }
+        raw_atlas.get_slice(0, sl_data, &ww, &hh);
+        std::vector<std::string> columns;
+        for (int y = 0; y < hh; y++)
+        {
+            for (int x = 0; x < ww; x++)
+            {
+                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_red");
+                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_green");
+            }
+        }
+        columns.push_back("target");
+        CSVData table = CSVData(columns);
         for (int i = 0; i< packingLayersBranches.size();i++)
         {
             for (auto &c : packingLayersBranches[i].clusters)
@@ -598,49 +611,57 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
 
                             if (need_rescale)
                             {
-                                float sz = MAX(imp_cd->min_bbox.sizes.x,MAX(imp_cd->min_bbox.sizes.y,imp_cd->min_bbox.sizes.z));
-                                float scale = max_size/sz;
-                                if (true)
+                                float sz = MAX(imp_cd->min_bbox.sizes.x, MAX(imp_cd->min_bbox.sizes.y, imp_cd->min_bbox.sizes.z));
+                                float scale = max_size / sz;
+
+                                for (int y = 0; y < hh; y++)
                                 {
-                                    for (int y=0;y<hh;y++)
+                                    float y_src = scale * y;
+                                    int y0 = y_src;
+                                    float qy = y_src - y0;
+                                    for (int x = 0; x < ww; x++)
                                     {
-                                        float y_src = scale*y;
-                                        int y0 = y_src;
-                                        float qy = y_src - y0;
-                                        for (int x=0;x<ww;x++)
+                                        float x_src = scale * x;
+                                        if (x_src > ww + 1 || y_src > hh + 1)
                                         {
-                                            float x_src = scale*x;
-                                            if (x_src > ww + 1 || y_src > hh + 1)
-                                            {
-                                                for (int ch = 0;ch < 3;ch++)
-                                                    tmp_data[4*(y*ww + x) + ch] = 0;
-                                            }
-                                            else
-                                            {
-                                                int x0 = x_src;
-                                                float qx = x_src - x0;
-                                                for (int ch = 0;ch < 3;ch++)
-                                                {
-                                                    tmp_data[4*(y*ww + x) + ch] = 
-                                                             (1-qy)*((1-qx)*sl_data[4*(y0*ww + x0) + ch] + 
-                                                                      qx*sl_data[4*(y0*ww + x0 + 1) + ch]) +
-                                                                qy*((1-qx)*sl_data[4*((y0+1)*ww + x0) + ch] + 
-                                                                      qx*sl_data[4*((y0+1)*ww + x0 + 1) + ch]);
-                                                    tmp_data[4*(y*ww + x) + ch] = sl_data[4*(y0*ww + x0) + ch];
-                                                }
-                                            }
-                                            tmp_data[4*(y*ww + x) + 3] = 255;
+                                            for (int ch = 0; ch < 3; ch++)
+                                                tmp_data[4 * (y * ww + x) + ch] = 0;
                                         }
+                                        else
+                                        {
+                                            int x0 = x_src;
+                                            float qx = x_src - x0;
+                                            for (int ch = 0; ch < 3; ch++)
+                                            {
+                                                tmp_data[4 * (y * ww + x) + ch] =
+                                                    (1 - qy) * ((1 - qx) * sl_data[4 * (y0 * ww + x0) + ch] +
+                                                                qx * sl_data[4 * (y0 * ww + x0 + 1) + ch]) +
+                                                    qy * ((1 - qx) * sl_data[4 * ((y0 + 1) * ww + x0) + ch] +
+                                                          qx * sl_data[4 * ((y0 + 1) * ww + x0 + 1) + ch]);
+                                                tmp_data[4 * (y * ww + x) + ch] = sl_data[4 * (y0 * ww + x0) + ch];
+                                            }
+                                        }
+                                        tmp_data[4 * (y * ww + x) + 3] = 255;
                                     }
-                                    textureManager.save_bmp_raw_directly(tmp_data, ww, hh, 4, file_path);
                                 }
-                                else
-                                {
-                                    textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
-                                }
+                                textureManager.save_bmp_raw_directly(tmp_data, ww, hh, 4, file_path);
                             }
                             else
                                 textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+                            
+                            std::vector<int> row;
+                            for (int y = 0; y < hh; y++)
+                            {
+                                for (int x = 0; x < ww; x++)
+                                {
+                                    row.push_back(tmp_data[4*(y*ww + x)]);
+                                    row.push_back(tmp_data[4*(y*ww + x) + 1]);
+                                }
+                            }
+                            row.push_back(cnt);
+                            logerr("%d cnt",cnt);
+                            if (bill.id == imp_cd->self_impostor->slices.front().id)
+                                table.add_row(row,0);
                             if (info_files)
                             {
                                 //add a record about images to database and (maybe) test or train lists;
@@ -692,6 +713,7 @@ void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, Gr
                 }
             }
         }
+        CSVSaver::save_csv_in_file(table, "scripts/test.csv");
     }
     catch(const std::exception& e)
     {
