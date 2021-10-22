@@ -63,18 +63,9 @@ struct Value
     }
     ~Value()
     {
-        //if (type == ValueType::BLOCK && b)
-        //    delete b;
-        //else if (type == ValueType::ARRAY && a)
-        //    delete a;   
+
     }
     void clear();
-    /*{
-        if (type == ValueType::BLOCK && b)
-            delete b;
-        else if (type == ValueType::ARRAY && a)
-            delete a;  
-    }*/
 };
 
 struct DataArray
@@ -83,61 +74,78 @@ struct DataArray
     std::vector<Value> values;
 };
 
+class BlkManager;
 struct Block
 {
+    friend class BlkManager;
+
     int size();
     void clear();
 
-    bool has_tag(std::string name);
-    int get_id(std::string name);
-    int get_next_id(std::string name, int pos);
-    std::string  get_name(int id);
+    bool has_tag(const std::string &name);
+    int get_id(const std::string &name);
+    int get_next_id(const std::string &name, int pos);
+    std::string get_name(int id);
     ValueType get_type(int id);
-    ValueType get_type(std::string name);
-    
+    ValueType get_type(const std::string &name);
+
     int get_bool(int id, bool base_val = false);
     int get_int(int id, int base_val = 0);
     double get_double(int id, double base_val = 0);
-    glm::vec2 get_vec2(int id, glm::vec2 base_val = glm::vec2(0,0));
-    glm::vec3 get_vec3(int id, glm::vec3 base_val = glm::vec3(0,0,0));
-    glm::vec4 get_vec4(int id, glm::vec4 base_val = glm::vec4(0,0,0,0));
+    glm::vec2 get_vec2(int id, glm::vec2 base_val = glm::vec2(0, 0));
+    glm::vec3 get_vec3(int id, glm::vec3 base_val = glm::vec3(0, 0, 0));
+    glm::vec4 get_vec4(int id, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
     std::string get_string(int id, std::string base_val = "");
     Block *get_block(int id);
     bool get_arr(int id, std::vector<double> &values, bool replace = false);
     bool get_arr(int id, std::vector<float> &values, bool replace = false);
     bool get_arr(int id, std::vector<int> &values, bool replace = false);
 
-    int get_bool(std::string name, bool base_val = false);
-    int get_int(std::string name, int base_val = 0);
-    double get_double(std::string name, double base_val = 0);
-    glm::vec2 get_vec2(std::string name, glm::vec2 base_val = glm::vec2(0,0));
-    glm::vec3 get_vec3(std::string name, glm::vec3 base_val = glm::vec3(0,0,0));
-    glm::vec4 get_vec4(std::string name, glm::vec4 base_val = glm::vec4(0,0,0,0));
-    std::string get_string(std::string name, std::string base_val = "");
+    int get_bool(const std::string name, bool base_val = false);
+    int get_int(const std::string name, int base_val = 0);
+    double get_double(const std::string name, double base_val = 0);
+    glm::vec2 get_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
+    glm::vec3 get_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
+    glm::vec4 get_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    std::string get_string(const std::string name, std::string base_val = "");
     Block *get_block(std::string name);
-    bool get_arr(std::string name, std::vector<double> &values, bool replace = false);
-    bool get_arr(std::string name, std::vector<float> &values, bool replace = false);
-    bool get_arr(std::string name, std::vector<int> &values, bool replace = false);
+    bool get_arr(const std::string name, std::vector<double> &values, bool replace = false);
+    bool get_arr(const std::string name, std::vector<float> &values, bool replace = false);
+    bool get_arr(const std::string name, std::vector<int> &values, bool replace = false);
 
-    void add_bool(std::string name, bool base_val = false);
-    void add_int(std::string name, int base_val = 0);
-    void add_double(std::string name, double base_val = 0);
-    void add_vec2(std::string name, glm::vec2 base_val = glm::vec2(0,0));
-    void add_vec3(std::string name, glm::vec3 base_val = glm::vec3(0,0,0));
-    void add_vec4(std::string name, glm::vec4 base_val = glm::vec4(0,0,0,0));
-    void add_string(std::string name, std::string base_val = "");
-    void add_block(std::string name, Block *bl);
-    void add_arr(std::string name, std::vector<double> &values);
-    void add_arr(std::string name, std::vector<float> &values);
-    void add_arr(std::string name, std::vector<int> &values);
+    void add_bool(const std::string name, bool base_val = false);
+    void add_int(const std::string name, int base_val = 0);
+    void add_double(const std::string name, double base_val = 0);
+    void add_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
+    void add_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
+    void add_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    void add_string(const std::string name, std::string base_val = "");
+    void add_block(const std::string name, Block *bl);
+    void add_arr(const std::string name, std::vector<double> &values);
+    void add_arr(const std::string name, std::vector<float> &values);
+    void add_arr(const std::string name, std::vector<int> &values);
 
+    void set_bool(const std::string name, bool base_val = false);
+    void set_int(const std::string name, int base_val = 0);
+    void set_double(const std::string name, double base_val = 0);
+    void set_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
+    void set_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
+    void set_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    void set_string(const std::string name, std::string base_val = "");
+    void set_block(const std::string name, Block *bl);
+    void set_arr(const std::string name, std::vector<double> &values);
+    void set_arr(const std::string name, std::vector<float> &values);
+    void set_arr(const std::string name, std::vector<int> &values);
+
+    void add_value(const std::string &name, const Value &value);
+    void set_value(const std::string &name, const Value &value);
     std::vector<std::string> names;
     std::vector<Value> values;
 };
 
 class BlkManager
 {
-    public:
+public:
     bool load_block_from_file(std::string path, Block &b);
     void save_block_to_file(std::string path, Block &b);
 };
