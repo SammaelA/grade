@@ -18,6 +18,7 @@ struct BranchClusteringData
 {
     int base_cluster_id;
     int id;  
+    unsigned short tree_type;
     glm::mat4 transform;
     float r_transform;
     bool can_be_center;
@@ -129,8 +130,9 @@ private:
     };
     void get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
                            ClusteringContext *ctx);
-    void prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<BranchClusteringData *> &branches,
-                          bool need_save_full_data = false);
+    void prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters, 
+                          std::vector<std::vector<BranchClusteringData *>> &branches,
+                          bool split_by_types = true);
     void prepare_result(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
                         std::vector<BranchClusteringData *> &branches, ClusteringContext *ctx, 
                         std::vector<ClusteringBase::ClusterStruct> &result);

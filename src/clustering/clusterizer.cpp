@@ -117,6 +117,7 @@ BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base
     }
     BranchClusteringData *br = clusteringHelper->convert_branch(settings, base, ctx, bbcd);
     br->set_base(bbcd);
+    br->tree_type = base->type_id;
     return br;
 }
 void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
@@ -149,15 +150,32 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
     }
 }
 void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters,
-                                    std::vector<BranchClusteringData *> &branches, bool need_save_full_data)
+                                    std::vector<std::vector<BranchClusteringData *>> &branches_by_type, bool split_by_type)
 {
+    std::map<int, int> index_by_type;
     if (cStrategy == ClusteringStrategy::Merge)
     {
         for (auto &c : base_clusters)
         {
+            int type = c.base->type_id;
+            if (!split_by_type && type)
+            {
+                debug("warning: there are different types of trees is benchmark grove.");
+                type = 0;
+            }
+            auto it = index_by_type.find(type);
+            if (it == index_by_type.end())
+            {
+                auto p = index_by_type.emplace(type, branches_by_type.size());
+                it = p.first;
+                branches_by_type.emplace_back();
+            }
+            auto &branches = branches_by_type[it->second];
+
             branches.push_back(c.ACDA.clustering_data[c.base_pos]);
             branches.back()->base_cluster_id = c.id;
             branches.back()->id = 0;
+            branches.back()->tree_type = type;
             tmpData.pos_in_table_by_branch_id.emplace(c.base->self_id, branches.size() - 1);
             debugl(3, "cluster id %d %d %d\n",c.id, c.base_pos, branches.back());
         }
@@ -171,6 +189,21 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
                 BranchClusteringData *b = c.ACDA.clustering_data[i];
                 if (b)
                 {
+                    int type = b->tree_type;
+                    if (!split_by_type && type)
+                    {
+                        debug("warning: there are different types of trees is benchmark grove.");
+                        type = 0;
+                    }
+                    auto it = index_by_type.find(type);
+                    if (it == index_by_type.end())
+                    {
+                        auto p = index_by_type.emplace(type, branches_by_type.size());
+                        it = p.first;
+                        branches_by_type.emplace_back();
+                    }
+                    auto &branches = branches_by_type[it->second];
+
                     branches.push_back(b);
                     branches.back()->can_be_center = (i == c.base_pos);
                     branches.back()->base_cluster_id = c.id;
@@ -193,76 +226,81 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
                               ClusteringContext *ctx, bool need_save_full_data, bool need_visualize_clusters)
 {
     tmpData = ClusterizationTmpData();
-    std::vector<BranchClusteringData *> branches;
-    prepare_branches(settings, base_clusters, branches);
+    std::vector<std::vector<BranchClusteringData *>> branches_by_type;
+    prepare_branches(settings, base_clusters, branches_by_type, !need_save_full_data);
+    for (auto &branches : branches_by_type)
+    {
+        //if need_save_full_data = true this cycle will be performed only once
 
-    IntermediateClusteringData *ICD = clusteringHelper->prepare_intermediate_data(settings, branches, ctx);
-    ICD->branches = branches;
-    ICD->elements_count = branches.size();
-    std::vector<ClusteringBase::ClusterStruct> cluster_result;
-    clusteringBase->clusterize(settings, ICD, cluster_result);
-                for (auto &str : cluster_result)
-            {
-                debugl(3,"cluster %d{",branches[str.center]->base_cluster_id);
-                for (auto p : str.members)
+        IntermediateClusteringData *ICD = clusteringHelper->prepare_intermediate_data(settings, branches, ctx);
+        ICD->branches = branches;
+        ICD->elements_count = branches.size();
+        std::vector<ClusteringBase::ClusterStruct> cluster_result;
+        clusteringBase->clusterize(settings, ICD, cluster_result);
+                    for (auto &str : cluster_result)
                 {
-
-                    debugl(3,"%d, ",branches[p.first]->base_cluster_id);
-                }
-                debugl(3,"}\n");
-            }
-            debugl(3,"\n");
-    prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
-    for (auto &cl : clusters)
-    {
-        glm::vec4 pos;
-        glm::vec4 joint = glm::vec4(cl.base->center_self, 1);
-        debugl(3, "\n\ncenter center %f %f %f\n",joint.x, joint.y, joint.z);
-        for (auto &tr : cl.IDA.transforms)
-        {
-            pos = tr * joint;
-            debugl(3, "pos %f %f %f size %d\n", pos.x, pos.y, pos.z, cl.base->joints.size());
-        }
-    }
-    if (need_visualize_clusters)
-    {
-        auto icon_sizes = ctx->self_impostors_data->atlas.get_slice_size();
-        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",icon_sizes.x,icon_sizes.y);
-    }
-    if (need_save_full_data)
-    {
-        fcd = new FullClusteringData();
-        fcd->base_clusters = &base_clusters;
-        fcd->clusters = cluster_result;
-        fcd->result_clusters = &clusters;
-        fcd->id = ICD;
-        fcd->ctx = ctx;
-        fcd->settings = &settings;
-        fcd->pos_in_table_by_id = tmpData.pos_in_table_by_id;
-        fcd->pos_in_table_by_branch_id = tmpData.pos_in_table_by_branch_id;
-    }
-    else
-    {
-        delete ICD;
-        if (cStrategy == ClusteringStrategy::Merge)
-        {
-            //we do not need clustering data for non-central branches
-            for (auto &cl : clusters)
-            {
-                for (int i = 0; i < cl.ACDA.clustering_data.size(); i++)
-                {
-                    if (i == cl.base_pos)
-                        continue;
-                    if (cl.ACDA.clustering_data[i])
+                    debugl(3,"cluster %d{",branches[str.center]->base_cluster_id);
+                    for (auto p : str.members)
                     {
-                        clusteringHelper->clear_branch_data(cl.ACDA.clustering_data[i], ctx);
-                        cl.ACDA.clustering_data[i] = nullptr;
+
+                        debugl(3,"%d, ",branches[p.first]->base_cluster_id);
+                    }
+                    debugl(3,"}\n");
+                }
+                debugl(3,"\n");
+        prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
+        for (auto &cl : clusters)
+        {
+            glm::vec4 pos;
+            glm::vec4 joint = glm::vec4(cl.base->center_self, 1);
+            debugl(3, "\n\ncenter center %f %f %f\n",joint.x, joint.y, joint.z);
+            for (auto &tr : cl.IDA.transforms)
+            {
+                pos = tr * joint;
+                debugl(3, "pos %f %f %f size %d\n", pos.x, pos.y, pos.z, cl.base->joints.size());
+            }
+        }
+        if (need_visualize_clusters)
+        {
+            auto icon_sizes = ctx->self_impostors_data->atlas.get_slice_size();
+            visualize_clusters(settings, branches, cluster_result, ctx, "clusters",icon_sizes.x,icon_sizes.y);
+        }
+        if (need_save_full_data)
+        {
+            fcd = new FullClusteringData();
+            fcd->base_clusters = &base_clusters;
+            fcd->clusters = cluster_result;
+            fcd->result_clusters = &clusters;
+            fcd->id = ICD;
+            fcd->ctx = ctx;
+            fcd->settings = &settings;
+            fcd->pos_in_table_by_id = tmpData.pos_in_table_by_id;
+            fcd->pos_in_table_by_branch_id = tmpData.pos_in_table_by_branch_id;
+        }
+        else
+        {
+            delete ICD;
+            if (cStrategy == ClusteringStrategy::Merge)
+            {
+                //we do not need clustering data for non-central branches
+                for (auto &cl : clusters)
+                {
+                    for (int i = 0; i < cl.ACDA.clustering_data.size(); i++)
+                    {
+                        if (i == cl.base_pos)
+                            continue;
+                        if (cl.ACDA.clustering_data[i])
+                        {
+                            clusteringHelper->clear_branch_data(cl.ACDA.clustering_data[i], ctx);
+                            cl.ACDA.clustering_data[i] = nullptr;
+                        }
                     }
                 }
             }
         }
-    }
 
+    }
+    
     tmpData = ClusterizationTmpData();
 }
 void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &result_clusters,
