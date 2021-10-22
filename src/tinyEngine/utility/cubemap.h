@@ -1,5 +1,5 @@
 #pragma once
-#include "../helpers/stb_image.h"
+#include "../../third_party/stb_image.h"
 #include "texture.h"
 #include "shader.h"
 #include <vector>

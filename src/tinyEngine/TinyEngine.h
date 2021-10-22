@@ -2,9 +2,9 @@
 #include <functional>
 #include <initializer_list>
 
-#include "imgui/imgui.h"                    //Interface Dependencies
-#include "imgui/imgui_impl_sdl.h"
-#include "imgui/imgui_impl_opengl3.h"
+#include "../third_party/imgui/imgui.h"                    //Interface Dependencies
+#include "../third_party/imgui/imgui_impl_sdl.h"
+#include "../third_party/imgui/imgui_impl_opengl3.h"
 
 #include <GL/glew.h>                                //Rendering Dependencies
 #include <SDL2/SDL.h>

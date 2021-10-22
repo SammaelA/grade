@@ -1,7 +1,7 @@
 
 #define GLEW_EXPERIMENTAL
 #include "tinyEngine/TinyEngine.h"
-#include "generated_tree.h"
+#include "generators/generated_tree.h"
 #include "glm/trigonometric.hpp"
 #include "tinyEngine/helpers/image.h"
 #include "tinyEngine/helpers/color.h"
@@ -20,7 +20,7 @@
 #include "terrain.h"
 #include "tinyEngine/shadow.h"
 #include "grove_packer.h"
-#include "proctree.h"
+#include "generators/proctree.h"
 #include "app.h"
 #include "grass_renderer.h"
 #include "tinyEngine/utility/deffered_target.h"
@@ -32,10 +32,10 @@
 #include "parameter_selection.h"
 #include "tinyEngine/save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
-#include "simple_generator.h"
+#include "generators/simple_generator.h"
 #include "load_tree_structure.h"
-#include "python_tree_gen.h"
-#include "weber_penn_parameters.h"
+#include "generators/python_tree_gen.h"
+#include "generators/weber_penn_parameters.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -375,7 +375,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
     tree_ggd.task = GenerationTask::IMPOSTORS;
     Tree single_tree;
     gen->create_grove(tree_ggd, &single_tree, *data.heightmap);
-    packer.add_trees_to_grove(ggd, res, &single_tree, data.heightmap, false);
+    packer.add_trees_to_grove(tree_ggd, res, &single_tree, data.heightmap, false);
     print_alloc_info();
     distibutionGenerator.d = nullptr;
     dd.clear();

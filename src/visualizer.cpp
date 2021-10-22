@@ -1,4 +1,3 @@
-#include "generated_tree.h"
 #include "visualizer.h"
 #include "tinyEngine/utility.h"
 #include "texture_manager.h"

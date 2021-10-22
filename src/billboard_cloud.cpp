@@ -3,7 +3,6 @@
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 #include "tree.h"
-#include "generated_tree.h"
 #include "tinyEngine/utility/shader.h"
 #include "tinyEngine/utility.h"
 #include "visualizer.h"

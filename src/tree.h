@@ -4,7 +4,6 @@
 #include <string>
 #include "volumetric_occlusion.h"
 #include "parameter.h"
-#include "mygen_parameters.h"
 #include "marks.h"
 #include "grove.h"
 

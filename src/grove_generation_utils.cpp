@@ -2,7 +2,7 @@
 #include "distribution.h"
 #include "tree.h"
 #include "body.h"
-#include "generated_tree.h"
+#include "generators/generated_tree.h"
 
 void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
 {

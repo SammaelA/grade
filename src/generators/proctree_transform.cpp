@@ -1,7 +1,7 @@
 #include "proctree.h"
-#include "tree.h"
-#include "terrain.h"
-#include "grove_generation_utils.h"
+#include "../tree.h"
+#include "../terrain.h"
+#include "../grove_generation_utils.h"
 
 float scl = 1;
 glm::vec3 rnd_dir()

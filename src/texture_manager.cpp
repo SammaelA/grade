@@ -1,7 +1,7 @@
 #include "texture_manager.h"
 #include "tinyEngine/helpers/image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "tinyEngine/helpers/stb_image_write.h"
+#include "third_party/stb_image_write.h"
 #include <exception>
 
 long tex_mem = 0;

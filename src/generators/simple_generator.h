@@ -1,7 +1,7 @@
 #pragma once
 #include "abstract_generator.h"
-#include "parameter.h"
-
+#include "../parameter.h"
+#include "mygen_parameters.h"
 struct SimpleTreeStructureParameters : public ParametersSet
 {
     Parameter<float> max_depth;

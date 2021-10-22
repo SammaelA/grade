@@ -1,20 +1,21 @@
 
 #include "generated_tree.h"
-#include "tinyEngine/utility.h"
-#include "clustering/clustering.h"
-#include "texture_manager.h"
-#include "visualizer.h"
-#include "distribution.h"
+#include "../tinyEngine/utility.h"
+#include "../clustering/clustering.h"
+#include "../texture_manager.h"
+#include "../visualizer.h"
+#include "../distribution.h"
 #include <math.h>
 #include <algorithm>
-#include "body.h"
+#include "../body.h"
 #include <chrono>
-#include "tinyEngine/save_utils/saver.h"
-#include "impostor.h"
-#include "terrain.h"
-#include "field_2d.h"
-#include "grove_generation_utils.h"
-#include "synthetic_trees_generator.h"
+#include "../tinyEngine/save_utils/saver.h"
+#include "../impostor.h"
+#include "../terrain.h"
+#include "../field_2d.h"
+#include "../grove_generation_utils.h"
+#include "../synthetic_trees_generator.h"
+
 namespace mygen
 {
 #define PI 3.14159265f

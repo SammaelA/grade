@@ -1,6 +1,6 @@
 #include "python_tree_gen.h"
-#include "tinyEngine/utility/python_interaction.h"
-#include "grove_generation_utils.h"
+#include "../tinyEngine/utility/python_interaction.h"
+#include "../grove_generation_utils.h"
 #include "weber_penn_parameters.h"
 #include <iosfwd>
 #include <fstream>

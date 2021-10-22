@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
 #include <glm/glm.hpp>
-#include "parameter.h"
+#include "../parameter.h"
 #include "abstract_generator.h"
 
 struct Tree;

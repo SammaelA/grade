@@ -187,7 +187,7 @@ void load_tree(Block &blk, SavedTree &st)
                     glm::vec3 pos = st.pos + glm::vec3(transform * glm::vec4(spline_raw[j], spline_raw[j+1], spline_raw[j+2], 1));
                     float r = spline_raw[j+3] * st.scale;
                     st.splines.back().joints.push_back(
-                    SJoint{pos, r, std::vector<int>()});
+                    SJoint{pos, r, std::vector<int>(), std::vector<int>()});
                     st.joints_count++;
                 }
             }

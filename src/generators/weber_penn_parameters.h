@@ -1,5 +1,5 @@
 #pragma once
-#include "parameter.h"
+#include "../parameter.h"
 
 
 struct WeberPennParameters : public ParametersSet

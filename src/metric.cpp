@@ -1,7 +1,7 @@
 #include "metric.h"
 #include "tinyEngine/utility.h"
 //#define STB_IMAGE_IMPLEMENTATION
-#include "tinyEngine/helpers/stb_image.h"
+#include "third_party/stb_image.h"
 #include "tree.h"
 #include "tinyEngine/utility/postfx.h"
 unsigned char reference_raw[4*256*256];

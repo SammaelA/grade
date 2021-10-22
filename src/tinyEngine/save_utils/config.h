@@ -1,6 +1,6 @@
 #pragma once
 #include "../../parameter.h"
-#include "../../mygen_parameters.h"
+#include "../../generators/mygen_parameters.h"
 #include <map>
 
 struct GroveGenerationData;

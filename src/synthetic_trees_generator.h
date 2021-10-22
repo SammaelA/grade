@@ -1,5 +1,5 @@
 #pragma once
-#include "generated_tree.h"
+#include "generators/generated_tree.h"
 #include "tinyEngine/utility.h"
 #include "clustering/clustering.h"
 #include "texture_manager.h"

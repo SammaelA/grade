@@ -4,13 +4,14 @@
 #include <glm/glm.hpp>
 #include "glm/gtc/matrix_transform.hpp"
 #include <unordered_set>
-#include "volumetric_occlusion.h"
-#include "tinyEngine/utility/model.h"
-#include "billboard_cloud.h"
-#include "tree.h"
-#include "grove.h"
-#include "grove_generation_utils.h"
+#include "../volumetric_occlusion.h"
+#include "../tinyEngine/utility/model.h"
+#include "../billboard_cloud.h"
+#include "../tree.h"
+#include "../grove.h"
+#include "../grove_generation_utils.h"
 #include "abstract_generator.h"
+#include "mygen_parameters.h"
 class DebugVisualizer;
 class Heightmap;
 

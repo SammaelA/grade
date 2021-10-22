@@ -1,7 +1,7 @@
 #pragma once
-#include "parameter.h"
-#include "tree.h"
-#include "terrain.h"
+#include "../parameter.h"
+#include "../tree.h"
+#include "../terrain.h"
 
 class AbstractTreeGenerator
 {

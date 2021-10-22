@@ -2,7 +2,7 @@
 
 #include <string>
 #include <fstream>
-#include "abstract_generator.h"
+#include "generators/abstract_generator.h"
 #include "tinyEngine/save_utils/blk.h"
 
 
