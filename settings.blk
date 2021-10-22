@@ -6,8 +6,8 @@
         light_importance:r = 0.5
         max_clusters_in_layer:i = 100000
         recursive_clustering_layers:i = 2
-        average_cluster_size_goal:r = 15
-        impostor_similarity_slices:i = 4
+        average_cluster_size_goal:r = 45
+        impostor_texture_size:i = 16
         leaves_opacity:r = 0.33
     }
     trunks_params

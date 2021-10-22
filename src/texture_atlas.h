@@ -71,6 +71,7 @@ public:
     bool target(int num, int type);
     glm::mat4 tex_transform(int num) const;
     glm::ivec4 get_sizes() const { return glm::ivec4(width, height, gridWN, gridHN); }
+    glm::ivec2 get_slice_size() const {return glm::ivec2(width/gridWN, height/gridHN); }
     bool clear();
     Texture &tex(int type);
     void gen_mipmaps();

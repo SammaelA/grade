@@ -24,7 +24,8 @@ void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_p
     //more diversity to test clustering 
     if (level == 1)
     {
-        leaves_chance = urand();
+        float lrnd = urand();
+        leaves_chance = lrnd > 0.4 ? lrnd : 0;
         float rnd = urand();
         seg_count = rnd < 0.4 ? (rnd*seg_count + 2) : seg_count;
     }

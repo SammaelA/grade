@@ -151,14 +151,6 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
 void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters,
                                     std::vector<BranchClusteringData *> &branches, bool need_save_full_data)
 {
-    /*for (auto &c : base_clusters)
-    {
-        for (BranchClusteringData *b : c.ACDA.clustering_data)
-        {
-            if (b)
-                branches.push_back(b);
-        }
-    }*/
     if (cStrategy == ClusteringStrategy::Merge)
     {
         for (auto &c : base_clusters)
@@ -234,9 +226,8 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
     }
     if (need_visualize_clusters)
     {
-        int cluster_size = get_default_block().get_int("impostor_texture_size",(int)Quality::LOW_AS_F);
-        cluster_size = settings.get_int("impostor_texture_size", cluster_size);
-        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",cluster_size,cluster_size);
+        auto icon_sizes = ctx->self_impostors_data->atlas.get_slice_size();
+        visualize_clusters(settings, branches, cluster_result, ctx, "clusters",icon_sizes.x,icon_sizes.y);
     }
     if (need_save_full_data)
     {

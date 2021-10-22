@@ -16,4 +16,14 @@
             separate_colors:b = true
         }
     }
+        imp_deep_hash_ddt_1
+    {
+        branches_params
+        {
+            clustering_helper:s = "imp_deep_hash_ddt"
+            separate_colors:b = true
+            script:s = "get_hashes"
+            model:s = "./models/tm_3_dch.npy"
+        }
+    }
 }

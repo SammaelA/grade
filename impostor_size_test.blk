@@ -1,0 +1,74 @@
+{
+    imp_hash_ddt
+    {
+        branches_params
+        {
+            clustering_helper:s = "imp_hash_ddt"
+            separate_colors:b = true
+            impostor_hash_size:i = 64
+        }
+    }
+    i_100
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 100
+        }
+    }
+    i_80
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 80
+        }
+    }
+    i_60
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 60
+        }
+    }
+    i_50
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 50
+        }
+    }
+    i_40
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 40
+        }
+    }
+    i_35
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 35
+        }
+    }
+    i_30
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 30
+        }
+    }
+    i_25
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 25
+        }
+    }
+    i_20
+    {
+        branches_params
+        {
+            impostor_texture_size:i = 20
+        }
+    }
+}

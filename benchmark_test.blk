@@ -1,18 +1,9 @@
 {
-    imp_hash_ddt
+    i_2
     {
         branches_params
         {
-            clustering_helper:s = "imp_hash_ddt"
-            separate_colors:b = true
-        }
-    }
-    GPU_imp
-    {
-        branches_params
-        {
-            clustering_helper:s = "impostor"
-            impostor_texture_size:i = 64
+            impostor_texture_size:i = 2
         }
     }
 }
