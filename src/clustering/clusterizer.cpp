@@ -6,7 +6,7 @@
 #include "hasing.h"
 #include "impostor_metric.h"
 #include "clustering.h"
-#include "visualize_clusters.h"
+#include "clustering_debug_utils.h"
 #include "pyclustering.h"
 #include "GPU_impostor_metric.h"
 #include "deep_hashing.h"

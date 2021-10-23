@@ -2,6 +2,8 @@
 #include <map>
 #include <new>
 #include <vector>
+#include <boost/filesystem.hpp>
+#include <iostream>
 
 #include "malloc.h"
 
@@ -233,4 +235,37 @@ void ProgressBar::iter(long n)
         }
         debugnl();
     }
+}
+
+bool prepare_directory(std::string &save_path)
+{
+  bool status = true;
+  try
+  {
+    if (boost::filesystem::exists(save_path))
+    {
+      if (boost::filesystem::is_directory(save_path))
+      {
+        printf("replacing previous save\n");
+        boost::filesystem::remove_all(save_path);
+      }
+      else
+      {
+        logerr("path %s represents existing file. Can not save here", save_path.c_str());
+        status = false;
+      }
+    }
+    if (status)
+    {
+      boost::filesystem::create_directory(save_path);
+      boost::filesystem::permissions(save_path, boost::filesystem::perms::all_all);
+    }
+  }
+  catch (const std::exception &e)
+  {
+    status = false;
+    std::cerr << e.what() << '\n';
+  }
+
+  return status;
 }

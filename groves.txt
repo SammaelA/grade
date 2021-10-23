@@ -26,8 +26,6 @@ synthetic_precision = 8
 pos = (0 0 0)
 size = (175 250 175)
 preset = {default wood2 leaf2}
-preset = {simple wood leaf}
-preset = {gnarly wood leaf2}
 }
 grove_end
 grove simple_grove

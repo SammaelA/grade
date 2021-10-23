@@ -2,6 +2,7 @@
     
     branches_params
     {
+        clustering_helper:s = "gpu_impostor"
         wood_size_mult:r = 4
         light_importance:r = 0.5
         max_clusters_in_layer:i = 100000

@@ -147,3 +147,5 @@ private:
     float t_estimate_q = 0.9;
     bool finished = false;
 };
+
+bool prepare_directory(std::string &save_path);

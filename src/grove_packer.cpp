@@ -15,10 +15,8 @@
 #include "synthetic_trees_generator.h"
 #include "grove_packer.h"
 #include "clustering/default_clustering_params.h"
-#include <boost/filesystem.hpp>
-#include <iostream>
-#include <fstream>
-#include "tinyEngine/save_utils/csv.h"
+#include "clustering/clustering_debug_utils.h"
+#include "clustering/clustering_debug_status.h"
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -484,7 +482,23 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
                                      bool visualize_clusters, bool save_cluster_data)
 {
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
-    if (ggd.trees_count <= max_trees_in_patch)
+    visualize_clusters = visualize_clusters || clusteringDebugInfo.visualize_clusters;
+    if (visualize_clusters || clusteringDebugInfo.prepare_dataset || clusteringDebugInfo.save_csv)
+    {
+        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters, true);
+
+        if (clusteringDebugInfo.prepare_dataset)
+        {
+            bool status = prepare_directory(clusteringDebugInfo.dataset_name);
+            if (status)
+                prepare_dataset(clusteringDebugInfo.dataset_name, ctx, packingLayersBranches);
+            else
+                logerr("unable to create directory to save dataset. Exiting.");
+        }
+        if (clusteringDebugInfo.save_csv)
+            save_csv(clusteringDebugInfo.csv_file_name, ctx, packingLayersBranches);
+    }
+    else if (ggd.trees_count <= max_trees_in_patch)
     {
         add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters, save_cluster_data);
     }
@@ -500,229 +514,6 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
         }
         ggd.trees_count = trees_count;
     }
-}
-
-void GrovePacker::add_trees_to_grove_prepare_dataset(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, 
-                                                     Heightmap *h, std::string &save_path)
-
-{
-    add_trees_to_grove_internal(ggd, grove, trees_external, h, false, true);
-
-    int cnt = 0;
-    TextureAtlasRawData raw_atlas = TextureAtlasRawData(ctx->self_impostors_data->atlas);
-    unsigned char *sl_data = safe_new<unsigned char>(2*raw_atlas.get_slice_size(0), "sl_data");
-    memset(sl_data,0,2*raw_atlas.get_slice_size(0));
-    unsigned char *tmp_data = safe_new<unsigned char>(raw_atlas.get_slice_size(0), "tmp_data");
-    int ww = 0, hh = 0;
-    bool info_files = true;
-    
-    std::string database_file;
-    std::string test_file;
-    std::string train_file;
-    
-    float train_part = 0.9;
-    float test_part = 0.05;
-    
-    std::string database_name = "database.txt";
-    std::string test_name = "test.txt";
-    std::string train_name = "train.txt";
-    
-    std::string folder_name = "images";
-
-    int sl = 0;
-    int train_elems = 0;
-    int test_elems = 0;
-
-    std::string dir_path;
-
-    //find largest branch to rescale dataset images properly
-    glm::vec3 max_sizes = glm::vec3(0,0,0);
-    for (int i = 0; i< packingLayersBranches.size();i++)
-    {
-        for (auto &c : packingLayersBranches[i].clusters)
-        {
-            for (auto *cd : c.ACDA.clustering_data)
-            {
-                auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
-                if (imp_cd)
-                {
-                    max_sizes = max(max_sizes, imp_cd->min_bbox.sizes);
-                }
-            }
-        }
-    }
-    float q = 0.85;
-    float max_size = q*MAX(max_sizes.x,MAX(max_sizes.y,max_sizes.z));
-    bool need_rescale = true;
-    try
-    {
-        int clusters_count = 0;
-        if (info_files)
-        {
-            dir_path = save_path + "/"+folder_name;
-            boost::filesystem::create_directory(dir_path);
-            boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all); 
-
-            for (int i = 0; i< packingLayersBranches.size();i++)
-            {
-                clusters_count += packingLayersBranches[i].clusters.size();
-            }         
-        }
-        raw_atlas.get_slice(0, sl_data, &ww, &hh);
-        std::vector<std::string> columns;
-        for (int y = 0; y < hh; y++)
-        {
-            for (int x = 0; x < ww; x++)
-            {
-                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_red");
-                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_green");
-            }
-        }
-        columns.push_back("target");
-        CSVData table = CSVData(columns);
-        for (int i = 0; i< packingLayersBranches.size();i++)
-        {
-            for (auto &c : packingLayersBranches[i].clusters)
-            {
-                std::string cluster_labels;
-                if (info_files)
-                {
-                    for (int j=0;j<clusters_count;j++)
-                    {
-                        cluster_labels += ((j == cnt) ? " 1" : " 0");
-                    }
-                }
-                else
-                {
-                    dir_path = save_path + "/" + std::to_string(cnt);
-                    boost::filesystem::create_directory(dir_path);
-                    boost::filesystem::permissions(dir_path, boost::filesystem::perms::all_all);
-                    sl = 0;
-                }
-                for (auto *cd : c.ACDA.clustering_data)
-                {
-                    auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
-                    if (imp_cd)
-                    {
-                        for (auto &bill : imp_cd->self_impostor->slices)
-                        {
-                            std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
-                            raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
-
-                            if (need_rescale)
-                            {
-                                float sz = MAX(imp_cd->min_bbox.sizes.x, MAX(imp_cd->min_bbox.sizes.y, imp_cd->min_bbox.sizes.z));
-                                float scale = max_size / sz;
-
-                                for (int y = 0; y < hh; y++)
-                                {
-                                    float y_src = scale * y;
-                                    int y0 = y_src;
-                                    float qy = y_src - y0;
-                                    for (int x = 0; x < ww; x++)
-                                    {
-                                        float x_src = scale * x;
-                                        if (x_src > ww + 1 || y_src > hh + 1)
-                                        {
-                                            for (int ch = 0; ch < 3; ch++)
-                                                tmp_data[4 * (y * ww + x) + ch] = 0;
-                                        }
-                                        else
-                                        {
-                                            int x0 = x_src;
-                                            float qx = x_src - x0;
-                                            for (int ch = 0; ch < 3; ch++)
-                                            {
-                                                tmp_data[4 * (y * ww + x) + ch] =
-                                                    (1 - qy) * ((1 - qx) * sl_data[4 * (y0 * ww + x0) + ch] +
-                                                                qx * sl_data[4 * (y0 * ww + x0 + 1) + ch]) +
-                                                    qy * ((1 - qx) * sl_data[4 * ((y0 + 1) * ww + x0) + ch] +
-                                                          qx * sl_data[4 * ((y0 + 1) * ww + x0 + 1) + ch]);
-                                                tmp_data[4 * (y * ww + x) + ch] = sl_data[4 * (y0 * ww + x0) + ch];
-                                            }
-                                        }
-                                        tmp_data[4 * (y * ww + x) + 3] = 255;
-                                    }
-                                }
-                                textureManager.save_bmp_raw_directly(tmp_data, ww, hh, 4, file_path);
-                            }
-                            else
-                                textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
-                            
-                            std::vector<int> row;
-                            for (int y = 0; y < hh; y++)
-                            {
-                                for (int x = 0; x < ww; x++)
-                                {
-                                    row.push_back(tmp_data[4*(y*ww + x)]);
-                                    row.push_back(tmp_data[4*(y*ww + x) + 1]);
-                                }
-                            }
-                            row.push_back(cnt);
-                            logerr("%d cnt",cnt);
-                            if (bill.id == imp_cd->self_impostor->slices.front().id)
-                                table.add_row(row,0);
-                            if (info_files)
-                            {
-                                //add a record about images to database and (maybe) test or train lists;
-                                std::string record = folder_name + "/" + std::to_string(sl)+".bmp" + cluster_labels + "\n";
-                                database_file += record;
-                                if (urand() < train_part)
-                                {
-                                    train_file += record;
-                                    train_elems++;
-                                }
-                                if (urand() < test_part)
-                                {
-                                    test_file += record;
-                                    test_elems++;
-                                }
-                            }
-                            sl++;
-                        }
-                    }
-                    else
-                    {
-                        logerr("error - trying to save to dataset branch without impostor. Check clustering settings");
-                    }
-                }
-                cnt++;
-                if (info_files)
-                {
-                    std::ofstream database_ofs;
-                    database_ofs.open(save_path+"/database.txt");
-                    database_ofs << database_file;
-                    database_ofs.close();
-
-                    std::ofstream test_ofs;
-                    test_ofs.open(save_path+"/test.txt");
-                    test_ofs << test_file;
-                    test_ofs.close();
-
-                    std::ofstream train_ofs;
-                    train_ofs.open(save_path+"/train.txt");
-                    train_ofs << train_file;
-                    train_ofs.close();
-
-                    std::ofstream info_ofs;
-                    info_ofs.open(save_path+"/info.txt");
-                    info_ofs << std::string(std::to_string(clusters_count)+" "+std::to_string(sl)+" "+
-                                            std::to_string(train_elems)+" "+std::to_string(test_elems));
-                    info_ofs.close();
-
-                }
-            }
-        }
-        CSVSaver::save_csv_in_file(table, "scripts/test.csv");
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-
-    safe_delete<unsigned char>(sl_data, "sl_data");
-    safe_delete<unsigned char>(tmp_data, "tmp_data");
-    raw_atlas.clear();
 }
 
 void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,

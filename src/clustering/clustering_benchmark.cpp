@@ -1,7 +1,7 @@
 #include "clustering_benchmark.h"
 #include <chrono>
 #include "dist_data_table.h"
-#include "visualize_clusters.h"
+#include "clustering_debug_utils.h"
 
 #define STEPS (ClusteringStep::CLUSTERING_STEPS_COUNT)
 struct ClusteringResult
