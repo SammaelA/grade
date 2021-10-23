@@ -36,6 +36,7 @@ public:
 
     static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
     static BBox get_minimal_bbox(Branch *b);
+    static BBox get_minimal_bbox_fixed_dirs(Branch *branch);
 
 protected:  
     struct BranchProjectionData

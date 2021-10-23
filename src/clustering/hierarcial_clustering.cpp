@@ -75,6 +75,7 @@ ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clusters, std::li
     Dist md(-1, -1, 1e9);
     int k = n > current_clusters.size() ? current_clusters.size() : n;
     k = n > current_clusters.size() / 3 ? n : current_clusters.size() / 3;
+    k = current_clusters.size() - 1;
     int n1 = 0;
     auto i = current_clusters.begin();
     auto j = current_clusters.rbegin();

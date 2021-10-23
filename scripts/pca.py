@@ -34,8 +34,8 @@ ax.set_ylabel('Principal Component 2', fontsize = 15)
 ax.set_title('2 Component PCA', fontsize = 20)
 
 print(finalDf.loc[:, 'principal component 1'])
-targets = [0, 1, 2, 3, 5, 6, 7, 8]
-colors = ['r', 'g', 'b', 'magenta', 'yellow','black','brown','violet']
+targets = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+colors = [(0,0,0), (0,0,1), (0,1,0), (0,1,1), (1,0,0), (1,0,1), (1,1,0), (0,0.5,0), (0,0,0.5)]
 for target, color in zip(targets,colors):
     indicesToKeep = finalDf['target'] == target
     print(finalDf['target'])

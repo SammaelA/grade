@@ -1,9 +1,9 @@
 {
-    i_2
+    i_base
     {
         branches_params
         {
-            impostor_texture_size:i = 2
+            clustering_helper:s = "impostor"
         }
     }
 }

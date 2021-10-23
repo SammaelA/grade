@@ -182,18 +182,57 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
 
     create_billboard(ttd, branch, min_bbox, tg, num, bill, *atlas, bgp);
 }
+void center_of_mass(Branch *b,glm::vec3 &sum, double &mass)
+{
+    for (Segment &s : b->segments)
+    {
+        float v = glm::length(s.begin - s.end)*(s.rel_r_begin*s.rel_r_begin + s.rel_r_begin*s.rel_r_end + 
+                                                s.rel_r_end*s.rel_r_end);
+        sum += 0.5f*v*(s.begin + s.end);
+        mass += v;
+    }
+    for (Joint &j : b->joints)
+    {
+        for (Branch *br : j.childBranches)
+        {
+            center_of_mass(br, sum, mass);
+        }
+    }
+}
+BBox BillboardCloudRaw::get_minimal_bbox_fixed_dirs(Branch *branch)
+{
+    vec3 a(0, 0, 0);
+    vec3 b;
+    vec3 c;
+    a = (branch->segments.back().end - branch->segments.front().begin);
+    a = normalize(a); //average branch direction
+    double sum = 1e-6;
+    vec3 v(0,0,0);
+    center_of_mass(branch, v, sum);
+    v = ((float)(1.0/sum))*v - branch->segments.front().begin;
 
+    b = v - a*dot(a,v);
+    if (dot(b,b) < 1e-6)
+    {
+        if (abs(1 - dot(a,vec3(1,0,0))) > 1e-6)
+            b = vec3(1,0,0);
+        else
+            b = vec3(0,0,1); 
+    }
+    b = normalize(b);
+    c = cross(a, b);
+    return BillboardCloudRaw::get_bbox(branch, a, b, c);
+}
 BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
 {
+    return get_minimal_bbox_fixed_dirs(branch);
     int iterations = 360;
     vec3 a(0, 0, 0);
     vec3 b;
     vec3 c;
-    for (Segment &seg : branch->segments)
-    {
-        a += (seg.end - seg.begin);
-    }
+    a = (branch->segments.back().end - branch->segments.front().begin);
     a = normalize(a); //average branch direction
+
     b.x = urand();
     b.y = urand();
     b.z = urand();

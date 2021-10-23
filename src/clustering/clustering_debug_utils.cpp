@@ -20,6 +20,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
     int max_size = 0;
     std::vector<std::pair<glm::ivec4, Billboard *>> icons;
     std::vector<ivec4> cluster_frames;
+    std::vector<int> cluster_nums;
     int tex_w = 0, tex_h = 0;
     for (auto &cs : clusters)
     {
@@ -29,6 +30,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
     int cur_h = 0;
     int cur_w = 0;
     int layer_h = 0;
+    int n = 0;
     for (auto &cs : clusters)
     {
         std::vector<Billboard *> child_clusters;
@@ -53,6 +55,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
             cur_w = 0;
         }
         cluster_frames.push_back(glm::ivec4(cur_w, cur_h, cluster_w, cluster_h));
+        cluster_nums.push_back(n);
         for (int i = 0; i < icons_w; i++)
         {
             for (int j = 0; j < icons_h; j++)
@@ -67,6 +70,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
         layer_h = MAX(layer_h, cluster_h);
         cur_w += cluster_w;
+        n++;
     }
     tex_h = cur_h + layer_h;
 
@@ -163,9 +167,18 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
     }
     int thickness = 4;
-    glm::ivec4 color = glm::ivec4(255,150,150,255);
-    for (auto &cl : cluster_frames)
+    glm::ivec4 base_color = glm::ivec4(255,150,150,255);
+    glm::ivec4 color = base_color;
+    std::vector<glm::vec3> colors =
     {
+        glm::vec3(0,0,0), glm::vec3(0,0,1), glm::vec3(0,1,0), glm::vec3(0,1,1), 
+        glm::vec3(1,0,0), glm::vec3(1,0,1), glm::vec3(1,1,0), glm::vec3(0,0.5,0), 
+        glm::vec3(0,0,0.5)
+    };
+    for (int i=0;i<cluster_frames.size();i++)
+    {
+        auto &cl = cluster_frames[i];
+        color = i >= colors.size() ? base_color : glm::ivec4(255*colors[i].x,255*colors[i].y,255*colors[i].z,255);
         #define FRAME(i,j) \
         data[4 * ((cl.y + j) * tex_w + (cl.x + i))] = color.x;\
         data[4 * ((cl.y + j) * tex_w + (cl.x + i))+1] = color.y;\
