@@ -6,8 +6,8 @@ struct Hash
     std::vector<float> data;
     std::vector<int> start_points = {0};
     std::vector<float> weights = {1};
-    bool weighted = false;
-    bool normalized = false;
+    bool weighted = true;
+    bool normalized = true;
     void weight_and_normalize();
     void weight();
     void normalize();

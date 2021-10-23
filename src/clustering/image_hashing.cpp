@@ -63,7 +63,8 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
 
     int hash_size = get_default_block().get_int("impostor_hash_size", 8);
     hash_size = settings.get_int("impostor_hash_size", hash_size);
-    
+    hash_size = MIN(hash_size, (int)(isimParams.impostor_texture_size));
+
     bool separate_colors = get_default_block().get_bool("separate_colors", true);
     separate_colors = settings.get_bool("separate_colors", separate_colors);
     
@@ -86,6 +87,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
             float av_g = 0;
             H = std::vector<float>(2*hash_size*hash_size, 0);
             int cnt = 0;
+            logerr("hash size %d %d", hash_size, step);
             for (int i=0;i<hash_size;i++)
             {
                 for (int j=0;j<hash_size;j++)
@@ -153,6 +155,11 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
                 }
             }          
         }
+        for (auto &f : H)
+        {
+            debug("%f ",f);
+        }
+        debugnl();
     }
 
     return id;

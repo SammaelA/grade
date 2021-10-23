@@ -245,13 +245,17 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
     try
     {
         raw_atlas.get_slice(0, sl_data, &ww, &hh);
+        auto *base_imp = dynamic_cast<BranchClusteringDataImpostor *>(packingLayers[0].clusters[0].ACDA.clustering_data[0]);
         std::vector<std::string> columns;
-        for (int y = 0; y < hh; y++)
+        for (int i=0;i<base_imp->self_impostor->slices.size();i++)
         {
-            for (int x = 0; x < ww; x++)
+            for (int y = 0; y < hh; y++)
             {
-                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_red");
-                columns.push_back("pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_green");
+                for (int x = 0; x < ww; x++)
+                {
+                    columns.push_back(std::to_string(i) + "_pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_red");
+                    columns.push_back(std::to_string(i) + "_pixel_" + std::to_string(y) + "_" + std::to_string(x) + "_green");
+                }
             }
         }
         columns.push_back("target");
@@ -265,6 +269,7 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
                     auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
                     if (imp_cd)
                     {
+                        std::vector<int> row;
                         for (auto &bill : imp_cd->self_impostor->slices)
                         {
                             raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
@@ -303,7 +308,6 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
                                 }
                             }
 
-                            std::vector<int> row;
                             for (int y = 0; y < hh; y++)
                             {
                                 for (int x = 0; x < ww; x++)
@@ -312,13 +316,12 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
                                     row.push_back(tmp_data[4 * (y * ww + x) + 1]);
                                 }
                             }
-                            row.push_back(cnt);
-                            logerr("%d cnt", cnt);
-                            if (bill.id == imp_cd->self_impostor->slices.front().id)
-                                table.add_row(row, 0);
 
                             sl++;
                         }
+                        row.push_back(cnt);
+                        logerr("%d cnt", cnt);
+                        table.add_row(row, 0);
                     }
                     else
                     {
@@ -367,7 +370,7 @@ void save_csv_hash(std::string &save_path, ClusteringContext *ctx, std::vector<C
                         std::vector<float> row = hash_cd->hashes[hash_n].data;
 
                         row.push_back(cnt);
-                        logerr("%d cnt", cnt);
+                        logerr("%d cnt %f %f %f %f %f", cnt, row[0],row[1],row[2],row[3],row[4]);
                         if (hash_n == 0)
                             table.add_row(row, 0);
                     }
