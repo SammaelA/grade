@@ -17,7 +17,7 @@ struct BranchClusteringDataImpostor : public BranchClusteringData
     virtual void clear() override;
     ~ImpostorClusteringContext() { clear(); }
 };*/
-
+struct DistData;
 class ImpostorClusteringHelper : public ClusteringHelper
 {
 public:
@@ -26,6 +26,8 @@ public:
     virtual void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) override;
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                   ClusteringContext *ctx) override;
+    static Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImpostor &bwd2, 
+                                ClusteringContext *current_data, float min, float max, DistData *data);
 };
 
 extern ImpostorSimilarityParams isimParams;

@@ -2,7 +2,7 @@
     
     branches_params
     {
-        clustering_helper:s = "imp_hash_experimental"
+        clustering_base:s = "kmeans"
         wood_size_mult:r = 4
         light_importance:r = 0.5
         max_clusters_in_layer:i = 100000

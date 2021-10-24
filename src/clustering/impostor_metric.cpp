@@ -5,8 +5,6 @@
 #include "impostor_similarity_params.h"
 
 ImpostorSimilarityParams isimParams;
-Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImpostor &bwd2, 
-                     ClusteringContext *current_data, float min, float max, DistData *data);
 
 void BranchClusteringDataImpostor::clear()
 {
@@ -229,8 +227,8 @@ float imp_dist(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *
     }
     return (double)diff/(sum+1);
 }
-Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImpostor &bwd2, 
-                     ClusteringContext *current_data, float min, float max, DistData *data)
+Answer ImpostorClusteringHelper::dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImpostor &bwd2, 
+                                               ClusteringContext *current_data, float min, float max, DistData *data)
 {
     if (!current_data->self_impostors_raw_atlas || !current_data->self_impostors_data)
         return Answer(true,1000,1000);
@@ -292,6 +290,6 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
     glm::vec3 &s2 = bwd2.sizes;
     float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
                                SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
-    min_av_dist *= dist_discriminator;
+     min_av_dist += dist_discriminator - 1;
     return Answer(true,min_av_dist,min_av_dist);
 }

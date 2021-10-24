@@ -1,9 +1,9 @@
 {
-    i_base
+    kmeans_base
     {
         branches_params
         {
-            clustering_helper:s = "imp_hash_experimental"
+            clustering_base:s = "kmeans"
         }
     }
 }

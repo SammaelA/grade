@@ -11,6 +11,7 @@
 #include "GPU_impostor_metric.h"
 #include "deep_hashing.h"
 #include "experimental_hashing.h"
+#include "kmeans_custom.h"
 
 using namespace glm;
 int cur_cluster_id = 0;
@@ -67,6 +68,8 @@ void Clusterizer2::prepare(Block &settings)
         clusteringBase = new DBscanPyClusteringBase();
     else if (c_base_name == "optics")
         clusteringBase = new OpticsPyClusteringBase();
+    else if (c_base_name == "kmeans")
+        clusteringBase = new KmeansClusteringBase();
     else
     {
         logerr("given unknown clustering base name %s",c_base_name);
@@ -239,6 +242,7 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
         IntermediateClusteringData *ICD = clusteringHelper->prepare_intermediate_data(settings, branches, ctx);
         ICD->branches = branches;
         ICD->elements_count = branches.size();
+        ICD->ctx = ctx;
         std::vector<ClusteringBase::ClusterStruct> cluster_result;
         clusteringBase->clusterize(settings, ICD, cluster_result);
                     for (auto &str : cluster_result)

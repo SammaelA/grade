@@ -42,7 +42,7 @@ float sum = 1e-6;
                         float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
 
                         dist += f;
-                        sum += abs(p1.r+p2.r) + abs(p1.g+p2.g);
+                        sum += p1.r+p2.r + p1.g+p2.g;
                     }
                 }
             }

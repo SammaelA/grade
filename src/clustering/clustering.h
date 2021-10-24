@@ -31,11 +31,13 @@ struct BranchClusteringData
         can_be_center = base.can_be_center;
     }
 };
+struct ClusteringContext;
 struct IntermediateClusteringData
 {
     bool all_branches_can_be_centers = true; 
     int elements_count;
     std::vector<BranchClusteringData *> branches;
+    ClusteringContext *ctx = nullptr;
     virtual void clear() {};
 };
 struct ClusteringContext
