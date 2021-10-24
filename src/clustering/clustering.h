@@ -22,6 +22,7 @@ struct BranchClusteringData
     glm::mat4 transform;
     float r_transform;
     bool can_be_center;
+    glm::vec3 sizes;
     virtual void clear() {};
     void set_base(BaseBranchClusteringData &base)
     {

@@ -146,14 +146,16 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
             }
             else
             {
+                isimParams.size_diff_tolerance = 0;
+                isimParams.size_diff_factor = 0.5;
                 float min_av_dist = results[2*(sz*i + j)];
                 int best_rot = results[2*(sz*i + j) + 1];
                 #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
-                glm::vec3 &s1 = real_branches[i]->min_bbox.sizes;
-                glm::vec3 &s2 = real_branches[j]->min_bbox.sizes;
+                glm::vec3 &s1 = real_branches[i]->sizes;
+                glm::vec3 &s2 = real_branches[j]->sizes;
                 float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
                                         SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
-                min_av_dist *= dist_discriminator;
+                min_av_dist += dist_discriminator - 1;
                 a = Answer(true,min_av_dist,min_av_dist);
                 d = (2*PI*best_rot)/tasks_cnt_per_impostor;
             }

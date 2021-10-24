@@ -33,7 +33,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
 {
     isimParams.load(&settings);
     BranchClusteringDataImpostor *id = new BranchClusteringDataImpostor();
-    id->min_bbox = BillboardCloudRaw::get_minimal_bbox(base);
+
     if (!ictx)
     {
         logerr("ImpostorClusteringHelper given clustering context with wrong type");
@@ -288,8 +288,8 @@ Answer dist_impostor(BranchClusteringDataImpostor &bwd1, BranchClusteringDataImp
 
     data->rotation = (2*PI*best_rot)/sz;
     #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
-    glm::vec3 &s1 = bwd1.min_bbox.sizes;
-    glm::vec3 &s2 = bwd2.min_bbox.sizes;
+    glm::vec3 &s1 = bwd1.sizes;
+    glm::vec3 &s2 = bwd2.sizes;
     float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
                                SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
     min_av_dist *= dist_discriminator;

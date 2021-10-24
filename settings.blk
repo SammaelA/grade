@@ -2,15 +2,15 @@
     
     branches_params
     {
-        clustering_helper:s = "gpu_impostor"
+        clustering_helper:s = "imp_hash_experimental"
         wood_size_mult:r = 4
         light_importance:r = 0.5
         max_clusters_in_layer:i = 100000
         recursive_clustering_layers:i = 2
-        average_cluster_size_goal:r = 50
-        impostor_texture_size:i = 16
+        average_cluster_size_goal:r = 65
+        impostor_texture_size:i = 32
         leaves_opacity:r = 0.33
-        impostor_hash_size:i = 32
+        impostor_hash_size:i = 8
     }
     trunks_params
     {

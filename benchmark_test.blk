@@ -3,7 +3,7 @@
     {
         branches_params
         {
-            clustering_helper:s = "impostor"
+            clustering_helper:s = "imp_hash_experimental"
         }
     }
 }

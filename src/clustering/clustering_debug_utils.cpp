@@ -247,7 +247,7 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
                 auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
                 if (imp_cd)
                 {
-                    max_sizes = max(max_sizes, imp_cd->min_bbox.sizes);
+                    max_sizes = max(max_sizes, imp_cd->sizes);
                 }
             }
         }
@@ -287,7 +287,7 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
                         {
                             raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
 
-                            float sz = MAX(imp_cd->min_bbox.sizes.x, MAX(imp_cd->min_bbox.sizes.y, imp_cd->min_bbox.sizes.z));
+                            float sz = MAX(imp_cd->sizes.x, MAX(imp_cd->sizes.y, imp_cd->sizes.z));
                             float scale = max_size / sz;
 
                             for (int y = 0; y < hh; y++)
@@ -450,7 +450,7 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
                 auto *imp_cd = dynamic_cast<BranchClusteringDataImpostor *>(cd);
                 if (imp_cd)
                 {
-                    max_sizes = max(max_sizes, imp_cd->min_bbox.sizes);
+                    max_sizes = max(max_sizes, imp_cd->sizes);
                 }
             }
         }
@@ -515,7 +515,7 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
 
                             if (need_rescale)
                             {
-                                float sz = MAX(imp_cd->min_bbox.sizes.x, MAX(imp_cd->min_bbox.sizes.y, imp_cd->min_bbox.sizes.z));
+                                float sz = MAX(imp_cd->sizes.x, MAX(imp_cd->sizes.y, imp_cd->sizes.z));
                                 float scale = max_size / sz;
 
                                 for (int y = 0; y < hh; y++)

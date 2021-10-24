@@ -3,7 +3,7 @@
 
 void Hash::weight_and_normalize()
 {
-    double s = 0;
+    double s = 1e-6;
     if (weights.size() != start_points.size())
     {
         logerr("hash weight and start_points size mismatch");
@@ -45,7 +45,7 @@ void Hash::weight()
 }
 void Hash::normalize()
 {
-    double s = 0;
+    double s = 1e-6;
 
     for (int i=0;i<data.size();i++)
     {
