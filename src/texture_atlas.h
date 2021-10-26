@@ -54,7 +54,7 @@ public:
     friend bool saver::load(FILE *f, TextureAtlas &t); 
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
-    TextureAtlas(int w, int h, int layers = 2);
+    TextureAtlas(int w, int h, int layers, int mip_levels = 5);
     ~TextureAtlas();
     void set_clear_color(glm::vec4 color)
     {

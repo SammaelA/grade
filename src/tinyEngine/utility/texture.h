@@ -24,17 +24,19 @@ public:
   int get_W() { return W; }
   int get_H() { return H; }
   int get_layers() { return layers; }
+  int get_mip_levels() { return mip_levels; }
 protected:
   int W,H,layers;
   int tag = 0;//tag show to which part of program this texture belongs. Used by texture manager
   unsigned id = 0;
+  int mip_levels = 0;
   void clear();
   Texture();
   Texture(bool empty) {texture = ~0;}
   Texture(SDL_Surface* s);
   Texture(Texture &stub, unsigned char *data);
-  Texture(int W, int H, bool d = false);
-  Texture(int W, int H, bool d, int layers);
+  Texture(int W, int H, bool d, int mip_levels);
+  Texture(int W, int H, bool d, int layers, int mip_levels);
   void empty(int W, int H, bool set_default = true, GLenum F = GL_RGBA);
   void depth(int W, int H, bool set_default = true);
   void raw(SDL_Surface* s, bool set_default = true);

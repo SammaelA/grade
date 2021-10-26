@@ -40,7 +40,9 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     if (!ictx->self_impostors_data)
     {
         ictx->self_impostors_data = new ImpostorsData();
-        TextureAtlas a = TextureAtlas(16*isimParams.impostor_texture_size,16*isimParams.impostor_texture_size,1);
+        int mips = log2(isimParams.impostor_texture_size) + 2;
+        TextureAtlas a = TextureAtlas(8*isimParams.impostor_texture_size,8*isimParams.impostor_texture_size, 2, mips);
+
         ictx->self_impostors_data->atlas = a;
         ictx->self_impostors_data->atlas.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
         ictx->self_impostors_data->atlas.set_clear_color(glm::vec4(0, 0, 0, 0));

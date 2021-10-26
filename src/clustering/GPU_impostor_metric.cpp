@@ -38,7 +38,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
     glm::uvec4 *slices_info = new glm::uvec4[slices_cnt];
     int p = 0;
     auto &atlas = ictx->self_impostors_data->atlas;
-    
+    atlas.gen_mipmaps();
+
     for (int i = 0; i < sz; i++)
     {
         for (int k = 0; k<tasks_cnt_per_impostor;k++)

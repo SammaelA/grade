@@ -48,10 +48,10 @@ normalTex(atlas.normalTex)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h, int l) :
+TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels) :
                            Countable(1),
-                           colorTex(textureManager.create_unnamed_array(w, h, false, l)),
-                           normalTex(textureManager.create_unnamed_array(w, h, false, l)),
+                           colorTex(textureManager.create_unnamed_array(w, h, false, l, mip_levels)),
+                           normalTex(textureManager.create_unnamed_array(w, h, false, l, mip_levels)),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
@@ -227,7 +227,8 @@ void TextureAtlas::gen_mipmaps()
         {
             int w = get_sizes().x;
             int h =  get_sizes().y;
-            int mips = 4;
+            int mips = tex(k).get_mip_levels();
+
             for (int i=1;i<mips;i++)
             {
                 glBindTexture(tex(k).type, tex(k).texture);
@@ -317,7 +318,7 @@ void TextureAtlas::increase_capacity()
 }
 void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
 {
-    Texture new_tex = textureManager.create_unnamed_array(width, height, false, new_layers);
+    Texture new_tex = textureManager.create_unnamed_array(width, height, false, new_layers, t.get_mip_levels());
     Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
     Model bm;
     std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};

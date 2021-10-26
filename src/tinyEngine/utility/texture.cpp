@@ -1,5 +1,5 @@
 #include "texture.h"
-        const int mipLevelCount = 5;
+
 void Texture::set_default_paramaters(Texture *t)
 {
         glTexParameteri(t->type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -24,8 +24,9 @@ Texture::Texture(SDL_Surface *s) : Texture()
 {
         raw(s);
 } //Load raw surface data into texture
-Texture::Texture(int W, int H, bool d) : Texture()
+Texture::Texture(int W, int H, bool d, int _mip_levels) : Texture()
 { //Create empty texture of defined size
+        mip_levels = _mip_levels;
         if (!d)
                 empty(W, H);
         else
@@ -42,6 +43,7 @@ Texture()
         H = stub.H;
         layers = stub.layers;
         type = stub.type;
+        mip_levels = stub.mip_levels;
 
         glBindTexture(type, texture);
 
@@ -55,12 +57,12 @@ Texture()
         glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
         if (type == GL_TEXTURE_2D)
         {
-                glTexStorage2D(texture, mipLevelCount, GL_RGBA8, W, H);
+                glTexStorage2D(texture, stub.mip_levels, GL_RGBA8, W, H);
                 glTexImage2D(type, 0, GL_RGBA, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         }
         else 
         {
-                glTexStorage3D(texture, mipLevelCount, GL_RGBA8, W, H, layers);
+                glTexStorage3D(texture, stub.mip_levels, GL_RGBA8, W, H, layers);
                 glTexImage3D(type, 0, GL_RGBA, W, H,layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         }
         
@@ -107,6 +109,7 @@ void Texture::raw(SDL_Surface *s, bool set_default)
           this->H = t.H;
           this->layers = t.layers;
           this->origin = t.origin;
+          this->mip_levels = t.mip_levels;
   }
   Texture &Texture::operator=(const Texture &t)
   {
@@ -117,23 +120,24 @@ void Texture::raw(SDL_Surface *s, bool set_default)
           this->H = t.H;
           this->layers = t.layers;
           this->origin = t.origin;
+          this->mip_levels = t.mip_levels;
           return *this;
   }
   void Texture::clear()
   {
           glDeleteTextures(1, &texture);
   }
-Texture::Texture(int W, int H, bool d, int layers)
+Texture::Texture(int W, int H, bool d, int layers, int _mip_levels)
 {
 
-
+        mip_levels = _mip_levels;
         this->W = W;
         this->H = H;
         this->layers = layers;
         type = GL_TEXTURE_2D_ARRAY;
         glGenTextures(1, &texture);
         glBindTexture(type,texture);
-        glTextureStorage3D(texture, mipLevelCount, GL_RGBA8, W, H, layers);
+        glTextureStorage3D(texture, mip_levels, GL_RGBA8, W, H, layers);
         glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

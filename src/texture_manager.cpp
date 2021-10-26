@@ -6,6 +6,8 @@
 
 long tex_mem = 0;
 int tex_count = 0;
+const int mipLevelCount = 5;
+
 Texture TextureManager::get_unnamed(GLuint n)
 {
     auto t_it = unnamed_textures.find(n);
@@ -160,24 +162,24 @@ TextureManager::TextureManager(std::string base_path)
     debugl(10,"textures loaded %d\n",textures.size());
 }
 
-Texture TextureManager::create_unnamed(int w, int h, bool shadow)
+Texture TextureManager::create_unnamed(int w, int h, bool shadow, int mip_levels)
 {
     tex_mem += 4*w*h;
     tex_count++;
     debugl(10,"created unnamed %dx%d ",w,h);
     debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
-    Texture t(w,h,shadow);
+    Texture t(w,h,shadow, mip_levels);
     t.tag = current_textures_tag;
     unnamed_textures.emplace(t.texture,t);
     return t;
 }
-Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int layers)
+Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int layers, int mip_levels)
 {
     tex_mem += 4*w*h*layers;
     tex_count++;
     debugl(10,"created unnamed array %dx%dx%d ",w,h,layers);
     debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
-    Texture t(w,h,shadow,layers);
+    Texture t(w,h,shadow,layers,mip_levels);
     t.tag = current_textures_tag;
     unnamed_array_textures.emplace(t.texture,t);
     return t;

@@ -6,11 +6,13 @@
 class TextureManager
 {
 public:
+    const static int baseMipLevelCount = 5;
+
     Texture get(std::string name);
     Texture get(int n);
     Texture get_arr(int n);
-    Texture create_unnamed(int w, int h, bool shadow = false);
-    Texture create_unnamed_array(int w, int h, bool shadow, int layers);
+    Texture create_unnamed(int w, int h, bool shadow = false, int mip_levels = baseMipLevelCount);
+    Texture create_unnamed_array(int w, int h, bool shadow, int layers, int mip_levels = baseMipLevelCount);
     Texture create_unnamed(SDL_Surface *s);
     Texture get_unnamed(GLuint n);
     Texture get_unnamed_arr(GLuint n);
