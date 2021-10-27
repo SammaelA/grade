@@ -204,11 +204,11 @@ glm::mat4 TextureAtlas::tex_transform(int num) const
     glm::mat4 tr_mat = glm::translate(glm::mat4(1.0f), glm::vec3(a, b, 0));
     return tr_mat * sc_mat;
 }
-void TextureAtlas::gen_mipmaps()
+void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
 {
     debugl(10,"generate mipmaps\n");
     Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
-    Shader mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"});
+    Shader mipMapRenderer({"mipmap_render.vs", mipmap_shader_name}, {"in_Position", "in_Tex"});
     Model bm;
     std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};
     std::vector<float> tc = {0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0};
@@ -269,7 +269,11 @@ void TextureAtlas::gen_mipmaps()
                 textureManager.delete_tex(ctex);
             }
         }
+        glBindTexture(tex(k).type, tex(k).texture);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1000);
     }
+
     debugl(10,"generate mipmaps end\n");
 }
 TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)

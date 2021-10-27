@@ -10,5 +10,5 @@ public:
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
                                                                   ClusteringContext *ctx) override;
 private:
-    GLuint results_buf, slices_info_buf;
+    GLuint results_buf, slices_info_buf, branches_sizes_buf;
 };

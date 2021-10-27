@@ -1,7 +1,7 @@
 {
     trunks_default_params
     {
-        clustering_helper:s = "structural_similarity_gpu"
+        clustering_helper:s = "gpu_impostor"
 
 
         hash_count:i = 4
@@ -55,7 +55,7 @@
     }
     trees_default_params
     {
-        clustering_helper:s = "impostor"
+        clustering_helper:s = "gpu_impostor"
 
 
         hash_count:i = 4

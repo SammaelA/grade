@@ -3,7 +3,7 @@
     {
         branches_params
         {
-            clustering_base:s = "kmeans"
+            gpu_impostor_use_mips:b = false
         }
     }
 }

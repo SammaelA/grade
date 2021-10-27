@@ -25,7 +25,7 @@ void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_p
     if (level == 1)
     {
         float lrnd = urand();
-        leaves_chance = lrnd > 0.4 ? lrnd : 0;
+        leaves_chance = lrnd > 0.4 ? lrnd : lrnd;
         float rnd = urand();
         seg_count = rnd < 0.4 ? (rnd*seg_count + 2) : seg_count;
     }

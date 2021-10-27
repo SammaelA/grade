@@ -10,8 +10,8 @@ struct ImpostorSimilarityParams
     int impostor_texture_size = Quality::LOW_AS_F;
     float leaf_size_mult = 1;
     float wood_size_mult = 1;
-    float size_diff_factor = 2;
-    float size_diff_tolerance = 0.3;
+    float size_diff_factor = 0.75;
+    float size_diff_tolerance = 0.1;
     float leaves_opacity = 0.4;
     void load_from_block(Block *b)
     {
