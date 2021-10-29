@@ -37,6 +37,7 @@
 #include "generators/python_tree_gen.h"
 #include "generators/weber_penn_parameters.h"
 #include "clustering/clustering_debug_status.h"
+#include "generators/GE_generator.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -415,6 +416,8 @@ int full_initialization()
     gen = new TreeLoaderBlk();
   else if (generator_name == "python_tree_gen")
     gen = new PythonTreeGen();
+  else if (generator_name == "ge_gen")
+    gen = new GETreeGenerator();
   else
     gen = new mygen::TreeGenerator();
   data.heightmap->random_generate(0, 0, 0);
