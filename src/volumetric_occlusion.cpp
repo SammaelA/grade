@@ -409,6 +409,31 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
         base_str *= lightParams.penumbraDepthDecay;
     }
 }
+
+void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r)
+{
+    if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
+        return;
+
+    glm::ivec3 voxel = pos_to_voxel(pos);
+    for (int i = 0; i <= voxel.y; i++)
+    {
+        int wd = MAX(i * lightParams.penumbraWidthInc, max_r);
+        for (int j = -wd; j <= wd; j++)
+        {
+            for (int k = -wd; k <= wd; k++)
+            {
+                glm::ivec3 vx = voxel + glm::ivec3(j, -i, k);
+                if (in_voxel_cube(vx))
+                {
+                    float dist_sq = (i*i + j*j + k*k) + 1;
+                    voxels[v_to_i(vx)] += strenght * pow(pow_b, -i-1);
+                }
+            }
+        }
+    }
+}
+
 void LightVoxelsCube::set_occluder_simple(glm::vec3 pos, float strenght)
 {
     glm::ivec3 voxel = pos_to_voxel(pos);

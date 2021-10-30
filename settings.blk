@@ -2,7 +2,6 @@
     
     branches_params
     {
-        clustering_base:s = "kmeans"
         wood_size_mult:r = 4
         light_importance:r = 0.5
         max_clusters_in_layer:i = 100000
@@ -14,15 +13,11 @@
     }
     trunks_params
     {
-        clustering_helper:s = "hash_simple"
-        clustering_base:s = "py_kmeans"
         wood_size_mult:r = 4
         light_importance:r = 0.5
     }
     trees_params
     {
-        clustering_helper:s = "hash_simple"
-        clustering_base:s = "py_kmeans"
         wood_size_mult:r = 4
         light_importance:r = 0.5
     }
