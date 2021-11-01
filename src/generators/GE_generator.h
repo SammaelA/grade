@@ -4,6 +4,7 @@
 #include "abstract_generator.h"
 #include "../parameter.h"
 #include "../volumetric_occlusion.h"
+#include "../tinyEngine/utility/octree.h"
 #include <vector>
 #include <list>
 struct GETreeParameters /*: public ParametersSet*/
@@ -13,7 +14,7 @@ struct GETreeParameters /*: public ParametersSet*/
     int tau = 6;
     float ro = 1.5;
     float X0 = 2;
-    float Xm = 25;
+    float Xm = 40;
     float r = 0.34;
     int alpha = 4;
     float sigma = 0.5;
@@ -98,8 +99,15 @@ private:
         {
             positions.push_back(pos);
         }
+        void prepare(LightVoxelsCube &voxels)
+        {
+            octree.create(voxels.get_bbox());
+            octree.insert_vector(positions);
+            positions.clear();
+        }
         bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
-                           glm::vec3 &best_pos, float &best_occ)
+                           glm::vec3 &best_pos, float &best_occ);
+        /*
         {
             float r_sqr = r*r;
             best_occ = 1000;
@@ -122,7 +130,9 @@ private:
             else 
                 return true;
         }
-        void remove_close(glm::vec3 pos, float r)
+        */
+        void remove_close(glm::vec3 pos, float r);
+        /*
         {
             float r_sq = r*r;
             auto it = positions.begin();
@@ -136,9 +146,10 @@ private:
                 else
                     it++;
             }
-        }
+        }*/
 
-        std::list<glm::vec3> positions;
+        std::vector<glm::vec3> positions;
+        Octree octree;
     };
     
     enum GrowthType

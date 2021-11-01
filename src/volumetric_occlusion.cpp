@@ -128,6 +128,10 @@ glm::vec3 LightVoxelsCube::get_center()
 {
     return center;
 }
+AABB LightVoxelsCube::get_bbox()
+{
+    return AABB(voxel_to_pos(-get_vox_sizes()), voxel_to_pos(get_vox_sizes()));
+}
 float LightVoxelsCube::get_voxel_size()
 {
     return voxel_size;
@@ -418,7 +422,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
     glm::ivec3 voxel = pos_to_voxel(pos);
     for (int i = 0; i <= voxel.y; i++)
     {
-        int wd = MAX(i * lightParams.penumbraWidthInc, max_r);
+        int wd = MIN(i, max_r);
         for (int j = -wd; j <= wd; j++)
         {
             for (int k = -wd; k <= wd; k++)
@@ -426,8 +430,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
                 glm::ivec3 vx = voxel + glm::ivec3(j, -i, k);
                 if (in_voxel_cube(vx))
                 {
-                    float dist_sq = (i*i + j*j + k*k) + 1;
-                    voxels[v_to_i(vx)] += strenght * pow(pow_b, -i-1);
+                    voxels[v_to_i(vx)] += strenght * pow(pow_b, -i);
                 }
             }
         }

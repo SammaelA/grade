@@ -47,6 +47,7 @@ public:
     void add_heightmap(Heightmap &h);
     void calculte_precise_occlusion_from_bodies();
     void get_data(float **data, glm::ivec3 &size);
+    AABB get_bbox();
     float NMSE(LightVoxelsCube *B);
     glm::vec3 get_center();
     float get_voxel_size();

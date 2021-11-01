@@ -4,7 +4,7 @@
 #include "tinyEngine/utility/model.h"
 #include "texture_atlas.h"
 #include <glm/glm.hpp>
-#include "tinyEngine/bbox.h"
+#include "tinyEngine/utility/bbox.h"
 struct InstanceDataArrays
 {
     std::vector<glm::mat4> transforms;

@@ -1,5 +1,5 @@
 #pragma once
-#include "tinyEngine/bbox.h"
+#include "tinyEngine/utility/bbox.h"
 class Visualizer;
 class Body
 {

@@ -24,11 +24,11 @@ void GETreeGenerator::create_tree_internal(Tree &t, GETreeParameters &params)
 {
     iteration = 0;
     create_initial_trunk(t, params);
-    ivec3 voxels_sizes = ivec3(4*params.Xm, 4*params.Xm, 4*params.Xm);
+    ivec3 voxels_sizes = ivec3(2*params.Xm, 2*params.Xm, 2*params.Xm);
     for (int i=0;i<params.max_iterations;i++)
     {
         iteration = i;
-        LightVoxelsCube voxels = LightVoxelsCube(t.pos, voxels_sizes, 0.25*params.ro);
+        LightVoxelsCube voxels = LightVoxelsCube(t.pos, voxels_sizes, 0.5*params.ro);
 
         auto &p = params;
         float A = ((float)p.Xm/p.X0 - 1)*exp(-p.r*iteration);
@@ -45,6 +45,7 @@ void GETreeGenerator::create_tree_internal(Tree &t, GETreeParameters &params)
         set_occlusion(t.root, voxels, params);
         //calc_light(t, t.root, voxels);
         prepare_nodes_and_space_colonization(t, t.root, params, growth_points, sp_data, max_growth);
+        sp_data.prepare(voxels);
         //logerr("prepared %d grow points %d sp dots", growth_points.size(), sp_data.positions.size());
         grow_nodes(t, params, growth_points, sp_data, voxels, max_growth);
         recalculate_radii(t, t.root, params);
@@ -312,7 +313,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                     br = &(gp.joint->childBranches.back());
                 }
 
-                float influence_r = 4*params.ro;
+                float influence_r = 1.5*params.ro;
                 vec3 best_pos;
                 float best_occ;
                 if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI/6, best_pos, best_occ) 
@@ -357,8 +358,8 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
         {
             if (i > -10)
             {
-                total_light += MAX(0, 3 - voxels.get_occlusion_simple(j.pos));
-                logerr("l %f", voxels.get_occlusion_simple(j.pos));
+                total_light += MAX(0, 1/(0.5 + voxels.get_occlusion_simple(j.pos)));
+                //logerr("l %f", voxels.get_occlusion_simple(j.pos));
                 for (Branch &br : j.childBranches)
                 {
                     if (br.alive)
@@ -367,6 +368,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                     total_joints += br.total_joints;
                 }
 
+/*
                 auto it = j.childBranches.begin();
                 while (it != j.childBranches.end())
                 {
@@ -379,6 +381,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                         it = j.childBranches.erase(it);
                     }
                 }
+*/
             }
             i++;
         }
@@ -439,4 +442,39 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             }
             i++;
         }
+    }
+
+    bool GETreeGenerator::SpaceColonizationData::find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, 
+                                                               glm::vec3 dir, float angle,
+                                                               glm::vec3 &best_pos, float &best_occ)
+    {
+        best_occ = 1000;
+        float cs = cos(angle);
+
+        std::function<void(glm::vec3 &)> func = [&](glm::vec3 &p){
+            if (dot(normalize(p-pos),dir) > cs)
+                {
+                    float occ = voxels.get_occlusion(p);
+                    //logerr("%f occ", occ);
+                    if (occ < best_occ)
+                    {
+                        best_occ = occ;
+                        best_pos = p;
+                    }
+                }
+        };
+
+        AABB box = AABB(pos - r*vec3(1,1,1), pos + r*vec3(1,1,1)); 
+        octree.apply_to_neighbours_sphere(box, r, pos, func);
+
+        if (best_occ >= 1000)
+            return false;
+        else 
+            return true;
+    }
+
+    void GETreeGenerator::SpaceColonizationData::remove_close(glm::vec3 pos, float r)
+    {
+        AABB box = AABB(pos - r*vec3(1,1,1), pos + r*vec3(1,1,1)); 
+        octree.remove_in_sphere(box, r, pos);
     }
