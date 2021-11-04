@@ -435,7 +435,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                 {
                     float min_dist = delta;
                     int min_pos = -1;
-                    vec3 pos1 = POS1(j1);
+                    vec3 pos1 = vec3(POS1(j1));
                     for (int j2 = 0; j2 < j2_sz; j2++)
                     {
                         if (pair_found[j2])

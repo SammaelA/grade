@@ -36,7 +36,7 @@ bool Box::in_body(glm::vec3 vec)
     glm::vec3 rp = vec - bbox.position;
     if (rp.x < 0 || rp.y < 0 || rp.z < 0 || rp.x > bbox.sizes.x || rp.y > bbox.sizes.y || rp.z > bbox.sizes.z)
         return false;
-    rp = transform*glm::vec4(vec,1);
+    rp = glm::vec3(transform*glm::vec4(vec,1));
     return !(rp.x < 0 || rp.y < 0 || rp.z < 0 || rp.x > 1 || rp.y > 1 || rp.z > 1);
 }
 Ellipsoid::Ellipsoid(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c):
@@ -56,7 +56,7 @@ bool Ellipsoid::in_body(glm::vec3 vec)
     glm::vec3 rp = vec - bbox.position;
     if (rp.x < 0 || rp.y < 0 || rp.z < 0 || rp.x > bbox.sizes.x || rp.y > bbox.sizes.y || rp.z > bbox.sizes.z)
         return false;
-    rp = transform*glm::vec4(vec,1);
+    rp = glm::vec3(transform*glm::vec4(vec,1));
     return length(rp)<=1;
 }
 Cylinder::Cylinder(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c):
@@ -75,6 +75,6 @@ bool Cylinder::in_body(glm::vec3 vec)
     glm::vec3 rp = vec - bbox.position;
     if (rp.x < 0 || rp.y < 0 || rp.z < 0 || rp.x > bbox.sizes.x || rp.y > bbox.sizes.y || rp.z > bbox.sizes.z)
         return false;
-    rp = transform*glm::vec4(vec,1);
+    rp = glm::vec3(transform*glm::vec4(vec,1));
     return ((rp.x*rp.x + rp.y*rp.y)<=1) && (rp.z>=-1) && (rp.z<=1);
 }

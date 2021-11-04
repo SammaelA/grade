@@ -113,7 +113,7 @@ BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base
         float r_transform = 1 / sc_vert.x;
         mat4 SC = scale(mat4(1.0f), sc_vert);
         mat4 SC_inv = inverse(SC);
-        vec3 base_joint_pos = vec4(b.joints.front().pos, 1.0f);
+        vec3 base_joint_pos = vec3(b.joints.front().pos);
         mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
         rot = SC_inv * rot * transl;
         transform = inverse(rot);
