@@ -19,7 +19,6 @@ CMakeCache.txt
 /main
 /profile
 /Makefile
-/resources/*
 /.vscode/*
 /build/*
 /CMakeFiles/*
