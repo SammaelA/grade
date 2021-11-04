@@ -10,11 +10,11 @@
 struct GETreeParameters /*: public ParametersSet*/
 {
     float lambda = 0.52;
-    float k = 0.5;//part of joint that can create child branches
+    float k = 0.95;//part of joint that can create child branches
     int tau = 6;
     float ro = 1.5;
     float X0 = 2;
-    float Xm = 40;
+    float Xm = 75;
     float r = 0.34;
     int alpha = 4;
     float sigma = 0.5;
@@ -22,15 +22,19 @@ struct GETreeParameters /*: public ParametersSet*/
     float nu = 0.5;
     float b_min = 1.8;
     float b_max = 2.2;
-    float r_s = 0.25;
+    float r_s = 0.1;
 
     float base_r = 0.04;
-    int max_branches = 2;
+    int max_branches = 1;
     int occlusion_pyramid_d = 10;
     float r_pow = 2.5;
     int sp_points_base = 10;
-    float branching_angle = PI/4;
-    int max_iterations = 20;
+    float branching_angle_min = 0;
+    float branching_angle_max = PI/4;
+    int max_iterations = 100;
+    float leaf_size_mult = 3.5;
+    float leaves_cnt = 1.0;
+    int max_joints_in_branch = 8;
 };
 
 class GETreeGenerator : public AbstractTreeGenerator
@@ -156,6 +160,7 @@ private:
     {
         END,
         BRANCHING,
+        END_BRANCH,
         FINISHED
     };
     struct GrowPoint
@@ -194,4 +199,5 @@ private:
     void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi, 
                                       SpaceColonizationData &sp_data);
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
+    void create_leaves(Branch &b, GETreeParameters &params, int level_from);
 };

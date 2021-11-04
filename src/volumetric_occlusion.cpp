@@ -423,6 +423,10 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
     for (int i = 0; i <= voxel.y; i++)
     {
         int wd = MIN(i, max_r);
+        //float occ = strenght * pow(pow_b, -i);
+        float occ = strenght * pow(i + 2, -pow_b);
+        if (occ < 1e-6)
+            return;
         for (int j = -wd; j <= wd; j++)
         {
             for (int k = -wd; k <= wd; k++)
@@ -430,7 +434,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
                 glm::ivec3 vx = voxel + glm::ivec3(j, -i, k);
                 if (in_voxel_cube(vx))
                 {
-                    voxels[v_to_i(vx)] += strenght * pow(pow_b, -i);
+                    voxels[v_to_i(vx)] += occ;
                 }
             }
         }
