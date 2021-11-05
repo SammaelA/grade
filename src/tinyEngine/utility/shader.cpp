@@ -2,6 +2,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <iosfwd>
+#include <fstream>
 #include <string>
 #include <glm/glm.hpp>
 #include <sstream>

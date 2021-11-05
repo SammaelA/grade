@@ -9,7 +9,7 @@ namespace image {
       printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
       return nullptr;
     }
-    SDL_Surface* optimized = SDL_ConvertSurfaceFormat(loaded, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_Surface* optimized = SDL_ConvertSurfaceFormat(loaded, SDL_PIXELFORMAT_RGBA8888, 0);
     SDL_FreeSurface(loaded);
     return optimized;
   }

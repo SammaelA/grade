@@ -250,7 +250,7 @@ BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
             min_bbox = box;
             min_minside = minside;
         }
-        b = br * vec4(b, 1);
+        b = vec3(br * vec4(b, 1));
         c = cross(a, b);
     }
     return min_bbox;
@@ -267,8 +267,8 @@ BBox BillboardCloudRaw::get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::
     update_bbox(branch, rot, mn, mx);
     mn -= bias;
     mx += bias;
-    box.sizes = mx - mn;
-    box.position = mn;
+    box.sizes = vec3(mx - mn);
+    box.position = vec3(mn);
     box.a = a;
     box.b = b;
     box.c = c;
@@ -351,7 +351,7 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
     this->instancing = _instancing;
     mat4 rot_inv(vec4(box.a, 0), vec4(box.b, 0), vec4(box.c, 0), vec4(0, 0, 0, 1));
     mat4 rot = inverse(rot_inv);
-    vec3 base_joint_rel = rot * vec4(base_joint, 1.0f);
+    vec3 base_joint_rel = vec3(rot * vec4(base_joint, 1.0f));
     base_joint_rel -= box.position;
     vec4 pos = rot_inv * vec4(box.position, 1.0f);
     if (type == 1 || type == 0)
@@ -749,7 +749,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
             //it should be attached to projection of base joint
             p.b->level = layer;
             Billboard parent_billboard = billboards[p.parent];
-            vec3 n = parent_billboard.planeCoef;
+            vec3 n = vec3(parent_billboard.planeCoef);
             vec3 proj = p.base_joint - (dot(n, p.base_joint) + parent_billboard.planeCoef.w) * n;
             p.base_joint = proj;
             b.branch_id = parent_billboard.branch_id;
