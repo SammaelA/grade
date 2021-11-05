@@ -14,12 +14,12 @@ struct GETreeParameters /*: public ParametersSet*/
     int tau = 6;
     float ro = 1.5;
     float X0 = 2;
-    float Xm = 75;
+    float Xm = 100;
     float r = 0.34;
     int alpha = 4;
     float sigma = 0.5;
     float mu = 1.5;
-    float nu = 0.5;
+    float nu = 1.75;
     float b_min = 1.8;
     float b_max = 2.2;
     float r_s = 0.1;
@@ -34,7 +34,11 @@ struct GETreeParameters /*: public ParametersSet*/
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
     float leaves_cnt = 1.0;
-    int max_joints_in_branch = 8;
+    int max_joints_in_branch = 1000;
+    float resource_mult = 10.0;
+    float top_res_mult_base = 0.4;
+    float top_res_mult_level_decrease = 0.2;
+    float nu_level_decrease = 0.2;
 };
 
 class GETreeGenerator : public AbstractTreeGenerator
@@ -51,7 +55,8 @@ private:
         std::list<Joint> joints;
         int level;
         bool alive = true;
-        float total_resource;
+        float total_resource = 0;
+        float total_light = 0;
         int total_joints = 0;
         float base_r;
         Branch(){};
@@ -75,7 +80,8 @@ private:
         float r;
         std::list<Branch> childBranches;
         Leaf leaf;//can be empty if edges.empty()
-        float resource;
+        float light = 0;
+        float resource = 0;
         bool can_have_child_branches;
         Joint(glm::vec3 _pos, float _r, bool ch_b = true) 
         {
@@ -85,6 +91,7 @@ private:
             childBranches = {};
             leaf = Leaf();
             resource = 0;
+            light = 0;
             can_have_child_branches = ch_b;
         }
     };
@@ -169,12 +176,14 @@ private:
         Branch *base_branch;
         GrowthType gType;
         glm::vec3 prev_dir;
-        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, glm::vec3 pd)
+        float resource_left;
+        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, glm::vec3 pd, float res_left)
         {
             joint = _j;
             base_branch = _b;
             gType = _gt;
             prev_dir = pd;
+            resource_left = res_left;
         }
     };
 
@@ -184,7 +193,8 @@ private:
     void convert(Tree &src, ::Tree &dst, GroveGenerationData &ggd);
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
-    void calc_light(Tree &t, Branch &b, LightVoxelsCube &voxels);
+    void calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
+    void distribute_resource(Branch &b, GETreeParameters &params);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
                                               SpaceColonizationData &sp_data,

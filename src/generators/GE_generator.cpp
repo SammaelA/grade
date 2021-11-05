@@ -43,13 +43,14 @@ void GETreeGenerator::create_tree_internal(Tree &t, GETreeParameters &params)
         SpaceColonizationData sp_data;
 
         set_occlusion(t.root, voxels, params);
-        //calc_light(t, t.root, voxels);
+        calc_light(t.root, voxels, params);
+        distribute_resource(t.root, params);
         prepare_nodes_and_space_colonization(t, t.root, params, growth_points, sp_data, max_growth);
         sp_data.prepare(voxels);
         //logerr("prepared %d grow points %d sp dots", growth_points.size(), sp_data.positions.size());
         grow_nodes(t, params, growth_points, sp_data, voxels, max_growth);
         recalculate_radii(t, t.root, params);
-        remove_branches(t, t.root, params, voxels);
+        //remove_branches(t, t.root, params, voxels);
     }
     //generate tree
     
@@ -181,6 +182,8 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
         }
         for (Branch &chb : it->childBranches)
         {
+            //if (chb.level >= 2)
+            //    continue;
             //logerr("conv br %d %d",b_src.level, i);
             if (!chb.alive)
                 continue;
@@ -198,31 +201,133 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             nb->id = dst.id;
             //logerr("conv br 2 %d %d",b_src.level, i);
             convert(src, dst, chb, nb);
+            if (nb->segments.front().rel_r_begin > b_dst->segments.back().rel_r_begin)
+                logerr("aaaa %f %f", nb->segments.front().rel_r_begin, b_dst->segments.back().rel_r_begin);
         }
         i++;
     }
 }
 
-    void GETreeGenerator::calc_light(Tree &t, Branch &b, LightVoxelsCube &voxels)
+    void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params)
     {
         float l = 0;
+        float res = 0;
         int total_joints = b.joints.size();
-        for (Joint &j : b.joints)
+        auto it = b.joints.rbegin();
+        for (int i=b.joints.size()-1;i>0;i--)
         {
-            j.resource = MAX(0, 1 - voxels.get_occlusion(j.pos));
-            l+= j.resource;
-            //logerr("resources %f",j.resource);
-            for (Branch &br : j.childBranches)
+            Joint &j = *it;
+            if (j.childBranches.empty())
             {
-                if (br.alive)
-                    calc_light(t, br, voxels);
-                total_joints += br.total_joints;
-                l += br.total_resource;
+                j.light = MIN(1, 1/(0.5 + voxels.get_occlusion_simple(j.pos)));
+                j.resource = j.light;
             }
+            else
+            {
+                float l_lateral = 0;
+                for (Branch &br : j.childBranches)
+                {
+                    if (br.alive)
+                    {
+                        calc_light(br, voxels, params);
+                        total_joints += br.total_joints;
+                        l_lateral += br.total_light;
+                    }
+                }
+                float R_BH = (l + l_lateral)*(1-params.lambda)*l_lateral/
+                             (params.lambda*l + (1-params.lambda)*l_lateral);
+                j.light = l_lateral;
+                j.resource = R_BH;
+            }
+            l+= j.light;
+            res+= j.resource;
+            it++;
         }
-        b.total_resource = l - b.joints.front().resource;
+        b.joints.front().resource = res;
+        b.joints.front().light = l;
+        b.total_light = l;
+        b.total_resource = res;
         b.total_joints = total_joints;
     }
+
+    void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params)
+    {
+        {
+        std::vector<std::pair<Joint *,float>> gp;
+        auto it = b.joints.rbegin();
+        for (int i=b.joints.size()-1;i>0;i--)
+        {
+            Joint &j = *it;
+            bool productive = false;
+            if (i == b.joints.size() - 1)
+            {
+                productive = true;
+            }
+            else if (j.childBranches.size() < params.max_branches && j.can_have_child_branches)
+                productive = true;
+            else 
+            {
+                for (auto &br : j.childBranches)
+                    productive = productive || b.alive;
+            }
+            if (productive)
+            {
+                gp.push_back(std::pair<Joint *,float>(&j,j.resource));
+            }
+            else
+            {
+                j.resource = 0;
+            }
+            it++;
+        }
+        int sz = gp.size();
+        
+        //insertion sort is fast for small arrays
+        for(int i=1;i<sz;i++)     
+	        for(int j=i;j>0 && gp[j-1].second<gp[j].second;j--)
+			    std::swap(gp[j-1],gp[j]);
+        /*if (b.level <= 2)
+        {
+            logerr("res sum %f",b.total_resource);
+            for (int i=0;i<sz;i++)
+                logerr("res %f",gp[i].second);
+        }*/
+        float denom = 0;
+        #define W(i) MAX(0.1,1-0.1*i)
+        for (int i=0;i<sz;i++)
+            denom += gp[i].second*W(i);
+        float trm = MAX(0,params.top_res_mult_base - b.level*params.top_res_mult_level_decrease);
+        b.joints.back().resource += trm*denom;
+        denom *= (1 + trm);
+        for (int i=0;i<sz;i++)
+        {
+            float res = b.total_resource*(gp[i].second*W(i))/denom;
+            auto &j = *(gp[i].first);
+            int b_cnt = j.childBranches.empty() ? 1 : 0;
+            for (auto &br : j.childBranches)
+                b_cnt += br.alive;
+            if (j.childBranches.empty())
+                j.resource = res/b_cnt;
+            else
+                j.resource = 0;
+            //if (b.level <= 2) logerr("res2 j %f",j.resource);
+            for (auto &br : j.childBranches)
+            {
+                if (br.alive)
+                {
+                    br.total_resource = res/b_cnt;
+                    //if (b.level <= 2) logerr("res2 br %f", br.total_resource);
+                }
+                
+            }
+        }
+        }
+        for (auto &j : b.joints)
+            for (auto &br : j.childBranches)
+                if (br.alive)
+                    distribute_resource(br, params);
+    }
+
     void cross_vecs(vec3 a, vec3 &b, vec3 &c)
     {
         b = vec3(1,0,0);
@@ -267,16 +372,16 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             auto prev = it;
             prev--;
             auto &j = *it;
-            float max_r = params.ro * max_growth_per_node;
-            int sp_cnt = MAX(params.sp_points_base * iter_frac, 2);
+            float max_r = 2*params.ro * max_growth_per_node;
+            int sp_cnt = MAX(params.sp_points_base * iter_frac + 15, 2);
             glm::vec3 pd = normalize(j.pos - b.joints.front().pos);
-            if (i == b.joints.size() - 1 && j.childBranches.size() == 0)
+            if (i == b.joints.size() - 1)
             {
                 //grow branch forward
                 GrowthType t = GrowthType::END;
-                if (b.joints.size() > params.max_joints_in_branch)
-                    t = GrowthType::END_BRANCH;
-                growth_points.push_back(GrowPoint(&j, &b, t, pd));
+                //if (b.joints.size() > params.max_joints_in_branch)
+                //    t = GrowthType::END_BRANCH;
+                growth_points.push_back(GrowPoint(&j, &b, t, pd, params.r*params.resource_mult*j.resource));
                 //logerr("j pos %f %f %f %f %f %f",j.pos.x,j.pos.y, j.pos.z, prev->pos.x, prev->pos.y, prev->pos.z);
                 add_SPCol_points_solid_angle(j.pos, pd, max_r,sp_cnt,PI/3,sp_data);
             }
@@ -284,7 +389,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             {
                 //create child branch
                 //logerr("j pos 2 %f %f %f",j.pos.x,j.pos.y, j.pos.z);
-                growth_points.push_back(GrowPoint(&j, &b, GrowthType::BRANCHING, pd));
+                growth_points.push_back(GrowPoint(&j, &b, GrowthType::BRANCHING, pd, params.r*params.resource_mult*j.resource));
                 add_SPCol_points_solid_angle(j.pos, pd, max_r,sp_cnt,0,sp_data);
             }
             for (Branch &br : j.childBranches)
@@ -322,9 +427,13 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             for (int j=0;j<growth_points.size();j++)
             {
                 auto &gp = growth_points[permutations[j]];
+                if (gp.resource_left < 1)
+                    gp.gType = GrowthType::FINISHED;
                 //logerr("growing point %d",j);
                 if (gp.gType == GrowthType::FINISHED)
                     continue;
+                gp.resource_left -= 1.0;
+
                 Joint *start = gp.joint;
                 Branch *br = gp.base_branch;
                 glm::vec3 prev_dir = gp.prev_dir;
@@ -342,6 +451,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                     prev_dir = r*cos(psi)*sin(phi)*b + r*cos(psi)*cos(phi)*c + r*sin(psi)*prev_dir;
                     start = &(gp.joint->childBranches.back().joints.front()); 
                     br = &(gp.joint->childBranches.back());
+                    logerr("new branch created");
                 }
                 else if (gp.gType == GrowthType::END_BRANCH)
                 {
@@ -349,19 +459,19 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                     start = &(gp.joint->childBranches.back().joints.front()); 
                     br = &(gp.joint->childBranches.back());
                 }
-                float influence_r = 1.5*params.ro;
+                float influence_r = 4*params.ro;
                 vec3 best_pos;
                 float best_occ;
                 if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI/6, best_pos, best_occ) 
                     && best_pos.x == best_pos.x)
                 {
                     vec3 best_dir = prev_dir + params.mu*normalize(best_pos - start->pos) + 
-                                    params.nu*tropism(br->joints.size(),params);
+                                    (params.nu-br->level*params.nu_level_decrease)*tropism(br->joints.size(),params);
                     vec3 new_pos =  start->pos +  params.ro*normalize(best_dir);
-                    //logerr("prev dir %f %f %f", prev_dir.x, prev_dir.y, prev_dir.z);
-                    //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
-                    //logerr("joint with new pos created %f %f %f %f %f %f",new_pos.x, new_pos.y,new_pos.z,
-                    //                                                     best_dir.x, best_dir.y,best_dir.z);
+                    logerr("prev dir %f %f %f", prev_dir.x, prev_dir.y, prev_dir.z);
+                    logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
+                    logerr("joint with new pos created %f %f %f %f %f %f",new_pos.x, new_pos.y,new_pos.z,
+                                                                         best_dir.x, best_dir.y,best_dir.z);
                     br->joints.push_back(Joint(new_pos, params.base_r, urand() < params.k));
 
                     float b = params.b_min + (params.b_max - params.b_min)*
@@ -376,7 +486,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
                 }
                 else
                 {
-                    //logerr("failed to find best pos");
+                    logerr("failed to find best pos");
                     //we cannot grow this branch 
                     gp.gType = GrowthType::FINISHED;
                 }
@@ -424,12 +534,12 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
         float lq = total_light/total_joints;
         if (total_joints > 10)
         {
-            logerr("br is ok %d %d %f",b.level, total_joints, total_light);
+            //logerr("br is ok %d %d %f",b.level, total_joints, total_light);
         }
-        if (b.level > 0 && lq < (params.r_s + 0.02*log2f(total_joints)) && b.joints.size() > 1)
+        if (b.level > 0 && lq < (params.r_s + 0.04*MIN(log2f(total_joints),5)) && b.joints.size() > 1)
         {
             //remove branch
-            logerr("remove branch %d %f",total_joints, total_light);
+            //logerr("remove branch %d %f",total_joints, total_light);
             b.joints = {};
             b.alive = false;
             b.total_joints = 0;
