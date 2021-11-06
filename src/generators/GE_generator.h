@@ -14,8 +14,8 @@ struct GETreeParameters : public ParametersSet
     int tau = 6;
     float ro = 1.0;
     float X0 = 2;
-    float Xm = 100;
-    float r = 0.4;
+    float Xm = 120;
+    float r = 0.37;
     int alpha = 4;
     float sigma = 0.5;
     float mu = 1.5;
@@ -34,10 +34,10 @@ struct GETreeParameters : public ParametersSet
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
     float leaves_cnt = 0.0;
-    int max_joints_in_branch = 8;
-    float resource_mult = 7.0;
+    int max_joints_in_branch = 16;
+    float resource_mult = 10.0;
     float top_res_mult_base = 0.5;
-    float top_res_mult_level_decrease = 0.5;
+    float top_res_mult_level_decrease = 0.15;
     float leaves_max_r = 2;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
 
     virtual glm::vec3 get_tree_max_size() override
@@ -73,6 +73,7 @@ private:
         float total_light = 0;
         int total_joints = 0;
         float base_r;
+        glm::vec2 average_chb_dir = glm::vec2(0,0);
         Branch(){};
         Branch(int _level, glm::vec3 start_pos)
         {
@@ -195,4 +196,5 @@ private:
                                       SpaceColonizationData &sp_data);
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
     void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
+    void set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels);
 };

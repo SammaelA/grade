@@ -330,7 +330,7 @@ void generate_grove()
   prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
   prototype.trees_count = ggd.trees_count;
   prototype.possible_types = {std::pair<int, float>(0,1)};
-  LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.5f, 1.0f);
+  LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.45f, 1.0f);
   debug_voxels = voxels;
 
   GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
