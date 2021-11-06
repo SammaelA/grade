@@ -24,7 +24,7 @@ count = 1
 synthetic_count = 0
 synthetic_precision = 8
 pos = (0 0 0)
-size = (175 250 175)
+size = (20 100 20)
 preset = {default wood2 leaf2}
 }
 grove_end

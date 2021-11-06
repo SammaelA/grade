@@ -7,15 +7,15 @@
 #include "../tinyEngine/utility/octree.h"
 #include <vector>
 #include <list>
-struct GETreeParameters /*: public ParametersSet*/
+struct GETreeParameters : public ParametersSet
 {
     float lambda = 0.52;
     float k = 0.75;//part of joint that can create child branches
     int tau = 6;
-    float ro = 1.5;
+    float ro = 1.0;
     float X0 = 2;
-    float Xm = 75;
-    float r = 0.34;
+    float Xm = 100;
+    float r = 0.4;
     int alpha = 4;
     float sigma = 0.5;
     float mu = 1.5;
@@ -24,32 +24,46 @@ struct GETreeParameters /*: public ParametersSet*/
     float b_max = 2.2;
     float r_s = 0.1;
 
-    float base_r = 0.03;
+    float base_r = 0.025;
     int max_branches = 1;
     int occlusion_pyramid_d = 10;
     float r_pow = 2.2;
-    int sp_points_base = 10;
+    int sp_points_base = 16;
     float branching_angle_min = 0;
     float branching_angle_max = PI/3;
-    int max_iterations = 150;
+    int max_iterations = 100;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 1.5;
-    int max_joints_in_branch = 1000;
+    float leaves_cnt = 0.0;
+    int max_joints_in_branch = 8;
     float resource_mult = 7.0;
     float top_res_mult_base = 0.5;
     float top_res_mult_level_decrease = 0.5;
     float leaves_max_r = 2;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
+
+    virtual glm::vec3 get_tree_max_size() override
+    {
+        set_state(0);
+        return ro*glm::vec3(2*Xm, 3.5*Xm, 2*Xm);
+    }
 };
 
 class GETreeGenerator : public AbstractTreeGenerator
 {
 public:
     virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
+    virtual bool iterate(LightVoxelsCube &voxels) override;
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
+    virtual bool iteration_method_implemented() override {return true;}
 private:
     static int iteration, ids, t_ids;
-    
+    static GETreeParameters defaultParameters;
     struct Joint;
     struct Leaf; 
+    struct Tree;
+
+    std::vector<Tree> trees;
+
     struct Branch
     {
         std::list<Joint> joints;
@@ -96,11 +110,21 @@ private:
         }
     };
 
+    enum TreeStatus
+    {
+        SEED,
+        GROWING,
+        GROWN,
+        DEAD
+    };
     struct Tree
     {
         glm::vec3 pos;
         Branch root;
         int max_depth = 1;
+        TreeTypeData *type = nullptr;
+        TreeStatus status = SEED;
+        int iteration = 0;
     };
 
     struct SpaceColonizationData
@@ -118,46 +142,7 @@ private:
         }
         bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
                            glm::vec3 &best_pos, float &best_occ);
-        /*
-        {
-            float r_sqr = r*r;
-            best_occ = 1000;
-            float cs = cos(angle);
-            for (auto &p : positions)
-            {
-                if (dot(p-pos,p-pos) <= r_sqr && dot(normalize(p-pos),dir) > cs)
-                {
-                    float occ = voxels.get_occlusion(p);
-                    //logerr("%f occ", occ);
-                    if (occ < best_occ)
-                    {
-                        best_occ = occ;
-                        best_pos = p;
-                    }
-                }
-            }
-            if (best_occ >= 1000)
-                return false;
-            else 
-                return true;
-        }
-        */
         void remove_close(glm::vec3 pos, float r);
-        /*
-        {
-            float r_sq = r*r;
-            auto it = positions.begin();
-            while (it != positions.end())
-            {
-                float d = glm::dot(pos - *it, pos - *it);
-                if (d < r_sq)
-                {
-                    it = positions.erase(it);
-                }
-                else
-                    it++;
-            }
-        }*/
 
         std::vector<glm::vec3> positions;
         Octree octree;
@@ -190,7 +175,7 @@ private:
     void create_tree_internal(Tree &t, GETreeParameters &params);
     void create_initial_trunk(Tree &t, GETreeParameters &params);
     void set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level);
-    void convert(Tree &src, ::Tree &dst, GroveGenerationData &ggd);
+    void convert(Tree &src, ::Tree &dst);
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
     void calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);

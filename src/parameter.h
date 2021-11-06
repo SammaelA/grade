@@ -339,12 +339,13 @@ struct ParametersSet
     static Parameter<int> from_float(Parameter<float> source);
     static Parameter<float> from_int(Parameter<int> source);
     virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
-                            ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) = 0;
+                            ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) {};
     virtual void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, 
                            ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
     virtual void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
                                  ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
     virtual void save_to_blk(Block &b);
     virtual void load_from_blk(Block &b);
-    virtual void set_state(int state) = 0;
+    virtual void set_state(int state) {};
+    virtual glm::vec3 get_tree_max_size() = 0;
 };

@@ -153,7 +153,7 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
                 if (rnd < 0)
                     break;
                 float r = get(i,j);
-                if (r > rnd && seeds.size() < count)
+                if (r >= rnd && seeds.size() < count)
                 {
                     Seed s;
                     s.pos = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
@@ -169,18 +169,25 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
         }
     }
 }
-Seeder::Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h):
-Countable(6),
-mask(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
-hm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
-psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
-const_psm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size),
-dsm(ggd.pos,glm::vec2(ggd.size.x,ggd.size.z),cell_size)
+Seeder::Seeder(GroveGenerationData &ggd, float cell_size, const Heightmap *h):
+Seeder(ggd.pos, ggd.size,cell_size, h)
 {
-    heightmap = h;
+
+}
+Seeder::Seeder(glm::vec3 pos, glm::vec3 size, float cell_size, const Heightmap *h):
+Countable(6),
+mask(pos,glm::vec2(size.x, size.z),cell_size),
+hm(pos,glm::vec2(size.x, size.z),cell_size),
+psm(pos,glm::vec2(size.x, size.z),cell_size),
+const_psm(pos,glm::vec2(size.x, size.z),cell_size),
+dsm(pos,glm::vec2(size.x, size.z),cell_size)
+{
+    heightmap = (Heightmap *)h;
     //mask.set_round(0.85*ggd.size.x);
-    mask.set_square(0.85*ggd.size.x,0.85*ggd.size.z);
+    mask.set_square(0.85*size.x,0.85*size.z);
     hm.create(*heightmap,mask);
+    psm.set(const_psm);
+    dsm.create(hm, psm);
 }
 void Seeder::add_body(Body *b, float opacity, bool solid)
 {

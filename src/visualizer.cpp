@@ -765,9 +765,9 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 
     visualize_light_voxels(voxels,
                            voxels->get_center() - voxels->get_voxel_size()*glm::vec3(voxels->get_vox_sizes()),
                            voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
-                           5.0f*glm::vec3(voxels->get_voxel_size()),
+                           2.0f*glm::vec3(voxels->get_voxel_size()),
                            0.5f*voxels->get_voxel_size(),
-                           5,
+                           0.4,
                            shift,
                            scale);
 

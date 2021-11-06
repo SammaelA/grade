@@ -172,10 +172,11 @@ struct TreeStructureParameters : public ParametersSet
     }
     virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
                             ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override;
-    //virtual void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, 
-    //                       ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES) override;
-   // virtual void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
-    //                             ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES) override;
+    virtual glm::vec3 get_tree_max_size() override
+    {
+        set_state(0);
+        return 2.0f*glm::vec3(seg_len_mult()*max_segments());
+    }
 };
 template<typename T>
 class BaseParameterSetWrapper

@@ -108,6 +108,10 @@ namespace Proctree
 		virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
                             ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override;
 		virtual void set_state(int state) override;
+		virtual glm::vec3 get_tree_max_size() override
+    	{
+			return glm::vec3(100,100,100);
+		}
 	};
 
 

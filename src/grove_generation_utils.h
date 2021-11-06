@@ -52,7 +52,8 @@ private:
 class Seeder : Countable
 {
 public:
-    Seeder(GroveGenerationData &ggd, float cell_size, Heightmap *h);
+    Seeder(GroveGenerationData &ggd, float cell_size, const Heightmap *h);
+    Seeder(glm::vec3 pos, glm::vec3 size, float cell_size, const Heightmap *h);
     void recalcuate_shadows(Tree *trees, int count);
     void add_tree_shadow(Tree &t);
 

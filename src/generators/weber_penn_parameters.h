@@ -83,4 +83,9 @@ struct WeberPennParameters : public ParametersSet
     virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
                                     ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override;
     std::string convert_to_python_list();
+    virtual glm::vec3 get_tree_max_size() override
+    {
+        set_state(0);
+        return glm::vec3(100,100,100);
+    }
 };

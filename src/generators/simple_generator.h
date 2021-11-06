@@ -62,6 +62,11 @@ struct SimpleTreeStructureParameters : public ParametersSet
     {
 
     }
+    virtual glm::vec3 get_tree_max_size() override
+    {
+        set_state(0);
+        return 2.0f*glm::vec3(segment_size()*segment_count());
+    }
 };
 
 class SimpleTreeGenerator : public AbstractTreeGenerator

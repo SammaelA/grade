@@ -1,7 +1,6 @@
 
 #define GLEW_EXPERIMENTAL
 #include "tinyEngine/TinyEngine.h"
-#include "generators/generated_tree.h"
 #include "glm/trigonometric.hpp"
 #include "tinyEngine/helpers/image.h"
 #include "tinyEngine/helpers/color.h"
@@ -20,7 +19,6 @@
 #include "terrain.h"
 #include "tinyEngine/shadow.h"
 #include "grove_packer.h"
-#include "generators/proctree.h"
 #include "app.h"
 #include "grass_renderer.h"
 #include "tinyEngine/utility/deffered_target.h"
@@ -32,12 +30,15 @@
 #include "parameter_selection.h"
 #include "tinyEngine/save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
-#include "generators/simple_generator.h"
 #include "load_tree_structure.h"
+#include "clustering/clustering_debug_status.h"
+#include "grove_generator.h"
+#include "generators/GE_generator.h"
 #include "generators/python_tree_gen.h"
 #include "generators/weber_penn_parameters.h"
-#include "clustering/clustering_debug_status.h"
-#include "generators/GE_generator.h"
+#include "generators/simple_generator.h"
+#include "generators/proctree.h"
+#include "generators/generated_tree.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -54,6 +55,7 @@ GrovePacked grove;
 GroveGenerationData ggd;
 GroveRenderer *GR = nullptr;
 ClusteringBenchmark benchmark;
+LightVoxelsCube *debug_voxels = nullptr;
 struct RenderData
 {
   bool regenerate_shadows = true;
@@ -319,9 +321,22 @@ void clear_current_grove()
 }
 void generate_grove()
 {
+  ggd.types[0].generator_name = "ge_gen";
   ::Tree *trees = new ::Tree[ggd.trees_count];
-  gen->create_grove(ggd, trees, *data.heightmap);
-  
+  //gen->create_grove(ggd, trees, *data.heightmap);
+  GroveGenerator grove_gen;
+  GrovePrototype prototype;
+  prototype.pos = glm::vec2(ggd.pos.x, ggd.pos.z);
+  prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
+  prototype.trees_count = ggd.trees_count;
+  prototype.possible_types = {std::pair<int, float>(0,1)};
+  LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.5f, 1.0f);
+  debug_voxels = voxels;
+
+  GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
+
+  grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
+
   packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
  
   delete[] trees;
@@ -479,7 +494,11 @@ int full_initialization()
     {
       mygen::TreeGenerator *mygen_gen = dynamic_cast<mygen::TreeGenerator *>(gen);
       if (mygen_gen)
-        debugVisualizer->visualize_light_voxels(mygen_gen->voxels);
+        debug_voxels = mygen_gen->voxels;
+    }
+    if (debug_voxels)
+    {
+        debugVisualizer->visualize_light_voxels(debug_voxels);
     }
     /*LightVoxelsCube *voxx = new LightVoxelsCube(glm::vec3(0,0,0), glm::ivec3(8,8,8),1,3,2);
     for (int i=-8;i<=8;i++)
