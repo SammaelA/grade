@@ -425,7 +425,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
         int wd = MIN(i, max_r);
         //float occ = strenght * pow(pow_b, -i);
         float occ = strenght * pow(i + 2, -pow_b);
-        if (occ < 1e-6)
+        if (abs(occ) < 1e-6)
             return;
         for (int j = -wd; j <= wd; j++)
         {

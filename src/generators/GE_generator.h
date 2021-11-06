@@ -10,35 +10,35 @@
 struct GETreeParameters /*: public ParametersSet*/
 {
     float lambda = 0.52;
-    float k = 0.95;//part of joint that can create child branches
+    float k = 0.75;//part of joint that can create child branches
     int tau = 6;
     float ro = 1.5;
     float X0 = 2;
-    float Xm = 100;
+    float Xm = 75;
     float r = 0.34;
     int alpha = 4;
     float sigma = 0.5;
     float mu = 1.5;
-    float nu = 1.75;
+    float nu = 1.0;
     float b_min = 1.8;
     float b_max = 2.2;
     float r_s = 0.1;
 
-    float base_r = 0.04;
+    float base_r = 0.03;
     int max_branches = 1;
     int occlusion_pyramid_d = 10;
-    float r_pow = 2.5;
+    float r_pow = 2.2;
     int sp_points_base = 10;
     float branching_angle_min = 0;
-    float branching_angle_max = PI/4;
-    int max_iterations = 100;
+    float branching_angle_max = PI/3;
+    int max_iterations = 150;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 1.0;
+    float leaves_cnt = 1.5;
     int max_joints_in_branch = 1000;
-    float resource_mult = 10.0;
-    float top_res_mult_base = 0.4;
-    float top_res_mult_level_decrease = 0.2;
-    float nu_level_decrease = 0.2;
+    float resource_mult = 7.0;
+    float top_res_mult_base = 0.5;
+    float top_res_mult_level_decrease = 0.5;
+    float leaves_max_r = 2;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
 };
 
 class GETreeGenerator : public AbstractTreeGenerator
@@ -208,6 +208,6 @@ private:
     void recalculate_radii(Tree &t, Branch &b, GETreeParameters &params);
     void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi, 
                                       SpaceColonizationData &sp_data);
-    void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
-    void create_leaves(Branch &b, GETreeParameters &params, int level_from);
+    void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
+    void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
 };
