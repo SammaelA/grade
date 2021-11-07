@@ -321,7 +321,7 @@ void clear_current_grove()
 }
 void generate_grove()
 {
-  ggd.types[0].generator_name = "ge_gen";
+  ggd.types[0].generator_name = generator_name;
   ::Tree *trees = new ::Tree[ggd.trees_count];
   //gen->create_grove(ggd, trees, *data.heightmap);
   GroveGenerator grove_gen;
@@ -331,6 +331,7 @@ void generate_grove()
   prototype.trees_count = ggd.trees_count;
   prototype.possible_types = {std::pair<int, float>(0,1)};
   LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.45f, 1.0f);
+  voxels->add_heightmap(*data.heightmap);
   debug_voxels = voxels;
 
   GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
@@ -403,9 +404,9 @@ int full_initialization()
   appContext.light.dir = glm::normalize(glm::vec3(-0.2, 0.5, -0));
   appContext.light.color = glm::vec3(0.99, 0.9, 0.7);
   appContext.light.intensity = 1;
-  appContext.light.ambient_q = 0.37;
-  appContext.light.diffuse_q = 0.63;
-  appContext.light.specular_q = 0.0;
+  appContext.light.ambient_q = 0.5;
+  appContext.light.diffuse_q = 0.4;
+  appContext.light.specular_q = 0.1;
   appContext.light.has_shadow_map = true;
   appContext.light.shadow_map_size = glm::vec2(4096, 4096);
   shadowMap.create(4096, 4096);

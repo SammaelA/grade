@@ -13,6 +13,7 @@
     }
     trunks_params
     {
+        average_cluster_size_goal:r = 1
         wood_size_mult:r = 4
         light_importance:r = 0.5
     }

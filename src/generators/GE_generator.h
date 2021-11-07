@@ -14,7 +14,7 @@ struct GETreeParameters : public ParametersSet
     int tau = 6;
     float ro = 1.0;
     float X0 = 2;
-    float Xm = 120;
+    float Xm = 100;
     float r = 0.37;
     int alpha = 4;
     float sigma = 0.5;
@@ -33,11 +33,10 @@ struct GETreeParameters : public ParametersSet
     float branching_angle_max = PI/3;
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 0.0;
+    float leaves_cnt = 1.5;
     int max_joints_in_branch = 16;
-    float resource_mult = 10.0;
-    float top_res_mult_base = 0.5;
-    float top_res_mult_level_decrease = 0.15;
+    float resource_mult = 5.0;
+    float res_q = 1.0;
     float leaves_max_r = 2;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
 
     virtual glm::vec3 get_tree_max_size() override

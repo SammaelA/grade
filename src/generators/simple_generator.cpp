@@ -162,3 +162,35 @@ void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_e
         t_ids++;
     }
 }
+
+void SimpleTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+{
+    tree_positions.push_back(pos);
+    types.push_back(type);
+}
+
+void SimpleTreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels)
+{
+    SimpleTreeStructureParameters s_params;
+    params = BaseParameterSetWrapper<SimpleTreeStructureParameters>(s_params, s_params.max_depth());
+    params.set_state(0);
+    for (int i=0;i<tree_positions.size();i++)
+    {
+        vec3 pos = tree_positions[i];
+
+        for (int j=0;j<params().max_depth();j++)
+        {
+            BranchHeap *br = new BranchHeap();
+            trees_external[i].branchHeaps.push_back(br);
+        }
+
+        trees_external[i].leaves = new LeafHeap();
+        trees_external[i].id = t_ids;
+        trees_external[i].pos = pos;
+        trees_external[i].type = types[i];
+        trees_external[i].valid = true;
+
+        create_tree(trees_external + i, pos);
+        t_ids++;
+    }
+}
