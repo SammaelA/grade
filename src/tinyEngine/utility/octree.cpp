@@ -40,7 +40,14 @@ bool Octree::Node::insert(glm::vec3 &pos)
             if (child_nodes[i]->insert(pos))
                 return true;
         }
-        logerr("error: malformed octree node");
+        /*
+        logerr("error: malformed octree node %f %f %f",pos.x,pos.y,pos.z);
+        for (int i=0;i<8;i++) 
+        {
+            logerr("ch node %f %f %f -- %f %f %f",child_nodes[i]->box.min_pos.x,child_nodes[i]->box.min_pos.y,
+            child_nodes[i]->box.min_pos.z,child_nodes[i]->box.max_pos.x,child_nodes[i]->box.max_pos.y,
+            child_nodes[i]->box.max_pos.z);
+        }*/
         return false;
     }
     else if (points.size() < Octree::MAX_NODES)

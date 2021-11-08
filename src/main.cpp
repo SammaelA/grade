@@ -335,7 +335,7 @@ void generate_grove()
   debug_voxels = voxels;
 
   GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
-
+  mask.set_round(MIN(prototype.size.x,prototype.size.y));
   grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
 
   packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
@@ -436,7 +436,7 @@ int full_initialization()
     gen = new GETreeGenerator();
   else
     gen = new mygen::TreeGenerator();
-  data.heightmap->random_generate(0, 0, 0);
+  data.heightmap->random_generate(0, 0, 10);
 
   if (generation_needed)
   {

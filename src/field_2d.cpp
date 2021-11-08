@@ -72,8 +72,8 @@ float perlin(float x, float y) {
 }
 float f_perlin(float x, float y) 
 {
-    std::vector<float> x_mul = {1,3,7,11};
-    std::vector<float> y_mul = {1,5,9,13};
+    std::vector<float> x_mul = {1,3,7,11,21};
+    std::vector<float> y_mul = {1,5,9,13,23};
     float res = 0.0;
     int it = 0;
     for (float mx : x_mul)
@@ -123,6 +123,22 @@ float f_perlin(float x, float y)
         return (dx*get(ps.x, ps.y) + (1 - dx)*get(ps.x + 1, ps.y))*(1 - dy) + 
                (dx*get(ps.x, ps.y + 1) + (1 - dx)*get(ps.x + 1, ps.y + 1))*dy;
         
+    }
+    void Field_2d::set(glm::vec3 position, float val)
+    {
+        if (!data)
+            return;
+        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
+        glm::ivec2 ps = rp;
+        set(rp.x,rp.y,val);
+    }
+    void Field_2d::fill_const(float val)
+    {
+        base_val = val;
+        if (!data)
+            return;
+        for (int i=0;i<(2*w + 1)*(2*h + 1);i++)
+            data[i] = val;
     }
     void Field_2d::fill_perlin(float base, float min, float max, glm::ivec2 sh)
     {
@@ -197,6 +213,10 @@ float f_perlin(float x, float y)
         {
             add(x,y,val);
         }
+    }
+    glm::vec4 Field_2d::get_borders()
+    {
+        return glm::vec4(pos.x - size.x, pos.z - size.y, pos.x + size.x, pos.z + size.y);
     }
     void Field_2d::print()
     {

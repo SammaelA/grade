@@ -6,6 +6,7 @@
 #include "generators/proctree.h"
 #include "generators/generated_tree.h"
 #include "grove_generation_utils.h"
+#include "planter.h"
 #include <map>
 
 AbstractTreeGenerator *GroveGenerator::get_generator(std::string &generator_name)
@@ -48,35 +49,41 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
 
     int trees_planted = 0;
     bool generating = true;
-    Seeder seeder = Seeder(glm::vec3(prototype.pos.x,0,prototype.pos.y), 
-                           glm::vec3(prototype.size.x,0, prototype.size.y), 3.0f, &hmap);
-
+    //Seeder seeder = Seeder(glm::vec3(prototype.pos.x,0,prototype.pos.y), 
+    //                       glm::vec3(prototype.size.x,0, prototype.size.y), 3.0f, &hmap);
+    Planter planter = Planter(&voxels, &hmap, &mask,
+                              glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size,
+                              1,prototype.trees_count,7.5);
     while (trees_planted < prototype.trees_count || generating)
     {
         if (trees_planted < prototype.trees_count)
         {
-            std::vector<Seed> seeds;
-            seeder.choose_places_for_seeds(1,seeds);
+            std::vector<glm::vec3> seeds = planter.get_saplings();
+            //seeder.choose_places_for_seeds(1,seeds);
             if (!seeds.empty())
             {
-                float f = urand(0,w);
-                int type = 0;
-                for (auto &p : prototype.possible_types)
+                for (auto &seed : seeds)
                 {
-                    if (f < p.second)
+                    float f = urand(0,w);
+                    int type = 0;
+                    for (auto &p : prototype.possible_types)
                     {
-                        type = p.first;
-                        break;
+                        if (f < p.second)
+                        {
+                            type = p.first;
+                            break;
+                        }
+                        else
+                            f -= p.second;
                     }
-                    else
-                        f -= p.second;
-                }
 
-                AbstractTreeGenerator *gen = generators.at(treeTypesCatalogue[type].generator_name);
-                glm::vec3 pos = glm::vec3(seeds[0].pos.x,0,seeds[0].pos.y);
-                pos.y = hmap.get_height(pos);
-                gen->plant_tree(pos, &(treeTypesCatalogue[type]));
-                t_counts.at(treeTypesCatalogue[type].generator_name)++;
+                    AbstractTreeGenerator *gen = generators.at(treeTypesCatalogue[type].generator_name);
+                    //glm::vec3 pos = glm::vec3(seeds[0].pos.x,0,seeds[0].pos.y);
+                    //pos.y = hmap.get_height(pos);
+                    logerr("olant tree %d",prototype.trees_count);
+                    gen->plant_tree(seed, &(treeTypesCatalogue[type]));
+                    t_counts.at(treeTypesCatalogue[type].generator_name)++;
+                }
             }
             trees_planted++;
         }

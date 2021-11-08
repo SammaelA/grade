@@ -33,7 +33,7 @@ struct GETreeParameters : public ParametersSet
     float branching_angle_max = PI/3;
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 1.5;
+    float leaves_cnt = 0.0;
     int max_joints_in_branch = 16;
     float resource_mult = 5.0;
     float res_q = 1.0;

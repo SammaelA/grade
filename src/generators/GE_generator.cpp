@@ -185,7 +185,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     t.root.level = 0;
     t.root.joints.push_back(Joint(t.pos, 1));
 
-    bool bush = true;
+    bool bush = false;
     if (bush)
     {
         for (int i = 0; i < 10; i++)
