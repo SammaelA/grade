@@ -423,6 +423,8 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
     for (int i = 0; i <= voxel.y; i++)
     {
         int wd = MIN(i, max_r);
+        if (wd == max_r && urand() < 0.5)
+            continue;
         //float occ = strenght * pow(pow_b, -i);
         float occ = strenght * pow(i + 2, -pow_b);
         if (abs(occ) < 1e-6)
@@ -431,7 +433,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
         {
             for (int k = -wd; k <= wd; k++)
             {
-                glm::ivec3 vx = voxel + glm::ivec3(j, -i, k);
+                glm::ivec3 vx = voxel + glm::ivec3(k, -i, j);
                 if (in_voxel_cube(vx))
                 {
                     voxels[v_to_i(vx)] += occ;
@@ -546,6 +548,34 @@ float LightVoxelsCube::get_occlusion_simple(glm::vec3 pos)
         return 1000; 
     }
 }
+float LightVoxelsCube::get_occlusion_projection(glm::vec3 pos)
+{
+    glm::ivec3 voxel = pos_to_voxel(pos);
+    voxel.y = 0;
+    float res = 0;
+    if (in_voxel_cube(voxel))
+    {
+        for (int j=vox_y;j>=-vox_y;j--)
+        {
+            voxel.y = j;
+            float o = voxels[v_to_i(voxel)];
+            if (o < 5*1e9)
+            {
+                res += o;
+            }
+            else //reached heightmap
+            {
+                break;
+            }
+        }
+        //logerr("occ projection %f %f %f - %f",pos.x,pos.y,pos.z,res);
+        return res;
+    }
+    else
+    {
+        return 1e9; 
+    }
+}
 float LightVoxelsCube::get_occlusion_simple_mip(glm::vec3 pos, int mip)
 {
     glm::ivec3 voxel = pos_to_voxel(pos);
@@ -657,7 +687,11 @@ void LightVoxelsCube::add_heightmap(Heightmap &h)
                 glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
                 if (pos.y < terr_pos.y - thr)
                 {
-                    voxels[v_to_i(i,j,k)] += 1e9;
+                    voxels[v_to_i(i,j,k)] = MAX(1e10, voxels[v_to_i(i,j,k)]);
+                }
+                else
+                {
+                    break;
                 }
             }
         }

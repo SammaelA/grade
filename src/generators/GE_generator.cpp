@@ -185,7 +185,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     t.root.level = 0;
     t.root.joints.push_back(Joint(t.pos, 1));
 
-    bool bush = false;
+    bool bush = true;
     if (bush)
     {
         for (int i = 0; i < 10; i++)
@@ -487,7 +487,7 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
         prev--;
         auto &j = *it;
         float max_r = params.ro * max_growth_per_node;
-        int sp_cnt = MAX(params.sp_points_base * iter_frac + 15, 2);
+        int sp_cnt = MAX(params.sp_points_base * iter_frac, 2);
         glm::vec3 pd = normalize(j.pos - b.joints.front().pos);
         float resource = params.r * params.resource_mult * j.resource;
         //if (b.level <= 1)
@@ -583,7 +583,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
             }
-            float influence_r = 4 * params.ro;
+            float influence_r = 2 * params.ro;
             vec3 best_pos;
             float best_occ;
             if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI / 6, best_pos, best_occ) && best_pos.x == best_pos.x)

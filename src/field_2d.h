@@ -1,5 +1,6 @@
 #pragma once
 #include "glm/glm.hpp"
+#include <functional>
 class Field_2d
 {
 public:
@@ -10,6 +11,7 @@ public:
     float get_bilinear(glm::vec3 pos);
     void set(glm::vec3 pos, float val);
     void fill_const(float val);
+    void fill_func(std::function<float(glm::vec2 &)> filler);
     void fill_perlin(float base, float min, float max, glm::ivec2 sh = glm::ivec2(0,0));
     glm::vec2 get_range() {return glm::vec2(min_val,max_val);}
     glm::vec2 get_grad_bilinear(glm::vec3 pos);

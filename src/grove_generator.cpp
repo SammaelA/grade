@@ -53,7 +53,7 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
     //                       glm::vec3(prototype.size.x,0, prototype.size.y), 3.0f, &hmap);
     Planter planter = Planter(&voxels, &hmap, &mask,
                               glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size,
-                              1,prototype.trees_count,7.5);
+                              1,prototype.trees_count,5);
     while (trees_planted < prototype.trees_count || generating)
     {
         if (trees_planted < prototype.trees_count)

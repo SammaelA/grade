@@ -322,25 +322,38 @@ void clear_current_grove()
 void generate_grove()
 {
   ggd.types[0].generator_name = generator_name;
-  ::Tree *trees = new ::Tree[ggd.trees_count];
-  //gen->create_grove(ggd, trees, *data.heightmap);
-  GroveGenerator grove_gen;
-  GrovePrototype prototype;
-  prototype.pos = glm::vec2(ggd.pos.x, ggd.pos.z);
-  prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
-  prototype.trees_count = ggd.trees_count;
-  prototype.possible_types = {std::pair<int, float>(0,1)};
-  LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.45f, 1.0f);
-  voxels->add_heightmap(*data.heightmap);
-  debug_voxels = voxels;
+  int max_tc = ggd.trees_count;
+  for (int i = 0;i<3;i++)
+  {
+    for (int j=0;j<3;j++)
+    {
+      ggd.pos.x = (i + urand())*2*ggd.size.x;
+      ggd.pos.z = (j + urand())*2*ggd.size.z;
+      ggd.trees_count = MAX(urand()*max_tc,1);
 
-  GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
-  mask.set_round(MIN(prototype.size.x,prototype.size.y));
-  grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
+      ::Tree *trees = new ::Tree[ggd.trees_count];
 
-  packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
- 
-  delete[] trees;
+      GroveGenerator grove_gen;
+      GrovePrototype prototype;
+      prototype.pos = glm::vec2(ggd.pos.x, ggd.pos.z);
+      prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
+      prototype.trees_count = ggd.trees_count;
+      prototype.possible_types = {std::pair<int, float>(0,1)};
+      LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.5f, 1.0f);
+      voxels->add_heightmap(*data.heightmap);
+      //debug_voxels = voxels;
+
+      GroveMask mask = GroveMask(ggd.pos, prototype.size,3);
+      mask.set_round(MIN(prototype.size.x,prototype.size.y));
+      grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
+
+      packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
+    
+      delete[] trees;
+      delete voxels;
+    }
+  }
+
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {

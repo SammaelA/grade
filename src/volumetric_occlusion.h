@@ -32,6 +32,7 @@ public:
     float get_occlusion_view_ray(glm::vec3 pos, glm::vec3 light);
     float get_occlusion_view_ray(glm::vec3 pos);
     float get_occlusion_simple(glm::vec3 pos);
+    float get_occlusion_projection(glm::vec3 pos);
     float get_occlusion_simple_mip(glm::vec3 pos, int mip);
     float get_occlusion_trilinear(glm::vec3 pos);
     float get_occlusion_trilinear_mip(glm::vec3 pos, int mip);
@@ -54,6 +55,7 @@ public:
     glm::ivec3 get_vox_sizes();
     int get_mip_count();
     int get_mip_decrease();
+    
 private:
     struct LightParams
     {

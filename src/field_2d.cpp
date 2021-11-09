@@ -140,6 +140,17 @@ float f_perlin(float x, float y)
         for (int i=0;i<(2*w + 1)*(2*h + 1);i++)
             data[i] = val;
     }
+    void Field_2d::fill_func(std::function<float(glm::vec2 &)> filler)
+    {
+        for (int i = -w;i<=w;i++)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                set(i,j,filler(ps));
+            }
+        }
+    }
     void Field_2d::fill_perlin(float base, float min, float max, glm::ivec2 sh)
     {
         base_val = base;

@@ -85,7 +85,7 @@ void GroveMask::set_round(float r)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
+                glm::vec3 position = glm::vec3(cell_size*i, 0,cell_size*j);
                 if (length(position) < r) 
                     set(i,j,1);
                 else

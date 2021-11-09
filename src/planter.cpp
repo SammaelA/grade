@@ -41,6 +41,12 @@ std::vector<glm::vec3> Planter::get_saplings()
     int cnt = saplings_left >= 2 ? saplings_left/2 : saplings_left;
     std::vector<glm::vec3> saplings;
     //спроецировать воксельный массив на occlusion
+    std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) ->float
+    {
+        return voxels->get_occlusion_projection(glm::vec3(p.x,0,p.y));
+    };
+    occlusion.fill_func(func);
+
     for (int i=0;i<cnt;i++)
     {
         const int max_points = 50;
@@ -59,6 +65,7 @@ std::vector<glm::vec3> Planter::get_saplings()
                 points.push_back(glm::vec3(x,y,occ));
                 sum += occ;
             }
+            logerr("occ is got %f %f %f",occlusion.get_bilinear(ps), density.get_bilinear(ps), mask->get_bilinear(ps));
             tries++;
         }
         if (points.empty())

@@ -20,11 +20,11 @@ preset = {default wood leaf2}
 grove_end
 grove oak_grove
 {
-count = 1
+count = 15
 synthetic_count = 0
 synthetic_precision = 8
 pos = (0 0 0)
-size = (20 100 20)
+size = (50 100 50)
 preset = {default wood2 leaf2}
 }
 grove_end

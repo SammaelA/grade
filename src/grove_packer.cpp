@@ -559,6 +559,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 
     debugl(1, "Packing grove %s with %d/%d valid trees\n", ggd.name.c_str(), valid_trees_cnt, count);
 
+    if (false)
     {
         float r = sqrt(count);
         glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
