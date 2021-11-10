@@ -15,7 +15,10 @@ public:
     void fill_perlin(float base, float min, float max, glm::ivec2 sh = glm::ivec2(0,0));
     glm::vec2 get_range() {return glm::vec2(min_val,max_val);}
     glm::vec2 get_grad_bilinear(glm::vec3 pos);
-    glm::vec4 get_borders();
+    glm::vec4 get_borders();//[x0,y0] - [x1,y1]
+    void get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
+                               glm::vec2 *min_pos = nullptr,
+                               glm::vec2 *max_pos = nullptr);//real_min >= min_v, real_max <= max_v 
     void print();
 protected:
     float get(int x, int y);

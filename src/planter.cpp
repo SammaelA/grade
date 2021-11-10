@@ -65,7 +65,7 @@ std::vector<glm::vec3> Planter::get_saplings()
                 points.push_back(glm::vec3(x,y,occ));
                 sum += occ;
             }
-            logerr("occ is got %f %f %f",occlusion.get_bilinear(ps), density.get_bilinear(ps), mask->get_bilinear(ps));
+            //logerr("occ is got %f %f %f",occlusion.get_bilinear(ps), density.get_bilinear(ps), mask->get_bilinear(ps));
             tries++;
         }
         if (points.empty())
@@ -77,7 +77,7 @@ std::vector<glm::vec3> Planter::get_saplings()
             float rnd = urand(0,sum);
             for (auto &p : points)
             {
-                logerr("p %f %f rnd %f %f",p.x,p.y,rnd,p.z);
+                //logerr("p %f %f rnd %f %f",p.x,p.y,rnd,p.z);
                 if (rnd < p.z)
                 {
                     glm::vec3 pos = glm::vec3(p.x,0,p.y);

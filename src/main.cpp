@@ -319,18 +319,138 @@ void clear_current_grove()
   }
   packer = GrovePacker();
 }
+
+
+struct Cell
+{
+  enum CellStatus
+  {
+    EMPTY,
+    WAITING,
+    BORDER,
+    FINISHED
+  };
+  GrovePrototype prototype;
+  LightVoxelsCube *voxels = nullptr;
+  int id = -1;
+  CellStatus status;
+  std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
+  explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
+};
+
+LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+                                     Heightmap &h)
+{
+  glm::vec3 max_tree_size = glm::vec3(0,0,0);
+  float min_scale_factor = 1000;
+  for (auto &p : prototype.possible_types)
+  {
+    auto &type = types[p.first];
+    max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
+    min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
+  }
+  
+  float min_hmap = 0, max_hmap = 0;
+  h.get_min_max_imprecise(prototype.pos - prototype.size, prototype.pos + prototype.size, &min_hmap, &max_hmap);
+  float br = 5;
+  float min_y = min_hmap - br;
+  float max_y = max_hmap + max_tree_size.y;
+  float y_center = (min_y + max_y)/2;
+  float y_sz = (max_y - min_y)/2;
+  glm::vec3 voxel_sz = glm::vec3(prototype.size.x + max_tree_size.x, y_sz, prototype.size.y + max_tree_size.z);
+  glm::vec3 voxel_center = glm::vec3(prototype.pos.x, y_center, prototype.pos.y);
+  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
+  AABB box = v->get_bbox();
+  logerr("created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
+  box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z,prototype.pos.x - prototype.size.x,
+  prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
+  return v;
+}
 void generate_grove()
 {
   ggd.types[0].generator_name = generator_name;
   int max_tc = ggd.trees_count;
-  for (int i = 0;i<3;i++)
-  {
-    for (int j=0;j<3;j++)
-    {
-      ggd.pos.x = (i + urand())*2*ggd.size.x;
-      ggd.pos.z = (j + urand())*2*ggd.size.z;
-      ggd.trees_count = MAX(urand()*max_tc,1);
+  glm::vec2 full_size = glm::vec2(150,150);
+  glm::vec2 start_pos = glm::vec2(-100, -100);
+  glm::vec2 cell_size = glm::vec2(ggd.size.x,ggd.size.z);
+  glm::vec2 mask_pos = start_pos + 0.5f*full_size;
+  GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), 0.5f*full_size, 3);
+  mask.set_round(MIN(full_size.x, full_size.y));
 
+  int cells_x = ceil(full_size.x/cell_size.x);
+  int cells_y = ceil(full_size.y/cell_size.y);
+  std::vector<Cell> cells = std::vector<Cell>(cells_x*cells_y,Cell(Cell::CellStatus::WAITING));
+  std::list<int> waiting_cells;
+  std::list<int> border_cells;
+
+  for (int i=0;i<cells_x;i++)
+  {
+    for (int j=0;j<cells_y;j++)
+    {
+      int id = i*cells_y + j;
+      cells[id].id = id;
+      //TODO: do we need a cell here?
+      cells[id].status = (i % 2 && j % 2) ? Cell::CellStatus::WAITING : Cell::CellStatus::EMPTY;
+
+      if (cells[id].status == Cell::CellStatus::WAITING)
+      {
+        glm::vec2 center = start_pos + cell_size*glm::vec2(i+0.5,j+0.5);
+        cells[id].prototype.pos = center;
+        cells[id].prototype.size = cell_size;
+        cells[id].prototype.possible_types = {std::pair<int, float>(0,1)};
+        cells[id].prototype.trees_count = MAX(urand()*max_tc,1);
+        waiting_cells.push_back(id);
+      }
+    }
+  }
+  for (int c_id : waiting_cells)
+  {
+    auto &c = cells[c_id];
+
+    //temp stuff
+    ggd.pos.x = c.prototype.pos.x;
+    ggd.pos.z = c.prototype.pos.y;
+    ggd.pos.y = data.heightmap->get_height(ggd.pos);
+    ggd.size.x = cell_size.x;
+    ggd.size.z = cell_size.y;
+    ggd.trees_count = c.prototype.trees_count;
+
+    ::Tree *trees = new ::Tree[ggd.trees_count];
+    GroveGenerator grove_gen;
+    GrovePrototype prototype;
+    prototype.pos = glm::vec2(ggd.pos.x, ggd.pos.z);
+    prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
+    prototype.trees_count = ggd.trees_count;
+    prototype.possible_types = {std::pair<int, float>(0, 1)};
+    LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, *data.heightmap);
+    voxels->add_heightmap(*data.heightmap);
+    //debug_voxels = voxels;
+
+    grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
+
+    packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
+
+    if (c.depends.size() > 0)
+    {
+      //create small voxels array to use for generating in neighbour cells
+      border_cells.push_back(c_id);
+    }
+    if (debug_voxels) 
+      delete debug_voxels;
+    debug_voxels = voxels;
+    //delete voxels;
+    delete[] trees;
+    //
+  }
+  /*
+  for (int i = 0;i<2;i++)
+  {
+    for (int j=0;j<2;j++)
+    {
+      ggd.pos.x = (i + urand())*3*ggd.size.x;
+      ggd.pos.z = (j + urand())*3*ggd.size.z;
+      ggd.trees_count = MAX(urand()*max_tc,1);
+      ggd.trees_count = 1;
       ::Tree *trees = new ::Tree[ggd.trees_count];
 
       GroveGenerator grove_gen;
@@ -339,7 +459,7 @@ void generate_grove()
       prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
       prototype.trees_count = ggd.trees_count;
       prototype.possible_types = {std::pair<int, float>(0,1)};
-      LightVoxelsCube *voxels = new LightVoxelsCube(glm::vec3(0, 0, 0) + ggd.pos, ggd.size + glm::vec3(100,0,100), 0.5f, 1.0f);
+      LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types,*data.heightmap);
       voxels->add_heightmap(*data.heightmap);
       //debug_voxels = voxels;
 
@@ -350,10 +470,13 @@ void generate_grove()
       packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
     
       delete[] trees;
-      delete voxels;
+      if (i == 1 && j== 1)
+        debug_voxels = voxels;
+      else
+        delete voxels;
     }
   }
-
+  */
 }
 void generate_single_tree(ParametersSet *par, GrovePacked &res)
 {

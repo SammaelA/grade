@@ -767,7 +767,7 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 
                            voxels->get_voxel_size()*(2.0f*glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
                            2.0f*glm::vec3(voxels->get_voxel_size()),
                            0.5f*voxels->get_voxel_size(),
-                           0.4,
+                           0.1,
                            shift,
                            scale);
 
@@ -792,9 +792,9 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
                     continue;
                 glm::vec4 tex;
                 tex.w = 1;
-                tex.z = MIN(1,occ/10);
-                tex.y = MIN(1,occ/100);
-                tex.x = MIN(1,occ/1000);
+                tex.z = MIN(1,occ/(10*threshold));
+                tex.y = MIN(1,occ/(100*threshold));
+                tex.x = MIN(1,occ/(1000*threshold));
                 Box b = Box(shift + glm::vec3(scale.x*x,scale.y*y,scale.z*z),glm::vec3(dot_size,0,0),glm::vec3(0,dot_size,0),glm::vec3(0,0,dot_size));
                 body_to_model(&b,m,true,tex);
             }

@@ -663,14 +663,15 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         i++;
     }
     float lq = total_light / total_joints;
-    float remove_q = lq/(params.r_s + 0.02 * MIN(log2f(total_joints), 7));
+    float remove_q = lq/(params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10));
     if (total_joints > 10)
     {
         //logerr("br is ok %d %d %d %f",b.level, total_joints, b.joints.size(), ch_b_count);
     }
-    if (b.level > 0 && (((urand() < (pow(2,-remove_q) - 0.5)) && b.joints.size() > 1) ||
+    if (b.level > 1 && 
+      (((urand() < (pow(2,-remove_q) - 0.5)) && b.level >= params.remove_min_level) ||
         total_joints > 50 && (float)b.joints.size()/total_joints > 0.33 ||
-        dead_b_count/b.joints.size() > 0.5 ||
+        dead_b_count/b.joints.size() > 0.75 ||
         b.joints.size() > 0.5*params.max_joints_in_branch && ch_b_count < 2))
     {
         //remove branch

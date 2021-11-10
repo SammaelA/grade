@@ -22,7 +22,9 @@ struct GETreeParameters : public ParametersSet
     float nu = 1.0;
     float b_min = 1.8;
     float b_max = 2.2;
-    float r_s = 0.1;
+    float r_s = 0.05;
+    float rs_size_factor = 0.02;
+    int remove_min_level = 2;
 
     float base_r = 0.025;
     int max_branches = 1;
@@ -33,7 +35,7 @@ struct GETreeParameters : public ParametersSet
     float branching_angle_max = PI/3;
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 0.0;
+    float leaves_cnt = 1.0;
     int max_joints_in_branch = 16;
     float resource_mult = 5.0;
     float res_q = 1.0;
@@ -41,8 +43,11 @@ struct GETreeParameters : public ParametersSet
 
     virtual glm::vec3 get_tree_max_size() override
     {
-        set_state(0);
-        return ro*glm::vec3(2*Xm, 3.5*Xm, 2*Xm);
+        return ro*glm::vec3(Xm, 1.5*Xm, Xm);
+    }
+    virtual float get_scale_factor() override 
+    {
+        return ro;
     }
 };
 

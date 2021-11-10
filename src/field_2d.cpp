@@ -242,3 +242,80 @@ float f_perlin(float x, float y)
             debugnl();
         }
     }
+    void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
+                                         glm::vec2 *min_pos, glm::vec2 *max_pos)
+    {
+        if (!data)
+        {
+            if (min_v)
+                *min_v = base_val;
+            if (max_v)
+                *max_v = base_val;
+            if (min_pos)
+                *min_pos = from;
+            if (max_pos)
+                *max_pos = from;
+            return;
+        }
+        glm::vec2 mnp = (from - glm::vec2(pos.x,pos.y))/cell_size;
+        glm::vec2 mxp = (to - glm::vec2(pos.x,pos.y))/cell_size;
+        
+        float mn = FLT_MAX;
+        float mx = FLT_MIN;
+        glm::ivec2 mn_pos = glm::ivec2(-1,-1);
+        glm::ivec2 mx_pos = glm::ivec2(-1,-1);
+        if (mnp.x < 0 || mnp.y < 0)
+        {
+            mn = base_val;
+            mx = base_val;
+            mn_pos = from;
+            mx_pos = from;
+        }
+        else if (mxp.x >= w || mxp.y >= h)
+        {
+            mn = base_val;
+            mx = base_val;
+            mn_pos = glm::ivec2(w+1,h+1);
+            mx_pos = glm::ivec2(w+1,h+1);
+        }
+        for (int x = MAX(floor(mnp.x), 0);x<MIN(ceil(mxp.x),w);x++)
+        {
+            for (int y = MAX(floor(mnp.y), 0);y<MIN(ceil(mxp.y),h);y++)
+            {
+                float val = get(x,y);
+                if (val > mx)
+                {
+                    mx = val;
+                    mx_pos = glm::ivec2(x,y);
+                }
+                if (val < mn)
+                {
+                    mn = val;
+                    mn_pos = glm::ivec2(x,y);
+                }
+            }
+        }
+
+        if (min_v)
+            *min_v = mn;
+        if (max_v)
+            *max_v = mx;
+        if (min_pos)
+        {
+            if (mn_pos == glm::ivec2(-1,-1))
+                *min_pos = from;
+            else if (mn_pos == glm::ivec2(w + 1,h + 1))
+                *min_pos = to;
+            else 
+                *min_pos = glm::vec2(pos.x,pos.y) + cell_size*glm::vec2(mn_pos);
+        }
+        if (max_pos)
+        {
+            if (mx_pos == glm::ivec2(-1,-1))
+                *max_pos = from;
+            else if (mx_pos == glm::ivec2(w + 1,h + 1))
+                *max_pos = to;
+            else 
+                *max_pos = glm::vec2(pos.x,pos.y) + cell_size*glm::vec2(mx_pos);
+        }
+    }

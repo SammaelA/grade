@@ -420,7 +420,8 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
         return;
 
     glm::ivec3 voxel = pos_to_voxel(pos);
-    for (int i = 0; i <= voxel.y; i++)
+
+    for (int i = 0; voxel.y - i > -vox_y; i++)
     {
         int wd = MIN(i, max_r);
         if (wd == max_r && urand() < 0.5)
