@@ -30,7 +30,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
             float dX_dt = p.Xm * p.r * A / SQR(1 + A);
             int max_growth = round(dX_dt);
 
-            logerr("iteration %d max growth %d", iteration, max_growth);
+            //logerr("iteration %d max growth %d", iteration, max_growth);
             if (iteration >= params.max_iterations || max_growth <= 0)
                 t.status == TreeStatus::GROWN;
             else

@@ -57,25 +57,61 @@ LightVoxelsCube(source,
 {
 
 }
-LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes):
+LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes, int size_decrease, glm::vec2 min_max):
 LightVoxelsCube(source,
                 source->pos_to_voxel(pos),
-                vox_sizes(sizes,source->voxel_size))
+                vox_sizes(sizes,source->voxel_size*size_decrease),
+                size_decrease,
+                min_max)
 
 {
+    glm::ivec3 vsz = vox_sizes(sizes, source->voxel_size);
+    glm::ivec3 vox_pos = source->pos_to_voxel(pos);
+    if (true || vsz.x % size_decrease || vsz.y % size_decrease || vsz.z % size_decrease)
+    {
+        debug("warning: trying to get slice [cent: %d %d %d, size: %d %d %d] of volumetric occlusion \
+               with size_decrease = %d. It will make the real size smaller\n",vox_pos.x,vox_pos.y,vox_pos.z,
+               vsz.x,vsz.y,vsz.z, size_decrease);
+    }
     center = pos;
 }
-LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes):
-LightVoxelsCube(source->voxel_to_pos(vox_pos),vox_sizes,source->voxel_size, source->mip_levels, source->mip_decrease)
+LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 src_vox_sizes, int size_decrease, glm::vec2 min_max):
+LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source->voxel_size*size_decrease,
+                source->mip_levels, source->mip_decrease)
 {
-    for (int i = vox_pos.x-vox_sizes.x; i <= vox_pos.x+vox_sizes.x; i++)
+    glm::ivec3 vox_sizes = src_vox_sizes/size_decrease;
+    //logerr("creating voxels %d %d %d from %d %d %d",get_vox_sizes().x,get_vox_sizes().y,get_vox_sizes().z,
+    //source->get_vox_sizes().x,source->get_vox_sizes().y,source->get_vox_sizes().z);
+    for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
     {
-        for (int j = vox_pos.y-vox_sizes.y; j <= vox_pos.y+vox_sizes.y; j++)
+        for (int j = -vox_sizes.y; j <= +vox_sizes.y; j++)
         {
-            for (int k = vox_pos.z-vox_sizes.z; k <= vox_pos.z+vox_sizes.z; k++)
+            for (int k = -vox_sizes.z; k <= +vox_sizes.z; k++)
             {
-                glm::ivec3 vx = glm::ivec3(i,j,k) - vox_pos;
-                replace_occluder_voxel(vx,source->get_occlusion_voxel(vx + vox_pos));
+                float occ = 0;
+                int sm = 0;
+                for (int x0 = 0; x0 < size_decrease; x0++)
+                {
+                    for (int y0 = 0; y0 < size_decrease; y0++)
+                    {
+                        for (int z0 = 0; z0 < size_decrease; z0++)
+                        {
+                            int x = size_decrease*i + x0 + vox_pos.x;
+                            int y = size_decrease*j + y0 + vox_pos.y;
+                            int z = size_decrease*k + z0 + vox_pos.z;
+                            if (source->in_voxel_cube(x,y,z))
+                            {
+                                float f = source->get_occlusion_voxel_unsafe(x,y,z);
+                                if (f >= min_max.x && f < min_max.y)
+                                {
+                                    occ += f;
+                                    sm ++;
+                                }
+                            }
+                        }
+                    }
+                }
+                voxels[v_to_i(i,j,k)] = sm > 0 ? occ/sm : 0;
             }
         }
     }
@@ -309,6 +345,10 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusi
 inline bool LightVoxelsCube::in_voxel_cube(glm::ivec3 voxel)
 {
     return (abs(voxel.x) <= vox_x) && (abs(voxel.y) <= vox_y) && (abs(voxel.z) <= vox_z);
+}
+inline bool LightVoxelsCube::in_voxel_cube(int x, int y, int z)
+{
+    return (x >= -vox_x) && (x <= vox_x) && (y >= -vox_y) && (y <= vox_y) && (z >= -vox_z) && (z <= vox_z);
 }
 inline float LightVoxelsCube::fast_voxel_occlusion(glm::ivec3 voxel)
 {
@@ -694,6 +734,30 @@ void LightVoxelsCube::add_heightmap(Heightmap &h)
                 {
                     break;
                 }
+            }
+        }
+    }
+}
+void LightVoxelsCube::add_voxels_cube(LightVoxelsCube *cube)
+{
+    if (!cube)
+        return;
+    AABB box1 = get_bbox();
+    AABB box2 = cube->get_bbox();
+    glm::vec3 mn = max(box1.min_pos,box2.min_pos);
+    glm::vec3 mx = min(box1.max_pos,box2.max_pos);
+    if (mn.x >= mx.x || mn.y >= mx.y || mn.z >= mx.z)
+        return;
+    glm::ivec3 vox_mn = pos_to_voxel(mn);
+    glm::ivec3 vox_mx = pos_to_voxel(mx);
+    for (int i=vox_mn.x;i<=vox_mx.x;i++)
+    {
+        for (int j=vox_mn.y;j<=vox_mx.y;j++)
+        {
+            for (int k=vox_mn.z;k<=vox_mx.z;k++)
+            {
+                glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
+                voxels[v_to_i(i,j,k)] = MAX(cube->get_occlusion_trilinear(pos), voxels[v_to_i(i,j,k)]);
             }
         }
     }

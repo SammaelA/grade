@@ -331,23 +331,41 @@ struct Cell
     FINISHED
   };
   GrovePrototype prototype;
-  LightVoxelsCube *voxels = nullptr;
+  LightVoxelsCube *voxels_small = nullptr;
   int id = -1;
   CellStatus status;
   std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
+  std::vector<int> depends_from;
+  AABB influence_bbox;
   explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
 };
 
 LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
-                                     Heightmap &h)
+                                     AABB &influence_box)
 {
-  glm::vec3 max_tree_size = glm::vec3(0,0,0);
   float min_scale_factor = 1000;
   for (auto &p : prototype.possible_types)
   {
     auto &type = types[p.first];
-    max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
     min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
+  }
+  glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
+  glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
+  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
+  AABB &box = influence_box;
+  logerr("created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
+  box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z,prototype.pos.x - prototype.size.x,
+  prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
+  return v;
+}
+AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+                        Heightmap &h)
+{
+  glm::vec3 max_tree_size = glm::vec3(0,0,0);
+  for (auto &p : prototype.possible_types)
+  {
+    auto &type = types[p.first];
+    max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
   }
   
   float min_hmap = 0, max_hmap = 0;
@@ -359,18 +377,14 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   float y_sz = (max_y - min_y)/2;
   glm::vec3 voxel_sz = glm::vec3(prototype.size.x + max_tree_size.x, y_sz, prototype.size.y + max_tree_size.z);
   glm::vec3 voxel_center = glm::vec3(prototype.pos.x, y_center, prototype.pos.y);
-  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
-  AABB box = v->get_bbox();
-  logerr("created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
-  box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z,prototype.pos.x - prototype.size.x,
-  prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
-  return v;
+  return AABB(voxel_center - voxel_sz, voxel_center + voxel_sz);
+
 }
 void generate_grove()
 {
   ggd.types[0].generator_name = generator_name;
   int max_tc = ggd.trees_count;
-  glm::vec2 full_size = glm::vec2(150,150);
+  glm::vec2 full_size = glm::vec2(200,100);
   glm::vec2 start_pos = glm::vec2(-100, -100);
   glm::vec2 cell_size = glm::vec2(ggd.size.x,ggd.size.z);
   glm::vec2 mask_pos = start_pos + 0.5f*full_size;
@@ -391,7 +405,7 @@ void generate_grove()
       cells[id].id = id;
       //TODO: do we need a cell here?
       cells[id].status = (i % 2 && j % 2) ? Cell::CellStatus::WAITING : Cell::CellStatus::EMPTY;
-
+      //cells[id].status = Cell::CellStatus::WAITING;
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
         glm::vec2 center = start_pos + cell_size*glm::vec2(i+0.5,j+0.5);
@@ -399,10 +413,58 @@ void generate_grove()
         cells[id].prototype.size = cell_size;
         cells[id].prototype.possible_types = {std::pair<int, float>(0,1)};
         cells[id].prototype.trees_count = MAX(urand()*max_tc,1);
+        cells[id].influence_bbox = get_influence_AABB(cells[id].prototype, ggd.types, *data.heightmap);
         waiting_cells.push_back(id);
       }
     }
   }
+
+  for (int c_id : waiting_cells)
+  {
+    //find dependencies
+    int j0 = c_id % cells_y;
+    int i0 = c_id / cells_y;
+    bool search = true;
+    int d = 3;
+    int d_prev = 0;
+    while (search)
+    {
+      search = false;
+      auto func = [&](int i1, int j1)
+      {
+          int i = i0 + i1;
+          int j = j0 + j1;
+
+          logerr("test %d %d",i,j);
+          int ncid = i*cells_y + j;
+          if (i >= 0 && j >= 0 && i < cells_x && j <= cells_y && ncid > c_id)
+          {
+            auto &c = cells[ncid];
+            if (c.status == Cell::CellStatus::WAITING && c.influence_bbox.intersects(cells[c_id].influence_bbox))
+            {
+              cells[c_id].depends.push_back(ncid);
+              c.depends_from.push_back(c_id);
+              search = true;
+            }
+          }
+      };
+      for (int i1=-d;i1<=d;i1++)
+      {
+        for (int j1=-d;j1<=d;j1++)
+        {
+          if (i1 <= -d_prev || j1 <= -d_prev || i1 >= d_prev || j1 >= d_prev)
+            func(i1,j1);
+        }
+      }
+      d++;
+      d_prev = d;
+    }
+    debug("depends of cell %d: ",c_id);
+    for (auto &d : cells[c_id].depends)
+      debug("%d ",d);
+    debugnl();
+  }
+
   for (int c_id : waiting_cells)
   {
     auto &c = cells[c_id];
@@ -422,25 +484,67 @@ void generate_grove()
     prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
     prototype.trees_count = ggd.trees_count;
     prototype.possible_types = {std::pair<int, float>(0, 1)};
-    LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, *data.heightmap);
+    LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
     voxels->add_heightmap(*data.heightmap);
+    for (auto &dep_cid : c.depends_from)
+    {
+      voxels->add_voxels_cube(cells[dep_cid].voxels_small);
+    }
     //debug_voxels = voxels;
 
     grove_gen.prepare_patch(prototype, ggd.types, *data.heightmap, mask, *voxels, trees);
 
     packer.add_trees_to_grove(ggd, grove, trees, data.heightmap);
 
-    if (c.depends.size() > 0)
+    if (!c.depends.empty())
     {
-      //create small voxels array to use for generating in neighbour cells
+      c.status = Cell::CellStatus::BORDER;
+      c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(), 4,
+                                           glm::vec2(0,1e8));
       border_cells.push_back(c_id);
+    }
+    else
+    {
+      c.status = Cell::CellStatus::FINISHED;
     }
     if (debug_voxels) 
       delete debug_voxels;
     debug_voxels = voxels;
     //delete voxels;
     delete[] trees;
-    //
+    //TODO: can be done not every iteration
+
+    auto it = border_cells.begin();
+
+    while (it != border_cells.end())
+    {
+      bool have_deps = false;
+      for (int &dep : cells[*it].depends)
+      {
+        if (cells[dep].status == Cell::CellStatus::WAITING)
+        {
+          have_deps = true;
+          break;
+        }
+      }
+      if (!have_deps)
+      {
+        logerr("removed dependency %d",*it);
+        cells[*it].status = Cell::CellStatus::FINISHED;
+        delete cells[*it].voxels_small;
+        it = border_cells.erase(it);
+      }
+      else
+      {
+        it++;
+      }   
+    }
+  }
+  if (debug_voxels)
+  {
+    LightVoxelsCube *vox = new LightVoxelsCube(debug_voxels,glm::ivec3(0,0,0), debug_voxels->get_vox_sizes(), 4,
+                                               glm::vec2(0,1e8));
+    debug_voxels = vox;
   }
   /*
   for (int i = 0;i<2;i++)

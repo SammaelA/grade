@@ -16,7 +16,25 @@ struct AABB
     glm::vec3 max_pos;
     glm::vec3 min_pos;
 
-    AABB &operator=(AABB &aabb)
+    AABB()
+    {}
+    AABB(const AABB &aabb)
+    {
+        min_pos = aabb.min_pos;
+        max_pos = aabb.max_pos;
+    }
+    AABB(AABB &&aabb)
+    {
+        min_pos = aabb.min_pos;
+        max_pos = aabb.max_pos;
+    }
+    AABB &operator=(const AABB &aabb)
+    {
+        min_pos = aabb.min_pos;
+        max_pos = aabb.max_pos;
+        return *this;
+    }
+    AABB &operator=(AABB &&aabb)
     {
         min_pos = aabb.min_pos;
         max_pos = aabb.max_pos;

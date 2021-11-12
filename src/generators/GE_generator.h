@@ -43,7 +43,7 @@ struct GETreeParameters : public ParametersSet
 
     virtual glm::vec3 get_tree_max_size() override
     {
-        return ro*glm::vec3(Xm, 1.5*Xm, Xm);
+        return ro*glm::vec3(ro*Xm, 1.5*ro*Xm, ro*Xm);
     }
     virtual float get_scale_factor() override 
     {

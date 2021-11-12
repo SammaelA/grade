@@ -11,8 +11,10 @@ public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);
     LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size, int mip_levels = 1, int mip_decrease = 2);
     LightVoxelsCube(LightVoxelsCube *source);
-    LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes);
-    LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes);
+    LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes, int size_decrease = 1, 
+                    glm::vec2 min_max = glm::vec2(0,1e10));
+    LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes, int size_decrease,
+                    glm::vec2 min_max);
     ~LightVoxelsCube();
     void clear();
     void replace_occluder_voxel(glm::ivec3 voxel, float strength);
@@ -46,6 +48,7 @@ public:
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true);
     void add_heightmap(Heightmap &h);
+    void add_voxels_cube(LightVoxelsCube *cube);
     void calculte_precise_occlusion_from_bodies();
     void get_data(float **data, glm::ivec3 &size);
     AABB get_bbox();
@@ -96,6 +99,7 @@ private:
     glm::ivec3 pos_to_voxel(glm::vec3 pos);
     glm::vec3 voxel_to_pos(glm::ivec3 voxel);
     bool in_voxel_cube(glm::ivec3 voxel);
+    bool in_voxel_cube(int x, int y, int z);
     int v_to_i(glm::ivec3 voxel);
     int v_to_i(int x, int y, int z);
     int v_to_i_mip(glm::ivec3 voxel, int mip);

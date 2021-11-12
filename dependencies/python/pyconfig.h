@@ -1,6 +1,6 @@
 #if defined(__linux__)
 # if defined(__x86_64__) && defined(__LP64__)
-#  include <x86_64-linux-gnu/python3.5m/pyconfig.h>
+#  include <x86_64-linux-gnu/python3.6m/pyconfig.h>
 # elif defined(__x86_64__) && defined(__ILP32__)
 #  include <x86_64-linux-gnux32/python3.5m/pyconfig.h>
 # elif defined(__i386__)
