@@ -1,7 +1,7 @@
 #pragma once
 #include "clustering.h"
 #include "helpers.h"
-#include "../impostor.h"
+#include "graphics_utils/impostor.h"
 #include "impostor_similarity_params.h"
 
 struct BranchClusteringDataImpostor : public BranchClusteringData

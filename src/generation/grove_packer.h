@@ -7,9 +7,9 @@
 #include <unordered_set>
 #include "graphics_utils/volumetric_occlusion.h"
 #include "tinyEngine/model.h"
-#include "billboard_cloud.h"
+#include "graphics_utils/billboard_cloud.h"
 #include "core/tree.h"
-#include "grove.h"
+#include "core/grove.h"
 #include "generation/grove_generation_utils.h"
 #include "clustering/clustering.h"
 #include "save_utils/blk.h"

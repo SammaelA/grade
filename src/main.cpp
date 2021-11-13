@@ -9,10 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include "tinyEngine/camera.h"
-#include "visualizer.h"
+#include "graphics_utils/modeling.h"
 #include "graphics_utils/texture_manager.h"
 #include "common_utils/utility.h"
-#include "grove.h"
+#include "core/grove.h"
+#include "render/grove_renderer.h"
 #include "save_utils/config.h"
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
@@ -39,6 +40,8 @@
 #include "tree_generators/simple_generator.h"
 #include "tree_generators/proctree.h"
 #include "tree_generators/generated_tree.h"
+#include "render/billboard_cloud_renderer.h"
+#include "render/visualizer.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler

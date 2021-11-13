@@ -5,7 +5,7 @@
 #include "tinyEngine/model.h"
 #include "tinyEngine/texture.h"
 #include "tinyEngine/camera.h"
-#include "visualizer.h"
+#include "graphics_utils/modeling.h"
 
 #include <cstring>
 #include <fstream>

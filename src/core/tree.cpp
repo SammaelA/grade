@@ -1,6 +1,6 @@
 #include "core/tree.h"
 #include "graphics_utils/texture_manager.h"
-#include "billboard_cloud.h"
+#include "graphics_utils/billboard_cloud.h"
 #include "common_utils/spline.h"
 
 void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)

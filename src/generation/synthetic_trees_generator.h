@@ -3,14 +3,14 @@
 #include "common_utils/utility.h"
 #include "clustering/clustering.h"
 #include "graphics_utils/texture_manager.h"
-#include "visualizer.h"
+#include "graphics_utils/modeling.h"
 #include "common_utils/distribution.h"
 #include <math.h>
 #include <algorithm>
 #include "core/body.h"
 #include <chrono>
 #include "save_utils/saver.h"
-#include "impostor.h"
+#include "graphics_utils/impostor.h"
 #include "graphics_utils/terrain.h"
 #include "common_utils/field_2d.h"
 #include "generation/grove_generation_utils.h"

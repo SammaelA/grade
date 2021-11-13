@@ -1,7 +1,8 @@
 #pragma once
 #include <functional>
 #include <chrono>
-#include "grove.h"
+#include "core/grove.h"
+#include "render/grove_renderer.h"
 #include "tinyEngine/camera.h"
 #include "core/tree.h"
 #include "common_utils/sun.h"

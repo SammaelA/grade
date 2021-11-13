@@ -1,10 +1,13 @@
-#include "grove.h"
+#include "grove_renderer.h"
 #include "core/tree.h"
-#include "visualizer.h"
+#include "graphics_utils/modeling.h"
 #include "graphics_utils/texture_manager.h"
-#include "billboard_cloud.h"
-#include "impostor.h"
+#include "graphics_utils/billboard_cloud.h"
+#include "graphics_utils/impostor.h"
 #include "tinyEngine/camera.h"
+#include "render/billboard_cloud_renderer.h"
+#include "render/impostor_renderer.h"
+#include "render/visualizer.h"
 #include <chrono>
 
 GroveRenderer::GroveRenderer(): 

@@ -3,7 +3,7 @@
 #include "config.h"
 #include <malloc.h>
 #include "core/tree.h"
-#include "grove.h"
+#include "core/grove.h"
 #include "generation/generation_settings.h"
 extern "C" int parse_file(char *file);
 

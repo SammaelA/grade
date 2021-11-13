@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
 #include "common_utils/parameter.h"
-#include "grove.h"
+#include "core/grove.h"
 #include "save_utils/blk.h"
 
 DEFINE_ENUM_WITH_STRING_CONVERSIONS(SelectionType,(BruteForce)(SimulatedAnnealing)(PolycentricSimulatedAnnealing))
