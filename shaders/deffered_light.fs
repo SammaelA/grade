@@ -105,7 +105,7 @@ poissonDisk[63] = vec2(-0.178564, -0.596057);
     for (int i = 0;i< samples;i++)
     {
       vec2 cD_tD = texture(shadowMap, projCoords.xy + delta*sts_inv*poissonDisk[(start + 13*i) % 64]).zw; 
-      float trans_mult = cD_tD.y > 0.4 ? (2*cD_tD.y - 1) : 0;
+      float trans_mult = sqrt(sqrt(cD_tD.y));
       float shadow = currentDepth - bias > cD_tD.x ? trans_mult : 0.0;
       res += shadow/samples;
     }
@@ -142,6 +142,7 @@ void main(void)
         vec3 view_pos = texture(viewPosTex,ex_Tex).xyz;
         float ao = texture(aoTex,ex_Tex).x;
         fragColor = vec4(color_none.xyz/color_none.a,1);
+        fragColor = vec4(pow(color_none.xyz,vec3(2.2)),1);
         float shadow = 0;
         if (need_shadow)
         {
@@ -152,18 +153,27 @@ void main(void)
             if (type == 0)
                 samples = 16;
             else 
-                bias = 3*1e-4;
+                bias = 3*1e-6;
             vec4 FragPosLightSpace = shadow_mat * vec4(world_pos,1);
-            shadow = need_shadow ? ShadowCalculation(FragPosLightSpace, world_pos, bias, samples) : 0;
+            shadow = ShadowCalculation(FragPosLightSpace, world_pos, bias, samples);
         }
         vec3 n = normalize(normal_type.xyz);
         vec3 ads = ambient_diffuse_specular;
-        vec3 dir = normalize(world_pos - camera_pos);
         n = dot(n,dir_to_sun) > 0 ? n : -n;
+        float lambertian = max(dot(dir_to_sun, n), 0.0);
+        float specular = 0.0;
+        float shininess = 16.0;
+        if (lambertian > 0.0) 
+        {
+          vec3 viewDir = normalize(world_pos - camera_pos);
+          vec3 halfDir = normalize(dir_to_sun + viewDir);
+          float specAngle = max(dot(halfDir, n), 0.0);
+          specular = pow(specAngle, shininess);
+        }
         vec3 h = reflect(-dir_to_sun,n);
-        vec3 color = vec3(1,1,1)*ads.x + (1-shadow)*light_color*(ads.y*clamp(dot(n,dir_to_sun),0,1));
+        vec3 color = vec3(1,1,1)*ads.x + (1-shadow)*(light_color*ads.y*lambertian + vec3(1,1,1)*ads.z*specular);
         fragColor.xyz *= color;
-        fragColor.xyz = 1.2*pow(fragColor.xyz,vec3(1.0));
+        fragColor.xyz = pow(fragColor.xyz,vec3(1.0/2.2));
         fragColor.xyz = fragColor.xyz*color_none.a + cube_color*(1 - color_none.a);
       }
     }

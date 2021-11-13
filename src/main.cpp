@@ -387,7 +387,7 @@ void generate_grove()
 {
   ggd.types[0].generator_name = generator_name;
   int max_tc = ggd.trees_count;
-  glm::vec2 full_size = glm::vec2(200,200);
+  glm::vec2 full_size = glm::vec2(100,100);
   glm::vec2 start_pos = glm::vec2(-100, -100);
   glm::vec2 cell_size = glm::vec2(ggd.size.x,ggd.size.z);
   glm::vec2 mask_pos = start_pos + 0.5f*full_size;
@@ -646,14 +646,14 @@ int full_initialization()
   appContext.camera.pos = glm::vec3(-300, 70, 0);
   appContext.light.dir = glm::normalize(glm::vec3(-0.2, 0.5, -0));
   appContext.light.color = glm::vec3(0.99, 0.9, 0.7);
-  appContext.light.intensity = 1;
-  appContext.light.ambient_q = 0.5;
-  appContext.light.diffuse_q = 0.4;
+  appContext.light.intensity = 2;
+  appContext.light.ambient_q = 0.1;
+  appContext.light.diffuse_q = 0.8;
   appContext.light.specular_q = 0.1;
   appContext.light.has_shadow_map = true;
   appContext.light.shadow_map_size = glm::vec2(4096, 4096);
   shadowMap.create(4096, 4096);
-  defferedTarget.create(2 * 1920, 2 * 1080);
+  defferedTarget.create(1920, 1080);
   defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 
   data.hbaoRenderer = new HBAORenderer();
@@ -979,7 +979,7 @@ uniform mat4 shadow_mat;*/
   data.defferedLight->get_shader().uniform("dir_to_sun", ctx.light.dir);
   data.defferedLight->get_shader().uniform("camera_pos", ctx.camera.pos);
   data.defferedLight->get_shader().uniform("ambient_diffuse_specular", ads);
-  data.defferedLight->get_shader().uniform("light_color", ctx.light.color);
+  data.defferedLight->get_shader().uniform("light_color", ctx.light.color*ctx.light.intensity);
   data.defferedLight->get_shader().uniform("need_shadow", shadowMap.getTex() != 0);
   data.defferedLight->get_shader().uniform("shadow_mat", shadowMap.get_transform());
   data.defferedLight->get_shader().uniform("sts_inv", 1.0f / ctx.light.shadow_map_size);

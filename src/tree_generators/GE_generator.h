@@ -35,11 +35,11 @@ struct GETreeParameters : public ParametersSet
     float branching_angle_max = PI/3;
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
-    float leaves_cnt = 0.0;
+    float leaves_cnt = 1.0;
     int max_joints_in_branch = 16;
-    float resource_mult = 5.0;
+    float resource_mult = 7.5;
     float res_q = 1.0;
-    float leaves_max_r = 2;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
+    float leaves_max_r = 5;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
 
     virtual glm::vec3 get_tree_max_size() override
     {
