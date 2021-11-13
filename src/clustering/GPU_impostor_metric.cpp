@@ -1,7 +1,7 @@
 #include "GPU_impostor_metric.h"
 #include "dist_data_table.h"
 #include "../billboard_cloud.h"
-#include "../texture_manager.h"
+#include "graphics_utils/texture_manager.h"
 #include "../tinyEngine/TinyEngine.h"
 
 IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_data(Block &settings, 

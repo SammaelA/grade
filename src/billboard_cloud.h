@@ -1,14 +1,14 @@
 #pragma once
-#include "texture_atlas.h"
-#include "tinyEngine/utility/shader.h"
-#include "tinyEngine/utility/model.h"
-#include "tinyEngine/utility/instance.h"
-#include "tree.h"
+#include "graphics_utils/texture_atlas.h"
+#include "tinyEngine/shader.h"
+#include "tinyEngine/model.h"
+#include "tinyEngine/instance.h"
+#include "core/tree.h"
 #include "clustering/clustering.h"
-#include "billboard_cloud_data.h"
+#include "core/billboard_cloud_data.h"
 #include <list>
 #include <vector>
-#include "tinyEngine/utility/postfx.h"
+#include "tinyEngine/postfx.h"
 class Visualizer;
 class BillboardCloudRaw : Countable
 {

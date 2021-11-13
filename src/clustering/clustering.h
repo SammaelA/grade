@@ -1,11 +1,11 @@
 #pragma once
-#include "../tree.h"
+#include "core/tree.h"
 #include "../visualizer.h"
-#include "../volumetric_occlusion.h"
+#include "graphics_utils/volumetric_occlusion.h"
 #include <vector>
 #include <map>
-#include "../tinyEngine/save_utils/blk.h"
-#include "../hash.h"
+#include "save_utils/blk.h"
+#include "common_utils/hash.h"
 #include "default_clustering_params.h"
 
 struct BaseBranchClusteringData

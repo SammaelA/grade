@@ -20,16 +20,16 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include "utility/texture.h"              //Utility Classes
-#include "utility/shader.h"
-#include "utility/model.h"
-#include "utility/instance.h"
-#include "utility/target.h"
+#include "texture.h"              //Utility Classes
+#include "shader.h"
+#include "model.h"
+#include "instance.h"
+#include "target.h"
 
 #include "view.h"
 #include "event.h"
 #include "audio.h"
-#include "utility.h"
+#include "common_utils/utility.h"
 #include <chrono>
 
 /* TINY ENGINE */

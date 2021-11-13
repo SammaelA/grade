@@ -1,6 +1,6 @@
 #include "visualizer.h"
-#include "tinyEngine/utility.h"
-#include "texture_manager.h"
+#include "common_utils/utility.h"
+#include "graphics_utils/texture_manager.h"
 
 #define PI 3.14159265f
 

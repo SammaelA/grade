@@ -1,11 +1,11 @@
 #include "clustering_debug_utils.h"
-#include "../tinyEngine/utility/postfx.h"
-#include "../texture_manager.h"
-#include "../grove_packer.h"
+#include "../tinyEngine/postfx.h"
+#include "graphics_utils/texture_manager.h"
+#include "generation/grove_packer.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>
-#include "../tinyEngine/save_utils/csv.h"
+#include "save_utils/csv.h"
 #include "clustering_debug_status.h"
 #include "hasing.h"
 

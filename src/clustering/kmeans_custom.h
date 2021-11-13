@@ -1,5 +1,5 @@
 #pragma once
-#include "../hash.h"
+#include "common_utils/hash.h"
 #include "clustering.h"
 #include "hasing.h"
 #include "impostor_metric.h"

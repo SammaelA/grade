@@ -1,5 +1,5 @@
 #pragma once
-#include "../tinyEngine/save_utils/blk.h"
+#include "save_utils/blk.h"
 #include "default_clustering_params.h"
 
 struct ImpostorSimilarityParams

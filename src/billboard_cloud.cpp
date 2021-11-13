@@ -2,12 +2,12 @@
 #include <algorithm>
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
-#include "tree.h"
-#include "tinyEngine/utility/shader.h"
-#include "tinyEngine/utility.h"
+#include "core/tree.h"
+#include "tinyEngine/shader.h"
+#include "common_utils/utility.h"
 #include "visualizer.h"
-#include "texture_manager.h"
-#include "distribution.h"
+#include "graphics_utils/texture_manager.h"
+#include "common_utils/distribution.h"
 
 using namespace glm;
 #define TEX_ATLAS_LAYERS 4

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../tinyEngine/utility/python_interaction.h"
+#include "../common_utils/python_interaction.h"
 #include "hasing.h"
 
 class DeepHashBasedClusteringHelper : public HashBasedClusteringHelper

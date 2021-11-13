@@ -1,7 +1,7 @@
 #pragma once
 #include "clustering.h"
 #include "helpers.h"
-#include "../hash.h"
+#include "common_utils/hash.h"
 
 struct BranchHash : public BranchClusteringData
 {

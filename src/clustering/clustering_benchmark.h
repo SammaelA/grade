@@ -1,7 +1,7 @@
 #pragma once
-#include "../grove_packer.h"
-#include "../terrain.h"
-#include "../generators/abstract_generator.h"
+#include "generation/grove_packer.h"
+#include "graphics_utils/terrain.h"
+#include "tree_generators/abstract_generator.h"
 
 class ClusteringBenchmark
 {

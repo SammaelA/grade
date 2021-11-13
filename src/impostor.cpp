@@ -1,5 +1,5 @@
 #include "impostor.h"
-#include "texture_manager.h"
+#include "graphics_utils/texture_manager.h"
 
 using glm::vec3;
 using glm::vec4;

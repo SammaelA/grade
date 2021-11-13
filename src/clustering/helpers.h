@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../tree.h"
-#include "../volumetric_occlusion.h"
+#include "core/tree.h"
+#include "graphics_utils/volumetric_occlusion.h"
 #include <vector>
 #include <map>
-#include "../tinyEngine/save_utils/blk.h"
+#include "save_utils/blk.h"
 #include "../billboard_cloud.h"
 
 glm::vec3 canonical_bbox();

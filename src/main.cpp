@@ -2,43 +2,43 @@
 #define GLEW_EXPERIMENTAL
 #include "tinyEngine/TinyEngine.h"
 #include "glm/trigonometric.hpp"
-#include "tinyEngine/helpers/image.h"
-#include "tinyEngine/helpers/color.h"
-#include "tinyEngine/helpers/helper.h"
+#include "tinyEngine/image.h"
+#include "tinyEngine/color.h"
+#include "tinyEngine/helper.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include "tinyEngine/camera.h"
 #include "visualizer.h"
-#include "texture_manager.h"
-#include "tinyEngine/utility.h"
+#include "graphics_utils/texture_manager.h"
+#include "common_utils/utility.h"
 #include "grove.h"
-#include "tinyEngine/save_utils/config.h"
+#include "save_utils/config.h"
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
-#include "terrain.h"
-#include "tinyEngine/shadow.h"
-#include "grove_packer.h"
+#include "graphics_utils/terrain.h"
+#include "render/shadow.h"
+#include "generation/grove_packer.h"
 #include "app.h"
-#include "grass_renderer.h"
-#include "tinyEngine/utility/deffered_target.h"
-#include "tinyEngine/ambient_occlusion.h"
-#include "tinyEngine/utility/cubemap.h"
-#include "tinyEngine/utility/python_interaction.h"
-#include "tinyEngine/gltf_utils/general_gltf_writer.h"
+#include "render/grass_renderer.h"
+#include "tinyEngine/deffered_target.h"
+#include "render/ambient_occlusion.h"
+#include "tinyEngine/cubemap.h"
+#include "common_utils/python_interaction.h"
+#include "gltf_utils/general_gltf_writer.h"
 #include <thread>
-#include "parameter_selection.h"
-#include "tinyEngine/save_utils/blk.h"
+#include "generation/parameter_selection.h"
+#include "save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
-#include "load_tree_structure.h"
+#include "tree_generators/load_tree_structure.h"
 #include "clustering/clustering_debug_status.h"
-#include "grove_generator.h"
-#include "generators/GE_generator.h"
-#include "generators/python_tree_gen.h"
-#include "generators/weber_penn_parameters.h"
-#include "generators/simple_generator.h"
-#include "generators/proctree.h"
-#include "generators/generated_tree.h"
+#include "generation/grove_generator.h"
+#include "tree_generators/GE_generator.h"
+#include "tree_generators/python_tree_gen.h"
+#include "tree_generators/weber_penn_parameters.h"
+#include "tree_generators/simple_generator.h"
+#include "tree_generators/proctree.h"
+#include "tree_generators/generated_tree.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -384,7 +384,7 @@ void generate_grove()
 {
   ggd.types[0].generator_name = generator_name;
   int max_tc = ggd.trees_count;
-  glm::vec2 full_size = glm::vec2(200,100);
+  glm::vec2 full_size = glm::vec2(200,200);
   glm::vec2 start_pos = glm::vec2(-100, -100);
   glm::vec2 cell_size = glm::vec2(ggd.size.x,ggd.size.z);
   glm::vec2 mask_pos = start_pos + 0.5f*full_size;

@@ -1,7 +1,7 @@
 #include "deep_hashing.h"
 #include "impostor_similarity_params.h"
 #include "../impostor.h"
-#include "../texture_manager.h"
+#include "graphics_utils/texture_manager.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>

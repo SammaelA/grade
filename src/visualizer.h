@@ -1,12 +1,13 @@
 #pragma once
-#include "tree.h"
+#include "core/tree.h"
+#include "core/scene_models.h"
 #include "grove.h"
-#include "body.h"
-#include "tinyEngine/utility/model.h"
-#include "tinyEngine/utility/shader.h"
-#include "tinyEngine/utility/texture.h"
+#include "core/body.h"
+#include "tinyEngine/model.h"
+#include "tinyEngine/shader.h"
+#include "tinyEngine/texture.h"
 #include <vector>
-#include "volumetric_occlusion.h"
+#include "graphics_utils/volumetric_occlusion.h"
 class Visualizer
 {
 public:

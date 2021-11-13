@@ -1,15 +1,17 @@
 #pragma once
-#include "tinyEngine/utility.h"
-#include "tinyEngine/utility/model.h"
-#include "tinyEngine/utility/instance.h"
-#include "tinyEngine/utility/shader.h"
-#include "tinyEngine/utility.h"
-#include "billboard_cloud_data.h"
-#include "timestamp.h"
-#include "rendering_SSBO_structs.h"
+#include "common_utils/utility.h"
+#include "tinyEngine/model.h"
+#include "tinyEngine/instance.h"
+#include "tinyEngine/shader.h"
+#include "common_utils/utility.h"
+#include "core/billboard_cloud_data.h"
+#include "common_utils/timestamp.h"
+#include "render/rendering_SSBO_structs.h"
 #include "tinyEngine/camera.h"
 #include "limits.h"
-#include "tinyEngine/utility/bit_vector.h"
+#include "common_utils/bit_vector.h"
+#include "core/limits.h"
+
 class ImpostorRenderer;
 class BillboardCloudRenderer;
 class GroveGenerationData;

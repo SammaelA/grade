@@ -1,7 +1,7 @@
 #include "impostor_metric.h"
 #include "dist_data_table.h"
 #include "../billboard_cloud.h"
-#include "../texture_manager.h"
+#include "graphics_utils/texture_manager.h"
 #include "impostor_similarity_params.h"
 
 ImpostorSimilarityParams isimParams;

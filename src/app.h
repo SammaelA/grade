@@ -3,8 +3,8 @@
 #include <chrono>
 #include "grove.h"
 #include "tinyEngine/camera.h"
-#include "tree.h"
-#include "sun.h"
+#include "core/tree.h"
+#include "common_utils/sun.h"
 #include "tinyEngine/event.h"
 class FpsCounter
 {
