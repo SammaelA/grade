@@ -489,6 +489,10 @@ void generate_grove()
     prototype.possible_types = {std::pair<int, float>(0, 1)};
     LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
     voxels->add_heightmap(*data.heightmap);
+    for (int i = 0; i < ggd.obstacles.size(); i++)
+    {
+      voxels->add_body(ggd.obstacles[i],10000);
+    }
     for (auto &dep_cid : c.depends_from)
     {
       voxels->add_voxels_cube(cells[dep_cid].voxels_small);
