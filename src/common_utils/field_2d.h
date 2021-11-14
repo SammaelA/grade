@@ -20,6 +20,8 @@ public:
                                glm::vec2 *min_pos = nullptr,
                                glm::vec2 *max_pos = nullptr);//real_min >= min_v, real_max <= max_v 
     void print();
+    glm::vec3 get_pos() {return pos;}
+    glm::vec2 get_size() {return size;}
 protected:
     float get(int x, int y);
     glm::vec2 get_grad(int x, int y);
