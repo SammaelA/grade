@@ -1,0 +1,12 @@
+{
+    bush
+    {
+        wood_tex_name:s = "wood2"
+        leaf_tex_name:s = "leaf2"
+    }
+    simple_tree
+    {
+        wood_tex_name:s = "wood2"
+        leaf_tex_name:s = "leaf2"
+    }
+}

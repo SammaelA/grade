@@ -6,6 +6,7 @@
 #include "ambient_occlusion.h"
 #include "tinyEngine/cubemap.h"
 #include "tinyEngine/deffered_target.h"
+#include "terrain_renderer.h"
 
 class WorldRenderer
 {

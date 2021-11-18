@@ -45,7 +45,7 @@ void Cubemap::render(glm::mat4 &projection, glm::mat4 &view, Camera &camera)
     view = glm::mat4(glm::mat3(view));
     glDepthMask(GL_FALSE);
     cube_shader.use();
-    cube_shader.texture("skybox",cube);
+    cube_shader.textureCube("skybox",cube);
     cube_shader.uniform("projection",projection);
     cube_shader.uniform("view",view);
     glBindVertexArray(cube_model.vao);

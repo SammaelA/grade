@@ -90,6 +90,8 @@ float f_perlin(float x, float y)
     Field_2d(pos, ceil(size.x/cell_size), ceil(size.y/cell_size))
     {
         this->cell_size = cell_size;
+        this->pos = pos;
+        this->size = size;
     }
     Field_2d::Field_2d(glm::vec3 _pos, int _w, int _h)
     {

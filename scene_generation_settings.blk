@@ -1,0 +1,9 @@
+{
+    types
+    {
+        bush:tag
+        simple_tree:tag
+    }
+    scene_size:p2 = 250, 250
+    max_trees_per_patch:i = 4
+}

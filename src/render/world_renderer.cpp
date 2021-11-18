@@ -49,7 +49,7 @@ void WorldRenderer::init(int h, int w, Block &render_settings)
     void WorldRenderer::set_heightmap(Heightmap &heightmap)
     {
         bool need_simple_grass = true;
-        glm::vec2 precision = glm::vec2(20, 20);
+        glm::vec2 precision = glm::vec2(10, 10);
         remove_heightmap();
         terrainRenderer = new TerrainRenderer(heightmap, heightmap.get_pos(), heightmap.get_size(), precision);
 
