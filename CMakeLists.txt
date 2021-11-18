@@ -15,6 +15,18 @@ message(SDL2_MIXER_LIBRARY=${SDL2_MIXER_LIBRARY})
 find_library(PY_CLUSERING_LIBRARY libpyclustering.so dependencies/pyclustering/ccore)
 message(PY_CLUSERING_LIBRARY=${PY_CLUSERING_LIBRARY})
 
+find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
+message(HYDRA_LIB1=${HYDRA_LIB1})
+
+find_library(HYDRA_LIB2 libhydra_api.a dependencies/Hydra/HydraAPI/bin)
+message(HYDRA_LIB2=${HYDRA_LIB2})
+
+find_library(HYDRA_LIB3 libies_parser.a dependencies/Hydra/HydraAPI/bin)
+message(HYDRA_LIB3=${HYDRA_LIB3})
+
+find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
+message(HYDRA_LIB4=${HYDRA_LIB4})
+
 find_package(Boost REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
@@ -43,5 +55,15 @@ add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC})
 target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
                         ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} ${PY_CLUSERING_LIBRARY} 
                         boost_serialization boost_system boost_filesystem
-                        ${PYTHON_LIBRARIES})
+                        ${PYTHON_LIBRARIES} 
+                        ${HYDRA_LIB1}
+                        ${HYDRA_LIB2}
+                        ${HYDRA_LIB3}
+                        ${HYDRA_LIB4}
+                        freeimage
+                        glfw
+                        dl
+                        rt
+                        stdc++fs
+                        OpenCL)
 

@@ -44,7 +44,7 @@
 #include "render/visualizer.h"
 #include "render/world_renderer.h"
 #include "generation/scene_generator.h"
-#include "save_utils/hydra_scene_exporter.h"
+#include "hydra_utils/hydra_scene_exporter.h"
 
 namespace parser
 {
