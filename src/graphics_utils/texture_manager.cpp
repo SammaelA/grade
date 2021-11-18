@@ -152,7 +152,7 @@ TextureManager::TextureManager(std::string base_path)
             t.origin = paths[i];
             textures.emplace(names[i],t);
             mipmap(t,ptr->w,ptr->h,9);
-            delete ptr;
+            SDL_FreeSurface(ptr);
         }
         catch(const std::exception& e)
         {

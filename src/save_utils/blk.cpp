@@ -816,4 +816,6 @@ void Block::set_value(const std::string &name, const Value &value)
     int id = get_id(name);
     if (id >= 0)
         values[id] = value;
+    else 
+        add_value(name,value);
 }

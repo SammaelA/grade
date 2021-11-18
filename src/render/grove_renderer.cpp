@@ -566,6 +566,11 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     for (int id : branch.branches)
     {
         int type_slice = 0;//unused ggd->types[type].wood_id;
+        if (id < 0)
+        {
+            logerr("invalid id = %d", id);
+            continue;//invalid id - TODO fix it
+        }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
             v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(type_slice, 0));
@@ -592,6 +597,11 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         int type_slice = 0;//unused ggd->types[type].leaf_id;
         for (int id : branch.branches)
         {
+            if (id < 0)
+            {
+                logerr("invalid id = %d", id);
+                continue;//invalid id - TODO fix it
+            }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
                 v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(type_slice, 0));

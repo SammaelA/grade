@@ -85,8 +85,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
             glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*sz, branches_sizes, GL_STATIC_DRAW);
         }
 
-        delete slices_info;
-        delete branches_sizes;
+        delete[] slices_info;
+        delete[] branches_sizes;
 
     pb_buffers.finish();
         
@@ -214,6 +214,6 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
     }*/
     pb_finalize.finish();
     
-    delete results;
+    delete[] results;
     return data;
 }

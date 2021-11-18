@@ -166,8 +166,8 @@ void SceneGenerator::generate_grove()
       int id = i*cells_y + j;
       cells[id].id = id;
       //TODO: do we need a cell here?
-      cells[id].status = (i % 2 && j % 2) ? Cell::CellStatus::WAITING : Cell::CellStatus::EMPTY;
-      //cells[id].status = Cell::CellStatus::WAITING;
+      //cells[id].status = (i % 2 && j % 2) ? Cell::CellStatus::WAITING : Cell::CellStatus::EMPTY;
+      cells[id].status = Cell::CellStatus::WAITING;
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
         glm::vec2 center = start_pos + cell_size*glm::vec2(i+0.5,j+0.5);
@@ -197,10 +197,10 @@ void SceneGenerator::generate_grove()
           int i = i0 + i1;
           int j = j0 + j1;
 
-          logerr("test %d %d",i,j);
           int ncid = i*cells_y + j;
-          if (i >= 0 && j >= 0 && i < cells_x && j <= cells_y && ncid > c_id)
+          if (i >= 0 && j >= 0 && i < cells_x && j < cells_y && ncid > c_id)
           {
+            logerr("test %d %d",i,j);
             auto &c = cells[ncid];
             if (c.status == Cell::CellStatus::WAITING && c.influence_bbox.intersects(cells[c_id].influence_bbox))
             {
