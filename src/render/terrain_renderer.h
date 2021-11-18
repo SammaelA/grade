@@ -1,6 +1,7 @@
 #pragma once
 #include "graphics_utils/terrain.h"
-
+#include "tinyEngine/model.h"
+#include "tinyEngine/shader.h"
 class TerrainRenderer
 {
 public:

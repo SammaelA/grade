@@ -2,6 +2,7 @@
 #include "core/tree.h"
 #include "graphics_utils/terrain.h"
 #include "generation/grove_generation_utils.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 float scl = 1;
 glm::vec3 rnd_dir()

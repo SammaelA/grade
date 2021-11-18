@@ -4,8 +4,10 @@
 #include "core/body.h"
 #include "graphics_utils/terrain.h"
 #include "common_utils/distribution.h"
+#include "tinyEngine/model.h"
+#include "tinyEngine/shader.h"
 #include <vector>
-struct LightVoxelsCube : Countable
+struct LightVoxelsCube : public Countable
 {
 public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);

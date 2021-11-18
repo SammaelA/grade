@@ -55,18 +55,15 @@ void sig_handler(int signo)
   destroyedBySig = true;
 }
 #endif
+};
 
-
-
-void terminateGL();
-
-int main()
+bool HydraSceneExporter::export_internal1(std::string directory, Scene &scene, Block &export_settings)
 {
-  hrInfoCallback(&InfoCallBack);
+  hrInfoCallback(&h_inter::InfoCallBack);
 
   hrErrorCallerPlace(L"main");  // for debug needs only
 
-  atexit(&destroy);                           // if application will terminated you have to call hrSceneLibraryClose to free all connections with hydra.exe
+  atexit(&h_inter::destroy);                           // if application will terminated you have to call hrSceneLibraryClose to free all connections with hydra.exe
 #if defined WIN32
   SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
   wchar_t NPath[512];
@@ -88,7 +85,7 @@ int main()
   
   {
     struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = sig_handler;
+    sigIntHandler.sa_handler = h_inter::sig_handler;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = SA_RESETHAND;
     sigaction(SIGINT,  &sigIntHandler, NULL);
@@ -105,8 +102,9 @@ int main()
   
   try
   {
+    export_internal2(directory, scene, export_settings);
     //demo_01_plane_box();
-    ::demo_02_load_obj();
+    //::demo_02_load_obj();
     //demo_03_caustics();
     //demo_04_instancing();
   }
@@ -127,9 +125,9 @@ int main()
   
   return 0;
 }
-};
+
 bool HydraSceneExporter::export_scene(std::string directory, Scene &scene, Block &export_settings)
 {
-    h_inter::main();
+    export_internal1(directory, scene, export_settings);
     return true;
 }

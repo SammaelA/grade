@@ -1,6 +1,5 @@
 #pragma once
-#include "graphics_utils/terrain.h"
-
+#include "terrain_renderer.h"
 class GrassRenderer
 {
 public:
