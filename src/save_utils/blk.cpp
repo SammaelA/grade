@@ -6,7 +6,6 @@
 #include <boost/algorithm/string.hpp>
 
 int cur_line = 0;
-
 bool is_empty(const char c)
 {
     if (c == '\n')
@@ -51,25 +50,25 @@ std::string next_token(const char *data, int &pos)
     return res;
 }
 
-std::vector<std::pair<ValueType, std::string>> descs = {
-    {EMPTY, "em"},
-    {INT, "i"},
-    {DOUBLE, "r"},
-    {VEC2, "p2"},
-    {VEC3, "p3"},
-    {VEC4, "p4"},
-    {STRING, "s"},
-    {ARRAY, "arr"}};
+std::vector<std::pair<Block::ValueType, std::string>> descs = {
+    {Block::ValueType::EMPTY, "em"},
+    {Block::ValueType::INT, "i"},
+    {Block::ValueType::DOUBLE, "r"},
+    {Block::ValueType::VEC2, "p2"},
+    {Block::ValueType::VEC3, "p3"},
+    {Block::ValueType::VEC4, "p4"},
+    {Block::ValueType::STRING, "s"},
+    {Block::ValueType::ARRAY, "arr"}};
 bool load_block(const char *data, int &cur_pos, Block &b);
-bool read_array(const char *data, int &cur_pos, DataArray &a);
-bool read_value(const char *data, int &cur_pos, Value &v)
+bool read_array(const char *data, int &cur_pos, Block::DataArray &a);
+bool read_value(const char *data, int &cur_pos, Block::Value &v)
 {
     std::string token = next_token(data, cur_pos);
     //:<type> = <description> or { <block> }
     if (token == "{")
     {
         v.bl = new Block();
-        v.type = ValueType::BLOCK;
+        v.type = Block::ValueType::BLOCK;
         return load_block(data, cur_pos, *(v.bl));
     }
     else if (token == ":")
@@ -77,37 +76,37 @@ bool read_value(const char *data, int &cur_pos, Value &v)
         std::string type = next_token(data, cur_pos);
         if (type == "tag")
         {
-            v.type = ValueType::EMPTY;
+            v.type = Block::ValueType::EMPTY;
             return true;
         }
         std::string eq = next_token(data, cur_pos);
         if (eq != "=")
         {
             logerr("line %d expected = after value type", cur_line);
-            v.type = ValueType::EMPTY;
+            v.type = Block::ValueType::EMPTY;
             return false;
         }
         if (type == "b")
         {
             std::string val = next_token(data, cur_pos);
-            v.type = ValueType::BOOL;
+            v.type = Block::ValueType::BOOL;
             v.b = boost::iequals(val, "true");
         }
         else if (type == "i")
         {
             std::string val = next_token(data, cur_pos);
-            v.type = ValueType::INT;
+            v.type = Block::ValueType::INT;
             v.i = std::stol(val);
         }
         else if (type == "r")
         {
             std::string val = next_token(data, cur_pos);
-            v.type = ValueType::DOUBLE;
+            v.type = Block::ValueType::DOUBLE;
             v.d = std::stod(val);
         }
         else if (type == "p2")
         {
-            v.type = ValueType::VEC2;
+            v.type = Block::ValueType::VEC2;
             std::string val;
             bool ok = true;
             v.v2 = glm::vec2(0, 0);
@@ -126,13 +125,13 @@ bool read_value(const char *data, int &cur_pos, Value &v)
             if (!ok)
             {
                 logerr("line %d wrong description of vector", cur_line);
-                v.type = ValueType::EMPTY;
+                v.type = Block::ValueType::EMPTY;
                 return false;
             }
         }
         else if (type == "p3")
         {
-            v.type = ValueType::VEC3;
+            v.type = Block::ValueType::VEC3;
             std::string val;
             bool ok = true;
             v.v3 = glm::vec3(0, 0, 0);
@@ -158,13 +157,13 @@ bool read_value(const char *data, int &cur_pos, Value &v)
             if (!ok)
             {
                 logerr("line %d wrong description of vector", cur_line);
-                v.type = ValueType::EMPTY;
+                v.type = Block::ValueType::EMPTY;
                 return false;
             }
         }
         else if (type == "p4")
         {
-            v.type = ValueType::VEC4;
+            v.type = Block::ValueType::VEC4;
             std::string val;
             bool ok = true;
             v.v4 = glm::vec4(0, 0, 0, 0);
@@ -198,7 +197,7 @@ bool read_value(const char *data, int &cur_pos, Value &v)
             if (!ok)
             {
                 logerr("line %d wrong description of vector", cur_line);
-                v.type = ValueType::EMPTY;
+                v.type = Block::ValueType::EMPTY;
                 return false;
             }
         }
@@ -218,22 +217,22 @@ bool read_value(const char *data, int &cur_pos, Value &v)
                 }
                 if (data[cur_pos] == 0)
                 {
-                    v.type = EMPTY;
+                    v.type = Block::ValueType::EMPTY;
                     logerr("line %d expected \" at the end of a string", cur_line);
                     return false;
                 }
                 else if (data[cur_pos] == '\"')
                 {
                     cur_pos++;
-                    v.type = ValueType::STRING;
+                    v.type = Block::ValueType::STRING;
                     v.s = new std::string(start, len);
                 }
             }
         }
         else if (type == "arr")
         {
-            v.type = ValueType::ARRAY;
-            v.a = new DataArray();
+            v.type = Block::ValueType::ARRAY;
+            v.a = new Block::DataArray();
             return read_array(data, cur_pos, *(v.a));
         }
 
@@ -242,11 +241,11 @@ bool read_value(const char *data, int &cur_pos, Value &v)
     else
     {
         logerr("line %d expected : or { after value/block name", cur_line);
-        v.type = ValueType::EMPTY;
+        v.type = Block::ValueType::EMPTY;
         return false;
     }
 }
-bool read_array(const char *data, int &cur_pos, DataArray &a)
+bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
 {
     std::string token = next_token(data, cur_pos);
     //{ <value>, <value>, ... <value>}
@@ -255,14 +254,14 @@ bool read_array(const char *data, int &cur_pos, DataArray &a)
         bool ok = true;
         while (ok)
         {
-            Value val;
+            Block::Value val;
             std::string tok = next_token(data, cur_pos);
             if (tok == "}")
             {
-                a.type = ValueType::DOUBLE;
+                a.type = Block::ValueType::DOUBLE;
                 return true;
             }
-            val.type = ValueType::DOUBLE;
+            val.type = Block::ValueType::DOUBLE;
             val.d = std::stod(tok);
             a.values.push_back(val);
 
@@ -270,7 +269,7 @@ bool read_array(const char *data, int &cur_pos, DataArray &a)
             ok = ok && (tok == ",");
             if (tok == "}")
             {
-                a.type = ValueType::DOUBLE;
+                a.type = Block::ValueType::DOUBLE;
                 return true;
             }
         }
@@ -353,55 +352,55 @@ int Block::get_next_id(const std::string &name, int pos)
     }
     return -1;
 }
-ValueType Block::get_type(int id)
+Block::ValueType Block::get_type(int id)
 {
-    return (id >= 0 && id < size()) ? values[id].type : ValueType::EMPTY;
+    return (id >= 0 && id < size()) ? values[id].type : Block::ValueType::EMPTY;
 }
-ValueType Block::get_type(const std::string &name)
+Block::ValueType Block::get_type(const std::string &name)
 {
     return get_type(get_id(name));
 }
 
 int Block::get_bool(int id, bool base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::BOOL) ? values[id].b : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::BOOL) ? values[id].b : base_val;
 }
 int Block::get_int(int id, int base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::INT) ? values[id].i : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::INT) ? values[id].i : base_val;
 }
 double Block::get_double(int id, double base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::DOUBLE) ? values[id].d : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::DOUBLE) ? values[id].d : base_val;
 }
 glm::vec2 Block::get_vec2(int id, glm::vec2 base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::VEC2) ? values[id].v2 : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC2) ? values[id].v2 : base_val;
 }
 glm::vec3 Block::get_vec3(int id, glm::vec3 base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::VEC3) ? values[id].v3 : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC3) ? values[id].v3 : base_val;
 }
 glm::vec4 Block::get_vec4(int id, glm::vec4 base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::VEC4) ? values[id].v4 : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC4) ? values[id].v4 : base_val;
 }
 std::string Block::get_string(int id, std::string base_val)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::STRING && values[id].s) ? *(values[id].s) : base_val;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::STRING && values[id].s) ? *(values[id].s) : base_val;
 }
 Block *Block::get_block(int id)
 {
-    return (id >= 0 && id < size() && values[id].type == ValueType::BLOCK) ? values[id].bl : nullptr;
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::BLOCK) ? values[id].bl : nullptr;
 }
 bool Block::get_arr(int id, std::vector<double> &_values, bool replace)
 {
-    if (id >= 0 && id < size() && values[id].type == ValueType::ARRAY && values[id].a &&
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
     {
         if (replace)
             _values.clear();
-        for (Value &v : values[id].a->values)
+        for (Block::Value &v : values[id].a->values)
         {
             _values.push_back(v.d);
         }
@@ -411,12 +410,12 @@ bool Block::get_arr(int id, std::vector<double> &_values, bool replace)
 }
 bool Block::get_arr(int id, std::vector<float> &_values, bool replace)
 {
-    if (id >= 0 && id < size() && values[id].type == ValueType::ARRAY && values[id].a &&
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
     {
         if (replace)
             _values.clear();
-        for (Value &v : values[id].a->values)
+        for (Block::Value &v : values[id].a->values)
         {
             _values.push_back(v.d);
         }
@@ -426,12 +425,12 @@ bool Block::get_arr(int id, std::vector<float> &_values, bool replace)
 }
 bool Block::get_arr(int id, std::vector<int> &_values, bool replace)
 {
-    if (id >= 0 && id < size() && values[id].type == ValueType::ARRAY && values[id].a &&
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
     {
         if (replace)
             _values.clear();
-        for (Value &v : values[id].a->values)
+        for (Block::Value &v : values[id].a->values)
         {
             _values.push_back(v.d);
         }
@@ -485,7 +484,7 @@ bool Block::get_arr(const std::string name, std::vector<int> &_values, bool repl
     return get_arr(get_id(name), _values, replace);
 }
 
-void save_value(std::string &str, Value &v);
+void save_value(std::string &str, Block::Value &v);
 void save_block(std::string &str, Block &b)
 {
     str += "{\n";
@@ -497,10 +496,10 @@ void save_block(std::string &str, Block &b)
     }
     str += "}";
 }
-void save_arr(std::string &str, DataArray &a)
+void save_arr(std::string &str, Block::DataArray &a)
 {
     str += "{ ";
-    if (a.type == ValueType::DOUBLE)
+    if (a.type == Block::ValueType::DOUBLE)
     {
         for (int i = 0; i < a.values.size(); i++)
         {
@@ -511,53 +510,53 @@ void save_arr(std::string &str, DataArray &a)
     }
     str += " }";
 }
-void save_value(std::string &str, Value &v)
+void save_value(std::string &str, Block::Value &v)
 {
-    if (v.type == EMPTY)
+    if (v.type == Block::ValueType::EMPTY)
     {
         str += ":tag";
     }
-    else if (v.type == BOOL)
+    else if (v.type == Block::ValueType::BOOL)
     {
         str += ":b = ";
         str += v.b ? "true" : "false";
     }
-    else if (v.type == INT)
+    else if (v.type == Block::ValueType::INT)
     {
         str += ":i = ";
         str += std::to_string(v.i);
     }
-    else if (v.type == DOUBLE)
+    else if (v.type == Block::ValueType::DOUBLE)
     {
         str += ":r = ";
         str += std::to_string(v.d);
     }
-    else if (v.type == VEC2)
+    else if (v.type == Block::ValueType::VEC2)
     {
         str += ":p2 = ";
         str += std::to_string(v.v2.x) + ", " + std::to_string(v.v2.y);
     }
-    else if (v.type == VEC3)
+    else if (v.type == Block::ValueType::VEC3)
     {
         str += ":p3 = ";
         str += std::to_string(v.v3.x) + ", " + std::to_string(v.v3.y) + ", " + std::to_string(v.v3.z);
     }
-    else if (v.type == VEC4)
+    else if (v.type == Block::ValueType::VEC4)
     {
         str += ":p4 = ";
         str += std::to_string(v.v4.x) + ", " + std::to_string(v.v4.y) + ", " + std::to_string(v.v4.z) +
                ", " + std::to_string(v.v4.w);
     }
-    else if (v.type == STRING && v.s)
+    else if (v.type == Block::ValueType::STRING && v.s)
     {
         str += ":s = \"" + *(v.s) + "\"";
     }
-    else if (v.type == ARRAY && v.a)
+    else if (v.type == Block::ValueType::ARRAY && v.a)
     {
         str += ":arr = ";
         save_arr(str, *(v.a));
     }
-    else if (v.type == BLOCK && v.bl)
+    else if (v.type == Block::ValueType::BLOCK && v.bl)
     {
         str += " ";
         save_block(str, *(v.bl));
@@ -574,16 +573,16 @@ void BlkManager::save_block_to_file(std::string path, Block &b)
     out.close();
 }
 
-void Value::clear()
+void Block::Value::clear()
 {
-    if (type == ValueType::BLOCK && bl)
+    if (type == Block::ValueType::BLOCK && bl)
         delete bl;
-    else if (type == ValueType::ARRAY && a)
+    else if (type == Block::ValueType::ARRAY && a)
         delete a;
-    else if (type == ValueType::STRING && s)
+    else if (type == Block::ValueType::STRING && s)
         delete s;
 
-    type = EMPTY;
+    type = Block::ValueType::EMPTY;
 }
 void Block::clear()
 {
@@ -597,75 +596,75 @@ void Block::clear()
 bool Block::has_tag(const std::string &name)
 {
     int id = get_id(name);
-    return id >= 0 && (get_type(id) == ValueType::EMPTY);
+    return id >= 0 && (get_type(id) == Block::ValueType::EMPTY);
 }
 
 void Block::add_bool(const std::string name, bool base_val)
 {
-    Value val;
-    val.type = ValueType::BOOL;
+    Block::Value val;
+    val.type = Block::ValueType::BOOL;
     val.b = base_val;
     add_value(name, val);
 }
 void Block::add_int(const std::string name, int base_val)
 {
-    Value val;
-    val.type = ValueType::INT;
+    Block::Value val;
+    val.type = Block::ValueType::INT;
     val.i = base_val;
     add_value(name, val);
 }
 void Block::add_double(const std::string name, double base_val)
 {
-    Value val;
-    val.type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::DOUBLE;
     val.d = base_val;
     add_value(name, val);
 }
 void Block::add_vec2(const std::string name, glm::vec2 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC2;
+    Block::Value val;
+    val.type = Block::ValueType::VEC2;
     val.v2 = base_val;
     add_value(name, val);
 }
 void Block::add_vec3(const std::string name, glm::vec3 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC3;
+    Block::Value val;
+    val.type = Block::ValueType::VEC3;
     val.v3 = base_val;
     add_value(name, val);
 }
 void Block::add_vec4(const std::string name, glm::vec4 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC4;
+    Block::Value val;
+    val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
     add_value(name, val);
 }
 void Block::add_string(const std::string name, std::string base_val)
 {
-    Value val;
-    val.type = ValueType::STRING;
+    Block::Value val;
+    val.type = Block::ValueType::STRING;
     val.s = new std::string(base_val);
     add_value(name, val);
 }
 void Block::add_block(const std::string name, Block *bl)
 {
-    Value val;
-    val.type = ValueType::BLOCK;
+    Block::Value val;
+    val.type = Block::ValueType::BLOCK;
     val.bl = bl;
     add_value(name, val);
 }
 void Block::add_arr(const std::string name, std::vector<double> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (double &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -673,14 +672,14 @@ void Block::add_arr(const std::string name, std::vector<double> &_values)
 }
 void Block::add_arr(const std::string name, std::vector<float> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (float &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -688,14 +687,14 @@ void Block::add_arr(const std::string name, std::vector<float> &_values)
 }
 void Block::add_arr(const std::string name, std::vector<int> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (int &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -703,70 +702,70 @@ void Block::add_arr(const std::string name, std::vector<int> &_values)
 }
 void Block::set_bool(const std::string name, bool base_val)
 {
-    Value val;
-    val.type = ValueType::BOOL;
+    Block::Value val;
+    val.type = Block::ValueType::BOOL;
     val.b = base_val;
     set_value(name, val);
 }
 void Block::set_int(const std::string name, int base_val)
 {
-    Value val;
-    val.type = ValueType::INT;
+    Block::Value val;
+    val.type = Block::ValueType::INT;
     val.i = base_val;
     set_value(name, val);
 }
 void Block::set_double(const std::string name, double base_val)
 {
-    Value val;
-    val.type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::DOUBLE;
     val.d = base_val;
     set_value(name, val);
 }
 void Block::set_vec2(const std::string name, glm::vec2 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC2;
+    Block::Value val;
+    val.type = Block::ValueType::VEC2;
     val.v2 = base_val;
     set_value(name, val);
 }
 void Block::set_vec3(const std::string name, glm::vec3 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC3;
+    Block::Value val;
+    val.type = Block::ValueType::VEC3;
     val.v3 = base_val;
     set_value(name, val);
 }
 void Block::set_vec4(const std::string name, glm::vec4 base_val)
 {
-    Value val;
-    val.type = ValueType::VEC4;
+    Block::Value val;
+    val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
     set_value(name, val);
 }
 void Block::set_string(const std::string name, std::string base_val)
 {
-    Value val;
-    val.type = ValueType::STRING;
+    Block::Value val;
+    val.type = Block::ValueType::STRING;
     val.s = new std::string(base_val);
     set_value(name, val);
 }
 void Block::set_block(const std::string name, Block *bl)
 {
-    Value val;
-    val.type = ValueType::BLOCK;
+    Block::Value val;
+    val.type = Block::ValueType::BLOCK;
     val.bl = bl;
     set_value(name, val);
 }
 void Block::set_arr(const std::string name, std::vector<double> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (double &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -774,14 +773,14 @@ void Block::set_arr(const std::string name, std::vector<double> &_values)
 }
 void Block::set_arr(const std::string name, std::vector<float> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (float &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -789,14 +788,14 @@ void Block::set_arr(const std::string name, std::vector<float> &_values)
 }
 void Block::set_arr(const std::string name, std::vector<int> &_values)
 {
-    Value val;
-    val.type = ValueType::ARRAY;
-    val.a = new DataArray();
-    val.a->type = ValueType::DOUBLE;
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
     for (int &d : _values)
     {
-        Value av;
-        av.type = ValueType::DOUBLE;
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
         av.d = d;
         val.a->values.push_back(av);
     }
@@ -806,12 +805,12 @@ std::string Block::get_name(int id)
 {
     return (id >= 0 && id < names.size()) ? names[id] : "";
 }
-void Block::add_value(const std::string &name, const Value &value)
+void Block::add_value(const std::string &name, const Block::Value &value)
 {
     values.push_back(value);
     names.push_back(name);
 }
-void Block::set_value(const std::string &name, const Value &value)
+void Block::set_value(const std::string &name, const Block::Value &value)
 {
     int id = get_id(name);
     if (id >= 0)

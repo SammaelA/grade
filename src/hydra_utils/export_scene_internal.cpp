@@ -15,11 +15,59 @@
 #include "HydraAPI/utils/mesh_utils.h"
 #include "HydraAPI/hydra_api/LiteMath.h"
 
+#include "core/scene.h"
 namespace hlm = HydraLiteMath;
 using pugi::xml_node;
 
 extern GLFWwindow* g_window;
 void initGLIfNeeded(int a_width, int a_height, const char* name);
+
+void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
+{
+    glm::vec2 size = h.get_size();
+    glm::vec3 pos = h.get_pos();
+    glm::vec2 step = glm::vec2(10,10);
+    SimpleMesh &flat_terrain = mesh;
+            int x = (2*size.x/step.x) + 1;
+            int y = (2*size.y/step.y) + 1;
+            glm::vec2 range = h.get_height_range();
+            for (int i = 0; i < x; i++)
+            {
+                for (int j = 0; j < y; j++)
+                {
+                    int ind = flat_terrain.vPos.size()/3;
+                    glm::vec3 terr_pos = glm::vec3(pos.x - size.x + step.x*i,0,pos.z - size.y + step.y*j);
+                glm::vec3 terr_pos1 = glm::vec3(pos.x - size.x + step.x*(i+1),0,pos.z - size.y + step.y*j);
+                glm::vec3 terr_pos2 = glm::vec3(pos.x - size.x + step.x*(i),0,pos.z - size.y + step.y*(j+1));
+
+                terr_pos.y = h.get_height(terr_pos);
+                terr_pos1.y = h.get_height(terr_pos1);
+                terr_pos2.y = h.get_height(terr_pos2);
+                glm::vec3 n = glm::normalize(glm::cross(terr_pos1 - terr_pos,terr_pos2 - terr_pos));
+
+                flat_terrain.vPos.push_back(terr_pos.x);
+                flat_terrain.vPos.push_back(terr_pos.y);
+                flat_terrain.vPos.push_back(terr_pos.z);
+                
+                flat_terrain.vNorm.push_back(n.x);
+                flat_terrain.vNorm.push_back(n.y);
+                flat_terrain.vNorm.push_back(n.z);
+
+                flat_terrain.vTexCoord.push_back(0.5*(i % 2));
+                flat_terrain.vTexCoord.push_back(0.5*(j % 2));
+
+                if (i != x - 1 && j != y - 1)
+                {
+                    flat_terrain.triIndices.push_back(ind);
+                    flat_terrain.triIndices.push_back(ind + 1);
+                    flat_terrain.triIndices.push_back(ind + y + 1);
+                    flat_terrain.triIndices.push_back(ind);
+                    flat_terrain.triIndices.push_back(ind + y + 1);
+                    flat_terrain.triIndices.push_back(ind + y);
+                }
+                }
+            }
+        }
 
 bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
@@ -29,7 +77,9 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrErrorCallerPlace(L"demo_02_load_obj");
   hrSceneLibraryOpen(L"demos/demo_test", HR_WRITE_DISCARD);
   
-  SimpleMesh sphere   = CreateSphere(2.0f, 128);
+  SimpleMesh sphere;
+  heightmap_to_simple_mesh(*(scene.heightmap), sphere);
+  //   = CreateSphere(2.0f, 128);
   HRMaterialRef mat0 = hrMaterialCreate(L"mysimplemat");
   hrMaterialOpen(mat0, HR_WRITE_DISCARD);
   {
@@ -125,7 +175,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     node.append_child(L"trace_depth").text()      = 8;
     node.append_child(L"diff_trace_depth").text() = 4;
-    node.append_child(L"maxRaysPerPixel").text()  = 1024;
+    node.append_child(L"maxRaysPerPixel").text()  = 128;
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);
@@ -193,7 +243,4 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrRenderSaveFrameBufferLDR(renderRef, L"demos/demo_test/z_out.png");
   return true;
 }
-void heightmap_to_simple_mesh(Heightmap &heightmap, SimpleMesh &mesh)
-{
 
-}

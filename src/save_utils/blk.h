@@ -4,79 +4,77 @@
 #include <glm/glm.hpp>
 
 struct Block;
-struct DataArray;
-
-enum ValueType
-{
-    EMPTY,
-    BOOL,
-    INT,
-    DOUBLE,
-    VEC2,
-    VEC3,
-    VEC4,
-    STRING,
-    BLOCK,
-    ARRAY
-};
-
-struct Value
-{
-    ValueType type;
-    union
-    {
-        bool b;
-        long i;
-        double d;
-        glm::vec2 v2;
-        glm::vec3 v3;
-        glm::vec4 v4;
-        std::string *s;
-        Block *bl;
-        DataArray *a;
-    };
-    Value()
-    {
-        type = EMPTY;
-    }
-    Value(const Value &v)
-    {
-        type = v.type;
-        if (type == ValueType::INT)
-            i = v.i;
-        else if (type == ValueType::BOOL)
-            b = v.b;
-        else if (type == ValueType::DOUBLE)
-            d = v.d;
-        else if (type == ValueType::VEC2)
-            v2 = v.v2;
-        else if (type == ValueType::VEC3)
-            v3 = v.v3;
-        else if (type == ValueType::VEC4)
-            v4 = v.v4;
-        else if (type == ValueType::STRING)
-            s = v.s;
-        else if (type == ValueType::BLOCK)
-            bl = v.bl;
-        else if (type == ValueType::ARRAY)
-            a = v.a;
-    }
-    ~Value()
-    {
-
-    }
-    void clear();
-};
-
-struct DataArray
-{
-    ValueType type = EMPTY;
-    std::vector<Value> values;
-};
-
 class BlkManager;
 struct Block
 {
+    struct DataArray;
+    enum ValueType
+    {
+        EMPTY,
+        BOOL,
+        INT,
+        DOUBLE,
+        VEC2,
+        VEC3,
+        VEC4,
+        STRING,
+        BLOCK,
+        ARRAY
+    };
+
+    struct Value
+    {
+        ValueType type;
+        union
+        {
+            bool b;
+            long i;
+            double d;
+            glm::vec2 v2;
+            glm::vec3 v3;
+            glm::vec4 v4;
+            std::string *s;
+            Block *bl;
+            DataArray *a;
+        };
+        Value()
+        {
+            type = EMPTY;
+        }
+        Value(const Value &v)
+        {
+            type = v.type;
+            if (type == ValueType::INT)
+                i = v.i;
+            else if (type == ValueType::BOOL)
+                b = v.b;
+            else if (type == ValueType::DOUBLE)
+                d = v.d;
+            else if (type == ValueType::VEC2)
+                v2 = v.v2;
+            else if (type == ValueType::VEC3)
+                v3 = v.v3;
+            else if (type == ValueType::VEC4)
+                v4 = v.v4;
+            else if (type == ValueType::STRING)
+                s = v.s;
+            else if (type == ValueType::BLOCK)
+                bl = v.bl;
+            else if (type == ValueType::ARRAY)
+                a = v.a;
+        }
+        ~Value()
+        {
+
+        }
+        void clear();
+    };
+
+    struct DataArray
+    {
+        ValueType type = EMPTY;
+        std::vector<Value> values;
+    };
     friend class BlkManager;
 
     int size();
