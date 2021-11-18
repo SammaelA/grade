@@ -44,6 +44,7 @@
 #include "render/visualizer.h"
 #include "render/world_renderer.h"
 #include "generation/scene_generator.h"
+#include "save_utils/hydra_scene_exporter.h"
 
 namespace parser
 {
@@ -52,236 +53,83 @@ namespace parser
 //Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 AppContext appContext;
 
-bool generation_needed = false;
-bool saving_needed = false;
-bool loading_needed = false;
-bool print_perf = false;
-bool only_gen = false;
-bool visualize_voxels = false;
-bool visualize_initial_voxels = false;
-bool statistics_run = false;
-bool gltf_export = false;
-bool need_initialization = true;
-bool parameter_selection = false;
-bool clustering_benchmark = false;
-
-std::string generator_name = "default";
-std::string generator_fixed_preset_name = "";
-std::string parameter_selector_name = "default_selection";
-std::string clustering_benchmark_path = "benchmark.blk";
-struct StatRunLaunchParams
-{
-  int trees = 1;
-  float max_ind_dist = 0.7;
-} statRunLaunchParams;
-GroveRenderer::Precision pres = GroveRenderer::MEDIUM;
-std::string grove_type_name = "default";
-std::string save_path = ".";
-std::string load_path = ".";
-
+bool render_needed = true;
+bool save_to_hydra = false;
+std::string settings_block = "scene_generation_settings.blk";
+std::string hydra_scene_dir = "vegetation_scene";
+bool demo_mode = false;
+int demo_mode_trees_cnt = 0;
 int parse_arguments(int argc, char *argv[])
 {
-  int k = 1;
+  int k = 0;
   while (k < argc)
   {
-    if (std::string(argv[k]) == "-g")
+    if (std::string(argv[k]) == "-settings")
     {
-      generation_needed = true;
-      if (argc == k + 1)
+      if (argc > k + 2 && std::string(argv[k+1]) == "=")
       {
-        logerr("write grove type name after -g");
-        return 1;
-      }
-      else
-        grove_type_name = argv[k + 1];
-      k += 2;
-    }
-    else if (std::string(argv[k]) == "-perf")
-    {
-      print_perf = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-parameter_selection")
-    {
-      parameter_selection = true;
-      if (argc > k+1)
-      {
-        parameter_selector_name = std::string(argv[k+1]);
-        k++;
-      }
-      k++;
-    }
-    else if (std::string(argv[k]) == "-benchmark")
-    {
-      clustering_benchmark = true;
-      if (argc > k+1)
-      {
-        clustering_benchmark_path = std::string(argv[k+1]);
-        k++;
-      }
-      k++;
-    }
-    else if (std::string(argv[k]) == "-visualize_voxels")
-    {
-      visualize_voxels = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-visualize_clusters")
-    {
-      clusteringDebugInfo.visualize_clusters = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-visualize_initial_voxels")
-    {
-      visualize_initial_voxels = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-only_gen")
-    {
-      only_gen = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-export_gltf")
-    {
-      gltf_export = true;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-s")
-    {
-      saving_needed = true;
-      if (argc == k + 1)
-      {
-        logerr("write path to save after -s");
-        return 1;
-      }
-      else
-        save_path = argv[k + 1];
-      k += 2;
-    }
-    else if (std::string(argv[k]) == "-l")
-    {
-      loading_needed = true;
-      if (argc == k + 1)
-      {
-        logerr("write path to load from after -l");
-        return 1;
-      }
-      else
-        load_path = argv[k + 1];
-      k += 2;
-    }
-    else if (std::string(argv[k]) == "-low_precision")
-    {
-      pres = GroveRenderer::LOW;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-high_precision")
-    {
-      pres = GroveRenderer::DEBUG;
-      k++;
-    }
-    else if (std::string(argv[k]) == "-h")
-    {
-      logerr("-g <grove type name> -s <save path> -l <load path>");
-      return 1;
-    }
-    else if (std::string(argv[k]) == "-stat_run")
-    {
-      if (argc <= k + 2)
-      {
-        logerr("-stat_run <num_tree> <max_individual distance>");
-      }
-      else
-      {
-        statRunLaunchParams.trees = atoi(argv[k + 1]);
-        statRunLaunchParams.max_ind_dist = atof(argv[k + 2]);
-        statistics_run = true;
-        //only_gen = true;
-        generation_needed = true;
-        debug("stat run %d trees %f MID\n", statRunLaunchParams.trees, statRunLaunchParams.max_ind_dist);
+        settings_block = std::string(argv[k+2]);
         k += 3;
       }
-    }
-    else if (std::string(argv[k]) == "-generator")
-    {
-      bool ok = argc >= k+2;
-      if (ok)
-      {
-        if (std::string(argv[k+1]) == "=")
-          generator_name = std::string(argv[k+2]);
-        else
-          ok = false;
-      }
-      if (!ok)
-      {
-        logerr("-generator = <generator_name>");
-        logerr("possible names : default, proctree, simple, python_tree_gen");
-      }
-      k += 3;
-      if (generator_name == "python_tree_gen")
-      {
-        bool ok = argc >= k+2;
-        if (ok && std::string(argv[k]) == "-parameters")
-        {
-          if (std::string(argv[k+1]) == "=")
-            generator_fixed_preset_name = std::string(argv[k+2]);
-          else
-            ok = false;
-        }
-        else 
-          ok = false;
-
-        if (ok)
-          k += 3;
-      }
-    }
-    else if (std::string(argv[k]) == "-prepare_dataset")
-    {
-      clusteringDebugInfo.prepare_dataset = true;
-      if (argc == k + 1)
-      {
-        logerr("write path to save after -prepare_dataset");
-        return 1;
-      }
       else
-        clusteringDebugInfo.dataset_name = argv[k + 1];
-      k += 2;
-    }
-    else if (std::string(argv[k]) == "-save_csv")
-    {
-      clusteringDebugInfo.save_csv = true;
-      if (argc == k + 1)
       {
-        logerr("write path to save after -save_csv");
-        return 1;
+        logerr("use \"settings = <settings_file.blk>\"");
+        k++;
       }
-      else
-        clusteringDebugInfo.csv_file_name = argv[k + 1];
-      k += 2;
     }
-    else if (std::string(argv[k]) == "-progress_bar")
+    else if (std::string(argv[k]) == "-render")
     {
-      show_progress = 1;
+      render_needed = true;
       k++;
+    }
+    else if (std::string(argv[k]) == "-no_render")
+    {
+      render_needed = false;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-hydra_save_scene")
+    {
+      save_to_hydra = true;
+      if (argc > k + 2 && std::string(argv[k+1]) == "=")
+      {
+        hydra_scene_dir = std::string(argv[k+2]);
+        k += 3;
+      }
+      else
+      {
+        k++;
+      }
+    }
+    else if (std::string(argv[k]) == "-demo")
+    {
+      if (argc > k + 1)
+      {
+        int n = std::stoi(argv[k+1]);
+        if (n <= 0)
+        {
+          logerr("use \"demo <trees_count>\"");
+        }
+        else
+        {
+          demo_mode = true;
+          render_needed = true;
+          save_to_hydra = true;
+          demo_mode_trees_cnt = n;
+        }
+        k += 2;
+      }
+      else
+      {
+        logerr("use \"demo <trees_count>\"");
+        k++;
+      }
     }
     else
     {
-      logerr("unknown command \"%s\". Write -h for help", argv[k]);
-      return 1;
+      logerr("unknows argument %s",argv[k]);
+      k++;
     }
   }
-  if (saving_needed && !generation_needed)
-  {
-    logerr("Error: -s should be used only with -g flag");
-    return 1;
-  }
-  if (!generation_needed && !loading_needed)
-  {
-    need_initialization = false;
-    //logerr("You choosed to do nothing. Program will be closed");
-    //return 0;
-  }
-  return -1;
 }
 void load_tree_types(std::map<std::string,TreeTypeData> &tree_types)
 {
@@ -348,21 +196,48 @@ void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ct
   }
 }
 
+void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
+{
+  float density = 5;
+  glm::vec2 cell_size(75,75);
+  int patches_cnt = demo_mode_trees_cnt/density;
+  int patches_x = sqrt(patches_cnt);
+  int patches_y = patches_x + 1;
+  patches_x = MAX(patches_x,1);
+  patches_cnt = patches_x*patches_y;
+  int max_trees_per_patch = 2*((float)demo_mode_trees_cnt/patches_cnt);
+  sceneGenerationContext.settings.set_vec2("cell_size",cell_size);
+  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(cell_size.x*patches_x,cell_size.y*patches_y));
+  sceneGenerationContext.settings.set_int("max_trees_per_patch",max_trees_per_patch);
+}
+
 int parser_main(int argc, char *argv[])
 {
     base_init();
     Scene scene;
     SceneGenerator::SceneGenerationContext sceneGenerationContext;
     BlkManager man;
-    man.load_block_from_file("scene_generation_settings.blk", sceneGenerationContext.settings);
+
+    parse_arguments(argc,argv);
+    man.load_block_from_file(settings_block, sceneGenerationContext.settings);
     sceneGenerationContext.scene = &scene;
     load_tree_types(sceneGenerationContext.tree_types);
     prepare_global_ggd_from_settings(sceneGenerationContext);
+    scene.tree_types = sceneGenerationContext.global_ggd.types;
+    if (demo_mode)
+      demo_scene_ctx(sceneGenerationContext);
+    
     SceneGenerator sceneGen = SceneGenerator(sceneGenerationContext);
     sceneGen.create_scene_auto();
 
-    bool need_render = true;
-    if (need_render)
+    if (save_to_hydra)
+    {
+      HydraSceneExporter hExp;
+      Block export_settings;
+      hExp.export_scene(hydra_scene_dir, scene, export_settings);
+    }
+
+    if (render_needed)
     {
         WorldRenderer worldRenderer;
         Block render_settings;
