@@ -7,6 +7,8 @@
 #include "tree_generators/generated_tree.h"
 #include "generation/grove_generation_utils.h"
 #include "planter.h"
+#include "trees_preprocessor.h"
+
 #include <map>
 
 AbstractTreeGenerator *GroveGenerator::get_generator(std::string &generator_name)
@@ -101,5 +103,12 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
         int t_cnt = t_counts.at(p.first);
         p.second->finalize_generation(trees + t_count,voxels);
         t_count += t_cnt;
+    }
+
+    TreePreprocessor t_prep;
+    Block prep_settings;
+    for (int i=0;i<prototype.trees_count;i++)
+    {
+        t_prep.preprocess_tree(trees[i],prep_settings);
     }
 }

@@ -246,6 +246,7 @@ int parser_main(int argc, char *argv[])
         worldRenderer.set_grove(scene.grove, sceneGenerationContext.global_ggd);
         Tiny::view.pipeline = [&]()
         {
+          worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);
             worldRenderer.set_forced_LOD(appContext.forced_LOD);
             worldRenderer.render(1,appContext.camera);
         };
