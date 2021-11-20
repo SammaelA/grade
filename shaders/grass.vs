@@ -22,7 +22,7 @@ void main(void)
 {
     vec3 hmap_scales_inv = vec3(1.0/1024,1e3,1.0/1024);
     vec3 hmap_center = vec3(0,0,0);
-    vec3 shift = 25*vec3(gl_InstanceID / 200 - 100, 0, gl_InstanceID % 200 - 100);
+    vec3 shift = 5.12*vec3(gl_InstanceID / 200 - 100, 0, gl_InstanceID % 200 - 100);
     vec2 tc = 0.5*((shift*hmap_scales_inv).zx + 1);
     float per = texture(perlin,tc).x;
     vec3 noise = 7*(2*texture(noise,tc).xyz - 1);

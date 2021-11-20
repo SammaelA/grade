@@ -61,6 +61,9 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
         Shader &shader = to_shadow ? terrainShadow : terrain;
         shader.use();
         shader.texture("terrain",terrain_tex);
+        float aniso = 0.0f;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); 
         shader.uniform("projection",projection);
         shader.uniform("view",view);
         shader.uniform("model",flat_terrain->model);

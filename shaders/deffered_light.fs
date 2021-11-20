@@ -146,14 +146,14 @@ void main(void)
         float shadow = 0;
         if (need_shadow)
         {
-            float bias = 1e-6;
+            float bias = 3*1e-6;
             int samples = 2;
             int type = int(normal_type.a);
 
             if (type == 0)
                 samples = 16;
             else 
-                bias = 3*1e-6;
+                bias = 1e-5;
             vec4 FragPosLightSpace = shadow_mat * vec4(world_pos,1);
             shadow = ShadowCalculation(FragPosLightSpace, world_pos, bias, samples);
         }

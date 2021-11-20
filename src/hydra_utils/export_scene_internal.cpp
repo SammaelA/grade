@@ -26,7 +26,7 @@ void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
 {
     glm::vec2 size = h.get_size();
     glm::vec3 pos = h.get_pos();
-    glm::vec2 step = glm::vec2(10,10);
+    glm::vec2 step = glm::vec2(100,100);
     SimpleMesh &flat_terrain = mesh;
             int x = (2*size.x/step.x) + 1;
             int y = (2*size.y/step.y) + 1;
@@ -108,28 +108,47 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrMeshClose(cubeOpenRef);
 
   HRLightRef rectLight = hrLightCreate(L"my_area_light");
-  
+
   hrLightOpen(rectLight, HR_WRITE_DISCARD);
   {
     pugi::xml_node lightNode = hrLightParamNode(rectLight);
-    
+
     lightNode.attribute(L"type").set_value(L"area");
     lightNode.attribute(L"shape").set_value(L"rect");
     lightNode.attribute(L"distribution").set_value(L"diffuse");
-    
+
     pugi::xml_node sizeNode = lightNode.append_child(L"size");
-    
+
     sizeNode.append_attribute(L"half_length") = 1.0f;
     sizeNode.append_attribute(L"half_width")  = 1.0f;
-    
+
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
-    
+
     intensityNode.append_child(L"color").append_attribute(L"val")      = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 25.0f;
-  
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 8.0f;
+
     VERIFY_XML(lightNode);
   }
   hrLightClose(rectLight);
+
+  HRLightRef sky = hrLightCreate(L"sky");
+
+  hrLightOpen(sky, HR_WRITE_DISCARD);
+  {
+    auto lightNode = hrLightParamNode(sky);
+    lightNode.attribute(L"type").set_value(L"sky");
+	  lightNode.attribute(L"distribution").set_value(L"map");
+    auto intensityNode = lightNode.append_child(L"intensity");
+    intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1.0");
+
+    auto texEnv  = hrTexture2DCreateFromFile(L"data/textures/LA_Downtown_Afternoon_Fishing_B_8k.jpg");
+
+	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
+
+	  VERIFY_XML(lightNode);
+  }
+  hrLightClose(sky);
   
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,7 +194,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     node.append_child(L"trace_depth").text()      = 8;
     node.append_child(L"diff_trace_depth").text() = 4;
-    node.append_child(L"maxRaysPerPixel").text()  = 128;
+    node.append_child(L"maxRaysPerPixel").text()  = 1024;
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);
@@ -202,6 +221,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     //
     mtranslate = hlm::translate4x4(hlm::float3(0, 3.85f, 0));
     hrLightInstance(scnRef, rectLight, mtranslate.L());
+    hrLightInstance(scnRef, sky, mtranslate.L());
   }
   hrSceneClose(scnRef);
   

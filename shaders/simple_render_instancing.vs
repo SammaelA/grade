@@ -71,7 +71,7 @@ out vec4 ex_FragPosView;
 out vec2 a_mult;
 flat out uint model_id;
 out vec4 FragPosLightSpace;
-
+out vec3 colorMult;
 void main(void) 
 {
     uint id = typeData[type_id].offset + gl_DrawID;
@@ -84,7 +84,17 @@ void main(void)
 	ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
     gl_Position = projection * ex_FragPosView;
 	ex_Tex = in_Tex.xyz;
-    ex_Tex.z = instances[curInsts[offset].index].center_par.w;
+    vec4 cp = instances[curInsts[offset].index].center_par;
+    vec4 cs = instances[curInsts[offset].index].center_self;
+    ex_Tex.z = cp.w;
     model_id = curModels[id].y;
 	FragPosLightSpace = lightSpaceMatrix * vec4(ex_FragPos, 1.0);
+
+    vec3 rnd1 = 2*fract(cp.xyz) - 1;
+    rnd1.z = 0;
+    vec3 rnd2 = 2*fract(cs.xyz) - 1;
+    rnd2.z = 0;
+    float rnd3 = 2*fract(10*length(cp.xyz)) - 1;
+    float rnd4 = 2*fract(10*length(cs.xyz)) - 1;
+    colorMult = (1 + 0.1*rnd1 + 0.05*rnd2)*(1 + 0.2*rnd3)*(1 + 0.1*rnd4);
 }

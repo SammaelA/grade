@@ -72,8 +72,8 @@ float perlin(float x, float y) {
 }
 float f_perlin(float x, float y) 
 {
-    std::vector<float> x_mul = {1,3,7,11,21};
-    std::vector<float> y_mul = {1,5,9,13,23};
+    std::vector<float> x_mul = {1,3,7,11};
+    std::vector<float> y_mul = {1,5,9,13};
     float res = 0.0;
     int it = 0;
     for (float mx : x_mul)

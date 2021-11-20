@@ -111,8 +111,8 @@ void SceneGenerator::generate_grove()
   float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
 
 
-  ctx.scene->heightmap = new Heightmap(center3, 0.5f*heightmap_size,hmap_cell_size);
-  ctx.scene->heightmap->random_generate(0,0,10);
+  ctx.scene->heightmap = new Heightmap(center3, 0.5f*glm::vec2(1024,1024),hmap_cell_size);
+  ctx.scene->heightmap->random_generate(0,1,15);
   logerr("heightmap size %f %f", ctx.scene->heightmap->get_size().x,ctx.scene->heightmap->get_size().y);
   ctx.scene->grove.center = center3;
   ctx.scene->grove.ggd_name = "blank";

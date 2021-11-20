@@ -5,6 +5,7 @@ in vec3 ex_Normal;
 in vec3 ex_FragPos;
 in vec4 ex_FragPosView;
 in vec2 a_mult;
+in vec3 colorMult;
 flat in uint model_id;
 in vec4 FragPosLightSpace;
 
@@ -39,7 +40,7 @@ void main(void)
   {
     fragColor = vec4(1,0,1,1);
   }
-
+  fragColor.xyz = colorMult*fragColor.xyz;
   fragNormal = vec4(ex_Normal.xyz,1);
   fragViewPos = vec4(ex_FragPosView.xyz,1);
   fragWorldPos = vec4(ex_FragPos,1);

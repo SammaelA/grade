@@ -112,8 +112,8 @@ int parse_arguments(int argc, char *argv[])
         else
         {
           demo_mode = true;
-          render_needed = false;
-          save_to_hydra = true;
+          render_needed = true;
+          save_to_hydra = false;
           demo_mode_trees_cnt = n;
         }
         k += 2;

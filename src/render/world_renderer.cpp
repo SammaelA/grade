@@ -3,6 +3,17 @@
 #include "tinyEngine/TinyEngine.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
+const int HALTON_COUNT = 8;
+const float JITTER_SCALE = 2.0;
+  glm::vec2 haltonSequence[HALTON_COUNT] = {
+    glm::vec2(1.0 / 2.0, 1.0 / 3.0),
+    glm::vec2(1.0 / 4.0, 2.0 / 3.0),
+    glm::vec2(3.0 / 4.0, 1.0 / 9.0),
+    glm::vec2(1.0 / 8.0, 4.0 / 9.0),
+    glm::vec2(5.0 / 8.0, 7.0 / 9.0),
+    glm::vec2(3.0 / 8.0, 2.0 / 9.0),
+    glm::vec2(7.0 / 8.0, 5.0 / 9.0),
+    glm::vec2(1.0 / 16.0, 8.0 / 9.0)};
 WorldRenderer::~WorldRenderer()
 {
   regenerate_shadows = true;
@@ -19,9 +30,28 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(debugVisualizer)
 }
 
-void WorldRenderer::init(int h, int w, Block &render_settings)
+void WorldRenderer::set_resolution(int w, int h)
 {
+  if (w == screen_w && h == screen_h)
+    return;
+  screen_w = w;
+  screen_h = h;
+  
   projection = glm::perspective(fov, (float)w / h, 1.0f, 3000.0f);
+}
+
+void WorldRenderer::init(int _h, int _w, Block &render_settings)
+{
+  if (inited)
+    return;
+  inited = true;
+  float rt_overscale = render_settings.get_double("rt_overscale",1.5);
+  int w = rt_overscale*_w;
+  int h = rt_overscale*_h;
+  target_w = w;
+  target_h = h;
+
+  set_resolution(w, h);
 
   light.dir = glm::normalize(glm::vec3(-0.2, 0.5, -0));
   light.color = glm::vec3(0.99, 0.9, 0.7);
@@ -34,16 +64,21 @@ void WorldRenderer::init(int h, int w, Block &render_settings)
 
   startScreenShader = new PostFx("simple_render.fs");
   shadowMap.create(light.shadow_map_size.x, light.shadow_map_size.y);
-  defferedTarget.create(1920, 1080);
+  defferedTarget.create(w, h);
   defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 
   hbaoRenderer = new HBAORenderer();
-  hbaoRenderer->create(800, 600);
-  cubemap = new Cubemap(1920, 1080);
+  hbaoRenderer->create(w/2, h/2);
+  cubemap = new Cubemap(w, h);
   defferedLight = new PostFx("deffered_light.fs");
   debugShader = new Shader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), defaultShader);
+
+  targets[0].create(w,h);
+  targets[1].create(w,h);
+  taa = new PostFx("taa.fs");
+
 }
 
     void WorldRenderer::set_heightmap(Heightmap &heightmap)
@@ -55,7 +90,7 @@ void WorldRenderer::init(int h, int w, Block &render_settings)
 
         if (need_simple_grass)
         {
-            heightmapTex = new HeightmapTex(heightmap, 2048, 2048);
+            heightmapTex = new HeightmapTex(heightmap, 1024, 1024);
             grassRenderer = new GrassRenderer();
         }
     }
@@ -134,6 +169,18 @@ void WorldRenderer::init(int h, int w, Block &render_settings)
 
 void WorldRenderer::render(float dt, Camera &camera)
 {
+  frame++;
+  float deltaWidth = 1.0 / target_w;
+  float deltaHeight = 1.0 / target_h;
+  uint index = frame % HALTON_COUNT;
+ 
+  glm::vec2 jitter = glm::vec2(haltonSequence[index].x * deltaWidth, haltonSequence [index].y * deltaHeight);
+  
+  projectionNoJitter = projection;
+
+  projection[3][0] += jitter.x * JITTER_SCALE;
+  projection[3][1] += jitter.y * JITTER_SCALE;
+
   if (regenerate_shadows)
   {
     //shadows pass
@@ -242,8 +289,10 @@ uniform mat4 shadow_mat;*/
   //hbaoRenderer.render(ctx,defferedTarget.get_view_pos());
 
   cubemap->render(projection, camera.camera(), camera);
+
+  targets[current_target].target();
+
   glm::vec3 ads = glm::vec3(light.ambient_q, light.diffuse_q, light.specular_q);
-  Tiny::view.target(glm::vec3(0.6, 0.7, 1));
   defferedLight->use();
   defferedLight->get_shader().texture("colorTex", defferedTarget.get_color());
   defferedLight->get_shader().texture("normalsTex", defferedTarget.get_normals());
@@ -260,4 +309,15 @@ uniform mat4 shadow_mat;*/
   defferedLight->get_shader().uniform("shadow_mat", shadowMap.get_transform());
   defferedLight->get_shader().uniform("sts_inv", 1.0f / light.shadow_map_size);
   defferedLight->render();
+
+  Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+  
+  taa->use();
+  taa->get_shader().texture("target",targets[current_target].get_tex());
+  taa->get_shader().texture("prevTarget",targets[(current_target + 1) % 2].get_tex());
+  taa->get_shader().uniform("weight",0.95f);
+  taa->render();
+
+  current_target = (current_target + 1) % 2;
+  projection = projectionNoJitter;
 }

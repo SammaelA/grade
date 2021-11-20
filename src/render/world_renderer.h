@@ -7,6 +7,7 @@
 #include "tinyEngine/cubemap.h"
 #include "tinyEngine/deffered_target.h"
 #include "terrain_renderer.h"
+#include "tinyEngine/render_target.h"
 
 class WorldRenderer
 {
@@ -33,6 +34,7 @@ public:
     void set_groveRendererDebugParams(GroveRendererDebugParams _groveRendererDebugParams);
     void clear_all();
     
+    void set_resolution(int w, int h);
 private:
     void on_scene_changed();
 
@@ -41,7 +43,7 @@ private:
     int forced_LOD = -1;
     GroveRendererDebugParams groveRendererDebugParams;
     bool regenerate_shadows = true;
-    glm::mat4 projection;
+    glm::mat4 projection, projectionNoJitter;
 
     ShadowMap shadowMap;
     DefferedTarget defferedTarget;
@@ -51,6 +53,7 @@ private:
     PostFx *startScreenShader = nullptr;
     Shader *defaultShader = nullptr;
     Shader *debugShader = nullptr;
+    PostFx *taa = nullptr;
 
     GroveRenderer *groveRenderer = nullptr;
     HeightmapTex *heightmapTex = nullptr;
@@ -58,9 +61,15 @@ private:
     TerrainRenderer *terrainRenderer = nullptr;
     DebugVisualizer *debugVisualizer = nullptr;
     DirectedLight light;
-
+    RenderTarget targets[2];
+    int current_target = 0;
+    int target_w = 0, target_h = 0;
+    int screen_w = 0, screen_h = 0;
+    bool inited = false;
+    unsigned long frame = 0;
     const int DEBUG_RENDER_MODE = -2;
     const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
     const int MAX_RENDER_MODE = 2;
     const float fov = glm::radians(90.0f);
+    
 };
