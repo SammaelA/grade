@@ -183,7 +183,8 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
 void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
     t.root.level = 0;
-    t.root.joints.push_back(Joint(t.pos, 1));
+    t.root = Branch();
+    t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-10,0), 1));
 
     bool bush = true;
     if (bush)
@@ -191,7 +192,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*i;
-            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, params.ro, 0), 0.9));
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*params.ro, 0), 0.9));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos));
             auto &b = t.root.joints.back().childBranches.back();
             b.joints.push_back(Joint(t.pos + 3*params.ro*vec3(sin(phi),1,cos(phi)),0.1,true));

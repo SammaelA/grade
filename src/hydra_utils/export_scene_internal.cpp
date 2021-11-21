@@ -16,17 +16,29 @@
 #include "HydraAPI/hydra_api/LiteMath.h"
 
 #include "core/scene.h"
+#include "graphics_utils/modeling.h"
 namespace hlm = HydraLiteMath;
 using pugi::xml_node;
-
 extern GLFWwindow* g_window;
+
+  static inline void WriteMatrix4x4(pugi::xml_node a_node, const wchar_t* a_attrib_name, float a_value[16])
+  {
+    std::wstringstream outStream;
+    outStream << a_value[0]  << L" " << a_value[1]  << L" " << a_value[2]  << L" " << a_value[3]  << L" "
+              << a_value[4]  << L" " << a_value[5]  << L" " << a_value[6]  << L" " << a_value[7]  << L" "
+              << a_value[8]  << L" " << a_value[9]  << L" " << a_value[10] << L" " << a_value[11] << L" "
+              << a_value[12] << L" " << a_value[13] << L" " << a_value[14] << L" " << a_value[15];
+
+    a_node.attribute(a_attrib_name).set_value(outStream.str().c_str());
+  }
+
 void initGLIfNeeded(int a_width, int a_height, const char* name);
 
 void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
 {
     glm::vec2 size = h.get_size();
     glm::vec3 pos = h.get_pos();
-    glm::vec2 step = glm::vec2(100,100);
+    glm::vec2 step = glm::vec2(10,10);
     SimpleMesh &flat_terrain = mesh;
             int x = (2*size.x/step.x) + 1;
             int y = (2*size.y/step.y) + 1;
@@ -48,7 +60,8 @@ void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
                 flat_terrain.vPos.push_back(terr_pos.x);
                 flat_terrain.vPos.push_back(terr_pos.y);
                 flat_terrain.vPos.push_back(terr_pos.z);
-                
+                //flat_terrain.vPos.push_back(1);
+
                 flat_terrain.vNorm.push_back(n.x);
                 flat_terrain.vNorm.push_back(n.y);
                 flat_terrain.vNorm.push_back(n.z);
@@ -59,56 +72,209 @@ void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
                 if (i != x - 1 && j != y - 1)
                 {
                     flat_terrain.triIndices.push_back(ind);
+                    flat_terrain.triIndices.push_back(ind + y + 1);
                     flat_terrain.triIndices.push_back(ind + 1);
-                    flat_terrain.triIndices.push_back(ind + y + 1);
+ 
                     flat_terrain.triIndices.push_back(ind);
-                    flat_terrain.triIndices.push_back(ind + y + 1);
                     flat_terrain.triIndices.push_back(ind + y);
+                    flat_terrain.triIndices.push_back(ind + y + 1);
                 }
                 }
             }
         }
+void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, InstancedBranch &branch, 
+                                  int up_to_level, bool need_leaves, int wood_mat_id, int leaves_mat_id)
+{
+  if (branch.branches.empty())
+        return;
+    //clusterization process guarantees that type of all branches in instance
+    //will be the same
+    Model model;
+    //uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
 
+    Visualizer v = Visualizer();
+    uint ind_offset = model.indices.size();
+    uint verts = model.positions.size();
+    for (int id : branch.branches)
+    {
+        if (id < 0)
+        {
+            logerr("invalid id = %d", id);
+            continue;//invalid id - TODO fix it
+        }
+        PackedBranch &b = source->instancedCatalogue.get(id);
+        if (b.level <= up_to_level && !b.joints.empty())
+            v.packed_branch_to_model(b, &model, false, up_to_level);
+    }
+    uint l_ind_offset = model.indices.size();
+    uint l_verts = model.positions.size();
+
+    verts = l_verts;
+    if (need_leaves)
+    {
+        int type_slice = 0;
+        for (int id : branch.branches)
+        {
+            if (id < 0)
+            {
+                logerr("invalid id = %d", id);
+                continue;//invalid id - TODO fix it
+            }
+            PackedBranch &b = source->instancedCatalogue.get(id);
+            if (!b.joints.empty())
+                v.packed_branch_to_model(b, &model, true, up_to_level);
+        }
+    }
+    uint l_end = model.indices.size();
+    l_verts = model.positions.size();
+    int count = l_ind_offset - ind_offset;
+    int l_count = l_end - l_ind_offset;
+
+    if (model.positions.size() % 3 || model.normals.size() % 3 || model.indices.size() % 3
+        || model.colors.size() % 4)
+    {
+      logerr("error creating model from packed branch");
+    }
+    else
+    {
+      mesh.vPos = std::move(model.positions);
+      mesh.vNorm = std::move(model.normals);
+      
+      mesh.triIndices = std::vector<int>(model.indices.size(),0);
+      memcpy(mesh.triIndices.data(),model.indices.data(),mesh.triIndices.size()*sizeof(int));
+      
+      mesh.vTexCoord = std::vector<GLfloat>(model.colors.size()/2, 0);
+      for (int i = 0;i<model.colors.size()/4;i++)
+      {
+        mesh.vTexCoord[2*i] = model.colors[4*i];
+        mesh.vTexCoord[2*i + 1] = model.colors[4*i + 1];
+      }
+
+      mesh.matIndices = std::vector<int>(model.indices.size()/3,wood_mat_id);
+
+      for (int i=count/3;i<model.indices.size()/3;i++)
+      {
+        mesh.matIndices[i] = leaves_mat_id;
+      }
+    }
+}
 bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
-  const int DEMO_WIDTH  = 512;
-  const int DEMO_HEIGHT = 512;
+  const int DEMO_WIDTH  = 1024;
+  const int DEMO_HEIGHT = 1024;
   
   hrErrorCallerPlace(L"demo_02_load_obj");
   hrSceneLibraryOpen(L"demos/demo_test", HR_WRITE_DISCARD);
-  
-  SimpleMesh sphere;
-  heightmap_to_simple_mesh(*(scene.heightmap), sphere);
-  //   = CreateSphere(2.0f, 128);
-  HRMaterialRef mat0 = hrMaterialCreate(L"mysimplemat");
-  hrMaterialOpen(mat0, HR_WRITE_DISCARD);
-  {
-    xml_node matNode = hrMaterialParamNode(mat0);
-    xml_node diff    = matNode.append_child(L"diffuse");
-    
-    diff.append_attribute(L"brdf_type").set_value(L"lambert");
-    diff.append_child(L"color").append_attribute(L"val") = L"0.5 0.5 0.5";
-    
-    VERIFY_XML(matNode); // you can verify XML parameters for the main renderer "HydraModern" in this way
-  }
-  hrMaterialClose(mat0);
 
-  HRMeshRef cubeOpenRef = hrMeshCreate(L"my_box");
-  
-  hrMeshOpen(cubeOpenRef, HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+  HRTextureNodeRef texWood = hrTexture2DCreateFromFile(L"data/textures/wood.jpg");
+  HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(L"data/textures/leaf.png");
+  HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(L"data/textures/leaf_opacity.png");
+  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain2.jpg");
+
+  HRTextureNodeRef cube[6] = {
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/posx.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/negx.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/posy.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/negy.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/posz.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/Meadow/negz.jpg"),
+    };
+
+  HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
+
+
+  HRMaterialRef mat_land = hrMaterialCreate(L"land_material");
+  hrMaterialOpen(mat_land, HR_WRITE_DISCARD);
   {
-    hrMeshVertexAttribPointer4f(cubeOpenRef, L"pos",      &sphere.vPos[0]);
-    hrMeshVertexAttribPointer4f(cubeOpenRef, L"norm",     &sphere.vNorm[0]);
-    hrMeshVertexAttribPointer2f(cubeOpenRef, L"texcoord", &sphere.vTexCoord[0]);
-    
-    hrMeshMaterialId(cubeOpenRef, 0);
-    //hrMeshPrimitiveAttribPointer1i(cubeOpenRef, L"mind", cubeMatIndices);
-    hrMeshAppendTriangles3(cubeOpenRef, int(sphere.triIndices.size()), &sphere.triIndices[0]);
+    auto matNode = hrMaterialParamNode(mat_land);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    auto texNode = hrTextureBind(texTerrain, color);
+
+    VERIFY_XML(matNode);
   }
-  hrMeshClose(cubeOpenRef);
+  hrMaterialClose(mat_land);
+
+  HRMaterialRef mat_wood = hrMaterialCreate(L"mat_wood");
+  hrMaterialOpen(mat_wood, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_wood);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    auto texNode = hrTextureBind(texWood, color);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_wood);
+
+  HRMaterialRef mat_leaf = hrMaterialCreate(L"mat_leaf");
+  hrMaterialOpen(mat_leaf, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_leaf);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    auto texNode = hrTextureBind(texLeaf, color);
+
+    auto opacity = matNode.append_child(L"opacity");
+    auto texNodeOp = hrTextureBind(texLeafOpacity, opacity);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_leaf);
+
+  SimpleMesh terrain;
+  heightmap_to_simple_mesh(*(scene.heightmap), terrain);
+  HRMeshRef terrainMeshRef = hrMeshCreate(L"terrain");
+  hrMeshOpen(terrainMeshRef, HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+  {
+    hrMeshVertexAttribPointer3f(terrainMeshRef, L"pos",      &terrain.vPos[0]);
+    hrMeshVertexAttribPointer3f(terrainMeshRef, L"norm",     &terrain.vNorm[0]);
+    hrMeshVertexAttribPointer2f(terrainMeshRef, L"texcoord", &terrain.vTexCoord[0]);
+    
+    hrMeshMaterialId(terrainMeshRef, mat_land.id);
+    hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
+  }
+  hrMeshClose(terrainMeshRef);
+
+  std::vector<HRMeshRef> branches;
+  std::vector<SimpleMesh> meshes;
+  std::vector<InstanceDataArrays *> IDAs;
+
+  for (auto &pb : scene.grove.instancedBranches)
+  {
+    meshes.emplace_back();
+    SimpleMesh &br = meshes.back();
+    packed_branch_to_simple_mesh(br,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
+    std::wstring name = L"branch" + std::to_wstring(branches.size());
+    branches.push_back(hrMeshCreate(name.c_str()));
+    IDAs.push_back(&(pb.IDA));
+    hrMeshOpen(branches.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+    logerr("open %d %d %d %d %d",meshes.size(),br.vPos.size(),br.vNorm.size(), 
+           br.vTexCoord.size(), br.triIndices.size());
+    {
+      hrMeshVertexAttribPointer3f(branches.back(), L"pos",      &br.vPos[0]);
+      hrMeshVertexAttribPointer3f(branches.back(), L"norm",     &br.vNorm[0]);
+      hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
+      hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
+
+      hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size() - 3), br.triIndices.data());
+    }
+    hrMeshClose(branches.back());
+  }
 
   HRLightRef rectLight = hrLightCreate(L"my_area_light");
-
   hrLightOpen(rectLight, HR_WRITE_DISCARD);
   {
     pugi::xml_node lightNode = hrLightParamNode(rectLight);
@@ -131,8 +297,27 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   }
   hrLightClose(rectLight);
 
-  HRLightRef sky = hrLightCreate(L"sky");
+  HRLightRef directLight = hrLightCreate(L"my_direct_light");
+  hrLightOpen(directLight, HR_WRITE_DISCARD);
+  {
+    pugi::xml_node lightNode = hrLightParamNode(directLight);
 
+    lightNode.attribute(L"type").set_value(L"directional");
+    lightNode.attribute(L"shape").set_value(L"point");
+
+    pugi::xml_node sizeNode = lightNode.append_child(L"size");
+
+    sizeNode.append_child(L"inner_radius").append_attribute(L"val") = 1.0f;
+    sizeNode.append_child(L"outer_radius").append_attribute(L"val") = 2.0f;
+
+    pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
+
+    intensityNode.append_child(L"color").append_attribute(L"val") = L"1 1 1";
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 2.0f * PI;
+  }
+  hrLightClose(directLight);
+
+  HRLightRef sky = hrLightCreate(L"sky");
   hrLightOpen(sky, HR_WRITE_DISCARD);
   {
     auto lightNode = hrLightParamNode(sky);
@@ -140,9 +325,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 	  lightNode.attribute(L"distribution").set_value(L"map");
     auto intensityNode = lightNode.append_child(L"intensity");
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
-    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1.0");
-
-    auto texEnv  = hrTexture2DCreateFromFile(L"data/textures/LA_Downtown_Afternoon_Fishing_B_8k.jpg");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.75");
 
 	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
 
@@ -165,10 +348,10 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     camNode.append_child(L"fov").text().set(L"45");
     camNode.append_child(L"nearClipPlane").text().set(L"0.01");
-    camNode.append_child(L"farClipPlane").text().set(L"100.0");
+    camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"0 0 14");
+    camNode.append_child(L"position").text().set(L"20 75 -200");
     camNode.append_child(L"look_at").text().set(L"0 0 0");
   
     VERIFY_XML(camNode);
@@ -192,9 +375,9 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     node.append_child(L"method_tertiary").text()  = L"pathtracing";
     node.append_child(L"method_caustic").text()   = L"pathtracing";
     
-    node.append_child(L"trace_depth").text()      = 8;
-    node.append_child(L"diff_trace_depth").text() = 4;
-    node.append_child(L"maxRaysPerPixel").text()  = 1024;
+    node.append_child(L"trace_depth").text()      = 4;
+    node.append_child(L"diff_trace_depth").text() = 3;
+    node.append_child(L"maxRaysPerPixel").text()  = 512;
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);
@@ -207,21 +390,25 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   
   hrSceneOpen(scnRef, HR_WRITE_DISCARD);
   {
-    // instance bynny and cornell box
-    //
-    auto mscale     = hlm::scale4x4(hlm::float3(3,3,3));
-    auto mtranslate = hlm::translate4x4(hlm::float3(1, -4.2, 0));
-    auto mres       = hlm::mul(mtranslate,mscale);
+    auto mind = hlm::scale4x4(hlm::float3(1,1,1));
+    hrMeshInstance(scnRef, terrainMeshRef, mind.L());
     
-    
-    auto mrot = hlm::rotate_Y_4x4(180.0f*DEG_TO_RAD);
-    hrMeshInstance(scnRef, cubeOpenRef, mrot.L());
-    
-    //// instance light (!!!)
-    //
-    mtranslate = hlm::translate4x4(hlm::float3(0, 3.85f, 0));
-    hrLightInstance(scnRef, rectLight, mtranslate.L());
-    hrLightInstance(scnRef, sky, mtranslate.L());
+    for (int i=0;i<branches.size();i++)
+    {
+      for (auto &mat : IDAs[i]->transforms)
+      {
+        const float mat_vals2[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
+                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
+                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
+                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
+        auto m = hlm::float4x4(mat_vals2);
+        hrMeshInstance(scnRef, branches[i], m.L());
+      }
+    }
+
+    hrLightInstance(scnRef, sky, mind.L());
+    auto mres = hlm::mul(hlm::rotate_Z_4x4(1.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
+    hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);
   

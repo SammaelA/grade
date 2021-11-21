@@ -53,7 +53,7 @@ namespace parser
 //Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 AppContext appContext;
 
-bool render_needed = true;
+bool render_needed = false;
 bool save_to_hydra = false;
 std::string settings_block = "scene_generation_settings.blk";
 std::string hydra_scene_dir = "vegetation_scene";
@@ -87,7 +87,7 @@ int parse_arguments(int argc, char *argv[])
       render_needed = false;
       k++;
     }
-    else if (std::string(argv[k]) == "-hydra_save_scene")
+    else if (std::string(argv[k]) == "-hydra")
     {
       save_to_hydra = true;
       if (argc > k + 2 && std::string(argv[k+1]) == "=")
@@ -112,8 +112,8 @@ int parse_arguments(int argc, char *argv[])
         else
         {
           demo_mode = true;
-          render_needed = true;
-          save_to_hydra = false;
+          //render_needed = false;
+          //save_to_hydra = true;
           demo_mode_trees_cnt = n;
         }
         k += 2;

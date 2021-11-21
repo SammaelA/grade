@@ -112,9 +112,9 @@ bool HydraSceneExporter::export_internal1(std::string directory, Scene &scene, B
   {
     std::cout << "std::runtime_error: " << e.what() << std::endl;
   }
-  catch (...)
+  catch (std::exception &e)
   {
-    std::cout << "unknown exception" << std::endl;
+    std::cout << "unknown exception" << e.what() << std::endl;
   }
 
   hrErrorCallerPlace(L"main"); // for debug needs only

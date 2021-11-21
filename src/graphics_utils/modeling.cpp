@@ -345,7 +345,7 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
         std::vector<SegmentVertexes> vets;
         std::vector<float> empty_mults;
 
-        int ringsize = MIN(32,MAX(3,3 + 2*(max_level - b.level)*(max_level - b.level)));
+        int ringsize = MIN(16,MAX(3,16 - 4*b.level));
         int tex_step = 4;
         if (ringsize % 2 == 1)
             ringsize++;
