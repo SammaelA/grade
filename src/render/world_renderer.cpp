@@ -28,6 +28,7 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(grassRenderer)
   DEL_IT(terrainRenderer)
   DEL_IT(debugVisualizer)
+  DEL_IT(grassRenderer2);
 }
 
 void WorldRenderer::set_resolution(int w, int h)
@@ -84,7 +85,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     void WorldRenderer::set_heightmap(Heightmap &heightmap)
     {
         bool need_simple_grass = true;
-        glm::vec2 precision = glm::vec2(10, 10);
+        glm::vec2 precision = glm::vec2(5, 5);
         remove_heightmap();
         terrainRenderer = new TerrainRenderer(heightmap, heightmap.get_pos(), heightmap.get_size(), precision);
 
@@ -133,6 +134,16 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     {
         remove_body_debug();
         debugVisualizer->add_bodies(body, 1);
+    }
+
+    void WorldRenderer::set_grass(GrassPacked &grass_data)
+    {
+      grassRenderer2 = new GrassRenderer2(grass_data);
+    }
+    void WorldRenderer::remove_grass()
+    {
+      DEL_IT(grassRenderer2);
+      on_scene_changed();
     }
 
     void WorldRenderer::remove_body_debug()
@@ -199,7 +210,12 @@ void WorldRenderer::render(float dt, Camera &camera)
       terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
                                   0, camera.pos, light, true);
     }
-    if (grassRenderer)
+    if (grassRenderer2)
+    {
+           grassRenderer2->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                                camera.pos, *heightmapTex, light, true); 
+    }
+    else if (grassRenderer)
     {
       grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
                                 camera.pos, *heightmapTex, light, true);
@@ -212,7 +228,12 @@ void WorldRenderer::render(float dt, Camera &camera)
                                 glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
                                 light, groveRendererDebugParams, sh_viewproj, 0, true);
     }
-    if (grassRenderer)
+    if (grassRenderer2)
+    {
+      grassRenderer2->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
+                                camera.pos, *heightmapTex, light, true);
+    }
+    else if (grassRenderer)
     {
       grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
                                 camera.pos, *heightmapTex, light, true);
@@ -262,7 +283,12 @@ void WorldRenderer::render(float dt, Camera &camera)
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
                                   camera.pos, light);
     }
-    if (grassRenderer)
+    if (grassRenderer2)
+    {
+      grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                                camera.pos, *heightmapTex, light);
+    }
+    else if (grassRenderer)
     {
       grassRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
                                 camera.pos, *heightmapTex, light);

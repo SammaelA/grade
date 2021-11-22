@@ -219,16 +219,22 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrMaterialOpen(mat_leaf, HR_WRITE_DISCARD);
   {
     auto matNode = hrMaterialParamNode(mat_leaf);
-    auto diff = matNode.append_child(L"diffuse");
+  /*auto diff = matNode.append_child(L"diffuse");
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
     auto color = diff.append_child(L"color");
     color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
     color.append_attribute(L"tex_apply_mode").set_value(L"replace");
-    auto texNode = hrTextureBind(texLeaf, color);
+    auto texNode = hrTextureBind(texLeaf, color);*/
 
     auto opacity = matNode.append_child(L"opacity");
     auto texNodeOp = hrTextureBind(texLeafOpacity, opacity);
+    
+    auto transl = matNode.append_child(L"translucency");
+    auto colorTrans = transl.append_child(L"color");
+    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNodeTrans = hrTextureBind(texLeaf, transl);
 
     VERIFY_XML(matNode);
   }

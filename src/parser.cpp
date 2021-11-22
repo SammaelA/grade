@@ -173,6 +173,27 @@ void load_tree_types(std::map<std::string,TreeTypeData> &tree_types)
     }
   }
 }
+
+void load_grass_types(std::map<std::string, GrassType> &grass_types)
+{
+  BlkManager man;
+  Block grass_types_blk;
+  int id = 0;
+  man.load_block_from_file("grass_presets.blk",grass_types_blk);
+  for (int i=0;i<grass_types_blk.size();i++)
+  {
+    Block *bl = grass_types_blk.get_block(i);
+    std::string name = grass_types_blk.get_name(i);
+    if (bl)
+    {
+      GrassType gt;
+      gt.id = id;
+      gt.load_from_blk(*bl);
+      grass_types.emplace(name,gt);
+    }
+  }
+}
+
 void base_init()
 {
   glewInit();
@@ -222,6 +243,7 @@ int parser_main(int argc, char *argv[])
     man.load_block_from_file(settings_block, sceneGenerationContext.settings);
     sceneGenerationContext.scene = &scene;
     load_tree_types(sceneGenerationContext.tree_types);
+    load_grass_types(sceneGenerationContext.grass_types);
     prepare_global_ggd_from_settings(sceneGenerationContext);
     scene.tree_types = sceneGenerationContext.global_ggd.types;
     if (demo_mode)
@@ -243,6 +265,7 @@ int parser_main(int argc, char *argv[])
         Block render_settings;
         worldRenderer.init(appContext.WIDTH, appContext.HEIGHT, render_settings);
         worldRenderer.set_heightmap(*scene.heightmap);
+        worldRenderer.set_grass(scene.grass);
         worldRenderer.set_grove(scene.grove, sceneGenerationContext.global_ggd);
         Tiny::view.pipeline = [&]()
         {

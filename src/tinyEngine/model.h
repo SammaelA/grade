@@ -204,6 +204,7 @@ public:
     SIZE = indices.size();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, SIZE*sizeof(GLuint), &indices[0], GL_DYNAMIC_DRAW);
+    logerr("created IBO %d size %d",ibo,SIZE);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   }
 

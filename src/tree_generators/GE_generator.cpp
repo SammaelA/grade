@@ -159,8 +159,10 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
             j.r < params.base_r * params.leaves_max_r &&
             urand() < params.leaves_cnt * (1 / (0.5 + voxels.get_occlusion_simple(j.pos))))
         {
-            glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-0.1, 0.33), urand(-1, 1)));
-            glm::vec3 rd2 = normalize(vec3(urand(-1, 1), urand(-0.33, 0.33), urand(-1, 1)));
+            glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_a, params.leaves_angle_a), 
+                                           urand(-1, 1)));
+            glm::vec3 rd2 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_b, params.leaves_angle_b),
+                                           urand(-1, 1)));
             float sz = params.ro * params.leaf_size_mult;
             glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
             glm::vec3 b = j.pos + 0.5f * sz * rd2;

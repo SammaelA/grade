@@ -40,7 +40,8 @@ struct GETreeParameters : public ParametersSet
     float resource_mult = 7.5;
     float res_q = 1.0;
     float leaves_max_r = 5;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
-
+    float leaves_angle_a = 0.3;
+    float leaves_angle_b = 0.4;
     virtual glm::vec3 get_tree_max_size() override
     {
         return ro*glm::vec3(ro*Xm, 1.5*ro*Xm, ro*Xm);
@@ -82,6 +83,8 @@ struct GETreeParameters : public ParametersSet
         b.set_double("resource_mult", 7.5);
         b.set_double("res_q", 1.0);
         b.set_double("leaves_max_r", 5);
+        b.set_double("leaves_angle_a", 0.3);
+        b.set_double("leaves_angle_b", 0.4);
     }
     virtual void load_from_blk(Block &b)
     {
@@ -116,6 +119,8 @@ struct GETreeParameters : public ParametersSet
         resource_mult = b.get_double("resource_mult", resource_mult);
         res_q = b.get_double("res_q", res_q);
         leaves_max_r = b.get_double("leaves_max_r", leaves_max_r);
+        leaves_angle_a = b.get_double("leaves_angle_a", leaves_angle_a);
+        leaves_angle_b = b.get_double("leaves_angle_b", leaves_angle_b);
     }
 };
 

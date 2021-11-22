@@ -1,0 +1,12 @@
+{
+    grass_meadow_1
+    {
+        texture:s = "grass_meadow_1"
+        plant_size:r = 3.5
+    }
+    grass_meadow_2
+    {
+        texture:s = "grass_meadow_2"
+        plant_size:r = 2.5
+    }
+}

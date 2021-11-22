@@ -179,6 +179,19 @@ bool TextureAtlas::target(int num, int type)
 
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
+bool TextureAtlas::target_slice(int num, int type)
+{     
+    int l = num / (gridHN*gridWN);
+    num = num % (gridHN*gridWN);
+
+    glm::ivec2 tsh(num % gridWN, num / gridWN);
+    glm::ivec2 sz(width/gridWN, height/gridHN);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    bind(l, type);
+    glViewport(tsh.x*sz.x, tsh.y*sz.y, sz.x, sz.y);
+
+    return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+}
 bool TextureAtlas::clear()
 {
     target(0,0);

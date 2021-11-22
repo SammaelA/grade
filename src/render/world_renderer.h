@@ -29,6 +29,9 @@ public:
     void add_body_debug(Body *body);
     void remove_body_debug();
 
+    void set_grass(GrassPacked &grass_data);
+    void remove_grass();
+
     void set_render_mode(int _render_mode);
     void set_forced_LOD(int _forced_LOD); //forced_LOD = -1 means no forced LOD
     void set_groveRendererDebugParams(GroveRendererDebugParams _groveRendererDebugParams);
@@ -58,6 +61,7 @@ private:
     GroveRenderer *groveRenderer = nullptr;
     HeightmapTex *heightmapTex = nullptr;
     GrassRenderer *grassRenderer = nullptr;
+    GrassRenderer2 *grassRenderer2 = nullptr;
     TerrainRenderer *terrainRenderer = nullptr;
     DebugVisualizer *debugVisualizer = nullptr;
     DirectedLight light;

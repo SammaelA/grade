@@ -8,6 +8,7 @@ void TreePreprocessor::preprocess_tree(Tree &t, Block &preprocessing_params)
 
 void TreePreprocessor::simplify_branch_rec(Branch *b, int max_merge_n)
 {
+    return;
     float r_diff_thr = 0.75;
     if (b->dead)
         return;

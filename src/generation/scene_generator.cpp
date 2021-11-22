@@ -9,24 +9,7 @@
 #include "tree_generators/simple_generator.h"
 #include "tree_generators/proctree.h"
 #include "tree_generators/generated_tree.h"
-struct Cell
-{
-  enum CellStatus
-  {
-    EMPTY,
-    WAITING,
-    BORDER,
-    FINISHED
-  };
-  GrovePrototype prototype;
-  LightVoxelsCube *voxels_small = nullptr;
-  int id = -1;
-  CellStatus status;
-  std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
-  std::vector<int> depends_from;
-  AABB influence_bbox;
-  explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
-};
+#include "grass_generator.h"
 
 LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                                                      AABB &influence_box)
@@ -110,9 +93,12 @@ void SceneGenerator::generate_grove()
   glm::vec3 center3 = glm::vec3(center.x,0,center.y);
   float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
 
+  Block *grass_blk = ctx.settings.get_block("grass");
+  bool grass_needed = (grass_blk != nullptr);
+
 
   ctx.scene->heightmap = new Heightmap(center3, 0.5f*glm::vec2(1024,1024),hmap_cell_size);
-  ctx.scene->heightmap->random_generate(0,1,15);
+  ctx.scene->heightmap->random_generate(0,0,7.5);
   logerr("heightmap size %f %f", ctx.scene->heightmap->get_size().x,ctx.scene->heightmap->get_size().y);
   ctx.scene->grove.center = center3;
   ctx.scene->grove.ggd_name = "blank";
@@ -156,6 +142,8 @@ void SceneGenerator::generate_grove()
   int cells_x = ceil(full_size.x/cell_size.x);
   int cells_y = ceil(full_size.y/cell_size.y);
   std::vector<Cell> cells = std::vector<Cell>(cells_x*cells_y,Cell(Cell::CellStatus::WAITING));
+  GrassGenerator grassGenerator;
+
   std::list<int> waiting_cells;
   std::list<int> border_cells;
 
@@ -165,6 +153,7 @@ void SceneGenerator::generate_grove()
     {
       int id = i*cells_y + j;
       cells[id].id = id;
+      cells[id].bbox = AABB2D(start_pos + cell_size*glm::vec2(i,j), start_pos + cell_size*glm::vec2(i+1,j+1));
       //TODO: do we need a cell here?
       //cells[id].status = (i % 2 && j % 2) ? Cell::CellStatus::WAITING : Cell::CellStatus::EMPTY;
       cells[id].status = Cell::CellStatus::WAITING;
@@ -179,6 +168,12 @@ void SceneGenerator::generate_grove()
         waiting_cells.push_back(id);
       }
     }
+  }
+
+  if (grass_needed)
+  {
+    grassGenerator.set_grass_types(ctx.grass_types, *grass_blk);
+    grassGenerator.prepare_grass_patches(cells, cells_x, cells_y);
   }
 
   for (int c_id : waiting_cells)
@@ -229,6 +224,7 @@ void SceneGenerator::generate_grove()
 
   for (int c_id : waiting_cells)
   {
+    //generation trees and grass
     auto &c = cells[c_id];
 
     //temp stuff
@@ -261,6 +257,11 @@ void SceneGenerator::generate_grove()
     grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
 
     packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
+
+    if (grass_needed)
+    {
+      grassGenerator.generate_grass_in_cell(c, voxels);
+    }
 
     if (!c.depends.empty())
     {
@@ -302,5 +303,10 @@ void SceneGenerator::generate_grove()
         it++;
       }   
     }
+  }
+
+  if (grass_needed)
+  {
+    grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
   }
 }
