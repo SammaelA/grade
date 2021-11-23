@@ -9,4 +9,64 @@
         texture:s = "grass_meadow_2"
         plant_size:r = 2.5
     }
+    grass_meadow_3
+    {
+        texture:s = "grass_meadow_3"
+        plant_size:r = 2.5
+    }   
+    grass_meadow_4
+    {
+        texture:s = "grass_meadow_4"
+        plant_size:r = 3.5
+    }
+    grass_meadow_5
+    {
+        texture:s = "grass_meadow_5"
+        plant_size:r = 2.5
+    }
+    grass_meadow_6
+    {
+        texture:s = "grass_meadow_6"
+        plant_size:r = 2.5
+    }  
+    grass_meadow_7
+    {
+        texture:s = "grass_meadow_7"
+        plant_size:r = 3.5
+    }
+    grass_meadow_8
+    {
+        texture:s = "grass_meadow_8"
+        plant_size:r = 2.5
+    }
+    grass_meadow_9
+    {
+        texture:s = "grass_meadow_9"
+        plant_size:r = 2.5
+    }  
+    grass_meadow_10
+    {
+        texture:s = "grass_meadow_10"
+        plant_size:r = 3.5
+    }
+    grass_meadow_11
+    {
+        texture:s = "grass_meadow_11"
+        plant_size:r = 2.5
+    }
+    grass_meadow_12
+    {
+        texture:s = "grass_meadow_12"
+        plant_size:r = 2.5
+    }  
+    grass_meadow_13
+    {
+        texture:s = "grass_meadow_13"
+        plant_size:r = 3.5
+    }
+    grass_meadow_14
+    {
+        texture:s = "grass_meadow_14"
+        plant_size:r = 2.5
+    } 
 }

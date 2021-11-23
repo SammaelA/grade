@@ -636,7 +636,8 @@ int base_initialization()
   Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
   Tiny::event.handler = [&]()
   { eventHandler(appContext, Tiny::event); };
-  textureManager = TextureManager("./resources/textures/");
+  Block blk;
+  textureManager = TextureManager("./resources/textures/", blk);
   data.startScreenShader = new PostFx("simple_render.fs");
 
   //PythonHelper ph;

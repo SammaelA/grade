@@ -201,7 +201,10 @@ void base_init()
   Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
   Tiny::event.handler = [&]()
   { eventHandler(appContext, Tiny::event); };
-  textureManager = TextureManager("./resources/textures/");
+  BlkManager man;
+  Block textures_list;
+  man.load_block_from_file("resources.blk",textures_list);
+  textureManager = TextureManager("./resources/textures/", textures_list);
 }
 void init_render(WorldRenderer &worldRenderer)
 {
@@ -225,11 +228,12 @@ void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationConte
   int patches_x = sqrt(patches_cnt);
   int patches_y = patches_x + 1;
   patches_x = MAX(patches_x,1);
-  patches_cnt = patches_x*patches_y;
   int max_trees_per_patch = 2*((float)demo_mode_trees_cnt/patches_cnt);
   sceneGenerationContext.settings.set_vec2("cell_size",cell_size);
-  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(cell_size.x*patches_x,cell_size.y*patches_y));
+  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(3*cell_size.x*patches_x,3*cell_size.y*patches_y));
   sceneGenerationContext.settings.set_int("max_trees_per_patch",max_trees_per_patch);
+  sceneGenerationContext.settings.set_int("fixed_patches_count", patches_cnt);
+  sceneGenerationContext.settings.set_double("patches_density", 0);
 }
 
 int parser_main(int argc, char *argv[])

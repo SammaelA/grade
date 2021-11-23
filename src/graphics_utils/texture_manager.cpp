@@ -2,6 +2,8 @@
 #include "../tinyEngine/image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../third_party/stb_image_write.h"
+#include "save_utils/blk.h"
+
 #include <exception>
 
 long tex_mem = 0;
@@ -134,15 +136,23 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
     }
     glDeleteFramebuffers(1, &fbo1);
 }
-TextureManager::TextureManager(std::string base_path)
+TextureManager::TextureManager(std::string base_path, Block &textures_used)
 {
     image::base_img_path = base_path;
-    std::vector<std::string> names = {"reference_tree_test", "terrain","noise","colored_noise","leaf1","leaf2","leaf","wood","wood2","wood3",
-                                      "grass","start_screen","grass_meadow_1","grass_meadow_2","grass_meadow_3","grass_meadow_4",
-                                      "texture not found"};
-    std::vector<std::string> paths = {"reference_tree_test.png", "terrain.png","perlin.png","noise.png","leaf1.png","leaf6.png","leaf4.png","wood1.jpg","wood2.jpg","wood3.jpg",
-                                      "grass.png","start_screen.png","grass8.png","grass11.png","grass14.png","grass15.png",
-                                      "texture_not_found.png"};
+    std::vector<std::string> names = {"texture not found"};
+    std::vector<std::string> paths = {"texture_not_found.png"};
+    
+    for (int i=0;i<textures_used.size();i++)
+    {
+        std::string name = textures_used.get_name(i);
+        std::string path = textures_used.get_string(i,"");
+        if (path != "")
+        {
+            names.push_back(name);
+            paths.push_back(path);
+        }
+    }
+    
     for (int i=0;i<paths.size();i++)
     {
         try

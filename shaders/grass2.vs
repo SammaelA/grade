@@ -11,7 +11,7 @@ in vec4 in_Tex;
 
 uniform mat4 projection;
 uniform mat4 view;
-uniform int instance_offset;
+uniform int inst_buf_offset;
 
 out vec3 ex_Tex;
 out vec3 ex_Normal;
@@ -21,7 +21,7 @@ out vec4 ex_FragPosView;
 
 void main(void) 
 { 
-    int instance_n = instance_offset + int(gl_InstanceID);
+    int instance_n = inst_buf_offset + int(gl_InstanceID);
     mat4 inst_mat = instances[instance_n];
     ex_Normal = (transpose(inverse(inst_mat))*vec4(in_Normal,0)).xyz;
     ex_FragPos = (inst_mat*vec4(in_Position, 1.0f)).xyz;

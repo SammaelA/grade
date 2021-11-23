@@ -75,12 +75,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
         inst_counts.push_back(p.second.size());
         total_instances += p.second.size();
     }
-    for (auto &m : models)
-    {
-        for (int i:   m->indices)
-            logerr("ind %d",i);
-        logerr("---");
-    }
+
     glm::mat4 *matrices = new glm::mat4[total_instances];
     int i=0;
     for (auto &p : data.grass_instances)

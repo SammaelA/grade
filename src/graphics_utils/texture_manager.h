@@ -3,6 +3,7 @@
 #include "../tinyEngine/texture.h"
 #include <string>
 
+struct Block;
 class TextureManager
 {
 public:
@@ -24,7 +25,7 @@ public:
     void save_bmp_directly(Texture &t, std::string name);
     void save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
     TextureManager();
-    TextureManager(std::string base_path);
+    TextureManager(std::string base_path, Block &textures_used);
     bool is_correct(Texture &t);
     void clear_unnamed();
     void set_textures_tag(int tag);
