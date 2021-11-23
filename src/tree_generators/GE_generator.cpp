@@ -315,6 +315,9 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
 
 void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params)
 {
+    if (b.joints.empty())
+        return;
+
     float l = 0;
     float res = 0;
     int total_joints = b.joints.size();
