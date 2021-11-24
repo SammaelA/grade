@@ -5,6 +5,7 @@
     colored_noise:s = "noise.png"
     leaf1:s = "leaf1.png"
     leaf2:s = "leaf6.png"
+    leaf3:s = "leaf5.png"
     leaf:s = "leaf4.png"
     wood:s = "wood1.jpg"
     wood2:s = "wood2.jpg"
@@ -25,4 +26,5 @@
     grass_meadow_12:s = "grass13.png"
     grass_meadow_13:s = "grass14.png"
     grass_meadow_14:s = "grass15.png"
+    lily_texture:s = "grass16.png"
 }

@@ -8,8 +8,10 @@
     max_trees_per_patch:i = 5
     grass
     {
-        grass_meadow_1:r = 1.0
-        grass_meadow_2:r = 1.0
-        grass_meadow_3:r = 1.0
+        grass_meadow_1:r = 0.75
+        grass_meadow_4:r = 0.4
+        lily:r = 1.5
+        flowers_1:r = 0.18
+        flowers_2:r = 0.25
     }
 }

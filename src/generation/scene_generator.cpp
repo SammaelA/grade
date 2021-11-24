@@ -142,20 +142,35 @@ void SceneGenerator::generate_grove()
   GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), 0.5f*full_size, 3);
   mask.set_round(MIN(full_size.x, full_size.y));
 
-  int cells_x = ceil(full_size.x/cell_size.x);
-  int cells_y = ceil(full_size.y/cell_size.y);
+  int cells_x = ceil(2*full_size.x/cell_size.x);
+  int cells_y = ceil(2*full_size.y/cell_size.y);
   std::vector<Cell> cells = std::vector<Cell>(cells_x*cells_y,Cell(Cell::CellStatus::EMPTY));
   GrassGenerator grassGenerator;
 
   std::list<int> waiting_cells;
   std::list<int> border_cells;
+
+  for (int i=0;i<cells_x;i++)
+  {
+    for (int j=0;j<cells_y;j++)
+    {
+      int id = i*cells_y + j;
+      cells[id].id = id;
+      cells[id].bbox = AABB2D(start_pos + cell_size*glm::vec2(i,j), start_pos + cell_size*glm::vec2(i+1,j+1));
+    }
+  }
+
   if (fixed_patches_count > 0)
   {
-    std::vector<int> cells_n = std::vector<int>(cells.size());
-    for (int i=0;i<cells_n.size();i++)
-      cells_n[i] = i;
+    std::vector<int> cells_n = {};
+    for (int i=0;i<cells.size();i++)
+    {
+      glm::vec2 ct = 0.5f*(cells[i].bbox.min_pos + cells[i].bbox.max_pos);
+      if (mask.get_bilinear(glm::vec3(ct.x,0,ct.y)) > 0.1)
+        cells_n.push_back(i);
+    }
     std::random_shuffle(cells_n.begin(), cells_n.end());
-    for (int i=0;i<fixed_patches_count;i++)
+    for (int i=0;i<MIN(fixed_patches_count, cells_n.size());i++)
     {
       cells[cells_n[i]].status = Cell::CellStatus::WAITING;
     }
@@ -166,11 +181,10 @@ void SceneGenerator::generate_grove()
     for (int j=0;j<cells_y;j++)
     {
       int id = i*cells_y + j;
-      cells[id].id = id;
-      cells[id].bbox = AABB2D(start_pos + cell_size*glm::vec2(i,j), start_pos + cell_size*glm::vec2(i+1,j+1));
+
       int trees_count = 0;
       if (urand() < patches_density || (cells[id].status == Cell::CellStatus::WAITING))
-        trees_count = MAX(urand()*max_tc,1);
+        trees_count = MAX(urand(0.4,0.6)*max_tc,1);
       if (grass_needed)
         cells[id].status = Cell::CellStatus::WAITING;
       if (cells[id].status == Cell::CellStatus::WAITING)
@@ -178,8 +192,12 @@ void SceneGenerator::generate_grove()
         logerr("waiting cell %d %d",id, trees_count);
         glm::vec2 center = start_pos + cell_size*glm::vec2(i+0.5,j+0.5);
         cells[id].prototype.pos = center;
-        cells[id].prototype.size = cell_size;
-        cells[id].prototype.possible_types = {std::pair<int, float>(0,1)};
+        cells[id].prototype.size = 0.5f*cell_size;
+        cells[id].prototype.possible_types = {};
+        for (int i=0;i<types.size();i++)
+        {
+          cells[id].prototype.possible_types.push_back(std::pair<int, float>(i,1.0f/types.size()));
+        }
         cells[id].prototype.trees_count = trees_count;
         cells[id].influence_bbox = get_influence_AABB(cells[id].prototype, ggd.types, *(ctx.scene->heightmap));
         waiting_cells.push_back(id);
@@ -243,23 +261,20 @@ void SceneGenerator::generate_grove()
   {
     //generation trees and grass
     auto &c = cells[c_id];
+    bool short_lived_voxels = false;
     if (c.prototype.trees_count > 0)
     {
       //temp stuff
       ggd.pos.x = c.prototype.pos.x;
       ggd.pos.z = c.prototype.pos.y;
       ggd.pos.y = ctx.scene->heightmap->get_height(ggd.pos);
-      ggd.size.x = cell_size.x;
-      ggd.size.z = cell_size.y;
+      ggd.size.x = c.prototype.size.x;
+      ggd.size.z = c.prototype.size.y;
       ggd.trees_count = c.prototype.trees_count;
 
       ::Tree *trees = new ::Tree[ggd.trees_count];
       GroveGenerator grove_gen;
-      GrovePrototype prototype;
-      prototype.pos = glm::vec2(ggd.pos.x, ggd.pos.z);
-      prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
-      prototype.trees_count = ggd.trees_count;
-      prototype.possible_types = {std::pair<int, float>(0, 1)};
+      GrovePrototype &prototype = c.prototype;
       LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
       voxels->add_heightmap(*(ctx.scene->heightmap));
       for (int i = 0; i < ggd.obstacles.size(); i++)
@@ -272,7 +287,7 @@ void SceneGenerator::generate_grove()
       }
       grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
       packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
-
+    
       if (!c.depends.empty())
       {
         c.status = Cell::CellStatus::BORDER;
@@ -284,6 +299,12 @@ void SceneGenerator::generate_grove()
       {
         c.status = Cell::CellStatus::FINISHED;
       }
+      if (grass_needed && !c.voxels_small)
+      {
+        short_lived_voxels = true;
+        c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(), 4,
+                                             glm::vec2(0,1e8));
+      }
       delete voxels;
       delete[] trees;
     } 
@@ -292,6 +313,8 @@ void SceneGenerator::generate_grove()
       grassGenerator.generate_grass_in_cell(c, c.voxels_small);
       if (c.status != Cell::CellStatus::BORDER)
         c.status = Cell::CellStatus::FINISHED;
+      if (short_lived_voxels && c.voxels_small)
+        delete c.voxels_small;
     }
 
     //TODO: can be done not every iteration

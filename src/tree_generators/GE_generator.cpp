@@ -188,7 +188,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     t.root = Branch();
     t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-10,0), 1));
 
-    bool bush = true;
+    bool bush = (params.root_type == 0);
     if (bush)
     {
         for (int i = 0; i < 10; i++)
@@ -202,9 +202,11 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     }
     else
     {
-        t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 10 * params.ro, 0), 0.9));
-        for (int i = 0; i < 4; i++)
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 3 * params.ro, 0), 0.9));
+        t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 10 * params.ro, 0), 0.9,false));
+        for (int i = 0; i < 2; i++)
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 3 * params.ro, 0), 0.9,false));
+        for (int i = 0; i < 5; i++)
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 3 * params.ro, 0), 0.9,true));
     }
     t.status = TreeStatus::GROWING;
 }
@@ -669,6 +671,8 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         i++;
     }
     float lq = total_light / total_joints;
+    //if (params.root_type == 1)
+        //logerr("params.r_s %f %f", lq, params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10));
     float remove_q = lq/(params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10));
     if (total_joints > 10)
     {

@@ -4,6 +4,7 @@
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/postfx.h"
 #include "graphics_utils/texture_manager.h"
+#include "graphics_utils/volumetric_occlusion.h"
 
 void GrassGenerator::set_grass_types(const std::map<std::string, GrassType> &grass_types, Block &grass_settings)
 {
@@ -61,7 +62,7 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
     for (int i = 0;i<used_grass_types.size();i++)
     {
         auto &type = used_grass_types[i];
-        int patches_count = grass_quantity[i]*(full_size.x*full_size.y)/(PI*SQR(type.patch_size));
+        int patches_count = round(grass_quantity[i]*(full_size.x*full_size.y)/(PI*SQR(type.patch_size)));
         logerr("%f %d %f %f %f",grass_quantity[i],patches_count, full_size.x, full_size.y, type.patch_size);
         if (patches_count <= 0)
             continue;
@@ -89,12 +90,69 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
     }
     logerr("added %d grass patches",grass_patches.size());
 }
+
+struct GridPoint
+{
+    static constexpr int point_size = 4;
+    int patch_ids[point_size] = {-1,-1,-1,-1};
+    std::list<Sphere2D>::iterator instances[point_size];
+};
+struct GrassGrid
+{
+public:
+    static constexpr float precision = 1;
+
+    GrassGrid(Cell &cell, float plant_av_sz)
+    {
+        cell_sz = (cell.bbox.max_pos - cell.bbox.min_pos);
+        cell_pos = cell.bbox.min_pos;
+        sz = glm::ivec2(precision/plant_av_sz*cell_sz);
+        p_sz = cell_sz/glm::vec2(sz);
+        data = new GridPoint[sz.x*sz.y];
+        logerr("created grid %d %d",sz.x, sz.y);
+    }
+    ~GrassGrid()
+    {
+        if (data)
+            delete[] data;
+    }
+
+    glm::ivec4 slice(AABB2D &box)
+    {
+        glm::vec2 grdf = (box.min_pos - cell_pos)/p_sz;
+        int x0 = CLAMP(floor(grdf.x),0,sz.x - 1);
+        int y0 = CLAMP(floor(grdf.y),0,sz.y - 1);
+
+        grdf = (box.max_pos - cell_pos)/p_sz;
+        int x1 = CLAMP(ceil(grdf.x),0,sz.x - 1);
+        int y1 = CLAMP(ceil(grdf.y),0,sz.y - 1);
+
+        return glm::ivec4(x0, y0, x1, y1);
+    }
+    GridPoint &get_point(int x, int y)
+    {
+        return data[y*sz.x + x];
+    }
+    glm::vec2 center(int x, int y)
+    {
+        return cell_pos + p_sz*glm::vec2(x + 0.5, y + 0.5);
+    }
+
+    GridPoint *data = nullptr;
+    glm::ivec2 sz;
+    glm::vec2 cell_sz;
+    glm::vec2 cell_pos;
+    glm::vec2 p_sz;
+};
+
 void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusion)
 {
     bool test_occlusion = (occlusion != nullptr);
-    test_occlusion = false;//TODO: test occlusion
-    //int dots_mult = 3;
+    //test_occlusion = false;//TODO: test occlusion
     Normal normal = Normal(0,1);
+
+    GrassGrid grid = GrassGrid(cell, used_grass_types[0].plant_size);
+
     for (int patch_id : cell.grass_patches)
     {
         GrassPatch &patch = grass_patches[patch_id];
@@ -103,6 +161,87 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
         if (pb.empty())
             continue;
         float pb_sq = (pb.max_pos.x - pb.min_pos.x)*(pb.max_pos.y - pb.min_pos.y);
+        int instances_cnt = round(patch.instances_max_cnt*(pb_sq/(PI*SQR(patch.sphere.r))));
+        if (instances_cnt <= 0)
+            continue;
+        int new_instances = 0;
+        float ipp_f_base = CLAMP(type.patch_density*(grid.p_sz.x*grid.p_sz.y), 1, GridPoint::point_size);
+        float grid_diag = sqrt(SQR(grid.p_sz.x) + SQR(grid.p_sz.y));
+        glm::ivec4 grid_slice = grid.slice(pb);
+        logerr("subgrid (%d %d) - (%d %d)",grid_slice.x, grid_slice.y, grid_slice.z, grid_slice.w);
+        for (int x = grid_slice.x; x < grid_slice.z; x++)
+        {
+            for (int y = grid_slice.y; y < grid_slice.w; y++)
+            {
+                GridPoint &p = grid.get_point(x, y);
+                glm::vec2 center = grid.center(x, y);
+                if (patch.sphere.contains(center))
+                {
+                    float LS = type.light_sensivity;
+                    float grow_chance = LS >= 0 ? 1 : 0;
+                    if (test_occlusion && LS != 0)
+                    {
+                        float light = 1/(1 + occlusion->get_occlusion_projection(glm::vec3(center.x, 0, center.y)));
+                        grow_chance = LS > 0 ? pow(light, LS) : 1 - pow(light, -LS);
+                    }
+                    if (grow_chance < 0.01)
+                        continue;
+                    float ipp_f = ipp_f_base*grow_chance;
+                    int ipp_i = floor(ipp_f);
+                    float ipp_r = ipp_f - ipp_i;
+                    int ipp = CLAMP(ipp_i + (urand() < ipp_r),0,GridPoint::point_size);
+                    //logerr("cell %d patch %d (%d %d )trying to add %d instances %f %f %f",cell.id, patch_id, x, y, ipp,
+                    //        grow_chance, center.x, center.y);
+
+                    for (int point = 0; point < ipp; point++)
+                    {
+                        glm::vec2 pos = center + grid.p_sz*glm::vec2(urand(-0.5, 0.5), urand(-0.5, 0.5));
+                        float r = type.plant_size + type.plant_size_std_dev*normal.get();
+                        bool placed = false;
+                        int n = 0;
+                        while (!placed && n < GridPoint::point_size)
+                        {
+                            if (p.patch_ids[n] < 0)
+                            {
+                                //add new instance
+                                patch.grass_instances.push_back(Sphere2D(pos,r));
+                                p.patch_ids[n] = patch_id;
+                                p.instances[n] = patch.grass_instances.end()--;
+                                placed = true;
+                                new_instances++;
+                            }
+                            else
+                            {
+                                GrassPatch &sec_p = grass_patches[p.patch_ids[n]];
+                                GrassType &sec_type = used_grass_types[sec_p.grass_type];
+                                float dist_q = (1 - length(pos - p.instances[n]->pos))/(grid_diag);// from 0 to 1
+                                float push_a = type.push/(type.push + sec_type.push + 1e-6);
+                                float push_b = 1 - push_a;
+
+                                float rnd = urand();
+                                if (rnd < dist_q*push_a)
+                                {
+                                    //replace existed instance with new
+                                    sec_p.grass_instances.erase(p.instances[n]);
+                                    patch.grass_instances.push_back(Sphere2D(pos,r));
+                                    p.patch_ids[n] = patch_id;
+                                    p.instances[n] = patch.grass_instances.end()--;
+                                    placed = true;
+                                    new_instances++;
+                                }
+                                else if (rnd > 1 - dist_q*push_b || n == GridPoint::point_size - 1)
+                                {
+                                    //do not grow this instance
+                                    placed = true;
+                                }
+                            }
+                            n++;
+                        }
+                    }
+                }
+            }
+        }
+        /*
         int instances_cnt = round(patch.instances_max_cnt*(pb_sq/(PI*SQR(patch.sphere.r))));
         for (int i=0;i<instances_cnt;i++)
         {
@@ -117,6 +256,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
                 patch.grass_instances.push_back(Sphere2D(pos,r));
             }
         }
+        */
     }
 }
 void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
@@ -153,7 +293,7 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
             glm::vec3 pos3 = glm::vec3(in.pos.x, 0, in.pos.y);
             pos3.y = h.get_height(pos3);
             instances.push_back(GrassInstanceData(pos3,in.r,urand(0, 2*PI)));
-            logerr("added grass instance %d (%f %f %f) r= %f",in_cnt,pos3.x,pos3.y,pos3.z,in.r);
+            //logerr("added grass instance %d (%f %f %f) r= %f",in_cnt,pos3.x,pos3.y,pos3.z,in.r);
             in_cnt++;
         }
     }

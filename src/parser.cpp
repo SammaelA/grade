@@ -224,13 +224,13 @@ void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationConte
 {
   float density = 5;
   glm::vec2 cell_size(75,75);
-  int patches_cnt = demo_mode_trees_cnt/density;
+  int patches_cnt = ceil(demo_mode_trees_cnt/density);
   int patches_x = sqrt(patches_cnt);
-  int patches_y = patches_x + 1;
   patches_x = MAX(patches_x,1);
+  int patches_y = patches_x;
   int max_trees_per_patch = 2*((float)demo_mode_trees_cnt/patches_cnt);
   sceneGenerationContext.settings.set_vec2("cell_size",cell_size);
-  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(3*cell_size.x*patches_x,3*cell_size.y*patches_y));
+  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(2*cell_size.x*patches_x,2*cell_size.y*patches_y));
   sceneGenerationContext.settings.set_int("max_trees_per_patch",max_trees_per_patch);
   sceneGenerationContext.settings.set_int("fixed_patches_count", patches_cnt);
   sceneGenerationContext.settings.set_double("patches_density", 0);
