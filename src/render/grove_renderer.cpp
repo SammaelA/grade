@@ -716,6 +716,12 @@ void GroveRenderer::prepare_wood_types_atlas()
         return;
     atlas = new TextureAtlas(tex_size,tex_size,num_texs);
     atlas->set_grid(tex_size,tex_size);
+    Texture &t = atlas->tex(0);
+    glBindTexture(t.type, t.texture);
+    glTexParameteri(t.type, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(t.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(t.type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
     int k = 0;
 
     Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});

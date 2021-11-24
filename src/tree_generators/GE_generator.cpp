@@ -239,7 +239,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst)
     dst.valid = true;
 
     dst.root = dst.branchHeaps[0]->new_branch();
-    dst.root->type_id = 0;
+    dst.root->type_id = dst.type->type_id;
     dst.root->self_id = ids++;
     dst.root->level = 0;
     dst.root->dead = false;
@@ -298,7 +298,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             ::Branch *nb = dst.branchHeaps[chb.level]->new_branch();
             //logerr("conv br 3 %d %d",b_src.level, i);
             b_dst->joints.back().childBranches.push_back(nb);
-            nb->type_id = 0;
+            nb->type_id = dst.type->type_id;
             nb->self_id = ids++;
             nb->level = chb.level;
             nb->dead = false;
