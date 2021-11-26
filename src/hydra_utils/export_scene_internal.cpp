@@ -52,7 +52,7 @@ void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
 {
   Visualizer vis;
   Model model;
-  vis.heightmap_to_model(h, &model, glm::vec2(512, 512), glm::vec2(8192, 8192), 10, 0);
+  vis.heightmap_to_model(h, &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
   model_to_simple_mesh(model, mesh);
 }
 void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, InstancedBranch &branch, 
@@ -147,8 +147,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
 
   HRTextureNodeRef cube[6] = {
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_west.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_east.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_west.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_up.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_down.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_north.bmp"),
@@ -166,8 +166,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
     auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"0.5 0.5 0.5");
-    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    color.append_attribute(L"val").set_value(L"0.6 0.6 0.6");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
     auto texNode = hrTextureBind(texTerrain, color);
 
     VERIFY_XML(matNode);
@@ -194,23 +194,24 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrMaterialOpen(mat_leaf, HR_WRITE_DISCARD);
   {
     auto matNode = hrMaterialParamNode(mat_leaf);
-  /*auto diff = matNode.append_child(L"diffuse");
+  auto diff = matNode.append_child(L"diffuse");
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
     auto color = diff.append_child(L"color");
     color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
     color.append_attribute(L"tex_apply_mode").set_value(L"replace");
-    auto texNode = hrTextureBind(texLeaf, color);*/
+    auto texNode = hrTextureBind(texLeaf, color);
 
     auto opacity = matNode.append_child(L"opacity");
     auto texNodeOp = hrTextureBind(texLeafOpacity, opacity);
-    
+   /* 
     auto transl = matNode.append_child(L"translucency");
     auto colorTrans = transl.append_child(L"color");
     colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
     colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNodeTrans = hrTextureBind(texLeaf, transl);
 
+    auto texNodeTrans = hrTextureBind(texLeaf, transl);
+*/
     VERIFY_XML(matNode);
   }
   hrMaterialClose(mat_leaf);
@@ -223,11 +224,13 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     auto opacity = matNode.append_child(L"opacity");
     auto texNodeOp = hrTextureBind(texGrassOpacity, opacity);
     
-    auto transl = matNode.append_child(L"translucency");
-    auto colorTrans = transl.append_child(L"color");
-    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNodeTrans = hrTextureBind(texGrass, transl);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.5 1.5 1.5");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+  
+    auto texNodeTrans = hrTextureBind(texGrass, diff);
 
     VERIFY_XML(matNode);
   }
@@ -243,7 +246,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     hrMeshVertexAttribPointer2f(terrainMeshRef, L"texcoord", &terrain.vTexCoord[0]);
     
     hrMeshMaterialId(terrainMeshRef, mat_land.id);
-    logerr("tri id %d",int(terrain.triIndices.size()));
+    logerr("tri id 1 %d",int(terrain.triIndices.size()));
     hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
   }
   hrMeshClose(terrainMeshRef);
@@ -257,19 +260,23 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     meshes.emplace_back();
     SimpleMesh &br = meshes.back();
     packed_branch_to_simple_mesh(br,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
-    std::wstring name = L"branch" + std::to_wstring(branches.size());
-    IDAs.push_back(&(pb.IDA));
-    branches.push_back(hrMeshCreate(name.c_str()));
-    hrMeshOpen(branches.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+    if (br.triIndices.size() > 0)
     {
-      hrMeshVertexAttribPointer3f(branches.back(), L"pos",      &br.vPos[0]);
-      hrMeshVertexAttribPointer3f(branches.back(), L"norm",     &br.vNorm[0]);
-      hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
-      hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
+      std::wstring name = L"branch" + std::to_wstring(branches.size());
+      IDAs.push_back(&(pb.IDA));
+      branches.push_back(hrMeshCreate(name.c_str()));
+      hrMeshOpen(branches.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+      {
+        hrMeshVertexAttribPointer3f(branches.back(), L"pos",      &br.vPos[0]);
+        hrMeshVertexAttribPointer3f(branches.back(), L"norm",     &br.vNorm[0]);
+        hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
+        hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
 
-      hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
+        logerr("tri id 2 %d",int(br.triIndices.size()));
+        hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
+      }
+      hrMeshClose(branches.back());
     }
-    hrMeshClose(branches.back());
   }
 
     std::vector<Model *> grass_models;
@@ -334,7 +341,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshVertexAttribPointer2f(grasses.back(), L"texcoord", &mesh.vTexCoord[0]);
         
         hrMeshMaterialId(grasses.back(), mat_grass.id);
-        logerr("tri id %d",int(mesh.triIndices.size()));
+        logerr("tri id 3 %d",int(mesh.triIndices.size()));
         hrMeshAppendTriangles3(grasses.back(), int(mesh.triIndices.size()), mesh.triIndices.data());
       }
       hrMeshClose(grasses.back());
@@ -359,7 +366,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
 
     intensityNode.append_child(L"color").append_attribute(L"val")      = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 8.0f;
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 4.0f;
 
     VERIFY_XML(lightNode);
   }
@@ -393,9 +400,11 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 	  lightNode.attribute(L"distribution").set_value(L"map");
     auto intensityNode = lightNode.append_child(L"intensity");
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
-    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.5");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1.0");
 
 	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
+    //texNode.append_attribute(L"input_gamma").set_value(1.0f);
+    //texNode.append_attribute(L"input_alpha").set_value(L"rgb");
 
 	  VERIFY_XML(lightNode);
   }
@@ -419,8 +428,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-180 90 20");
-    camNode.append_child(L"look_at").text().set(L"0 0 0");
+    camNode.append_child(L"position").text().set(L"-115 80 20");
+    camNode.append_child(L"look_at").text().set(L"0 40 0");
   
     VERIFY_XML(camNode);
   }
@@ -473,6 +482,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshInstance(scnRef, branches[i], m.L());
       }
     }
+    
     for (int i=0;i<inst_counts.size();i++)
     {
       for (int in = inst_offsets[i];in < inst_offsets[i] + inst_counts[i];in++)
@@ -484,9 +494,11 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
                                     mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
         auto m = hlm::float4x4(mat_vals);
         hrMeshInstance(scnRef, grasses[i], m.L());
+        //break;
       }
       logerr("added %d grass instances", inst_counts[i]);
     }
+    
     delete matrices;
     hrLightInstance(scnRef, sky, mind.L());
     auto mres = hlm::mul(hlm::rotate_Z_4x4(1.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
