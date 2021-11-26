@@ -16,7 +16,7 @@ layout (location = 3) out vec4 fragWorldPos;
 void main(void) 
 {
   fragColor = texture(tex,ex_Tex.xy);
-  if (fragColor.a<0.5)
+  if (fragColor.a<0.99)
     discard;
   fragColor.rgb/fragColor.a;
 

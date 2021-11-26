@@ -11,13 +11,13 @@
     }
     simple_tree
     {
-        wood_tex_name:s = "wood2"
-        leaf_tex_name:s = "leaf2"
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
         res_q:r = 0.5
         root_type:i = 1
-        Xm:r = 125
+        Xm:r = 100
         branching_angle_max:r = 1.5
-        r_s:r = 0.02
+        r_s:r = 0.1
         r:r = 0.35
     }
 }

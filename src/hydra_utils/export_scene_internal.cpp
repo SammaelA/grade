@@ -33,55 +33,28 @@ extern GLFWwindow* g_window;
   }
 
 void initGLIfNeeded(int a_width, int a_height, const char* name);
+void model_to_simple_mesh(Model &model, SimpleMesh &mesh)
+{
+  mesh.vPos = std::move(model.positions);
+  mesh.vNorm = std::move(model.normals);
 
+  mesh.triIndices = std::vector<int>(model.indices.size(), 0);
+  memcpy(mesh.triIndices.data(), model.indices.data(), mesh.triIndices.size() * sizeof(int));
+
+  mesh.vTexCoord = std::vector<GLfloat>(model.colors.size() / 2, 0);
+  for (int i = 0; i < model.colors.size() / 4; i++)
+  {
+    mesh.vTexCoord[2 * i] = model.colors[4 * i];
+    mesh.vTexCoord[2 * i + 1] = model.colors[4 * i + 1];
+  }
+}
 void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
 {
-    glm::vec2 size = h.get_size();
-    glm::vec3 pos = h.get_pos();
-    glm::vec2 step = glm::vec2(10,10);
-    SimpleMesh &flat_terrain = mesh;
-            int x = (2*size.x/step.x) + 1;
-            int y = (2*size.y/step.y) + 1;
-            glm::vec2 range = h.get_height_range();
-            for (int i = 0; i < x; i++)
-            {
-                for (int j = 0; j < y; j++)
-                {
-                    int ind = flat_terrain.vPos.size()/3;
-                    glm::vec3 terr_pos = glm::vec3(pos.x - size.x + step.x*i,0,pos.z - size.y + step.y*j);
-                glm::vec3 terr_pos1 = glm::vec3(pos.x - size.x + step.x*(i+1),0,pos.z - size.y + step.y*j);
-                glm::vec3 terr_pos2 = glm::vec3(pos.x - size.x + step.x*(i),0,pos.z - size.y + step.y*(j+1));
-
-                terr_pos.y = h.get_height(terr_pos);
-                terr_pos1.y = h.get_height(terr_pos1);
-                terr_pos2.y = h.get_height(terr_pos2);
-                glm::vec3 n = glm::normalize(glm::cross(terr_pos1 - terr_pos,terr_pos2 - terr_pos));
-
-                flat_terrain.vPos.push_back(terr_pos.x);
-                flat_terrain.vPos.push_back(terr_pos.y);
-                flat_terrain.vPos.push_back(terr_pos.z);
-                //flat_terrain.vPos.push_back(1);
-
-                flat_terrain.vNorm.push_back(n.x);
-                flat_terrain.vNorm.push_back(n.y);
-                flat_terrain.vNorm.push_back(n.z);
-
-                flat_terrain.vTexCoord.push_back(0.5*(i % 2));
-                flat_terrain.vTexCoord.push_back(0.5*(j % 2));
-
-                if (i != x - 1 && j != y - 1)
-                {
-                    flat_terrain.triIndices.push_back(ind);
-                    flat_terrain.triIndices.push_back(ind + y + 1);
-                    flat_terrain.triIndices.push_back(ind + 1);
- 
-                    flat_terrain.triIndices.push_back(ind);
-                    flat_terrain.triIndices.push_back(ind + y);
-                    flat_terrain.triIndices.push_back(ind + y + 1);
-                }
-                }
-            }
-        }
+  Visualizer vis;
+  Model model;
+  vis.heightmap_to_model(h, &model, glm::vec2(512, 512), glm::vec2(8192, 8192), 10, 0);
+  model_to_simple_mesh(model, mesh);
+}
 void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, InstancedBranch &branch, 
                                   int up_to_level, bool need_leaves, int wood_mat_id, int leaves_mat_id)
 {
@@ -168,16 +141,18 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
   HRTextureNodeRef texWood = hrTexture2DCreateFromFile(L"data/textures/wood.jpg");
   HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(L"data/textures/leaf.png");
+  HRTextureNodeRef texGrass = hrTexture2DCreateFromFile(L"data/textures/grass_atlas.bmp");
   HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(L"data/textures/leaf_opacity.png");
-  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain2.jpg");
+  HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(L"data/textures/grass_atlas_op.bmp");
+  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
 
   HRTextureNodeRef cube[6] = {
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/posx.jpg"),
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/negx.jpg"),
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/posy.jpg"),
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/negy.jpg"),
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/posz.jpg"),
-      hrTexture2DCreateFromFile(L"data/textures/Meadow/negz.jpg"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_west.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_east.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_up.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_down.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_north.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_south.bmp"),
     };
 
   HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
@@ -191,7 +166,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
     auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"val").set_value(L"0.5 0.5 0.5");
     color.append_attribute(L"tex_apply_mode").set_value(L"replace");
     auto texNode = hrTextureBind(texTerrain, color);
 
@@ -240,6 +215,24 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   }
   hrMaterialClose(mat_leaf);
 
+  HRMaterialRef mat_grass = hrMaterialCreate(L"mat_grass");
+  hrMaterialOpen(mat_grass, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_grass);
+
+    auto opacity = matNode.append_child(L"opacity");
+    auto texNodeOp = hrTextureBind(texGrassOpacity, opacity);
+    
+    auto transl = matNode.append_child(L"translucency");
+    auto colorTrans = transl.append_child(L"color");
+    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNodeTrans = hrTextureBind(texGrass, transl);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_grass);
+
   SimpleMesh terrain;
   heightmap_to_simple_mesh(*(scene.heightmap), terrain);
   HRMeshRef terrainMeshRef = hrMeshCreate(L"terrain");
@@ -250,6 +243,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     hrMeshVertexAttribPointer2f(terrainMeshRef, L"texcoord", &terrain.vTexCoord[0]);
     
     hrMeshMaterialId(terrainMeshRef, mat_land.id);
+    logerr("tri id %d",int(terrain.triIndices.size()));
     hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
   }
   hrMeshClose(terrainMeshRef);
@@ -264,21 +258,89 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     SimpleMesh &br = meshes.back();
     packed_branch_to_simple_mesh(br,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
     std::wstring name = L"branch" + std::to_wstring(branches.size());
-    branches.push_back(hrMeshCreate(name.c_str()));
     IDAs.push_back(&(pb.IDA));
+    branches.push_back(hrMeshCreate(name.c_str()));
     hrMeshOpen(branches.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
-    logerr("open %d %d %d %d %d",meshes.size(),br.vPos.size(),br.vNorm.size(), 
-           br.vTexCoord.size(), br.triIndices.size());
     {
       hrMeshVertexAttribPointer3f(branches.back(), L"pos",      &br.vPos[0]);
       hrMeshVertexAttribPointer3f(branches.back(), L"norm",     &br.vNorm[0]);
       hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
       hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
 
-      hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size() - 3), br.triIndices.data());
+      hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
     }
     hrMeshClose(branches.back());
   }
+
+    std::vector<Model *> grass_models;
+    std::vector<SimpleMesh> grass_meshes;
+    std::vector<HRMeshRef> grasses;
+
+    std::vector<int> inst_offsets;
+    std::vector<int> inst_counts;
+    std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
+    std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
+    std::vector<float> normals = {0,0,1, 0,0,1, 0,0,1, 0,0,1, 1,0,0, 1,0,0, 1,0,0, 1,0,0};
+    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};
+
+    glm::vec4 tex_transform = glm::vec4(1,1,0,0);
+
+    int total_instances = 0;
+    
+    for (auto &p : scene.grass.grass_instances)
+    {
+        tex_transform = scene.grass.grass_textures.tc_transform(p.first);
+        grass_models.push_back(new Model());
+        grass_models.back()->positions = vertexes;
+        grass_models.back()->colors = tc;
+        for (int i=0;i<grass_models.back()->colors.size();i+=4)
+        {
+            grass_models.back()->colors[i] = tex_transform.x*(grass_models.back()->colors[i] + tex_transform.z);
+            grass_models.back()->colors[i + 1] = 1 - tex_transform.y*(grass_models.back()->colors[i + 1] + tex_transform.w);
+        }
+        grass_models.back()->normals = normals;
+        grass_models.back()->indices = indices;
+        grass_models.back()->update();
+        inst_offsets.push_back(total_instances);
+        inst_counts.push_back(p.second.size());
+        total_instances += p.second.size();
+    }
+
+    glm::mat4 *matrices = new glm::mat4[total_instances];
+    int i=0;
+    for (auto &p : scene.grass.grass_instances)
+    {
+        for (auto &in : p.second)
+        {
+            matrices[i] = glm::scale(
+                          glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
+                                      in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
+            i++;
+        }
+    }
+    
+    for (auto *model : grass_models)
+    {
+      std::wstring name = L"grass" + std::to_wstring(grasses.size());
+      grass_meshes.emplace_back();
+      SimpleMesh &mesh = grass_meshes.back();
+      model_to_simple_mesh(*model, mesh);
+
+      grasses.push_back(hrMeshCreate(name.c_str()));
+      hrMeshOpen(grasses.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+      {
+        hrMeshVertexAttribPointer3f(grasses.back(), L"pos",      &mesh.vPos[0]);
+        hrMeshVertexAttribPointer3f(grasses.back(), L"norm",     &mesh.vNorm[0]);
+        hrMeshVertexAttribPointer2f(grasses.back(), L"texcoord", &mesh.vTexCoord[0]);
+        
+        hrMeshMaterialId(grasses.back(), mat_grass.id);
+        logerr("tri id %d",int(mesh.triIndices.size()));
+        hrMeshAppendTriangles3(grasses.back(), int(mesh.triIndices.size()), mesh.triIndices.data());
+      }
+      hrMeshClose(grasses.back());
+
+      delete model;
+    }
 
   HRLightRef rectLight = hrLightCreate(L"my_area_light");
   hrLightOpen(rectLight, HR_WRITE_DISCARD);
@@ -319,7 +381,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
 
     intensityNode.append_child(L"color").append_attribute(L"val") = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 2.0f * PI;
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 4.0f * PI;
   }
   hrLightClose(directLight);
 
@@ -331,7 +393,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 	  lightNode.attribute(L"distribution").set_value(L"map");
     auto intensityNode = lightNode.append_child(L"intensity");
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
-    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.75");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.5");
 
 	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
 
@@ -352,12 +414,12 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   {
     xml_node camNode = hrCameraParamNode(camRef);
     
-    camNode.append_child(L"fov").text().set(L"45");
+    camNode.append_child(L"fov").text().set(L"90");
     camNode.append_child(L"nearClipPlane").text().set(L"0.01");
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"20 75 -200");
+    camNode.append_child(L"position").text().set(L"-180 90 20");
     camNode.append_child(L"look_at").text().set(L"0 0 0");
   
     VERIFY_XML(camNode);
@@ -411,7 +473,21 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshInstance(scnRef, branches[i], m.L());
       }
     }
-
+    for (int i=0;i<inst_counts.size();i++)
+    {
+      for (int in = inst_offsets[i];in < inst_offsets[i] + inst_counts[i];in++)
+      {
+        auto &mat = matrices[in];
+        const float mat_vals[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
+                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
+                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
+                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
+        auto m = hlm::float4x4(mat_vals);
+        hrMeshInstance(scnRef, grasses[i], m.L());
+      }
+      logerr("added %d grass instances", inst_counts[i]);
+    }
+    delete matrices;
     hrLightInstance(scnRef, sky, mind.L());
     auto mres = hlm::mul(hlm::rotate_Z_4x4(1.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
