@@ -21,6 +21,8 @@ public:
     void branch_to_model(Branch &b, Model *m, bool leaves);
     void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw = glm::vec2(1,0));
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
+    void heightmap_to_model(Heightmap &h, Model *m, glm::vec2 detailed_size, glm::vec2 full_size, float precision,
+                            int LODs);
 protected:
     void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale);
     void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos,

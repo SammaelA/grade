@@ -1,6 +1,6 @@
 {
     reference_tree_test:s = "reference_tree_test.png"
-    terrain:s = "terrain.png"
+    terrain:s = "terrain4.jpg"
     noise:s = "perlin.png"
     colored_noise:s = "noise.png"
     leaf1:s = "leaf1.png"

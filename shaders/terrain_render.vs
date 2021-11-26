@@ -24,6 +24,5 @@ void main(void) {
 	gl_Position = projection * ex_FragPosView;
 
 	ex_Tex = in_Tex.xyz;
-	ex_Tex.xy = fract(0.05*ex_FragPos.xz);
 	FragPosLightSpace = lightSpaceMatrix * vec4(ex_FragPos, 1.0);
 }

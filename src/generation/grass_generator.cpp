@@ -124,8 +124,8 @@ public:
         int y0 = CLAMP(floor(grdf.y),0,sz.y - 1);
 
         grdf = (box.max_pos - cell_pos)/p_sz;
-        int x1 = CLAMP(ceil(grdf.x),0,sz.x - 1);
-        int y1 = CLAMP(ceil(grdf.y),0,sz.y - 1);
+        int x1 = CLAMP(ceil(grdf.x)+1,0,sz.x - 1);
+        int y1 = CLAMP(ceil(grdf.y)+1,0,sz.y - 1);
 
         return glm::ivec4(x0, y0, x1, y1);
     }

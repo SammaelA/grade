@@ -131,7 +131,7 @@ void main(void)
     {
       vec4 color_none = texture(colorTex,ex_Tex);
       vec4 normal_type = texture(normalsTex,ex_Tex);
-      vec3 cube_color = texture(cubeTex, ex_Tex).xyz;
+      vec3 cube_color = pow(texture(cubeTex, ex_Tex).xyz,vec3(1/2.2));//remove pow is cube tex is in sRGB
       if (color_none.a < 0.01)
       {
         fragColor = vec4(cube_color,1);

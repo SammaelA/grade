@@ -3,6 +3,7 @@
 #include "graphics_utils/texture_manager.h"
 
 #define PI 3.14159265f
+using namespace glm;
 
 void Visualizer::leaf_to_model(Leaf &l, Model *m, float scale)
 {
@@ -628,4 +629,348 @@ void Visualizer::body_to_model(Body *b, Model *m, bool fixed_tc, glm::vec4 tc)
             m->colors[i+3] = tc.w;
         }
     }
+}
+
+int HMLOD = 0;
+glm::vec3 get_n(Heightmap &h, glm::vec3 terr_pos, glm::vec2 step)
+{
+    terr_pos.y = 0;
+    glm::vec3 terr_pos1 = terr_pos + glm::vec3(step.x,0,0);
+    glm::vec3 terr_pos2 = terr_pos + glm::vec3(0,0,step.y);
+    terr_pos.y = h.get_height(terr_pos);
+    terr_pos1.y = h.get_height(terr_pos1);
+    terr_pos2.y = h.get_height(terr_pos2);
+    glm::vec3 n = glm::normalize(glm::cross(terr_pos1 - terr_pos, terr_pos2 - terr_pos));
+    if (dot(n, glm::vec3(0,1,0)) < 0)
+        n = -n;
+    return n;
+}
+
+void add_vertex(Heightmap &h, glm::vec3 &terr_pos, Model *m, glm::vec2 step)
+{
+    terr_pos.y = h.get_height(terr_pos);
+    glm::vec3 n = get_n(h, terr_pos, step);
+
+    m->positions.push_back(terr_pos.x);
+    m->positions.push_back(terr_pos.y);
+    m->positions.push_back(terr_pos.z);
+
+    m->normals.push_back(n.x);
+    m->normals.push_back(n.y);
+    m->normals.push_back(n.z);
+
+    float l = 0.1 * length(h.get_grad(terr_pos));
+    glm::vec2 tc = glm::vec2(2.0f*abs(fract(glm::vec2(terr_pos.x, terr_pos.z)/47.1f) - 0.5f));
+    tc = glm::vec2(terr_pos.x + urand(-HMLOD,HMLOD), terr_pos.z + urand(-HMLOD,HMLOD))/27.1f;
+    m->colors.push_back(tc.x);
+    m->colors.push_back(tc.y);
+    m->colors.push_back(0);
+    m->colors.push_back(0);
+}
+
+void Visualizer::heightmap_to_model(Heightmap &h, Model *m, glm::vec2 detailed_size, glm::vec2 full_size, 
+                                    float precision, int LODs)
+{
+    int x = MAX(pow(2, round(log2(2*detailed_size.x / precision))), 4);
+    int y = MAX(pow(2, round(log2(2*detailed_size.y / precision))), 4);
+    //x = 4;
+    //y = 4;
+    glm::vec2 step = 2.0f * detailed_size / glm::vec2(x, y);
+    glm::vec3 center_pos = h.get_pos();
+    glm::vec2 total_size = detailed_size;
+    HMLOD = 0;
+    //detailed part of hmap
+    for (int i = 0; i <= x; i++)
+    {
+        for (int j = 0; j <= y; j++)
+        {
+            int ind = m->positions.size() / 3;
+            glm::vec3 terr_pos = glm::vec3(center_pos.x - detailed_size.x + step.x * i, 0, 
+                                           center_pos.z - detailed_size.y + step.y * j);
+            add_vertex(h, terr_pos, m, step);
+
+            if (i != x && j != y)
+            {
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + 1);
+                m->indices.push_back(ind + (y+1) + 1);
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + (y+1) + 1);
+                m->indices.push_back(ind + (y+1));
+            }
+        }
+    }
+    bool sides_spec = y % 2;
+    x = x/2 + 2;//we can safly do it, as x and y are powers of 2
+    y = y/2;
+    step *= 2.0f;
+    HMLOD = 1;
+    vec3 pos;
+    glm::vec3 start_pos_top = glm::vec3(center_pos.x - detailed_size.x - step.x, 0, center_pos.z + detailed_size.y + step.y);
+    glm::vec3 start_pos_right = glm::vec3(center_pos.x + detailed_size.x + step.x, 0, center_pos.z - detailed_size.y);
+    glm::vec3 start_pos_bottom = glm::vec3(center_pos.x - detailed_size.x - step.x, 0, center_pos.z - detailed_size.y - step.y);
+    glm::vec3 start_pos_left = glm::vec3(center_pos.x - detailed_size.x - step.x, 0, center_pos.z - detailed_size.y);
+    glm::vec3 end_pos_bottom = glm::vec3(center_pos.x + detailed_size.x + step.x, 0, center_pos.z - detailed_size.y);
+    glm::vec3 end_pos_top = glm::vec3(center_pos.x + detailed_size.x + step.x, 0, center_pos.z + detailed_size.y);
+
+    while (total_size.x < full_size.x || total_size.y < full_size.y)
+    {
+       
+        vec3 start_pos = start_pos_top;
+        for (int i = 0;i<x;i++)
+        {
+            bool less = (i == 0) || (i == x-1);
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(i*step.x,0,0);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(i*step.x,0,-step.y);
+            add_vertex(h, pos, m, step);
+            if (!less)
+            {
+              pos = start_pos + vec3((i+0.5)*step.x,0,-step.y);
+              add_vertex(h, pos, m, step);
+            }
+            if (i == x - 1)
+                pos = end_pos_top;
+            else
+                pos = start_pos + vec3((i+1)*step.x,0,-step.y);
+            add_vertex(h, pos, m, step);
+            if (i == x - 1)
+                pos = end_pos_top + vec3(0,0,step.y);
+            else
+                pos = start_pos + vec3((i+1)*step.x,0,0);
+            add_vertex(h, pos, m, step);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+
+            if (less)
+            {
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 3);
+            }
+            else
+            {
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 4);
+                
+                m->indices.push_back(ind + 4);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 3);
+            }
+        }
+
+        start_pos = start_pos_bottom;
+        for (int i = 0;i<x;i++)
+        {
+            bool less = (i == 0) || (i == x-1);
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(i*step.x,0,0);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(i*step.x,0,step.y);
+            add_vertex(h, pos, m, step);
+            if (!less)
+            {
+                pos = start_pos + vec3((i+0.5)*step.x,0,step.y);
+                add_vertex(h, pos, m, step);
+            }
+            
+            if (i == x - 1)
+                pos = end_pos_bottom;
+            else
+                pos = start_pos + vec3((i+1)*step.x,0,step.y);
+            add_vertex(h, pos, m, step);
+            if (i == x - 1)
+                pos = end_pos_bottom + vec3(0,0,-step.y);
+            else
+                pos = start_pos + vec3((i+1)*step.x,0,0);
+            add_vertex(h, pos, m, step);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+            
+            if (less)
+            {
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 3);
+            }
+            else
+            {
+                m->indices.push_back(ind);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 4);
+                
+                m->indices.push_back(ind + 4);
+                m->indices.push_back(ind + 2);
+                m->indices.push_back(ind + 3);
+            }
+        }
+
+    
+        
+        start_pos = start_pos_left;
+        for (int i=0;i<y - sides_spec;i++)
+        {
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(0,0,i*step.y);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(step.x,0,i*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(step.x,0,(i+0.5)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            pos = start_pos + vec3(step.x,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(0,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 4);
+            
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 3);
+        }
+        if (sides_spec)
+        {
+            int i = y -1;
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(0,0,i*step.y);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(step.x,0,i*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(step.x,0,(i+0.5)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            pos = start_pos + vec3(step.x,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos_top + vec3(0,0,-step.y);
+            add_vertex(h, pos, m, step);
+            
+            pos = start_pos_top + vec3(step.x,0,-step.y);
+            add_vertex(h, pos, m, step);
+
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 4);
+            
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 3);
+
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 3);
+            m->indices.push_back(ind + 5);
+        }
+
+          start_pos = start_pos_right;
+        for (int i=0;i<y - sides_spec;i++)
+        {
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(0,0,i*step.y);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(-step.x,0,i*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(-step.x,0,(i+0.5)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            pos = start_pos + vec3(-step.x,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(0,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 4);
+            
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 3);
+        }
+        if (sides_spec)
+        {
+            int i = y -1;
+            int ind = m->positions.size() / 3;
+
+            pos = start_pos + vec3(0,0,i*step.y);
+            add_vertex(h, pos, m, step);
+            pos = start_pos + vec3(-step.x,0,i*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = start_pos + vec3(-step.x,0,(i+0.5)*step.y);
+            add_vertex(h, pos, m, step);
+            
+            pos = start_pos + vec3(-step.x,0,(i+1)*step.y);
+            add_vertex(h, pos, m, step);
+
+            pos = end_pos_top;
+            add_vertex(h, pos, m, step);
+            
+            pos = end_pos_top + vec3(-step.x,0,0);
+            add_vertex(h, pos, m, step);
+
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 1);
+            m->indices.push_back(ind + 2);
+            
+            m->indices.push_back(ind);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 4);
+            
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 2);
+            m->indices.push_back(ind + 3);
+
+            m->indices.push_back(ind + 4);
+            m->indices.push_back(ind + 3);
+            m->indices.push_back(ind + 5);
+        }
+
+        //break;
+        start_pos_top += glm::vec3(-2.0f*step.x, 0, 2.0f*step.y);
+        start_pos_bottom += glm::vec3(-2.0f*step.x, 0, -2.0f*step.y);
+        end_pos_top += glm::vec3(2.0f*step.x, 0, step.y);
+        start_pos_right += glm::vec3(2.0f*step.x, 0, -step.y);
+        start_pos_left += glm::vec3(-2.0f*step.x, 0, -step.y);
+        end_pos_bottom += glm::vec3(2.0f*step.x, 0, -step.y);
+
+        sides_spec = sides_spec || y % 2;
+
+        x = x/2 + 2;
+        y = y/2 + 1;
+        step *= 2.0f;
+        HMLOD*=2;
+        total_size += step;
+    }
+
+    m->update();
 }

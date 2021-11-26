@@ -9,6 +9,7 @@ cube_shader({"cubemap.vs", "cubemap.fs"}, {"in_Position"})
 {
     width = w;
     height = h;
+    /*
     std::vector<std::string> faces
     {
         "Skybox/hills_bk.tga",
@@ -17,6 +18,15 @@ cube_shader({"cubemap.vs", "cubemap.fs"}, {"in_Position"})
         "Skybox/hills_lf.tga",
         "Skybox/hills_rt.tga",
         "Skybox/Untitled.png"
+    };*/
+    std::vector<std::string> faces
+    {
+        "clouds1/clouds1_south.bmp",
+        "clouds1/clouds1_down.bmp",
+        "clouds1/clouds1_north.bmp",
+        "clouds1/clouds1_east.bmp",
+        "clouds1/clouds1_west.bmp",
+        "clouds1/clouds1_up.bmp"
     };
     cube = loadCubemap(faces);
     

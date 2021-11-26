@@ -100,8 +100,8 @@ void SceneGenerator::generate_grove()
   bool grass_needed = (grass_blk != nullptr);
 
 
-  ctx.scene->heightmap = new Heightmap(center3, 0.5f*glm::vec2(1024,1024),hmap_cell_size);
-  ctx.scene->heightmap->random_generate(0,0,7.5);
+  ctx.scene->heightmap = new Heightmap(center3, heightmap_size,hmap_cell_size);
+  ctx.scene->heightmap->random_generate(0,0,100);
   logerr("heightmap size %f %f", ctx.scene->heightmap->get_size().x,ctx.scene->heightmap->get_size().y);
   ctx.scene->grove.center = center3;
   ctx.scene->grove.ggd_name = "blank";
