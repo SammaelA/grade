@@ -5,19 +5,23 @@
         leaf_tex_name:s = "leaf3"
         res_q:r = 1.0
         root_type:i = 0
-        Xm:r = 50
-        r_s:r = 0.03
-        r:r = 0.45
+        Xm:r = 35
+        r_s:r = 0.0
+        r:r = 0.4
+        remove_min_level:i = 1000
     }
     simple_tree
     {
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
-        res_q:r = 0.5
+        res_q:r = 0.25
         root_type:i = 1
         Xm:r = 100
-        branching_angle_max:r = 1.5
-        r_s:r = 0.1
-        r:r = 0.35
+        branching_angle_max:r = 2.5
+        branching_angle_min:r = 2.0
+        r_s:r = 0.115
+        rs_size_factor:r = -0.004
+        r:r = 0.3
+        leaves_cnt:r = 1.5
     }
 }

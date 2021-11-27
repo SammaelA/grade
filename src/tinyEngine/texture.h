@@ -11,7 +11,7 @@ class Texture
   friend bool saver::save(FILE *f, Texture &t);
   friend bool saver::load(FILE *f, Texture &t);
 public:
-  GLuint texture = ~0;               //Texture int (OpenGL: everything is an int!)
+  GLuint texture = 0;               //Texture int (OpenGL: everything is an int!)
   GLenum type = GL_TEXTURE_2D;  //Texture type (default is this)
   std::string origin = "";//empty for runtime generated textures, path to file for loaded textures
   void set_default_paramaters(Texture *tex);

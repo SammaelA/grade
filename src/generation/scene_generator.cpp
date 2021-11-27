@@ -10,6 +10,7 @@
 #include "tree_generators/proctree.h"
 #include "tree_generators/generated_tree.h"
 #include "grass_generator.h"
+#include "graphics_utils/debug_transfer.h"
 #include <algorithm>
 
 LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
@@ -139,13 +140,16 @@ void SceneGenerator::generate_grove()
   ggd.types = types; 
 
 
-  GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), 0.5f*full_size, 3);
-  mask.set_round(MIN(full_size.x, full_size.y));
-
-  int cells_x = ceil(2*full_size.x/cell_size.x);
-  int cells_y = ceil(2*full_size.y/cell_size.y);
+  int cells_x = ceil(3*full_size.x/cell_size.x);
+  int cells_y = ceil(3*full_size.y/cell_size.y);
   std::vector<Cell> cells = std::vector<Cell>(cells_x*cells_y,Cell(Cell::CellStatus::EMPTY));
+  
   GrassGenerator grassGenerator;
+  glm::vec2 mask_size = full_size;
+  if (cells_x <= 2 || cells_y <= 2)
+    mask_size *= 2.0f;
+  GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, 3);
+  mask.set_square(mask_size.x, mask_size.y);
 
   std::list<int> waiting_cells;
   std::list<int> border_cells;
@@ -183,7 +187,7 @@ void SceneGenerator::generate_grove()
       int id = i*cells_y + j;
 
       int trees_count = 0;
-      if (urand() < patches_density || (cells[id].status == Cell::CellStatus::WAITING))
+      if (urand() <= patches_density || (cells[id].status == Cell::CellStatus::WAITING))
         trees_count = MAX(urand(0.4,0.6)*max_tc,1);
       if (grass_needed)
         cells[id].status = Cell::CellStatus::WAITING;
@@ -286,6 +290,7 @@ void SceneGenerator::generate_grove()
         voxels->add_voxels_cube(cells[dep_cid].voxels_small);
       }
       grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
+      logerr("creating patch with %d trees", ggd.trees_count);
       packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
     
       if (!c.depends.empty())
@@ -336,7 +341,15 @@ void SceneGenerator::generate_grove()
       {
         logerr("removed dependency %d",*it);
         cells[*it].status = Cell::CellStatus::FINISHED;
-        delete cells[*it].voxels_small;
+        if (debugTransferSettings.save_small_voxels_count > debugTransferData.debug_voxels.size())
+        {
+          debugTransferData.debug_voxels.push_back(cells[*it].voxels_small);
+          cells[*it].voxels_small = nullptr;
+        }
+        else
+        {
+          delete cells[*it].voxels_small;
+        }
         it = border_cells.erase(it);
       }
       else

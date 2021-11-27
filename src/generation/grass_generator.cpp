@@ -106,10 +106,12 @@ public:
     {
         cell_sz = (cell.bbox.max_pos - cell.bbox.min_pos);
         cell_pos = cell.bbox.min_pos;
-        sz = glm::ivec2(precision/plant_av_sz*cell_sz);
+        sz = glm::ivec2(precision/plant_av_sz*cell_sz) + glm::ivec2(1,1);
         p_sz = cell_sz/glm::vec2(sz);
         data = new GridPoint[sz.x*sz.y];
-        logerr("created grid %d %d",sz.x, sz.y);
+        //logerr("cell %d [%f %f] - [%f %f]",cell.id, cell.bbox.min_pos.x, cell.bbox.min_pos.y, cell.bbox.max_pos.x, cell.bbox.max_pos.y);
+        //logerr("created grid %d %d [%f %f] - [%f %f]",sz.x, sz.y, center(0,0).x, center(0,0).y, center(sz.x-1,sz.x-1).x,
+        //center(sz.x-1,sz.x-1).y);
     }
     ~GrassGrid()
     {
@@ -120,13 +122,13 @@ public:
     glm::ivec4 slice(AABB2D &box)
     {
         glm::vec2 grdf = (box.min_pos - cell_pos)/p_sz;
-        int x0 = CLAMP(floor(grdf.x),0,sz.x - 1);
-        int y0 = CLAMP(floor(grdf.y),0,sz.y - 1);
+        int x0 = CLAMP(floor(grdf.x),0,sz.x);
+        int y0 = CLAMP(floor(grdf.y),0,sz.y);
 
         grdf = (box.max_pos - cell_pos)/p_sz;
-        int x1 = CLAMP(ceil(grdf.x)+1,0,sz.x - 1);
-        int y1 = CLAMP(ceil(grdf.y)+1,0,sz.y - 1);
-
+        int x1 = CLAMP(ceil(grdf.x),0,sz.x);
+        int y1 = CLAMP(ceil(grdf.y),0,sz.y);
+        //return glm::ivec3(0,0,sz.x-1,sz.y-1);
         return glm::ivec4(x0, y0, x1, y1);
     }
     GridPoint &get_point(int x, int y)
@@ -168,7 +170,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
         float ipp_f_base = CLAMP(type.patch_density*(grid.p_sz.x*grid.p_sz.y), 1, GridPoint::point_size);
         float grid_diag = sqrt(SQR(grid.p_sz.x) + SQR(grid.p_sz.y));
         glm::ivec4 grid_slice = grid.slice(pb);
-        logerr("subgrid (%d %d) - (%d %d)",grid_slice.x, grid_slice.y, grid_slice.z, grid_slice.w);
+        //logerr("subgrid (%d %d) - (%d %d)",grid_slice.x, grid_slice.y, grid_slice.z, grid_slice.w);
         for (int x = grid_slice.x; x < grid_slice.z; x++)
         {
             for (int y = grid_slice.y; y < grid_slice.w; y++)
@@ -196,7 +198,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
                     for (int point = 0; point < ipp; point++)
                     {
                         glm::vec2 pos = center + grid.p_sz*glm::vec2(urand(-0.5, 0.5), urand(-0.5, 0.5));
-                        float r = type.plant_size + type.plant_size_std_dev*normal.get();
+                        float r = MAX(type.plant_size + type.plant_size_std_dev*normal.get(),0.1f*type.plant_size);
                         bool placed = false;
                         int n = 0;
                         while (!placed && n < GridPoint::point_size)
@@ -206,7 +208,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
                                 //add new instance
                                 patch.grass_instances.push_back(Sphere2D(pos,r));
                                 p.patch_ids[n] = patch_id;
-                                p.instances[n] = patch.grass_instances.end()--;
+                                p.instances[n] = --patch.grass_instances.end();
                                 placed = true;
                                 new_instances++;
                             }
@@ -225,7 +227,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
                                     sec_p.grass_instances.erase(p.instances[n]);
                                     patch.grass_instances.push_back(Sphere2D(pos,r));
                                     p.patch_ids[n] = patch_id;
-                                    p.instances[n] = patch.grass_instances.end()--;
+                                    p.instances[n] = --patch.grass_instances.end();
                                     placed = true;
                                     new_instances++;
                                 }

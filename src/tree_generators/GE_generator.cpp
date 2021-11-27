@@ -157,7 +157,7 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
     {
         if (j.childBranches.empty() && b.level >= level_from && params.leaves_cnt > 0 &&
             j.r < params.base_r * params.leaves_max_r &&
-            urand() < params.leaves_cnt * (1 / (0.5 + voxels.get_occlusion_simple(j.pos))))
+            urand() < params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos))))
         {
             glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_a, params.leaves_angle_a), 
                                            urand(-1, 1)));
@@ -184,8 +184,8 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
 }
 void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
-    t.root.level = 0;
     t.root = Branch();
+    t.root.level = 0;
     t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-10,0), 1));
 
     bool bush = (params.root_type == 0);
@@ -202,11 +202,16 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     }
     else
     {
-        t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 10 * params.ro, 0), 0.9,false));
-        for (int i = 0; i < 2; i++)
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 3 * params.ro, 0), 0.9,false));
-        for (int i = 0; i < 5; i++)
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 3 * params.ro, 0), 0.9,true));
+        //t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 0.1*params.Xm*params.ro, 0), 0.9,false));
+        float d = 0.05*params.Xm*params.ro;
+        for (int i = 0; i < 4; i++)
+        {
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*urand(-1,1)*d, d, 0.1*urand(-1,1)*d), 0.9,false));
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*urand(-1,1)*d, d, 0.1*urand(-1,1)*d), 0.9,true));
+        }
     }
     t.status = TreeStatus::GROWING;
 }
@@ -500,12 +505,12 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
         float resource = params.r * params.resource_mult * j.resource;
         //if (b.level <= 1)
         //    resource *= 5;
-        if (i == b.joints.size() - 1)
+        if (i == b.joints.size() - 1 && j.childBranches.size() < params.max_branches)
         {
             //grow branch forward
             GrowthType t = GrowthType::END;
-            //if (b.joints.size() > params.max_joints_in_branch)
-            //    t = GrowthType::END_BRANCH;
+            if (b.joints.size() > params.max_joints_in_branch)
+                t = GrowthType::END_BRANCH;
             growth_points.push_back(GrowPoint(&j, &b, t, pd, resource));
             //logerr("j pos %f %f %f %f %f %f",j.pos.x,j.pos.y, j.pos.z, prev->pos.x, prev->pos.y, prev->pos.z);
             //if (sqrt(SQR(j.pos.x - g_center.x) + SQR(j.pos.z - g_center.z)) < 0.33*params.ro*params.Xm)
@@ -534,6 +539,7 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
 
 vec3 tropism(float n, GETreeParameters &params)
 {
+    return vec3(0, CLAMP(1.5 - 2*((float)n/params.max_joints_in_branch),-0.5,1),0);
     return vec3(0, MAX(0.5 - SQR(3 * n / params.Xm), -1), 0);
 }
 
@@ -565,6 +571,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             Joint *start = gp.joint;
             Branch *br = gp.base_branch;
             glm::vec3 prev_dir = gp.prev_dir;
+            float nu = params.nu;
             if (gp.gType == GrowthType::BRANCHING)
             {
                 gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos));
@@ -577,12 +584,13 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 float psi = urand(params.branching_angle_min, params.branching_angle_max);
 
                 vec2 planar_dir = vec2(sin(phi), cos(phi));
-                planar_dir = normalize(planar_dir - gp.base_branch->average_chb_dir);
+                planar_dir = normalize(planar_dir - 3.0f*gp.base_branch->average_chb_dir);
                 gp.base_branch->average_chb_dir += planar_dir;
 
                 prev_dir = r * cos(psi) * planar_dir.x * b + r * cos(psi) * planar_dir.y * c + r * sin(psi) * prev_dir;
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
+                nu = 0;
                 //logerr("new branch created");
             }
             else if (gp.gType == GrowthType::END_BRANCH)
@@ -597,7 +605,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI / 6, best_pos, best_occ) && best_pos.x == best_pos.x)
             {
                 vec3 best_dir = prev_dir + params.mu * normalize(best_pos - start->pos) +
-                                (params.nu) * tropism(br->joints.size(), params);
+                                (nu) * tropism(br->joints.size(), params);
                 vec3 new_pos = start->pos + params.ro * normalize(best_dir);
                 //logerr("prev dir %f %f %f", prev_dir.x, prev_dir.y, prev_dir.z);
                 //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
@@ -627,6 +635,18 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
 
 void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels)
 {
+    b.total_resource = 0;
+    if (b.level < 2)
+    {
+        //logerr("level %d joints %d params %f %f %f",b.level, b.joints.size(), params.r_s, params.branching_angle_max, 
+        //       params.branching_angle_min);
+    }
+    if (b.joints.size() < 2)
+    {
+        b.total_joints = b.joints.size();
+        b.total_resource = 0;
+        return;
+    }
     float total_light = 0;
     int total_joints = b.joints.size();
     int i = 0;
@@ -637,7 +657,11 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         if (i > 0)
         {
             if (j.childBranches.empty())
-                total_light += MIN(1, 1 / (0.5 + voxels.get_occlusion_simple(j.pos)));
+                total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_simple(j.pos),0)));
+            if (true)
+            {
+                //logerr("%f %f aaa", voxels.get_occlusion_simple(j.pos),  MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_simple(j.pos),0))));
+            }
             //logerr("l %f", voxels.get_occlusion_simple(j.pos));
             for (Branch &br : j.childBranches)
             {
@@ -645,19 +669,23 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
                 {
                     remove_branches(t, br, params, voxels);
                     ch_b_count++;
+                    total_light += br.total_resource; //total_light
+                    if (br.total_resource != br.total_resource)
+                    {
+                        logerr("nan detected here");
+                    }
+                    total_joints += br.total_joints;
                 }
                 else
                     dead_b_count++;
-                total_light += br.total_resource; //total_light or 0 if branch is removed
-                total_joints += br.total_joints;
             }
 
-            if (b.level == 0)
+            if (true)
             {
                 auto it = j.childBranches.begin();
                 while (it != j.childBranches.end())
                 {
-                    if (it->alive)
+                    if (it->alive || it->base_r >= 3*params.base_r)
                     {
                         it++;
                     }
@@ -670,16 +698,34 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         }
         i++;
     }
-    float lq = total_light / total_joints;
+    float lq = total_light / total_joints + 1e-6;
+    float size_log = MIN(log2f(total_joints), 10);
+    float remove_q = lq/(params.r_s + params.rs_size_factor * size_log);
+    float q = remove_q > 1 ? 0.5*size_log*(remove_q - 1) : 0.5*size_log*(1/remove_q - 1);
+    float remove_chance = 1 - 1/(1 + exp(-q)); 
     //if (params.root_type == 1)
-        //logerr("params.r_s %f %f", lq, params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10));
-    float remove_q = lq/(params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10));
+    //    logerr("params.r_s %d %f %f chance = %f %f %f", total_joints, total_light, params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10),
+    //          remove_q, q, remove_chance);
+    //logerr("%f tot", total_light);
+    if (total_light != total_light)
+    {
+        logerr("NAN detected");
+        int r =  0;
+        for (Joint &j : b.joints)
+        {
+            for (Branch &br : j.childBranches)
+            {
+                logerr("br %d res %f", r, br.total_resource);
+                r++;
+            }
+        }
+    }
     if (total_joints > 10)
     {
         //logerr("br is ok %d %d %d %f",b.level, total_joints, b.joints.size(), ch_b_count);
     }
-    if (b.level > 1 && 
-      (((urand() < (pow(2,-remove_q) - 0.5)) && b.level >= params.remove_min_level) ||
+    if (b.level >= params.remove_min_level && 
+       (urand() < remove_chance ||
         total_joints > 50 && (float)b.joints.size()/total_joints > 0.33 ||
         dead_b_count/b.joints.size() > 0.75 ||
         b.joints.size() > 0.5*params.max_joints_in_branch && ch_b_count < 2))

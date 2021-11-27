@@ -45,6 +45,7 @@
 #include "render/world_renderer.h"
 #include "generation/scene_generator.h"
 #include "hydra_utils/hydra_scene_exporter.h"
+#include "graphics_utils/debug_transfer.h"
 
 namespace parser
 {
@@ -123,6 +124,14 @@ int parse_arguments(int argc, char *argv[])
         logerr("use \"demo <trees_count>\"");
         k++;
       }
+    }
+    else if (std::string(argv[k]) == "-debug_small_voxels")
+    {
+      debugTransferSettings.save_small_voxels_count = 100000;
+    }
+    else if (std::string(argv[k]) == "-debug_original_voxels")
+    {
+      debugTransferSettings.save_detailed_voxels_count = 100000;
     }
     else
     {
@@ -230,7 +239,7 @@ void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationConte
   int patches_y = patches_x;
   int max_trees_per_patch = 2*((float)demo_mode_trees_cnt/patches_cnt);
   sceneGenerationContext.settings.set_vec2("cell_size",cell_size);
-  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(2*cell_size.x*patches_x,2*cell_size.y*patches_y));
+  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(cell_size.x*patches_x,cell_size.y*patches_y));
   sceneGenerationContext.settings.set_int("max_trees_per_patch",max_trees_per_patch);
   sceneGenerationContext.settings.set_int("fixed_patches_count", patches_cnt);
   sceneGenerationContext.settings.set_double("patches_density", 0);
@@ -271,6 +280,12 @@ int parser_main(int argc, char *argv[])
         worldRenderer.set_heightmap(*scene.heightmap);
         worldRenderer.set_grass(scene.grass);
         worldRenderer.set_grove(scene.grove, sceneGenerationContext.global_ggd);
+        auto &voxels = debugTransferData.debug_voxels;
+        for (auto *vox : voxels)
+        {
+          if (vox)
+            worldRenderer.set_voxels_debug(*vox);
+        }
         Tiny::view.pipeline = [&]()
         {
           worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);

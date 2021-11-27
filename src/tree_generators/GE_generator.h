@@ -18,13 +18,13 @@ struct GETreeParameters : public ParametersSet
     float r = 0.37;
     int alpha = 4;
     float sigma = 0.5;
-    float mu = 1.5;
-    float nu = 1.0;
+    float mu = 0.75;
+    float nu = 0.5;
     float b_min = 1.8;
     float b_max = 2.2;
     float r_s = 0.05;
     float rs_size_factor = 0.02;
-    int remove_min_level = 2;
+    int remove_min_level = 1;
 
     float base_r = 0.025;
     int max_branches = 1;
