@@ -199,19 +199,20 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
     auto color = diff.append_child(L"color");
     color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
     auto texNode = hrTextureBind(texLeaf, color);
 
     auto opacity = matNode.append_child(L"opacity");
+    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
     auto texNodeOp = hrTextureBind(texLeafOpacity, opacity);
-   /* 
+   
     auto transl = matNode.append_child(L"translucency");
     auto colorTrans = transl.append_child(L"color");
     colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
     colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
 
     auto texNodeTrans = hrTextureBind(texLeaf, transl);
-*/
+
     VERIFY_XML(matNode);
   }
   hrMaterialClose(mat_leaf);
@@ -222,15 +223,21 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     auto matNode = hrMaterialParamNode(mat_grass);
 
     auto opacity = matNode.append_child(L"opacity");
+    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
     auto texNodeOp = hrTextureBind(texGrassOpacity, opacity);
     
     auto diff = matNode.append_child(L"diffuse");
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
     auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1.5 1.5 1.5");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
     color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-  
-    auto texNodeTrans = hrTextureBind(texGrass, diff);
+    auto texNode = hrTextureBind(texGrass, diff);
+
+    auto transl = matNode.append_child(L"translucency");
+    auto colorTrans = transl.append_child(L"color");
+    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNodeTrans = hrTextureBind(texGrass, transl);
 
     VERIFY_XML(matNode);
   }
@@ -366,7 +373,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
 
     intensityNode.append_child(L"color").append_attribute(L"val")      = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 4.0f;
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 1.5f;
 
     VERIFY_XML(lightNode);
   }
@@ -388,7 +395,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
 
     intensityNode.append_child(L"color").append_attribute(L"val") = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 4.0f * PI;
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 2.0f * PI;
   }
   hrLightClose(directLight);
 
@@ -428,7 +435,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-115 80 20");
+    camNode.append_child(L"position").text().set(L"-140 80 20");
     camNode.append_child(L"look_at").text().set(L"0 40 0");
   
     VERIFY_XML(camNode);
@@ -454,7 +461,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     node.append_child(L"trace_depth").text()      = 4;
     node.append_child(L"diff_trace_depth").text() = 3;
-    node.append_child(L"maxRaysPerPixel").text()  = 512;
+    node.append_child(L"maxRaysPerPixel").text()  = 128;
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);
