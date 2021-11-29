@@ -41,7 +41,7 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     }
     
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(atl);
-    //textureManager.save_bmp(impData.atlas.tex(0),"flush_atlas");
+    //textureManager.save_png(impData.atlas.tex(0),"flush_atlas");
         
         int hash_discrete_steps = get_default_block().get_int("hash_discrete_steps", -1);
         hash_discrete_steps = settings.get_int("hash_discrete_steps", hash_discrete_steps);
@@ -64,11 +64,11 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
 
         for (int hash_n = 0;hash_n < isimParams.impostor_similarity_slices;hash_n++)
         {
-            std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
+            std::string file_path = dir_path + "/" + std::to_string(sl)+".png";
             auto &bill = imp_iter.slices[hash_n];
             rawAtlas.get_slice(bill.id, sl_data, &ww, &hh);
-            textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
-            std::string record = "./" + std::to_string(sl)+".bmp" + cluster_labels + "\n";
+            textureManager.save_png_raw_directly(sl_data, ww, hh, 4, file_path);
+            std::string record = "./" + std::to_string(sl)+".png" + cluster_labels + "\n";
             database_file += record;
             sl++;
 

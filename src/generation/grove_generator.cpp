@@ -43,7 +43,6 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
     for (auto &p : prototype.possible_types)
     {
         std::string g_name = treeTypesCatalogue[p.first].generator_name;
-        logerr("using generator %s to create grove",g_name.c_str());
         generators.emplace(g_name,get_generator(g_name));
         t_counts.emplace(g_name,0);
         w += p.second;
@@ -82,7 +81,7 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
                     AbstractTreeGenerator *gen = generators.at(treeTypesCatalogue[type].generator_name);
                     //glm::vec3 pos = glm::vec3(seeds[0].pos.x,0,seeds[0].pos.y);
                     //pos.y = hmap.get_height(pos);
-                    logerr("olant tree %d",prototype.trees_count);
+                    debugl(1,"polant tree %d",prototype.trees_count);
                     gen->plant_tree(seed, &(treeTypesCatalogue[type]));
                     t_counts.at(treeTypesCatalogue[type].generator_name)++;
                 }

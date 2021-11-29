@@ -113,8 +113,6 @@ int parse_arguments(int argc, char *argv[])
         else
         {
           demo_mode = true;
-          //render_needed = false;
-          //save_to_hydra = true;
           demo_mode_trees_cnt = n;
         }
         k += 2;
@@ -128,10 +126,17 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-debug_small_voxels")
     {
       debugTransferSettings.save_small_voxels_count = 100000;
+      k++;
     }
     else if (std::string(argv[k]) == "-debug_original_voxels")
     {
       debugTransferSettings.save_detailed_voxels_count = 100000;
+      k++;
+    }
+    else if (std::string(argv[k]) == "-no_debug")
+    {
+      debug_level = 1000;
+      k++;
     }
     else
     {

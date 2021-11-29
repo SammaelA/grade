@@ -311,7 +311,7 @@ GroveRenderer()
                 sizeof(InstanceData)*instances.size() + sizeof(ModelData)*models.size() +
                 sizeof(currentInstancesData)*instances.size() + sizeof(currentModelsData)*models.size() +
                 sizeof(DrawElementsIndirectCommand)*models.size() + sizeof(currentTypesData)*types.size();
-    logerr("total size %f Mbytes",1e-6*size);
+    debugl(1,"total size %f Mbytes",1e-6*size);
 }
 void GroveRenderer::pack_bb_to_model_data(ModelData &md, BBox &bb)
 {

@@ -255,12 +255,14 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst)
 
     convert(src, dst, src.root, dst.root);
 
+    /*
     debug("converted, branches: ");
     for (auto &bh : dst.branchHeaps)
     {
         debug("%d ",bh->branches.size());
     }
     debugnl();
+    */
 }
 void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst)
 {
@@ -712,7 +714,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         logerr("NAN detected");
         int r =  0;
         for (Joint &j : b.joints)
-        {
+        {   
             for (Branch &br : j.childBranches)
             {
                 logerr("br %d res %f", r, br.total_resource);

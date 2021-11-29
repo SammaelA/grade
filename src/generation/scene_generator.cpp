@@ -26,7 +26,7 @@ LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, 
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
   auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
   AABB &box = influence_box;
-  logerr("created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
+  debugl(1, "created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
   box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z,prototype.pos.x - prototype.size.x,
   prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
   return v;
@@ -78,22 +78,18 @@ void SceneGenerator::create_scene_auto()
 }
 void SceneGenerator::generate_grove()
 {
-  logerr("ctx settings size %d",ctx.settings.size());
-  for (int i=0;i<ctx.settings.size();i++)
-  {
-    auto s = ctx.settings.get_name(i);
-    logerr("%d set name %s",i,s.c_str());
-  }
   GrovePacker packer;
+
   int max_tc = ctx.settings.get_int("max_trees_per_patch", 1);
   int fixed_patches_count = ctx.settings.get_int("fixed_patches_count", 0);
   float patches_density = ctx.settings.get_double("patches_density", 1);
+  glm::vec2 heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000,1000));
   glm::vec2 full_size = ctx.settings.get_vec2("scene_size", glm::vec2(100,100));
+  glm::vec2 grass_field_size = ctx.settings.get_vec2("grass_field_size", glm::vec2(500,500));
+  grass_field_size = max(min(grass_field_size, heightmap_size), full_size);
   glm::vec2 center = ctx.settings.get_vec2("scene_center", glm::vec2(0,0));
-  glm::vec2 start_pos = center - 0.5f*full_size;
   glm::vec2 cell_size = ctx.settings.get_vec2("cell_size", glm::vec2(50,50));
   glm::vec2 mask_pos = center;
-  glm::vec2 heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000,1000));
   glm::vec3 center3 = glm::vec3(center.x,0,center.y);
   float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
 
@@ -103,7 +99,6 @@ void SceneGenerator::generate_grove()
 
   ctx.scene->heightmap = new Heightmap(center3, heightmap_size,hmap_cell_size);
   ctx.scene->heightmap->random_generate(0,0,100);
-  logerr("heightmap size %f %f", ctx.scene->heightmap->get_size().x,ctx.scene->heightmap->get_size().y);
   ctx.scene->grove.center = center3;
   ctx.scene->grove.ggd_name = "blank";
   
@@ -140,8 +135,9 @@ void SceneGenerator::generate_grove()
   ggd.types = types; 
 
 
-  int cells_x = ceil(3*full_size.x/cell_size.x);
-  int cells_y = ceil(3*full_size.y/cell_size.y);
+  int cells_x = ceil(grass_field_size.x/cell_size.x);
+  int cells_y = ceil(grass_field_size.y/cell_size.y);
+  glm::vec2 start_pos = center - 0.5f*cell_size*glm::vec2(cells_x, cells_y);
   std::vector<Cell> cells = std::vector<Cell>(cells_x*cells_y,Cell(Cell::CellStatus::EMPTY));
   
   GrassGenerator grassGenerator;
@@ -179,7 +175,7 @@ void SceneGenerator::generate_grove()
       cells[cells_n[i]].status = Cell::CellStatus::WAITING;
     }
   }
-  logerr("fixed patches count %d dens %f",fixed_patches_count, patches_density);
+
   for (int i=0;i<cells_x;i++)
   {
     for (int j=0;j<cells_y;j++)
@@ -193,7 +189,6 @@ void SceneGenerator::generate_grove()
         cells[id].status = Cell::CellStatus::WAITING;
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        logerr("waiting cell %d %d",id, trees_count);
         glm::vec2 center = start_pos + cell_size*glm::vec2(i+0.5,j+0.5);
         cells[id].prototype.pos = center;
         cells[id].prototype.size = 0.5f*cell_size;
@@ -234,7 +229,6 @@ void SceneGenerator::generate_grove()
           int ncid = i*cells_y + j;
           if (i >= 0 && j >= 0 && i < cells_x && j < cells_y && ncid > c_id)
           {
-            logerr("test %d %d",i,j);
             auto &c = cells[ncid];
             if (c.status == Cell::CellStatus::WAITING && c.influence_bbox.intersects(cells[c_id].influence_bbox))
             {
@@ -255,10 +249,12 @@ void SceneGenerator::generate_grove()
       d++;
       d_prev = d;
     }
+    /*
     debug("depends of cell %d: ",c_id);
     for (auto &d : cells[c_id].depends)
       debug("%d ",d);
     debugnl();
+    */
   }
 
   for (int c_id : waiting_cells)
@@ -290,7 +286,7 @@ void SceneGenerator::generate_grove()
         voxels->add_voxels_cube(cells[dep_cid].voxels_small);
       }
       grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
-      logerr("creating patch with %d trees", ggd.trees_count);
+      debugl(1, "creating patch with %d trees", ggd.trees_count);
       packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
     
       if (!c.depends.empty())
@@ -339,7 +335,7 @@ void SceneGenerator::generate_grove()
       }
       if (!have_deps)
       {
-        logerr("removed dependency %d",*it);
+        //logerr("removed dependency %d",*it);
         cells[*it].status = Cell::CellStatus::FINISHED;
         if (debugTransferSettings.save_small_voxels_count > debugTransferData.debug_voxels.size())
         {

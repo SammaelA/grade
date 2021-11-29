@@ -259,26 +259,26 @@ void TextureManager::clear_unnamed_with_tag(int tag)
     current_textures_tag = 0;
     debugl(10, "texture clearing completed. %d Mb allocated memory left\n", (int)(1e-6*tex_mem));
 }
-void TextureManager::save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name)
+void TextureManager::save_png_raw(unsigned char *data, int w, int h, int channels, std::string name)
 {
-    save_bmp_raw_directly(data, w, h, channels, "saves/"+name+".bmp");
+    save_png_raw_directly(data, w, h, channels, "saves/"+name+".png");
 }
-void TextureManager::save_bmp(Texture &t, std::string name)
+void TextureManager::save_png(Texture &t, std::string name)
 {
-    save_bmp_directly(t, "saves/"+name+".bmp");
+    save_png_directly(t, "saves/"+name+".png");
 }
-void TextureManager::save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name)
+void TextureManager::save_png_raw_directly(unsigned char *data, int w, int h, int channels, std::string name)
 {
     if (data)
     {
-        stbi_write_bmp(name.c_str(), w, h, channels, data);
+        stbi_write_png(name.c_str(), w, h, channels, data, 0);
     }
     else
     {
         logerr("trying to save empty data");
     }
 }
-void TextureManager::save_bmp_directly(Texture &t, std::string name)
+void TextureManager::save_png_directly(Texture &t, std::string name)
 {
     unsigned char *data = nullptr;
     int w,h,layers = 1;
@@ -294,7 +294,7 @@ void TextureManager::save_bmp_directly(Texture &t, std::string name)
         w = t.get_W();
         h = t.get_H();
         layers = t.type == GL_TEXTURE_2D_ARRAY ? t.get_layers() : 1;
-        data = safe_new<unsigned char>(4*w*h*layers, "save_bmp_data");
+        data = safe_new<unsigned char>(4*w*h*layers, "save_png_data");
 
         glBindTexture(t.type, t.texture);
 
@@ -314,8 +314,8 @@ void TextureManager::save_bmp_directly(Texture &t, std::string name)
     }
     if (data)
     {
-        save_bmp_raw_directly(data,w,h*layers,4,name);
-        safe_delete<unsigned char>(data, "save_bmp_data"); 
+        save_png_raw_directly(data,w,h*layers,4,name);
+        safe_delete<unsigned char>(data, "save_png_data"); 
     }
 }
 void TextureManager::delete_tex(Texture &t)

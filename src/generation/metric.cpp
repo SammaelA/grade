@@ -107,7 +107,7 @@ reference(_reference_image)
                     GL_UNSIGNED_BYTE,
                     reference_raw);
         glBindTexture(GL_TEXTURE_2D, 0);
-        //textureManager.save_bmp(ref_resized,"imp");
+        //textureManager.save_png(ref_resized,"imp");
         glDeleteTextures(1, &ref_resized.texture);
     }
     
@@ -153,7 +153,7 @@ double ImpostorMetric::get(GrovePacked &g)
         glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         
         float av_m = 0;
-        //textureManager.save_bmp(imp,"imp");
+        //textureManager.save_png(imp,"imp");
         
         for (int i=0;i<w;i+=8)
         {
@@ -168,7 +168,7 @@ double ImpostorMetric::get(GrovePacked &g)
             }
             //debugnl();
         }
-        //textureManager.save_bmp_raw(reference_raw,w,h,4,"imp");
+        //textureManager.save_png_raw(reference_raw,w,h,4,"imp");
         //tard.clear();
         for (int i=0;i<3;i++)
         {
@@ -183,8 +183,8 @@ double ImpostorMetric::get(GrovePacked &g)
                 av_m += m;
             }
         }
-        textureManager.save_bmp_raw(imp_raw,iw,ih,4,"imp");
-        //textureManager.save_bmp(imp,"imp");
+        textureManager.save_png_raw(imp_raw,iw,ih,4,"imp");
+        //textureManager.save_png(imp,"imp");
         av_m /= 8;
 
         safe_delete<unsigned char>(imp_raw, "metric_impostor_raw");

@@ -103,10 +103,6 @@ bool HydraSceneExporter::export_internal1(std::string directory, Scene &scene, B
   try
   {
     export_internal2(directory, scene, export_settings);
-    //demo_01_plane_box();
-    //::demo_02_load_obj();
-    //demo_03_caustics();
-    //demo_04_instancing();
   }
   catch (std::runtime_error& e)
   {

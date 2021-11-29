@@ -133,17 +133,21 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
 }
 bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
-  const int DEMO_WIDTH  = 1024;
-  const int DEMO_HEIGHT = 1024;
+  const int DEMO_WIDTH  = 1500;
+  const int DEMO_HEIGHT = 1500;
   
   hrErrorCallerPlace(L"demo_02_load_obj");
-  hrSceneLibraryOpen(L"demos/demo_test", HR_WRITE_DISCARD);
-
+  std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
+  hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
+  std::wstring permanent_tex_dir = L"../../../../resources/textures/";
+  std::wstring temp_tex_dir = L"../../../../saves/";
   HRTextureNodeRef texWood = hrTexture2DCreateFromFile(L"data/textures/wood.jpg");
   HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(L"data/textures/leaf.png");
-  HRTextureNodeRef texGrass = hrTexture2DCreateFromFile(L"data/textures/grass_atlas.bmp");
+  std::wstring g = temp_tex_dir + L"grass_atlas.png";
+  HRTextureNodeRef texGrass = hrTexture2DCreateFromFile(g.c_str());
   HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(L"data/textures/leaf_opacity.png");
-  HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(L"data/textures/grass_atlas_op.bmp");
+  g = temp_tex_dir + L"grass_atlas_alpha.png";
+  HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(g.c_str());
   HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
 
   HRTextureNodeRef cube[6] = {
@@ -253,7 +257,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     hrMeshVertexAttribPointer2f(terrainMeshRef, L"texcoord", &terrain.vTexCoord[0]);
     
     hrMeshMaterialId(terrainMeshRef, mat_land.id);
-    logerr("tri id 1 %d",int(terrain.triIndices.size()));
+    //logerr("tri id 1 %d",int(terrain.triIndices.size()));
     hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
   }
   hrMeshClose(terrainMeshRef);
@@ -279,7 +283,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
         hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
 
-        logerr("tri id 2 %d",int(br.triIndices.size()));
+        //logerr("tri id 2 %d",int(br.triIndices.size()));
         hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
       }
       hrMeshClose(branches.back());
@@ -348,7 +352,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshVertexAttribPointer2f(grasses.back(), L"texcoord", &mesh.vTexCoord[0]);
         
         hrMeshMaterialId(grasses.back(), mat_grass.id);
-        logerr("tri id 3 %d",int(mesh.triIndices.size()));
+        //logerr("tri id 3 %d",int(mesh.triIndices.size()));
         hrMeshAppendTriangles3(grasses.back(), int(mesh.triIndices.size()), mesh.triIndices.data());
       }
       hrMeshClose(grasses.back());
@@ -394,8 +398,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
     pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
 
-    intensityNode.append_child(L"color").append_attribute(L"val") = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 2.0f * PI;
+    intensityNode.append_child(L"color").append_attribute(L"val") = L"0.4285 0.3095 0.262";
+    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 5.0f * PI;
   }
   hrLightClose(directLight);
 
@@ -407,7 +411,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 	  lightNode.attribute(L"distribution").set_value(L"map");
     auto intensityNode = lightNode.append_child(L"intensity");
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
-    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1.0");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.9");
 
 	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
     //texNode.append_attribute(L"input_gamma").set_value(1.0f);
@@ -435,8 +439,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-140 80 20");
-    camNode.append_child(L"look_at").text().set(L"0 40 0");
+    camNode.append_child(L"position").text().set(L"-7 70 190");
+    camNode.append_child(L"look_at").text().set(L"0 30 0");
   
     VERIFY_XML(camNode);
   }
@@ -508,7 +512,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     delete matrices;
     hrLightInstance(scnRef, sky, mind.L());
-    auto mres = hlm::mul(hlm::rotate_Z_4x4(1.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
+    auto mres = hlm::mul(hlm::rotate_Z_4x4(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);
@@ -548,7 +552,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
       break;
   }
   
-  hrRenderSaveFrameBufferLDR(renderRef, L"demos/demo_test/z_out.png");
+  std::wstring demo_dir = dir + std::wstring(L"/demo.png");
+  hrRenderSaveFrameBufferLDR(renderRef, demo_dir.c_str());
   return true;
 }
 

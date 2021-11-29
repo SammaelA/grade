@@ -120,11 +120,11 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
     /*
     if (current_clustering_step == ClusteringStep::BRANCHES)
     {
-        textureManager.save_bmp_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
+        textureManager.save_png_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
                                     ictx->self_impostors_raw_atlas->get_w(),
                                     ictx->self_impostors_raw_atlas->get_h(),
                                     4,
-                                    "raw bmp");
+                                    "raw png");
     }
     */
     ProgressBar pb = ProgressBar("Preparing DDT with imposter metric", SQR(real_branches.size()),"iterations", true);
@@ -224,7 +224,7 @@ float imp_dist(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *
     }
     if (data)
     {
-        textureManager.save_bmp_raw(data, w, h, 4, "debug_"+std::to_string(ccnt));
+        textureManager.save_png_raw(data, w, h, 4, "debug_"+std::to_string(ccnt));
         delete data;
     }
     return (double)diff/(sum+1);

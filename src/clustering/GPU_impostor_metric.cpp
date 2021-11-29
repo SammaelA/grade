@@ -43,7 +43,6 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
     
     bool gpu_impostor_use_mips = get_default_block().get_bool("gpu_impostor_use_mips", true);
     gpu_impostor_use_mips = settings.get_bool("gpu_impostor_use_mips", gpu_impostor_use_mips);
-    logerr("usin mip %d", gpu_impostor_use_mips);
 
     auto &atlas = ictx->self_impostors_data->atlas;
     if (gpu_impostor_use_mips)

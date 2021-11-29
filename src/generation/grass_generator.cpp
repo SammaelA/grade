@@ -63,7 +63,7 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
     {
         auto &type = used_grass_types[i];
         int patches_count = round(grass_quantity[i]*(full_size.x*full_size.y)/(PI*SQR(type.patch_size)));
-        logerr("%f %d %f %f %f",grass_quantity[i],patches_count, full_size.x, full_size.y, type.patch_size);
+
         if (patches_count <= 0)
             continue;
         
@@ -88,7 +88,7 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
             add_patch(cells, cells_x, cells_y, rand_cells[j], i);
         }
     }
-    logerr("added %d grass patches",grass_patches.size());
+    debugl(1, "added %d grass patches",grass_patches.size());
 }
 
 struct GridPoint
@@ -266,7 +266,7 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
     PostFx copy = PostFx("copy.fs");
     grass_packed.grass_instances = {};
     glm::ivec2 grass_tex_size = glm::ivec2(512, 512);
-    
+
     {
         TextureAtlas atl = TextureAtlas(grass_tex_size.x,grass_tex_size.y*used_grass_types.size(),1);
         grass_packed.grass_textures = atl;
@@ -283,7 +283,23 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
         grass_packed.grass_instances.push_back(std::pair<int, std::vector<GrassInstanceData>>(tex_id,{}));
     }
     grass_packed.grass_textures.gen_mipmaps();
-    textureManager.save_bmp(grass_packed.grass_textures.tex(0),"grass_atlas");
+    textureManager.save_png(grass_packed.grass_textures.tex(0),"grass_atlas");
+
+
+    PostFx copy_alpha = PostFx("alpha_split_alpha.fs");
+    TextureAtlas atl_alpha = TextureAtlas(grass_tex_size.x,grass_tex_size.y*used_grass_types.size(),1);
+    atl_alpha.set_grid(grass_tex_size.x, grass_tex_size.y, false);
+    for (auto &t : used_grass_types)
+    {
+        int tex_id = atl_alpha.add_tex();
+        atl_alpha.target_slice(tex_id, 0);
+        copy_alpha.use();
+        copy_alpha.get_shader().texture("tex",t.texture);
+        copy_alpha.render();
+    }
+    atl_alpha.gen_mipmaps();
+    textureManager.save_png(atl_alpha.tex(0),"grass_atlas_alpha");
+
 
     int in_cnt = 0;
     for (auto &patch : grass_patches)

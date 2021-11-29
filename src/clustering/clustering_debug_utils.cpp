@@ -215,7 +215,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
     }
 
-    textureManager.save_bmp_raw(data, tex_w, tex_h, 4, file_name);
+    textureManager.save_png_raw(data, tex_w, tex_h, 4, file_name);
     textureManager.delete_tex(res);
     delete data;
 
@@ -510,7 +510,7 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
                     {
                         for (auto &bill : imp_cd->self_impostor->slices)
                         {
-                            std::string file_path = dir_path + "/" + std::to_string(sl)+".bmp";
+                            std::string file_path = dir_path + "/" + std::to_string(sl)+".png";
                             raw_atlas.get_slice(bill.id, sl_data, &ww, &hh);
 
                             if (need_rescale)
@@ -548,10 +548,10 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
                                         tmp_data[4 * (y * ww + x) + 3] = 255;
                                     }
                                 }
-                                textureManager.save_bmp_raw_directly(tmp_data, ww, hh, 4, file_path);
+                                textureManager.save_png_raw_directly(tmp_data, ww, hh, 4, file_path);
                             }
                             else
-                                textureManager.save_bmp_raw_directly(sl_data, ww, hh, 4, file_path);
+                                textureManager.save_png_raw_directly(sl_data, ww, hh, 4, file_path);
                             
                             std::vector<int> row;
                             for (int y = 0; y < hh; y++)
@@ -569,7 +569,7 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
                             if (info_files)
                             {
                                 //add a record about images to database and (maybe) test or train lists;
-                                std::string record = folder_name + "/" + std::to_string(sl)+".bmp" + cluster_labels + "\n";
+                                std::string record = folder_name + "/" + std::to_string(sl)+".png" + cluster_labels + "\n";
                                 database_file += record;
                                 if (urand() < train_part)
                                 {
