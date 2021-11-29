@@ -32,7 +32,6 @@ dist/
 /large_dataset/*
 /scale_test/*
 /original_trees/*
-/dependencies/Hydra
 /hydra_scenes/*
 *.npy
 # Compiled Java class files
