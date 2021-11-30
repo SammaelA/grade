@@ -71,7 +71,7 @@ bool HierarcialClusteringBase::clusterize(Block &settings, IntermediateClusterin
 ClusterDendrogramm::Dist
 ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clusters, std::list<Dist> &P_delta, float &delta)
 {
-    debugl(1, "get P delta\n");
+    debugl(17, "get P delta\n");
     Dist md(-1, -1, 1e9);
     int k = n > current_clusters.size() ? current_clusters.size() : n;
     k = n > current_clusters.size() / 3 ? n : current_clusters.size() / 3;
@@ -99,7 +99,7 @@ ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clusters, std::li
         n1++;
     }
     delta = md.d;
-    debugl(1, "P delta delta %f\n", delta);
+    debugl(17, "P delta delta %f\n", delta);
     for (int u : current_clusters)
     {
         for (int v : current_clusters)
@@ -120,7 +120,7 @@ ClusterDendrogramm::get_P_delta(int n, std::list<int> &current_clusters, std::li
             }
         }
     }
-    debugl(1,"P_delta size = %d md = (%d %d %f)\n", P_delta.size(), md.U, md.V, md.d);
+    debugl(17,"P_delta size = %d md = (%d %d %f)\n", P_delta.size(), md.U, md.V, md.d);
     return md;
 }
 void ClusterDendrogramm::make(int n, int clusters_num)
@@ -225,11 +225,11 @@ void ClusterDendrogramm::make(int n, int clusters_num)
     int sum = 0;
     for (int S : current_clusters)
     {
-        debugl(1, "cluster %d size = %d\n", S, clusters[S].size);
+        debugl(17, "cluster %d size = %d\n", S, clusters[S].size);
         sum += clusters[S].size;
     }
     float comp = (float)size/current_clusters.size();
-    debugl(17, "%d %d %f clusters elements compression\n", current_clusters.size(), size, comp);
+    debugl(1, "%d %d %f clusters elements compression\n", current_clusters.size(), size, comp);
 }
 
 Answer HierarcialClusteringBase::get_dist(int n1, int n2, DistData *data)

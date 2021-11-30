@@ -22,6 +22,7 @@ public:
     void print();
     glm::vec3 get_pos() {return pos;}
     glm::vec2 get_size() {return size;}
+    glm::ivec2 get_grid_size() {return glm::ivec2(w,h);}
 protected:
     float get(int x, int y);
     glm::vec2 get_grad(int x, int y);

@@ -26,9 +26,12 @@ LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, 
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
   auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
   AABB &box = influence_box;
-  debugl(1, "created bbox [%f %f %f] - [%f %f %f] for patch [%f %f] - [%f %f]",box.min_pos.x,box.min_pos.y,
+  float Mvoxels = 1e-6*v->get_size_cnt();
+  debugl(1, "created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f] for patch [%.1f %.1f] - [%.1f %.1f] with %.2f Mvoxels\n",
+  box.min_pos.x,box.min_pos.y,
   box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z,prototype.pos.x - prototype.size.x,
-  prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
+  prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y,
+  Mvoxels);
   return v;
 }
 AABB SceneGenerator::get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
@@ -286,7 +289,7 @@ void SceneGenerator::generate_grove()
         voxels->add_voxels_cube(cells[dep_cid].voxels_small);
       }
       grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
-      debugl(1, "creating patch with %d trees", ggd.trees_count);
+      debugl(1, "creating patch with %d trees\n", ggd.trees_count);
       packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
     
       if (!c.depends.empty())

@@ -673,6 +673,8 @@ void Visualizer::heightmap_to_model(Heightmap &h, Model *m, glm::vec2 detailed_s
 {
     int x = MAX(pow(2, round(log2(2*detailed_size.x / precision))), 4);
     int y = MAX(pow(2, round(log2(2*detailed_size.y / precision))), 4);
+    x = h.get_grid_size().x;
+    y = h.get_grid_size().y;
     //x = 4;
     //y = 4;
     glm::vec2 step = 2.0f * detailed_size / glm::vec2(x, y);

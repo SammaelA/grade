@@ -60,9 +60,10 @@ std::string settings_block = "scene_generation_settings.blk";
 std::string hydra_scene_dir = "vegetation_scene";
 bool demo_mode = false;
 int demo_mode_trees_cnt = 0;
+int demo_mode_patch_size = 5;
 int parse_arguments(int argc, char *argv[])
 {
-  int k = 0;
+  int k = 1;
   while (k < argc)
   {
     if (std::string(argv[k]) == "-settings")
@@ -123,6 +124,27 @@ int parse_arguments(int argc, char *argv[])
         k++;
       }
     }
+    else if (std::string(argv[k]) == "-patch_size")
+    {
+      if (argc > k + 1)
+      {
+        int n = std::stoi(argv[k+1]);
+        if (n <= 0)
+        {
+          logerr("use \"patch_size <trees_count_in_patch>\"");
+        }
+        else
+        {
+          demo_mode_patch_size = n;
+        }
+        k += 2;
+      }
+      else
+      {
+        logerr("use \"patch_size <trees_count_in_patch>\"");
+        k++;
+      }
+    }
     else if (std::string(argv[k]) == "-debug_small_voxels")
     {
       debugTransferSettings.save_small_voxels_count = 100000;
@@ -137,6 +159,27 @@ int parse_arguments(int argc, char *argv[])
     {
       debug_level = 1000;
       k++;
+    }
+    else if (std::string(argv[k]) == "-debug")
+    {
+      if (argc > k + 1)
+      {
+        int n = std::stoi(argv[k+1]);
+        if (n <= 0)
+        {
+          logerr("use \"debug <debug_type>\"");
+        }
+        else
+        {
+          debug_level = n;
+        }
+        k += 2;
+      }
+      else
+      {
+        logerr("use \"debug <debug_type>\"");
+        k++;
+      }
     }
     else
     {
@@ -236,8 +279,10 @@ void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ct
 
 void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
 {
-  float density = 5;
-  glm::vec2 cell_size(75,75);
+  demo_mode_patch_size = MIN(demo_mode_patch_size, demo_mode_trees_cnt);
+  float density = MAX(demo_mode_patch_size, 2);
+  int d_sqrt = sqrt(density);
+  glm::vec2 cell_size(30*(d_sqrt + 1),30*(d_sqrt + 1));
   int patches_cnt = ceil(demo_mode_trees_cnt/density);
   int patches_x = sqrt(patches_cnt);
   patches_x = MAX(patches_x,1);

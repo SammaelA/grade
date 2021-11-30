@@ -6,10 +6,44 @@
 #include <boost/algorithm/string.hpp>
 
 int cur_line = 0;
+bool in_comment_assume = false;
+bool in_comment = false;
 bool is_empty(const char c)
-{
+{   
     if (c == '\n')
         cur_line++;
+    
+    if (in_comment)
+    {
+        if (c == '\n')
+        {
+            in_comment = false;
+
+            return true;
+        }
+        else
+            return true;
+    }
+    else if (!in_comment_assume && c == '\\')
+    {
+        in_comment_assume = true;
+        return true;
+    }
+    else if (in_comment_assume)
+    {
+        if (c == '\\')
+        {
+            in_comment_assume = false;
+            in_comment = true;
+            return true;
+        }
+        else
+        {
+            logerr("line %d hanging \\ found", cur_line);
+            in_comment_assume = false;
+        }
+    }
+
     return (c == ' ' || c == '\n' || c == '\t');
 }
 bool is_div(const char c)

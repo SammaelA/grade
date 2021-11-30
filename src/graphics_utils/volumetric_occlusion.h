@@ -60,6 +60,7 @@ public:
     glm::ivec3 get_vox_sizes();
     int get_mip_count();
     int get_mip_decrease();
+    long get_size_cnt() {return count;}
     
 private:
     struct LightParams

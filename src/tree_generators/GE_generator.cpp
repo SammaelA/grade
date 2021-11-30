@@ -7,6 +7,8 @@ int GETreeGenerator::t_ids = 0;
 int GETreeGenerator::iteration = 0;
 GETreeParameters GETreeGenerator::defaultParameters = GETreeParameters();
 vec3 g_center = vec3(0,0,0);
+vec3 min_pos;
+vec3 max_pos;
 //TreeTypeData def_ttd = TreeTypeData(-1,&(GETreeGenerator::defaultParameters), "wood","leaf");
 bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
 {
@@ -75,7 +77,11 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
         GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->params);
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         set_levels_rec(t, t.root, params, 0);
+        min_pos = vec3(1e9,1e9,1e9);
+        max_pos = -min_pos;
         create_leaves(t.root, params, 0, voxels);
+        vec3 sz = max_pos - min_pos;
+        //logerr("tree size %f %f %f max_sz %f %f %f", sz.x, sz.y, sz.z, params.Xm, 1.5f*params.Xm, params.Xm);
         convert(t, trees_external[trees.size() - i - 1]);
         i++;
     }
@@ -155,6 +161,8 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
 {
     for (Joint &j : b.joints)
     {
+        //min_pos = min(min_pos, j.pos);
+        //max_pos = max(max_pos, j.pos);
         if (j.childBranches.empty() && b.level >= level_from && params.leaves_cnt > 0 &&
             j.r < params.base_r * params.leaves_max_r &&
             urand() < params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos))))
@@ -186,14 +194,14 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
     t.root = Branch();
     t.root.level = 0;
-    t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-10,0), 1));
+    t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1));
 
     bool bush = (params.root_type == 0);
     if (bush)
     {
         for (int i = 0; i < 10; i++)
         {
-            float phi = 0.2*PI*i;
+            float phi = 0.2*PI*(i + urand());
             t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*params.ro, 0), 0.9));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos));
             auto &b = t.root.joints.back().childBranches.back();

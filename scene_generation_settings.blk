@@ -6,7 +6,7 @@
     }
     scene_size:p2 = 150, 150
     heightmap_size:p2 = 4000, 4000
-    max_trees_per_patch:i = 5
+    //max_trees_per_patch:i = 5
     heightmap_cell_size:r = 10
     grass
     {

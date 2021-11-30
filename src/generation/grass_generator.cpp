@@ -88,7 +88,7 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
             add_patch(cells, cells_x, cells_y, rand_cells[j], i);
         }
     }
-    debugl(1, "added %d grass patches",grass_patches.size());
+    debugl(1, "added %d grass patches\n",grass_patches.size());
 }
 
 struct GridPoint

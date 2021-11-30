@@ -85,7 +85,7 @@ std::vector<glm::vec3> Planter::get_saplings()
                     saplings.push_back(pos);
                     saplings_planted.push_back(pos);
                     occlusion.set(pos,1e9);
-                    debugl(1, "placed sapling %f %f %f",pos.x,pos.y,pos.z);
+                    debugl(1, "placed sapling %f %f %f\n",pos.x,pos.y,pos.z);
                     break;
                 }
                 else

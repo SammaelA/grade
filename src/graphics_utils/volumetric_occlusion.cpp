@@ -722,7 +722,7 @@ void LightVoxelsCube::add_heightmap(Heightmap &h)
         for (int k=-vox_z;k<=vox_z;k++)
         {
             glm::vec3 terr_pos = center + voxel_size*glm::vec3(i,0,k);
-            terr_pos.y = h.get_height(terr_pos);
+            terr_pos.y = h.get_height_simple(terr_pos);
             for (int j=-vox_y;j<=vox_y;j++)
             {
                 glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);

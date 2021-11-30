@@ -79,9 +79,6 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
                     }
 
                     AbstractTreeGenerator *gen = generators.at(treeTypesCatalogue[type].generator_name);
-                    //glm::vec3 pos = glm::vec3(seeds[0].pos.x,0,seeds[0].pos.y);
-                    //pos.y = hmap.get_height(pos);
-                    debugl(1,"polant tree %d",prototype.trees_count);
                     gen->plant_tree(seed, &(treeTypesCatalogue[type]));
                     t_counts.at(treeTypesCatalogue[type].generator_name)++;
                 }

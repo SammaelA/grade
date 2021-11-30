@@ -45,7 +45,12 @@ struct GETreeParameters : public ParametersSet
     int root_type = 1;
     virtual glm::vec3 get_tree_max_size() override
     {
-        return ro*glm::vec3(ro*Xm, 1.5*ro*Xm, ro*Xm);
+        if (root_type == 0)
+            return ro*glm::vec3(1.5*Xm, Xm, 1.5*Xm);
+        else if (root_type == 1)
+            return ro*glm::vec3(0.6*Xm, 1.25*Xm, 0.6*Xm);
+        else 
+            return ro*glm::vec3(2.0f*Xm, 1.5f*Xm, 2.0f*Xm);
     }
     virtual float get_scale_factor() override 
     {

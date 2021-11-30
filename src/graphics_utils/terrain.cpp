@@ -3,6 +3,7 @@
 #include "common_utils/utility.h"
 #include "tinyEngine/camera.h"
 #include "graphics_utils/texture_manager.h"
+#include "common_utils/bbox.h"
 
     Heightmap::Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size):
     Field_2d(pos, size, cell_size)
@@ -15,10 +16,35 @@
 
     }
 
+    float Heightmap::get_height_simple(glm::vec3 position)
+    {
+        return get_bilinear(position);
+    }
 
     float Heightmap::get_height(glm::vec3 position)
     {
-      return get_bilinear(position);
+        position.y = 0;
+        if (!data)
+            return base_val;
+        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
+        glm::ivec2 ps = glm::ivec2(rp.x > 0 ? rp.x : rp.x-1, rp.y > 0 ? rp.y : rp.y-1);
+        float dx = rp.x - ps.x;
+        float dy = rp.y - ps.y;
+        int rdx = round(dx);
+        float h1 = get(ps.x, ps.y);
+        float h2 = get(ps.x + 1, ps.y + 1);
+        float h3 = get(ps.x + rdx, ps.y + 1 - rdx);
+
+        glm::vec3 p1 = pos + cell_size*glm::vec3(ps.x, 0, ps.y);
+        p1.y = 0;
+        glm::vec3 p2 = pos + cell_size*glm::vec3(ps.x + 1, 0, ps.y + 1);
+        p2.y = 0;
+        glm::vec3 p3 = pos + cell_size*glm::vec3(ps.x + rdx, 0, ps.y + 1 - rdx);
+        p3.y = 0;
+
+        glm::vec3 barycent = Barycentric(position, p1, p2, p3);
+
+        return barycent.x*h1 + barycent.y*h2 + barycent.z*h3;
     }
     void Heightmap::random_generate(float base, float min, float max)
     {
