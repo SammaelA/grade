@@ -16,6 +16,7 @@ CMakeCache.txt
 *.csv
 *.json
 .*
+
 /main
 /profile
 /Makefile
