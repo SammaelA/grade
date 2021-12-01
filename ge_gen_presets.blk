@@ -19,7 +19,7 @@
         Xm:r = 100
         branching_angle_max:r = 2.5
         branching_angle_min:r = 2.0
-        r_s:r = 0.115
+        r_s:r = 0.1
         rs_size_factor:r = -0.004
         r:r = 0.3
         leaves_cnt:r = 1.5

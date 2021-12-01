@@ -22,9 +22,10 @@ LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, 
     auto &type = types[p.first];
     min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
   }
-  glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
+  float vox_scale = 0.5/0.8;
+  glm::vec3 voxel_sz = vox_scale*(influence_box.max_pos - influence_box.min_pos);
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
-  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, 0.5f*min_scale_factor, 1.0f);
+  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale*min_scale_factor, 1.0f);
   AABB &box = influence_box;
   float Mvoxels = 1e-6*v->get_size_cnt();
   debugl(1, "created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f] for patch [%.1f %.1f] - [%.1f %.1f] with %.2f Mvoxels\n",

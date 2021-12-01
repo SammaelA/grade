@@ -456,29 +456,37 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 
 void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r)
 {
-    if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
-        return;
-
+    #define CH 0.6
+    float occ = 0.0;
     glm::ivec3 voxel = pos_to_voxel(pos);
-
+    int x0 = voxel.x;
+    int y0 = voxel.y;
+    int z0 = voxel.z;
     for (int i = 0; voxel.y - i > -vox_y; i++)
     {
         int wd = MIN(i, max_r);
-        if (wd == max_r && urand() < 0.5)
-            continue;
-        //float occ = strenght * pow(pow_b, -i);
-        float occ = strenght * pow(i + 2, -pow_b);
+        if (wd == max_r) 
+        {
+            if (urand() < CH)
+                continue;
+            else 
+                occ = 1/(1-CH);
+        }
+        else
+            occ = 1;
+
+        if (abs(pow_b - 2) < 1e-4)
+            occ *= strenght / SQR(i + 2);
+        else
+            occ *= strenght * pow(i + 2, -pow_b);
         if (abs(occ) < 1e-6)
             return;
-        for (int j = -wd; j <= wd; j++)
+        int y = y0 - i;
+        for (int j = MAX(z0 - wd, -vox_z); j <= MIN(z0 + wd, vox_z); j++)
         {
-            for (int k = -wd; k <= wd; k++)
+            for (int k = MAX(x0 - wd, -vox_x); k <= MIN(x0 + wd, vox_x); k++)
             {
-                glm::ivec3 vx = voxel + glm::ivec3(k, -i, j);
-                if (in_voxel_cube(vx))
-                {
-                    voxels[v_to_i(vx)] += occ;
-                }
+                voxels[v_to_i(k, y, j)] += occ;
             }
         }
     }
