@@ -48,7 +48,7 @@ public:
     glm::vec3 get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion);
     void prepare_mip_levels();
     void print_average_occlusion();
-    void add_body(Body *b, float opacity = 1e9, bool solid = true);
+    void add_body(Body *b, float opacity = 1e9, bool solid = true, float infl_distance = 0, float base_infl_occ = 0);
     void add_heightmap(Heightmap &h);
     void add_voxels_cube(LightVoxelsCube *cube);
     void calculte_precise_occlusion_from_bodies();
@@ -70,7 +70,7 @@ private:
         float penumbraDepthDecay = 0.4;
         float penumbraWidthDecay = 0.8;
         float searchDepth = 5;
-        float sunPositions = 0;
+        float sunPositions = 4;
     } lightParams;
     struct Light
     {

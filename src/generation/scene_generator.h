@@ -2,6 +2,7 @@
 #include "grove_generator.h"
 #include "core/scene.h"
 
+struct Cell;
 class SceneGenerator
 {
 public:
@@ -19,6 +20,7 @@ public:
 private:
     LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                                          AABB &influence_box);
+    LightVoxelsCube *create_cell_small_voxels(Cell &c);
     AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                             Heightmap &h);
     void generate_grove();
@@ -29,13 +31,15 @@ struct Cell
 {
   enum CellStatus
   {
-    EMPTY,
-    WAITING,
-    BORDER,
-    FINISHED
+    EMPTY,//nothing to do with it or task is not set
+    WAITING,//task is set but not performed. voxels_small == nullptr, planar_occlusion == nullptr
+    BORDER,//plants are generated. voxels_small!= nullptr, planar_occlusion == nullptr
+    FINISHED_PLANTS, //plants are generated. voxels_small == nullptr, planar_occlusion != nullptr
+    FINISHED_ALL //plants and grass are generated. voxels_small == nullptr, planar_occlusion == nullptr
   };
   GrovePrototype prototype;
-  LightVoxelsCube *voxels_small = nullptr;
+  LightVoxelsCube *voxels_small = nullptr;//used for plants gen is dependant cells
+  Field_2d *planar_occlusion = nullptr;//used for grass gen in this cell
   int id = -1;
   AABB2D bbox;
   CellStatus status;

@@ -275,6 +275,8 @@ void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ct
   {
     ctx.global_ggd.types.push_back(p.second);
   }
+
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(0,0,0), glm::vec3(50,0,0), glm::vec3(0,0,50), glm::vec3(0,100,0)));
 }
 
 void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
@@ -330,6 +332,8 @@ int parser_main(int argc, char *argv[])
         worldRenderer.set_heightmap(*scene.heightmap);
         worldRenderer.set_grass(scene.grass);
         worldRenderer.set_grove(scene.grove, sceneGenerationContext.global_ggd);
+        for (auto *b : sceneGenerationContext.global_ggd.obstacles)
+          worldRenderer.add_body_debug(b);
         auto &voxels = debugTransferData.debug_voxels;
         for (auto *vox : voxels)
         {

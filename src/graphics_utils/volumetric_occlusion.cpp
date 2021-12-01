@@ -770,11 +770,12 @@ void LightVoxelsCube::add_voxels_cube(LightVoxelsCube *cube)
         }
     }
 }
-void LightVoxelsCube::add_body(Body *b, float opacity, bool solid)
+void LightVoxelsCube::add_body(Body *b, float opacity, bool solid, float infl_distance, float base_infl_occ)
 {
     if (!b)
         return;
-    glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
+    int infl_dist = infl_distance/voxel_size;
+
     for (int i=-vox_x;i<=vox_x;i++)
     {
         for (int j=-vox_y;j<=vox_y;j++)
@@ -787,7 +788,37 @@ void LightVoxelsCube::add_body(Body *b, float opacity, bool solid)
                     if (solid)
                         voxels[v_to_i(i,j,k)] += 1e7;
                     if (opacity > 0.1)
+                    {
                         set_occluder_simple(pos,opacity);
+
+                        if (infl_dist > 0)
+                        {
+                            if (!b->in_body(pos + glm::vec3(voxel_size, 0, 0)))
+                            {
+                                for (int l = 1; l<=infl_dist;l++)
+                                    set_occluder_simple(pos + glm::vec3(l*voxel_size, 0, 0),
+                                                        (base_infl_occ*(infl_dist-l))/infl_dist);
+                            }
+                            if (!b->in_body(pos + glm::vec3(-voxel_size, 0, 0)))
+                            {
+                                for (int l = 1; l<=infl_dist;l++)
+                                    set_occluder_simple(pos + glm::vec3(-l*voxel_size, 0, 0),
+                                                        (base_infl_occ*(infl_dist-l))/infl_dist);
+                            }
+                            if (!b->in_body(pos + glm::vec3(0, 0, voxel_size)))
+                            {
+                                for (int l = 1; l<=infl_dist;l++)
+                                    set_occluder_simple(pos + glm::vec3(0, 0, l*voxel_size),
+                                                        (base_infl_occ*(infl_dist-l))/infl_dist);
+                            }
+                            if (!b->in_body(pos + glm::vec3(0, 0, -voxel_size)))
+                            {
+                                for (int l = 1; l<=infl_dist;l++)
+                                    set_occluder_simple(pos + glm::vec3(0, 0, -l*voxel_size),
+                                                        (base_infl_occ*(infl_dist-l))/infl_dist);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -798,12 +829,14 @@ void LightVoxelsCube::calculte_precise_occlusion_from_bodies()
     glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
     std::vector<glm::vec3> sun_dirs;
     int steps = lightParams.sunPositions;
+    steps = 6;
+    logerr("body occlusion %d steps", steps);
     if (steps < 3)
         return;
     for (int i=0;i<steps;i++)
     {
         EnvironmentParameters params;
-        params.hours = 24.0*i/steps;
+        params.hours = 6 + (12.0*i)/steps;
         glm::vec3 sun = Sun::sun_direction(params);
         if (sun.y < 0) //sun above horizon
             sun_dirs.push_back(-sun);   
@@ -811,6 +844,7 @@ void LightVoxelsCube::calculte_precise_occlusion_from_bodies()
     if (sun_dirs.size() < 3)
         return;
     std::vector<glm::vec3> main_dirs = {sun_dirs.front(),sun_dirs[sun_dirs.size()/2],sun_dirs.back()};
+    logerr("body occlusion %d dirs", sun_dirs.size());
     for (int i=-vox_x;i<=vox_x;i++)
     {
         for (int j=-vox_y;j<=vox_y;j++)

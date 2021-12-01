@@ -35,6 +35,22 @@ LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, 
   Mvoxels);
   return v;
 }
+
+LightVoxelsCube *SceneGenerator::create_cell_small_voxels(Cell &c)
+{
+  float vox_scale = 4;
+  glm::vec3 voxel_sz = vox_scale*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+  glm::vec3 voxel_center = c.influence_bbox.min_pos + voxel_sz;
+  
+  auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale, 1.0f);
+  for (auto *b : ctx.global_ggd.obstacles)
+  {
+    voxels->add_body(b,10000);
+  }
+
+  return voxels;
+}
+
 AABB SceneGenerator::get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                                         Heightmap &h)
 {
@@ -280,15 +296,17 @@ void SceneGenerator::generate_grove()
       GroveGenerator grove_gen;
       GrovePrototype &prototype = c.prototype;
       LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
-      voxels->add_heightmap(*(ctx.scene->heightmap));
-      for (int i = 0; i < ggd.obstacles.size(); i++)
+      
+      for (auto *b : ctx.global_ggd.obstacles)
       {
-        voxels->add_body(ggd.obstacles[i],10000);
+        voxels->add_body(b,10000, true, 7.5, 3.5);
       }
+
       for (auto &dep_cid : c.depends_from)
       {
         voxels->add_voxels_cube(cells[dep_cid].voxels_small);
       }
+      voxels->add_heightmap(*(ctx.scene->heightmap));
       grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
       debugl(1, "creating patch with %d trees\n", ggd.trees_count);
       packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
@@ -302,30 +320,27 @@ void SceneGenerator::generate_grove()
       }
       else
       {
-        c.status = Cell::CellStatus::FINISHED;
-      }
-      if (grass_needed && !c.voxels_small)
-      {
-        short_lived_voxels = true;
-        c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(), 4,
-                                             glm::vec2(0,1e8));
+        c.status = Cell::CellStatus::FINISHED_PLANTS;
       }
       delete voxels;
       delete[] trees;
     } 
-    if (grass_needed)
+    else 
     {
-      grassGenerator.generate_grass_in_cell(c, c.voxels_small);
-      if (c.status != Cell::CellStatus::BORDER)
-        c.status = Cell::CellStatus::FINISHED;
-      if (short_lived_voxels && c.voxels_small)
-        delete c.voxels_small;
+      if (!c.depends.empty())
+      {
+        c.status = Cell::CellStatus::BORDER;
+        c.voxels_small = create_cell_small_voxels(c);
+        border_cells.push_back(c_id);
+      }
+      else
+      {
+        c.status = Cell::CellStatus::FINISHED_PLANTS;
+      }
     }
 
     //TODO: can be done not every iteration
-
     auto it = border_cells.begin();
-
     while (it != border_cells.end())
     {
       bool have_deps = false;
@@ -340,16 +355,28 @@ void SceneGenerator::generate_grove()
       if (!have_deps)
       {
         //logerr("removed dependency %d",*it);
-        cells[*it].status = Cell::CellStatus::FINISHED;
+        if (grass_needed && cells[*it].voxels_small)
+        {
+          glm::vec3 occ_center = cells[*it].voxels_small->get_center();
+          AABB bbox = cells[*it].voxels_small->get_bbox();
+          glm::vec2 bord = glm::vec2(bbox.max_pos.x - bbox.min_pos.x, bbox.max_pos.z - bbox.min_pos.z);
+          float vox_size = cells[*it].voxels_small->get_voxel_size();
+          cells[*it].planar_occlusion = new Field_2d(occ_center, 0.5f*bord, vox_size);
+          std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) ->float
+          {
+            return cells[*it].voxels_small->get_occlusion_projection(glm::vec3(p.x,0,p.y));
+          };
+          cells[*it].planar_occlusion->fill_func(func);
+        }
+
+        cells[*it].status = Cell::CellStatus::FINISHED_PLANTS;
+
         if (debugTransferSettings.save_small_voxels_count > debugTransferData.debug_voxels.size())
-        {
           debugTransferData.debug_voxels.push_back(cells[*it].voxels_small);
-          cells[*it].voxels_small = nullptr;
-        }
         else
-        {
           delete cells[*it].voxels_small;
-        }
+        
+        cells[*it].voxels_small = nullptr;
         it = border_cells.erase(it);
       }
       else
@@ -358,9 +385,25 @@ void SceneGenerator::generate_grove()
       }   
     }
   }
-
+  
   if (grass_needed)
   {
+    for (auto &c : cells)
+    {
+      if (c.status == Cell::CellStatus::FINISHED_PLANTS && !c.grass_patches.empty())
+        grassGenerator.generate_grass_in_cell(c, c.planar_occlusion);
+    }
     grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
+  }
+
+  for (auto &c : cells)
+  {
+    if (c.planar_occlusion)
+      delete c.planar_occlusion;
+    if (c.voxels_small)
+    {
+      logerr("missed dependencies. Cell %d", c.id);
+      delete c.voxels_small;
+    }
   }
 }

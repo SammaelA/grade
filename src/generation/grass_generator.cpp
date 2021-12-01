@@ -147,7 +147,7 @@ public:
     glm::vec2 p_sz;
 };
 
-void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusion)
+void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion)
 {
     bool test_occlusion = (occlusion != nullptr);
     //test_occlusion = false;//TODO: test occlusion
@@ -183,8 +183,11 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, LightVoxelsCube *occlusi
                     float grow_chance = LS >= 0 ? 1 : 0;
                     if (test_occlusion && LS != 0)
                     {
-                        float light = 1/(1 + occlusion->get_occlusion_projection(glm::vec3(center.x, 0, center.y)));
-                        grow_chance = LS > 0 ? pow(light, LS) : 1 - pow(light, -LS);
+                        float light = 1/(1 + occlusion->get_bilinear(glm::vec3(center.x, 0, center.y)));
+                        if (light > 0.005)
+                            grow_chance = LS > 0 ? pow(light, LS) : 1 - pow(light, -LS);
+                        else
+                            grow_chance = 0;
                     }
                     if (grow_chance < 0.01)
                         continue;
