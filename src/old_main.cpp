@@ -344,7 +344,7 @@ struct Cell
   explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
 };
 
-LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+LightVoxelsCube *create_grove_voxels2(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                                      AABB &influence_box)
 {
   float min_scale_factor = 1000;
@@ -362,7 +362,7 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   prototype.pos.y - prototype.size.y, prototype.pos.x + prototype.size.x, prototype.pos.y + prototype.size.y);
   return v;
 }
-AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+AABB get_influence_AABB2(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
                         Heightmap &h)
 {
   glm::vec3 max_tree_size = glm::vec3(0,0,0);
@@ -417,7 +417,7 @@ void generate_grove()
         cells[id].prototype.size = cell_size;
         cells[id].prototype.possible_types = {std::pair<int, float>(0,1)};
         cells[id].prototype.trees_count = MAX(urand()*max_tc,1);
-        cells[id].influence_bbox = get_influence_AABB(cells[id].prototype, ggd.types, *data.heightmap);
+        cells[id].influence_bbox = get_influence_AABB2(cells[id].prototype, ggd.types, *data.heightmap);
         waiting_cells.push_back(id);
       }
     }
@@ -488,7 +488,7 @@ void generate_grove()
     prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
     prototype.trees_count = ggd.trees_count;
     prototype.possible_types = {std::pair<int, float>(0, 1)};
-    LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
+    LightVoxelsCube *voxels = create_grove_voxels2(prototype, ggd.types, c.influence_bbox);
     voxels->add_heightmap(*data.heightmap);
     for (int i = 0; i < ggd.obstacles.size(); i++)
     {
@@ -571,7 +571,7 @@ void generate_grove()
       prototype.size = glm::vec2(ggd.size.x, ggd.size.z);
       prototype.trees_count = ggd.trees_count;
       prototype.possible_types = {std::pair<int, float>(0,1)};
-      LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types,*data.heightmap);
+      LightVoxelsCube *voxels = create_grove_voxels2(prototype, ggd.types,*data.heightmap);
       voxels->add_heightmap(*data.heightmap);
       //debug_voxels = voxels;
 

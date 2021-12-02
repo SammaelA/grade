@@ -12,9 +12,11 @@
 #include "grass_generator.h"
 #include "graphics_utils/debug_transfer.h"
 #include <algorithm>
+#include<thread>
+#include<mutex> 
 
-LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
-                                                     AABB &influence_box)
+LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+                                     AABB &influence_box)
 {
   float min_scale_factor = 1000;
   for (auto &p : prototype.possible_types)
@@ -36,7 +38,7 @@ LightVoxelsCube *SceneGenerator::create_grove_voxels(GrovePrototype &prototype, 
   return v;
 }
 
-LightVoxelsCube *SceneGenerator::create_cell_small_voxels(Cell &c)
+LightVoxelsCube *create_cell_small_voxels(Cell &c, const SceneGenerator::SceneGenerationContext &ctx)
 {
   float vox_scale = 4;
   glm::vec3 voxel_sz = vox_scale*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
@@ -51,8 +53,8 @@ LightVoxelsCube *SceneGenerator::create_cell_small_voxels(Cell &c)
   return voxels;
 }
 
-AABB SceneGenerator::get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
-                                        Heightmap &h)
+AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+                        Heightmap &h)
 {
   glm::vec3 max_tree_size = glm::vec3(0,0,0);
   for (auto &p : prototype.possible_types)
@@ -92,6 +94,120 @@ AbstractTreeGenerator *get_gen(std::string &generator_name)
   return gen;
 }
 
+class RawTreesDatabase
+{
+public:
+  struct TreeToken
+  {
+    Tree *trees;
+    int count;
+    int array_n;
+    int start_pos;
+  };
+  RawTreesDatabase() {};
+  RawTreesDatabase(const RawTreesDatabase&) = delete;
+  RawTreesDatabase( RawTreesDatabase&) = delete;
+  TreeToken get_empty_trees(int cnt, GroveGenerationData &ggd);
+  void generation_finished(TreeToken &token);
+  bool pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx);
+
+  std::mutex database_lock;
+private:
+  static constexpr int max_trees_in_array = 256;
+  struct TreeArray
+  {
+    Tree *data = nullptr;
+    int cnt_max = max_trees_in_array;
+    int cnt_real = 0;
+    std::vector<bool> finished;//length = cnt;
+    bool all_finished = false;
+    bool filled = false;;
+    bool closed = false;
+    GroveGenerationData ggd;
+  };
+  std::vector<TreeArray> arrays;
+};
+
+RawTreesDatabase::TreeToken RawTreesDatabase::get_empty_trees(int cnt, GroveGenerationData &_ggd)
+{
+  arrays.emplace_back();
+  arrays.back().data = new Tree[cnt];
+  arrays.back().cnt_real = cnt;
+  arrays.back().filled = true;
+  arrays.back().ggd = _ggd;
+  arrays.back().finished = std::vector<bool>(cnt, false);
+
+  return TreeToken{arrays.back().data, cnt, (int)arrays.size() - 1, 0};
+};
+
+void RawTreesDatabase::generation_finished(TreeToken &token)
+{
+  auto &arr = arrays[token.array_n];
+  for (int i=token.start_pos;i<token.start_pos + token.count;i++)
+    arr.finished[i] = true;
+  
+  arr.all_finished = true;
+  for (auto fin : arr.finished)
+    arr.all_finished = arr.all_finished && fin;
+}
+
+bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx)
+{
+  bool job_finished = true;
+  for (auto &arr : arrays)
+  {
+    if (!arr.closed && arr.all_finished)
+    {
+      packer.add_trees_to_grove(arr.ggd, ctx.scene->grove, arr.data, ctx.scene->heightmap);
+      delete[] arr.data;
+      arr.closed = true;
+    }
+    job_finished = job_finished && arr.closed;
+  }
+
+  return job_finished;
+}
+
+struct GenerationJob
+{
+  SceneGenerator::SceneGenerationContext &ctx;
+  std::mutex ctx_lock;
+
+  std::vector<Cell> &cells;
+
+  std::list<int> waiting_cells;
+  std::list<int> border_cells;
+  GroveGenerationData ggd;
+  RawTreesDatabase &rawTreesDatabase;
+
+  GrassGenerator &grassGenerator;
+  std::mutex grassGenerator_lock;
+
+  GroveMask &mask;
+  std::mutex mask_lock;
+  int cells_x;
+  int cells_y;
+  bool grass_needed;
+
+  GenerationJob(SceneGenerator::SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
+                std::vector<TreeTypeData> &_types, RawTreesDatabase &_database, GrassGenerator &_grassGenerator,
+                GroveMask &_mask, int _cells_x, int _cells_y, bool _grass_needed) : ctx(_ctx),
+                                                                cells(_cells),
+                                                                rawTreesDatabase(_database),
+                                                                grassGenerator(_grassGenerator),
+                                                                mask(_mask)
+  {
+    ggd.types = _types;
+    cells_x = _cells_x;
+    cells_y = _cells_y;
+    grass_needed = _grass_needed;
+  };
+  GenerationJob(const GenerationJob &) = delete;
+  GenerationJob(GenerationJob &) = delete;
+  void prepare_dependencies(); //done in main thread;
+  void generate();//can be done in separate thread           
+};
+
 void SceneGenerator::create_scene_auto()
 {
   generate_grove();
@@ -99,6 +215,7 @@ void SceneGenerator::create_scene_auto()
 void SceneGenerator::generate_grove()
 {
   GrovePacker packer;
+  RawTreesDatabase rawTreesDatabase;
 
   int max_tc = ctx.settings.get_int("max_trees_per_patch", 1);
   int fixed_patches_count = ctx.settings.get_int("fixed_patches_count", 0);
@@ -167,8 +284,19 @@ void SceneGenerator::generate_grove()
   GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, 3);
   mask.set_square(mask_size.x, mask_size.y);
 
-  std::list<int> waiting_cells;
-  std::list<int> border_cells;
+  //std::list<int> waiting_cells;
+  //std::list<int> border_cells;
+
+  std::vector<GenerationJob *> generationJobs;
+  const int max_jobs_cnt = 8;
+  int job_size = MAX(ceil((float)cells_x/max_jobs_cnt), 1);
+  int jobs_cnt = MAX(ceil((float)cells_x/job_size), 1);
+  logerr("starting generation %dx%d cells with %d jobs (job size = %d)", cells_x, cells_y, jobs_cnt, job_size);
+
+  for (int i=0;i<jobs_cnt;i++)
+  {
+    generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, grassGenerator, mask, cells_x, cells_y, grass_needed));
+  }
 
   for (int i=0;i<cells_x;i++)
   {
@@ -219,7 +347,7 @@ void SceneGenerator::generate_grove()
         }
         cells[id].prototype.trees_count = trees_count;
         cells[id].influence_bbox = get_influence_AABB(cells[id].prototype, ggd.types, *(ctx.scene->heightmap));
-        waiting_cells.push_back(id);
+        generationJobs[i/job_size]->waiting_cells.push_back(id);
       }
     }
   }
@@ -230,8 +358,57 @@ void SceneGenerator::generate_grove()
     grassGenerator.prepare_grass_patches(cells, cells_x, cells_y);
   }
 
+  std::vector<std::thread> threads;
+  for (auto *j : generationJobs)
+  {
+    j->prepare_dependencies();
+  }
+  for (auto *j : generationJobs)
+  {
+    threads.push_back(std::thread(&GenerationJob::generate, j));
+  }
+
+  for (auto &t : threads)
+  {
+    logerr("launching thread");
+    t.join();
+  }
+
+  for (auto *j : generationJobs)
+  {
+    delete j;
+  }
+
+  rawTreesDatabase.pack_ready(packer, ctx);
+
+  if (grass_needed)
+  {
+    for (auto &c : cells)
+    {
+      if ((c.status != Cell::CellStatus::EMPTY) && !c.grass_patches.empty())
+        grassGenerator.generate_grass_in_cell(c, c.planar_occlusion);
+    }
+    grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
+  }
+
+  for (auto &c : cells)
+  {
+    if (c.planar_occlusion)
+      delete c.planar_occlusion;
+    if (c.voxels_small)
+    {
+      logerr("missed dependencies. Cell %d", c.id);
+      delete c.voxels_small;
+    }
+  }
+}
+
+void GenerationJob::prepare_dependencies()
+{
   for (int c_id : waiting_cells)
   {
+    if (cells[c_id].prototype.trees_count == 0)
+      continue;
     //find dependencies
     int j0 = c_id % cells_y;
     int i0 = c_id / cells_y;
@@ -269,48 +446,84 @@ void SceneGenerator::generate_grove()
       d++;
       d_prev = d;
     }
-    /*
+    
     debug("depends of cell %d: ",c_id);
     for (auto &d : cells[c_id].depends)
       debug("%d ",d);
     debugnl();
-    */
+    
   }
-
+}
+void GenerationJob::generate()
+{
   for (int c_id : waiting_cells)
   {
     //generation trees and grass
-    auto &c = cells[c_id];
+    logerr("generating cell %d", c_id);
     bool short_lived_voxels = false;
-    if (c.prototype.trees_count > 0)
+    auto &c = cells[c_id];
+    
+    //c.cell_lock.lock();
+    GrovePrototype prototype = c.prototype;
+    auto influence_bb = c.influence_bbox;
+    //c.cell_lock.unlock();
+
+    if (prototype.trees_count > 0)
     {
       //temp stuff
-      ggd.pos.x = c.prototype.pos.x;
-      ggd.pos.z = c.prototype.pos.y;
-      ggd.pos.y = ctx.scene->heightmap->get_height(ggd.pos);
-      ggd.size.x = c.prototype.size.x;
-      ggd.size.z = c.prototype.size.y;
-      ggd.trees_count = c.prototype.trees_count;
+      ggd.pos.x = prototype.pos.x;
+      ggd.pos.z = prototype.pos.y;
 
-      ::Tree *trees = new ::Tree[ggd.trees_count];
+      ctx_lock.lock();
+      ggd.pos.y = ctx.scene->heightmap->get_height(ggd.pos);
+      ctx_lock.unlock();
+
+      ggd.size.x = prototype.size.x;
+      ggd.size.z = prototype.size.y;
+      ggd.trees_count = prototype.trees_count;
+
+      //::Tree *trees = new ::Tree[ggd.trees_count];
       GroveGenerator grove_gen;
-      GrovePrototype &prototype = c.prototype;
-      LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, c.influence_bbox);
+      LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, influence_bb);
       
+      ctx_lock.lock();
       for (auto *b : ctx.global_ggd.obstacles)
       {
         voxels->add_body(b,10000, true, 7.5, 3.5);
       }
+      ctx_lock.unlock();
 
-      for (auto &dep_cid : c.depends_from)
+      c.cell_lock.lock();
+      std::vector<int> deps = c.depends_from;
+      c.cell_lock.unlock();
+      for (auto &dep_cid : deps)
       {
+        cells[dep_cid].cell_lock.lock();
         voxels->add_voxels_cube(cells[dep_cid].voxels_small);
+        cells[dep_cid].cell_lock.unlock();
       }
+
+      ctx_lock.lock();
       voxels->add_heightmap(*(ctx.scene->heightmap));
-      grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, trees);
-      debugl(1, "creating patch with %d trees\n", ggd.trees_count);
-      packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
-    
+      ctx_lock.unlock();
+
+      rawTreesDatabase.database_lock.lock();
+      auto token = rawTreesDatabase.get_empty_trees(ggd.trees_count, ggd);
+      rawTreesDatabase.database_lock.unlock();
+
+      grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, token.trees);
+      debugl(1, "created patch with %d trees\n", ggd.trees_count);
+
+      rawTreesDatabase.database_lock.lock();
+      rawTreesDatabase.generation_finished(token);
+      rawTreesDatabase.database_lock.unlock();
+
+      //std::lock(ctx_lock, packer_lock);
+      //packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
+      //ctx_lock.unlock();
+      //packer_lock.unlock();
+
+      c.cell_lock.lock();
       if (!c.depends.empty())
       {
         c.status = Cell::CellStatus::BORDER;
@@ -322,21 +535,24 @@ void SceneGenerator::generate_grove()
       {
         c.status = Cell::CellStatus::FINISHED_PLANTS;
       }
+      c.cell_lock.unlock();
       delete voxels;
-      delete[] trees;
+      //delete[] trees;
     } 
     else 
     {
+      c.cell_lock.lock();
       if (!c.depends.empty())
       {
         c.status = Cell::CellStatus::BORDER;
-        c.voxels_small = create_cell_small_voxels(c);
+        c.voxels_small = create_cell_small_voxels(c, ctx);
         border_cells.push_back(c_id);
       }
       else
       {
         c.status = Cell::CellStatus::FINISHED_PLANTS;
       }
+      c.cell_lock.unlock();
     }
 
     //TODO: can be done not every iteration
@@ -344,9 +560,12 @@ void SceneGenerator::generate_grove()
     while (it != border_cells.end())
     {
       bool have_deps = false;
-      for (int &dep : cells[*it].depends)
+      cells[*it].cell_lock.lock();
+      std::vector<int> deps = cells[*it].depends;
+      cells[*it].cell_lock.unlock();
+      for (int &dep : deps)
       {
-        if (cells[dep].status == Cell::CellStatus::WAITING)
+        if (cells[dep].status.load() == Cell::CellStatus::WAITING)
         {
           have_deps = true;
           break;
@@ -354,6 +573,7 @@ void SceneGenerator::generate_grove()
       }
       if (!have_deps)
       {
+        cells[*it].cell_lock.lock();
         //logerr("removed dependency %d",*it);
         if (grass_needed && cells[*it].voxels_small)
         {
@@ -378,32 +598,13 @@ void SceneGenerator::generate_grove()
         
         cells[*it].voxels_small = nullptr;
         it = border_cells.erase(it);
+        cells[*it].cell_lock.unlock();
       }
       else
       {
         it++;
       }   
     }
+    logerr("finished generating cell %d", c_id);
   }
-  
-  if (grass_needed)
-  {
-    for (auto &c : cells)
-    {
-      if (c.status == Cell::CellStatus::FINISHED_PLANTS && !c.grass_patches.empty())
-        grassGenerator.generate_grass_in_cell(c, c.planar_occlusion);
-    }
-    grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
-  }
-
-  for (auto &c : cells)
-  {
-    if (c.planar_occlusion)
-      delete c.planar_occlusion;
-    if (c.voxels_small)
-    {
-      logerr("missed dependencies. Cell %d", c.id);
-      delete c.voxels_small;
-    }
-  }
-}
+} 
