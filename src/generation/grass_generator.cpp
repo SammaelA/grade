@@ -186,7 +186,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion)
                         float light = 1/(1 + occlusion->get_bilinear(glm::vec3(center.x, 0, center.y)));
                         if (light > 0.005)
                             grow_chance = LS > 0 ? pow(light, LS) : 1 - pow(light, -LS);
-                        else
+                        else //we are probably inside something solid
                             grow_chance = 0;
                     }
                     if (grow_chance < 0.01)

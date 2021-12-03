@@ -564,7 +564,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         float r = sqrt(count);
         glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
         glm::vec3 vox_size = curGgd.size;
-        auto &type = ggd.types[0];
+
         TreeStructureParameters base_params;
         ParameterSetWrapper params = ParameterSetWrapper(base_params, base_params.max_depth() + 1);
         params.set_state(params().max_depth() - 1);

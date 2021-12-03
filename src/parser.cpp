@@ -276,7 +276,11 @@ void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ct
     ctx.global_ggd.types.push_back(p.second);
   }
 
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(0,0,0), glm::vec3(50,0,0), glm::vec3(0,0,50), glm::vec3(0,100,0)));
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-200,0,-20), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,100,0)));
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-175,0,-50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,130,0)));
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-200,0,75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,90,0)));
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-230,0,-75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,110,0)));
+  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-270,0,50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,120,0)));
 }
 
 void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
