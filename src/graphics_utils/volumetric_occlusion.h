@@ -49,6 +49,7 @@ public:
     void prepare_mip_levels();
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true, float infl_distance = 0, float base_infl_occ = 0);
+    void add_AABB(AABB &box, bool precise, float opacity = 1e9);
     void add_heightmap(Heightmap &h);
     void add_voxels_cube(LightVoxelsCube *cube);
     void calculte_precise_occlusion_from_bodies();
@@ -101,7 +102,10 @@ private:
     float fast_voxel_occlusion(glm::ivec3 voxel);
     float voxel_occlusion(glm::ivec3 voxel);
     glm::ivec3 pos_to_voxel(glm::vec3 pos);
+    glm::ivec3 pos_to_block(glm::vec3 pos);
     glm::vec3 voxel_to_pos(glm::ivec3 voxel);
+    void fill_blocks(glm::ivec3 from, glm::ivec3 to, float val);
+    void fill_voxels(glm::ivec3 from, glm::ivec3 to, float val);
     bool in_voxel_cube(glm::ivec3 voxel);
     bool in_voxel_cube(int x, int y, int z);
     int v_to_i(glm::ivec3 voxel);
@@ -111,6 +115,7 @@ private:
     int v_to_i_mip_no_offset(glm::ivec3 voxel, int mip);
     int v_to_i_mip_no_offset(int x, int y, int z, int mip);
     int voxels_count() {return vox_x*vox_y*vox_z;}
+
     float sum_occlusion = 0.0;
     float occ_count = 0.0;
 };
