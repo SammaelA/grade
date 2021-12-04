@@ -84,11 +84,12 @@ private:
         float intensity;
     };
     glm::vec3 center;
-    const float voxel_size;
+    float voxel_size;
     int vox_x, vox_y, vox_z;
     int count;
     int block_size = 1;
     int block_x, block_y, block_z;
+    int block_cnt = 1;
     int mip_levels = 1;
     int mip_decrease = 2;
     std::vector<int> mip_offsets;

@@ -597,6 +597,9 @@ void GenerationJob::generate()
         c.status = Cell::CellStatus::FINISHED_PLANTS;
       }
       c.cell_lock.unlock();
+      if (debugTransferSettings.save_detailed_voxels_count > debugTransferData.debug_voxels.size())
+        debugTransferData.debug_voxels.push_back(voxels);
+      else
       delete voxels;
       //delete[] trees;
     } 

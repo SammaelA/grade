@@ -11,6 +11,28 @@ glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
 {
     return glm::ivec3(MAX(1,sizes.x/voxel_size),MAX(1,sizes.y/voxel_size),MAX(1,sizes.z/voxel_size));
 }
+int LVC_divisible(int a, int b)
+{
+    if (b == 1)
+        return a;
+    int c = a;
+    int cnt = 0;
+    while (((2*c + 1) % b) && (cnt <= b))
+    {
+        c++;
+        cnt++;
+    }
+    if (cnt <= b)
+    {
+        logerr("found div to %d %d --> %d",b, a,c);
+        return c;
+    }
+    else
+    {
+        logerr("cannot find div %d %d",a,b);
+        return a;
+    }
+}
 LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision,
                                  int mip_levels, int mip_decrease):
 LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size / light_precision, mip_levels, mip_decrease)
@@ -25,13 +47,17 @@ voxel_size(vox_size)
     center = cent;
     mip_levels = _mip_levels;
     mip_decrease = _mip_decrease;
-    set_directed_light(glm::vec3(0, 1, 0), 1);
-    vox_x = sizes.x;
-    vox_y = sizes.y;
-    vox_z = sizes.z;
+    block_size = (mip_levels == 1 && sizes.x > 100) ? 5 : 1;
+    block_cnt = block_size*block_size*block_size;
+    vox_x = LVC_divisible(sizes.x, block_size);
+    vox_y = LVC_divisible(sizes.y, block_size);
+    vox_z = LVC_divisible(sizes.z, block_size);
+
     block_x = ceil((2*vox_x + 1.0)/block_size);
     block_y = ceil((2*vox_y + 1.0)/block_size);
     block_z = ceil((2*vox_z + 1.0)/block_size);
+
+    set_directed_light(glm::vec3(0, 1, 0), 1);
 
     count = 0;
     for (int i=0;i<mip_levels;i++)
@@ -79,7 +105,7 @@ LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, gl
 LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source->voxel_size*size_decrease,
                 source->mip_levels, source->mip_decrease)
 {
-    glm::ivec3 vox_sizes = src_vox_sizes/size_decrease;
+    glm::ivec3 vox_sizes = glm::ivec3(vox_x, vox_y, vox_z);
     //logerr("creating voxels %d %d %d from %d %d %d",get_vox_sizes().x,get_vox_sizes().y,get_vox_sizes().z,
     //source->get_vox_sizes().x,source->get_vox_sizes().y,source->get_vox_sizes().z);
     for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
@@ -119,6 +145,7 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source
 }
 void LightVoxelsCube::get_data(float **data, glm::ivec3 &size)
 {
+    //TODO - adjust to block structure
     *data = voxels;
     for (int i=0;i<voxels_count();i++)
     {
@@ -365,34 +392,45 @@ glm::ivec3 LightVoxelsCube::pos_to_voxel(glm::vec3 pos)
     glm::ivec3 voxel = glm::ivec3((pos.x / voxel_size), (pos.y / voxel_size), (pos.z / voxel_size));
     return voxel;
 }
-/*
-#define LIN(x,y,z, mx, my, mz) (mx)*(my)*(z) + (mx)*(y) + (x)
+
+#define LIN(x,y,z, mx, my, mz) ((mx)*(my)*(z) + (mx)*(y) + (x))
 int LightVoxelsCube::v_to_i(int x, int y, int z)
 {
-    int bl_x = (x + vox_x) / block_size * block_size;
-    int bl_y = (y + vox_y) / block_size * block_size;
-    int bl_z = (z + vox_z) / block_size * block_size;
+    int bl_x = (x + vox_x) / block_size;
+    int bl_y = (y + vox_y) / block_size;
+    int bl_z = (z + vox_z) / block_size;
 
     int self_x = (x + vox_x) % block_size;
     int self_y = (y + vox_y) % block_size;
     int self_z = (z + vox_z) % block_size;
-    return LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
+    /*
+    static int cnt = 0;
+    int pos = block_cnt*LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
            LIN(self_x, self_y, self_z, block_size, block_size, block_size);
+    if (cnt < 100)
+    {
+        logerr("%d %d %d [%d %d %d][%d %d %d] b_sz_cnt %d %d [%d %d %d][%d %d %d] pos = %d", x,y,z,vox_x,vox_y,vox_z,
+               block_x, block_y, block_z,
+               block_size, block_cnt, bl_x, bl_y, bl_z,self_x, self_y, self_z, pos);
+               cnt++;
+    }*/
+    return block_cnt*LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
+           LIN(self_x, self_y, self_z, block_size, block_size, block_size);;
 }
 int LightVoxelsCube::v_to_i(glm::ivec3 voxel)
 {
-    int bl_x = (voxel.x + vox_x) / block_size * block_size;
-    int bl_y = (voxel.y + vox_y) / block_size * block_size;
-    int bl_z = (voxel.z + vox_z) / block_size * block_size;
+    int bl_x = (voxel.x + vox_x) / block_size;
+    int bl_y = (voxel.y + vox_y) / block_size;
+    int bl_z = (voxel.z + vox_z) / block_size;
 
     int self_x = (voxel.x + vox_x) % block_size;
     int self_y = (voxel.y + vox_y) % block_size;
     int self_z = (voxel.z + vox_z) % block_size;
-    return LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
+    return block_cnt*LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
            LIN(self_x, self_y, self_z, block_size, block_size, block_size);
 }
-*/
 
+/*
 int LightVoxelsCube::v_to_i(int x, int y, int z)
 {
     return (2 * vox_x + 1) * (2 * vox_y + 1) * (vox_z + z) + (2 * vox_x + 1) * (vox_y + y) + (vox_x + x);
@@ -401,33 +439,38 @@ int LightVoxelsCube::v_to_i(glm::ivec3 voxel)
 {
     return (2 * vox_x + 1) * (2 * vox_y + 1) * (vox_z + voxel.z) + (2 * vox_x + 1) * (vox_y + voxel.y) + (vox_x + voxel.x);
 }
+*/
 int LightVoxelsCube::v_to_i_mip(glm::ivec3 voxel, int mip)
 {
-    return mip_offsets[mip] + 
+    return mip == 0 ? v_to_i(voxel) :
+          (mip_offsets[mip] + 
            mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (vox_z + voxel.z)/mip_size_decrease[mip] + 
            mip_vox_xyz[mip].x * (vox_y + voxel.y)/mip_size_decrease[mip] + 
-           (vox_x + voxel.x)/mip_size_decrease[mip];   
+           (vox_x + voxel.x)/mip_size_decrease[mip]);   
 }
 int LightVoxelsCube::v_to_i_mip(int x, int y, int z, int mip)
 {
-    return mip_offsets[mip] + 
+    return mip == 0 ? v_to_i(x,y,z) : 
+          (mip_offsets[mip] + 
            mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * ((vox_z + z)/mip_size_decrease[mip]) + 
            mip_vox_xyz[mip].x * ((vox_y + y)/mip_size_decrease[mip]) + 
-           (vox_x + x)/mip_size_decrease[mip];    
+           (vox_x + x)/mip_size_decrease[mip]);    
 }
 int LightVoxelsCube::v_to_i_mip_no_offset(glm::ivec3 voxel, int mip)
 {
-    return mip_offsets[mip] + 
+    return mip == 0 ? v_to_i(voxel) :
+          (mip_offsets[mip] + 
            mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (voxel.z) + 
            mip_vox_xyz[mip].x * (voxel.y) + 
-           (voxel.x);   
+           (voxel.x));   
 }
 int LightVoxelsCube::v_to_i_mip_no_offset(int x, int y, int z, int mip)
 {
-    return mip_offsets[mip] + 
+    return mip == 0 ? v_to_i(x,y,z) : 
+          (mip_offsets[mip] + 
            mip_vox_xyz[mip].x * mip_vox_xyz[mip].y * (z) + 
            mip_vox_xyz[mip].x * (y) + 
-           (x);    
+           (x));    
 }
 void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 {
