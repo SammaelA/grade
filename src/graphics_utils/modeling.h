@@ -9,9 +9,12 @@
 #include "tinyEngine/texture.h"
 #include <vector>
 #include "graphics_utils/volumetric_occlusion.h"
+
+class ModelLoader;
 class Visualizer
 {
 public:
+friend class ModelLoader;
     Visualizer(Texture _tree_tex, Texture _leaves_tex, Shader *_tree_shader);
     Visualizer();
     void add_branch_layer(Tree &t, int layer, Model *m);
@@ -37,4 +40,12 @@ protected:
     Texture tree_tex;
     Texture leaves_tex;
     Shader *tree_shader = nullptr;
+};
+
+class ModelLoader
+{
+public:
+    Model *create_model_from_block(Block &bl, Texture &tex);
+private:
+    Model *create_debug_box_model();
 };

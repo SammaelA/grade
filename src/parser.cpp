@@ -276,11 +276,13 @@ void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ct
     ctx.global_ggd.types.push_back(p.second);
   }
 
+  /*
   ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-00,0,-20), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,100,0)));
   ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-15,0,-50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,130,0)));
   ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-00,0,75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,90,0)));
   ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-230,0,-75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,110,0)));
   ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-270,0,50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,120,0)));
+  */
 }
 
 void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
@@ -319,6 +321,29 @@ int parser_main(int argc, char *argv[])
       demo_scene_ctx(sceneGenerationContext);
     
     SceneGenerator sceneGen = SceneGenerator(sceneGenerationContext);
+
+    //
+    Block objs;
+    for (int i=0;i<10;i++)
+    {
+      Block *chb = new Block();
+      chb->add_string("name","debug_box");
+      chb->add_mat4("transform",glm::scale(
+                                glm::rotate(
+                                glm::translate(glm::mat4(1.0f), glm::vec3(50*(i-4),0,0)),
+                                0.f, glm::vec3(0,1,0)),
+                                glm::vec3(30,100,30)));
+      objs.add_block("obj",chb);
+    }
+
+    for (int i=0;i<objs.size();i++)
+    {
+      Block *b = objs.get_block(i);
+      if (b)
+        sceneGen.add_object_blk(*b);
+    }
+    //
+
     sceneGen.create_scene_auto();
 
     if (save_to_hydra)
@@ -344,6 +369,7 @@ int parser_main(int argc, char *argv[])
           if (vox)
             worldRenderer.set_voxels_debug(*vox);
         }
+        worldRenderer.add_instanced_models(scene.instanced_models);
         Tiny::view.pipeline = [&]()
         {
           worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);

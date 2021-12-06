@@ -8,6 +8,7 @@
 #include "tinyEngine/deffered_target.h"
 #include "terrain_renderer.h"
 #include "tinyEngine/render_target.h"
+#include "core/scene.h"
 
 class WorldRenderer
 {
@@ -28,6 +29,9 @@ public:
 
     void add_body_debug(Body *body);
     void remove_body_debug();
+
+    void add_instanced_models(std::vector<Scene::InstancedModel> &models);
+    void remove_all_instanced_models();
 
     void set_grass(GrassPacked &grass_data);
     void remove_grass();
@@ -56,6 +60,8 @@ private:
     PostFx *startScreenShader = nullptr;
     Shader *defaultShader = nullptr;
     Shader *debugShader = nullptr;
+    Shader *simpleInstancingShader = nullptr;
+    Shader *simpleInstancingShaderShadow = nullptr;
     PostFx *taa = nullptr;
 
     GroveRenderer *groveRenderer = nullptr;
@@ -66,6 +72,11 @@ private:
     DebugVisualizer *debugVisualizer = nullptr;
     DirectedLight light;
     RenderTarget targets[2];
+    
+    GLuint simple_instances_buffer;
+    std::vector<Scene::InstancedModel> models;
+    std::vector<int> inst_offsets;//same size ^
+
     int current_target = 0;
     int target_w = 0, target_h = 0;
     int screen_w = 0, screen_h = 0;

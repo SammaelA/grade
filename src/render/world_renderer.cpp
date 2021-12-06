@@ -74,6 +74,8 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   defferedLight = new PostFx("deffered_light.fs");
   debugShader = new Shader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+  simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+  simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), defaultShader);
 
   targets[0].create(w,h);
@@ -136,6 +138,11 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
         debugVisualizer->add_bodies(body, 1);
     }
 
+    void WorldRenderer::remove_body_debug()
+    {
+        on_scene_changed();
+    }
+
     void WorldRenderer::set_grass(GrassPacked &grass_data)
     {
       grassRenderer2 = new GrassRenderer2(grass_data);
@@ -145,10 +152,29 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
       DEL_IT(grassRenderer2);
       on_scene_changed();
     }
-
-    void WorldRenderer::remove_body_debug()
+    
+    void WorldRenderer::add_instanced_models(std::vector<Scene::InstancedModel> &_models)
     {
-        on_scene_changed();
+      models = _models;
+      int offset = 0;
+      std::vector<glm::mat4> all_matrices;
+      for (auto &im : models)
+      {
+        inst_offsets.push_back(offset);
+        offset += im.instances.size();
+        all_matrices.insert(all_matrices.end(), im.instances.begin(), im.instances.end());
+      }
+      glGenBuffers(1, &simple_instances_buffer);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, simple_instances_buffer);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*offset, all_matrices.data(), GL_STATIC_DRAW);
+      
+      on_scene_changed();
+    }
+
+    void WorldRenderer::remove_all_instanced_models()
+    {
+      glDeleteBuffers(1, &simple_instances_buffer);
+      on_scene_changed();
     }
 
     void WorldRenderer::on_scene_changed()
@@ -198,6 +224,20 @@ void WorldRenderer::render(float dt, Camera &camera)
     regenerate_shadows = false;
     shadowMap.use(light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
+    if (!models.empty())
+    {
+      simpleInstancingShaderShadow->use();
+      simpleInstancingShaderShadow->uniform("projection", shadowMap.get_projection());
+      simpleInstancingShaderShadow->uniform("view", shadowMap.get_view());
+      for (int i=0;i<models.size();i++)
+      {
+        simpleInstancingShaderShadow->uniform("inst_buf_offset", inst_offsets[i]);
+
+        glBindVertexArray(models[i].model->vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i].model->ibo);
+        glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+      }
+    }
     if (groveRenderer)
     {
       groveRenderer->render(groveRenderer->get_max_LOD(), shadowMap.get_projection(),
@@ -278,6 +318,21 @@ void WorldRenderer::render(float dt, Camera &camera)
 
       glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
     //color pass
+    if (!models.empty())
+    {
+      simpleInstancingShader->use();
+      simpleInstancingShader->uniform("projection", projection);
+      simpleInstancingShader->uniform("view", camera.camera());
+      for (int i=0;i<models.size();i++)
+      {
+        simpleInstancingShader->uniform("inst_buf_offset", inst_offsets[i]);
+        simpleInstancingShader->texture("tex", models[i].tex.texture);
+
+        glBindVertexArray(models[i].model->vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i].model->ibo);
+        glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+      }
+    }
     if (terrainRenderer)
     {
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),

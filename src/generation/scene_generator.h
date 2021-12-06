@@ -19,12 +19,9 @@ public:
     
     SceneGenerator(SceneGenerationContext &_ctx): ctx(_ctx){};
     void create_scene_auto();
+    uint64_t add_object_blk(Block &b);
+    bool remove_object(uint64_t id);
 private:
-    //LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
-    //                                     AABB &influence_box);
-    //LightVoxelsCube *create_cell_small_voxels(Cell &c);
-    //AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
-    //                        Heightmap &h);
     void generate_grove();
     SceneGenerationContext &ctx;
 };

@@ -84,15 +84,6 @@ std::string next_token(const char *data, int &pos)
     return res;
 }
 
-std::vector<std::pair<Block::ValueType, std::string>> descs = {
-    {Block::ValueType::EMPTY, "em"},
-    {Block::ValueType::INT, "i"},
-    {Block::ValueType::DOUBLE, "r"},
-    {Block::ValueType::VEC2, "p2"},
-    {Block::ValueType::VEC3, "p3"},
-    {Block::ValueType::VEC4, "p4"},
-    {Block::ValueType::STRING, "s"},
-    {Block::ValueType::ARRAY, "arr"}};
 bool load_block(const char *data, int &cur_pos, Block &b);
 bool read_array(const char *data, int &cur_pos, Block::DataArray &a);
 bool read_value(const char *data, int &cur_pos, Block::Value &v)
@@ -234,6 +225,43 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
                 v.type = Block::ValueType::EMPTY;
                 return false;
             }
+        }
+        else if (type == "m4")
+        {
+            v.type = Block::ValueType::MAT4;
+            v.m4 = glm::mat4(1.0f);
+            std::string val;
+            float mat[16];
+            bool ok = true;
+            int cnt = 0;
+
+
+            while (cnt < 16 && ok)
+            {
+                val = next_token(data, cur_pos);
+
+                mat[cnt] = std::stof(val);
+                if (cnt < 15)
+                {
+                    val = next_token(data, cur_pos);
+                    ok = ok && (val == ",");
+                }
+                cnt++;
+            }
+            if (ok)
+            {
+                v.m4 = glm::mat4(mat[0], mat[4], mat[8], mat[12],
+                                 mat[1], mat[5], mat[9], mat[13],
+                                 mat[2], mat[6], mat[10], mat[14],
+                                 mat[3], mat[7], mat[11], mat[15]);
+            }
+            else
+            {
+                logerr("line %d wrong description of matrix", cur_line);
+                v.type = Block::ValueType::EMPTY;
+                return false;
+            }
+
         }
         else if (type == "s")
         {
@@ -419,6 +447,10 @@ glm::vec4 Block::get_vec4(int id, glm::vec4 base_val)
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC4) ? values[id].v4 : base_val;
 }
+glm::mat4 Block::get_mat4(int id, glm::mat4 base_val)
+{
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::MAT4) ? values[id].m4 : base_val;
+}
 std::string Block::get_string(int id, std::string base_val)
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::STRING && values[id].s) ? *(values[id].s) : base_val;
@@ -496,6 +528,10 @@ glm::vec3 Block::get_vec3(const std::string name, glm::vec3 base_val)
 glm::vec4 Block::get_vec4(const std::string name, glm::vec4 base_val)
 {
     return get_vec4(get_id(name), base_val);
+}
+glm::mat4 Block::get_mat4(const std::string name, glm::mat4 base_val)
+{
+    return get_mat4(get_id(name), base_val);
 }
 std::string Block::get_string(const std::string name, std::string base_val)
 {
@@ -580,6 +616,21 @@ void save_value(std::string &str, Block::Value &v)
         str += ":p4 = ";
         str += std::to_string(v.v4.x) + ", " + std::to_string(v.v4.y) + ", " + std::to_string(v.v4.z) +
                ", " + std::to_string(v.v4.w);
+    }
+    else if (v.type == Block::ValueType::MAT4)
+    {
+        str += ":m4 = ";
+        for (int i=0;i<4;i++)
+        {
+            for (int j=0;j<4;j++)
+            {
+                str += std::to_string(v.m4[j][i]);
+                if (i < 3 || j < 3)
+                    str += ", ";
+                if (j == 3)
+                    str += "  ";
+            }
+        }
     }
     else if (v.type == Block::ValueType::STRING && v.s)
     {
@@ -673,6 +724,13 @@ void Block::add_vec4(const std::string name, glm::vec4 base_val)
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
+    add_value(name, val);
+}
+void Block::add_mat4(const std::string name, glm::mat4 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::MAT4;
+    val.m4 = base_val;
     add_value(name, val);
 }
 void Block::add_string(const std::string name, std::string base_val)
@@ -774,6 +832,13 @@ void Block::set_vec4(const std::string name, glm::vec4 base_val)
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
+    set_value(name, val);
+}
+void Block::set_mat4(const std::string name, glm::mat4 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::MAT4;
+    val.m4 = base_val;
     set_value(name, val);
 }
 void Block::set_string(const std::string name, std::string base_val)

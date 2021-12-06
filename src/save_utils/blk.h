@@ -17,6 +17,7 @@ struct Block
         VEC2,
         VEC3,
         VEC4,
+        MAT4,
         STRING,
         BLOCK,
         ARRAY
@@ -33,6 +34,7 @@ struct Block
             glm::vec2 v2;
             glm::vec3 v3;
             glm::vec4 v4;
+            glm::mat4 m4;
             std::string *s;
             Block *bl;
             DataArray *a;
@@ -56,6 +58,8 @@ struct Block
                 v3 = v.v3;
             else if (type == ValueType::VEC4)
                 v4 = v.v4;
+            else if (type == ValueType::MAT4)
+                m4 = v.m4;
             else if (type == ValueType::STRING)
                 s = v.s;
             else if (type == ValueType::BLOCK)
@@ -93,6 +97,7 @@ struct Block
     glm::vec2 get_vec2(int id, glm::vec2 base_val = glm::vec2(0, 0));
     glm::vec3 get_vec3(int id, glm::vec3 base_val = glm::vec3(0, 0, 0));
     glm::vec4 get_vec4(int id, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    glm::mat4 get_mat4(int id, glm::mat4 base_val = glm::mat4(1.0f));
     std::string get_string(int id, std::string base_val = "");
     Block *get_block(int id);
     bool get_arr(int id, std::vector<double> &values, bool replace = false);
@@ -105,6 +110,7 @@ struct Block
     glm::vec2 get_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
     glm::vec3 get_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
     glm::vec4 get_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    glm::mat4 get_mat4(const std::string name, glm::mat4 base_val = glm::mat4(1.0f));
     std::string get_string(const std::string name, std::string base_val = "");
     Block *get_block(std::string name);
     bool get_arr(const std::string name, std::vector<double> &values, bool replace = false);
@@ -117,6 +123,7 @@ struct Block
     void add_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
     void add_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
     void add_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    void add_mat4(const std::string name, glm::mat4 base_val = glm::mat4(1.0f));
     void add_string(const std::string name, std::string base_val = "");
     void add_block(const std::string name, Block *bl);
     void add_arr(const std::string name, std::vector<double> &values);
@@ -129,6 +136,7 @@ struct Block
     void set_vec2(const std::string name, glm::vec2 base_val = glm::vec2(0, 0));
     void set_vec3(const std::string name, glm::vec3 base_val = glm::vec3(0, 0, 0));
     void set_vec4(const std::string name, glm::vec4 base_val = glm::vec4(0, 0, 0, 0));
+    void set_mat4(const std::string name, glm::mat4 base_val = glm::mat4(1.0f));
     void set_string(const std::string name, std::string base_val = "");
     void set_block(const std::string name, Block *bl);
     void set_arr(const std::string name, std::vector<double> &values);

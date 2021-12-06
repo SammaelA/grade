@@ -713,3 +713,79 @@ bool GenerationJob::remove_unused_borders()
 
   return border_cells.empty();
 }
+
+uint64_t pack_id(unsigned _empty, unsigned category, unsigned type, unsigned id)
+{
+  //[_empty][category][type][id]
+  //[8][8][16][32]
+  return ((_empty & ((1UL << 8) - 1UL)) << 56) | 
+         ((category & ((1UL << 8) - 1UL)) << 48) |
+         ((type & ((1UL << 16) - 1UL)) << 32)|
+         ((id & ((1UL << 32) - 1UL)) << 0);
+}
+
+void unpack_id(uint64_t packed_id, unsigned &_empty, unsigned &category, unsigned &type, unsigned &id)
+{
+  //[_empty][category][type][id]
+  //[8][8][16][32]
+  _empty = (packed_id >> 56) & ((1UL << 8) - 1UL);
+  category = (packed_id >> 48) & ((1UL << 8) - 1UL);
+  type = (packed_id >> 32) & ((1UL << 16) - 1UL);
+  id = (packed_id >> 0) & ((1UL << 32) - 1UL);
+}
+
+uint64_t SceneGenerator::add_object_blk(Block &b)
+{
+  std::string name = b.get_string("name", "debug_box");
+  glm::mat4 transform = b.get_mat4("transform");
+  glm::vec4 from = transform*glm::vec4(0,0,0,1);
+  glm::vec4 to = transform*glm::vec4(1,1,1,1);
+  logerr("adding object %f %f %f - %f %f %f",from.x, from.y, from.z, to.x, to.y, to.z);
+  bool new_model = true;
+  unsigned model_num = 0;
+  unsigned pos = 0;
+  for (auto &im : ctx.scene->instanced_models)
+  {
+    if (im.name == name)
+    {
+      im.instances.push_back(transform);
+      new_model = false;
+      pos = im.instances.size() - 1;
+      return pack_id(0, (int)Scene::ERROR, 0, 0);
+    }
+    model_num++;
+  }
+  if (new_model)
+  {
+    model_num++;
+    ModelLoader loader;
+    ctx.scene->instanced_models.emplace_back();
+    ctx.scene->instanced_models.back().model = loader.create_model_from_block(b, ctx.scene->instanced_models.back().tex);
+    ctx.scene->instanced_models.back().model->update();
+    ctx.scene->instanced_models.back().instances.push_back(transform);
+    pos = 0;
+  }
+
+  return pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
+}
+
+bool SceneGenerator::remove_object(uint64_t packed_id)
+{
+  unsigned _empty;
+  unsigned category;
+  unsigned type;
+  unsigned id;
+
+  unpack_id(packed_id, _empty, category, type, id);
+  if (category == (int)Scene::SIMPLE_OBJECT && type < ctx.scene->instanced_models.size() && 
+      id < ctx.scene->instanced_models[type].instances.size())
+  {
+    auto beg = ctx.scene->instanced_models[type].instances.begin();
+    ctx.scene->instanced_models[type].instances.erase(std::next(beg, id));
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
