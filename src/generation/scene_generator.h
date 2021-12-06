@@ -10,11 +10,12 @@ class SceneGenerator
 public:
     struct SceneGenerationContext
     {
+      SceneGenerationContext(): objects_bvh(true) {};
         Scene *scene;
         Block settings;
         std::map<std::string,TreeTypeData> tree_types;
         std::map<std::string, GrassType> grass_types;
-        GroveGenerationData global_ggd;
+        BVH objects_bvh;
     };
     
     SceneGenerator(SceneGenerationContext &_ctx): ctx(_ctx){};

@@ -11,6 +11,7 @@
 #include "tree_generators/generated_tree.h"
 #include "grass_generator.h"
 #include "graphics_utils/debug_transfer.h"
+#include "scene_generator_helper.h"
 #include <algorithm>
 #include <thread>
 #include <mutex>
@@ -51,17 +52,21 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   return v;
 }
 
-LightVoxelsCube *create_cell_small_voxels(Cell &c, const SceneGenerator::SceneGenerationContext &ctx)
+LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
 {
   float vox_scale = 4;
   glm::vec3 voxel_sz = vox_scale*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
   glm::vec3 voxel_center = c.influence_bbox.min_pos + voxel_sz;
   
   auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale, 1.0f);
-  for (auto *b : ctx.global_ggd.obstacles)
+
+  auto func = [&](const std::pair<AABB, uint64_t> &p)
   {
-    voxels->add_body(b,10000);
-  }
+    logerr("added bbox");
+    voxels->add_AABB(p.first,false, 10000);
+  };
+  logerr("added bbox 1");
+  ctx.objects_bvh.iterate_over_intersected_bboxes(voxels->get_bbox(), func);
 
   return voxels;
 }
@@ -548,10 +553,11 @@ void GenerationJob::generate()
       LightVoxelsCube *voxels = create_grove_voxels(prototype, ggd.types, influence_bb);
       
       ctx_lock.lock();
-      for (auto *b : ctx.global_ggd.obstacles)
+      auto func = [&](const std::pair<AABB, uint64_t> &p)
       {
-        voxels->add_body(b,10000, true, 7.5, 3.5);
-      }
+        voxels->add_AABB(p.first,false, 10000);
+      };
+      ctx.objects_bvh.iterate_over_intersected_bboxes(voxels->get_bbox(), func);
       ctx_lock.unlock();
 
       c.cell_lock.lock();
@@ -642,12 +648,10 @@ void GenerationJob::generate()
         {
           glm::vec3 pos = glm::vec3(p.x, 0, p.y);
           pos.y = ctx.scene->heightmap->get_height(pos) + 1;
-          for (auto *b : ctx.global_ggd.obstacles)
-          {
-            if (b->in_body(pos))
-              return 1e9;
-          }
-          return 0;
+          if (ctx.objects_bvh.contains(pos))
+            return 1e9;
+          else
+            return 0;
         };
         cells[*it].planar_occlusion->fill_func(func);
       }
@@ -714,26 +718,6 @@ bool GenerationJob::remove_unused_borders()
   return border_cells.empty();
 }
 
-uint64_t pack_id(unsigned _empty, unsigned category, unsigned type, unsigned id)
-{
-  //[_empty][category][type][id]
-  //[8][8][16][32]
-  return ((_empty & ((1UL << 8) - 1UL)) << 56) | 
-         ((category & ((1UL << 8) - 1UL)) << 48) |
-         ((type & ((1UL << 16) - 1UL)) << 32)|
-         ((id & ((1UL << 32) - 1UL)) << 0);
-}
-
-void unpack_id(uint64_t packed_id, unsigned &_empty, unsigned &category, unsigned &type, unsigned &id)
-{
-  //[_empty][category][type][id]
-  //[8][8][16][32]
-  _empty = (packed_id >> 56) & ((1UL << 8) - 1UL);
-  category = (packed_id >> 48) & ((1UL << 8) - 1UL);
-  type = (packed_id >> 32) & ((1UL << 16) - 1UL);
-  id = (packed_id >> 0) & ((1UL << 32) - 1UL);
-}
-
 uint64_t SceneGenerator::add_object_blk(Block &b)
 {
   std::string name = b.get_string("name", "debug_box");
@@ -751,13 +735,13 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
       im.instances.push_back(transform);
       new_model = false;
       pos = im.instances.size() - 1;
-      return pack_id(0, (int)Scene::ERROR, 0, 0);
+      return SceneGenHelper::pack_id(0, (int)Scene::ERROR, 0, 0);
     }
     model_num++;
   }
+
   if (new_model)
   {
-    model_num++;
     ModelLoader loader;
     ctx.scene->instanced_models.emplace_back();
     ctx.scene->instanced_models.back().model = loader.create_model_from_block(b, ctx.scene->instanced_models.back().tex);
@@ -765,8 +749,14 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
     ctx.scene->instanced_models.back().instances.push_back(transform);
     pos = 0;
   }
-
-  return pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
+  
+  logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
+  auto &im = ctx.scene->instanced_models[model_num];
+  std::vector<AABB> boxes;
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4, 1.1);
+  uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
+  ctx.objects_bvh.add_bboxes(boxes, id);
+  return id;
 }
 
 bool SceneGenerator::remove_object(uint64_t packed_id)
@@ -776,12 +766,13 @@ bool SceneGenerator::remove_object(uint64_t packed_id)
   unsigned type;
   unsigned id;
 
-  unpack_id(packed_id, _empty, category, type, id);
+  SceneGenHelper::unpack_id(packed_id, _empty, category, type, id);
   if (category == (int)Scene::SIMPLE_OBJECT && type < ctx.scene->instanced_models.size() && 
       id < ctx.scene->instanced_models[type].instances.size())
   {
     auto beg = ctx.scene->instanced_models[type].instances.begin();
     ctx.scene->instanced_models[type].instances.erase(std::next(beg, id));
+    ctx.objects_bvh.remove_bboxes(packed_id);
     return true;
   }
   else

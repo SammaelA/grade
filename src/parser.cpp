@@ -269,22 +269,6 @@ void init_render(WorldRenderer &worldRenderer)
   worldRenderer.init(appContext.WIDTH, appContext.HEIGHT, render_settings);
 }
 
-void prepare_global_ggd_from_settings(SceneGenerator::SceneGenerationContext &ctx)
-{
-  for (auto p : ctx.tree_types)
-  {
-    ctx.global_ggd.types.push_back(p.second);
-  }
-
-  /*
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-00,0,-20), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,100,0)));
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-15,0,-50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,130,0)));
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-00,0,75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,90,0)));
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-230,0,-75), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,110,0)));
-  ctx.global_ggd.obstacles.push_back(new Box(glm::vec3(-270,0,50), glm::vec3(30,0,0), glm::vec3(0,0,30), glm::vec3(0,120,0)));
-  */
-}
-
 void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
 {
   demo_mode_patch_size = MIN(demo_mode_patch_size, demo_mode_trees_cnt);
@@ -315,8 +299,10 @@ int parser_main(int argc, char *argv[])
     sceneGenerationContext.scene = &scene;
     load_tree_types(sceneGenerationContext.tree_types);
     load_grass_types(sceneGenerationContext.grass_types);
-    prepare_global_ggd_from_settings(sceneGenerationContext);
-    scene.tree_types = sceneGenerationContext.global_ggd.types;
+    for (auto p : sceneGenerationContext.tree_types)
+    {
+      scene.tree_types.push_back(p.second);
+    }
     if (demo_mode)
       demo_scene_ctx(sceneGenerationContext);
     
@@ -324,15 +310,15 @@ int parser_main(int argc, char *argv[])
 
     //
     Block objs;
-    for (int i=0;i<10;i++)
+    for (int i=0;i<9;i++)
     {
       Block *chb = new Block();
       chb->add_string("name","debug_box");
       chb->add_mat4("transform",glm::scale(
                                 glm::rotate(
-                                glm::translate(glm::mat4(1.0f), glm::vec3(50*(i-4),0,0)),
-                                0.f, glm::vec3(0,1,0)),
-                                glm::vec3(30,100,30)));
+                                glm::translate(glm::mat4(1.0f), glm::vec3(75*(i/3),0,75*(i % 3))),
+                                0.25f*PI, glm::vec3(0,1,0)),
+                                glm::vec3(30,80,30)));
       objs.add_block("obj",chb);
     }
 
@@ -357,12 +343,12 @@ int parser_main(int argc, char *argv[])
     {
         WorldRenderer worldRenderer;
         Block render_settings;
+        GroveGenerationData ggd;
+        ggd.types = scene.tree_types;
         worldRenderer.init(appContext.WIDTH, appContext.HEIGHT, render_settings);
         worldRenderer.set_heightmap(*scene.heightmap);
         worldRenderer.set_grass(scene.grass);
-        worldRenderer.set_grove(scene.grove, sceneGenerationContext.global_ggd);
-        for (auto *b : sceneGenerationContext.global_ggd.obstacles)
-          worldRenderer.add_body_debug(b);
+        worldRenderer.set_grove(scene.grove, ggd);
         auto &voxels = debugTransferData.debug_voxels;
         for (auto *vox : voxels)
         {
@@ -370,6 +356,12 @@ int parser_main(int argc, char *argv[])
             worldRenderer.set_voxels_debug(*vox);
         }
         worldRenderer.add_instanced_models(scene.instanced_models);
+
+        auto func = [&](const std::pair<AABB, uint64_t> &p)
+          {
+            worldRenderer.add_aabb_debug(p.first);
+          };
+        sceneGenerationContext.objects_bvh.iterate_over_intersected_bboxes(AABB(glm::vec3(-1e9,-1e9,-1e9),glm::vec3(1e9,1e9,1e9)), func);
         Tiny::view.pipeline = [&]()
         {
           worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);

@@ -28,8 +28,9 @@ public:
     void remove_voxels_debug();
 
     void add_body_debug(Body *body);
+    void add_aabb_debug(const AABB &box);
     void remove_body_debug();
-
+    
     void add_instanced_models(std::vector<Scene::InstancedModel> &models);
     void remove_all_instanced_models();
 

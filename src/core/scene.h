@@ -2,6 +2,8 @@
 #include "grove.h"
 #include "graphics_utils/terrain.h"
 #include "grass.h"
+#include "common_utils/bvh.h"
+
 struct TreeTypeData;
 struct Scene
 {
@@ -19,7 +21,7 @@ struct Scene
         std::vector<glm::mat4> instances;
         InstancedModel();
     };
-    Scene() {};
+    Scene(){};
     ~Scene();
     Heightmap *heightmap = nullptr;
     std::vector<InstancedModel> instanced_models;

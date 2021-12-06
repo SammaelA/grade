@@ -1,6 +1,7 @@
 #include "world_renderer.h"
 #define GLEW_EXPERIMENTAL
 #include "tinyEngine/TinyEngine.h"
+#include "core/body.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
 const int HALTON_COUNT = 8;
@@ -136,6 +137,15 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     {
         remove_body_debug();
         debugVisualizer->add_bodies(body, 1);
+    }
+
+    void WorldRenderer::add_aabb_debug(const AABB &box)
+    {
+      glm::vec3 sz = box.max_pos - box.min_pos;
+      Box *box_ptr = new Box(box.min_pos, glm::vec3(sz.x,0,0), glm::vec3(0,sz.y,0), glm::vec3(0,0,sz.z));
+      debugVisualizer->add_bodies(box_ptr,1);
+      on_scene_changed();
+      delete box_ptr;
     }
 
     void WorldRenderer::remove_body_debug()

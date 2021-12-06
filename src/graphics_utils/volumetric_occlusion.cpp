@@ -937,12 +937,12 @@ void LightVoxelsCube::add_body(Body *b, float opacity, bool solid, float infl_di
     logerr("body added took %.2f ms", 0.001*time);
 }
 
-void LightVoxelsCube::add_AABB(AABB &box, bool precise, float opacity)
+void LightVoxelsCube::add_AABB(const AABB &box, bool precise, float opacity)
 {
     if (!precise)
     {
-        ivec3 st_b = clamp(pos_to_block(box.min_pos), ivec3(0,0,0), ivec3(block_x, block_y, block_z));
-        ivec3 end_b = clamp(pos_to_block(box.max_pos), ivec3(0,0,0), ivec3(block_x, block_y, block_z));
+        ivec3 st_b = clamp(pos_to_block(box.min_pos), ivec3(0,0,0), ivec3(block_x-1, block_y-1, block_z-1));
+        ivec3 end_b = clamp(pos_to_block(box.max_pos), ivec3(0,0,0), ivec3(block_x-1, block_y-1, block_z-1));
 
         fill_blocks(st_b, end_b, opacity);
     }

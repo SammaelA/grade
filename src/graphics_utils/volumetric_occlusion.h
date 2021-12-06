@@ -49,7 +49,7 @@ public:
     void prepare_mip_levels();
     void print_average_occlusion();
     void add_body(Body *b, float opacity = 1e9, bool solid = true, float infl_distance = 0, float base_infl_occ = 0);
-    void add_AABB(AABB &box, bool precise, float opacity = 1e9);
+    void add_AABB(const AABB &box, bool precise, float opacity = 1e9);
     void add_heightmap(Heightmap &h);
     void add_voxels_cube(LightVoxelsCube *cube);
     void calculte_precise_occlusion_from_bodies();

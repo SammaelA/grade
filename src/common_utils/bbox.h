@@ -51,8 +51,8 @@ struct AABB
     inline bool contains(glm::vec3 &p)
     {
         return (p.x >= min_pos.x) && (p.x < max_pos.x) &&
-               (p.x >= min_pos.x) && (p.y < max_pos.y) &&
-               (p.y >= min_pos.y) && (p.z < max_pos.z);
+               (p.y >= min_pos.y) && (p.y < max_pos.y) &&
+               (p.z >= min_pos.z) && (p.z < max_pos.z);
     }
     inline bool intersects(AABB &aabb)
     {
