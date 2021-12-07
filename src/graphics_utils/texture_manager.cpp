@@ -155,23 +155,30 @@ TextureManager::TextureManager(std::string base_path, Block &textures_used)
     
     for (int i=0;i<paths.size();i++)
     {
-        try
-        {
-            auto ptr = image::load(image::base_img_path + paths[i]);
-            if (!ptr)
-                continue;
-            Texture t(ptr);
-            t.origin = paths[i];
-            textures.emplace(names[i],t);
-            mipmap(t,ptr->w,ptr->h,9);
-            SDL_FreeSurface(ptr);
-        }
-        catch(const std::exception& e)
-        {
-            logerr("texture not found %s",paths[i].c_str());
-        }
+        load_tex(names[i], image::base_img_path + paths[i]);
     }
     debugl(10,"textures loaded %d\n",textures.size());
+}
+
+bool TextureManager::load_tex(std::string name, std::string path)
+{
+    try
+    {
+        auto ptr = image::load(path);
+        if (!ptr)
+            return false;
+        Texture t(ptr);
+        t.origin = path;
+        textures.emplace(name, t);
+        mipmap(t, ptr->w, ptr->h, 9);
+        SDL_FreeSurface(ptr);
+    }
+    catch (const std::exception &e)
+    {
+        logerr("texture not found %s", path.c_str());
+        return false;
+    }
+    return true;
 }
 
 Texture TextureManager::create_unnamed(int w, int h, bool shadow, int mip_levels)

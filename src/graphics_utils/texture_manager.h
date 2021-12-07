@@ -26,6 +26,7 @@ public:
     void save_png_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
     TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
+    bool load_tex(std::string name, std::string path);
     bool is_correct(Texture &t);
     void clear_unnamed();
     void set_textures_tag(int tag);

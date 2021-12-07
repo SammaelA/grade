@@ -20,6 +20,7 @@ public:
     
     SceneGenerator(SceneGenerationContext &_ctx): ctx(_ctx){};
     void create_scene_auto();
+    void create_heightmap_simple_auto();
     uint64_t add_object_blk(Block &b);
     bool remove_object(uint64_t id);
 private:

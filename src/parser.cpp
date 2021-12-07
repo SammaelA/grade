@@ -310,17 +310,20 @@ int parser_main(int argc, char *argv[])
 
     //
     Block objs;
-    for (int i=0;i<9;i++)
+    for (int i=0;i<5;i++)
     {
       Block *chb = new Block();
-      chb->add_string("name","debug_box");
+      chb->add_string("name","stone_1");
+      chb->add_bool("on_terrain", true);
       chb->add_mat4("transform",glm::scale(
                                 glm::rotate(
                                 glm::translate(glm::mat4(1.0f), glm::vec3(75*(i/3),0,75*(i % 3))),
-                                0.25f*PI, glm::vec3(0,1,0)),
-                                glm::vec3(30,80,30)));
+                                -0.5f*PI, glm::vec3(1,0,0)),
+                                glm::vec3(30,30,30)));
       objs.add_block("obj",chb);
     }
+
+    sceneGen.create_heightmap_simple_auto();
 
     for (int i=0;i<objs.size();i++)
     {
@@ -357,11 +360,13 @@ int parser_main(int argc, char *argv[])
         }
         worldRenderer.add_instanced_models(scene.instanced_models);
 
+        /*
         auto func = [&](const std::pair<AABB, uint64_t> &p)
           {
             worldRenderer.add_aabb_debug(p.first);
           };
         sceneGenerationContext.objects_bvh.iterate_over_intersected_bboxes(AABB(glm::vec3(-1e9,-1e9,-1e9),glm::vec3(1e9,1e9,1e9)), func);
+        */
         Tiny::view.pipeline = [&]()
         {
           worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);

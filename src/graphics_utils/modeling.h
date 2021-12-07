@@ -48,4 +48,7 @@ public:
     Model *create_model_from_block(Block &bl, Texture &tex);
 private:
     Model *create_debug_box_model();
+    Model *load_model_from_obj(std::string name, Texture &tex);
 };
+
+extern Block obj_models_blk;

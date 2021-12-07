@@ -34,6 +34,7 @@ dist/
 /scale_test/*
 /original_trees/*
 /hydra_scenes/*
+/resources/models
 *.npy
 # Compiled Java class files
 *.class

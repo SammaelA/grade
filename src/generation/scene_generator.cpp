@@ -260,6 +260,18 @@ void SceneGenerator::create_scene_auto()
 {
   generate_grove();
 }
+
+void SceneGenerator::create_heightmap_simple_auto()
+{
+  glm::vec2 heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000,1000));
+  float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
+  glm::vec2 center = ctx.settings.get_vec2("scene_center", glm::vec2(0,0));
+  glm::vec3 center3 = glm::vec3(center.x,0,center.y);
+  
+  ctx.scene->heightmap = new Heightmap(center3, heightmap_size,hmap_cell_size);
+  ctx.scene->heightmap->random_generate(0,0,40);
+}
+
 void SceneGenerator::generate_grove()
 {
   GrovePacker packer;
@@ -276,14 +288,10 @@ void SceneGenerator::generate_grove()
   glm::vec2 cell_size = ctx.settings.get_vec2("cell_size", glm::vec2(50,50));
   glm::vec2 mask_pos = center;
   glm::vec3 center3 = glm::vec3(center.x,0,center.y);
-  float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
 
   Block *grass_blk = ctx.settings.get_block("grass");
   bool grass_needed = (grass_blk != nullptr);
 
-
-  ctx.scene->heightmap = new Heightmap(center3, heightmap_size,hmap_cell_size);
-  ctx.scene->heightmap->random_generate(0,0,100);
   ctx.scene->grove.center = center3;
   ctx.scene->grove.ggd_name = "blank";
   
@@ -725,6 +733,15 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
   glm::vec4 from = transform*glm::vec4(0,0,0,1);
   glm::vec4 to = transform*glm::vec4(1,1,1,1);
   logerr("adding object %f %f %f - %f %f %f",from.x, from.y, from.z, to.x, to.y, to.z);
+  bool place_on_terrain = b.get_bool("on_terrain", false);
+  if (place_on_terrain)
+  {
+    glm::vec3 pos = glm::vec3(from);
+    float min_h, float_max_h;
+    pos.y = ctx.scene->heightmap->get_height(pos);
+    transform[3][1] += (pos.y - from.y);
+    // = glm::translate(transform, glm::vec3(0,pos.y - from.y,0));
+  }
   bool new_model = true;
   unsigned model_num = 0;
   unsigned pos = 0;
@@ -753,7 +770,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
   logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
-  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4, 1.1);
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 1, 1.05);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
   ctx.objects_bvh.add_bboxes(boxes, id);
   return id;

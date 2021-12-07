@@ -1,0 +1,22 @@
+{
+    farm_1
+    {
+        obj:s = "Farmhouse.obj"
+        color:s = "Farmhouse.jpg"
+    }
+    cottage_1
+    {
+        obj:s = "cottage_obj.obj"
+        color:s = "cottage_diffuse.png"
+    }
+    stone_1
+    {
+        obj:s = "Rock_1.obj"
+        color:s = "Rock_1_Base_Color.jpg"
+    }
+    medieval_house
+    {
+        obj:s = "mh.obj"
+        color:s = "mh.jpg"
+    }
+}
