@@ -730,17 +730,20 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
 {
   std::string name = b.get_string("name", "debug_box");
   glm::mat4 transform = b.get_mat4("transform");
+  /*
   glm::vec4 from = transform*glm::vec4(0,0,0,1);
   glm::vec4 to = transform*glm::vec4(1,1,1,1);
-  logerr("adding object %f %f %f - %f %f %f",from.x, from.y, from.z, to.x, to.y, to.z);
+  logerr("adding object %f %f %f - %f %f %f",from.x, from.y, from.z, to.x, to.y, to.z);*/
+
   bool place_on_terrain = b.get_bool("on_terrain", false);
+
   if (place_on_terrain)
   {
+    glm::vec4 from = transform*glm::vec4(0,0,0,1);
     glm::vec3 pos = glm::vec3(from);
     float min_h, float_max_h;
     pos.y = ctx.scene->heightmap->get_height(pos);
     transform[3][1] += (pos.y - from.y);
-    // = glm::translate(transform, glm::vec3(0,pos.y - from.y,0));
   }
   bool new_model = true;
   unsigned model_num = 0;
@@ -752,7 +755,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
       im.instances.push_back(transform);
       new_model = false;
       pos = im.instances.size() - 1;
-      return SceneGenHelper::pack_id(0, (int)Scene::ERROR, 0, 0);
+      break;
     }
     model_num++;
   }
@@ -764,13 +767,14 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
     ctx.scene->instanced_models.back().model = loader.create_model_from_block(b, ctx.scene->instanced_models.back().tex);
     ctx.scene->instanced_models.back().model->update();
     ctx.scene->instanced_models.back().instances.push_back(transform);
+    ctx.scene->instanced_models.back().name = name;
     pos = 0;
   }
   
   logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
-  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 1, 1.05);
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 12, 1.05);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
   ctx.objects_bvh.add_bboxes(boxes, id);
   return id;

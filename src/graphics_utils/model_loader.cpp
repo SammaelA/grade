@@ -87,27 +87,32 @@ Model *ModelLoader::load_model_from_obj(std::string name, Texture &tex)
     }
 
     Model *m = new Model;
-    for (auto &lv : loader.LoadedVertices)
+    int start_index = 0;
+    for (auto &mesh : loader.LoadedMeshes)
     {
-        m->positions.push_back(lv.Position.X);
-        m->positions.push_back(lv.Position.Y);
-        m->positions.push_back(lv.Position.Z);
+        logerr("create mesh from %d", loader.LoadedMeshes.size());
+        for (auto &lv : mesh.Vertices)
+        {
+            m->positions.push_back(lv.Position.X);
+            m->positions.push_back(lv.Position.Y);
+            m->positions.push_back(lv.Position.Z);
 
-        m->normals.push_back(lv.Normal.X);
-        m->normals.push_back(lv.Normal.Y);
-        m->normals.push_back(lv.Normal.Z);
+            m->normals.push_back(lv.Normal.X);
+            m->normals.push_back(lv.Normal.Y);
+            m->normals.push_back(lv.Normal.Z);
 
-        m->colors.push_back(lv.TextureCoordinate.X);
-        m->colors.push_back(lv.TextureCoordinate.Y);
-        m->colors.push_back(0);
-        m->colors.push_back(1);
+            m->colors.push_back(lv.TextureCoordinate.X);
+            m->colors.push_back(1 - lv.TextureCoordinate.Y);
+            m->colors.push_back(0);
+            m->colors.push_back(1);
+        }
+
+        for (auto &ind : mesh.Indices)
+        {
+            m->indices.push_back(start_index + ind);
+        }
+        start_index += mesh.Vertices.size();
     }
-
-    for (auto &ind : loader.LoadedIndices)
-    {
-        m->indices.push_back(ind);
-    }
-
     transform_model_to_standart_form(m);
     return m;
 }

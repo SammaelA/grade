@@ -59,6 +59,7 @@ namespace SceneGenHelper
     if (max_count == 1)
     {
       boxes.push_back(AABB(min_pos, max_pos));
+      return;
     }
     //find main == longest axis
     int main_axis = 1;
@@ -160,9 +161,9 @@ namespace SceneGenHelper
         }
         else
         {
-          //          logerr("created new AABB for object %.1f %.1f %.1f -- %.1f %.1f %.1f", 
-          //  prev_bbox.min_pos.x, prev_bbox.min_pos.y, prev_bbox.min_pos.z,
-          //  prev_bbox.max_pos.x, prev_bbox.max_pos.y, prev_bbox.max_pos.z);
+                    logerr("created new AABB for object %.1f %.1f %.1f -- %.1f %.1f %.1f", 
+            prev_bbox.min_pos.x, prev_bbox.min_pos.y, prev_bbox.min_pos.z,
+            prev_bbox.max_pos.x, prev_bbox.max_pos.y, prev_bbox.max_pos.z);
           boxes.push_back(prev_bbox); 
           prev_bbox = cur_bbox;
 
