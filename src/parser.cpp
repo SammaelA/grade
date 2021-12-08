@@ -159,6 +159,7 @@ int parse_arguments(int argc, char *argv[])
     else if (std::string(argv[k]) == "-debug_bvh")
     {
       debug_bvh = true;
+      k++;
     }
     else if (std::string(argv[k]) == "-no_debug")
     {
@@ -316,19 +317,19 @@ int parser_main(int argc, char *argv[])
     sceneGen.create_heightmap_simple_auto();
     //
     Block objs;
-    int cnt = 9;
+    int cnt = 15;
     for (int i=0;i<cnt*cnt;i++)
     {
       Block *chb = new Block();
       chb->add_string("name","stone_1");
       chb->add_bool("on_terrain", false);
-      glm::vec3 pos = glm::vec3(75*(i/cnt - cnt/2 + urand(-1,1)),0,75*(i % cnt - cnt/2  + urand(-1,1)));
-      glm::vec3 size = glm::vec3(urand(10,50));
-      pos.y = sceneGenerationContext.scene->heightmap->get_height(pos) - 0.3*size.y;
+      glm::vec3 pos = glm::vec3(50*(i/cnt - cnt/2 + urand(-1,1)),0,50*(i % cnt - cnt/2  + urand(-1,1)));
+      glm::vec3 size = glm::vec3(urand(10,30));
+      pos.y = sceneGenerationContext.scene->heightmap->get_height(pos) - 0.4*size.y;
       chb->add_mat4("transform",glm::scale(
                                 glm::rotate(
                                 glm::translate(glm::mat4(1.0f),pos),
-                                (float)urand()*PI, glm::vec3(1,0,0)),
+                                (float)urand()*PI, glm::vec3(0,0,1)),
                                 size));
       objs.add_block("obj",chb);
     }
@@ -340,7 +341,7 @@ int parser_main(int argc, char *argv[])
         sceneGen.add_object_blk(*b);
     }
     //
-
+    sceneGenerationContext.objects_bvh.rebuild();
     sceneGen.create_scene_auto();
 
     if (save_to_hydra)
@@ -375,7 +376,7 @@ int parser_main(int argc, char *argv[])
               worldRenderer.add_aabb_debug(p.first);
             };
           sceneGenerationContext.objects_bvh.iterate_over_intersected_bboxes(AABB(glm::vec3(-1e9,-1e9,-1e9),
-                                                                                  glm::vec3(1e9,1e9,1e9)), func);
+                                                                                  glm::vec3(1e9,1e9,1e9)), func, false);
         }
         Tiny::view.pipeline = [&]()
         {

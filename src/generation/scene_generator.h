@@ -10,7 +10,7 @@ class SceneGenerator
 public:
     struct SceneGenerationContext
     {
-      SceneGenerationContext(): objects_bvh(true) {};
+      SceneGenerationContext(): objects_bvh(false) {};
         Scene *scene;
         Block settings;
         std::map<std::string,TreeTypeData> tree_types;

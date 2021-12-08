@@ -23,9 +23,9 @@ namespace SceneGenHelper
     id = (packed_id >> 0) & ((1UL << 32) - 1UL);
   }
 
-  void get_AABB_list_from_instance(Model *m, glm::mat4 transform, std::vector<AABB> &boxes, int max_count, float inflation_q)
+  void get_AABB_list_from_instance(Model *m, glm::mat4 transform, std::vector<AABB> &boxes, float _column_size, float inflation_q)
   {
-    if (!m || m->positions.size() % 3 || max_count < 1)
+    if (!m || m->positions.size() % 3 || _column_size < 0.1)
     {
       logerr("cannot get AABB list - malformed model");
       return;
@@ -56,120 +56,54 @@ namespace SceneGenHelper
       logerr("cannot get AABB list - malformed or too small model");
       return;
     }
-    if (max_count == 1)
-    {
-      boxes.push_back(AABB(min_pos, max_pos));
-      return;
-    }
-    //find main == longest axis
-    int main_axis = 1;
-    int sa[2] = {0,2};
-    if (full_sz.x > full_sz.y && full_sz.x > full_sz.z)
-    {
-      main_axis = 0;
-      sa[0] = 1;
-      sa[1] = 2;
-    }
-    else if (full_sz.y > full_sz.x && full_sz.y > full_sz.z)
-    {
-      main_axis = 1;
-      sa[0] = 0;
-      sa[1] = 2;
-    }
-    else 
-    {
-      main_axis = 2;
-      sa[0] = 0;
-      sa[1] = 1;
-    }
-    //logerr("box center %f %f %f full_size %f %f %f %d %d %d",center.x, center.y, center.z, full_sz.x, full_sz.y, full_sz.z,
-    //main_axis,sa[0],sa[1]);
-    //slice AABB of object into max_count slices along the main axis and then find AABB for each slice
-    float step = full_sz[main_axis]/max_count;
-    float eps = 0.01*step;
-
-    std::vector<vec3> maxes = std::vector<vec3>(max_count, vec3(-1e9, -1e9, -1e9));
-    std::vector<vec3> mins = std::vector<vec3>(max_count, vec3(1e9, 1e9, 1e9)); 
-
-    //set starting maxes and mins
-    for (int i=0;i<max_count;i++)
-    {
-      maxes[i][sa[0]] = center[sa[0]];
-      maxes[i][sa[1]] = center[sa[1]];
-      maxes[i][main_axis] = min_pos[main_axis] + (i+1)*step;
-
-      mins[i][sa[0]] = center[sa[0]];
-      mins[i][sa[1]] = center[sa[1]];
-      mins[i][main_axis] = min_pos[main_axis] + (i)*step;
-    }
-
-    //find maxes and mins for each slice
+    AABB bounding = AABB(min_pos, max_pos);
     
-    for (auto &pos : positions)
+    //we should be more precise in x,z coordinates than in y
+    vec2 column_size = vec2(_column_size,_column_size);
+    ivec2 columns_cnt = ivec2(ceil(full_sz.x/column_size.x), ceil(full_sz.z/column_size.y));
+    column_size = vec2(full_sz.x/columns_cnt.x, full_sz.z/columns_cnt.y);
+    
+    std::vector<ivec2> column_positions = std::vector<ivec2>(positions.size(), ivec2(0,0));
+    for (int i=0;i<positions.size();i++)
     {
-      int slice = CLAMP((pos[main_axis] - min_pos[main_axis])/step, 0, max_count-1);
-
-      maxes[slice][sa[0]] = MAX(maxes[slice][sa[0]], pos[sa[0]]);
-      maxes[slice][sa[1]] = MAX(maxes[slice][sa[1]], pos[sa[1]]);
-      mins[slice][sa[0]] = MIN(mins[slice][sa[0]], pos[sa[0]]);
-      mins[slice][sa[1]] = MIN(mins[slice][sa[1]], pos[sa[1]]);
+      column_positions[i] = vec2(positions[i].x - bounding.min_pos.x, positions[i].z - bounding.min_pos.z)/column_size; 
     }
 
-    //inflate them
-    for (int i=0;i<max_count;i++)
+    std::vector<vec2> columns = std::vector<vec2>(columns_cnt.x*columns_cnt.y, vec2(1,-1));
+    for (int i = 0;i<m->indices.size();i+=3)//assume that everything is triangles
     {
-      vec3 center = 0.5f*(maxes[i] + mins[i]);
-      vec3 full_size = maxes[i] - mins[i];
-      full_size[sa[0]] *= inflation_q;
-      full_size[sa[1]] *= inflation_q;
+      ivec2 max_column = max(max(column_positions[m->indices[i]], column_positions[m->indices[i+1]]),column_positions[m->indices[i+2]]);
+      ivec2 min_column = min(min(column_positions[m->indices[i]], column_positions[m->indices[i+1]]),column_positions[m->indices[i+2]]);
+    
+      float max_h = max(max(positions[m->indices[i]].y, positions[m->indices[i+1]].y), positions[m->indices[i+2]].y);
+      float min_h = max(max(positions[m->indices[i]].y, positions[m->indices[i+1]].y), positions[m->indices[i+2]].y);
 
-      maxes[i] = center + 0.5f*full_size;
-      mins[i] = center - 0.5f*full_size;
-    }
-
-    AABB prev_bbox, cur_bbox;
-    prev_bbox.min_pos = vec3(0,0,0);
-    prev_bbox.max_pos = vec3(0,0,0);
-    //transform them to bboxes
-    for (int i=0;i<max_count;i++)
-    {
-      cur_bbox = AABB(mins[i], maxes[i]);
-
-      if (prev_bbox.min_pos[sa[0]] == prev_bbox.max_pos[sa[0]] || 
-          prev_bbox.min_pos[sa[1]] == prev_bbox.max_pos[sa[1]])
+      for (int x = min_column.x; x<= max_column.x;x++)
       {
-        prev_bbox = cur_bbox;
-      }
-      else
-      {
-        if (abs(prev_bbox.min_pos[sa[0]] - cur_bbox.min_pos[sa[0]]) < eps &&
-            abs(prev_bbox.min_pos[sa[1]] - cur_bbox.min_pos[sa[1]]) < eps &&
-            abs(prev_bbox.max_pos[sa[0]] - cur_bbox.max_pos[sa[0]]) < eps &&
-            abs(prev_bbox.max_pos[sa[1]] - cur_bbox.max_pos[sa[1]]) < eps)
+        for (int y = min_column.y; y<= max_column.y;y++)
         {
-          prev_bbox.min_pos[sa[0]] = MIN(prev_bbox.min_pos[sa[0]], cur_bbox.min_pos[sa[0]]);
-          prev_bbox.min_pos[sa[1]] = MIN(prev_bbox.min_pos[sa[1]], cur_bbox.min_pos[sa[1]]);
-          prev_bbox.max_pos[sa[0]] = MAX(prev_bbox.max_pos[sa[0]], cur_bbox.max_pos[sa[0]]);
-          prev_bbox.max_pos[sa[1]] = MAX(prev_bbox.max_pos[sa[1]], cur_bbox.max_pos[sa[1]]);
-          
-          prev_bbox.max_pos[main_axis] = cur_bbox.max_pos[main_axis];
-        }
-        else if (cur_bbox.min_pos[sa[0]] == cur_bbox.max_pos[sa[0]] || 
-                 cur_bbox.min_pos[sa[1]] == cur_bbox.max_pos[sa[1]])
-        {
-          prev_bbox.max_pos[main_axis] = cur_bbox.max_pos[main_axis];   
-        }
-        else
-        {
-                    logerr("created new AABB for object %.1f %.1f %.1f -- %.1f %.1f %.1f", 
-            prev_bbox.min_pos.x, prev_bbox.min_pos.y, prev_bbox.min_pos.z,
-            prev_bbox.max_pos.x, prev_bbox.max_pos.y, prev_bbox.max_pos.z);
-          boxes.push_back(prev_bbox); 
-          prev_bbox = cur_bbox;
-
+          //logerr("ind %d %d %d",i,x,y);
+          columns[y*columns_cnt.x + x].x = min(columns[y*columns_cnt.x + x].x, min_h);
+          columns[y*columns_cnt.x + x].y = max(columns[y*columns_cnt.x + x].y, max_h);
         }
       }
     }
-    boxes.push_back(prev_bbox);
+    for (int x = 0; x< columns_cnt.x;x++)
+    {
+      for (int y=0;y<columns_cnt.y;y++)
+      {
+        vec2 hh = columns[y*columns_cnt.x + x];
+        if (hh.x < hh.y)
+        {
+          float h_range = inflation_q*(hh.y - hh.x);
+          float h0 = 0.5*(hh.y + hh.x);
+          hh.x = h0 - 0.5*h_range;
+          hh.y = h0 + 0.5*h_range;
+          AABB column = AABB(vec3(bounding.min_pos.x + x*column_size.x, hh.x, bounding.min_pos.z + y*column_size.y),
+                            vec3(bounding.min_pos.x + (x+1)*column_size.x, hh.y, bounding.min_pos.z + (y+1)*column_size.y));
+          boxes.push_back(column);
+        }
+      }
+    }
   }
 };

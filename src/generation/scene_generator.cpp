@@ -593,11 +593,6 @@ void GenerationJob::generate()
       rawTreesDatabase.generation_finished(token);
       rawTreesDatabase.database_lock.unlock();
 
-      //std::lock(ctx_lock, packer_lock);
-      //packer.add_trees_to_grove(ggd, ctx.scene->grove, trees, ctx.scene->heightmap);
-      //ctx_lock.unlock();
-      //packer_lock.unlock();
-
       c.cell_lock.lock();
       if (!c.depends.empty())
       {
@@ -774,7 +769,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
   logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
-  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 12, 1.05);
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 5, 1.05);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
   ctx.objects_bvh.add_bboxes(boxes, id);
   return id;

@@ -35,6 +35,7 @@ dist/
 /original_trees/*
 /hydra_scenes/*
 /resources/models
+profile.txt
 *.npy
 # Compiled Java class files
 *.class
