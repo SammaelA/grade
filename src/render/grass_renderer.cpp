@@ -1,6 +1,8 @@
 #include "grass_renderer.h"
 #include "graphics_utils/texture_manager.h"
-#include "../tinyEngine/camera.h"
+#include "tinyEngine/camera.h"
+#include "graphics_utils/modeling.h"
+
 GrassRenderer::GrassRenderer():
  grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
  grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"}),
@@ -48,32 +50,26 @@ grass_atlas(data.grass_textures),
 grass({"grass2.vs", "grass2.fs"}, {"in_Position","in_Normal", "in_Tex"}),
 grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_Tex"})
 {
-    std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
-    std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
-    std::vector<float> normals = {0,0,1, 0,0,1, 0,0,1, 0,0,1, 1,0,0, 1,0,0, 1,0,0, 1,0,0};
-    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};
-
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
 
     int total_instances = 0;
-    
+    ModelLoader ML;
+    Texture null = textureManager.empty();
+    int type_n = 0;
     for (auto &p : data.grass_instances)
     {
         tex_transform = data.grass_textures.tc_transform(p.first);
-        models.push_back(new Model());
-        models.back()->positions = vertexes;
-        models.back()->colors = tc;
+        models.push_back(ML.create_model_by_name(data.used_grass_types[type_n].model_name,null));
         for (int i=0;i<models.back()->colors.size();i+=4)
         {
             models.back()->colors[i] = tex_transform.x*(models.back()->colors[i] + tex_transform.z);
             models.back()->colors[i + 1] = tex_transform.y*(models.back()->colors[i + 1] + tex_transform.w);
         }
-        models.back()->normals = normals;
-        models.back()->indices = indices;
         models.back()->update();
         inst_offsets.push_back(total_instances);
         inst_counts.push_back(p.second.size());
         total_instances += p.second.size();
+        type_n++;
     }
 
     glm::mat4 *matrices = new glm::mat4[total_instances];

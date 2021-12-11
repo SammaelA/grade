@@ -4,14 +4,24 @@
 
 Block obj_models_blk;
 bool obj_models_blk_loaded = false;
+std::string ModelLoader::base_path = "resources/models";
 
 Model *ModelLoader::create_model_from_block(Block &bl, Texture &tex)
 {
     std::string name = bl.get_string("name", "debug_box");
+    return create_model_by_name(name, tex);
+}
+
+Model *ModelLoader::create_model_by_name(std::string name, Texture &tex)
+{
     if (name == "debug_box")
     {
         tex = textureManager.get("noise");
         return create_debug_box_model();
+    }
+    else if (name == "simple_grass")
+    {
+        return create_simple_grass_model();
     }
     else 
     {
@@ -27,6 +37,22 @@ Model *ModelLoader::create_debug_box_model()
     Model *m = new Model;
     //v.ellipsoid_to_model(&cyl, m, 16, 16);
     v.box_to_model(&b, m);
+    return m;
+}
+
+Model *ModelLoader::create_simple_grass_model()
+{
+    std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
+    std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
+    std::vector<float> normals = {0,0,1, 0,0,1, 0,0,1, 0,0,1, 1,0,0, 1,0,0, 1,0,0, 1,0,0};
+    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};
+
+    Model *m = new Model;
+    m->positions = vertexes;
+    m->normals = normals;
+    m->colors = tc;
+    m->indices = indices;
+    
     return m;
 }
 
@@ -65,7 +91,6 @@ Model *ModelLoader::load_model_from_obj(std::string name, Texture &tex)
         logerr("cannot find model %s. It is not mentioned in models.blk file", name.c_str());
         return nullptr;
     }
-    std::string base_path = "resources/models";
     std::string folder_name = obj->get_string("folder_name", name);
     std::string obj_filename = base_path + "/" + folder_name + "/" + obj->get_string("obj", "");
     std::string obj_color_tex = base_path + "/" + folder_name + "/" + obj->get_string("color", "");

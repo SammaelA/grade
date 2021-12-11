@@ -766,7 +766,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
     pos = 0;
   }
   
-  logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
+  //logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
   SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 5, 1.05);

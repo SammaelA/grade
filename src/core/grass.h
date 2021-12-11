@@ -17,7 +17,7 @@ struct GrassType
     float plant_size_std_dev = 1.5;
     float light_sensivity = 1;
     float push = 1;
-    
+    std::string model_name = "simple_grass";
     void load_from_blk(Block &block);
     GrassType();
 };
@@ -37,6 +37,7 @@ struct GrassInstanceData
 
 struct GrassPacked
 {
+    std::vector<GrassType> used_grass_types;
     TextureAtlas grass_textures;
     std::vector<std::pair<int, std::vector<GrassInstanceData>>> grass_instances;
     //each member is a type: int is texture id in atlas, second is list of instances for this type

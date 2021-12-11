@@ -17,6 +17,8 @@
 
 #include "core/scene.h"
 #include "graphics_utils/modeling.h"
+#include "graphics_utils/texture_manager.h"
+
 namespace hlm = HydraLiteMath;
 using pugi::xml_node;
 extern GLFWwindow* g_window;
@@ -140,6 +142,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
   hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
   std::wstring permanent_tex_dir = L"../../../../resources/textures/";
+  std::string base_dir = "../../../../";
   std::wstring temp_tex_dir = L"../../../../saves/";
   HRTextureNodeRef texWood = hrTexture2DCreateFromFile(L"data/textures/wood.jpg");
   HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(L"data/textures/leaf.png");
@@ -296,33 +299,35 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
     std::vector<int> inst_offsets;
     std::vector<int> inst_counts;
+    /*
     std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
     std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
     std::vector<float> normals = {0,0,1, 0,0,1, 0,0,1, 0,0,1, 1,0,0, 1,0,0, 1,0,0, 1,0,0};
-    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};
+    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};*/
 
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
-
+    Texture null = textureManager.empty();
+    ModelLoader ML;
+    std::string prev_base_dir = ModelLoader::base_path;
+    ModelLoader::base_path = base_dir + prev_base_dir;
     int total_instances = 0;
-    
+    int type_n = 0;
     for (auto &p : scene.grass.grass_instances)
     {
         tex_transform = scene.grass.grass_textures.tc_transform(p.first);
-        grass_models.push_back(new Model());
-        grass_models.back()->positions = vertexes;
-        grass_models.back()->colors = tc;
+        grass_models.push_back(ML.create_model_by_name(scene.grass.used_grass_types[type_n].model_name,null));
         for (int i=0;i<grass_models.back()->colors.size();i+=4)
         {
             grass_models.back()->colors[i] = tex_transform.x*(grass_models.back()->colors[i] + tex_transform.z);
             grass_models.back()->colors[i + 1] = 1 - tex_transform.y*(grass_models.back()->colors[i + 1] + tex_transform.w);
         }
-        grass_models.back()->normals = normals;
-        grass_models.back()->indices = indices;
         grass_models.back()->update();
         inst_offsets.push_back(total_instances);
         inst_counts.push_back(p.second.size());
         total_instances += p.second.size();
+        type_n++;
     }
+    ModelLoader::base_path = prev_base_dir;
 
     glm::mat4 *matrices = new glm::mat4[total_instances];
     int i=0;

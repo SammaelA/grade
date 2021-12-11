@@ -24,14 +24,14 @@ bool is_empty(const char c)
         else
             return true;
     }
-    else if (!in_comment_assume && c == '\\')
+    else if (!in_comment_assume && c == '/')
     {
         in_comment_assume = true;
         return true;
     }
     else if (in_comment_assume)
     {
-        if (c == '\\')
+        if (c == '/')
         {
             in_comment_assume = false;
             in_comment = true;
@@ -39,7 +39,7 @@ bool is_empty(const char c)
         }
         else
         {
-            logerr("line %d hanging \\ found", cur_line);
+            logerr("line %d hanging / found", cur_line);
             in_comment_assume = false;
         }
     }

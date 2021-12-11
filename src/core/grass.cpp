@@ -16,6 +16,7 @@ void GrassType::load_from_blk(Block &block)
     plant_size_std_dev = block.get_double("plant_size_std_dev",plant_size_std_dev);
     light_sensivity = block.get_double("light_sensivity",light_sensivity);
     push = block.get_double("push",push);
+    model_name = block.get_string("model_name",model_name);
 }
 
 GrassType::GrassType(): texture(textureManager.empty())

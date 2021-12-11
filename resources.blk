@@ -26,5 +26,9 @@
     grass_meadow_12:s = "grass13.png"
     grass_meadow_13:s = "grass14.png"
     grass_meadow_14:s = "grass15.png"
+    grass_detailed_1:s = "../models/grass/grass_1/grass_1.png"
+    grass_detailed_4:s = "../models/grass/grass_4/grass_4.png"
+    grass_detailed_5:s = "../models/grass/grass_5/grass_5.png"
+    grass_detailed_6:s = "../models/grass/grass_6/grass_6.png"
     lily_texture:s = "grass16.png"
 }

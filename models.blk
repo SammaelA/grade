@@ -19,4 +19,40 @@
         obj:s = "mh.obj"
         color:s = "mh.jpg"
     }
+    grass_1
+    {
+        folder_name:s = "grass/grass_1"
+        obj:s = "grass_1.obj"
+        color:s = "grass_1.png"
+    }
+    grass_2
+    {
+        folder_name:s = "grass/grass_2"
+        obj:s = "grass_2.obj"
+        color:s = "grass_2.jpg"
+    }
+    grass_3
+    {
+        folder_name:s = "grass/grass_3"
+        obj:s = "grass_3.obj"
+        color:s = "grass_3.png"
+    }
+    grass_4
+    {
+        folder_name:s = "grass/grass_4"
+        obj:s = "grass_4.obj"
+        color:s = "grass_4.png"
+    }
+    grass_5
+    {
+        folder_name:s = "grass/grass_5"
+        obj:s = "grass_5.obj"
+        color:s = "grass_5.png"
+    }
+    grass_6
+    {
+        folder_name:s = "grass/grass_6"
+        obj:s = "grass_6.obj"
+        color:s = "grass_6.png"
+    }
 }

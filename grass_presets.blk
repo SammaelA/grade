@@ -48,4 +48,32 @@
         patch_size:r = 50
         patch_density:r = 0.2
     }
+    grass_detailed_1
+    {
+        model_name:s = "grass_1"
+        texture:s = "grass_detailed_1"
+        plant_size:r = 3.5
+        light_sensivity:r = 1
+    }
+    grass_detailed_2
+    {
+        model_name:s = "grass_4"
+        texture:s = "grass_detailed_4"
+        plant_size:r = 3.5
+        light_sensivity:r = 1      
+    }
+    grass_detailed_3
+    {
+        model_name:s = "grass_5"
+        texture:s = "grass_detailed_5"
+        plant_size:r = 10.0
+        light_sensivity:r = 1      
+    }
+    grass_detailed_4
+    {
+        model_name:s = "grass_6"
+        texture:s = "grass_detailed_6"
+        plant_size:r = 3.5
+        light_sensivity:r = 1      
+    }
 }

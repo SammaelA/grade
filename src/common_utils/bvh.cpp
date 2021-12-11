@@ -128,7 +128,7 @@ int BVH::add_node_rec(std::vector<int> &boxes)
                 left_idx.push_back(box_id);
             if (obj_bboxes[box_id].first.max_pos[best_axis] > split)
                 right_idx.push_back(box_id);
-        }*/
+        }
                                 debug("boxes {");
     for (int box_id : boxes)
     {
@@ -147,6 +147,7 @@ int BVH::add_node_rec(std::vector<int> &boxes)
         debug("%d ", box_id);
     }
     debug("}\n");
+    */
         if (!right_idx.empty())
         {
 
@@ -176,8 +177,8 @@ int BVH::add_node_rec(std::vector<int> &boxes)
             nodes[node_id].left_idx = add_node_rec(left_idx);
         }
     }
-    logerr("created node %d %d %d total nodes/bboxes %d %d",nodes[node_id].bbox_idx,nodes[node_id].left_idx,nodes[node_id].right_idx,
-                        nodes.size(),obj_bboxes.size());
+    //logerr("created node %d %d %d total nodes/bboxes %d %d",nodes[node_id].bbox_idx,nodes[node_id].left_idx,nodes[node_id].right_idx,
+    //                    nodes.size(),obj_bboxes.size());
     return node_id;
 }
 

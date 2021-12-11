@@ -268,6 +268,7 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
 {  
     PostFx copy = PostFx("copy.fs");
     grass_packed.grass_instances = {};
+    grass_packed.used_grass_types = used_grass_types;
     glm::ivec2 grass_tex_size = glm::ivec2(512, 512);
 
     {
