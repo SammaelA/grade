@@ -79,6 +79,28 @@ void MetainfoManager::load_grass_types()
     }
 }
 
+void MetainfoManager::load_biomes()
+{
+    BlkManager man;
+    Block biomes_blk;
+
+    man.load_block_from_file("biomes.blk", biomes_blk);
+    for (int i = 0; i < biomes_blk.size(); i++)
+    {
+        Block *bl = biomes_blk.get_block(i);
+        std::string name = biomes_blk.get_name(i);
+        if (bl)
+        {
+            Biome gt;
+            gt.load_from_blk(*bl);
+
+            gt.id = biomes.size();
+            biome_id_by_name.emplace(name, biomes.size());
+            biomes.push_back(gt);
+        }
+    }
+}
+
 bool MetainfoManager::reload_all(std::string dir)
 {
     loaded = false;
@@ -91,8 +113,9 @@ bool MetainfoManager::reload_all(std::string dir)
 
     load_tree_types();
     load_grass_types();
+    load_biomes();
 
-    loaded = tree_types.size() > 0 && grass_types.size() > 0;
+    loaded = tree_types.size() > 0 && grass_types.size() > 0 && biomes.size() > 0;
     return loaded;
 }
 
@@ -119,6 +142,18 @@ TreeTypeData &MetainfoManager::get_tree_type(int id)
         return tree_types[id];
 }
 
+int MetainfoManager::get_tree_type_id_by_name(std::string name)
+{
+    auto it = tree_type_id_by_name.find(name);
+    if (it == tree_type_id_by_name.end())
+    {
+        logerr("invalid tree type name = %s", name.c_str());
+        return -1;
+    }
+    else
+        return it->second;
+}
+
 GrassType &MetainfoManager::get_grass_type(std::string name)
 {
     auto it = grass_type_id_by_name.find(name);
@@ -142,6 +177,18 @@ GrassType &MetainfoManager::get_grass_type(int id)
         return grass_types[id];
 }
 
+int MetainfoManager::get_grass_type_id_by_name(std::string name)
+{
+    auto it = grass_type_id_by_name.find(name);
+    if (it == grass_type_id_by_name.end())
+    {
+        logerr("invalid grass type name = %s", name.c_str());
+        return -1;
+    }
+    else
+        return it->second;
+}
+
 Biome &MetainfoManager::get_biome(std::string name)
 {
     auto it = biome_id_by_name.find(name);
@@ -163,4 +210,16 @@ Biome &MetainfoManager::get_biome(int id)
     }
     else
         return biomes[id];
+}
+
+int MetainfoManager::get_biome_id_by_name(std::string name)
+{
+    auto it = biome_id_by_name.find(name);
+    if (it == biome_id_by_name.end())
+    {
+        logerr("invalid grass type name = %s", name.c_str());
+        return -1;
+    }
+    else
+        return it->second;
 }

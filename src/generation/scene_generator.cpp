@@ -203,8 +203,9 @@ bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGene
   bool job_finished = true;
   for (auto &arr : arrays)
   {
-    if (!arr.closed && (arr.all_finished || forced))
+    if (!arr.closed && (arr.cnt_real > 0) && (arr.all_finished || forced))
     {
+      logerr("adding %d trees to grove",arr.cnt_real);
       arr.ggd.trees_count = arr.cnt_real;
       packer.add_trees_to_grove(arr.ggd, ctx.scene->grove, arr.data, ctx.scene->heightmap);
       delete[] arr.data;
@@ -266,11 +267,16 @@ void SceneGenerator::create_heightmap_simple_auto()
 {
   glm::vec2 heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000,1000));
   float hmap_cell_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
+  glm::vec2 full_size = ctx.settings.get_vec2("scene_size", glm::vec2(100,100));
+  glm::vec2 grass_field_size = ctx.settings.get_vec2("grass_field_size", glm::vec2(500,500));
+  grass_field_size = max(min(grass_field_size, heightmap_size), full_size);
   glm::vec2 center = ctx.settings.get_vec2("scene_center", glm::vec2(0,0));
+  glm::vec2 cell_size = ctx.settings.get_vec2("cell_size", glm::vec2(50,50));
   glm::vec3 center3 = glm::vec3(center.x,0,center.y);
   
   ctx.scene->heightmap = new Heightmap(center3, heightmap_size,hmap_cell_size);
   ctx.scene->heightmap->random_generate(0,0,40);
+  ctx.biome_map.create(AABB2D(center - 0.5f*grass_field_size, center + 0.5f*grass_field_size), 1);
 }
 
 void SceneGenerator::generate_grove()
@@ -526,7 +532,7 @@ void GenerationJob::generate()
   for (int c_id : waiting_cells)
   {
     //generation trees and grass
-    logerr("generating cell %d", c_id);
+    //logerr("generating cell %d", c_id);
     bool short_lived_voxels = false;
     auto &c = cells[c_id];
     
@@ -623,7 +629,7 @@ void GenerationJob::generate()
 
     //TODO: can be done not every iteration
     remove_unused_borders();
-    logerr("finished generating cell %d", c_id);
+    //logerr("finished generating cell %d", c_id);
   }
 
   while (!remove_unused_borders())
@@ -797,4 +803,17 @@ ctx(_ctx)
   {
     logerr("failed to load meta information for scene generator");
   }
+}
+
+void SceneGenerator::set_default_biome(std::string biome_name)
+{
+  int id = metainfoManager.get_biome_id_by_name(biome_name);
+  if (id>=0)
+    ctx.biome_map.set_rect(ctx.biome_map.borders(),id);
+}
+void SceneGenerator::set_biome_round(glm::vec2 pos, float r, std::string biome_name)
+{
+  int id = metainfoManager.get_biome_id_by_name(biome_name);
+  if (id>=0)
+    ctx.biome_map.set_round(pos,r,1.5*r,id);
 }

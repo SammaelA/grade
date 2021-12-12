@@ -325,6 +325,66 @@ void TextureManager::save_png_directly(Texture &t, std::string name)
         safe_delete<unsigned char>(data, "save_png_data"); 
     }
 }
+
+void TextureManager::save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name)
+{
+    save_bmp_raw_directly(data, w, h, channels, "saves/"+name+".bmp");
+}
+void TextureManager::save_bmp(Texture &t, std::string name)
+{
+    save_bmp_directly(t, "saves/"+name+".bmp");
+}
+void TextureManager::save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name)
+{
+    if (data)
+    {
+        stbi_write_bmp(name.c_str(), w, h, channels, data);
+    }
+    else
+    {
+        logerr("trying to save empty data");
+    }
+}
+void TextureManager::save_bmp_directly(Texture &t, std::string name)
+{
+    unsigned char *data = nullptr;
+    int w,h,layers = 1;
+    if (!t.is_valid())
+    {
+        logerr("trying to save invalid texture");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    else if (t.type == GL_TEXTURE_2D || t.type == GL_TEXTURE_2D_ARRAY)
+    {
+        w = t.get_W();
+        h = t.get_H();
+        layers = t.type == GL_TEXTURE_2D_ARRAY ? t.get_layers() : 1;
+        data = safe_new<unsigned char>(4*w*h*layers, "save_png_data");
+
+        glBindTexture(t.type, t.texture);
+
+        glGetTexImage(t.type,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    data);
+        glBindTexture(t.type, 0);
+    }
+    else
+    {
+        logerr("invalid texture format");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    if (data)
+    {
+        save_bmp_raw_directly(data,w,h*layers,4,name);
+        safe_delete<unsigned char>(data, "save_png_data"); 
+    }
+}
 void TextureManager::delete_tex(Texture &t)
 {
     if (t.type == GL_TEXTURE_2D)

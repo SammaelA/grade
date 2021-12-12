@@ -1,4 +1,8 @@
 {
+    empty_biome
+    {
+
+    }
     mixed_forest
     {
         trees
@@ -14,7 +18,7 @@
         {
             coverage:s = "patches"
             coverage_part:r = 0.25
-            patch_density:r = 3
+            density:r = 3
             patch_size:r = 50
             types
             {
@@ -25,6 +29,18 @@
         {
             coverage:s = "full"
             density:r = 0.4
+            types
+            {
+                grass_meadow_1:r = 1.0
+            }
+        }
+    }
+    meadow
+    {
+        grass
+        {
+            coverage:s = "full"
+            density:r = 1.0
             types
             {
                 grass_meadow_1:r = 1.0

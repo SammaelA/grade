@@ -311,6 +311,12 @@ int parser_main(int argc, char *argv[])
     SceneGenerator sceneGen = SceneGenerator(sceneGenerationContext);
 
     sceneGen.create_heightmap_simple_auto();
+    sceneGen.set_default_biome("meadow");
+    sceneGen.set_biome_round(glm::vec2(0,100),40,"mixed_forest");
+    sceneGen.set_biome_round(glm::vec2(100,0),50,"mixed_forest");
+    sceneGen.set_biome_round(glm::vec2(0,-100),60,"mixed_forest");
+    sceneGen.set_biome_round(glm::vec2(-100,0),70,"mixed_forest");
+    sceneGenerationContext.biome_map.save_as_image();
     //
     Block objs;
     int cnt = 15;

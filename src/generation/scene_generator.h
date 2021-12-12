@@ -1,6 +1,7 @@
 #pragma once
 #include "grove_generator.h"
 #include "core/scene.h"
+#include "biome.h"
 #include <mutex>
 #include <atomic>
 
@@ -14,6 +15,7 @@ public:
         Scene *scene;
         Block settings;
         BVH objects_bvh;
+        BiomeMap biome_map;
     };
     
     SceneGenerator(SceneGenerationContext &_ctx);
@@ -21,6 +23,8 @@ public:
     void create_heightmap_simple_auto();
     uint64_t add_object_blk(Block &b);
     bool remove_object(uint64_t id);
+    void set_default_biome(std::string biome_name);
+    void set_biome_round(glm::vec2 pos, float r, std::string biome_name);
 private:
     void generate_grove();
     SceneGenerationContext &ctx;
