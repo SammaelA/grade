@@ -233,3 +233,10 @@ void Branch::mark_dead()
             br->mark_dead();
     }
 }
+
+TreeTypeData::TreeTypeData():
+wood(textureManager.empty()),
+leaf(textureManager.empty())
+{
+
+}

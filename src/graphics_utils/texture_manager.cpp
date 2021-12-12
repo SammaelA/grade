@@ -216,7 +216,7 @@ Texture TextureManager::create_unnamed(SDL_Surface *s)
 }
 Texture TextureManager::empty()
 {
-    return get("empty");
+    return textures.empty() ? Texture() : get("empty");
 }
 void TextureManager::clear_unnamed()
 {

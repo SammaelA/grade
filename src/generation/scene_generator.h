@@ -13,12 +13,10 @@ public:
       SceneGenerationContext(): objects_bvh(false) {};
         Scene *scene;
         Block settings;
-        std::map<std::string,TreeTypeData> tree_types;
-        std::map<std::string, GrassType> grass_types;
         BVH objects_bvh;
     };
     
-    SceneGenerator(SceneGenerationContext &_ctx): ctx(_ctx){};
+    SceneGenerator(SceneGenerationContext &_ctx);
     void create_scene_auto();
     void create_heightmap_simple_auto();
     uint64_t add_object_blk(Block &b);

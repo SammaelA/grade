@@ -1,0 +1,34 @@
+{
+    mixed_forest
+    {
+        trees
+        {
+            coverage:s = "full"
+            density:r = 1
+            types
+            {
+                simple_tree:r = 1
+            }
+        }   
+        trees
+        {
+            coverage:s = "patches"
+            coverage_part:r = 0.25
+            patch_density:r = 3
+            patch_size:r = 50
+            types
+            {
+                bush:r = 1
+            }
+        }
+        grass
+        {
+            coverage:s = "full"
+            density:r = 0.4
+            types
+            {
+                grass_meadow_1:r = 1.0
+            }
+        }
+    }
+}

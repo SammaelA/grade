@@ -12,6 +12,7 @@
 #include "grass_generator.h"
 #include "graphics_utils/debug_transfer.h"
 #include "scene_generator_helper.h"
+#include "metainfo_manager.h"
 #include <algorithm>
 #include <thread>
 #include <mutex>
@@ -307,15 +308,7 @@ void SceneGenerator::generate_grove()
     for (int i=0;i<types_bl->size();i++)
     {
       std::string type_name = types_bl->get_name(i);
-      auto it = ctx.tree_types.find(type_name);
-      if (it == ctx.tree_types.end())
-      {
-        logerr("error: using unknown tree type %s",type_name.c_str());
-      }
-      else
-      {
-        types.push_back(it->second);
-      }
+      types.push_back(metainfoManager.get_tree_type(type_name));
     }
     if (types.empty())
     {
@@ -413,7 +406,7 @@ void SceneGenerator::generate_grove()
 
   if (grass_needed)
   {
-    grassGenerator.set_grass_types(ctx.grass_types, *grass_blk);
+    grassGenerator.set_grass_types(*grass_blk);
     grassGenerator.prepare_grass_patches(cells, cells_x, cells_y);
   }
 
@@ -794,5 +787,14 @@ bool SceneGenerator::remove_object(uint64_t packed_id)
   else
   {
     return false;
+  }
+}
+
+SceneGenerator::SceneGenerator(SceneGenerationContext &_ctx):
+ctx(_ctx)
+{
+  if (!metainfoManager.reload_all())
+  {
+    logerr("failed to load meta information for scene generator");
   }
 }

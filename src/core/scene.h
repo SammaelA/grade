@@ -28,5 +28,4 @@ struct Scene
 
     GrovePacked grove;
     GrassPacked grass;
-    std::vector<TreeTypeData> tree_types;
 };

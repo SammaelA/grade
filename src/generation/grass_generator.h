@@ -13,7 +13,7 @@ class GrassGenerator
 {
 public:
     void prepare_grass_patches(std::vector<Cell> &cells, int cells_x, int cells_y);
-    void set_grass_types(const std::map<std::string, GrassType> &grass_types, Block &grass_settings);
+    void set_grass_types(Block &grass_settings);
     void generate_grass_in_cell(Cell &cell, Field_2d *occlusion);
     void pack_all_grass(GrassPacked &grass_packed, Heightmap &h);
 private:

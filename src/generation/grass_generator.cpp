@@ -5,8 +5,9 @@
 #include "tinyEngine/postfx.h"
 #include "graphics_utils/texture_manager.h"
 #include "graphics_utils/volumetric_occlusion.h"
+#include "metainfo_manager.h"
 
-void GrassGenerator::set_grass_types(const std::map<std::string, GrassType> &grass_types, Block &grass_settings)
+void GrassGenerator::set_grass_types(Block &grass_settings)
 {
     for (int i=0;i<grass_settings.size();i++)
     {
@@ -14,16 +15,8 @@ void GrassGenerator::set_grass_types(const std::map<std::string, GrassType> &gra
         float q = grass_settings.get_double(i, -1);
         if (q > 0)
         {
-            auto it = grass_types.find(name);
-            if (it == grass_types.end())
-            {
-                logerr("cannot find grass type \"%s\" in types list",name.c_str());
-            }
-            else
-            {
-                used_grass_types.push_back(it->second);
-                grass_quantity.push_back(q);
-            }
+            used_grass_types.push_back(metainfoManager.get_grass_type(name));
+            grass_quantity.push_back(q);
         }
     }
 }

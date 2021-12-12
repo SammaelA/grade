@@ -95,6 +95,7 @@ struct BranchHeap : Countable
 
 struct TreeTypeData
 {
+    TreeTypeData();
     TreeTypeData(int id, ParametersSet *params, std::string wood_tex_name, std::string leaf_tex_name);
     ~TreeTypeData();
     int type_id;

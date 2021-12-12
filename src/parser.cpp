@@ -46,6 +46,7 @@
 #include "generation/scene_generator.h"
 #include "hydra_utils/hydra_scene_exporter.h"
 #include "graphics_utils/debug_transfer.h"
+#include "generation/metainfo_manager.h"
 
 namespace parser
 {
@@ -303,12 +304,7 @@ int parser_main(int argc, char *argv[])
     parse_arguments(argc,argv);
     man.load_block_from_file(settings_block, sceneGenerationContext.settings);
     sceneGenerationContext.scene = &scene;
-    load_tree_types(sceneGenerationContext.tree_types);
-    load_grass_types(sceneGenerationContext.grass_types);
-    for (auto p : sceneGenerationContext.tree_types)
-    {
-      scene.tree_types.push_back(p.second);
-    }
+
     if (demo_mode)
       demo_scene_ctx(sceneGenerationContext);
     
@@ -356,7 +352,7 @@ int parser_main(int argc, char *argv[])
         WorldRenderer worldRenderer;
         Block render_settings;
         GroveGenerationData ggd;
-        ggd.types = scene.tree_types;
+        ggd.types = metainfoManager.get_all_tree_types();
         worldRenderer.init(appContext.WIDTH, appContext.HEIGHT, render_settings);
         worldRenderer.set_heightmap(*scene.heightmap);
         worldRenderer.set_grass(scene.grass);

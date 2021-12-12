@@ -1,7 +1,8 @@
 {
     types
     {
-        bush:tag
+        //bush:tag
+        simple_tree:tag
         simple_tree:tag
     }
     scene_size:p2 = 150, 150
@@ -10,14 +11,14 @@
     heightmap_cell_size:r = 10
     grass
     {
-        //grass_meadow_1:r = 0.75
+        grass_meadow_1:r = 0.75
         //grass_meadow_3:r = 0.4
         //lily:r = 1.5
         //flowers_1:r = 0.18
         //flowers_2:r = 0.25
-        grass_detailed_1:r = 0.5
+        //grass_detailed_1:r = 0.5
         //grass_detailed_2:r = 0.5
-        grass_detailed_3:r = 0.5
+        //grass_detailed_3:r = 0.5
         //grass_detailed_4:r = 0.5
     }
 }
