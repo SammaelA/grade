@@ -4,6 +4,7 @@
 #include "metainfo_manager.h"
 #include "common_utils/bbox.h"
 #include "graphics_utils/texture_manager.h"
+#include "grove_generation_utils.h"
 
 int gr = 0;
 void load_biome_types(Block *bl, std::vector<std::pair<int, float>> &types)
@@ -121,14 +122,14 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
     
     void BiomeMap::set_rect(AABB2D box, int id)
     {
-        int x0 = CLAMP((box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w-1);
-        int y0 = CLAMP((box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h-1);
-        int x1 = CLAMP((box.max_pos.x - bbox.min_pos.x)/pixel_size,0,w-1);
-        int y1 = CLAMP((box.max_pos.y - bbox.min_pos.y)/pixel_size,0,h-1);
+        int x0 = CLAMP(ceil(box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y0 = CLAMP(ceil(box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h);
+        int x1 = CLAMP(ceil(box.max_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y1 = CLAMP(ceil(box.max_pos.y - bbox.min_pos.y)/pixel_size,0,h);
 
-        for (int i=y0;i<=y1;i++)
+        for (int i=y0;i<y1;i++)
         {
-            for (int j=x0;j<=x1;j++)
+            for (int j=x0;j<x1;j++)
             {
                 data[i*w + j] = id;
             }
@@ -141,10 +142,10 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         float ir2p = SQR(inner_r/pixel_size);
         float or2p = SQR(outer_r/pixel_size);
 
-        int x0 = CLAMP((box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w-1);
-        int y0 = CLAMP((box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h-1);
-        int x1 = CLAMP((box.max_pos.x - bbox.min_pos.x)/pixel_size,0,w-1);
-        int y1 = CLAMP((box.max_pos.y - bbox.min_pos.y)/pixel_size,0,h-1);
+        int x0 = CLAMP(ceil(box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y0 = CLAMP(ceil(box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h);
+        int x1 = CLAMP(ceil(box.max_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y1 = CLAMP(ceil(box.max_pos.y - bbox.min_pos.y)/pixel_size,0,h);
 
         float xc = 0.5*x0 + 0.5*x1;
         float yc = 0.5*y0 + 0.5*y1;
@@ -152,9 +153,9 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         if (or2p/ir2p > 1.01)
         {
             //smooth edges
-            for (int i=y0;i<=y1;i++)
+            for (int i=y0;i<y1;i++)
             {
-                for (int j=x0;j<=x1;j++)
+                for (int j=x0;j<x1;j++)
                 {
                     float d2 = SQR(i - yc) + SQR(j - xc);
                     if (d2 > or2p)
@@ -208,4 +209,41 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         textureManager.save_bmp_raw(image_data, w, h, 3, name);
 
         delete[] image_data;
+    }
+
+    void BiomeMap::get_stat(std::vector<std::pair<int,int>> &stat, AABB2D box)
+    {
+        int x0 = CLAMP(ceil(box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y0 = CLAMP(ceil(box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h);
+        int x1 = CLAMP(ceil(box.max_pos.x - bbox.min_pos.x)/pixel_size,0,w);
+        int y1 = CLAMP(ceil(box.max_pos.y - bbox.min_pos.y)/pixel_size,0,h);
+
+        stat = {};
+        for (int i=y0;i<y1;i++)
+        {
+            for (int j=x0;j<x1;j++)
+            {
+                int b = data[i*w + j];
+                for (auto &p : stat)
+                {
+                    if (p.first == b)
+                    {
+                        p.second++;
+                        b = -1;
+                        break;
+                    }
+                }
+                if (b >= 0)
+                    stat.push_back(std::pair<int,int>(b,1));
+            }
+        }
+    }
+
+    void BiomeMap::set_mask(GroveMask &mask, int biome_id)
+    {
+        std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) -> float
+        {
+            return (get(p) == biome_id) ? 1.0 : 0.0;
+        };
+        mask.fill_func(func);
     }

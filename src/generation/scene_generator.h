@@ -16,10 +16,19 @@ public:
         Block settings;
         BVH objects_bvh;
         BiomeMap biome_map;
+        std::vector<Cell> cells;
+
+        int cells_x, cells_y;
+        float hmap_pixel_size, biome_map_pixel_size;
+        glm::vec2 heightmap_size, grass_field_size, full_size, cell_size, center, start_pos;
+        glm::vec3 center3;
+
+        int base_biome_id = 0;
     };
     
     SceneGenerator(SceneGenerationContext &_ctx);
     void create_scene_auto();
+    void init_scene(Block &settings);
     void create_heightmap_simple_auto();
     uint64_t add_object_blk(Block &b);
     bool remove_object(uint64_t id);
@@ -41,7 +50,8 @@ struct Cell
     FINISHED_ALL //plants and grass are generated. voxels_small == nullptr, planar_occlusion == nullptr
   };
   std::mutex cell_lock;
-  GrovePrototype prototype;
+  std::vector<GrovePrototype> prototypes;
+
   LightVoxelsCube *voxels_small = nullptr;//used for plants gen is dependant cells
   Field_2d *planar_occlusion = nullptr;//used for grass gen in this cell
   int id = -1;
@@ -50,12 +60,13 @@ struct Cell
   std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
   std::vector<int> depends_from;
   std::vector<int> grass_patches;//set and used by grass generator
+  std::vector<std::pair<int,int>> biome_stat;//<biome_id, number_of_pixels> 
   AABB influence_bbox;
   explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
   Cell(const Cell &cell)
   {
     id = cell.id;
-    prototype = cell.prototype;
+    prototypes = cell.prototypes;
     bbox = cell.bbox;
     status.store(cell.status);
     influence_bbox = cell.influence_bbox;

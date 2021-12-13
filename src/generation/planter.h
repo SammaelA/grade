@@ -6,7 +6,7 @@
 class Planter
 {
 public: 
-    Planter(LightVoxelsCube *_voxels, Heightmap *_heightmap, GroveMask *_mask,
+    Planter(LightVoxelsCube *_voxels, Heightmap *_heightmap, GroveMask *_mask, GroveMask *_biome_mask,
                   glm::vec3 center, glm::vec2 size,
                   float base_density, int max_saplings = 1000, float cell_size = 5);
     bool has_saplings() {return saplings_left > 0;}
@@ -15,6 +15,7 @@ private:
     LightVoxelsCube *voxels = nullptr;
     Heightmap *heightmap = nullptr;
     GroveMask *mask = nullptr;
+    GroveMask *biome_mask = nullptr;
     Field_2d density;
     Field_2d occlusion;
 

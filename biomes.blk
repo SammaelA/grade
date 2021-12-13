@@ -47,4 +47,16 @@
             }
         }
     }
+    bush
+    {
+        trees
+        {
+            coverage:s = "full"
+            density:r = 20
+            types
+            {
+                bush:r = 1
+            }
+        }
+    }
 }

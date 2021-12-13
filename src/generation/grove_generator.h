@@ -8,6 +8,7 @@ struct GrovePrototype
     glm::vec2 pos;//pos of center
     glm::vec2 size;//size from center, BBox is [pos - (size.x,0,size.z)] - [pos + size]
     std::vector<std::pair<int,float>> possible_types;//type id and chance to create tree of that type
+    GroveMask *biome_mask = nullptr;
 };
 class GroveGenerator
 {

@@ -4,6 +4,7 @@
 #include "common_utils/utility.h"
 #include "common_utils/bbox.h"
 
+class GroveMask;
 struct Biome
 {
     struct PatchDesc
@@ -49,6 +50,8 @@ public:
     
     void set_rect(AABB2D box, int id);
     void set_round(glm::vec2 pos, float inner_r, float outer_r, int id);
+    void get_stat(std::vector<std::pair<int,int>> &stat, AABB2D bbox);
+    void set_mask(GroveMask &mask, int biome_id);
     void save_as_image(std::string name = "biome_map_debug");
 private:
 

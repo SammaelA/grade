@@ -276,7 +276,7 @@ void init_render(WorldRenderer &worldRenderer)
   worldRenderer.init(appContext.WIDTH, appContext.HEIGHT, render_settings);
 }
 
-void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationContext)
+void demo_scene_ctx(Block &settings)
 {
   demo_mode_patch_size = MIN(demo_mode_patch_size, demo_mode_trees_cnt);
   float density = MAX(demo_mode_patch_size, 2);
@@ -287,11 +287,11 @@ void demo_scene_ctx(SceneGenerator::SceneGenerationContext &sceneGenerationConte
   patches_x = MAX(patches_x,1);
   int patches_y = patches_x;
   int max_trees_per_patch = 2*((float)demo_mode_trees_cnt/patches_cnt);
-  sceneGenerationContext.settings.set_vec2("cell_size",cell_size);
-  sceneGenerationContext.settings.set_vec2("scene_size",glm::vec2(cell_size.x*patches_x,cell_size.y*patches_y));
-  sceneGenerationContext.settings.set_int("max_trees_per_patch",max_trees_per_patch);
-  sceneGenerationContext.settings.set_int("fixed_patches_count", patches_cnt);
-  sceneGenerationContext.settings.set_double("patches_density", 0);
+  settings.set_vec2("cell_size",cell_size);
+  settings.set_vec2("scene_size",glm::vec2(cell_size.x*patches_x,cell_size.y*patches_y));
+  settings.set_int("max_trees_per_patch",max_trees_per_patch);
+  settings.set_int("fixed_patches_count", patches_cnt);
+  settings.set_double("patches_density", 0);
 }
 
 int parser_main(int argc, char *argv[])
@@ -300,26 +300,24 @@ int parser_main(int argc, char *argv[])
     Scene scene;
     SceneGenerator::SceneGenerationContext sceneGenerationContext;
     BlkManager man;
-
+    Block gen_settings;
     parse_arguments(argc,argv);
-    man.load_block_from_file(settings_block, sceneGenerationContext.settings);
-    sceneGenerationContext.scene = &scene;
-
+    man.load_block_from_file(settings_block, gen_settings);
     if (demo_mode)
-      demo_scene_ctx(sceneGenerationContext);
+      demo_scene_ctx(gen_settings);
     
+    sceneGenerationContext.scene = &scene;
     SceneGenerator sceneGen = SceneGenerator(sceneGenerationContext);
-
+    
+    sceneGen.init_scene(gen_settings);
     sceneGen.create_heightmap_simple_auto();
     sceneGen.set_default_biome("meadow");
-    sceneGen.set_biome_round(glm::vec2(0,100),40,"mixed_forest");
-    sceneGen.set_biome_round(glm::vec2(100,0),50,"mixed_forest");
-    sceneGen.set_biome_round(glm::vec2(0,-100),60,"mixed_forest");
-    sceneGen.set_biome_round(glm::vec2(-100,0),70,"mixed_forest");
+    sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
+    sceneGen.set_biome_round(glm::vec2(-100,0),50,"bush");
     sceneGenerationContext.biome_map.save_as_image();
     //
     Block objs;
-    int cnt = 15;
+    int cnt = 0;
     for (int i=0;i<cnt*cnt;i++)
     {
       Block *chb = new Block();

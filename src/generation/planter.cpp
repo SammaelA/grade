@@ -1,6 +1,6 @@
 #include "planter.h"
 
-Planter::Planter(LightVoxelsCube *_voxels, Heightmap *_heightmap, GroveMask *_mask,
+Planter::Planter(LightVoxelsCube *_voxels, Heightmap *_heightmap, GroveMask *_mask, GroveMask *_bm,
                  glm::vec3 _center, glm::vec2 _size,
                  float base_density, int max_saplings, float _cell_size):
 density(_center, _size, _cell_size),
@@ -12,6 +12,7 @@ occlusion(_center, _size, _cell_size)
     size = _size;
     cell_size = _cell_size;
     mask = _mask;
+    biome_mask = _bm;
     AABB box = voxels->get_bbox();
     glm::vec4 bord = heightmap->get_borders();//(min_pos,max_pos)
     if (center.x - size.x < box.min_pos.x ||
@@ -60,6 +61,8 @@ std::vector<glm::vec3> Planter::get_saplings()
             float y = center.z + urand(-1,1)*size.y;
             glm::vec3 ps = glm::vec3(x,0,y);
             float occ = (1 /(1 + occlusion.get_bilinear(ps)))*density.get_bilinear(ps)*mask->get_bilinear(ps);
+            if (biome_mask)
+                occ *= biome_mask->get_bilinear(ps);
             if (occ > 1e-4)
             {
                 points.push_back(glm::vec3(x,y,occ));
