@@ -444,8 +444,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-7 70 190");
-    camNode.append_child(L"look_at").text().set(L"0 30 0");
+    camNode.append_child(L"position").text().set(L"-43.3 70 75");
+    camNode.append_child(L"look_at").text().set(L"-32 67 96");
   
     VERIFY_XML(camNode);
   }

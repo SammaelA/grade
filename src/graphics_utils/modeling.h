@@ -44,7 +44,8 @@ protected:
 
 class ModelLoader
 {
-public:
+public: 
+    static void load_default_blk();
     Model *create_model_from_block(Block &bl, Texture &tex);
     Model *create_model_by_name(std::string name, Texture &tex);
     static std::string base_path;

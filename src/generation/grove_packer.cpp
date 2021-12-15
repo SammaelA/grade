@@ -540,9 +540,16 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     GroveGenerationData &curGgd = ggd;
 
     int valid_trees_cnt = 0;
+    Branch dummy_branch;
     for (int i = 0; i < count; i++)
     {
         bool valid = is_valid_tree(trees_external[i]);
+        if (!valid)
+        {
+            //dummy tree
+            trees_external[i] = Tree();
+            trees_external[i].root = &dummy_branch;
+        }
         trees_external[i].valid = valid;
         valid_trees_cnt += valid;
     }

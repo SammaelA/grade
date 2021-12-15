@@ -76,13 +76,18 @@ void transform_model_to_standart_form(Model *m)
     }
 }
 
+void ModelLoader::load_default_blk()
+{
+    BlkManager man;
+    man.load_block_from_file("models.blk", obj_models_blk);
+    obj_models_blk_loaded = true;
+}
+
 Model *ModelLoader::load_model_from_obj(std::string name, Texture &tex)
 {
     if (!obj_models_blk_loaded)
     {
-        BlkManager man;
-        man.load_block_from_file("models.blk", obj_models_blk);
-        obj_models_blk_loaded = true;
+        load_default_blk();
     }
 
     Block *obj = obj_models_blk.get_block(name);

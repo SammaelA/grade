@@ -52,7 +52,7 @@
         trees
         {
             coverage:s = "full"
-            density:r = 20
+            density:r = 5
             types
             {
                 bush:r = 1

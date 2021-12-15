@@ -269,6 +269,7 @@ void base_init()
   Block textures_list;
   man.load_block_from_file("resources.blk",textures_list);
   textureManager = TextureManager("./resources/textures/", textures_list);
+  ModelLoader::load_default_blk();
 }
 void init_render(WorldRenderer &worldRenderer)
 {
@@ -312,7 +313,7 @@ int parser_main(int argc, char *argv[])
     sceneGen.init_scene(gen_settings);
     sceneGen.create_heightmap_simple_auto();
     sceneGen.set_default_biome("meadow");
-    sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
+    sceneGen.set_biome_round(glm::vec2(0,100),50,"mixed_forest");
     sceneGen.set_biome_round(glm::vec2(-100,0),50,"bush");
     sceneGenerationContext.biome_map.save_as_image();
     //
