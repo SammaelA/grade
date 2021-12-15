@@ -5,9 +5,9 @@
 3) Установить следующие пакеты:
 sudo apt-get install libfreeimage-dev
 sudo apt-get install mesa-common-dev libglu1-mesa-dev libglfw3-dev libglfw3
-sudo apt install ocl-icd-opencl-dev
+sudo apt install ocl-icd-opencl-dev mesa-utils
 sudo apt-get install libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev libsdl2-image-dev libglew-dev libboost-system-dev libboost-filesystem-dev libglm-dev
-sudo apt-get install python-dev 
+sudo apt-get install python-dev libnoise-dev libboost-serialization-dev
 
 Из папки grade
 4) Cmake CMakeLists.txt
