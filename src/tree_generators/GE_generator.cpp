@@ -194,11 +194,10 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
     t.root = Branch();
     t.root.level = 0;
-    t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1));
 
-    bool bush = (params.root_type == 0);
-    if (bush)
+    if (params.root_type == 0)
     {
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1));
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*(i + urand());
@@ -208,8 +207,9 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
             b.joints.push_back(Joint(t.pos + 3*params.ro*vec3(sin(phi),1,cos(phi)),0.1,true));
         }
     }
-    else
+    else if (params.root_type == 1)
     {
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1));
         //t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 0.1*params.Xm*params.ro, 0), 0.9,false));
         float d = 0.05*params.Xm*params.ro;
         for (int i = 0; i < 4; i++)
@@ -220,6 +220,23 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         {
             t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*urand(-1,1)*d, d, 0.1*urand(-1,1)*d), 0.9,true));
         }
+    }
+    else if (params.root_type == 2)
+    {
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-2,0), 1));
+        for (int i = 0; i < 10; i++)
+        {
+            float phi = 0.2*PI*(i + urand());
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, -2 + 0.1*(i+1)*params.ro, 0), 0.9));
+            t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos));
+            auto &b = t.root.joints.back().childBranches.back();
+            b.joints.push_back(Joint(t.root.joints.back().pos + (float)urand(2.5,5.5)*params.ro*vec3(sin(phi),0,cos(phi)),0.1,false));
+            b.joints.push_back(Joint(b.joints.back().pos + vec3(urand(-0.3,0.3),4,urand(-0.3,0.3)),0.1,true));
+        }
+    }
+    else
+    {
+        logerr("GE Gen error: Unknows root type %d",params.root_type);
     }
     t.status = TreeStatus::GROWING;
 }

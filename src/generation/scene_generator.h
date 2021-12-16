@@ -34,6 +34,7 @@ public:
     bool remove_object(uint64_t id);
     void set_default_biome(std::string biome_name);
     void set_biome_round(glm::vec2 pos, float r, std::string biome_name);
+    void plant_tree(glm::vec2 pos, int type);
 private:
     void generate_grove();
     SceneGenerationContext &ctx;

@@ -903,3 +903,41 @@ void SceneGenerator::set_biome_round(glm::vec2 pos, float r, std::string biome_n
   if (id>=0)
     ctx.biome_map.set_round(pos,r,outer_r,id);
 }
+
+void SceneGenerator::plant_tree(glm::vec2 pos, int type)
+{
+  if (type < 0 || type >= metainfoManager.get_all_tree_types().size())
+  {
+    logerr("Failed to place tree manually. Invalid type = %d",type);
+    return;
+  }
+  glm::ivec2 c_ij = (pos - ctx.start_pos)/ctx.cell_size;
+  if (c_ij.x >= 0 && c_ij.x < ctx.cells_x && c_ij.y >= 0 && c_ij.y < ctx.cells_y)
+  {
+    glm::vec3 p = glm::vec3(pos.x, 0, pos.y);
+    p.y = ctx.scene->heightmap->get_bilinear(p);
+    Cell &c = ctx.cells[c_ij.x*ctx.cells_y + c_ij.y];
+    if (c.prototypes.empty())
+    {
+      c.prototypes.emplace_back();
+      c.prototypes.back().pos = 0.5f*(c.bbox.max_pos + c.bbox.min_pos);
+      c.prototypes.back().size = 0.5f*(c.bbox.max_pos - c.bbox.min_pos);
+      c.prototypes.back().trees_count = 0;
+    }
+    bool have_type = false;
+    for (auto &tp : c.prototypes.back().possible_types)
+    {
+      if (tp.first == type)
+      {
+        have_type = true;
+        break;
+      }
+    }
+    if (!have_type)
+    {
+      c.prototypes.back().possible_types.push_back(std::pair<int,float>(type,0));
+    }
+    c.prototypes.back().preplanted_trees.push_back(std::pair<int,glm::vec3>(type,p));
+    c.prototypes.back().trees_count++;
+  } 
+}
