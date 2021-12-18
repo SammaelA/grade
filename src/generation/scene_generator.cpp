@@ -381,12 +381,14 @@ void SceneGenerator::generate_grove()
   for (auto &c : cells)
   {
     ctx.biome_map.get_stat(c.biome_stat, c.bbox);
+    /*
     debug("cell %d stat:", c.id);
     for (auto &p : c.biome_stat)
     {
       debug(" (%d, %d)",p.first,p.second);
     }
     debugnl();
+    */
   }
 
   GrassGenerator grassGenerator;
@@ -503,7 +505,6 @@ void SceneGenerator::generate_grove()
 
   for (auto &t : threads)
   {
-    logerr("launching thread");
     t.detach();
   }
 
@@ -597,12 +598,12 @@ void GenerationJob::prepare_dependencies()
       d++;
       d_prev = d;
     }
-    
+    /*
     debug("depends of cell %d: ",c_id);
     for (auto &d : cells[c_id].depends)
       debug("%d ",d);
     debugnl();
-    
+    */
   }
 }
 void GenerationJob::generate()

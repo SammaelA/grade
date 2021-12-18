@@ -27,7 +27,6 @@ int LVC_divisible(int a, int b)
     }
     if (cnt <= b)
     {
-        logerr("found div to %d %d --> %d",b, a,c);
         return c;
     }
     else
