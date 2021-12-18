@@ -17,8 +17,8 @@
         //flowers_1:r = 0.18
         //flowers_2:r = 0.25
         //grass_detailed_1:r = 0.5
-        //grass_detailed_2:r = 0.5
+        ////grass_detailed_2:r = 0.5
         //grass_detailed_3:r = 0.5
-        //grass_detailed_4:r = 0.5
+        ////grass_detailed_4:r = 0.5
     }
 }

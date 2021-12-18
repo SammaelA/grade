@@ -445,7 +445,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     camNode.append_child(L"up").text().set(L"0 1 0");
     camNode.append_child(L"position").text().set(L"-3.6 20 -55.2");
-    camNode.append_child(L"look_at").text().set(L"0 19 0");
+    camNode.append_child(L"look_at").text().set(L"0 0 0");
   
     VERIFY_XML(camNode);
   }

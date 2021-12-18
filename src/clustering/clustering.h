@@ -24,6 +24,7 @@ struct BranchClusteringData
     bool can_be_center;
     glm::vec3 sizes;
     virtual void clear() {};
+    virtual ~BranchClusteringData() {clear();}
     void set_base(BaseBranchClusteringData &base)
     {
         transform = base.transform;
@@ -38,6 +39,7 @@ struct IntermediateClusteringData
     int elements_count;
     std::vector<BranchClusteringData *> branches;
     ClusteringContext *ctx = nullptr;
+    virtual ~IntermediateClusteringData() = default;
     virtual void clear() {};
 };
 struct ClusteringContext
@@ -50,7 +52,7 @@ struct ClusteringContext
         if (self_impostors_data)
             delete self_impostors_data;
     };
-    ~ClusteringContext()
+    virtual ~ClusteringContext()
     {
         clear();
     }
@@ -58,6 +60,7 @@ struct ClusteringContext
 class ClusteringHelper
 {
 public:
+    virtual ~ClusteringHelper() = default;
     virtual BranchClusteringData *convert_branch(Block &settings, Branch *base, ClusteringContext *ctx, BaseBranchClusteringData &data) = 0;
     virtual void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) = 0;
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
@@ -78,6 +81,7 @@ public:
         int center;
         std::vector<std::pair<int,Transform>> members;
     };
+    virtual ~ClusteringBase() = default;
     virtual bool clusterize(Block &settings, IntermediateClusteringData *data, std::vector<ClusterStruct> &result) = 0;
 };
 struct AdditionalClusterDataArrays

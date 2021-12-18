@@ -313,7 +313,7 @@ int parser_main(int argc, char *argv[])
     sceneGen.init_scene(gen_settings);
     sceneGen.create_heightmap_simple_auto();
     sceneGen.set_default_biome("meadow");
-    sceneGen.plant_tree(glm::vec2(0,0), metainfoManager.get_tree_type_id_by_name("bush"));
+    sceneGen.plant_tree(glm::vec2(0,0), metainfoManager.get_tree_type_id_by_name("simple_tree"));
     //sceneGen.set_biome_round(glm::vec2(0,0),50,"mixed_forest");
     //sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
     sceneGenerationContext.biome_map.save_as_image();
