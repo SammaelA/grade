@@ -87,7 +87,7 @@ double *UniformInt::get_series(unsigned size)
 }
 double urand(double from, double to)
 {
-    return base->get() * (to - from) + from;
+    return ((float)rand() / RAND_MAX) * (to - from) + from;
 }
 double urandi(int from, int to)
 {

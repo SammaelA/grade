@@ -46,6 +46,17 @@
                 grass_meadow_1:r = 1.0
             }
         }
+        trees
+        {
+            coverage:s = "patches"
+            coverage_part:r = 0.1
+            density:r = 3
+            patch_size:r = 60
+            types
+            {
+                bush:r = 1
+            }
+        }
     }
     bush
     {

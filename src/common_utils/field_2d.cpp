@@ -114,11 +114,11 @@ float f_perlin(float x, float y)
         else
             return base_val;
     }
-    float Field_2d::get_bilinear(glm::vec3 position)
+    float Field_2d::get_bilinear(glm::vec2 position)
     {
         if (!data)
             return base_val;
-        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
+        glm::vec2 rp = glm::vec2(position.x - pos.x, position.y - pos.z)/cell_size;
         glm::ivec2 ps = rp;
         float dx = rp.x - ps.x;
         float dy = rp.y - ps.y;
@@ -126,6 +126,12 @@ float f_perlin(float x, float y)
                (dx*get(ps.x, ps.y + 1) + (1 - dx)*get(ps.x + 1, ps.y + 1))*dy;
         
     }
+
+    float Field_2d::get_bilinear(glm::vec3 position)
+    {
+        return get_bilinear(glm::vec2(position.x, position.z));
+    }
+
     void Field_2d::set(glm::vec3 position, float val)
     {
         if (!data)
@@ -150,6 +156,17 @@ float f_perlin(float x, float y)
             {
                 glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
                 set(i,j,filler(ps));
+            }
+        }
+    }
+    void Field_2d::read_func(std::function<void(glm::vec2 &, float )> reader)
+    {
+        for (int i = -w;i<=w;i++)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                reader(ps, get(i,j));
             }
         }
     }
@@ -319,5 +336,130 @@ float f_perlin(float x, float y)
                 *max_pos = to;
             else 
                 *max_pos = glm::vec2(pos.x,pos.y) + cell_size*glm::vec2(mx_pos);
+        }
+    }
+
+    void Field_2d::add(Field_2d &field, bool same_size_expected)
+    {
+        if (!field.data)
+            return;
+        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        if (!same_size && same_size_expected)
+        {
+            logerr("warning: Field_2d add same size and position for fields expected");
+        }
+        if (same_size)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    set(i,j,get(i,j) + field.get(i,j));
+                }
+            }
+        }
+        else
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    set(i,j,get(i,j) + field.get_bilinear(ps));
+                }
+            }
+        }
+    }
+    void Field_2d::sub(Field_2d &field, bool same_size_expected)
+    {
+        if (!field.data)
+            return;
+        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        if (!same_size && same_size_expected)
+        {
+            logerr("warning: Field_2d sub same size and position for fields expected");
+        }
+        if (same_size)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    set(i,j,get(i,j) - field.get(i,j));
+                }
+            }
+        }
+        else
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    set(i,j,get(i,j) - field.get_bilinear(ps));
+                }
+            }
+        }
+    }
+    void Field_2d::mul(Field_2d &field, bool same_size_expected)
+    {
+        if (!field.data)
+            return;
+        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        if (!same_size && same_size_expected)
+        {
+            logerr("warning: Field_2d mul same size and position for fields expected");
+        }
+        if (same_size)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    set(i,j,get(i,j) * field.get(i,j));
+                }
+            }
+        }
+        else
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    set(i,j,get(i,j) * field.get_bilinear(ps));
+                }
+            }
+        }
+    }
+    void Field_2d::div(Field_2d &field, bool same_size_expected)
+    {
+        if (!field.data)
+            return;
+        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        if (!same_size && same_size_expected)
+        {
+            logerr("warning: Field_2d div same size and position for fields expected");
+        }
+        if (same_size)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    set(i,j,get(i,j) / field.get(i,j));
+                }
+            }
+        }
+        else
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                for (int i = -w;i<=w;i++)
+                {
+                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    set(i,j,get(i,j) / field.get_bilinear(ps));
+                }
+            }
         }
     }

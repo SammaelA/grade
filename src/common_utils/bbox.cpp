@@ -10,8 +10,7 @@ bool AABB::intersects(Sphere &s)
         else if (s.pos[i] > max_pos[i])
             dmin += SQR(s.pos[i] - max_pos[i]);
     }
-    if (dmin <= s.r * s.r)
-        return true;
+    return (dmin <= s.r * s.r);
 }
 
 bool AABB2D::intersects(Sphere2D &s)
@@ -24,8 +23,7 @@ bool AABB2D::intersects(Sphere2D &s)
         else if (s.pos[i] > max_pos[i])
             dmin += SQR(s.pos[i] - max_pos[i]);
     }
-    if (dmin <= s.r * s.r)
-        return true;
+    return (dmin <= s.r * s.r);
 }
 
 glm::vec3 Barycentric(glm::vec3 p, glm::vec3 a, glm::vec3 b, glm::vec3 c)

@@ -93,6 +93,21 @@ void GroveMask::set_round(float r)
             }
         }
 }
+void GroveMask::set_round_min(float r, float val)
+{
+    base_val = 0;
+        for (int i = -w; i <= w; i++)
+        {
+            for (int j = -h; j <= h; j++)
+            {
+                glm::vec3 position = glm::vec3(cell_size*i, 0,cell_size*j);
+                if (length(position) < r) 
+                    set(i,j,MIN(val, get(i,j)));
+                //else
+                //    set(i,j,0);
+            }
+        }
+}
 void GroveMask::set_square(float x, float z)
 {
         base_val = 0;

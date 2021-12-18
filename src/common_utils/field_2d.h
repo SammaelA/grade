@@ -9,9 +9,15 @@ public:
     Field_2d() {data = nullptr;}
     ~Field_2d();
     float get_bilinear(glm::vec3 pos);
+    float get_bilinear(glm::vec2 pos);
     void set(glm::vec3 pos, float val);
+    void add(Field_2d &field, bool same_size_expected = false);
+    void sub(Field_2d &field, bool same_size_expected = false);
+    void mul(Field_2d &field, bool same_size_expected = false);
+    void div(Field_2d &field, bool same_size_expected = false);
     void fill_const(float val);
     void fill_func(std::function<float(glm::vec2 &)> filler);
+    void read_func(std::function<void(glm::vec2 &, float )> reader);
     void fill_perlin(float base, float min, float max, glm::ivec2 sh = glm::ivec2(0,0));
     glm::vec2 get_range() {return glm::vec2(min_val,max_val);}
     glm::vec2 get_grad_bilinear(glm::vec3 pos);

@@ -9,6 +9,16 @@ struct Cell;
 class SceneGenerator
 {
 public:
+    struct Patch
+    {
+      Sphere2D border;
+      float density;
+      std::vector<std::pair<int, float>> types;
+      int patch_type_id;
+      int biome_id;
+      Patch() {};
+      Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int biome_id, int patch_type_id);
+    };
     struct SceneGenerationContext
     {
       SceneGenerationContext(): objects_bvh(false) {};
@@ -17,7 +27,8 @@ public:
         BVH objects_bvh;
         BiomeMap biome_map;
         std::vector<Cell> cells;
-
+        std::vector<Patch> trees_patches;
+        std::vector<Patch> grass_patches;
         int cells_x, cells_y;
         float hmap_pixel_size, biome_map_pixel_size;
         glm::vec2 heightmap_size, grass_field_size, full_size, cell_size, center, start_pos;
@@ -37,6 +48,7 @@ public:
     void plant_tree(glm::vec2 pos, int type);
 private:
     void generate_grove();
+    void prepare_tree_patches();
     SceneGenerationContext &ctx;
 };
 
@@ -61,6 +73,7 @@ struct Cell
   std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
   std::vector<int> depends_from;
   std::vector<int> grass_patches;//set and used by grass generator
+  std::vector<int> trees_patches;
   std::vector<std::pair<int,int>> biome_stat;//<biome_id, number_of_pixels> 
   AABB influence_bbox;
   explicit Cell(CellStatus _status = CellStatus::EMPTY) {status = _status;}
