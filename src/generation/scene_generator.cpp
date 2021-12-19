@@ -173,7 +173,7 @@ RawTreesDatabase::TreeToken RawTreesDatabase::get_empty_trees(int cnt, GroveGene
     }
     else
     {
-      logerr("%d do not fin in %d/%d", cnt, arrays[i].cnt_real, arrays[i].cnt_max);
+      //logerr("%d do not fin in %d/%d", cnt, arrays[i].cnt_real, arrays[i].cnt_max);
       //cannot place more trees here, array is filled
       arrays[i].filled = true;
     }
@@ -367,6 +367,7 @@ void SceneGenerator::generate_grove()
   int &cells_x = ctx.cells_x;
   int &cells_y = ctx.cells_y;
 
+/*
   for (auto &c : cells)
   {
     ctx.biome_map.get_stat(c.biome_stat, c.bbox);
@@ -379,7 +380,7 @@ void SceneGenerator::generate_grove()
     debugnl();
     
   }
-
+*/
   GrassGenerator grassGenerator;
   glm::vec2 mask_size = ctx.grass_field_size;
   GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, 3);
@@ -415,7 +416,8 @@ void SceneGenerator::generate_grove()
     }
   }
 
-  prepare_tree_patches();
+  prepare_patches(0);
+  prepare_patches(1);
 
   for (int i=0;i<cells_x;i++)
   {
@@ -536,8 +538,8 @@ void SceneGenerator::generate_grove()
 
   if (grass_needed)
   {
-    grassGenerator.set_grass_types(*grass_blk);
-    grassGenerator.prepare_grass_patches(cells, cells_x, cells_y);
+    //grassGenerator.set_grass_types(*grass_blk);
+    //grassGenerator.prepare_grass_patches(cells, cells_x, cells_y);
   }
 
   std::vector<std::thread> threads;
@@ -580,8 +582,71 @@ void SceneGenerator::generate_grove()
   {
     for (auto &c : cells)
     {
-      if ((c.status != Cell::CellStatus::EMPTY) && !c.grass_patches.empty())
-        grassGenerator.generate_grass_in_cell(c, c.planar_occlusion);
+      //if ((c.status != Cell::CellStatus::EMPTY) && !c.grass_patches.empty())
+      //  grassGenerator.generate_grass_in_cell(c, c.planar_occlusion);
+      
+      if (c.status != Cell::CellStatus::EMPTY)
+      {
+        glm::vec2 cell_center = 0.5f*(c.bbox.max_pos + c.bbox.min_pos);
+        int cnt_all = 0;
+        for (auto &p : c.biome_stat)
+        {
+          cnt_all += p.second;
+        }
+        for (auto &p : c.biome_stat)
+        {
+          //prepare grass for biome
+          float fract = p.second/(float)cnt_all;
+
+          if (fract < 0.01)
+            continue;
+
+          Biome &biome = metainfoManager.get_biome(p.first);
+          GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x,0,cell_center.y), 0.5f*ctx.cell_size, 
+                                               ctx.biome_map_pixel_size);
+          ctx.biome_map.set_mask(*(biome_mask), p.first);
+
+          for (int patch_id : c.grass_patches)
+          {
+            if (ctx.grass_patches[patch_id].biome_id == p.first)
+            {
+              auto &patch = ctx.grass_patches[patch_id];
+              std::function<float(glm::vec2 &)> patch_func = [&](glm::vec2 &po) -> float
+              {
+                return patch.border.contains(po) ? 1 : 0; 
+              };
+              GroveMask *patch_mask = new GroveMask(glm::vec3(cell_center.x,0,cell_center.y), 0.5f*ctx.cell_size, 
+                                                              ctx.biome_map_pixel_size);
+              patch_mask->fill_func(patch_func);
+              patch_mask->mul(*biome_mask);
+              grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,patch_mask, patch.density,
+                                                    patch.types);
+
+              delete patch_mask;
+            }
+          }
+          
+          std::function<float(glm::vec2 &, float)> func = [&](glm::vec2 &po, float occ) -> float
+          {
+            float res = occ;
+            for (int patch_id : c.grass_patches)
+            {
+              if (ctx.grass_patches[patch_id].biome_id == p.first && ctx.grass_patches[patch_id].border.contains(po))
+              {
+                auto &patch_desc = biome.grass.patch_descs[ctx.grass_patches[patch_id].patch_type_id];
+                res = CLAMP(MIN(res,1 - patch_desc.push),0,1);
+              }
+            }
+            return res;
+          };
+
+          biome_mask->fill_func(func);
+          grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,biome_mask, biome.grass.main_density,
+                                                biome.grass.main_types);
+
+          delete biome_mask;        
+        }
+      }
     }
     grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
   }
@@ -996,7 +1061,7 @@ SceneGenerator::Patch::Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int _bi
   biome_id = _biome_id;
 }
 
-void SceneGenerator::prepare_tree_patches()
+void SceneGenerator::prepare_patches(int patch_type)
 {
   auto biomes = metainfoManager.get_all_biomes();
   std::vector<std::vector<std::pair<Biome::PatchDesc, float>>> patch_descs;
@@ -1004,7 +1069,8 @@ void SceneGenerator::prepare_tree_patches()
   for (auto &b : biomes)
   {
     patch_descs.emplace_back();
-    for (auto &pd : b.trees.patch_descs)
+    auto &descs = ((patch_type == 0) ? b.trees.patch_descs : b.grass.patch_descs);
+    for (auto &pd : descs)
     {
       float chance = pd.coverage_part*SQR(ctx.biome_map_pixel_size)/(PI*SQR(pd.size));
       if (chance > 1e-6)
@@ -1012,6 +1078,7 @@ void SceneGenerator::prepare_tree_patches()
     }
   }
 
+  auto &patches = (patch_type == 0) ? ctx.trees_patches : ctx.grass_patches;
   for (int i=0;i<ctx.biome_map.pixels_h();i++)
   {
     for (int j=0;j<ctx.biome_map.pixels_w();j++)
@@ -1026,12 +1093,17 @@ void SceneGenerator::prepare_tree_patches()
         {
           if (p.second > rnd)
           {
-            ctx.trees_patches.push_back(Patch(pos, p.first, type, desc_n));
+            patches.push_back(Patch(pos, p.first, type, desc_n));
             for (auto &c : ctx.cells)//TODO: optimize me
             {
-              if (ctx.trees_patches.back().border.intersects(c.bbox))
+              if (patches.back().border.intersects(c.bbox))
               {
-                c.trees_patches.push_back(ctx.trees_patches.size() - 1);
+                if (patch_type == 0)
+                  c.trees_patches.push_back(patches.size() - 1);
+                else
+                {
+                  c.grass_patches.push_back(patches.size() - 1);
+                }
               }
             }
             break;

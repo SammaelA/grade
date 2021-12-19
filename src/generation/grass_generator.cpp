@@ -5,6 +5,7 @@
 #include "tinyEngine/postfx.h"
 #include "graphics_utils/texture_manager.h"
 #include "graphics_utils/volumetric_occlusion.h"
+#include "generation/grove_generation_utils.h"
 #include "metainfo_manager.h"
 
 void GrassGenerator::set_grass_types(Block &grass_settings)
@@ -257,6 +258,107 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion)
         */
     }
 }
+
+void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, GroveMask *mask, float density,
+                                            std::vector<std::pair<int, float>> types)
+{
+    if (density < 1e-4)
+        return;
+    std::vector<std::pair<int, float>> types_in_vector;
+    for (auto &p : types)
+    {
+        if (p.second < 1e-4 || p.first < 0)
+            continue;
+        bool t_found = false;
+        int i = 0;
+        for (auto &gt : used_grass_types)
+        {
+            if (gt.id == p.first)
+            {
+                types_in_vector.push_back(std::pair<int, float>(i, p.second));
+                t_found = true;
+                break;
+            }
+            i++;
+        }
+        if (!t_found)
+        {
+            //new grass type is used
+            used_grass_types.push_back(metainfoManager.get_grass_type(p.first));
+            grass_quantity.push_back(0);
+            grass_instances.push_back(std::vector<Sphere2D>{});
+
+            types_in_vector.push_back(std::pair<int, float>(used_grass_types.size()-1, p.second));
+        }
+    }
+    if (types_in_vector.empty())
+        return;
+    float density_mult = 0.01;
+    glm::vec2 grid_sz = glm::vec2(5,5);
+    glm::ivec2 grid_cnt = glm::ivec2((cell.bbox.max_pos - cell.bbox.min_pos)/grid_sz);
+    grid_sz = (cell.bbox.max_pos - cell.bbox.min_pos)/glm::vec2(grid_cnt);
+
+    float insts_per_grid = density_mult*grid_sz.x*grid_sz.y*density;
+    std::vector<float> LS = std::vector<float>(types_in_vector.size(),0);
+    Normal norm = Normal();
+    for (int i=0;i<grid_cnt.x;i++)
+    {
+        for (int j=0;j<grid_cnt.y;j++)
+        {
+            glm::vec2 pos = cell.bbox.min_pos + grid_sz*glm::vec2(i,j);
+            float light = 1.0;
+            float mask_val = 1.0;
+            if (mask)
+                mask_val = mask->get_bilinear(pos);
+            if (mask_val < 0.01)
+                continue;
+            if (occlusion)
+                light = 1/(1 + occlusion->get_bilinear(pos));
+            
+            float sum = 1e-6;
+            int t = 0;
+            for (auto &p : types_in_vector)
+            {
+                float L = used_grass_types[p.first].light_sensivity;
+                float grow_chance = L > 0 ? pow(light, L) : 1 - pow(light, -L);
+                LS[t] = mask_val*p.second*grow_chance;
+                sum += LS[t];
+                t++;
+            }
+
+            float cnt_f = insts_per_grid*sum;
+            int cnt = floor(cnt_f);
+            if (cnt_f - cnt > urand())
+                cnt++;
+            if (cnt <= 0)
+                continue;
+            
+            for (auto &L : LS)
+                L /= sum;
+        
+            for (int k = 0;k<cnt;k++)
+            {
+                glm::vec2 i_pos = pos + grid_sz*glm::vec2(urand(-0.67,0.67),urand(-0.67,0.67));
+                float rnd = urand();
+                for (int tp = 0;tp<types_in_vector.size();tp++)
+                {
+                    if (rnd < LS[tp])
+                    {
+                        auto &type = used_grass_types[types_in_vector[tp].first];
+                        float sz = type.plant_size + type.plant_size_std_dev*norm.get();
+                        sz = MAX(sz,0.25*type.plant_size);
+                        grass_instances[types_in_vector[tp].first].push_back(Sphere2D(i_pos,sz));
+                    }
+                    else
+                    {
+                        rnd -= LS[tp];
+                    }
+                }
+            }
+        }
+    }
+}
+
 void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
 {  
     PostFx copy = PostFx("copy.fs");
@@ -311,5 +413,21 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
             //logerr("added grass instance %d (%f %f %f) r= %f",in_cnt,pos3.x,pos3.y,pos3.z,in.r);
             in_cnt++;
         }
+    }
+
+    int list_n = 0;
+    for (auto &in_list : grass_instances)
+    {
+        std::vector<GrassInstanceData> &instances = grass_packed.grass_instances[list_n].second;
+        instances.reserve(in_list.size());
+        for (auto &in : in_list)
+        {
+            glm::vec3 pos3 = glm::vec3(in.pos.x, 0, in.pos.y);
+            pos3.y = h.get_height(pos3);
+            instances.push_back(GrassInstanceData(pos3,in.r,urand(0, 2*PI)));
+            //logerr("added grass instance %d (%f %f %f) r= %f",in_cnt,pos3.x,pos3.y,pos3.z,in.r);
+            in_cnt++;
+        }    
+        list_n++; 
     }
 }

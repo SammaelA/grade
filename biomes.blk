@@ -40,18 +40,32 @@
         grass
         {
             coverage:s = "full"
-            density:r = 1.0
+            density:r = 25
             types
             {
-                grass_meadow_1:r = 1.0
+                grass_meadow_1:r = 0.5
+                lily:r = 0.5
+            }
+        }
+        grass
+        {
+            coverage:s = "patches"
+            coverage_part:r = 0.15
+            density:r = 25
+            patch_size:r = 30
+            push:r = 0.75
+            types
+            {
+                flowers_1:r = 0.5
+                flowers_2:r = 0.5
             }
         }
         trees
         {
             coverage:s = "patches"
-            coverage_part:r = 0.1
-            density:r = 3
-            patch_size:r = 60
+            coverage_part:r = 0.05
+            density:r = 20
+            patch_size:r = 75
             types
             {
                 bush:r = 1

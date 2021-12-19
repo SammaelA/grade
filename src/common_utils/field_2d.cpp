@@ -159,6 +159,17 @@ float f_perlin(float x, float y)
             }
         }
     }
+    void Field_2d::fill_func(std::function<float(glm::vec2 &, float )> filler)
+    {
+        for (int i = -w;i<=w;i++)
+        {
+            for (int j=-h;j<=h;j++)
+            {
+                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                set(i,j,filler(ps, get(i,j)));
+            }
+        }
+    }
     void Field_2d::read_func(std::function<void(glm::vec2 &, float )> reader)
     {
         for (int i = -w;i<=w;i++)

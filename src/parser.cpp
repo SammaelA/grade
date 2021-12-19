@@ -313,7 +313,7 @@ int parser_main(int argc, char *argv[])
     sceneGen.init_scene(gen_settings);
     sceneGen.create_heightmap_simple_auto();
     sceneGen.set_default_biome("meadow");
-    sceneGen.set_biome_round(glm::vec2(0,0),175,"bush");
+    //sceneGen.set_biome_round(glm::vec2(0,0),100,"bush");
     if (demo_mode)
     {
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));

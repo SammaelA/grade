@@ -48,7 +48,7 @@ public:
     void plant_tree(glm::vec2 pos, int type);
 private:
     void generate_grove();
-    void prepare_tree_patches();
+    void prepare_patches(int type);
     SceneGenerationContext &ctx;
 };
 
