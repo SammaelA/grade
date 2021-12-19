@@ -63,13 +63,13 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
         t_counts.at(treeTypesCatalogue[p.first].generator_name)++;
         trees_planted++;
     }
-    
+
     while (trees_planted < prototype.trees_count || generating)
     {
         if (trees_planted < prototype.trees_count)
         {
             std::vector<glm::vec3> seeds = planter.get_saplings();
-            //seeder.choose_places_for_seeds(1,seeds);
+            
             if (!seeds.empty())
             {
                 for (auto &seed : seeds)

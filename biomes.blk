@@ -63,10 +63,22 @@
         trees
         {
             coverage:s = "full"
-            density:r = 5
+            density:r = 10
             types
             {
-                bush:r = 1
+                small_bush:r = 1
+            }
+        }
+        trees
+        {
+            coverage:s = "patches"
+            coverage_part:r = 0.15
+            density:r = 25
+            patch_size:r = 75
+            push:r = 1.0
+            types
+            {
+                simple_tree:r = 1
             }
         }
     }

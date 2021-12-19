@@ -73,25 +73,34 @@ LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerati
   return voxels;
 }
 
-AABB get_influence_AABB(GrovePrototype &prototype, std::vector<TreeTypeData> &types,
+AABB get_influence_AABB(std::vector<GrovePrototype> &prototypes, std::vector<TreeTypeData> &types,
                         Heightmap &h)
 {
+  if (prototypes.empty())
+    return AABB();
+  glm::vec2 pos = prototypes[0].pos;
+  glm::vec2 size = prototypes[0].size;
+
   glm::vec3 max_tree_size = glm::vec3(0,0,0);
-  for (auto &p : prototype.possible_types)
+  for (auto &prototype : prototypes)
   {
-    auto &type = types[p.first];
-    max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
+    for (auto &p : prototype.possible_types)
+    {
+      auto &type = types[p.first];
+      max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
+    }
   }
-  
+
   float min_hmap = 0, max_hmap = 0;
-  h.get_min_max_imprecise(prototype.pos - prototype.size, prototype.pos + prototype.size, &min_hmap, &max_hmap);
+  h.get_min_max_imprecise(pos - size, pos + size, &min_hmap, &max_hmap);
   float br = 5;
   float min_y = min_hmap - br;
   float max_y = max_hmap + max_tree_size.y;
   float y_center = (min_y + max_y)/2;
   float y_sz = (max_y - min_y)/2;
-  glm::vec3 voxel_sz = glm::vec3(prototype.size.x + max_tree_size.x, y_sz, prototype.size.y + max_tree_size.z);
-  glm::vec3 voxel_center = glm::vec3(prototype.pos.x, y_center, prototype.pos.y);
+
+  glm::vec3 voxel_sz = glm::vec3(size.x + max_tree_size.x, y_sz, size.y + max_tree_size.z);
+  glm::vec3 voxel_center = glm::vec3(pos.x, y_center, pos.y);
   return AABB(voxel_center - voxel_sz, voxel_center + voxel_sz);
 
 }
@@ -290,7 +299,7 @@ void SceneGenerator::init_scene(Block &_settings)
   ctx.grass_field_size = ctx.settings.get_vec2("grass_field_size", glm::vec2(500,500));
   ctx.grass_field_size = max(min(ctx.grass_field_size, ctx.heightmap_size), ctx.full_size);
   ctx.center = ctx.settings.get_vec2("scene_center", glm::vec2(0,0));
-  ctx.cell_size = ctx.settings.get_vec2("cell_size", glm::vec2(50,50));
+  ctx.cell_size = ctx.settings.get_vec2("cell_size", glm::vec2(150,150));
   ctx.center3 = glm::vec3(ctx.center.x,0,ctx.center.y);
 
   align(ctx.hmap_pixel_size, ctx.biome_map_pixel_size);
@@ -350,27 +359,7 @@ void SceneGenerator::generate_grove()
   ctx.scene->grove.center = ctx.center3;
   ctx.scene->grove.ggd_name = "blank";
   
-  std::vector<TreeTypeData> types;
-  Block *types_bl = ctx.settings.get_block("types");
-  if (!types_bl)
-  {
-    logerr("error: scene generation settings should have \"types\" block");
-    return;
-  }  
-  else
-  {
-    for (int i=0;i<types_bl->size();i++)
-    {
-      std::string type_name = types_bl->get_name(i);
-      types.push_back(metainfoManager.get_tree_type(type_name));
-    }
-    if (types.empty())
-    {
-      logerr("error: \"types\" block should contain at least one valid tree type");
-      return;
-    }
-  }
-  
+  std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
   GroveGenerationData ggd;
   ggd.types = types; 
 
@@ -432,6 +421,7 @@ void SceneGenerator::generate_grove()
   {
     for (int j=0;j<cells_y;j++)
     {
+      glm::vec2 cell_center = ctx.start_pos + ctx.cell_size*glm::vec2(i+0.5,j+0.5);
       int id = i*cells_y + j;
       ctx.biome_map.get_stat(cells[id].biome_stat, cells[id].bbox);
       int cnt_all = 0;
@@ -444,31 +434,11 @@ void SceneGenerator::generate_grove()
       {
         //prepare main prototype for biome
         float fract = p.second/(float)cnt_all;
-        logerr("fract %f",fract);
-        if (fract < 0.05)
+
+        if (fract < 0.01)
           continue;
 
         Biome &biome = metainfoManager.get_biome(p.first);
-        if (!biome.trees.main_types.empty())
-        {
-          cells[id].prototypes.emplace_back();
-          auto &prototype = cells[id].prototypes.back();
-          
-          glm::vec2 center = ctx.start_pos + ctx.cell_size*glm::vec2(i+0.5,j+0.5);
-          prototype.pos = center;
-          prototype.size = 0.5f*ctx.cell_size;
-          prototype.possible_types = biome.trees.main_types;
-          float tk = 1e-4*biome.trees.main_density*p.second;
-          float tk_frac = tk - (int)tk;
-          prototype.trees_count = (int)tk + (tk_frac > urand());
-
-          if (fract < 0.95)
-          {
-            prototype.biome_mask = new GroveMask(glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size, ctx.biome_map_pixel_size);
-            ctx.biome_map.set_mask(*(prototype.biome_mask), p.first);
-          }
-          logerr("cell %d prepared biome %d Expected %d trees",id,p.first,prototype.trees_count);
-        }
 
         for (auto &pn : cells[id].trees_patches)
         {
@@ -476,8 +446,8 @@ void SceneGenerator::generate_grove()
           {
             auto &patch = ctx.trees_patches[pn];
 
-            GroveMask *mask = new GroveMask(glm::vec3(patch.border.pos.x,0,patch.border.pos.y), 
-                                                      glm::vec2(patch.border.r, patch.border.r), ctx.biome_map_pixel_size);
+            GroveMask *mask = new GroveMask(glm::vec3(cell_center.x,0,cell_center.y), 
+                                                      0.5f*ctx.cell_size, ctx.biome_map_pixel_size);
 
             std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
             {
@@ -488,14 +458,14 @@ void SceneGenerator::generate_grove()
               mask->mul(*(cells[id].prototypes.back().biome_mask));
             else
             {
-              GroveMask *biome_mask = new GroveMask(glm::vec3(patch.border.pos.x,0,patch.border.pos.y), 
-                                                              glm::vec2(patch.border.r, patch.border.r), ctx.biome_map_pixel_size);
+              GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x,0,cell_center.y), 
+                                                              0.5f*ctx.cell_size, ctx.biome_map_pixel_size);
               ctx.biome_map.set_mask(*biome_mask, p.first);
               mask->mul(*(biome_mask));
             }
 
-            cells[id].prototypes.emplace_back();
-            auto &patch_prototype = cells[id].prototypes.back();
+            auto patch_prototype = GrovePrototype();
+            cells[id].prototypes.back();
             
             int cells_cnt = 0;
             std::function<void(glm::vec2 &, float)> reader = [&](glm::vec2 &po, float val)
@@ -507,15 +477,50 @@ void SceneGenerator::generate_grove()
             float tk = 1e-4*patch.density*cells_cnt;
             float tk_frac = tk - (int)tk;
 
-            patch_prototype.pos = patch.border.pos;
-            patch_prototype.size = glm::vec2(patch.border.r, patch.border.r);
+            patch_prototype.pos = cell_center;
+            patch_prototype.size = 0.5f*ctx.cell_size;
             patch_prototype.possible_types = patch.types;
             patch_prototype.trees_count = (int)tk + (tk_frac > urand());
             patch_prototype.biome_mask = mask;
-            logerr("cell %d prepared biome %d patch (%d cells) Expected %d trees",id,p.first,cells_cnt,
-            patch_prototype.trees_count);
+            //logerr("cell %d prepared biome %d patch (%d cells) Expected %d trees",id,p.first,cells_cnt,
+            //patch_prototype.trees_count);
+            if (patch_prototype.trees_count > 0)
+            {
+              cells[id].prototypes.push_back(patch_prototype);
+            }
+            else if (patch_prototype.biome_mask)
+            {
+              delete patch_prototype.biome_mask;
+            }
           }
         } 
+
+        if (!biome.trees.main_types.empty())
+        {
+          auto prototype = GrovePrototype();
+          
+          prototype.pos = cell_center;
+          prototype.size = 0.5f*ctx.cell_size;
+          prototype.possible_types = biome.trees.main_types;
+          float tk = 1e-4*biome.trees.main_density*p.second;
+          float tk_frac = tk - (int)tk;
+          prototype.trees_count = (int)tk + (tk_frac > urand());
+
+          if (fract < 0.95)
+          {
+            prototype.biome_mask = new GroveMask(glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size, ctx.biome_map_pixel_size);
+            ctx.biome_map.set_mask(*(prototype.biome_mask), p.first);
+          }
+          if (prototype.trees_count > 0)
+          {
+            cells[id].prototypes.push_back(prototype);
+          }
+          else if (prototype.biome_mask)
+          {
+            delete prototype.biome_mask;
+          }
+          //logerr("cell %d prepared biome %d Expected %d trees",id,p.first,prototype.trees_count);
+        }
       }
       
       if (cells[id].prototypes.size() > 0 || grass_needed)
@@ -523,10 +528,7 @@ void SceneGenerator::generate_grove()
 
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        if (cells[id].prototypes.empty())
-          cells[id].influence_bbox = AABB();
-        else
-          cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes[0], ggd.types, *(ctx.scene->heightmap));
+        cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene->heightmap));
         generationJobs[i/job_size]->waiting_cells.push_back(id);
       }
     }
@@ -567,7 +569,6 @@ void SceneGenerator::generate_grove()
       threads_working = threads_working || !fin._a.load();
     }
   }
-  logerr("finished packing");
   for (auto *j : generationJobs)
   {
     delete j;
@@ -656,13 +657,9 @@ void GenerationJob::generate()
   for (int c_id : waiting_cells)
   {
     //generation trees and grass
-    //logerr("generating cell %d", c_id);
     bool short_lived_voxels = false;
     auto &c = cells[c_id];
-    
-    //c.cell_lock.lock();
     auto influence_bb = c.influence_bbox;
-    //c.cell_lock.unlock();
 
     int tc = 0;
     for (auto &prot : c.prototypes)
@@ -683,7 +680,6 @@ void GenerationJob::generate()
       ggd.size.z = base_prototype.size.y;
       ggd.trees_count = base_prototype.trees_count;
 
-      //::Tree *trees = new ::Tree[ggd.trees_count];
       GroveGenerator grove_gen;
       LightVoxelsCube *voxels = create_grove_voxels(base_prototype, ggd.types, influence_bb);
       
@@ -711,6 +707,7 @@ void GenerationJob::generate()
 
       for (auto &prototype : c.prototypes)
       {
+        ggd.trees_count = prototype.trees_count;
         rawTreesDatabase.database_lock.lock();
         auto token = rawTreesDatabase.get_empty_trees(ggd.trees_count, ggd);
         rawTreesDatabase.database_lock.unlock();
@@ -1030,14 +1027,11 @@ void SceneGenerator::prepare_tree_patches()
           if (p.second > rnd)
           {
             ctx.trees_patches.push_back(Patch(pos, p.first, type, desc_n));
-            logerr("created tree patch %f %f %f biome %d %d", pos.x, pos.y, ctx.trees_patches.back().border.r,
-                   type, desc_n);
-            for (auto &c : ctx.cells)//TODO: foptimize me
+            for (auto &c : ctx.cells)//TODO: optimize me
             {
               if (ctx.trees_patches.back().border.intersects(c.bbox))
               {
                 c.trees_patches.push_back(ctx.trees_patches.size() - 1);
-                logerr("added tree patch %d to cell %d",ctx.trees_patches.size() - 1, c.id);
               }
             }
             break;

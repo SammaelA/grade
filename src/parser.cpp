@@ -313,13 +313,14 @@ int parser_main(int argc, char *argv[])
     sceneGen.init_scene(gen_settings);
     sceneGen.create_heightmap_simple_auto();
     sceneGen.set_default_biome("meadow");
+    sceneGen.set_biome_round(glm::vec2(0,0),175,"bush");
     if (demo_mode)
     {
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
       int t_id = metainfoManager.get_tree_type_id_by_name("simple_tree");
-      int b_id = metainfoManager.get_tree_type_id_by_name("bush");
+      int b_id = metainfoManager.get_tree_type_id_by_name("small_bush");
       for (int i=0;i<sz;i++)
       {
         for (int j=0;j<sz;j++)

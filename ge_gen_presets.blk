@@ -13,7 +13,23 @@
         nu:r = 0.3
         mu:r = 1.0
         remove_min_level:i = 1000
-        leaves_cnt:r = 0.0
+        leaves_cnt:r = 1.0
+    }
+    small_bush
+    {
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
+        res_q:r = 1.0
+        root_type:i = 2
+        Xm:r = 25
+        branching_angle_max:r = 4.0
+        branching_angle_min:r = 2.0
+        r_s:r = 0.0
+        r:r = 0.3
+        nu:r = 0.3
+        mu:r = 1.0
+        remove_min_level:i = 1000
+        leaves_cnt:r = 1.0
     }
     meadow_bush
     {
@@ -25,7 +41,7 @@
         r_s:r = 0.0
         r:r = 0.4
         remove_min_level:i = 1000
-        leaves_cnt:r = 0.0
+        leaves_cnt:r = 1.0
     }
     simple_tree
     {
@@ -39,6 +55,6 @@
         r_s:r = 0.095
         rs_size_factor:r = -0.0055
         r:r = 0.35
-        leaves_cnt:r = 0.0
+        leaves_cnt:r = 1.0
     }
 }
