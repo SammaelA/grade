@@ -329,7 +329,7 @@ int parser_main(int argc, char *argv[])
           {
             float tx = dist*(j - sz/2 + urand());
             float ty = dist*(i - sz/2 + urand());
-            sceneGen.plant_tree(glm::vec2(tx,ty), (cnt % 2) ? t_id : b_id);
+            sceneGen.plant_tree(glm::vec2(tx,ty), (cnt % 2 == 0) ? t_id : b_id);
             cnt++;
           }
         }

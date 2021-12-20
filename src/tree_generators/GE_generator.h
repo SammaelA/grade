@@ -19,14 +19,13 @@ struct GETreeParameters : public ParametersSet
     int alpha = 4;
     float sigma = 0.5;
     float mu = 0.75;
-    float nu = 0.5;
     float b_min = 1.8;
     float b_max = 2.2;
     float r_s = 0.05;
     float rs_size_factor = 0.02;
     int remove_min_level = 1;
 
-    float base_r = 0.025;
+    float base_r = 0.035;
     int max_branches = 1;
     int occlusion_pyramid_d = 7;
     float r_pow = 2.2;
@@ -36,13 +35,16 @@ struct GETreeParameters : public ParametersSet
     int max_iterations = 100;
     float leaf_size_mult = 3.5;
     float leaves_cnt = 1.0;
-    int max_joints_in_branch = 16;
-    float resource_mult = 7.5;
+    int max_joints_in_branch = 32;
+    float resource_mult = 6.0;
     float res_q = 0.5;
     float leaves_max_r = 5;//if radius in node > leaves_max_r*base_r leaf will not be created on this node
     float leaves_angle_a = 0.3;
     float leaves_angle_b = 0.4;
     int root_type = 1;
+    glm::vec4 tropism_params = glm::vec4(1,1,1.0/15,1.5);
+    glm::vec2 tropism_min_max = glm::vec2(-5,5);
+
     virtual glm::vec3 get_tree_max_size() override
     {
         if (root_type == 0)
@@ -68,7 +70,6 @@ struct GETreeParameters : public ParametersSet
         b.set_int("alpha", 4);
         b.set_double("sigma", 0.5);
         b.set_double("mu", 1.5);
-        b.set_double("nu", 1.0);
         b.set_double("b_min", 1.8);
         b.set_double("b_max", 2.2);
         b.set_double("r_s", 0.05);
@@ -92,6 +93,8 @@ struct GETreeParameters : public ParametersSet
         b.set_double("leaves_angle_a", 0.3);
         b.set_double("leaves_angle_b", 0.4);
         b.set_int("root_type", 1);
+        b.set_vec2("tropism_min_max",tropism_min_max);
+        b.set_vec4("tropism_params", tropism_params);
     }
     virtual void load_from_blk(Block &b)
     {
@@ -105,7 +108,6 @@ struct GETreeParameters : public ParametersSet
         alpha = b.get_int("alpha", 4);
         sigma = b.get_double("sigma", sigma);
         mu = b.get_double("mu", mu);
-        nu = b.get_double("nu", nu);
         b_min = b.get_double("b_min", b_min);
         b_max = b.get_double("b_max", b_max);
         r_s = b.get_double("r_s", r_s);
@@ -129,6 +131,8 @@ struct GETreeParameters : public ParametersSet
         leaves_angle_a = b.get_double("leaves_angle_a", leaves_angle_a);
         leaves_angle_b = b.get_double("leaves_angle_b", leaves_angle_b);
         root_type = b.get_int("root_type", root_type);
+        tropism_min_max = b.get_vec2("tropism_min_max",tropism_min_max);
+        tropism_params = b.get_vec4("tropism_params", tropism_params);
     }
 };
 
@@ -156,7 +160,8 @@ private:
         bool alive = true;
         float total_resource = 0;
         float total_light = 0;
-        int total_joints = 0;
+        int total_joints = 0;//how many joint this branch has totally (with subbranches)
+        int distance_from_root = 0;//how many segnebts between first joint of this branch and root
         float base_r;
         glm::vec2 average_chb_dir = glm::vec2(0,0);
         Branch(){};
@@ -244,17 +249,19 @@ private:
     struct GrowPoint
     {
         Joint *joint;
+        int joint_n;
         Branch *base_branch;
         GrowthType gType;
         glm::vec3 prev_dir;
         float resource_left;
-        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, glm::vec3 pd, float res_left)
+        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, glm::vec3 pd, float res_left, int _joint_n)
         {
             joint = _j;
             base_branch = _b;
             gType = _gt;
             prev_dir = pd;
             resource_left = res_left;
+            joint_n = _joint_n;
         }
     };
 
@@ -265,7 +272,7 @@ private:
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
     void calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
-    void distribute_resource(Branch &b, GETreeParameters &params);
+    void distribute_resource(Branch &b, GETreeParameters &params, float res_mult);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
                                               SpaceColonizationData &sp_data,

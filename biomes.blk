@@ -60,17 +60,17 @@
                 flowers_2:r = 0.5
             }
         }
-        trees
-        {
-            coverage:s = "patches"
-            coverage_part:r = 0.05
-            density:r = 20
-            patch_size:r = 75
-            types
-            {
-                bush:r = 1
-            }
-        }
+        //trees
+        //{
+        //    coverage:s = "patches"
+        //    coverage_part:r = 0.05
+        //    density:r = 20
+        //    patch_size:r = 75
+        //    types
+        //    {
+        //        bush:r = 1
+        //    }
+        //}
     }
     bush
     {

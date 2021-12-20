@@ -10,7 +10,6 @@
         branching_angle_min:r = 2.0
         r_s:r = 0.0
         r:r = 0.3
-        nu:r = 0.3
         mu:r = 1.0
         remove_min_level:i = 1000
         leaves_cnt:r = 1.0
@@ -26,7 +25,6 @@
         branching_angle_min:r = 2.0
         r_s:r = 0.0
         r:r = 0.3
-        nu:r = 0.3
         mu:r = 1.0
         remove_min_level:i = 1000
         leaves_cnt:r = 1.0
@@ -52,9 +50,11 @@
         Xm:r = 100
         branching_angle_max:r = 2.5
         branching_angle_min:r = 2.0
-        r_s:r = 0.095
-        rs_size_factor:r = -0.0055
-        r:r = 0.35
+        r_s:r = 0.15
+        rs_size_factor:r = -0.01
+        r:r = 0.26
         leaves_cnt:r = 1.0
+        tropism_params:p4 = 0.2, 1, 0.02, 1 
+        //tropism_params:p4 = 1, -1, 0.05, 2 
     }
 }
