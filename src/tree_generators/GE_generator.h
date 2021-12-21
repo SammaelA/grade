@@ -44,10 +44,14 @@ struct GETreeParameters : public ParametersSet
     int root_type = 1;
     glm::vec4 tropism_params = glm::vec4(1,1,1.0/15,1.5);
     glm::vec2 tropism_min_max = glm::vec2(-5,5);
+    float branching_tropims_mult = 0.67;
+    int tropism_level_base = 1;
+    float res_decrease_step = 0.09;
+    float res_decrease_min = 0.03;
 
     virtual glm::vec3 get_tree_max_size() override
     {
-        if (root_type == 0)
+        if (root_type == 0 || root_type == 2)
             return ro*glm::vec3(1.5*Xm, Xm, 1.5*Xm);
         else if (root_type == 1)
             return ro*glm::vec3(0.6*Xm, 1.25*Xm, 0.6*Xm);
@@ -133,6 +137,11 @@ struct GETreeParameters : public ParametersSet
         root_type = b.get_int("root_type", root_type);
         tropism_min_max = b.get_vec2("tropism_min_max",tropism_min_max);
         tropism_params = b.get_vec4("tropism_params", tropism_params);
+        branching_tropims_mult = b.get_double("branching_tropims_mult", branching_tropims_mult);
+        tropism_level_base =  b.get_int("tropism_level_base", tropism_level_base);
+        res_decrease_step = b.get_double("res_decrease_step", res_decrease_step);
+        res_decrease_min = b.get_double("res_decrease_min", res_decrease_min);
+    
     }
 };
 

@@ -359,7 +359,8 @@ void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParam
 {
     if (b.joints.empty())
         return;
-
+    if (b.level <= params.tropism_level_base)
+        b.distance_from_root = 0;
     float l = 0;
     float res = 0;
     int total_joints = b.joints.size();
@@ -444,7 +445,7 @@ void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params, f
                 logerr("res %f",gp[i].second);
         }*/
         
-        #define W(i) (b.level == 0 ? 1 : MAX(0.03, 1 - 0.09 * i))
+        #define W(i) (MAX(params.res_decrease_min, 1 - params.res_decrease_step * i))
         
         float denom_1 = 0, denom_2 = 0;
         float q_1 = params.res_q, q_2 = 1 - params.res_q;
@@ -640,7 +641,8 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
                 br->distance_from_root = gp.base_branch->distance_from_root + gp.joint_n;
-                nu *= 0.5;
+                nu *= params.branching_tropims_mult;
+                prev_dir *= 3.0f;
                 //logerr("new branch created");
             }
             else if (gp.gType == GrowthType::END_BRANCH)
@@ -653,10 +655,11 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             float influence_r = 2 * params.ro;
             vec3 best_pos;
             float best_occ;
-            if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI / 6, best_pos, best_occ) && best_pos.x == best_pos.x)
+            if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI, best_pos, best_occ) && best_pos.x == best_pos.x)
             {
+                float distance_from_root = (br->level < params.tropism_level_base) ? 0 : br->joints.size() + br->distance_from_root;
                 vec3 best_dir = prev_dir + params.mu * normalize(best_pos - start->pos) +
-                                (nu) * tropism(br->joints.size() + br->distance_from_root, params);
+                                (nu) * tropism(distance_from_root, params);
                 vec3 new_pos = start->pos + params.ro * normalize(best_dir);
                 //logerr("prev dir %f %f %f", prev_dir.x, prev_dir.y, prev_dir.z);
                 //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
