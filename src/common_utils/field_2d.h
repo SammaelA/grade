@@ -27,9 +27,11 @@ public:
                                glm::vec2 *min_pos = nullptr,
                                glm::vec2 *max_pos = nullptr);//real_min >= min_v, real_max <= max_v 
     void print();
+    void save_as_image(std::string name, float min_val = 0, float max_val = 0);
     glm::vec3 get_pos() {return pos;}
     glm::vec2 get_size() {return size;}
     glm::ivec2 get_grid_size() {return glm::ivec2(w,h);}
+    float get_cell_size() {return cell_size;}
 protected:
     float get(int x, int y);
     glm::vec2 get_grad(int x, int y);

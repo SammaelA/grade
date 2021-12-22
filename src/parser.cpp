@@ -195,68 +195,6 @@ int parse_arguments(int argc, char *argv[])
     }
   }
 }
-void load_tree_types(std::map<std::string,TreeTypeData> &tree_types)
-{
-  int id = 0;
-  BlkManager man;
-  Block ge_gen_types, my_gen_types;
-  man.load_block_from_file("ge_gen_presets.blk",ge_gen_types);
-  man.load_block_from_file("my_gen_presets.blk",my_gen_types);
-
-  for (int i=0;i<ge_gen_types.size();i++)
-  {
-    Block *bl = ge_gen_types.get_block(i);
-    if (bl)
-    {
-      std::string name = ge_gen_types.get_name(i);
-      std::string wood_tex_name = bl->get_string("wood_tex_name","wood");
-      std::string leaf_tex_name = bl->get_string("leaf_tex_name","leaf");
-      GETreeParameters *params = new GETreeParameters();
-      params->load_from_blk(*bl);
-      TreeTypeData type = TreeTypeData(id,params,wood_tex_name,leaf_tex_name);
-      type.generator_name = "ge_gen";
-      tree_types.emplace(name,type);
-      id++;
-    }
-  }
-
-  for (int i=0;i<my_gen_types.size();i++)
-  {
-    Block *bl = my_gen_types.get_block(i);
-    if (bl)
-    {
-      std::string name = my_gen_types.get_name(i);
-      std::string wood_tex_name = bl->get_string("wood_tex_name","wood");
-      std::string leaf_tex_name = bl->get_string("leaf_tex_name","leaf");
-      TreeStructureParameters *params = new TreeStructureParameters();
-      params->load_from_blk(*bl);
-      TreeTypeData type = TreeTypeData(id,params,wood_tex_name,leaf_tex_name);
-      type.generator_name = "my_gen";
-      tree_types.emplace(name,type);
-      id++;
-    }
-  }
-}
-
-void load_grass_types(std::map<std::string, GrassType> &grass_types)
-{
-  BlkManager man;
-  Block grass_types_blk;
-  int id = 0;
-  man.load_block_from_file("grass_presets.blk",grass_types_blk);
-  for (int i=0;i<grass_types_blk.size();i++)
-  {
-    Block *bl = grass_types_blk.get_block(i);
-    std::string name = grass_types_blk.get_name(i);
-    if (bl)
-    {
-      GrassType gt;
-      gt.id = id;
-      gt.load_from_blk(*bl);
-      grass_types.emplace(name,gt);
-    }
-  }
-}
 
 void base_init()
 {
@@ -319,9 +257,10 @@ int parser_main(int argc, char *argv[])
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
-      int b_id = metainfoManager.get_tree_type_id_by_name("small_oak");
-      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
+      int t_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
+      int b_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
+      int l_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
+      logerr("lid = %d %d %d", t_id, b_id, l_id);
       int ids[3] = {t_id, b_id, l_id};
       for (int i=0;i<sz;i++)
       {
@@ -354,7 +293,7 @@ int parser_main(int argc, char *argv[])
       chb->add_mat4("transform",glm::scale(
                                 glm::rotate(
                                 glm::translate(glm::mat4(1.0f),pos),
-                                (float)urand()*PI, glm::vec3(0,0,1)),
+                                (float)urand()*PI, glm::vec3(0,1,0)),
                                 size));
       objs.add_block("obj",chb);
     }

@@ -259,8 +259,8 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion)
     }
 }
 
-void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, GroveMask *mask, float density,
-                                            std::vector<std::pair<int, float>> types)
+void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, GroveMask *mask, GroveMask *global_mask,
+                                            float density, std::vector<std::pair<int, float>> types)
 {
     if (density < 1e-4)
         return;
@@ -309,7 +309,9 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, Gro
             float light = 1.0;
             float mask_val = 1.0;
             if (mask)
-                mask_val = mask->get_bilinear(pos);
+                mask_val *= mask->get_bilinear(pos);
+            if (global_mask)
+                mask_val *= global_mask->get_bilinear(pos);
             if (mask_val < 0.01)
                 continue;
             if (occlusion)

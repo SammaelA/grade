@@ -41,7 +41,7 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
     min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
   }
   float vox_scale = 0.5/0.8;
-  glm::vec3 voxel_sz = vox_scale*(influence_box.max_pos - influence_box.min_pos);
+  glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
   auto *v = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale*min_scale_factor, 1.0f);
   AABB &box = influence_box;
@@ -56,8 +56,8 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
 
 LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
 {
-  float vox_scale = 4;
-  glm::vec3 voxel_sz = vox_scale*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+  float vox_scale = 4*ctx.biome_map_pixel_size;
+  glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
   glm::vec3 voxel_center = c.influence_bbox.min_pos + voxel_sz;
   
   auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale, 1.0f);
@@ -344,6 +344,31 @@ void SceneGenerator::create_heightmap_simple_auto()
   debug("created heightmap. Took %.2f ms\n", ms);
 }
 
+void SceneGenerator::create_global_grove_mask(GroveMask &mask)
+{
+  glm::vec2 mask_size = ctx.grass_field_size;
+  std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
+  {
+    glm::vec3 p0 = glm::vec3(po.x + 0.5*mask.get_cell_size(), 0, po.y + 0.5*mask.get_cell_size());
+    p0.y = ctx.scene->heightmap->get_height(p0) + ctx.biome_map_pixel_size;
+    int hits = 0;
+    float kernel[9] = {1, 3, 1,
+                       3, 6, 3,
+                       1, 3, 1};
+    for (int i=-1;i<=1;i++)
+    {
+      for (int j=-1;j<=1;j++)
+      {
+        glm::vec3 p = p0 + glm::vec3(i*0.5*mask.get_cell_size(), 0, j*0.5*mask.get_cell_size());
+        hits += kernel[3*(i+1) + j + 1]*((int)ctx.objects_bvh.contains(p));
+      }
+    }
+    return 1 - hits / 22.0; 
+  };
+  mask.fill_func(func);
+  mask.save_as_image("grass_mask",0,1);
+}
+
 void SceneGenerator::generate_grove()
 {
   GrovePacker packer;
@@ -383,8 +408,8 @@ void SceneGenerator::generate_grove()
 */
   GrassGenerator grassGenerator;
   glm::vec2 mask_size = ctx.grass_field_size;
-  GroveMask mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, 3);
-  mask.set_square(mask_size.x, mask_size.y);
+  GroveMask global_mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, ctx.biome_map_pixel_size);
+  create_global_grove_mask(global_mask);
 
   std::vector<GenerationJob *> generationJobs;
   const int max_jobs_cnt = 8;
@@ -394,7 +419,7 @@ void SceneGenerator::generate_grove()
 
   for (int i=0;i<jobs_cnt;i++)
   {
-    generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, grassGenerator, mask, cells_x, cells_y, 
+    generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, grassGenerator, global_mask, cells_x, cells_y, 
                                                grass_needed, i));
     std::atomic<bool> ab(false);
     thread_finished.push_back(ab);                                      
@@ -406,7 +431,7 @@ void SceneGenerator::generate_grove()
     for (int i=0;i<cells.size();i++)
     {
       glm::vec2 ct = 0.5f*(cells[i].bbox.min_pos + cells[i].bbox.max_pos);
-      if (mask.get_bilinear(glm::vec3(ct.x,0,ct.y)) > 0.1)
+      if (global_mask.get_bilinear(glm::vec3(ct.x,0,ct.y)) > 0.1)
         cells_n.push_back(i);
     }
     std::random_shuffle(cells_n.begin(), cells_n.end());
@@ -619,8 +644,8 @@ void SceneGenerator::generate_grove()
                                                               ctx.biome_map_pixel_size);
               patch_mask->fill_func(patch_func);
               patch_mask->mul(*biome_mask);
-              grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,patch_mask, patch.density,
-                                                    patch.types);
+              grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,patch_mask, &global_mask, 
+                                                    patch.density, patch.types);
 
               delete patch_mask;
             }
@@ -641,8 +666,8 @@ void SceneGenerator::generate_grove()
           };
 
           biome_mask->fill_func(func);
-          grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,biome_mask, biome.grass.main_density,
-                                                biome.grass.main_types);
+          grassGenerator.generate_grass_in_cell(c, c.planar_occlusion,biome_mask,  &global_mask, 
+                                                biome.grass.main_density, biome.grass.main_types);
 
           delete biome_mask;        
         }
@@ -959,7 +984,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
   //logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
-  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 5, 1.05);
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 2*ctx.biome_map_pixel_size, 1.05);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
   ctx.objects_bvh.add_bboxes(boxes, id);
   return id;

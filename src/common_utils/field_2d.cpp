@@ -1,5 +1,6 @@
 #include "common_utils/field_2d.h"
 #include "common_utils/utility.h"
+#include "graphics_utils/texture_manager.h"
 #include <vector>
 /* Function to linearly interpolate between a0 and a1
  * Weight w should be in the range [0.0, 1.0]
@@ -271,6 +272,37 @@ float f_perlin(float x, float y)
             }
             debugnl();
         }
+    }
+    void Field_2d::save_as_image(std::string name, float mnv, float mxv)
+    {
+        if (mnv == mxv)
+        {
+            mnv = min_val;
+            mxv = max_val;
+        }
+        if (mnv <= mxv)
+        {
+            mnv = 0;
+            mxv = 1;
+        }
+
+        if (!data)
+            return;
+        unsigned char *image_data = new unsigned char[3*(2*w + 1)*(2*h+1)];
+        for (int i=-h;i<=h;i++)
+        {
+            for (int j=-w;j<=w;j++)
+            {
+                float val = (get(i,j) - mnv)/(mxv - mnv);
+                int pos = (i+h)*(2*w + 1) + j + w;
+                image_data[3*pos]   = 255*val;
+                image_data[3*pos+1] = 255*val;
+                image_data[3*pos+2] = 255*val;
+            }
+        }
+        textureManager.save_bmp_raw(image_data, 2*w+1, 2*h+1, 3, name);
+
+        delete[] image_data;
     }
     void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
                                          glm::vec2 *min_pos, glm::vec2 *max_pos)

@@ -95,11 +95,11 @@ LightVoxelsCube(source,
 {
     glm::ivec3 vsz = vox_sizes(sizes, source->voxel_size);
     glm::ivec3 vox_pos = source->pos_to_voxel(pos);
-    if (true || vsz.x % size_decrease || vsz.y % size_decrease || vsz.z % size_decrease)
+    if (size_decrease > 1 && (vsz.x % size_decrease || vsz.y % size_decrease || vsz.z % size_decrease))
     {
         debug("warning: trying to get slice [cent: %d %d %d, size: %d %d %d] of volumetric occlusion \
-               with size_decrease = %d. It will make the real size smaller\n",vox_pos.x,vox_pos.y,vox_pos.z,
-               vsz.x,vsz.y,vsz.z, size_decrease);
+               with size_decrease = %d. It will make the real size smaller %d %d %d\n",vox_pos.x,vox_pos.y,vox_pos.z,
+               vsz.x,vsz.y,vsz.z, size_decrease, source->vox_x, source->vox_y, source->vox_z);
     }
     center = pos;
 }
@@ -744,6 +744,7 @@ float LightVoxelsCube::get_occlusion_trilinear(glm::vec3 pos)
     int x = voxel.x;
     int y = voxel.y;
     int z = voxel.z;
+    //logerr("pos voxel pos to voxel %f %f %f %d %d %d %d %d %d",pos.x, pos.y, pos.z, x,y,z, vox_x, vox_y, vox_z);
     #define C(i,j,k) voxels[v_to_i(x+i,y+j,z+k)]
     if (in_voxel_cube(voxel) && in_voxel_cube(voxel + glm::ivec3(1,1,1)))
     {

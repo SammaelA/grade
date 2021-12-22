@@ -49,6 +49,7 @@ public:
 private:
     void generate_grove();
     void prepare_patches(int type);
+    void create_global_grove_mask(GroveMask &mask);
     SceneGenerationContext &ctx;
 };
 

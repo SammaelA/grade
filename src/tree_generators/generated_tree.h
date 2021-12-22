@@ -131,7 +131,8 @@ class TreeGenerator : public AbstractTreeGenerator
 public:
     TreeGenerator() : curTree(nullptr), curParams(TreeStructureParameters(),1){};
     virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
-
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     void reset();
     Tree *curTree = nullptr;
@@ -142,6 +143,7 @@ public:
     Heightmap *heightmap = nullptr;
     GroveGenerationData curGgd;
     Seeder *seeder = nullptr;
+    std::vector<std::pair<glm::vec3, TreeTypeData *>> tree_saplings;
 
     void grow_branch(Branch *b, float feed);
     void new_joint(Branch *b, Joint &j);

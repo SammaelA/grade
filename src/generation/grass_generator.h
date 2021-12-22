@@ -13,8 +13,8 @@ class GroveMask;
 class GrassGenerator
 {
 public:
-    void generate_grass_in_cell(Cell &cell, Field_2d *occlusion, GroveMask *mask, float density,
-                                std::vector<std::pair<int, float>> types);
+    void generate_grass_in_cell(Cell &cell, Field_2d *occlusion, GroveMask *mask, GroveMask *global_mask,
+                                float density, std::vector<std::pair<int, float>> types);
     void pack_all_grass(GrassPacked &grass_packed, Heightmap &h);
 private:
     struct GrassPatch

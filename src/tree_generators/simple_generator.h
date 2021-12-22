@@ -40,9 +40,9 @@ struct SimpleTreeStructureParameters : public ParametersSet
     }
     SimpleTreeStructureParameters():
     max_depth(4),
-        segment_size(1,std::vector<float>{1.5,0.7,0.25,0.25}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.15, 0.15)),
+        segment_size(1,std::vector<float>{3.0,1.5,0.5,0.5}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.15, 0.15)),
         segment_count(15, std::vector<float>{15, 12, 10, 15}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-10, 10)),
-        base_thickness(1.5,std::vector<float>{0.8,0.4,0.25,0.1}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.08, 0.08)),
+        base_thickness(1.5,std::vector<float>{2,1.4,0.6,0.4}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.08, 0.08)),
         base_dir_mult(5),
         rand_dir_mult(1),
         up_dir_mult(1),
@@ -52,8 +52,8 @@ struct SimpleTreeStructureParameters : public ParametersSet
         sectors_count(6),
         base_branch_angle(PI/4),
         branching_chance(0.75),
-        leaves_chance(0.8),
-        leaf_mult(1.25)
+        leaves_chance(1.0),
+        leaf_mult(2.0)
     {
 
     };

@@ -599,6 +599,7 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
         BranchHeap *bh = new BranchHeap();
         t.branchHeaps.push_back(bh);
     }
+    logerr("cranhc heaps count %d", t.branchHeaps.size());
     curParams.set_state(0);
     root = t.branchHeaps[0]->new_branch();
     root->level = 0;
@@ -640,6 +641,7 @@ void TreeGenerator::grow_tree(Tree &t)
         sum_feed[i] = 0;
         count_feed[i] = 0;
     }
+    logerr("t.iter < curParams().growth_iterations() && root %d %f %d",t.iter, curParams().growth_iterations(), root);
     if (t.iter < curParams().growth_iterations() && root)
     {
         float feed = 1;
@@ -1008,6 +1010,63 @@ Tree::~Tree()
         dst.pos = src.pos;
         dst.type = 0;
         dst.edges = src.edges;
+    }
+
+    void TreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+    {
+        tree_saplings.push_back(std::pair<glm::vec3, TreeTypeData *>(pos, type));
+    }
+
+    void TreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCube &_voxels)
+    {
+        reset();
+        Tree trees[MAX_TREES];
+        int count = tree_saplings.size();
+        voxels = &_voxels;
+        logerr("MyGen creating %d trees", count);
+        TreeStructureParameters default_params;
+        for (int i = 0; i < count; i++)
+        {
+            auto &type = *(tree_saplings[i].second);
+            trees[i] = Tree();
+            trees[i].type_id = type.type_id;
+            TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters *>(type.params);
+            if (!ptr)
+            {
+                logerr("mygen::TreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");
+                ptr = &default_params;
+            }
+            trees[i].params = ParameterSetWrapper(*ptr, ptr->max_depth() + 1);
+            trees[i].wood = type.wood;
+            trees[i].leaf = type.leaf;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            auto &type = *(tree_saplings[i].second);
+            trees_external[i] = ::Tree();
+            trees_external[i].type = tree_saplings[i].second;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            trees[i].pos = tree_saplings[i].first;
+            trees[i].pos.y += 5;
+            plant_tree(trees[i], trees[i].params);
+        }
+        for (int i = 0; i < count; i++)
+        {
+            while (trees[i].iter < trees[i].params().growth_iterations())
+            {
+                grow_tree(trees[i]);
+            }
+        }
+        
+        GroveGenerationData ggd;
+        for (int i = 0; i < count; i++)
+        {
+            post_process(ggd, trees[i]);
+        }
+
+        convert(trees, trees_external, count);
     }
 }
 //namespace mygen
