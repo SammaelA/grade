@@ -343,7 +343,7 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Model *m)
         }
     }
 }
-void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw)
+void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, float precision, glm::vec2 tc_zw)
 {
     if (!leaves)
     {
@@ -351,8 +351,9 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, 
             return;
         std::vector<SegmentVertexes> vets;
         std::vector<float> empty_mults;
-
-        int ringsize = MIN(16,MAX(3,16 - 4*b.level));
+        
+        float diff = b.joints[0].r > 1 ? sqrt(b.joints[0].r) : - sqrt(1/b.joints[0].r);
+        int ringsize = CLAMP(pow(2, precision + 1) + diff, 4, pow(2, precision + 2));
         int tex_step = 4;
         if (ringsize % 2 == 1)
             ringsize++;

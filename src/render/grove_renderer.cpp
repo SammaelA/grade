@@ -573,7 +573,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, base_container, false, up_to_level, glm::vec2(type_slice, 0));
+            v.packed_branch_to_model(b, base_container, false, 2, glm::vec2(type_slice, 0));
     }
     uint l_ind_offset = base_container->indices.size();
     uint l_verts = base_container->positions.size();
@@ -604,7 +604,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                v.packed_branch_to_model(b, base_container, true, up_to_level, glm::vec2(type_slice, 0));
+                v.packed_branch_to_model(b, base_container, true, 2, glm::vec2(type_slice, 0));
         }
     }
     uint l_end = base_container->indices.size();

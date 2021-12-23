@@ -6,5 +6,5 @@ class TreePreprocessor
 public:
     void preprocess_tree(Tree &t, Block &preprocessing_params);
 private:
-    void simplify_branch_rec(Branch *b, int max_merge_n);
+    void simplify_branch_rec(Tree &t, Branch *b, int max_merge_n);
 };

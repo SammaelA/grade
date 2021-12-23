@@ -22,7 +22,7 @@ friend class ModelLoader;
     void leaf_to_model(Leaf &l, Model *m, float scale = 1);
     void packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw = glm::vec2(1,0));
     void branch_to_model(Branch &b, Model *m, bool leaves);
-    void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, int max_level, glm::vec2 tc_zw = glm::vec2(1,0));
+    void packed_branch_to_model(PackedBranch &b, Model *m, bool leaves, float precision, glm::vec2 tc_zw = glm::vec2(1,0));
     void body_to_model(Body *b, Model *m, bool fixed_tc = false, glm::vec4 tc = glm::vec4(1,0,0,0));
     void heightmap_to_model(Heightmap &h, Model *m, glm::vec2 detailed_size, glm::vec2 full_size, float precision,
                             int LODs);

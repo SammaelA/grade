@@ -36,7 +36,7 @@ namespace gltf
                     auto &br = grove.instancedCatalogue.get(br_id);
                     if (br.type_id != type_id)
                         continue;
-                    v.packed_branch_to_model(br,m,false,3);
+                    v.packed_branch_to_model(br,m,false,4);
                 }
                 if (!m->positions.empty())
                 {
@@ -56,7 +56,7 @@ namespace gltf
                     auto &br = grove.instancedCatalogue.get(br_id);
                     if (br.type_id != type_id)
                         continue;
-                    v.packed_branch_to_model(br,m_l,true,3);
+                    v.packed_branch_to_model(br,m_l,true,4);
                 }
                 if (!m_l->positions.empty())
                 {

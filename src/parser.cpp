@@ -257,10 +257,10 @@ int parser_main(int argc, char *argv[])
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
-      int b_id = metainfoManager.get_tree_type_id_by_name("small_oak");
-      int l_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
-      logerr("lid = %d %d %d", t_id, b_id, l_id);
+      int t_id = metainfoManager.get_tree_type_id_by_name("small_oak");
+      int b_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
+      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
+
       int ids[3] = {t_id, b_id, l_id};
       for (int i=0;i<sz;i++)
       {

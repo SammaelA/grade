@@ -88,7 +88,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, up_to_level);
+            v.packed_branch_to_model(b, &model, false, 4);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -119,7 +119,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                v.packed_branch_to_model(b, &model, true, up_to_level);
+                v.packed_branch_to_model(b, &model, true, 4);
         }
       for (int i=verts;i<model.colors.size();i+=4)
       {
