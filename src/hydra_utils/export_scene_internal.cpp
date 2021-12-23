@@ -65,11 +65,20 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
     //clusterization process guarantees that type of all branches in instance
     //will be the same
     Model model;
+    int type_id = branch.IDA.type_ids[0];
     //uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
 
     Visualizer v = Visualizer();
     uint ind_offset = model.indices.size();
-    uint verts = model.positions.size();
+    uint verts = model.colors.size();
+    glm::vec4 w_tc_trans = glm::vec4(1,1,0,0);
+    if (source->groveTexturesAtlas.maps_valid && source->groveTexturesAtlas.atlases_valid)
+    {
+      int tex_id = source->groveTexturesAtlas.wood_tex_map.at(type_id);
+      glm::vec4 tctr = source->groveTexturesAtlas.woodAtlas->tc_transform(tex_id);
+      logerr("type %d wood tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
+      w_tc_trans = tctr;
+    }
     for (int id : branch.branches)
     {
         if (id < 0)
@@ -81,12 +90,25 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         if (b.level <= up_to_level && !b.joints.empty())
             v.packed_branch_to_model(b, &model, false, up_to_level);
     }
+      for (int i=verts;i<model.colors.size();i+=4)
+      {
+        model.colors[i] = (model.colors[i] + w_tc_trans.z)*w_tc_trans.x;
+        model.colors[i + 1] = (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
+      }
     uint l_ind_offset = model.indices.size();
-    uint l_verts = model.positions.size();
+    uint l_verts = model.colors.size();
 
     verts = l_verts;
+    w_tc_trans = glm::vec4(1,1,0,0);
     if (need_leaves)
     {
+      if (source->groveTexturesAtlas.maps_valid && source->groveTexturesAtlas.atlases_valid)
+      {
+        int tex_id = source->groveTexturesAtlas.leaves_tex_map.at(type_id);
+        glm::vec4 tctr = source->groveTexturesAtlas.leavesAtlas->tc_transform(tex_id);
+        logerr("type %d leaves tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
+        w_tc_trans = tctr;
+      }
         int type_slice = 0;
         for (int id : branch.branches)
         {
@@ -99,6 +121,11 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
             if (!b.joints.empty())
                 v.packed_branch_to_model(b, &model, true, up_to_level);
         }
+      for (int i=verts;i<model.colors.size();i+=4)
+      {
+        model.colors[i] = (model.colors[i] + w_tc_trans.z)*w_tc_trans.x;
+        model.colors[i + 1] = (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
+      }
     }
     uint l_end = model.indices.size();
     l_verts = model.positions.size();
@@ -144,11 +171,15 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   std::wstring permanent_tex_dir = L"../../../../resources/textures/";
   std::string base_dir = "../../../../";
   std::wstring temp_tex_dir = L"../../../../saves/";
-  HRTextureNodeRef texWood = hrTexture2DCreateFromFile(L"data/textures/wood.jpg");
-  HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(L"data/textures/leaf.png");
-  std::wstring g = temp_tex_dir + L"grass_atlas.png";
+  std::wstring g;
+  g = temp_tex_dir + L"wood_atlas.png";
+  HRTextureNodeRef texWood = hrTexture2DCreateFromFile(g.c_str());
+  g = temp_tex_dir + L"leaves_atlas.png";
+  HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(g.c_str());
+  g = temp_tex_dir + L"grass_atlas.png";
   HRTextureNodeRef texGrass = hrTexture2DCreateFromFile(g.c_str());
-  HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(L"data/textures/leaf_opacity.png");
+  g = temp_tex_dir + L"leaves_atlas_alpha.png";
+  HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(g.c_str());
   g = temp_tex_dir + L"grass_atlas_alpha.png";
   HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(g.c_str());
   HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
@@ -444,8 +475,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-3.6 20 -55.2");
-    camNode.append_child(L"look_at").text().set(L"0 0 0");
+    camNode.append_child(L"position").text().set(L"50 30 50");
+    camNode.append_child(L"look_at").text().set(L"0 20 0");
   
     VERIFY_XML(camNode);
   }

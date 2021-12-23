@@ -686,6 +686,8 @@ void SceneGenerator::generate_grove()
       delete c.voxels_small;
     }
   }
+
+  packer.prepare_grove_atlas(ctx.scene->grove, 512, 512, true, true, true);
 }
 
 void GenerationJob::prepare_dependencies()

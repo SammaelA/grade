@@ -257,9 +257,9 @@ int parser_main(int argc, char *argv[])
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
-      int b_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
-      int l_id = metainfoManager.get_tree_type_id_by_name("fast_simple_tree");
+      int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
+      int b_id = metainfoManager.get_tree_type_id_by_name("small_oak");
+      int l_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
       logerr("lid = %d %d %d", t_id, b_id, l_id);
       int ids[3] = {t_id, b_id, l_id};
       for (int i=0;i<sz;i++)
@@ -268,8 +268,8 @@ int parser_main(int argc, char *argv[])
         {
           if (cnt < demo_mode_trees_cnt)
           {
-            float tx = dist*(j - sz/2 + urand());
-            float ty = dist*(i - sz/2 + urand());
+            float tx = dist*(j - sz/2 + 0*urand());
+            float ty = dist*(i - sz/2 + 0*urand());
             sceneGen.plant_tree(glm::vec2(tx,ty), ids[cnt % 3]);
             cnt++;
           }

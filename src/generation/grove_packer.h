@@ -38,6 +38,8 @@ public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                             bool visualize_clusters = false, bool save_cluster_data = false);
     void init(Block &packing_params_block);
+    void prepare_grove_atlas(GrovePacked &grove, int tex_x, int tex_y, bool save_atlases, bool save_png, 
+                             bool alpha_tex_needed);
     GrovePacker() = default;
     explicit GrovePacker(bool shared_ctx);
     ClusteringStrategy get_clustering_strategy() { return cStrategy; }

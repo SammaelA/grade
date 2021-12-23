@@ -17,6 +17,7 @@
 #include "clustering/default_clustering_params.h"
 #include "clustering/clustering_debug_utils.h"
 #include "clustering/clustering_debug_status.h"
+#include "metainfo_manager.h"
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -651,4 +652,122 @@ void GrovePacker::init()
     BlkManager man;
     man.load_block_from_file("settings.blk",settings_block);  
     base_init(); 
+}
+
+void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, bool save_atlases, bool save_png, 
+                                      bool alpha_tex_needed)
+{
+    auto &atl = grove.groveTexturesAtlas;
+    std::vector<Texture> unique_wood_texs;
+    std::vector<Texture> unique_leaves_texs;
+    std::vector<bool> ids_found = std::vector<bool>(1024, false);
+    for (auto &ib : grove.instancedBranches)
+    {
+        for (int &tid : ib.IDA.type_ids)
+        {
+            if (!ids_found[tid])
+            {
+                ids_found[tid] = true;
+                auto &type = metainfoManager.get_tree_type(tid);
+                int w_tex_n = unique_wood_texs.size();
+                for (int i=0;i<unique_wood_texs.size();i++)
+                {
+                    if (unique_wood_texs[i].texture == type.wood.texture)
+                    {
+                        w_tex_n = i;
+                        break;
+                    }
+                }
+                if (w_tex_n == unique_wood_texs.size())
+                    unique_wood_texs.push_back(type.wood);
+
+                int l_tex_n = unique_leaves_texs.size();
+                for (int i=0;i<unique_leaves_texs.size();i++)
+                {
+                    if (unique_leaves_texs[i].texture == type.leaf.texture)
+                    {
+                        l_tex_n = i;
+                        break;
+                    }
+                }
+                if (l_tex_n == unique_leaves_texs.size())
+                    unique_leaves_texs.push_back(type.leaf);
+
+                atl.wood_tex_map.emplace(tid, w_tex_n);
+                atl.leaves_tex_map.emplace(tid, l_tex_n);
+            }
+        }
+    }
+    atl.maps_valid = true;
+    atl.atlases_valid = save_atlases;
+    atl.woodAtlas = new TextureAtlas(tex_w, tex_h*unique_wood_texs.size(), 1);
+    atl.woodAtlas->set_grid(tex_w, tex_h, false);
+    atl.leavesAtlas = new TextureAtlas(tex_w, tex_h*unique_leaves_texs.size(), 1);
+    atl.leavesAtlas->set_grid(tex_w, tex_h, false);
+
+    PostFx copy = PostFx("copy.fs");
+
+    for (int i=0;i<unique_wood_texs.size();i++)
+    {
+        int tex_id = atl.woodAtlas->add_tex();
+        atl.woodAtlas->target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex",unique_wood_texs[i]);
+        copy.render();
+        for (auto &p : atl.wood_tex_map)
+        {
+            if (p.second == i)
+                p.second = tex_id;
+        }
+    }
+
+    if (save_png)
+        textureManager.save_png(atl.woodAtlas->tex(0),"wood_atlas");
+    if (save_atlases)
+        atl.woodAtlas->gen_mipmaps();
+    else
+    {
+        delete atl.woodAtlas;
+        atl.leavesAtlas = nullptr;
+    }
+
+    for (int i=0;i<unique_leaves_texs.size();i++)
+    {
+        int tex_id = atl.leavesAtlas->add_tex();
+        atl.leavesAtlas->target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex",unique_leaves_texs[i]);
+        copy.render();
+        for (auto &p : atl.leaves_tex_map)
+        {
+            if (p.second == i)
+                p.second = tex_id;
+        }
+    }
+
+    if (save_png)
+        textureManager.save_png(atl.leavesAtlas->tex(0),"leaves_atlas");
+    if (alpha_tex_needed)
+    {
+        PostFx copy_alpha = PostFx("alpha_split_alpha.fs");
+        TextureAtlas atl_alpha = TextureAtlas(tex_w, tex_h*unique_leaves_texs.size(), 1);
+        atl_alpha.set_grid(tex_w, tex_h, false);
+
+        for (int i=0;i<unique_leaves_texs.size();i++)
+        {
+            int tex_id = atl_alpha.add_tex();
+            atl_alpha.target_slice(tex_id, 0);
+            copy_alpha.use();
+            copy_alpha.get_shader().texture("tex",unique_leaves_texs[i]);
+            copy_alpha.render();
+        }
+        textureManager.save_png(atl_alpha.tex(0),"leaves_atlas_alpha");
+    }
+    if (save_atlases)
+        atl.leavesAtlas->gen_mipmaps();
+    else
+    {
+        delete atl.leavesAtlas;
+        atl.leavesAtlas = nullptr;
+    }
 }

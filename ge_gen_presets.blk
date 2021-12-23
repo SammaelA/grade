@@ -1,11 +1,12 @@
 {
     bush
     {
-        wood_tex_name:s = "wood3"
-        leaf_tex_name:s = "leaf3"
+        wood_tex_name:s = "wood2"
+        leaf_tex_name:s = "leaf"
         res_q:r = 1.0
         root_type:i = 2
-        Xm:r = 53
+        Xm:r = 25
+        resource_mult:r = 3.0
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
         r_s:r = 0.0

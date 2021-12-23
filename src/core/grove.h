@@ -62,6 +62,16 @@ struct InstancedBranch
     InstanceDataArrays IDA;
     BBox bbox;
 };
+
+struct GroveTexturesAtlas
+{
+    bool atlases_valid = false;
+    bool maps_valid = false;
+    TextureAtlas *woodAtlas = nullptr;
+    std::map<int, int> wood_tex_map;//<type_id, tex n in atlas> 
+    TextureAtlas *leavesAtlas = nullptr;
+    std::map<int, int> leaves_tex_map;
+};
 struct GrovePacked
 {
     glm::vec3 center;
@@ -71,5 +81,7 @@ struct GrovePacked
     std::list<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
     std::vector<ImpostorsData> impostors;
+
+    GroveTexturesAtlas groveTexturesAtlas;
     GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
 };
