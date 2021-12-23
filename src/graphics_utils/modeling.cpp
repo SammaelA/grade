@@ -41,37 +41,40 @@ void Visualizer::leaf_to_model(Leaf &l, Model *m, float scale)
 }
 void Visualizer::packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw)
 {
-    if (l.edges.size() < 4)
+    if (l.edges.size() % 4 || l.edges.empty())
     {
         return;
     }
-    glm::vec3 a = l.edges[0];
-    glm::vec3 b = l.edges[1];
-    glm::vec3 c = l.edges[2];
-    glm::vec3 n = glm::normalize(glm::cross(a - b, c - b));
-    std::vector<float> tex_c{0, 0, 0, 1, 1, 1, 1, 0};
-    int _b = m->positions.size() / 3;
-    for (int i = 0; i < 4; i++)
+    for (int start_n = 0;start_n < l.edges.size();start_n += 4)
     {
-        glm::vec3 v = l.edges[i];
-        m->positions.push_back(v.x);
-        m->positions.push_back(v.y);
-        m->positions.push_back(v.z);
-        m->normals.push_back(n.x);
-        m->normals.push_back(n.y);
-        m->normals.push_back(n.z);
-        m->colors.push_back(tex_c[2 * i]);
-        m->colors.push_back(tex_c[2 * i + 1]);
-        m->colors.push_back(tc_zw.x);
-        m->colors.push_back(tc_zw.y);
-    }
+        glm::vec3 a = l.edges[start_n + 0];
+        glm::vec3 b = l.edges[start_n + 1];
+        glm::vec3 c = l.edges[start_n + 2];
+        glm::vec3 n = glm::normalize(glm::cross(a - b, c - b));
+        std::vector<float> tex_c{0, 0, 0, 1, 1, 1, 1, 0};
+        int _b = m->positions.size() / 3;
+        for (int i = 0; i < 4; i++)
+        {
+            glm::vec3 v = l.edges[start_n + i];
+            m->positions.push_back(v.x);
+            m->positions.push_back(v.y);
+            m->positions.push_back(v.z);
+            m->normals.push_back(n.x);
+            m->normals.push_back(n.y);
+            m->normals.push_back(n.z);
+            m->colors.push_back(tex_c[2 * i]);
+            m->colors.push_back(tex_c[2 * i + 1]);
+            m->colors.push_back(tc_zw.x);
+            m->colors.push_back(tc_zw.y);
+        }
 
-    m->indices.push_back(_b);
-    m->indices.push_back(_b + 1);
-    m->indices.push_back(_b + 2);
-    m->indices.push_back(_b + 2);
-    m->indices.push_back(_b + 3);
-    m->indices.push_back(_b);
+        m->indices.push_back(_b);
+        m->indices.push_back(_b + 1);
+        m->indices.push_back(_b + 2);
+        m->indices.push_back(_b + 2);
+        m->indices.push_back(_b + 3);
+        m->indices.push_back(_b);
+    }
 }
 void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
                           float rel_ring_pos, std::vector<float> &mults, glm::vec3 p)

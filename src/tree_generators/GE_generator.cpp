@@ -172,24 +172,30 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
         //min_pos = min(min_pos, j.pos);
         //max_pos = max(max_pos, j.pos);
         if (j.childBranches.empty() && b.level >= level_from && params.leaves_cnt > 0 &&
-            j.r < params.base_r * params.leaves_max_r &&
-            urand() < params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos))))
+            j.r < params.base_r * params.leaves_max_r)
         {
-            glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_a, params.leaves_angle_a), 
-                                           urand(-1, 1)));
-            glm::vec3 rd2 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_b, params.leaves_angle_b),
-                                           urand(-1, 1)));
-            float sz = params.ro * params.leaf_size_mult;
-            glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
-            glm::vec3 b = j.pos + 0.5f * sz * rd2;
-            glm::vec3 c = j.pos - 0.5f * sz * rd2;
-            glm::vec3 d = j.pos + sz * rd1 - 0.5f * sz * rd2;
+            float f_leaves_cnt = params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos)));
+            int l_cnt = f_leaves_cnt;
+            if (urand() < (f_leaves_cnt - l_cnt))
+                l_cnt++;
+            for (int i=0;i<l_cnt;i++)
+            {
+                glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_a, params.leaves_angle_a), 
+                                            urand(-1, 1)));
+                glm::vec3 rd2 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_b, params.leaves_angle_b),
+                                            urand(-1, 1)));
+                float sz = params.ro * params.leaf_size_mult;
+                glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
+                glm::vec3 b = j.pos + 0.5f * sz * rd2;
+                glm::vec3 c = j.pos - 0.5f * sz * rd2;
+                glm::vec3 d = j.pos + sz * rd1 - 0.5f * sz * rd2;
 
-            j.leaf.pos = j.pos;
-            j.leaf.edges.push_back(a);
-            j.leaf.edges.push_back(b);
-            j.leaf.edges.push_back(c);
-            j.leaf.edges.push_back(d);
+                j.leaf.pos = j.pos;
+                j.leaf.edges.push_back(a);
+                j.leaf.edges.push_back(b);
+                j.leaf.edges.push_back(c);
+                j.leaf.edges.push_back(d);
+            }
         }
         for (Branch &br : j.childBranches)
         {
