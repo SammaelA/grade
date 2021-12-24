@@ -100,11 +100,11 @@ float f_perlin(float x, float y)
         h = _h;
         pos = _pos;
 
-        data = safe_new<float>((2*w + 1)*(2*h + 1),"field_2d_data");
+        data = new float[(2*w + 1)*(2*h + 1)];
     }
     Field_2d::~Field_2d()
     {
-        safe_delete<float>(data,"field_2d_data");
+        delete[] data;
     }
     float Field_2d::get(int x, int y)
     {

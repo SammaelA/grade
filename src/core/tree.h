@@ -57,7 +57,7 @@ struct Leaf
     std::vector<glm::vec3> edges;
     ushort type;
 };
-struct LeafHeap : Countable
+struct LeafHeap
 {
     std::list<Leaf> leaves;
     Leaf *new_leaf()
@@ -70,14 +70,14 @@ struct LeafHeap : Countable
     {
         leaves.clear();
     }
-    LeafHeap():Countable(7){};
+    LeafHeap(){};
     LeafHeap& operator=(LeafHeap&&h)
     {
         leaves = std::move(h.leaves);
     }
 
 };
-struct BranchHeap : Countable
+struct BranchHeap
 {
     std::list<Branch> branches;
     Branch *new_branch()
@@ -85,7 +85,7 @@ struct BranchHeap : Countable
         branches.push_back(Branch());
         return &branches.back();
     }
-    BranchHeap():Countable(8){};
+    BranchHeap(){};
     BranchHeap& operator=(BranchHeap&&h)
     {
         branches = std::move(h.branches);

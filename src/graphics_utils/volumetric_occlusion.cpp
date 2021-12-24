@@ -5,11 +5,12 @@
 #include "common_utils/distribution.h"
 #include "common_utils/sun.h"
 #include <chrono>
+#include <atomic>
 
 using namespace glm;
 
-int sum_memory = 0;
-int sum_allocs = 1;
+std::atomic<int> sum_memory(0);
+std::atomic<int> sum_allocs(1);
 glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
 {
     return glm::ivec3(MAX(1,sizes.x/voxel_size),MAX(1,sizes.y/voxel_size),MAX(1,sizes.z/voxel_size));
@@ -43,7 +44,6 @@ LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size /
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
 }
 LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size, int _mip_levels, int _mip_decrease):
-Countable(9),
 voxel_size(vox_size)
 {
     center = cent;
@@ -73,10 +73,10 @@ voxel_size(vox_size)
         mip_size_decrease.push_back(decrease);
         count+= mip_x*mip_y*mip_z;
     }
-    voxels = safe_new<float>(count,"voxels");
+    voxels = new float[count];
     std::fill(voxels,voxels+count,0);
-    sum_memory += count*sizeof(float);
-    sum_allocs++;
+    sum_memory.fetch_add(count*sizeof(float));
+    sum_allocs.fetch_add(1);
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source):
 LightVoxelsCube(source,
@@ -229,9 +229,9 @@ void LightVoxelsCube::clear()
     if (voxels)
     {
         int count = (2 * vox_x + 1) * (2 * vox_y + 1) * (2 * vox_z + 1);
-        sum_memory -= count*sizeof(float);
-        sum_allocs--;
-        safe_delete<float>(voxels, "voxels");
+        sum_memory.fetch_add(-count*sizeof(float));
+        sum_allocs.fetch_add(-1);
+        delete[] voxels;
         voxels = nullptr;
     }
 }
@@ -1013,7 +1013,7 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     const float BIAS = 0.01;
     float step = 2*PI/rays_sqrt;
     float r_step = 0.75*voxel_size;
-    float *occlusions = safe_new<float>(rays_sqrt*rays_sqrt, "dir_to_bright_place_occlusions"); 
+    float *occlusions = new float[rays_sqrt*rays_sqrt];
     for (int i=0;i<rays_sqrt*rays_sqrt;i++)
     {
         occlusions[i] = 0;
@@ -1053,7 +1053,8 @@ glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float leng
     float z = sinf(psi);
 
     *occlusion = mo;
-    safe_delete<float>(occlusions, "dir_to_bright_place_occlusions");
+    if (occlusions)
+        delete[] occlusions;
     return glm::vec3(x,y,z);
 }
 

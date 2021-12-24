@@ -7,6 +7,8 @@
 #include "common_utils/octree.h"
 #include <vector>
 #include <list>
+#include <atomic>
+
 struct GETreeParameters : public ParametersSet
 {
     float lambda = 0.52;
@@ -54,7 +56,7 @@ struct GETreeParameters : public ParametersSet
         if (root_type == 0 || root_type == 2)
             return ro*glm::vec3(1.5*Xm, Xm, 1.5*Xm);
         else if (root_type == 1)
-            return ro*glm::vec3(0.6*Xm, 1.25*Xm, 0.6*Xm);
+            return ro*glm::vec3(0.6*Xm, 1.25*Xm + 30, 0.6*Xm);
         else 
             return ro*glm::vec3(2.0f*Xm, 1.5f*Xm, 2.0f*Xm);
     }
@@ -154,7 +156,8 @@ public:
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual bool iteration_method_implemented() override {return true;}
 private:
-    static int iteration, ids, t_ids;
+    static std::atomic<int> ids, t_ids;
+    int iteration = 0;
     static GETreeParameters defaultParameters;
     struct Joint;
     struct Leaf; 
@@ -174,10 +177,10 @@ private:
         float base_r;
         glm::vec2 average_chb_dir = glm::vec2(0,0);
         Branch(){};
-        Branch(int _level, glm::vec3 start_pos)
+        Branch(int _level, glm::vec3 start_pos, int iteration)
         {
             level = _level;
-            joints = {Joint(start_pos,0,false)};
+            joints = {Joint(start_pos,0,iteration,false)};
         }
     };
 
@@ -197,7 +200,7 @@ private:
         float light = 0;
         float resource = 0;
         bool can_have_child_branches;
-        Joint(glm::vec3 _pos, float _r, bool ch_b = true) 
+        Joint(glm::vec3 _pos, float _r, int iteration, bool ch_b) 
         {
             birth_time = iteration;
             pos = _pos; 

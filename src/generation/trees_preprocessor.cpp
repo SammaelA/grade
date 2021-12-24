@@ -2,15 +2,15 @@
 
 using namespace glm;
 
-int prev_count = 0;
-int new_count = 0;
-int t1 = 0;
-int t2 = 0;
-int t3 = 0;
-int t4 = 0;
-
 void TreePreprocessor::preprocess_tree(Tree &t, Block &preprocessing_params)
 {
+    prev_count = 0;
+    new_count = 0;
+    t1 = 0;
+    t2 = 0;
+    t3 = 0;
+    t4 = 0;
+
     int max_merge_n = preprocessing_params.get_int("max_merge_n",12);
     simplify_branch_rec(t, t.root, max_merge_n);
     t.leaves->clear_removed();

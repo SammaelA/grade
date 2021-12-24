@@ -338,7 +338,7 @@ void SceneGenerator::create_heightmap_simple_auto()
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   ctx.scene->heightmap = new Heightmap(ctx.center3, ctx.heightmap_size,ctx.hmap_pixel_size);
-  ctx.scene->heightmap->load_from_image(0,-100,150,"heightmap1.jpg");
+  ctx.scene->heightmap->load_from_image(0,0,40,"heightmap1.jpg");
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   debug("created heightmap. Took %.2f ms\n", ms);
@@ -849,9 +849,14 @@ void GenerationJob::generate()
     remove_unused_borders();
     //logerr("finished generating cell %d", c_id);
   }
-
+  int tries = 0;
+  int max_tries = 100;
   while (!remove_unused_borders())
-    std::this_thread::yield();
+  {
+    tries = MIN(tries + 1, max_tries);
+    for (int t=0;t<tries;t++)
+      std::this_thread::yield();
+  }
   if (grass_needed)
   {
     auto it = waiting_cells.begin();
@@ -926,8 +931,8 @@ bool GenerationJob::remove_unused_borders()
         delete cells[*it].voxels_small;
 
       cells[*it].voxels_small = nullptr;
-      it = border_cells.erase(it);
       cells[*it].cell_lock.unlock();
+      it = border_cells.erase(it);
     }
     else
     {

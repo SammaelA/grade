@@ -7,7 +7,7 @@
 #include "tinyEngine/model.h"
 #include "tinyEngine/shader.h"
 #include <vector>
-struct LightVoxelsCube : public Countable
+struct LightVoxelsCube
 {
 public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);
