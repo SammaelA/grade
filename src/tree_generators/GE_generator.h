@@ -54,7 +54,7 @@ struct GETreeParameters : public ParametersSet
     virtual glm::vec3 get_tree_max_size() override
     {
         if (root_type == 0 || root_type == 2)
-            return ro*glm::vec3(1.5*Xm, Xm, 1.5*Xm);
+            return ro*glm::vec3(1.5*Xm, Xm + 30, 1.5*Xm);
         else if (root_type == 1)
             return ro*glm::vec3(0.6*Xm, 1.25*Xm + 30, 0.6*Xm);
         else 

@@ -2,33 +2,53 @@
     bush
     {
         wood_tex_name:s = "wood2"
+        leaf_tex_name:s = "leaf3"
+        res_q:r = 0.75
+        root_type:i = 0
+        Xm:r = 35
+        resource_mult:r = 3.0
+        branching_angle_max:r = 4.0
+        branching_angle_min:r = 3.0
+        r_s:r = 0.0
+        r:r = 0.3
+        mu:r = 0.5
+        leaves_cnt:r = 2.25
+        tropism_params:p4 = 1, -1, 0.06, 1.5
+        remove_min_level:i = 2
+        resource_mult:r = 4
+    }
+    flat_bush
+    {
+        wood_tex_name:s = "wood2"
+        leaf_tex_name:s = "leaf"
+        res_q:r = 1.0
+        root_type:i = 0
+        Xm:r = 25
+        resource_mult:r = 3.0
+        branching_angle_max:r = 4.0
+        branching_angle_min:r = 3.0
+        r_s:r = 0.0
+        r:r = 0.3
+        mu:r = 1.0
+        remove_min_level:i = 1000
+        leaves_cnt:r = 1.0
+        tropism_params:p4 = -0.5, -1, 0.05, 1.0
+    }
+    small_bush
+    {
+        wood_tex_name:s = "wood2"
         leaf_tex_name:s = "leaf"
         res_q:r = 1.0
         root_type:i = 2
         Xm:r = 25
-        resource_mult:r = 3.0
         branching_angle_max:r = 4.0
-        branching_angle_min:r = 2.0
+        branching_angle_min:r = 3.0
         r_s:r = 0.0
         r:r = 0.3
         mu:r = 1.0
         remove_min_level:i = 1000
         leaves_cnt:r = 1.0
-    }
-    small_bush
-    {
-        wood_tex_name:s = "wood3"
-        leaf_tex_name:s = "leaf3"
-        res_q:r = 1.0
-        root_type:i = 2
-        Xm:r = 25
-        branching_angle_max:r = 4.0
-        branching_angle_min:r = 2.0
-        r_s:r = 0.0
-        r:r = 0.3
-        mu:r = 1.0
-        remove_min_level:i = 1000
-        leaves_cnt:r = 1.0
+        tropism_params:p4 = -0.5, -1, 0.05, 1.0
     }
     meadow_bush
     {

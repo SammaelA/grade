@@ -6,6 +6,7 @@
     leaf1:s = "leaf1.png"
     leaf2:s = "leaf6.png"
     leaf3:s = "leaf5.png"
+    leaf4:s = "leaf4.png"
     leaf:s = "leaf6.png"
     wood:s = "wood1.jpg"
     wood2:s = "wood2.jpg"
