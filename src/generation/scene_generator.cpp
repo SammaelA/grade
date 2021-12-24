@@ -338,7 +338,7 @@ void SceneGenerator::create_heightmap_simple_auto()
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   ctx.scene->heightmap = new Heightmap(ctx.center3, ctx.heightmap_size,ctx.hmap_pixel_size);
-  ctx.scene->heightmap->random_generate(0,0,40);
+  ctx.scene->heightmap->load_from_image(0,-100,150,"heightmap1.jpg");
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   debug("created heightmap. Took %.2f ms\n", ms);

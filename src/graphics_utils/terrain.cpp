@@ -4,6 +4,8 @@
 #include "tinyEngine/camera.h"
 #include "graphics_utils/texture_manager.h"
 #include "common_utils/bbox.h"
+#include "third_party/stb_image.h"
+#include "tinyEngine/image.h"
 
     Heightmap::Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size):
     Field_2d(pos, size, cell_size)
@@ -49,6 +51,33 @@
     void Heightmap::random_generate(float base, float min, float max)
     {
       fill_perlin(base,min,max);
+    }
+    void Heightmap::load_from_image(float base, float min, float max, std::string texture_name)
+    {
+        base_val = base;
+        min_val = base;
+        max_val = base;
+        int image_w = 0, image_h = 0, channels = 0;
+        std::string filename = image::base_img_path + texture_name;
+        auto *image_data = stbi_load(filename.c_str(), &image_w, &image_h, &channels, 3);
+        if (!data || !image_data || !w || !h || !channels)
+            return;
+        for (int i = -w; i <= w; i++)
+        {
+            for (int j = -h; j <= h; j++)
+            {
+                glm::vec2 rp = glm::vec2(image_w*((float)(i + w)/(2*w + 1)), image_h*((float)(j + h)/(2*h + 1)));
+                glm::ivec2 ps = rp;
+                #define GET_F(a,b) (image_data[channels * (CLAMP(b,0,image_h-1) * image_w + CLAMP(a,0,image_w-1)) + 0]/255.0)
+                float dx = rp.x - ps.x;
+                float dy = rp.y - ps.y;
+                float height = (dx*GET_F(ps.x, ps.y) + (1 - dx)*GET_F(ps.x + 1, ps.y))*(1 - dy) + 
+                               (dx*GET_F(ps.x, ps.y + 1) + (1 - dx)*GET_F(ps.x + 1, ps.y + 1))*dy; 
+
+                height = min + (max - min)*height;
+                set(i,j,height);
+            }
+        }
     }
     glm::vec2 Heightmap::get_grad(glm::vec3 position)
     {
