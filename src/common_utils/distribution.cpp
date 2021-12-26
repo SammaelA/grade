@@ -153,3 +153,11 @@ double DiscreteGeneral::get()
 double *DiscreteGeneral::get_series(unsigned size)
 {
 }
+glm::vec3 rand_dir()
+{
+    glm::vec3 dir;
+    dir.x = urand(-1,1);
+    dir.y = urand(-1,1);
+    dir.z = urand(-1,1);
+    return normalize(dir);
+}

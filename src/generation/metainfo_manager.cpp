@@ -3,6 +3,7 @@
 #include "tree_generators/GE_generator.h"
 #include "tree_generators/mygen_parameters.h"
 #include "tree_generators/simple_generator.h"
+#include "tree_generators/simpliest_generator.h"
 
 MetainfoManager metainfoManager;
 TreeTypeData dummy1;
@@ -13,10 +14,11 @@ void MetainfoManager::load_tree_types()
 {
     int id = 0;
     BlkManager man;
-    Block ge_gen_types, my_gen_types, simple_gen_types;
+    Block ge_gen_types, my_gen_types, simple_gen_types, simpliest_gen_types;
     man.load_block_from_file("ge_gen_presets.blk", ge_gen_types);
     man.load_block_from_file("my_gen_presets.blk", my_gen_types);
     man.load_block_from_file("simple_gen_presets.blk", simple_gen_types);
+    man.load_block_from_file("simpliest_gen_presets.blk", simpliest_gen_types);
 
     for (int i = 0; i < ge_gen_types.size(); i++)
     {
@@ -70,7 +72,27 @@ void MetainfoManager::load_tree_types()
             params->load_from_blk(*bl);
             TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
             type.generator_name = "simple";
-            logerr("loaded simple type %s", name.c_str());
+
+            type.type_id = tree_types.size();
+            tree_type_id_by_name.emplace(name, tree_types.size());
+            tree_types.push_back(type);
+            id++;
+        }
+    }
+        
+    for (int i = 0; i < simpliest_gen_types.size(); i++)
+    {
+        Block *bl = simpliest_gen_types.get_block(i);
+        if (bl)
+        {
+            std::string name = simpliest_gen_types.get_name(i);
+            std::string wood_tex_name = bl->get_string("wood_tex_name", "wood");
+            std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf");
+            SimpliestTreeStructureParameters *params = new SimpliestTreeStructureParameters();
+            params->load_from_blk(*bl);
+            TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
+            type.generator_name = "simpliest";
+            logerr("loaded simpliest type %s", name.c_str());
 
             type.type_id = tree_types.size();
             tree_type_id_by_name.emplace(name, tree_types.size());

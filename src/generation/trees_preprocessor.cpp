@@ -59,7 +59,7 @@ void TreePreprocessor::simplify_branch_rec(Tree &t, Branch *b, int max_merge_n)
             vec3 dir = last_dir;
             if (next_sit != b->segments.end())
                 dir = normalize(next_sit->end - sit->begin);
-            if (!it->childBranches.empty()) //has child branches
+            if (!it->childBranches.empty() || it->leaf) //has child branches
             {
                 useful = true;
                 t1++;

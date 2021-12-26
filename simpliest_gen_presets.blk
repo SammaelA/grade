@@ -1,0 +1,6 @@
+{
+    simpliest_tree_default
+    {
+        branch_angle:arr = { 1.1, 1.1, 1.1, 1.5}
+    }
+}

@@ -3,6 +3,7 @@
 #include "tree_generators/python_tree_gen.h"
 #include "tree_generators/weber_penn_parameters.h"
 #include "tree_generators/simple_generator.h"
+#include "tree_generators/simpliest_generator.h"
 #include "tree_generators/proctree.h"
 #include "tree_generators/generated_tree.h"
 #include "generation/grove_generation_utils.h"
@@ -18,6 +19,8 @@ AbstractTreeGenerator *GroveGenerator::get_generator(std::string &generator_name
         gen = new Proctree::ProctreeGenerator();
     else if (generator_name == "simple")
         gen = new SimpleTreeGenerator();
+    else if (generator_name == "simpliest")
+        gen = new SimpliestTreeGenerator();
     else if (generator_name == "load_from_file")
         gen = new TreeLoaderBlk();
     else if (generator_name == "python_tree_gen")

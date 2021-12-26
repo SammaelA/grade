@@ -2,15 +2,6 @@
 
 using namespace glm;
 
-vec3 rand_dir()
-{
-    vec3 dir;
-    dir.x = urand(-1,1);
-    dir.y = urand(-1,1);
-    dir.z = urand(-1,1);
-    return normalize(dir);
-}
-
 int ids = 0;
 int t_ids = 0;
 
