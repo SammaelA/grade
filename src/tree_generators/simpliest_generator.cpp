@@ -38,6 +38,8 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
 
         create_tree(trees_external + i, pos, *params);
     }
+    tree_positions.clear();
+    types.clear();
 }
 
 void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStructureParameters &params)
@@ -169,4 +171,80 @@ void SimpliestTreeStructureParameters::load_from_blk(Block &b)
     max_depth = b.get_int("max_depth",max_depth);
     leaves_count = b.get_double("leaves_count",leaves_count);
     leaf_size = b.get_double("leaf_size",leaf_size);
+}
+
+void SimpliestTreeStructureParameters::write_parameter_list(ParameterList &list)
+{
+    /*    int max_depth = 4;
+    std::vector<float> branch_len = {60,20,12,7};
+    std::vector<float> branch_r = {1.75,0.75,0.2, 0.075};
+    std::vector<float> branch_angle = {PI/6, PI/6, PI/4, PI/4};
+    std::vector<int> branch_count = {20,10,8,10};
+    std::vector<float> branching_start = {0.5,0.0,0,0};
+    float leaves_count = 0.75;
+    float leaf_size = 3;*/
+    list.ordinalParameters.emplace("max_depth",max_depth);
+
+    list.continuousParameters.emplace("branch_len_0",branch_len[0]);
+    list.continuousParameters.emplace("branch_len_1",branch_len[1]);
+    list.continuousParameters.emplace("branch_len_2",branch_len[2]);
+    list.continuousParameters.emplace("branch_len_3",branch_len[3]);
+
+    list.continuousParameters.emplace("branch_r_0",branch_r[0]);
+    list.continuousParameters.emplace("branch_r_1",branch_r[1]);
+    list.continuousParameters.emplace("branch_r_2",branch_r[2]);
+    list.continuousParameters.emplace("branch_r_3",branch_r[3]);
+
+    list.continuousParameters.emplace("branch_angle_0",branch_angle[0]);
+    list.continuousParameters.emplace("branch_angle_1",branch_angle[1]);
+    list.continuousParameters.emplace("branch_angle_2",branch_angle[2]);
+    list.continuousParameters.emplace("branch_angle_3",branch_angle[3]);
+
+    list.continuousParameters.emplace("branch_count_0",branch_count[0]);
+    list.continuousParameters.emplace("branch_count_1",branch_count[1]);
+    list.continuousParameters.emplace("branch_count_2",branch_count[2]);
+    list.continuousParameters.emplace("branch_count_3",branch_count[3]);
+
+    list.continuousParameters.emplace("branching_start_0",branching_start[0]);
+    list.continuousParameters.emplace("branching_start_1",branching_start[1]);
+    list.continuousParameters.emplace("branching_start_2",branching_start[2]);
+    list.continuousParameters.emplace("branching_start_3",branching_start[3]);
+
+    list.continuousParameters.emplace("leaves_count",leaves_count);
+    list.continuousParameters.emplace("leaf_size",leaf_size);
+
+    list.print();
+}
+
+void SimpliestTreeStructureParameters::read_parameter_list(ParameterList &list)
+{
+    max_depth = list.ordinalParameters.at("max_depth");
+
+    branch_len[0] = list.continuousParameters.at("branch_len_0");
+    branch_len[1] = list.continuousParameters.at("branch_len_1");
+    branch_len[2] = list.continuousParameters.at("branch_len_2");
+    branch_len[3] = list.continuousParameters.at("branch_len_3");
+    
+    branch_r[0] = list.continuousParameters.at("branch_r_0");
+    branch_r[1] = list.continuousParameters.at("branch_r_1");
+    branch_r[2] = list.continuousParameters.at("branch_r_2");
+    branch_r[3] = list.continuousParameters.at("branch_r_3");
+
+    branch_angle[0] = list.continuousParameters.at("branch_angle_0");
+    branch_angle[1] = list.continuousParameters.at("branch_angle_1");
+    branch_angle[2] = list.continuousParameters.at("branch_angle_2");
+    branch_angle[3] = list.continuousParameters.at("branch_angle_3");
+
+    branch_count[0] = list.continuousParameters.at("branch_count_0");
+    branch_count[1] = list.continuousParameters.at("branch_count_1");
+    branch_count[2] = list.continuousParameters.at("branch_count_2");
+    branch_count[3] = list.continuousParameters.at("branch_count_3");
+
+    branching_start[0] = list.continuousParameters.at("branching_start_0");
+    branching_start[1] = list.continuousParameters.at("branching_start_1");
+    branching_start[2] = list.continuousParameters.at("branching_start_2");
+    branching_start[3] = list.continuousParameters.at("branching_start_3");
+
+    leaves_count = list.continuousParameters.at("leaves_count");
+    leaf_size = list.continuousParameters.at("leaf_size");
 }

@@ -24,7 +24,7 @@ void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, C
     }
     if (!data->atlas.is_valid())
     {
-        AtlasParams params = set_atlas_params(quality, (slices_n + 1)*4);
+        AtlasParams params = set_atlas_params(quality, (slices_n + 1));
         int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
         TextureAtlas a = TextureAtlas(params.x,params.y,params.layers);
         data->atlas = a;

@@ -1,6 +1,9 @@
 {
     simpliest_tree_default
     {
+    }
+    simpliest_tree_test
+    {
         branch_angle:arr = { 1.1, 1.1, 1.1, 1.5}
     }
 }

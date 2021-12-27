@@ -212,3 +212,39 @@ void ParametersSet::load_from_blk(Block &b)
                                     normal_part,rl,nullptr,nullptr);
     }
 }
+
+void ParameterList::print()
+{
+    debug("====Parameter List===\n");
+    debug("Categorials:\n");
+    for (auto &p : categorialParameters)
+    {
+        if(p.second.fixed())
+        {
+            debug("%s = %d\n", p.first.c_str(), p.second.val);
+        }
+        else
+        {
+            debug("%s = %d in {", p.first.c_str(), p.second.val);  
+            for (auto &v : p.second.possible_values)
+                debug("%d ", v);
+            debug("}\n");         
+        }
+    }
+    debug("Ordinals:\n");
+    for (auto &p : ordinalParameters)
+    {
+        if(p.second.fixed())
+            debug("%s = %d\n", p.first.c_str(), p.second.val);
+        else
+            debug("%s = %d in [%d %d]\n", p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);        
+    }
+    debug("Continuous:\n");
+    for (auto &p : continuousParameters)
+    {
+        if(p.second.fixed())
+            debug("%s = %.2f\n", p.first.c_str(), p.second.val);
+        else
+            debug("%s = %.2f in [%.2f %.2f]\n", p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);        
+    }
+}

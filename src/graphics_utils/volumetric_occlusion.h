@@ -19,6 +19,7 @@ public:
                     glm::vec2 min_max);
     ~LightVoxelsCube();
     void clear();
+    void fill(float val);
     void replace_occluder_voxel(glm::ivec3 voxel, float strength);
     void set_occluder_voxel(glm::ivec3 voxel, float strength);
     void set_occluder_voxel_mip(glm::ivec3 voxel, float strenght, int mip);

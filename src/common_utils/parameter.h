@@ -22,6 +22,7 @@ enum ParameterVariablesSet
 };
 struct ParametersSet;
 struct WeberPennParameters;
+struct ParameterList;
 template <typename T>
 class Parameter
 {
@@ -349,4 +350,64 @@ struct ParametersSet
     virtual void set_state(int state) {};
     virtual glm::vec3 get_tree_max_size() = 0;
     virtual float get_scale_factor() {return 1;}
+    virtual void write_parameter_list(ParameterList &list) {};
+    virtual void read_parameter_list(ParameterList &list) {};
+};
+
+struct CategorialParameter
+{
+    int val = 0;
+    std::vector<int> possible_values;
+    operator int () {return val;}
+    CategorialParameter(int _val) 
+    {
+        val = _val;
+        possible_values = {_val};
+    }
+    bool fixed() { return possible_values.size() > 1;}
+};
+
+struct OrdinalParameter
+{
+    int val = 0;
+    int min_val = 0;
+    int max_val = 0;
+    operator int () {return val;}
+    OrdinalParameter(int _val) 
+    {
+        val = _val;
+        min_val = val;
+        max_val = val;
+    }
+    bool fixed() { return max_val <= min_val;}
+};
+
+struct ContinuousParameter
+{
+    float val = 0;
+    float min_val = 0;
+    float max_val = 0;
+    operator float () {return val;}
+    ContinuousParameter(int _val) 
+    {
+        val = _val;
+        min_val = val;
+        max_val = val;
+    }
+    ContinuousParameter(float _val) 
+    {
+        val = _val;
+        min_val = val;
+        max_val = val;
+    }
+    bool fixed() { return max_val <= min_val;}
+};
+
+struct ParameterList
+{
+    std::map<std::string, CategorialParameter> categorialParameters;
+    std::map<std::string, OrdinalParameter> ordinalParameters;
+    std::map<std::string, ContinuousParameter> continuousParameters;
+
+    void print();
 };

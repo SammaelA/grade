@@ -74,9 +74,14 @@ voxel_size(vox_size)
         count+= mip_x*mip_y*mip_z;
     }
     voxels = new float[count];
-    std::fill(voxels,voxels+count,0);
+    fill(0);
     sum_memory.fetch_add(count*sizeof(float));
     sum_allocs.fetch_add(1);
+}
+
+void LightVoxelsCube::fill(float val)
+{
+    std::fill(voxels,voxels+count,0);
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source):
 LightVoxelsCube(source,
