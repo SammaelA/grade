@@ -200,6 +200,7 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
             std::vector<SegmentVertexes> vets;
             int i = 0;
             int ringsize = 3 * pow(2, MAX(3 - b.level,0));
+            ringsize = 3;//this function is called only for billboards creation, so detailed branches are not needed
             float br = 0.5*(b.segments.front().rel_r_begin + b.segments.back().rel_r_end);
             for (auto &segment : b.segments)
             {

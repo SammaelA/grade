@@ -107,31 +107,32 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
     mat4 atlas_tr = atlas.tex_transform(num);
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
-    Model bm;
+    Model br_m, l_m;
     std::function<void(Model *)> _c_wood = [&](Model *h) { 
-        tg.recursive_branch_to_model(*branch, &bm, false, params.wood_scale, params.level_from, params.level_to); 
+        tg.recursive_branch_to_model(*branch, &br_m, false, params.wood_scale, params.level_from, params.level_to); 
     };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { 
-        tg.recursive_branch_to_model(*branch, &bm, true, params.leaf_scale, params.level_from, params.level_to); 
+        tg.recursive_branch_to_model(*branch, &l_m, true, params.leaf_scale, params.level_from, params.level_to); 
     };
 
     int tex_count = params.normals_needed ? 1 : atlas.tex_count();
+    br_m.construct(_c_wood);
+    if (params.leaf_opacity > 0)
+        l_m.construct(_c_leaves);
     for (int k = 0; k<tex_count;k++)
     {
         bool transparent_pass = (k == 0 && params.leaf_opacity < 1);
 
         atlas.target(num,k);
         rendererToTexture.use();
-
-        bm.construct(_c_wood);
         rendererToTexture.texture("tex", ttd.wood);
-        rendererToTexture.uniform("model", transl * rot * bm.model);
+        rendererToTexture.uniform("model", transl * rot * br_m.model);
         rendererToTexture.uniform("projectionCamera", result);
         rendererToTexture.uniform("state", params.monochrome ? -1 : k);
         rendererToTexture.uniform("projection_zero", rb.z);
         if (params.monochrome)
             rendererToTexture.uniform("fixed_color",glm::vec4(1,0,0,1));
-        bm.render(GL_TRIANGLES);
+        br_m.render(GL_TRIANGLES);
         
         if (params.leaf_opacity > 0)
         {
@@ -141,7 +142,6 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
                 glDisable(GL_DEPTH_TEST); 
             }
-            bm.construct(_c_leaves);
 
             Texture &leaf = ttd.leaf;
             glBindTexture(leaf.type,leaf.texture);
@@ -149,12 +149,12 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
             glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
 
             rendererToTexture.texture("tex", ttd.leaf);
-            rendererToTexture.uniform("model", transl * rot * bm.model);
+            rendererToTexture.uniform("model", transl * rot * l_m.model);
             rendererToTexture.uniform("projectionCamera", result);
             rendererToTexture.uniform("projection_zero", rb.z);
             if (params.monochrome)
                 rendererToTexture.uniform("fixed_color",glm::vec4(0,1,0,params.leaf_opacity));
-            bm.render(GL_TRIANGLES);
+            l_m.render(GL_TRIANGLES);
 
             glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
             glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 1000);

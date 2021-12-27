@@ -197,7 +197,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     {
         std::vector<ClusterData> clusters_base;
         //create base clusters one element in each
-        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, ctx);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, ctx, true);
         //clusterize this base clusters and put result at the end of cluster list
         //on zero level
         cl->clusterize(settings, clusters_base, packingLayers[clustering_base_level].clusters, ctx, 
@@ -210,7 +210,8 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     else
     {
         //just add base clusters to zero level cluster list
-        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[clustering_base_level].clusters, ctx);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[clustering_base_level].clusters, 
+                              ctx, false);
     }
 
     //we do not modify previously existed clusters on this step. Only add some new

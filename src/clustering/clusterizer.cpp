@@ -84,18 +84,19 @@ Clusterizer2::~Clusterizer2()
         delete clusteringBase;
 }
 void Clusterizer2::get_base_clusters(Block &settings, Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters,
-                                     ClusteringContext *ctx)
+                                     ClusteringContext *ctx, bool clustering_data_needed)
 {
     ProgressBar pb("Preparing branches", count, "trees", true);
     for (int i = 0; i < count; i++)
     {
         int prev_n = base_clusters.size();
-        get_base_clusters(settings, t[i], layer, base_clusters, ctx);
+        get_base_clusters(settings, t[i], layer, base_clusters, ctx, clustering_data_needed);
         if (count < 500 || (i % 10 == 0))
             pb.iter(i);
         debugl(3, "added %d branches from tree %d\n", base_clusters.size() - prev_n, i);
     }
     pb.finish();
+    if (clustering_data_needed)
     clusteringHelper->branch_conversion_flush(settings, ctx);
 }
 BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx)
@@ -128,7 +129,7 @@ BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base
     return br;
 }
 void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
-                                     ClusteringContext *ctx)
+                                     ClusteringContext *ctx, bool clustering_data_needed)
 {
     if (!t.valid)
         return;
@@ -152,7 +153,10 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
             //since we delete full trees right after packing the in clusters originals now mean nothing
             base_clusters.back().ACDA.ids.push_back(b.self_id);
             base_clusters.back().ACDA.rotations.push_back(0);
-            base_clusters.back().ACDA.clustering_data.push_back(convert_branch(settings, &b, ctx));
+            if (clustering_data_needed)
+                base_clusters.back().ACDA.clustering_data.push_back(convert_branch(settings, &b, ctx));
+            else 
+                base_clusters.back().ACDA.clustering_data.push_back(nullptr);
         }
     }
 }

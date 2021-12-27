@@ -119,7 +119,7 @@ class Clusterizer2
 public:
     void prepare(Block &settings);
     void get_base_clusters(Block &settings, Tree *t, int count, int layer, std::vector<ClusterData> &base_clusters,
-                           ClusteringContext *ctx);
+                           ClusteringContext *ctx, bool clustering_data_needed);
     void clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
                     ClusteringContext *ctx, bool need_save_full_data = false, bool visualize_clusters = false);
     FullClusteringData *get_full_data() { return fcd; }
@@ -136,7 +136,7 @@ private:
         std::map<int,int> pos_in_table_by_branch_id;
     };
     void get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
-                           ClusteringContext *ctx);
+                           ClusteringContext *ctx, bool clustering_data_needed);
     void prepare_branches(Block &settings, std::vector<ClusterData> &base_clusters, 
                           std::vector<std::vector<BranchClusteringData *>> &branches,
                           bool split_by_types = true);
