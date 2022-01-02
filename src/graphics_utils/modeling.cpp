@@ -239,6 +239,138 @@ void Visualizer::recursive_branch_to_model(Branch &b, Model *m, bool leaves, flo
             recursive_branch_to_model(*branch, m, leaves, scale, level_from, level_to);
     }
 }
+int s_cnt(Branch *b)
+{
+    int cnt = b->segments.size();
+    for (auto &joint : b->joints)
+    {
+        for (auto ch_b : joint.childBranches)
+            cnt += s_cnt(ch_b);
+    }
+    return cnt;
+}
+void Visualizer::recursive_branch_to_model_fast(Branch &branch, Model *m, bool leaves, float scale, int level_from, 
+                                                int level_to)
+{
+    /*
+    constexpr int ringsize = 4;
+    int cnt = s_cnt(&branch);
+    m->indices.reserve(cnt*ringsize*6);
+    m->positions.reserve((cnt+1)*ringsize*3);
+    m->normals.reserve((cnt+1)*ringsize*3);
+    m->colors.reserve((cnt+1)*ringsize*4);*/
+    recursive_branch_to_model_fast_i(branch, m, leaves, scale, level_from, level_to);
+}
+
+void Visualizer::recursive_branch_to_model_fast_i(Branch &branch, Model *m, bool leaves, float scale, int level_from, 
+                                                  int level_to)
+{
+    if (branch.level < 0 || branch.level > level_to)
+        return;
+
+
+    if (branch.level >= level_from)
+    {
+        if (!leaves)
+        {   
+            constexpr int ringsize = 4;
+            //m->indices.reserve(m->indices.size() + branch.segments.size()*ringsize*6);
+            //m->positions.reserve(m->positions.size() + (branch.segments.size()+1)*ringsize*3);
+            //m->normals.reserve(m->normals.size() + (branch.segments.size()+1)*ringsize*3);
+            //m->colors.reserve(m->colors.size() + (branch.segments.size()+1)*ringsize*4);
+            float total_dist = 0;
+            float base_r = 0.5f*(branch.segments.front().rel_r_begin + branch.segments.back().rel_r_end);
+            for (auto &segment : branch.segments)
+            {
+                vec3 &pos = segment.begin;
+                vec3 a = segment.end - segment.begin;
+                float len = length(a);
+                a = a / len;
+                vec3 b = abs(a.y) > 1e-6 ? vec3(-a.y,a.x,0) : vec3(-a.z,0,a.x);
+                b = normalize(b);
+                vec3 c = cross(a,b);
+
+                int _b = m->positions.size()/3;
+                for (int i = 0; i < ringsize; i++)
+                {
+                    float angle = (2*PI*i)/ringsize;
+                    vec3 n = b*cosf(angle) + c*sinf(angle);
+                    vec3 p = pos + segment.rel_r_begin*n;
+                    m->normals.push_back(n.x);
+                    m->normals.push_back(n.y);
+                    m->normals.push_back(n.z);
+
+                    m->positions.push_back(p.x);
+                    m->positions.push_back(p.y);
+                    m->positions.push_back(p.z);
+
+                    float tcy = 0.2*total_dist/base_r;
+                    tcy = abs(tcy - (int)tcy - 0.5f);
+                    m->colors.push_back(1 - abs(angle - PI)/PI);
+                    m->colors.push_back(tcy);
+                    m->colors.push_back(1);
+                    m->colors.push_back(0);
+
+                    //Bottom Triangle
+                    m->indices.push_back(_b + i);
+                    m->indices.push_back(_b + (i + 1) % (ringsize));
+                    m->indices.push_back(_b + i + ringsize);
+                    //Upper Triangle
+                    m->indices.push_back(_b + i + ringsize);
+                    m->indices.push_back(_b + (i + 1) % (ringsize));
+                    m->indices.push_back(_b + (i + 1) % (ringsize) + ringsize);
+                }
+                total_dist += len;
+            }
+            {
+            //last vertices
+                auto &segment = branch.segments.back();
+                            vec3 &pos = segment.end;
+                vec3 a = segment.end - segment.begin;
+                float len = length(a);
+                a = a / len;
+                vec3 b = abs(a.y) > 1e-6 ? vec3(-a.y,a.x,0) : vec3(-a.z,0,a.x);
+                b = normalize(b);
+                vec3 c = cross(a,b);
+
+                for (int i = 0; i < ringsize; i++)
+                {
+                    float angle = 2*PI*i/ringsize;
+                    vec3 n = b*cosf(angle) + c*sinf(angle);
+                    vec3 p = pos + segment.rel_r_end*n;
+                    m->normals.push_back(n.x);
+                    m->normals.push_back(n.y);
+                    m->normals.push_back(n.z);
+
+                    m->positions.push_back(p.x);
+                    m->positions.push_back(p.y);
+                    m->positions.push_back(p.z);
+
+                    float tcy = 0.2*total_dist/base_r;
+                    tcy = abs(tcy - (int)tcy - 0.5f);
+                    m->colors.push_back(1 - abs(angle - PI));
+                    m->colors.push_back(tcy);
+                    m->colors.push_back(1);
+                    m->colors.push_back(0);
+                }
+            }
+        }
+        else
+        {
+            for (auto &joint : branch.joints)
+            {
+                if (joint.leaf)
+                    leaf_to_model(*(joint.leaf), m, scale);
+            }
+        }
+    }
+    for (auto &joint : branch.joints)
+    {
+        for (auto ch_b : joint.childBranches)
+            recursive_branch_to_model_fast_i(*ch_b, m, leaves, scale, level_from, level_to);
+    }
+}
+
 void Visualizer::branch_to_model(Branch &b, Model *m, bool leaves)
 {
     if (!leaves)

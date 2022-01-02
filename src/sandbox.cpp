@@ -202,8 +202,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     parList.print();
     bestParList = parList;
     float best_metric = 0;
-    int max_iters = 300;
-    
+    int cnt = 0;
     std::function<float(ParameterList &)> func = [&](ParameterList &params) -> float
     {
         GrovePacker packer;
@@ -242,7 +241,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         float dt = sum_dot/dot_cnt;
         float metric = 1 - dt;
         //logerr("dot metric %f %f", dt, metric);
-
+        logerr("generate %d",cnt);
+        cnt++;
         return metric;
     };
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

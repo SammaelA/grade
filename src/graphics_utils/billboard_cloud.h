@@ -31,6 +31,9 @@ public:
                  BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards);
     void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill,
                           TextureAtlas &atlas, BillboardGenerationParams params);
+    void create_billboard_model(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill,
+                                TextureAtlas &atlas, BillboardGenerationParams params, Model &m_b, Model &m_l);
+    void create_models(Branch *branch, Visualizer &tg, BillboardGenerationParams params, Model &br_m, Model &l_m);
     BillboardCloudRaw();
     ~BillboardCloudRaw();
 

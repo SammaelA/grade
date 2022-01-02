@@ -18,7 +18,10 @@ friend class ModelLoader;
     Visualizer(Texture _tree_tex, Texture _leaves_tex, Shader *_tree_shader);
     Visualizer();
     void add_branch_layer(Tree &t, int layer, Model *m);
-    void recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale = 1, int level_from = 0, int level_to = 1000);
+    void recursive_branch_to_model(Branch &b, Model *m, bool leaves, float scale = 1, int level_from = 0, 
+                                   int level_to = 1000);
+    void recursive_branch_to_model_fast(Branch &b, Model *m, bool leaves, float scale = 1, int level_from = 0, 
+                                        int level_to = 1000);
     void leaf_to_model(Leaf &l, Model *m, float scale = 1);
     void packed_leaf_to_model(PackedLeaf &l, Model *m, glm::vec2 tc_zw = glm::vec2(1,0));
     void branch_to_model(Branch &b, Model *m, bool leaves);
@@ -27,6 +30,8 @@ friend class ModelLoader;
     void heightmap_to_model(Heightmap &h, Model *m, glm::vec2 detailed_size, glm::vec2 full_size, float precision,
                             int LODs);
 protected:
+    void recursive_branch_to_model_fast_i(Branch &b, Model *m, bool leaves, float scale = 1, int level_from = 0, 
+                                          int level_to = 1000);
     void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale);
     void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, float rel_ring_pos,
                   std::vector<float> &mults, glm::vec3 p = glm::vec3(1,0,0));

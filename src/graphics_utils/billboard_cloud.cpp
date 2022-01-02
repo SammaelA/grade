@@ -88,8 +88,28 @@ float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
     return err;
 }
 
+void BillboardCloudRaw::create_models(Branch *branch, Visualizer &tg, BillboardGenerationParams params, Model &br_m, Model &l_m)
+{
+    std::function<void(Model *)> _c_wood = [&](Model *h) { 
+        tg.recursive_branch_to_model_fast(*branch, &br_m, false, params.wood_scale, params.level_from, params.level_to); 
+    };
+    std::function<void(Model *)> _c_leaves = [&](Model *h) { 
+        tg.recursive_branch_to_model_fast(*branch, &l_m, true, params.leaf_scale, params.level_from, params.level_to); 
+    };
+    br_m.construct(_c_wood);
+    if (params.leaf_opacity > 0)
+        l_m.construct(_c_leaves);
+}
+
 void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill,
                                          TextureAtlas &atlas, BillboardGenerationParams params)
+{
+    Model br_m, l_m;
+    create_models(branch, tg, params, br_m, l_m);
+    create_billboard_model(ttd, branch, min_bbox, tg, num, bill, atlas, params, br_m, l_m);
+}
+void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill,
+                                               TextureAtlas &atlas, BillboardGenerationParams params, Model &br_m, Model &l_m)
 {
     if (num < 0)
     {
@@ -107,18 +127,8 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
     mat4 atlas_tr = atlas.tex_transform(num);
     mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
-    Model br_m, l_m;
-    std::function<void(Model *)> _c_wood = [&](Model *h) { 
-        tg.recursive_branch_to_model(*branch, &br_m, false, params.wood_scale, params.level_from, params.level_to); 
-    };
-    std::function<void(Model *)> _c_leaves = [&](Model *h) { 
-        tg.recursive_branch_to_model(*branch, &l_m, true, params.leaf_scale, params.level_from, params.level_to); 
-    };
 
     int tex_count = params.normals_needed ? 1 : atlas.tex_count();
-    br_m.construct(_c_wood);
-    if (params.leaf_opacity > 0)
-        l_m.construct(_c_leaves);
     for (int k = 0; k<tex_count;k++)
     {
         bool transparent_pass = (k == 0 && params.leaf_opacity < 1);
