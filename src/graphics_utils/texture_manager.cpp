@@ -181,6 +181,27 @@ bool TextureManager::load_tex(std::string name, std::string path)
     return true;
 }
 
+Texture TextureManager::load_unnamed_tex(std::string path)
+{
+    try
+    {
+        auto ptr = image::load(path);
+        if (!ptr)
+            return Texture();
+        Texture t(ptr);
+        t.origin = path;
+        mipmap(t, ptr->w, ptr->h, 9);
+        SDL_FreeSurface(ptr);
+        unnamed_textures.emplace(t.texture, t);
+        return t;
+    }
+    catch (const std::exception &e)
+    {
+        logerr("texture not found %s", path.c_str());
+        return Texture();
+    }
+}
+
 Texture TextureManager::create_unnamed(int w, int h, bool shadow, int mip_levels)
 {
     tex_mem += 4*w*h;

@@ -3,6 +3,7 @@
 #include "generation/grove_packer.h"
 #include "generation/metainfo_manager.h"
 #include "graphics_utils/texture_manager.h"
+#include "tinyEngine/image.h"
 #include <chrono>
 struct BS_Grid
 {
@@ -172,14 +173,72 @@ void bruteforce_selection(std::function<float(ParameterList &)> &f, int num_bins
     }
 }
 
+float dot_metric(Tree &single_tree, float dst_dot)
+{
+    double sum_dot = 0;
+    int dot_cnt = 0;
+
+    for (auto &bh : single_tree.branchHeaps)
+    {
+        for (auto &b : bh->branches)
+        {
+            glm::vec3 dir = normalize(b.segments.front().begin - b.segments.front().end);
+            for (auto &j : b.joints)
+            {
+                for (auto *chb : j.childBranches)
+                {
+                    glm::vec3 ch_dir = normalize(chb->segments.front().begin - chb->segments.front().end);
+                    float w = pow(10, 3 - b.level);
+                    sum_dot += w * SQR(0.5 - CLAMP(glm::dot(dir, ch_dir), 0, 1));
+                    dot_cnt += w;
+                }
+            }
+        }
+    }
+    float dt = sum_dot / dot_cnt;
+    float metric = 1 - dt;
+    logerr("dot metric %f %f", dt, metric);
+    return metric;
+}
+
+Texture load_reference(std::string name)
+{
+    Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+    Texture ref = textureManager.create_unnamed(ref_raw.get_W(), ref_raw.get_H());
+    PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
+    
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ref.texture, 0);
+    glViewport(0, 0, ref_raw.get_W(), ref_raw.get_H());
+    glClearColor(0,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    ref_transform.use();
+    ref_transform.get_shader().texture("tex", ref_raw);
+    ref_transform.get_shader().uniform("wood_color", glm::vec3(0.2,0.2,0.2));
+    ref_transform.get_shader().uniform("leaves_color", glm::vec3(0,0.15,0));
+    ref_transform.get_shader().uniform("background_color", glm::vec3(0,0,0));
+    ref_transform.render();
+
+    textureManager.delete_tex(ref_raw);
+    textureManager.save_png(ref, "transformed_"+name);
+    return ref;
+}
+
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
 
     scene.heightmap = new Heightmap(glm::vec3(0,0,0),glm::vec2(100,100),10);
     scene.heightmap->fill_const(0);
-    GroveGenerationData tree_ggd;
 
+    Texture reference = load_reference("reference_tree_test.png");
+    return;
+
+    GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
     TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
@@ -217,33 +276,9 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
         //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
-
-        double sum_dot = 0;
-        int dot_cnt = 0;
-        float dst_dot = 0.5;
-        for (auto &bh : single_tree.branchHeaps)
-        {
-            for (auto &b : bh->branches)
-            {
-                glm::vec3 dir = normalize(b.segments.front().begin - b.segments.front().end);
-                for (auto &j : b.joints)
-                {
-                    for (auto *chb : j.childBranches)
-                    {
-                        glm::vec3 ch_dir = normalize(chb->segments.front().begin - chb->segments.front().end);
-                        float w = pow(10, 3 - b.level);
-                        sum_dot += w*SQR(0.5 - CLAMP(glm::dot(dir, ch_dir),0,1));
-                        dot_cnt+=w;
-                    }
-                }
-            }
-        }
-        float dt = sum_dot/dot_cnt;
-        float metric = 1 - dt;
-        //logerr("dot metric %f %f", dt, metric);
         logerr("generate %d",cnt);
         cnt++;
-        return metric;
+        return dot_metric(single_tree, 0.5);
     };
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     /*

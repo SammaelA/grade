@@ -31,6 +31,7 @@ public:
     TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
     bool load_tex(std::string name, std::string path);
+    Texture load_unnamed_tex(std::string path);
     bool is_correct(Texture &t);
     void clear_unnamed();
     void set_textures_tag(int tag);
