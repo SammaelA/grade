@@ -326,8 +326,8 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
         {
             ImpostorBaker ib;
-            ib.prepare(ggd.impostor_quality, layer_from, packingLayers[info.layer].clusters[info.pos], ggd.types,
-                       &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostors);
+            ib.prepare(ggd.impostor_generation_params, layer_from, packingLayers[info.layer].clusters[info.pos], 
+                       ggd.types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostors);
         }
 
         debugl(6, "added cluster %d\n", packingLayers[info.layer].clusters[info.pos].id);

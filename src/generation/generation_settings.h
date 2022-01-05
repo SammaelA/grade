@@ -1,6 +1,7 @@
 #pragma once
 #include "core/tree.h"
 #include "core/body.h"
+#include "graphics_utils/impostor.h"
 
 enum GenerationTask
 {
@@ -21,7 +22,7 @@ struct GroveGenerationData
     int synts_count;
     int synts_precision;
     float clustering_max_individual_distance = 0.7;
-    Quality impostor_quality = Quality::MEDIUM;
+    ImpostorBaker::ImpostorGenerationParams impostor_generation_params;
     Quality bill_1_quality = Quality::MEDIUM;
     Quality bill_2_quality = Quality::LOW;
     unsigned task = GENERATE | CLUSTERIZE | BILLBOARDS | IMPOSTORS | MODELS;

@@ -4,6 +4,7 @@
 #include "generation/metainfo_manager.h"
 #include "graphics_utils/texture_manager.h"
 #include "tinyEngine/image.h"
+#include "parameter_selection/impostor_similarity.h"
 #include <chrono>
 struct BS_Grid
 {
@@ -201,10 +202,10 @@ float dot_metric(Tree &single_tree, float dst_dot)
     return metric;
 }
 
-Texture load_reference(std::string name)
+Texture load_reference(std::string name, int image_w, int image_h)
 {
     Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
-    Texture ref = textureManager.create_unnamed(ref_raw.get_W(), ref_raw.get_H());
+    Texture ref = textureManager.create_unnamed(image_w, image_h);
     PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
     
     GLuint fbo;
@@ -212,7 +213,7 @@ Texture load_reference(std::string name)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ref.texture, 0);
-    glViewport(0, 0, ref_raw.get_W(), ref_raw.get_H());
+    glViewport(0, 0, image_w, image_h);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -224,7 +225,7 @@ Texture load_reference(std::string name)
     ref_transform.render();
 
     textureManager.delete_tex(ref_raw);
-    textureManager.save_png(ref, "transformed_"+name);
+    glDeleteFramebuffers(1, &fbo);
     return ref;
 }
 
@@ -235,16 +236,23 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     scene.heightmap = new Heightmap(glm::vec3(0,0,0),glm::vec2(100,100),10);
     scene.heightmap->fill_const(0);
 
-    Texture reference = load_reference("reference_tree_test.png");
-    return;
-
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
     TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
-    AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
+    tree_ggd.impostor_generation_params.slices_n = 8;
+    tree_ggd.impostor_generation_params.quality = 128;
+    tree_ggd.impostor_generation_params.monochrome = true;
+    tree_ggd.impostor_generation_params.normals_needed = false;
+    tree_ggd.impostor_generation_params.leaf_opacity = 1;
+
+    Texture reference = load_reference("reference_tree_test.png", tree_ggd.impostor_generation_params.quality, 
+                                       tree_ggd.impostor_generation_params.quality);
+    textureManager.save_png(reference, "transformed_reference_tree_test");
+    AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
+    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(8, 8, false);
     LightVoxelsCube voxels = LightVoxelsCube(glm::vec3(0,0,0),type.params->get_tree_max_size(), type.params->get_scale_factor());
 
     ParameterList parList;
@@ -275,9 +283,13 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
-        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
+        textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
         logerr("generate %d",cnt);
         cnt++;
+        std::vector<float> res;
+        Texture ref = textureManager.get("ref");
+        imp_sim.calc_similarity(tmp_g, ref, res);
+        return res[0];
         return dot_metric(single_tree, 0.5);
     };
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

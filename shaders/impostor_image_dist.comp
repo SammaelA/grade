@@ -1,0 +1,63 @@
+#version 430
+#define THREADS 64
+layout( local_size_x = THREADS, local_size_y = 1) in;
+
+layout(std430, binding = 1) writeonly buffer results_buf
+{
+    float results[];
+};
+layout(std430, binding = 2) readonly buffer slices_info_buf
+{
+    uvec4 slices_info[];//x0,y0,layer for slice in atlas
+};
+
+uniform int impostor_x;
+uniform int impostor_y;
+uniform int impostors_count;
+uniform int impostor_slice_count;
+uniform int slice_stride;
+uniform int start_id;
+
+uniform sampler2DArray atlas;
+uniform sampler2D reference_image;
+
+float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
+{
+    float sum = 1e-6;
+    float dist = 0;
+    float a = 0;
+    for (int i=0;i<impostor_x;i++)
+    {
+        for (int j=0;j<impostor_y;j++)
+        {
+            vec4 p1 = texelFetch(atlas, pixel_coords + ivec3(i, j, 0), mip);
+            vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
+            vec4 p2 = texture(reference_image, im_tc);
+
+            if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
+            {
+                float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
+                dist += f;
+                sum += p1.r+p2.r + p1.g+p2.g;
+            }
+        }
+    }
+    dist /= sum;
+    return dist;
+}
+
+void main()
+{
+    int id =  int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    int impostor_n = id / impostor_slice_count;
+    int slice_n = id % impostor_slice_count;
+    if (impostor_n >= impostors_count)
+        return;
+
+    vec2 scale = vec2(1,1);
+    ivec3 slice_data = ivec3(slices_info[impostor_n*slice_stride + slice_n].xyz);
+    float dist = get_dist(slice_data, scale, 0);
+    results[id] = dist;
+}

@@ -8,6 +8,7 @@
 #include "render/billboard_cloud_renderer.h"
 #include "render/impostor_renderer.h"
 #include "render/visualizer.h"
+#include "generation/generation_settings.h"
 #include <chrono>
 
 GroveRenderer::GroveRenderer(): 

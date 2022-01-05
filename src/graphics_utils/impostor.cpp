@@ -1,5 +1,6 @@
 #include "graphics_utils/impostor.h"
 #include "graphics_utils/texture_manager.h"
+#include "generation/generation_settings.h"
 
 using glm::vec3;
 using glm::vec4;

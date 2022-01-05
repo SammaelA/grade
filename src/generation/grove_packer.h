@@ -15,6 +15,7 @@
 #include "save_utils/blk.h"
 #include "clustering/clustering.h"
 #include "clustering/impostor_metric.h"
+#include "generation/generation_settings.h"
 
 class DebugVisualizer;
 class Heightmap;

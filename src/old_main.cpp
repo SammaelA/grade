@@ -715,12 +715,12 @@ int full_initialization()
       std::function<void(ParametersSet *, GrovePacked &)> _generate = generate_single_tree;
       ParameterSelector sel(_generate);
       ParametersSet *start = ggd.types[0].params;
-      Quality imp_qual = ggd.impostor_quality;
-      ggd.impostor_quality = Quality::ULTRALOW;
+      //Quality imp_qual = ggd.impostor_quality;
+      //ggd.impostor_quality = Quality::ULTRALOW;
       //ggd.bill_1_quality = Quality::ULTRALOW;
       //ggd.bill_2_quality = Quality::ULTRALOW;
       sel.select(start,parameter_selector_name);
-      ggd.impostor_quality = imp_qual;
+      //ggd.impostor_quality = imp_qual;
     }
     
     if (statistics_run)

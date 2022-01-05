@@ -32,4 +32,5 @@
     grass_detailed_5:s = "../models/grass/grass_5/grass_5.png"
     grass_detailed_6:s = "../models/grass/grass_6/grass_6.png"
     lily_texture:s = "grass16.png"
+    ref:s = "transformed_reference_tree_test.png"
 }

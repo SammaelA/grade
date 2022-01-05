@@ -1,7 +1,6 @@
 #pragma once
 #include "graphics_utils/billboard_cloud.h"
-#include "core/tree.h"
-#include "generation/generation_settings.h"
+#include "core/tree.h"//#include "generation/generation_settings.h"
 
 class ImpostorBaker : public BillboardCloudRaw
 {
