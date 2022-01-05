@@ -175,14 +175,6 @@ void SimpliestTreeStructureParameters::load_from_blk(Block &b)
 
 void SimpliestTreeStructureParameters::write_parameter_list(ParameterList &list)
 {
-    /*    int max_depth = 4;
-    std::vector<float> branch_len = {60,20,12,7};
-    std::vector<float> branch_r = {1.75,0.75,0.2, 0.075};
-    std::vector<float> branch_angle = {PI/6, PI/6, PI/4, PI/4};
-    std::vector<int> branch_count = {20,10,8,10};
-    std::vector<float> branching_start = {0.5,0.0,0,0};
-    float leaves_count = 0.75;
-    float leaf_size = 3;*/
     list.ordinalParameters.emplace("max_depth",max_depth);
 
     list.continuousParameters.emplace("branch_len_0",branch_len[0]);
@@ -212,8 +204,6 @@ void SimpliestTreeStructureParameters::write_parameter_list(ParameterList &list)
 
     list.continuousParameters.emplace("leaves_count",leaves_count);
     list.continuousParameters.emplace("leaf_size",leaf_size);
-
-    list.print();
 }
 
 void SimpliestTreeStructureParameters::read_parameter_list(ParameterList &list)

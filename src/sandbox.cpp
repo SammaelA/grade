@@ -229,6 +229,41 @@ Texture load_reference(std::string name, int image_w, int image_h)
     return ref;
 }
 
+void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, int num_slice, std::string name)
+{
+    Texture res(textureManager.create_unnamed(tex_w, tex_h));
+    PostFx copy = PostFx("copy_arr2.fs");
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res.texture, 0);
+    glViewport(0, 0, tex_w, tex_h);
+    glClearColor(1,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
+    tex_transform = glm::vec4(tex_transform.z*tex_transform.x, tex_transform.w*tex_transform.y, tex_transform.x, tex_transform.y);
+    //tex_transform.y += tex_transform.w;
+    //tex_transform.w *= -1;
+    logerr("tc %f %f %f %f", tex_transform.x, tex_transform.y, tex_transform.z, tex_transform.w);
+    glm::vec3 tex = glm::vec3(0,0,0);
+    imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
+    int layer = tex.z;
+
+    copy.use();
+    copy.get_shader().texture("tex", imp.atlas.tex(0));
+    copy.get_shader().uniform("tex_transform", tex_transform);
+    copy.get_shader().uniform("layer",layer);
+    copy.render();
+    
+    glBindTexture(imp.atlas.tex(0).type, 0);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    textureManager.save_png_directly(res, image::base_img_path + name + ".png");
+    textureManager.delete_tex(res);
+    glDeleteFramebuffers(1, &fbo);
+}
+
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
@@ -248,9 +283,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 1;
 
-    Texture reference = load_reference("reference_tree_test.png", tree_ggd.impostor_generation_params.quality, 
-                                       tree_ggd.impostor_generation_params.quality);
-    textureManager.save_png(reference, "transformed_reference_tree_test");
+    Texture ref = textureManager.empty(); 
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(8, 8, false);
     LightVoxelsCube voxels = LightVoxelsCube(glm::vec3(0,0,0),type.params->get_tree_max_size(), type.params->get_scale_factor());
@@ -264,6 +297,14 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     parList.continuousParameters.at("branch_angle_1").max_val = PI/2;
     parList.continuousParameters.at("branch_angle_2").min_val = 0;
     parList.continuousParameters.at("branch_angle_2").max_val = PI/2;
+    
+    /*
+    parList.continuousParameters.at("branch_angle_0").min_val = 0.52;
+    parList.continuousParameters.at("branch_angle_0").max_val = 0.52;
+    parList.continuousParameters.at("branch_angle_1").min_val = 0.52;
+    parList.continuousParameters.at("branch_angle_1").max_val = 0.52;
+    parList.continuousParameters.at("branch_angle_2").min_val = 0.79;
+    parList.continuousParameters.at("branch_angle_2").max_val = 0.79;*/
     //parList.continuousParameters.at("branch_angle_3").min_val = 0;
     //parList.continuousParameters.at("branch_angle_3").max_val = PI/2;
     parList.print();
@@ -283,27 +324,20 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
-        textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
+        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
         logerr("generate %d",cnt);
         cnt++;
         std::vector<float> res;
-        Texture ref = textureManager.get("ref");
         imp_sim.calc_similarity(tmp_g, ref, res);
         return res[0];
         return dot_metric(single_tree, 0.5);
     };
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    /*
-    for (int i=0;i<max_iters;i++)
+
+    //create reference tree
     {
+        tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
         Tree single_tree;
-        GrovePacked tmp_g;
-        for (auto &p : parList.continuousParameters)
-        {
-            if (!p.second.fixed())
-                p.second.val = urand(p.second.min_val, p.second.max_val);
-        }
         tree_ggd.types[0].params->read_parameter_list(parList);
         gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[0]));
         while (gen->iterate(voxels))
@@ -311,53 +345,34 @@ void sandbox_main(int argc, char **argv, Scene &scene)
             
         }
         gen->finalize_generation(&single_tree,voxels);
-        packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
-        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
-
-        double sum_dot = 0;
-        int dot_cnt = 0;
-        float dst_dot = 0.5;
-        for (auto &bh : single_tree.branchHeaps)
-        {
-            for (auto &b : bh->branches)
-            {
-                glm::vec3 dir = normalize(b.segments.front().begin - b.segments.front().end);
-                for (auto &j : b.joints)
-                {
-                    for (auto *chb : j.childBranches)
-                    {
-                        glm::vec3 ch_dir = normalize(chb->segments.front().begin - chb->segments.front().end);
-                        sum_dot += SQR(0.5 - glm::dot(dir, ch_dir));
-                        dot_cnt++;
-                    }
-                }
-            }
-        }
-        float dt = sum_dot/dot_cnt;
-        float metric = 1 - dt;
-        logerr("%d dot metric %f %f",i, dt, metric);
-        if (metric > best_metric)
-        {
-            best_metric = metric;
-            bestParList = parList;
-        }
+        packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
+        save_impostor_as_reference(scene.grove.impostors[1], 256, 256, 0, "imp_ref");
+        ref = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
     }
-    */
+
+
     bestParList = parList;
-    bruteforce_selection(func, 4, 2, 2, 1, best_metric, bestParList);
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    bruteforce_selection(func, 5, 1, 1, 5, best_metric, bestParList);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    //bestParList.print();
+    bestParList.print();
     logerr("best metric %f took %.2f seconds to find",best_metric, time/1000);
-    tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
-    GrovePacker packer;
-    Tree single_tree;
+
+
+    //create preapred tree
+    {
+        tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
+        GrovePacker packer;
+        Tree single_tree;
         tree_ggd.types[0].params->read_parameter_list(bestParList);
-        gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[0]));
+        gen->plant_tree(glm::vec3(100,0,0),&(tree_ggd.types[0]));
         while (gen->iterate(voxels))
         {
             
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
+        save_impostor_as_reference(scene.grove.impostors[1], 256, 256, 0, "imp_res");
+    }
 }

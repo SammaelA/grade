@@ -80,9 +80,9 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, Texture &refere
         float dist = 1;
         for (int j =0;j<slices_per_impostor;j++)
         {
-            dist = MIN(dist, results_data[i*slices_per_impostor + j]);
+            dist += results_data[i*slices_per_impostor + j];
         }
-        dist = CLAMP(1 - dist, 0,1);
+        dist = CLAMP(1 - dist/slices_per_impostor, 0,1);
         sim_results.push_back(dist);
         logerr("similarity data %f", sim_results.back());
     }

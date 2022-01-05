@@ -195,6 +195,11 @@ namespace parser
           k++;
         }
       }
+      else if (std::string(argv[k]) == "-random_seed")
+      {
+        srand(time(nullptr));
+        k++;
+      }
       else
       {
         logerr("unknows argument %s", argv[k]);
