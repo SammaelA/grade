@@ -283,7 +283,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 1;
 
-    Texture ref = textureManager.empty(); 
+    ReferenceTree ref_tree;
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(8, 8, false);
     LightVoxelsCube voxels = LightVoxelsCube(glm::vec3(0,0,0),type.params->get_tree_max_size(), type.params->get_scale_factor());
@@ -328,7 +328,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         logerr("generate %d",cnt);
         cnt++;
         std::vector<float> res;
-        imp_sim.calc_similarity(tmp_g, ref, res);
+        imp_sim.calc_similarity(tmp_g, ref_tree, res);
         return res[0];
         return dot_metric(single_tree, 0.5);
     };
@@ -347,7 +347,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
         save_impostor_as_reference(scene.grove.impostors[1], 256, 256, 0, "imp_ref");
-        ref = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
+        ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
+        ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), ref_tree.info);
     }
 
 

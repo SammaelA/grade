@@ -10,17 +10,30 @@ similarity_shader({"impostor_image_dist.comp"},{})
     slices_stride = slices_per_impostor + (int)(!use_top_slice);
     results_data = new float[slices_per_impostor*max_impostors];
     slices_info_data = new glm::uvec4[slices_per_impostor*max_impostors];
+    impostors_info_data = new TreeCompareInfo[max_impostors + 1];
 
     glGenBuffers(1, &results_buf);
     glGenBuffers(1, &slices_info_buf);
+    glGenBuffers(1, &impostors_info_buf);
 }
 
-void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, Texture &reference, std::vector<float> &sim_results)
+void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, TreeCompareInfo &info)
 {
+    info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
+    logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
+}
+
+void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results)
+{
+    impostors_info_data[0] = reference.info;
+    logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
     int impostors_cnt = grove.impostors[1].impostors.size();
     int cnt = 0;
+    int imp_n = 1;
     for (auto &imp : grove.impostors[1].impostors)
     {
+        get_tree_compare_info(imp, impostors_info_data[imp_n]);
+
         for (auto &sl : imp.slices)
         {
             if (cnt >= slices_per_impostor*max_impostors)
@@ -41,6 +54,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, Texture &refere
             grove.impostors[1].atlas.pixel_offsets(imp.top_slice.id, slices_info_data[cnt]);
             cnt++;
         }
+        imp_n++;
     }
     if (cnt != impostors_cnt*slices_per_impostor)
     {
@@ -55,10 +69,13 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, Texture &refere
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slices_info_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*cnt, slices_info_data, GL_STATIC_DRAW);
 
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, impostors_info_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TreeCompareInfo)*(impostors_cnt+1), impostors_info_data, GL_STATIC_DRAW);
+
     glm::ivec2 slice_sizes = grove.impostors[1].atlas.get_slice_size();
     similarity_shader.use();
     similarity_shader.texture("atlas", grove.impostors[1].atlas.tex(0));
-    similarity_shader.texture("reference_image", reference);
+    similarity_shader.texture("reference_image", reference.tex);
     similarity_shader.uniform("impostor_x", slice_sizes.x);
     similarity_shader.uniform("impostor_y", slice_sizes.y);
     similarity_shader.uniform("impostors_count", impostors_cnt);
@@ -94,7 +111,10 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
         delete[] results_data;
     if (slices_info_data)
         delete[] slices_info_data;
+    if (impostors_info_data)
+        delete[] impostors_info_data;
     //glDeleteFramebuffers(1, &fbo);
     glDeleteBuffers(1, &results_buf);
     glDeleteBuffers(1, &slices_info_buf);
+    glDeleteBuffers(1, &impostors_info_buf);
 }

@@ -1,5 +1,12 @@
 #version 430
 #define THREADS 64
+
+struct TreeCompareInfo
+{
+    vec2 BCyl_sizes;//radius and height of bounding cylinder;
+    vec2 _pad;
+};
+
 layout( local_size_x = THREADS, local_size_y = 1) in;
 
 layout(std430, binding = 1) writeonly buffer results_buf
@@ -9,6 +16,10 @@ layout(std430, binding = 1) writeonly buffer results_buf
 layout(std430, binding = 2) readonly buffer slices_info_buf
 {
     uvec4 slices_info[];//x0,y0,layer for slice in atlas
+};
+layout(std430, binding = 3) readonly buffer impostors_info_buf
+{
+    TreeCompareInfo impostors_info[];//impostors_info[0] is info for reference
 };
 
 uniform int impostor_x;
@@ -57,6 +68,7 @@ void main()
         return;
 
     vec2 scale = vec2(1,1);
+    scale = impostors_info[0].BCyl_sizes/impostors_info[impostor_n+1].BCyl_sizes;
     ivec3 slice_data = ivec3(slices_info[impostor_n*slice_stride + slice_n].xyz);
     float dist = get_dist(slice_data, scale, 0);
     results[id] = dist;
