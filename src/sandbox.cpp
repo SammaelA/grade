@@ -160,7 +160,7 @@ void bruteforce_selection(std::function<float(ParameterList &)> &f, int num_bins
                 {
                     new_progress_bars.emplace_back();
                     new_progress_bars.back().base_set = grid_params(best.second, grid.base_set);
-                    new_progress_bars.back().base_set.print();
+                    //new_progress_bars.back().base_set.print();
                     fill_bs_grid_bins(new_progress_bars.back(), new_progress_bars.back().base_set, num_bins);
                 }
             }
@@ -243,9 +243,6 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, int nu
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
     tex_transform = glm::vec4(tex_transform.z*tex_transform.x, tex_transform.w*tex_transform.y, tex_transform.x, tex_transform.y);
-    //tex_transform.y += tex_transform.w;
-    //tex_transform.w *= -1;
-    logerr("tc %f %f %f %f", tex_transform.x, tex_transform.y, tex_transform.z, tex_transform.w);
     glm::vec3 tex = glm::vec3(0,0,0);
     imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
     int layer = tex.z;
@@ -264,6 +261,54 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, int nu
     glDeleteFramebuffers(1, &fbo);
 }
 
+void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *average_p, float *stddev_p)
+{
+    if (vals.empty())
+        return;
+    float mn = vals[0], mx = vals[0], sum = 0;
+    for (float &v : vals)
+    {
+        mn = MIN(mn, v);
+        mx = MAX(mx, v);
+        sum += v;
+    }
+    sum /= vals.size();
+    float dev = 0;
+    for (float &v : vals)
+    {
+        dev += abs(v - sum);
+    }
+    dev /= vals.size();
+    if (min_p)
+        *min_p = mn;
+    if (max_p)
+        *max_p = mx;
+    if (average_p)
+        *average_p = sum;
+    if (stddev_p)
+        *stddev_p = dev;
+}
+
+float sel_quality(ParameterList &parList, ParameterList &referenceParList, 
+                  std::function<float(ParameterList &)> &metric, int samples = 16)
+{
+    std::vector<float> res, ref;
+    for (int i=0;i<samples;i++)
+    {
+        res.push_back(metric(parList));
+        ref.push_back(metric(referenceParList));
+    }
+    float mn1=0, mn2=0, mx1=0, mx2=0, av=0, dev=0;
+    vector_stat(res, &mn1, &mx1, &av, &dev);
+    debug("result stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn1, mx1, av, dev);
+    vector_stat(ref, &mn2, &mx2, &av, &dev);
+    debug("reference stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn2, mx2, av, dev);
+    float q = MAX(MIN(mx1, mx2) - MAX(mn1, mn2),1e-6)/MAX(MAX(mx1, mx2) - MIN(mn1, mn2),1e-6);
+    debug("quality: %.4f %f %f %f %f\n", q, MIN(mx1, mx2), MAX(mn1, mn2),MAX(mx1, mx2), MIN(mn1, mn2));
+
+    return q;
+}
+
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
@@ -271,6 +316,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     scene.heightmap = new Heightmap(glm::vec3(0,0,0),glm::vec2(100,100),10);
     scene.heightmap->fill_const(0);
 
+    float imp_size = 128;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
     TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
@@ -278,7 +324,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
     tree_ggd.impostor_generation_params.slices_n = 8;
-    tree_ggd.impostor_generation_params.quality = 128;
+    tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 1;
@@ -287,16 +333,22 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(8, 8, false);
     LightVoxelsCube voxels = LightVoxelsCube(glm::vec3(0,0,0),type.params->get_tree_max_size(), type.params->get_scale_factor());
+    ParameterList parList, bestParList, referenceParList;
 
-    ParameterList parList;
-    ParameterList bestParList;
     tree_ggd.types[0].params->write_parameter_list(parList);
+    BlkManager man;
+    Block b;
+
+    man.load_block_from_file("simpliest_gen_param_borders.blk", b);
+    parList.load_borders_from_blk(b);
+    parList.print();
+    /*
     parList.continuousParameters.at("branch_angle_0").min_val = 0;
     parList.continuousParameters.at("branch_angle_0").max_val = PI/2;
     parList.continuousParameters.at("branch_angle_1").min_val = 0;
     parList.continuousParameters.at("branch_angle_1").max_val = PI/2;
     parList.continuousParameters.at("branch_angle_2").min_val = 0;
-    parList.continuousParameters.at("branch_angle_2").max_val = PI/2;
+    parList.continuousParameters.at("branch_angle_2").max_val = PI/2;*/
     
     /*
     parList.continuousParameters.at("branch_angle_0").min_val = 0.52;
@@ -307,8 +359,9 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     parList.continuousParameters.at("branch_angle_2").max_val = 0.79;*/
     //parList.continuousParameters.at("branch_angle_3").min_val = 0;
     //parList.continuousParameters.at("branch_angle_3").max_val = PI/2;
-    parList.print();
+    //parList.print();
     bestParList = parList;
+    referenceParList = parList;
     float best_metric = 0;
     int cnt = 0;
     std::function<float(ParameterList &)> func = [&](ParameterList &params) -> float
@@ -325,7 +378,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
         //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
-        logerr("generate %d",cnt);
+        //logerr("generate %d",cnt);
         cnt++;
         std::vector<float> res;
         imp_sim.calc_similarity(tmp_g, ref_tree, res);
@@ -338,7 +391,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
         Tree single_tree;
-        tree_ggd.types[0].params->read_parameter_list(parList);
+        tree_ggd.types[0].params->read_parameter_list(referenceParList);
         gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[0]));
         while (gen->iterate(voxels))
         {
@@ -346,7 +399,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
-        save_impostor_as_reference(scene.grove.impostors[1], 256, 256, 0, "imp_ref");
+        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_ref");
         ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
         ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), ref_tree.info);
     }
@@ -354,12 +407,13 @@ void sandbox_main(int argc, char **argv, Scene &scene)
 
     bestParList = parList;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    bruteforce_selection(func, 5, 1, 1, 5, best_metric, bestParList);
+    bruteforce_selection(func, 8, 1, 1, 1, best_metric, bestParList);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     bestParList.print();
-    logerr("best metric %f took %.2f seconds to find",best_metric, time/1000);
-
+    debug("best metric %f took %.2f seconds and %d tries to find\n",best_metric, time/1000, cnt);
+    //calculate_selection_quality
+    //sel_quality(bestParList, referenceParList, func, 64);
 
     //create preapred tree
     {
@@ -374,6 +428,6 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
-        save_impostor_as_reference(scene.grove.impostors[1], 256, 256, 0, "imp_res");
+        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_res");
     }
 }

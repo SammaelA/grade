@@ -43,13 +43,13 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
         {
             vec4 p1 = texelFetch(atlas, pixel_coords + ivec3(i, j, 0), mip);
             vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
-            vec4 p2 = texture(reference_image, im_tc);
+            vec4 p2 = texelFetch(reference_image, ivec2(im_tc*vec2(impostor_x, impostor_y)), 0);
 
             if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
             {
                 float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
                 dist += f;
-                sum += p1.r+p2.r + p1.g+p2.g;
+                sum += (p1.r+p2.r) + p1.g+p2.g;
             }
         }
     }

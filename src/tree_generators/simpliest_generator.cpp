@@ -3,8 +3,10 @@
 
 using namespace glm;
 
-std::atomic<int> branch_next_id(0), tree_next_id(0); 
+#define NO_RANDOM_GEN 1
 
+std::atomic<int> branch_next_id(0), tree_next_id(0); 
+std::atomic<int> leaves_cnt(0), leaves_tries(0);
 void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
     tree_positions.push_back(pos);
@@ -85,13 +87,35 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
             continue;
         if (level == params.max_depth - 1)
         {
-            if (urand() < params.leaves_count)
+            #if NO_RANDOM_GEN > 0
+                leaves_tries.fetch_add(1);
+                bool leaf_b = leaves_cnt/(float)leaves_tries < params.leaves_count;
+            #else
+                bool leaf_b = urand() < params.leaves_count;// random version
+            #endif
+            if (leaf_b)
             {
+                leaves_cnt.fetch_add(1);
                 //create leaf
                 Leaf *l = tree->leaves->new_leaf();
                 l->pos = j.pos;
-                glm::vec3 rd1 = rand_dir();
-                glm::vec3 rd2 = rand_dir();
+                #if NO_RANDOM_GEN > 0
+                    float psi = PI / 2;
+                    float phi = (2 * PI * (i % 6)) / 6;
+                    vec3 z_axis = base_dir;
+                    vec3 y_axis = normalize(cross(z_axis, normal));
+                    vec3 x_axis = normalize(cross(y_axis, z_axis));
+
+                    float x = sin(psi) * sin(phi);
+                    float y = sin(psi) * cos(phi);
+                    float z = cos(psi);
+
+                    glm::vec3 rd1 = normalize(sin(psi) * sin(phi) * x_axis + sin(psi) * cos(phi) * y_axis + cos(psi) * z_axis);
+                    glm::vec3 rd2 = normalize(sin(psi) * cos(phi) * x_axis + sin(psi) * sin(phi) * y_axis + cos(psi) * z_axis);
+                #else
+                    glm::vec3 rd1 = rand_dir();
+                    glm::vec3 rd2 = rand_dir();
+                #endif
                 float sz = params.leaf_size;
                 glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
                 glm::vec3 b = j.pos + 0.5f * sz * rd2;
@@ -123,7 +147,12 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                 if (i != params.branch_count[level])
                 {
                     float psi = params.branch_angle[level];
-                    float phi = 2*PI*urand();
+                    
+                    #if NO_RANDOM_GEN > 0
+                        float phi = (2*PI*(i % 6))/6;//determined version
+                    #else
+                        float phi = 2*PI*urand();//random version
+                    #endif
 
                     vec3 z_axis = base_dir;
                     vec3 y_axis = normalize(cross(z_axis, normal));

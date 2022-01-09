@@ -410,4 +410,5 @@ struct ParameterList
     std::map<std::string, ContinuousParameter> continuousParameters;
 
     void print();
+    void load_borders_from_blk(Block &b);
 };

@@ -20,13 +20,13 @@ similarity_shader({"impostor_image_dist.comp"},{})
 void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, TreeCompareInfo &info)
 {
     info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
-    logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
+    //logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
 }
 
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results)
 {
     impostors_info_data[0] = reference.info;
-    logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
+    //logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
     int impostors_cnt = grove.impostors[1].impostors.size();
     int cnt = 0;
     int imp_n = 1;
@@ -97,11 +97,12 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float dist = 1;
         for (int j =0;j<slices_per_impostor;j++)
         {
-            dist += results_data[i*slices_per_impostor + j];
+            dist = MIN(results_data[i*slices_per_impostor + j], dist);
+            //logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
         }
-        dist = CLAMP(1 - dist/slices_per_impostor, 0,1);
+        dist = CLAMP(1 - dist, 0,1);
         sim_results.push_back(dist);
-        logerr("similarity data %f", sim_results.back());
+        //logerr("similarity data %f", sim_results.back());
     }
 }
 

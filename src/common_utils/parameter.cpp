@@ -248,3 +248,48 @@ void ParameterList::print()
             debug("%s = %.2f in [%.2f %.2f]\n", p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);        
     }
 }
+
+void ParameterList::load_borders_from_blk(Block &b)
+{
+    for (int i=0;i<b.size();i++)
+    {
+        if (b.get_type(i) == Block::ValueType::VEC2)
+        {
+            //min_max for ordinal or continuous
+            auto it = ordinalParameters.find(b.get_name(i));
+            if (it != ordinalParameters.end())
+            {
+                glm::vec2 min_max = b.get_vec2(i, glm::vec2(it->second.val, it->second.val));
+                it->second.min_val = min_max.x;
+                it->second.max_val = min_max.y;
+            }
+            else
+            {
+                auto it = continuousParameters.find(b.get_name(i));
+                if (it != continuousParameters.end())
+                {
+                    glm::vec2 min_max = b.get_vec2(i, glm::vec2(it->second.val, it->second.val));
+                    it->second.min_val = min_max.x;
+                    it->second.max_val = min_max.y;
+                }
+                else
+                {
+                    logerr("%s has wrong parameter name or type in borders list", b.get_name(i));
+                }
+            }
+        }
+        else if (b.get_type(i) == Block::ValueType::ARRAY)
+        {
+            //categorial
+            auto it = categorialParameters.find(b.get_name(i));
+            if (it != categorialParameters.end())
+            {
+                b.get_arr(i, it->second.possible_values, true);
+            }
+            else
+            {
+                logerr("%s has wrong parameter name or type in borders list", b.get_name(i));
+            }
+        }
+    }
+}
