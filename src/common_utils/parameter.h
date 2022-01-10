@@ -349,6 +349,7 @@ struct ParametersSet
     virtual void load_from_blk(Block &b);
     virtual void set_state(int state) {};
     virtual glm::vec3 get_tree_max_size() = 0;
+    virtual ParametersSet *copy() { return nullptr;};
     virtual float get_scale_factor() {return 1;}
     virtual void write_parameter_list(ParameterList &list) {};
     virtual void read_parameter_list(ParameterList &list) {};

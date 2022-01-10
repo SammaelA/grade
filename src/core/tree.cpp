@@ -240,3 +240,35 @@ leaf(textureManager.empty())
 {
 
 }
+
+TreeTypeData::TreeTypeData(const TreeTypeData &t):
+wood(t.wood),
+leaf(t.leaf)
+{
+    type_id = t.type_id;
+    wood_id = t.wood_id;
+    leaf_id = t.leaf_id;
+    additional_textures = t.additional_textures;
+    generator_name = t.generator_name;
+
+    if (t.params)
+        params = t.params->copy();
+    else
+        params = nullptr;
+}
+
+TreeTypeData::TreeTypeData(TreeTypeData &t):
+wood(t.wood),
+leaf(t.leaf)
+{
+    type_id = t.type_id;
+    wood_id = t.wood_id;
+    leaf_id = t.leaf_id;
+    additional_textures = t.additional_textures;
+    generator_name = t.generator_name;
+    
+    if (t.params)
+        params = t.params->copy();
+    else
+        params = nullptr;
+}

@@ -7,7 +7,7 @@ similarity_shader({"impostor_image_dist.comp"},{})
     use_top_slice = _use_top_slice;
     max_impostors = _max_impostors;
     slices_per_impostor = _slices_per_impostor;
-    slices_stride = slices_per_impostor + (int)(!use_top_slice);
+    slices_stride = slices_per_impostor;
     results_data = new float[slices_per_impostor*max_impostors];
     slices_info_data = new glm::uvec4[slices_per_impostor*max_impostors];
     impostors_info_data = new TreeCompareInfo[max_impostors + 1];
@@ -26,7 +26,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, TreeCompareInf
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results)
 {
     impostors_info_data[0] = reference.info;
-    //logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
+    logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
     int impostors_cnt = grove.impostors[1].impostors.size();
     int cnt = 0;
     int imp_n = 1;
@@ -90,26 +90,27 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, results_buf);
     GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     memcpy(results_data,ptr,sizeof(float)*cnt);
-
+    //logerr("cnt = %d", cnt);
     sim_results = {};
     for (int i=0;i<impostors_cnt;i++)
     {   
-        float dist = 1;
+        float dist = 0;
         for (int j =0;j<slices_per_impostor;j++)
         {
-            dist = MIN(results_data[i*slices_per_impostor + j], dist);
-            logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
+            dist += results_data[i*slices_per_impostor + j];
+            //logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
         }
+        dist /= slices_per_impostor;
         glm::vec2 scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
         if (scale_fine.x > 1)
             scale_fine.x = 1/scale_fine.x;
         if (scale_fine.y > 1)
             scale_fine.y = 1/scale_fine.y;
-        float sf = sqrt(scale_fine.x)*sqrt(scale_fine.y);
-        logerr("scale fine %f %f %f", scale_fine.x, scale_fine.y, sf);
+        float sf = (scale_fine.x)*(scale_fine.y);
+        //logerr("scale fine %f %f %f", scale_fine.x, scale_fine.y, sf);
         dist = CLAMP(sf*(1 - dist), 0,1);
         sim_results.push_back(dist);
-        logerr("similarity data %f", sim_results.back());
+        //logerr("similarity data %f", sim_results.back());
     }
 }
 

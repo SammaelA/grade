@@ -12,6 +12,12 @@ struct SimpliestTreeStructureParameters : public ParametersSet
     std::vector<float> branching_start = {0.5,0.0,0,0};
     float leaves_count = 0.75;
     float leaf_size = 3;
+    virtual ParametersSet *copy() override
+    { 
+        auto Ps = new SimpliestTreeStructureParameters();
+        *Ps = *this;
+        return Ps;
+    };
     virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
                                     ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override
     {

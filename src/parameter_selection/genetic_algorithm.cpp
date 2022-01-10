@@ -87,7 +87,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         if (population[i].alive)
             kill_creature(i);
     }
-    logerr("heaven popultion %d", heaven.size());
+    logerr("heaven popultion %d best metric %f", heaven.size(), heaven[0].metric);
     for (auto &creature : heaven)
     {
         best_results.emplace_back();
@@ -135,7 +135,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
             //found = true;
 
             int pos = urandi(0, G.size());
-            logerr("mutation pos %d G size %d %f", pos, G.size(), (float)urandi(0, G.size()));
+            //logerr("mutation pos %d G size %d %f", pos, G.size(), (float)urandi(0, G.size()));
             int g_pos = pos;
             if (pos < parametersMask.categorialParameters.size())
             {
@@ -164,7 +164,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
             else
             {
                 pos -= parametersMask.categorialParameters.size() + parametersMask.ordinalParameters.size();
-                logerr("continuous pos %d mutation", pos);
+                //logerr("continuous pos %d mutation", pos);
                 if (!parametersMask.continuousParameters[pos].second.fixed())
                 {
                     float len = mutation_power*(parametersMask.continuousParameters[pos].second.max_val - parametersMask.continuousParameters[pos].second.min_val);
@@ -314,10 +314,10 @@ void GeneticAlgorithm::make_children(Creature &A, Creature &B, int count)
         {
             //TODO: implement diploid genomes
         }
-        mutation(population[pos].main_genome, 0.4, urandi(1, 0.5*free_parameters_cnt));
+        mutation(population[pos].main_genome, 0.4, urandi(1, MIN(3,free_parameters_cnt)));
         for (auto &g : population[pos].other_genomes)
         {
-            mutation(g, 0.5, urandi(1, 0.5*free_parameters_cnt));
+            mutation(g, 0.5, urandi(1, MIN(3,free_parameters_cnt)));
         }
     }
 }

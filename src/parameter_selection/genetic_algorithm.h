@@ -8,8 +8,8 @@ class GeneticAlgorithm
 public:
     struct MetaParameters
     {
-        int initial_population_size = 90;
-        int max_population_size = 100;
+        int initial_population_size = 40;
+        int max_population_size = 50;
         int best_genoms_count = 1;
         float weaks_to_kill = 0.33;
         float dead_at_birth_thr = 0.0;

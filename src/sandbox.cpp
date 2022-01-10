@@ -300,14 +300,17 @@ void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *av
 }
 
 float sel_quality(ParameterList &parList, ParameterList &referenceParList, 
-                  std::function<float(ParameterList &)> &metric, int samples = 16)
+                  const std::function<std::vector<float>(std::vector<ParameterList> &)> &metric, int samples = 16)
 {
     std::vector<float> res, ref;
+    std::vector<ParameterList> parLists, referenceParLists;
     for (int i=0;i<samples;i++)
     {
-        res.push_back(metric(parList));
-        ref.push_back(metric(referenceParList));
+        parLists.push_back(parList);
+        referenceParLists.push_back(referenceParList);
     }
+    res = metric(parLists);
+    ref = metric(referenceParLists);
     float mn1=0, mn2=0, mx1=0, mx2=0, av=0, dev=0;
     vector_stat(res, &mn1, &mx1, &av, &dev);
     debug("result stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn1, mx1, av, dev);
@@ -389,7 +392,14 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         for (int i=0;i<params.size();i++)
         {
             tree_ggd.types[i].params->read_parameter_list(params[i]);
+        }
+        for (int i=0;i<params.size();i++)
+        {
+            //logerr("aaaaaaaaaaaa");
+            //params[i].print();
+
             gen->plant_tree(glm::vec3(100*i,0,0),&(tree_ggd.types[i]));
+            //logerr("tree planted %d", i);
         }
         while (gen->iterate(voxels))
         {
@@ -397,7 +407,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(trees,voxels);
         packer.add_trees_to_grove(tree_ggd, tmp_g, trees, scene.heightmap, false);
-        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
+        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
         //logerr("generate %d",cnt);
         cnt+=params.size();
         std::vector<float> res;
@@ -439,7 +449,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     bestParList.print();
     debug("best metric %f took %.2f seconds and %d tries to find\n",best_metric, time/1000, cnt);
     //calculate_selection_quality
-    //sel_quality(bestParList, referenceParList, func, 64);
+    sel_quality(bestParList, referenceParList, func, 16);
 
     //create preapred tree
     {
