@@ -5,6 +5,8 @@
 #include "graphics_utils/texture_manager.h"
 #include "tinyEngine/image.h"
 #include "parameter_selection/impostor_similarity.h"
+#include "parameter_selection/genetic_algorithm.h"
+
 #include <chrono>
 struct BS_Grid
 {
@@ -75,8 +77,9 @@ void fill_bs_grid_bins(BS_Grid &grid, ParameterList &params, int num_bins)
     }
 }
 
-void bruteforce_selection(std::function<float(ParameterList &)> &f, int num_bins, int detalization_count, 
-                          int detalization_depth, int num_samples, float &best_val, ParameterList &bestParams)
+void bruteforce_selection(const std::function<std::vector<float>(std::vector<ParameterList> &)> &f, int num_bins, 
+                          int detalization_count, int detalization_depth, int num_samples, float &best_val, 
+                          ParameterList &bestParams)
 {
     std::vector<BS_Grid> progress_bars;
     progress_bars.emplace_back();
@@ -96,11 +99,18 @@ void bruteforce_selection(std::function<float(ParameterList &)> &f, int num_bins
             while (i < grid.bins.size())
             {
                 float sum_metric = 0;
+                std::vector<ParameterList> params; 
                 for (int sample = 0;sample<num_samples;sample++)
                 {
-                    ParameterList params = grid_params(grid.bins, grid.base_set);
-                    sum_metric += f(params);
+                    params.push_back(grid_params(grid.bins, grid.base_set));
                 }
+                auto vec = f(params);
+                for (auto &v : vec)
+                {
+                    sum_metric += v;
+                    logerr("v = %f", v);
+                }
+                logerr("");
                 sum_metric /= num_samples;
                 if (cur_best.size() < detalization_count)
                 {
@@ -331,7 +341,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
 
     ReferenceTree ref_tree;
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
-    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(8, 8, false);
+    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(256, 8, false);
     LightVoxelsCube voxels = LightVoxelsCube(glm::vec3(0,0,0),type.params->get_tree_max_size(), type.params->get_scale_factor());
     ParameterList parList, bestParList, referenceParList;
 
@@ -364,26 +374,36 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     referenceParList = parList;
     float best_metric = 0;
     int cnt = 0;
-    std::function<float(ParameterList &)> func = [&](ParameterList &params) -> float
+    auto func = [&](std::vector<ParameterList> &params) -> std::vector<float>
     {
+        if (params.empty())
+            return std::vector<float>();
         GrovePacker packer;
-        Tree single_tree;
+        Tree *trees = new Tree[params.size()];
         GrovePacked tmp_g;
-        tree_ggd.types[0].params->read_parameter_list(params);
-        gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[0]));
+        for (int i=tree_ggd.types.size();i<params.size();i++)
+        {
+            tree_ggd.types.push_back(tree_ggd.types[0]);
+        }
+        tree_ggd.trees_count = params.size();
+        for (int i=0;i<params.size();i++)
+        {
+            tree_ggd.types[i].params->read_parameter_list(params[i]);
+            gen->plant_tree(glm::vec3(100*i,0,0),&(tree_ggd.types[i]));
+        }
         while (gen->iterate(voxels))
         {
             
         }
-        gen->finalize_generation(&single_tree,voxels);
-        packer.add_trees_to_grove(tree_ggd, tmp_g, &single_tree, scene.heightmap, false);
+        gen->finalize_generation(trees,voxels);
+        packer.add_trees_to_grove(tree_ggd, tmp_g, trees, scene.heightmap, false);
         //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp0");
         //logerr("generate %d",cnt);
-        cnt++;
+        cnt+=params.size();
         std::vector<float> res;
         imp_sim.calc_similarity(tmp_g, ref_tree, res);
-        return res[0];
-        return dot_metric(single_tree, 0.5);
+        delete[] trees;
+        return res;
     };
 
     //create reference tree
@@ -391,6 +411,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
         Tree single_tree;
+        tree_ggd.trees_count = 1;
         tree_ggd.types[0].params->read_parameter_list(referenceParList);
         gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[0]));
         while (gen->iterate(voxels))
@@ -407,7 +428,12 @@ void sandbox_main(int argc, char **argv, Scene &scene)
 
     bestParList = parList;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    bruteforce_selection(func, 8, 1, 1, 1, best_metric, bestParList);
+    std::vector<std::pair<float,ParameterList>> best_pars;
+    //bruteforce_selection(func, 4, 1, 1, 4, best_metric, bestParList);
+    GeneticAlgorithm GA;
+    GA.perform(parList, GeneticAlgorithm::MetaParameters(), GeneticAlgorithm::ExitConditions(), func, best_pars);
+    bestParList = best_pars[0].second;
+    best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     bestParList.print();
@@ -420,6 +446,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
         Tree single_tree;
+        tree_ggd.trees_count = 1;
         tree_ggd.types[0].params->read_parameter_list(bestParList);
         gen->plant_tree(glm::vec3(100,0,0),&(tree_ggd.types[0]));
         while (gen->iterate(voxels))

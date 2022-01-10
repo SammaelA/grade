@@ -293,3 +293,32 @@ void ParameterList::load_borders_from_blk(Block &b)
         }
     }
 }
+
+void ParameterList::to_simple_list(std::vector<float> &list)
+{
+    for (auto &p : categorialParameters)
+        list.push_back(p.second.val);
+    for (auto &p : ordinalParameters)
+        list.push_back(p.second.val);
+    for (auto &p : continuousParameters)
+        list.push_back(p.second.val);
+}
+void ParameterList::from_simple_list(std::vector<float> &list)
+{
+    int n = 0;
+    for (auto &p : categorialParameters)
+    {
+        p.second.val = list[n];
+        n++;
+    }
+    for (auto &p : ordinalParameters)
+    {
+        p.second.val = list[n];
+        n++;
+    }
+    for (auto &p : continuousParameters)
+    {
+        p.second.val = list[n];
+        n++;
+    }
+}

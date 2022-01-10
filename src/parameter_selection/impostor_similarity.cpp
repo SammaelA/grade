@@ -98,11 +98,18 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         for (int j =0;j<slices_per_impostor;j++)
         {
             dist = MIN(results_data[i*slices_per_impostor + j], dist);
-            //logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
+            logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
         }
-        dist = CLAMP(1 - dist, 0,1);
+        glm::vec2 scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
+        if (scale_fine.x > 1)
+            scale_fine.x = 1/scale_fine.x;
+        if (scale_fine.y > 1)
+            scale_fine.y = 1/scale_fine.y;
+        float sf = sqrt(scale_fine.x)*sqrt(scale_fine.y);
+        logerr("scale fine %f %f %f", scale_fine.x, scale_fine.y, sf);
+        dist = CLAMP(sf*(1 - dist), 0,1);
         sim_results.push_back(dist);
-        //logerr("similarity data %f", sim_results.back());
+        logerr("similarity data %f", sim_results.back());
     }
 }
 
@@ -114,7 +121,7 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
         delete[] slices_info_data;
     if (impostors_info_data)
         delete[] impostors_info_data;
-    //glDeleteFramebuffers(1, &fbo);
+    glDeleteFramebuffers(1, &fbo);
     glDeleteBuffers(1, &results_buf);
     glDeleteBuffers(1, &slices_info_buf);
     glDeleteBuffers(1, &impostors_info_buf);

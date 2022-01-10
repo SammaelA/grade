@@ -15,7 +15,7 @@ public:
     void prepare(int branch_level, std::vector<ClusterData> &clusters,
                  ImpostorGenerationParams &params, ImpostorsData *data = nullptr);
     void prepare(ImpostorGenerationParams params, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
-                 ImpostorsData *data, std::list<Impostor>::iterator &impostor);
+                 ImpostorsData *data, std::list<Impostor>::iterator &impostor, int clusters_expected = 1);
     void prepare(Quality quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                  ImpostorsData *data, std::list<Impostor>::iterator &impostor);
     void prepare_all_grove(GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,

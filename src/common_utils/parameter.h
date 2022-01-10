@@ -411,4 +411,6 @@ struct ParameterList
 
     void print();
     void load_borders_from_blk(Block &b);
+    void to_simple_list(std::vector<float> &list);
+    void from_simple_list(std::vector<float> &list);
 };

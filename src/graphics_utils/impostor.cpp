@@ -15,7 +15,7 @@ void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &clu
 }
 
 void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
-                            ImpostorsData *data, std::list<Impostor>::iterator &impostor)
+                            ImpostorsData *data, std::list<Impostor>::iterator &impostor, int clusters_expected)
 {
     quality = params.quality;
     static const int slices_n = 8;
@@ -25,7 +25,8 @@ void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, C
     }
     if (!data->atlas.is_valid())
     {
-        int mult = params.monochrome ? 2 : 4;
+        int mult = clusters_expected + 1;
+        logerr("created impostors for %d clusters", clusters_expected);
         AtlasParams params = set_atlas_params(quality, mult*(slices_n + 1));
         int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
         TextureAtlas a = TextureAtlas(params.x,params.y,params.layers);
