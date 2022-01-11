@@ -8,20 +8,20 @@ class GeneticAlgorithm
 public:
     struct MetaParameters
     {
-        int initial_population_size = 40;
-        int max_population_size = 50;
+        int initial_population_size = 90;
+        int max_population_size = 100;
         int best_genoms_count = 1;
         float weaks_to_kill = 0.33;
-        float dead_at_birth_thr = 0.0;
+        float dead_at_birth_thr = 0.25;
         int n_ploid_genes = 1;
-        int max_age = 100;
+        int max_age = 10;
     };
     struct ExitConditions
     {
         float time_elapsed_seconds = 60*60;
         float function_reached = 1;
-        int function_calculated = 1000;
-        int generations = 30;
+        int function_calculated = 10000;
+        int generations = 75;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                  const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,

@@ -35,12 +35,12 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     initialize_population();
     calculate_metric();
     recalculate_fitness();
-
+    debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_ever);
     while (!should_exit())
     {
         kill_old();
         kill_weak(metaParams.weaks_to_kill);
-        if (current_population_size == 0)
+        if (current_population_size < 5)
         {
             logerr("population extincted");
             return;
@@ -54,7 +54,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         find_pairs(0.67*space_left, pairs);
         for (auto &p : pairs)
         {
-            logerr("children %d %d", p.first, p.second);
+            //logerr("children %d %d", p.first, p.second);
             make_children(population[p.first], population[p.second], 1);
         }
         
@@ -66,6 +66,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                 population[i].age++;
         }
         iteration_n++;
+        debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_ever);
     }
 
     prepare_best_params(best_results);
@@ -87,7 +88,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         if (population[i].alive)
             kill_creature(i);
     }
-    logerr("heaven popultion %d best metric %f", heaven.size(), heaven[0].metric);
+    debug("heaven popultion %d best metric %.4f\n", heaven.size(), heaven[0].metric);
     for (auto &creature : heaven)
     {
         best_results.emplace_back();
@@ -171,7 +172,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                     float val = G[g_pos] + len*urand(-1,1);
                     val = CLAMP(val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
                     G[g_pos] = val;
-                    logerr("applied pos val %d %f in [%f %f]",pos, val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
+                    //logerr("applied pos val %d %f in [%f %f]",pos, val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
                     found = true;
                 }
             }
@@ -217,7 +218,7 @@ void GeneticAlgorithm::find_pairs(int cnt, std::vector<std::pair<int, int>> &pai
             }
         }
         pairs.push_back(std::pair<int, int>(vals[0], vals[1]));
-        logerr("parents %d %d chosen", vals[0], vals[1]);
+        //logerr("parents %d %d chosen", vals[0], vals[1]);
     }
 }
 
@@ -226,6 +227,7 @@ void GeneticAlgorithm::kill_creature(int n)
     if (heaven.size() < metaParams.best_genoms_count)
     {
         heaven.push_back(population[n]);
+        best_metric_ever = MAX(best_metric_ever, population[n].metric);
     }
     else
     {
@@ -234,6 +236,7 @@ void GeneticAlgorithm::kill_creature(int n)
             if (heaven[i].metric < population[n].metric)
             {
                 heaven[i] = population[n];
+                best_metric_ever = MAX(best_metric_ever, population[n].metric);
                 break;
             }
         }
@@ -261,13 +264,13 @@ void GeneticAlgorithm::kill_weak(float percent)
     int killed = 0;
     for (int i=0;i<population.size();i++)
     {
-        logerr("%d) %d fitness %f",i,population[i].alive, population[i].fitness);
+        //logerr("%d) %d fitness %f",i,population[i].alive, population[i].fitness);
     }
     for (int i=0;i<population.size();i++)
     {
         if (population[i].alive)
         {
-           logerr("killed weak %d metric %f", i, population[i].metric);
+           //logerr("killed weak %d metric %f", i, population[i].metric);
            kill_creature(i); 
            killed++;
         }
@@ -303,7 +306,7 @@ void GeneticAlgorithm::make_children(Creature &A, Creature &B, int count)
         population[pos].alive = true;
         population[pos].age = 0;
         population[pos].max_age = metaParams.max_age;
-        logerr("child %d created", pos);
+        //logerr("child %d created", pos);
         current_population_size++;
 
         if (metaParams.n_ploid_genes == 1)
@@ -342,7 +345,7 @@ void GeneticAlgorithm::calculate_metric()
     for (int i=0;i<metrics.size();i++)
     {
         population[positions[i]].metric = metrics[i];
-        logerr("metric[%d] = %f", positions[i], metrics[i]);
+        //logerr("metric[%d] = %f", positions[i], metrics[i]);
     }
 }
 void GeneticAlgorithm::recalculate_fitness()

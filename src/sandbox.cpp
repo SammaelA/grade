@@ -340,7 +340,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 1;
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
 
     ReferenceTree ref_tree;
     AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);

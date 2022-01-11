@@ -6,6 +6,18 @@
 
     branch_len_0:p2 = 10, 100
     branch_len_1:p2 = 10, 100
-    //branch_len_2:p2 = 5, 20
-    //branch_len_3:p2 = 1, 10
+    branch_len_2:p2 = 5, 20
+    branch_len_3:p2 = 1, 10
+
+    branch_count_0:p2 = 5, 20
+    branch_count_1:p2 = 5, 20
+    branch_count_2:p2 = 5, 20
+    branch_count_3:p2 = 5, 20
+
+    branching_start_0:p2 = 0, 1
+    branching_start_1:p2 = 0, 1
+    branching_start_2:p2 = 0, 1
+    branching_start_3:p2 = 0, 1
+    leaves_count:p2 = 0.1,1
+    leaf_size:p2 = 1,4
 }

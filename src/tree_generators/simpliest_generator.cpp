@@ -46,6 +46,8 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
 
 void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStructureParameters &params)
 {
+    leaves_tries.store(0);
+    leaves_cnt.store(0);
     tree->root = tree->branchHeaps[0]->new_branch();
     tree->root->type_id = 0;
     tree->root->self_id = branch_next_id.fetch_add(1);
@@ -56,7 +58,8 @@ void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStru
     tree->root->plane_coef = vec4(1,0,0,-pos.x);
     tree->root->id = tree->id;
     create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params);
-    //logerr("created simpliest tree with %d leaves", tree->leaves->leaves.size());
+    //logerr("created simpliest tree with %d  %f leaves %d %d", tree->leaves->leaves.size(), params.leaves_count, 
+    //        leaves_tries.load(), leaves_cnt.load());
 }
 
 void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, 
