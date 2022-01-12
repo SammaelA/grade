@@ -6,6 +6,7 @@
 #include "common_utils/distribution.h"
 #include "tinyEngine/model.h"
 #include "tinyEngine/shader.h"
+#include <functional>
 #include <vector>
 struct LightVoxelsCube
 {
@@ -63,7 +64,8 @@ public:
     int get_mip_count();
     int get_mip_decrease();
     long get_size_cnt() {return count;}
-    
+    void read_func(const std::function<void(glm::vec3 &, float )> reader);
+    void read_func_simple(const std::function<void(float )> reader);
 private:
     struct LightParams
     {

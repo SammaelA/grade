@@ -411,7 +411,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         //logerr("generate %d",cnt);
         cnt+=params.size();
         std::vector<float> res;
-        imp_sim.calc_similarity(tmp_g, ref_tree, res);
+        imp_sim.calc_similarity(tmp_g, ref_tree, res, trees);
         delete[] trees;
         return res;
     };
@@ -432,7 +432,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
         save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_ref");
         ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
-        ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), ref_tree.info);
+        ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
     }
 
 
@@ -455,16 +455,24 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     {
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
-        Tree single_tree;
-        tree_ggd.trees_count = 1;
-        tree_ggd.types[0].params->read_parameter_list(bestParList);
-        gen->plant_tree(glm::vec3(100,0,0),&(tree_ggd.types[0]));
+        Tree *trees = new Tree[best_pars.size()];
+        tree_ggd.trees_count = best_pars.size();
+
+        auto type = tree_ggd.types[0];
+        tree_ggd.types.clear();
+        tree_ggd.types = std::vector<TreeTypeData>(best_pars.size(), type);
+        for (int i=0;i<best_pars.size();i++)
+        {
+            tree_ggd.types[i].params->read_parameter_list(best_pars[i].second);
+            gen->plant_tree(glm::vec3(100*(1 + i/10),0,100*(i%10)),&(tree_ggd.types[i]));
+        }
         while (gen->iterate(voxels))
         {
             
         }
-        gen->finalize_generation(&single_tree,voxels);
-        packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
+        gen->finalize_generation(trees,voxels);
+        packer.add_trees_to_grove(tree_ggd, scene.grove, trees, scene.heightmap, false);
+        delete[] trees;
         save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_res");
     }
 }

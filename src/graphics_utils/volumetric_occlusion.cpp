@@ -1106,3 +1106,24 @@ void LightVoxelsCube::prepare_mip_levels()
         }
     }
 }
+
+void LightVoxelsCube::read_func(const std::function<void(glm::vec3 &, float )> reader)
+{
+    for (int i=-vox_x;i<=vox_x;i++)
+    {
+        for (int j=-vox_y;j<=vox_y;j++)
+        {
+            for (int k=-vox_z;k<=vox_z;k++)
+            {
+                glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
+                reader(pos, voxels[v_to_i(i,j,k)]);
+            }
+        }
+    }
+}
+
+void LightVoxelsCube::read_func_simple(const std::function<void(float )> reader)
+{
+    for (int i=0;i<count;i++)
+        reader(voxels[i]);
+}

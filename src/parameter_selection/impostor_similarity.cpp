@@ -1,5 +1,6 @@
 #include "impostor_similarity.h"
 #include "tinyEngine/TinyEngine.h"
+#include "graphics_utils/volumetric_occlusion.h"
 
 ImpostorSimilarityCalc::ImpostorSimilarityCalc(int _max_impostors, int _slices_per_impostor, bool _use_top_slice):
 similarity_shader({"impostor_image_dist.comp"},{})
@@ -17,22 +18,97 @@ similarity_shader({"impostor_image_dist.comp"},{})
     glGenBuffers(1, &impostors_info_buf);
 }
 
-void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, TreeCompareInfo &info)
+void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeCompareInfo &info)
 {
     info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
+    info.trunk_thickness = t.root->segments.front().rel_r_begin;
+    
+    glm::vec3 center = t.pos + imp.bcyl.h_2;
+    glm::vec3 sz = 1.25f*glm::vec3(imp.bcyl.r, imp.bcyl.h_2, imp.bcyl.r);
+    float v_max = MAX(sz.x, MAX(sz.y, sz.z))/8;
+    float v_min = MIN(sz.x, MIN(sz.y, sz.z))/4;
+    float v_sz = MIN(v_max, v_min);
+    //logerr("creating voxels cube size %f %f %f sz %f", sz.x, sz.y, sz.z, v_sz);
+    LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz, 1);
+    LightVoxelsCube leaves_dens = LightVoxelsCube(center, sz, v_sz, 1);
+    double dots = 0;
+    int seg_cnt = 1;
+
+    for (auto &bh : t.branchHeaps)
+    {
+        for (auto &b : bh->branches)
+        {
+            if (b.dead)
+                continue;
+            for (auto &j : b.joints)
+            {
+                if (j.pos.x == j.pos.x)
+                    branches_dens.set_occluder_simple(j.pos, 1);
+                //else 
+                //    logerr("NAN detected");
+            }
+            if (b.segments.size() > 1)
+            {
+                auto sit = b.segments.begin();
+                auto sit2 = b.segments.begin();
+                sit2++;
+                while (sit2 != b.segments.end())
+                {
+                    if (sit->end.x == sit->end.x && sit2->end.x == sit2->end.x)
+                        dots += glm::dot(normalize(sit->end - sit->begin), normalize(sit2->end - sit2->begin));
+                    sit++;
+                    sit2++;
+                }
+                seg_cnt += b.segments.size()-1;
+            }
+        }
+    }
+
+    float V = v_sz*v_sz*v_sz;
+    int b_vox_cnt = 1;
+    double res = 0;
+    std::function<void (float)> f = [&](float val)
+    {
+        res += val;
+        b_vox_cnt += (val >= 1);
+    };
+    if (t.leaves)
+    {
+        for (auto &l : t.leaves->leaves)
+        {
+            if (l.pos.x == l.pos.x)
+                leaves_dens.set_occluder_simple(l.pos, 1);
+        }
+    }
+    leaves_dens.read_func_simple(f);
+    info.leaves_density = res/(V*MAX(b_vox_cnt, 1));
+    //logerr("leaves dens %f %d %f", (float)res, b_vox_cnt, info.leaves_density);
+
+    b_vox_cnt = 1;
+    res = 0;
+    branches_dens.read_func_simple(f);
+
+    info.branches_density = res/(V*MAX(b_vox_cnt,1));
+    //logerr("branch dens %f %d %f", (float)res, b_vox_cnt, info.branches_density);
+
+    info.branches_curvature = dots/MAX(seg_cnt,1);
+    //logerr("branch curvative %f %d %f", (float)dots, seg_cnt, info.branches_curvature);
     //logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
 }
 
-void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results)
+void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, 
+                                             std::vector<float> &sim_results, Tree *original_trees)
 {
     impostors_info_data[0] = reference.info;
     //logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
     int impostors_cnt = grove.impostors[1].impostors.size();
     int cnt = 0;
-    int imp_n = 1;
+    int imp_n = 0;
+
     for (auto &imp : grove.impostors[1].impostors)
     {
-        get_tree_compare_info(imp, impostors_info_data[imp_n]);
+        //logerr("tree %d/%d", imp_n, impostors_cnt);
+        get_tree_compare_info(imp, original_trees[imp_n], impostors_info_data[imp_n+1]);
 
         for (auto &sl : imp.slices)
         {
@@ -102,13 +178,19 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         }
         dist /= slices_per_impostor;
         glm::vec2 scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
+        float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
+        d_ld /= MAX(1e-4, (impostors_info_data[i+1].leaves_density + impostors_info_data[0].leaves_density));
+        float d_bd = abs(impostors_info_data[i+1].branches_density - impostors_info_data[0].branches_density); 
+        d_bd /= MAX(1e-4, (impostors_info_data[i+1].branches_density + impostors_info_data[0].branches_density));
+        float d_bc = abs(impostors_info_data[i+1].branches_curvature - impostors_info_data[0].branches_curvature);
+        d_bc /= MAX(1e-4, (impostors_info_data[i+1].branches_curvature + impostors_info_data[0].branches_curvature)); 
         if (scale_fine.x > 1)
             scale_fine.x = 1/scale_fine.x;
         if (scale_fine.y > 1)
             scale_fine.y = 1/scale_fine.y;
         float sf = (scale_fine.x)*(scale_fine.y);
-        //logerr("scale fine %f %f %f", scale_fine.x, scale_fine.y, sf);
-        dist = CLAMP(sf*(1 - dist), 0,1);
+        //logerr("scale fine %f %f %f", d_ld, d_bd, d_bc);
+        dist = CLAMP(sf*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());
     }

@@ -8,20 +8,21 @@ class GeneticAlgorithm
 public:
     struct MetaParameters
     {
-        int initial_population_size = 90;
-        int max_population_size = 100;
-        int best_genoms_count = 1;
-        float weaks_to_kill = 0.33;
-        float dead_at_birth_thr = 0.25;
+        int initial_population_size = 250;
+        int max_population_size = 250;
+        int best_genoms_count = 10;
+        float weaks_to_kill = 0.5;
+        float dead_at_birth_thr = 0.01;
         int n_ploid_genes = 1;
-        int max_age = 10;
+        int max_age = 3;
+        bool evolution_stat = true;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 60*60;
+        float time_elapsed_seconds = 1*60;
         float function_reached = 1;
         int function_calculated = 10000;
-        int generations = 75;
+        int generations = 100;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                  const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
@@ -53,6 +54,8 @@ private:
     };
     std::vector<Creature> population;
     std::vector<Creature> heaven;
+    std::vector<Creature> crio_camera;
+
 
     std::chrono::steady_clock::time_point t_start, iter_start;
     int current_population_size = 0;

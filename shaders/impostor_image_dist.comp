@@ -4,6 +4,10 @@
 struct TreeCompareInfo
 {
     vec2 BCyl_sizes;//radius and height of bounding cylinder;
+    float branches_density;
+    float leaves_density;
+    float branches_curvature;//from 0 to 1, average dot(seg, seg_next) for all branches
+    float trunk_thickness; 
     vec2 _pad;
 };
 

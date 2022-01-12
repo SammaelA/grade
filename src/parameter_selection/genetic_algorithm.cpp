@@ -66,6 +66,20 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                 population[i].age++;
         }
         iteration_n++;
+        if (metaParams.evolution_stat)
+        {
+            float max_val = 0;
+            int max_pos = 0;
+            for (int i=0;i<heaven.size();i++)
+            {
+                if (heaven[i].metric > max_val)
+                {
+                    max_pos = i;
+                    max_val = heaven[i].metric;
+                }
+            }
+            crio_camera.push_back(heaven[max_pos]);
+        }
         debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_ever);
     }
 
@@ -76,7 +90,7 @@ bool GeneticAlgorithm::should_exit()
 {
     iter_start = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(iter_start - t_start).count();
-    time_spent_sec += 0.001*time;
+    time_spent_sec = 0.001*time;
     return (time_spent_sec > exitConditions.time_elapsed_seconds || iteration_n >= exitConditions.generations
     || func_called >= exitConditions.function_calculated || best_metric_ever >= exitConditions.function_reached);
 }
@@ -89,13 +103,27 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
             kill_creature(i);
     }
     debug("heaven popultion %d best metric %.4f\n", heaven.size(), heaven[0].metric);
+    debug("heaven [ ");
+    for (auto &creature : heaven)
+    {
+        debug("%.4f ", creature.metric);
+    }
+    debug("]\n");
     for (auto &creature : heaven)
     {
         best_results.emplace_back();
         best_results.back().first = creature.metric;
         best_results.back().second = original_param_list;
         best_results.back().second.from_simple_list(creature.main_genome);
-        best_results.back().second.print();
+        //best_results.back().second.print();
+    }
+    for (auto &creature : crio_camera)
+    {
+        best_results.emplace_back();
+        best_results.back().first = creature.metric;
+        best_results.back().second = original_param_list;
+        best_results.back().second.from_simple_list(creature.main_genome);
+        //best_results.back().second.print();
     }
 }
 
@@ -156,7 +184,9 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                 if (!parametersMask.ordinalParameters[pos].second.fixed())
                 {
                     float len = mutation_power*(parametersMask.ordinalParameters[pos].second.max_val - parametersMask.ordinalParameters[pos].second.min_val);
-                    float val = G[g_pos] + len*urand(-1,1);
+                    float from = CLAMP(G[g_pos] - len, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
+                    float to = CLAMP(G[g_pos] + len, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
+                    float val = urand(from,to);
                     val = CLAMP(val, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
                     G[g_pos] = val;
                     found = true;
@@ -169,7 +199,9 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                 if (!parametersMask.continuousParameters[pos].second.fixed())
                 {
                     float len = mutation_power*(parametersMask.continuousParameters[pos].second.max_val - parametersMask.continuousParameters[pos].second.min_val);
-                    float val = G[g_pos] + len*urand(-1,1);
+                    float from = CLAMP(G[g_pos] - len, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
+                    float to = CLAMP(G[g_pos] + len, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
+                    float val = urand(from,to);
                     val = CLAMP(val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
                     G[g_pos] = val;
                     //logerr("applied pos val %d %f in [%f %f]",pos, val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
@@ -317,7 +349,10 @@ void GeneticAlgorithm::make_children(Creature &A, Creature &B, int count)
         {
             //TODO: implement diploid genomes
         }
-        mutation(population[pos].main_genome, 0.4, urandi(1, MIN(3,free_parameters_cnt)));
+        if (urand() < 0.2)
+            mutation(population[pos].main_genome, 1.0, urandi(1, 0.6*free_parameters_cnt));
+        else
+            mutation(population[pos].main_genome, 0.33, urandi(1, MIN(3,free_parameters_cnt)));
         for (auto &g : population[pos].other_genomes)
         {
             mutation(g, 0.5, urandi(1, MIN(3,free_parameters_cnt)));
@@ -362,4 +397,20 @@ void GeneticAlgorithm::recalculate_fitness()
         else
             p.fitness = -1;
     }
+    /*
+    std::sort(population.begin(), population.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
+    float min_v = 0.025;
+    float step = 0.025;
+    int n = 0;
+
+    for (auto &p : population)
+    {
+        if (p.alive && p.fitness > 0)
+        {
+            p.fitness = MAX(min_v, 1 - step*n);
+            n++;
+        }
+    }
+    */
 }
