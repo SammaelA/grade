@@ -8,18 +8,18 @@ class GeneticAlgorithm
 public:
     struct MetaParameters
     {
-        int initial_population_size = 250;
-        int max_population_size = 250;
+        int initial_population_size = 100;
+        int max_population_size = 100;
         int best_genoms_count = 10;
         float weaks_to_kill = 0.5;
-        float dead_at_birth_thr = 0.01;
+        float dead_at_birth_thr = 0.001;
         int n_ploid_genes = 1;
         int max_age = 3;
         bool evolution_stat = true;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 1*60;
+        float time_elapsed_seconds = 20;
         float function_reached = 1;
         int function_calculated = 10000;
         int generations = 100;
@@ -51,6 +51,7 @@ private:
         int max_age = 1000;
         int children_cnt = 0;
         bool alive = false;
+        int id = 0;
     };
     std::vector<Creature> population;
     std::vector<Creature> heaven;
@@ -77,4 +78,10 @@ private:
     void calculate_metric();
     void recalculate_fitness();
     Genome random_genes();
+
+    struct Stat
+    {
+        std::map<int, float> all_results;
+        std::vector<glm::ivec3> all_births;//mother, father, child
+    } stat;
 };

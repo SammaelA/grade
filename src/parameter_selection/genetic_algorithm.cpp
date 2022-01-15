@@ -1,5 +1,10 @@
 #include "genetic_algorithm.h"
 #include <algorithm>
+#include <atomic>
+#include "GA_utils.h"
+#include <set>
+
+std::atomic<int> next_id(0);
 
 void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                                const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
@@ -32,12 +37,14 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
             free_parameters_cnt++;
     }
 
+    next_id.store(0);
     initialize_population();
     calculate_metric();
     recalculate_fitness();
     debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_ever);
     while (!should_exit())
     {
+        next_id.store(1000*(iteration_n + 1));
         kill_old();
         kill_weak(metaParams.weaks_to_kill);
         if (current_population_size < 5)
@@ -95,6 +102,19 @@ bool GeneticAlgorithm::should_exit()
     || func_called >= exitConditions.function_calculated || best_metric_ever >= exitConditions.function_reached);
 }
 
+void add_all_ids(std::set<int> &ids, int id, std::vector<glm::ivec3> &all_births)
+{
+    ids.emplace(id);
+    for (auto &v : all_births)
+    {
+        if (v.z == id)
+        {
+            add_all_ids(ids, v.x, all_births);
+            add_all_ids(ids, v.y, all_births);
+        }
+    }
+}
+
 void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, ParameterList>> &best_results)
 {
     for (int i=0;i<population.size();i++)
@@ -125,6 +145,78 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         best_results.back().second.from_simple_list(creature.main_genome);
         //best_results.back().second.print();
     }
+
+    if (metaParams.evolution_stat)
+    {
+        DebugGraph g_test;
+        g_test.add_node(DebugGraph::Node(glm::vec2(0,0), glm::vec3(1,0,0),0.1));
+        g_test.add_node(DebugGraph::Node(glm::vec2(-1,1), glm::vec3(0,1,0),0.15));
+        g_test.add_node(DebugGraph::Node(glm::vec2(1,1), glm::vec3(0,0,1),0.2));
+        g_test.add_edge(DebugGraph::Edge(0,1,0.02));
+        g_test.add_edge(DebugGraph::Edge(1,2,0.03));
+        g_test.add_edge(DebugGraph::Edge(0,2,0.04));
+        g_test.save_as_image("graph_test", 300, 300);
+
+        DebugGraph stat_g;
+        std::map<int, int> pos_by_id;
+        int cnt = 0;
+        for (auto &p : stat.all_results)
+        {
+            int iter = p.first/1000;
+            int n = p.first % 1000;
+            stat_g.add_node(DebugGraph::Node(glm::vec2(iter, 0.1*n), glm::vec3(1 - p.second, p.second, 0), 0.045));
+            pos_by_id.emplace(p.first, cnt);
+            cnt++;
+        }
+
+        int n = 0;
+        for (auto &c : heaven)
+        {
+            DebugGraph stat_gn = stat_g;
+            std::set<int> ids;
+            add_all_ids(ids, c.id, stat.all_births);
+            glm::vec3 color = glm::vec3(n/4%2, n/2%2, n%2);
+            if (n % 8 == 0)
+            {
+                color = glm::vec3(0.5, 0.5, 0.5);
+            }
+            for (auto &id : ids)
+            {
+                for (auto &v : stat.all_births)
+                {
+                    if (v.z == id)
+                    {
+                        auto itA = pos_by_id.find(v.x);
+                        auto itB = pos_by_id.find(v.y);
+                        auto itC = pos_by_id.find(v.z);
+                        if (itA != pos_by_id.end() && itB != pos_by_id.end() && itC != pos_by_id.end())
+                        {
+                            stat_gn.add_edge(DebugGraph::Edge(itA->second, itC->second, 0.005, color));
+                            stat_gn.add_edge(DebugGraph::Edge(itB->second, itC->second, 0.005, color));
+                        }                        
+                    }
+                }
+            }
+            n++;
+            stat_gn.save_as_image("graph_gen_" + std::to_string(n), 4000, 4000);
+        }
+
+        
+        for (auto &v : stat.all_births)
+        {
+            auto itA = pos_by_id.find(v.x);
+            auto itB = pos_by_id.find(v.y);
+            auto itC = pos_by_id.find(v.z);
+            if (itA != pos_by_id.end() && itB != pos_by_id.end() && itC != pos_by_id.end())
+            {
+                stat_g.add_edge(DebugGraph::Edge(itA->second, itC->second, 0.005));
+                stat_g.add_edge(DebugGraph::Edge(itB->second, itC->second, 0.005));
+            }
+
+        }
+        
+        stat_g.save_as_image("graph_gen", 5000, 5000);
+    }
 }
 
 GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
@@ -149,6 +241,7 @@ void GeneticAlgorithm::initialize_population()
             population[i].other_genomes.push_back(random_genes());
         population[i].alive = true;
         population[i].max_age = metaParams.max_age;
+        population[i].id = next_id.fetch_add(1);
     }
     current_population_size = metaParams.initial_population_size;
 }
@@ -338,6 +431,11 @@ void GeneticAlgorithm::make_children(Creature &A, Creature &B, int count)
         population[pos].alive = true;
         population[pos].age = 0;
         population[pos].max_age = metaParams.max_age;
+        population[pos].id = next_id.fetch_add(1);
+        if (metaParams.evolution_stat)
+        {
+            stat.all_births.push_back(glm::ivec3(A.id, B.id, population[pos].id));
+        }
         //logerr("child %d created", pos);
         current_population_size++;
 
@@ -393,7 +491,7 @@ void GeneticAlgorithm::recalculate_fitness()
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = p.metric;
+            p.fitness = SQR(p.metric);
         else
             p.fitness = -1;
     }
@@ -413,4 +511,14 @@ void GeneticAlgorithm::recalculate_fitness()
         }
     }
     */
+   if (metaParams.evolution_stat)
+   {
+       for (auto &c : population)
+       {
+           if (c.alive)
+           {
+               stat.all_results.emplace(c.id, c.metric);
+           }
+       }
+   }
 }
