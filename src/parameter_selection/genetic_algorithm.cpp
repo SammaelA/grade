@@ -52,18 +52,14 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
             logerr("population extincted");
             return;
         }
-        else if (current_population_size < 0.1*metaParams.initial_population_size)
+        else if (current_population_size < metaParams.min_population_size)
         {
             logerr("population %d is about to extinct", current_population_size);
         }
-        int space_left = metaParams.max_population_size - current_population_size;
+        int space_left = metaParams.max_population_size - metaParams.elite;
         std::vector<std::pair<int, int>> pairs;
-        find_pairs(0.67*space_left, pairs);
-        for (auto &p : pairs)
-        {
-            //logerr("children %d %d", p.first, p.second);
-            make_children(population[p.first], population[p.second], 1);
-        }
+        find_pairs(space_left, pairs);
+        make_new_generation(pairs);
         
         calculate_metric();
         recalculate_fitness();
@@ -146,7 +142,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         //best_results.back().second.print();
     }
 
-    if (metaParams.evolution_stat)
+    if (metaParams.debug_graph)
     {
         DebugGraph g_test;
         g_test.add_node(DebugGraph::Node(glm::vec2(0,0), glm::vec3(1,0,0),0.1));
@@ -233,7 +229,8 @@ GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
 
 void GeneticAlgorithm::initialize_population()
 {
-    population = std::vector<Creature>(metaParams.max_population_size, Creature());
+    population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
+    new_population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
     for (int i=0;i<metaParams.initial_population_size;i++)
     {
         population[i].main_genome = random_genes();
@@ -375,7 +372,7 @@ void GeneticAlgorithm::kill_old()
 {
     for (int i=0;i<population.size();i++)
     {
-        if (population[i].age >= population[i].max_age)
+        if (population[i].age >= population[i].max_age && current_population_size > metaParams.min_population_size)
             kill_creature(i);
     }
 }
@@ -414,48 +411,57 @@ void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
     }
 }
 
-void GeneticAlgorithm::make_children(Creature &A, Creature &B, int count)
+void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
 {
-    for (int ch=0;ch<count;ch++)
+    C = Creature();
+    C.alive = true;
+    C.age = 0;
+    C.max_age = metaParams.max_age;
+    C.id = next_id.fetch_add(1);
+    if (metaParams.evolution_stat)
     {
-        int pos = -1;
-        for (int i=0;i<population.size();i++)
-        {
-            if (!population[i].alive)
-            {
-                pos = i;
-                population[i] = Creature();
-                break;
-            }
-        }
-        population[pos].alive = true;
-        population[pos].age = 0;
-        population[pos].max_age = metaParams.max_age;
-        population[pos].id = next_id.fetch_add(1);
-        if (metaParams.evolution_stat)
-        {
-            stat.all_births.push_back(glm::ivec3(A.id, B.id, population[pos].id));
-        }
-        //logerr("child %d created", pos);
-        current_population_size++;
-
-        if (metaParams.n_ploid_genes == 1)
-        {
-            crossingover(A.main_genome, B.main_genome, population[pos].main_genome);
-        }
-        else
-        {
-            //TODO: implement diploid genomes
-        }
-        if (urand() < 0.2)
-            mutation(population[pos].main_genome, 1.0, urandi(1, 0.6*free_parameters_cnt));
-        else
-            mutation(population[pos].main_genome, 0.33, urandi(1, MIN(3,free_parameters_cnt)));
-        for (auto &g : population[pos].other_genomes)
-        {
-            mutation(g, 0.5, urandi(1, MIN(3,free_parameters_cnt)));
-        }
+        stat.all_births.push_back(glm::ivec3(A.id, B.id, C.id));
     }
+
+    if (metaParams.n_ploid_genes == 1)
+    {
+        crossingover(A.main_genome, B.main_genome, C.main_genome);
+    }
+    else
+    {
+        //TODO: implement diploid genomes
+    }
+    float it = 1 + 0.1*iteration_n;
+    if (urand() < 0.33/it)
+        mutation(C.main_genome, 1.0, urandi(1, free_parameters_cnt));
+    else
+        mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
+    for (auto &g : C.other_genomes)
+    {
+        mutation(g, 0.5, urandi(1, MIN(3, free_parameters_cnt)));
+    }
+}
+
+void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pairs)
+{
+    //assume that the population is sorted by fitness;
+    for (int i=0;i<metaParams.elite;i++)
+    {
+        new_population[i] = population[population.size() - i - 1];
+    }
+    int pos = metaParams.elite;
+    for (auto &p : pairs)
+    {
+        //logerr("children %d %d", p.first, p.second);
+        make_child(population[p.first], population[p.second], new_population[pos]);
+        pos++;
+    }
+    for (int i=0;i<population.size()-metaParams.elite;i++)
+    {
+        kill_creature(i);
+    }
+    current_population_size = metaParams.elite + pairs.size();
+    population = new_population;
 }
 
 void GeneticAlgorithm::calculate_metric()
@@ -475,6 +481,7 @@ void GeneticAlgorithm::calculate_metric()
     }
 
     std::vector<float> metrics = function(params);
+    func_called += metrics.size();
     for (int i=0;i<metrics.size();i++)
     {
         population[positions[i]].metric = metrics[i];
@@ -483,22 +490,25 @@ void GeneticAlgorithm::calculate_metric()
 }
 void GeneticAlgorithm::recalculate_fitness()
 {
+    std::sort(population.begin(), population.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.metric < b.metric;});
     for (auto &p : population)
     {
-        if (p.alive && p.metric < metaParams.dead_at_birth_thr)
+        //logerr("%d metr %f", p.id, p.metric);
+        if (p.alive && p.metric < metaParams.dead_at_birth_thr && current_population_size > metaParams.min_population_size)
         {
             p.alive = false;
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = SQR(p.metric);
+            p.fitness = pow(p.metric, 1 + 0.1*iteration_n );
         else
             p.fitness = -1;
     }
     /*
     std::sort(population.begin(), population.end(), 
               [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
-    float min_v = 0.025;
+    float min_v = 0.1;
     float step = 0.025;
     int n = 0;
 
@@ -521,4 +531,24 @@ void GeneticAlgorithm::recalculate_fitness()
            }
        }
    }
+   /*
+   int p_cnt = 0;
+   double p_dist = 0;
+   for (auto &p1 : population)
+   {
+       for (auto &p2 : population)
+       {
+           if (p1.alive && p2.alive)
+           {
+               p_cnt++;
+               ParameterList par1 = original_param_list;
+               par1.from_simple_list(p1.main_genome);
+               ParameterList par2 = original_param_list;
+               par2.from_simple_list(p2.main_genome);
+               p_dist += par1.diff(par2);
+           }
+       }
+   }
+   logerr("average population diff %f", (float)(p_dist/p_cnt));
+   */
 }

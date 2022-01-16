@@ -9,20 +9,23 @@ public:
     struct MetaParameters
     {
         int initial_population_size = 100;
-        int max_population_size = 100;
-        int best_genoms_count = 10;
+        int max_population_size = 50;
+        int min_population_size = 10;
+        int best_genoms_count = 2;
+        int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.001;
         int n_ploid_genes = 1;
         int max_age = 3;
         bool evolution_stat = true;
+        bool debug_graph = true;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 20;
+        float time_elapsed_seconds = 5*60;
         float function_reached = 1;
-        int function_calculated = 10000;
-        int generations = 100;
+        int function_calculated = 1000;
+        int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                  const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
@@ -54,6 +57,7 @@ private:
         int id = 0;
     };
     std::vector<Creature> population;
+    std::vector<Creature> new_population;
     std::vector<Creature> heaven;
     std::vector<Creature> crio_camera;
 
@@ -74,7 +78,8 @@ private:
     void kill_old();
     void kill_weak(float percent);
     void crossingover(Genome &A, Genome &B, Genome &res);
-    void make_children(Creature &A, Creature &B, int count);
+    void make_new_generation(std::vector<std::pair<int, int>> &pairs);
+    void make_child(Creature &A, Creature &B, Creature &C);
     void calculate_metric();
     void recalculate_fitness();
     Genome random_genes();

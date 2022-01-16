@@ -220,6 +220,7 @@ glm::mat4 TextureAtlas::tex_transform(int num) const
 void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
 {
     debugl(10,"generate mipmaps\n");
+    //logerr("mipmaps gen %d", tex(0).get_mip_levels());
     Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
     Shader mipMapRenderer({"mipmap_render.vs", mipmap_shader_name}, {"in_Position", "in_Tex"});
     Model bm;

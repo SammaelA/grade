@@ -32,7 +32,7 @@ void MetainfoManager::load_tree_types()
             params->load_from_blk(*bl);
             TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
             type.generator_name = "ge_gen";
-
+            logerr("%s loaded", name.c_str());
             type.type_id = tree_types.size();
             tree_type_id_by_name.emplace(name, tree_types.size());
             tree_types.push_back(type);

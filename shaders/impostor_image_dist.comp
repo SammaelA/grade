@@ -36,6 +36,7 @@ uniform int start_id;
 uniform sampler2DArray atlas;
 uniform sampler2D reference_image;
 
+
 float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
 {
     float sum = 1e-6;
@@ -45,9 +46,26 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
     {
         for (int j=0;j<impostor_y;j++)
         {
-            vec4 p1 = texelFetch(atlas, pixel_coords + ivec3(i, j, 0), mip);
+            vec4 p1 = vec4(0);
+            int n = 2;
+            for (int x = -n;x<n;x++)
+            {
+                for (int y=-n;y<=n;y++)
+                {
+                    p1 += texelFetch(atlas, pixel_coords + ivec3(i+x, j+y, 0), 0);
+                }
+            }
+            p1 /= (2*n+1)*(2*n+1); 
             vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
-            vec4 p2 = texelFetch(reference_image, ivec2(im_tc*vec2(impostor_x, impostor_y)), 0);
+            vec4 p2 = vec4(0);
+            for (int x = -n;x<n;x++)
+            {
+                for (int y=-n;y<=n;y++)
+                {
+                    p2 += texelFetch(reference_image, ivec2(im_tc*vec2(impostor_x, impostor_y))+ivec2(x,y), 0);
+                }
+            }
+            p2 /= (2*n+1)*(2*n+1);
 
             if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
             {

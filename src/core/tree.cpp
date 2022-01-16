@@ -254,7 +254,10 @@ leaf(t.leaf)
     if (t.params)
         params = t.params->copy();
     else
+    {
+        //logerr("wrong tree types data %s, no params!", generator_name.c_str());
         params = nullptr;
+    }
 }
 
 TreeTypeData::TreeTypeData(TreeTypeData &t):
@@ -266,9 +269,12 @@ leaf(t.leaf)
     leaf_id = t.leaf_id;
     additional_textures = t.additional_textures;
     generator_name = t.generator_name;
-    
+
     if (t.params)
         params = t.params->copy();
     else
+    {
+        //logerr("wrong tree types data %s, no params!", generator_name.c_str());
         params = nullptr;
+    }
 }

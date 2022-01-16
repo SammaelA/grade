@@ -32,8 +32,9 @@ struct SimpliestTreeStructureParameters : public ParametersSet
     }
     virtual void save_to_blk(Block &b) override;
     virtual void load_from_blk(Block &b) override;
-    virtual void write_parameter_list(ParameterList &list) override;
-    virtual void read_parameter_list(ParameterList &list) override;
+    //virtual void write_parameter_list(ParameterList &list) override;
+    //virtual void read_parameter_list(ParameterList &list) override;
+    virtual void RW_parameter_list(bool write, ParameterList &list) override;
 };
 
 class SimpliestTreeGenerator : public AbstractTreeGenerator

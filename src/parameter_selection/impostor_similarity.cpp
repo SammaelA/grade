@@ -29,8 +29,8 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     float v_min = MIN(sz.x, MIN(sz.y, sz.z))/4;
     float v_sz = MIN(v_max, v_min);
     //logerr("creating voxels cube size %f %f %f sz %f", sz.x, sz.y, sz.z, v_sz);
-    LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz, 1);
-    LightVoxelsCube leaves_dens = LightVoxelsCube(center, sz, v_sz, 1);
+    LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz, 1.0f);
+    LightVoxelsCube leaves_dens = LightVoxelsCube(center, sz, v_sz, 1.0f);
     double dots = 0;
     int seg_cnt = 1;
 
@@ -94,11 +94,22 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     info.branches_curvature = dots/MAX(seg_cnt,1);
     //logerr("branch curvative %f %d %f", (float)dots, seg_cnt, info.branches_curvature);
     //logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
+    info.joints_cnt = 0;
+    for (auto &bh : t.branchHeaps)
+    {
+        for (auto &b : bh->branches)
+        {
+            info.joints_cnt += b.joints.size();
+        }
+    }
+    logerr("%d joints", info.joints_cnt);
 }
 
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, 
                                              std::vector<float> &sim_results, Tree *original_trees)
 {
+    //grove.impostors[1].atlas.gen_mipmaps("mipmap_render_average.fs");
+    
     impostors_info_data[0] = reference.info;
     //logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
     int impostors_cnt = grove.impostors[1].impostors.size();
@@ -184,13 +195,16 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         d_bd /= MAX(1e-4, (impostors_info_data[i+1].branches_density + impostors_info_data[0].branches_density));
         float d_bc = abs(impostors_info_data[i+1].branches_curvature - impostors_info_data[0].branches_curvature);
         d_bc /= MAX(1e-4, (impostors_info_data[i+1].branches_curvature + impostors_info_data[0].branches_curvature)); 
+        float d_jcnt = abs(impostors_info_data[i+1].joints_cnt - impostors_info_data[0].joints_cnt);
+        d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
         if (scale_fine.x > 1)
             scale_fine.x = 1/scale_fine.x;
         if (scale_fine.y > 1)
             scale_fine.y = 1/scale_fine.y;
         float sf = (scale_fine.x)*(scale_fine.y);
-        //logerr("scale fine %f %f %f", d_ld, d_bd, d_bc);
-        dist = CLAMP(sf*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc), 0,1);
+        //dist = dist;
+        logerr("dist %f %f %f %f %f %f", 1- sf, d_ld, d_bd, d_bc, d_jcnt, dist);
+        dist = CLAMP(sf*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());
     }

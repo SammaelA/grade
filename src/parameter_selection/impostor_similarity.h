@@ -10,7 +10,8 @@ struct TreeCompareInfo
     float leaves_density;
     float branches_curvature;//from 0 to 1, average dot(seg, seg_next) for all branches
     float trunk_thickness; 
-    glm::vec2 _pad;
+    int joints_cnt;
+    float _pad;
 };
 struct ReferenceTree
 {
@@ -28,7 +29,7 @@ public:
                          Tree *original_trees);
     static void get_tree_compare_info(Impostor &imp, Tree &original_tree, TreeCompareInfo &info);
 private:
-    GLuint fbo, slices_info_buf, results_buf, impostors_info_buf;
+    GLuint fbo=0, slices_info_buf=0, results_buf=0, impostors_info_buf=0;
     int slices_per_impostor = 8;
     int slices_stride = 9;
     bool use_top_slice = false;

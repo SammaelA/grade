@@ -351,8 +351,10 @@ struct ParametersSet
     virtual glm::vec3 get_tree_max_size() = 0;
     virtual ParametersSet *copy() { return nullptr;};
     virtual float get_scale_factor() {return 1;}
-    virtual void write_parameter_list(ParameterList &list) {};
-    virtual void read_parameter_list(ParameterList &list) {};
+    virtual void write_parameter_list(ParameterList &list) { RW_parameter_list(true, list);}
+    virtual void read_parameter_list(ParameterList &list) {RW_parameter_list(false, list);}
+private:
+    virtual void RW_parameter_list(bool write, ParameterList &list){};
 };
 
 struct CategorialParameter
@@ -414,4 +416,5 @@ struct ParameterList
     void load_borders_from_blk(Block &b);
     void to_simple_list(std::vector<float> &list);
     void from_simple_list(std::vector<float> &list);
+    float diff(ParameterList &list);
 };

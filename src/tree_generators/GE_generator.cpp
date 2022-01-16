@@ -4,7 +4,7 @@ using namespace glm;
 
 std::atomic<int> GETreeGenerator::ids(0);
 std::atomic<int> GETreeGenerator::t_ids(0);
-
+int GETreeGenerator::joints_limit = 50000;
 GETreeParameters GETreeGenerator::defaultParameters = GETreeParameters();
 
 //TreeTypeData def_ttd = TreeTypeData(-1,&(GETreeGenerator::defaultParameters), "wood","leaf");
@@ -92,6 +92,8 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
         convert(t, trees_external[trees.size() - i - 1]);
         i++;
     }
+    trees.clear();
+    iteration = 0;
 }
 void GETreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
@@ -671,7 +673,12 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 //logerr("joint with new pos created %f %f %f %f %f %f",new_pos.x, new_pos.y,new_pos.z,
                 //                                                     best_dir.x, best_dir.y,best_dir.z);
                 br->joints.push_back(Joint(new_pos, params.base_r, iteration, urand() < params.k));
-
+                t.joints_total++;
+                if (t.joints_total > joints_limit)
+                {
+                    t.status == TreeStatus::GROWN;
+                    return;
+                }
                 //float b = params.b_min + (params.b_max - params.b_min) *
                 //                             CLAMP((float)(iteration - params.tau) / (params.max_iterations - params.tau), 0, 1);
                 set_occlusion_joint(br->joints.back(),1,params,voxels);

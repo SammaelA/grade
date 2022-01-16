@@ -322,3 +322,57 @@ void ParameterList::from_simple_list(std::vector<float> &list)
         n++;
     }
 }
+
+float ParameterList::diff(ParameterList &list)
+{
+    if (categorialParameters.size() != list.categorialParameters.size() ||
+        ordinalParameters.size() != list.ordinalParameters.size() ||
+        continuousParameters.size() != list.continuousParameters.size())
+    {
+        return 1;
+    }
+
+    float dist = 0;
+    {
+        auto it1 = categorialParameters.begin();
+        auto it2 = list.categorialParameters.begin();
+        for (int i=0;i<categorialParameters.size();i++)
+        {
+            if (it1->second.val != it2->second.val)
+            {
+                dist += 1;
+            }
+            it1++;
+            it2++;
+        }
+    }
+    {
+        auto it1 = ordinalParameters.begin();
+        auto it2 = list.ordinalParameters.begin();
+        for (int i=0;i<ordinalParameters.size();i++)
+        {
+            if (!it1->second.fixed())
+            {
+                float sz = it1->second.max_val - it2->second.min_val;
+                dist += abs(it2->second.val - it1->second.val)/sz;
+            }
+            it1++;
+            it2++;
+        }
+    }
+    {
+        auto it1 = continuousParameters.begin();
+        auto it2 = list.continuousParameters.begin();
+        for (int i=0;i<continuousParameters.size();i++)
+        {
+            if (!it1->second.fixed())
+            {
+                float sz = it1->second.max_val - it2->second.min_val;
+                dist += abs(it2->second.val - it1->second.val)/sz;
+            }
+            it1++;
+            it2++;
+        }
+    }
+    return dist / (categorialParameters.size() + ordinalParameters.size() + continuousParameters.size());
+}

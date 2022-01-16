@@ -3,7 +3,7 @@
 
 using namespace glm;
 
-#define NO_RANDOM_GEN 1
+#define NO_RANDOM_GEN 0
 
 std::atomic<int> branch_next_id(0), tree_next_id(0); 
 std::atomic<int> leaves_cnt(0), leaves_tries(0);
@@ -49,7 +49,7 @@ void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStru
     leaves_tries.store(0);
     leaves_cnt.store(0);
     tree->root = tree->branchHeaps[0]->new_branch();
-    tree->root->type_id = 0;
+    tree->root->type_id = tree->type->type_id;
     tree->root->self_id = branch_next_id.fetch_add(1);
     tree->root->level = 0;
     tree->root->dead = false;
@@ -205,68 +205,44 @@ void SimpliestTreeStructureParameters::load_from_blk(Block &b)
     leaf_size = b.get_double("leaf_size",leaf_size);
 }
 
-void SimpliestTreeStructureParameters::write_parameter_list(ParameterList &list)
+void SimpliestTreeStructureParameters::RW_parameter_list(bool write, ParameterList &list)
 {
-    list.ordinalParameters.emplace("max_depth",max_depth);
+    #define ORD1(par) if (write) {list.ordinalParameters.emplace(#par, par);} else {par = list.ordinalParameters.at(#par);}
+    #define ORD2(par_name, par) if (write) {list.ordinalParameters.emplace(#par_name, par);} else {par = list.ordinalParameters.at(#par_name);}
 
-    list.continuousParameters.emplace("branch_len_0",branch_len[0]);
-    list.continuousParameters.emplace("branch_len_1",branch_len[1]);
-    list.continuousParameters.emplace("branch_len_2",branch_len[2]);
-    list.continuousParameters.emplace("branch_len_3",branch_len[3]);
+    #define CAT1(par) if (write) {list.categorialParameters.emplace(#par, par);} else {par = list.categorialParameters.at(#par);}
+    #define CAT2(par_name, par) if (write) {list.categorialParameters.emplace(#par_name, par);} else {par = list.categorialParameters.at(#par_name);}
 
-    list.continuousParameters.emplace("branch_r_0",branch_r[0]);
-    list.continuousParameters.emplace("branch_r_1",branch_r[1]);
-    list.continuousParameters.emplace("branch_r_2",branch_r[2]);
-    list.continuousParameters.emplace("branch_r_3",branch_r[3]);
-
-    list.continuousParameters.emplace("branch_angle_0",branch_angle[0]);
-    list.continuousParameters.emplace("branch_angle_1",branch_angle[1]);
-    list.continuousParameters.emplace("branch_angle_2",branch_angle[2]);
-    list.continuousParameters.emplace("branch_angle_3",branch_angle[3]);
-
-    list.continuousParameters.emplace("branch_count_0",branch_count[0]);
-    list.continuousParameters.emplace("branch_count_1",branch_count[1]);
-    list.continuousParameters.emplace("branch_count_2",branch_count[2]);
-    list.continuousParameters.emplace("branch_count_3",branch_count[3]);
-
-    list.continuousParameters.emplace("branching_start_0",branching_start[0]);
-    list.continuousParameters.emplace("branching_start_1",branching_start[1]);
-    list.continuousParameters.emplace("branching_start_2",branching_start[2]);
-    list.continuousParameters.emplace("branching_start_3",branching_start[3]);
-
-    list.continuousParameters.emplace("leaves_count",leaves_count);
-    list.continuousParameters.emplace("leaf_size",leaf_size);
-}
-
-void SimpliestTreeStructureParameters::read_parameter_list(ParameterList &list)
-{
-    max_depth = list.ordinalParameters.at("max_depth");
-
-    branch_len[0] = list.continuousParameters.at("branch_len_0");
-    branch_len[1] = list.continuousParameters.at("branch_len_1");
-    branch_len[2] = list.continuousParameters.at("branch_len_2");
-    branch_len[3] = list.continuousParameters.at("branch_len_3");
+    #define CON1(par) if (write) {list.continuousParameters.emplace(#par, par);} else {par = list.continuousParameters.at(#par);}
+    #define CON2(par_name, par) if (write) {list.continuousParameters.emplace(#par_name, par);} else {par = list.continuousParameters.at(#par_name);}
     
-    branch_r[0] = list.continuousParameters.at("branch_r_0");
-    branch_r[1] = list.continuousParameters.at("branch_r_1");
-    branch_r[2] = list.continuousParameters.at("branch_r_2");
-    branch_r[3] = list.continuousParameters.at("branch_r_3");
+    ORD1(max_depth);
 
-    branch_angle[0] = list.continuousParameters.at("branch_angle_0");
-    branch_angle[1] = list.continuousParameters.at("branch_angle_1");
-    branch_angle[2] = list.continuousParameters.at("branch_angle_2");
-    branch_angle[3] = list.continuousParameters.at("branch_angle_3");
+    CON2(branch_len_0, branch_len[0]);
+    CON2(branch_len_1, branch_len[1]);
+    CON2(branch_len_2, branch_len[2]);
+    CON2(branch_len_3, branch_len[3]);
 
-    branch_count[0] = list.continuousParameters.at("branch_count_0");
-    branch_count[1] = list.continuousParameters.at("branch_count_1");
-    branch_count[2] = list.continuousParameters.at("branch_count_2");
-    branch_count[3] = list.continuousParameters.at("branch_count_3");
+    CON2(branch_r_0, branch_r[0]);
+    CON2(branch_r_1, branch_r[1]);
+    CON2(branch_r_2, branch_r[2]);
+    CON2(branch_r_3, branch_r[3]);
 
-    branching_start[0] = list.continuousParameters.at("branching_start_0");
-    branching_start[1] = list.continuousParameters.at("branching_start_1");
-    branching_start[2] = list.continuousParameters.at("branching_start_2");
-    branching_start[3] = list.continuousParameters.at("branching_start_3");
+    CON2(branch_angle_0, branch_angle[0]);
+    CON2(branch_angle_1, branch_angle[1]);
+    CON2(branch_angle_2, branch_angle[2]);
+    CON2(branch_angle_3, branch_angle[3]);
 
-    leaves_count = list.continuousParameters.at("leaves_count");
-    leaf_size = list.continuousParameters.at("leaf_size");
+    CON2(branch_count_0, branch_count[0]);
+    CON2(branch_count_1, branch_count[1]);
+    CON2(branch_count_2, branch_count[2]);
+    CON2(branch_count_3, branch_count[3]);
+
+    CON2(branching_start_0, branching_start[0]);
+    CON2(branching_start_1, branching_start[1]);
+    CON2(branching_start_2, branching_start[2]);
+    CON2(branching_start_3, branching_start[3]);
+
+    CON1(leaves_count);
+    CON1(leaf_size);
 }

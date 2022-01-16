@@ -117,7 +117,17 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     for (Branch &b : base_branches)
     {
         BBox bbox = get_bbox(&b,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
-        make_impostor(b, ttd[b.type_id], *(its[proj.at(b.mark_A)]),params, data->atlas, bbox); 
+        int type_pos = 0;
+        for (auto &tt : ttd)
+        {
+            if (tt.type_id == b.type_id)
+            {
+                break;
+            }
+            type_pos++;
+        }
+        //logerr("type id %d %d", b.type_id, type_pos);
+        make_impostor(b, ttd[type_pos], *(its[proj.at(b.mark_A)]),params, data->atlas, bbox); 
     }
 
     data->valid = !data->impostors.empty();
