@@ -240,36 +240,32 @@ Texture load_reference(std::string name, int image_w, int image_h)
     return ref;
 }
 
-void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, int num_slice, std::string name)
+void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::string name, TextureAtlas &ref_atl)
 {
-    Texture res(textureManager.create_unnamed(tex_w, tex_h));
+    {
+        TextureAtlas atl = TextureAtlas(8*tex_w, tex_h, 1, 1);
+        ref_atl = atl;
+    }
+    ref_atl.set_grid(tex_w,tex_h,false);
     PostFx copy = PostFx("copy_arr2.fs");
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res.texture, 0);
-    glViewport(0, 0, tex_w, tex_h);
-    glClearColor(1,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
-    tex_transform = glm::vec4(tex_transform.z*tex_transform.x, tex_transform.w*tex_transform.y, tex_transform.x, tex_transform.y);
-    glm::vec3 tex = glm::vec3(0,0,0);
-    imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
-    int layer = tex.z;
-
-    copy.use();
-    copy.get_shader().texture("tex", imp.atlas.tex(0));
-    copy.get_shader().uniform("tex_transform", tex_transform);
-    copy.get_shader().uniform("layer",layer);
-    copy.render();
-    
-    glBindTexture(imp.atlas.tex(0).type, 0);
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-    textureManager.save_png_directly(res, image::base_img_path + name + ".png");
-    textureManager.delete_tex(res);
-    glDeleteFramebuffers(1, &fbo);
+    for (int num_slice = 0; num_slice < 8; num_slice++)
+    {
+        glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
+        tex_transform = glm::vec4(tex_transform.z*tex_transform.x, tex_transform.w*tex_transform.y, tex_transform.x, tex_transform.y);
+        glm::vec3 tex = glm::vec3(0,0,0);
+        imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
+        int layer = tex.z;
+        
+        int tex_id = ref_atl.add_tex();
+        ref_atl.target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex", imp.atlas.tex(0));
+        copy.get_shader().uniform("tex_transform", tex_transform);
+        copy.get_shader().uniform("layer",(float)layer);
+        copy.render();
+    }
+    textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
+    textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
 }
 
 void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *average_p, float *stddev_p)
@@ -323,6 +319,43 @@ float sel_quality(ParameterList &parList, ParameterList &referenceParList,
     return q;
 }
 
+void ref_atlas_transform(TextureAtlas &atl)
+{
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glm::ivec4 sizes = atl.get_sizes();
+    glm::ivec2 slice_size = atl.get_slice_size();
+    TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, atl.layers_count(), 1);
+    atl_tmp.set_grid(slice_size.x, slice_size.y, false);
+
+    PostFx gauss = PostFx("gaussian_blur_atlas.fs");
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl_tmp.target(l,0);
+        gauss.use();
+        gauss.get_shader().texture("tex", atl.tex(0));
+        gauss.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        gauss.get_shader().uniform("layer",(float)l);
+        gauss.get_shader().uniform("pass", 0);
+        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        gauss.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl.target(l,0);
+        gauss.use();
+        gauss.get_shader().texture("tex", atl_tmp.tex(0));
+        gauss.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        gauss.get_shader().uniform("layer",l);
+        gauss.get_shader().uniform("pass", 1);
+        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        gauss.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    textureManager.save_png(atl.tex(0), "atlass_gauss_1");
+}
+
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
@@ -330,11 +363,11 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     scene.heightmap = new Heightmap(glm::vec3(0,0,0),glm::vec2(100,100),10);
     scene.heightmap->fill_const(0);
 
-    float imp_size = 32;
+    float imp_size = 64;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
-    //TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
-    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
+    TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
+    //TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
@@ -356,8 +389,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     BlkManager man;
     Block b;
 
-    //man.load_block_from_file("simpliest_gen_param_borders.blk", b);
-    man.load_block_from_file("ge_gen_param_borders.blk", b);
+    man.load_block_from_file("simpliest_gen_param_borders.blk", b);
+    //man.load_block_from_file("ge_gen_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     parList.print();
     /*
@@ -414,6 +447,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
 
         packer.add_trees_to_grove(tree_ggd, tmp_g, trees, scene.heightmap, false);
+        ref_atlas_transform(tmp_g.impostors[1].atlas);
         textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
         //logerr("generate %d",cnt);
         cnt+=params.size();
@@ -438,7 +472,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         gen->finalize_generation(&single_tree,voxels);
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
-        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_ref");
+        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
+        ref_atlas_transform(ref_tree.atlas);
         ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
         ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
         GETreeGenerator::set_joints_limit(2*ref_tree.info.joints_cnt);
@@ -498,6 +533,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         }
         packer.add_trees_to_grove(tree_ggd, scene.grove, trees, scene.heightmap, false);
         delete[] trees;
-        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, 0, "imp_res");
+        //TextureAtlas atl;
+        //save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_res", atl);
     }
 }

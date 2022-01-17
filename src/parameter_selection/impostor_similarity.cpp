@@ -3,7 +3,7 @@
 #include "graphics_utils/volumetric_occlusion.h"
 
 ImpostorSimilarityCalc::ImpostorSimilarityCalc(int _max_impostors, int _slices_per_impostor, bool _use_top_slice):
-similarity_shader({"impostor_image_dist.comp"},{})
+similarity_shader({"impostor_atlas_dist.comp"},{})
 {
     use_top_slice = _use_top_slice;
     max_impostors = _max_impostors;
@@ -159,17 +159,32 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, impostors_info_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TreeCompareInfo)*(impostors_cnt+1), impostors_info_data, GL_STATIC_DRAW);
 
+    int e = glGetError();
+    while (e)
+    {
+        logerr("error before %d", e);
+        e = glGetError();      
+    }
     glm::ivec2 slice_sizes = grove.impostors[1].atlas.get_slice_size();
+    glm::ivec4 atlas_sizes = reference.atlas.get_sizes();
     similarity_shader.use();
     similarity_shader.texture("atlas", grove.impostors[1].atlas.tex(0));
-    similarity_shader.texture("reference_image", reference.tex);
+    similarity_shader.texture("reference_image", reference.atlas.tex(0));
+
+    similarity_shader.uniform("reference_images_cnt", atlas_sizes.z);
+    logerr("atlas sizes %d", atlas_sizes.z);
     similarity_shader.uniform("impostor_x", slice_sizes.x);
     similarity_shader.uniform("impostor_y", slice_sizes.y);
     similarity_shader.uniform("impostors_count", impostors_cnt);
     similarity_shader.uniform("impostor_slice_count", slices_per_impostor);
     similarity_shader.uniform("slice_stride", slices_stride);
     similarity_shader.uniform("start_id", 0);
-    
+    e = glGetError();  
+    while (e)
+    {
+        logerr("error after %d", e);
+        e = glGetError();      
+    }
     glDispatchCompute(cnt, 1, 1);
     //SDL_GL_SwapWindow(Tiny::view.gWindow);
 

@@ -17,6 +17,7 @@ struct ReferenceTree
 {
     TreeCompareInfo info;
     Texture tex;
+    TextureAtlas atlas;
     ReferenceTree() : tex(textureManager.empty()) {};
 };
 

@@ -32,12 +32,12 @@ uniform int impostors_count;
 uniform int impostor_slice_count;
 uniform int slice_stride;
 uniform int start_id;
-
+uniform int reference_images_cnt;
 uniform sampler2DArray atlas;
-uniform sampler2D reference_image;
+uniform sampler2DArray reference_image;
 
 
-float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
+float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n)
 {
     float sum = 1e-6;
     float dist = 0;
@@ -46,26 +46,9 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int mip)
     {
         for (int j=0;j<impostor_y;j++)
         {
-            vec4 p1 = vec4(0);
-            int n = 0;
-            for (int x = -n;x<=n;x++)
-            {
-                for (int y=-n;y<=n;y++)
-                {
-                    p1 += texelFetch(atlas, pixel_coords + ivec3(i+x, j+y, 0), 0);
-                }
-            }
-            p1 /= (2*n+1)*(2*n+1); 
+            vec4 p1 = texelFetch(atlas, pixel_coords + ivec3(i, j, 0), 0);
             vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
-            vec4 p2 = vec4(0);
-            for (int x = -n;x<=n;x++)
-            {
-                for (int y=-n;y<=n;y++)
-                {
-                    p2 += texelFetch(reference_image, ivec2(im_tc*vec2(impostor_x, impostor_y))+ivec2(x,y), 0);
-                }
-            }
-            p2 /= (2*n+1)*(2*n+1);
+            vec4 p2 = texelFetch(reference_image, ivec3(im_tc*vec2(float(ref_image_n)+impostor_x, impostor_y), 0), 0);
 
             if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
             {
@@ -92,6 +75,11 @@ void main()
     vec2 scale = vec2(1,1);
     scale = impostors_info[0].BCyl_sizes/impostors_info[impostor_n+1].BCyl_sizes;
     ivec3 slice_data = ivec3(slices_info[impostor_n*slice_stride + slice_n].xyz);
-    float dist = get_dist(slice_data, scale, 0);
-    results[id] = dist;
+    float min_dist = 1;
+    for (int i=0;i<reference_images_cnt;i++)
+    {
+        float dist = get_dist(slice_data, scale, i);
+        min_dist = min(dist, min_dist);
+    }
+    results[id] = min_dist;
 }
