@@ -264,8 +264,8 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::s
         copy.get_shader().uniform("layer",(float)layer);
         copy.render();
     }
-    textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
-    textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
+    //textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
+    //textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
 }
 
 void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *average_p, float *stddev_p)
@@ -337,10 +337,11 @@ void ref_atlas_transform(TextureAtlas &atl)
         gauss.get_shader().uniform("layer",(float)l);
         gauss.get_shader().uniform("pass", 0);
         gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        gauss.get_shader().uniform("slice_size", slice_size);
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
+    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
     for (int l=0;l<atl.layers_count();l++)
     {
         atl.target(l,0);
@@ -350,10 +351,73 @@ void ref_atlas_transform(TextureAtlas &atl)
         gauss.get_shader().uniform("layer",l);
         gauss.get_shader().uniform("pass", 1);
         gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        gauss.get_shader().uniform("slice_size", slice_size);
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    textureManager.save_png(atl.tex(0), "atlass_gauss_1");
+    //textureManager.save_png(atl.tex(0), "atlass_gauss_1");
+
+    PostFx sil_fill = PostFx("silhouette_fill.fs");
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl_tmp.target(l,0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        sil_fill.get_shader().uniform("layer",(float)l);
+        sil_fill.get_shader().uniform("radius", 8);
+        sil_fill.get_shader().uniform("dir_threshold", 4);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    } 
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl.target(l,0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        sil_fill.get_shader().uniform("layer",(float)l);
+        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("dir_threshold", 6);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    } 
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl_tmp.target(l,0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        sil_fill.get_shader().uniform("layer",(float)l);
+        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("dir_threshold", 6);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f/sizes.x, 1.0f/sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    } 
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_2");
+
+    PostFx sil_sharp = PostFx("silhouette_sharpen.fs");
+    for (int l=0;l<atl.layers_count();l++)
+    {
+        atl.target(l,0);
+        sil_sharp.use();
+        sil_sharp.get_shader().texture("tex", atl_tmp.tex(0));
+        sil_sharp.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        sil_sharp.get_shader().uniform("layer",(float)l);
+        sil_sharp.get_shader().uniform("threshold", 0.05f);
+        sil_sharp.render();
+    } 
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl.tex(0), "atlass_gauss_3");
 }
 
 void sandbox_main(int argc, char **argv, Scene &scene)
@@ -363,11 +427,11 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     scene.heightmap = new Heightmap(glm::vec3(0,0,0),glm::vec2(100,100),10);
     scene.heightmap->fill_const(0);
 
-    float imp_size = 64;
+    float imp_size = 128;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
-    TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
-    //TreeTypeData type = metainfoManager.get_tree_type("small_oak");
+    //TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_2");
+    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
@@ -389,8 +453,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     BlkManager man;
     Block b;
 
-    man.load_block_from_file("simpliest_gen_param_borders.blk", b);
-    //man.load_block_from_file("ge_gen_param_borders.blk", b);
+    //man.load_block_from_file("simpliest_gen_param_borders.blk", b);
+    man.load_block_from_file("ge_gen_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     parList.print();
     /*
@@ -448,7 +512,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
 
         packer.add_trees_to_grove(tree_ggd, tmp_g, trees, scene.heightmap, false);
         ref_atlas_transform(tmp_g.impostors[1].atlas);
-        textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
+        //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
         //logerr("generate %d",cnt);
         cnt+=params.size();
         std::vector<float> res;

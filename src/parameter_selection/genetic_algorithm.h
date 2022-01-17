@@ -18,13 +18,13 @@ public:
         int n_ploid_genes = 1;
         int max_age = 3;
         bool evolution_stat = true;
-        bool debug_graph = true;
+        bool debug_graph = false;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 5*60;
+        float time_elapsed_seconds = 60*60;
         float function_reached = 1;
-        int function_calculated = 100;
+        int function_calculated = 10000;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
