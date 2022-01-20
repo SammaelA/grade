@@ -11,20 +11,20 @@ public:
         int initial_population_size = 100;
         int max_population_size = 50;
         int min_population_size = 10;
-        int best_genoms_count = 2;
+        int best_genoms_count = 5;
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.001;
         int n_ploid_genes = 1;
-        int max_age = 3;
+        int max_age = 100;
         bool evolution_stat = true;
         bool debug_graph = false;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 60*60;
+        float time_elapsed_seconds = 1*60;
         float function_reached = 1;
-        int function_calculated = 10000;
+        int function_calculated = 1000;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
@@ -50,6 +50,7 @@ private:
         std::vector<Genome> other_genomes;//recessive
         float metric = -1;
         float fitness = -1;
+        int metric_calc_n = 0;
         int age = 0;
         int max_age = 1000;
         int children_cnt = 0;

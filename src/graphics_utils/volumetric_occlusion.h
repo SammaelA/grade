@@ -18,6 +18,7 @@ public:
                     glm::vec2 min_max = glm::vec2(0,1e10));
     LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 vox_sizes, int size_decrease,
                     glm::vec2 min_max);
+    LightVoxelsCube() {};
     ~LightVoxelsCube();
     void clear();
     void fill(float val);

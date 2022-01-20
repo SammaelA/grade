@@ -479,13 +479,35 @@ void GeneticAlgorithm::calculate_metric()
         }
         i++;
     }
+    int k = -1;
+    for (auto &p : heaven)
+    {
+        params.push_back(original_param_list);
+        params.back().from_simple_list(p.main_genome);
+        positions.push_back(k);
+        k--;
+    }
 
     std::vector<float> metrics = function(params);
     func_called += metrics.size();
     for (int i=0;i<metrics.size();i++)
     {
-        population[positions[i]].metric = metrics[i];
-        //logerr("metric[%d] = %f", positions[i], metrics[i]);
+        auto &c = positions[i] >= 0 ? population[positions[i]] : heaven[-positions[i] - 1];
+        c.metric = (metrics[i] + c.metric_calc_n*c.metric)/(c.metric_calc_n+1);
+        c.metric_calc_n++;
+        logerr("metric[%d] = %f (%d calc)", positions[i], c.metric, c.metric_calc_n);
+    }
+
+    for (auto &p : population)
+    {
+        for (auto &h : heaven)
+        {
+            if (p.id == h.id)
+            {
+                p.metric = h.metric;
+                p.metric_calc_n = h.metric_calc_n;
+            }
+        }
     }
 }
 void GeneticAlgorithm::recalculate_fitness()

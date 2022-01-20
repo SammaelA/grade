@@ -7,7 +7,7 @@
 #include "parameter_selection/impostor_similarity.h"
 #include "parameter_selection/genetic_algorithm.h"
 #include "tree_generators/GE_generator.h"
-
+#include <thread>
 #include <chrono>
 struct BS_Grid
 {
@@ -420,6 +420,23 @@ void ref_atlas_transform(TextureAtlas &atl)
     //textureManager.save_png(atl.tex(0), "atlass_gauss_3");
 }
 
+void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree)
+{
+    AbstractTreeGenerator *gen = GroveGenerator::get_generator(type->generator_name);
+    voxels.fill(0);
+    gen->plant_tree(glm::vec3(0,0,0),type);
+    while (gen->iterate(voxels)){}
+    gen->finalize_generation(tree,voxels);
+}
+void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<TreeTypeData> *types, Tree *trees)
+{
+    for (int i=start_n;i<stop_n;i++)
+    {
+        logerr("gen tree %d in %d %d", i, start_n, stop_n);
+        gen_tree(*vox, &((*types)[i]), trees + i);
+    }
+}
+
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
@@ -430,7 +447,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     float imp_size = 128;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
-    //TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_2");
+    //TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
     TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
@@ -442,7 +459,6 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
 
     ReferenceTree ref_tree;
-    AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
     GeneticAlgorithm::MetaParameters mp;
     int imp_max_cnt = MAX(mp.initial_population_size, mp.max_population_size);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, 8, false);
@@ -457,24 +473,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     man.load_block_from_file("ge_gen_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     parList.print();
-    /*
-    parList.continuousParameters.at("branch_angle_0").min_val = 0;
-    parList.continuousParameters.at("branch_angle_0").max_val = PI/2;
-    parList.continuousParameters.at("branch_angle_1").min_val = 0;
-    parList.continuousParameters.at("branch_angle_1").max_val = PI/2;
-    parList.continuousParameters.at("branch_angle_2").min_val = 0;
-    parList.continuousParameters.at("branch_angle_2").max_val = PI/2;*/
-    
-    /*
-    parList.continuousParameters.at("branch_angle_0").min_val = 0.52;
-    parList.continuousParameters.at("branch_angle_0").max_val = 0.52;
-    parList.continuousParameters.at("branch_angle_1").min_val = 0.52;
-    parList.continuousParameters.at("branch_angle_1").max_val = 0.52;
-    parList.continuousParameters.at("branch_angle_2").min_val = 0.79;
-    parList.continuousParameters.at("branch_angle_2").max_val = 0.79;*/
-    //parList.continuousParameters.at("branch_angle_3").min_val = 0;
-    //parList.continuousParameters.at("branch_angle_3").max_val = PI/2;
-    //parList.print();
+
     bestParList = parList;
     referenceParList = parList;
     float best_metric = 0;
@@ -496,20 +495,26 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         {
             tree_ggd.types[i].params->read_parameter_list(params[i]);
         }
-        for (int i=0;i<params.size();i++)
+
+        int num_threads = MIN(8, params.size());
+        int step = ceil(params.size()/(float)num_threads);
+        LightVoxelsCube **thr_voxels = new LightVoxelsCube*[num_threads];
+        for (int i=0;i<num_threads;i++)
         {
-            //logerr("aaaaaaaaaaaa");
-            //params[i].print();
-            voxels.fill(0);
-            gen->plant_tree(glm::vec3(0,0,0),&(tree_ggd.types[i]));
-            //logerr("tree planted %d", i);
-            while (gen->iterate(voxels))
-            {
-                
-            }
-            gen->finalize_generation(trees+i,voxels);
+            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0), 2.0f*type.params->get_tree_max_size(), 0.625f*type.params->get_scale_factor());
+        }
+        std::vector<std::thread> threads;
+        for (int i=0;i<num_threads;i++)
+        {
+            int start_n = step*i;
+            int stop_n = MIN(step*(i+1), params.size());
+            threads.push_back(std::thread(&gen_tree_task, start_n, stop_n, thr_voxels[i],&(tree_ggd.types), trees));
         }
 
+        for (auto &t : threads)
+        {
+            t.join();
+        }
         packer.add_trees_to_grove(tree_ggd, tmp_g, trees, scene.heightmap, false);
         ref_atlas_transform(tmp_g.impostors[1].atlas);
         //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
@@ -518,11 +523,17 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         std::vector<float> res;
         imp_sim.calc_similarity(tmp_g, ref_tree, res, trees);
         delete[] trees;
+        for (int i=0;i<num_threads;i++)
+        {
+            delete thr_voxels[i];
+        }
+        delete[] thr_voxels;
         return res;
     };
 
     //create reference tree
     {
+        AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
         voxels.fill(0);
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
         GrovePacker packer;
@@ -559,7 +570,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         bestParList.print();
         debug("best metric %f took %.2f seconds and %d tries to find\n",best_metric, time/1000, cnt);
         //calculate_selection_quality
-        sel_quality(bestParList, referenceParList, func, 8);
+        sel_quality(bestParList, referenceParList, func, 32);
     }
     else
     {
@@ -583,6 +594,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         //tree_ggd.types = std::vector<TreeTypeData>(best_pars.size(), type);
         for (int i=0;i<best_pars.size();i++)
         {
+            AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
             glm::vec3 pos = glm::vec3(100*(1 + i/5),0,100*(i%5));
             voxels.fill(0);
             voxels.relocate(pos);

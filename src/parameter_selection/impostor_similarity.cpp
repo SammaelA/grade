@@ -20,6 +20,16 @@ similarity_shader({"impostor_atlas_dist.comp"},{})
 
 void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeCompareInfo &info)
 {
+    if (!t.root || !t.valid)
+    {
+        info.BCyl_sizes = glm::vec2(0,0);
+        info.branches_curvature = 0;
+        info.branches_density = 0;
+        info.joints_cnt = 0;
+        info.leaves_density = 0;
+        info.trunk_thickness = 0;
+        return;
+    }
     info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
     info.trunk_thickness = t.root->segments.front().rel_r_begin;
     
@@ -40,10 +50,13 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
         {
             if (b.dead)
                 continue;
-            for (auto &j : b.joints)
+            for (auto &s : b.segments)
             {
-                if (j.pos.x == j.pos.x)
-                    branches_dens.set_occluder_simple(j.pos, 1);
+                if (s.end.x == s.end.x)
+                {
+                    branches_dens.set_occluder_simple(s.end, glm::length(s.end - s.begin)*
+                    (SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end)));
+                }
                 //else 
                 //    logerr("NAN detected");
             }
@@ -76,8 +89,9 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     {
         for (auto &l : t.leaves->leaves)
         {
+            float sz = MAX(glm::length(l.edges[0] - l.edges[1]), glm::length(l.edges[0] - l.edges[2]));
             if (l.pos.x == l.pos.x)
-                leaves_dens.set_occluder_simple(l.pos, 1);
+                leaves_dens.set_occluder_simple(l.pos, sz*sz);
         }
     }
     leaves_dens.read_func_simple(f);
