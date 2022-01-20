@@ -11,20 +11,22 @@ public:
         int initial_population_size = 100;
         int max_population_size = 50;
         int min_population_size = 10;
-        int best_genoms_count = 5;
+        int best_genoms_count = 3;
+        int heaven_size = 7;
+        int heaven_recalc_n = 4;
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.001;
         int n_ploid_genes = 1;
         int max_age = 100;
-        bool evolution_stat = true;
+        bool evolution_stat = false;
         bool debug_graph = false;
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 1*60;
+        float time_elapsed_seconds = 60*60;
         float function_reached = 1;
-        int function_calculated = 1000;
+        int function_calculated = 10000;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
@@ -81,7 +83,7 @@ private:
     void crossingover(Genome &A, Genome &B, Genome &res);
     void make_new_generation(std::vector<std::pair<int, int>> &pairs);
     void make_child(Creature &A, Creature &B, Creature &C);
-    void calculate_metric();
+    void calculate_metric(int heaven_n = 1);
     void recalculate_fitness();
     Genome random_genes();
 

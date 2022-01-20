@@ -217,9 +217,9 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             scale_fine.x = 1/scale_fine.x;
         if (scale_fine.y > 1)
             scale_fine.y = 1/scale_fine.y;
-        float sf = (scale_fine.x)*(scale_fine.y);
+        float sf = sqrt((scale_fine.x)*(scale_fine.y));
         //dist = dist;
-        logerr("dist %f %f %f %f %f %f", 1- sf, d_ld, d_bd, d_bc, d_jcnt, dist);
+        //logerr("dist %f %f %f %f %f %f", 1- sf, d_ld, d_bd, d_bc, d_jcnt, dist);
         dist = CLAMP(sf*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());

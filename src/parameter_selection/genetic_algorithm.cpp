@@ -118,6 +118,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         if (population[i].alive)
             kill_creature(i);
     }
+    calculate_metric(metaParams.heaven_recalc_n);
     debug("heaven popultion %d best metric %.4f\n", heaven.size(), heaven[0].metric);
     debug("heaven [ ");
     for (auto &creature : heaven)
@@ -125,12 +126,14 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         debug("%.4f ", creature.metric);
     }
     debug("]\n");
-    for (auto &creature : heaven)
+    std::sort(heaven.begin(), heaven.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.metric > b.metric;});
+    for (int i=0;i<MIN(metaParams.best_genoms_count, heaven.size());i++)
     {
         best_results.emplace_back();
-        best_results.back().first = creature.metric;
+        best_results.back().first = heaven[i].metric;
         best_results.back().second = original_param_list;
-        best_results.back().second.from_simple_list(creature.main_genome);
+        best_results.back().second.from_simple_list(heaven[i].main_genome);
         //best_results.back().second.print();
     }
     for (auto &creature : crio_camera)
@@ -346,23 +349,6 @@ void GeneticAlgorithm::find_pairs(int cnt, std::vector<std::pair<int, int>> &pai
 
 void GeneticAlgorithm::kill_creature(int n)
 {
-    if (heaven.size() < metaParams.best_genoms_count)
-    {
-        heaven.push_back(population[n]);
-        best_metric_ever = MAX(best_metric_ever, population[n].metric);
-    }
-    else
-    {
-        for (int i=0;i<heaven.size();i++)
-        {
-            if (heaven[i].metric < population[n].metric)
-            {
-                heaven[i] = population[n];
-                best_metric_ever = MAX(best_metric_ever, population[n].metric);
-                break;
-            }
-        }
-    }
     population[n].alive = false;
     population[n].fitness = -1;
     current_population_size--;
@@ -464,7 +450,7 @@ void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pai
     population = new_population;
 }
 
-void GeneticAlgorithm::calculate_metric()
+void GeneticAlgorithm::calculate_metric(int heaven_n)
 {
     std::vector<ParameterList> params;
     std::vector<int> positions;
@@ -479,15 +465,17 @@ void GeneticAlgorithm::calculate_metric()
         }
         i++;
     }
-    int k = -1;
-    for (auto &p : heaven)
+    for (int i=0;i<heaven_n;i++)
     {
-        params.push_back(original_param_list);
-        params.back().from_simple_list(p.main_genome);
-        positions.push_back(k);
-        k--;
+        int k = -1;
+        for (auto &p : heaven)
+        {
+            params.push_back(original_param_list);
+            params.back().from_simple_list(p.main_genome);
+            positions.push_back(k);
+            k--;
+        }
     }
-
     std::vector<float> metrics = function(params);
     func_called += metrics.size();
     for (int i=0;i<metrics.size();i++)
@@ -495,7 +483,6 @@ void GeneticAlgorithm::calculate_metric()
         auto &c = positions[i] >= 0 ? population[positions[i]] : heaven[-positions[i] - 1];
         c.metric = (metrics[i] + c.metric_calc_n*c.metric)/(c.metric_calc_n+1);
         c.metric_calc_n++;
-        logerr("metric[%d] = %f (%d calc)", positions[i], c.metric, c.metric_calc_n);
     }
 
     for (auto &p : population)
@@ -523,7 +510,7 @@ void GeneticAlgorithm::recalculate_fitness()
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = pow(p.metric, 1 + 0.1*iteration_n );
+            p.fitness = pow(p.metric, 1 + 0.2*iteration_n );
         else
             p.fitness = -1;
     }
@@ -543,6 +530,57 @@ void GeneticAlgorithm::recalculate_fitness()
         }
     }
     */
+
+    for (int n=0;n<population.size();n++)
+    {
+        if (!population[n].alive)
+            continue;
+        if (heaven.size() < MAX(metaParams.best_genoms_count, metaParams.heaven_size))
+        {
+            heaven.push_back(population[n]);
+            best_metric_ever = MAX(best_metric_ever, population[n].metric);
+        }
+        else
+        {
+            int worst_pos = -1;
+            float worst_val = 1;
+            bool same = false;
+            for (int i=0;i<heaven.size();i++)
+            {
+                if (heaven[i].id == population[n].id)
+                {
+                    same = true;
+                    break;
+                }
+                if (heaven[i].metric < population[n].metric && heaven[i].metric < worst_val)
+                {
+                   worst_val = heaven[i].metric;
+                   worst_pos = i;
+                }
+            }
+            if (!same && worst_pos >= 0)
+            {
+                heaven[worst_pos] = population[n];
+            }
+        }
+    }
+    best_metric_ever = 0;
+    for (auto &c : heaven)
+    {
+        best_metric_ever = MAX(best_metric_ever, c.metric);
+    }
+
+    for (int i=0;i<population.size();i++)
+    {
+        auto &c = population[i];
+        if (c.alive)
+        logerr("%d metric[%d] = %.3f %.3f(%d calc)",c.id, i, c.metric, c.fitness, c.metric_calc_n);
+    }
+    for (int i=0;i<heaven.size();i++)
+    {
+        auto &c = heaven[i];
+        logerr("%d metric[%d] = %.3f (%d calc)",c.id, -i-1, c.metric, c.metric_calc_n);
+    }
    if (metaParams.evolution_stat)
    {
        for (auto &c : population)
