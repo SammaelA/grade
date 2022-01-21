@@ -392,8 +392,16 @@ void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
     res = A;
     for (int i=0;i<A.size();i++)
     {
-        if (urand() > 0.5)
-            res[i] = B[i];
+        if (urand() > metaParams.mix_chance)
+        {
+            if (urand() > 0.5)
+                res[i] = B[i];
+        }
+        else
+        {
+            float rnd = urand();
+            res[i] = rnd*A[i] + (1-rnd)*B[i];
+        }
     }
 }
 
@@ -413,9 +421,35 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     {
         crossingover(A.main_genome, B.main_genome, C.main_genome);
     }
+    else if (metaParams.n_ploid_genes == 2)
+    {
+        C.other_genomes.push_back(A.other_genomes[0]);
+        int c = rand() % 4;
+        switch (c)
+        {
+        case 0:
+            crossingover(A.main_genome, B.main_genome, C.main_genome);
+            crossingover(A.other_genomes[0], B.other_genomes[0], C.other_genomes[0]);
+            break;
+        case 1:
+            crossingover(A.main_genome, B.other_genomes[0], C.main_genome);
+            crossingover(A.other_genomes[0], B.main_genome, C.other_genomes[0]);
+            break;
+        case 2:
+            crossingover(A.other_genomes[0], B.main_genome, C.main_genome);
+            crossingover(A.main_genome, B.other_genomes[0], C.other_genomes[0]);
+            break;
+        case 3:
+            crossingover(A.other_genomes[0], B.other_genomes[0], C.main_genome);
+            crossingover(A.main_genome, B.main_genome, C.other_genomes[0]);
+            break;
+        default:
+            break;
+        }
+    }
     else
     {
-        //TODO: implement diploid genomes
+        //it's shit
     }
     float it = 1 + 0.1*iteration_n;
     if (urand() < 0.33/it)
@@ -424,7 +458,10 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
     for (auto &g : C.other_genomes)
     {
-        mutation(g, 0.5, urandi(1, MIN(3, free_parameters_cnt)));
+        if (urand() < 0.33/it)
+            mutation(g, 1.0, urandi(1, free_parameters_cnt));
+        else
+            mutation(g, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
     }
 }
 

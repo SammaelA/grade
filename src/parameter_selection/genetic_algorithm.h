@@ -17,6 +17,7 @@ public:
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.001;
+        float mix_chance = 0.25;
         int n_ploid_genes = 1;
         int max_age = 100;
         bool evolution_stat = false;
@@ -26,7 +27,7 @@ public:
     {
         float time_elapsed_seconds = 60*60;
         float function_reached = 1;
-        int function_calculated = 10000;
+        int function_calculated = 1500;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,

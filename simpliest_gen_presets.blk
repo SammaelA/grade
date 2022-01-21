@@ -10,8 +10,8 @@
     {
         branching_start:arr = {0.5, 0.7, 0, 0}
         branch_angle:arr = { 1.1, 2.5, 2.5, 0.0}
-        branch_count:arr = {20,25,10,10}   
-        branch_len:arr = {60,30,3,10}
-        leaf_size:r = 1.25
+        branch_count:arr = {20,25,10,13}   
+        branch_len:arr = {60,30,5,10}
+        leaf_size:r = 3.25
     }
 }
