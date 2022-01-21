@@ -25,9 +25,9 @@ public:
     };
     struct ExitConditions
     {
-        float time_elapsed_seconds = 60*60;
+        float time_elapsed_seconds = 45*60;
         float function_reached = 1;
-        int function_calculated = 1500;
+        int function_calculated = 10000;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,

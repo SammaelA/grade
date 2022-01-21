@@ -447,8 +447,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     float imp_size = 128;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
-    TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
-    //TreeTypeData type = metainfoManager.get_tree_type("small_oak");
+    //TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
+    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
@@ -469,8 +469,8 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     BlkManager man;
     Block b;
 
-    man.load_block_from_file("simpliest_gen_param_borders.blk", b);
-    //man.load_block_from_file("ge_gen_param_borders.blk", b);
+    //man.load_block_from_file("simpliest_gen_param_borders.blk", b);
+    man.load_block_from_file("ge_gen_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     parList.print();
 
@@ -551,7 +551,7 @@ void sandbox_main(int argc, char **argv, Scene &scene)
         ref_atlas_transform(ref_tree.atlas);
         ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
         ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
-        GETreeGenerator::set_joints_limit(2*ref_tree.info.joints_cnt);
+        GETreeGenerator::set_joints_limit(1.667*ref_tree.info.joints_cnt);
     }
 
 
