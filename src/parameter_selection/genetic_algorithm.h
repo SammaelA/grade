@@ -27,7 +27,7 @@ public:
     {
         float time_elapsed_seconds = 45*60;
         float function_reached = 1;
-        int function_calculated = 10000;
+        int function_calculated = 1000;
         int generations = 10000;
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,

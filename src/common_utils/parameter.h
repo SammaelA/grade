@@ -367,7 +367,7 @@ struct CategorialParameter
         val = _val;
         possible_values = {_val};
     }
-    bool fixed() { return possible_values.size() > 1;}
+    bool fixed() { return possible_values.size() == 1;}
 };
 
 struct OrdinalParameter

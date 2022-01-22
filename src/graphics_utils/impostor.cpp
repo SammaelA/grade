@@ -26,7 +26,7 @@ void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, C
     if (!data->atlas.is_valid())
     {
         int mult = clusters_expected + 1;
-        logerr("created impostors for %d clusters", clusters_expected);
+        //logerr("created impostors for %d clusters", clusters_expected);
         AtlasParams params = set_atlas_params(quality, mult*(slices_n + 1));
         int atlas_capacity = (params.x/params.grid_x)*(params.y/params.grid_y)*params.layers;
         TextureAtlas a = TextureAtlas(params.x,params.y,params.layers);

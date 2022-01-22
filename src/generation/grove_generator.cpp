@@ -33,6 +33,27 @@ AbstractTreeGenerator *GroveGenerator::get_generator(std::string &generator_name
     return gen;
 }
 
+ParametersSet *GroveGenerator::get_default_parameters(std::string &generator_name)
+{
+    ParametersSet *gen;
+    if (generator_name == "proctree")
+        gen = new Proctree::Properties();
+    else if (generator_name == "simple")
+        gen = new SimpleTreeStructureParameters();
+    else if (generator_name == "simpliest")
+        gen = new SimpliestTreeStructureParameters();
+    else if (generator_name == "load_from_file")
+        gen = nullptr;//not implemented
+    else if (generator_name == "python_tree_gen")
+        gen = new WeberPennParameters();
+    else if (generator_name == "ge_gen")
+        gen = new GETreeParameters();
+    else
+        gen = new TreeStructureParameters();
+
+    return gen;    
+}
+
 void GroveGenerator::prepare_patch(GrovePrototype &prototype, 
                                    std::vector<TreeTypeData> &treeTypesCatalogue,
                                    Heightmap &hmap,

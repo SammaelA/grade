@@ -15,4 +15,5 @@
     remove_min_level:p2 = 0, 5
     max_joints_in_branch:p2 = 10, 40
     res_decrease_step:p2 = 0.05, 0.5
+    root_type:arr = {0,1,2}
 }

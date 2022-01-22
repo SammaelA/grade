@@ -37,6 +37,10 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
             free_parameters_cnt++;
     }
 
+    metaParams.heaven_size = MAX(metaParams.heaven_size, 1.5*metaParams.best_genoms_count);
+    metaParams.min_population_size = MAX(MAX(metaParams.min_population_size,metaParams.elite), 
+                                     MAX(metaParams.heaven_size, metaParams.best_genoms_count));
+    metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
     initialize_population();
     calculate_metric();
@@ -254,10 +258,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
         int tries = 0;
         while (!found && tries < 100)
         {
-            //found = true;
-
             int pos = urandi(0, G.size());
-            //logerr("mutation pos %d G size %d %f", pos, G.size(), (float)urandi(0, G.size()));
             int g_pos = pos;
             if (pos < parametersMask.categorialParameters.size())
             {
@@ -606,17 +607,19 @@ void GeneticAlgorithm::recalculate_fitness()
     {
         best_metric_ever = MAX(best_metric_ever, c.metric);
     }
-
-    for (int i=0;i<population.size();i++)
+    if (metaParams.evolution_stat)
     {
-        auto &c = population[i];
-        if (c.alive)
-        logerr("%d metric[%d] = %.3f %.3f(%d calc)",c.id, i, c.metric, c.fitness, c.metric_calc_n);
-    }
-    for (int i=0;i<heaven.size();i++)
-    {
-        auto &c = heaven[i];
-        logerr("%d metric[%d] = %.3f (%d calc)",c.id, -i-1, c.metric, c.metric_calc_n);
+        for (int i=0;i<population.size();i++)
+        {
+            auto &c = population[i];
+            if (c.alive)
+            logerr("%d metric[%d] = %.3f %.3f(%d calc)",c.id, i, c.metric, c.fitness, c.metric_calc_n);
+        }
+        for (int i=0;i<heaven.size();i++)
+        {
+            auto &c = heaven[i];
+            logerr("%d metric[%d] = %.3f (%d calc)",c.id, -i-1, c.metric, c.metric_calc_n);
+        }
     }
    if (metaParams.evolution_stat)
    {
