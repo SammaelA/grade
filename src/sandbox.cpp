@@ -10,6 +10,7 @@
 #include "parameter_selection/parameter_selection.h"
 #include <thread>
 #include <chrono>
+#include <time.h>
 struct BS_Grid
 {
     std::vector<std::pair<int, int>> bins;
@@ -214,8 +215,9 @@ float dot_metric(Tree &single_tree, float dst_dot)
     return metric;
 }
 
-void sandbox_main(int argc, char **argv, Scene &scene)
+void sandbox_main(int argc, char **argv, Scene *scene)
 {
+    /*
     metainfoManager.reload_all();
     TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
     Block b, ref_info;
@@ -225,4 +227,64 @@ void sandbox_main(int argc, char **argv, Scene &scene)
     ParameterSelector sel;
     //auto res = sel.parameter_selection(type, b, &scene);
     auto res = sel.parameter_selection(ref_info, b, &scene);
+    */
+   LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
+   LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
+   int cnt = 50000;
+   srand(0);
+   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   long r1, r2, r3;
+   r1 = 0;
+   r2 = 0;
+   r3 = 0;
+   for (int i=0;i<cnt;i++)
+   {
+       r1 = (3*r1 + 17) % 400;
+       r2 = (5*r2 + 19) % 400;
+       r3 = (7*r3 + 23) % 400;
+       glm::vec3 pos = glm::vec3(r1 - 200, r2 - 200, r3 - 200);
+       ref.set_occluder_pyramid2(pos, 1, 2, 7);
+   }
+   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+   logerr("Reference took %.3f seconds, %d op/s", time/1000, (int)(cnt*1000.0f/time));
+   
+   srand(0);
+   t1 = std::chrono::steady_clock::now();
+   r1 = 0;
+   r2 = 0;
+   r3 = 0;
+   for (int i=0;i<cnt;i++)
+   {
+       r1 = (3*r1 + 17) % 400;
+       r2 = (5*r2 + 19) % 400;
+       r3 = (7*r3 + 23) % 400;
+       glm::vec3 pos = glm::vec3(r1 - 200, r2 - 200, r3 - 200);
+       test.set_occluder_pyramid_fast(pos, 1, 7);
+   }
+   t2 = std::chrono::steady_clock::now();
+   time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+   logerr("Took %.3f seconds, %d op/s", time/1000, (int)(cnt*1000.0f/time));
+
+   float *ref_data;
+   glm::ivec3 ref_sizes;
+   float *test_data;
+   glm::ivec3 test_sizes;
+   ref.get_data(&ref_data, ref_sizes);
+   test.get_data(&test_data, test_sizes);
+   if (ref_sizes != test_sizes)
+   {
+       logerr("AAA %d %d %d -- %d %d %d",ref_sizes.x, ref_sizes.y, ref_sizes.z, test_sizes.x, test_sizes.y, test_sizes.z);
+   }
+   else if (ref.get_size_cnt() == test.get_size_cnt())
+   {
+       int vox_cnt = ref.get_size_cnt();
+       int wrong_voxels = 0;
+       for (int i=0;i<vox_cnt;i++)
+       {
+           if (abs(ref_data[i] - test_data[i]) >= 0.001)
+            wrong_voxels++;
+       }
+       logerr("Wrong voxels %d from %d", wrong_voxels,vox_cnt);
+   }
 }

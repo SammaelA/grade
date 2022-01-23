@@ -28,6 +28,7 @@ public:
     void set_occluder(glm::vec3 pos, float strenght);
     void set_occluder_pyramid(glm::vec3 pos, float strenght);
     void set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r);
+    void set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r);
     void set_occluder_simple(glm::vec3 pos, float strenght);
     void set_occluder_simple_mip(glm::vec3 pos, float strenght, int mip);
     void set_occluder_trilinear(glm::vec3 pos, float strenght);

@@ -450,19 +450,9 @@ int LightVoxelsCube::v_to_i(int x, int y, int z)
     int self_x = (x + vox_x) % block_size;
     int self_y = (y + vox_y) % block_size;
     int self_z = (z + vox_z) % block_size;
-    /*
-    static int cnt = 0;
-    int pos = block_cnt*LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
-           LIN(self_x, self_y, self_z, block_size, block_size, block_size);
-    if (cnt < 100)
-    {
-        logerr("%d %d %d [%d %d %d][%d %d %d] b_sz_cnt %d %d [%d %d %d][%d %d %d] pos = %d", x,y,z,vox_x,vox_y,vox_z,
-               block_x, block_y, block_z,
-               block_size, block_cnt, bl_x, bl_y, bl_z,self_x, self_y, self_z, pos);
-               cnt++;
-    }*/
+
     return block_cnt*LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z)+
-           LIN(self_x, self_y, self_z, block_size, block_size, block_size);;
+           LIN(self_x, self_y, self_z, block_size, block_size, block_size);
 }
 int LightVoxelsCube::v_to_i(glm::ivec3 voxel)
 {
@@ -549,8 +539,7 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 
 void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r)
 {
-    //std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    #define CH 0.6
+    #define CH 0.0
     float occ = 0.0;
     glm::ivec3 voxel = pos_to_voxel(pos);
     int x0 = voxel.x;
@@ -573,7 +562,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
             occ *= strenght / SQR(i + 2);
         else
             occ *= strenght * pow(i + 2, -pow_b);
-        if (abs(occ) < 1e-6)
+        if (abs(occ) < 0.00025)
             return;
         int y = y0 - i;
         for (int j = MAX(z0 - wd, -vox_z); j <= MIN(z0 + wd, vox_z); j++)
@@ -584,14 +573,85 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
             }
         }
     }
-    /*
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    float time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    cnt++;
-    tm += time;
-    if (cnt % 10000 == 0)
-        logerr("occlusion added took %.2f ms", 0.001*(float)(tm/cnt));
-    */
+}
+
+void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r)
+{
+    float occ = 0.0;
+    glm::ivec3 voxel = pos_to_voxel(pos);
+    int x0 = voxel.x;
+    int y0 = voxel.y;
+    int z0 = voxel.z;
+    for (int i = 0; i < MIN(voxel.y+vox_y, max_r);i++)
+    {
+        occ = strenght / SQR(i + 2);
+        int y = y0 - i;
+        for (int j = MAX(z0 - i, -vox_z); j <= MIN(z0 + i, vox_z); j++)
+        {
+            for (int k = MAX(x0 - i, -vox_x); k <= MIN(x0 + i, vox_x); k++)
+            {
+                voxels[v_to_i(k, y, j)] += occ;
+            }
+        }
+    }
+    int st_n = (abs(x0) + abs(y0) + abs(z0));
+    int wd = max_r;
+    int max_depth = sqrt(abs(strenght)/0.00025) - 2;
+
+    int x1 = MAX(x0 - wd, -vox_x);
+    int y1 = MAX(-vox_y, y0 - max_depth);
+    int z1 = MAX(z0 - wd, -vox_z);
+
+    int bl1_x = (x1 + vox_x) / block_size;
+    int bl1_y = (y1 + vox_y) / block_size;
+    int bl1_z = (z1 + vox_z) / block_size;
+
+    int self1_x = (x1 + vox_x) % block_size;
+    int self1_y = (y1 + vox_y) % block_size;
+    int self1_z = (z1 + vox_z) % block_size;
+
+    int bl1_pos = LIN(bl1_x, bl1_y, bl1_z, block_x, block_y, block_z);
+
+    int x2 = MIN(x0 + wd, vox_x);
+    int y2 = MAX(y0 - max_r, MAX(-vox_y, y0 - max_depth));
+    int z2 = MIN(z0 + wd, vox_z);
+
+    int bl2_x = (x2 + vox_x) / block_size;
+    int bl2_y = (y2 + vox_y) / block_size;
+    int bl2_z = (z2 + vox_z) / block_size;
+
+    int self2_x = (x2 + vox_x) % block_size;
+    int self2_y = (y2 + vox_y) % block_size;
+    int self2_z = (z2 + vox_z) % block_size;
+
+    for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z++)
+    {
+        int vst_z = bl_z == bl1_z ? self1_z : 0;
+        int ven_z = bl_z == bl2_z ? self2_z : block_size - 1;
+        for (int bl_y = bl1_y; bl_y <= bl2_y; bl_y++)
+        {
+            int vst_y = bl_y == bl1_y ? self1_y : 0;
+            int ven_y = bl_y == bl2_y ? self2_y : block_size - 1;
+            for (int bl_x = bl1_x; bl_x <= bl2_x; bl_x++)
+            {
+                int vst_x = bl_x == bl1_x ? self1_x : 0;
+                int ven_x = bl_x == bl2_x ? self2_x : block_size - 1;
+                int bl_pos = LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z);
+                int bl_st_y = -bl_y*block_size + vox_y;
+                for (int self_z = vst_z; self_z <= ven_z; self_z ++)
+                {
+                    for (int self_y = vst_y; self_y <= ven_y; self_y ++)
+                    {
+                        float occ = strenght / SQR(bl_st_y - self_y + y0 + 2);
+                        for (int self_x = vst_x; self_x <= ven_x; self_x++)
+                        {
+                            voxels[block_cnt*bl_pos + LIN(self_x, self_y, self_z,block_size, block_size, block_size)] += occ;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void LightVoxelsCube::set_occluder_simple(glm::vec3 pos, float strenght)

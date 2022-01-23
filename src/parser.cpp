@@ -65,6 +65,7 @@ namespace parser
   int demo_mode_trees_cnt = 0;
   int demo_mode_patch_size = 5;
   bool debug_bvh = false;
+  bool no_init = false;
   int parse_arguments(int argc, char *argv[])
   {
     int k = 1;
@@ -91,6 +92,11 @@ namespace parser
       else if (std::string(argv[k]) == "-no_render")
       {
         render_needed = false;
+        k++;
+      }
+      else if (std::string(argv[k]) == "-no_init")
+      {
+        no_init = true;
         k++;
       }
       else if (std::string(argv[k]) == "-hydra")
@@ -247,6 +253,12 @@ namespace parser
 
   int parser_main(int argc, char *argv[])
   {
+    parse_arguments(argc, argv);
+    if (sandbox && no_init)
+    {
+      sandbox_main(argc, argv, nullptr);
+      exit(0);
+    }
     base_init();
     Scene scene;
     SceneGenerator::SceneGenerationContext sceneGenerationContext;
@@ -268,7 +280,7 @@ namespace parser
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("small_oak");
+      int t_id = metainfoManager.get_tree_type_id_by_name("large_oak");
       int b_id = metainfoManager.get_tree_type_id_by_name("bush");
       int l_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
 
@@ -321,7 +333,7 @@ namespace parser
     }
     else if (sandbox)
     {
-      sandbox_main(argc, argv, scene);
+      sandbox_main(argc, argv, &scene);
     }
     if (save_to_hydra)
     {
