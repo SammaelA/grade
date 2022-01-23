@@ -297,6 +297,10 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
                                                      ReferenceTree &ref_tree, TreeTypeData *ref_type)
 {
+    debug("starting parameter selection for reference (%.3f %.3f) %.3f %.3f %d %.3f %.3f\n", 
+          ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y, ref_tree.info.branches_curvature,
+          ref_tree.info.branches_density, ref_tree.info.joints_cnt, ref_tree.info.leaves_density,
+          ref_tree.info.trunk_thickness);
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
@@ -476,4 +480,67 @@ ParameterSelector::Results ParameterSelector::parameter_selection(TreeTypeData r
 ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings,
                                                                   Scene *demo_scene)
 {
+    int reference_images_cnt = 0;
+    for (int i=0;i<reference_info.size();i++)
+    {
+        if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
+            reference_images_cnt++;
+    }
+    if (reference_images_cnt == 0)
+    {
+        logerr("No images selected as a reference for parameter selection");
+        return Results();
+    }
+    
+    Scene inner_scene;
+    Scene &scene = demo_scene ? *demo_scene : inner_scene;
+    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap->fill_const(0);
+    float imp_size = selection_settings.get_int("impostor_size", 128);
+    ReferenceTree ref_tree;
+    ref_tree.info.BCyl_sizes = reference_info.get_vec2("BCyl_sizes",glm::vec2(0,0));
+    ref_tree.info.branches_curvature = reference_info.get_double("branches_curvature",0);
+    ref_tree.info.branches_density = reference_info.get_double("branches_density",0);
+    ref_tree.info.joints_cnt =reference_info.get_int("joints_cnt",0);
+    ref_tree.info.leaves_density = reference_info.get_double("leaves_density",0);
+    ref_tree.info.trunk_thickness = reference_info.get_double("trunk_thickness",0);
+
+    {
+        TextureAtlas atl = TextureAtlas(reference_images_cnt * imp_size, imp_size, 1, 1);
+        ref_tree.atlas = atl;
+    }
+    ref_tree.atlas.set_grid(imp_size, imp_size, false);
+    PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
+    for (int i=0;i<reference_info.size();i++)
+    {
+        if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
+        {
+            Block *ref_image_blk = reference_info.get_block(i);
+            if (!ref_image_blk)
+                continue;
+            std::string name = ref_image_blk->get_string("image","");
+            if (name == "")
+                continue;
+            Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+            int slice_id = ref_tree.atlas.add_tex();
+            ref_tree.atlas.target_slice(slice_id, 0);
+            ref_transform.use();
+            ref_transform.get_shader().texture("tex", ref_raw);
+            ref_transform.get_shader().uniform("wood_color",
+                                               ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
+            ref_transform.get_shader().uniform("leaves_color",
+                                               ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
+            ref_transform.get_shader().uniform("background_color",
+                                               ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
+            ref_transform.render();
+
+            textureManager.delete_tex(ref_raw);
+        }
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    ref_atlas_transform(ref_tree.atlas);
+    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas");
+    Results res;
+    parameter_selection_internal(selection_settings, res, scene, ref_tree, nullptr);
+    return res;
 }

@@ -217,10 +217,12 @@ float dot_metric(Tree &single_tree, float dst_dot)
 void sandbox_main(int argc, char **argv, Scene &scene)
 {
     metainfoManager.reload_all();
-    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
-    Block b;
+    TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
+    Block b, ref_info;
     BlkManager man;
     man.load_block_from_file("parameter_selection_settings.blk", b);
+    man.load_block_from_file("parameter_selection_reference.blk", ref_info);
     ParameterSelector sel;
-    auto res = sel.parameter_selection(type, b, &scene);
+    //auto res = sel.parameter_selection(type, b, &scene);
+    auto res = sel.parameter_selection(ref_info, b, &scene);
 }

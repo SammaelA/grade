@@ -11,7 +11,7 @@ uniform vec3 leaves_color;
 uniform vec3 background_color;
 void main(void) 
 {
-  vec4 color = texture(tex,ex_Tex);
+  vec4 color = texture(tex,vec2(ex_Tex.x, 1-ex_Tex.y));
 
   fragColor = vec4(0,0,0,0);
   if (color.a > 0.5)
