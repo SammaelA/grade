@@ -121,7 +121,8 @@ private:
     int v_to_i_mip_no_offset(glm::ivec3 voxel, int mip);
     int v_to_i_mip_no_offset(int x, int y, int z, int mip);
     int voxels_count() {return vox_x*vox_y*vox_z;}
-
+    void set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r);
+    void set_occluder_pyramid_head_5(glm::ivec3 voxel, float strenght, int max_r);
     float sum_occlusion = 0.0;
     float occ_count = 0.0;
 };

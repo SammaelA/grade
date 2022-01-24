@@ -217,7 +217,6 @@ float dot_metric(Tree &single_tree, float dst_dot)
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
-    /*
     metainfoManager.reload_all();
     TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
     Block b, ref_info;
@@ -226,8 +225,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     man.load_block_from_file("parameter_selection_reference.blk", ref_info);
     ParameterSelector sel;
     //auto res = sel.parameter_selection(type, b, &scene);
-    auto res = sel.parameter_selection(ref_info, b, &scene);
-    */
+    auto res = sel.parameter_selection(ref_info, b, scene);
+
+/*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    int cnt = 50000;
@@ -287,4 +287,5 @@ void sandbox_main(int argc, char **argv, Scene *scene)
        }
        logerr("Wrong voxels %d from %d", wrong_voxels,vox_cnt);
    }
+*/
 }

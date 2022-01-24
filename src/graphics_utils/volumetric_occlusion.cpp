@@ -539,7 +539,7 @@ void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
 
 void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r)
 {
-    #define CH 0.0
+    #define CH 0.6
     float occ = 0.0;
     glm::ivec3 voxel = pos_to_voxel(pos);
     int x0 = voxel.x;
@@ -575,6 +575,156 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
     }
 }
 
+void LightVoxelsCube::set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r)
+{
+    #define BLOCK_SIZE_5 5
+    int x0 = voxel.x;
+    int y0 = voxel.y;
+    int z0 = voxel.z;
+    int wd = max_r;
+    int max_depth = sqrt(abs(strenght)/0.005) - 2;
+
+    int x1 = MAX(x0 - wd, -vox_x);
+    int y1 = MAX(-vox_y, y0 - max_depth);
+    int z1 = MAX(z0 - wd, -vox_z);
+
+    int bl1_x = (x1 + vox_x) / BLOCK_SIZE_5;
+    int bl1_y = (y1 + vox_y) / BLOCK_SIZE_5;
+    int bl1_z = (z1 + vox_z) / BLOCK_SIZE_5;
+
+    int self1_x = (x1 + vox_x) % BLOCK_SIZE_5;
+    int self1_y = (y1 + vox_y) % BLOCK_SIZE_5;
+    int self1_z = (z1 + vox_z) % BLOCK_SIZE_5;
+
+    int bl1_pos = LIN(bl1_x, bl1_y, bl1_z, block_x, block_y, block_z);
+
+    int x2 = MIN(x0 + wd, vox_x);
+    int y2 = MAX(y0 - wd, MAX(-vox_y, y0 - max_depth));
+    int z2 = MIN(z0 + wd, vox_z);
+
+    int bl2_x = (x2 + vox_x) / BLOCK_SIZE_5;
+    int bl2_y = (y2 + vox_y) / BLOCK_SIZE_5;
+    int bl2_z = (z2 + vox_z) / BLOCK_SIZE_5;
+
+    int self2_x = (x2 + vox_x) % BLOCK_SIZE_5;
+    int self2_y = (y2 + vox_y) % BLOCK_SIZE_5;
+    int self2_z = (z2 + vox_z) % BLOCK_SIZE_5;
+
+    bl1_z += (abs(x0) + abs(y0) + abs(z0)) % 2;
+
+    for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z+=2)
+    {
+        int vst_z = bl_z == bl1_z ? self1_z : 0;
+        int ven_z = bl_z == bl2_z ? self2_z : BLOCK_SIZE_5 - 1;
+        for (int bl_y = bl1_y; bl_y <= bl2_y; bl_y++)
+        {
+            int vst_y = bl_y == bl1_y ? self1_y : 0;
+            int ven_y = bl_y == bl2_y ? self2_y : BLOCK_SIZE_5 - 1;
+            for (int bl_x = bl1_x; bl_x <= bl2_x; bl_x++)
+            {
+                int vst_x = bl_x == bl1_x ? self1_x : 0;
+                int ven_x = bl_x == bl2_x ? self2_x : BLOCK_SIZE_5 - 1;
+                int bl_pos = LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z);
+                int bl_st_y = -bl_y*BLOCK_SIZE_5 + vox_y;
+                for (int self_z = vst_z; self_z <= ven_z; self_z ++)
+                {
+                    int self_addr_z = block_cnt*bl_pos + BLOCK_SIZE_5*BLOCK_SIZE_5*self_z;
+                    for (int self_y = vst_y; self_y <= ven_y; self_y++)
+                    {
+                        int self_addr_y = self_addr_z + BLOCK_SIZE_5*self_y;
+                        float occ = strenght / SQR(bl_st_y - self_y + y0 + 2);
+                        for (int self_x = vst_x; self_x <= ven_x; self_x++)
+                        {
+                            voxels[self_addr_y + self_x] += occ;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void LightVoxelsCube::set_occluder_pyramid_head_5(glm::ivec3 voxel, float strenght, int max_r)
+    {
+        #define BLOCK_SIZE_5 5
+    int x0 = voxel.x;
+    int y0 = voxel.y;
+    int z0 = voxel.z;
+        int wd = max_r - 1;
+        int x1 = MAX(x0 - wd, -vox_x);
+        int y1 = MAX(-vox_y, y0 - wd);
+        int z1 = MAX(z0 - wd, -vox_z);
+
+        int bl1_x = (x1 + vox_x) / BLOCK_SIZE_5;
+        int bl1_y = (y1 + vox_y) / BLOCK_SIZE_5;
+        int bl1_z = (z1 + vox_z) / BLOCK_SIZE_5;
+
+        int self1_x = (x1 + vox_x) % BLOCK_SIZE_5;
+        int self1_y = (y1 + vox_y) % BLOCK_SIZE_5;
+        int self1_z = (z1 + vox_z) % BLOCK_SIZE_5;
+
+        int bl1_pos = LIN(bl1_x, bl1_y, bl1_z, block_x, block_y, block_z);
+
+        int x2 = MIN(x0 + wd, vox_x);
+        int y2 = y0;
+        int z2 = MIN(z0 + wd, vox_z);
+
+        int bl2_x = (x2 + vox_x) / BLOCK_SIZE_5;
+        int bl2_y = (y2 + vox_y) / BLOCK_SIZE_5;
+        int bl2_z = (z2 + vox_z) / BLOCK_SIZE_5;
+
+        int self2_x = (x2 + vox_x) % BLOCK_SIZE_5;
+        int self2_y = (y2 + vox_y) % BLOCK_SIZE_5;
+        int self2_z = (z2 + vox_z) % BLOCK_SIZE_5;    
+        for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z++)
+        {
+            int bl_z_sh = bl_z*BLOCK_SIZE_5 - vox_z - z0;
+            int vst_z = bl_z == bl1_z ? self1_z : 0;
+            int ven_z = bl_z == bl2_z ? self2_z : BLOCK_SIZE_5 - 1;
+            for (int bl_y = bl1_y; bl_y <= bl2_y; bl_y++)
+            {
+                int bl_y_sh = y0 - bl_y*BLOCK_SIZE_5 + vox_y;
+                int vst_y = bl_y == bl1_y ? self1_y : 0;
+                int ven_y = bl_y == bl2_y ? self2_y : BLOCK_SIZE_5 - 1;
+                for (int bl_x = bl1_x; bl_x <= bl2_x; bl_x++)
+                {
+                    int vst_x = bl_x == bl1_x ? self1_x : 0;
+                    int ven_x = bl_x == bl2_x ? self2_x : BLOCK_SIZE_5 - 1;
+                    int bl_pos = LIN(bl_x, bl_y, bl_z, block_x, block_y, block_z);
+                    int bl_x_sh = bl_x*BLOCK_SIZE_5 - vox_x - x0;
+                    for (int self_z = vst_z; self_z <= ven_z; self_z ++)
+                    {
+                        int self_addr_z = block_cnt*bl_pos + BLOCK_SIZE_5*BLOCK_SIZE_5*self_z;
+                        int self_sh_z = abs(bl_z_sh + self_z);
+                        int en_local_y = MIN(ven_y,bl_y_sh-self_sh_z);
+                        for (int self_y = vst_y; self_y <= en_local_y; self_y++)
+                        {
+                            int self_addr_y = self_addr_z + BLOCK_SIZE_5*self_y;
+                            int self_sh_y = bl_y_sh - self_y;
+                            float occ = strenght / SQR(bl_y_sh - self_y + 2);
+                            int st_local_x = MAX(vst_x, -self_sh_y - bl_x_sh);
+                            int en_local_x = MIN(ven_x, -bl_x_sh + self_sh_y);
+                            for (int self_x = st_local_x; self_x <= en_local_x; self_x++)
+                            {
+                                voxels[self_addr_y + self_x] += occ;
+                                /*
+                                if (length(pos - glm::vec3(17-200,19-200,23-200))<0.5)
+                                {
+                                    logerr("[%d-%d][%d-%d][%d-%d]voxels[%d %d %d] += %f shifts %d %d %d", 
+                                    st_local_x, en_local_x, vst_y, en_local_y, vst_z, ven_z,
+                                    bl_x*block_size +self_x - vox_x, 
+                                    bl_y*block_size + self_y - vox_y, bl_z*block_size +self_z - vox_z, occ, bl_x_sh + self_x, -self_sh_y,
+                                    bl_z_sh + self_z);
+                                }*/
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r)
 {
     float occ = 0.0;
@@ -582,6 +732,14 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
     int x0 = voxel.x;
     int y0 = voxel.y;
     int z0 = voxel.z;
+
+    if (block_size == 5)
+    {
+        set_occluder_pyramid_head_5(voxel, strenght, max_r);
+        set_occluder_pyramid_tail_5(voxel, strenght, max_r);
+        return;
+    }
+
     for (int i = 0; i < MIN(voxel.y+vox_y, max_r);i++)
     {
         occ = strenght / SQR(i + 2);
@@ -594,7 +752,7 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
             }
         }
     }
-    int st_n = (abs(x0) + abs(y0) + abs(z0));
+
     int wd = max_r;
     int max_depth = sqrt(abs(strenght)/0.00025) - 2;
 
@@ -613,7 +771,7 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
     int bl1_pos = LIN(bl1_x, bl1_y, bl1_z, block_x, block_y, block_z);
 
     int x2 = MIN(x0 + wd, vox_x);
-    int y2 = MAX(y0 - max_r, MAX(-vox_y, y0 - max_depth));
+    int y2 = MAX(y0 - wd, MAX(-vox_y, y0 - max_depth));
     int z2 = MIN(z0 + wd, vox_z);
 
     int bl2_x = (x2 + vox_x) / block_size;
@@ -624,7 +782,9 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
     int self2_y = (y2 + vox_y) % block_size;
     int self2_z = (z2 + vox_z) % block_size;
 
-    for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z++)
+    bl1_z += (abs(x0) + abs(y0) + abs(z0)) % 2;
+
+    for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z+=2)
     {
         int vst_z = bl_z == bl1_z ? self1_z : 0;
         int ven_z = bl_z == bl2_z ? self2_z : block_size - 1;
@@ -640,12 +800,14 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
                 int bl_st_y = -bl_y*block_size + vox_y;
                 for (int self_z = vst_z; self_z <= ven_z; self_z ++)
                 {
-                    for (int self_y = vst_y; self_y <= ven_y; self_y ++)
+                    int self_addr_z = block_cnt*bl_pos + block_size*block_size*self_z;
+                    for (int self_y = vst_y; self_y <= ven_y; self_y++)
                     {
+                        int self_addr_y = self_addr_z + block_size*self_y;
                         float occ = strenght / SQR(bl_st_y - self_y + y0 + 2);
                         for (int self_x = vst_x; self_x <= ven_x; self_x++)
                         {
-                            voxels[block_cnt*bl_pos + LIN(self_x, self_y, self_z,block_size, block_size, block_size)] += occ;
+                            voxels[self_addr_y + self_x] += occ;
                         }
                     }
                 }

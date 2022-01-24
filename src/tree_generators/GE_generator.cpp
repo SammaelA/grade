@@ -856,8 +856,8 @@ void GETreeGenerator::set_occlusion_joint(Joint &j, float base_value, GETreePara
     float b = params.b_min + (params.b_max - params.b_min) *
               CLAMP((float)(j.birth_time - params.tau) / (params.max_iterations - params.tau), 0, 1);
     b = 2;
-    voxels.set_occluder_pyramid2(j.pos, base_value, b, params.occlusion_pyramid_d);
-    //voxels.set_occluder_pyramid_fast(j.pos, base_value, params.occlusion_pyramid_d);
+    //voxels.set_occluder_pyramid2(j.pos, base_value, b, params.occlusion_pyramid_d);
+    voxels.set_occluder_pyramid_fast(j.pos, base_value, params.occlusion_pyramid_d);
     //logerr("occlusion set %f val = %f before = %f",voxels.get_occlusion_simple(j.pos), base_value, 
     //voxels.get_occlusion_simple(j.pos)- base_value);
 }
