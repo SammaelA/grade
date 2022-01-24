@@ -1,9 +1,9 @@
 {
-    BCyl_sizes:p2 = 50, 100
+    BCyl_sizes:p2 = 100, 100
     branches_curvature:r = 1.0
     branches_density:r = 0.03
-    joints_cnt:i = 10000
-    leaves_density:r = 2.6
+    joints_cnt:i = 5000
+    leaves_density:r = 3
     trunk_thickness:r = 1.75
     reference_image
     {
