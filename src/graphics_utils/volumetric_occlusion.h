@@ -69,6 +69,7 @@ public:
     void read_func(const std::function<void(glm::vec3 &, float )> reader);
     void read_func_simple(const std::function<void(float )> reader);
     void relocate(glm::vec3 new_pos) { center = new_pos; }
+    int get_block_size() { return block_size; }
 private:
     struct LightParams
     {

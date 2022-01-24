@@ -815,7 +815,8 @@ void GenerationJob::generate()
       if (!c.depends.empty())
       {
         c.status = Cell::CellStatus::BORDER;
-        c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(), 4,
+        c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(),
+                                            voxels->get_block_size() > 1 ? voxels->get_block_size() : 5,
                                             glm::vec2(0,1e8));
         border_cells.push_back(c_id);
       }

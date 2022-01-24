@@ -115,6 +115,7 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source
     glm::ivec3 vox_sizes = glm::ivec3(vox_x, vox_y, vox_z);
     //logerr("creating voxels %d %d %d from %d %d %d",get_vox_sizes().x,get_vox_sizes().y,get_vox_sizes().z,
     //source->get_vox_sizes().x,source->get_vox_sizes().y,source->get_vox_sizes().z);
+
     for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
     {
         for (int j = -vox_sizes.y; j <= +vox_sizes.y; j++)
@@ -123,11 +124,11 @@ LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source
             {
                 float occ = 0;
                 int sm = 0;
-                for (int x0 = 0; x0 < size_decrease; x0++)
+                for (int x0 = 0; x0 < size_decrease; x0+=(size_decrease - 1)/2)
                 {
-                    for (int y0 = 0; y0 < size_decrease; y0++)
+                    for (int y0 = 0; y0 < size_decrease; y0+=(size_decrease - 1)/2)
                     {
-                        for (int z0 = 0; z0 < size_decrease; z0++)
+                        for (int z0 = 0; z0 < size_decrease; z0+=(size_decrease - 1)/2)
                         {
                             int x = size_decrease*i + x0 + vox_pos.x;
                             int y = size_decrease*j + y0 + vox_pos.y;

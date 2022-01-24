@@ -31,7 +31,7 @@ struct GETreeParameters : public ParametersSet
     int max_branches = 1;
     int occlusion_pyramid_d = 7;
     float r_pow = 2.2;
-    int sp_points_base = 16;
+    int sp_points_base = 4;
     float branching_angle_min = 0;
     float branching_angle_max = PI/3;
     int max_iterations = 100;
