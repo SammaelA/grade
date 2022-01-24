@@ -45,6 +45,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     initialize_population();
     calculate_metric();
     recalculate_fitness();
+    pick_best_to_heaven();
     debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_ever);
     while (!should_exit())
     {
@@ -67,6 +68,9 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         
         calculate_metric();
         recalculate_fitness();
+        pick_best_to_heaven();
+        if (iteration_n % metaParams.migration_interval == 0)
+            migration();
         for (int i=0;i<population.size();i++)
         {
             if (population[i].alive)
@@ -207,6 +211,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         
         for (auto &v : stat.all_births)
         {
+            logerr("aaa %d %d %d",v.x, v.y, v.z);
             auto itA = pos_by_id.find(v.x);
             auto itB = pos_by_id.find(v.y);
             auto itC = pos_by_id.find(v.z);
@@ -246,6 +251,7 @@ void GeneticAlgorithm::initialize_population()
         population[i].alive = true;
         population[i].max_age = metaParams.max_age;
         population[i].id = next_id.fetch_add(1);
+        population[i].sub_population_n = metaParams.n_islands*i/metaParams.initial_population_size;
     }
     current_population_size = metaParams.initial_population_size;
 }
@@ -315,36 +321,63 @@ void GeneticAlgorithm::find_pairs(int cnt, std::vector<std::pair<int, int>> &pai
         if (c.alive)
             fitsum += c.fitness;
     }
-    int vals[2];
-    for (int n=0;n<cnt;n++)
+    std::vector<float> islands_fitsum(metaParams.n_islands, 0);
+    for (auto &c : population)
     {
-        vals[0] = -1;
-        for (int k=0;k<2;k++)
+        if (c.alive)
+            islands_fitsum[c.sub_population_n] += c.fitness;
+    }
+
+    for (int n = 0; n < cnt; n++)
+    {
+        int p0 = -1;
+        int p1 = -1;
+
+        bool found = false;
+        while (!found)
         {
-            bool found = false;
-            while (!found)
+            float v = urand(0, fitsum);
+            for (int i = 0; i < population.size(); i++)
             {
-                float v = urand(0, fitsum);
-                for (int i=0;i<population.size();i++)
+                if (population[i].alive)
                 {
-                    if (population[i].alive)
+                    if (v < population[i].fitness)
                     {
-                        if (v < population[i].fitness && i != vals[0])
-                        {
-                            vals[k] = i;
-                            found = true;
-                            break;
-                        }
-                        else
-                        {
-                            v -= population[i].fitness;
-                        }
+                        p0 = i;
+                        found = true;
+                        break;
+                    }
+                    else
+                    {
+                        v -= population[i].fitness;
                     }
                 }
             }
         }
-        pairs.push_back(std::pair<int, int>(vals[0], vals[1]));
-        //logerr("parents %d %d chosen", vals[0], vals[1]);
+        int p0_island = population[p0].sub_population_n;
+        found = false;
+        while (!found)
+        {
+            float v = urand(0, islands_fitsum[p0_island]);
+            for (int i = 0; i < population.size(); i++)
+            {
+                if (population[i].alive && population[i].sub_population_n == p0_island)
+                {
+                    if (v < population[i].fitness)
+                    {
+                        p1 = i;
+                        found = true;
+                        break;
+                    }
+                    else
+                    {
+                        v -= population[i].fitness;
+                    }
+                }
+            }
+        }
+        pairs.push_back(std::pair<int, int>(p0, p1));
+        //logerr("parents %d %d chosen", p0, p1);
     }
 }
 
@@ -406,13 +439,45 @@ void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
     }
 }
 
+float GeneticAlgorithm::genes_dist(Creature &A, Creature &B)
+{
+    if (!A.alive || !B.alive)
+        return 1;
+    ParameterList par1 = original_param_list;
+    par1.from_simple_list(A.main_genome);
+    ParameterList par2 = original_param_list;
+    par2.from_simple_list(B.main_genome);
+    return par1.diff(par2); 
+}
+
+float GeneticAlgorithm::closest_neighbour(Creature &C, std::vector<Creature> &population)
+{
+    int i=0;
+    float min_dist = 1;
+    while (population[i].alive)
+    {
+        if (population[i].id != C.id)
+        {
+            float dist =  genes_dist(C, population[i]);
+            min_dist = MIN(min_dist,dist);
+        }
+        i++;
+    }
+    return min_dist;
+}
+
 void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
 {
+    if (A.sub_population_n != B.sub_population_n)
+    {
+        logerr("something went wrong %d %d", A.sub_population_n, B.sub_population_n);
+    }
     C = Creature();
     C.alive = true;
     C.age = 0;
     C.max_age = metaParams.max_age;
     C.id = next_id.fetch_add(1);
+    C.sub_population_n = A.sub_population_n;
     if (metaParams.evolution_stat)
     {
         stat.all_births.push_back(glm::ivec3(A.id, B.id, C.id));
@@ -464,6 +529,13 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         else
             mutation(g, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
     }
+    
+    while (closest_neighbour(C, new_population) < metaParams.clone_thr)
+    {
+        //logerr("remutation %d, it has clone in population",C.id);
+        mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
+    }
+
 }
 
 void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pairs)
@@ -535,39 +607,14 @@ void GeneticAlgorithm::calculate_metric(int heaven_n)
         }
     }
 }
-void GeneticAlgorithm::recalculate_fitness()
-{
-    std::sort(population.begin(), population.end(), 
-              [&](const Creature& a, const Creature& b) -> bool{return a.metric < b.metric;});
-    for (auto &p : population)
-    {
-        //logerr("%d metr %f", p.id, p.metric);
-        if (p.alive && p.metric < metaParams.dead_at_birth_thr && current_population_size > metaParams.min_population_size)
-        {
-            p.alive = false;
-            current_population_size--;
-        }
-        if (p.alive)
-            p.fitness = pow(p.metric, 1 + 0.2*iteration_n );
-        else
-            p.fitness = -1;
-    }
-    /*
-    std::sort(population.begin(), population.end(), 
-              [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
-    float min_v = 0.1;
-    float step = 0.025;
-    int n = 0;
 
-    for (auto &p : population)
-    {
-        if (p.alive && p.fitness > 0)
-        {
-            p.fitness = MAX(min_v, 1 - step*n);
-            n++;
-        }
-    }
-    */
+bool GeneticAlgorithm::better(Creature &A, Creature &B)
+{
+    return A.metric > B.metric;
+}
+
+void GeneticAlgorithm::pick_best_to_heaven()
+{
 
     for (int n=0;n<population.size();n++)
     {
@@ -583,6 +630,8 @@ void GeneticAlgorithm::recalculate_fitness()
             int worst_pos = -1;
             float worst_val = 1;
             bool same = false;
+
+            //creature should be better that someone in heaven
             for (int i=0;i<heaven.size();i++)
             {
                 if (heaven[i].id == population[n].id)
@@ -598,6 +647,31 @@ void GeneticAlgorithm::recalculate_fitness()
             }
             if (!same && worst_pos >= 0)
             {
+                //but also it should be better than all it's clones
+                std::vector<int> clones;
+                bool better_all_clones = true;
+                for (int i=0;i<heaven.size();i++)
+                {
+                    if (genes_dist(population[n], heaven[i]) < 2*metaParams.clone_thr)
+                    {
+                        clones.push_back(i);
+                        if (!better(population[n], heaven[i]))
+                        {
+                            better_all_clones = false;
+                            break;
+                        }
+                    }
+                }
+                if (better_all_clones)
+                {
+                    //no need to keep clones that are worse than our creature
+                    /*
+                    for (int &c_n : clones)
+                    {
+                        heaven[c_n] = Creature();
+                    }
+                    */
+                }
                 heaven[worst_pos] = population[n];
             }
         }
@@ -631,23 +705,78 @@ void GeneticAlgorithm::recalculate_fitness()
            }
        }
    }
+}
+
+void GeneticAlgorithm::migration()
+{
+    if (metaParams.n_islands == 1)
+        return;
+    for (auto &p : population)
+    {
+        if (urand() < metaParams.migration_chance)
+        {
+            p.sub_population_n = urandi(0, metaParams.n_islands);
+        }
+    }
+}
+
+void GeneticAlgorithm::recalculate_fitness()
+{
+    std::sort(population.begin(), population.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.metric < b.metric;});
+    for (auto &p : population)
+    {
+        //logerr("%d(%d) metr %f", p.id, p.sub_population_n, p.metric);
+        if (p.alive && p.metric < metaParams.dead_at_birth_thr && current_population_size > metaParams.min_population_size)
+        {
+            p.alive = false;
+            current_population_size--;
+        }
+        if (p.alive)
+            p.fitness = pow(p.metric, 1 + 0.2*iteration_n ) + 1e-4;
+        else
+            p.fitness = -1;
+    }
+    /*
+    std::sort(population.begin(), population.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
+    float min_v = 0.1;
+    float step = 0.025;
+    int n = 0;
+
+    for (auto &p : population)
+    {
+        if (p.alive && p.fitness > 0)
+        {
+            p.fitness = MAX(min_v, 1 - step*n);
+            n++;
+        }
+    }
+    */
    /*
    int p_cnt = 0;
    double p_dist = 0;
-   for (auto &p1 : population)
+   debug("dist matrix:\n");
+   for (auto &p1 : heaven)
    {
-       for (auto &p2 : population)
+       if (p1.alive)
        {
-           if (p1.alive && p2.alive)
-           {
-               p_cnt++;
-               ParameterList par1 = original_param_list;
-               par1.from_simple_list(p1.main_genome);
-               ParameterList par2 = original_param_list;
-               par2.from_simple_list(p2.main_genome);
-               p_dist += par1.diff(par2);
-           }
-       }
+            for (auto &p2 : heaven)
+            {
+                if (p2.alive)
+                {
+                    p_cnt++;
+                    ParameterList par1 = original_param_list;
+                    par1.from_simple_list(p1.main_genome);
+                    ParameterList par2 = original_param_list;
+                    par2.from_simple_list(p2.main_genome);
+                    float dist =  par1.diff(par2);
+                    p_dist += dist;
+                    debug("%.2f ", dist);
+                }
+            }
+            debugnl();
+        }
    }
    logerr("average population diff %f", (float)(p_dist/p_cnt));
    */

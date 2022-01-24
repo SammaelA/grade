@@ -16,10 +16,14 @@ public:
         int heaven_recalc_n = 4;
         int elite = 5;
         float weaks_to_kill = 0.5;
-        float dead_at_birth_thr = 0.001;
+        float dead_at_birth_thr = 0.0000;
         float mix_chance = 0.25;
         int n_ploid_genes = 1;
         int max_age = 100;
+        float clone_thr = 0.01;
+        int n_islands = 4;
+        int migration_interval = 10;
+        float migration_chance = 0.15;
         bool evolution_stat = false;
         bool debug_graph = false;
     };
@@ -59,6 +63,7 @@ private:
         int children_cnt = 0;
         bool alive = false;
         int id = 0;
+        int sub_population_n = -1;
     };
     std::vector<Creature> population;
     std::vector<Creature> new_population;
@@ -86,8 +91,12 @@ private:
     void make_child(Creature &A, Creature &B, Creature &C);
     void calculate_metric(int heaven_n = 1);
     void recalculate_fitness();
+    void pick_best_to_heaven();
+    void migration();
     Genome random_genes();
-
+    float closest_neighbour(Creature &C, std::vector<Creature> &population);
+    float genes_dist(Creature &A, Creature &B);
+    bool better(Creature &A, Creature &B);
     struct Stat
     {
         std::map<int, float> all_results;

@@ -1,13 +1,13 @@
 {
-    branch_angle_0:p2 = 0.25, 1.57
-    branch_angle_1:p2 = 0.25, 1.57
-    branch_angle_2:p2 = 0.25, 1.57
-    branch_angle_3:p2 = 0.25, 1.57
+    branch_angle_0:p2 = 0.01, 3
+    branch_angle_1:p2 = 0.01, 3
+    branch_angle_2:p2 = 0.01, 3
+    branch_angle_3:p2 = 0.01, 3
 
-    branch_len_0:p2 = 10, 100
-    branch_len_1:p2 = 10, 100
-    branch_len_2:p2 = 5, 20
-    branch_len_3:p2 = 1, 10
+    branch_len_0:p2 = 1, 100
+    branch_len_1:p2 = 1, 100
+    branch_len_2:p2 = 1, 100
+    branch_len_3:p2 = 1, 100
 
     branch_count_0:p2 = 5, 20
     branch_count_1:p2 = 5, 20

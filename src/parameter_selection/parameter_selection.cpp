@@ -338,6 +338,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
     mp.max_population_size = selection_settings.get_int("max_population_size", mp.max_population_size);
     mp.elite = selection_settings.get_int("elite", mp.elite);
+    mp.n_islands = selection_settings.get_int("n_islands", mp.n_islands);
+    mp.migration_interval = selection_settings.get_int("migration_interval", mp.migration_interval);
+    mp.clone_thr = selection_settings.get_double("clone_thr", mp.clone_thr);
+    mp.migration_chance = selection_settings.get_double("migration_chance", mp.migration_chance);
     mp.evolution_stat = selection_settings.get_bool("evolution_stat", mp.evolution_stat);
     mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
 
