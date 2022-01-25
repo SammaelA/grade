@@ -50,8 +50,8 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n)
             vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
             vec4 p2 = texelFetch(reference_image, ivec3(im_tc*vec2(float(ref_image_n)+impostor_x, impostor_y), 0), 0);
 
-            dist += abs(p1.z - p2.z);
-            sum += max(p1.z, p2.z);
+            dist += abs(p1.z - p2.z) + (max(p1.y,p2.y) > 0 ? abs(p1.y - p2.y) : abs(p1.x - p2.x));
+            sum += max(p1.z, p2.z) + (max(p1.y,p2.y) > 0 ? max(p1.y,p2.y) : max(p1.x,p2.x));
             /*
             if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
             {
@@ -77,7 +77,10 @@ void main()
         return;
 
     vec2 scale = vec2(1,1);
-    scale = impostors_info[0].BCyl_sizes/impostors_info[impostor_n+1].BCyl_sizes;
+    scale.x = impostors_info[0].BCyl_sizes.x > 0 ? 
+              impostors_info[0].BCyl_sizes.x/impostors_info[impostor_n+1].BCyl_sizes.x : 1;
+    scale.y = impostors_info[0].BCyl_sizes.y > 0 ? 
+              impostors_info[0].BCyl_sizes.y/impostors_info[impostor_n+1].BCyl_sizes.y : 1;
     ivec3 slice_data = ivec3(slices_info[impostor_n*slice_stride + slice_n].xyz);
     float min_dist = 1;
     for (int i=0;i<reference_images_cnt;i++)

@@ -102,10 +102,10 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     res = 0;
     branches_dens.read_func_simple(f);
 
-    info.branches_density = res/(V*MAX(b_vox_cnt,1));
+    info.branches_density = 100*res/(V*MAX(b_vox_cnt,1));
     //logerr("branch dens %f %d %f", (float)res, b_vox_cnt, info.branches_density);
 
-    info.branches_curvature = dots/MAX(seg_cnt,1);
+    info.branches_curvature = 1 - dots/MAX(seg_cnt,1);
     //logerr("branch curvative %f %d %f", (float)dots, seg_cnt, info.branches_curvature);
     //logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
     info.joints_cnt = 0;
@@ -213,14 +213,34 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         d_bc /= MAX(1e-4, (impostors_info_data[i+1].branches_curvature + impostors_info_data[0].branches_curvature)); 
         float d_jcnt = abs(impostors_info_data[i+1].joints_cnt - impostors_info_data[0].joints_cnt);
         d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
+        float d_th = abs(impostors_info_data[i+1].trunk_thickness - impostors_info_data[0].trunk_thickness); 
+        d_th /= MAX(1e-4, (impostors_info_data[i+1].trunk_thickness + impostors_info_data[0].trunk_thickness)); 
         if (scale_fine.x > 1)
             scale_fine.x = 1/scale_fine.x;
         if (scale_fine.y > 1)
             scale_fine.y = 1/scale_fine.y;
-        float sf = sqrt((scale_fine.x)*(scale_fine.y));
-        //dist = dist;
-        //logerr("dist %f %f %f %f %f %f", 1- sf, d_ld, d_bd, d_bc, d_jcnt, dist);
-        dist = CLAMP(sf*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt), 0,1);
+
+                
+        if (reference.width_status == TCIFeatureStatus::DONT_CARE)
+            scale_fine.x = 1;
+        if (reference.height_status == TCIFeatureStatus::DONT_CARE)
+            scale_fine.y = 1;
+        if (reference.branches_density_status == TCIFeatureStatus::DONT_CARE)
+            d_bd = -1e-5;
+        if (reference.leaves_density_status == TCIFeatureStatus::DONT_CARE)
+            d_ld = -1e-5;
+        if (reference.branches_curvature_status == TCIFeatureStatus::DONT_CARE)
+            d_bc = -1e-5;
+        if (reference.trunk_thickness_status == TCIFeatureStatus::DONT_CARE)
+            d_th = -1e-5;
+        if (reference.joints_cnt_status == TCIFeatureStatus::DONT_CARE)
+            d_jcnt = -1e-5;
+        if (reference.reference_image_status == TCIFeatureStatus::DONT_CARE)
+            dist = -1e-5;    
+        float d_sd = 1 - sqrt((scale_fine.x)*(scale_fine.y));
+
+        //logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
+        dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());
     }

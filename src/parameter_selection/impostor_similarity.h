@@ -3,6 +3,16 @@
 #include "graphics_utils/texture_manager.h"
 #include "common_utils/utility.h"
 
+
+enum TCIFeatureStatus
+{
+    UNKNOWN,
+    EXPLICIT,
+    DONT_CARE,
+    FROM_TYPE,
+    FROM_IMAGE
+};
+
 struct TreeCompareInfo
 {
     glm::vec2 BCyl_sizes;//radius and height of bounding cylinder;
@@ -16,9 +26,17 @@ struct TreeCompareInfo
 struct ReferenceTree
 {
     TreeCompareInfo info;
-    Texture tex;
+    TCIFeatureStatus reference_image_status = EXPLICIT;
+    TCIFeatureStatus width_status = EXPLICIT;
+    TCIFeatureStatus height_status = EXPLICIT;
+    TCIFeatureStatus branches_density_status = EXPLICIT;
+    TCIFeatureStatus leaves_density_status = EXPLICIT;
+    TCIFeatureStatus branches_curvature_status = EXPLICIT;
+    TCIFeatureStatus trunk_thickness_status = EXPLICIT;
+    TCIFeatureStatus joints_cnt_status = EXPLICIT;
     TextureAtlas atlas;
-    ReferenceTree() : tex(textureManager.empty()) {};
+    TreeTypeData *reference_type = nullptr;
+    ReferenceTree(){};
 };
 
 class ImpostorSimilarityCalc

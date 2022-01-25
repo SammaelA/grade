@@ -472,7 +472,6 @@ ParameterSelector::Results ParameterSelector::parameter_selection(TreeTypeData r
         packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
         save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
         ref_atlas_transform(ref_tree.atlas);
-        ref_tree.tex = textureManager.load_unnamed_tex(image::base_img_path + "imp_ref.png");
         ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
     }
     delete ref_voxels;
@@ -481,9 +480,19 @@ ParameterSelector::Results ParameterSelector::parameter_selection(TreeTypeData r
     return res;
 }
 
+
 ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings,
                                                                   Scene *demo_scene)
 {
+    Scene inner_scene;
+    Scene &scene = demo_scene ? *demo_scene : inner_scene;
+    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap->fill_const(0);
+    float imp_size = selection_settings.get_int("impostor_size", 128);
+    float original_tex_aspect_ratio = 1;
+    ReferenceTree ref_tree;
+    TreeTypeData reference_ttd;
+
     int reference_images_cnt = 0;
     for (int i=0;i<reference_info.size();i++)
     {
@@ -492,59 +501,310 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     }
     if (reference_images_cnt == 0)
     {
-        logerr("No images selected as a reference for parameter selection");
-        return Results();
+        std::string type_name = reference_info.get_string("reference_type","");
+        if (type_name == "")
+        {
+            logerr("Parameter selection error: No images or plant type selected as a reference");
+            return Results();
+        }
+        int type_id = metainfoManager.get_tree_type_id_by_name(type_name);
+        if (type_id < 0)
+        {
+            logerr("Parameter selection error: reference type %s is invalid", type_name.c_str());
+            return Results();
+        }
+        else
+        {
+            //existed type is a reference for selection
+            reference_ttd = metainfoManager.get_tree_type(type_id);  
+            GroveGenerationData tree_ggd;
+            tree_ggd.trees_count = 1;
+            tree_ggd.types = {reference_ttd};
+            tree_ggd.name = "single_tree";
+            tree_ggd.task = GenerationTask::IMPOSTORS;
+            tree_ggd.impostor_generation_params.slices_n = 8;
+            tree_ggd.impostor_generation_params.quality = imp_size;
+            tree_ggd.impostor_generation_params.monochrome = true;
+            tree_ggd.impostor_generation_params.normals_needed = false;
+            tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
+
+            LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.params->get_tree_max_size(),
+                                                            0.625f * reference_ttd.params->get_scale_factor());
+            //create reference tree
+            {
+                AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_ttd.generator_name);
+                ref_voxels->fill(0);
+                tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
+                GrovePacker packer;
+                Tree single_tree;
+                tree_ggd.trees_count = 1;
+                gen->plant_tree(glm::vec3(0, 0, 0), &(tree_ggd.types[0]));
+                while (gen->iterate(*ref_voxels))
+                {
+                }
+                gen->finalize_generation(&single_tree, *ref_voxels);
+                packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
+                save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
+                ref_atlas_transform(ref_tree.atlas);
+                ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
+            }
+            delete ref_voxels;
+        }
+
+    }
+    else
+    {
+        //a set of images is a reference for selection
+        {
+            TextureAtlas atl = TextureAtlas(reference_images_cnt * imp_size, imp_size, 1, 1);
+            ref_tree.atlas = atl;
+        }
+        ref_tree.atlas.set_grid(imp_size, imp_size, false);
+        PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
+        for (int i=0;i<reference_info.size();i++)
+        {
+            if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
+            {
+                Block *ref_image_blk = reference_info.get_block(i);
+                if (!ref_image_blk)
+                    continue;
+                std::string name = ref_image_blk->get_string("image","");
+                if (name == "")
+                    continue;
+                Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+                int slice_id = ref_tree.atlas.add_tex();
+                ref_tree.atlas.target_slice(slice_id, 0);
+                ref_transform.use();
+                ref_transform.get_shader().texture("tex", ref_raw);
+                ref_transform.get_shader().uniform("wood_color",
+                                                ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
+                ref_transform.get_shader().uniform("leaves_color",
+                                                ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
+                ref_transform.get_shader().uniform("background_color",
+                                                ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
+                ref_transform.render();
+
+                textureManager.delete_tex(ref_raw);
+            }
+        }
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        ref_atlas_transform(ref_tree.atlas);
+    }
+    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas1");
+    
+    Block &ri = reference_info;
+    TreeCompareInfo explicit_info;
+    explicit_info.BCyl_sizes = glm::vec2(ri.get_double("width",-1),ri.get_double("height",-1));
+    explicit_info.branches_curvature = ri.get_double("branches_curvature",-1);
+    explicit_info.branches_density = ri.get_double("branches_density",-1);
+    explicit_info.joints_cnt = ri.get_int("joints_cnt",-1);
+    explicit_info.leaves_density = ri.get_double("leaves_density",-1);
+    explicit_info.trunk_thickness = ri.get_double("trunk_thickness",-1);
+
+    if (explicit_info.BCyl_sizes.x < 0)
+    {
+        auto status_str = ri.get_string("width","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree width is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0 && false)
+            ref_tree.width_status = TCIFeatureStatus::FROM_IMAGE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for width", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.BCyl_sizes.x = explicit_info.BCyl_sizes.x;
+    }
+
+    if (explicit_info.BCyl_sizes.y < 0)
+    {
+        ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("height","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree height is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for height", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.BCyl_sizes.y = explicit_info.BCyl_sizes.y;
+    }
+
+    if (explicit_info.branches_density < 0)
+    {
+        ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("branches_density","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree branches_density is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for branches_density", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.branches_density = explicit_info.branches_density;
     }
     
-    Scene inner_scene;
-    Scene &scene = demo_scene ? *demo_scene : inner_scene;
-    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
-    scene.heightmap->fill_const(0);
-    float imp_size = selection_settings.get_int("impostor_size", 128);
-    ReferenceTree ref_tree;
-    ref_tree.info.BCyl_sizes = reference_info.get_vec2("BCyl_sizes",glm::vec2(0,0));
-    ref_tree.info.branches_curvature = reference_info.get_double("branches_curvature",0);
-    ref_tree.info.branches_density = reference_info.get_double("branches_density",0);
-    ref_tree.info.joints_cnt =reference_info.get_int("joints_cnt",0);
-    ref_tree.info.leaves_density = reference_info.get_double("leaves_density",0);
-    ref_tree.info.trunk_thickness = reference_info.get_double("trunk_thickness",0);
-
+    if (explicit_info.leaves_density < 0)
     {
-        TextureAtlas atl = TextureAtlas(reference_images_cnt * imp_size, imp_size, 1, 1);
-        ref_tree.atlas = atl;
-    }
-    ref_tree.atlas.set_grid(imp_size, imp_size, false);
-    PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
-    for (int i=0;i<reference_info.size();i++)
-    {
-        if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
+        ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("leaves_density","");
+        if (status_str == "")
         {
-            Block *ref_image_blk = reference_info.get_block(i);
-            if (!ref_image_blk)
-                continue;
-            std::string name = ref_image_blk->get_string("image","");
-            if (name == "")
-                continue;
-            Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
-            int slice_id = ref_tree.atlas.add_tex();
-            ref_tree.atlas.target_slice(slice_id, 0);
-            ref_transform.use();
-            ref_transform.get_shader().texture("tex", ref_raw);
-            ref_transform.get_shader().uniform("wood_color",
-                                               ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
-            ref_transform.get_shader().uniform("leaves_color",
-                                               ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
-            ref_transform.get_shader().uniform("background_color",
-                                               ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
-            ref_transform.render();
-
-            textureManager.delete_tex(ref_raw);
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree leaves_density is not set. DONT_CARE mode will be used by default\n");
+            }
         }
+        else if (status_str == "DONT_CARE")
+            ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for leaves_density", status_str.c_str());
     }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    ref_atlas_transform(ref_tree.atlas);
-    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas");
+    else
+    {
+        ref_tree.info.leaves_density = explicit_info.leaves_density;
+    }
+
+    if (explicit_info.branches_curvature < 0)
+    {
+        ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("branches_curvature","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree branches_curvature is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for branches_curvature", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.branches_curvature = explicit_info.branches_curvature;
+    }
+
+    if (explicit_info.trunk_thickness < 0)
+    {
+        ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("trunk_thickness","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree trunk_thickness is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0 && false)
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_IMAGE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for trunk_thickness", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.trunk_thickness = explicit_info.trunk_thickness;
+    }
+
+    if (explicit_info.joints_cnt < 0)
+    {
+        ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("joints_cnt","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree joints_cnt is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+        {
+            ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+            int max_joints = ri.get_int("max_joints",25000);
+            debug("joints_cnt status is set as DONT_CARE, but there is still a limit max_joints = %d\n",max_joints);
+        }
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for joints_cnt", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.joints_cnt = explicit_info.joints_cnt;
+    }
+
     Results res;
-    parameter_selection_internal(selection_settings, res, scene, ref_tree, nullptr);
+    parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd);
     return res;
 }

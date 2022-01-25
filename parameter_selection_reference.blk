@@ -1,12 +1,16 @@
 {
-    BCyl_sizes:p2 = 100, 100
-    branches_curvature:r = 1.0
-    branches_density:r = 0.03
+    //width:r = 50
+    //height:r = 120
+    //branches_curvature:r = 0.0
+    branches_curvature:s = "DONT_CARE"
+    //branches_density:r = 3
     joints_cnt:i = 5000
-    leaves_density:r = 3
-    trunk_thickness:r = 1.75
-    reference_image
-    {
-        image:s = "reference_tree_test.png"
-    }
+    //leaves_density:r = 3
+    trunk_thickness:s = "DONT_CARE"
+    //trunk_thickness:r = 1.75
+    reference_type:s = "large_oak"
+    //reference_image
+    //{
+    //    image:s = "reference_tree_test.png"
+    //}
 }

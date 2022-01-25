@@ -1,5 +1,5 @@
 {
-    generator_name:s = "ge_gen"
+    generator_name:s = "simpliest"
     evolution_stat:b = false
     debug_graph:b = false
     initial_population_size:i = 100
