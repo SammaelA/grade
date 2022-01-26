@@ -107,7 +107,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
 
     info.branches_curvature = 1 - dots/MAX(seg_cnt,1);
     //logerr("branch curvative %f %d %f", (float)dots, seg_cnt, info.branches_curvature);
-    //logerr("imp bcyl size %f %f", imp.bcyl.r, 2*imp.bcyl.h_2);
+    //logerr("imp bcyl size %f %f", info.BCyl_sizes.x, info.BCyl_sizes.y);
     info.joints_cnt = 0;
     for (auto &bh : t.branchHeaps)
     {
@@ -239,7 +239,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             dist = -1e-5;    
         float d_sd = 1 - sqrt((scale_fine.x)*(scale_fine.y));
 
-        //logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
+        logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
         dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());

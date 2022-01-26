@@ -15,12 +15,12 @@ enum TCIFeatureStatus
 
 struct TreeCompareInfo
 {
-    glm::vec2 BCyl_sizes;//radius and height of bounding cylinder;
-    float branches_density;
-    float leaves_density;
-    float branches_curvature;//from 0 to 1, average dot(seg, seg_next) for all branches
-    float trunk_thickness; 
-    int joints_cnt;
+    glm::vec2 BCyl_sizes = glm::vec2(0,0);//radius and height of bounding cylinder;
+    float branches_density = 0;
+    float leaves_density = 0;
+    float branches_curvature = 0;//from 0 to 1, average dot(seg, seg_next) for all branches
+    float trunk_thickness = 0; 
+    int joints_cnt = 0;
     float _pad;
 };
 struct ReferenceTree

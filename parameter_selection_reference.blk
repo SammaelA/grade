@@ -1,16 +1,16 @@
 {
-    //width:r = 50
-    //height:r = 120
+    width:s = "FROM_IMAGE"
+    height:r = 120
     //branches_curvature:r = 0.0
     branches_curvature:s = "DONT_CARE"
-    //branches_density:r = 3
+    branches_density:r = 3
     joints_cnt:i = 5000
-    //leaves_density:r = 3
-    trunk_thickness:s = "DONT_CARE"
+    leaves_density:r = 3
+    trunk_thickness:s = "FROM_IMAGE"
     //trunk_thickness:r = 1.75
-    reference_type:s = "large_oak"
-    //reference_image
-    //{
-    //    image:s = "reference_tree_test.png"
-    //}
+    //reference_type:s = "large_oak"
+    reference_image
+    {
+        image:s = "reference_tree_test_2.png"
+    }
 }

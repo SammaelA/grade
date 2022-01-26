@@ -151,4 +151,25 @@
         resource_mult:r = 3.5
         tropism_params:p4 = 0.5, 1, 0.04, 1 
     }
+
+    small_tree_auto_1
+    {
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
+        max_joints_in_branch:i = 32
+        remove_min_level:i = 3
+        root_type:i = 1
+        Xm:r = 175
+        branching_angle_max:r = 3.0
+        branching_angle_min:r = 2.0
+        leaves_cnt:r = 3.4
+        mu:r = 0.71
+        r:r = 0.43
+        r_s:r = 0.14
+        res_decrease_step:r = 0.07
+        res_q:r = 0.25
+        resource_mult:r = 8.65
+        rs_size_factor:r = -0.00
+        tropism_params:p4 = -0.24, -1, 0.19, 1.69 
+    }
 }

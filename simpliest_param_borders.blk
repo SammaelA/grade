@@ -4,6 +4,8 @@
     branch_angle_2:p2 = 0.01, 3
     branch_angle_3:p2 = 0.01, 3
 
+    branch_r_0:p2 = 0.5, 25
+
     branch_len_0:p2 = 1, 100
     branch_len_1:p2 = 1, 100
     branch_len_2:p2 = 1, 100

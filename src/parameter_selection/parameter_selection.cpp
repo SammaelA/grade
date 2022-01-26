@@ -480,6 +480,130 @@ ParameterSelector::Results ParameterSelector::parameter_selection(TreeTypeData r
     return res;
 }
 
+void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color,
+                                          glm::vec4 &tc_transform, float &width_height, float &tr_thick_height)
+{
+    unsigned char *data = nullptr;
+    int w,h;
+    if (!t.is_valid())
+    {
+        logerr("invalid reference texture");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    else if (t.type == GL_TEXTURE_2D)
+    {
+        w = t.get_W();
+        h = t.get_H();
+        data = new unsigned char[4*w*h];
+
+        glBindTexture(t.type, t.texture);
+
+        glGetTexImage(t.type,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    data);
+        glBindTexture(t.type, 0);
+    }
+    else
+    {
+        logerr("invalid reference texture format");
+        data = nullptr;
+        w = 0;
+        h = 0;
+    }
+    if (data)
+    {
+        std::vector<glm::ivec2> min_max;
+        int min_x = w;
+        int max_x = -1;
+        int min_y = h;
+        int max_y = -1;
+        for (int y=0;y<h;y++)
+        {
+            min_max.push_back(glm::ivec2(-1,-1));
+            for (int x=0;x<w;x++)
+            {
+                int pos = 4*((h - y - 1)*w + x);
+                if (data[pos] != (unsigned char)255*background_color.x ||
+                    data[pos+1] != (unsigned char)255*background_color.y ||
+                    data[pos+2] != (unsigned char)255*background_color.z)
+                {
+                    min_max.back().x = x;
+                    break;
+                }
+            }
+            if (min_max.back().x >= 0)
+            {
+                for (int x=w-1;x>=0;x--)
+                {
+                    int pos = 4*((h - y - 1)*w + x);
+                    if (data[pos] != (unsigned char)255*background_color.x ||
+                        data[pos+1] != (unsigned char)255*background_color.y ||
+                        data[pos+2] != (unsigned char)255*background_color.z)
+                    {
+                        min_max.back().y = x;
+                        break;
+                    }
+                }
+                min_x = MIN(min_x,min_max.back().x);
+                max_x = MAX(max_x, min_max.back().y);
+                min_y = MIN(min_y, y);
+                max_y = MAX(max_y, y);
+            }
+            logerr("[%d %d]", min_max.back().x, min_max.back().y);
+        }
+        //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
+        tc_transform.x = (float)(min_x)/w;
+        tc_transform.y = (float)(min_y)/h;
+        tc_transform.z = (float)(max_x - min_x)/w;
+        tc_transform.w = (float)(max_y - min_y)/h;
+        width_height = (float)(max_x - min_x)/(max_y - min_y);
+        float base_th = 0;
+        float sum_th = 0;
+        int len = 0;
+        for (auto &v : min_max)
+        {
+            if (v.x >= 0)
+            {
+                float th = (float)(v.y - v.x)/h;
+                if (base_th == 0)
+                {
+                    if (th < 0.25)
+                    {
+                        logerr("base th [%d %d]", v.x, v.y);
+                        base_th = th;
+                        sum_th = th;
+                        len++;
+                    }
+                    else
+                    {
+                        tr_thick_height = -1;
+                        debug("cannot find visible trunk on reference image\n");
+                        break;
+                    }
+                }
+                else if (th < 1.5*base_th)
+                {
+                    logerr("th [%d %d]", v.x, v.y);
+                    sum_th += th;
+                    len++;
+                }
+                else
+                {
+                    break;
+                }
+
+            }
+        }
+        if (len > 0)
+            tr_thick_height = 0.5*sum_th/len;
+        logerr("trunk th %f", tr_thick_height);
+        delete[] data;
+    }
+}
 
 ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings,
                                                                   Scene *demo_scene)
@@ -490,6 +614,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     scene.heightmap->fill_const(0);
     float imp_size = selection_settings.get_int("impostor_size", 128);
     float original_tex_aspect_ratio = 1;
+    float original_tex_tr_thickness = 0;
     ReferenceTree ref_tree;
     TreeTypeData reference_ttd;
 
@@ -561,6 +686,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         ref_tree.atlas.set_grid(imp_size, imp_size, false);
         PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
+        original_tex_aspect_ratio = 0;
+
         for (int i=0;i<reference_info.size();i++)
         {
             if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
@@ -572,6 +699,13 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 if (name == "")
                     continue;
                 Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+                glm::vec4 ref_tc_transform;
+                float aspect_ratio = -1;
+                float tr_thickness = -1;
+                prepare_to_transform_reference_image(ref_raw, ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)),
+                ref_tc_transform, aspect_ratio, tr_thickness);
+                original_tex_aspect_ratio += aspect_ratio;
+                original_tex_tr_thickness += tr_thickness;
                 int slice_id = ref_tree.atlas.add_tex();
                 ref_tree.atlas.target_slice(slice_id, 0);
                 ref_transform.use();
@@ -582,11 +716,14 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                                                 ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
                 ref_transform.get_shader().uniform("background_color",
                                                 ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
+                ref_transform.get_shader().uniform("ref_tc_transform",ref_tc_transform);
                 ref_transform.render();
 
                 textureManager.delete_tex(ref_raw);
             }
         }
+        original_tex_aspect_ratio /= reference_images_cnt;
+        original_tex_tr_thickness /= reference_images_cnt;
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
         ref_atlas_transform(ref_tree.atlas);
     }
@@ -618,8 +755,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else if (status_str == "DONT_CARE")
             ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0 && false)
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0)
+        {
             ref_tree.width_status = TCIFeatureStatus::FROM_IMAGE;
+            ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*explicit_info.BCyl_sizes.y;
+        }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
         else 
@@ -760,8 +900,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else if (status_str == "DONT_CARE")
             ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0 && false)
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0)
+        {
             ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_IMAGE;
+            ref_tree.info.trunk_thickness = original_tex_tr_thickness*explicit_info.BCyl_sizes.y;
+        }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
         else 

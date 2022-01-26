@@ -9,9 +9,11 @@ uniform sampler2D tex;
 uniform vec3 wood_color;
 uniform vec3 leaves_color;
 uniform vec3 background_color;
+uniform vec4 ref_tc_transform;
 void main(void) 
 {
-  vec4 color = texture(tex,vec2(ex_Tex.x, 1-ex_Tex.y));
+  vec2 tc = ref_tc_transform.xy + ref_tc_transform.zw*vec2(ex_Tex.x, 1-ex_Tex.y);
+  vec4 color = texture(tex, tc);
 
   fragColor = vec4(0,0,0,0);
   if (color.a > 0.5)
