@@ -1,12 +1,12 @@
 {
     width:s = "FROM_IMAGE"
-    height:r = 120
+    height:r = 100
     //branches_curvature:r = 0.0
     branches_curvature:s = "DONT_CARE"
     branches_density:r = 3
-    joints_cnt:i = 5000
+    joints_cnt:i = 7500
     leaves_density:r = 3
-    trunk_thickness:s = "FROM_IMAGE"
+    trunk_thickness:s = "DONT_CARE"
     //trunk_thickness:r = 1.75
     //reference_type:s = "large_oak"
     reference_image

@@ -88,7 +88,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, 4);
+            v.packed_branch_to_model(b, &model, false, 2);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -317,7 +317,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
         hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
 
-        //logerr("tri id 2 %d",int(br.triIndices.size()));
+        logerr("tri id 2 %d",int(br.triIndices.size()));
         hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
       }
       hrMeshClose(branches.back());
@@ -475,7 +475,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"50 30 50");
+    camNode.append_child(L"position").text().set(L"-431 255.16 -43.75");
     camNode.append_child(L"look_at").text().set(L"0 20 0");
   
     VERIFY_XML(camNode);

@@ -115,6 +115,22 @@ float sel_quality(ParameterList &parList, ParameterList &referenceParList,
     return q;
 }
 
+void sel_quality(ParameterList &parList, const std::function<std::vector<float>(std::vector<ParameterList> &)> &metric, 
+                  int samples = 16)
+{
+    std::vector<float> res;
+    std::vector<ParameterList> parLists;
+    for (int i = 0; i < samples; i++)
+    {
+        parLists.push_back(parList);
+    }
+    res = metric(parLists);
+
+    float mn1 = 0, mx1 = 0, av = 0, dev = 0;
+    vector_stat(res, &mn1, &mx1, &av, &dev);
+    debug("result stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn1, mx1, av, dev);
+}
+
 void ref_atlas_transform(TextureAtlas &atl)
 {
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -301,7 +317,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
           ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y, ref_tree.info.branches_curvature,
           ref_tree.info.branches_density, ref_tree.info.joints_cnt, ref_tree.info.leaves_density,
           ref_tree.info.trunk_thickness);
-    std::string gen_name = selection_settings.get_string("generator_name", "simpliest");
+    std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
     {
@@ -392,7 +408,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         ref_type->params->write_parameter_list(referenceParList);
         sel_quality(bestParList, referenceParList, func, 32);
     }
-
+    else
+    {
+        sel_quality(bestParList, func, 32);
+    }
     //create preapred tree
     {
         LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
@@ -553,7 +572,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 min_y = MIN(min_y, y);
                 max_y = MAX(max_y, y);
             }
-            logerr("[%d %d]", min_max.back().x, min_max.back().y);
+            //logerr("[%d %d]", min_max.back().x, min_max.back().y);
         }
         //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
         tc_transform.x = (float)(min_x)/w;
@@ -573,7 +592,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 {
                     if (th < 0.25)
                     {
-                        logerr("base th [%d %d]", v.x, v.y);
+                        //logerr("base th [%d %d]", v.x, v.y);
                         base_th = th;
                         sum_th = th;
                         len++;
@@ -587,7 +606,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 }
                 else if (th < 1.5*base_th)
                 {
-                    logerr("th [%d %d]", v.x, v.y);
+                    //logerr("th [%d %d]", v.x, v.y);
                     sum_th += th;
                     len++;
                 }
@@ -600,7 +619,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         }
         if (len > 0)
             tr_thick_height = 0.5*sum_th/len;
-        logerr("trunk th %f", tr_thick_height);
+        //logerr("trunk th %f", tr_thick_height);
         delete[] data;
     }
 }
@@ -949,5 +968,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
     Results res;
     parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd);
+    
+    std::string type_name = selection_settings.get_string("save_best_result","");
+    if (type_name != "")
+        metainfoManager.add_tree_type(res.best_candidates[0], type_name);   
+    
     return res;
 }

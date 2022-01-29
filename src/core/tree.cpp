@@ -154,12 +154,14 @@ void Branch::pack(PackedBranch &branch)
         branch.r_mults.clear();
     }
 }
-TreeTypeData::TreeTypeData(int id, ParametersSet *_params, std::string wood_tex_name, std::string leaf_tex_name):
-wood(textureManager.get(wood_tex_name)),
-leaf(textureManager.get(leaf_tex_name))
+TreeTypeData::TreeTypeData(int id, ParametersSet *_params, std::string _wood_tex_name, std::string _leaf_tex_name):
+wood(textureManager.get(_wood_tex_name)),
+leaf(textureManager.get(_leaf_tex_name))
 {
     type_id = id;
     params = _params;
+    wood_tex_name = _wood_tex_name;
+    leaf_tex_name = _leaf_tex_name;
 }
 TreeTypeData::~TreeTypeData()
 {
@@ -250,7 +252,8 @@ leaf(t.leaf)
     leaf_id = t.leaf_id;
     additional_textures = t.additional_textures;
     generator_name = t.generator_name;
-
+    wood_tex_name = t.wood_tex_name;
+    leaf_tex_name = t.leaf_tex_name;
     if (t.params)
         params = t.params->copy();
     else
@@ -269,7 +272,8 @@ leaf(t.leaf)
     leaf_id = t.leaf_id;
     additional_textures = t.additional_textures;
     generator_name = t.generator_name;
-
+    wood_tex_name = t.wood_tex_name;
+    leaf_tex_name = t.leaf_tex_name;
     if (t.params)
         params = t.params->copy();
     else

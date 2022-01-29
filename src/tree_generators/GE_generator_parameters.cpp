@@ -2,53 +2,56 @@
 
 void GETreeParameters::save_to_blk(Block &b)
 {
-    b.set_double("lambda", 0.52);
-    b.set_double("k", 0.75);
-    b.set_int("tau", 6);
-    b.set_double("ro", 1.0);
-    b.set_double("X0", 2);
-    b.set_double("Xm", 100);
-    b.set_double("r", 0.37);
-    b.set_int("alpha", 4);
-    b.set_double("sigma", 0.5);
-    b.set_double("mu", 1.5);
-    b.set_double("b_min", 1.8);
-    b.set_double("b_max", 2.2);
-    b.set_double("r_s", 0.05);
-    b.set_double("rs_size_factor", 0.02);
-    b.set_int("remove_min_level", 2);
-
-    b.set_double("base_r", 0.025);
-    b.set_int("max_branches", 1);
-    b.set_int("occlusion_pyramid_d", 10);
-    b.set_double("r_pow", 2.2);
-    b.set_int("sp_points_base", 16);
-    b.set_double("branching_angle_min", 0);
-    b.set_double("branching_angle_max", PI / 3);
-    b.set_int("max_iterations", 100);
-    b.set_double("leaf_size_mult", 3.5);
-    b.set_double("leaves_cnt", 1.0);
-    b.set_int("max_joints_in_branch", 16);
-    b.set_double("resource_mult", 7.5);
-    b.set_double("res_q", 1.0);
-    b.set_double("leaves_max_r", 5);
-    b.set_double("leaves_angle_a", 0.3);
-    b.set_double("leaves_angle_b", 0.4);
-    b.set_int("root_type", 1);
+    b.set_double("lambda", lambda);
+    b.set_double("k", k);
+    b.set_int("tau", tau);
+    b.set_double("ro", ro);
+    b.set_double("X0", X0);
+    b.set_double("Xm", Xm);
+    b.set_double("r", r);
+    b.set_int("alpha", alpha);
+    b.set_double("sigma", sigma);
+    b.set_double("mu", mu);
+    b.set_double("b_min", b_min);
+    b.set_double("b_max", b_max);
+    b.set_double("r_s", r_s);
+    b.set_double("rs_size_factor", rs_size_factor);
+    b.set_int("remove_min_level", remove_min_level);
+    b.set_double("base_r", base_r);
+    b.set_int("max_branches", max_branches);
+    b.set_int("occlusion_pyramid_d", occlusion_pyramid_d);
+    b.set_double("r_pow", r_pow);
+    b.set_int("sp_points_base", sp_points_base);
+    b.set_double("branching_angle_min", branching_angle_min);
+    b.set_double("branching_angle_max", branching_angle_max);
+    b.set_int("max_iterations", max_iterations);
+    b.set_double("leaf_size_mult", leaf_size_mult);
+    b.set_double("leaves_cnt", leaves_cnt);
+    b.set_int("max_joints_in_branch", max_joints_in_branch);
+    b.set_double("resource_mult", resource_mult);
+    b.set_double("res_q", res_q);
+    b.set_double("leaves_max_r", leaves_max_r);
+    b.set_double("leaves_angle_a", leaves_angle_a);
+    b.set_double("leaves_angle_b", leaves_angle_b);
+    b.set_int("root_type", root_type);
     b.set_vec2("tropism_min_max", tropism_min_max);
     b.set_vec4("tropism_params", tropism_params);
+    b.set_double("branching_tropims_mult", branching_tropims_mult);
+    b.set_int("tropism_level_base", tropism_level_base);
+    b.set_double("res_decrease_step", res_decrease_step);
+    b.set_double("res_decrease_min", res_decrease_min);
 }
 
 void GETreeParameters::load_from_blk(Block &b)
 {
-    lambda = b.get_double("lambda", 0.52);
-    k = b.get_double("k", 0.75);
-    tau = b.get_int("tau", 6);
-    ro = b.get_double("ro", 1.0);
-    X0 = b.get_double("X0", 2);
-    Xm = b.get_double("Xm", 100);
-    r = b.get_double("r", 0.37);
-    alpha = b.get_int("alpha", 4);
+    lambda = b.get_double("lambda", lambda);
+    k = b.get_double("k", k);
+    tau = b.get_int("tau", tau);
+    ro = b.get_double("ro", ro);
+    X0 = b.get_double("X0", X0);
+    Xm = b.get_double("Xm", Xm);
+    r = b.get_double("r", r);
+    alpha = b.get_int("alpha", alpha);
     sigma = b.get_double("sigma", sigma);
     mu = b.get_double("mu", mu);
     b_min = b.get_double("b_min", b_min);
@@ -56,7 +59,6 @@ void GETreeParameters::load_from_blk(Block &b)
     r_s = b.get_double("r_s", r_s);
     rs_size_factor = b.get_double("rs_size_factor", rs_size_factor);
     remove_min_level = b.get_int("remove_min_level", remove_min_level);
-
     base_r = b.get_double("base_r", base_r);
     max_branches = b.get_int("max_branches", max_branches);
     occlusion_pyramid_d = b.get_int("occlusion_pyramid_d", occlusion_pyramid_d);

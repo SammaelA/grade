@@ -70,8 +70,8 @@ struct GETreeParameters : public ParametersSet
         *Ps = *this;
         return Ps;
     };
-    virtual void save_to_blk(Block &b);
-    virtual void load_from_blk(Block &b);
+    virtual void save_to_blk(Block &b) override;
+    virtual void load_from_blk(Block &b) override;
     virtual void RW_parameter_list(bool write, ParameterList &list) override;
 };
 

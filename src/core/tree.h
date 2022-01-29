@@ -108,6 +108,8 @@ struct TreeTypeData
     int leaf_id;
     std::vector<Texture> additional_textures;
     std::string generator_name = "default";
+    std::string wood_tex_name = "wood";
+    std::string leaf_tex_name = "leaf";
 
 };
 struct Tree

@@ -1,7 +1,7 @@
 {
     bush
     {
-        wood_tex_name:s = "wood2"
+        wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.75
         root_type:i = 0
@@ -19,8 +19,8 @@
     }
     flat_bush
     {
-        wood_tex_name:s = "wood2"
-        leaf_tex_name:s = "leaf"
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
         res_q:r = 1.0
         root_type:i = 0
         Xm:r = 25
@@ -36,8 +36,8 @@
     }
     small_bush
     {
-        wood_tex_name:s = "wood2"
-        leaf_tex_name:s = "leaf"
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
         res_q:r = 1.0
         root_type:i = 2
         Xm:r = 25

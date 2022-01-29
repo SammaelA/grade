@@ -226,6 +226,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     ParameterSelector sel;
     //auto res = sel.parameter_selection(type, b, scene);
     auto res = sel.parameter_selection(ref_info, b, scene);
+    metainfoManager.save_all();
 
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

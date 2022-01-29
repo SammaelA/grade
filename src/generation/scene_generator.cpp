@@ -109,7 +109,7 @@ AbstractTreeGenerator *get_gen(std::string &generator_name)
   AbstractTreeGenerator *gen;
   if (generator_name == "proctree")
     gen = new Proctree::ProctreeGenerator();
-  else if (generator_name == "simple")
+  else if (generator_name == "simple_gen")
     gen = new SimpleTreeGenerator();
   else if (generator_name == "load_from_file")
     gen = new TreeLoaderBlk();

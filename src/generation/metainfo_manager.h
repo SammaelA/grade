@@ -7,7 +7,9 @@ class MetainfoManager
 {
 public:
     bool reload_all(std::string dir = ".");
-
+    bool save_all(std::string dir = ".");
+    
+    void add_tree_type(TreeTypeData &ttd, std::string name);
     TreeTypeData &get_tree_type(std::string name);
     TreeTypeData &get_tree_type(int id);
     int get_tree_type_id_by_name(std::string name);
@@ -27,6 +29,8 @@ private:
     void load_grass_types();
     void load_biomes();
     
+    void save_tree_types();
+
     std::map<std::string, int> tree_type_id_by_name;
     std::vector<TreeTypeData> tree_types;
     

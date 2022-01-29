@@ -1,5 +1,6 @@
 {
     generator_name:s = "ge_gen"
+    save_best_result:s = "selected_tree_2"
     evolution_stat:b = false
     debug_graph:b = false
     initial_population_size:i = 100
@@ -7,9 +8,9 @@
     best_results_count:i = 5
     exit_conditions
     {
-        function_calculated:i = 1000
+        function_calculated:i = 3000
         generations:i = 10000
         function_reached:r = 1.0
-        time_elapsed_seconds:r = 4000
+        time_elapsed_seconds:r = 2000
     }
 }

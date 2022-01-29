@@ -675,7 +675,7 @@ int full_initialization()
   data.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(2000, 2000), 5);
   if (generator_name == "proctree")
     gen = new Proctree::ProctreeGenerator();
-  else if (generator_name == "simple")
+  else if (generator_name == "simple_gen")
     gen = new SimpleTreeGenerator();
   else if (generator_name == "load_from_file")
     gen = new TreeLoaderBlk();
