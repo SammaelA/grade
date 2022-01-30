@@ -253,13 +253,16 @@ void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<Tr
 
 LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 {
-    glm::vec3 ref_size = glm::vec3(ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
-    return new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * ref_size, 0.625f);
+    int sz_x = 25*ceil(1.25*ref_tree.info.BCyl_sizes.x/25 + 1);
+    int sz_y = 25*ceil(1.25*ref_tree.info.BCyl_sizes.y/25 + 1);
+    glm::vec3 ref_size = glm::vec3(sz_x, 0.5f*sz_y, sz_x);
+    //logerr("ref size %d %d", sz_x, sz_y);
+    return new LightVoxelsCube(glm::vec3(0, ref_size.y - 1, 0), ref_size, 0.625f, 1.0f, 1, 2);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
                                               GroveGenerationData &tree_ggd, Heightmap *flat_hmap,
-                                              ReferenceTree &ref_tree, int &cnt)
+                                              ReferenceTree &ref_tree, int &cnt, ReferenceTree *new_ref = nullptr)
 {
     if (params.empty())
         return std::vector<float>();
@@ -297,11 +300,17 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     }
     packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
     ref_atlas_transform(tmp_g.impostors[1].atlas);
-    //textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
-    //logerr("generate %d",cnt);
     cnt += params.size();
     std::vector<float> res;
-    imp_sim.calc_similarity(tmp_g, ref_tree, res, trees);
+    if (new_ref)
+    {
+        textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
+        ImpostorSimilarityCalc::get_tree_compare_info(tmp_g.impostors[1].impostors.back(), trees[0], new_ref->info);
+    }
+    else
+    {
+        imp_sim.calc_similarity(tmp_g, ref_tree, res, trees);
+    }
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
     {
@@ -320,6 +329,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
+    if (!ref_type)
     {
         std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
         bool found = false;
@@ -338,7 +348,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             return;
         }
     }
-
+    else
+    {
+        tree_ggd.types = {*ref_type};
+    }
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
     tree_ggd.impostor_generation_params.slices_n = 8;
@@ -347,8 +360,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 1.0;
 
-    GETreeGenerator::set_joints_limit(1.667 * ref_tree.info.joints_cnt);
-
+    GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
     mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
@@ -380,7 +392,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     man.load_block_from_file(gen_name + "_param_borders.blk", b);
     parList.load_borders_from_blk(b);
-    parList.print();
+    //parList.print();
 
     bestParList = parList;
     float best_metric = 0;
@@ -399,7 +411,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    bestParList.print();
+    //bestParList.print();
     debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
 
     if (ref_type && ref_type->generator_name == gen_name)
@@ -431,9 +443,9 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         for (int i = 0; i < best_pars.size(); i++)
         {
             AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
-            glm::vec3 pos = glm::vec3(100 * (1 + i / 5), 0, 100 * (i % 5));
+            glm::vec3 pos =  glm::vec3(100 * (1 + i / 5), 0, 100 * (i % 5));
             res_voxels->fill(0);
-            res_voxels->relocate(pos);
+            res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
 
             tree_ggd.types[i].params->read_parameter_list(best_pars[i].second);
             gen->plant_tree(pos, &(tree_ggd.types[i]));
@@ -579,7 +591,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         tc_transform.y = (float)(min_y)/h;
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
-        width_height = (float)(max_x - min_x)/(max_y - min_y);
+        width_height = 0.5f*(float)(max_x - min_x)/(max_y - min_y);
         float base_th = 0;
         float sum_th = 0;
         int len = 0;
@@ -660,7 +672,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         else
         {
             //existed type is a reference for selection
-            reference_ttd = metainfoManager.get_tree_type(type_id);  
+            reference_ttd = metainfoManager.get_tree_type(type_id); 
+            ParameterList referenceParList;
+            reference_ttd.params->write_parameter_list(referenceParList);
+            //referenceParList.print();
+            reference_ttd.params->read_parameter_list(referenceParList);
             GroveGenerationData tree_ggd;
             tree_ggd.trees_count = 1;
             tree_ggd.types = {reference_ttd};
@@ -674,7 +690,43 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
             LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.params->get_tree_max_size(),
                                                             0.625f * reference_ttd.params->get_scale_factor());
+            logerr("AAAA %f %f %f",reference_ttd.params->get_tree_max_size().x, reference_ttd.params->get_tree_max_size().y,
+            reference_ttd.params->get_tree_max_size().z);
+            ReferenceTree ref_tree_init;
+            ref_tree_init.info.BCyl_sizes = glm::vec2(reference_ttd.params->get_tree_max_size().x, reference_ttd.params->get_tree_max_size().y);
+            ref_tree_init.info.joints_cnt = 100000;
             //create reference tree
+            for (int i=0;i<10;i++)
+            {
+                GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
+                ref_voxels = gen_voxels_for_selection(ref_tree_init);
+                Scene init_scene;
+                init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+                init_scene.heightmap->fill_const(0);
+                AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_ttd.generator_name);
+                ref_voxels->fill(0);
+                tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
+                GrovePacker packer;
+                Tree single_tree;
+                tree_ggd.trees_count = 1;
+                gen->plant_tree(glm::vec3(0, 0, 0), &(tree_ggd.types[0]));
+                while (gen->iterate(*ref_voxels))
+                {
+                }
+                gen->finalize_generation(&single_tree, *ref_voxels);
+                packer.add_trees_to_grove(tree_ggd, init_scene.grove, &single_tree, init_scene.heightmap, false);
+                //save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
+                //ref_atlas_transform(ref_tree.atlas);
+                ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree_init.info);
+                delete ref_voxels;
+            }
+            //std::vector<ParameterList> a_params = {referenceParList};
+            //ImpostorSimilarityCalc isc = ImpostorSimilarityCalc(1, 8, false);
+            //int aa;
+            //generate_for_par_selection(a_params, isc, tree_ggd, scene.heightmap, ref_tree_init, aa, &ref_tree);
+            for (int i=0;i<1;i++)
+            {
+            ref_voxels = gen_voxels_for_selection(ref_tree_init);
             {
                 AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
@@ -692,7 +744,9 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 ref_atlas_transform(ref_tree.atlas);
                 ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
             }
+            //ref_tree.info.BCyl_sizes = ref_tree_init.info.BCyl_sizes;
             delete ref_voxels;
+            }
         }
 
     }
@@ -774,10 +828,26 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else if (status_str == "DONT_CARE")
             ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0)
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
         {
             ref_tree.width_status = TCIFeatureStatus::FROM_IMAGE;
-            ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*explicit_info.BCyl_sizes.y;
+            if (explicit_info.BCyl_sizes.y > 0)
+                ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*explicit_info.BCyl_sizes.y;
+            else  
+            {
+                auto h_status_str = ri.get_string("height","");
+                if (h_status_str != "FROM_IMAGE")
+                {
+                    logerr("if width status is FROM_IMAGE height status should be either FROM_IMAGE or explicit");
+                }
+                else
+                {
+                    float max_height = ri.get_double("max_height", 200);
+                    ref_tree.info.BCyl_sizes.y = max_height/1.5;
+                    ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*ref_tree.info.BCyl_sizes.y;
+                }
+            }
+
         }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
@@ -807,6 +877,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else if (status_str == "DONT_CARE")
             ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
+        {
+            ref_tree.height_status = TCIFeatureStatus::FROM_IMAGE;
+        }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
         else 
@@ -919,10 +993,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else if (status_str == "DONT_CARE")
             ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0 && explicit_info.BCyl_sizes.y > 0)
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
         {
             ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_IMAGE;
-            ref_tree.info.trunk_thickness = original_tex_tr_thickness*explicit_info.BCyl_sizes.y;
+            ref_tree.info.trunk_thickness = original_tex_tr_thickness*ref_tree.info.BCyl_sizes.y;
         }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
@@ -955,6 +1029,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
             int max_joints = ri.get_int("max_joints",25000);
             debug("joints_cnt status is set as DONT_CARE, but there is still a limit max_joints = %d\n",max_joints);
+            ref_tree.info.joints_cnt = 0.5*max_joints;
         }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;

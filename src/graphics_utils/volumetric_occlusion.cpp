@@ -77,6 +77,8 @@ voxel_size(vox_size)
     fill(0);
     sum_memory.fetch_add(count*sizeof(float));
     sum_allocs.fetch_add(1);
+    //debug("[%f %f %f] created voxels cube %d x %d x %d voxels, %dx%dx%d blocks\n", center.x, center.y, center.z,
+    //      2*vox_x + 1, 2*vox_y + 1, 2*vox_z + 1, block_x, block_y, block_z);
 }
 
 void LightVoxelsCube::fill(float val)

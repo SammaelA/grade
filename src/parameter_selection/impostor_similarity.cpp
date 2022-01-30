@@ -31,6 +31,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
         return;
     }
     info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
+    //logerr("imp size %f %f", info.BCyl_sizes.x, info.BCyl_sizes.y);
     info.trunk_thickness = t.root->segments.front().rel_r_begin;
     
     glm::vec3 center = t.pos + imp.bcyl.h_2;
@@ -204,7 +205,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             //logerr("dist %d %d %f", i, j, results_data[i*slices_per_impostor + j]);
         }
         dist /= slices_per_impostor;
-        glm::vec2 scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
+        dist = smoothstep5(dist);
         float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
         d_ld /= MAX(1e-4, (impostors_info_data[i+1].leaves_density + impostors_info_data[0].leaves_density));
         float d_bd = abs(impostors_info_data[i+1].branches_density - impostors_info_data[0].branches_density); 
@@ -213,18 +214,48 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         d_bc /= MAX(1e-4, (impostors_info_data[i+1].branches_curvature + impostors_info_data[0].branches_curvature)); 
         float d_jcnt = abs(impostors_info_data[i+1].joints_cnt - impostors_info_data[0].joints_cnt);
         d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
-        float d_th = abs(impostors_info_data[i+1].trunk_thickness - impostors_info_data[0].trunk_thickness); 
-        d_th /= MAX(1e-4, (impostors_info_data[i+1].trunk_thickness + impostors_info_data[0].trunk_thickness)); 
-        if (scale_fine.x > 1)
-            scale_fine.x = 1/scale_fine.x;
-        if (scale_fine.y > 1)
-            scale_fine.y = 1/scale_fine.y;
+        
+        float d_th;
+        if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
+            reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
+            reference.trunk_thickness_status == TCIFeatureStatus::FROM_IMAGE)
+        {
+            d_th = (impostors_info_data[i+1].trunk_thickness/MAX(impostors_info_data[i+1].BCyl_sizes.y, 1e-6))/
+                   (impostors_info_data[0].trunk_thickness/impostors_info_data[0].BCyl_sizes.y);
+            if (d_th > 1)
+                d_th = 1/d_th;
+            d_th = 1 - d_th;
+        }
+        else
+        {
+            d_th = abs(impostors_info_data[i+1].trunk_thickness - impostors_info_data[0].trunk_thickness); 
+            d_th /= MAX(1e-4, (impostors_info_data[i+1].trunk_thickness + impostors_info_data[0].trunk_thickness)); 
+        }
 
-                
-        if (reference.width_status == TCIFeatureStatus::DONT_CARE)
-            scale_fine.x = 1;
-        if (reference.height_status == TCIFeatureStatus::DONT_CARE)
+        glm::vec2 scale_fine;
+        if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE)
+        {
+            scale_fine.x = (impostors_info_data[i+1].BCyl_sizes.x/MAX(impostors_info_data[i+1].BCyl_sizes.y, 1e-6))/
+                           (impostors_info_data[0].BCyl_sizes.x/impostors_info_data[0].BCyl_sizes.y);
+            if (scale_fine.x > 1)
+                scale_fine.x = 1/scale_fine.x;
             scale_fine.y = 1;
+        }
+        else
+        {
+            scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
+            if (scale_fine.x > 1)
+                scale_fine.x = 1/scale_fine.x;
+            if (scale_fine.y > 1)
+                scale_fine.y = 1/scale_fine.y;
+
+                    
+            if (reference.width_status == TCIFeatureStatus::DONT_CARE)
+                scale_fine.x = 1;
+            if (reference.height_status == TCIFeatureStatus::DONT_CARE)
+                scale_fine.y = 1;
+            scale_fine = sqrt(scale_fine);
+        }
         if (reference.branches_density_status == TCIFeatureStatus::DONT_CARE)
             d_bd = -1e-5;
         if (reference.leaves_density_status == TCIFeatureStatus::DONT_CARE)
@@ -237,9 +268,9 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             d_jcnt = -1e-5;
         if (reference.reference_image_status == TCIFeatureStatus::DONT_CARE)
             dist = -1e-5;    
-        float d_sd = 1 - sqrt((scale_fine.x)*(scale_fine.y));
+        float d_sd = 1 - (scale_fine.x)*(scale_fine.y);
 
-        logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
+        //logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
         dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());

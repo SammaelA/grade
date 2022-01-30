@@ -177,14 +177,14 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
         {
             float f_leaves_cnt = params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos)));
             int l_cnt = f_leaves_cnt;
-            if (urand() < (f_leaves_cnt - l_cnt))
+            if (self_rand() < (f_leaves_cnt - l_cnt))
                 l_cnt++;
             for (int i=0;i<l_cnt;i++)
             {
-                glm::vec3 rd1 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_a, params.leaves_angle_a), 
-                                            urand(-1, 1)));
-                glm::vec3 rd2 = normalize(vec3(urand(-1, 1), urand(-params.leaves_angle_b, params.leaves_angle_b),
-                                            urand(-1, 1)));
+                glm::vec3 rd1 = normalize(vec3(self_rand(-1, 1), self_rand(-params.leaves_angle_a, params.leaves_angle_a), 
+                                            self_rand(-1, 1)));
+                glm::vec3 rd2 = normalize(vec3(self_rand(-1, 1), self_rand(-params.leaves_angle_b, params.leaves_angle_b),
+                                            self_rand(-1, 1)));
                 float sz = params.ro * params.leaf_size_mult;
                 glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
                 glm::vec3 b = j.pos + 0.5f * sz * rd2;
@@ -215,7 +215,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1, iteration, true));
         for (int i = 0; i < 10; i++)
         {
-            float phi = 0.2*PI*(i + urand());
+            float phi = 0.2*PI*(i + self_rand());
             t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*params.ro, 0), 0.9, iteration, true));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration));
             auto &b = t.root.joints.back().childBranches.back();
@@ -229,11 +229,11 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         float d = 0.05*params.Xm*params.ro;
         for (int i = 0; i < 4; i++)
         {
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*urand(-1,1)*d, d, 0.1*urand(-1,1)*d), 0.9,iteration, false));
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*d, d, 0.1*self_rand(-1,1)*d), 0.9,iteration, false));
         }
         for (int i = 0; i < 4; i++)
         {
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*urand(-1,1)*d, d, 0.1*urand(-1,1)*d), 0.9, iteration, true));
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*d, d, 0.1*self_rand(-1,1)*d), 0.9, iteration, true));
         }
     }
     else if (params.root_type == 2)
@@ -241,12 +241,12 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-2,0), 1, iteration, true));
         for (int i = 0; i < 10; i++)
         {
-            float phi = 0.2*PI*(i + urand());
+            float phi = 0.2*PI*(i + self_rand());
             t.root.joints.push_back(Joint(t.pos + glm::vec3(0, -2 + 0.1*(i+1)*params.ro, 0), 0.9, iteration, true));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration));
             auto &b = t.root.joints.back().childBranches.back();
-            b.joints.push_back(Joint(t.root.joints.back().pos + (float)urand(2.5,5.5)*params.ro*vec3(sin(phi),0,cos(phi)),0.1,iteration,false));
-            b.joints.push_back(Joint(b.joints.back().pos + vec3(urand(-0.3,0.3),4,urand(-0.3,0.3)),0.1, iteration, true));
+            b.joints.push_back(Joint(t.root.joints.back().pos + (float)self_rand(2.5,5.5)*params.ro*vec3(sin(phi),0,cos(phi)),0.1,iteration,false));
+            b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.3,0.3),4,self_rand(-0.3,0.3)),0.1, iteration, true));
         }
     }
     else
@@ -515,9 +515,9 @@ void GETreeGenerator::add_SPCol_points_solid_angle(vec3 pos, vec3 dir, float r_m
     float r, phi, psi;
     for (int i = 0; i < cnt; i++)
     {
-        r = urand(0, r_max);
-        phi = urand(0, 2 * PI);
-        psi = urand(min_psi, PI / 2);
+        r = self_rand(0, r_max);
+        phi = self_rand(0, 2 * PI);
+        psi = self_rand(min_psi, PI / 2);
         vec3 dr = r * cos(psi) * sin(phi) * cr + r * cos(psi) * cos(phi) * trd + r * sin(psi) * dir;
         vec3 ps = pos + dr;
         sp_data.add(ps);
@@ -613,7 +613,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
         {
             permutations[j] = j;
         }
-        std::random_shuffle(permutations.begin(), permutations.end());
+        std::shuffle(permutations.begin(), permutations.end(), gen);
 
         for (int j = 0; j < growth_points.size(); j++)
         {
@@ -637,8 +637,8 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 vec3 b, c;
                 cross_vecs(prev_dir, b, c);
                 float r = params.ro;
-                float phi = urand(-PI, PI);
-                float psi = urand(params.branching_angle_min, params.branching_angle_max);
+                float phi = self_rand(-PI, PI);
+                float psi = self_rand(params.branching_angle_min, params.branching_angle_max);
 
                 vec2 planar_dir = vec2(sin(phi), cos(phi));
                 planar_dir = normalize(planar_dir - 3.0f*gp.base_branch->average_chb_dir);
@@ -672,7 +672,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
                 //logerr("joint with new pos created %f %f %f %f %f %f",new_pos.x, new_pos.y,new_pos.z,
                 //                                                     best_dir.x, best_dir.y,best_dir.z);
-                br->joints.push_back(Joint(new_pos, params.base_r, iteration, urand() < params.k));
+                br->joints.push_back(Joint(new_pos, params.base_r, iteration, self_rand() < params.k));
                 t.joints_total++;
                 if (t.joints_total > joints_limit)
                 {
@@ -791,7 +791,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         //logerr("br is ok %d %d %d %f",b.level, total_joints, b.joints.size(), ch_b_count);
     }
     if (b.level >= params.remove_min_level && (total_joints > 10) && 
-       (urand() < remove_chance ||
+       (self_rand() < remove_chance ||
         total_joints > 50 && (float)b.joints.size()/total_joints > 0.33 ||
         dead_b_count/b.joints.size() > 0.75 ||
         b.joints.size() > 0.5*params.max_joints_in_branch && ch_b_count < 2))
@@ -890,4 +890,10 @@ void GETreeGenerator::SpaceColonizationData::remove_close(glm::vec3 pos, float r
 {
     AABB box = AABB(pos - r * vec3(1, 1, 1), pos + r * vec3(1, 1, 1));
     octree.remove_in_sphere(box, r, pos);
+}
+
+float GETreeGenerator::self_rand(double from, double to)
+{
+    //return urand(from, to);
+    return from >= to ? from : from + d_ur(gen)*(to - from);
 }

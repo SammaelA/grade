@@ -87,8 +87,11 @@ public:
 private:
     static int joints_limit;
     static std::atomic<int> ids, t_ids;
-    int iteration = 0;
     static GETreeParameters defaultParameters;
+    //std::random_device rd{};
+    std::mt19937 gen{0};
+    std::uniform_real_distribution<double> d_ur = std::uniform_real_distribution<double>(0,1);
+    int iteration = 0;
     struct Joint;
     struct Leaf; 
     struct Tree;
@@ -232,4 +235,5 @@ private:
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
     void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
     void set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels);
+    float self_rand(double from = 0.0, double to = 1.0);
 };

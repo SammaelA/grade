@@ -127,6 +127,8 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
             kill_creature(i);
     }
     calculate_metric(metaParams.heaven_recalc_n);
+    std::sort(heaven.begin(), heaven.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.metric > b.metric;});
     debug("heaven popultion %d best metric %.4f\n", heaven.size(), heaven[0].metric);
     debug("heaven [ ");
     for (auto &creature : heaven)
@@ -134,8 +136,6 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         debug("%.4f ", creature.metric);
     }
     debug("]\n");
-    std::sort(heaven.begin(), heaven.end(), 
-              [&](const Creature& a, const Creature& b) -> bool{return a.metric > b.metric;});
     for (int i=0;i<MIN(metaParams.best_genoms_count, heaven.size());i++)
     {
         best_results.emplace_back();

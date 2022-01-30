@@ -269,3 +269,5 @@ bool prepare_directory(std::string &save_path)
 
   return status;
 }
+float smoothstep3(float x) { return -2*x*x*x + 3*x*x; }
+float smoothstep5(float x) { return 6*x*x*x*x*x - 15*x*x*x*x + 10*x*x*x; }

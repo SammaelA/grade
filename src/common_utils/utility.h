@@ -149,3 +149,5 @@ private:
 };
 
 bool prepare_directory(std::string &save_path);
+float smoothstep3(float x);
+float smoothstep5(float x);

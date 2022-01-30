@@ -13,7 +13,7 @@ public:
         int min_population_size = 10;
         int best_genoms_count = 3;
         int heaven_size = 7;
-        int heaven_recalc_n = 4;
+        int heaven_recalc_n = 10;
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.0000;

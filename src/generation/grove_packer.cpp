@@ -135,7 +135,7 @@ bool is_valid_tree(::Tree &t)
     }
     if (t.branchHeaps[1]->branches.empty())
     {
-        logerr("tree %u do not have branches instead of trunk. Grove packer will ignore it", t.id);
+        //logerr("tree %u do not have branches instead of trunk. Grove packer will ignore it", t.id);
         return false;
     }
     return true;

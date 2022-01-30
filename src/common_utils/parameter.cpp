@@ -280,7 +280,6 @@ void ParameterList::load_borders_from_blk(Block &b)
         }
         else if (b.get_type(i) == Block::ValueType::ARRAY)
         {
-            logerr("cat parameter %s", b.get_name(i).c_str());
             //categorial
             auto it = categorialParameters.find(b.get_name(i));
             if (it != categorialParameters.end())
