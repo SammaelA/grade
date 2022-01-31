@@ -578,7 +578,7 @@ void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float
     }
 }
 
-void LightVoxelsCube::set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r)
+void LightVoxelsCube::set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r, int rnd_seed)
 {
     #define BLOCK_SIZE_5 5
     int x0 = voxel.x;
@@ -613,7 +613,7 @@ void LightVoxelsCube::set_occluder_pyramid_tail_5(glm::ivec3 voxel, float streng
     int self2_y = (y2 + vox_y) % BLOCK_SIZE_5;
     int self2_z = (z2 + vox_z) % BLOCK_SIZE_5;
 
-    bl1_z += (abs(x0) + abs(y0) + abs(z0)) % 2;
+    bl1_z += rnd_seed % 2;
 
     for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z+=2)
     {
@@ -728,7 +728,7 @@ void LightVoxelsCube::set_occluder_pyramid_head_5(glm::ivec3 voxel, float streng
         }
     }
 
-void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r)
+void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r, int rnd_seed)
 {
     float occ = 0.0;
     glm::ivec3 voxel = pos_to_voxel(pos);
@@ -739,7 +739,7 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
     if (block_size == 5)
     {
         set_occluder_pyramid_head_5(voxel, strenght, max_r);
-        set_occluder_pyramid_tail_5(voxel, strenght, max_r);
+        set_occluder_pyramid_tail_5(voxel, strenght, max_r, rnd_seed);
         return;
     }
 
@@ -785,7 +785,7 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
     int self2_y = (y2 + vox_y) % block_size;
     int self2_z = (z2 + vox_z) % block_size;
 
-    bl1_z += (abs(x0) + abs(y0) + abs(z0)) % 2;
+    bl1_z += rnd_seed % 2;
 
     for (int bl_z = bl1_z; bl_z <= bl2_z; bl_z+=2)
     {

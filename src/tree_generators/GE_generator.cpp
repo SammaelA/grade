@@ -175,7 +175,7 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
         if (j.childBranches.empty() && b.level >= level_from && params.leaves_cnt > 0 &&
             j.r < params.base_r * params.leaves_max_r)
         {
-            float f_leaves_cnt = params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_simple(j.pos)));
+            float f_leaves_cnt = params.leaves_cnt * SQR(1 / (0.5 + voxels.get_occlusion_trilinear(j.pos)));
             int l_cnt = f_leaves_cnt;
             if (self_rand() < (f_leaves_cnt - l_cnt))
                 l_cnt++;
@@ -295,14 +295,14 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst)
 
     convert(src, dst, src.root, dst.root);
 
-    /*
+    
     debug("converted, branches: ");
     for (auto &bh : dst.branchHeaps)
     {
         debug("%d ",bh->branches.size());
     }
     debugnl();
-    */
+    
 }
 void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst)
 {
@@ -377,7 +377,7 @@ void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParam
         Joint &j = *it;
         if (j.childBranches.empty())
         {
-            j.light = MIN(1, SQR(1 / ( 1 + voxels.get_occlusion_simple(j.pos))));
+            j.light = MIN(1, SQR(1 / ( 1 + voxels.get_occlusion_trilinear(j.pos))));
             j.resource = j.light;
         }
         else
@@ -723,12 +723,12 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         if (i > 0)
         {
             if (j.childBranches.empty())
-                total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_simple(j.pos),0)));
+                total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_trilinear(j.pos),0)));
             if (true)
             {
-                //logerr("%f %f aaa", voxels.get_occlusion_simple(j.pos),  MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_simple(j.pos),0))));
+                //logerr("%f %f aaa", voxels.get_occlusion_trilinear(j.pos),  MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_trilinear(j.pos),0))));
             }
-            //logerr("l %f", voxels.get_occlusion_simple(j.pos));
+            //logerr("l %f", voxels.get_occlusion_trilinear(j.pos));
             for (Branch &br : j.childBranches)
             {
                 if (br.alive)
@@ -853,7 +853,9 @@ void GETreeGenerator::set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreePa
 
 void GETreeGenerator::set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels)
 {
-    voxels.set_occluder_pyramid_fast(j.pos, base_value, params.occlusion_pyramid_d);
+    glm::vec3 p = j.pos;
+    int rnd_seed = 17*abs(p.x) + 19*abs(p.y) + 23*abs(p.z);
+    voxels.set_occluder_pyramid_fast(j.pos, base_value, params.occlusion_pyramid_d, rnd_seed);
 }
 
 bool GETreeGenerator::SpaceColonizationData::find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos,
@@ -867,7 +869,7 @@ bool GETreeGenerator::SpaceColonizationData::find_best_pos(LightVoxelsCube &voxe
     {
         if (dot(normalize(p - pos), dir) > cs)
         {
-            float occ = voxels.get_occlusion_simple(p);
+            float occ = voxels.get_occlusion_trilinear(p);
             //logerr("%f occ", occ);
             if (occ < best_occ)
             {

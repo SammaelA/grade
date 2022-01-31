@@ -218,16 +218,60 @@ float dot_metric(Tree &single_tree, float dst_dot)
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
     metainfoManager.reload_all();
-    TreeTypeData type = metainfoManager.get_tree_type("simpliest_tree_default");
+    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
+    scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene->heightmap->fill_const(0);
+
+    float imp_size = 128;
+    GroveGenerationData tree_ggd;
+    tree_ggd.trees_count = 1;
+    tree_ggd.types = {type};
+    tree_ggd.name = "single_tree";
+    tree_ggd.task = GenerationTask::IMPOSTORS;
+    tree_ggd.impostor_generation_params.slices_n = 8;
+    tree_ggd.impostor_generation_params.quality = imp_size;
+    tree_ggd.impostor_generation_params.monochrome = true;
+    tree_ggd.impostor_generation_params.normals_needed = false;
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
+
+    ReferenceTree ref_tree;
+
+    //create reference tree
+    for (int i=0;i<2;i++)
+    {
+        logerr("GEN %d",i);
+        glm::vec3 pos = glm::vec3(100*0,0,0);
+        glm::vec3 sz = type.params->get_tree_max_size();
+        LightVoxelsCube *ref_voxels = new LightVoxelsCube(pos + glm::vec3(0, sz.y - 10, 0),
+                                                          (1.5f + 0.25f*i)*sz,
+                                                          0.625f * type.params->get_scale_factor());
+        AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
+        ref_voxels->fill(0);
+        tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
+        GrovePacker packer;
+        Tree single_tree;
+        tree_ggd.trees_count = 1;
+        gen->plant_tree(pos, &(tree_ggd.types[0]));
+        while (gen->iterate(*ref_voxels))
+        {
+        }
+        gen->finalize_generation(&single_tree, *ref_voxels);
+        packer.add_trees_to_grove(tree_ggd, scene->grove, &single_tree, scene->heightmap, false);
+        delete ref_voxels;
+        //save_impostor_as_reference(scene->grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
+        //ref_atlas_transform(ref_tree.atlas);
+        //ImpostorSimilarityCalc::get_tree_compare_info(scene->grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
+    }
+    /*
     Block b, ref_info;
     BlkManager man;
     man.load_block_from_file("parameter_selection_settings.blk", b);
     man.load_block_from_file("parameter_selection_reference.blk", ref_info);
     ParameterSelector sel;
-    //auto res = sel.parameter_selection(type, b, scene);
+    auto res = sel.parameter_selection(type, b, scene);
     auto res = sel.parameter_selection(ref_info, b, scene);
     metainfoManager.save_all();
-
+    */
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

@@ -83,6 +83,7 @@ public:
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual bool iteration_method_implemented() override {return true;}
+    virtual void set_seed(int seed) override {gen = std::mt19937{seed};}
     static void set_joints_limit(int lim) {joints_limit = lim;}
 private:
     static int joints_limit;

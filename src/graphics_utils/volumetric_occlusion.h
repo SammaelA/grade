@@ -28,7 +28,7 @@ public:
     void set_occluder(glm::vec3 pos, float strenght);
     void set_occluder_pyramid(glm::vec3 pos, float strenght);
     void set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r);
-    void set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r);
+    void set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r, int rnd_seed);
     void set_occluder_simple(glm::vec3 pos, float strenght);
     void set_occluder_simple_mip(glm::vec3 pos, float strenght, int mip);
     void set_occluder_trilinear(glm::vec3 pos, float strenght);
@@ -122,7 +122,7 @@ private:
     int v_to_i_mip_no_offset(glm::ivec3 voxel, int mip);
     int v_to_i_mip_no_offset(int x, int y, int z, int mip);
     int voxels_count() {return vox_x*vox_y*vox_z;}
-    void set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r);
+    void set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r, int rnd_seed);
     void set_occluder_pyramid_head_5(glm::ivec3 voxel, float strenght, int max_r);
     float sum_occlusion = 0.0;
     float occ_count = 0.0;

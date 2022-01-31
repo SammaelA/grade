@@ -15,6 +15,7 @@ public:
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) {};
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) {};
     virtual bool iteration_method_implemented() {return false;}
+    virtual void set_seed(int seed) {};
 };
 
 extern std::atomic<int> branch_next_id, tree_next_id; 
