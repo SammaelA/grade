@@ -8,6 +8,7 @@
 #include "parameter_selection/genetic_algorithm.h"
 #include "tree_generators/GE_generator.h"
 #include "parameter_selection/parameter_selection.h"
+#include "tree_generators/all_generators.h"
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -222,6 +223,34 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
     scene->heightmap->fill_const(0);
     
+    /*
+    int cnt = 100;
+    int _a;
+    ParameterList par;
+    type.params->write_parameter_list(par);
+    std::vector<ParameterList> params;
+    for (int i=0;i<cnt;i++)
+    {
+        params.push_back(par);
+    }
+    float imp_size = 128;
+    GroveGenerationData tree_ggd;
+    tree_ggd.trees_count = 1;
+    tree_ggd.types = {type};
+    tree_ggd.name = "single_tree";
+    tree_ggd.task = GenerationTask::IMPOSTORS;
+    tree_ggd.impostor_generation_params.slices_n = 8;
+    tree_ggd.impostor_generation_params.quality = imp_size;
+    tree_ggd.impostor_generation_params.monochrome = true;
+    tree_ggd.impostor_generation_params.normals_needed = false;
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
+
+    ReferenceTree ref_tree;
+    ref_tree.info.
+    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(cnt, 8, false);
+    generate_for_par_selection(params, imp_sim, tree_ggd, scene->heightmap, ref_tree, _a, nullptr);  
+    */
+    
     Block b, ref_info;
     BlkManager man;
     man.load_block_from_file("parameter_selection_settings.blk", b);
@@ -229,7 +258,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
     metainfoManager.save_all();
-
+    
     /*
     float imp_size = 128;
     GroveGenerationData tree_ggd;
@@ -246,17 +275,23 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     ReferenceTree ref_tree;
 
     //create reference tree
-    for (int i=0;i<2;i++)
-    {
-        logerr("GEN %d",i);
-        glm::vec3 pos = glm::vec3(100*0,0,0);
+
+        glm::vec3 pos = glm::vec3(0,0,0);
         glm::vec3 sz = type.params->get_tree_max_size();
-        LightVoxelsCube *ref_voxels = new LightVoxelsCube(pos + glm::vec3(0, sz.y - 10, 0),
-                                                          (1.5f + 0.25f*i)*sz,
-                                                          0.625f * type.params->get_scale_factor());
-        AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
+        LightVoxelsCube *ref_voxels = new LightVoxelsCube(pos + glm::vec3(0, sz.y - 10, 0),sz,
+                                                          0.625f * type.params->get_scale_factor(), 1.0f, 1, 2);
+    
+    int cnt = 8;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    GETreeGenerator::set_joints_limit(10000);
+    GETreeGeneratorSimplified::set_joints_limit(10000);
+    for (int i=0;i<cnt*cnt;i++)
+    {
+        pos = glm::vec3(100*(i / cnt),0,100*(i % cnt));
+        //logerr("GEN %d",i);
+        AbstractTreeGenerator *gen = get_generator(type.generator_name);
         ref_voxels->fill(0);
-        tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
+        ref_voxels->relocate(pos + glm::vec3(0, sz.y - 10, 0));
         GrovePacker packer;
         Tree single_tree;
         tree_ggd.trees_count = 1;
@@ -266,13 +301,12 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         }
         gen->finalize_generation(&single_tree, *ref_voxels);
         packer.add_trees_to_grove(tree_ggd, scene->grove, &single_tree, scene->heightmap, false);
-        delete ref_voxels;
-        //save_impostor_as_reference(scene->grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
-        //ref_atlas_transform(ref_tree.atlas);
-        //ImpostorSimilarityCalc::get_tree_compare_info(scene->grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
     }
-    */
-   
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
+    delete ref_voxels;
+   */
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

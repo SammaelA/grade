@@ -20,6 +20,4 @@ public:
                        GroveMask &mask,
                        LightVoxelsCube &voxels,
                        Tree *trees);
-    static AbstractTreeGenerator *get_generator(std::string &name);
-    static ParametersSet *get_default_parameters(std::string &name);
 };

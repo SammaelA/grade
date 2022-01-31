@@ -7,6 +7,7 @@
 #include "tinyEngine/image.h"
 #include "tree_generators/GE_generator.h"
 #include "generation/metainfo_manager.h"
+#include "tree_generators/all_generators.h"
 #include <thread>
 
 Texture load_reference(std::string name, int image_w, int image_h)
@@ -234,7 +235,7 @@ void ref_atlas_transform(TextureAtlas &atl)
 
 void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree)
 {
-    AbstractTreeGenerator *gen = GroveGenerator::get_generator(type->generator_name);
+    AbstractTreeGenerator *gen = get_generator(type->generator_name);
     voxels.fill(0);
     gen->plant_tree(glm::vec3(0, 0, 0), type);
     while (gen->iterate(voxels))
@@ -256,13 +257,13 @@ LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
     int sz_x = 25*ceil(1.5*ref_tree.info.BCyl_sizes.x/25);
     int sz_y = 25*ceil(1.5*ref_tree.info.BCyl_sizes.y/25);
     glm::vec3 ref_size = glm::vec3(sz_x, 0.5f*sz_y, sz_x);
-    logerr("ref size %d %d", sz_x, sz_y);
+    //logerr("ref size %d %d", sz_x, sz_y);
     return new LightVoxelsCube(glm::vec3(0, ref_size.y - 10, 0), ref_size, 0.625f, 1.0f, 1, 2);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
                                               GroveGenerationData &tree_ggd, Heightmap *flat_hmap,
-                                              ReferenceTree &ref_tree, int &cnt, ReferenceTree *new_ref = nullptr)
+                                              ReferenceTree &ref_tree, int &cnt, ReferenceTree *new_ref)
 {
     if (params.empty())
         return std::vector<float>();
@@ -361,6 +362,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.leaf_opacity = 1.0;
 
     GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
+    GETreeGeneratorSimplified::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
     mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
@@ -402,7 +404,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     std::vector<std::pair<float, ParameterList>> best_pars;
     auto func = [&](std::vector<ParameterList> &params) -> std::vector<float> {
-        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
+        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt, nullptr);
     };
 
     GeneticAlgorithm GA;
@@ -442,7 +444,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
         for (int i = 0; i < best_pars.size(); i++)
         {
-            AbstractTreeGenerator *gen = GroveGenerator::get_generator(type.generator_name);
+            AbstractTreeGenerator *gen = get_generator(type.generator_name);
             glm::vec3 pos =  glm::vec3(100 * (1 + i / 5), 0, 100 * (i % 5));
             res_voxels->fill(0);
             res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
@@ -460,6 +462,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     }
 
     GETreeGenerator::set_joints_limit(1000000);
+    GETreeGeneratorSimplified::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
 }
 
@@ -651,11 +654,12 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             for (int i=0;i<10;i++)
             {
                 GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
+                GETreeGeneratorSimplified::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
                 ref_voxels = gen_voxels_for_selection(ref_tree_init);
                 Scene init_scene;
                 init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
                 init_scene.heightmap->fill_const(0);
-                AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_ttd.generator_name);
+                AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
                 tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
                 GrovePacker packer;
@@ -680,7 +684,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             {
             ref_voxels = gen_voxels_for_selection(ref_tree_init);
             {
-                AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_ttd.generator_name);
+                AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
                 tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
                 GrovePacker packer;

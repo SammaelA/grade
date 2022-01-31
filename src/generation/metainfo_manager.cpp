@@ -49,91 +49,10 @@ void MetainfoManager::load_tree_types()
         LOAD2(gen_name, Param, "_presets.blk") \
     }
     LOAD("ge_gen", GETreeParameters);
+    LOAD("ge_gen_simplified", GETreeParameters);
     LOAD("my_gen", TreeStructureParameters);
     LOAD("simple_gen", SimpleTreeStructureParameters);
     LOAD("simpliest_gen", SimpliestTreeStructureParameters);
-    /*
-    for (int i = 0; i < ge_gen_types.size(); i++)
-    {
-        Block *bl = ge_gen_types.get_block(i);
-        if (bl)
-        {
-            std::string name = ge_gen_types.get_name(i);
-            std::string wood_tex_name = bl->get_string("wood_tex_name", "wood");
-            std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf");
-            GETreeParameters *params = new GETreeParameters();
-            params->load_from_blk(*bl);
-            TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
-            type.generator_name = "ge_gen";
-            logerr("%s loaded", name.c_str());
-            type.type_id = tree_types.size();
-            tree_type_id_by_name.emplace(name, tree_types.size());
-            tree_types.push_back(type);
-            id++;
-        }
-    }
-
-    for (int i = 0; i < my_gen_types.size(); i++)
-    {
-        Block *bl = my_gen_types.get_block(i);
-        if (bl)
-        {
-            std::string name = my_gen_types.get_name(i);
-            std::string wood_tex_name = bl->get_string("wood_tex_name", "wood");
-            std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf");
-            TreeStructureParameters *params = new TreeStructureParameters();
-            params->load_from_blk(*bl);
-            TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
-            type.generator_name = "my_gen";
-
-            type.type_id = tree_types.size();
-            tree_type_id_by_name.emplace(name, tree_types.size());
-            tree_types.push_back(type);
-            id++;
-        }
-    }
-    
-    for (int i = 0; i < simple_gen_types.size(); i++)
-    {
-        Block *bl = simple_gen_types.get_block(i);
-        if (bl)
-        {
-            std::string name = simple_gen_types.get_name(i);
-            std::string wood_tex_name = bl->get_string("wood_tex_name", "wood");
-            std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf");
-            SimpleTreeStructureParameters *params = new SimpleTreeStructureParameters();
-            params->load_from_blk(*bl);
-            TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
-            type.generator_name = "simple_gen";
-
-            type.type_id = tree_types.size();
-            tree_type_id_by_name.emplace(name, tree_types.size());
-            tree_types.push_back(type);
-            id++;
-        }
-    }
-        
-    for (int i = 0; i < simpliest_gen_types.size(); i++)
-    {
-        Block *bl = simpliest_gen_types.get_block(i);
-        if (bl)
-        {
-            std::string name = simpliest_gen_types.get_name(i);
-            std::string wood_tex_name = bl->get_string("wood_tex_name", "wood");
-            std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf");
-            SimpliestTreeStructureParameters *params = new SimpliestTreeStructureParameters();
-            params->load_from_blk(*bl);
-            TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name);
-            type.generator_name = "simpliest_gen";
-            logerr("loaded simpliest type %s", name.c_str());
-
-            type.type_id = tree_types.size();
-            tree_type_id_by_name.emplace(name, tree_types.size());
-            tree_types.push_back(type);
-            id++;
-        }
-    }
-    */
 }
 
 void MetainfoManager::load_grass_types()
@@ -355,6 +274,7 @@ void MetainfoManager::save_tree_types()
     }
 
     SAVE("ge_gen", GETreeParameters);
+    SAVE("ge_gen_simplified", GETreeParameters);
     SAVE("my_gen", TreeStructureParameters);
     SAVE("simple_gen", SimpleTreeStructureParameters);
     SAVE("simpliest_gen", SimpliestTreeStructureParameters);

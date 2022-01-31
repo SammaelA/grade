@@ -1,0 +1,38 @@
+{
+    small_oak_simplified
+    {
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
+        res_q:r = 0.15
+        root_type:i = 1
+        Xm:r = 40
+        branching_angle_max:r = 3.0
+        branching_angle_min:r = 1.0
+        r_s:r = 0.1
+        rs_size_factor:r = -0.005
+        r:r = 0.3
+        mu:r = 0.25
+        leaves_cnt:r = 3.0
+        resource_mult:r = 4
+        tropism_params:p4 = 0.75, -1, 0.1, 1 
+    }
+    large_oak_simplified
+    {
+        wood_tex_name:s = "wood3"
+        leaf_tex_name:s = "leaf3"
+        res_q:r = 0.0
+        root_type:i = 1
+        Xm:r = 200
+        branching_angle_max:r = 4.0
+        branching_angle_min:r = 2.0
+        r_s:r = 0.135
+        rs_size_factor:r = -0.0025
+        r:r = 0.28
+        mu:r = 0.6
+        leaves_cnt:r = 0.0
+        resource_mult:r = 5.0
+        max_joints_in_branch:i = 32
+        tropism_params:p4 = 0.9, -1, 0.02, 1.5
+        res_decrease_step:r = 0.15
+    }
+}

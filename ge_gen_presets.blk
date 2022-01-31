@@ -127,7 +127,7 @@
         rs_size_factor:r = -0.0025
         r:r = 0.28
         mu:r = 0.6
-        leaves_cnt:r = 1.75
+        leaves_cnt:r = 0.0
         resource_mult:r = 5.0
         max_joints_in_branch:i = 32
         tropism_params:p4 = 0.9, -1, 0.02, 1.5

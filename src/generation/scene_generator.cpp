@@ -3,12 +3,7 @@
 #include "grove_packer.h"
 #include "core/tree.h"
 #include "save_utils/blk.h"
-#include "tree_generators/GE_generator.h"
-#include "tree_generators/python_tree_gen.h"
-#include "tree_generators/weber_penn_parameters.h"
-#include "tree_generators/simple_generator.h"
-#include "tree_generators/proctree.h"
-#include "tree_generators/generated_tree.h"
+#include "tree_generators/all_generators.h"
 #include "grass_generator.h"
 #include "graphics_utils/debug_transfer.h"
 #include "scene_generator_helper.h"
@@ -103,24 +98,6 @@ AABB get_influence_AABB(std::vector<GrovePrototype> &prototypes, std::vector<Tre
   glm::vec3 voxel_center = glm::vec3(pos.x, y_center, pos.y);
   return AABB(voxel_center - voxel_sz, voxel_center + voxel_sz);
 
-}
-AbstractTreeGenerator *get_gen(std::string &generator_name)
-{
-  AbstractTreeGenerator *gen;
-  if (generator_name == "proctree")
-    gen = new Proctree::ProctreeGenerator();
-  else if (generator_name == "simple_gen")
-    gen = new SimpleTreeGenerator();
-  else if (generator_name == "load_from_file")
-    gen = new TreeLoaderBlk();
-  else if (generator_name == "python_tree_gen")
-    gen = new PythonTreeGen();
-  else if (generator_name == "ge_gen")
-    gen = new GETreeGenerator();
-  else
-    gen = new mygen::TreeGenerator();
-  
-  return gen;
 }
 
 class RawTreesDatabase

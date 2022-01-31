@@ -4,13 +4,13 @@
 #include "abstract_generator.h"
 #include "common_utils/parameter.h"
 #include "graphics_utils/volumetric_occlusion.h"
-#include "common_utils/octree.h"
 #include "GE_generator_parameters.h"
 #include <vector>
 #include <list>
 #include <atomic>
 
-class GETreeGenerator : public AbstractTreeGenerator
+
+class GETreeGeneratorSimplified : public AbstractTreeGenerator
 {
 public:
     virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
@@ -100,19 +100,6 @@ private:
         int iteration = 0;
         int joints_total = 0;
     };
-
-    struct SpaceColonizationData
-    {
-    public:
-        void add(glm::vec3 pos);
-        void prepare(LightVoxelsCube &voxels);
-        bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
-                           glm::vec3 &best_pos, float &best_occ, GETreeGenerator *gen);
-        void remove_close(glm::vec3 pos, float r);
-
-        std::vector<glm::vec3> positions;
-        Octree octree;
-    };
     
     enum GrowthType
     {
@@ -150,20 +137,19 @@ private:
     void distribute_resource(Branch &b, GETreeParameters &params, float res_mult);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
-                                              SpaceColonizationData &sp_data,
                                               int max_growth_per_node);
     void grow_nodes(Tree &t, GETreeParameters &params, 
                     std::vector<GrowPoint> &growth_points,
-                    SpaceColonizationData &sp_data,
                     LightVoxelsCube &voxels,
                     int max_growth_per_node);
     void remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels);
     void recalculate_radii(Tree &t, Branch &b, GETreeParameters &params);
-    void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi, 
-                                      SpaceColonizationData &sp_data);
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
     void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
     void set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels);
+    bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos,
+                       glm::vec3 dir, float angle,
+                       glm::vec3 &best_pos, float &best_occ);
     inline float self_rand(double from = 0.0, double to = 1.0) 
     { 
         seed = seed * 1103515245 + 12345;

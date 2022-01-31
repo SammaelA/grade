@@ -1,58 +1,10 @@
 #include "grove_generator.h"
-#include "tree_generators/GE_generator.h"
-#include "tree_generators/python_tree_gen.h"
-#include "tree_generators/weber_penn_parameters.h"
-#include "tree_generators/simple_generator.h"
-#include "tree_generators/simpliest_generator.h"
-#include "tree_generators/proctree.h"
-#include "tree_generators/generated_tree.h"
 #include "generation/grove_generation_utils.h"
 #include "planter.h"
 #include "trees_preprocessor.h"
-
+#include "tree_generators/all_generators.h"
 #include <map>
 
-AbstractTreeGenerator *GroveGenerator::get_generator(std::string &generator_name)
-{
-    AbstractTreeGenerator *gen;
-    if (generator_name == "proctree")
-        gen = new Proctree::ProctreeGenerator();
-    else if (generator_name == "simple_gen")
-        gen = new SimpleTreeGenerator();
-    else if (generator_name == "simpliest_gen")
-        gen = new SimpliestTreeGenerator();
-    else if (generator_name == "load_from_file")
-        gen = new TreeLoaderBlk();
-    else if (generator_name == "python_tree_gen")
-        gen = new PythonTreeGen();
-    else if (generator_name == "ge_gen")
-        gen = new GETreeGenerator();
-    else
-        gen = new mygen::TreeGenerator();
-
-    return gen;
-}
-
-ParametersSet *GroveGenerator::get_default_parameters(std::string &generator_name)
-{
-    ParametersSet *gen;
-    if (generator_name == "proctree")
-        gen = new Proctree::Properties();
-    else if (generator_name == "simple_gen")
-        gen = new SimpleTreeStructureParameters();
-    else if (generator_name == "simpliest_gen")
-        gen = new SimpliestTreeStructureParameters();
-    else if (generator_name == "load_from_file")
-        gen = nullptr;//not implemented
-    else if (generator_name == "python_tree_gen")
-        gen = new WeberPennParameters();
-    else if (generator_name == "ge_gen")
-        gen = new GETreeParameters();
-    else
-        gen = new TreeStructureParameters();
-
-    return gen;    
-}
 
 void GroveGenerator::prepare_patch(GrovePrototype &prototype, 
                                    std::vector<TreeTypeData> &treeTypesCatalogue,
