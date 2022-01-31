@@ -221,7 +221,16 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
     scene->heightmap->fill_const(0);
+    
+    Block b, ref_info;
+    BlkManager man;
+    man.load_block_from_file("parameter_selection_settings.blk", b);
+    man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+    ParameterSelector sel;
+    auto res = sel.parameter_selection(ref_info, b, scene);
+    metainfoManager.save_all();
 
+    /*
     float imp_size = 128;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
@@ -262,16 +271,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         //ref_atlas_transform(ref_tree.atlas);
         //ImpostorSimilarityCalc::get_tree_compare_info(scene->grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
     }
-    /*
-    Block b, ref_info;
-    BlkManager man;
-    man.load_block_from_file("parameter_selection_settings.blk", b);
-    man.load_block_from_file("parameter_selection_reference.blk", ref_info);
-    ParameterSelector sel;
-    auto res = sel.parameter_selection(type, b, scene);
-    auto res = sel.parameter_selection(ref_info, b, scene);
-    metainfoManager.save_all();
     */
+   
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

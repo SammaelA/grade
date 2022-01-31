@@ -253,11 +253,11 @@ void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<Tr
 
 LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 {
-    int sz_x = 25*ceil(1.25*ref_tree.info.BCyl_sizes.x/25 + 1);
-    int sz_y = 25*ceil(1.25*ref_tree.info.BCyl_sizes.y/25 + 1);
+    int sz_x = 25*ceil(1.5*ref_tree.info.BCyl_sizes.x/25);
+    int sz_y = 25*ceil(1.5*ref_tree.info.BCyl_sizes.y/25);
     glm::vec3 ref_size = glm::vec3(sz_x, 0.5f*sz_y, sz_x);
-    //logerr("ref size %d %d", sz_x, sz_y);
-    return new LightVoxelsCube(glm::vec3(0, ref_size.y - 1, 0), ref_size, 0.625f, 1.0f, 1, 2);
+    logerr("ref size %d %d", sz_x, sz_y);
+    return new LightVoxelsCube(glm::vec3(0, ref_size.y - 10, 0), ref_size, 0.625f, 1.0f, 1, 2);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
@@ -461,54 +461,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     GETreeGenerator::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
-}
-
-ParameterSelector::Results ParameterSelector::parameter_selection(TreeTypeData reference_tree_type,
-                                                                  Block &selection_settings, Scene *demo_scene)
-{
-
-    Scene inner_scene;
-    Scene &scene = demo_scene ? *demo_scene : inner_scene;
-    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
-    scene.heightmap->fill_const(0);
-
-    float imp_size = selection_settings.get_int("impostor_size", 128);
-    GroveGenerationData tree_ggd;
-    tree_ggd.trees_count = 1;
-    tree_ggd.types = {reference_tree_type};
-    tree_ggd.name = "single_tree";
-    tree_ggd.task = GenerationTask::IMPOSTORS;
-    tree_ggd.impostor_generation_params.slices_n = 8;
-    tree_ggd.impostor_generation_params.quality = imp_size;
-    tree_ggd.impostor_generation_params.monochrome = true;
-    tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
-
-    ReferenceTree ref_tree;
-    LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_tree_type.params->get_tree_max_size(),
-                                                      0.625f * reference_tree_type.params->get_scale_factor());
-    //create reference tree
-    {
-        AbstractTreeGenerator *gen = GroveGenerator::get_generator(reference_tree_type.generator_name);
-        ref_voxels->fill(0);
-        tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
-        GrovePacker packer;
-        Tree single_tree;
-        tree_ggd.trees_count = 1;
-        gen->plant_tree(glm::vec3(0, 0, 0), &(tree_ggd.types[0]));
-        while (gen->iterate(*ref_voxels))
-        {
-        }
-        gen->finalize_generation(&single_tree, *ref_voxels);
-        packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
-        save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
-        ref_atlas_transform(ref_tree.atlas);
-        ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
-    }
-    delete ref_voxels;
-    Results res;
-    parameter_selection_internal(selection_settings, res, scene, ref_tree, &reference_tree_type);
-    return res;
 }
 
 void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color,

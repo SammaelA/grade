@@ -295,13 +295,14 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst)
 
     convert(src, dst, src.root, dst.root);
 
-    
+    /*
     debug("converted, branches: ");
     for (auto &bh : dst.branchHeaps)
     {
         debug("%d ",bh->branches.size());
     }
     debugnl();
+    */
     
 }
 void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst)
