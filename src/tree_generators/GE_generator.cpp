@@ -35,8 +35,8 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
             else
             {
                 std::vector<GrowPoint> growth_points;
-                SpaceColonizationData sp_data;
-
+                sp_data = SpaceColonizationData();
+                sp_data.active = true;
                 calc_light(t.root, voxels, params);
                 //logerr("light %.1f", t.root.total_light);
                 float l0 = t.root.total_light;
@@ -47,10 +47,10 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
                 float l4 = CLAMP(t.root.total_light - l2, 0, 1000*params.Xm);
                 float l_corr = l1 + 0.4*l2 + 0.16*l3 + 0.0*l4;
                 distribute_resource(t.root, params, 1.0);
-                prepare_nodes_and_space_colonization(t, t.root, params, growth_points, sp_data, max_growth);
+                prepare_nodes_and_space_colonization(t, t.root, params, growth_points, max_growth);
                 sp_data.prepare(voxels);
                 //logerr("prepared %d grow points %d sp dots", growth_points.size(), sp_data.positions.size());
-                grow_nodes(t, params, growth_points, sp_data, voxels, max_growth);
+                grow_nodes(t, params, growth_points, voxels, max_growth);
                 recalculate_radii(t, t.root, params);
                 remove_branches(t, t.root, params, voxels);
 
@@ -113,58 +113,8 @@ void GETreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_extern
         grow = iterate(voxels);
     }
     finalize_generation(trees_external, voxels);
-    /*
-    for (int i = 0; i < ggd.trees_count; i++)
-    {
-        Tree t;
-        t.pos = vec3(50 * i, 0, 0);
-        t.pos.y = h.get_height(t.pos);
-        GETreeParameters params;
-
-        create_tree_internal(t, params);
-        convert(t, trees_external[ggd.trees_count - i - 1]);
-        t_ids++;
-    }
-    */
 }
-void GETreeGenerator::create_tree_internal(Tree &t, GETreeParameters &params)
-{
-    iteration = 0;
-    create_initial_trunk(t, params);
-    ivec3 voxels_sizes = ivec3(2 * params.Xm, 3.5 * params.Xm, 2 * params.Xm);
-    LightVoxelsCube voxels = LightVoxelsCube(t.pos, voxels_sizes, 0.5 * params.ro);
-    set_occlusion(t.root, voxels, params, 1);
 
-    for (int i = 0; i < params.max_iterations; i++)
-    {
-        iteration = i;
-
-        auto &p = params;
-        float A = ((float)p.Xm / p.X0 - 1) * exp(-p.r * iteration);
-        float dX_dt = p.Xm * p.r * A / SQR(1 + A);
-        int max_growth = round(dX_dt);
-
-        if (max_growth <= 0)
-            break;
-        //max_growth = 1;
-        std::vector<GrowPoint> growth_points;
-        SpaceColonizationData sp_data;
-
-        calc_light(t.root, voxels, params);
-        distribute_resource(t.root, params, 1);
-        prepare_nodes_and_space_colonization(t, t.root, params, growth_points, sp_data, max_growth);
-        sp_data.prepare(voxels);
-        //logerr("prepared %d grow points %d sp dots", growth_points.size(), sp_data.positions.size());
-        grow_nodes(t, params, growth_points, sp_data, voxels, max_growth);
-        recalculate_radii(t, t.root, params);
-        remove_branches(t, t.root, params, voxels);
-    }
-    //generate tree
-    //LightVoxelsCube voxels = LightVoxelsCube(t.pos, voxels_sizes, 0.5*params.ro);
-    //set_occlusion(t.root, voxels, params);
-    set_levels_rec(t, t.root, params, 0);
-    create_leaves(t.root, params, 0, voxels);
-}
 void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels)
 {
     for (Joint &j : b.joints)
@@ -499,24 +449,8 @@ void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params, f
                 distribute_resource(br, params, res_mult);
 }
 
-void cross_vecs(vec3 a, vec3 &b, vec3 &c)
+void GETreeGenerator::add_SPCol_points_solid_angle(vec3 pos, vec3 dir, float r_max, int cnt, float min_psi)
 {
-    b = vec3(1, 0, 0);
-    if (abs(dot(b - a, b - a)) > 1 - 1e-6)
-        b = vec3(0, 0, 1);
-    b = cross(a, b);
-    c = cross(a, b);
-}
-void GETreeGenerator::add_SPCol_points_solid_angle(vec3 pos, vec3 dir, float r_max, int cnt, float min_psi,
-                                                   SpaceColonizationData &sp_data)
-{
-    
-    for (int i = 0; i < cnt; i++)
-    {
-        sp_data.add(pos + r_max*glm::vec3(self_rand(-1,1), self_rand(-1,1), self_rand(-1,1)));
-    }
-    return;
-
     vec3 cr, trd;
     cross_vecs(dir, cr, trd);
     float r, phi, psi;
@@ -534,7 +468,6 @@ void GETreeGenerator::add_SPCol_points_solid_angle(vec3 pos, vec3 dir, float r_m
 
 void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params,
                                                            std::vector<GrowPoint> &growth_points,
-                                                           SpaceColonizationData &sp_data,
                                                            int max_growth_per_node)
 {
     float iter_frac = 1 - (float)iteration / params.max_iterations;
@@ -565,7 +498,7 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
             growth_points.push_back(GrowPoint(&j, &b, t, pd, resource,i));
             //logerr("j pos %f %f %f %f %f %f",j.pos.x,j.pos.y, j.pos.z, prev->pos.x, prev->pos.y, prev->pos.z);
             //if (sqrt(SQR(j.pos.x - g_center.x) + SQR(j.pos.z - g_center.z)) < 0.33*params.ro*params.Xm)
-                add_SPCol_points_solid_angle(j.pos, pd, max_r, sp_cnt, PI / 3, sp_data);
+                add_SPCol_points_solid_angle(j.pos, pd, max_r, sp_cnt, PI / 3);
             //else if (b.level <= 2)
             //    logerr("frac %f %f",sqrt(SQR(j.pos.x - g_center.x) + SQR(j.pos.z - g_center.z)), 0.1*params.ro*params.Xm);
         }
@@ -575,41 +508,21 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
             //logerr("j pos 2 %f %f %f",j.pos.x,j.pos.y, j.pos.z);
             //if (sqrt(SQR(j.pos.x - g_center.x) + SQR(j.pos.z - g_center.z)) < 0.33*params.ro*params.Xm)
                 growth_points.push_back(GrowPoint(&j, &b, GrowthType::BRANCHING, pd, resource,i));
-            add_SPCol_points_solid_angle(j.pos, pd, max_r, sp_cnt, 0, sp_data);
+            add_SPCol_points_solid_angle(j.pos, pd, max_r, sp_cnt, 0);
         }
         for (Branch &br : j.childBranches)
         {
             if (br.alive)
             {
-                prepare_nodes_and_space_colonization(t, br, params, growth_points, sp_data, max_growth_per_node);
+                prepare_nodes_and_space_colonization(t, br, params, growth_points, max_growth_per_node);
             }
         }
         i++;
     }
 }
 
-vec3 tropism(float n, GETreeParameters &params)
-{
-    glm::vec4 p = params.tropism_params;
-    float trop = 0;
-    if (p.y > 0)
-        trop = p.x*(pow(abs(p.y - p.z*n), p.w));
-    else
-        trop = p.x*(-p.y - pow(p.z*n,p.w));
-    trop = CLAMP(trop, params.tropism_min_max.x, params.tropism_min_max.y);
-    //float trop = params.tropism_params.x + params.tropism_params.y*abs(params.tropism_params.z + params.tropism_params.w*)
-    return vec3(0, trop, 0);
-    //return vec3(0, MIN(pow(abs(1 - n/15), 3),1.5), 0);
-    return vec3(0, MIN(1 - pow(n/25,5),1), 0);
-    return vec3(0, 1 - SQR(n/20), 0);
-    return vec3(0, SQR(1 - n/20), 0);
-    return vec3(0, CLAMP(1.5 - 2*((float)n/params.max_joints_in_branch),-0.5,1),0);
-    return vec3(0, MAX(0.5 - SQR(3 * n / params.Xm), -1), 0);
-}
-
 void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                                  std::vector<GrowPoint> &growth_points,
-                                 SpaceColonizationData &sp_data,
                                  LightVoxelsCube &voxels,
                                  int max_growth_per_node)
 {
@@ -669,7 +582,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             float influence_r = 2 * params.ro;
             vec3 best_pos;
             float best_occ;
-            if (sp_data.find_best_pos(voxels, influence_r, start->pos, prev_dir, PI, best_pos, best_occ, this) && best_pos.x == best_pos.x)
+            if (find_best_pos(voxels, influence_r, start->pos, prev_dir, PI, best_pos, best_occ) && best_pos.x == best_pos.x)
             {
                 float distance_from_root = (br->level < params.tropism_level_base) ? 0 : br->joints.size() + br->distance_from_root;
                 vec3 best_dir = prev_dir + params.mu * normalize(best_pos - start->pos) +
@@ -865,10 +778,18 @@ void GETreeGenerator::set_occlusion_joint(Joint &j, float base_value, GETreePara
     voxels.set_occluder_pyramid_fast(j.pos, base_value, params.occlusion_pyramid_d, rnd_seed);
 }
 
+bool GETreeGenerator::find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
+                                    glm::vec3 &best_pos, float &best_occ)
+{
+    return sp_data.find_best_pos(voxels, r, pos, dir, angle, best_pos, best_occ);
+}
+
 bool GETreeGenerator::SpaceColonizationData::find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos,
                                                            glm::vec3 dir, float angle,
-                                                           glm::vec3 &best_pos, float &best_occ, GETreeGenerator *gen)
+                                                           glm::vec3 &best_pos, float &best_occ)
 {
+    if (!active)
+        return false;
     best_occ = 1000;
     float cs = cos(angle);
 
@@ -897,17 +818,23 @@ bool GETreeGenerator::SpaceColonizationData::find_best_pos(LightVoxelsCube &voxe
 
 void GETreeGenerator::SpaceColonizationData::remove_close(glm::vec3 pos, float r)
 {
+    if (!active)
+       return;
     AABB box = AABB(pos - r * vec3(1, 1, 1), pos + r * vec3(1, 1, 1));
     octree.remove_in_sphere(box, r, pos);
 }
 
 void GETreeGenerator::SpaceColonizationData::add(glm::vec3 pos)
 {
+    if (!active)
+        return;
     positions.push_back(pos);
 }
 
 void GETreeGenerator::SpaceColonizationData::prepare(LightVoxelsCube &voxels)
 {
+    if (!active)
+        return;
     octree.create(voxels.get_bbox());
     octree.insert_vector(positions);
     positions.clear();

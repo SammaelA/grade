@@ -20,7 +20,7 @@ public:
     virtual bool iteration_method_implemented() override {return true;}
     virtual void set_seed(int _seed) override {gen = std::mt19937{_seed}; seed = _seed;}
     static void set_joints_limit(int lim) {joints_limit = lim;}
-private:
+protected:
     static int joints_limit;
     static std::atomic<int> ids, t_ids;
     static GETreeParameters defaultParameters;
@@ -107,11 +107,12 @@ private:
         void add(glm::vec3 pos);
         void prepare(LightVoxelsCube &voxels);
         bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
-                           glm::vec3 &best_pos, float &best_occ, GETreeGenerator *gen);
+                           glm::vec3 &best_pos, float &best_occ);
         void remove_close(glm::vec3 pos, float r);
 
         std::vector<glm::vec3> positions;
         Octree octree;
+        bool active = true;
     };
     
     enum GrowthType
@@ -140,7 +141,6 @@ private:
         }
     };
 
-    void create_tree_internal(Tree &t, GETreeParameters &params);
     void create_initial_trunk(Tree &t, GETreeParameters &params);
     void set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level);
     void convert(Tree &src, ::Tree &dst);
@@ -150,24 +150,52 @@ private:
     void distribute_resource(Branch &b, GETreeParameters &params, float res_mult);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
-                                              SpaceColonizationData &sp_data,
                                               int max_growth_per_node);
     void grow_nodes(Tree &t, GETreeParameters &params, 
                     std::vector<GrowPoint> &growth_points,
-                    SpaceColonizationData &sp_data,
                     LightVoxelsCube &voxels,
                     int max_growth_per_node);
     void remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels);
     void recalculate_radii(Tree &t, Branch &b, GETreeParameters &params);
-    void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi, 
-                                      SpaceColonizationData &sp_data);
+    void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi);
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
     void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
     void set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels);
+    virtual bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
+                               glm::vec3 &best_pos, float &best_occ);
     inline float self_rand(double from = 0.0, double to = 1.0) 
     { 
         seed = seed * 1103515245 + 12345;
         float r =  ((unsigned int)(seed / 65536) % 32768) / 32768.0f;
         return from >= to ? from : from + r*(to - from);
     }
+    inline void cross_vecs(glm::vec3 a, glm::vec3 &b, glm::vec3 &c)
+    {
+        b = glm::vec3(1, 0, 0);
+        if (abs(dot(b - a, b - a)) > 1 - 1e-6)
+            b = glm::vec3(0, 0, 1);
+        b = glm::cross(a, b);
+        c = glm::cross(a, b);
+    }
+    inline glm::vec3 tropism(float n, GETreeParameters &params)
+    {
+        glm::vec4 p = params.tropism_params;
+        float trop = 0;
+        if (p.y > 0)
+            trop = p.x*(pow(abs(p.y - p.z*n), p.w));
+        else
+            trop = p.x*(-p.y - pow(p.z*n,p.w));
+        trop = CLAMP(trop, params.tropism_min_max.x, params.tropism_min_max.y);
+        //float trop = params.tropism_params.x + params.tropism_params.y*abs(params.tropism_params.z + params.tropism_params.w*)
+        return glm::vec3(0, trop, 0);
+        //return vec3(0, MIN(pow(abs(1 - n/15), 3),1.5), 0);
+        return glm::vec3(0, MIN(1 - pow(n/25,5),1), 0);
+        return glm::vec3(0, 1 - SQR(n/20), 0);
+        return glm::vec3(0, SQR(1 - n/20), 0);
+        return glm::vec3(0, CLAMP(1.5 - 2*((float)n/params.max_joints_in_branch),-0.5,1),0);
+        return glm::vec3(0, MAX(0.5 - SQR(3 * n / params.Xm), -1), 0);
+    }
+
+    //this data is reseted every iteration
+    SpaceColonizationData sp_data;
 };
