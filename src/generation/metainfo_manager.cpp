@@ -258,7 +258,7 @@ void MetainfoManager::save_tree_types()
         auto ttid = tree_type_id_by_name.begin(); \
         while (ttid != tree_type_id_by_name.end()) \
         {   auto &type = tree_types[ttid->second];\
-            if (type.params && dynamic_cast<Param*>(type.params)) \
+            if (type.params && dynamic_cast<Param*>(type.params) && type.generator_name == gen_name) \
             { \
                 Param *params = dynamic_cast<Param*>(type.params); \
                 Block *b = new Block(); \
