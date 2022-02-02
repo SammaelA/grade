@@ -517,7 +517,7 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     {
         //it's shit
     }
-    float it = 1 + 0.1*iteration_n;
+    float it = 1 + 0.01*iteration_n;
     if (urand() < 0.33/it)
         mutation(C.main_genome, 1.0, urandi(1, free_parameters_cnt));
     else
@@ -533,7 +533,8 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     while (closest_neighbour(C, new_population) < metaParams.clone_thr)
     {
         //logerr("remutation %d, it has clone in population",C.id);
-        mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
+        mutation(C.main_genome, 0.5, urandi(1, free_parameters_cnt));
+        //mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
     }
 
 }
@@ -565,16 +566,6 @@ void GeneticAlgorithm::calculate_metric(int heaven_n)
     std::vector<ParameterList> params;
     std::vector<int> positions;
     int i=0;
-    for (auto &p : population)
-    {
-        if (p.alive && p.metric < 0)
-        {
-            params.push_back(original_param_list);
-            params.back().from_simple_list(p.main_genome);
-            positions.push_back(i);
-        }
-        i++;
-    }
     for (int i=0;i<heaven_n;i++)
     {
         int k = -1;
@@ -585,6 +576,16 @@ void GeneticAlgorithm::calculate_metric(int heaven_n)
             positions.push_back(k);
             k--;
         }
+    }
+    for (auto &p : population)
+    {
+        if (p.alive && p.metric < 0)
+        {
+            params.push_back(original_param_list);
+            params.back().from_simple_list(p.main_genome);
+            positions.push_back(i);
+        }
+        i++;
     }
     std::vector<float> metrics = function(params);
     func_called += metrics.size();

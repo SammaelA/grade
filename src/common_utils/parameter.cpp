@@ -274,7 +274,7 @@ void ParameterList::load_borders_from_blk(Block &b)
                 }
                 else
                 {
-                    logerr("%s has wrong parameter name or type in borders list", b.get_name(i));
+                    logerr("%s has wrong parameter name or type in borders list", b.get_name(i).c_str());
                 }
             }
         }

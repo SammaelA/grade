@@ -20,8 +20,8 @@ public:
         float mix_chance = 0.25;
         int n_ploid_genes = 1;
         int max_age = 100;
-        float clone_thr = 0.01;
-        int n_islands = 3;
+        float clone_thr = -0.01;
+        int n_islands = 1;
         int migration_interval = 2;
         float migration_chance = 0.1;
         bool evolution_stat = false;

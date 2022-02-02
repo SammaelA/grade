@@ -192,7 +192,8 @@ void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor 
         in_rot = inverse(rot_inv);
         cur.position = in_rot * vec4(cur.position,1);
         num = atl.add_tex();
-
+        //logerr("imp scale %f %f %f -- from %f %f %f", cur.sizes.x, cur.sizes.y, cur.sizes.z, bbox.sizes.x, bbox.sizes.y,
+        //       bbox.sizes.z);
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
         create_billboard_model(tree_type, &br, cur, tg, num, bill, atl, params, br_m, l_m);
 

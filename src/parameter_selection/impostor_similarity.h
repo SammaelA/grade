@@ -45,10 +45,10 @@ public:
     ImpostorSimilarityCalc(int max_impostors, int slices_per_impostor, bool use_top_slice = false);
     ~ImpostorSimilarityCalc();
     void calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
-                         Tree *original_trees);
+                         Tree *original_trees, bool debug_print = false, bool image_debug = false);
     static void get_tree_compare_info(Impostor &imp, Tree &original_tree, TreeCompareInfo &info);
 private:
-    GLuint fbo=0, slices_info_buf=0, results_buf=0, impostors_info_buf=0;
+    GLuint fbo=0, slices_info_buf=0, results_buf=0, impostors_info_buf=0, dbg_buf=0;
     int slices_per_impostor = 8;
     int slices_stride = 9;
     bool use_top_slice = false;

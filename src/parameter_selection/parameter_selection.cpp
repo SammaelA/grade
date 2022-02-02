@@ -10,6 +10,8 @@
 #include "tree_generators/all_generators.h"
 #include <thread>
 
+bool debug_stat = false;
+
 Texture load_reference(std::string name, int image_w, int image_h)
 {
     Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
@@ -310,7 +312,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     }
     else
     {
-        imp_sim.calc_similarity(tmp_g, ref_tree, res, trees);
+        imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, true);
     }
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
@@ -320,17 +322,24 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     delete[] thr_voxels;
     return res;
 }
+
+void print_ref_tree_info(TreeCompareInfo &info)
+{
+ debug(" (%.3f %.3f) %.3f %.3f %d %.3f %.3f\n", 
+          info.BCyl_sizes.x, info.BCyl_sizes.y, info.branches_curvature,
+          info.branches_density, info.joints_cnt, info.leaves_density,
+          info.trunk_thickness);   
+}
+
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
                                                      ReferenceTree &ref_tree, TreeTypeData *ref_type)
 {
-    debug("starting parameter selection for reference (%.3f %.3f) %.3f %.3f %d %.3f %.3f\n", 
-          ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y, ref_tree.info.branches_curvature,
-          ref_tree.info.branches_density, ref_tree.info.joints_cnt, ref_tree.info.leaves_density,
-          ref_tree.info.trunk_thickness);
+    debug("starting parameter selection for reference");
+    print_ref_tree_info(ref_tree.info);
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
-    if (!ref_type)
+    if (!ref_type || ref_type->generator_name != gen_name)
     {
         std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
         bool found = false;
@@ -413,9 +422,9 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    //bestParList.print();
     debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
-
+    
+    debug_stat = true;
     if (ref_type && ref_type->generator_name == gen_name)
     {
         ParameterList referenceParList;
@@ -426,6 +435,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     {
         sel_quality(bestParList, func, 32);
     }
+    debug_stat = false;
+
     //create preapred tree
     {
         LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
@@ -455,8 +466,18 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             {
             }
             gen->finalize_generation(trees + i, *res_voxels);
+
         }
         packer.add_trees_to_grove(tree_ggd, scene.grove, trees, scene.heightmap, false);
+
+        int i = 0;
+        for (auto &imp : scene.grove.impostors[1].impostors)
+        {
+            TreeCompareInfo info;
+            ImpostorSimilarityCalc::get_tree_compare_info(imp, trees[i], info);
+            print_ref_tree_info(info);
+            i++;
+        }
         delete[] trees;
         delete res_voxels;
     }
@@ -513,9 +534,8 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             for (int x=0;x<w;x++)
             {
                 int pos = 4*((h - y - 1)*w + x);
-                if (data[pos] != (unsigned char)255*background_color.x ||
-                    data[pos+1] != (unsigned char)255*background_color.y ||
-                    data[pos+2] != (unsigned char)255*background_color.z)
+                glm::vec3 color = (1.0f/255)*glm::vec3(data[pos], data[pos+1], data[pos+2]);
+                if (length(color - background_color) > 0.05)
                 {
                     min_max.back().x = x;
                     break;
@@ -542,11 +562,20 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             //logerr("[%d %d]", min_max.back().x, min_max.back().y);
         }
         //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
+        float q = sqrt(2);//bcyl.x of impostor is a radius of bounding cylinder, which is sqrt(2)*imp_side 
+                                //if tree bbox is square
+        min_x = 0.5*w - q*(0.5*w - min_x);
+        max_x = q*(max_x - 0.5*w) + 0.5*w;
+        width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
+        min_x -= 0.1*w;//some small adjustment usual for my impostors
+        max_x += 0.1*w;
+        min_y -= 0.05*h;
+        max_y += 0.05*h;
+        //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
         tc_transform.x = (float)(min_x)/w;
         tc_transform.y = (float)(min_y)/h;
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
-        width_height = 0.5f*(float)(max_x - min_x)/(max_y - min_y);
         float base_th = 0;
         float sum_th = 0;
         int len = 0;
@@ -754,9 +783,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         original_tex_aspect_ratio /= reference_images_cnt;
         original_tex_tr_thickness /= reference_images_cnt;
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_0");
         ref_atlas_transform(ref_tree.atlas);
     }
-    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas1");
+    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_1");
     
     Block &ri = reference_info;
     TreeCompareInfo explicit_info;

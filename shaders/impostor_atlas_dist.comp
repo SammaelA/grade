@@ -25,6 +25,10 @@ layout(std430, binding = 3) readonly buffer impostors_info_buf
 {
     TreeCompareInfo impostors_info[];//impostors_info[0] is info for reference
 };
+layout(std430, binding = 4) writeonly buffer debug_buf
+{
+    uvec4 debug_image[];
+};
 
 uniform int impostor_x;
 uniform int impostor_y;
@@ -33,33 +37,53 @@ uniform int impostor_slice_count;
 uniform int slice_stride;
 uniform int start_id;
 uniform int reference_images_cnt;
+uniform int image_debug;
+uniform int relative_scale;
 uniform sampler2DArray atlas;
 uniform sampler2DArray reference_image;
 
-
-float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n)
+float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id)
 {
     float sum = 1e-6;
     float dist = 0;
     float a = 0;
+    vec2 scale_i = vec2(1,1);
+    if (scale.x < 1)
+    {
+        scale_i.x = 1 / scale.x;
+        scale.x = 1;
+    }
+    if (scale.y < 1)
+    {
+        scale_i.y = 1 / scale.y;
+        scale.y = 1;
+    }
     for (int i=0;i<impostor_x;i++)
     {
         for (int j=0;j<impostor_y;j++)
         {
-            vec4 p1 = texelFetch(atlas, pixel_coords + ivec3(i, j, 0), 0);
+            vec2 imp_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale_i + vec2(0.5,0);
+            vec4 p1 = (imp_tc.x < 0 || imp_tc.x > 1 || imp_tc.y < 0 || imp_tc.y > 1) ?
+                       vec4(0,0,0,0) :
+                       texelFetch(atlas, pixel_coords + ivec3(imp_tc*vec2(impostor_x, impostor_y), 0), 0);
+
             vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y)) - vec2(0.5,0))*scale + vec2(0.5,0);
-            vec4 p2 = texelFetch(reference_image, ivec3(im_tc*vec2(float(ref_image_n)+impostor_x, impostor_y), 0), 0);
+            vec4 p2 = (im_tc.x < 0 || im_tc.x > 1 || im_tc.y < 0 || im_tc.y > 1) ?
+                       vec4(0,0,0,0) :
+                       textureLod(reference_image, vec3(im_tc + vec2(ref_image_n,0), 0),0);
 
             dist += abs(p1.z - p2.z) + (max(p1.y,p2.y) > 0 ? abs(p1.y - p2.y) : abs(p1.x - p2.x));
             sum += max(p1.z, p2.z) + (max(p1.y,p2.y) > 0 ? max(p1.y,p2.y) : max(p1.x,p2.x));
-            /*
-            if (p1.a > 0 || (p2.a > 0 && (p2.x + p2.y + p2.z) > 0))
+
+            if (image_debug > 0 && id == 0)
             {
-                float f = abs(p1.r-p2.r) + abs(p1.g-p2.g);
-                dist += f;
-                sum += (p1.r+p2.r) + p1.g+p2.g;
+                vec2 im_tc_dbg = vec2(i/float(impostor_x),j/float(impostor_y));
+                vec4 p_dbg = texelFetch(reference_image, ivec3(im_tc_dbg*vec2(impostor_x, impostor_y), 0), 0);
+                debug_image[j*impostor_x + i] = uvec4(0, 255*p1.z, 0, 255);
+                debug_image[impostor_x*impostor_y + j*impostor_x + i] = uvec4(0, 255*p_dbg.z, 0, 255);
+                debug_image[2*impostor_x*impostor_y + j*impostor_x + i] = uvec4(0, 0, 255*p2.z, 255);
+                debug_image[3*impostor_x*impostor_y + j*impostor_x + i] = uvec4(0, 255*p1.z, 255*p2.z, 255);
             }
-            */
         }
     }
     dist /= sum;
@@ -75,17 +99,29 @@ void main()
     int slice_n = id % impostor_slice_count;
     if (impostor_n >= impostors_count)
         return;
-
+    if (impostors_info[0].BCyl_sizes.x < 0 || impostors_info[0].BCyl_sizes.y < 0 || 
+        impostors_info[impostor_n+1].BCyl_sizes.x < 0 || impostors_info[impostor_n+1].BCyl_sizes.y < 0)
+    {
+        results[id] = 1;
+        return;
+    }
     vec2 scale = vec2(1,1);
-    scale.x = impostors_info[0].BCyl_sizes.x > 0 ? 
-              impostors_info[0].BCyl_sizes.x/impostors_info[impostor_n+1].BCyl_sizes.x : 1;
-    scale.y = impostors_info[0].BCyl_sizes.y > 0 ? 
-              impostors_info[0].BCyl_sizes.y/impostors_info[impostor_n+1].BCyl_sizes.y : 1;
+    if (relative_scale > 0)
+    {
+        scale.y = 1;
+        scale.x = (impostors_info[impostor_n+1].BCyl_sizes.x/impostors_info[impostor_n+1].BCyl_sizes.y)/
+                  (impostors_info[0].BCyl_sizes.x/impostors_info[0].BCyl_sizes.y);
+    }
+    else
+    {
+        scale.x = impostors_info[impostor_n+1].BCyl_sizes.x/impostors_info[0].BCyl_sizes.x;
+        scale.y = impostors_info[impostor_n+1].BCyl_sizes.y/impostors_info[0].BCyl_sizes.y;
+    }
     ivec3 slice_data = ivec3(slices_info[impostor_n*slice_stride + slice_n].xyz);
     float min_dist = 1;
     for (int i=0;i<reference_images_cnt;i++)
     {
-        float dist = get_dist(slice_data, scale, i);
+        float dist = get_dist(slice_data, scale, i, id);
         min_dist = min(dist, min_dist);
     }
     results[id] = min_dist;

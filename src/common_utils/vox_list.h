@@ -11,6 +11,7 @@ class VoxList
 public:
     static constexpr int base_points_cnt = 16;
     void create(LightVoxelsCube *voxels);
+    void 
 private:
     struct Vox
     {
@@ -18,4 +19,5 @@ private:
         glm::vec3 points[base_points_cnt];  
         std::vector<glm::vec3> more_points; 
     };
+    Vox *data;
 };
