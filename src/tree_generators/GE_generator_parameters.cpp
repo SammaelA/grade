@@ -40,6 +40,9 @@ void GETreeParameters::save_to_blk(Block &b)
     b.set_int("tropism_level_base", tropism_level_base);
     b.set_double("res_decrease_step", res_decrease_step);
     b.set_double("res_decrease_min", res_decrease_min);
+    b.set_vec2("initial_trunk_scale", initial_trunk_scale);
+    b.set_double("trunk_bonus_radius", trunk_bonus_radius);
+    b.set_double("trunk_bonus_radius_mod", trunk_bonus_radius_mod);
 }
 
 void GETreeParameters::load_from_blk(Block &b)
@@ -82,6 +85,9 @@ void GETreeParameters::load_from_blk(Block &b)
     tropism_level_base = b.get_int("tropism_level_base", tropism_level_base);
     res_decrease_step = b.get_double("res_decrease_step", res_decrease_step);
     res_decrease_min = b.get_double("res_decrease_min", res_decrease_min);
+    initial_trunk_scale = b.get_vec2("initial_trunk_scale", initial_trunk_scale);
+    trunk_bonus_radius = b.get_double("trunk_bonus_radius", trunk_bonus_radius);
+    trunk_bonus_radius_mod = b.get_double("trunk_bonus_radius_mod", trunk_bonus_radius_mod);
 }
 void GETreeParameters::RW_parameter_list(bool write, ParameterList &list)
 {
@@ -142,4 +148,9 @@ void GETreeParameters::RW_parameter_list(bool write, ParameterList &list)
     CON1(branching_tropims_mult);
     CON1(res_decrease_step);
     CON1(res_decrease_min);
+
+    CON2(initial_trunk_scale_x, initial_trunk_scale.x);
+    CON2(initial_trunk_scale_y, initial_trunk_scale.y);
+    CON1(trunk_bonus_radius);
+    CON1(trunk_bonus_radius_mod);
 }

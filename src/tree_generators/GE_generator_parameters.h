@@ -50,13 +50,15 @@ struct GETreeParameters : public ParametersSet
     int tropism_level_base = 1;
     float res_decrease_step = 0.09;
     float res_decrease_min = 0.03;
-
+    glm::vec2 initial_trunk_scale = glm::vec2(1,1);//horizontal, vertical scale
+    float trunk_bonus_radius = 0.1;
+    float trunk_bonus_radius_mod = 1;
     virtual glm::vec3 get_tree_max_size() override
     {
         if (root_type == 0 || root_type == 2)
             return ro*glm::vec3(1.5*Xm, Xm + 30, 1.5*Xm);
         else if (root_type == 1)
-            return ro*glm::vec3(0.6*Xm, 1.25*Xm + 30, 0.6*Xm);
+            return ro*glm::vec3(0.6*Xm, 1.25*Xm + 0.4*Xm*initial_trunk_scale.y, 0.6*Xm);
         else 
             return ro*glm::vec3(2.0f*Xm, 1.5f*Xm, 2.0f*Xm);
     }

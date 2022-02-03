@@ -41,7 +41,6 @@ bool GETreeGeneratorSimplified::iterate(LightVoxelsCube &voxels)
                 distribute_resource(t.root, params, 1.0);
                 prepare_nodes_and_space_colonization(t, t.root, params, growth_points, max_growth);
                 grow_nodes(t, params, growth_points, voxels, max_growth);
-                recalculate_radii(t, t.root, params);
                 remove_branches(t, t.root, params, voxels);
 
                 t.iteration++;

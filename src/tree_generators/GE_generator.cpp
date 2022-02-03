@@ -38,7 +38,6 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
                 sp_data = SpaceColonizationData();
                 sp_data.active = true;
                 calc_light(t.root, voxels, params);
-                //logerr("light %.1f", t.root.total_light);
                 float l0 = t.root.total_light;
                 t.root.total_light *= MAX((t.root.total_light + 30)/(t.root.total_light + 0.1),1.5);
                 float l1 = CLAMP(t.root.total_light, 0, 15*params.Xm);
@@ -49,9 +48,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
                 distribute_resource(t.root, params, 1.0);
                 prepare_nodes_and_space_colonization(t, t.root, params, growth_points, max_growth);
                 sp_data.prepare(voxels);
-                //logerr("prepared %d grow points %d sp dots", growth_points.size(), sp_data.positions.size());
                 grow_nodes(t, params, growth_points, voxels, max_growth);
-                recalculate_radii(t, t.root, params);
                 remove_branches(t, t.root, params, voxels);
 
                 t.iteration++;
@@ -79,16 +76,11 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
     int i = 0;
     for (auto &t : trees)
     {
-        vec3 min_pos;
-        vec3 max_pos;
         GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->params);
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         set_levels_rec(t, t.root, params, 0);
-        min_pos = vec3(1e9,1e9,1e9);
-        max_pos = -min_pos;
+        recalculate_radii(t, t.root, params);
         create_leaves(t.root, params, 0, voxels);
-        vec3 sz = max_pos - min_pos;
-        //logerr("tree size %f %f %f max_sz %f %f %f", sz.x, sz.y, sz.z, params.Xm, 1.5f*params.Xm, params.Xm);
         convert(t, trees_external[trees.size() - i - 1]);
         i++;
     }
@@ -158,44 +150,47 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
     t.root = Branch();
     t.root.level = 0;
-
+    float sz_x = params.initial_trunk_scale.x*params.ro;
+    float sz_y = params.initial_trunk_scale.y*params.ro;
     if (params.root_type == 0)
     {
-        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1, iteration, true));
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), iteration, true));
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*(i + self_rand());
-            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*params.ro, 0), 0.9, iteration, true));
-            t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration));
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*sz_y, 0), iteration, true));
+            t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration,false));
             auto &b = t.root.joints.back().childBranches.back();
-            b.joints.push_back(Joint(t.pos + 3*params.ro*vec3(sin(phi),1,cos(phi)),0.1, iteration, true));
+            b.joints.push_back(Joint(t.pos + 3*sz_x*vec3(sin(phi),1,cos(phi)), iteration, true));
         }
     }
     else if (params.root_type == 1)
     {
-        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), 1, iteration, true));
-        //t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0, 0.1*params.Xm*params.ro, 0), 0.9,false));
-        float d = 0.05*params.Xm*params.ro;
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), iteration, true));
+        float dx = 0.05*params.Xm*sz_x;
+        float dy = 0.05*params.Xm*sz_y;
         for (int i = 0; i < 4; i++)
         {
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*d, d, 0.1*self_rand(-1,1)*d), 0.9,iteration, false));
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*dx, dy, 0.1*self_rand(-1,1)*dx), 
+                                          iteration, false, params.trunk_bonus_radius*pow(1 - i/8.0, params.trunk_bonus_radius_mod)));
         }
         for (int i = 0; i < 4; i++)
         {
-            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*d, d, 0.1*self_rand(-1,1)*d), 0.9, iteration, true));
+            t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*dx, dy, 0.1*self_rand(-1,1)*dx), 
+                                          iteration, true, params.trunk_bonus_radius*pow(1 - (i+4)/8.0, params.trunk_bonus_radius_mod)));
         }
     }
     else if (params.root_type == 2)
     {
-        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-2,0), 1, iteration, true));
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-2,0), iteration, true));
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*(i + self_rand());
-            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, -2 + 0.1*(i+1)*params.ro, 0), 0.9, iteration, true));
-            t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration));
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, -2 + 0.1*(i+1)*sz_y, 0), iteration, true));
+            t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration,false));
             auto &b = t.root.joints.back().childBranches.back();
-            b.joints.push_back(Joint(t.root.joints.back().pos + (float)self_rand(2.5,5.5)*params.ro*vec3(sin(phi),0,cos(phi)),0.1,iteration,false));
-            b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.3,0.3),4,self_rand(-0.3,0.3)),0.1, iteration, true));
+            b.joints.push_back(Joint(t.root.joints.back().pos + (float)self_rand(2.5,5.5)*sz_x*vec3(sin(phi),0,cos(phi)), iteration,false));
+            b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.3,0.3),4,self_rand(-0.3,0.3)), iteration, true));
         }
     }
     else
@@ -551,7 +546,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             float nu = 1.0;
             if (gp.gType == GrowthType::BRANCHING)
             {
-                gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos, iteration));
+                gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos, iteration, true));
 
                 //choose base direction of a new branch
                 vec3 b, c;
@@ -574,7 +569,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
             }
             else if (gp.gType == GrowthType::END_BRANCH)
             {
-                gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos, iteration));
+                gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos, iteration, true));
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
                 br->distance_from_root = gp.base_branch->distance_from_root + gp.joint_n;
@@ -592,7 +587,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
                 //logerr("joint with new pos created %f %f %f %f %f %f",new_pos.x, new_pos.y,new_pos.z,
                 //                                                     best_dir.x, best_dir.y,best_dir.z);
-                br->joints.push_back(Joint(new_pos, params.base_r, iteration, self_rand() < params.k));
+                br->joints.push_back(Joint(new_pos, iteration, self_rand() < params.k));
                 t.joints_total++;
                 if (t.joints_total > joints_limit)
                 {
@@ -622,11 +617,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
 void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels)
 {
     b.total_resource = 0;
-    if (b.level < 2)
-    {
-        //logerr("level %d joints %d params %f %f %f",b.level, b.joints.size(), params.r_s, params.branching_angle_max, 
-        //       params.branching_angle_min);
-    }
+
     if (b.joints.size() < 2)
     {
         b.total_joints = b.joints.size();
@@ -644,11 +635,6 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         {
             if (j.childBranches.empty())
                 total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_trilinear(j.pos),0)));
-            if (true)
-            {
-                //logerr("%f %f aaa", voxels.get_occlusion_trilinear(j.pos),  MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_trilinear(j.pos),0))));
-            }
-            //logerr("l %f", voxels.get_occlusion_trilinear(j.pos));
             for (Branch &br : j.childBranches)
             {
                 if (br.alive)
@@ -666,20 +652,13 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
                     dead_b_count++;
             }
 
-            if (true)
+            auto it = j.childBranches.begin();
+            while (it != j.childBranches.end())
             {
-                auto it = j.childBranches.begin();
-                while (it != j.childBranches.end())
-                {
-                    if (it->alive || it->base_r >= 3*params.base_r)
-                    {
-                        it++;
-                    }
-                    else
-                    {
-                        it = j.childBranches.erase(it);
-                    }
-                }
+                if (it->alive)
+                    it++;
+                else
+                    it = j.childBranches.erase(it);
             }
         }
         i++;
@@ -689,10 +668,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
     float remove_q = lq/(params.r_s + params.rs_size_factor * size_log);
     float q = remove_q > 1 ? 0.5*size_log*(remove_q - 1) : 0.5*size_log*(1/remove_q - 1);
     float remove_chance = 1 - 1/(1 + exp(-q)); 
-    //if (params.root_type == 1)
-    //    logerr("params.r_s %d %f %f chance = %f %f %f", total_joints, total_light, params.r_s + params.rs_size_factor * MIN(log2f(total_joints), 10),
-    //          remove_q, q, remove_chance);
-    //logerr("%f tot", total_light);
+
     if (total_light != total_light)
     {
         logerr("NAN detected");
@@ -706,11 +682,8 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
             }
         }
     }
-    if (total_joints > 10)
-    {
-        //logerr("br is ok %d %d %d %f",b.level, total_joints, b.joints.size(), ch_b_count);
-    }
-    if (b.level >= params.remove_min_level && (total_joints > 10) && 
+
+    if (b.level >= params.remove_min_level && (total_joints > 10) && b.can_be_removed &&
        (self_rand() < remove_chance ||
         total_joints > 50 && (float)b.joints.size()/total_joints > 0.33 ||
         dead_b_count/b.joints.size() > 0.75 ||
@@ -733,6 +706,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
 
 void GETreeGenerator::recalculate_radii(Tree &t, Branch &b, GETreeParameters &params)
 {
+    //it should be called only once - during finalize step
     float r = pow(params.base_r, params.r_pow);
     for (auto it = b.joints.rbegin(); it != b.joints.rend(); it++)
     {
@@ -748,9 +722,10 @@ void GETreeGenerator::recalculate_radii(Tree &t, Branch &b, GETreeParameters &pa
             }
             r += pow(br.base_r, params.r_pow); //use memory of removed branches too
         }
-        it->r = pow(r, 1.0 / params.r_pow);
+        //previously it->r contains bonus r from generation step
+        it->r = CLAMP(it->r + pow(r, 1.0 / params.r_pow), params.base_r, 1000*params.base_r);
     }
-    b.base_r = pow(r, 1.0 / params.r_pow);
+    b.base_r = b.joints.front().r;
 }
 
 void GETreeGenerator::set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul)

@@ -40,17 +40,19 @@ protected:
         std::list<Joint> joints;
         int level;
         bool alive = true;
+        bool can_be_removed = true;
         float total_resource = 0;
         float total_light = 0;
         int total_joints = 0;//how many joint this branch has totally (with subbranches)
-        int distance_from_root = 0;//how many segnebts between first joint of this branch and root
+        int distance_from_root = 0;//how many segments between first joint of this branch and root
         float base_r;
         glm::vec2 average_chb_dir = glm::vec2(0,0);
         Branch(){};
-        Branch(int _level, glm::vec3 start_pos, int iteration)
+        Branch(int _level, glm::vec3 start_pos, int iteration, bool _can_be_removed)
         {
+            can_be_removed = _can_be_removed;
             level = _level;
-            joints = {Joint(start_pos,0,iteration,false)};
+            joints = {Joint(start_pos,iteration,false)};
         }
     };
 
@@ -70,11 +72,11 @@ protected:
         float light = 0;
         float resource = 0;
         bool can_have_child_branches;
-        Joint(glm::vec3 _pos, float _r, int iteration, bool ch_b) 
+        Joint(glm::vec3 _pos, int iteration, bool ch_b, float bonus_r = 0.0) 
         {
             birth_time = iteration;
             pos = _pos; 
-            r = _r; 
+            r = bonus_r; 
             childBranches = {};
             leaf = Leaf();
             resource = 0;
