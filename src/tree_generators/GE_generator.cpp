@@ -166,7 +166,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     }
     else if (params.root_type == 1)
     {
-        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), iteration, true));
+        t.root.joints.push_back(Joint(t.pos + glm::vec3(0,-1,0), iteration, true, params.trunk_bonus_radius));
         float dx = 0.05*params.Xm*sz_x;
         float dy = 0.05*params.Xm*sz_y;
         for (int i = 0; i < 4; i++)

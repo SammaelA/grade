@@ -46,6 +46,8 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     double dots = 0;
     int seg_cnt = 1;
 
+    double trop_sum = 0;
+    int seg_for_trop_cnt = 1;
     for (auto &bh : t.branchHeaps)
     {
         for (auto &b : bh->branches)
@@ -66,15 +68,30 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
             {
                 auto sit = b.segments.begin();
                 auto sit2 = b.segments.begin();
+                auto jit = b.joints.begin();
+                jit++;
                 sit2++;
+                float b_trop = 0;
+                int b_chb = 0;
                 while (sit2 != b.segments.end())
                 {
                     if (sit->end.x == sit->end.x && sit2->end.x == sit2->end.x)
+                    {
                         dots += glm::dot(normalize(sit->end - sit->begin), normalize(sit2->end - sit2->begin));
+                        b_trop += dot(normalize(sit2->end - sit2->begin), glm::vec3(0,1,0)) - dot(normalize(sit->end - sit->begin), glm::vec3(0,1,0));
+                        b_chb += jit->childBranches.size();
+                    }
                     sit++;
                     sit2++;
+                    jit++;
                 }
                 seg_cnt += b.segments.size()-1;
+                if (b_chb > 0)
+                {
+                    //we do not use small branches(with no child branches) for tropism, as they are usually have random direction
+                    trop_sum += b_trop;
+                    seg_for_trop_cnt += b.segments.size()-1;
+                }
             }
         }
     }
@@ -110,6 +127,8 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     info.branches_curvature = 1 - dots/MAX(seg_cnt,1);
     //logerr("branch curvative %f %d %f", (float)dots, seg_cnt, info.branches_curvature);
     //logerr("imp bcyl size %f %f", info.BCyl_sizes.x, info.BCyl_sizes.y);
+    info.tropism = 10 * trop_sum/MAX(seg_for_trop_cnt,1);
+    //logerr("tree tropism %f %d %f", trop_sum, seg_for_trop_cnt, info.tropism);
     info.joints_cnt = 0;
     for (auto &bh : t.branchHeaps)
     {
@@ -245,7 +264,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         d_bc /= MAX(1e-4, (impostors_info_data[i+1].branches_curvature + impostors_info_data[0].branches_curvature)); 
         float d_jcnt = abs(impostors_info_data[i+1].joints_cnt - impostors_info_data[0].joints_cnt);
         d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
-        
+        float d_trop = CLAMP(abs(impostors_info_data[i+1].tropism - impostors_info_data[0].tropism)/2,-1,1);
         float d_th;
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
             reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
@@ -294,6 +313,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             d_bd = -1e-5;
         if (reference.leaves_density_status == TCIFeatureStatus::DONT_CARE)
             d_ld = -1e-5;
+        if (reference.tropism_status == TCIFeatureStatus::DONT_CARE)
+            d_trop = -1e-5;
         if (reference.branches_curvature_status == TCIFeatureStatus::DONT_CARE)
             d_bc = -1e-5;
         if (reference.trunk_thickness_status == TCIFeatureStatus::DONT_CARE)
@@ -305,9 +326,9 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_sd = 1 - (scale_fine.x)*(scale_fine.y);
 
         if (debug_print && i == 0)
-            logerr("dist %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, dist);
+            logerr("dist %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, dist);
         //dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
-        dist = CLAMP(((1 - d_sd) + (1 - dist) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th))/7, 0,1);
+        dist = CLAMP(((1 - d_sd) + (1 - dist) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + (1-d_trop))/8, 0,1);
         dist = dist*dist*dist;
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());

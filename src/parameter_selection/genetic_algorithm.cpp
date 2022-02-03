@@ -517,17 +517,17 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     {
         //it's shit
     }
-    float it = 1 + 0.01*iteration_n;
+    float it = 1 + 0.25*sqrt(iteration_n);
     if (urand() < 0.33/it)
         mutation(C.main_genome, 1.0, urandi(1, free_parameters_cnt));
     else
-        mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
+        mutation(C.main_genome, 0.5/it, urandi(1, 0.33*free_parameters_cnt));
     for (auto &g : C.other_genomes)
     {
         if (urand() < 0.33/it)
-            mutation(g, 1.0, urandi(1, free_parameters_cnt));
+            mutation(C.main_genome, 1.0, urandi(1, free_parameters_cnt));
         else
-            mutation(g, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
+            mutation(C.main_genome, 0.5/it, urandi(1, 0.33*free_parameters_cnt));
     }
     
     while (closest_neighbour(C, new_population) < metaParams.clone_thr)
@@ -734,7 +734,7 @@ void GeneticAlgorithm::recalculate_fitness()
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = pow(p.metric, 1 + 0.2*iteration_n ) + 1e-4;
+            p.fitness = pow(p.metric, 1 + 0.2*sqrt(iteration_n)) + 1e-4;
         else
             p.fitness = -1;
     }

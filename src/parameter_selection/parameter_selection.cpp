@@ -371,7 +371,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.leaf_opacity = 1.0;
 
     GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
-    GETreeGeneratorSimplified::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
     mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
@@ -483,7 +482,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     }
 
     GETreeGenerator::set_joints_limit(1000000);
-    GETreeGeneratorSimplified::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
 }
 
@@ -546,9 +544,8 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 for (int x=w-1;x>=0;x--)
                 {
                     int pos = 4*((h - y - 1)*w + x);
-                    if (data[pos] != (unsigned char)255*background_color.x ||
-                        data[pos+1] != (unsigned char)255*background_color.y ||
-                        data[pos+2] != (unsigned char)255*background_color.z)
+                    glm::vec3 color = (1.0f/255)*glm::vec3(data[pos], data[pos+1], data[pos+2]);
+                    if (length(color - background_color) > 0.05)
                     {
                         min_max.back().y = x;
                         break;
@@ -683,7 +680,6 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             for (int i=0;i<10;i++)
             {
                 GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
-                GETreeGeneratorSimplified::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
                 ref_voxels = gen_voxels_for_selection(ref_tree_init);
                 Scene init_scene;
                 init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
@@ -796,7 +792,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     explicit_info.joints_cnt = ri.get_int("joints_cnt",-1);
     explicit_info.leaves_density = ri.get_double("leaves_density",-1);
     explicit_info.trunk_thickness = ri.get_double("trunk_thickness",-1);
-
+    explicit_info.tropism = ri.get_double("tropism", -100);
     if (explicit_info.BCyl_sizes.x < 0)
     {
         auto status_str = ri.get_string("width","");
@@ -927,6 +923,34 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
         else 
             logerr("Parameter selection error: parameter status %s is not supported for leaves_density", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.leaves_density = explicit_info.leaves_density;
+    }
+
+    if (explicit_info.tropism < 0)
+    {
+        ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("tropism","");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree tropism is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
+        else 
+            logerr("Parameter selection error: parameter status %s is not supported for tropism", status_str.c_str());
     }
     else
     {

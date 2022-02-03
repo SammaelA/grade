@@ -21,7 +21,7 @@ struct TreeCompareInfo
     float branches_curvature = 0;//from 0 to 1, average dot(seg, seg_next) for all branches
     float trunk_thickness = 0; 
     int joints_cnt = 0;
-    float _pad;
+    float tropism = 0;
 };
 struct ReferenceTree
 {
@@ -34,6 +34,7 @@ struct ReferenceTree
     TCIFeatureStatus branches_curvature_status = EXPLICIT;
     TCIFeatureStatus trunk_thickness_status = EXPLICIT;
     TCIFeatureStatus joints_cnt_status = EXPLICIT;
+    TCIFeatureStatus tropism_status = EXPLICIT;
     TextureAtlas atlas;
     TreeTypeData *reference_type = nullptr;
     ReferenceTree(){};

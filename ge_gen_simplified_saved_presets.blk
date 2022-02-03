@@ -39,6 +39,8 @@ tropism_level_base:i = 1
 res_decrease_step:r = 0.150000
 res_decrease_min:r = 0.030000
 initial_trunk_scale:p2 = 1.000000, 1.000000
+trunk_bonus_radius:r = 0.100000
+trunk_bonus_radius_mod:r = 1.000000
 wood_tex_name:s = "wood3"
 leaf_tex_name:s = "leaf3"
 }
@@ -82,6 +84,8 @@ tropism_level_base:i = 1
 res_decrease_step:r = 0.090000
 res_decrease_min:r = 0.030000
 initial_trunk_scale:p2 = 1.000000, 1.000000
+trunk_bonus_radius:r = 0.100000
+trunk_bonus_radius_mod:r = 1.000000
 wood_tex_name:s = "wood3"
 leaf_tex_name:s = "leaf3"
 }
