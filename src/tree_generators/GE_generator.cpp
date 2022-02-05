@@ -109,10 +109,18 @@ void GETreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_extern
 
 void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels)
 {
-    for (Joint &j : b.joints)
+    if (!b.alive || b.joints.size() < 2)
+        return;
+    auto jit = b.joints.begin();
+    jit++;
+    auto prev_jit = b.joints.begin();
+    while (jit != b.joints.end())
     {
-        //min_pos = min(min_pos, j.pos);
-        //max_pos = max(max_pos, j.pos);
+        Joint &j = *jit;
+        vec3 dir_x = normalize(jit->pos - prev_jit->pos);
+        vec3 dir_y, dir_z;
+        cross_vecs(dir_x, dir_y, dir_z);
+
         if (j.childBranches.empty() && b.level >= level_from && params.leaves_cnt > 0 &&
             j.r < params.base_r * params.leaves_max_r)
         {
@@ -120,12 +128,16 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
             int l_cnt = f_leaves_cnt;
             if (self_rand() < (f_leaves_cnt - l_cnt))
                 l_cnt++;
+            
             for (int i=0;i<l_cnt;i++)
             {
-                glm::vec3 rd1 = normalize(vec3(self_rand(-1, 1), self_rand(-params.leaves_angle_a, params.leaves_angle_a), 
-                                            self_rand(-1, 1)));
-                glm::vec3 rd2 = normalize(vec3(self_rand(-1, 1), self_rand(-params.leaves_angle_b, params.leaves_angle_b),
-                                            self_rand(-1, 1)));
+                glm::vec3 rd1 = normalize(vec3(self_rand(-params.leaves_angle_a, params.leaves_angle_a), 
+                                               self_rand(-1, 1), self_rand(-1, 1)));
+                rd1 = dir_x*rd1.x + dir_y*rd1.y + dir_z*rd1.z;
+
+                glm::vec3 rd2 = normalize(vec3(self_rand(-params.leaves_angle_b, params.leaves_angle_b),
+                                               self_rand(-1, 1), self_rand(-1, 1)));
+                rd2 = dir_x*rd2.x + dir_y*rd2.y + dir_z*rd2.z;
                 float sz = params.ro * params.leaf_size_mult;
                 glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
                 glm::vec3 b = j.pos + 0.5f * sz * rd2;
@@ -144,6 +156,8 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
             if (br.alive)
                 create_leaves(br, params, level_from, voxels);
         }
+        jit++;
+        prev_jit++;
     }
 }
 void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)

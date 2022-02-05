@@ -363,6 +363,17 @@ void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
     textureManager.delete_tex(t);
     t = new_tex;
 }
+
+std::vector<int> TextureAtlas::get_all_valid_slices_ids()
+{
+    std::vector<int> ids;
+    for (int i=0;i<curNum;i++)
+    {
+        ids.push_back(i);
+    }
+    return ids;
+}
+
 int TextureAtlasRawData::get_pixel_pos(int ww, int hh, int tex_id)
 {
     int l = tex_id / (gridHN*gridWN);

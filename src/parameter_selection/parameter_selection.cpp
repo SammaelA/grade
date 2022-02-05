@@ -134,107 +134,6 @@ void sel_quality(ParameterList &parList, const std::function<std::vector<float>(
     debug("result stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn1, mx1, av, dev);
 }
 
-void ref_atlas_transform(TextureAtlas &atl)
-{
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glm::ivec4 sizes = atl.get_sizes();
-    glm::ivec2 slice_size = atl.get_slice_size();
-    TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, atl.layers_count(), 1);
-    atl_tmp.set_grid(slice_size.x, slice_size.y, false);
-
-    PostFx gauss = PostFx("gaussian_blur_atlas.fs");
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl_tmp.target(l, 0);
-        gauss.use();
-        gauss.get_shader().texture("tex", atl.tex(0));
-        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        gauss.get_shader().uniform("layer", (float)l);
-        gauss.get_shader().uniform("pass", 0);
-        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        gauss.get_shader().uniform("slice_size", slice_size);
-        gauss.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl.target(l, 0);
-        gauss.use();
-        gauss.get_shader().texture("tex", atl_tmp.tex(0));
-        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        gauss.get_shader().uniform("layer", l);
-        gauss.get_shader().uniform("pass", 1);
-        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        gauss.get_shader().uniform("slice_size", slice_size);
-        gauss.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl.tex(0), "atlass_gauss_1");
-
-    PostFx sil_fill = PostFx("silhouette_fill.fs");
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl_tmp.target(l, 0);
-        sil_fill.use();
-        sil_fill.get_shader().texture("tex", atl.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 8);
-        sil_fill.get_shader().uniform("dir_threshold", 4);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
-        sil_fill.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl.target(l, 0);
-        sil_fill.use();
-        sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 4);
-        sil_fill.get_shader().uniform("dir_threshold", 6);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
-        sil_fill.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl_tmp.target(l, 0);
-        sil_fill.use();
-        sil_fill.get_shader().texture("tex", atl.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 4);
-        sil_fill.get_shader().uniform("dir_threshold", 6);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
-        sil_fill.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_2");
-
-    PostFx sil_sharp = PostFx("silhouette_sharpen.fs");
-    for (int l = 0; l < atl.layers_count(); l++)
-    {
-        atl.target(l, 0);
-        sil_sharp.use();
-        sil_sharp.get_shader().texture("tex", atl_tmp.tex(0));
-        sil_sharp.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
-        sil_sharp.get_shader().uniform("layer", (float)l);
-        sil_sharp.get_shader().uniform("threshold", 0.05f);
-        sil_sharp.render();
-    }
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl.tex(0), "atlass_gauss_3");
-}
-
 void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree)
 {
     AbstractTreeGenerator *gen = get_generator(type->generator_name);
@@ -265,7 +164,7 @@ LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
                                               GroveGenerationData &tree_ggd, Heightmap *flat_hmap,
-                                              ReferenceTree &ref_tree, int &cnt, ReferenceTree *new_ref)
+                                              ReferenceTree &ref_tree, int &cnt)
 {
     if (params.empty())
         return std::vector<float>();
@@ -302,18 +201,10 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         t.join();
     }
     packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
-    ref_atlas_transform(tmp_g.impostors[1].atlas);
     cnt += params.size();
     std::vector<float> res;
-    if (new_ref)
-    {
-        textureManager.save_png(tmp_g.impostors[1].atlas.tex(0),"imp"+std::to_string(cnt));
-        ImpostorSimilarityCalc::get_tree_compare_info(tmp_g.impostors[1].impostors.back(), trees[0], new_ref->info);
-    }
-    else
-    {
-        imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, true);
-    }
+    imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, false);
+
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
     {
@@ -412,7 +303,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     std::vector<std::pair<float, ParameterList>> best_pars;
     auto func = [&](std::vector<ParameterList> &params) -> std::vector<float> {
-        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt, nullptr);
+        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
     };
 
     GeneticAlgorithm GA;
@@ -559,6 +450,16 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             //logerr("[%d %d]", min_max.back().x, min_max.back().y);
         }
         //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
+        float sym_line = -1;
+        for (auto &v : min_max)
+        {
+            if (v.x >= 0)
+            {
+                sym_line = (v.y + v.x)/2.0;
+                logerr("sym line %f %d %d %d %d", sym_line, v.y, v.x, max_x, min_x);
+                break;   
+            }
+        }
         float q = sqrt(2);//bcyl.x of impostor is a radius of bounding cylinder, which is sqrt(2)*imp_side 
                                 //if tree bbox is square
         min_x = 0.5*w - q*(0.5*w - min_x);
@@ -566,10 +467,10 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
         min_x -= 0.1*w;//some small adjustment usual for my impostors
         max_x += 0.1*w;
-        min_y -= 0.05*h;
-        max_y += 0.05*h;
+        max_y += 0.1*h;
         //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
-        tc_transform.x = (float)(min_x)/w;
+        sym_line = sym_line/w;
+        tc_transform.x = (float)(min_x)/w + sym_line - 0.5;//0.5*((float)(max_x - min_x)/w) - (float)(min_x)/w;
         tc_transform.y = (float)(min_y)/h;
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
@@ -664,6 +565,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.name = "single_tree";
             tree_ggd.task = GenerationTask::IMPOSTORS;
             tree_ggd.impostor_generation_params.slices_n = 8;
+            //tree_ggd.impostor_generation_params.need_top_view = false;
             tree_ggd.impostor_generation_params.quality = imp_size;
             tree_ggd.impostor_generation_params.monochrome = true;
             tree_ggd.impostor_generation_params.normals_needed = false;
@@ -701,12 +603,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree_init.info);
                 delete ref_voxels;
             }
-            //std::vector<ParameterList> a_params = {referenceParList};
-            //ImpostorSimilarityCalc isc = ImpostorSimilarityCalc(1, 8, false);
-            //int aa;
-            //generate_for_par_selection(a_params, isc, tree_ggd, scene.heightmap, ref_tree_init, aa, &ref_tree);
-            for (int i=0;i<1;i++)
-            {
+            ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(1, tree_ggd.impostor_generation_params.slices_n);
             ref_voxels = gen_voxels_for_selection(ref_tree_init);
             {
                 AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
@@ -722,12 +619,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 gen->finalize_generation(&single_tree, *ref_voxels);
                 packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
                 save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
-                ref_atlas_transform(ref_tree.atlas);
+                imp_sim.get_reference_tree_image_info(ref_tree);
                 ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
             }
-            //ref_tree.info.BCyl_sizes = ref_tree_init.info.BCyl_sizes;
             delete ref_voxels;
-            }
         }
 
     }
@@ -741,6 +636,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         ref_tree.atlas.set_grid(imp_size, imp_size, false);
         PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
         original_tex_aspect_ratio = 0;
+        ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(1, reference_images_cnt);
 
         for (int i=0;i<reference_info.size();i++)
         {
@@ -780,7 +676,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         original_tex_tr_thickness /= reference_images_cnt;
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
         textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_0");
-        ref_atlas_transform(ref_tree.atlas);
+        imp_sim.get_reference_tree_image_info(ref_tree);
     }
     textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_1");
     

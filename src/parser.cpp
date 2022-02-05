@@ -282,7 +282,7 @@ namespace parser
       float dist = 75;
       int t_id = metainfoManager.get_tree_type_id_by_name("large_oak_simplified");
       int b_id = metainfoManager.get_tree_type_id_by_name("large_oak");
-      int l_id = metainfoManager.get_tree_type_id_by_name("selected_tree_2");
+      int l_id = metainfoManager.get_tree_type_id_by_name("small_oak");
 
       int ids[3] = {t_id, b_id, l_id};
       for (int i = 0; i < sz; i++)

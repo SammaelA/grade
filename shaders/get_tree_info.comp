@@ -1,0 +1,191 @@
+#version 430
+#define THREADS 64
+
+struct TreeImageInfo
+{
+    vec4 tc_transform;//shift and scale, tranform impostor to occupy the whole texture
+    float crown_start_level;//as a share of tree size
+    float trunk_thickness;//as a share of tree size
+    float crown_leaves_share;
+    float crown_branches_share;
+};
+
+layout( local_size_x = THREADS, local_size_y = 1) in;
+
+layout(std430, binding = 1) writeonly buffer results_buf
+{
+    TreeImageInfo results[];
+};
+layout(std430, binding = 5) readonly buffer slices_info_buf
+{
+    uvec4 slices_info[];//x0,y0,layer for slice in atlas
+};
+layout(std430, binding = 4) writeonly buffer debug_buf
+{
+    uvec4 debug_image[];
+};
+
+uniform int impostor_x;
+uniform int impostor_y;
+uniform int slices_count;
+uniform int start_id;
+uniform int image_debug;
+
+uniform sampler2DArray initial_atlas;
+uniform sampler2DArray transformed_atlas;
+
+#define MAX_IMPOSTOR_SIZE 256
+vec4 smooth_sample_init(ivec3 pixel_coords)
+{
+    return 0.0625*texelFetch(initial_atlas, pixel_coords + ivec3(-1,-1,0), 0) +
+           0.0625*texelFetch(initial_atlas, pixel_coords + ivec3(-1, 1,0), 0) +
+           0.0625*texelFetch(initial_atlas, pixel_coords + ivec3( 1,-1,0), 0) +
+           0.0625*texelFetch(initial_atlas, pixel_coords + ivec3( 1, 1,0), 0) +
+           0.125*texelFetch(initial_atlas, pixel_coords + ivec3(-1, 0,0), 0) +
+           0.125*texelFetch(initial_atlas, pixel_coords + ivec3( 0,-1,0), 0) +
+           0.125*texelFetch(initial_atlas, pixel_coords + ivec3( 1, 0,0), 0) +
+           0.125*texelFetch(initial_atlas, pixel_coords + ivec3( 0, 1,0), 0) +
+           0.25*texelFetch(initial_atlas, pixel_coords, 0);
+}
+void find_th_lb(ivec3 pixel_coords, int id)
+{
+    int leaves_cnt[MAX_IMPOSTOR_SIZE];
+    ivec2 min_max[MAX_IMPOSTOR_SIZE];
+    int min_x = MAX_IMPOSTOR_SIZE;
+    int max_x = 0;
+    int min_y = MAX_IMPOSTOR_SIZE;
+    int max_y = 0;
+    for (int j=0;j<impostor_y;j++)
+    {
+        leaves_cnt[j] = 0;
+        for (int i=0;i<impostor_x;i++)
+        {
+            vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
+            if (p1.y > 0)
+            {
+                leaves_cnt[j]++;
+            }
+        }
+        min_max[j] = ivec2(-1,-2);
+        for (int i=0;i<impostor_x;i++)
+        {
+            vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
+            if (p1.z > 0)
+            {
+                min_max[j].x = i;
+                break;
+            }
+        }
+        if (min_max[j].x >= 0)
+        {
+            for (int i=impostor_x;i>=0;i--)
+            {
+                vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
+                if (p1.z > 0)
+                {
+                    min_max[j].y = i;
+                    break;
+                }
+            }
+            min_x = min(min_x, min_max[j].x);
+            max_x = max(max_x, min_max[j].y);
+            min_y = min(min_y, j);
+            max_y = max(max_y, j);
+        }
+    }
+    results[id].tc_transform = vec4(min_x, max_x, min_y, max_y);
+
+    int fast_inc_pos = 0;
+    int fast_inc_speed = -1;
+    int max_leaves = int(impostor_x/8.0);
+    if (leaves_cnt[0] < max_leaves)
+    {
+        for (int j=1;j<impostor_y;j++)
+        {
+            if (leaves_cnt[j] >= max_leaves)
+            {
+                fast_inc_pos = j;
+                break;
+            }
+            else
+            {
+                int speed = leaves_cnt[j] - leaves_cnt[j-1];
+                if (speed > fast_inc_speed)
+                {
+                    fast_inc_speed = speed;
+                    fast_inc_pos = j;
+                }
+            }
+        }
+    }
+    results[id].crown_start_level = float(fast_inc_pos)/float(impostor_y);
+
+    float t_pixels = 0;
+    int th = 0;
+    float sym_line = -1;
+    for (int j=0;j<fast_inc_pos;j++)
+    {
+        th += int(min_max[j].x>=0);
+        if (min_max[j].x>=0 && sym_line < 0)
+        {
+            sym_line = float(min_max[j].x + min_max[j].y)/float(2*impostor_x);
+        }
+        for (int i=min_max[j].x;i<=min_max[j].y;i++)
+        {
+            vec4 p1 = smooth_sample_init(pixel_coords + ivec3(i,j,0));
+            t_pixels += p1.x;
+        }
+    }
+    results[id].trunk_thickness = t_pixels/(float(th*(max_x - min_x + 1)) + 1e-6);
+    results[id].tc_transform.x = sym_line > 0 ? sym_line : 0.5;
+    int sil_sz = 0;
+    float br_sum = 0;
+    float l_sum = 0;
+    for (int j=fast_inc_pos;j<impostor_y;j++)
+    {
+        sil_sz += min_max[j].y - min_max[j].x + 1;
+        for (int i=min_max[j].x;i<=min_max[j].y;i++)
+        {
+            vec4 p1 = smooth_sample_init(pixel_coords + ivec3(i,j,0));
+            br_sum += p1.x;
+            l_sum += p1.y;
+        }
+    }
+    results[id].crown_branches_share = br_sum/(float(sil_sz) + 1e-4);
+    results[id].crown_leaves_share = l_sum/(float(sil_sz) + 1e-4);
+
+    if (image_debug > 0 && (id == 1 || slices_count == 1))
+    {
+        for (int j=0;j<impostor_y;j++)
+        {
+            for (int i=0;i<impostor_x;i++)
+            {
+                vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
+                vec4 p2 = smooth_sample_init(pixel_coords + ivec3(i,j,0));
+                if (j == fast_inc_pos)
+                    debug_image[j*impostor_x + i] = 255*uvec4(1,1,1,1);
+                else
+                {
+                    debug_image[j*impostor_x + i] = uvec4(255.0*p2);
+                    if (p2.x == 0 && p2.y == 0)
+                    {
+                        debug_image[j*impostor_x + i].z = uint(255*p1.z);
+                        //debug_image[j*impostor_x + i].z = 2*leaves_cnt[j];
+                        debug_image[j*impostor_x + i].w = 255;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void main()
+{
+    int id =  int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    if (id >= slices_count)
+        return;
+    ivec3 slice_data = ivec3(slices_info[id].xyz);
+    find_th_lb(slice_data, id);
+}

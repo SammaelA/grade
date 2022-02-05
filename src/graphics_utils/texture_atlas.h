@@ -79,6 +79,7 @@ public:
     int tex_count() const {return 2;}
     int capacity() const { return gridWN*gridHN*layers;}
     bool is_valid() const {return valid && (capacity() > 0);}
+    std::vector<int> get_all_valid_slices_ids();
     void destroy();
 private:
     bool bind(int layer, int type);

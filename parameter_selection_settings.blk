@@ -5,6 +5,7 @@
     debug_graph:b = false
     initial_population_size:i = 100
     max_population_size:i = 50
+    impostor_size:i = 128
     best_results_count:i = 5
     exit_conditions
     {

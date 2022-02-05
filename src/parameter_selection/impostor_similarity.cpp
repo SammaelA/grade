@@ -1,9 +1,11 @@
 #include "impostor_similarity.h"
 #include "tinyEngine/TinyEngine.h"
 #include "graphics_utils/volumetric_occlusion.h"
+#include "tinyEngine/postfx.h"
 
 ImpostorSimilarityCalc::ImpostorSimilarityCalc(int _max_impostors, int _slices_per_impostor, bool _use_top_slice):
-similarity_shader({"impostor_atlas_dist.comp"},{})
+similarity_shader({"impostor_atlas_dist.comp"},{}),
+tree_info_shader({"get_tree_info.comp"},{})
 {
     use_top_slice = _use_top_slice;
     max_impostors = _max_impostors;
@@ -12,11 +14,14 @@ similarity_shader({"impostor_atlas_dist.comp"},{})
     results_data = new float[slices_per_impostor*max_impostors];
     slices_info_data = new glm::uvec4[slices_per_impostor*max_impostors];
     impostors_info_data = new TreeCompareInfo[max_impostors + 1];
+    shader_imp_data = new glm::vec4[max_impostors + 1];
+    tree_image_info_data = new TreeImageInfo[(slices_per_impostor + 1)*max_impostors];
 
     glGenBuffers(1, &results_buf);
     glGenBuffers(1, &slices_info_buf);
     glGenBuffers(1, &impostors_info_buf);
     glGenBuffers(1, &dbg_buf);
+    glGenBuffers(1, &tree_image_info_buf);
 }
 
 void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeCompareInfo &info)
@@ -140,22 +145,117 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     //logerr("%d joints", info.joints_cnt);
 }
 
-void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
-                                             Tree *original_trees, bool debug_print, bool image_debug)
+void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::map<int, TreeImageInfo> &results, 
+                                                 bool image_debug)
 {
-    //grove.impostors[1].atlas.gen_mipmaps("mipmap_render_average.fs");
+    glm::ivec4 sizes = images_atl.get_sizes();
+    glm::ivec2 slice_size = images_atl.get_slice_size();
+    TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, images_atl.layers_count(), 1);
+    atl_tmp.set_grid(slice_size.x, slice_size.y, false);
+    PostFx copy = PostFx("copy_arr2.fs");
+    for (int i = 0; i < images_atl.layers_count(); i++)
+    {
+        int tex_id = atl_tmp.add_tex();
+        atl_tmp.target(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex", images_atl.tex(0));
+        copy.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        copy.get_shader().uniform("layer", (float)i);
+        copy.render();
+    }
+    ref_atlas_transform(images_atl);
+
+    std::vector<int> ids = images_atl.get_all_valid_slices_ids();
+    int cnt = 0;
+    for (auto &id : ids)
+    {
+        images_atl.pixel_offsets(id, slices_info_data[cnt]);
+        cnt++;
+    }
+
+    int slices_cnt = ids.size();
+    if (slices_cnt > (slices_per_impostor + 1)*max_impostors)
+    {
+        logerr("atlas for tree image info has too many slices");
+        slices_cnt = (slices_per_impostor + 1)*max_impostors;
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, tree_image_info_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TreeImageInfo)*slices_cnt, nullptr, GL_STREAM_READ);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, slices_info_buf);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
+
+    glm::ivec2 slice_sizes = images_atl.get_slice_size();
+    glm::ivec4 atlas_sizes = images_atl.get_sizes();
     
-    impostors_info_data[0] = reference.info;
-    //logerr("reference info %f %f", reference.info.BCyl_sizes.x, reference.info.BCyl_sizes.y);
+    if (image_debug)
+    { 
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, dbg_buf);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4), nullptr, GL_STREAM_READ);
+    }
+
+    tree_info_shader.use();
+    tree_info_shader.texture("initial_atlas", atl_tmp.tex(0));
+    tree_info_shader.texture("transformed_atlas", images_atl.tex(0));
+
+    tree_info_shader.uniform("impostor_x", slice_sizes.x);
+    tree_info_shader.uniform("impostor_y", slice_sizes.y);
+    tree_info_shader.uniform("slices_count", slices_cnt);
+    tree_info_shader.uniform("start_id", 0);
+    tree_info_shader.uniform("image_debug", (int)image_debug); 
+
+    glDispatchCompute(ceil(slices_cnt), 1, 1);
+    //SDL_GL_SwapWindow(Tiny::view.gWindow);
+
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, tree_image_info_buf);
+    GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    memcpy(tree_image_info_data,ptr,sizeof(TreeImageInfo)*slices_cnt);
+    
+    if (image_debug)
+    { 
+        for (int i=0;i<slices_cnt;i++)
+        {
+            logerr("line %f %f %f %f", tree_image_info_data[i].crown_start_level, tree_image_info_data[i].crown_branches_share, 
+                                       tree_image_info_data[i].crown_leaves_share, tree_image_info_data[i].trunk_thickness);
+            glm::vec4 tc = tree_image_info_data[i].tc_transform;
+            logerr("tc transform %f %f %f %f", tc.x, tc.y, tc.z, tc.w);
+        }
+        glm::uvec4 *data = new glm::uvec4[4*slice_sizes.x*slice_sizes.y];
+        unsigned char *data_ch = new unsigned char[4*4*slice_sizes.x*slice_sizes.y];
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, dbg_buf);
+        ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+        memcpy(data,ptr,4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4));
+        for (int i=0;i<4*slice_sizes.x*slice_sizes.y;i++)
+        {
+            data_ch[4*i] = data[i].x;
+            data_ch[4*i+1] = data[i].y;
+            data_ch[4*i+2] = data[i].z;
+            data_ch[4*i+3] = data[i].w;
+            //debug("%d %d %d %d  ",data[i].x, data[i].y, data[i].z, data[i].w);
+        }
+        textureManager.save_png_raw(data_ch, slice_sizes.x, 4*slice_sizes.y, 4, "get_tree_info_debug");
+        delete[] data;
+        delete[] data_ch;
+    }
+
+    for (int i=0;i<slices_cnt;i++)
+    {
+        results.emplace(ids[i], tree_image_info_data[i]);
+    }
+}
+
+void ImpostorSimilarityCalc::set_slices_data(GrovePacked &grove)
+{
     int impostors_cnt = grove.impostors[1].impostors.size();
+    int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
     int cnt = 0;
     int imp_n = 0;
 
     for (auto &imp : grove.impostors[1].impostors)
     {
-        //logerr("tree %d/%d", imp_n, impostors_cnt);
-        get_tree_compare_info(imp, original_trees[imp_n], impostors_info_data[imp_n+1]);
-
         for (auto &sl : imp.slices)
         {
             if (cnt >= slices_per_impostor*max_impostors)
@@ -168,6 +268,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         }
         if (use_top_slice)
         {
+            logerr("use_top_slice is not supported");
+            /*
             if (cnt >= slices_per_impostor*max_impostors)
             {
                 logerr("more impostor slices than expected at creation of ImpostorSimilarityCalc");
@@ -175,6 +277,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             }
             grove.impostors[1].atlas.pixel_offsets(imp.top_slice.id, slices_info_data[cnt]);
             cnt++;
+            */
         }
         imp_n++;
     }
@@ -183,16 +286,96 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         logerr("wrong impostors count in grove %d, %d = %dx%d expected", cnt, impostors_cnt*slices_per_impostor,
                impostors_cnt, slices_per_impostor);
     }
+}
+
+void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &reference)
+{
+    std::map<int, TreeImageInfo> results;
+    get_tree_image_info(reference.atlas, results, true);
+    if (results.empty())
+    {
+        logerr("refrence trees atlas is empty!!!");
+        return;
+    }
+    TreeImageInfo av_info;
+    for (auto &p : results)
+    {
+        av_info.trunk_thickness += p.second.trunk_thickness;
+        av_info.crown_start_level += p.second.crown_start_level;
+        av_info.crown_leaves_share += p.second.crown_leaves_share;
+        av_info.crown_branches_share += p.second.crown_branches_share;
+    }
+    av_info.trunk_thickness /= results.size();
+    av_info.crown_start_level /= results.size();
+    av_info.crown_leaves_share /= results.size();
+    av_info.crown_branches_share /= results.size();
+
+    av_info.crown_leaves_share *= 0.8;//usually we don't see all the gaps on tree's cron on image, so it has larger leaves share
+                                      //it is an euristic to reduce this error
+    reference.image_info = av_info;
+}
+
+void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
+                                             Tree *original_trees, bool debug_print, bool image_debug)
+{
+    int impostors_cnt = grove.impostors[1].impostors.size();
+    int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
+
+    std::map<int, TreeImageInfo> images_info;
+    get_tree_image_info(grove.impostors[1].atlas, images_info, false);
+
+    int imp_n = 0;
+
+    impostors_info_data[0] = reference.info;
+    tree_image_info_data[0] = reference.image_info;
+    for (auto &imp : grove.impostors[1].impostors)
+    {
+        get_tree_compare_info(imp, original_trees[imp_n], impostors_info_data[imp_n+1]);
+
+        int slices_cnt = 0;
+        TreeImageInfo av_info;
+        for (auto &slice : imp.slices)
+        {
+            auto it = images_info.find(slice.id);
+            if (it == images_info.end())
+            {
+                logerr("cannot find image info for slice %d", slice.id);
+            }
+            else
+            {
+                av_info.trunk_thickness += it->second.trunk_thickness;
+                av_info.crown_start_level += it->second.crown_start_level;
+                av_info.crown_leaves_share += it->second.crown_leaves_share;
+                av_info.crown_branches_share += it->second.crown_branches_share;
+                slices_cnt++;
+            }
+        }
+        av_info.trunk_thickness /= slices_cnt;
+        av_info.crown_start_level /= slices_cnt;
+        av_info.crown_leaves_share /= slices_cnt;
+        av_info.crown_branches_share /= slices_cnt;
+
+        tree_image_info_data[imp_n+1] = av_info;
+        imp_n++;
+    }
+    for (int i=0;i<imp_n+1;i++)
+    {
+        shader_imp_data[i].x = impostors_info_data[i].BCyl_sizes.x;
+        shader_imp_data[i].y = impostors_info_data[i].BCyl_sizes.y;
+        shader_imp_data[i].z = tree_image_info_data[i].crown_start_level;
+    }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
+    set_slices_data(grove);
+
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, results_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*cnt, nullptr, GL_STREAM_READ);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*slices_cnt, nullptr, GL_STREAM_READ);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slices_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*cnt, slices_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, impostors_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TreeCompareInfo)*(impostors_cnt+1), impostors_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*(impostors_cnt+1), shader_imp_data, GL_STATIC_DRAW);
 
     glm::ivec2 slice_sizes = grove.impostors[1].atlas.get_slice_size();
     glm::ivec4 atlas_sizes = reference.atlas.get_sizes();
@@ -214,18 +397,17 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     similarity_shader.uniform("impostor_slice_count", slices_per_impostor);
     similarity_shader.uniform("slice_stride", slices_stride);
     similarity_shader.uniform("start_id", 0);
-    if (image_debug)
-       similarity_shader.uniform("image_debug", (int)image_debug); 
+    similarity_shader.uniform("image_debug", (int)image_debug); 
     int relative_scale = (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE);
     similarity_shader.uniform("relative_scale", relative_scale); 
 
-    glDispatchCompute(cnt, 1, 1);
+    glDispatchCompute(slices_cnt, 1, 1);
     //SDL_GL_SwapWindow(Tiny::view.gWindow);
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, results_buf);
     GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-    memcpy(results_data,ptr,sizeof(float)*cnt);
+    memcpy(results_data,ptr,sizeof(float)*slices_cnt);
     
     if (image_debug)
     { 
@@ -253,9 +435,9 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float dist = 0;
         for (int j =0;j<slices_per_impostor;j++)
             dist += results_data[i*slices_per_impostor + j];
-        
+
         dist /= slices_per_impostor;
-        dist = smoothstep5(dist);
+
         float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
         d_ld /= MAX(1e-4, (impostors_info_data[i+1].leaves_density + impostors_info_data[0].leaves_density));
         float d_bd = abs(impostors_info_data[i+1].branches_density - impostors_info_data[0].branches_density); 
@@ -265,6 +447,10 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_jcnt = abs(impostors_info_data[i+1].joints_cnt - impostors_info_data[0].joints_cnt);
         d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
         float d_trop = CLAMP(abs(impostors_info_data[i+1].tropism - impostors_info_data[0].tropism)/2,-1,1);
+        
+        float d_b_crone = abs(tree_image_info_data[i+1].crown_branches_share - tree_image_info_data[0].crown_branches_share);
+        float d_b_leaves = abs(tree_image_info_data[i+1].crown_leaves_share - tree_image_info_data[0].crown_leaves_share);
+
         float d_th;
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
             reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
@@ -326,9 +512,10 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_sd = 1 - (scale_fine.x)*(scale_fine.y);
 
         if (debug_print && i == 0)
-            logerr("dist %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, dist);
+            logerr("dist %f %f %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, d_b_leaves, dist);
         //dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
-        dist = CLAMP(((1 - d_sd) + (1 - dist) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + (1-d_trop))/8, 0,1);
+        dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
+                      (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - dist))/10, 0,1);
         dist = dist*dist*dist;
         sim_results.push_back(dist);
         //logerr("similarity data %f", sim_results.back());
@@ -343,9 +530,115 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
         delete[] slices_info_data;
     if (impostors_info_data)
         delete[] impostors_info_data;
+    if (shader_imp_data)
+        delete[] shader_imp_data;
+    if (tree_image_info_data)
+        delete[] tree_image_info_data;
     glDeleteFramebuffers(1, &fbo);
     glDeleteBuffers(1, &results_buf);
     glDeleteBuffers(1, &slices_info_buf);
     glDeleteBuffers(1, &impostors_info_buf);
     glDeleteBuffers(1, &dbg_buf);
+    glDeleteBuffers(1, &tree_image_info_buf);
+}
+
+void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
+{
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glm::ivec4 sizes = atl.get_sizes();
+    glm::ivec2 slice_size = atl.get_slice_size();
+    TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, atl.layers_count(), 1);
+    atl_tmp.set_grid(slice_size.x, slice_size.y, false);
+
+    PostFx gauss = PostFx("gaussian_blur_atlas.fs");
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl_tmp.target(l, 0);
+        gauss.use();
+        gauss.get_shader().texture("tex", atl.tex(0));
+        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        gauss.get_shader().uniform("layer", (float)l);
+        gauss.get_shader().uniform("pass", 0);
+        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl.target(l, 0);
+        gauss.use();
+        gauss.get_shader().texture("tex", atl_tmp.tex(0));
+        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        gauss.get_shader().uniform("layer", l);
+        gauss.get_shader().uniform("pass", 1);
+        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl.tex(0), "atlass_gauss_1");
+
+    PostFx sil_fill = PostFx("silhouette_fill.fs");
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl_tmp.target(l, 0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("layer", (float)l);
+        sil_fill.get_shader().uniform("radius", 8);
+        sil_fill.get_shader().uniform("dir_threshold", 4);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl.target(l, 0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("layer", (float)l);
+        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("dir_threshold", 6);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl_tmp.target(l, 0);
+        sil_fill.use();
+        sil_fill.get_shader().texture("tex", atl.tex(0));
+        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("layer", (float)l);
+        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("dir_threshold", 6);
+        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("threshold", 0.05f);
+        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_2");
+
+    PostFx sil_sharp = PostFx("silhouette_sharpen.fs");
+    for (int l = 0; l < atl.layers_count(); l++)
+    {
+        atl.target(l, 0);
+        sil_sharp.use();
+        sil_sharp.get_shader().texture("tex", atl_tmp.tex(0));
+        sil_sharp.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_sharp.get_shader().uniform("layer", (float)l);
+        sil_sharp.get_shader().uniform("threshold", 0.05f);
+        sil_sharp.render();
+    }
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    //textureManager.save_png(atl.tex(0), "atlass_gauss_3");
 }

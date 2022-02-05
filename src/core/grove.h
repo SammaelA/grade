@@ -26,8 +26,8 @@ struct PackedBranch
     std::vector<PackedJoint> joints;
     std::vector<PackedLeaf> leaves;
     std::vector<std::vector<float>> r_mults;
-    int level;
-    uint type_id;
+    int level = 0;
+    uint type_id = 0;
     glm::vec4 plane_coef;
 };
 struct BranchCatalogue
