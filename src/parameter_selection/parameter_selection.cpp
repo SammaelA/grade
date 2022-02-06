@@ -159,7 +159,7 @@ LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
     int sz_y = 25*ceil(1.5*ref_tree.info.BCyl_sizes.y/25);
     glm::vec3 ref_size = glm::vec3(sz_x, 0.5f*sz_y, sz_x);
     //logerr("ref size %d %d", sz_x, sz_y);
-    return new LightVoxelsCube(glm::vec3(0, ref_size.y - 10, 0), ref_size, 0.625f, 1.0f, 1, 2);
+    return new LightVoxelsCube(glm::vec3(0, ref_size.y, 0), ref_size, 0.625f, 1.0f, 1, 2);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,

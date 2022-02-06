@@ -12,7 +12,7 @@ tree_info_shader({"get_tree_info.comp"},{})
     slices_per_impostor = _slices_per_impostor;
     slices_stride = slices_per_impostor;
     results_data = new float[slices_per_impostor*max_impostors];
-    slices_info_data = new glm::uvec4[slices_per_impostor*max_impostors];
+    slices_info_data = new glm::uvec4[(slices_per_impostor  + 1)*max_impostors];
     impostors_info_data = new TreeCompareInfo[max_impostors + 1];
     shader_imp_data = new glm::vec4[max_impostors + 1];
     tree_image_info_data = new TreeImageInfo[(slices_per_impostor + 1)*max_impostors];
@@ -310,8 +310,8 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
     av_info.crown_leaves_share /= results.size();
     av_info.crown_branches_share /= results.size();
 
-    av_info.crown_leaves_share *= 0.8;//usually we don't see all the gaps on tree's cron on image, so it has larger leaves share
-                                      //it is an euristic to reduce this error
+    av_info.crown_leaves_share *= 0.85;//usually we don't see all the gaps on tree's crone on image, so it has larger leaves share
+                                       //it is an euristic to reduce this error
     reference.image_info = av_info;
 }
 
@@ -450,8 +450,11 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         
         float d_b_crone = abs(tree_image_info_data[i+1].crown_branches_share - tree_image_info_data[0].crown_branches_share);
         float d_b_leaves = abs(tree_image_info_data[i+1].crown_leaves_share - tree_image_info_data[0].crown_leaves_share);
-
-        float d_th;
+        float d_cs = CLAMP(4*abs(tree_image_info_data[i+1].crown_start_level - tree_image_info_data[0].crown_start_level),0,1);
+        float d_th = abs(tree_image_info_data[i+1].trunk_thickness - tree_image_info_data[0].trunk_thickness) /
+                     abs(tree_image_info_data[i+1].trunk_thickness + tree_image_info_data[0].trunk_thickness) *
+                     abs(tree_image_info_data[i+1].crown_start_level + tree_image_info_data[0].crown_start_level);
+        /*
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
             reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
             reference.trunk_thickness_status == TCIFeatureStatus::FROM_IMAGE)
@@ -467,7 +470,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             d_th = abs(impostors_info_data[i+1].trunk_thickness - impostors_info_data[0].trunk_thickness); 
             d_th /= MAX(1e-4, (impostors_info_data[i+1].trunk_thickness + impostors_info_data[0].trunk_thickness)); 
         }
-
+        */
         glm::vec2 scale_fine;
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE)
         {
@@ -503,8 +506,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             d_trop = -1e-5;
         if (reference.branches_curvature_status == TCIFeatureStatus::DONT_CARE)
             d_bc = -1e-5;
-        if (reference.trunk_thickness_status == TCIFeatureStatus::DONT_CARE)
-            d_th = -1e-5;
+        //if (reference.trunk_thickness_status == TCIFeatureStatus::DONT_CARE)
+        //    d_th = -1e-5;
         if (reference.joints_cnt_status == TCIFeatureStatus::DONT_CARE)
             d_jcnt = -1e-5;
         if (reference.reference_image_status == TCIFeatureStatus::DONT_CARE)
@@ -512,13 +515,13 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_sd = 1 - (scale_fine.x)*(scale_fine.y);
 
         if (debug_print && i == 0)
-            logerr("dist %f %f %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, d_b_leaves, dist);
-        //dist = CLAMP((1 - d_sd)*(1 - dist)*(1 - d_ld)*(1 - d_bd)*(1 - d_bc)*(1-d_jcnt)*(1-d_th), 0,1);
+            logerr("dist %f %f %f %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, 
+                                                            d_b_leaves, d_cs, dist);
+
         dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
-                      (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - dist))/10, 0,1);
+                      (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + (1 - dist))/11, 0,1);
         dist = dist*dist*dist;
         sim_results.push_back(dist);
-        //logerr("similarity data %f", sim_results.back());
     }
 }
 

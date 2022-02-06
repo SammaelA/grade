@@ -13,16 +13,16 @@ struct GETreeParameters : public ParametersSet
 {
     float lambda = 0.52;
     float k = 0.75;//part of joint that can create child branches
-    int tau = 6;
+    int tau = 6;//unused
     float ro = 1.0;
     float X0 = 2;
     float Xm = 100;
     float r = 0.37;
-    int alpha = 4;
-    float sigma = 0.5;
+    int alpha = 4;//unused
+    float sigma = 0.5;//unused
     float mu = 0.75;
-    float b_min = 1.8;
-    float b_max = 2.2;
+    float b_min = 1.8;//unused
+    float b_max = 2.2;//unused
     float r_s = 0.05;
     float rs_size_factor = 0.02;
     int remove_min_level = 1;

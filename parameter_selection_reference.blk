@@ -1,11 +1,12 @@
 {
+    //width:r = 100
     width:s = "FROM_IMAGE"
-    //height:s = "FROM_IMAGE"
-    height:r = 150
+    height:s = "FROM_IMAGE"
+    //height:r = 50
     //branches_curvature:r = 0.1
     //branches_curvature:s = "DONT_CARE"
     //branches_density:r = 1.5
-    joints_cnt:i = 25000
+    joints_cnt:i = 2000
     //max_joints:i = 15000
     //leaves_density:r = 2
     //trunk_thickness:s = "FROM_IMAGE"
@@ -13,6 +14,8 @@
     //reference_type:s = "large_oak"
     reference_image
     {
-        image:s = "ref1.png"
+        image:s = "ref4.jpg"
+        wood_color:p3 = 0.2, 0.2, 0.18
+        background_color:p3 = 1, 1, 1
     }
 }

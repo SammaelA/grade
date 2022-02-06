@@ -9,7 +9,7 @@
     best_results_count:i = 5
     exit_conditions
     {
-        function_calculated:i = 2500
+        function_calculated:i = 1500
         generations:i = 10000
         function_reached:r = 1.0
         time_elapsed_seconds:r = 2000

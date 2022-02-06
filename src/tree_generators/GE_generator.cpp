@@ -162,8 +162,15 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
 }
 void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
+    long param_dependant_seed = 71*params.initial_trunk_scale.x  + 
+                                 73*params.initial_trunk_scale.y  +
+                                 79*abs(params.trunk_bonus_radius)+
+                                 173*params.trunk_bonus_radius_mod;
+    for (int i=0;i<param_dependant_seed % 10; i++)
+        self_rand();                            
     t.root = Branch();
     t.root.level = 0;
+    t.root.can_be_removed = false;
     float sz_x = params.initial_trunk_scale.x*params.ro;
     float sz_y = params.initial_trunk_scale.y*params.ro;
     if (params.root_type == 0)
@@ -172,10 +179,10 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*(i + self_rand());
-            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1)*sz_y, 0), iteration, true));
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, 0.1*(i+1), 0), iteration, true));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration,false));
             auto &b = t.root.joints.back().childBranches.back();
-            b.joints.push_back(Joint(t.pos + 3*sz_x*vec3(sin(phi),1,cos(phi)), iteration, true));
+            b.joints.push_back(Joint(t.pos + 3.0f*vec3(sz_x*sin(phi),sz_y,sz_x*cos(phi)), iteration, true));
         }
     }
     else if (params.root_type == 1)
