@@ -80,7 +80,7 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         set_levels_rec(t, t.root, params, 0);
         recalculate_radii(t, t.root, params);
-        create_leaves(t.root, params, 0, voxels);
+        create_leaves(t.root, params, 2, voxels);
         convert(t, trees_external[trees.size() - i - 1]);
         i++;
     }

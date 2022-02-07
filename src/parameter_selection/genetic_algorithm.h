@@ -10,10 +10,11 @@ public:
     {
         int initial_population_size = 100;
         int max_population_size = 50;
-        int min_population_size = 10;
+        int min_population_size = 5;
         int best_genoms_count = 3;
         int heaven_size = 7;
-        int heaven_recalc_n = 10;
+        int heaven_recalc_n = 4;
+        int heaven_fine_tuning_count = 0;
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.0000;
@@ -89,7 +90,7 @@ private:
     void crossingover(Genome &A, Genome &B, Genome &res);
     void make_new_generation(std::vector<std::pair<int, int>> &pairs);
     void make_child(Creature &A, Creature &B, Creature &C);
-    void calculate_metric(int heaven_n = 1);
+    void calculate_metric(int heaven_n = 1, bool elite_fine_tuning = true);
     void recalculate_fitness();
     void pick_best_to_heaven();
     void migration();

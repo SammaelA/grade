@@ -19,13 +19,13 @@ void main(void)
   fragColor = vec4(0,0,0,0);
   if (color.a > 0.5)
   {
-      float a = dot(wood_color - color.xyz, wood_color - color.xyz)/dot(wood_color + color.xyz, wood_color + color.xyz);
-      float b = dot(leaves_color - color.xyz, leaves_color - color.xyz)/dot(leaves_color + color.xyz, leaves_color + color.xyz);
-      float c = dot(background_color - color.xyz, background_color - color.xyz);
+      float a = dot((wood_color) - color.xyz, (wood_color) - color.xyz);
+      float b = dot((leaves_color) - color.xyz, (leaves_color) - color.xyz);
+      float c = dot((background_color) - color.xyz, (background_color) - color.xyz);
       float g_part = color.g/(color.r + color.b + 1e-4);
-      if (c < 1e-4)
+      if (10*c < a && 10*c < b)
         fragColor = vec4(0,0,0,0);
-      else if (g_part < 0.5)
+      else if (color.y < max(color.x, color.z))
         fragColor = vec4(1,0,0,1);
       else
         fragColor = vec4(0,1,0,1);    

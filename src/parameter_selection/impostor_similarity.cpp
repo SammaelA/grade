@@ -451,9 +451,11 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_b_crone = abs(tree_image_info_data[i+1].crown_branches_share - tree_image_info_data[0].crown_branches_share);
         float d_b_leaves = abs(tree_image_info_data[i+1].crown_leaves_share - tree_image_info_data[0].crown_leaves_share);
         float d_cs = CLAMP(4*abs(tree_image_info_data[i+1].crown_start_level - tree_image_info_data[0].crown_start_level),0,1);
-        float d_th = abs(tree_image_info_data[i+1].trunk_thickness - tree_image_info_data[0].trunk_thickness) /
-                     abs(tree_image_info_data[i+1].trunk_thickness + tree_image_info_data[0].trunk_thickness) *
-                     abs(tree_image_info_data[i+1].crown_start_level + tree_image_info_data[0].crown_start_level);
+        float d_th = CLAMP(abs(tree_image_info_data[i+1].trunk_thickness - tree_image_info_data[0].trunk_thickness) /
+                           (1e-4 + tree_image_info_data[0].trunk_thickness) *
+                           abs(tree_image_info_data[i+1].crown_start_level + tree_image_info_data[0].crown_start_level),
+                           0,1);
+        //logerr("th %f %f", tree_image_info_data[i+1].trunk_thickness, tree_image_info_data[0].trunk_thickness);
         /*
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
             reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
@@ -518,10 +520,15 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             logerr("dist %f %f %f %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, 
                                                             d_b_leaves, d_cs, dist);
 
-        dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
-                      (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + (1 - dist))/11, 0,1);
-        dist = dist*dist*dist;
-        sim_results.push_back(dist);
+        float res_dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
+                                (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + (1 - dist))/11, 0,1);
+        res_dist = res_dist*res_dist*res_dist;
+        
+        bool valid = d_sd < 0.8 && d_jcnt < 0.9 && dist < 0.9;
+        if (!valid)
+            res_dist = 0;
+        
+        sim_results.push_back(res_dist);
     }
 }
 

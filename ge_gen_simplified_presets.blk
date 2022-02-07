@@ -34,5 +34,6 @@
         max_joints_in_branch:i = 32
         tropism_params:p4 = 0.9, -1, 0.02, 1.5
         res_decrease_step:r = 0.15
+        initial_trunk_scale:p2 = 1,0.2
     }
 }

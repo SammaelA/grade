@@ -37,13 +37,13 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
             free_parameters_cnt++;
     }
 
-    metaParams.heaven_size = MAX(metaParams.heaven_size, 1.5*metaParams.best_genoms_count);
+    metaParams.heaven_size = MAX(metaParams.heaven_size, metaParams.best_genoms_count + 1);
     metaParams.min_population_size = MAX(MAX(metaParams.min_population_size,metaParams.elite), 
                                      MAX(metaParams.heaven_size, metaParams.best_genoms_count));
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
     initialize_population();
-    calculate_metric();
+    calculate_metric(1, false);
     recalculate_fitness();
     pick_best_to_heaven();
     debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_ever);
@@ -61,12 +61,12 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         {
             logerr("population %d is about to extinct", current_population_size);
         }
-        int space_left = metaParams.max_population_size - metaParams.elite;
+        int space_left = metaParams.max_population_size - heaven.size();
         std::vector<std::pair<int, int>> pairs;
         find_pairs(space_left, pairs);
         make_new_generation(pairs);
         
-        calculate_metric();
+        calculate_metric(1, true);
         recalculate_fitness();
         pick_best_to_heaven();
         if (iteration_n % metaParams.migration_interval == 0)
@@ -126,7 +126,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
         if (population[i].alive)
             kill_creature(i);
     }
-    calculate_metric(metaParams.heaven_recalc_n);
+    calculate_metric(metaParams.heaven_recalc_n, false);
     std::sort(heaven.begin(), heaven.end(), 
               [&](const Creature& a, const Creature& b) -> bool{return a.metric > b.metric;});
     debug("heaven popultion %d best metric %.4f\n", heaven.size(), heaven[0].metric);
@@ -454,7 +454,7 @@ float GeneticAlgorithm::closest_neighbour(Creature &C, std::vector<Creature> &po
 {
     int i=0;
     float min_dist = 1;
-    while (population[i].alive)
+    while (population[i].alive && i < population.size())
     {
         if (population[i].id != C.id)
         {
@@ -542,48 +542,68 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
 void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pairs)
 {
     //assume that the population is sorted by fitness;
-    for (int i=0;i<metaParams.elite;i++)
+    int elite_count = metaParams.elite > 0 ? heaven.size() : 0;
+    if (elite_count)
     {
-        new_population[i] = population[population.size() - i - 1];
+        for (int i=0;i<heaven.size();i++)
+        {
+            new_population[i] = heaven[i];
+        }
     }
-    int pos = metaParams.elite;
+    int pos = elite_count;
     for (auto &p : pairs)
     {
         //logerr("children %d %d", p.first, p.second);
         make_child(population[p.first], population[p.second], new_population[pos]);
         pos++;
     }
-    for (int i=0;i<population.size()-metaParams.elite;i++)
-    {
-        kill_creature(i);
-    }
-    current_population_size = metaParams.elite + pairs.size();
+
+    current_population_size = elite_count + pairs.size();
     population = new_population;
 }
 
-void GeneticAlgorithm::calculate_metric(int heaven_n)
+void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
 {
     std::vector<ParameterList> params;
-    std::vector<int> positions;
-    int i=0;
+    enum ParOrigin
+    {
+        NEW_ENTITY,
+        ELITE_ORIGIN,
+        ELITE_MODIFIED
+    };
+    std::vector<std::pair<ParOrigin,int>> positions;
+
     for (int i=0;i<heaven_n;i++)
     {
-        int k = -1;
+        int h = 0;
         for (auto &p : heaven)
         {
             params.push_back(original_param_list);
-            params.back().from_simple_list(p.main_genome);
-            positions.push_back(k);
-            k--;
+            params.back().from_simple_list(p.main_genome);  
+            positions.push_back(std::pair<ParOrigin,int>(ELITE_ORIGIN, h));
+            if (elite_fine_tuning)
+            {
+                for (int j=0;j<metaParams.heaven_fine_tuning_count;j++)
+                {
+                    Genome modified = p.main_genome;
+                    mutation(modified, 0.25, 1);
+                    params.push_back(original_param_list);
+                    params.back().from_simple_list(modified);
+                    positions.push_back(std::pair<ParOrigin,int>(ELITE_MODIFIED, h));
+                }
+            }
+            h++;
         }
     }
+
+    int i=0;
     for (auto &p : population)
     {
         if (p.alive && p.metric < 0)
         {
             params.push_back(original_param_list);
             params.back().from_simple_list(p.main_genome);
-            positions.push_back(i);
+            positions.push_back(std::pair<ParOrigin,int>(NEW_ENTITY, i));
         }
         i++;
     }
@@ -591,9 +611,32 @@ void GeneticAlgorithm::calculate_metric(int heaven_n)
     func_called += metrics.size();
     for (int i=0;i<metrics.size();i++)
     {
-        auto &c = positions[i] >= 0 ? population[positions[i]] : heaven[-positions[i] - 1];
-        c.metric = (metrics[i] + c.metric_calc_n*c.metric)/(c.metric_calc_n+1);
-        c.metric_calc_n++;
+        if (positions[i].first == NEW_ENTITY)
+        {
+            auto &c = population[positions[i].second];
+            c.metric = metrics[i];
+            c.metric_calc_n++;
+        }
+        else if (positions[i].first == ELITE_ORIGIN)
+        {
+            auto &c = heaven[positions[i].second];
+            c.metric = (metrics[i] + c.metric_calc_n*c.metric)/(c.metric_calc_n+1);
+            c.metric_calc_n++;
+        }
+    }
+    for (int i=0;i<metrics.size();i++)
+    {
+        if (positions[i].first == ELITE_MODIFIED)
+        {
+            auto &c = heaven[positions[i].second];
+            if (metrics[i] > c.metric)
+            {
+                logerr("elite individual %d %d improved %f --> %f", positions[i].second, c.id, c.metric, metrics[i]);
+                params[i].to_simple_list(c.main_genome);
+                c.metric = metrics[i];
+                c.metric_calc_n = 1;
+            }
+        }
     }
 
     for (auto &p : population)
@@ -666,12 +709,10 @@ void GeneticAlgorithm::pick_best_to_heaven()
                 if (better_all_clones)
                 {
                     //no need to keep clones that are worse than our creature
-                    /*
                     for (int &c_n : clones)
                     {
                         heaven[c_n] = Creature();
                     }
-                    */
                 }
                 heaven[worst_pos] = population[n];
             }

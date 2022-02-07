@@ -203,7 +203,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
     cnt += params.size();
     std::vector<float> res;
-    imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, false);
+    imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, true);
 
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
@@ -273,7 +273,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     mp.migration_chance = selection_settings.get_double("migration_chance", mp.migration_chance);
     mp.evolution_stat = selection_settings.get_bool("evolution_stat", mp.evolution_stat);
     mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
-
+    mp.heaven_fine_tuning_count = selection_settings.get_int("heaven_fine_tuning_count", mp.heaven_fine_tuning_count);
     GeneticAlgorithm::ExitConditions ex_c;
     Block *ex_bl = selection_settings.get_block("exit_conditions");
     if (ex_bl)
@@ -283,7 +283,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         ex_c.generations = ex_bl->get_int("generations", ex_c.generations);
         ex_c.time_elapsed_seconds = ex_bl->get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
     }
-    int imp_max_cnt = MAX(50, MAX(mp.initial_population_size, mp.max_population_size));
+    int imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
+                          MAX(mp.initial_population_size, mp.max_population_size) + (mp.heaven_fine_tuning_count+1)*mp.heaven_size);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, 8, false);
     ParameterList parList, bestParList;
 
