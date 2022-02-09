@@ -294,13 +294,24 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     man.load_block_from_file(gen_name + "_param_borders.blk", b);
     parList.load_borders_from_blk(b);
+    std::vector<ParameterList> initial_params;
+    
+    auto all_types = metainfoManager.get_all_tree_types();
+    for (auto &t : all_types)
+    {
+        if (t.generator_name == tree_ggd.types[0].generator_name)
+        {
+            initial_params.push_back(ParameterList());
+            t.params->write_parameter_list(initial_params.back());
+        }
+    }
+
     //parList.print();
 
     bestParList = parList;
     float best_metric = 0;
     int cnt = 0;
 
-    bestParList = parList;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     std::vector<std::pair<float, ParameterList>> best_pars;
     auto func = [&](std::vector<ParameterList> &params) -> std::vector<float> {
@@ -308,7 +319,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     };
 
     GeneticAlgorithm GA;
-    GA.perform(parList, mp, ex_c, func, best_pars);
+    GA.perform(parList, mp, ex_c, func, best_pars, initial_params);
     bestParList = best_pars[0].second;
     best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

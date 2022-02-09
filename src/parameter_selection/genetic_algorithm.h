@@ -37,7 +37,8 @@ public:
     };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                  const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
-                 std::vector<std::pair<float,ParameterList>> &best_results);
+                 std::vector<std::pair<float,ParameterList>> &best_results,
+                 std::vector<ParameterList> &initial_types);
 private:
     std::function<std::vector<float>(std::vector<ParameterList> &)> function;
     ParameterList original_param_list;
@@ -81,7 +82,7 @@ private:
 
     bool should_exit();
     void prepare_best_params(std::vector<std::pair<float,ParameterList>> &best_results);
-    void initialize_population();
+    void initialize_population(std::vector<ParameterList> &initial_types);
     void mutation(Genome &G, float mutation_power, int mutation_genes_count);
     void find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs);
     void kill_creature(int n);

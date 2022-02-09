@@ -437,7 +437,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             dist += results_data[i*slices_per_impostor + j];
 
         dist /= slices_per_impostor;
-
+        dist = smoothstep3(dist);
+        
         float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
         d_ld /= MAX(1e-4, (impostors_info_data[i+1].leaves_density + impostors_info_data[0].leaves_density));
         float d_bd = abs(impostors_info_data[i+1].branches_density - impostors_info_data[0].branches_density); 
@@ -521,7 +522,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
                                                             d_b_leaves, d_cs, dist);
 
         float res_dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
-                                (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + (1 - dist))/11, 0,1);
+                                (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + 5*(1 - dist))/15, 0,1);
         res_dist = res_dist*res_dist*res_dist;
         
         bool valid = d_sd < 0.8 && d_jcnt < 0.9 && dist < 0.9;

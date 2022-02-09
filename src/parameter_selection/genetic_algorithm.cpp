@@ -8,7 +8,8 @@ std::atomic<int> next_id(0);
 
 void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
                                const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
-                               std::vector<std::pair<float, ParameterList>> &best_results)
+                               std::vector<std::pair<float, ParameterList>> &best_results,
+                               std::vector<ParameterList> &initial_types)
 {
     t_start = std::chrono::steady_clock::now();
 
@@ -42,7 +43,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                                      MAX(metaParams.heaven_size, metaParams.best_genoms_count));
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
-    initialize_population();
+    initialize_population(initial_types);
     calculate_metric(1, false);
     recalculate_fitness();
     pick_best_to_heaven();
@@ -239,11 +240,35 @@ GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
     return g;
 }
 
-void GeneticAlgorithm::initialize_population()
+void GeneticAlgorithm::initialize_population(std::vector<ParameterList> &initial_types)
 {
     population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
     new_population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
-    for (int i=0;i<metaParams.initial_population_size;i++)
+    
+    int max_iters = 10;
+    int max_cnt = 0.5*metaParams.initial_population_size;
+    int i0=0;
+    int iter = 0;
+    
+    while (i0 < max_cnt && iter < max_iters)
+    {
+        for (auto &t : initial_types)
+        {
+            t.to_simple_list(population[i0].main_genome);
+            for (int j=1;j<metaParams.n_ploid_genes;j++)
+                population[i0].other_genomes.push_back(population[i0].main_genome);
+            population[i0].alive = true;
+            population[i0].max_age = metaParams.max_age;
+            population[i0].id = next_id.fetch_add(1);
+            population[i0].sub_population_n = metaParams.n_islands*i0/metaParams.initial_population_size;
+            i0++;
+            if (i0 >= max_cnt)
+                break;
+        }
+        iter++;
+    }
+    
+    for (int i=i0;i<metaParams.initial_population_size;i++)
     {
         population[i].main_genome = random_genes();
         for (int j=1;j<metaParams.n_ploid_genes;j++)
@@ -578,18 +603,31 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
         int h = 0;
         for (auto &p : heaven)
         {
-            params.push_back(original_param_list);
-            params.back().from_simple_list(p.main_genome);  
-            positions.push_back(std::pair<ParOrigin,int>(ELITE_ORIGIN, h));
-            if (elite_fine_tuning)
+            if (p.metric_calc_n < 4 || !elite_fine_tuning)
             {
-                for (int j=0;j<metaParams.heaven_fine_tuning_count;j++)
+                params.push_back(original_param_list);
+                params.back().from_simple_list(p.main_genome);  
+                positions.push_back(std::pair<ParOrigin,int>(ELITE_ORIGIN, h));
+                if (elite_fine_tuning)
                 {
-                    Genome modified = p.main_genome;
-                    mutation(modified, 0.25, 1);
-                    params.push_back(original_param_list);
-                    params.back().from_simple_list(modified);
-                    positions.push_back(std::pair<ParOrigin,int>(ELITE_MODIFIED, h));
+                    int ft_cnt = 0;
+                    if (iteration_n < 10)
+                        ft_cnt = 0;
+                    else if (iteration_n < 40)
+                        ft_cnt = 1;
+                    else if (iteration_n < 100)
+                        ft_cnt = 2;
+                    else
+                        ft_cnt = 3;
+                    ft_cnt *= metaParams.heaven_fine_tuning_count;
+                    for (int j=0;j<ft_cnt;j++)
+                    {
+                        Genome modified = p.main_genome;
+                        mutation(modified, 0.25, 1);
+                        params.push_back(original_param_list);
+                        params.back().from_simple_list(modified);
+                        positions.push_back(std::pair<ParOrigin,int>(ELITE_MODIFIED, h));
+                    }
                 }
             }
             h++;
@@ -631,10 +669,10 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             auto &c = heaven[positions[i].second];
             if (metrics[i] > c.metric)
             {
-                logerr("elite individual %d %d improved %f --> %f", positions[i].second, c.id, c.metric, metrics[i]);
+                //logerr("elite individual %d %d improved %f --> %f", positions[i].second, c.id, c.metric, metrics[i]);
                 params[i].to_simple_list(c.main_genome);
                 c.metric = metrics[i];
-                c.metric_calc_n = 1;
+                c.metric_calc_n = 3;
             }
         }
     }
@@ -779,6 +817,20 @@ void GeneticAlgorithm::recalculate_fitness()
         else
             p.fitness = -1;
     }
+
+    float min_v = 0.01;
+    float step = 4.0 / SQR(metaParams.max_population_size);
+    int n = 0;
+    for (int i=population.size()-1;i>=0;i--)
+    {
+        if (population[i].alive)
+        {
+            population[i].fitness = MAX(min_v, 1 - step*n*n);
+            if (population[i].metric_calc_n == 1)
+                n++;
+        }
+    }
+
     /*
     std::sort(population.begin(), population.end(), 
               [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});

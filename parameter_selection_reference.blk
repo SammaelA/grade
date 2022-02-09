@@ -14,10 +14,10 @@
     //reference_type:s = "large_oak"
     reference_image
     {
-        image:s = "reference_tree_test_2.png"
+        image:s = "ref8.png"
         //image:s = "ref6.png"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
-        //background_color:p3 = 1, 1, 1
+        background_color:p3 = 1, 1, 1
     }
 }

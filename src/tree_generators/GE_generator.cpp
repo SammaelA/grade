@@ -163,9 +163,9 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
 void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
 {
     long param_dependant_seed = 71*params.initial_trunk_scale.x  + 
-                                 73*params.initial_trunk_scale.y  +
-                                 79*abs(params.trunk_bonus_radius)+
-                                 173*params.trunk_bonus_radius_mod;
+                                73*params.initial_trunk_scale.y  +
+                                79*abs(params.trunk_bonus_radius)+
+                                173*params.trunk_bonus_radius_mod;
     for (int i=0;i<param_dependant_seed % 10; i++)
         self_rand();                            
     t.root = Branch();
@@ -193,12 +193,12 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         for (int i = 0; i < 4; i++)
         {
             t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*dx, dy, 0.1*self_rand(-1,1)*dx), 
-                                          iteration, false, params.trunk_bonus_radius*pow(1 - i/8.0, params.trunk_bonus_radius_mod)));
+                                          iteration, false, params.trunk_bonus_radius*pow(1 - (i+1)/9.0, params.trunk_bonus_radius_mod)));
         }
         for (int i = 0; i < 4; i++)
         {
             t.root.joints.push_back(Joint(t.root.joints.back().pos + glm::vec3(0.1*self_rand(-1,1)*dx, dy, 0.1*self_rand(-1,1)*dx), 
-                                          iteration, true, params.trunk_bonus_radius*pow(1 - (i+4)/8.0, params.trunk_bonus_radius_mod)));
+                                          iteration, true, params.trunk_bonus_radius*pow(1 - (i+5)/9.0, params.trunk_bonus_radius_mod)));
         }
     }
     else if (params.root_type == 2)
