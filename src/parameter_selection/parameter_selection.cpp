@@ -358,7 +358,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         for (int i = 0; i < best_pars.size(); i++)
         {
             AbstractTreeGenerator *gen = get_generator(type.generator_name);
-            glm::vec3 pos =  glm::vec3(100 * (1 + i / 5), 0, 100 * (i % 5));
+            glm::vec3 pos =  glm::vec3(200 * (1 + i / 5), 0, 200 * (i % 5));
             res_voxels->fill(0);
             res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
 
@@ -837,7 +837,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         ref_tree.info.leaves_density = explicit_info.leaves_density;
     }
 
-    if (explicit_info.tropism < 0)
+    if (explicit_info.tropism < -1)
     {
         ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
         auto status_str = ri.get_string("tropism","");

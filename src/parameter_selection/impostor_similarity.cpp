@@ -453,8 +453,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_b_leaves = abs(tree_image_info_data[i+1].crown_leaves_share - tree_image_info_data[0].crown_leaves_share);
         float d_cs = CLAMP(4*abs(tree_image_info_data[i+1].crown_start_level - tree_image_info_data[0].crown_start_level),0,1);
         float d_th = CLAMP(abs(tree_image_info_data[i+1].trunk_thickness - tree_image_info_data[0].trunk_thickness) /
-                           (1e-4 + tree_image_info_data[0].trunk_thickness) *
-                           abs(tree_image_info_data[i+1].crown_start_level + tree_image_info_data[0].crown_start_level),
+                           (1e-4 + tree_image_info_data[0].trunk_thickness + tree_image_info_data[i+1].trunk_thickness),
                            0,1);
         //logerr("th %f %f", tree_image_info_data[i+1].trunk_thickness, tree_image_info_data[0].trunk_thickness);
         /*

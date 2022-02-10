@@ -45,6 +45,8 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
                 float l3 = CLAMP(t.root.total_light - l2, 0, 60*params.Xm);
                 float l4 = CLAMP(t.root.total_light - l2, 0, 1000*params.Xm);
                 float l_corr = l1 + 0.4*l2 + 0.16*l3 + 0.0*l4;
+                
+                calc_distance_from_root(t.root, params, glm::vec2(0,0));
                 distribute_resource(t.root, params, 1.0);
                 prepare_nodes_and_space_colonization(t, t.root, params, growth_points, max_growth);
                 sp_data.prepare(voxels);
@@ -214,12 +216,82 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
             b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.3,0.3),4,self_rand(-0.3,0.3)), iteration, true));
         }
     }
+    else if (params.root_type == 3)
+        create_universal_initial_trink(t, params);
     else
     {
         logerr("GE Gen error: Unknows root type %d",params.root_type);
     }
     t.status = TreeStatus::GROWING;
 }
+
+void GETreeGenerator::create_universal_initial_trink(Tree &t, GETreeParameters &params)
+{
+    t.status = TreeStatus::GROWING;
+    t.root = Branch();
+    t.root.level = 0;
+    t.root.can_be_removed = false;
+    float sz_x = params.initial_trunk_scale.x*params.ro;
+    float sz_y = params.initial_trunk_scale.y*params.ro;
+
+    float dL;
+    if (params.L0 > 0)
+    {
+        t.root.joints.push_back(Joint(t.pos, 0, false, params.R0));
+        dL = sz_y*params.L0/4;
+    }
+    else
+    {
+        t.root.joints.push_back(Joint(t.pos - glm::vec3(0,sz_y*params.L0,0), 0, false, params.R0));
+        dL = -sz_y*params.L0/4;        
+    }
+
+    for (int i=0;i<4;i++)
+    {
+        glm::vec3 pos = t.root.joints.front().pos + glm::vec3(0,(i+1)*dL,0);
+        pos.x += params.dX*sz_x*self_rand(-1,1);
+        pos.z += params.dX*sz_x*self_rand(-1,1);
+        float r = params.iR[i] * t.root.joints.back().r;
+        t.root.joints.push_back(Joint(pos, 0, false, r));
+    }
+
+    int prev_pos_phi_n = 0;
+    for (int i=0;i<params.B_cnt;i++)
+    {
+        std::vector<int> pos_phi_n;
+        if (i < 4)
+            pos_phi_n.push_back(i);
+        else 
+        {
+            for (int j=0;j<4;j++)
+            {
+                if (j != prev_pos_phi_n)
+                    pos_phi_n.push_back(j);
+            }
+        }
+        #define RND_N (i < 4 ? i : ((int)self_rand(0,3.999)))
+
+        glm::vec3 r_pos = t.root.joints.back().pos;
+        r_pos.y += sz_y*params.Lt[RND_N];
+        r_pos.x = t.pos.x + params.dX*sz_x*self_rand(-1,1);
+        r_pos.z = t.pos.z + params.dX*sz_x*self_rand(-1,1);
+
+        float r = t.root.joints.back().r * params.dR[RND_N];
+
+        float sectors = 8;
+        float phi = ((int)(sectors*params.phi[pos_phi_n[(int)self_rand(0,pos_phi_n.size() - 1e-4)]]) + self_rand(0,1))/sectors*2*PI;
+        float psi = ((int)(sectors*params.psi[RND_N]) + self_rand(0,1))/sectors*PI/2;
+        float l = params.Lb[RND_N];
+
+        glm::vec3 b_pos = r_pos + l*glm::vec3(sz_x*sin(psi)*cos(phi),sz_y*cos(psi),sz_x*sin(psi)*sin(phi));
+
+        t.root.joints.push_back(Joint(r_pos,0, true, r));
+        t.root.joints.back().childBranches.push_back(Branch(1, r_pos, 0, false));
+        auto &b = t.root.joints.back().childBranches.back();
+        b.joints.push_back(Joint(b_pos, 0, true, 0));
+    }
+}
+
 void GETreeGenerator::set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level)
 {
     //logerr("level %d", level);
@@ -328,12 +400,33 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
     }
 }
 
+void GETreeGenerator::calc_distance_from_root(Branch &b, GETreeParameters &params, glm::vec2 start_distance)
+{
+    if (b.joints.size() < 2)
+        return;
+    auto it = b.joints.begin();
+    it->distance_from_root = start_distance;
+    it++;
+    auto prev_it = b.joints.end();
+    while (it != b.joints.end())
+    {
+        vec3 d = it->pos - prev_it->pos;
+        it->distance_from_root = prev_it->distance_from_root + vec2(sqrt(SQR(d.x) + SQR(d.z)), abs(d.y));
+        for (auto &ch_b : it->childBranches)
+        {
+            calc_distance_from_root(ch_b, params, it->distance_from_root);
+        }
+        it++;
+        prev_it++;
+    }
+}
+
 void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params)
 {
     if (b.joints.empty())
         return;
     if (b.level <= params.tropism_level_base)
-        b.distance_from_root = 0;
+        b.distance_from_trunk = 0;
     float l = 0;
     float res = 0;
     int total_joints = b.joints.size();
@@ -353,7 +446,7 @@ void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParam
             {
                 if (br.alive)
                 {
-                    br.distance_from_root = b.distance_from_root + i;
+                    br.distance_from_trunk = b.distance_from_trunk + i;
                     calc_light(br, voxels, params);
                     total_joints += br.total_joints;
                     l_lateral += br.total_light;
@@ -407,7 +500,7 @@ void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params, f
         }
         int sz = gp.size();
 
-        //insertion sort is fast for small arrays
+        //bubble sort is fast for small arrays
         for (int i = 1; i < sz; i++)
             for (int j = i; j > 0 && gp[j - 1].second < gp[j].second; j--)
                 std::swap(gp[j - 1], gp[j]);
@@ -419,27 +512,21 @@ void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params, f
         }*/
         
         #define W(i) (MAX(params.res_decrease_min, 1 - params.res_decrease_step * i))
-        
+        #define RD(d) (CLAMP(1 - (d.x-params.distance_fine_start.x)/(params.distance_fine_start.x + params.distance_fine_slope.x),0,1)* \
+                       CLAMP(1 - (d.y-params.distance_fine_start.y)/(params.distance_fine_start.y + params.distance_fine_slope.y),0,1))
         float denom_1 = 0, denom_2 = 0;
         float q_1 = params.res_q, q_2 = 1 - params.res_q;
 
         for (int i = 0; i < sz; i++)
         {
-            denom_1 += gp[i].second*W(i);
-            denom_2 += W(i);
+            denom_1 += gp[i].second*W(i)*RD(gp[i].first->distance_from_root);
+            denom_2 += W(i)*RD(gp[i].first->distance_from_root);
         }
-        denom_1 *= (q_1 + q_2);
-        denom_2 *= (q_1 + q_2);
-        /*
-        float trm = MAX(0,params.top_res_mult_base - b.level*params.top_res_mult_level_decrease);
-        b.joints.back().resource += trm*denom_1;
-        denom_1 *= (1 + trm);
-        if (!gp.empty())
-            gp[0].second = b.joints.back().resource;
-        */
+
         for (int i = 0; i < sz; i++)
         {
-            float res = res_mult * b.total_resource * (q_1*(gp[i].second*W(i)) / denom_1 + q_2*(W(i)) / denom_2);
+            float res = res_mult * b.total_resource * (q_1*(gp[i].second*W(i)*RD(gp[i].first->distance_from_root)) / denom_1 + 
+                                                       q_2*(W(i)*RD(gp[i].first->distance_from_root)) / denom_2);
             auto &j = *(gp[i].first);
             int b_cnt = j.childBranches.empty() ? 1 : 0;
             for (auto &br : j.childBranches)
@@ -583,7 +670,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 prev_dir = r * cos(psi) * planar_dir.x * b + r * cos(psi) * planar_dir.y * c + r * sin(psi) * prev_dir;
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
-                br->distance_from_root = gp.base_branch->distance_from_root + gp.joint_n;
+                br->distance_from_trunk = gp.base_branch->distance_from_trunk + gp.joint_n;
                 nu *= params.branching_tropims_mult;
                 prev_dir *= 3.0f;
                 //logerr("new branch created");
@@ -593,16 +680,16 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
                 gp.joint->childBranches.push_back(Branch(gp.base_branch->level + 1, gp.joint->pos, iteration, true));
                 start = &(gp.joint->childBranches.back().joints.front());
                 br = &(gp.joint->childBranches.back());
-                br->distance_from_root = gp.base_branch->distance_from_root + gp.joint_n;
+                br->distance_from_trunk = gp.base_branch->distance_from_trunk + gp.joint_n;
             }
             float influence_r = 2 * params.ro;
             vec3 best_pos;
             float best_occ;
             if (find_best_pos(voxels, influence_r, start->pos, prev_dir, PI, best_pos, best_occ) && best_pos.x == best_pos.x)
             {
-                float distance_from_root = (br->level < params.tropism_level_base) ? 0 : br->joints.size() + br->distance_from_root;
+                float distance_from_trunk = (br->level < params.tropism_level_base) ? 0 : br->joints.size() + br->distance_from_trunk;
                 vec3 best_dir = prev_dir + params.mu * normalize(best_pos - start->pos) +
-                                (nu) * tropism(distance_from_root, params);
+                                (nu) * tropism(distance_from_trunk, params);
                 vec3 new_pos = start->pos + params.ro * normalize(best_dir);
                 //logerr("prev dir %f %f %f", prev_dir.x, prev_dir.y, prev_dir.z);
                 //logerr("best_pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);

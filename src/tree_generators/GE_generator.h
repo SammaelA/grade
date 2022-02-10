@@ -44,7 +44,7 @@ protected:
         float total_resource = 0;
         float total_light = 0;
         int total_joints = 0;//how many joint this branch has totally (with subbranches)
-        int distance_from_root = 0;//how many segments between first joint of this branch and root
+        int distance_from_trunk = 0;//how many segments between first joint of this branch and trunk
         float base_r;
         glm::vec2 average_chb_dir = glm::vec2(0,0);
         Branch(){};
@@ -72,6 +72,7 @@ protected:
         float light = 0;
         float resource = 0;
         bool can_have_child_branches;
+        glm::vec2 distance_from_root = glm::vec2(0,0);//horizontal and vertical length of path from root
         Joint(glm::vec3 _pos, int iteration, bool ch_b, float bonus_r = 0.0) 
         {
             birth_time = iteration;
@@ -144,11 +145,13 @@ protected:
     };
 
     void create_initial_trunk(Tree &t, GETreeParameters &params);
+    void create_universal_initial_trink(Tree &t, GETreeParameters &params);
     void set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level);
     void convert(Tree &src, ::Tree &dst);
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
     void calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
+    void calc_distance_from_root(Branch &b, GETreeParameters &params, glm::vec2 start_distance);
     void distribute_resource(Branch &b, GETreeParameters &params, float res_mult);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,

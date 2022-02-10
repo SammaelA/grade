@@ -43,6 +43,19 @@ void GETreeParameters::save_to_blk(Block &b)
     b.set_vec2("initial_trunk_scale", initial_trunk_scale);
     b.set_double("trunk_bonus_radius", trunk_bonus_radius);
     b.set_double("trunk_bonus_radius_mod", trunk_bonus_radius_mod);
+    b.set_vec2("distance_fine_start", distance_fine_start);
+    b.set_vec2("distance_fine_slope", distance_fine_slope);
+
+    b.set_double("L0",L0);
+    b.set_double("R0",R0);
+    b.set_int("B_cnt",B_cnt);
+    b.set_double("dX",dX);
+    b.set_vec4("iR",iR);
+    b.set_vec4("dR",dR);
+    b.set_vec4("Lt",Lt);
+    b.set_vec4("Lb",Lb);
+    b.set_vec4("phi",phi);
+    b.set_vec4("psi",psi);
 }
 
 void GETreeParameters::load_from_blk(Block &b)
@@ -88,6 +101,19 @@ void GETreeParameters::load_from_blk(Block &b)
     initial_trunk_scale = b.get_vec2("initial_trunk_scale", initial_trunk_scale);
     trunk_bonus_radius = b.get_double("trunk_bonus_radius", trunk_bonus_radius);
     trunk_bonus_radius_mod = b.get_double("trunk_bonus_radius_mod", trunk_bonus_radius_mod);
+    distance_fine_start = b.get_vec2("distance_fine_start", distance_fine_start);
+    distance_fine_slope = b.get_vec2("distance_fine_slope", distance_fine_slope);
+
+    L0 = b.get_double("L0",L0);
+    R0 = b.get_double("R0",R0);
+    B_cnt = b.get_int("B_cnt",B_cnt);
+    dX = b.get_double("dX",dX);
+    iR = b.get_vec4("iR",iR);
+    dR = b.get_vec4("dR",dR);
+    Lt = b.get_vec4("Lt",Lt);
+    Lb = b.get_vec4("Lb",Lb);
+    phi = b.get_vec4("phi",phi);
+    psi = b.get_vec4("psi",psi);
 }
 void GETreeParameters::RW_parameter_list(bool write, ParameterList &list)
 {
@@ -111,6 +137,7 @@ void GETreeParameters::RW_parameter_list(bool write, ParameterList &list)
     ORD1(max_iterations);
     ORD1(max_joints_in_branch);
     ORD1(tropism_level_base);
+    ORD1(B_cnt);
 
     CON1(lambda);
     CON1(k);
@@ -153,4 +180,44 @@ void GETreeParameters::RW_parameter_list(bool write, ParameterList &list)
     CON2(initial_trunk_scale_y, initial_trunk_scale.y);
     CON1(trunk_bonus_radius);
     CON1(trunk_bonus_radius_mod);
+
+    CON2(distance_fine_start_x, distance_fine_start.x);
+    CON2(distance_fine_start_y, distance_fine_start.y);
+    CON2(distance_fine_slope_x, distance_fine_slope.x);
+    CON2(distance_fine_slope_y, distance_fine_slope.y);
+
+    CON1(L0);
+    CON1(R0);
+    CON1(dX);
+
+
+    CON2(iR_x, iR.x);
+    CON2(iR_y, iR.y);
+    CON2(iR_z, iR.z);
+    CON2(iR_w, iR.w);
+
+    CON2(dR_x, dR.x);
+    CON2(dR_y, dR.y);
+    CON2(dR_z, dR.z);
+    CON2(dR_w, dR.w);
+
+    CON2(Lt_x, Lt.x);
+    CON2(Lt_y, Lt.y);
+    CON2(Lt_z, Lt.z);
+    CON2(Lt_w, Lt.w);
+
+    CON2(Lb_x, Lb.x);
+    CON2(Lb_y, Lb.y);
+    CON2(Lb_z, Lb.z);
+    CON2(Lb_w, Lb.w);
+
+    CON2(phi_x, phi.x);
+    CON2(phi_y, phi.y);
+    CON2(phi_z, phi.z);
+    CON2(phi_w, phi.w);
+
+    CON2(psi_x, psi.x);
+    CON2(psi_y, psi.y);
+    CON2(psi_z, psi.z);
+    CON2(psi_w, psi.w);
 }

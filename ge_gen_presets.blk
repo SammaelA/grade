@@ -119,7 +119,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.0
-        root_type:i = 1
+        root_type:i = 3
         Xm:r = 200
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
