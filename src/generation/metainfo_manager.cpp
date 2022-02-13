@@ -1,9 +1,6 @@
 #include "metainfo_manager.h"
 #include "save_utils/blk.h"
-#include "tree_generators/GE_generator.h"
-#include "tree_generators/mygen_parameters.h"
-#include "tree_generators/simple_generator.h"
-#include "tree_generators/simpliest_generator.h"
+#include "tree_generators/all_generators.h"
 
 MetainfoManager metainfoManager;
 TreeTypeData dummy1;
@@ -53,6 +50,7 @@ void MetainfoManager::load_tree_types()
     LOAD("my_gen", TreeStructureParameters);
     LOAD("simple_gen", SimpleTreeStructureParameters);
     LOAD("simpliest_gen", SimpliestTreeStructureParameters);
+    LOAD("weber_penn_gen", WeberPennParametersNative);
 }
 
 void MetainfoManager::load_grass_types()
@@ -278,4 +276,5 @@ void MetainfoManager::save_tree_types()
     SAVE("my_gen", TreeStructureParameters);
     SAVE("simple_gen", SimpleTreeStructureParameters);
     SAVE("simpliest_gen", SimpliestTreeStructureParameters);
+    SAVE("weber_penn_gen", WeberPennParametersNative);
 }

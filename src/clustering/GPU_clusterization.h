@@ -5,7 +5,7 @@
 #define uvec4 glm::uvec4 //CPU
 
 #define CNT_bytes 8
-#define MAX_JOINTS 42
+#define MAX_JOINTS 128
 #define _cnt(x) ((x) & (1<<CNT_bytes))
 #define _id(x) ((x) >> CNT_bytes)
 #define id_cnt_pack(id, cnt) ((id>>CNT_bytes) | cnt)

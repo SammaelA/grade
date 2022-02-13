@@ -280,9 +280,9 @@ namespace parser
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("large_oak");
-      int b_id = metainfoManager.get_tree_type_id_by_name("large_oak");
-      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
+      int t_id = metainfoManager.get_tree_type_id_by_name("weber_penn_tree");
+      int b_id = metainfoManager.get_tree_type_id_by_name("weber_penn_tree");
+      int l_id = metainfoManager.get_tree_type_id_by_name("weber_penn_tree");
 
       int ids[3] = {t_id, b_id, l_id};
       for (int i = 0; i < sz; i++)

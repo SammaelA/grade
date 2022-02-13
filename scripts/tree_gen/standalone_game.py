@@ -542,6 +542,8 @@ class Tree(object):
                 # set position and handles of new point
                 # if this is a clone then correct initial direction to match original to make
                 # split smoother
+                if stem.depth <= 1:
+                    print(stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z)
                 new_point.co = turtle.pos.copy()
                 if cloned_turtle and seg_ind == start:
                     new_point.handle_left = turtle.pos - cloned_turtle.dir * (stem.length / (curve_res * 3))
@@ -1258,7 +1260,13 @@ def construct(params, seed=0, generate_leaves=True):
 
     t = Tree(TreeParam(params), generate_leaves)
     t.make()
-
+    
+    cnt = 0
+    for branch_level in t.branch_curves:
+            for spline in branch_level.splines.data:
+                for p in spline.bezier_points:
+                    cnt = cnt + 1
+    print(cnt, " points")
     sys.stdout = open(sys.argv[1], 'w')
     ret_obj = t.tree_obj
     print("{")

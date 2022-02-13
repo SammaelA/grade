@@ -1,6 +1,6 @@
 {
     generator_name:s = "ge_gen_simplified"
-    save_best_result:s = "selected_tree_ref_1"
+    save_best_result:s = "selected_tree_ref_7"
     evolution_stat:b = false
     debug_graph:b = false
     initial_population_size:i = 150

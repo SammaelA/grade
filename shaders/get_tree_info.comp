@@ -61,7 +61,7 @@ void find_th_lb(ivec3 pixel_coords, int id)
         for (int i=0;i<impostor_x;i++)
         {
             vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
-            if (p1.y > 0)
+            if (p1.x + p1.y > 0)
             {
                 leaves_cnt[j]++;
             }
@@ -97,7 +97,7 @@ void find_th_lb(ivec3 pixel_coords, int id)
 
     int fast_inc_pos = 0;
     int fast_inc_speed = -1;
-    int max_leaves = int(impostor_x/8.0);
+    int max_leaves = int(impostor_x/5.0);
     if (leaves_cnt[0] < max_leaves)
     {
         for (int j=1;j<impostor_y;j++)

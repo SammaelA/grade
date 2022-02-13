@@ -17,6 +17,8 @@ AbstractTreeGenerator *get_generator(std::string &generator_name)
         gen = new GETreeGenerator();
     else if (generator_name == "ge_gen_simplified")
         gen = new GETreeGeneratorSimplified();
+    else if (generator_name == "weber_penn_gen")
+        gen = new WeberPennGenerator();
     else
         gen = new mygen::TreeGenerator();
 
@@ -36,8 +38,10 @@ ParametersSet *get_default_parameters(std::string &generator_name)
         gen = nullptr;//not implemented
     else if (generator_name == "python_tree_gen")
         gen = new WeberPennParameters();
-    else if (generator_name == "ge_gen")
+    else if (generator_name == "ge_gen" || generator_name == "ge_gen_simplified")
         gen = new GETreeParameters();
+    else if (generator_name == "weber_penn_gen")
+        gen = new WeberPennParametersNative();
     else
         gen = new TreeStructureParameters();
 

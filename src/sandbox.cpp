@@ -1,3 +1,6 @@
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include "sandbox.h"
 #include "generation/scene_generator.h"
 #include "generation/grove_packer.h"
@@ -9,6 +12,7 @@
 #include "tree_generators/GE_generator.h"
 #include "parameter_selection/parameter_selection.h"
 #include "tree_generators/all_generators.h"
+#include "tree_generators/weber_penn_generator.h"
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -218,6 +222,11 @@ float dot_metric(Tree &single_tree, float dst_dot)
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
+    WeberPennParametersNative param;
+    WeberPennGenerator::Tree t;
+    t.init(param, true);
+    t.make();
+    return;
     metainfoManager.reload_all();
     TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
