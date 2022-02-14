@@ -110,6 +110,7 @@
     blossom_shape:p2 = 0, 1
     blossom_scale:p2 = 0, 1
     blossom_rate:p2 = 0, 1
+    leaf_rate:p2 = 0, 1
     //tropism_x:p2 = 
     //tropism_y:p2 = 
     tropism_z:p2 = -3, 3

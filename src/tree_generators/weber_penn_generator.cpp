@@ -146,8 +146,8 @@ void WeberPennGenerator::Tree::init(WeberPennParametersNative _param, bool _gene
 void WeberPennGenerator::Tree::make()
 {
     create_branches();
-    if (generate_leaves)
-        create_leaf_mesh();
+    //if (generate_leaves)
+    //    create_leaf_mesh();
 }
 
 void WeberPennGenerator::Tree::create_branches()
@@ -194,6 +194,10 @@ void WeberPennGenerator::Tree::create_branches()
         }
         catch(const std::exception& e)
         {
+            //branch_curves = {};
+            //leaves_array = {};
+            clear();   
+            root = nullptr;
             //std::cerr << e.what() << '\n';
         }
         
@@ -1149,8 +1153,11 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
     {
         for (auto &b : branches_array)
         {
-            stem.leaves.push_back(leaves_array.size());
-            leaves_array.push_back(Leaf(b.pos_tur.pos, b.dir_tur.dir, b.dir_tur.right));
+            if (random_uniform(0, 1) < param.leaf_rate)
+            {
+                stem.leaves.push_back(leaves_array.size());
+                leaves_array.push_back(Leaf(b.pos_tur.pos, b.dir_tur.dir, b.dir_tur.right));
+            }
         }
     }
     else
@@ -1554,6 +1561,7 @@ void WeberPennGenerator::Tree::clear()
         if (s)
             delete s;
     }
+    stems = {};
 }
 
 WeberPennGenerator::Stem::Stem(int _depth, int _spline_pos, Stem *_parent, float _offset, float _radius_limit)
@@ -1648,7 +1656,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
     dst.root->center_par = vec3(0, 0, 0);
     dst.root->plane_coef = vec4(1, 0, 0, -dst.pos.x);
     dst.root->id = dst.id;
-
+    
     convert(src, dst, src.root, dst.root);
 }
 
@@ -1663,8 +1671,8 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
         vec3 pos = dst.pos + 10.0f*vec3(p.co.x, p.co.z, -p.co.y);
         if (length(pos - prev_pos) < 1e-4)
         {
-            pos.y += 1e-4*same_cnt;
             same_cnt++;
+            pos.y += 1e-4*same_cnt;
         }
         else
         {

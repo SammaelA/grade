@@ -115,9 +115,12 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     {
         for (auto &l : t.leaves->leaves)
         {
-            float sz = MAX(glm::length(l.edges[0] - l.edges[1]), glm::length(l.edges[0] - l.edges[2]));
+            int cnt = l.edges.size()/4;
+            float sum_sq = 0;
+            for (int i=0;i<cnt;i++)
+                sum_sq += glm::length(l.edges[4*i] - l.edges[4*i+1])*glm::length(l.edges[4*i] - l.edges[4*i+2]);
             if (l.pos.x == l.pos.x)
-                leaves_dens.set_occluder_simple(l.pos, sz*sz);
+                leaves_dens.set_occluder_simple(l.pos, sum_sq);
         }
     }
     leaves_dens.read_func_simple(f);
@@ -324,6 +327,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
 
     std::map<int, TreeImageInfo> images_info;
+    //textureManager.save_png(grove.impostors[1].atlas.tex(0),"atlas_original");
     get_tree_image_info(grove.impostors[1].atlas, images_info, false);
 
     int imp_n = 0;

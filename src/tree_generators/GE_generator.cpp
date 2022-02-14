@@ -4,7 +4,7 @@ using namespace glm;
 
 std::atomic<int> GETreeGenerator::ids(0);
 std::atomic<int> GETreeGenerator::t_ids(0);
-int AbstractTreeGenerator::joints_limit = 50000;
+int AbstractTreeGenerator::joints_limit = 1000000;
 GETreeParameters GETreeGenerator::defaultParameters = GETreeParameters();
 
 //TreeTypeData def_ttd = TreeTypeData(-1,&(GETreeGenerator::defaultParameters), "wood","leaf");

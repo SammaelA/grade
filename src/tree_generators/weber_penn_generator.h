@@ -43,6 +43,7 @@ struct WeberPennParametersNative : public ParametersSet
     int blossom_shape = 1;
     float blossom_scale = 0;
     float blossom_rate = 0;
+    float leaf_rate = 1;
     glm::vec3 tropism = glm::vec3(0,0,0.5);
     float prune_ratio = 0;
     float prune_width = 0.5;

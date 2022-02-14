@@ -23,7 +23,7 @@ void TreePreprocessor::simplify_branch_rec(Tree &t, Branch *b, int max_merge_n)
 {
     float r_diff_thr = 0.67;
     float dir_diff_thr = 0.5;
-    if (b->dead || b->joints.size() < 2)
+    if (!b || b->dead || b->joints.size() < 2)
         return;
     bool can_be_simplified = true;
     for (auto &s : b->segments)

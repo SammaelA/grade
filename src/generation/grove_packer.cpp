@@ -119,18 +119,18 @@ bool is_valid_tree(::Tree &t)
 {
     if (!t.valid)
     {
-        logerr("tree %u was marked as not valid by a generator. Grove packer will ignore it", t.id);
+        //logerr("tree %u was marked as not valid by a generator. Grove packer will ignore it", t.id);
         return false;
     }
     if (!(t.valid && t.leaves && t.branchHeaps.size() >= 2))
     {
-        logerr("tree %u do not have some of essential data structures. %d Grove packer will ignore it", t.id,
-               t.branchHeaps.size());
+        //logerr("tree %u do not have some of essential data structures. %d Grove packer will ignore it", t.id,
+        //       t.branchHeaps.size());
         return false;
     }
     if (t.branchHeaps[0]->branches.empty())
     {
-        logerr("tree %u do not have trunk. Grove packer will ignore it", t.id);
+        //logerr("tree %u do not have trunk. Grove packer will ignore it", t.id);
         return false;
     }
     if (t.branchHeaps[1]->branches.empty())

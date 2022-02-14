@@ -485,6 +485,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         max_x = q*(max_x - 0.5*w) + 0.5*w;
         width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
         min_x -= 0.1*w;//some small adjustment usual for my impostors
+        min_y -= 0.1*h;
         max_x += 0.1*w;
         max_y += 0.1*h;
         //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);

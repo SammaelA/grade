@@ -37,6 +37,7 @@ void WeberPennParametersNative::save_to_blk(Block &b)
     b.set_int("blossom_shape", blossom_shape);
     b.set_double("blossom_scale", blossom_scale);
     b.set_double("blossom_rate", blossom_rate);
+    b.set_double("leaf_rate", leaf_rate);
     b.set_vec3("tropism", tropism);
     b.set_double("prune_ratio", prune_ratio);
     b.set_double("prune_width", prune_width);
@@ -82,6 +83,7 @@ void WeberPennParametersNative::load_from_blk(Block &b)
     blossom_shape = b.get_int("blossom_shape", blossom_shape);
     blossom_scale = b.get_double("blossom_scale", blossom_scale);
     blossom_rate = b.get_double("blossom_rate", blossom_rate);
+    leaf_rate = b.get_double("leaf_rate", leaf_rate);
     tropism = b.get_vec3("tropism", tropism);
     prune_ratio = b.get_double("prune_ratio", prune_ratio);
     prune_width = b.get_double("prune_width", prune_width);
@@ -148,6 +150,7 @@ void WeberPennParametersNative::RW_parameter_list(bool write, ParameterList &lis
     ORD1(blossom_shape);
     CON1(blossom_scale);
     CON1(blossom_rate);
+    CON1(leaf_rate);
     CON2(tropism_x, tropism.x);
     CON2(tropism_y, tropism.y);
     CON2(tropism_z, tropism.z);
