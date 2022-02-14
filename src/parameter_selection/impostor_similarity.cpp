@@ -82,10 +82,12 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
                 {
                     if (sit->end.x == sit->end.x && sit2->end.x == sit2->end.x)
                     {
-                        dots += glm::dot(normalize(sit->end - sit->begin), normalize(sit2->end - sit2->begin));
-                        b_trop += dot(normalize(sit2->end - sit2->begin), glm::vec3(0,1,0)) - dot(normalize(sit->end - sit->begin), glm::vec3(0,1,0));
-                        b_chb += jit->childBranches.size();
+                        float l1 = MAX(length(sit->end - sit->begin),1e-6);
+                        float l2 = MAX(length(sit2->end - sit2->begin),1e-6);
+                        dots += glm::dot((sit->end - sit->begin)/l1, (sit2->end - sit2->begin)/l2);
+                        b_trop += dot((sit2->end - sit2->begin)/l2, glm::vec3(0,1,0)) - dot((sit->end - sit->begin)/l1, glm::vec3(0,1,0));
                     }
+                    b_chb += jit->childBranches.size();
                     sit++;
                     sit2++;
                     jit++;

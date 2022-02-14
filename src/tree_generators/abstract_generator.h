@@ -16,6 +16,9 @@ public:
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) {};
     virtual bool iteration_method_implemented() {return false;}
     virtual void set_seed(int seed) {};
+    static void set_joints_limit(int lim) {joints_limit = lim;}
+protected:
+    static int joints_limit;
 };
 
 extern std::atomic<int> branch_next_id, tree_next_id; 

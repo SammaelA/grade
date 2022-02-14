@@ -188,7 +188,15 @@ void WeberPennGenerator::Tree::create_branches()
         stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
         Stem *stem = stems.back();
         root = stem;
-        make_stem(turtle, *stem);
+        try
+        {
+            make_stem(turtle, *stem);
+        }
+        catch(const std::exception& e)
+        {
+            //std::cerr << e.what() << '\n';
+        }
+        
         /*
         std::vector<Stem *> stk = {stem};
         std::vector<Stem *> stk_n = {};
@@ -231,7 +239,7 @@ void WeberPennGenerator::Tree::create_branches()
                 }
             }
         }
-        logerr("created tree with %d points", curve_points);
+        //logerr("created tree with %d points", curve_points);
     }
 }
 
@@ -268,7 +276,7 @@ void WeberPennGenerator::Tree::create_leaf_mesh()
         }
         counter++;
     }
-    logerr("%d leaves added to mesh ", counter);
+    //logerr("%d leaves added to mesh ", counter);
 }
 
 void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm::vec3, float>> &points)
@@ -358,10 +366,11 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         //iteratively scale length by 0.9 until it fits, or remove entirely if we get to 80% reduction
         CHTurtle copy_turtle = CHTurtle(turtle);
         bool in_pruning_envelope = test_stem(copy_turtle, stem, start, split_corr_angle, clone_prob);
+        int cnt = 0;
         while (!in_pruning_envelope)
         {
             stem.length *= 0.9;
-            if (stem.length < 0.15 * start_length)
+            if (stem.length <= 0.15 * start_length || cnt > 100)
             {
                 //too short to look good so remove allow for semi prune with 0 length
                 if (param.prune_ratio < 1)
@@ -376,6 +385,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
             split_num_error = split_err_state;
             CHTurtle ct = CHTurtle(turtle);
             in_pruning_envelope = test_stem(ct, stem, start, split_corr_angle, clone_prob);
+            cnt++;
         }
         float fitting_length = stem.length;
         //apply reduction scaled by prune ratio
@@ -489,6 +499,12 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
             else
             {
                 spline(stem).add();
+                total_points_cnt++;
+                if (total_points_cnt > AbstractTreeGenerator::joints_limit)
+                {
+                    //logerr("too many joints");
+                    throw std::exception();
+                }
                 new_point = &(spline(stem).bezier_points.back());
 
                 if (seg_ind == 1)
@@ -518,6 +534,12 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
             {
                 turtle.move(seg_length);
                 spline(stem).add();
+                total_points_cnt++;
+                if (total_points_cnt > AbstractTreeGenerator::joints_limit)
+                {
+                    //logerr("too many joints");
+                    throw std::exception();
+                }
             }
             new_point = seg_ind == start ? &(spline(stem).bezier_points[0]) : &(spline(stem).bezier_points.back());
             
@@ -1127,6 +1149,7 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
     {
         for (auto &b : branches_array)
         {
+            stem.leaves.push_back(leaves_array.size());
             leaves_array.push_back(Leaf(b.pos_tur.pos, b.dir_tur.dir, b.dir_tur.right));
         }
     }
@@ -1257,6 +1280,12 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
             else
             {
                 spline(stem).add();
+                total_points_cnt++;
+                if (total_points_cnt > AbstractTreeGenerator::joints_limit)
+                {
+                    //logerr("too many joints");
+                    throw std::exception();
+                }
                 curr_point = &(spline(stem).bezier_points[spline(stem).bezier_points.size() - 1]);
             }
             if (k == points_per_seg - 1)
@@ -1556,6 +1585,7 @@ WeberPennGenerator::Stem::Stem(const Stem &other)
     length = other.length;
     radius = other.radius;
     length_child_max = other.length_child_max;
+    leaves = other.leaves;
 }
 
 void WeberPennGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
@@ -1624,7 +1654,6 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
 
 void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch *dst_br)
 {
-    #define D_EPS 0.25
     Spline &spline = src.branch_curves[src_br->depth].splines.data[src_br->spline_pos];
     float prev_r = 0;
     vec3 prev_pos = vec3(0,0,0);
@@ -1663,6 +1692,33 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
         prev_pos = dst.pos + 10.0f*vec3(p.co.x, p.co.z, -p.co.y);
     }
 
+    for (int &l_ind : src_br->leaves)
+    {
+        if (!dst_br->joints.back().leaf)
+        {
+            ::Leaf *l = dst.leaves->new_leaf();
+            dst_br->joints.back().leaf = l;
+        }
+        std::vector<glm::vec3> out_verts;
+        std::vector<std::vector<int>> out_indicies;
+
+        BaseLeafMesh base_leaf_shape;
+        Leaf::get_shape(9, src.tree_scale / src.param.g_scale,
+                        src.param.leaf_scale, src.param.leaf_scale_x, base_leaf_shape);
+        src.leaves_array[l_ind].get_mesh(src.param.leaf_bend, base_leaf_shape, 0, out_verts, out_indicies);
+
+        for (auto &v : out_indicies)
+        {
+            ::Leaf *l = dst_br->joints.back().leaf;
+            for (auto &ind : v)
+            {
+                vec3 pos = dst.pos + 10.0f*vec3(out_verts[ind].x, out_verts[ind].z, -out_verts[ind].y);
+                l->edges.push_back(pos);
+            }
+            l->pos = l->edges[0];
+            l->type = 0;
+        }
+    }
 
             for (Stem *s : src_br->children)
         {
@@ -1688,7 +1744,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             }
             i++;
           }
-              s->already_used = true;
+            s->already_used = true;
             Branch *br = dst.branchHeaps[s->depth]->new_branch();
             br->type_id = dst.type->type_id;
             br->self_id = branch_next_id2.fetch_add(1);

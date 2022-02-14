@@ -1,0 +1,121 @@
+{
+    shape:p2 = 0, 7
+    g_scale:p2 = 5, 40
+    g_scale_v:p2 = 0, 10
+    ratio:p2 = 0.005, 0.05
+    ratio_power:p2 = 1, 2
+    flare:p2 = 0, 1.2
+    base_splits:p2 = -2, 2
+    
+    base_size_x:p2 = 0.01, 1
+    base_size_y:p2 = 0, 0.5
+    base_size_z:p2 = 0, 0.1
+    base_size_w:p2 = 0, 0.1
+
+    down_angle_x:p2 = -0.01, 0.01
+    down_angle_y:p2 = -10, 100
+    down_angle_z:p2 = -10, 100
+    down_angle_w:p2 = -10, 100
+
+    down_angle_v_x:p2 = -0.01, 0.01
+    down_angle_v_y:p2 = -80, 40
+    down_angle_v_z:p2 = -80, 40
+    down_angle_v_w:p2 = -80, 40s
+
+    rotate_x:p2 = -0.01,0.01
+    rotate_y:p2 = -140, 140
+    rotate_z:p2 = -140, 140
+    rotate_w:p2 = -140, 140
+
+    rotate_v_x:p2 = -0.01,0.01
+    rotate_v_y:p2 = 0, 60
+    rotate_v_z:p2 = 0, 60
+    rotate_v_w:p2 = 0, 60
+
+    branches_x:p2 = 1,1
+    branches_y:p2 = 6, 250
+    branches_z:p2 = 0, 150
+    branches_w:p2 = 0, 150
+
+    length_x:p2 = 0.8, 1
+    length_y:p2 = 0.1,2.5
+    length_z:p2 = 0.1,2.5
+    length_w:p2 = 0.1,2.5
+
+    length_v_x:p2 = 0, 0.2
+    length_v_y:p2 = 0, 0.2
+    length_v_z:p2 = 0, 0.2 
+    length_v_w:p2 = 0, 0.2 
+
+    taper_x:p2 = 0.5, 2.5
+    taper_y:p2 = 0.5, 2.5 
+    taper_z:p2 = 0.5, 2.5 
+    taper_w:p2 = 0.5, 2.5 
+
+    seg_splits_x:p2 = 0, 2
+    seg_splits_y:p2 = 0, 1.5
+    seg_splits_z:p2 = 0, 1.5 
+    seg_splits_w:p2 = 0, 1.5 
+
+    split_angle_x:p2 = -80, 80
+    split_angle_y:p2 = -80, 80 
+    split_angle_z:p2 = -80, 80 
+    split_angle_w:p2 = -80, 80 
+
+    split_angle_v_x:p2 = -30, 30
+    split_angle_v_y:p2 = -30, 30
+    split_angle_v_z:p2 = -30, 30
+    split_angle_v_w:p2 = -30, 30
+
+    curve_res_x:p2 = 1, 20
+    curve_res_y:p2 = 1, 20
+    curve_res_z:p2 = 1, 20
+    curve_res_w:p2 = 1, 20
+
+    curve_x:p2 = -60, 60
+    curve_y:p2 = -60, 60
+    curve_z:p2 = -60, 60
+    curve_w:p2 = -60, 60
+
+    curve_back_x:p2 = -100, 100
+    curve_back_y:p2 = -100, 100
+    curve_back_z:p2 = -100, 100
+    curve_back_w:p2 = -100, 100
+
+    curve_v_x:p2 = 10, 500
+    curve_v_y:p2 = 10, 500
+    curve_v_z:p2 = 10, 500
+    curve_v_w:p2 = 10, 500
+
+    bend_v_x:p2 = 0, 250
+    bend_v_y:p2 = 0, 250 
+    bend_v_z:p2 = 0, 250 
+    bend_v_w:p2 = 0, 250
+
+    //branch_dist_x:p2 = 
+    //branch_dist_y:p2 = 
+    //branch_dist_z:p2 = 
+    //branch_dist_w:p2 = 
+
+    radius_mod_x:p2 = 0.1, 1
+    radius_mod_y:p2 = 0.1, 1 
+    radius_mod_z:p2 = 0.1, 1 
+    radius_mod_w:p2 = 0.1, 1 
+
+    leaf_blos_num:p2 = -100, 500
+    leaf_shape:p2 = 0, 10
+    leaf_scale:p2 = 0.05, 1
+    leaf_scale_x:p2 = 0.05, 1
+    leaf_bend:p2 = 0, 0.9
+    blossom_shape:p2 = 0, 1
+    blossom_scale:p2 = 0, 1
+    blossom_rate:p2 = 0, 1
+    //tropism_x:p2 = 
+    //tropism_y:p2 = 
+    tropism_z:p2 = -3, 3
+    prune_ratio:p2 = 0, 1
+    prune_width:p2 = 0, 1
+    prune_width_peak:p2 = 0, 1
+    prune_power_high:p2 = 0, 1
+    prune_power_low:p2 = 0, 1
+}

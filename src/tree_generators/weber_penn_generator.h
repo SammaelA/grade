@@ -36,7 +36,7 @@ struct WeberPennParametersNative : public ParametersSet
     glm::vec4 branch_dist= glm::vec4(-0, 0, 0, 0);
     glm::vec4 radius_mod = glm::vec4(1,1,1,1); 
     int leaf_blos_num = 40;
-    int leaf_shape = 0;
+    int leaf_shape = 10;
     float leaf_scale = 0.17;
     float leaf_scale_x = 1;
     float leaf_bend = 0.6;
@@ -64,9 +64,9 @@ struct WeberPennParametersNative : public ParametersSet
         *Ps = *this;
         return Ps;
     };
-    virtual void save_to_blk(Block &b) override {};
-    virtual void load_from_blk(Block &b) override {};
-    virtual void RW_parameter_list(bool write, ParameterList &list) override {};
+    virtual void save_to_blk(Block &b) override;
+    virtual void load_from_blk(Block &b) override;
+    virtual void RW_parameter_list(bool write, ParameterList &list) override;
 };
 
 class WeberPennGenerator : public AbstractTreeGenerator
@@ -136,6 +136,7 @@ public:
         Stem *parent;
         float offset;
         float radius_limit;
+        std::vector<int> leaves;
         std::vector<Stem *> children;
         float length;
         float radius;
@@ -213,6 +214,7 @@ public:
         std::vector<Stem *> stems;
         Stem *root = nullptr;
         unsigned long seed = 0;
+        int total_points_cnt = 0;
     };
 
     std::vector<TreeTypeData *> types;

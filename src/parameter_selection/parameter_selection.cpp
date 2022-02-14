@@ -188,17 +188,24 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     {
         thr_voxels[i] = gen_voxels_for_selection(ref_tree);
     }
-    std::vector<std::thread> threads;
-    for (int i = 0; i < num_threads; i++)
+    if (num_threads > 1)
     {
-        int start_n = step * i;
-        int stop_n = MIN(step * (i + 1), params.size());
-        threads.push_back(std::thread(&gen_tree_task, start_n, stop_n, thr_voxels[i], &(tree_ggd.types), trees));
-    }
+        std::vector<std::thread> threads;
+        for (int i = 0; i < num_threads; i++)
+        {
+            int start_n = step * i;
+            int stop_n = MIN(step * (i + 1), params.size());
+            threads.push_back(std::thread(&gen_tree_task, start_n, stop_n, thr_voxels[i], &(tree_ggd.types), trees));
+        }
 
-    for (auto &t : threads)
+        for (auto &t : threads)
+        {
+            t.join();
+        }
+    }
+    else
     {
-        t.join();
+        gen_tree_task(0, params.size(), thr_voxels[0], &(tree_ggd.types), trees);
     }
     packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
     cnt += params.size();
@@ -261,7 +268,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 1.0;
 
-    GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
+    AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
     mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
@@ -384,7 +391,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         delete res_voxels;
     }
 
-    GETreeGenerator::set_joints_limit(1000000);
+    AbstractTreeGenerator::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
 }
 
@@ -593,7 +600,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             //create reference tree
             for (int i=0;i<10;i++)
             {
-                GETreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
+                AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
                 ref_voxels = gen_voxels_for_selection(ref_tree_init);
                 Scene init_scene;
                 init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
