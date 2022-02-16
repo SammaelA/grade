@@ -302,17 +302,19 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     man.load_block_from_file(gen_name + "_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     std::vector<ParameterList> initial_params;
-    
-    auto all_types = metainfoManager.get_all_tree_types();
-    for (auto &t : all_types)
+    bool use_existing_presets = selection_settings.get_bool("use_existing_presets", true);
+    if (use_existing_presets)
     {
-        if (t.generator_name == tree_ggd.types[0].generator_name)
+        auto all_types = metainfoManager.get_all_tree_types();
+        for (auto &t : all_types)
         {
-            initial_params.push_back(ParameterList());
-            t.params->write_parameter_list(initial_params.back());
+            if (t.generator_name == tree_ggd.types[0].generator_name)
+            {
+                initial_params.push_back(ParameterList());
+                t.params->write_parameter_list(initial_params.back());
+            }
         }
     }
-
     //parList.print();
 
     bestParList = parList;
@@ -324,7 +326,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     auto func = [&](std::vector<ParameterList> &params) -> std::vector<float> {
         return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
     };
-
+    
+    //initial_params = {};
     GeneticAlgorithm GA;
     GA.perform(parList, mp, ex_c, func, best_pars, initial_params);
     bestParList = best_pars[0].second;
@@ -479,21 +482,13 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 break;   
             }
         }
-        float q = sqrt(2);//bcyl.x of impostor is a radius of bounding cylinder, which is sqrt(2)*imp_side 
-                                //if tree bbox is square
-        min_x = 0.5*w - q*(0.5*w - min_x);
-        max_x = q*(max_x - 0.5*w) + 0.5*w;
-        width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
-        min_x -= 0.1*w;//some small adjustment usual for my impostors
-        min_y -= 0.1*h;
-        max_x += 0.1*w;
-        max_y += 0.1*h;
-        //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
-        sym_line = sym_line/w;
-        tc_transform.x = (float)(min_x)/w + sym_line - 0.5;//0.5*((float)(max_x - min_x)/w) - (float)(min_x)/w;
+        
+        tc_transform.x = (float)(min_x)/w;
         tc_transform.y = (float)(min_y)/h;
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
+        width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
+
         float base_th = 0;
         float sum_th = 0;
         int len = 0;
@@ -679,6 +674,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 int slice_id = ref_tree.atlas.add_tex();
                 ref_tree.atlas.target_slice(slice_id, 0);
                 ref_transform.use();
+                ref_transform.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
                 ref_transform.get_shader().texture("tex", ref_raw);
                 ref_transform.get_shader().uniform("wood_color",
                                                 ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
@@ -703,6 +699,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     Block &ri = reference_info;
     TreeCompareInfo explicit_info;
     explicit_info.BCyl_sizes = glm::vec2(ri.get_double("width",-1),ri.get_double("height",-1));
+    explicit_info.BCyl_sizes /= (1 - 2*ReferenceTree::border_size);
     explicit_info.branches_curvature = ri.get_double("branches_curvature",-1);
     explicit_info.branches_density = ri.get_double("branches_density",-1);
     explicit_info.joints_cnt = ri.get_int("joints_cnt",-1);
@@ -745,7 +742,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                     ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*ref_tree.info.BCyl_sizes.y;
                 }
             }
-
+                        logerr("%f %f %f",ref_tree.info.BCyl_sizes.x, original_tex_aspect_ratio, explicit_info.BCyl_sizes.y);
         }
         else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
             ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;

@@ -12,8 +12,13 @@ uniform vec3 background_color;
 uniform vec4 ref_tc_transform;
 void main(void) 
 {
-  vec2 tc = ref_tc_transform.xy + ref_tc_transform.zw*vec2(ex_Tex.x, ex_Tex.y);
+  vec2 tc = ex_Tex.xy;
   tc.y = 1 - tc.y;
+  float br = 0.125;
+  vec4 tc_tr_2 = vec4(-br,-br,1,1)/(1-2*br);
+  tc = ref_tc_transform.xy + ref_tc_transform.zw*tc;
+  tc = tc_tr_2.xy + tc_tr_2.zw*tc;
+  //tc.y = 1 - tc.y;
   vec4 color = texture(tex, tc);
 
   fragColor = vec4(0,0,0,0);
@@ -28,6 +33,8 @@ void main(void)
       else if (color.y < max(color.x, color.z))
         fragColor = vec4(1,0,0,1);
       else
-        fragColor = vec4(0,1,0,1);    
+        fragColor = vec4(0,1,0,1);  
   }
+  //if (tc.x >= 0 && tc.x <= 1 && tc.y >= 0 && tc.y <= 1)  
+  //  fragColor = vec4(tc,0,1);  
 }

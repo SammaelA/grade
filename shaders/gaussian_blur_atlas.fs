@@ -7,6 +7,7 @@ out vec4 fragColor;
 
 uniform sampler2DArray tex;
 uniform float layer;
+uniform float blur_step = 0.5;
 uniform int pass;
 uniform vec2 tex_size_inv;
 uniform vec2 slice_size;
@@ -22,7 +23,7 @@ void main(void)
                                   0.1061154,  
                                   0.1028506, 0.09364651,  0.0801001,  0.06436224, 0.04858317, 0.03445063, 0.02294906);
     float offsets[15] = float[15](-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7);
-    float blur_step = 0.5;
+    //float blur_step = 0.5;
     vec4 res = vec4(0, 0, 0, 1);
     vec2 pixel_coords = ex_Tex/tex_size_inv;
     ivec2 slice_n = ivec2(pixel_coords/slice_size);

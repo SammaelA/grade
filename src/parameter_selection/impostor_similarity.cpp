@@ -303,17 +303,20 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
         return;
     }
     TreeImageInfo av_info;
+    av_info.tc_transform = glm::vec4(0,0,0,0);
     for (auto &p : results)
     {
         av_info.trunk_thickness += p.second.trunk_thickness;
         av_info.crown_start_level += p.second.crown_start_level;
         av_info.crown_leaves_share += p.second.crown_leaves_share;
         av_info.crown_branches_share += p.second.crown_branches_share;
+        av_info.tc_transform += p.second.tc_transform;
     }
     av_info.trunk_thickness /= results.size();
     av_info.crown_start_level /= results.size();
     av_info.crown_leaves_share /= results.size();
     av_info.crown_branches_share /= results.size();
+    av_info.tc_transform /= results.size();
 
     av_info.crown_leaves_share *= 0.85;//usually we don't see all the gaps on tree's crone on image, so it has larger leaves share
                                        //it is an euristic to reduce this error
@@ -340,6 +343,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
 
         int slices_cnt = 0;
         TreeImageInfo av_info;
+        av_info.tc_transform = glm::vec4(0,0,0,0);
         for (auto &slice : imp.slices)
         {
             auto it = images_info.find(slice.id);
@@ -353,6 +357,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
                 av_info.crown_start_level += it->second.crown_start_level;
                 av_info.crown_leaves_share += it->second.crown_leaves_share;
                 av_info.crown_branches_share += it->second.crown_branches_share;
+                av_info.tc_transform += it->second.tc_transform;
                 slices_cnt++;
             }
         }
@@ -360,6 +365,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         av_info.crown_start_level /= slices_cnt;
         av_info.crown_leaves_share /= slices_cnt;
         av_info.crown_branches_share /= slices_cnt;
+        av_info.tc_transform /= slices_cnt;
 
         tree_image_info_data[imp_n+1] = av_info;
         imp_n++;
@@ -462,35 +468,23 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
                            (1e-4 + tree_image_info_data[0].trunk_thickness + tree_image_info_data[i+1].trunk_thickness),
                            0,1);
         //logerr("th %f %f", tree_image_info_data[i+1].trunk_thickness, tree_image_info_data[0].trunk_thickness);
-        /*
-        if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && 
-            reference.height_status == TCIFeatureStatus::FROM_IMAGE &&
-            reference.trunk_thickness_status == TCIFeatureStatus::FROM_IMAGE)
-        {
-            d_th = (impostors_info_data[i+1].trunk_thickness/MAX(impostors_info_data[i+1].BCyl_sizes.y, 1e-6))/
-                   (impostors_info_data[0].trunk_thickness/impostors_info_data[0].BCyl_sizes.y);
-            if (d_th > 1)
-                d_th = 1/d_th;
-            d_th = 1 - d_th;
-        }
-        else
-        {
-            d_th = abs(impostors_info_data[i+1].trunk_thickness - impostors_info_data[0].trunk_thickness); 
-            d_th /= MAX(1e-4, (impostors_info_data[i+1].trunk_thickness + impostors_info_data[0].trunk_thickness)); 
-        }
-        */
         glm::vec2 scale_fine;
+        glm::vec2 ref_real_size = (1-2*ReferenceTree::border_size)*
+                                   impostors_info_data[0].BCyl_sizes;//reference image has empty borders 
+        glm::vec2 imp_real_size = glm::vec2(tree_image_info_data[i+1].tc_transform.z*impostors_info_data[i+1].BCyl_sizes.x,
+                                            tree_image_info_data[i+1].tc_transform.w*impostors_info_data[i+1].BCyl_sizes.y);
+        //logerr("%f %f -- %f %f", ref_real_size.x, ref_real_size.y, imp_real_size.x, imp_real_size.y);
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE)
         {
-            scale_fine.x = (impostors_info_data[i+1].BCyl_sizes.x/MAX(impostors_info_data[i+1].BCyl_sizes.y, 1e-6))/
-                           (impostors_info_data[0].BCyl_sizes.x/impostors_info_data[0].BCyl_sizes.y);
+            scale_fine.x = (imp_real_size.x/MAX(imp_real_size.y, 1e-6))/
+                           (ref_real_size.x/ref_real_size.y);
             if (scale_fine.x > 1)
                 scale_fine.x = 1/scale_fine.x;
             scale_fine.y = 1;
         }
         else
         {
-            scale_fine = impostors_info_data[i+1].BCyl_sizes/impostors_info_data[0].BCyl_sizes; 
+            scale_fine = imp_real_size/ref_real_size; 
             //scale_fine.x *= 2;
             //logerr("bcyl %f %f %f %f", impostors_info_data[i+1].BCyl_sizes.x, impostors_info_data[i+1].BCyl_sizes.y, 
             //       impostors_info_data[0].BCyl_sizes.x, impostors_info_data[0].BCyl_sizes.y);
@@ -577,6 +571,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         gauss.get_shader().uniform("pass", 0);
         gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.get_shader().uniform("blur_step", 0.33f);
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -591,6 +586,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         gauss.get_shader().uniform("pass", 1);
         gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.get_shader().uniform("blur_step", 0.33f);
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -604,7 +600,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_fill.get_shader().texture("tex", atl.tex(0));
         sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 8);
+        sil_fill.get_shader().uniform("radius", 4);
         sil_fill.get_shader().uniform("dir_threshold", 4);
         sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);
@@ -619,7 +615,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
         sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("radius", 2);
         sil_fill.get_shader().uniform("dir_threshold", 6);
         sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);

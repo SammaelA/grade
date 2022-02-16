@@ -33,8 +33,13 @@ struct TreeImageInfo
     float crown_branches_share = 0;
 };
 
+struct TreeImageInfoToCompare
+{
+    //glm::vec4
+};
 struct ReferenceTree
 {
+    static constexpr float border_size = 0.125f;
     TreeCompareInfo info;
     TreeImageInfo image_info;
     TCIFeatureStatus reference_image_status = EXPLICIT;

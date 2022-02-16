@@ -61,7 +61,7 @@ void find_th_lb(ivec3 pixel_coords, int id)
         for (int i=0;i<impostor_x;i++)
         {
             vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
-            if (p1.x + p1.y > 0)
+            if (p1.y > 0)
             {
                 leaves_cnt[j]++;
             }
@@ -93,11 +93,16 @@ void find_th_lb(ivec3 pixel_coords, int id)
             max_y = max(max_y, j);
         }
     }
-    results[id].tc_transform = vec4(min_x, max_x, min_y, max_y);
+    max_x += 1;
+    max_y += 1;
 
+    results[id].tc_transform = vec4(min_x, max_x, min_y, max_y);
+    results[id].tc_transform = vec4(float(min_x)/float(impostor_x), float(min_y)/float(impostor_y), 
+                                    float(max_x - min_x)/float(impostor_x), float(max_y - min_y)/float(impostor_y));
     int fast_inc_pos = 0;
     int fast_inc_speed = -1;
     int max_leaves = int(impostor_x/5.0);
+    int len = 0;
     if (leaves_cnt[0] < max_leaves)
     {
         for (int j=1;j<impostor_y;j++)
@@ -107,13 +112,17 @@ void find_th_lb(ivec3 pixel_coords, int id)
                 fast_inc_pos = j;
                 break;
             }
-            else
+            else if (leaves_cnt[j] > 0)
             {
-                int speed = leaves_cnt[j] - leaves_cnt[j-1];
-                if (speed > fast_inc_speed)
+                len++;
+                if (len > 5)
                 {
-                    fast_inc_speed = speed;
-                    fast_inc_pos = j;
+                    int speed = leaves_cnt[j] - leaves_cnt[j-1];
+                    if (speed > fast_inc_speed)
+                    {
+                        fast_inc_speed = speed;
+                        fast_inc_pos = j;
+                    }
                 }
             }
         }
@@ -136,8 +145,8 @@ void find_th_lb(ivec3 pixel_coords, int id)
             t_pixels += p1.x;
         }
     }
-    results[id].trunk_thickness = t_pixels/(float(th*(max_x - min_x + 1)) + 1e-6);
-    results[id].tc_transform.x = sym_line > 0 ? sym_line : 0.5;
+    results[id].trunk_thickness = t_pixels/(float(th*(max_x - min_x)) + 1e-6);
+    //results[id].tc_transform.x = sym_line > 0 ? sym_line : 0.5;
     int sil_sz = 0;
     float br_sum = 0;
     float l_sum = 0;

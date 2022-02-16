@@ -12,7 +12,7 @@ public:
         int max_population_size = 50;
         int min_population_size = 5;
         int best_genoms_count = 3;
-        int heaven_size = 7;
+        int heaven_size = 1;
         int heaven_recalc_n = 4;
         int heaven_fine_tuning_count = 0;
         int elite = 5;
