@@ -16,7 +16,7 @@ void TreePreprocessor::preprocess_tree(Tree &t, Block &preprocessing_params)
     t.leaves->clear_removed();
     for (auto &bh : t.branchHeaps)
         bh->clear_removed();
-    logerr("simplified tree %d/%d joints stat %d %d %d %d", new_count, prev_count, t1, t2, t3, t4);
+    //logerr("simplified tree %d/%d joints stat %d %d %d %d", new_count, prev_count, t1, t2, t3, t4);
 }
 
 void TreePreprocessor::simplify_branch_rec(Tree &t, Branch *b, int max_merge_n)

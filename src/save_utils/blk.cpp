@@ -302,7 +302,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
     }
     else
     {
-        logerr("line %d expected : or { after value/block name", cur_line);
+        logerr("line %d expected : or { after value/block name, but %s got", cur_line, token.c_str());
         v.type = Block::ValueType::EMPTY;
         return false;
     }

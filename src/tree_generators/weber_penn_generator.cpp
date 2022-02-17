@@ -182,12 +182,16 @@ void WeberPennGenerator::Tree::create_branches()
             turtle.roll_right(random_uniform(0, 360));
         }
         branch_curves[0].splines.data.emplace_back();
+        branch_curves[0].splines.data.back().resolution_u = 1;
+        stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
+        root = stems.back();
+
+        branch_curves[0].splines.data.emplace_back();
         auto &trunk = branch_curves[0].splines.data.back();
         trunk.resolution_u = param.curve_res[0];
 
-        stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
+        stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1,root));
         Stem *stem = stems.back();
-        root = stem;
         try
         {
             make_stem(turtle, *stem);
@@ -201,8 +205,27 @@ void WeberPennGenerator::Tree::create_branches()
             //std::cerr << e.what() << '\n';
         }
         
-        /*
-        std::vector<Stem *> stk = {stem};
+        for (auto *s : stems)
+        {
+            s->children = {};
+        }
+        for (auto *s : stems)
+        {
+            //logerr("%uud s",s);
+            //logerr("%uud",s->parent);
+            if (s->copied_from)
+            {
+                s->copied_from->children.push_back(s);
+            }
+            else if (s->parent)
+            {
+                s->parent->children.push_back(s);
+            }
+        }
+
+        int rec_points = 0;
+        
+        std::vector<Stem *> stk = {root};
         std::vector<Stem *> stk_n = {};
         while (stk.size() > 0)
         {
@@ -217,9 +240,17 @@ void WeberPennGenerator::Tree::create_branches()
                 if (c.bezier_points.empty())
                     debug("curve is empty\n");
                 else
+                {
                     debug("curve %d points %f %f %f --> %f %f %f\n",c.bezier_points.size(),
                         c.bezier_points.front().co.x, c.bezier_points.front().co.y, c.bezier_points.front().co.z,
                         c.bezier_points.back().co.x, c.bezier_points.back().co.y, c.bezier_points.back().co.z);
+                    for (auto &p : c.bezier_points)
+                    {
+                        debug("(%.4f %.4f %.4f)",p.co.x, p.co.y, p.co.z);
+                    }
+                    debugnl();
+                }
+                rec_points += c.bezier_points.size();
                 debug(" children {");
                 for (Stem *ch : s->children)
                 {
@@ -227,10 +258,15 @@ void WeberPennGenerator::Tree::create_branches()
                     stk_n.push_back(ch);
                 }
                 debug("}\n");
+                s->radius_limit = -1000;
             }
             stk = stk_n;
         }
-        */
+        for (auto *s : stems)
+        {
+            logerr("stem %u parent %u checked %d",s,s->parent,(int)s->radius_limit);
+        }
+        
         int curve_points = 0;
         for (auto &bl : branch_curves)
         {
@@ -243,7 +279,7 @@ void WeberPennGenerator::Tree::create_branches()
                 }
             }
         }
-        //logerr("created tree with %d points", curve_points);
+        logerr("created tree with %d/%d points", rec_points, curve_points);
     }
 }
 
@@ -287,7 +323,7 @@ void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm:
 {
     points = {};
     tree_scale = param.g_scale + param.g_scale_v;
-    auto stem = Stem(0, 0);
+    Stem stem(0, 0);
     stem.length = calc_stem_length(stem);
     float rad = 2.5 * calc_stem_radius(stem);
     for (int i=0;i<param.branches[0];i++)
@@ -417,23 +453,24 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         //calc base leaf count
         leaf_count = calc_leaf_count(stem);
         //correct leaf count for start position along stem
-        leaf_count *= 1 - start / curve_res;
+        leaf_count *= 1 - start / (float)curve_res;
         //divide by curve_res to get no per seg
         f_leaves_on_seg = leaf_count / (float)curve_res;
     }
     else
     {
         //calc base branch count
-        branch_count = calc_branch_count(stem);
+        float f_branch_count = calc_branch_count(stem);
         //correct branch Count for start position along stem
-        branch_count *= 1 - start / curve_res;
+        f_branch_count *= 1 - start /(float)curve_res;
         //correct for reduced number on clone branches
-        branch_count *= num_branches_factor;
+        f_branch_count *= num_branches_factor;
         //divide by curve_res to get no per seg
-        f_branches_on_seg = branch_count / curve_res;
+        f_branches_on_seg = f_branch_count /(float)curve_res;
+        branch_count = f_branch_count;
     }
     //higher point resolution for flared based
-    int max_points_per_seg = ceil(MAX(1.0, 100 / curve_res));
+    int max_points_per_seg = ceil(MAX(1.0, 100 /(float)curve_res));
 
     //set up FS error values
     float branch_num_error = 0;
@@ -483,6 +520,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
     
     for (int seg_ind=start;seg_ind<curve_res + 1;seg_ind++)
     {
+        //logerr("creating stem %d, segments [%d %d]", depth, start,curve_res);
         int remaining_segs = curve_res + 1 - seg_ind;
     
         //set up next bezier point
@@ -606,7 +644,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                         //TODO do this better?
                         //if depth != param.levels - 1:
                         branch_count *= num_branches_factor;
-                        f_branches_on_seg = branch_count / curve_res;
+                        f_branches_on_seg = branch_count / (float)curve_res;
                     }
                 }
             }
@@ -630,6 +668,8 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                     branch_num_error -= branches_on_seg - f_branches_on_seg;
                 }
                 //add branches
+                //logerr("branch_count %d %d %d %d %d %d %f %f",branch_count,depth, param.levels,seg_ind,curve_res,branches_on_seg,
+                //f_branches_on_seg,branch_num_error);
                 if (abs(branches_on_seg) > 0)
                     make_branches(turtle, stem, seg_ind, branches_on_seg, prev_rotation_angle);
             }
@@ -955,11 +995,11 @@ int WeberPennGenerator::Tree::calc_leaf_count(Stem &stem)
     return result;
 }
 
-int WeberPennGenerator::Tree::calc_branch_count(Stem &stem)
+float WeberPennGenerator::Tree::calc_branch_count(Stem &stem)
 {
     // Calculate branch count of this stem as defined in paper
     int d_p_1 = MIN(stem.depth + 1, 3);
-    int result = 0;
+    float result = 0;
     if (stem.depth == 0)
         result = param.branches[d_p_1] * (random_uniform(0, 1) * 0.2 + 0.9);
     else
@@ -1071,6 +1111,7 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
                                              std::vector<float> &prev_rotation_angle, bool is_leaves)
 {
     // Make the required branches for a segment of the stem
+    //logerr("make branches %d", branches_on_seg);
     Point &start_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 2];
     Point &end_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 1];
     std::vector<SetUpBranchRetStruct> branches_array = {};
@@ -1169,6 +1210,7 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
             new_spline.resolution_u = param.curve_res[d_plus_1];
             stems.push_back(new Stem(d_plus_1, branch_curves[d_plus_1].splines.data.size()-1, &stem, b.stem_offset, b.radius_limit));
             Stem *new_stem = stems.back();
+            //logerr("created stem (%d %d)", new_stem->depth, new_stem->spline_pos);
             make_stem(b.dir_tur, *new_stem, 0, 0, 1, 1, &b.pos_tur, nullptr);
         }
     }
@@ -1226,7 +1268,7 @@ void WeberPennGenerator::Tree::make_clones(CHTurtle &turtle, int seg_ind, float 
         float eff_spr_angle = 0;
         if (is_base_split && !using_direct_split)
         {
-            eff_spr_angle = (split_index + 1) * (360 / (num_of_splits + 1)) + random_uniform(-1, 1) * stem_depth;
+            eff_spr_angle = (split_index + 1) * (360.0 / (num_of_splits + 1)) + random_uniform(-1, 1) * stem_depth;
         }
         else
         {
@@ -1249,14 +1291,18 @@ void WeberPennGenerator::Tree::make_clones(CHTurtle &turtle, int seg_ind, float 
         branch_curves[stem.depth].splines.data.emplace_back();
         auto &split_stem = branch_curves[stem.depth].splines.data.back();
         split_stem.resolution_u = spline(stem).resolution_u;
-        auto new_stem = stem;
-        new_stem.spline_pos = branch_curves[stem.depth].splines.data.size()-1;
-
+        //split_stem.bezier_points = spline(stem).bezier_points;
+        //split_stem.
+        Stem *new_stem = new Stem(stem);
+        stems.push_back(new_stem);
+        new_stem->spline_pos = branch_curves[stem.depth].splines.data.size()-1;
+        //logerr("copied stem (%d %d) from (%d %d)", new_stem->depth, new_stem->spline_pos,
+        //stem.depth, stem.spline_pos);
         CHTurtle *cloned = nullptr;
         if (param.split_angle_v[stem.depth] >= 0)
             cloned = &turtle;
 
-        make_stem(n_turtle, new_stem, seg_ind, split_corr_angle, num_branches_factor, clone_prob,
+        make_stem(n_turtle, *new_stem, seg_ind, split_corr_angle, num_branches_factor, clone_prob,
                   nullptr, cloned);
     }
 }
@@ -1276,7 +1322,7 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
         // at this point the normals are left over-sized in order to allow for evaluation of the
         // original curve in later steps
         // once the stem is entirely built we then go back and scale the handles
-        float offset = k / (points_per_seg - 1);
+        float offset = k / (float)(points_per_seg - 1);
         Point *curr_point = nullptr;
         if (k == 0)
             curr_point = &seg_start_point;
@@ -1403,7 +1449,7 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
             else
             {
                 t_angle = (param.rotate[d_plus_1] * (
-                    (branch_ind / (branches_in_group - 1)) - 1 / 2)) + random_uniform(-1, 1) * param.rotate_v[
+                    (branch_ind / (branches_in_group - 1.0)) - 1.0 / 2.0)) + random_uniform(-1, 1) * param.rotate_v[
                     d_plus_1];
             }
             branch_dir_turtle.turn_right(t_angle);
@@ -1414,7 +1460,7 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
             float r_angle = 0;
             if (branch_mode == BranchMode::whorled)
             {
-                r_angle = prev_rot_ang[0] + (360 * branch_ind / branches_in_group) + random_uniform(-1, 1) *
+                r_angle = prev_rot_ang[0] + (360 * branch_ind / (float)branches_in_group) + random_uniform(-1, 1) *
                     param.rotate_v[d_plus_1];
             }
             else
@@ -1582,7 +1628,7 @@ WeberPennGenerator::Stem::Stem(int _depth, int _spline_pos, Stem *_parent, float
     }
 }
 
-WeberPennGenerator::Stem::Stem(const Stem &other)
+WeberPennGenerator::Stem::Stem(Stem &other)
 {
     spline_pos = other.spline_pos;
     depth = other.depth;
@@ -1594,6 +1640,9 @@ WeberPennGenerator::Stem::Stem(const Stem &other)
     radius = other.radius;
     length_child_max = other.length_child_max;
     leaves = other.leaves;
+    other.children.push_back(this);
+    copied_from = &other;
+
 }
 
 void WeberPennGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
@@ -1733,6 +1782,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
 
           float best_dist = 1000;
           Joint *best_joint = nullptr;
+          vec3 root_pos = vec3(0,0,0);
           int i=0;
           Spline &child_spline = src.branch_curves[s->depth].splines.data[s->spline_pos];
                       if (child_spline.bezier_points.empty())
@@ -1749,9 +1799,15 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             {
                 best_dist = len;
                 best_joint = &j;
+                root_pos = init_p;
             }
             i++;
           }
+          logerr("best dist %f curve (%d %d) child (%d %d)", best_dist, src_br->depth, src_br->spline_pos,
+          s->depth, s->spline_pos);
+          if (best_dist < 1000)
+          {
+            child_spline.bezier_points.front().co = root_pos;
             s->already_used = true;
             Branch *br = dst.branchHeaps[s->depth]->new_branch();
             br->type_id = dst.type->type_id;
@@ -1765,6 +1821,6 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
 
             best_joint->childBranches.push_back(br);
             convert(src, dst, s, br);
-
+          }
         }
 }

@@ -2,14 +2,14 @@
 
 void WeberPennParametersNative::save_to_blk(Block &b)
 {
-    b.set_int("shape", shape);
+    b.set_double("shape", shape);
     b.set_double("g_scale", g_scale);
     b.set_double("g_scale_v", g_scale_v);
-    b.set_int("levels", levels);
+    b.set_double("levels", levels);
     b.set_double("ratio", ratio);
     b.set_double("ratio_power", ratio_power);
     b.set_double("flare", flare);
-    b.set_int("base_splits", base_splits);
+    b.set_double("base_splits", base_splits);
     b.set_vec4("base_size", base_size);
     b.set_vec4("down_angle", down_angle);
     b.set_vec4("down_angle_v", down_angle_v);
@@ -29,12 +29,12 @@ void WeberPennParametersNative::save_to_blk(Block &b)
     b.set_vec4("bend_v", bend_v);
     b.set_vec4("branch_dist", branch_dist);
     b.set_vec4("radius_mod", radius_mod);
-    b.set_int("leaf_blos_num", leaf_blos_num);
-    b.set_int("leaf_shape", leaf_shape);
+    b.set_double("leaf_blos_num", leaf_blos_num);
+    b.set_double("leaf_shape", leaf_shape);
     b.set_double("leaf_scale", leaf_scale);
     b.set_double("leaf_scale_x", leaf_scale_x);
     b.set_double("leaf_bend", leaf_bend);
-    b.set_int("blossom_shape", blossom_shape);
+    b.set_double("blossom_shape", blossom_shape);
     b.set_double("blossom_scale", blossom_scale);
     b.set_double("blossom_rate", blossom_rate);
     b.set_double("leaf_rate", leaf_rate);
@@ -48,14 +48,14 @@ void WeberPennParametersNative::save_to_blk(Block &b)
 
 void WeberPennParametersNative::load_from_blk(Block &b)
 {
-    shape = b.get_int("shape", shape);
+    shape = b.get_double("shape", shape);
     g_scale = b.get_double("g_scale", g_scale);
     g_scale_v = b.get_double("g_scale_v", g_scale_v);
-    levels = b.get_int("levels", levels);
+    levels = b.get_double("levels", levels);
     ratio = b.get_double("ratio", ratio);
     ratio_power = b.get_double("ratio_power", ratio_power);
     flare = b.get_double("flare", flare);
-    base_splits = b.get_int("base_splits", base_splits);
+    base_splits = b.get_double("base_splits", base_splits);
     base_size = b.get_vec4("base_size", base_size);
     down_angle = b.get_vec4("down_angle", down_angle);
     down_angle_v = b.get_vec4("down_angle_v", down_angle_v);
@@ -75,12 +75,12 @@ void WeberPennParametersNative::load_from_blk(Block &b)
     bend_v = b.get_vec4("bend_v", bend_v);
     branch_dist = b.get_vec4("branch_dist", branch_dist);
     radius_mod = b.get_vec4("radius_mod", radius_mod);
-    leaf_blos_num = b.get_int("leaf_blos_num", leaf_blos_num);
-    leaf_shape = b.get_int("leaf_shape", leaf_shape);
+    leaf_blos_num = b.get_double("leaf_blos_num", leaf_blos_num);
+    leaf_shape = b.get_double("leaf_shape", leaf_shape);
     leaf_scale = b.get_double("leaf_scale", leaf_scale);
     leaf_scale_x = b.get_double("leaf_scale_x", leaf_scale_x);
     leaf_bend = b.get_double("leaf_bend", leaf_bend);
-    blossom_shape = b.get_int("blossom_shape", blossom_shape);
+    blossom_shape = b.get_double("blossom_shape", blossom_shape);
     blossom_scale = b.get_double("blossom_scale", blossom_scale);
     blossom_rate = b.get_double("blossom_rate", blossom_rate);
     leaf_rate = b.get_double("leaf_rate", leaf_rate);

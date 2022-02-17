@@ -449,7 +449,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             dist += results_data[i*slices_per_impostor + j];
 
         dist /= slices_per_impostor;
-        dist = smoothstep3(dist);
+        //dist = 1 - SQR(1-dist);
         
         float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
         d_ld /= MAX(1e-4, (impostors_info_data[i+1].leaves_density + impostors_info_data[0].leaves_density));

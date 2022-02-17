@@ -134,7 +134,8 @@ public:
         bool already_used = false;
         int spline_pos;
         int depth;
-        Stem *parent;
+        Stem *parent = nullptr;
+        Stem *copied_from = nullptr;
         float offset;
         float radius_limit;
         std::vector<int> leaves;
@@ -143,11 +144,13 @@ public:
         float radius;
         float length_child_max;
         Stem(int depth, int _spline_pos, Stem *_parent = nullptr, float _offset = 0, float _radius_limit=-1);
-        Stem(const Stem &other);//do not copy children!!
-        Stem(Stem &&other) = default;
-        Stem& operator=(const Stem& other)
-        { return *this = Stem(other);}
-        Stem& operator=(Stem&& other) = default;
+        Stem& operator=(const Stem& other) = delete;
+        Stem& operator=(Stem&& other)  = delete;
+        Stem(Stem &other);//do not copy children!!
+        //Stem(Stem &&other) = default;
+        //Stem& operator=(const Stem& other)
+        //{ return *this = Stem(other);}
+        //Stem& operator=(Stem&& other) = default;
     };
 
     enum BranchMode
@@ -175,7 +178,7 @@ public:
         float calc_stem_radius(Stem &stem);
         bool test_stem(CHTurtle &turtle, Stem &stem, int start=0, float split_corr_angle=0, float clone_prob=1);
         int calc_leaf_count(Stem &stem);
-        int calc_branch_count(Stem &stem);
+        float calc_branch_count(Stem &stem);
         void apply_tropism(CHTurtle &turtle, glm::vec3 tropism_vector);
         void calc_helix_points(CHTurtle &turtle, float hel_radius, float hel_pitch, 
                                glm::vec3 &hel_p_0, glm::vec3 &hel_p_1, glm::vec3 &hel_p_2, glm::vec3 &hel_axis);

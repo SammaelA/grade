@@ -543,10 +543,15 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         //it's shit
     }
     float it = 1 + 0.5*sqrt(iteration_n);
-    if (urand() < 0.2)
-        mutation(C.main_genome, 1.0, 8);
+    float strong_chance = 0.4 - 0.35*(MAX(0.1*iteration_n*iteration_n,100)/100);
+    float medium_chance = 0.4 - 0.3*(MAX(iteration_n - 25,100)/100);
+    float rnd = urand();
+    if (rnd < strong_chance)
+        mutation(C.main_genome, 1.0, 0.5*free_parameters_cnt);
+    else if (rnd < strong_chance + medium_chance)
+        mutation(C.main_genome, 0.75, 5);
     else
-        mutation(C.main_genome, 1/it, 3);
+        mutation(C.main_genome, 0.5, 3);
     for (auto &g : C.other_genomes)
     {
         if (urand() < 0.33/it)

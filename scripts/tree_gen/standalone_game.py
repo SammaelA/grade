@@ -497,6 +497,7 @@ class Tree(object):
             points_per_seg = 2
 
         for seg_ind in range(start, curve_res + 1):
+            print("creating stem lvl:",depth,", segments [",start,",",curve_res,"]")
             remaining_segs = curve_res + 1 - seg_ind
 
             # set up next bezier point
@@ -512,6 +513,7 @@ class Tree(object):
                 else:
                     stem.curve.add()
                     new_point = stem.curve.bezier_points[-1]
+                    print("add joint1")
 
                     if seg_ind == 1:
                         new_point.co = hel_p_2 + pos
@@ -537,13 +539,14 @@ class Tree(object):
                 else:
                     turtle.move(seg_length)
                     stem.curve.add()
+                    print("add joint2")
                     new_point = stem.curve.bezier_points[-1]
 
                 # set position and handles of new point
                 # if this is a clone then correct initial direction to match original to make
                 # split smoother
-                if stem.depth <= 1:
-                    print(stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z)
+                #if stem.depth <= 1:
+                #    print(stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z)
                 new_point.co = turtle.pos.copy()
                 if cloned_turtle and seg_ind == start:
                     new_point.handle_left = turtle.pos - cloned_turtle.dir * (stem.length / (curve_res * 3))
@@ -860,6 +863,7 @@ class Tree(object):
 
     def make_branches(self, turtle, stem, seg_ind, branches_on_seg, prev_rotation_angle, is_leaves=False):
         """Make the required branches for a segment of the stem"""
+        print("make branches", branches_on_seg)
         start_point = stem.curve.bezier_points[-2]
         end_point = stem.curve.bezier_points[-1]
         branches_array = []
@@ -1165,6 +1169,7 @@ class Tree(object):
                     curr_point = seg_end_point
                 else:
                     stem.curve.add()
+                    print("add joint3")
                     curr_point = stem.curve.bezier_points[-1]
                 if k == points_per_seg - 1:
                     curr_point.co = end_point.co
