@@ -55,7 +55,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels) :
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
-    debugl(10, "atlas created %dx%d %f Mbytes\n",w,h,1e-6*2*w*h*4);
+    debugl(10, "atlas created %dx%dx%d %f Mbytes\n",w,h,l,1e-6*2*w*h*l*4);
 
     width = w;
     height = h;
@@ -73,6 +73,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels) :
 TextureAtlas::~TextureAtlas()
 {
     //atlases_count--;
+    debugl(10, "atlas deleted %dx%dx%d %f Mbytes\n",width,height,layers,1e-6*2*width*height*layers*4);
     glDeleteFramebuffers(1, &fbo);
 }
 void TextureAtlas::destroy()

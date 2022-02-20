@@ -1,17 +1,17 @@
 {
     generator_name:s = "weber_penn_gen"
-    //save_best_result:s = "weber_penn_selected_5"
-    use_existing_presets:b = false
+    save_best_result:s = "weber_penn_selected_6"
+    use_existing_presets:b = true
     evolution_stat:b = false
     debug_graph:b = false
-    initial_population_size:i = 350
+    initial_population_size:i = 40
     max_population_size:i = 40
     impostor_size:i = 128
     best_results_count:i = 1
     heaven_fine_tuning_count:i = 1
     exit_conditions
     {
-        function_calculated:i = 5000
+        function_calculated:i = 400
         generations:i = 10000
         function_reached:r = 1.0
         time_elapsed_seconds:r = 2000

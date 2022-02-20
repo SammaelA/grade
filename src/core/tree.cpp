@@ -255,7 +255,9 @@ leaf(t.leaf)
     wood_tex_name = t.wood_tex_name;
     leaf_tex_name = t.leaf_tex_name;
     if (t.params)
+    {
         params = t.params->copy();
+    }
     else
     {
         //logerr("wrong tree types data %s, no params!", generator_name.c_str());
@@ -275,7 +277,9 @@ leaf(t.leaf)
     wood_tex_name = t.wood_tex_name;
     leaf_tex_name = t.leaf_tex_name;
     if (t.params)
+    {
         params = t.params->copy();
+    }
     else
     {
         //logerr("wrong tree types data %s, no params!", generator_name.c_str());

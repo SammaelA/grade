@@ -15,6 +15,7 @@ public:
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) {};
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) {};
     virtual bool iteration_method_implemented() {return false;}
+    virtual bool use_voxels_for_generation() {return false;}
     virtual void set_seed(int seed) {};
     static void set_joints_limit(int lim) {joints_limit = lim;}
 protected:

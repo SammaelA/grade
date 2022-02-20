@@ -219,6 +219,17 @@ float dot_metric(Tree &single_tree, float dst_dot)
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
+    /*
+    for (int i=0;i<2500;i++)
+    {
+        WeberPennParametersNative param;
+        WeberPennGenerator::Tree t;
+        t.init(param, true);
+        t.make();
+        t.clear();
+    }
+    return;
+    */
     metainfoManager.reload_all();
     TreeTypeData type = metainfoManager.get_tree_type("small_oak");
     scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);

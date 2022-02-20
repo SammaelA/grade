@@ -81,9 +81,8 @@ void WeberPennGenerator::Leaf::calc_bend_trf(float bend, glm::quat &bend_trf_1, 
 
 void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies)
 {
-    //TODO: other shapes
-    //out_verts = {glm::vec3(-0.5, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0.5, 0, 0)};
-    //out_indicies = {{0, 1, 2}};
+    //we cannot handle other shapers that square, so no need to create more vertices
+    n = 8;
     if (n == 0)
     {
         //1 = ovate
@@ -347,6 +346,10 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
 }
 void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies)
 {
+    //we cannot handle other shapers that square, so no need to create more vertices
+    n = 8;
+    leaves(8, out_verts, out_indicies);
+    return;
     if (n == 0)
     {
         //1 = cherry
@@ -546,6 +549,6 @@ void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<i
     else 
     {
         logerr("wrong blossom type %d", n);
-        leaves(9, out_verts, out_indicies);
+        leaves(8, out_verts, out_indicies);
     }
 }

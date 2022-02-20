@@ -183,6 +183,11 @@ void WeberPennGenerator::Tree::create_branches()
         }
         branch_curves[0].splines.data.emplace_back();
         branch_curves[0].splines.data.back().resolution_u = 1;
+        branch_curves[0].splines.data.back().bezier_points[0].co = vec3(0,0,-0.1);
+        branch_curves[0].splines.data.back().bezier_points[0].radius = 0.01;
+        branch_curves[0].splines.data.back().bezier_points.emplace_back();
+        branch_curves[0].splines.data.back().bezier_points[1].co = vec3(0,0,0);
+        branch_curves[0].splines.data.back().bezier_points[1].radius = 0.01;
         stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
         root = stems.back();
 
@@ -223,48 +228,51 @@ void WeberPennGenerator::Tree::create_branches()
             }
         }
 
+        /*
         int rec_points = 0;
-        
         std::vector<Stem *> stk = {root};
         std::vector<Stem *> stk_n = {};
-        while (stk.size() > 0)
+        if (root)
         {
-            stk_n = {};
-            for (Stem *s : stk)
+            while (stk.size() > 0)
             {
-                if (s->parent)
-                    debug("stem (%d %d) parent (%d %d)\n", s->depth, s->spline_pos, s->parent->depth, s->parent->spline_pos);
-                else
-                    debug("stem (%d %d) root\n", s->depth, s->spline_pos);
-                auto &c = branch_curves[s->depth].splines.data[s->spline_pos];
-                if (c.bezier_points.empty())
-                    debug("curve is empty\n");
-                else
+                stk_n = {};
+                for (Stem *s : stk)
                 {
-                    debug("curve %d points %f %f %f --> %f %f %f\n",c.bezier_points.size(),
-                        c.bezier_points.front().co.x, c.bezier_points.front().co.y, c.bezier_points.front().co.z,
-                        c.bezier_points.back().co.x, c.bezier_points.back().co.y, c.bezier_points.back().co.z);
-                    for (auto &p : c.bezier_points)
+                    if (s->parent)
+                        debug("stem (%d %d) parent (%d %d)\n", s->depth, s->spline_pos, s->parent->depth, s->parent->spline_pos);
+                    else
+                        debug("stem (%d %d) root\n", s->depth, s->spline_pos);
+                    auto &c = branch_curves[s->depth].splines.data[s->spline_pos];
+                    if (c.bezier_points.empty())
+                        debug("curve is empty\n");
+                    else
                     {
-                        debug("(%.4f %.4f %.4f)",p.co.x, p.co.y, p.co.z);
+                        debug("curve %d points %f %f %f --> %f %f %f\n",c.bezier_points.size(),
+                            c.bezier_points.front().co.x, c.bezier_points.front().co.y, c.bezier_points.front().co.z,
+                            c.bezier_points.back().co.x, c.bezier_points.back().co.y, c.bezier_points.back().co.z);
+                        for (auto &p : c.bezier_points)
+                        {
+                            debug("(%.4f %.4f %.4f)",p.co.x, p.co.y, p.co.z);
+                        }
+                        debugnl();
                     }
-                    debugnl();
+                    rec_points += c.bezier_points.size();
+                    debug(" children {");
+                    for (Stem *ch : s->children)
+                    {
+                        debug("(%d %d)", ch->depth, ch->spline_pos);
+                        stk_n.push_back(ch);
+                    }
+                    debug("}\n");
+                    s->radius_limit = -1000;
                 }
-                rec_points += c.bezier_points.size();
-                debug(" children {");
-                for (Stem *ch : s->children)
-                {
-                    debug("(%d %d)", ch->depth, ch->spline_pos);
-                    stk_n.push_back(ch);
-                }
-                debug("}\n");
-                s->radius_limit = -1000;
+                stk = stk_n;
             }
-            stk = stk_n;
         }
         for (auto *s : stems)
         {
-            logerr("stem %u parent %u checked %d",s,s->parent,(int)s->radius_limit);
+            //logerr("stem %u parent %u checked %d",s,s->parent,(int)s->radius_limit);
         }
         
         int curve_points = 0;
@@ -280,6 +288,7 @@ void WeberPennGenerator::Tree::create_branches()
             }
         }
         logerr("created tree with %d/%d points", rec_points, curve_points);
+        */
     }
 }
 
@@ -1544,7 +1553,7 @@ CHTurtle WeberPennGenerator::Tree::make_branch_dir_turtle(CHTurtle &turtle, bool
     if (helix)
     {
         //approximation to actual normal to preserve for helix
-        vec3 tan_d = normalize(calc_tangent_to_bezier(offset + 0.0001, start_point, end_point));
+        vec3 tan_d = normalize(calc_tangent_to_bezier(CLAMP(offset + 0.0001,0,1), start_point, end_point));
         branch_dir_turtle.right = glm::cross(branch_dir_turtle.dir,tan_d);
     }
     else
@@ -1803,16 +1812,23 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             }
             i++;
           }
-          logerr("best dist %f curve (%d %d) child (%d %d)", best_dist, src_br->depth, src_br->spline_pos,
-          s->depth, s->spline_pos);
+          //logerr("best dist %f curve (%d %d) child (%d %d)", best_dist, src_br->depth, src_br->spline_pos,
+          //s->depth, s->spline_pos);
           if (best_dist < 1000)
           {
+            float level = dst_br->level + 1;
+            //level = src_br->depth + 1;
+            if (dst.branchHeaps.size() == level)
+            {
+                BranchHeap *br = new BranchHeap();
+                dst.branchHeaps.push_back(br);
+            }
             child_spline.bezier_points.front().co = root_pos;
             s->already_used = true;
-            Branch *br = dst.branchHeaps[s->depth]->new_branch();
+            Branch *br = dst.branchHeaps[level]->new_branch();
             br->type_id = dst.type->type_id;
             br->self_id = branch_next_id2.fetch_add(1);
-            br->level = s->depth;
+            br->level = level;
             br->dead = false;
             br->center_self = best_joint->pos;
             br->center_par = dst_br->center_self;

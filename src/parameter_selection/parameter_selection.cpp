@@ -166,6 +166,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
                                               GroveGenerationData &tree_ggd, Heightmap *flat_hmap,
                                               ReferenceTree &ref_tree, int &cnt)
 {
+    textureManager.set_textures_tag(1);
     if (params.empty())
         return std::vector<float>();
     GrovePacker packer;
@@ -184,9 +185,18 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     int num_threads = MIN(8, params.size());
     int step = ceil(params.size() / (float)num_threads);
     LightVoxelsCube **thr_voxels = new LightVoxelsCube *[num_threads];
+    bool voxels_needed = false;
+    for (auto &t : tree_ggd.types)
+    {
+        if (get_generator(t.generator_name)->use_voxels_for_generation())
+         voxels_needed = true;
+    }
     for (int i = 0; i < num_threads; i++)
     {
-        thr_voxels[i] = gen_voxels_for_selection(ref_tree);
+        if (voxels_needed)
+            thr_voxels[i] = gen_voxels_for_selection(ref_tree);
+        else
+            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0),glm::ivec3(1,1,1),1,1,2);
     }
     if (num_threads > 1)
     {
@@ -215,9 +225,15 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
     {
-        delete thr_voxels[i];
+        if (thr_voxels[i])
+            delete thr_voxels[i];
     }
     delete[] thr_voxels;
+    for (auto &imp : tmp_g.impostors)
+    {
+        imp.atlas.destroy();
+    }
+    textureManager.clear_unnamed_with_tag(1);
     return res;
 }
 
@@ -328,6 +344,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     };
     
     //initial_params = {};
+    //logerr("started with %d initial params",initial_params.size());
     GeneticAlgorithm GA;
     GA.perform(parList, mp, ex_c, func, best_pars, initial_params);
     bestParList = best_pars[0].second;

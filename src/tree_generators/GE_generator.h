@@ -19,6 +19,7 @@ public:
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual bool iteration_method_implemented() override {return true;}
     virtual void set_seed(int _seed) override {gen = std::mt19937{_seed}; seed = _seed;}
+    virtual bool use_voxels_for_generation() {return false;}
 protected:
     static std::atomic<int> ids, t_ids;
     static GETreeParameters defaultParameters;
