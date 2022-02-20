@@ -33,7 +33,7 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   for (auto &p : prototype.possible_types)
   {
     auto &type = types[p.first];
-    min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
+    min_scale_factor = MIN(min_scale_factor,type.get_params()->get_scale_factor());
   }
   float vox_scale = 0.5/0.8;
   glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
@@ -82,7 +82,7 @@ AABB get_influence_AABB(std::vector<GrovePrototype> &prototypes, std::vector<Tre
     for (auto &p : prototype.possible_types)
     {
       auto &type = types[p.first];
-      max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
+      max_tree_size = max(max_tree_size,type.get_params()->get_tree_max_size());
     }
   }
 

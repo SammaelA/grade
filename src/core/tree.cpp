@@ -159,15 +159,30 @@ wood(textureManager.get(_wood_tex_name)),
 leaf(textureManager.get(_leaf_tex_name))
 {
     type_id = id;
-    params = _params;
+    params = _params->copy();
     wood_tex_name = _wood_tex_name;
     leaf_tex_name = _leaf_tex_name;
 }
 TreeTypeData::~TreeTypeData()
 {
-    //if (params)
-    //    delete params;
+    if (params)
+        delete params;
 }
+ParametersSet *TreeTypeData::get_params()
+{
+    return params;
+}
+
+void TreeTypeData::set_params(ParametersSet *_params)
+{
+    if (params)
+        delete params;
+    if (_params)
+        params = _params->copy();
+    else
+        params = nullptr;
+}
+
 float Branch::get_r_mult(float phi, std::vector<float> &mults)
 {
     if (mults.empty())
@@ -265,10 +280,11 @@ leaf(t.leaf)
     }
 }
 
-TreeTypeData::TreeTypeData(TreeTypeData &t):
-wood(t.wood),
-leaf(t.leaf)
+TreeTypeData &TreeTypeData::operator=(const TreeTypeData &t)
 {
+    wood = t.wood;
+    leaf = t.leaf;
+
     type_id = t.type_id;
     wood_id = t.wood_id;
     leaf_id = t.leaf_id;
@@ -285,4 +301,6 @@ leaf(t.leaf)
         //logerr("wrong tree types data %s, no params!", generator_name.c_str());
         params = nullptr;
     }
+
+    return *this;
 }

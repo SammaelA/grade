@@ -19,7 +19,7 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
     for (int i=0;i<tree_positions.size();i++)
     {
         vec3 pos = tree_positions[i];
-        SimpliestTreeStructureParameters *params = dynamic_cast<SimpliestTreeStructureParameters *>(types[i]->params);
+        SimpliestTreeStructureParameters *params = dynamic_cast<SimpliestTreeStructureParameters *>(types[i]->get_params());
         if (!params)
         {
             logerr("simpliest tree generator got wrong tree type");

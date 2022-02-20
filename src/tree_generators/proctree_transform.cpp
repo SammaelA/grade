@@ -140,7 +140,7 @@ void Proctree::transform(Proctree::Tree &src, ::Tree &dst, glm::vec3 pos, glm::v
 void Proctree::create_grove(GroveGenerationData ggd, ::Tree *trees, Heightmap &h)
 {
     Properties base_properties;
-    Properties *ptr = dynamic_cast<Properties *>(ggd.types[0].params);
+    Properties *ptr = dynamic_cast<Properties *>(ggd.types[0].get_params());
     if (!ptr)
     {
         logerr("ProctreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");

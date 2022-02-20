@@ -256,9 +256,9 @@ void MetainfoManager::save_tree_types()
         auto ttid = tree_type_id_by_name.begin(); \
         while (ttid != tree_type_id_by_name.end()) \
         {   auto &type = tree_types[ttid->second];\
-            if (type.params && dynamic_cast<Param*>(type.params) && type.generator_name == gen_name) \
+            if (type.get_params() && dynamic_cast<Param*>(type.get_params()) && type.generator_name == gen_name) \
             { \
-                Param *params = dynamic_cast<Param*>(type.params); \
+                Param *params = dynamic_cast<Param*>(type.get_params()); \
                 Block *b = new Block(); \
                 params->save_to_blk(*b); \
                 b->set_string("wood_tex_name", type.wood_tex_name); \

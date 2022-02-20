@@ -7,7 +7,7 @@ bool GETreeGeneratorSimplified::iterate(LightVoxelsCube &voxels)
     bool growing = false;
     for (auto &t : trees)
     {
-        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->params);
+        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->get_params());
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         if (t.status == TreeStatus::SEED)
         {

@@ -1,6 +1,7 @@
 #include "weber_penn_generator.h"
 #include "common_utils/turtle.h"
 #include <atomic>
+#include <cmath>
 
 std::atomic<int> branch_next_id2(0), tree_next_id2(0); 
 using glm::vec3;
@@ -195,7 +196,7 @@ void WeberPennGenerator::Tree::create_branches()
         auto &trunk = branch_curves[0].splines.data.back();
         trunk.resolution_u = param.curve_res[0];
 
-        stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1,root));
+        stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
         Stem *stem = stems.back();
         try
         {
@@ -209,7 +210,8 @@ void WeberPennGenerator::Tree::create_branches()
             root = nullptr;
             //std::cerr << e.what() << '\n';
         }
-        
+        if (root)
+            stem->parent = root;
         for (auto *s : stems)
         {
             s->children = {};
@@ -302,7 +304,8 @@ void WeberPennGenerator::Tree::create_leaf_mesh()
                                            param.leaf_scale, param.leaf_scale_x, base_leaf_shape);
     BaseLeafMesh base_blossom_shape;
     Leaf::get_shape(-param.blossom_shape, tree_scale / param.g_scale, param.blossom_scale, 1, base_blossom_shape);
-
+    logerr("leaf sz %f %f %f %f ",tree_scale, param.g_scale,
+                                           param.leaf_scale, param.leaf_scale_x);
     std::vector<glm::vec3> leaf_verts;
     std::vector<std::vector<int>> leaf_faces;
     int leaf_index = 0;
@@ -446,7 +449,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         split_num_error = split_err_state;
     }
     //get parameters
-    int curve_res = int(param.curve_res[depth]);
+    int curve_res = MAX(1,int(param.curve_res[depth]));
     float seg_splits = param.seg_splits[depth];
     float seg_length = stem.length / curve_res;
 
@@ -636,7 +639,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                     else
                         num_of_splits = int(param.base_splits);
                 }
-                else if (seg_splits > 0 && seg_ind < curve_res && (depth > 0 or seg_ind > base_seg_ind))
+                else if (seg_splits > 0 && seg_ind < curve_res && (depth > 0 || seg_ind > base_seg_ind))
                 {
                     //otherwise get number of splits from seg_splits and use floyd-steinberg to
                     //fix non-integer values only clone with probability clone_prob
@@ -699,6 +702,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                         leaf_num_error -= leaves_on_seg - f_leaves_on_seg;
                     }
                     //add leaves
+                    //logerr("los %d",leaves_on_seg);
                     if (abs(leaves_on_seg) > 0)
                         make_leaves(turtle, stem, seg_ind, leaves_on_seg, prev_rotation_angle);
             }
@@ -797,7 +801,7 @@ float WeberPennGenerator::Tree::calc_stem_length(Stem &stem)
     }
     else
         result = stem.parent->length_child_max * (stem.parent->length - 0.7 * stem.offset);
-    return MAX(0, result);
+    return MAX(1e-4, result);
 }
 
 float WeberPennGenerator::Tree::calc_stem_radius(Stem &stem)
@@ -997,7 +1001,11 @@ int WeberPennGenerator::Tree::calc_leaf_count(Stem &stem)
     {
         // scale number of leaves to match global scale and taper
         float leaves = param.leaf_blos_num * tree_scale / param.g_scale;
-        result = leaves * (stem.length / (stem.parent->length_child_max * stem.parent->length));
+        float div = (stem.parent->length_child_max * stem.parent->length);
+        
+        result = div > 1e-4 ? leaves * (stem.length / div) : leaves;
+        //logerr("l cnt = %d %f %f %f %f %d",param.leaf_blos_num , tree_scale , param.g_scale,
+        //stem.parent->length_child_max, stem.parent->length, result);
     }
     else // fan leaves
         return param.leaf_blos_num;
@@ -1113,7 +1121,7 @@ float WeberPennGenerator::Tree::radius_at_offset(Stem &stem, float z_1)
         float flare = param.flare * ((pow(100, y_val) - 1) / 100) + 1;
         radius *= flare;
     }
-    return radius;
+    return CLAMP(radius,0,1000);
 }
 
 void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int seg_ind, int branches_on_seg,
@@ -1128,9 +1136,11 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
 
     if (branches_on_seg < 0) // fan branches
     {
+        //logerr("bos %d",branches_on_seg);
         for (int branch_ind = 0; branch_ind < abs(int(branches_on_seg)); branch_ind++)
         {
             int stem_offset = 1;
+            //logerr("%d %d",branch_ind,branches_on_seg);
             branches_array.push_back(set_up_branch(turtle, stem, BranchMode::fan, 1, start_point, end_point,
                                                    stem_offset, branch_ind, prev_rotation_angle, abs(branches_on_seg)));
         }
@@ -1184,9 +1194,10 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
                 if (branch_ind % 2 == 0)
                     offset = MIN(MAX(0, branch_ind / (float)branches_on_seg), 1);
                 else
-                    offset = MIN(MAX(0, (branch_ind - branch_dist) / branches_on_seg), 1);
+                    offset = MIN(MAX(0, (branch_ind - branch_dist) / (float)branches_on_seg), 1);
 
                 float stem_offset = (((seg_ind - 1) + offset) / curve_res) * stem.length;
+                //logerr("%d %d %f off %f",branch_ind,branches_on_seg,branch_dist,offset);
                 // if not in base area then set up the branch
                 if (stem_offset > base_length)
                 {
@@ -1412,7 +1423,7 @@ float WeberPennGenerator::Tree::shape_ratio(int shape, float ratio)
     }
     else if (shape == 8) // envelope
     {
-        if (ratio < 0 or ratio > 1)
+        if (ratio < 0 || ratio > 1)
             result = 0.0;
         else if (ratio < 1 - param.prune_width_peak)
             result = pow(ratio / (1 - param.prune_width_peak), param.prune_power_high);
@@ -1440,6 +1451,10 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
                                         Point &start_point, Point &end_point, float stem_offset, int branch_ind,
                                         std::vector<float> &prev_rot_ang, int branches_in_group)
 {
+    if (!std::isfinite(start_point.co.x))
+    {
+        logerr("aaaaaaa %d",branches_in_group/0);
+    }
     //Set up a new branch, creating the new direction and position turtle and orienting them
     //correctly and adding the required info to the list of branches to be made
 
@@ -1482,7 +1497,7 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
             }
             //orient direction turtle to correct rotation
             branch_dir_turtle.roll_right(r_angle);
-            radius_limit = radius_at_offset(stem, stem_offset / stem.length);
+            radius_limit = radius_at_offset(stem, stem_offset / MAX(stem.length,1e-6));
         }
         //make branch position turtle in appropriate position on circumference
         auto branch_pos_turtle = make_branch_pos_turtle(branch_dir_turtle, offset, start_point,
@@ -1506,7 +1521,7 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
 glm::vec3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &start_point, Point &end_point)
 {
     //Evaluate Bezier curve at offset between bezier_spline_points start_point and end_point
-    if (offset < 0 or offset > 1)
+    if (offset < 0 || offset > 1)
     {
         logerr("Offset out of range: %f not between 0 and 1", offset);
         return vec3(0,0,0);
@@ -1514,10 +1529,10 @@ glm::vec3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &st
 
     float one_minus_offset = 1 - offset;
 
-    vec3 res = powf(one_minus_offset, 3) * start_point.co + 
+    vec3 res = one_minus_offset*one_minus_offset*one_minus_offset * start_point.co + 
               3 * one_minus_offset*one_minus_offset * offset * start_point.handle_right + 
               3 * one_minus_offset * offset*offset * end_point.handle_left + 
-              powf(offset, 3) * end_point.co;
+              offset*offset*offset * end_point.co;
 
     return res;
 }
@@ -1525,12 +1540,15 @@ glm::vec3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &st
 glm::vec3 WeberPennGenerator::Tree::calc_tangent_to_bezier(float offset, Point &start_point, Point &end_point)
 {
     //Calculate tangent to Bezier curve at offset between bezier_spline_points start_point and end_point
-    if (offset < 0 or offset > 1)
+    if (offset < 0 || offset > 1)
     {
         logerr("Offset out of range: %f not between 0 and 1", offset);
-        return vec3(0,0,0);
+        return vec3(1,0,0);
     }
-
+    if (length(start_point.co - end_point.co)<1e-6)
+    {
+        return vec3(1,0,0);
+    }
     float one_minus_offset = 1 - offset;
     vec3 start_handle_right = start_point.handle_right;
     vec3 end_handle_left = end_point.handle_left;
@@ -1547,7 +1565,8 @@ CHTurtle WeberPennGenerator::Tree::make_branch_dir_turtle(CHTurtle &turtle, bool
     //Create and setup the turtle for the direction of a new branch
 
     CHTurtle branch_dir_turtle = CHTurtle();
-    vec3 tangent = normalize(calc_tangent_to_bezier(offset, start_point, end_point));
+    vec3 tangent = calc_tangent_to_bezier(offset, start_point, end_point);
+    tangent = normalize(tangent);
     branch_dir_turtle.dir = tangent;
 
     if (helix)
@@ -1563,6 +1582,10 @@ CHTurtle WeberPennGenerator::Tree::make_branch_dir_turtle(CHTurtle &turtle, bool
         //to get the new direction - this doesn't hold for the helix
         branch_dir_turtle.right = glm::cross(glm::cross(turtle.dir, turtle.right), branch_dir_turtle.dir);
     }
+    if (!std::isfinite(branch_dir_turtle.dir.x))
+    {
+        logerr("aasss %d",(int)offset/0);
+    }
     return branch_dir_turtle;
 }
 
@@ -1572,11 +1595,30 @@ CHTurtle WeberPennGenerator::Tree::make_branch_pos_turtle(CHTurtle &dir_turtle, 
     //Create and setup the turtle for the position of a new branch, also returning the radius
     //of the parent to use as a limit for the child
 
+    //logerr("offset %f", offset);
     dir_turtle.pos = calc_point_on_bezier(offset, start_point, end_point);
     CHTurtle branch_pos_turtle = CHTurtle(dir_turtle);
+    //logerr("dir %f %f %f right %f %f %f",branch_pos_turtle.dir.x, branch_pos_turtle.dir.y, branch_pos_turtle.dir.z,
+    //branch_pos_turtle.right.x, branch_pos_turtle.right.y, branch_pos_turtle.right.z);
     branch_pos_turtle.pitch_down(90);
     branch_pos_turtle.move(radius_limit);
-
+    //logerr("%f %f",dir_turtle.pos.x, branch_pos_turtle.pos.x);
+    if (!std::isfinite(start_point.co.x))
+    {
+        logerr("stsss");
+        logerr("%d",(int)radius_limit/0);
+    }
+    if (!std::isfinite(end_point.co.x))
+    {
+        logerr("ensss");
+        logerr("%d",(int)radius_limit/0);
+    }
+    if (!std::isfinite(branch_pos_turtle.pos.x))
+    {
+        logerr("dir %f %f %f right %f %f %f",dir_turtle.dir.x, dir_turtle.dir.y, dir_turtle.dir.z,
+        dir_turtle.right.x, dir_turtle.right.y, dir_turtle.right.z);
+        logerr("%d",(int)radius_limit/0);
+    }
     return branch_pos_turtle;
 }
 
@@ -1675,7 +1717,7 @@ void WeberPennGenerator::finalize_generation(::Tree *trees_external, LightVoxels
     for (int i=0;i<types.size();i++)
     {
         vec3 pos = positions[i];
-        WeberPennParametersNative *params = dynamic_cast<WeberPennParametersNative *>(types[i]->params);
+        WeberPennParametersNative *params = dynamic_cast<WeberPennParametersNative *>(types[i]->get_params());
         if (!params)
         {
             logerr("WeberPenn tree generator got wrong tree type");

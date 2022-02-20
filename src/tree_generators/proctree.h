@@ -112,6 +112,12 @@ namespace Proctree
     	{
 			return glm::vec3(100,100,100);
 		}
+		virtual ParametersSet *copy() override
+		{ 
+			auto Ps = new Properties();
+			*Ps = *this;
+			return Ps;
+		};
 	};
 
 

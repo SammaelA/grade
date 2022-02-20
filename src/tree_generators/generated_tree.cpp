@@ -785,7 +785,7 @@ void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external
         auto &type = ggd.types[k];
         trees[i] = Tree();
         trees[i].type_id = type.type_id;
-        TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters*>(type.params);
+        TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters*>(type.get_params());
         if (!ptr)
         {
             logerr("mygen::TreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");
@@ -1030,7 +1030,7 @@ Tree::~Tree()
             auto &type = *(tree_saplings[i].second);
             trees[i] = Tree();
             trees[i].type_id = type.type_id;
-            TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters *>(type.params);
+            TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters *>(type.get_params());
             if (!ptr)
             {
                 logerr("mygen::TreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");

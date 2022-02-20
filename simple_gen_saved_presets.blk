@@ -1,2 +1,6 @@
 {
+fast_simple_tree {
+wood_tex_name:s = "wood"
+leaf_tex_name:s = "leaf"
+}
 }

@@ -14,7 +14,7 @@ void PythonTreeGen::create_grove(GroveGenerationData ggd, ::Tree *trees_external
     std::string config_file_name = scripts_path + "/params.py";
     std::string params_string;
     WeberPennParameters dummy;
-    WeberPennParameters *params = dynamic_cast<WeberPennParameters *>(ggd.types[0].params);
+    WeberPennParameters *params = dynamic_cast<WeberPennParameters *>(ggd.types[0].get_params());
     if (!params)
         params = &dummy;
     if (params->settings_already_in_file)

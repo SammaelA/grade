@@ -351,7 +351,7 @@ LightVoxelsCube *create_grove_voxels2(GrovePrototype &prototype, std::vector<Tre
   for (auto &p : prototype.possible_types)
   {
     auto &type = types[p.first];
-    min_scale_factor = MIN(min_scale_factor,type.params->get_scale_factor());
+    min_scale_factor = MIN(min_scale_factor,type.get_params()->get_scale_factor());
   }
   glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
@@ -369,7 +369,7 @@ AABB get_influence_AABB2(GrovePrototype &prototype, std::vector<TreeTypeData> &t
   for (auto &p : prototype.possible_types)
   {
     auto &type = types[p.first];
-    max_tree_size = max(max_tree_size,type.params->get_tree_max_size());
+    max_tree_size = max(max_tree_size,type.get_params()->get_tree_max_size());
   }
   
   float min_hmap = 0, max_hmap = 0;
@@ -599,7 +599,7 @@ void generate_single_tree(ParametersSet *par, GrovePacked &res)
 
     tree_ggd.trees_count = 1;
     TreeTypeData type = ggd.types[0];
-    type.params = par;
+    type.set_params(par);
     tree_ggd.types = {type};
     tree_ggd.synts_count = 0;
     tree_ggd.synts_precision = 1;
@@ -693,7 +693,7 @@ int full_initialization()
     ggd = config.get_ggd(grove_type_name);
     if (generator_name == "proctree")
     {
-      ggd.types[0].params = new Proctree::Properties();
+      ggd.types[0].set_params(new Proctree::Properties());
     }
     if (generator_name == "python_tree_gen")
     {
@@ -708,13 +708,13 @@ int full_initialization()
         p->name = "default";
         p->settings_already_in_file = false;
       }
-      ggd.types[0].params = p;
+      ggd.types[0].set_params(p);
     }
     if (parameter_selection)
     {
       std::function<void(ParametersSet *, GrovePacked &)> _generate = generate_single_tree;
       ParameterSelector sel(_generate);
-      ParametersSet *start = ggd.types[0].params;
+      ParametersSet *start = ggd.types[0].get_params();
       //Quality imp_qual = ggd.impostor_quality;
       //ggd.impostor_quality = Quality::ULTRALOW;
       //ggd.bill_1_quality = Quality::ULTRALOW;

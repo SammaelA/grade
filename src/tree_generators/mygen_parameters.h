@@ -177,6 +177,12 @@ struct TreeStructureParameters : public ParametersSet
         set_state(0);
         return 2.0f*glm::vec3(seg_len_mult()*max_segments());
     }
+    virtual ParametersSet *copy() override
+    {
+        auto Ps = new TreeStructureParameters();
+        *Ps = *this;
+        return Ps;
+    };
 };
 template<typename T>
 class BaseParameterSetWrapper

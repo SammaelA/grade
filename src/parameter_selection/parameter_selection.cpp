@@ -179,7 +179,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     tree_ggd.trees_count = params.size();
     for (int i = 0; i < params.size(); i++)
     {
-        tree_ggd.types[i].params->read_parameter_list(params[i]);
+        tree_ggd.types[i].get_params()->read_parameter_list(params[i]);
     }
 
     int num_threads = MIN(8, params.size());
@@ -311,7 +311,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, 8, false);
     ParameterList parList, bestParList;
 
-    tree_ggd.types[0].params->write_parameter_list(parList);
+    tree_ggd.types[0].get_params()->write_parameter_list(parList);
     BlkManager man;
     Block b;
 
@@ -327,7 +327,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             if (t.generator_name == tree_ggd.types[0].generator_name)
             {
                 initial_params.push_back(ParameterList());
-                t.params->write_parameter_list(initial_params.back());
+                t.get_params()->write_parameter_list(initial_params.back());
             }
         }
     }
@@ -357,7 +357,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     if (ref_type && ref_type->generator_name == gen_name)
     {
         ParameterList referenceParList;
-        ref_type->params->write_parameter_list(referenceParList);
+        ref_type->get_params()->write_parameter_list(referenceParList);
         sel_quality(bestParList, referenceParList, func, 32);
     }
     else
@@ -389,7 +389,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             res_voxels->fill(0);
             res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
 
-            tree_ggd.types[i].params->read_parameter_list(best_pars[i].second);
+            tree_ggd.types[i].get_params()->read_parameter_list(best_pars[i].second);
             gen->plant_tree(pos, &(tree_ggd.types[i]));
             while (gen->iterate(*res_voxels))
             {
@@ -588,9 +588,9 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             //existed type is a reference for selection
             reference_ttd = metainfoManager.get_tree_type(type_id); 
             ParameterList referenceParList;
-            reference_ttd.params->write_parameter_list(referenceParList);
+            reference_ttd.get_params()->write_parameter_list(referenceParList);
             //referenceParList.print();
-            reference_ttd.params->read_parameter_list(referenceParList);
+            reference_ttd.get_params()->read_parameter_list(referenceParList);
             GroveGenerationData tree_ggd;
             tree_ggd.trees_count = 1;
             tree_ggd.types = {reference_ttd};
@@ -603,12 +603,12 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.impostor_generation_params.normals_needed = false;
             tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
 
-            LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.params->get_tree_max_size(),
-                                                            0.625f * reference_ttd.params->get_scale_factor());
-            logerr("AAAA %f %f %f",reference_ttd.params->get_tree_max_size().x, reference_ttd.params->get_tree_max_size().y,
-            reference_ttd.params->get_tree_max_size().z);
+            LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
+                                                            0.625f * reference_ttd.get_params()->get_scale_factor());
+            logerr("AAAA %f %f %f",reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y,
+            reference_ttd.get_params()->get_tree_max_size().z);
             ReferenceTree ref_tree_init;
-            ref_tree_init.info.BCyl_sizes = glm::vec2(reference_ttd.params->get_tree_max_size().x, reference_ttd.params->get_tree_max_size().y);
+            ref_tree_init.info.BCyl_sizes = glm::vec2(reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y);
             ref_tree_init.info.joints_cnt = 100000;
             //create reference tree
             for (int i=0;i<10;i++)

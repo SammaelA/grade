@@ -13,7 +13,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
     bool growing = false;
     for (auto &t : trees)
     {
-        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->params);
+        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->get_params());
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         if (t.status == TreeStatus::SEED)
         {
@@ -63,11 +63,12 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
 }
 void GETreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
-    GETreeParameters *ps = dynamic_cast<GETreeParameters *>(type->params);
+    GETreeParameters *ps = dynamic_cast<GETreeParameters *>(type->get_params());
     if (!ps)
     {
         logerr("Tree type %d cannot be generated with GE tree generator", type->type_id);
-        type->params = &(GETreeGenerator::defaultParameters);
+        return;
+        //type->params = &(GETreeGenerator::defaultParameters);
     }
     trees.emplace_back();
     trees.back().pos = pos;
@@ -78,7 +79,7 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
     int i = 0;
     for (auto &t : trees)
     {
-        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->params);
+        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->get_params());
         GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         set_levels_rec(t, t.root, params, 0);
         recalculate_radii(t, t.root, params);
@@ -92,7 +93,7 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
 void GETreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
     GETreeParameters params;
-    ggd.types[0].params = &params;
+    ggd.types[0].set_params(&params);
 
     ivec3 voxels_sizes = ivec3(2 * ggd.trees_count * params.Xm, 3.5 * params.Xm, 2 * params.Xm);
     LightVoxelsCube voxels = LightVoxelsCube(vec3(0,0,0), voxels_sizes, 0.5 * params.ro);
