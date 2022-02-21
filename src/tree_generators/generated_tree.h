@@ -133,7 +133,7 @@ public:
     virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
-    virtual bool use_voxels_for_generation() {return false;}
+    virtual bool use_voxels_for_generation() {return true;}
     bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     void reset();
     Tree *curTree = nullptr;

@@ -2,6 +2,7 @@
 #include "tinyEngine/TinyEngine.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "tinyEngine/postfx.h"
+#include "generation/grove_packer.h"
 
 ImpostorSimilarityCalc::ImpostorSimilarityCalc(int _max_impostors, int _slices_per_impostor, bool _use_top_slice):
 similarity_shader({"impostor_atlas_dist.comp"},{}),
@@ -123,6 +124,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
                 leaves_dens.set_occluder_simple(l.pos, sum_sq);
         }
     }
+    info.id = t.id;
     leaves_dens.read_func_simple(f);
     info.leaves_density = res/(V*MAX(b_vox_cnt, 1));
     //logerr("leaves dens %f %d %f", (float)res, b_vox_cnt, info.leaves_density);
@@ -324,7 +326,7 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
 }
 
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
-                                             Tree *original_trees, bool debug_print, bool image_debug)
+                                             Tree *original_trees, int original_trees_cnt, bool debug_print, bool image_debug)
 {
     int impostors_cnt = grove.impostors[1].impostors.size();
     int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
@@ -334,13 +336,29 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     get_tree_image_info(grove.impostors[1].atlas, images_info, false);
 
     int imp_n = 0;
-
+    int t_n = 0;
     impostors_info_data[0] = reference.info;
     tree_image_info_data[0] = reference.image_info;
     for (auto &imp : grove.impostors[1].impostors)
     {
-        get_tree_compare_info(imp, original_trees[imp_n], impostors_info_data[imp_n+1]);
-
+        while (t_n < original_trees_cnt && !GrovePacker::is_valid_tree(original_trees[t_n]))
+        {
+            t_n++;
+        }
+        if (t_n < original_trees_cnt)
+        {
+            get_tree_compare_info(imp, original_trees[t_n], impostors_info_data[imp_n+1]);
+        }
+        else
+        {
+            auto &info = impostors_info_data[imp_n+1];
+            info.BCyl_sizes = glm::vec2(0,0);
+            info.branches_curvature = 0;
+            info.branches_density = 0;
+            info.joints_cnt = 0;
+            info.leaves_density = 0;
+            info.trunk_thickness = 0; 
+        }
         int slices_cnt = 0;
         TreeImageInfo av_info;
         av_info.tc_transform = glm::vec4(0,0,0,0);
@@ -369,6 +387,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
 
         tree_image_info_data[imp_n+1] = av_info;
         imp_n++;
+        t_n++;
     }
     for (int i=0;i<imp_n+1;i++)
     {
@@ -517,9 +536,11 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_sd = 1 - (scale_fine.x)*(scale_fine.y);
 
         if (debug_print && i == 0)
-            logerr("dist %f %f %f %f %f %f %f %f %f %f %f", d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, 
-                                                            d_b_leaves, d_cs, dist);
-
+        {
+            logerr("size %.3f l_dens %.3f b_dens %.3f b_curv %.3f b_cnt %.3f tr_th %.3f trop %.3f crone_st %.3f l_share %.3f b_share %.3f imp_sim %.3f", 
+                   d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, 
+                   d_b_leaves, d_cs, dist);
+        }
         float res_dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
                                 (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + 5*(1 - dist))/15, 0,1);
         res_dist = res_dist*res_dist*res_dist;
@@ -527,7 +548,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         bool valid = d_sd < 0.8 && d_jcnt < 0.9 && dist < 0.9;
         if (!valid)
             res_dist = 0;
-        
+
         sim_results.push_back(res_dist);
     }
 }

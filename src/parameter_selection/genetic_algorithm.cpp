@@ -594,7 +594,7 @@ void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pai
 
 void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
 {
-    std::vector<ParameterList> params;
+    std::vector<ParameterList> params = {};
     enum ParOrigin
     {
         NEW_ENTITY,
@@ -608,31 +608,31 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
         int h = 0;
         for (auto &p : heaven)
         {
-            if (p.metric_calc_n < 4 || !elite_fine_tuning)
+            if (p.metric_calc_n < 1 || !elite_fine_tuning)
             {
                 params.push_back(original_param_list);
-                params.back().from_simple_list(p.main_genome);  
-                positions.push_back(std::pair<ParOrigin,int>(ELITE_ORIGIN, h));
-                if (elite_fine_tuning)
+                params.back().from_simple_list(p.main_genome);
+                positions.push_back(std::pair<ParOrigin, int>(ELITE_ORIGIN, h));
+            }
+            if (elite_fine_tuning)
+            {
+                int ft_cnt = 0;
+                if (iteration_n < 10)
+                    ft_cnt = 0;
+                else if (iteration_n < 40)
+                    ft_cnt = 1;
+                else if (iteration_n < 100)
+                    ft_cnt = 2;
+                else
+                    ft_cnt = 3;
+                ft_cnt *= metaParams.heaven_fine_tuning_count;
+                for (int j = 0; j < ft_cnt; j++)
                 {
-                    int ft_cnt = 0;
-                    if (iteration_n < 10)
-                        ft_cnt = 0;
-                    else if (iteration_n < 40)
-                        ft_cnt = 1;
-                    else if (iteration_n < 100)
-                        ft_cnt = 2;
-                    else
-                        ft_cnt = 3;
-                    ft_cnt *= metaParams.heaven_fine_tuning_count;
-                    for (int j=0;j<ft_cnt;j++)
-                    {
-                        Genome modified = p.main_genome;
-                        mutation(modified, 0.25, 1);
-                        params.push_back(original_param_list);
-                        params.back().from_simple_list(modified);
-                        positions.push_back(std::pair<ParOrigin,int>(ELITE_MODIFIED, h));
-                    }
+                    Genome modified = p.main_genome;
+                    mutation(modified, 0.25, 3);
+                    params.push_back(original_param_list);
+                    params.back().from_simple_list(modified);
+                    positions.push_back(std::pair<ParOrigin, int>(ELITE_MODIFIED, h));
                 }
             }
             h++;

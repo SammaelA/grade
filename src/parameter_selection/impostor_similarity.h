@@ -15,6 +15,7 @@ enum TCIFeatureStatus
 
 struct TreeCompareInfo
 {
+    int id = -1;
     glm::vec2 BCyl_sizes = glm::vec2(0,0);//radius and height of bounding cylinder;
     float branches_density = 0;
     float leaves_density = 0;
@@ -62,7 +63,7 @@ public:
     ImpostorSimilarityCalc(int max_impostors, int slices_per_impostor, bool use_top_slice = false);
     ~ImpostorSimilarityCalc();
     void calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
-                         Tree *original_trees, bool debug_print = false, bool image_debug = false);
+                         Tree *original_trees, int original_trees_cnt, bool debug_print = false, bool image_debug = false);
     static void get_tree_compare_info(Impostor &imp, Tree &original_tree, TreeCompareInfo &info);
     void get_tree_image_info(TextureAtlas &images_atl, std::map<int, TreeImageInfo> &results, bool image_debug = false);
     void get_reference_tree_image_info(ReferenceTree &reference);

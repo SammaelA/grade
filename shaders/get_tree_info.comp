@@ -101,7 +101,7 @@ void find_th_lb(ivec3 pixel_coords, int id)
                                     float(max_x - min_x)/float(impostor_x), float(max_y - min_y)/float(impostor_y));
     int fast_inc_pos = 0;
     int fast_inc_speed = -1;
-    int max_leaves = int(impostor_x/8.0);
+    int max_leaves = int(impostor_x/32.0);
     int len = 0;
     if (leaves_cnt[0] < max_leaves)
     {

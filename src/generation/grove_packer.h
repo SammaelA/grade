@@ -45,6 +45,7 @@ public:
     explicit GrovePacker(bool shared_ctx);
     ClusteringStrategy get_clustering_strategy() { return cStrategy; }
     std::vector<FullClusteringData *> saved_clustering_data;
+    static bool is_valid_tree(::Tree &t);
 protected:
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                      bool visualize_clusters, bool save_cluster_data);

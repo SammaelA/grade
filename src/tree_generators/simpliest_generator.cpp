@@ -3,10 +3,9 @@
 
 using namespace glm;
 
-#define NO_RANDOM_GEN 0
+#define NO_RANDOM_GEN 1
 
 std::atomic<int> branch_next_id(0), tree_next_id(0); 
-std::atomic<int> leaves_cnt(0), leaves_tries(0);
 void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
     tree_positions.push_back(pos);
@@ -46,8 +45,8 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
 
 void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStructureParameters &params)
 {
-    leaves_tries.store(0);
-    leaves_cnt.store(0);
+    int leaves_tries = 0;
+    int leaves_cnt = 0;
     tree->root = tree->branchHeaps[0]->new_branch();
     tree->root->type_id = tree->type->type_id;
     tree->root->self_id = branch_next_id.fetch_add(1);
@@ -57,14 +56,14 @@ void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStru
     tree->root->center_par = vec3(0,0,0);
     tree->root->plane_coef = vec4(1,0,0,-pos.x);
     tree->root->id = tree->id;
-    create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params);
+    create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params, leaves_tries, leaves_cnt);
     //logerr("created simpliest tree with %d  %f leaves %d %d", tree->leaves->leaves.size(), params.leaves_count, 
     //        leaves_tries.load(), leaves_cnt.load());
 }
 
 void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, 
                                            glm::vec3 normal, int level, 
-                                           SimpliestTreeStructureParameters &params)
+                                           SimpliestTreeStructureParameters &params, int &leaves_tries, int &leaves_cnt)
 {
     float seg_len = params.branch_len[level]/params.branch_count[level];
     float r0 = params.branch_r[level];
@@ -91,14 +90,14 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
         if (level == params.max_depth - 1)
         {
             #if NO_RANDOM_GEN > 0
-                leaves_tries.fetch_add(1);
+                leaves_tries++;
                 bool leaf_b = leaves_cnt/(float)leaves_tries < params.leaves_count;
             #else
                 bool leaf_b = urand() < params.leaves_count;// random version
             #endif
             if (leaf_b)
             {
-                leaves_cnt.fetch_add(1);
+                leaves_cnt++;
                 //create leaf
                 Leaf *l = tree->leaves->new_leaf();
                 l->pos = j.pos;
@@ -174,7 +173,7 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                     //logerr("nb %f %f",nb_dir.x, nb_dir.z);
                     nb_norm = normalize(cross(base_dir, nb_dir));
                 }
-                create_branch(tree, ch_b, j.pos, nb_dir, nb_norm, level+1, params);
+                create_branch(tree, ch_b, j.pos, nb_dir, nb_norm, level+1, params, leaves_tries, leaves_cnt);
                 params.set_state(level);
             }
     }

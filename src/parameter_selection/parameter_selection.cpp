@@ -217,11 +217,35 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     {
         gen_tree_task(0, params.size(), thr_voxels[0], &(tree_ggd.types), trees);
     }
-    packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
-    cnt += params.size();
-    std::vector<float> res;
-    imp_sim.calc_similarity(tmp_g, ref_tree, res, trees, debug_stat, true);
-
+    std::vector<float> res = std::vector<float>(params.size(),1);
+    int valid_cnt = 0;
+    for (int i=0;i<params.size();i++)
+    {
+        if (GrovePacker::is_valid_tree(trees[i]))
+        {
+            valid_cnt++;
+        }
+        else
+        {
+            res[i] = 0;
+        }
+    }
+    if (valid_cnt > 0)
+    {
+        packer.add_trees_to_grove(tree_ggd, tmp_g, trees, flat_hmap, false);
+        cnt += params.size();
+        std::vector<float> valid_res;
+        imp_sim.calc_similarity(tmp_g, ref_tree, valid_res, trees, params.size(), debug_stat, true);
+        int k = 0;
+        for (auto &r : res)
+        {
+            if (r > 0)
+            {
+                r = valid_res[k];
+                k++;
+            }
+        }
+    }
     delete[] trees;
     for (int i = 0; i < num_threads; i++)
     {
@@ -239,9 +263,9 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
 
 void print_ref_tree_info(TreeCompareInfo &info)
 {
- debug(" (%.3f %.3f) %.3f %.3f %d %.3f %.3f\n", 
+ debug(" sz (%.3f %.3f) b_curv %.3f b_dens %.3f l_dens %.3f j_cnt %d t_th %.3f\n", 
           info.BCyl_sizes.x, info.BCyl_sizes.y, info.branches_curvature,
-          info.branches_density, info.joints_cnt, info.leaves_density,
+          info.branches_density, info.leaves_density, info.joints_cnt,
           info.trunk_thickness);   
 }
 
@@ -307,7 +331,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         ex_c.time_elapsed_seconds = ex_bl->get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
     }
     int imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
-                          MAX(mp.initial_population_size, mp.max_population_size) + (mp.heaven_fine_tuning_count+1)*mp.heaven_size);
+                          MAX(mp.initial_population_size, mp.max_population_size) + 
+                          (3+1)*(mp.heaven_fine_tuning_count)*mp.heaven_size);
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, 8, false);
     ParameterList parList, bestParList;
 

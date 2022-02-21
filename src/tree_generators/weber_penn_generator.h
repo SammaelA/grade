@@ -168,7 +168,6 @@ public:
         void create_branches();
         void create_leaf_mesh();
         void points_for_floor_split(std::vector<std::pair<glm::vec3, float>> &points);
-        float rand_in_range(float from, float to) {return random_uniform(from, to);}
         float random_uniform(float from, float to);
         unsigned long random_getstate() {return seed;}
         void random_setstate(unsigned long _seed){ seed = _seed;}

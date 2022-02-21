@@ -166,6 +166,7 @@ void WeberPennGenerator::Tree::create_branches()
     for (int ind = 0; ind<param.branches[0]; ind++)
     {
         tree_scale = param.g_scale + random_uniform(-1, 1) * param.g_scale_v;
+        tree_scale = MAX(tree_scale, 0.1*param.g_scale);
         CHTurtle turtle = CHTurtle();
         turtle.pos = vec3(0,0,0);
         turtle.dir = vec3(0,0,1);
@@ -344,7 +345,7 @@ void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm:
         while (!point_ok)
         {
             //distance from center proportional for number of splits, tree scale and stem radius
-            float dis = sqrt(random_uniform(0,1) * param.branches[0] / 2.5 * param.g_scale * param.ratio); 
+            float dis = sqrt(random_uniform(0.01,1) * param.branches[0] / 2.5 * param.g_scale * param.ratio); 
             //angle random in circle
             float theta = random_uniform(0, 2 * PI);
             vec3 pos = vec3(dis * cos(theta), dis * sin(theta), 0);
@@ -372,7 +373,8 @@ float WeberPennGenerator::Tree::random_uniform(float from, float to)
 {
     seed = seed * 1103515245 + 12345;
     float r =  ((unsigned int)(seed / 65536) % 32768) / 32768.0f;
-    return from >= to ? from : from + r*(to - from);
+    float res = from >= to ? from : from + r*(to - from);
+    return res;
 }
 
 void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start, float split_corr_angle, 
@@ -394,6 +396,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
     if (start == 0)     
     {       
         stem.length_child_max = param.length[d_plus_1] + random_uniform(-1, 1) * param.length_v[d_plus_1];
+        stem.length_child_max = MAX(stem.length_child_max, 0.1*param.length[d_plus_1]);
         stem.length = calc_stem_length(stem);
         stem.radius = calc_stem_radius(stem);
         if (depth == 0)
@@ -511,8 +514,8 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
     if (param.curve_v[depth] < 0)
     {
         float tan_ang = tan(glm::radians(90 - abs(param.curve_v[depth])));
-        float hel_pitch = 2 * stem.length / curve_res * rand_in_range(0.8, 1.2);
-        float hel_radius = 3 * hel_pitch / (16 * tan_ang) * rand_in_range(0.8, 1.2);
+        float hel_pitch = 2 * stem.length / curve_res * random_uniform(0.8, 1.2);
+        float hel_radius = 3 * hel_pitch / (16 * tan_ang) * random_uniform(0.8, 1.2);
 
         //apply full tropism if not trunk/main branch and horizontal tropism if is
         if (depth > 1)
@@ -638,6 +641,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                         num_of_splits = int(random_uniform(0, 1) * (abs(param.base_splits) + 0.5));
                     else
                         num_of_splits = int(param.base_splits);
+                    num_of_splits = MIN(2,num_of_splits);
                 }
                 else if (seg_splits > 0 && seg_ind < curve_res && (depth > 0 || seg_ind > base_seg_ind))
                 {
@@ -646,6 +650,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                     if (random_uniform(0, 1) <= clone_prob)
                     {
                         num_of_splits = int(seg_splits + split_num_error[depth]);
+                        num_of_splits = MIN(2,num_of_splits);
                         split_num_error[depth] -= num_of_splits - seg_splits;
 
                         //reduce clone/branch propensity
@@ -791,7 +796,9 @@ float WeberPennGenerator::Tree::calc_stem_length(Stem &stem)
     //Calculate length of this stem as defined in paper
     if (stem.depth == 0) // trunk
     {
-        result = tree_scale * (param.length[0] + random_uniform(-1, 1) * param.length_v[0]);
+        float len = (param.length[0] + random_uniform(-1, 1) * param.length_v[0]);
+        len = MAX(len, 0.1*param.length[0]);
+        result = tree_scale * len;
         trunk_length = result;
     }
     else if (stem.depth == 1) //first level
@@ -860,8 +867,8 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
     if (param.curve_v[depth] < 0)
     {
         float tan_ang = tan(glm::radians(90 - abs(param.curve_v[depth])));
-        float hel_pitch = 2 * stem.length / curve_res * rand_in_range(0.8, 1.2);
-        float hel_radius = 3 * hel_pitch / (16 * tan_ang) * rand_in_range(0.8, 1.2);
+        float hel_pitch = 2 * stem.length / curve_res * random_uniform(0.8, 1.2);
+        float hel_radius = 3 * hel_pitch / (16 * tan_ang) * random_uniform(0.8, 1.2);
 
         //apply full tropism if not trunk/main branch and horizontal tropism if is
         if (depth > 1)
@@ -1067,7 +1074,7 @@ void WeberPennGenerator::Tree::calc_helix_points(CHTurtle &turtle, float rad, fl
 
     // align helix points to turtle direction and randomize rotation around axis
     auto trf = to_track_quat_ZY(turtle.dir);
-    float spin_ang = rand_in_range(0, 2 * PI);
+    float spin_ang = random_uniform(0, 2 * PI);
     auto rot_quat = glm::angleAxis(glm::radians(spin_ang), vec3(0, 0, 1));
 
     for (auto &p :points)
@@ -1453,7 +1460,7 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
 {
     if (!std::isfinite(start_point.co.x))
     {
-        logerr("aaaaaaa %d",branches_in_group/0);
+        throw std::exception();
     }
     //Set up a new branch, creating the new direction and position turtle and orienting them
     //correctly and adding the required info to the list of branches to be made
@@ -1584,7 +1591,7 @@ CHTurtle WeberPennGenerator::Tree::make_branch_dir_turtle(CHTurtle &turtle, bool
     }
     if (!std::isfinite(branch_dir_turtle.dir.x))
     {
-        logerr("aasss %d",(int)offset/0);
+        throw std::exception();
     }
     return branch_dir_turtle;
 }
@@ -1605,19 +1612,18 @@ CHTurtle WeberPennGenerator::Tree::make_branch_pos_turtle(CHTurtle &dir_turtle, 
     //logerr("%f %f",dir_turtle.pos.x, branch_pos_turtle.pos.x);
     if (!std::isfinite(start_point.co.x))
     {
-        logerr("stsss");
-        logerr("%d",(int)radius_limit/0);
+        throw std::exception();
     }
     if (!std::isfinite(end_point.co.x))
     {
-        logerr("ensss");
-        logerr("%d",(int)radius_limit/0);
+        throw std::exception();
     }
     if (!std::isfinite(branch_pos_turtle.pos.x))
     {
         logerr("dir %f %f %f right %f %f %f",dir_turtle.dir.x, dir_turtle.dir.y, dir_turtle.dir.z,
         dir_turtle.right.x, dir_turtle.right.y, dir_turtle.right.z);
-        logerr("%d",(int)radius_limit/0);
+        //logerr("%d",(int)radius_limit/0);
+        throw std::exception();
     }
     return branch_pos_turtle;
 }

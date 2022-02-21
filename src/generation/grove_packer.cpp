@@ -115,7 +115,7 @@ void add_occluder(LightVoxelsCube *voxels, Tree *trees, int count)
             add_occluder(voxels, trees[i].root);
     }
 }
-bool is_valid_tree(::Tree &t)
+bool GrovePacker::is_valid_tree(::Tree &t)
 {
     if (!t.valid)
     {
