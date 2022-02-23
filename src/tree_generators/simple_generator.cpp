@@ -2,9 +2,6 @@
 
 using namespace glm;
 
-int ids = 0;
-int t_ids = 0;
-
 void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_pos, vec3 base_dir, vec3 normal, int level, 
                                         float base_r, float leaves_chance)
 {
@@ -79,7 +76,7 @@ void SimpleTreeGenerator::create_branch(Tree *tree, Branch *branch, vec3 start_p
             Branch *ch_b = tree->branchHeaps[level + 1]->new_branch();
             branch->joints.back().childBranches.push_back(ch_b);
             ch_b->type_id = branch->type_id;
-            ch_b->self_id = ids++;
+            ch_b->self_id = branch_next_id.fetch_add(1);
             ch_b->level = level+1;
             ch_b->dead = false;
             ch_b->center_self = new_pos;
@@ -115,7 +112,7 @@ void SimpleTreeGenerator::create_tree(Tree *tree, vec3 pos)
 {
     tree->root = tree->branchHeaps[0]->new_branch();
     tree->root->type_id = 0;
-    tree->root->self_id = ids++;
+    tree->root->self_id = branch_next_id.fetch_add(1);
     tree->root->level = 0;
     tree->root->dead = false;
     tree->root->center_self = pos;
@@ -134,7 +131,7 @@ void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_e
     params.set_state(0);
     for (int i=0;i<ggd.trees_count;i++)
     {
-        vec3 pos = vec3(50*(t_ids % 10), 0, 50 * (t_ids / 10));
+        vec3 pos = vec3(50*(tree_next_id % 10), 0, 50 * (tree_next_id / 10));
         pos.y = h->get_height(pos);
 
         for (int j=0;j<params().max_depth();j++)
@@ -144,13 +141,12 @@ void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_e
         }
 
         trees_external[i].leaves = new LeafHeap();
-        trees_external[i].id = t_ids;
+        trees_external[i].id = tree_next_id.fetch_add(1);
         trees_external[i].pos = pos;
         trees_external[i].type = &(ggd.types[0]);
         trees_external[i].valid = true;
 
         create_tree(trees_external + i, pos);
-        t_ids++;
     }
 }
 
@@ -176,12 +172,11 @@ void SimpleTreeGenerator::finalize_generation(::Tree *trees_external, LightVoxel
         }
 
         trees_external[i].leaves = new LeafHeap();
-        trees_external[i].id = t_ids;
+        trees_external[i].id = tree_next_id.fetch_add(1);
         trees_external[i].pos = pos;
         trees_external[i].type = types[i];
         trees_external[i].valid = true;
 
         create_tree(trees_external + i, pos);
-        t_ids++;
     }
 }

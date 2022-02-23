@@ -5,7 +5,6 @@ using namespace glm;
 
 #define NO_RANDOM_GEN 1
 
-std::atomic<int> branch_next_id(0), tree_next_id(0); 
 void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
     tree_positions.push_back(pos);

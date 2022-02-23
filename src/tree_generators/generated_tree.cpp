@@ -24,7 +24,7 @@ int j_count = 0;
 int b_count = 0;
 float sum_feed[10];
 float count_feed[10];
-int ids_counter = 0;
+
 bool dice(float x, float base)
 {
     float f = urand();
@@ -578,7 +578,7 @@ void TreeGenerator::calc_quality_field(LightVoxelsCube *&field, glm::vec3 pos, g
         }
     }
 }
-uint last_id = 0;
+
 void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
 {
     for (int i = 0; i < 10; i++)
@@ -586,8 +586,7 @@ void TreeGenerator::plant_tree(Tree &t, ParameterSetWrapper params)
         sum_feed[i] = 0;
         count_feed[i] = 0;
     }
-    t.id = last_id;
-    last_id++;
+    t.id = tree_next_id.fetch_add(1);
     t.voxels = voxels;
     t.params = params;
     if (t.leaves)
@@ -963,8 +962,7 @@ Tree::~Tree()
         dst.center_par = src.center_par;
         dst.center_self = src.center_self;
         dst.id = src_tree.id;
-        dst.self_id = ids_counter;
-        ids_counter++;
+        dst.self_id = branch_next_id.fetch_add(1);
         dst.level = src.level;
         dst.plane_coef = src.plane_coef;
         dst.type_id = src.type_id;

@@ -3,7 +3,6 @@
 #include <atomic>
 #include <cmath>
 
-std::atomic<int> branch_next_id2(0), tree_next_id2(0); 
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
@@ -1736,7 +1735,7 @@ void WeberPennGenerator::finalize_generation(::Tree *trees_external, LightVoxels
         }
 
         trees_external[i].leaves = new LeafHeap();
-        trees_external[i].id = tree_next_id2.fetch_add(1);
+        trees_external[i].id = tree_next_id.fetch_add(1);
         trees_external[i].pos = pos;
         trees_external[i].type = types[i];
         trees_external[i].valid = true;
@@ -1755,7 +1754,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
         return;
     dst.root = dst.branchHeaps[0]->new_branch();
     dst.root->type_id = dst.type->type_id;
-    dst.root->self_id = branch_next_id2.fetch_add(1);
+    dst.root->self_id = branch_next_id.fetch_add(1);
     dst.root->level = 0;
     dst.root->dead = false;
     dst.root->center_self = dst.pos;
@@ -1875,7 +1874,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             s->already_used = true;
             Branch *br = dst.branchHeaps[level]->new_branch();
             br->type_id = dst.type->type_id;
-            br->self_id = branch_next_id2.fetch_add(1);
+            br->self_id = branch_next_id.fetch_add(1);
             br->level = level;
             br->dead = false;
             br->center_self = best_joint->pos;

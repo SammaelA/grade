@@ -2,9 +2,6 @@
 #include <algorithm>
 using namespace glm;
 
-std::atomic<int> GETreeGenerator::ids(0);
-std::atomic<int> GETreeGenerator::t_ids(0);
-int AbstractTreeGenerator::joints_limit = 1000000;
 GETreeParameters GETreeGenerator::defaultParameters = GETreeParameters();
 
 //TreeTypeData def_ttd = TreeTypeData(-1,&(GETreeGenerator::defaultParameters), "wood","leaf");
@@ -316,14 +313,14 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst)
     }
 
     dst.leaves = new LeafHeap();
-    dst.id = t_ids.fetch_add(1);
+    dst.id = tree_next_id.fetch_add(1);
     dst.pos = src.pos;
     dst.type = src.type;
     dst.valid = true;
 
     dst.root = dst.branchHeaps[0]->new_branch();
     dst.root->type_id = dst.type->type_id;
-    dst.root->self_id = ids.fetch_add(1);
+    dst.root->self_id = branch_next_id.fetch_add(1);
     dst.root->level = 0;
     dst.root->dead = false;
     dst.root->center_self = src.pos;
@@ -385,7 +382,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             //logerr("conv br 3 %d %d",b_src.level, i);
             b_dst->joints.back().childBranches.push_back(nb);
             nb->type_id = dst.type->type_id;
-            nb->self_id = ids.fetch_add(1);
+            nb->self_id = branch_next_id.fetch_add(1);
             nb->level = chb.level;
             nb->dead = false;
             nb->center_self = b_dst->joints.back().pos;

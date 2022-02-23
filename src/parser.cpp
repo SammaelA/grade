@@ -282,7 +282,7 @@ namespace parser
       float dist = 75;
       int t_id = metainfoManager.get_tree_type_id_by_name("black_oak");
       int b_id = metainfoManager.get_tree_type_id_by_name("apple");
-      int l_id = metainfoManager.get_tree_type_id_by_name("apple");
+      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
 
       int ids[3] = {t_id, b_id, l_id};
       for (int i = 0; i < sz; i++)

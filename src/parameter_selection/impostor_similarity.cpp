@@ -325,6 +325,14 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
     reference.image_info = av_info;
 }
 
+float sigmoid(float x)
+{
+    #define SIGM(x,k) (1/(1 + exp(-k*(x))));
+    constexpr int k = 5;
+    float s_1 = SIGM(-1,k);
+    return s_1 + SIGM(2*x-1,k);
+}
+
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
                                              Tree *original_trees, int original_trees_cnt, bool debug_print, bool image_debug)
 {
@@ -468,6 +476,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             dist += results_data[i*slices_per_impostor + j];
 
         dist /= slices_per_impostor;
+        dist = sigmoid(dist);
         //dist = 1 - SQR(1-dist);
         
         float d_ld = abs(impostors_info_data[i+1].leaves_density - impostors_info_data[0].leaves_density); 
@@ -636,8 +645,8 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
         sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 2);
-        sil_fill.get_shader().uniform("dir_threshold", 6);
+        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("dir_threshold", 4);
         sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);
         sil_fill.get_shader().uniform("slice_size", slice_size);
@@ -651,7 +660,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_fill.get_shader().texture("tex", atl.tex(0));
         sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
-        sil_fill.get_shader().uniform("radius", 4);
+        sil_fill.get_shader().uniform("radius", 8);
         sil_fill.get_shader().uniform("dir_threshold", 6);
         sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);

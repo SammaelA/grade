@@ -20,6 +20,5 @@ public:
     static void set_joints_limit(int lim) {joints_limit = lim;}
 protected:
     static int joints_limit;
+    static std::atomic<int> branch_next_id, tree_next_id; 
 };
-
-extern std::atomic<int> branch_next_id, tree_next_id; 
