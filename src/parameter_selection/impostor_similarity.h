@@ -25,6 +25,15 @@ struct TreeCompareInfo
     float tropism = 0;
 };
 
+struct TrunkInfo
+{
+    float average_thickness = 0;
+    float symmetry_x = 0;//in texture coordinates i.e. in [0,1]
+    float trunk_split_level = 0;//as a share of tree size
+    float trunk_len = 0;//as a share of tree size
+    float thickness[16];//
+};
+
 struct TreeImageInfo
 {
     glm::vec4 tc_transform = glm::vec4(0,0,1,1);//shift and scale, tranform impostor to occupy the whole texture
@@ -32,6 +41,7 @@ struct TreeImageInfo
     float trunk_thickness = 0;//as a share of tree size
     float crown_leaves_share = 0;
     float crown_branches_share = 0;
+    TrunkInfo trunk_info;
 };
 
 struct TreeImageInfoToCompare

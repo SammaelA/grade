@@ -152,6 +152,20 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     //logerr("%d joints", info.joints_cnt);
 }
 
+void print_tree_image_info(TreeImageInfo &info)
+{
+         debug("tr thick %f %f\n",info.trunk_thickness,info.trunk_info.average_thickness);
+        debug("tr end sym_line len %f %f %f\n",info.trunk_info.trunk_split_level,
+                                               info.trunk_info.symmetry_x,
+                                               info.trunk_info.trunk_len);
+        debug("thickness [ ");
+        for (int j=0;j<16;j++)
+        {
+            debug("%f ",info.trunk_info.thickness[j]);
+        }
+        debug("]\n");   
+}
+
 void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::map<int, TreeImageInfo> &results, 
                                                  bool image_debug)
 {
@@ -220,11 +234,12 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, tree_image_info_buf);
     GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     memcpy(tree_image_info_data,ptr,sizeof(TreeImageInfo)*slices_cnt);
-    
+        
     if (image_debug)
     { 
         for (int i=0;i<slices_cnt;i++)
         {
+            print_tree_image_info(tree_image_info_data[i]);
             logerr("line %f %f %f %f", tree_image_info_data[i].crown_start_level, tree_image_info_data[i].crown_branches_share, 
                                        tree_image_info_data[i].crown_leaves_share, tree_image_info_data[i].trunk_thickness);
             glm::vec4 tc = tree_image_info_data[i].tc_transform;
@@ -306,6 +321,8 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
     }
     TreeImageInfo av_info;
     av_info.tc_transform = glm::vec4(0,0,0,0);
+    for (int i=0;i<16;i++)
+        av_info.trunk_info.thickness[i] = 0;
     for (auto &p : results)
     {
         av_info.trunk_thickness += p.second.trunk_thickness;
@@ -313,12 +330,26 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
         av_info.crown_leaves_share += p.second.crown_leaves_share;
         av_info.crown_branches_share += p.second.crown_branches_share;
         av_info.tc_transform += p.second.tc_transform;
+
+        av_info.trunk_info.average_thickness += p.second.trunk_info.average_thickness;
+        av_info.trunk_info.symmetry_x += p.second.trunk_info.symmetry_x;
+        av_info.trunk_info.trunk_len += p.second.trunk_info.trunk_len;
+        av_info.trunk_info.trunk_split_level += p.second.trunk_info.trunk_split_level;
+        for (int i=0;i<16;i++)
+            av_info.trunk_info.thickness[i] += p.second.trunk_info.thickness[i];
     }
     av_info.trunk_thickness /= results.size();
     av_info.crown_start_level /= results.size();
     av_info.crown_leaves_share /= results.size();
     av_info.crown_branches_share /= results.size();
     av_info.tc_transform /= results.size();
+
+    av_info.trunk_info.average_thickness /= results.size();
+    av_info.trunk_info.symmetry_x /= results.size();
+    av_info.trunk_info.trunk_len /= results.size();
+    av_info.trunk_info.trunk_split_level /= results.size();
+    for (int i=0;i<16;i++)
+        av_info.trunk_info.thickness[i] /= results.size();
 
     av_info.crown_leaves_share *= 0.85;//usually we don't see all the gaps on tree's crone on image, so it has larger leaves share
                                        //it is an euristic to reduce this error
@@ -370,6 +401,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         int slices_cnt = 0;
         TreeImageInfo av_info;
         av_info.tc_transform = glm::vec4(0,0,0,0);
+        for (int i=0;i<16;i++)
+            av_info.trunk_info.thickness[i] = 0;
         for (auto &slice : imp.slices)
         {
             auto it = images_info.find(slice.id);
@@ -384,6 +417,14 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
                 av_info.crown_leaves_share += it->second.crown_leaves_share;
                 av_info.crown_branches_share += it->second.crown_branches_share;
                 av_info.tc_transform += it->second.tc_transform;
+
+                av_info.trunk_info.average_thickness += it->second.trunk_info.average_thickness;
+                av_info.trunk_info.symmetry_x += it->second.trunk_info.symmetry_x;
+                av_info.trunk_info.trunk_len += it->second.trunk_info.trunk_len;
+                av_info.trunk_info.trunk_split_level += it->second.trunk_info.trunk_split_level;
+                for (int i=0;i<16;i++)
+                    av_info.trunk_info.thickness[i] += it->second.trunk_info.thickness[i];
+                
                 slices_cnt++;
             }
         }
@@ -393,6 +434,12 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         av_info.crown_branches_share /= slices_cnt;
         av_info.tc_transform /= slices_cnt;
 
+        av_info.trunk_info.average_thickness /= slices_cnt;
+        av_info.trunk_info.symmetry_x /= slices_cnt;
+        av_info.trunk_info.trunk_len /= slices_cnt;
+        av_info.trunk_info.trunk_split_level /= slices_cnt;
+        for (int i=0;i<16;i++)
+            av_info.trunk_info.thickness[i] /= slices_cnt;
         tree_image_info_data[imp_n+1] = av_info;
         imp_n++;
         t_n++;
@@ -402,6 +449,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         shader_imp_data[i].x = impostors_info_data[i].BCyl_sizes.x;
         shader_imp_data[i].y = impostors_info_data[i].BCyl_sizes.y;
         shader_imp_data[i].z = tree_image_info_data[i].crown_start_level;
+        shader_imp_data[i].w = tree_image_info_data[i].trunk_info.symmetry_x;
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -492,9 +540,20 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         float d_b_crone = abs(tree_image_info_data[i+1].crown_branches_share - tree_image_info_data[0].crown_branches_share);
         float d_b_leaves = abs(tree_image_info_data[i+1].crown_leaves_share - tree_image_info_data[0].crown_leaves_share);
         float d_cs = CLAMP(4*abs(tree_image_info_data[i+1].crown_start_level - tree_image_info_data[0].crown_start_level),0,1);
-        float d_th = CLAMP(abs(tree_image_info_data[i+1].trunk_thickness - tree_image_info_data[0].trunk_thickness) /
-                           (1e-4 + tree_image_info_data[0].trunk_thickness + tree_image_info_data[i+1].trunk_thickness),
+        float d_tl = CLAMP(abs(tree_image_info_data[i+1].trunk_info.trunk_len - tree_image_info_data[0].trunk_info.trunk_len) /
+                           (1e-4 + tree_image_info_data[0].trunk_info.trunk_len + tree_image_info_data[i+1].trunk_info.trunk_len),
                            0,1);
+        float d_th = 0;
+        float v1=1e-6,v2=1e-6;
+        for (int j=0;j<16;j++)
+        {
+           float r1 = tree_image_info_data[0].trunk_info.thickness[j];
+           float r2 = tree_image_info_data[i+1].trunk_info.thickness[j]; 
+           v1 += r1*r1;
+           v2 += r2*r2;
+           d_th += abs(r1*r1 - r2*r2);
+        }
+        d_th /= MAX(v1,v2);
         //logerr("th %f %f", tree_image_info_data[i+1].trunk_thickness, tree_image_info_data[0].trunk_thickness);
         glm::vec2 scale_fine;
         glm::vec2 ref_real_size = (1-2*ReferenceTree::border_size)*
@@ -546,12 +605,12 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
 
         if (debug_print && i == 0)
         {
-            logerr("size %.3f l_dens %.3f b_dens %.3f b_curv %.3f b_cnt %.3f tr_th %.3f trop %.3f crone_st %.3f l_share %.3f b_share %.3f imp_sim %.3f", 
-                   d_sd, d_ld, d_bd, d_bc, d_jcnt, d_th, d_trop, d_b_crone, 
+            logerr("size %.3f l_dens %.3f b_dens %.3f b_curv %.3f b_cnt %.3f tr_len %.3f tr_th %.3f trop %.3f crone_st %.3f l_share %.3f b_share %.3f imp_sim %.3f", 
+                   d_sd, d_ld, d_bd, d_bc, d_jcnt, d_tl, d_th, d_trop, d_b_crone, 
                    d_b_leaves, d_cs, dist);
         }
-        float res_dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_th) + 
-                                (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + 5*(1 - dist))/15, 0,1);
+        float res_dist = CLAMP(((1 - d_sd) + (1 - d_ld) + (1 - d_bd) + (1 - d_bc) + (1-d_jcnt) + (1-d_tl) + (1-d_th) + 
+                                (1-d_trop) + (1 - d_b_crone) + (1 - d_b_leaves) + (1 - d_cs) + 5*(1 - dist))/16, 0,1);
         res_dist = res_dist*res_dist*res_dist;
         
         bool valid = d_sd < 0.8 && d_jcnt < 0.9 && dist < 0.9;

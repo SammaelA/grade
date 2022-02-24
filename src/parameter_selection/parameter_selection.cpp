@@ -302,7 +302,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     }
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
-    tree_ggd.impostor_generation_params.slices_n = 8;
+    tree_ggd.impostor_generation_params.slices_n = 1;
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
@@ -333,7 +333,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     int imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
                           MAX(mp.initial_population_size, mp.max_population_size) + 
                           (3+1)*(mp.heaven_fine_tuning_count)*mp.heaven_size);
-    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, 8, false);
+    ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, tree_ggd.impostor_generation_params.slices_n, false);
     ParameterList parList, bestParList;
 
     tree_ggd.types[0].get_params()->write_parameter_list(parList);
@@ -621,7 +621,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.types = {reference_ttd};
             tree_ggd.name = "single_tree";
             tree_ggd.task = GenerationTask::IMPOSTORS;
-            tree_ggd.impostor_generation_params.slices_n = 8;
+            tree_ggd.impostor_generation_params.slices_n = 1;
             //tree_ggd.impostor_generation_params.need_top_view = false;
             tree_ggd.impostor_generation_params.quality = imp_size;
             tree_ggd.impostor_generation_params.monochrome = true;

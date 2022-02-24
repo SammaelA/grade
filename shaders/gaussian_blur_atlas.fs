@@ -46,6 +46,6 @@ void main(void)
         }
     }
     res.xy /= w;
-    fragColor = vec4(original.x, res.y,original.zw);
+    fragColor = vec4(res.xy,original.zw);
     //fragColor = vec4(ex_Tex, layer, 1);
 }

@@ -22,5 +22,5 @@
     initial_trunk_scale_x:p2 = 0.1, 10
     initial_trunk_scale_y:p2 = 0.1, 10
     trunk_bonus_radius:p2 = 0, 5
-    trunk_bonus_radius_mod:p2 = 0.1, 10
+    trunk_bonus_radius_mod:p2 = 0, 4
 }

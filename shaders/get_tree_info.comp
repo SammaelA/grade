@@ -1,6 +1,14 @@
 #version 430
 #define THREADS 64
 
+struct TrunkInfo
+{
+    float average_thickness;
+    float symmetry_x;//in texture coordinates i.e. in [0,1]
+    float trunk_split_level;//as a share of tree size
+    float trunk_len;//as a share of tree size
+    float thickness[16];//
+};
 struct TreeImageInfo
 {
     vec4 tc_transform;//shift and scale, tranform impostor to occupy the whole texture
@@ -8,11 +16,12 @@ struct TreeImageInfo
     float trunk_thickness;//as a share of tree size
     float crown_leaves_share;
     float crown_branches_share;
+    TrunkInfo trunk_info;
 };
 
 layout( local_size_x = THREADS, local_size_y = 1) in;
 
-layout(std430, binding = 1) writeonly buffer results_buf
+layout(std430, binding = 1) buffer results_buf
 {
     TreeImageInfo results[];
 };
@@ -47,6 +56,115 @@ vec4 smooth_sample_init(ivec3 pixel_coords)
            0.125*texelFetch(initial_atlas, pixel_coords + ivec3( 0, 1,0), 0) +
            0.25*texelFetch(initial_atlas, pixel_coords, 0);
 }
+
+void find_trunk_info(ivec3 pixel_coords, int id)
+{
+    ivec2 trunk_borders[MAX_IMPOSTOR_SIZE];
+    trunk_borders[0] = ivec2(0,0);
+    trunk_borders[1] = ivec2(0,0);
+    int borders_pos = 0;
+    int trunk_start_y = -1;
+    int trunk_end_y = -1;
+    for (int j=0;j<impostor_y;j++)
+    {
+        int b_pix = 0;
+        int l_pix = 0;
+        int b_st = -1;
+        int b_fin = -1;
+        for (int i=0;i<impostor_x;i++)
+        {
+            vec4 p1 = texelFetch(transformed_atlas, pixel_coords + ivec3(i,j,0), 0);
+            l_pix += int(p1.y > 0);
+            if (p1.x > 0)
+            {
+                if (b_fin >= 0)
+                {
+                    //we found second branch, so the trunk splits here
+                    trunk_end_y = max(trunk_start_y,j-1);
+                    break;
+                }
+                else if (b_st < 0)
+                {
+                    b_st = i;
+                    b_pix = 1;
+                }
+                else
+                {
+                    b_pix++;
+                }
+            }
+            else if (b_st >= 0 && b_fin < 0) 
+            {
+                //trunk finished on this slice
+                b_fin = i-1;
+            }
+        }
+        if (b_st >= 0 && b_fin < 0)
+            b_fin = impostor_x; 
+        if (trunk_start_y < 0)
+        {
+            //we found y where trunk starting
+            if (b_st >= 0)
+                trunk_start_y = j;
+        }
+        else
+        {
+            if (b_st >= 0)
+            {
+                if (borders_pos > 4 && float(b_fin - b_st) > 1.5*float(trunk_borders[borders_pos-1].y - trunk_borders[borders_pos-1].x))
+                {
+                    //trunk increase its size rapidly and it's not the artifacts on its very bottom. Probably it is splitted
+                    trunk_end_y = max(trunk_start_y,j-1);
+                }
+                else
+                {
+                    //trunk continues
+                    trunk_borders[borders_pos] = ivec2(b_st,b_fin);
+                    borders_pos++;
+                }
+            }
+            else
+            {
+                //trunk fully covered with leaves or just disappeared, so it is finished
+                trunk_end_y = max(trunk_start_y,j-1);
+            }
+        }
+        if (trunk_end_y >= 0)
+        {
+            //we found where trunk splits
+            break;
+        }
+    }
+    if (trunk_start_y >= 0 && trunk_end_y < 0)
+        trunk_end_y = impostor_y - 1;
+    float arr_step = float(borders_pos-1)/(16.0 - 1.0);
+    float av_tr_thickness = 0;
+    float av_sym_x = 0;
+    for (int i=0;i<16;i++)
+    {
+        int bord_pos = int(i*arr_step);
+        float a = fract(i*arr_step);
+        vec2 bord;
+        if (i == 15)
+            bord = vec2(trunk_borders[borders_pos-1]);
+        else 
+        {
+            bord = a*vec2(trunk_borders[bord_pos+1]) + (1-a)*vec2(trunk_borders[bord_pos]);
+        }
+        //*results[id].tc_transform.z
+        results[id].trunk_info.thickness[i] = (bord.y - bord.x)*results[id].tc_transform.z/impostor_x;
+        av_tr_thickness += results[id].trunk_info.thickness[i];
+        if (i < 4)
+        {
+            av_sym_x += 0.5*(bord.y + bord.x)/impostor_x;
+        }
+    }
+    results[id].trunk_info.average_thickness = av_tr_thickness/16;
+    results[id].trunk_info.symmetry_x = av_sym_x/4;
+    results[id].trunk_info.trunk_split_level = float(trunk_end_y+1)/impostor_y;
+    results[id].trunk_info.trunk_len = float(borders_pos)*results[id].tc_transform.w/impostor_y;
+}
+
 void find_th_lb(ivec3 pixel_coords, int id)
 {
     int leaves_cnt[MAX_IMPOSTOR_SIZE];
@@ -197,4 +315,5 @@ void main()
         return;
     ivec3 slice_data = ivec3(slices_info[id].xyz);
     find_th_lb(slice_data, id);
+    find_trunk_info(slice_data, id);
 }

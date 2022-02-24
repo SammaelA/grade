@@ -13,7 +13,7 @@ layout(std430, binding = 2) readonly buffer slices_info_buf
 };
 layout(std430, binding = 3) readonly buffer impostors_info_buf
 {
-    vec4 impostors_info[];//impostors_info[0] is info for reference. It contains (Bcyl_radius, Bcyl_height, crown_start_level,0)
+    vec4 impostors_info[];//impostors_info[0] is info for reference. It contains (Bcyl_radius, Bcyl_height, crown_start_level,symmetry_x)
 };
 layout(std430, binding = 4) writeonly buffer debug_buf
 {
@@ -32,8 +32,15 @@ uniform int relative_scale;
 uniform sampler2DArray atlas;
 uniform sampler2DArray reference_image;
 
-float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, float crown_level_ref, float crown_level_i)
+float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, int impostor_n)
 {
+    float crown_level_ref = impostors_info[0].z;
+    float crown_level_i = impostors_info[impostor_n+1].z;
+    float sym_line_ref = impostors_info[0].w;
+    float sym_line_i = impostors_info[impostor_n+1].w;
+    //sym_line_ref = 0.5;
+    //sym_line_i = 0.5;
+    int sym_line_shift = int(impostor_x*(sym_line_ref-sym_line_i));
     int p_cr = int(crown_level_ref*impostor_y);
     int p_cr_i = int(crown_level_i*impostor_y);
 
@@ -54,14 +61,14 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, float cr
     int max_y = impostor_y - max(min(p_cr, p_cr_i) + 1,0);
     for (int j=0;j<max_y;j++)
     {
-        for (int i=0;i<impostor_x;i++)
+        for (int i=min(0,sym_line_shift);i<impostor_x+max(0,sym_line_shift);i++)
         {
-            vec2 imp_tc = (vec2(i/float(impostor_x),j/float(impostor_y) + crown_level_i) - vec2(0.5,0))*scale_i + vec2(0.5,0);
+            vec2 imp_tc = (vec2((i-sym_line_shift)/float(impostor_x),j/float(impostor_y) + crown_level_i) - vec2(sym_line_i,0))*scale_i + vec2(sym_line_i,0);
             vec4 p1 = (imp_tc.x < 0 || imp_tc.x > 1 || imp_tc.y < 0 || imp_tc.y > 1) ?
                        vec4(0,0,0,0) :
                        texelFetch(atlas, pixel_coords + ivec3(imp_tc*vec2(impostor_x, impostor_y), 0), 0);
 
-            vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y) + crown_level_ref) - vec2(0.5,0))*scale + vec2(0.5,0);
+            vec2 im_tc = (vec2(i/float(impostor_x),j/float(impostor_y) + crown_level_ref) - vec2(sym_line_ref,0))*scale + vec2(sym_line_ref,0);
             vec4 p2 = (im_tc.x < 0 || im_tc.x > 1 || im_tc.y < 0 || im_tc.y > 1) ?
                        vec4(0,0,0,0) :
                        textureLod(reference_image, vec3(im_tc + vec2(ref_image_n,0), 0),0);
@@ -69,7 +76,7 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, float cr
             crone_dist += abs(p1.z - p2.z);
             crone_sum += max(p1.z, p2.z);
 
-            if (image_debug > 0 && id == 0)
+            if (image_debug > 0 && id == 0 && j >= 0 && j < impostor_y && i>=0 && i < impostor_x)
             {
                 debug_image[j*impostor_x + i] = uvec4(0, 255*p1.z, 0, 255);
                 debug_image[2*impostor_x*impostor_y + j*impostor_x + i] = uvec4(0, 0, 255*p2.z, 255);
@@ -93,14 +100,14 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, float cr
     int start_y = max(max(p_cr, p_cr_i) + 1,0);
     for (int j=0;j<start_y;j++)
     {
-        for (int i=0;i<impostor_x;i++)
+        for (int i=min(0,sym_line_shift);i<impostor_x+max(0,sym_line_shift);i++)
         {
-            vec2 imp_tc = (vec2(i/float(impostor_x),-j/float(impostor_y) + crown_level_i) - vec2(0.5,0))*scale_i + vec2(0.5,0);
+            vec2 imp_tc = (vec2((i-sym_line_shift)/float(impostor_x),-j/float(impostor_y) + crown_level_i) - vec2(sym_line_i,0))*scale_i + vec2(sym_line_i,0);
             vec4 p1 = (imp_tc.x < 0 || imp_tc.x > 1 || imp_tc.y < 0 || imp_tc.y > 1) ?
                        vec4(0,0,0,0) :
                        texelFetch(atlas, pixel_coords + ivec3(imp_tc*vec2(impostor_x, impostor_y), 0), 0);
 
-            vec2 im_tc = (vec2(i/float(impostor_x),-j/float(impostor_y) + crown_level_ref) - vec2(0.5,0))*scale + vec2(0.5,0);
+            vec2 im_tc = (vec2(i/float(impostor_x),-j/float(impostor_y) + crown_level_ref) - vec2(sym_line_ref,0))*scale + vec2(sym_line_ref,0);
             vec4 p2 = (im_tc.x < 0 || im_tc.x > 1 || im_tc.y < 0 || im_tc.y > 1) ?
                        vec4(0,0,0,0) :
                        textureLod(reference_image, vec3(im_tc + vec2(ref_image_n,0), 0),0);
@@ -108,7 +115,7 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, float cr
             crone_dist += abs(p1.x - p2.x);
             crone_sum += max(p1.x, p2.x);
 
-            if (image_debug > 0 && id == 0)
+            if (image_debug > 0 && id == 0 && j >= 0 && j < impostor_y && i>=0 && i < impostor_x)
             {
                 debug_image[impostor_x*impostor_y + j*impostor_x + i] = uvec4(0, 255*p1.x, 255*p2.x, 255);
             }
@@ -148,7 +155,7 @@ void main()
     float min_dist = 1;
     for (int i=0;i<reference_images_cnt;i++)
     {
-        float dist = get_dist(slice_data, scale, i, id, impostors_info[0].z, impostors_info[impostor_n+1].z);
+        float dist = get_dist(slice_data, scale, i, id, impostor_n);
         min_dist = min(dist, min_dist);
     }
     results[id] = min_dist;
