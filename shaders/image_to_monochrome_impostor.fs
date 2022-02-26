@@ -17,7 +17,7 @@ void main(void)
   float br = 0.125;
   vec4 tc_tr_2 = vec4(-br,-br,1,1)/(1-2*br);
   tc = ref_tc_transform.xy + ref_tc_transform.zw*tc;
-  tc = tc_tr_2.xy + tc_tr_2.zw*tc;
+  //tc = tc_tr_2.xy + tc_tr_2.zw*tc;
   //tc.y = 1 - tc.y;
   vec4 color = (tc.x >=0 && tc.y >= 0 && tc.x<=1 && tc.y<=1) ? texture(tex, tc) : vec4(0,0,0,0);
 

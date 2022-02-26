@@ -12,6 +12,14 @@
 
 bool debug_stat = false;
 
+glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
+{
+    return glm::vec4(tc_tr_2.x + tc_tr_1.x*tc_tr_2.z,
+                    tc_tr_2.y + tc_tr_1.y*tc_tr_2.w,
+                    tc_tr_1.z*tc_tr_2.z,
+                    tc_tr_1.w*tc_tr_2.w);
+}
+
 Texture load_reference(std::string name, int image_w, int image_h)
 {
     Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
@@ -270,7 +278,7 @@ void print_ref_tree_info(TreeCompareInfo &info)
 }
 
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
-                                                     ReferenceTree &ref_tree, TreeTypeData *ref_type)
+                                                     ReferenceTree &ref_tree, TreeTypeData *ref_type, bool save_result_image)
 {
     debug("starting parameter selection for reference");
     print_ref_tree_info(ref_tree.info);
@@ -321,15 +329,13 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     mp.evolution_stat = selection_settings.get_bool("evolution_stat", mp.evolution_stat);
     mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
     mp.heaven_fine_tuning_count = selection_settings.get_int("heaven_fine_tuning_count", mp.heaven_fine_tuning_count);
+    
     GeneticAlgorithm::ExitConditions ex_c;
-    Block *ex_bl = selection_settings.get_block("exit_conditions");
-    if (ex_bl)
-    {
-        ex_c.function_calculated = ex_bl->get_int("function_calculated", ex_c.function_calculated);
-        ex_c.function_reached = ex_bl->get_double("function_reached", ex_c.function_reached);
-        ex_c.generations = ex_bl->get_int("generations", ex_c.generations);
-        ex_c.time_elapsed_seconds = ex_bl->get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
-    }
+    ex_c.function_calculated = selection_settings.get_int("function_calculated", ex_c.function_calculated);
+    ex_c.function_reached = selection_settings.get_double("function_reached", ex_c.function_reached);
+    ex_c.generations = selection_settings.get_int("generations", ex_c.generations);
+    ex_c.time_elapsed_seconds = selection_settings.get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
+
     int imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
                           MAX(mp.initial_population_size, mp.max_population_size) + 
                           (3+1)*(mp.heaven_fine_tuning_count)*mp.heaven_size);
@@ -422,6 +428,16 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             gen->finalize_generation(trees + i, *res_voxels);
 
         }
+
+        tree_ggd.impostor_generation_params = ImpostorBaker::ImpostorGenerationParams();
+        if (save_result_image)
+        {
+            tree_ggd.impostor_generation_params.slices_n = 1;
+            //tree_ggd.impostor_generation_params.need_top_view = false;
+            tree_ggd.impostor_generation_params.normals_needed = false;
+            tree_ggd.impostor_generation_params.quality = 512;
+
+        }
         packer.add_trees_to_grove(tree_ggd, scene.grove, trees, scene.heightmap, false);
 
         int i = 0;
@@ -438,6 +454,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     AbstractTreeGenerator::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
+    results.best_res = best_metric;
 }
 
 void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color,
@@ -529,6 +546,11 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         tc_transform.y = (float)(min_y)/h;
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
+
+        float br = 0.125;
+        glm::vec4 tc_tr_2 = glm::vec4(-br,-br,1,1)/(1-2*br);
+        tc_transform = tc_tr_mult(tc_transform, tc_tr_2);
+
         width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
 
         float base_th = 0;
@@ -587,6 +609,15 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     float original_tex_tr_thickness = 0;
     ReferenceTree ref_tree;
     TreeTypeData reference_ttd;
+
+    bool save_selection_stat = true;
+    int sel_stat_w = 512;
+    int sel_stat_h = 512;
+    
+    TextureAtlas sel_stat_atl = TextureAtlas(4 * sel_stat_w, sel_stat_h, 1, 1);
+    sel_stat_atl.set_grid(sel_stat_w, sel_stat_h, false);
+    std::string reference_name = "ERROR";
+    float reference_aspect_ratio = 0;
 
     int reference_images_cnt = 0;
     for (int i=0;i<reference_info.size();i++)
@@ -695,6 +726,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         original_tex_aspect_ratio = 0;
         ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(1, reference_images_cnt);
 
+        bool ref_stat_saved = false;
         for (int i=0;i<reference_info.size();i++)
         {
             if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
@@ -705,7 +737,9 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 std::string name = ref_image_blk->get_string("image","");
                 if (name == "")
                     continue;
+                reference_name = name;
                 Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+                reference_aspect_ratio = ref_raw.get_H()/(float)ref_raw.get_W();
                 glm::vec4 ref_tc_transform;
                 float aspect_ratio = -1;
                 float tr_thickness = -1;
@@ -726,18 +760,51 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                                                 ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
                 ref_transform.get_shader().uniform("ref_tc_transform",ref_tc_transform);
                 ref_transform.render();
+                glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+                if (save_selection_stat && !ref_stat_saved)
+                {
+                    PostFx copy("copy.fs");
+                    int tex_id = sel_stat_atl.add_tex();
+                    sel_stat_atl.target_slice(tex_id, 0);
+                    copy.use();
+                    copy.get_shader().texture("tex", ref_raw);
+                    copy.get_shader().uniform("tex_transform", ref_tc_transform);
+                    copy.render();
+                    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+                    PostFx copy_arr("copy_arr2.fs");
+                    tex_id = sel_stat_atl.add_tex();
+                    sel_stat_atl.target_slice(tex_id, 0);
+                    copy_arr.use();
+                    copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
+                    copy_arr.get_shader().uniform("tex_transform", glm::vec4(0,1,1,-1));
+                    copy_arr.render();
+                    glMemoryBarrier(GL_ALL_BARRIER_BITS);       
+                    ref_stat_saved = true;             
+                }
 
                 textureManager.delete_tex(ref_raw);
             }
         }
         original_tex_aspect_ratio /= reference_images_cnt;
         original_tex_tr_thickness /= reference_images_cnt;
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
         textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_0");
         imp_sim.get_reference_tree_image_info(ref_tree);
     }
     textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_1");
-    
+    if (save_selection_stat)
+    {
+        PostFx copy_arr("copy_arr2.fs");
+        int tex_id = sel_stat_atl.add_tex();
+        sel_stat_atl.target_slice(tex_id, 0);
+        copy_arr.use();
+        copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
+        copy_arr.get_shader().uniform("tex_transform", glm::vec4(0,1,1,-1));
+        copy_arr.render();
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    }
+
     Block &ri = reference_info;
     TreeCompareInfo explicit_info;
     explicit_info.BCyl_sizes = glm::vec2(ri.get_double("width",-1),ri.get_double("height",-1));
@@ -1006,12 +1073,85 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         ref_tree.info.joints_cnt = explicit_info.joints_cnt;
     }
 
+    bool save_result_image = selection_settings.get_bool("save_result_image",false);
     Results res;
-    parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd);
+    parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd,
+                                 save_result_image);
     
     std::string type_name = selection_settings.get_string("save_best_result","");
     if (type_name != "")
-        metainfoManager.add_tree_type(res.best_candidates[0], type_name);   
-    
+        metainfoManager.add_tree_type(res.best_candidates[0], type_name);
+
+    if (save_result_image)
+    {
+        int tex_w = 512;
+        int tex_h = 512;
+        int start_imp = 1;
+        auto &imp = scene.grove.impostors[1];
+        int id = imp.impostors.front().slices[0].id;
+        PostFx copy = PostFx("copy_arr2.fs");
+
+        TextureAtlas atlas_copy = TextureAtlas(imp.atlas.get_sizes().x, imp.atlas.get_sizes().y, 1, 1);
+        atlas_copy.set_grid(imp.atlas.get_sizes().x, imp.atlas.get_sizes().y, false);
+        int tex_id = atlas_copy.add_tex();
+        atlas_copy.target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex", imp.atlas.tex(0));
+        copy.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        copy.get_shader().uniform("layer", (float)0);
+        copy.render();
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        // save result imposter
+        std::map<int, TreeImageInfo> image_infos;
+        ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp.impostors.size(), 1);
+        imp_sim.get_tree_image_info(imp.atlas, image_infos, false);
+        auto it = image_infos.find(id);
+        glm::vec4 tex_transform = imp.atlas.tc_transform(id);
+        tex_transform = glm::vec4(tex_transform.z * tex_transform.x, tex_transform.w * tex_transform.y, tex_transform.x, tex_transform.y);
+        if (it != image_infos.end())
+        {
+            float br = 0.09;
+            glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
+            glm::vec4 tr_tc_3 = tc_tr_mult(it->second.tc_transform, tc_tr_2);
+            tex_transform = tc_tr_mult(tr_tc_3, tex_transform);
+        }
+        else
+        {
+            logerr("asasff");
+        }
+
+        tex_transform = glm::vec4(tex_transform.x, tex_transform.y + tex_transform.w, tex_transform.z, -tex_transform.w);
+        glm::vec3 tex = glm::vec3(0, 0, 0);
+        imp.atlas.process_tc(id, tex);
+        int layer = tex.z;
+        tex_id = sel_stat_atl.add_tex();
+        sel_stat_atl.target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex", atlas_copy.tex(0));
+        copy.get_shader().uniform("tex_transform", tex_transform);
+        copy.get_shader().uniform("layer", (float)layer);
+        copy.render();
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        TextureAtlas atlas_asp = TextureAtlas(sel_stat_atl.get_sizes().x, 
+                                              reference_aspect_ratio*sel_stat_atl.get_sizes().y, 1, 1);
+        atlas_asp.set_grid(sel_stat_atl.get_sizes().x, reference_aspect_ratio*sel_stat_atl.get_sizes().y, false);
+        tex_id = atlas_asp.add_tex();
+        atlas_asp.target_slice(tex_id, 0);
+        copy.use();
+        copy.get_shader().texture("tex", sel_stat_atl.tex(0));
+        copy.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        copy.get_shader().uniform("layer", (float)0);
+        copy.render();
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        int iters = selection_settings.get_int("function_calculated",-1);
+        int version = selection_settings.get_int("version",-1);
+        std::string gen_name = selection_settings.get_string("generator_name","unknown_gen");
+        std::string file_name = "selection/" + gen_name +"/" + reference_name + "_v" + std::to_string(version) + "_i"+std::to_string(iters)
+                                + "_q0."+std::to_string((int)(100*res.best_res));
+        textureManager.save_png(atlas_asp.tex(0), file_name);
+    }
+
     return res;
 }

@@ -370,6 +370,24 @@ bool load_block(const char *data, int &cur_pos, Block &b)
         }
     }
 }
+
+bool BlkManager::load_block_from_string(std::string &str, Block &b)
+{
+    cur_line = 0;
+    int cur_pos = 0;
+    const char *data = str.c_str();
+    std::string token = next_token(data, cur_pos);
+    if (token == "{")
+    {
+        return load_block(data, cur_pos, b);
+    }
+    else
+    {
+        logerr("global block should start with {");
+        return false;
+    }    
+}
+
 bool BlkManager::load_block_from_file(std::string path, Block &b)
 {
     std::fstream f(path);
@@ -381,19 +399,7 @@ bool BlkManager::load_block_from_file(std::string path, Block &b)
     }
     iss << f.rdbuf();
     std::string entireFile = iss.str();
-    cur_line = 0;
-    int cur_pos = 0;
-    const char *data = entireFile.c_str();
-    std::string token = next_token(data, cur_pos);
-    if (token == "{")
-    {
-        return load_block(data, cur_pos, b);
-    }
-    else
-    {
-        logerr("global block should start with {");
-        return false;
-    }
+    load_block_from_string(entireFile, b);
 }
 
 int Block::size()
@@ -647,6 +653,12 @@ void save_value(std::string &str, Block::Value &v)
         save_block(str, *(v.bl));
     }
 }
+
+void BlkManager::save_block_to_string(std::string &str, Block &b)
+{
+    save_block(str, b);   
+}
+
 void BlkManager::save_block_to_file(std::string path, Block &b)
 {
     std::string input;
@@ -916,4 +928,23 @@ void Block::set_value(const std::string &name, const Block::Value &value)
         values[id] = value;
     else 
         add_value(name,value);
+}
+
+void Block::add_detalization(Block &det)
+{
+    for (int i=0;i<det.size();i++)
+    {
+        int id = get_id(det.get_name(i));
+        if (id >= 0 && values[id].type == det.get_type(i))
+        {
+            if (values[id].type == ValueType::BLOCK)
+            {
+                if (values[id].bl && det.values[i].bl)
+                    values[id].bl->add_detalization(*(det.values[i].bl));
+            }
+            else
+                values[id] = det.values[i];
+            logerr("detalization added %s %d %d",det.get_name(i).c_str(),values[id].bl, det.values[i].bl);
+        }
+    }
 }

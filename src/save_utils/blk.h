@@ -145,6 +145,9 @@ struct Block
 
     void add_value(const std::string &name, const Value &value);
     void set_value(const std::string &name, const Value &value);
+
+    void add_detalization(Block &det);
+
     std::vector<std::string> names;
     std::vector<Value> values;
 };
@@ -152,6 +155,8 @@ struct Block
 class BlkManager
 {
 public:
+    bool load_block_from_string(std::string &str, Block &b);
     bool load_block_from_file(std::string path, Block &b);
+    void save_block_to_string(std::string &str, Block &b);
     void save_block_to_file(std::string path, Block &b);
 };

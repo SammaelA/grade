@@ -15,7 +15,7 @@
     //reference_type:s = "large_oak"
     reference_image
     {
-        image:s = "reference_tree_test.png"
+        image:s = "ref1.png"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
         background_color:p3 = 0, 0, 0

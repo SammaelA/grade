@@ -9,5 +9,5 @@ uniform sampler2DArray tex;
 uniform float layer;
 void main(void) 
 {
-  fragColor = vec4(texture(tex,vec3(ex_Tex,layer)).xyz,1);
+  fragColor = vec4(textureLod(tex,vec3(ex_Tex,layer),0).xyz,1);
 }

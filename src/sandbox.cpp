@@ -267,6 +267,18 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     BlkManager man;
     man.load_block_from_file("parameter_selection_settings.blk", b);
     man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+    std::string add_str = "";
+    if (argc == 3 && argv[2] != "-render")
+    {
+        logerr("argv %s",argv[2]);
+        add_str = argv[2];
+    }
+    if (add_str != "")
+    {
+        Block add_ref;
+        man.load_block_from_string(add_str, add_ref);
+        ref_info.add_detalization(add_ref);
+    }
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
     metainfoManager.save_all();

@@ -43,7 +43,7 @@ uniform int image_debug;
 uniform sampler2DArray initial_atlas;
 uniform sampler2DArray transformed_atlas;
 
-#define MAX_IMPOSTOR_SIZE 256
+#define MAX_IMPOSTOR_SIZE 512
 vec4 smooth_sample_init(ivec3 pixel_coords)
 {
     return 0.0625*texelFetch(initial_atlas, pixel_coords + ivec3(-1,-1,0), 0) +
