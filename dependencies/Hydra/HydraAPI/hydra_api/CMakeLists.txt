@@ -45,7 +45,12 @@ set(SOURCE_FILES
         HydraAPI_GeomProcessing.cpp
         vfloat4_x64.h
         HydraRngUtils.cpp
-        HydraVSGFCompress.h HydraVSGFCompress.cpp)
+        HydraVSGFCompress.h HydraVSGFCompress.cpp
+        cmesh.cpp
+        cmesh_mikey_connect.cpp
+        cmesh_processing_weld.cpp
+        cmesh_processing.cpp
+        cmesh_vsgf.cpp)
 
 
 if (WIN32)
@@ -97,7 +102,7 @@ if(WIN32)
 #  target_link_libraries(hydra_api LINK_PUBLIC ${LIBS} ${OPENGL_glu_LIBRARY} ${OPENGL_gl_LIBRARY} corto ies_parser mikttspace)
 else()
   set_property(TARGET hydra_api PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1 -lstdc++fs")
 
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang") # enable sanitize youself if needed
       #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fno-omit-frame-pointer -fsanitize=leak)

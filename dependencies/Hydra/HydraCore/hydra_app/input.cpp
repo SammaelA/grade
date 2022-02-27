@@ -13,6 +13,7 @@ Input::Input()
   //inLibraryPath = "tests/test_aniso";
   //inLibraryPath = "tests/test_42_with_mirror";  
   inLibraryPath = "tests/test_42";
+  //inLibraryPath = "../../Diser/DiffuseReference/01_CornellBoxEmpty_direct/scenelib";
   //inLibraryPath = "tests/test_223_small"; ///< cornell box with sphere
   //inLibraryPath = "tests/test_224";
   //inLibraryPath = "tests/test_224_sphere";
@@ -20,21 +21,17 @@ Input::Input()
   //inLibraryPath = "tests/test_pool";
   //inLibraryPath = "C:/[Hydra]/pluginFiles/scenelib/";
 
-  //inLibraryPath = "/home/frol/PROG/HydraRepos/clsp/database/temp";
-  //inLibraryPath = "/home/frol/PROG/HydraRepos/HydraAPI-tests/3dsMaxTests/Furnance_Lambert";
-  //inLibraryPath = "/home/frol/PROG/HydraRepos/HydraAPI-tests/3dsMaxTests/Furnance_reflect_Phong";
-  //inLibraryPath = "/home/frol/PROG/HydraRepos/HydraAPI-tests/3dsMaxTests/NaNwithNormalMap";
-  //inLibraryPath = "/media/frol/f5550da9-66b3-4725-940f-ba037e5ffeb2/home/frol/PROG/HydraRepos/HydraAPI-tests/3dsMaxTests/Furnance_reflect_Phong";
-  //inLibraryPath = "/media/frol/f5550da9-66b3-4725-940f-ba037e5ffeb2/home/frol/PROG/HydraRepos/HydraAPI-tests/3dsMaxTests/Anisotropy_and_AreaLight_2";
+  //inLibraryPath = "/home/frol/PROG/HydraRepos/HydraAPI-tests/tests_f/test_119";
+  //inLibraryPath = "/home/frol/PROG/HydraRepos/HydraAPI/main/demos/demo_02";
 
   inDevelopment = false; ///< recompile shaders each time; note that nvidia have their own shader cache!
   inDeviceId    = 0;     ///< opencl device id
-  cpuFB         = false;  ///< store frame buffer on CPU. Automaticly enabled if
+  cpuFB         = true;  ///< store frame buffer on CPU. Automaticly enabled if
   enableMLT     = false; ///< if use MMLT, you MUST enable it early, when render process just started (here or via command line).
   boxMode       = false; ///< special 'in the box' mode when render don't react to any commands
 
-  winWidth      = 1024; //1536; ///<
-  winHeight     = 1024; //192;  ///<
+  winWidth      = 1024;
+  winHeight     = 1024;
 
   enableOpenGL1 = false; ///< if you want to draw scene for some debug needs with OpenGL1.
   exitStatus    = false;

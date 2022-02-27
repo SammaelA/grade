@@ -74,15 +74,22 @@ typedef struct GlobalRenderDataT
   int        sunNumber;           // #change this?
   PlainLight suns[MAX_SUN_NUM];   // #change this?
 
+  int    m_allTablesAreReady;
+  ushort m_essGgx2017Table[64 * 64];  
+  ushort m_essTranspTable[64 * 64 * 64];
 
 } EngineGlobals;
 
 #ifndef OCL_COMPILER
-static inline void InitEngineGlobals(EngineGlobals* a_pGlobals)
+static inline void InitEngineGlobals(EngineGlobals* a_pGlobals, const ushort* a_ggxData, const ushort* a_transpData)
 {
   memset(a_pGlobals, 0, sizeof(EngineGlobals));
   for(int i=0;i<QMC_VARS_NUM;i++)
     a_pGlobals->rmQMC[i] = -1;
+
+  a_pGlobals->m_allTablesAreReady = 1;
+  memcpy(a_pGlobals->m_essGgx2017Table, a_ggxData,   sizeof(ushort) * 64 * 64);
+  memcpy(a_pGlobals->m_essTranspTable, a_transpData, sizeof(ushort) * 64 * 64 * 64);
 }
 #endif
 
@@ -107,6 +114,19 @@ typedef struct SWTexSamplerT
 
   float4 row0;
   float4 row1;
+
+  #ifndef OCL_COMPILER
+  SWTexSamplerT operator=(const SWTexSamplerT& rhs)
+  {
+    flags = rhs.flags;
+    gamma = rhs.gamma;
+    texId = rhs.texId;
+    dummy2 = rhs.dummy2;
+    LiteMath::store_u(&row0.x, rhs.row0);
+    LiteMath::store_u(&row1.x, rhs.row1);
+    return *this;
+  }
+  #endif
 
 } SWTexSampler;
 
@@ -347,8 +367,8 @@ static inline float4 read_imagef_sw4(texture2d_t a_tex, const float2 a_texCoord,
   const float fw  = (float)(w);
   const float fh  = (float)(h);
 
-  float ffx = a_texCoord.x*fw - 0.5f;
-  float ffy = a_texCoord.y*fh - 0.5f;
+  float ffx = a_texCoord.x * fw - 0.5f; // a_texCoord should not be very large, so that the float does not overflow later. 
+  float ffy = a_texCoord.y * fh - 0.5f; // This is left to the responsibility of the top level.
 
   if ((a_flags & TEX_CLAMP_U) != 0 && ffx < 0) ffx = 0.0f;
   if ((a_flags & TEX_CLAMP_V) != 0 && ffy < 0) ffy = 0.0f;
@@ -790,9 +810,6 @@ static inline float3 sample2DAuxExt(int2 a_samplerOffset, float2 texCoord, __glo
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-
 // Basically the sensor plane is perpendicular to the viewing
 // direction, the optical axis which intersects its center.
 // Focusing can be done by moving the sensor back and forth
@@ -801,7 +818,7 @@ static inline float3 sample2DAuxExt(int2 a_samplerOffset, float2 texCoord, __glo
 // is not oriented perpendicularly to the optical axis.
 //
 
-ID_CALL float3 tiltCorrection(float3 ray_pos, float3 ray_dir, __global const EngineGlobals* a_globals)
+static inline float3 tiltCorrection(float3 ray_pos, float3 ray_dir, __global const EngineGlobals* a_globals)
 {
   float tiltX = a_globals->varsF[HRT_TILT_ROT_X];
   float tiltY = a_globals->varsF[HRT_TILT_ROT_Y];
@@ -820,10 +837,10 @@ ID_CALL float3 tiltCorrection(float3 ray_pos, float3 ray_dir, __global const Eng
     // rotate
 
     if (fabs(tiltY) > 0.0)
-      p = mul(make_matrix_rotationY(-tiltY), p);
+      p = mul(make_matrix_rotationY(-tiltY), p); // may be (+) ???
 
     if (fabs(tiltX) > 0.0f)
-      p = mul(make_matrix_rotationX(tiltX), p);
+      p = mul(make_matrix_rotationX(-tiltX), p);
 
     p.z -= 1.0f;
 
@@ -941,7 +958,7 @@ static inline void MakeEyeRayFromF4Rnd(float4 lensOffs, __global const EngineGlo
 
 #ifdef USE_1D_TEXTURES
 
-IDH_CALL int2 getObjectList(unsigned int offset, __read_only image1d_buffer_t objListTex)
+static inline int2 getObjectList(unsigned int offset, __read_only image1d_buffer_t objListTex)
 {
   int2 res;
   float4 tmp = read_imagef(objListTex, offset); //objListTex[offset]; 
@@ -950,7 +967,7 @@ IDH_CALL int2 getObjectList(unsigned int offset, __read_only image1d_buffer_t ob
   return res;
 }
 
-IDH_CALL BVHNode GetBVHNode(unsigned int offset, __read_only image1d_buffer_t bvhTex)
+static inline BVHNode GetBVHNode(unsigned int offset, __read_only image1d_buffer_t bvhTex)
 {
   float4 nodeHalf1 = read_imagef(bvhTex, (int)(2 * offset + 0));
   float4 nodeHalf2 = read_imagef(bvhTex, (int)(2 * offset + 1));
@@ -971,7 +988,7 @@ IDH_CALL BVHNode GetBVHNode(unsigned int offset, __read_only image1d_buffer_t bv
 
 #else
 
-IDH_CALL int2 getObjectList(unsigned int offset, __global const float4* objListTex)
+static inline int2 getObjectList(unsigned int offset, __global const float4* objListTex)
 {
   int2 res;
   float4 tmp = objListTex[offset]; 
@@ -980,8 +997,7 @@ IDH_CALL int2 getObjectList(unsigned int offset, __global const float4* objListT
   return res;
 }
 
-
-IDH_CALL BVHNode GetBVHNode(int offset, __global const float4* bvhTex)
+static inline BVHNode GetBVHNode(int offset, __global const float4* bvhTex)
 {
   const int    offset2   = (offset >= 0) ? offset : 0;
 
@@ -1094,10 +1110,10 @@ static inline __global const float* meshShadowRayOff(__global const PlainMesh* a
 static inline float4x4 fetchMatrix(const Lite_Hit hit, __global const float4* in_matrices)
 {
   float4x4 res;
-  res.row[0] = in_matrices[hit.instId * 4 + 0];
-  res.row[1] = in_matrices[hit.instId * 4 + 1];
-  res.row[2] = in_matrices[hit.instId * 4 + 2];
-  res.row[3] = in_matrices[hit.instId * 4 + 3];
+  res.m_col[0] = in_matrices[hit.instId * 4 + 0];
+  res.m_col[1] = in_matrices[hit.instId * 4 + 1];
+  res.m_col[2] = in_matrices[hit.instId * 4 + 2];
+  res.m_col[3] = in_matrices[hit.instId * 4 + 3];
   return res;
 }
 

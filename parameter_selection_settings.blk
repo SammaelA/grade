@@ -1,7 +1,8 @@
 {
-    generator_name:s = "ge_gen_simplified"
+    generator_name:s = "weber_penn_gen"
     //save_best_result:s = "gen_gen_selected_4"
-    use_existing_presets:b = false
+    save_best_result_auto:b = true
+    use_existing_presets:b = true
     save_result_image:b = true
     evolution_stat:b = false
     debug_graph:b = false
@@ -12,7 +13,7 @@
     heaven_fine_tuning_count:i = 1
     
     //exit_conditions
-    function_calculated:i = 5000
+    function_calculated:i = 500
     generations:i = 10000
     function_reached:r = 1.0
     time_elapsed_seconds:r = 2000

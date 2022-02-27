@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <experimental/filesystem>
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
@@ -21,24 +22,24 @@ extern HRObjectManager g_objManager;
 
 
 
-std::vector< HydraLiteMath::float4> getVerticesFromBBox(const BBox &a_bbox)
+std::vector< LiteMath::float4> getVerticesFromBBox(const BBox &a_bbox)
 {
-  std::vector< HydraLiteMath::float4> verts;
+  std::vector< LiteMath::float4> verts;
 
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_min, a_bbox.y_min, a_bbox.z_min, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_min, a_bbox.y_min, a_bbox.z_max, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_min, a_bbox.y_max, a_bbox.z_max, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_min, a_bbox.y_max, a_bbox.z_min, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_min, a_bbox.y_min, a_bbox.z_min, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_min, a_bbox.y_min, a_bbox.z_max, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_min, a_bbox.y_max, a_bbox.z_max, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_min, a_bbox.y_max, a_bbox.z_min, 1.0f));
 
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_max, a_bbox.y_min, a_bbox.z_min, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_max, a_bbox.y_min, a_bbox.z_max, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_max, a_bbox.y_max, a_bbox.z_max, 1.0f));
-  verts.emplace_back(HydraLiteMath::float4(a_bbox.x_max, a_bbox.y_max, a_bbox.z_min, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_max, a_bbox.y_min, a_bbox.z_min, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_max, a_bbox.y_min, a_bbox.z_max, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_max, a_bbox.y_max, a_bbox.z_max, 1.0f));
+  verts.emplace_back(LiteMath::float4(a_bbox.x_max, a_bbox.y_max, a_bbox.z_min, 1.0f));
 
   return verts;
 }
 
-BBox createBBoxFromFloat4V(const std::vector<HydraLiteMath::float4> &a_verts)
+BBox createBBoxFromFloat4V(const std::vector<LiteMath::float4> &a_verts)
 {
   BBox box;
 
@@ -100,18 +101,17 @@ BBox createBBoxFromFloatV(const std::vector<float> &a_verts, int stride)
 
 BBox HRUtils::transformBBox(const BBox &a_bbox, const float m[16])
 {
-  HydraLiteMath::float4x4 mat(m);
+  LiteMath::float4x4 mat(m);
 
   return ::transformBBox(a_bbox, mat);
 }
 
-BBox transformBBox(const BBox &a_bbox, const HydraLiteMath::float4x4 &m)
+BBox transformBBox(const BBox &a_bbox, const LiteMath::float4x4 &m)
 {
   auto verts = getVerticesFromBBox(a_bbox);
 
   for(auto& v : verts)
-    v = HydraLiteMath::mul(m, v);
-
+    v = m*v;
 
   return createBBoxFromFloat4V(verts);
 }
@@ -298,7 +298,7 @@ protected:
     std::wstring fileName(a_fileName);
     std::wstring ext = str_tail(fileName, 6);
 
-    HydraGeomData::Header header;
+    HydraGeomData::Header header{};
 
     if(ext == L".vsgfc")
     {
@@ -339,12 +339,39 @@ protected:
       const auto allOffsets       = CalcOffsets(header.verticesNum, header.indicesNum, hasTangentOnLoad, hasNormalsOnLoad);
       const auto matIndOffset     = allOffsets.offsetMind;
 
-      std::vector<uint32_t> matIndixes(m_indNum/3);
-      fin.seekg (matIndOffset);
-      fin.read((char*)matIndixes.data(), matIndixes.size()*sizeof(int));
-      fin.close();
+      bool hasExtraData = std::experimental::filesystem::file_size(a_fileName) > m_sizeInBytes;
 
-      m_matDrawList = FormMatDrawListRLE(matIndixes);
+      if(hasExtraData) // ext == L".vsgf2"
+      {
+        HydraHeaderC h2{};
+        fin.seekg(header.fileSizeInBytes);
+        fin.read((char*)&h2, sizeof(HydraHeaderC));
+
+        m_matDrawList.resize(h2.batchListArraySize);
+        fin.read((char*)m_matDrawList.data(), m_matDrawList.size()*sizeof(HRBatchInfo));
+
+        matNames.resize(h2.customDataSize);
+        fin.seekg(h2.customDataOffset, std::ios_base::beg);
+        fin.read ((char*)matNames.c_str(), h2.customDataSize);
+        fin.close();
+
+        m_bbox.x_min = h2.boxMin[0];
+        m_bbox.y_min = h2.boxMin[1];
+        m_bbox.z_min = h2.boxMin[2];
+
+        m_bbox.x_max = h2.boxMax[0];
+        m_bbox.y_max = h2.boxMax[1];
+        m_bbox.z_max = h2.boxMax[2];
+      }
+      else
+      {
+        std::vector<uint32_t> matIndixes(m_indNum / 3);
+        fin.seekg(matIndOffset);
+        fin.read((char *) matIndixes.data(), matIndixes.size() * sizeof(int));
+        fin.close();
+
+        m_matDrawList = FormMatDrawListRLE(matIndixes);
+      }
       //m_bbox;        // don't evaluate this for Proxy Object due to this is long operation
     }
 
@@ -437,12 +464,12 @@ std::shared_ptr<IHRMesh> HydraFactoryCommon::CreateVSGFFromSimpleInputMesh(HRMes
   //
   HydraGeomData data;
 
-  const size_t totalVertNumber     = input.verticesPos.size() / 4;
-  const size_t totalMeshTriIndices = input.triIndices.size();
+  const size_t totalVertNumber     = input.VerticesNum();
+  const size_t totalMeshTriIndices = input.IndicesNum();
 
   // sorting triIndices by matIndices
   
-  const uint32_t* triIndices = input.triIndices.data();
+  const uint32_t* triIndices = input.indices.data();
   const uint32_t* matIndices = input.matIndices.data();
 
   std::vector<uint32_t> sortedTriIndices;
@@ -457,14 +484,14 @@ std::shared_ptr<IHRMesh> HydraFactoryCommon::CreateVSGFFromSimpleInputMesh(HRMes
       tmp_vec.begin(), tmp_vec.end(),
       [&](std::size_t a, std::size_t b) { return input.matIndices[a] < input.matIndices[b]; });
 
-    sortedTriIndices.resize(input.triIndices.size());
+    sortedTriIndices.resize(input.indices.size());
     sortedMatIndices.resize(input.matIndices.size());
 
     for (int i = 0; i < tmp_vec.size(); ++i)
     {
-      sortedTriIndices.at(i * 3 + 0) = input.triIndices.at(tmp_vec.at(i) * 3 + 0);
-      sortedTriIndices.at(i * 3 + 1) = input.triIndices.at(tmp_vec.at(i) * 3 + 1);
-      sortedTriIndices.at(i * 3 + 2) = input.triIndices.at(tmp_vec.at(i) * 3 + 2);
+      sortedTriIndices.at(i * 3 + 0) = input.indices.at(tmp_vec.at(i) * 3 + 0);
+      sortedTriIndices.at(i * 3 + 1) = input.indices.at(tmp_vec.at(i) * 3 + 1);
+      sortedTriIndices.at(i * 3 + 2) = input.indices.at(tmp_vec.at(i) * 3 + 2);
 
       sortedMatIndices.at(i) = input.matIndices.at(tmp_vec.at(i));
     }
@@ -475,7 +502,7 @@ std::shared_ptr<IHRMesh> HydraFactoryCommon::CreateVSGFFromSimpleInputMesh(HRMes
 
   // (1) common mesh attributes
   //
-  data.setData(uint32_t(totalVertNumber), input.verticesPos.data(), input.verticesNorm.data(), input.verticesTangent.data(), input.verticesTexCoord.data(),
+  data.setData(uint32_t(totalVertNumber), input.vPos4f.data(), input.vNorm4f.data(), input.vTang4f.data(), input.vTexCoord2f.data(),
                uint32_t(totalMeshTriIndices), triIndices, matIndices);
 
   const size_t totalByteSizeCommon = data.sizeInBytes();
@@ -570,11 +597,11 @@ std::shared_ptr<IHRMesh> HydraFactoryCommon::CreateVSGFFromSimpleInputMesh(HRMes
     box.y_max = std::numeric_limits<float>::lowest();
     box.z_min = std::numeric_limits<float>::max();
     box.z_max = std::numeric_limits<float>::lowest();
-    for (int i = 0; i < input.verticesPos.size(); i += 4)
+    for (int i = 0; i < input.vPos4f.size(); i += 4)
     {
-      float x = input.verticesPos[i + 0];
-      float y = input.verticesPos[i + 1];
-      float z = input.verticesPos[i + 2];
+      float x = input.vPos4f[i + 0];
+      float y = input.vPos4f[i + 1];
+      float z = input.vPos4f[i + 2];
 
       box.x_min = x < box.x_min ? x : box.x_min;
       box.x_max = x > box.x_max ? x : box.x_max;

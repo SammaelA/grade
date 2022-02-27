@@ -221,19 +221,19 @@ static inline float MutateKelemen(float valueX, float2 rands, float p2, float p1
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define QRNG_DIMENSIONS 11
-#define QRNG_RESOLUTION 31
-#define INT_SCALE (1.0f / (float)0x80000001U)
+#define QRNG_DIMENSIONS_K 11
+#define QRNG_RESOLUTION_K 31
+#define INT_SCALE_K (1.0f / (float)0x80000001U)
 
 static inline float rndQmcSobolN(unsigned int pos, int dim, __constant unsigned int *c_Table)
 {
   unsigned int result = 0;
   unsigned int data   = pos;
 
-  for (int bit = 0; bit < QRNG_RESOLUTION; bit++, data >>= 1)
-    if (data & 1) result ^= c_Table[bit + dim*QRNG_RESOLUTION];
+  for (int bit = 0; bit < QRNG_RESOLUTION_K; bit++, data >>= 1)
+    if (data & 1) result ^= c_Table[bit + dim*QRNG_RESOLUTION_K];
 
-  return (float)(result + 1) * INT_SCALE;
+  return (float)(result + 1) * INT_SCALE_K;
 }
 
 /**
@@ -366,7 +366,7 @@ static inline float4 rndLensOld(__global const float* rptr)
 
 \return 4 random numbers for using them in camera\lens sampler
 */
-static inline float4 rndLens(RandomGen* gen, __global const float* rptr, const float2 screenScale,
+static inline float4 rndLens(__private RandomGen* gen, __global const float* rptr, const float2 screenScale,
                              __global const int* a_tab, const unsigned int a_qmcPos, __constant unsigned int* a_qmcTable)
 {
   if (rptr != 0)
@@ -401,7 +401,7 @@ static inline float4 rndLens(RandomGen* gen, __global const float* rptr, const f
 
 \return 4 random numbers for using them in light sampling
 */
-static inline float4 rndLight(RandomGen* gen, const int bounceId,
+static inline float4 rndLight(__private RandomGen* gen, const int bounceId,
                               __global const int* a_tab, const unsigned int qmcPos, __constant unsigned int* a_qmcTable)
 {
   if(bounceId == 0 && a_tab != 0 && a_qmcTable != 0)
@@ -428,7 +428,7 @@ static inline float4 rndLight(RandomGen* gen, const int bounceId,
 
 \return 3 random numbers for using them in material sampling
 */
-static inline float3 rndMat(RandomGen* gen, __global const float* rptr, const int bounceId,
+static inline float3 rndMat(__private RandomGen* gen, __global const float* rptr, const int bounceId,
                             __global const int* a_tab, const unsigned int qmcPos, __constant unsigned int* a_qmcTable)
 {
   if (rptr != 0)
@@ -463,7 +463,7 @@ static inline float3 rndMat(RandomGen* gen, __global const float* rptr, const in
 
 \return 3 random numbers for using them in material sampling
 */
-static inline float rndMatLayer(RandomGen* gen, __global const float* rptr, const int bounceId, const int layerId,
+static inline float rndMatLayer(__private RandomGen* gen, __global const float* rptr, const int bounceId, const int layerId,
                                 __global const int* a_tab, const unsigned int a_qmcPos, __constant unsigned int* a_qmcTable)
 {
   if (rptr != 0)                                                       // MCMC way; #NOTE: Lazy mutations is not needed due to small step
@@ -475,7 +475,7 @@ static inline float rndMatLayer(RandomGen* gen, __global const float* rptr, cons
 }
 
 
-static inline void RndMatAll(RandomGen* gen, __global const float* rptr, const int bounceId,
+static inline void RndMatAll(__private RandomGen* gen, __global const float* rptr, const int bounceId,
                              __global const int* a_tab, const unsigned int a_qmcPos, __constant unsigned int* a_qmcTable, 
                              __private float a_rands[MMLT_FLOATS_PER_BOUNCE])
 {

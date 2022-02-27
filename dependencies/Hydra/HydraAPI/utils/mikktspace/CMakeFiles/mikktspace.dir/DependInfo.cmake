@@ -1,14 +1,15 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "C"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_C
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/mikktspace/mikktspace.c" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/mikktspace/CMakeFiles/mikktspace.dir/mikktspace.c.o"
+  )
+set(CMAKE_C_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/mikktspace/mikktspace.c" "utils/mikktspace/CMakeFiles/mikktspace.dir/mikktspace.c.o" "gcc" "utils/mikktspace/CMakeFiles/mikktspace.dir/mikktspace.c.o.d"
+# The include file search paths:
+set(CMAKE_C_TARGET_INCLUDE_PATH
   )
 
 # Targets to which this target links.

@@ -1,8 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/shaderpack.dir/pack.cpp.o"
-  "CMakeFiles/shaderpack.dir/pack.cpp.o.d"
-  "shaderpack"
   "shaderpack.pdb"
+  "shaderpack"
 )
 
 # Per-language clean rules from dependency scanning.

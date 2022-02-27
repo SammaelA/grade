@@ -19,9 +19,9 @@ namespace HydraXMLHelpers
     return val;
   }
 
-  static inline HydraLiteMath::float3 ReadFloat3(pugi::xml_node a_node)
+  static inline LiteMath::float3 ReadFloat3(pugi::xml_node a_node)
   {
-    HydraLiteMath::float3 res(0,0,0);
+    LiteMath::float3 res(0,0,0);
     const wchar_t* camPosStr = a_node.text().as_string();
     if (camPosStr != nullptr)
     {
@@ -31,9 +31,9 @@ namespace HydraXMLHelpers
     return res;
   }
 
-  static inline HydraLiteMath::float3 ReadFloat3(pugi::xml_attribute a_attr)
+  static inline LiteMath::float3 ReadFloat3(pugi::xml_attribute a_attr)
   {
-    HydraLiteMath::float3 res(0, 0, 0);
+    LiteMath::float3 res(0, 0, 0);
     const wchar_t* camPosStr = a_attr.as_string();
     if (camPosStr != nullptr)
     {
@@ -137,6 +137,13 @@ namespace HydraXMLHelpers
     }
   }
 
+  static inline void WriteFloat(pugi::xml_attribute a_attr, float a_value)
+  {
+    std::wstringstream outStream;
+    outStream << a_value;
+    a_attr.set_value(outStream.str().c_str());
+  }
+
   static inline void WriteFloat(pugi::xml_node a_node, float a_value)
   {
     std::wstringstream outStream;
@@ -144,14 +151,14 @@ namespace HydraXMLHelpers
     a_node.text() = outStream.str().c_str();
   }
 
-  static inline void WriteFloat3(pugi::xml_node a_node, HydraLiteMath::float3 a_value)
+  static inline void WriteFloat3(pugi::xml_node a_node, LiteMath::float3 a_value)
   {
     std::wstringstream outStream;
     outStream << a_value.x << L" " << a_value.y << L" " << a_value.z;
     a_node.text() = outStream.str().c_str();
   }
 
-  static inline void WriteFloat3(pugi::xml_attribute a_attr, HydraLiteMath::float3 a_value)
+  static inline void WriteFloat3(pugi::xml_attribute a_attr, LiteMath::float3 a_value)
   {
     std::wstringstream outStream;
     outStream << a_value.x << L" " << a_value.y << L" " << a_value.z;
@@ -169,6 +176,34 @@ namespace HydraXMLHelpers
   {
     std::wstringstream outStream;
     outStream << a_value[0] << L" " << a_value[1] << L" " << a_value[2];
+    a_attr.set_value(outStream.str().c_str());
+  }
+
+  static inline void WriteFloat4(pugi::xml_node a_node, LiteMath::float4 a_value)
+  {
+    std::wstringstream outStream;
+    outStream << a_value.x << L" " << a_value.y << L" " << a_value.z << L" " << a_value.w;
+    a_node.text() = outStream.str().c_str();
+  }
+
+  static inline void WriteFloat4(pugi::xml_attribute a_attr, LiteMath::float4 a_value)
+  {
+    std::wstringstream outStream;
+    outStream << a_value.x << L" " << a_value.y << L" " << a_value.z << L" " << a_value.w;
+    a_attr.set_value(outStream.str().c_str());
+  }
+
+  static inline void WriteFloat4(pugi::xml_node a_node, float a_value[4])
+  {
+    std::wstringstream outStream;
+    outStream << a_value[0] << L" " << a_value[1] << L" " << a_value[2] << L" " << a_value[3];
+    a_node.text() = outStream.str().c_str();
+  }
+
+  static inline void WriteFloat4(pugi::xml_attribute a_attr, float a_value[4])
+  {
+    std::wstringstream outStream;
+    outStream << a_value[0] << L" " << a_value[1] << L" " << a_value[2] << L" " << a_value[3];
     a_attr.set_value(outStream.str().c_str());
   }
 
@@ -196,13 +231,13 @@ namespace HydraXMLHelpers
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  static HydraLiteMath::float3 ReadValue3f(const pugi::xml_node a_color) //#TODO: add this to documentation
+  static LiteMath::float3 ReadValue3f(const pugi::xml_node a_color) //#TODO: add this to documentation
   {
-    HydraLiteMath::float3 color(0, 0, 0);
+    LiteMath::float3 color(0, 0, 0);
     if (a_color.attribute(L"val") != nullptr)
     {
       if (std::wstring(L"replace") == a_color.attribute(L"tex_apply_mode").as_string())
-        color = HydraLiteMath::float3(1, 1, 1);
+        color = LiteMath::float3(1, 1, 1);
       else
         color = HydraXMLHelpers::ReadFloat3(a_color.attribute(L"val"));
     }
@@ -232,7 +267,7 @@ namespace HydraXMLHelpers
     return color;
   }
 
-  static HydraLiteMath::float2 ReadRectLightSize(const pugi::xml_node a_lightNode) //#TODO: add this to documentation
+  static LiteMath::float2 ReadRectLightSize(const pugi::xml_node a_lightNode) //#TODO: add this to documentation
   {
     float sizex = 0.0f;
     float sizey = 0.0f;
@@ -260,7 +295,7 @@ namespace HydraXMLHelpers
       sizey = sizeNode.child(L"Half-width").text().as_float();  // deprecated                                              
     }
 
-    return HydraLiteMath::float2(sizex, sizey);
+    return LiteMath::float2(sizex, sizey);
   }
 
   static float ReadSphereOrDiskLightRadius(const pugi::xml_node a_lightNode) //#TODO: add this to documentation
@@ -277,13 +312,13 @@ namespace HydraXMLHelpers
     return sizex;
   }
 
-  static HydraLiteMath::float3 ReadLightIntensity(const pugi::xml_node a_lightNode) //#TODO: add this to documentation
+  static LiteMath::float3 ReadLightIntensity(const pugi::xml_node a_lightNode) //#TODO: add this to documentation
   {
     const pugi::xml_node inode = a_lightNode.child(L"intensity");
     const pugi::xml_node icolr = inode.child(L"color");
 
     float  mult = 1.0f;
-    HydraLiteMath::float3 color(0, 0, 0);
+    LiteMath::float3 color(0, 0, 0);
 
     if (icolr.attribute(L"val") != nullptr)
       color = HydraXMLHelpers::ReadFloat3(icolr.attribute(L"val"));

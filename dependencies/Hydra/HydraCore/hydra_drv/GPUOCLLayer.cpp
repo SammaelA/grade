@@ -6,7 +6,10 @@
 
 #include "cl_scan_gpu.h"
 
-extern "C" void initQuasirandomGenerator(unsigned int table[QRNG_DIMENSIONS][QRNG_RESOLUTION]);
+const ushort* getGgxTable();
+const ushort* getTranspTable();
+
+extern "C" void initQuasirandomGenerator(unsigned int table[QRNG_DIMENSIONS_K][QRNG_RESOLUTION_K]);
 
 #include <algorithm>
 #undef min
@@ -413,6 +416,8 @@ const HRRenderDeviceInfoListElem* GPUOCLLayer::ListDevices() const
 }
 
 //void TestPathVertexReadWrite();
+const ushort* getGgxTable();
+const ushort* getTranspTable();
 
 GPUOCLLayer::GPUOCLLayer(int w, int h, int a_flags, int a_deviceId) : Base(w, h, a_flags)
 { 
@@ -422,7 +427,7 @@ GPUOCLLayer::GPUOCLLayer(int w, int h, int a_flags, int a_deviceId) : Base(w, h,
   for (int i = 0; i < MEM_TAKEN_OBJECTS_NUM; i++)
     m_memoryTaken[i] = 0;
   
-  InitEngineGlobals(&m_globsBuffHeader);
+  InitEngineGlobals(&m_globsBuffHeader, getGgxTable(), getTranspTable());
   
   #ifdef WIN32
   int initRes = clewInit(L"opencl.dll");
@@ -697,9 +702,9 @@ GPUOCLLayer::GPUOCLLayer(int w, int h, int a_flags, int a_deviceId) : Base(w, h,
 
   // create qmc table for Niederreiter sequence
   //
-  unsigned int tableCPU[QRNG_DIMENSIONS][QRNG_RESOLUTION];
+  unsigned int tableCPU[QRNG_DIMENSIONS_K][QRNG_RESOLUTION_K];
   initQuasirandomGenerator(tableCPU);
-  m_globals.qmcTable = clCreateBuffer(m_globals.ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, QRNG_DIMENSIONS * QRNG_RESOLUTION * sizeof(unsigned int), &tableCPU, &ciErr1);
+  m_globals.qmcTable = clCreateBuffer(m_globals.ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, QRNG_DIMENSIONS_K * QRNG_RESOLUTION_K * sizeof(unsigned int), &tableCPU, &ciErr1);
 
   if (ciErr1 != CL_SUCCESS)
     RUN_TIME_ERROR("Error when create qmcTable");
@@ -715,11 +720,12 @@ GPUOCLLayer::GPUOCLLayer(int w, int h, int a_flags, int a_deviceId) : Base(w, h,
 
   waitIfDebug(__FILE__, __LINE__);
 
-  m_spp           = 0.0f;
-  m_sppDL         = 0.0f;
-  m_sppDone       = 0.0f;
-  m_sppContrib    = 0.0f;
-  m_avgBrightness = 1.0f;
+  m_spp               = 0.0f;
+  m_sppDL             = 0.0f;
+  m_sppDone           = 0.0f;
+  m_sppContrib        = 0.0f;
+  m_avgBrightness     = 1.0f;
+  m_tablesBeenUpdated = false;
 }
 
 void GPUOCLLayer::RecompileProcTexShaders(const std::string& a_shaderPath)
@@ -1068,7 +1074,7 @@ void GPUOCLLayer::GetLDRImage(uint* data, int width, int height) const
     if (tempLDRBuff == 0)
     {
       std::cerr << "[cl_core]: null m_screen.pbo, alloc temp buffer in host memory " << std::endl;
-      std::vector<float4> hdrData(width*height);
+      cvex::vector<float4> hdrData(width*height);
       GetHDRImage(&hdrData[0], width, height);
 
       #pragma omp parallel for

@@ -1,8 +1,8 @@
-# Install script for directory: /media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_app
+# Install script for directory: /home/sammael/grade/dependencies/Hydra/HydraCore/hydra_app
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore")
+  set(CMAKE_INSTALL_PREFIX "/home/sammael")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -37,11 +37,6 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
 endif()
 
-# Set default install directory permissions.
-if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "/usr/bin/objdump")
-endif()
-
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra")
@@ -49,12 +44,12 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/hydra" TYPE EXECUTABLE FILES "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/build/hydra_app/hydra")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/hydra" TYPE EXECUTABLE FILES "/home/sammael/grade/dependencies/Hydra/HydraCore/build/hydra_app/hydra")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra"
-         OLD_RPATH "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/../HydraAPI/bin:/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/LIBRARY/lib_x64_linux:"
+         OLD_RPATH "/home/sammael/grade/dependencies/Hydra/HydraCore/../HydraAPI/bin:/home/sammael/grade/dependencies/Hydra/HydraCore/LIBRARY/lib_x64_linux:"
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/hydra/hydra")
@@ -64,16 +59,16 @@ endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/hydra/shaders" TYPE FILE FILES
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/cfetch.h"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/cglobals.h"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/texproc.cl"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/image.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/light.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/material.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/mlt.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/screen.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/sort.xx"
-    "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/trace.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/cfetch.h"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/cglobals.h"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/texproc.cl"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/image.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/light.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/material.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/mlt.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/screen.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/sort.xx"
+    "/home/sammael/grade/dependencies/Hydra/HydraCore/hydra_drv/shaders/trace.xx"
     )
 endif()
 

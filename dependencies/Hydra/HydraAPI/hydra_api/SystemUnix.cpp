@@ -1,7 +1,3 @@
-//
-// Created by hikawa on 02.07.17.
-//
-
 #include "HydraAPI.h"
 #include "HydraInternal.h"
 
@@ -23,7 +19,6 @@
 #include <experimental/filesystem>
 #include <iostream>
 
-namespace std_fs = std::experimental::filesystem;
 
 int hr_mkdir(const char* a_folder)
 {
@@ -156,22 +151,22 @@ std::vector<std::wstring> hr_listfiles(const wchar_t* a_folder2, bool excludeFol
 
 void hr_copy_file(const char* a_file1, const char* a_file2)
 {
-  std_fs::copy_file(a_file1, a_file2, std_fs::copy_options::overwrite_existing);
+  std::experimental::filesystem::copy_file(a_file1, a_file2, std::experimental::filesystem::copy_options::overwrite_existing);
 }
 
 void hr_copy_file(const wchar_t* a_file1, const wchar_t* a_file2)
 {
-  std_fs::copy_file(a_file1, a_file2, std_fs::copy_options::overwrite_existing);
+  std::experimental::filesystem::copy_file(a_file1, a_file2, std::experimental::filesystem::copy_options::overwrite_existing);
 }
 
 void hr_delete_file(const wchar_t* a_file)
 {
-  std_fs::remove(a_file);
+  std::experimental::filesystem::remove(a_file);
 }
 
 void hr_delete_file(const char* a_file)
 {
-  std_fs::remove(a_file);
+  std::experimental::filesystem::remove(a_file);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

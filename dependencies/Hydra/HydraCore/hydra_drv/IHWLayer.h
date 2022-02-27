@@ -14,7 +14,6 @@
 #include "IBVHBuilderAPI.h"
 #include "IMemoryStorage.h"
 
-#include "hydra_api/HydraAPI.h"
 #include "hydra_api/HydraInternal.h"
 
 typedef void(*RTE_PROGRESSBAR_CALLBACK)(const wchar_t* message, float a_progress);
@@ -91,13 +90,14 @@ struct LightMeshData
   size_t  size;
 };
 
-
+const ushort* getGgxTable();
+const ushort* getTranspTable();
 
 class IHWLayer
 {
 public:
 
-  IHWLayer() : m_progressBar(nullptr), m_width(0), m_height(0), m_pExternalImage(nullptr) { InitEngineGlobals(&m_globsBuffHeader); }
+  IHWLayer() : m_progressBar(nullptr), m_width(0), m_height(0), m_pExternalImage(nullptr) { InitEngineGlobals(&m_globsBuffHeader, getGgxTable(), getTranspTable()); }
   virtual ~IHWLayer();
 
   virtual void Clear(CLEAR_FLAGS a_flags)   = 0;
@@ -298,9 +298,9 @@ protected:
   struct TempBvhData
   {
     TempBvhData() : haveInst(true), smoothOpacity(false) {}
-    std::vector<BVHNode> m_bvh;
-    std::vector<float4>  m_tris;
-    std::vector<uint2>   m_atbl;
+    cvex::vector<BVHNode> m_bvh;
+    cvex::vector<float4>  m_tris;
+    std::vector<uint2>    m_atbl;
     bool haveInst;
     bool smoothOpacity;
   };

@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/ies_parser/IESNA.C
+stdlib.h
+-
+ctype.h
+-
+stdarg.h
+-
+string.h
+-
+math.h
+-
+IESNA.H
+/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/ies_parser/IESNA.H
+
+/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/ies_parser/IESNA.H
+stdio.h
+-
+
+/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/ies_parser/IES_READ.C
+stdio.h
+-
+string.h
+-
+IESNA.H
+/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/ies_parser/IESNA.H
+

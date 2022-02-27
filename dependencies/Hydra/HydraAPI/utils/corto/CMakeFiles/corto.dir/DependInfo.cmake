@@ -1,20 +1,21 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/bitstream.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/bitstream.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/color_attribute.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/color_attribute.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/cstream.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/cstream.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/decoder.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/decoder.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/encoder.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/encoder.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/normal_attribute.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/normal_attribute.cpp.o"
+  "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/tunstall.cpp" "/home/sammael/grade/dependencies/Hydra/HydraAPI/utils/corto/CMakeFiles/corto.dir/tunstall.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/bitstream.cpp" "utils/corto/CMakeFiles/corto.dir/bitstream.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/bitstream.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/color_attribute.cpp" "utils/corto/CMakeFiles/corto.dir/color_attribute.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/color_attribute.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/cstream.cpp" "utils/corto/CMakeFiles/corto.dir/cstream.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/cstream.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/decoder.cpp" "utils/corto/CMakeFiles/corto.dir/decoder.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/decoder.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/encoder.cpp" "utils/corto/CMakeFiles/corto.dir/encoder.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/encoder.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/normal_attribute.cpp" "utils/corto/CMakeFiles/corto.dir/normal_attribute.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/normal_attribute.cpp.o.d"
-  "/media/sammael/Data/programming/bachelor_work/grade/dependencies/Hydra/HydraAPI/utils/corto/tunstall.cpp" "utils/corto/CMakeFiles/corto.dir/tunstall.cpp.o" "gcc" "utils/corto/CMakeFiles/corto.dir/tunstall.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
   )
 
 # Targets to which this target links.

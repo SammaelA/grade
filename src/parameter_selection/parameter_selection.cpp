@@ -190,7 +190,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         tree_ggd.types[i].get_params()->read_parameter_list(params[i]);
     }
 
-    int num_threads = MIN(8, params.size());
+    int num_threads = MIN(16, params.size());
     int step = ceil(params.size() / (float)num_threads);
     LightVoxelsCube **thr_voxels = new LightVoxelsCube *[num_threads];
     bool voxels_needed = false;
@@ -1079,6 +1079,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                                  save_result_image);
     
     std::string type_name = selection_settings.get_string("save_best_result","");
+    if (selection_settings.get_bool("save_best_result_auto",false))
+    {
+        int version = selection_settings.get_int("version",-1);
+        type_name = reference_name + "_selected_params_"+std::to_string(version);
+    }
     if (type_name != "")
         metainfoManager.add_tree_type(res.best_candidates[0], type_name);
 
@@ -1104,7 +1109,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         // save result imposter
         std::map<int, TreeImageInfo> image_infos;
         ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp.impostors.size(), 1);
-        imp_sim.get_tree_image_info(imp.atlas, image_infos, false);
+        imp_sim.get_tree_image_info(atlas_copy, image_infos, false);
         auto it = image_infos.find(id);
         glm::vec4 tex_transform = imp.atlas.tc_transform(id);
         tex_transform = glm::vec4(tex_transform.z * tex_transform.x, tex_transform.w * tex_transform.y, tex_transform.x, tex_transform.y);
@@ -1127,7 +1132,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         tex_id = sel_stat_atl.add_tex();
         sel_stat_atl.target_slice(tex_id, 0);
         copy.use();
-        copy.get_shader().texture("tex", atlas_copy.tex(0));
+        copy.get_shader().texture("tex", imp.atlas.tex(0));
         copy.get_shader().uniform("tex_transform", tex_transform);
         copy.get_shader().uniform("layer", (float)layer);
         copy.render();

@@ -10,6 +10,7 @@
 #ifdef WIN32
 #include "clew/clew.h"
 #else
+#define CL_TARGET_OPENCL_VERSION 100
 #include <CL/cl.h>
 #endif
 
@@ -181,6 +182,7 @@ protected:
   float m_sppDone;
   float m_sppContrib;
   float m_avgBrightness;
+  bool  m_tablesBeenUpdated;
 
   struct CL_SCREEN_BUFFERS
   {
