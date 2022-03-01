@@ -169,6 +169,7 @@ void print_tree_image_info(TreeImageInfo &info)
 void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::map<int, TreeImageInfo> &results, 
                                                  bool image_debug)
 {
+    //image_debug = true;
     glm::ivec4 sizes = images_atl.get_sizes();
     glm::ivec2 slice_size = images_atl.get_slice_size();
     TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, images_atl.layers_count(), 1);
@@ -310,7 +311,7 @@ void ImpostorSimilarityCalc::set_slices_data(GrovePacked &grove)
     }
 }
 
-void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &reference)
+void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &reference, float clsh_mult)
 {
     std::map<int, TreeImageInfo> results;
     get_tree_image_info(reference.atlas, results, true);
@@ -351,8 +352,8 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
     for (int i=0;i<16;i++)
         av_info.trunk_info.thickness[i] /= results.size();
 
-    av_info.crown_leaves_share *= 0.85;//usually we don't see all the gaps on tree's crone on image, so it has larger leaves share
-                                       //it is an euristic to reduce this error
+    av_info.crown_leaves_share *= clsh_mult;//usually we don't see all the gaps on tree's crone on image, so it has larger leaves share
+                                            //it is an euristic to reduce this error
     reference.image_info = av_info;
 }
 
@@ -446,6 +447,11 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     }
     for (int i=0;i<imp_n+1;i++)
     {
+        if (i!=0)
+        {
+        impostors_info_data[i].BCyl_sizes = glm::vec2(tree_image_info_data[i].tc_transform.z*impostors_info_data[i].BCyl_sizes.x,
+                                                      tree_image_info_data[i].tc_transform.w*impostors_info_data[i].BCyl_sizes.y);
+        }
         shader_imp_data[i].x = impostors_info_data[i].BCyl_sizes.x;
         shader_imp_data[i].y = impostors_info_data[i].BCyl_sizes.y;
         shader_imp_data[i].z = tree_image_info_data[i].crown_start_level;
@@ -560,6 +566,8 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
                                    impostors_info_data[0].BCyl_sizes;//reference image has empty borders 
         glm::vec2 imp_real_size = glm::vec2(tree_image_info_data[i+1].tc_transform.z*impostors_info_data[i+1].BCyl_sizes.x,
                                             tree_image_info_data[i+1].tc_transform.w*impostors_info_data[i+1].BCyl_sizes.y);
+        imp_real_size = impostors_info_data[i+1].BCyl_sizes;
+        ref_real_size = impostors_info_data[0].BCyl_sizes;
         //logerr("%f %f -- %f %f", ref_real_size.x, ref_real_size.y, imp_real_size.x, imp_real_size.y);
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE)
         {

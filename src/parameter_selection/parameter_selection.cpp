@@ -8,6 +8,7 @@
 #include "tree_generators/GE_generator.h"
 #include "generation/metainfo_manager.h"
 #include "tree_generators/all_generators.h"
+#include "hydra_utils/hydra_scene_exporter.h"
 #include <thread>
 
 bool debug_stat = false;
@@ -47,18 +48,19 @@ Texture load_reference(std::string name, int image_w, int image_h)
     return ref;
 }
 
-void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::string name, TextureAtlas &ref_atl)
+void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::string name, TextureAtlas &ref_atl, glm::vec4 tc_tr)
 {
     {
-        TextureAtlas atl = TextureAtlas(8 * tex_w, tex_h, 1, 1);
+        TextureAtlas atl = TextureAtlas(imp.impostors.back().slices.size() * tex_w, tex_h, 1, 1);
         ref_atl = atl;
     }
     ref_atl.set_grid(tex_w, tex_h, false);
     PostFx copy = PostFx("copy_arr2.fs");
-    for (int num_slice = 0; num_slice < 8; num_slice++)
+    for (int num_slice = 0; num_slice < imp.impostors.back().slices.size(); num_slice++)
     {
         glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
         tex_transform = glm::vec4(tex_transform.z * tex_transform.x, tex_transform.w * tex_transform.y, tex_transform.x, tex_transform.y);
+        tex_transform = tc_tr_mult(tc_tr, tex_transform);
         glm::vec3 tex = glm::vec3(0, 0, 0);
         imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
         int layer = tex.z;
@@ -276,12 +278,16 @@ void print_ref_tree_info(TreeCompareInfo &info)
           info.branches_density, info.leaves_density, info.joints_cnt,
           info.trunk_thickness);   
 }
-
+void print_ref_tree_image_info(TreeImageInfo &info)
+{
+ debug(" cr_st %.3f l_sh %.3f b_sh %.3f\n",info.crown_start_level,info.crown_leaves_share, info.crown_branches_share);   
+}
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
                                                      ReferenceTree &ref_tree, TreeTypeData *ref_type, bool save_result_image)
 {
     debug("starting parameter selection for reference");
     print_ref_tree_info(ref_tree.info);
+    print_ref_tree_image_info(ref_tree.image_info);
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
@@ -314,11 +320,12 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 1.0;
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
 
     AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
     mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
+    mp.heaven_size = selection_settings.get_int("heaven_size", mp.heaven_size);
     mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
     mp.max_population_size = selection_settings.get_int("max_population_size", mp.max_population_size);
     mp.elite = selection_settings.get_int("elite", mp.elite);
@@ -547,7 +554,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         tc_transform.z = (float)(max_x - min_x)/w;
         tc_transform.w = (float)(max_y - min_y)/h;
 
-        float br = 0.125;
+        float br = ReferenceTree::border_size;
         glm::vec4 tc_tr_2 = glm::vec4(-br,-br,1,1)/(1-2*br);
         tc_transform = tc_tr_mult(tc_transform, tc_tr_2);
 
@@ -696,6 +703,9 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             {
                 AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
+                Scene init_scene;
+                init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+                init_scene.heightmap->fill_const(0);
                 tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
                 GrovePacker packer;
                 Tree single_tree;
@@ -705,10 +715,23 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 {
                 }
                 gen->finalize_generation(&single_tree, *ref_voxels);
-                packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
-                save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
-                imp_sim.get_reference_tree_image_info(ref_tree);
-                ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
+                packer.add_trees_to_grove(tree_ggd, init_scene.grove, &single_tree, init_scene.heightmap, false);
+                logerr("%d",single_tree.branchHeaps[0]->branches.size());
+                logerr("impostors %d",init_scene.grove.impostors[1].impostors.size());
+                save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, glm::vec4(0,0,1,1));
+                textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_01");
+                imp_sim.get_reference_tree_image_info(ref_tree,1);
+                ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
+                ref_tree.info.BCyl_sizes *= glm::vec2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
+                
+                /*
+                float br = ReferenceTree::border_size;
+                glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
+                glm::vec4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
+                save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, tc_tr);
+                textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_02");
+                imp_sim.get_reference_tree_image_info(ref_tree,1);
+                */
             }
             delete ref_voxels;
         }
@@ -1086,6 +1109,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     }
     if (type_name != "")
         metainfoManager.add_tree_type(res.best_candidates[0], type_name);
+    metainfoManager.save_all();
 
     if (save_result_image)
     {
@@ -1156,6 +1180,19 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         std::string file_name = "selection/" + gen_name +"/" + reference_name + "_v" + std::to_string(version) + "_i"+std::to_string(iters)
                                 + "_q0."+std::to_string((int)(100*res.best_res));
         textureManager.save_png(atlas_asp.tex(0), file_name);
+        
+        //hydra scene
+        {
+            HydraSceneExporter exporter;
+            Block export_settings;
+            float sz = 1.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
+            export_settings.add_vec3("camera_look_at", glm::vec3(sz,0.5*sz,0));
+            export_settings.add_vec3("camera_pos", glm::vec3(0,0.5*sz,0));
+            export_settings.add_bool("need_terrain",false);
+            export_settings.add_string("demo_copy_dir", "saves/"+file_name + "_res");
+            exporter.export_scene("param_selection_scene", scene, export_settings);
+        }
+
     }
 
     return res;

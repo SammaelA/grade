@@ -296,6 +296,7 @@ void ParameterList::load_borders_from_blk(Block &b)
 
 void ParameterList::to_simple_list(std::vector<float> &list)
 {
+    list = {};
     for (auto &p : categorialParameters)
         list.push_back(p.second.val);
     for (auto &p : ordinalParameters)

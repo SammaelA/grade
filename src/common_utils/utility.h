@@ -33,7 +33,7 @@
 #define MIN(a,b) ((a)<(b) ? (a) : (b))
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 #define CLAMP(a,b,c) (MIN(MAX((a),(b)),(c)))
-#define SQR(a) ((a)*(a))
+template<typename T> inline T SQR(T x) { return x * x; }
 
 
 void debugnl();

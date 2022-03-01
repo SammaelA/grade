@@ -76,7 +76,7 @@ public:
                          Tree *original_trees, int original_trees_cnt, bool debug_print = false, bool image_debug = false);
     static void get_tree_compare_info(Impostor &imp, Tree &original_tree, TreeCompareInfo &info);
     void get_tree_image_info(TextureAtlas &images_atl, std::map<int, TreeImageInfo> &results, bool image_debug = false);
-    void get_reference_tree_image_info(ReferenceTree &reference);
+    void get_reference_tree_image_info(ReferenceTree &reference, float clsh_mult = 0.85);
 private:
     void set_slices_data(GrovePacked &grove);
     void ref_atlas_transform(TextureAtlas &atl);

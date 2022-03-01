@@ -19,7 +19,7 @@
 #include "graphics_utils/modeling.h"
 #include "graphics_utils/texture_manager.h"
 
-namespace hlm = HydraLiteMath;
+namespace hlm = LiteMath;
 using pugi::xml_node;
 extern GLFWwindow* g_window;
 
@@ -88,7 +88,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, 2);
+            v.packed_branch_to_model(b, &model, false, 1);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -164,7 +164,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 {
   const int DEMO_WIDTH  = 1500;
   const int DEMO_HEIGHT = 1500;
-  
+  bool need_terrain = export_settings.get_bool("need_terrain",true);
   hrErrorCallerPlace(L"demo_02_load_obj");
   std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
   hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
@@ -317,7 +317,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
         hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
 
-        logerr("tri id 2 %d",int(br.triIndices.size()));
+        //logerr("tri id 2 %d",int(br.triIndices.size()));
         hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
       }
       hrMeshClose(branches.back());
@@ -464,6 +464,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   
   // camera
   //
+  glm::vec3 camera_pos = export_settings.get_vec3("camera_pos",glm::vec3(0,200,200));
+  glm::vec3 camera_look_at = export_settings.get_vec3("camera_look_at",glm::vec3(0,0,0));
   HRCameraRef camRef = hrCameraCreate(L"my camera");
   
   hrCameraOpen(camRef, HR_WRITE_DISCARD);
@@ -475,8 +477,12 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
     camNode.append_child(L"up").text().set(L"0 1 0");
-    camNode.append_child(L"position").text().set(L"-431 255.16 -43.75");
-    camNode.append_child(L"look_at").text().set(L"0 20 0");
+    logerr("camera pos %f %f %f", camera_pos.x, camera_pos.y,camera_pos.z);
+    std::wstring camera_pos_s = std::to_wstring(camera_pos.x)+L" "+std::to_wstring(camera_pos.y)+L" "+std::to_wstring(camera_pos.z);
+    camNode.append_child(L"position").text().set(camera_pos_s.c_str());
+    
+    std::wstring camera_look_at_s = std::to_wstring(camera_look_at.x)+L" "+std::to_wstring(camera_look_at.y)+L" "+std::to_wstring(camera_look_at.z);
+    camNode.append_child(L"look_at").text().set(camera_look_at_s.c_str());
   
     VERIFY_XML(camNode);
   }
@@ -515,8 +521,10 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   hrSceneOpen(scnRef, HR_WRITE_DISCARD);
   {
     auto mind = hlm::scale4x4(hlm::float3(1,1,1));
-    hrMeshInstance(scnRef, terrainMeshRef, mind.L());
-    
+    if (need_terrain)
+    {
+      hrMeshInstance(scnRef, terrainMeshRef, mind.L());
+    }
     for (int i=0;i<branches.size();i++)
     {
       for (auto &mat : IDAs[i]->transforms)
@@ -548,7 +556,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     delete matrices;
     hrLightInstance(scnRef, sky, mind.L());
-    auto mres = hlm::mul(hlm::rotate_Z_4x4(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
+    auto mres = hlm::mul(hlm::rotate4x4Z(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);
@@ -589,6 +597,11 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   }
   
   std::wstring demo_dir = dir + std::wstring(L"/demo.png");
+  std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
+  if (demo_copy_dir != "")
+  {
+    demo_dir = L"../../../../"+std::wstring(demo_copy_dir.begin(), demo_copy_dir.end())+ std::wstring(L".png"); 
+  }
   hrRenderSaveFrameBufferLDR(renderRef, demo_dir.c_str());
   return true;
 }

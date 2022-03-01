@@ -281,7 +281,6 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
-    metainfoManager.save_all();
     
     /*
     float imp_size = 128;
