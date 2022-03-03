@@ -546,12 +546,15 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     float strong_chance = 0.4 - 0.35*(MAX(0.1*iteration_n*iteration_n,100)/100);
     float medium_chance = 0.4 - 0.3*(MAX(iteration_n - 25,100)/100);
     float rnd = urand();
+    /*
     if (rnd < strong_chance)
         mutation(C.main_genome, 1.0, 0.5*free_parameters_cnt);
     else if (rnd < strong_chance + medium_chance)
         mutation(C.main_genome, 0.75, 5);
     else
         mutation(C.main_genome, 0.5, 3);
+    */
+    mutation(C.main_genome, 1, 7);
     for (auto &g : C.other_genomes)
     {
         if (urand() < 0.33/it)
@@ -629,7 +632,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
                 for (int j = 0; j < ft_cnt; j++)
                 {
                     Genome modified = p.main_genome;
-                    mutation(modified, 0.25, 3);
+                    mutation(modified, 0.5, 1);
                     params.push_back(original_param_list);
                     params.back().from_simple_list(modified);
                     positions.push_back(std::pair<ParOrigin, int>(ELITE_MODIFIED, h));
@@ -818,11 +821,12 @@ void GeneticAlgorithm::recalculate_fitness()
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = pow(p.metric, 1 + 0.2*sqrt(iteration_n)) + 1e-4;
+            p.fitness = pow(p.metric, 1 + 0.5*sqrt(iteration_n)) + 1e-4;
         else
             p.fitness = -1;
     }
 
+/*
     float min_v = 0.01;
     float step = 4.0 / SQR(metaParams.max_population_size);
     int n = 0;
@@ -835,7 +839,7 @@ void GeneticAlgorithm::recalculate_fitness()
                 n++;
         }
     }
-
+*/
     /*
     std::sort(population.begin(), population.end(), 
               [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});

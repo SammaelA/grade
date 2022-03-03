@@ -291,6 +291,19 @@ void WeberPennGenerator::Tree::create_branches()
         }
         logerr("created tree with %d/%d points", rec_points, curve_points);
         */
+        int curve_points = 0;
+        for (auto &bl : branch_curves)
+        {
+            for (auto &c : bl.splines.data)
+            {
+                curve_points += c.bezier_points.size();
+                for (auto &p : c.bezier_points)
+                {
+                    //logerr("%f %f %f",p.co.x, p.co.y, p.co.z);
+                }
+            }
+        }
+        logerr("created tree with %d points", curve_points);
     }
 }
 
@@ -1763,6 +1776,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
     dst.root->id = dst.id;
     
     convert(src, dst, src.root, dst.root);
+        logerr("convert %u", src.root, dst.branchHeaps[0]->branches.size());
 }
 
 void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch *dst_br)

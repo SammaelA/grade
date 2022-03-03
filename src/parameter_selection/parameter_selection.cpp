@@ -9,6 +9,7 @@
 #include "generation/metainfo_manager.h"
 #include "tree_generators/all_generators.h"
 #include "hydra_utils/hydra_scene_exporter.h"
+#include "simulated_annealing.h"
 #include <thread>
 
 bool debug_stat = false;
@@ -321,6 +322,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
     tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
+    tree_ggd.impostor_generation_params.leaf_scale = 1.5;
 
     AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
@@ -383,8 +385,17 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     
     //initial_params = {};
     //logerr("started with %d initial params",initial_params.size());
+    
     GeneticAlgorithm GA;
     GA.perform(parList, mp, ex_c, func, best_pars, initial_params);
+
+   /*
+    SimulatedAnnealing SA;
+    SimulatedAnnealing::MetaParameters sa_mp;
+    SimulatedAnnealing::ExitConditions sa_ex;
+    sa_ex.function_calculated = 3500;
+    SA.perform(parList, sa_mp, sa_ex, func, best_pars, initial_params);
+    */
     bestParList = best_pars[0].second;
     best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -665,6 +676,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.impostor_generation_params.monochrome = true;
             tree_ggd.impostor_generation_params.normals_needed = false;
             tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
+            tree_ggd.impostor_generation_params.leaf_scale = 1.5;
 
             LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
                                                             0.625f * reference_ttd.get_params()->get_scale_factor());
