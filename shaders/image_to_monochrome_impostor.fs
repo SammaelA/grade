@@ -14,7 +14,7 @@ void main(void)
 {
   vec2 tc = ex_Tex.xy;
   tc.y = 1 - tc.y;
-  float br = 0.125;
+  float br = 0.0;
   vec4 tc_tr_2 = vec4(-br,-br,1,1)/(1-2*br);
   tc = ref_tc_transform.xy + ref_tc_transform.zw*tc;
   //tc = tc_tr_2.xy + tc_tr_2.zw*tc;

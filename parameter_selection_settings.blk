@@ -1,24 +1,24 @@
 {
     generator_name:s = "simpliest_gen"
     //save_best_result:s = "gen_gen_selected_4"
-    //save_best_result_auto:b = true
+    save_best_result_auto:b = false
     use_existing_presets:b = false
     save_result_image:b = false
     evolution_stat:b = false
     debug_graph:b = false
-    initial_population_size:i = 250
+    initial_population_size:i = 100
     max_population_size:i = 50
-    impostor_size:i = 128
+    impostor_size:i = 400
     best_results_count:i = 1
     heaven_size:i = 10
     heaven_fine_tuning_count:i = 1
     
     //exit_conditions
-    function_calculated:i = 10000
+    function_calculated:i = 5000
     generations:i = 10000
     function_reached:r = 1.0
     time_elapsed_seconds:r = 2000
 
     //debug stuff
-    version:i = 1
+    version:i = 2
 }

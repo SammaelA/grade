@@ -1,0 +1,141 @@
+#version 430
+#define THREADS 32
+
+layout( local_size_x = THREADS, local_size_y = 1) in;
+
+struct StripeInfo
+{
+    vec4 crown_bord;//(x_start, dense crown x_start, dense crown x_end, x_end)
+    vec2 crown_ymin_ymax;
+    float branches_share;
+    //vec4 trunk_samples[4];//(y_sample, x_start, x_end, 0)
+
+    float _pad;
+    //vec4 _pad_2;
+    //vec4 _pad_3;
+};
+
+layout(std430, binding = 5) readonly buffer slices_info_buf
+{
+    uvec4 slices_info[];//x0,y0,layer for slice in atlas
+};
+layout(std430, binding = 7) writeonly buffer stripes_info_buf
+{
+    StripeInfo stripes[];
+};
+
+uniform int impostor_x;
+uniform int impostor_y;
+uniform int slices_count;
+uniform int start_id;
+uniform int stripes_count;
+uniform int pass;//0 - crown, 1 - trunk
+
+uniform sampler2DArray atlas;
+
+
+void crown()
+{
+    int id = int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    if (id >= stripes_count*slices_count)
+        return;
+    int slice_n = id / stripes_count;
+    int stripe_n = id % stripes_count;
+    ivec3 slice_data = ivec3(slices_info[slice_n].xyz);
+
+    int y_start = impostor_y*stripe_n/stripes_count;
+    int y_finish = impostor_y*(stripe_n+1)/stripes_count;
+    
+    float a1 = -1;
+    float b1 = -1;
+    float a2 = -1;
+    float b_sum = 0;
+    float l_sum = 0;
+    float b_len = 0;
+    float y_min = y_finish + 1;
+    float y_max = y_start - 1;
+
+    float b1_max = -1;
+    float b_len_max = 0;
+    for (int i=0;i<impostor_x;i++)
+    {
+        float bs = 0;
+        float ls = 0;
+        for (int j=y_start;j<y_finish;j++)
+        {
+            vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,j,0), 0);
+            bs += p1.x;
+            ls += p1.y;
+            y_min = (p1.x + p1.y > 0) ? min(y_min, j) : y_min;
+            y_max = (p1.x + p1.y > 0) ? max(y_max, j) : y_max;
+        }
+        if (bs + ls > 0.67*(y_finish - y_start))
+        {
+            //thick crown
+            if (a1 < 0)
+                a1 = i;
+            a2 = i;
+            if (b1 < 0)
+            {
+                //thick crown started
+                b1 = i;
+                b_len = 1;
+            }
+            else
+            {
+                //thick crown continues
+                b_len++;
+            }
+        }
+        else
+        {
+            if (b1 >= 0)//thick crown finished
+            {
+                if (b_len > b_len_max)
+                {
+                    b1_max = b1;
+                    b_len_max = b_len;
+                    b1 = -1;
+                }
+            }
+            if (bs + ls > 0)
+            {
+                if (a1 < 0)
+                    a1 = i;
+                a2 = i;    
+            }
+        }
+        b_sum += bs;
+        l_sum += ls;
+    }
+    if (b1_max < 0)
+        b1_max = 0.5*(a1 + a2);
+    stripes[id].crown_bord = vec4(a1, b1_max, b1_max + b_len_max, a2 + 1);
+    stripes[id].crown_ymin_ymax = a1 >= 0 ? vec2(y_min, y_max) : vec2(0, 0);
+    stripes[id].branches_share = b_sum/max(b_sum + l_sum, 1);
+}
+
+void trunk()
+{
+    int id = int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    if (id >= stripes_count*slices_count)
+        return;
+    int slice_n = id / stripes_count;
+    int stripe_n = id % stripes_count;
+    ivec3 slice_data = ivec3(slices_info[slice_n].xyz);
+
+    int y_start = impostor_y*stripe_n/stripes_count;
+    int y_finish = impostor_y*(stripe_n+1)/stripes_count;
+}
+
+void main()
+{
+    if (pass == 0)
+        crown();
+    else 
+        trunk();
+}

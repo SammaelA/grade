@@ -73,8 +73,8 @@ float get_dist(ivec3 pixel_coords, vec2 scale, int ref_image_n, int id, int impo
                        vec4(0,0,0,0) :
                        textureLod(reference_image, vec3(im_tc + vec2(ref_image_n,0), 0),0);
 
-            crone_dist += abs(p1.z - p2.z);
-            crone_sum += max(p1.z, p2.z);
+            crone_dist += abs(max(p1.x,p1.y) - max(p2.x,p2.y));
+            crone_sum += max(max(p1.x,p1.y), max(p2.x,p2.y));
 
             if (image_debug > 0 && id == 0 && j >= 0 && j < impostor_y && i>=0 && i < impostor_x)
             {

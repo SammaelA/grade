@@ -303,7 +303,7 @@ void WeberPennGenerator::Tree::create_branches()
                 }
             }
         }
-        logerr("created tree with %d points", curve_points);
+        //logerr("created tree with %d points", curve_points);
     }
 }
 
@@ -1776,7 +1776,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
     dst.root->id = dst.id;
     
     convert(src, dst, src.root, dst.root);
-        logerr("convert %u", src.root, dst.branchHeaps[0]->branches.size());
+    //logerr("convert %u", src.root, dst.branchHeaps[0]->branches.size());
 }
 
 void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch *dst_br)

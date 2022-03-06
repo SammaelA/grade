@@ -1,0 +1,160 @@
+#version 430
+#define THREADS 32
+
+layout( local_size_x = THREADS, local_size_y = 1) in;
+
+layout(std430, binding = 5) readonly buffer slices_info_buf
+{
+    uvec4 slices_info[];//x0,y0,layer for slice in atlas
+};
+layout(std430, binding = 6) buffer stripes_results_buf
+{
+    vec4 stripes_results[];
+};
+
+uniform int impostor_x;
+uniform int impostor_y;
+uniform int slices_count;
+uniform int start_id;
+uniform int stripes_count;
+uniform int pass;//0 - stripes, 1 - reduction
+
+uniform sampler2DArray atlas;
+
+void collection()
+{
+    int id = int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    if (id >= stripes_count*slices_count)
+        return;
+    int slice_n = id / stripes_count;
+    int stripe_n = id % stripes_count;
+    ivec3 slice_data = ivec3(slices_info[slice_n].xyz);
+
+    int y_start = impostor_y*stripe_n/stripes_count;
+    int y_finish = impostor_y*(stripe_n+1)/stripes_count;
+
+    int max_y = -1;
+    int max_x = -1;
+    int min_y = impostor_y + 1;
+    int min_x = impostor_x + 1;
+    for (int j=y_start;j<y_finish;j++)
+    {
+        int x_min = -1;
+        for (int i=0;i<impostor_x;i++)
+        {
+            vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,j,0), 0);
+            if (p1.a > 0.05)
+            {
+                x_min = i;
+                break;
+            }
+        }
+        if (x_min >= 0)
+        {
+            for (int i=impostor_x-1;i>=0;i--)
+            {
+                vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,j,0), 0);
+                if (p1.a > 0.05)
+                {
+                    min_x = min(min_x,x_min);
+                    max_x = max(max_x,i+1);
+                    min_y = min(min_y,j);
+                    max_y = max(max_y,j+1);
+                    break;
+                }
+            }            
+        }
+    }
+
+    stripes_results[2*slices_count + id] = vec4(min_x, max_x, min_y, max_y);
+}
+
+void reduction()
+{
+    int id = int(gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y +
+                  gl_GlobalInvocationID.y * gl_WorkGroupSize.x + 
+                  gl_GlobalInvocationID.x) + start_id;
+    if (id >= slices_count)
+        return;
+
+    float max_y = -1;
+    float max_x = -1;
+    float min_y = impostor_y + 1;
+    float min_x = impostor_x + 1;
+    
+    //find global borders
+    for (int i=0;i<stripes_count;i++)
+    {
+        vec4 stripe = stripes_results[2*slices_count + stripes_count*id + i];
+        min_y = min(min_y,stripe.z);
+        max_y = max(max_y,stripe.w);
+        min_x = min(min_x,stripe.x);
+        max_x = max(max_x,stripe.y);
+    }
+
+    float r_x = 0.5;
+    if (min_y < impostor_y)
+    {
+        //find root position
+        ivec3 slice_data = ivec3(slices_info[id].xyz);
+        int max_st = 0;
+        int max_len = 0;
+        int st = 0;
+        int len = 0;
+
+        for (int i=0;i<impostor_x;i++)
+        {
+            vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,min_y,0), 0);
+
+            if (p1.x > 0)
+            {
+                if (len > 0)
+                {
+                    //segment continues
+                    len++;
+                }
+                else
+                {
+                    //segment starts
+                    st = i;
+                    len = 1;
+                }
+            }
+            else if (len > 0)
+            {
+                //segment finishes
+                if (len > max_len)
+                {
+                    max_len = len;
+                    max_st = st;
+                }
+                len = 0;
+            }
+        }
+        if (len > 0)
+        {
+            //segment finishes at the end of image
+            if (len > max_len)
+            {
+                max_len = len;
+                max_st = st;
+            }
+            len = 0;            
+        }
+
+        int root_x = max_len > 0 ? max_st + max_len/2 : int(min_y + max_y)/2;
+        r_x = float(root_x)/float(impostor_x);
+    }
+    stripes_results[2*id] = vec4(min_x/impostor_x, max_x/impostor_x, min_y/impostor_y, max_y/impostor_y);
+    stripes_results[2*id + 1] = vec4(r_x,0,0,0);
+}
+
+void main()
+{
+    if (pass == 0)
+        collection();
+    else 
+        reduction();
+}

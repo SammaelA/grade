@@ -321,8 +321,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
-    tree_ggd.impostor_generation_params.leaf_scale = 1.5;
+    tree_ggd.impostor_generation_params.leaf_opacity = 1;
+    tree_ggd.impostor_generation_params.leaf_scale = 1.0;
 
     AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     GeneticAlgorithm::MetaParameters mp;
@@ -403,11 +403,11 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
     
     debug_stat = true;
-    if (ref_type && ref_type->generator_name == gen_name)
+    if (ref_type && ref_type->generator_name == gen_name && false)
     {
-        ParameterList referenceParList;
-        ref_type->get_params()->write_parameter_list(referenceParList);
-        sel_quality(bestParList, referenceParList, func, 32);
+        //ParameterList referenceParList;
+        //ref_type->get_params()->write_parameter_list(referenceParList);
+        //sel_quality(bestParList, referenceParList, func, 32);
     }
     else
     {
@@ -675,8 +675,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.impostor_generation_params.quality = imp_size;
             tree_ggd.impostor_generation_params.monochrome = true;
             tree_ggd.impostor_generation_params.normals_needed = false;
-            tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
-            tree_ggd.impostor_generation_params.leaf_scale = 1.5;
+            tree_ggd.impostor_generation_params.leaf_opacity = 1;
+            tree_ggd.impostor_generation_params.leaf_scale = 1.0;
 
             LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
                                                             0.625f * reference_ttd.get_params()->get_scale_factor());
@@ -736,14 +736,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
                 ref_tree.info.BCyl_sizes *= glm::vec2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
                 
-                /*
                 float br = ReferenceTree::border_size;
                 glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
                 glm::vec4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
                 save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, tc_tr);
                 textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_02");
-                imp_sim.get_reference_tree_image_info(ref_tree,1);
-                */
             }
             delete ref_voxels;
         }
@@ -842,7 +839,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
     Block &ri = reference_info;
     TreeCompareInfo explicit_info;
-    explicit_info.BCyl_sizes = glm::vec2(ri.get_double("width",-1),ri.get_double("height",-1));
+    explicit_info.BCyl_sizes = glm::vec2(0.5*ri.get_double("width",-1),ri.get_double("height",-1));
     explicit_info.BCyl_sizes /= (1 - 2*ReferenceTree::border_size);
     explicit_info.branches_curvature = ri.get_double("branches_curvature",-1);
     explicit_info.branches_density = ri.get_double("branches_density",-1);

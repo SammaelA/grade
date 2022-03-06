@@ -23,6 +23,8 @@ tree_info_shader({"get_tree_info.comp"},{})
     glGenBuffers(1, &impostors_info_buf);
     glGenBuffers(1, &dbg_buf);
     glGenBuffers(1, &tree_image_info_buf);
+    glGenBuffers(1, &stripes_results_buf);
+    glGenBuffers(1, &stripes_info_buf);
 }
 
 void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeCompareInfo &info)
@@ -313,6 +315,9 @@ void ImpostorSimilarityCalc::set_slices_data(GrovePacked &grove)
 
 void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &reference, float clsh_mult)
 {
+    get_reference_tree_image_info_alt(reference, clsh_mult);
+    return;
+
     std::map<int, TreeImageInfo> results;
     get_tree_image_info(reference.atlas, results, true);
     if (results.empty())
@@ -368,6 +373,9 @@ float sigmoid(float x)
 void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
                                              Tree *original_trees, int original_trees_cnt, bool debug_print, bool image_debug)
 {
+    calc_similarity_alt(grove, reference, sim_results, original_trees, original_trees_cnt, debug_print, image_debug);
+    return;
+    
     int impostors_cnt = grove.impostors[1].impostors.size();
     int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
 
@@ -647,6 +655,8 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
     glDeleteBuffers(1, &impostors_info_buf);
     glDeleteBuffers(1, &dbg_buf);
     glDeleteBuffers(1, &tree_image_info_buf);
+    glDeleteBuffers(1, &stripes_results_buf);
+    glDeleteBuffers(1, &stripes_info_buf);
 }
 
 void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
