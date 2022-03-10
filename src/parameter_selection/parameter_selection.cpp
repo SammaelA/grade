@@ -405,9 +405,9 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     debug_stat = true;
     if (ref_type && ref_type->generator_name == gen_name && false)
     {
-        //ParameterList referenceParList;
-        //ref_type->get_params()->write_parameter_list(referenceParList);
-        //sel_quality(bestParList, referenceParList, func, 32);
+        ParameterList referenceParList;
+        ref_type->get_params()->write_parameter_list(referenceParList);
+        sel_quality(bestParList, referenceParList, func, 32);
     }
     else
     {

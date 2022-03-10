@@ -18,13 +18,13 @@ public:
         int elite = 5;
         float weaks_to_kill = 0.5;
         float dead_at_birth_thr = 0.0000;
-        float mix_chance = 0.25;
+        float mix_chance = 1;
         int n_ploid_genes = 1;
         int max_age = 100;
-        float clone_thr = -0.01;
+        float clone_thr = 0.01;
         int n_islands = 1;
-        int migration_interval = 2;
-        float migration_chance = 0.1;
+        int migration_interval = 5;
+        float migration_chance = 0.2;
         bool evolution_stat = false;
         bool debug_graph = false;
     };
@@ -87,7 +87,7 @@ private:
     void find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs);
     void kill_creature(int n);
     void kill_old();
-    void kill_weak(float percent);
+    void kill_weak(int count);
     void crossingover(Genome &A, Genome &B, Genome &res);
     void make_new_generation(std::vector<std::pair<int, int>> &pairs);
     void make_child(Creature &A, Creature &B, Creature &C);
@@ -104,4 +104,22 @@ private:
         std::map<int, float> all_results;
         std::vector<glm::ivec3> all_births;//mother, father, child
     } stat;
+
+    struct PopulationBackup
+    {
+        std::vector<Creature> pop;
+        float best_value;
+        int backup_uses = 0;
+    };
+
+    struct SubPopulationInfo
+    {
+        static constexpr float progress_thr = 0.01;
+        std::vector<float> best_results_history;
+        std::vector<PopulationBackup> backups;
+        int best_result_iter = 0;
+        int no_progress_time = 0;
+    };
+
+    std::vector<SubPopulationInfo> sub_population_infos;
 };

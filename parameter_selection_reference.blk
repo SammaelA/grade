@@ -1,23 +1,23 @@
 {
-    width:r = 50
+    //width:r = 50
     //width:s = "FROM_IMAGE"
     //height:s = "FROM_IMAGE"
-    height:r = 60
+    //height:r = 60
     //branches_curvature:r = 0.1
     //branches_curvature:s = "DONT_CARE"
-    branches_density:r = 1.5
-    joints_cnt:i = 25000
+    //branches_density:r = 1.5
+    //joints_cnt:i = 25000
     //max_joints:i = 15000
-    leaves_density:r = 3
+    //leaves_density:r = 3
     //trunk_thickness:s = "FROM_IMAGE"
     //trunk_thickness:r = 1.75
     //tropism:r = 0.33
-    //reference_type:s = "simpliest_tree_default"
-    reference_image
-    {
-        image:s = "ref10.png"
+    reference_type:s = "large_oak"
+    //reference_image
+    //{
+        //image:s = "ref10.png"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
         //background_color:p3 = 0, 0, 0
-    }
+    //}
 }

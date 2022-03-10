@@ -43,6 +43,12 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                                      MAX(metaParams.heaven_size, metaParams.best_genoms_count));
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
+    for (int i=0;i<metaParams.n_islands;i++)
+    {
+        sub_population_infos.emplace_back();
+        sub_population_infos[i].best_result_iter = 0;
+        sub_population_infos[i].no_progress_time = -1;
+    }
     initialize_population(initial_types);
     calculate_metric(1, false);
     recalculate_fitness();
@@ -52,7 +58,28 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     {
         next_id.store(1000*(iteration_n + 1));
         kill_old();
-        kill_weak(metaParams.weaks_to_kill);
+        std::vector<int> pop_sizes = std::vector<int>(metaParams.n_islands,0);
+        for (auto &p : population)
+        {
+            if (p.alive)
+                pop_sizes[p.sub_population_n]++;
+        }
+        for (auto &n : pop_sizes)
+        {
+            debug("%d ",n);
+        }
+        kill_weak(current_population_size - metaParams.max_population_size*(1-metaParams.weaks_to_kill));
+        pop_sizes = std::vector<int>(metaParams.n_islands,0);
+        for (auto &p : population)
+        {
+            if (p.alive)
+                pop_sizes[p.sub_population_n]++;
+        }
+        for (auto &n : pop_sizes)
+        {
+            debug("%d ",n);
+        }
+        debugnl();
         if (current_population_size < 5)
         {
             logerr("population extincted");
@@ -62,7 +89,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         {
             logerr("population %d is about to extinct", current_population_size);
         }
-        int space_left = metaParams.max_population_size - heaven.size();
+        int space_left = metaParams.max_population_size - current_population_size;
         std::vector<std::pair<int, int>> pairs;
         find_pairs(space_left, pairs);
         make_new_generation(pairs);
@@ -70,12 +97,100 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         calculate_metric(1, true);
         recalculate_fitness();
         pick_best_to_heaven();
-        if (iteration_n % metaParams.migration_interval == 0)
+        if (iteration_n % metaParams.migration_interval == 0 && iteration_n)
             migration();
+        for (int i=0;i<metaParams.n_islands;i++)
+        {
+            sub_population_infos[i].best_results_history.push_back(0);
+        }
         for (int i=0;i<population.size();i++)
         {
             if (population[i].alive)
+            {
                 population[i].age++;
+                auto &sp_info = sub_population_infos[population[i].sub_population_n];
+                sp_info.best_results_history.back() = MAX(sp_info.best_results_history.back(), population[i].metric);
+            }
+        }
+        for (int i=0;i<metaParams.n_islands;i++)
+        {
+            if (sub_population_infos[i].best_results_history.back() >= 
+                sub_population_infos[i].best_results_history[sub_population_infos[i].best_result_iter] + SubPopulationInfo::progress_thr)
+            {
+                sub_population_infos[i].best_result_iter = sub_population_infos[i].best_results_history.size() - 1;
+                sub_population_infos[i].no_progress_time = 0;
+            }
+            else
+            {
+                sub_population_infos[i].no_progress_time++;
+            }
+            logerr("sp %d best %f no_progress %d",i,sub_population_infos[i].best_results_history[sub_population_infos[i].best_result_iter],sub_population_infos[i].no_progress_time);
+        }
+        if (iteration_n % 10 == 0)
+        {
+            for (int i=0;i<metaParams.n_islands;i++)
+            {
+                auto &info = sub_population_infos[i];
+                if (info.no_progress_time < 10)
+                {
+                    //create backup 
+                    info.backups.emplace_back();
+                    auto &backup = info.backups.back();
+                    backup.backup_uses = 0;
+                    backup.best_value = info.best_results_history[info.best_result_iter];
+                    for (int j=0;j<population.size();j++)
+                    {
+                        if (population[j].alive && population[j].sub_population_n == i)
+                        {
+                          backup.pop.push_back(population[j]);  
+                        }
+                    }
+                    logerr("subpop %d backup %d saved %d", i, info.backups.size(), backup.pop.size());
+                }   
+                else
+                {
+                    //restore population
+                    while (!info.backups.empty() && info.backups.back().backup_uses >= 2)
+                    {
+                        info.backups.pop_back();
+                    }
+                    if (!info.backups.empty() && info.no_progress_time < 50)
+                    {
+                        int cnt = 0;
+                        for (int j=0;j<population.size();j++)
+                        {
+                            if (population[j].alive && population[j].sub_population_n == i)
+                            {
+                                if (cnt >= info.backups.back().pop.size())
+                                    break;
+                                population[j] = info.backups.back().pop[cnt];
+                                cnt++;
+                            }
+                        }
+                        info.backups.back().backup_uses++;
+                        logerr("subpop %d backup %d restored %d", i, info.backups.size(), cnt);
+                    }
+                    else if (info.no_progress_time >= 50)
+                    {
+                        //create new random population here
+                        info = SubPopulationInfo();
+                        int cnt = 0;
+                        for (int j=0;j<population.size();j++)
+                        {
+                            if (population[j].alive && population[j].sub_population_n == i)
+                            {
+                                population[j].main_genome = random_genes();
+                                for (int jj=1;jj<metaParams.n_ploid_genes;jj++)
+                                    population[j].other_genomes.push_back(random_genes());
+                                population[j].alive = true;
+                                population[j].max_age = metaParams.max_age;
+                                population[j].id = next_id.fetch_add(1);
+                            }
+                        }
+                        logerr("subpop %d recreated %d", i, cnt);
+                    }
+                }
+            }
         }
         iteration_n++;
         if (metaParams.evolution_stat)
@@ -352,7 +467,67 @@ void GeneticAlgorithm::find_pairs(int cnt, std::vector<std::pair<int, int>> &pai
         if (c.alive)
             islands_fitsum[c.sub_population_n] += c.fitness;
     }
+    float f_cnt = (float)cnt/metaParams.n_islands;
+    float cnt_err = 0;
+    for (int island=0;island<metaParams.n_islands;island++)
+    {
+        int i_cnt = f_cnt + cnt_err;
+        cnt_err = f_cnt - i_cnt;
+        for (int n = 0; n < i_cnt; n++)
+        {
+            int p0 = -1;
+            int p1 = -1;
 
+            bool found = false;
+            int tries = 0;
+            while (!found && tries < 100)
+            {
+                float v = urand(0, islands_fitsum[island]);
+                for (int i = 0; i < population.size(); i++)
+                {
+                    if (population[i].alive && population[i].sub_population_n == island)
+                    {
+                        if (v < population[i].fitness)
+                        {
+                            p0 = i;
+                            found = true;
+                            break;
+                        }
+                        else
+                        {
+                            v -= population[i].fitness;
+                        }
+                    }
+                }    
+                tries++;           
+            }
+            found = false;
+            while (!found && tries < 100)
+            {
+                float v = urand(0, islands_fitsum[island]);
+                for (int i = 0; i < population.size(); i++)
+                {
+                    if (population[i].alive && population[i].sub_population_n == island)
+                    {
+                        if (v < population[i].fitness)
+                        {
+                            p1 = i;
+                            found = true;
+                            break;
+                        }
+                        else
+                        {
+                            v -= population[i].fitness;
+                        }
+                    }
+                }
+                tries++;
+            }
+            if (p0 >=0 && p1>=0)
+                pairs.push_back(std::pair<int, int>(p0, p1));
+        }
+    }
+    return;
     for (int n = 0; n < cnt; n++)
     {
         int p0 = -1;
@@ -422,46 +597,99 @@ void GeneticAlgorithm::kill_old()
     }
 }
 
-void GeneticAlgorithm::kill_weak(float percent)
+void GeneticAlgorithm::kill_weak(int cnt_to_kill)
 {
     std::sort(population.begin(), population.end(), 
-              [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
+              [&](const Creature& a, const Creature& b) -> bool
+                 {
+                     if (a.alive == b.alive)
+                     {
+                         if (a.sub_population_n == b.sub_population_n)
+                            return a.fitness < b.fitness;
+                         else
+                            return a.sub_population_n < b.sub_population_n;
+                     }
+                     else
+                        return a.alive > b.alive;
+                 });
     
-    int cnt_to_kill = percent*current_population_size;
     int killed = 0;
+    std::vector<int> islands_start = std::vector<int>(metaParams.n_islands,0);
+    std::vector<int> islands_end = std::vector<int>(metaParams.n_islands,0);
     for (int i=0;i<population.size();i++)
     {
-        //logerr("%d) %d fitness %f",i,population[i].alive, population[i].fitness);
+        //logerr("%d)%d island %d fitness %f",i, population[i].alive, population[i].sub_population_n, population[i].fitness);
+        if (population[i].alive)
+        {
+            if (i == 0)
+                islands_start[population[i].sub_population_n] = i;
+            else if (population[i].sub_population_n != population[i-1].sub_population_n)
+            {
+                islands_start[population[i].sub_population_n] = i;
+                islands_end[population[i-1].sub_population_n] = i-1;
+            }
+        }
+        else if (i > 0 && population[i-1].alive)
+            islands_end[population[i-1].sub_population_n] = i-1;
     }
+    if (population.back().alive && islands_end[population.back().sub_population_n] == 0)
+        islands_end[population.back().sub_population_n] = population.size() - 1;
+    float percent = (float)cnt_to_kill/current_population_size;
+    float np_err = 0;
+    for (int i=0;i<metaParams.n_islands;i++)
+    {
+        logerr("st en %d %d", islands_start[i], islands_end[i]);
+        //float np_f = percent*(islands_end[i] - islands_start[i]) + np_err;
+        float dest_cnt = metaParams.max_population_size/(2*metaParams.n_islands);
+        int new_pop_end = MAX(islands_start[i], islands_end[i] - dest_cnt);
+        //np_err += np_f - (new_pop_end - islands_start[i]);
+        for (int j=islands_start[i];j<new_pop_end;j++)
+        {
+            kill_creature(j); 
+            killed++;
+            if (killed >= cnt_to_kill)
+                break;
+        }
+        if (killed >= cnt_to_kill)
+            break;
+    }
+    /*
     for (int i=0;i<population.size();i++)
     {
         if (population[i].alive)
         {
-           //logerr("killed weak %d metric %f", i, population[i].metric);
            kill_creature(i); 
            killed++;
         }
         if (killed >= cnt_to_kill)
             break;
     }
+    */
 }
 
 void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
 {
-    res = A;
-    for (int i=0;i<A.size();i++)
-    {
-        if (urand() > metaParams.mix_chance)
+    float rnd = urand();
+    Genome &p1 = rnd < 0.5 ? A : B;
+    Genome &p2 = rnd < 0.5 ? B : A; 
+    res = p1;
+
+        if (urand() < metaParams.mix_chance)
         {
-            if (urand() > 0.5)
-                res[i] = B[i];
+            for (int i=0;i<A.size();i++)
+            {
+                if (urand() > 0.5)
+                    res[i] = p2[i];
+            }
         }
         else
         {
-            float rnd = urand();
-            res[i] = rnd*A[i] + (1-rnd)*B[i];
+            float pos = urandi(1, A.size() - 1);
+            for (int i=pos;i<A.size();i++)
+            {
+                res[i] = p2[i];
+            }
         }
-    }
 }
 
 float GeneticAlgorithm::genes_dist(Creature &A, Creature &B)
@@ -481,7 +709,7 @@ float GeneticAlgorithm::closest_neighbour(Creature &C, std::vector<Creature> &po
     float min_dist = 1;
     while (population[i].alive && i < population.size())
     {
-        if (population[i].id != C.id)
+        if (population[i].id != C.id && population[i].sub_population_n == C.sub_population_n)
         {
             float dist =  genes_dist(C, population[i]);
             min_dist = MIN(min_dist,dist);
@@ -554,7 +782,13 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     else
         mutation(C.main_genome, 0.5, 3);
     */
-    mutation(C.main_genome, 1, 7);
+    float mutation_power = CLAMP(0.2*(1 + 0.1*sub_population_infos[C.sub_population_n].no_progress_time),0,1);
+    //mutation_power = 0.15;
+    if (urand() < 0.25 + mutation_power*mutation_power || iteration_n < 10)
+    {
+        //C.main_genome = urand() < 0.5 ? A.main_genome : B.main_genome;
+        mutation(C.main_genome, 1, urandi(1, 1 + mutation_power*free_parameters_cnt));
+    }
     for (auto &g : C.other_genomes)
     {
         if (urand() < 0.33/it)
@@ -562,18 +796,19 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         else
             mutation(C.main_genome, 1/it, urandi(1, 0.33*free_parameters_cnt));
     }
-    
+
+
     while (closest_neighbour(C, new_population) < metaParams.clone_thr)
     {
         //logerr("remutation %d, it has clone in population",C.id);
         mutation(C.main_genome, 1/it, urandi(1, free_parameters_cnt));
         //mutation(C.main_genome, 0.33/it, urandi(1, 0.5*free_parameters_cnt));
     }
-
 }
 
 void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pairs)
 {
+/*
     //assume that the population is sorted by fitness;
     int elite_count = metaParams.elite > 0 ? heaven.size() : 0;
     if (elite_count)
@@ -592,6 +827,26 @@ void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pai
     }
 
     current_population_size = elite_count + pairs.size();
+*/
+    int pos = 0;
+    for (int i=0;i<population.size();i++)
+    {
+        if (population[i].alive)
+        {
+            new_population[pos] = population[i];
+            pos++;
+        }
+    }
+
+    for (auto &p : pairs)
+    {
+        //logerr("children %d %d", p.first, p.second);
+        make_child(population[p.first], population[p.second], new_population[pos]);
+        pos++;
+        //if (pos >= metaParams.max_population_size)
+        //    break;
+    }
+    current_population_size += pairs.size();
     population = new_population;
 }
 
@@ -742,7 +997,7 @@ void GeneticAlgorithm::pick_best_to_heaven()
                 bool better_all_clones = true;
                 for (int i=0;i<heaven.size();i++)
                 {
-                    if (genes_dist(population[n], heaven[i]) < 2*metaParams.clone_thr)
+                    if (genes_dist(population[n], heaven[i]) < 0*metaParams.clone_thr)
                     {
                         clones.push_back(i);
                         if (!better(population[n], heaven[i]))
@@ -803,7 +1058,7 @@ void GeneticAlgorithm::migration()
     {
         if (urand() < metaParams.migration_chance)
         {
-            p.sub_population_n = urandi(0, metaParams.n_islands);
+            p.sub_population_n =  (p.sub_population_n+1)% metaParams.n_islands;
         }
     }
 }
@@ -814,21 +1069,22 @@ void GeneticAlgorithm::recalculate_fitness()
               [&](const Creature& a, const Creature& b) -> bool{return a.metric < b.metric;});
     for (auto &p : population)
     {
-        //logerr("%d(%d) metr %f", p.id, p.sub_population_n, p.metric);
         if (p.alive && p.metric < metaParams.dead_at_birth_thr && current_population_size > metaParams.min_population_size)
         {
             p.alive = false;
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = pow(p.metric, 1 + 0.5*sqrt(iteration_n)) + 1e-4;
+            p.fitness = pow(-log2(CLAMP(1 - p.metric,0.001,1)), 1 + 0.05*iteration_n) + 0.1*CLAMP(10-iteration_n,0,1);
+            //p.fitness = pow(p.metric, iteration_n < 10 ? 1 : 3) + 1e-4;
         else
             p.fitness = -1;
+        //logerr("%d(%d) metr %f %f", p.id, p.sub_population_n, p.metric, p.fitness);
     }
 
 /*
     float min_v = 0.01;
-    float step = 4.0 / SQR(metaParams.max_population_size);
+    float step = 0.05;
     int n = 0;
     for (int i=population.size()-1;i>=0;i--)
     {
@@ -856,31 +1112,64 @@ void GeneticAlgorithm::recalculate_fitness()
         }
     }
     */
-   /*
-   int p_cnt = 0;
-   double p_dist = 0;
-   debug("dist matrix:\n");
-   for (auto &p1 : heaven)
+   for (int pop_n = 0; pop_n < metaParams.n_islands;pop_n++)
    {
-       if (p1.alive)
-       {
-            for (auto &p2 : heaven)
+        int p_cnt = 0;
+        double p_dist = 0;
+        //debug("dist matrix:\n");
+        for (auto &p1 : population)
+        {
+            if (p1.alive && p1.sub_population_n == pop_n)
             {
-                if (p2.alive)
+                    for (auto &p2 : population)
+                    {
+                        if (p2.alive && p2.sub_population_n == pop_n)
+                        {
+                            p_cnt++;
+                            ParameterList par1 = original_param_list;
+                            par1.from_simple_list(p1.main_genome);
+                            ParameterList par2 = original_param_list;
+                            par2.from_simple_list(p2.main_genome);
+                            float dist =  par1.diff(par2);
+                            p_dist += dist;
+                            //debug("%.2f ", dist);
+                        }
+                    }
+                    //debugnl();
+                }
+        }
+        logerr("%d) average population diff %.3f",pop_n, (float)(p_dist/p_cnt));
+    }
+
+    debug("dist matrix:\n");
+    for (int pop_n1 = 0; pop_n1 < metaParams.n_islands; pop_n1++)
+    {
+        for (int pop_n2 = 0; pop_n2 < metaParams.n_islands; pop_n2++)
+        {
+            int p_cnt = 0;
+            double p_dist = 0;
+            for (auto &p1 : population)
+            {
+                if (p1.alive && p1.sub_population_n == pop_n1)
                 {
-                    p_cnt++;
-                    ParameterList par1 = original_param_list;
-                    par1.from_simple_list(p1.main_genome);
-                    ParameterList par2 = original_param_list;
-                    par2.from_simple_list(p2.main_genome);
-                    float dist =  par1.diff(par2);
-                    p_dist += dist;
-                    debug("%.2f ", dist);
+                    for (auto &p2 : population)
+                    {
+                        if (p2.alive && p2.sub_population_n == pop_n2)
+                        {
+                            p_cnt++;
+                            ParameterList par1 = original_param_list;
+                            par1.from_simple_list(p1.main_genome);
+                            ParameterList par2 = original_param_list;
+                            par2.from_simple_list(p2.main_genome);
+                            float dist = par1.diff(par2);
+                            p_dist += dist;
+                        }
+                    }
                 }
             }
-            debugnl();
+            debug(" %.3f", (float)(p_dist/p_cnt));
         }
-   }
-   logerr("average population diff %f", (float)(p_dist/p_cnt));
-   */
+        debugnl();
+    }
+    debugnl();
 }

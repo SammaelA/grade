@@ -99,6 +99,7 @@ void reduction()
     {
         //find root position
         ivec3 slice_data = ivec3(slices_info[id].xyz);
+        /*
         int max_st = 0;
         int max_len = 0;
         int st = 0;
@@ -145,7 +146,19 @@ void reduction()
         }
 
         int root_x = max_len > 0 ? max_st + max_len/2 : int(min_y + max_y)/2;
-        r_x = float(root_x)/float(impostor_x);
+        */
+        float a = 0;
+        float s = 0.0001;
+        for (int j=int(min_y);j<int(min_y) + int(0.02*float(impostor_y) + 1);j++)
+        {
+            for (int i=0;i<impostor_x;i++)
+            {
+                vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,j,0), 0);
+                a += i*p1.x;
+                s += p1.x;
+            }
+        }
+        r_x = float(a/s)/float(impostor_x);
     }
     stripes_results[2*id] = vec4(min_x/impostor_x, max_x/impostor_x, min_y/impostor_y, max_y/impostor_y);
     stripes_results[2*id + 1] = vec4(r_x,0,0,0);
