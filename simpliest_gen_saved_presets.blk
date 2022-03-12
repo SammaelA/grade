@@ -11,6 +11,30 @@ leaf_size:r = 3.000000
 wood_tex_name:s = "wood"
 leaf_tex_name:s = "leaf"
 }
+ERROR_selected_params_4 {
+branch_len:arr = { 46.172852, 34.986477, 10.372843, 1.162899 }
+branch_r:arr = { 0.919822, 0.750000, 0.200000, 0.075000 }
+branch_angle:arr = { 0.110303, 1.068471, 0.462307, 2.358803 }
+branch_count:arr = { 14.000000, 18.000000, 9.000000, 8.000000 }
+branching_start:arr = { 0.541804, 0.059042, 0.191784, 0.949076 }
+max_depth:i = 4
+leaves_count:r = 0.283957
+leaf_size:r = 3.242102
+wood_tex_name:s = "wood"
+leaf_tex_name:s = "leaf"
+}
+ERROR_selected_params_5 {
+branch_len:arr = { 69.510513, 8.119869, 5.688095, 13.705792 }
+branch_r:arr = { 1.670607, 0.750000, 0.200000, 0.075000 }
+branch_angle:arr = { 0.910026, 0.120683, 0.543524, 1.130902 }
+branch_count:arr = { 19.000000, 11.000000, 11.000000, 9.000000 }
+branching_start:arr = { 0.449437, 0.319946, 0.151445, 0.973696 }
+max_depth:i = 4
+leaves_count:r = 0.828302
+leaf_size:r = 3.281450
+wood_tex_name:s = "wood"
+leaf_tex_name:s = "leaf"
+}
 ref10.png_selected_params_2 {
 branch_len:arr = { 2.366423, 31.993921, 24.457394, 5.800336 }
 branch_r:arr = { 1.715353, 0.750000, 0.200000, 0.075000 }

@@ -5,35 +5,40 @@
 #include <set>
 
 std::atomic<int> next_id(0);
-
+int di_cnt[256];
+long double di_res[256];
+long double di_dev[256];
 void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
-                               const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
+                               const OptFunction &opt_f,
                                std::vector<std::pair<float, ParameterList>> &best_results,
                                std::vector<ParameterList> &initial_types)
 {
     t_start = std::chrono::steady_clock::now();
 
-    function = f;
+    opt_function = opt_f;
     original_param_list = param_list;
     metaParams = params;
     exitConditions = exit_conditions;
     free_parameters_cnt = 0;
-
+    all_parameters_cnt = 0;
     for (auto &p : original_param_list.categorialParameters)
     {
         parametersMask.categorialParameters.push_back(p);
+        all_parameters_cnt++;
         if (!p.second.fixed())
             free_parameters_cnt++;
     }
     for (auto &p : original_param_list.ordinalParameters)
     {
         parametersMask.ordinalParameters.push_back(p);
+        all_parameters_cnt++;
         if (!p.second.fixed())
             free_parameters_cnt++;
     }
     for (auto &p : original_param_list.continuousParameters)
     {
         parametersMask.continuousParameters.push_back(p);
+        all_parameters_cnt++;
         if (!p.second.fixed())
             free_parameters_cnt++;
     }
@@ -50,6 +55,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         sub_population_infos[i].no_progress_time = -1;
     }
     initialize_population(initial_types);
+    save_load_function_stat(true);
     calculate_metric(1, false);
     recalculate_fitness();
     pick_best_to_heaven();
@@ -58,28 +64,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     {
         next_id.store(1000*(iteration_n + 1));
         kill_old();
-        std::vector<int> pop_sizes = std::vector<int>(metaParams.n_islands,0);
-        for (auto &p : population)
-        {
-            if (p.alive)
-                pop_sizes[p.sub_population_n]++;
-        }
-        for (auto &n : pop_sizes)
-        {
-            debug("%d ",n);
-        }
         kill_weak(current_population_size - metaParams.max_population_size*(1-metaParams.weaks_to_kill));
-        pop_sizes = std::vector<int>(metaParams.n_islands,0);
-        for (auto &p : population)
-        {
-            if (p.alive)
-                pop_sizes[p.sub_population_n]++;
-        }
-        for (auto &n : pop_sizes)
-        {
-            debug("%d ",n);
-        }
-        debugnl();
         if (current_population_size < 5)
         {
             logerr("population extincted");
@@ -124,7 +109,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
             {
                 sub_population_infos[i].no_progress_time++;
             }
-            logerr("sp %d best %f no_progress %d",i,sub_population_infos[i].best_results_history[sub_population_infos[i].best_result_iter],sub_population_infos[i].no_progress_time);
+            //logerr("sp %d best %f no_progress %d",i,sub_population_infos[i].best_results_history[sub_population_infos[i].best_result_iter],sub_population_infos[i].no_progress_time);
         }
         if (iteration_n % 10 == 0)
         {
@@ -150,11 +135,12 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                 else
                 {
                     //restore population
+                    int stall_limit = MAX(10, 100*(info.best_results_history[info.best_result_iter]));
                     while (!info.backups.empty() && info.backups.back().backup_uses >= 2)
                     {
                         info.backups.pop_back();
                     }
-                    if (!info.backups.empty() && info.no_progress_time < 50)
+                    if (false && !info.backups.empty() && info.no_progress_time < stall_limit)
                     {
                         int cnt = 0;
                         for (int j=0;j<population.size();j++)
@@ -170,7 +156,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                         info.backups.back().backup_uses++;
                         logerr("subpop %d backup %d restored %d", i, info.backups.size(), cnt);
                     }
-                    else if (info.no_progress_time >= 50)
+                    else if (info.no_progress_time >= stall_limit)
                     {
                         //create new random population here
                         info = SubPopulationInfo();
@@ -179,6 +165,8 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                         {
                             if (population[j].alive && population[j].sub_population_n == i)
                             {
+                                population[j] = Creature();
+                                population[j].sub_population_n = i;
                                 population[j].main_genome = random_genes();
                                 for (int jj=1;jj<metaParams.n_ploid_genes;jj++)
                                     population[j].other_genomes.push_back(random_genes());
@@ -188,6 +176,9 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                             }
                         }
                         logerr("subpop %d recreated %d", i, cnt);
+                        calculate_metric(1, true);
+                        recalculate_fitness();
+                        pick_best_to_heaven();
                     }
                 }
             }
@@ -211,6 +202,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     }
 
     prepare_best_params(best_results);
+    save_load_function_stat(false);
 }
 
 bool GeneticAlgorithm::should_exit()
@@ -396,15 +388,37 @@ void GeneticAlgorithm::initialize_population(std::vector<ParameterList> &initial
     current_population_size = metaParams.initial_population_size;
 }
 
-void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_genes_count)
+void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos)
 {
+    std::vector<float> mutation_weights = std::vector<float>(G.size(), 0);
+    float w_sum = 0;
+    for (int i=0;i<G.size();i++)
+    {
+        mutation_weights[i] = MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
+        w_sum += mutation_weights[i];
+    }
     for (int gene = 0; gene < mutation_genes_count; gene++)
     {
         bool found = false;
         int tries = 0;
         while (!found && tries < 100)
         {
-            int pos = urandi(0, G.size());
+            float rnd = urand(0, w_sum);  
+            int pos = 0;
+            for (int i=0;i<G.size();i++)
+            {
+                if (rnd < mutation_weights[i])
+                {
+                    pos = i;
+                    break;
+                }   
+                else
+                {
+                    rnd -= mutation_weights[i];
+                }
+            }
+            if (!single_mutation_pos)
+                mutation_power *= 1.0/MAX(1, 2*mutation_weights[pos]);
             int g_pos = pos;
             if (pos < parametersMask.categorialParameters.size())
             {
@@ -449,7 +463,16 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                 }
             }
             tries++;
+            if (single_mutation_pos && found == true && gene == mutation_genes_count-1)
+            {
+                //logerr("mutation %d", g_pos);
+                *single_mutation_pos = g_pos;
+            }
         }
+    }
+    if (single_mutation_pos)
+    {
+        //logerr("single mut");
     }
 }
 
@@ -638,7 +661,7 @@ void GeneticAlgorithm::kill_weak(int cnt_to_kill)
     float np_err = 0;
     for (int i=0;i<metaParams.n_islands;i++)
     {
-        logerr("st en %d %d", islands_start[i], islands_end[i]);
+        //logerr("st en %d %d", islands_start[i], islands_end[i]);
         //float np_f = percent*(islands_end[i] - islands_start[i]) + np_err;
         float dest_cnt = metaParams.max_population_size/(2*metaParams.n_islands);
         int new_pop_end = MAX(islands_start[i], islands_end[i] - dest_cnt);
@@ -783,8 +806,9 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         mutation(C.main_genome, 0.5, 3);
     */
     float mutation_power = CLAMP(0.2*(1 + 0.1*sub_population_infos[C.sub_population_n].no_progress_time),0,1);
+    mutation_power = 1 - MAX(A.metric, B.metric);
     //mutation_power = 0.15;
-    if (urand() < 0.25 + mutation_power*mutation_power || iteration_n < 10)
+    if (urand() < 0.25 + mutation_power*mutation_power || iteration_n < 15)
     {
         //C.main_genome = urand() < 0.5 ? A.main_genome : B.main_genome;
         mutation(C.main_genome, 1, urandi(1, 1 + mutation_power*free_parameters_cnt));
@@ -850,6 +874,35 @@ void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pai
     population = new_population;
 }
 
+void GeneticAlgorithm::print_function_stat()
+{
+    logerr("d_xi: ");
+    for (int k = 0; k < population[0].main_genome.size(); k++)
+    {
+        std::string name = "ERR";
+        bool active = false;
+        if (k < parametersMask.categorialParameters.size())
+        {
+            int pos = k;
+            name = parametersMask.categorialParameters[pos].first;
+            active = !parametersMask.categorialParameters[pos].second.fixed();
+        }
+        else if (k < parametersMask.categorialParameters.size() + parametersMask.ordinalParameters.size())
+        {
+            int pos = k - parametersMask.categorialParameters.size();
+            name = parametersMask.ordinalParameters[pos].first;
+            active = !parametersMask.ordinalParameters[pos].second.fixed();
+        }
+        else
+        {
+            int pos = k - parametersMask.categorialParameters.size() - parametersMask.ordinalParameters.size();
+            name = parametersMask.continuousParameters[pos].first;
+            active = !parametersMask.continuousParameters[pos].second.fixed();
+        }
+        logerr("%s %d (%.3f, %.3f, %d)",name.c_str(),active,  (float)di_res[k] / MAX(1, di_cnt[k]), (float)di_dev[k] / MAX(1, di_cnt[k]), di_cnt[k]);
+    }
+}
+
 void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
 {
     std::vector<ParameterList> params = {};
@@ -857,10 +910,13 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
     {
         NEW_ENTITY,
         ELITE_ORIGIN,
-        ELITE_MODIFIED
+        ELITE_MODIFIED,
+        CREATURE_MODIFIED
     };
     std::vector<std::pair<ParOrigin,int>> positions;
+    int fine_tune_pos[100];
 
+/*
     for (int i=0;i<heaven_n;i++)
     {
         int h = 0;
@@ -896,20 +952,43 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             h++;
         }
     }
-
+    */
     int i=0;
     for (auto &p : population)
     {
-        if (p.alive && p.metric < 0)
+        if (p.alive)
         {
-            params.push_back(original_param_list);
-            params.back().from_simple_list(p.main_genome);
-            positions.push_back(std::pair<ParOrigin,int>(NEW_ENTITY, i));
+            if (p.metric < 0)
+            {
+                params.push_back(original_param_list);
+                params.back().from_simple_list(p.main_genome);
+                positions.push_back(std::pair<ParOrigin,int>(NEW_ENTITY, i));
+            }
         }
         i++;
     }
-    std::vector<float> metrics = function(params);
+
+    int recnt = 0;
+    float delta = 0.25;
+    for (int i=population.size()-1;i>=0;i--)
+    {
+        auto &p = population[i];
+        if (p.alive)
+        {
+            if (p.metric >= 0 && iteration_n > 1 && recnt < 20)
+            {
+                Genome modified = p.main_genome; 
+                mutation(modified, delta, 1, &(fine_tune_pos[recnt]));
+                params.push_back(original_param_list);
+                params.back().from_simple_list(modified);
+                positions.push_back(std::pair<ParOrigin, int>(CREATURE_MODIFIED, i));   
+                recnt++;           
+            }
+        }
+    }
+    std::vector<float> metrics = opt_function.f(params);
     func_called += metrics.size();
+    int ftp = 0;
     for (int i=0;i<metrics.size();i++)
     {
         if (positions[i].first == NEW_ENTITY)
@@ -923,6 +1002,33 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             auto &c = heaven[positions[i].second];
             c.metric = (metrics[i] + c.metric_calc_n*c.metric)/(c.metric_calc_n+1);
             c.metric_calc_n++;
+        }
+        else if (positions[i].first == CREATURE_MODIFIED)
+        {
+            auto &c = population[positions[i].second];
+            int var_num = fine_tune_pos[ftp];
+            if (var_num >= 0 && var_num < 256)
+            {
+                di_cnt[var_num]++;
+                di_res[var_num]+= abs(c.metric - metrics[i])/delta;
+                di_dev[var_num]+= SQR(abs(c.metric - metrics[i])/delta);
+                if (abs(c.metric - metrics[i]) > 0.5)
+                {
+                    //logerr("large diff %f", abs(c.metric - metrics[i]));
+                }
+                if (ftp == 0 && iteration_n % 10 == 0)
+                {
+                    //print_function_stat();
+                }
+            }
+            //logerr("%d times changed creature %f --> %f", c.metric_calc_n, c.metric, metrics[i]);
+            if (c.metric < metrics[i])
+            {
+                c.metric = metrics[i];
+                params[i].to_simple_list(c.main_genome);
+                c.metric_calc_n++;
+            }
+            ftp++;
         }
     }
     for (int i=0;i<metrics.size();i++)
@@ -939,7 +1045,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             }
         }
     }
-
+/*
     for (auto &p : population)
     {
         for (auto &h : heaven)
@@ -951,6 +1057,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             }
         }
     }
+*/
 }
 
 bool GeneticAlgorithm::better(Creature &A, Creature &B)
@@ -1111,7 +1218,7 @@ void GeneticAlgorithm::recalculate_fitness()
             n++;
         }
     }
-    */
+    
    for (int pop_n = 0; pop_n < metaParams.n_islands;pop_n++)
    {
         int p_cnt = 0;
@@ -1172,4 +1279,66 @@ void GeneticAlgorithm::recalculate_fitness()
         debugnl();
     }
     debugnl();
+    */
+}
+
+void GeneticAlgorithm::save_load_function_stat(bool load)
+{
+    if (population.empty())
+    {
+        logerr("GA is not performed correctly. No need to save function stat");
+        return;
+    }
+    BlkManager man;
+    std::string stat_block_name = "GA_function_stats.blk";
+    Block stat_block;
+    man.load_block_from_file(stat_block_name, stat_block);
+    Block *bl = stat_block.get_block(opt_function.name);
+    if (!bl)
+    {
+        debug("creating new GA function stat block for function [%s]\n", opt_function.name.c_str());
+        bl = new Block();
+        stat_block.add_block(opt_function.name, bl);
+    }
+    int version = bl->get_int("version",-1);
+    int var_cnt = all_parameters_cnt;
+    std::vector<int> di_cnt_h;
+    std::vector<float> di_res_h;
+    if (version != opt_function.version)
+    {
+        debug("new version of GA function %d --> %d\n", version, opt_function.version);
+        bl->set_int("version", opt_function.version);
+    }
+    else
+    {
+        bl->get_arr("di_cnt", di_cnt_h);
+        bl->get_arr("di_res", di_res_h);
+    }
+    if (di_cnt_h.size() != var_cnt || di_res_h.size() != var_cnt)
+    {
+        debug("reset function stat %d %d %d\n", di_cnt_h.size(), di_res_h.size(), var_cnt);
+        di_cnt_h = std::vector<int>(var_cnt, 0);
+        di_res_h = std::vector<float>(var_cnt, 0);
+    }
+    if (load)
+    {
+        for (int i=0;i<var_cnt;i++)
+        {
+            int cnt = di_cnt_h[i] + di_cnt[i];
+            di_res[i] = (double)(di_res_h[i]*di_cnt_h[i] + di_res[i]);
+            di_cnt[i] = cnt;
+        }
+    }
+    else
+    {
+        for (int i=0;i<var_cnt;i++)
+        {
+            di_cnt_h[i] = di_cnt[i];
+            di_res_h[i] = di_res[i]/MAX(di_cnt[i], 1);
+        }
+        bl->set_arr("di_cnt", di_cnt_h);
+        bl->set_arr("di_res", di_res_h);
+
+        man.save_block_to_file(stat_block_name, stat_block);
+    }
 }

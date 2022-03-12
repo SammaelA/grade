@@ -16,6 +16,7 @@ std::vector<std::vector<StripeInfo>>
 ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl, const std::vector<std::pair<int, int>> &slice_id_impostor_n,
                                                         TreeCompareInfo *impostors_info, ReferenceTree *reference, glm::vec4 *tc_transform)
 {
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
     //set slices data
     int slices_cnt = slice_id_impostor_n.size();
     if (slices_cnt > (slices_per_impostor + 1)*max_impostors)
@@ -36,7 +37,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     //first step - calculate borders for every slice
 
     glm::ivec2 slice_size = images_atl.get_slice_size();
-    int stripe_height = 16;
+    int stripe_height = 10;
     int stripes_cnt = slice_size.y > stripe_height ? slice_size.y/stripe_height : 1;
     if (stripes_cnt*stripe_height != slice_size.y)
     {
@@ -382,7 +383,7 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         float adequate_mult = AM(d_sd)*AM(2*alt_imp_dist - 1)*AM(d_ld)*AM(d_bd)*AM(d_bc)*AM(d_jcnt)*AM(d_trop);
         res_dist *= adequate_mult;
         if (debug_print && i==0)
-            logerr("%f %f %f %f %f %f %f", (1 - d_sd),(1 - alt_imp_dist),(1 - d_ld),(1 - d_bd),(1 - d_bc),(1-d_jcnt),(1-d_trop));
+            logerr("%f = %f %f %f %f %f %f %f", res_dist, (1 - d_sd),(1 - alt_imp_dist),(1 - d_ld),(1 - d_bd),(1 - d_bc),(1-d_jcnt),(1-d_trop));
         //res_dist = 0.5 - sinf(asinf(1-2*sqrtf(res_dist))/3);
         sim_results.push_back(res_dist);
     }

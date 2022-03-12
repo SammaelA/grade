@@ -35,12 +35,18 @@ public:
         int function_calculated = 1000;
         int generations = 10000;
     };
+    struct OptFunction
+    {
+        std::string name = "default";
+        int version = 0;
+        std::function<std::vector<float>(std::vector<ParameterList> &)> f;
+    };
     void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
-                 const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
+                 const OptFunction &opt_f,
                  std::vector<std::pair<float,ParameterList>> &best_results,
                  std::vector<ParameterList> &initial_types);
 private:
-    std::function<std::vector<float>(std::vector<ParameterList> &)> function;
+    OptFunction opt_function;
     ParameterList original_param_list;
     struct ParametersMask
     {
@@ -51,7 +57,7 @@ private:
     MetaParameters metaParams;
     ExitConditions exitConditions;
     int free_parameters_cnt = 0;
-
+    int all_parameters_cnt = 0;
     typedef std::vector<float> Genome;
     struct Creature
     {
@@ -83,7 +89,7 @@ private:
     bool should_exit();
     void prepare_best_params(std::vector<std::pair<float,ParameterList>> &best_results);
     void initialize_population(std::vector<ParameterList> &initial_types);
-    void mutation(Genome &G, float mutation_power, int mutation_genes_count);
+    void mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos = nullptr);
     void find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs);
     void kill_creature(int n);
     void kill_old();
@@ -99,6 +105,8 @@ private:
     float closest_neighbour(Creature &C, std::vector<Creature> &population);
     float genes_dist(Creature &A, Creature &B);
     bool better(Creature &A, Creature &B);
+    void print_function_stat();
+    void save_load_function_stat(bool load);
     struct Stat
     {
         std::map<int, float> all_results;

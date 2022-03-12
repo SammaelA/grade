@@ -1,5 +1,5 @@
 {
-    generator_name:s = "ge_gen_simplified"
+    generator_name:s = "simpliest_gen"
     //save_best_result:s = "gen_gen_selected_4"
     save_best_result_auto:b = true
     use_existing_presets:b = false
@@ -8,7 +8,7 @@
     debug_graph:b = false
     initial_population_size:i = 250
     max_population_size:i = 150
-    impostor_size:i = 256
+    impostor_size:i = 200
     best_results_count:i = 1
     heaven_size:i = 2
     heaven_fine_tuning_count:i = 1
@@ -23,5 +23,5 @@
     time_elapsed_seconds:r = 2000
 
     //debug stuff
-    version:i = 4
+    version:i = 5
 }

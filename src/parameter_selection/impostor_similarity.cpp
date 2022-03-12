@@ -45,8 +45,8 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     
     glm::vec3 center = t.pos + imp.bcyl.h_2;
     glm::vec3 sz = 1.25f*glm::vec3(imp.bcyl.r, imp.bcyl.h_2, imp.bcyl.r);
-    float v_max = MAX(sz.x, MAX(sz.y, sz.z))/8;
-    float v_min = MIN(sz.x, MIN(sz.y, sz.z))/4;
+    float v_max = MAX(sz.x, MAX(sz.y, sz.z))/16;
+    float v_min = MIN(sz.x, MIN(sz.y, sz.z))/8;
     float v_sz = MIN(v_max, v_min);
     //logerr("creating voxels cube size %f %f %f sz %f", sz.x, sz.y, sz.z, v_sz);
     LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz, 1.0f);
@@ -68,6 +68,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
                 {
                     branches_dens.set_occluder_simple(s.end, glm::length(s.end - s.begin)*
                     (SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end)));
+                    leaves_dens.set_occluder_simple(s.end, 0.001);
                 }
                 //else 
                 //    logerr("NAN detected");
@@ -112,18 +113,23 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     std::function<void (float)> f = [&](float val)
     {
         res += val;
-        b_vox_cnt += (val >= 1);
+        b_vox_cnt += (val >= 0.001);
     };
     if (t.leaves)
     {
         for (auto &l : t.leaves->leaves)
         {
             int cnt = l.edges.size()/4;
-            float sum_sq = 0;
+            //logerr("l.edges %d",cnt);
             for (int i=0;i<cnt;i++)
-                sum_sq += glm::length(l.edges[4*i] - l.edges[4*i+1])*glm::length(l.edges[4*i] - l.edges[4*i+2]);
-            if (l.pos.x == l.pos.x)
-                leaves_dens.set_occluder_simple(l.pos, sum_sq);
+            {
+                float occ = glm::length(l.edges[4*i] - l.edges[4*i+1])*glm::length(l.edges[4*i] - l.edges[4*i+2]);
+                if (l.edges[4*i].x == l.edges[4*i].x)
+                {
+                    leaves_dens.set_occluder_simple(l.edges[4*i], occ);
+                    branches_dens.set_occluder_simple(l.edges[4*i], 0.001);
+                }
+            }
         }
     }
     info.id = t.id;

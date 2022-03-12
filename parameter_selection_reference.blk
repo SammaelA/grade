@@ -12,7 +12,7 @@
     //trunk_thickness:s = "FROM_IMAGE"
     //trunk_thickness:r = 1.75
     //tropism:r = 0.33
-    reference_type:s = "large_oak"
+    reference_type:s = "simpliest_tree_default"
     //reference_image
     //{
         //image:s = "ref10.png"

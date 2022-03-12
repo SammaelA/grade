@@ -387,7 +387,11 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     //logerr("started with %d initial params",initial_params.size());
     
     GeneticAlgorithm GA;
-    GA.perform(parList, mp, ex_c, func, best_pars, initial_params);
+    GeneticAlgorithm::OptFunction optF;
+    optF.f = func;
+    optF.name = gen_name;
+    optF.version = selection_settings.get_int("version", 1);
+    GA.perform(parList, mp, ex_c, optF, best_pars, initial_params);
 
    /*
     SimulatedAnnealing SA;
@@ -1170,7 +1174,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         copy.get_shader().uniform("layer", (float)layer);
         copy.render();
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
+        logerr("dshdjsds %f", reference_aspect_ratio);
         TextureAtlas atlas_asp = TextureAtlas(sel_stat_atl.get_sizes().x, 
                                               reference_aspect_ratio*sel_stat_atl.get_sizes().y, 1, 1);
         atlas_asp.set_grid(sel_stat_atl.get_sizes().x, reference_aspect_ratio*sel_stat_atl.get_sizes().y, false);
