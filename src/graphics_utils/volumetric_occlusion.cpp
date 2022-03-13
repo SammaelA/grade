@@ -669,7 +669,7 @@ void LightVoxelsCube::set_occluder_pyramid_head_5(glm::ivec3 voxel, float streng
         int bl1_pos = LIN(bl1_x, bl1_y, bl1_z, block_x, block_y, block_z);
 
         int x2 = MIN(x0 + wd, vox_x);
-        int y2 = y0;
+        int y2 = MIN(y0, vox_y);
         int z2 = MIN(z0 + wd, vox_z);
 
         int bl2_x = (x2 + vox_x) / BLOCK_SIZE_5;
@@ -732,9 +732,9 @@ void LightVoxelsCube::set_occluder_pyramid_fast(glm::vec3 pos, float strenght, i
 {
     float occ = 0.0;
     glm::ivec3 voxel = pos_to_voxel(pos);
-    int x0 = voxel.x;
-    int y0 = voxel.y;
-    int z0 = voxel.z;
+    int x0 = CLAMP(voxel.x, -vox_x, vox_x);
+    int y0 = CLAMP(voxel.y, -vox_y, vox_y);
+    int z0 = CLAMP(voxel.z, -vox_z, vox_z);
 
     if (block_size == 5)
     {
