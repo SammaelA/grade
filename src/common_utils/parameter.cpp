@@ -294,37 +294,101 @@ void ParameterList::load_borders_from_blk(Block &b)
     }
 }
 
-void ParameterList::to_simple_list(std::vector<float> &list)
+void ParameterList::to_simple_list(std::vector<float> &list, bool normalized, bool remove_fixed_params)
 {
     list = {};
-    for (auto &p : categorialParameters)
-        list.push_back(p.second.val);
-    for (auto &p : ordinalParameters)
-        list.push_back(p.second.val);
-    for (auto &p : continuousParameters)
-        list.push_back(p.second.val);
+    if (normalized)
+    {
+        for (auto &p : categorialParameters)
+        {
+            if (p.second.fixed())
+            {
+                if (!remove_fixed_params)
+                    list.push_back(0);
+            }
+            else
+            {
+                int pos = 0;
+                for (int i=0;i<p.second.possible_values.size();i++)
+                {
+                    if (p.second.possible_values[i] = p.second.val)
+                    {
+                        pos = i;
+                        break;
+                    }
+                }
+                list.push_back((float)pos/p.second.possible_values.size());
+            }
+        }
+        for (auto &p : ordinalParameters)
+        {
+            if (!p.second.fixed() || !remove_fixed_params)
+                list.push_back(p.second.fixed() ? 0 : (float)(p.second.val - p.second.min_val) / (p.second.max_val - p.second.min_val));
+        }
+        for (auto &p : continuousParameters)
+        {
+            if (!p.second.fixed() || !remove_fixed_params)
+                list.push_back(p.second.fixed() ? 0 : (float)(p.second.val - p.second.min_val) / (p.second.max_val - p.second.min_val));
+        }
+    }
+    else
+    {
+        for (auto &p : categorialParameters)
+            list.push_back(p.second.val);
+        for (auto &p : ordinalParameters)
+            list.push_back(p.second.val);
+        for (auto &p : continuousParameters)
+            list.push_back(p.second.val);
+    }
 }
-void ParameterList::from_simple_list(std::vector<float> &list)
+void ParameterList::from_simple_list(std::vector<float> &list, bool normalized, bool remove_fixed_params)
 {
     int n = 0;
-    for (auto &p : categorialParameters)
+    if (normalized)
     {
-        p.second.val = list[n];
-        n++;
+        for (auto &p : categorialParameters)
+        {
+            if (!p.second.fixed())
+                p.second.val = p.second.possible_values[(int)list[n]*p.second.possible_values.size()];
+            if (!p.second.fixed() || !remove_fixed_params)
+                n++;
+        }
+        for (auto &p : ordinalParameters)
+        {
+            if (!p.second.fixed())
+                p.second.val = p.second.min_val + list[n]*(p.second.max_val - p.second.min_val);
+            if (!p.second.fixed() || !remove_fixed_params)
+                n++;
+        }
+        for (auto &p : continuousParameters)
+        {
+            if (!p.second.fixed())
+                p.second.val = p.second.min_val + list[n]*(p.second.max_val - p.second.min_val);
+            if (!p.second.fixed() || !remove_fixed_params)
+                n++;
+        }
     }
-    for (auto &p : ordinalParameters)
+    else
     {
-        p.second.val = list[n];
-        n++;
-    }
-    for (auto &p : continuousParameters)
-    {
-        p.second.val = list[n];
-        n++;
+        for (auto &p : categorialParameters)
+        {
+            p.second.val = list[n];
+            n++;
+        }
+        for (auto &p : ordinalParameters)
+        {
+            p.second.val = list[n];
+            n++;
+        }
+        for (auto &p : continuousParameters)
+        {
+            p.second.val = list[n];
+            n++;
+        }
     }
 }
 
-float ParameterList::diff(ParameterList &list)
+float ParameterList::diff(ParameterList &list, bool normalized, bool remove_fixed_params)
 {
     if (categorialParameters.size() != list.categorialParameters.size() ||
         ordinalParameters.size() != list.ordinalParameters.size() ||

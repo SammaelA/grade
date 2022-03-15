@@ -414,7 +414,7 @@ struct ParameterList
 
     void print();
     void load_borders_from_blk(Block &b);
-    void to_simple_list(std::vector<float> &list);
-    void from_simple_list(std::vector<float> &list);
-    float diff(ParameterList &list);
+    void to_simple_list(std::vector<float> &list, bool normalized = false, bool remove_fixed_params = false);
+    void from_simple_list(std::vector<float> &list, bool normalized = false, bool remove_fixed_params = false);
+    float diff(ParameterList &list, bool normalized = false, bool remove_fixed_params = false);
 };

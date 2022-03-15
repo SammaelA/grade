@@ -283,6 +283,89 @@ void print_ref_tree_image_info(TreeImageInfo &info)
 {
  debug(" cr_st %.3f l_sh %.3f b_sh %.3f\n",info.crown_start_level,info.crown_leaves_share, info.crown_branches_share);   
 }
+
+#include <limbo/bayes_opt/boptimizer.hpp>
+
+using namespace limbo;
+
+struct Params {
+    struct bayes_opt_boptimizer : public defaults::bayes_opt_boptimizer {
+        
+    };
+
+// depending on which internal optimizer we use, we need to import different parameters
+#ifdef USE_NLOPT
+    struct opt_nloptnograd : public defaults::opt_nloptnograd {
+    };
+#elif defined(USE_LIBCMAES)
+    struct opt_cmaes : public defaults::opt_cmaes {
+    };
+#else
+    struct opt_gridsearch : public defaults::opt_gridsearch {
+    };
+#endif
+
+    struct kernel : public defaults::kernel {
+        BO_PARAM(double, noise, 0.01);
+    };
+
+    struct bayes_opt_bobase : public defaults::bayes_opt_bobase {
+        BO_PARAM(int, stats_enabled, true);
+    };
+
+    struct kernel_maternfivehalves : public defaults::kernel_maternfivehalves {
+    };
+
+    struct init_randomsampling : public defaults::init_randomsampling {
+        BO_PARAM(int, samples, 1000);
+    };
+
+    struct stop_maxiterations : public defaults::stop_maxiterations {
+        BO_PARAM(int, iterations, 500);        
+    };
+    struct kernel_squared_exp_ard : public defaults::kernel_squared_exp_ard {
+    };
+    struct opt_rprop : public defaults::opt_rprop {
+    };
+    // we use the default parameters for acqui_ucb
+    struct acqui_ucb : public defaults::acqui_ucb {
+    };
+};
+
+    struct Eval {
+        static ParameterList *parList_p;
+        static ImpostorSimilarityCalc *imp_sim_p;
+        static GroveGenerationData *tree_ggd_p;
+        static Scene *scene_p;
+        static ReferenceTree *ref_tree_p;
+        static int *cnt_p;
+        // number of input dimension (x.size())
+        BO_PARAM(size_t, dim_in, 95);
+        // number of dimensions of the result (res.size())
+        BO_PARAM(size_t, dim_out, 1);
+
+        // the function to be optimized
+        Eigen::VectorXd operator()(const Eigen::VectorXd& x) const
+        {
+            double y = 0;
+            std::vector<ParameterList> params = {*parList_p};
+            std::vector<float> norm_pars;
+            for (int i=0;i<x.size();i++)
+            {
+                norm_pars.push_back(x[i]);
+            }
+            params[0].from_simple_list(norm_pars, true, true);
+            auto res = generate_for_par_selection(params, *imp_sim_p, *tree_ggd_p, scene_p->heightmap, *ref_tree_p, *cnt_p);
+            y = res[0];
+            return tools::make_vector(y);
+        }
+    };
+    int *Eval::cnt_p;
+    ImpostorSimilarityCalc *Eval::imp_sim_p;
+    ParameterList *Eval::parList_p;
+    ReferenceTree *Eval::ref_tree_p;
+    Scene *Eval::scene_p;
+    GroveGenerationData *Eval::tree_ggd_p;
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
                                                      ReferenceTree &ref_tree, TreeTypeData *ref_type, bool save_result_image)
 {
@@ -400,6 +483,43 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     sa_ex.function_calculated = 3500;
     SA.perform(parList, sa_mp, sa_ex, func, best_pars, initial_params);
     */
+/*
+    std::vector<float> lst;
+    parList.to_simple_list(lst, true, true);
+    logerr("function has %d parameters", lst.size());
+    Eval::cnt_p = &cnt;
+    Eval::imp_sim_p = &imp_sim;
+    Eval::parList_p = &parList;
+    Eval::ref_tree_p = &ref_tree;
+    Eval::scene_p = &scene;
+    Eval::tree_ggd_p = &tree_ggd;
+    using kernel_t = kernel::MaternFiveHalves<Params>;//default
+    using mean_t = mean::Data<Params>;//default
+    using gp_opt_t = model::gp::NoLFOpt<Params>;//default
+    using gp_t = model::GP<Params, kernel_t, mean_t, gp_opt_t>;//default
+    //using gp_t = model::GP<Params>;
+    using acqui_t = acqui::UCB<Params, gp_t>;
+    using acqui_opt_t = opt::NLOptNoGrad<Params, nlopt::GN_DIRECT_L_RAND>;//not default
+    using init_t = init::RandomSampling<Params>;//default
+    //using stop_t = boost::fusion::vector<stop::MaxIterations<Params>, MinTolerance<Params>>;
+    //using stat_t = boost::fusion::vector<stat::ConsoleSummary<Params>, stat::Samples<Params>, stat::Observations<Params>, stat::AggregatedObservations<Params>, stat::GPAcquisitions<Params>, stat::BestAggregatedObservations<Params>, stat::GPKernelHParams<Params>>;
+
+    //bayes_opt::BOptimizer<Params, modelfun<gp_t>, acquifun<acqui_t>, acquiopt<acqui_opt_t>, initfun<init_t>> boptimizer;
+    bayes_opt::BOptimizer<Params, modelfun<gp_t>, acquifun<acqui_t>, acquiopt<acqui_opt_t>> boptimizer;
+    // run the evaluation
+    boptimizer.optimize(Eval());
+    // the best sample found
+    std::cout << "Best sample: " << boptimizer.best_sample()(0) << " - Best observation: " << boptimizer.best_observation()(0) << std::endl;
+    best_pars.emplace_back();
+    best_pars.back().first = boptimizer.best_observation()(0);
+    best_pars.back().second = parList;
+    std::vector<float> norm_best_params;
+    for (int i=0;i<boptimizer.best_sample().size();i++)
+    {
+        norm_best_params.push_back(boptimizer.best_sample()(i));
+    }
+    best_pars.back().second.from_simple_list(norm_best_params, true, true);
+*/
     bestParList = best_pars[0].second;
     best_metric = best_pars[0].first;
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -407,7 +527,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
     
     debug_stat = true;
-    if (ref_type && ref_type->generator_name == gen_name && false)
+    if (ref_type && ref_type->generator_name == gen_name)
     {
         ParameterList referenceParList;
         ref_type->get_params()->write_parameter_list(referenceParList);

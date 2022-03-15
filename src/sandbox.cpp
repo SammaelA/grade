@@ -10,6 +10,7 @@
 #include "parameter_selection/parameter_selection.h"
 #include "tree_generators/all_generators.h"
 #include "tree_generators/weber_penn_generator.h"
+#include <limbo/limbo.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>

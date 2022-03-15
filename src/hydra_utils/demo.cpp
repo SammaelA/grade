@@ -13,7 +13,7 @@
 using pugi::xml_node;
 
 #include "HydraAPI/hydra_api/LiteMath.h"
-namespace hlm = HydraLiteMath;
+namespace hlm = LiteMath;
 
 ///////////////////////////////////////////////////////////////////////// window and opegl
 #if defined(WIN32)
@@ -235,7 +235,7 @@ void demo_02_load_obj()
     int32_t remapList[2] = {0, mat4.id};                                                       // #NOTE: remaplist of size 1 here: [0 --> mat4.id]
     hrMeshInstance(scnRef, bunnyRef, mres.L(), remapList, sizeof(remapList)/sizeof(int32_t));  //
     
-    auto mrot = hlm::rotate_Y_4x4(180.0f*DEG_TO_RAD);
+    auto mrot = hlm::rotate4x4Y(180.0f*DEG_TO_RAD);
     hrMeshInstance(scnRef, cubeOpenRef, mrot.L());
     
     //// instance light (!!!)

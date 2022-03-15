@@ -15,9 +15,9 @@
     //reference_type:s = "simpliest_tree_default"
     reference_image
     {
-        image:s = "ref11.png"
+        image:s = "ref21.jpg"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
-        background_color:p3 = 0, 0, 0
+        background_color:p3 = 1, 1, 1
     }
 }
