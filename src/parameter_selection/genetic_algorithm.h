@@ -73,6 +73,28 @@ private:
         int id = 0;
         int sub_population_n = -1;
     };
+    struct Stat
+    {
+        std::map<int, float> all_results;
+        std::vector<glm::ivec3> all_births;//mother, father, child
+    } stat;
+
+    struct PopulationBackup
+    {
+        std::vector<Creature> pop;
+        float best_value;
+        int backup_uses = 0;
+    };
+
+    struct SubPopulationInfo
+    {
+        static constexpr float progress_thr = 0.01;
+        std::vector<float> best_results_history;
+        std::vector<PopulationBackup> backups;
+        int best_result_iter = 0;
+        int no_progress_time = 0;
+    };
+
     std::vector<Creature> population;
     std::vector<Creature> new_population;
     std::vector<Creature> heaven;
@@ -82,6 +104,7 @@ private:
     std::chrono::steady_clock::time_point t_start, iter_start;
     int current_population_size = 0;
     float best_metric_ever = 0;
+    float best_metric_current = 0;
     float time_spent_sec = 0; 
     int func_called = 0;
     int iteration_n = 0;
@@ -107,27 +130,9 @@ private:
     bool better(Creature &A, Creature &B);
     void print_function_stat();
     void save_load_function_stat(bool load);
-    struct Stat
-    {
-        std::map<int, float> all_results;
-        std::vector<glm::ivec3> all_births;//mother, father, child
-    } stat;
-
-    struct PopulationBackup
-    {
-        std::vector<Creature> pop;
-        float best_value;
-        int backup_uses = 0;
-    };
-
-    struct SubPopulationInfo
-    {
-        static constexpr float progress_thr = 0.01;
-        std::vector<float> best_results_history;
-        std::vector<PopulationBackup> backups;
-        int best_result_iter = 0;
-        int no_progress_time = 0;
-    };
+    void islands_GA(std::vector<ParameterList> &initial_types);
+    void tree_GA(std::vector<ParameterList> &initial_types);
+    void tree_GA_internal(int depth, int iters, int width, std::vector<ParameterList> &initial_types, PopulationBackup &result);
 
     std::vector<SubPopulationInfo> sub_population_infos;
 };

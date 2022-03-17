@@ -48,6 +48,98 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                                      MAX(metaParams.heaven_size, metaParams.best_genoms_count));
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
+    save_load_function_stat(true);
+    tree_GA(initial_types);
+    prepare_best_params(best_results);
+}
+
+void GeneticAlgorithm::tree_GA(std::vector<ParameterList> &initial_types)
+{
+    PopulationBackup result;
+    tree_GA_internal(4, 75, 2, initial_types, result);
+    population = result.pop;
+}
+
+void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::vector<ParameterList> &initial_types, PopulationBackup &result)
+{
+    metaParams.n_islands = 1;
+    if (depth == 1)
+    {
+        initialize_population(initial_types);
+    }
+    else
+    {
+        std::vector<PopulationBackup> backups = std::vector<PopulationBackup>(width, PopulationBackup());
+        int best_pos = 0;
+        for (int i=0;i<width;i++)
+        {
+            tree_GA_internal(depth - 1, iters, width, initial_types, backups[i]);
+            if (backups[i].best_value > backups[best_pos].best_value)
+            {
+                best_pos = i;
+            }
+        }
+        population = backups[best_pos].pop;
+    }
+    calculate_metric(1, false);
+    recalculate_fitness();
+    pick_best_to_heaven();
+    //debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_current);
+    debug("[%d] start %.3f\n", depth, best_metric_current);
+
+    iteration_n = 0;
+    while (!should_exit() && iteration_n < iters)
+    {
+        int c_id = next_id / 1000 * 1000;
+        next_id.store(1000 + c_id);
+        kill_old();
+        kill_weak(current_population_size - metaParams.max_population_size * (1 - metaParams.weaks_to_kill));
+        if (current_population_size < 5)
+        {
+            logerr("population extincted");
+            return;
+        }
+        else if (current_population_size < metaParams.min_population_size)
+        {
+            logerr("population %d is about to extinct", current_population_size);
+        }
+        int space_left = metaParams.max_population_size - current_population_size;
+        std::vector<std::pair<int, int>> pairs;
+        find_pairs(space_left, pairs);
+        make_new_generation(pairs);
+
+        calculate_metric(1, true);
+        recalculate_fitness();
+        pick_best_to_heaven();
+        iteration_n++;
+        if (metaParams.evolution_stat)
+        {
+            float max_val = 0;
+            int max_pos = 0;
+            for (int i = 0; i < heaven.size(); i++)
+            {
+                if (heaven[i].metric > max_val)
+                {
+                    max_pos = i;
+                    max_val = heaven[i].metric;
+                }
+            }
+            crio_camera.push_back(heaven[max_pos]);
+        }
+        //debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_current);
+    }
+
+    result.pop = population;
+    result.best_value = 0;
+    for (auto &p : result.pop)
+    {
+        result.best_value = MAX(result.best_value, p.metric);
+    }
+    debug("[%d] end %.3f\n", depth, result.best_value);
+}
+
+void GeneticAlgorithm::islands_GA(std::vector<ParameterList> &initial_types)
+{
     for (int i=0;i<metaParams.n_islands;i++)
     {
         sub_population_infos.emplace_back();
@@ -55,7 +147,6 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         sub_population_infos[i].no_progress_time = -1;
     }
     initialize_population(initial_types);
-    save_load_function_stat(true);
     calculate_metric(1, false);
     recalculate_fitness();
     pick_best_to_heaven();
@@ -200,9 +291,6 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
         }
         debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_ever);
     }
-
-    prepare_best_params(best_results);
-    save_load_function_stat(false);
 }
 
 bool GeneticAlgorithm::should_exit()
@@ -1067,11 +1155,12 @@ bool GeneticAlgorithm::better(Creature &A, Creature &B)
 
 void GeneticAlgorithm::pick_best_to_heaven()
 {
-
+    best_metric_current = 0;
     for (int n=0;n<population.size();n++)
     {
         if (!population[n].alive)
             continue;
+        best_metric_current = MAX(best_metric_current, population[n].metric);
         if (heaven.size() < MAX(metaParams.best_genoms_count, metaParams.heaven_size))
         {
             heaven.push_back(population[n]);
@@ -1284,11 +1373,6 @@ void GeneticAlgorithm::recalculate_fitness()
 
 void GeneticAlgorithm::save_load_function_stat(bool load)
 {
-    if (population.empty())
-    {
-        logerr("GA is not performed correctly. No need to save function stat");
-        return;
-    }
     BlkManager man;
     std::string stat_block_name = "GA_function_stats.blk";
     Block stat_block;
