@@ -8,11 +8,7 @@ struct StripeInfo
     vec4 crown_bord;//(x_start, dense crown x_start, dense crown x_end, x_end)
     vec2 crown_ymin_ymax;
     float branches_share;
-    //vec4 trunk_samples[4];//(y_sample, x_start, x_end, 0)
-
-    float _pad;
-    //vec4 _pad_2;
-    //vec4 _pad_3;
+    float leaves_share;
 };
 
 layout(std430, binding = 5) readonly buffer slices_info_buf
@@ -114,7 +110,9 @@ void crown()
         b1_max = 0.5*(a1 + a2);
     stripes[id].crown_bord = vec4(a1, b1_max, b1_max + b_len_max, a2 + 1);
     stripes[id].crown_ymin_ymax = a1 >= 0 ? vec2(y_min, y_max) : vec2(0, 0);
-    stripes[id].branches_share = b_sum/max(b_sum + l_sum, 1);
+    float stripe_size = max((y_max - y_min + 1)*(a2 - a1 + 1), 1);
+    stripes[id].branches_share = b_sum/stripe_size;
+    stripes[id].leaves_share = l_sum/stripe_size;
 }
 
 void trunk()

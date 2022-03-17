@@ -50,11 +50,7 @@ struct StripeInfo
     glm::vec4 crown_bord;//(x_start, dense crown x_start, dense crown x_end, x_end)
     glm::vec2 crown_ymin_ymax;
     float branches_share;
-    //glm::vec4 trunk_samples[4];//(y_sample, x_start, x_end, 0)
-
-    float _pad;
-    //glm::vec4 _pad_2;
-    //glm::vec4 _pad_3;
+    float leaves_share;
 };
 
 struct ReferenceTree

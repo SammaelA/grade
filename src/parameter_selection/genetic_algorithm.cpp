@@ -135,7 +135,7 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
                 else
                 {
                     //restore population
-                    int stall_limit = MAX(10, 100*(info.best_results_history[info.best_result_iter]));
+                    int stall_limit = MAX(10, 50*(info.best_results_history[info.best_result_iter]));
                     while (!info.backups.empty() && info.backups.back().backup_uses >= 2)
                     {
                         info.backups.pop_back();
@@ -969,13 +969,13 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
     }
 
     int recnt = 0;
-    float delta = 0.25;
+    float delta = 0.2;
     for (int i=population.size()-1;i>=0;i--)
     {
         auto &p = population[i];
         if (p.alive)
         {
-            if (p.metric >= 0 && iteration_n > 1 && recnt < 20)
+            if (p.metric >= 0 && iteration_n > 20 && recnt < 10)
             {
                 Genome modified = p.main_genome; 
                 mutation(modified, delta, 1, &(fine_tune_pos[recnt]));

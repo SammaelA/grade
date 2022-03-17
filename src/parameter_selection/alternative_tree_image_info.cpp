@@ -181,13 +181,6 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     memcpy(stripes_data,ptr,sizeof(StripeInfo)*(stripes_cnt*slices_cnt));
 
-    /*
-    for (int i=0;i<stripes_cnt*slices_cnt;i++)
-    {
-        logerr("stripe %f %f %f %f -- %f %f -- %f",stripes_data[i].crown_bord.x, stripes_data[i].crown_bord.y, stripes_data[i].crown_bord.z, stripes_data[i].crown_bord.w,
-                stripes_data[i].crown_ymin_ymax.x, stripes_data[i].crown_ymin_ymax.y, stripes_data[i].branches_share);
-    }
-    */
     delete[] borders_data;
 
 
@@ -212,6 +205,11 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info_alt(ReferenceTree &re
     sl_imp.push_back(std::pair<int,int>(0,0));
     auto res = get_alternative_tree_image_info(reference.atlas, sl_imp, &reference.info, nullptr, &reference.image_info.tc_transform);
     reference.alternative_image_info = res[0];
+}
+
+float cmp_sim(float a, float b)
+{
+    return a > b ? b/(a+1e-6) : a/(b+1e-6);
 }
 
 void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
@@ -319,6 +317,8 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
             auto &stripes = alt_tree_infos[i*slices_per_impostor + sl];//TODO: fix for multisliced impostors
             float trunk_sum = 0;
             float trunk_val = 0;
+            int trunk_stripes = 0;
+            int crown_stripes = 0;
             if (stripes.size() == reference.alternative_image_info.size())
             {
                 float max_points = 0;
@@ -327,31 +327,54 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                 {
                     glm::vec4 &b1 = reference.alternative_image_info[s].crown_bord;
                     glm::vec4 &b2 = stripes[s].crown_bord;
+                    if (b1.x < 0 && b2.x < 0)
+                    {
+                        continue;
+                    }
+                    crown_stripes++;
 
-                    float max_p_add = MAX((b1.y - b1.x) + 4*(b1.z - b1.y) + (b1.w - b1.z), (b2.y - b2.x) + 4*(b2.z - b2.y) + (b2.w - b2.z));
-                    max_points += max_p_add;
-                    //logerr("stripe %d max points %f", s, (b1.y - b1.x) + 3*(b1.z - b1.y) + (b1.w - b1.z));
-                    float p = 0;
+                    float reflow_implow = MAX(0, MIN(b1.y, b2.y) - MAX(b1.x, b2.x)) + MAX(0, MIN(b1.y, b2.w) - MAX(b1.x, b2.z)) + 
+                                          MAX(0, MIN(b1.w, b2.y) - MAX(b1.z, b2.x)) + MAX(0, MIN(b1.w, b2.w) - MAX(b1.z, b2.z));
+                    float reflow_imphigh = MAX(0, MIN(b1.y, b2.z) - MAX(b1.x, b2.y)) + MAX(0, MIN(b1.w, b2.z) - MAX(b1.z, b2.y));
+                    float reflow_impemp = (b1.y - b1.x) + (b1.w - b1.z) - reflow_implow - reflow_imphigh;
 
-                    p += MAX(0, MIN(b1.y, b2.y) - MAX(b1.x, b2.x)) + 0.5*MAX(0, MIN(b1.y, b2.z) - MAX(b1.x, b2.y)) + MAX(0, MIN(b1.y, b2.w) - MAX(b1.x, b2.z));
-                    p += 0.5*MAX(0, MIN(b1.z, b2.y) - MAX(b1.y, b2.x)) + 4*MAX(0, MIN(b1.z, b2.z) - MAX(b1.y, b2.y)) + 0.5*MAX(0, MIN(b1.z, b2.w) - MAX(b1.x, b2.z));
-                    p += MAX(0, MIN(b1.w, b2.y) - MAX(b1.z, b2.x)) + 0.5*MAX(0, MIN(b1.w, b2.z) - MAX(b1.z, b2.y)) + MAX(0, MIN(b1.w, b2.w) - MAX(b1.x, b2.z));
+                    float refhigh_imphigh = MAX(0, MIN(b1.z, b2.z) - MAX(b1.y, b2.y));
+                    float refhigh_implow = MAX(0, MIN(b1.z, b2.y) - MAX(b1.y, b2.x)) + MAX(0, MIN(b1.z, b2.w) - MAX(b1.y, b2.z));
+                    float refhigh_impemp = (b1.z - b1.y) - refhigh_imphigh - refhigh_implow;
 
                     glm::vec2 y1 = reference.alternative_image_info[s].crown_ymin_ymax;
                     glm::vec2 y2 = stripes[s].crown_ymin_ymax;
-                    float b_share_fine = 3*abs(reference.alternative_image_info[s].branches_share - stripes[s].branches_share);
-                    float p_add = p*MAX(0, (MIN(y1.y, y2.y) - MAX(y1.x, y2.x)))/MAX(1, y1.y - y1.x)*MAX(0.01,1 - b_share_fine);
+                    float bs1 = reference.alternative_image_info[s].branches_share;
+                    float bs2 = stripes[s].branches_share;
+                    float ls1 = reference.alternative_image_info[s].leaves_share;
+                    float ls2 = stripes[s].leaves_share;
+                    float bp = bs1/(bs1 + ls1 + 1e-4);
+                    float sim = 0.3*(reflow_implow + 0.75*reflow_imphigh)/(reflow_implow + reflow_imphigh + reflow_impemp) +
+                                0.7*(refhigh_imphigh + 0.5*refhigh_implow)/(refhigh_imphigh + refhigh_implow + refhigh_impemp);
+                    float b_share_mult = MAX(0.01,bp*cmp_sim(bs1, bs2) + (1-bp)*cmp_sim(ls1,ls2));
+                    if (debug_print && i==0)
+                        logerr("[%d]%f %f -- %f %f",s,bs1,ls1,bs2,ls2);
+                    float y_mult = MAX(0.01, (MIN(y1.y, y2.y) - MAX(y1.x, y2.x)))/MAX(1, y1.y - y1.x);
+                    float max_p_add = MAX(0.3*(b1.y - b1.x) + 0.7*(b1.z - b1.y) + 0.3*(b1.w - b1.z), 0.3*(b2.y - b2.x) + 0.7*(b2.z - b2.y) + 0.3*(b2.w - b2.z));
+                    float p_add = 0.3*(reflow_implow + 0.75*reflow_imphigh) + 0.7*(refhigh_imphigh + 0.5*refhigh_implow);
+                    p_add *= b_share_mult*y_mult;
+                    max_points += max_p_add;
                     points += p_add;
-                    //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
-                    //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
-                    //logerr("stripe %d max points %f", s, max_p_add);
-                    //logerr("stripe %d points %f", s, p_add);
-
-                    if (b1.z - b1.y + 2 > 0.5*(b1.w - b1.x) && reference.alternative_image_info[s].branches_share > 0.5)
+                    if (debug_print && i==0)
+                    {
+                        //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
+                        //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
+                        //logerr("stripe %d max points %f", s, max_p_add);
+                        //logerr("stripe %d points %f", s, p_add);
+                        //logerr("quality [%f %f %f] [%f %f %f]", reflow_implow, reflow_imphigh, reflow_impemp, refhigh_imphigh, refhigh_implow, refhigh_impemp);
+                        //logerr("q %f %f %f", sim, b_share_mult, y_mult);
+                    }
+                    if (b1.z - b1.y + 2 > 0.5*(b1.w - b1.x) && bp > 0.67)
                     {
                         //it is probably trunk stripe
                         trunk_sum += max_p_add;
                         trunk_val += p_add;
+                        trunk_stripes++;
                         //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
                         //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
                         //logerr("stripe %d max points %f", s, max_p_add);
@@ -359,12 +382,10 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                     }
                 }
                 float d1 = points/max_points;
-                d1 = d1 > 0.8 ? d1 : 0.5 - sinf(asinf(1-2*d1)/3);
-
                 float d2 = trunk_val/(trunk_sum+0.1);
-                d2 = d2 > 0.8 ? d2 : 0.5 - sinf(asinf(1-2*d2)/3);
 
-                float d = 1 - (3*d1 + d2)/4;
+                float trunk_importance = (trunk_stripes+1.0)/(crown_stripes + 1.0);
+                float d = 1 - ((1-trunk_importance)*d1 + trunk_importance*d2);
                 if (debug_print && i==0)
                     logerr("altermative image dist %f %f", points/max_points, trunk_val/(trunk_sum+0.1));
                 alt_imp_dist += d;
@@ -376,7 +397,6 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
             }
         }
         alt_imp_dist /= slices_per_impostor;
-        //alt_imp_dist = 1 - (0.5 - sinf(asinf(1-2*sqrtf(1 - alt_imp_dist))/3));
         #define LG(x) (1 + log2(x + 0.0001))
         res_dist = ((1 - d_sd)*(10*(1 - alt_imp_dist) + (1 - d_ld)+(1 - d_bd)+(1 - d_bc)+(1-d_jcnt)+(1-d_trop)))/15;
         #define AM(x) CLAMP(8*(1-(x)),0,1)
@@ -384,7 +404,6 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         res_dist *= adequate_mult;
         if (debug_print && i==0)
             logerr("%f = %f %f %f %f %f %f %f", res_dist, (1 - d_sd),(1 - alt_imp_dist),(1 - d_ld),(1 - d_bd),(1 - d_bc),(1-d_jcnt),(1-d_trop));
-        //res_dist = 0.5 - sinf(asinf(1-2*sqrtf(res_dist))/3);
         sim_results.push_back(res_dist);
     }
 }
