@@ -462,20 +462,43 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     std::vector<std::pair<float, ParameterList>> best_pars;
-    auto func = [&](std::vector<ParameterList> &params) -> std::vector<float> {
-        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
+    auto func = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
+        std::vector<ParameterList> gen_params(params.size(),parList);
+        for (int i=0;i<params.size();i++)
+        {
+            gen_params[i].from_simple_list(params[i], true, true);
+            //logerr("params size %d. Res size %d %d %d", params[i].size(), gen_params[i].categorialParameters.size(), gen_params[i].ordinalParameters.size(),
+            //       gen_params[i].continuousParameters.size());
+        }
+        return generate_for_par_selection(gen_params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
     };
     
     //initial_params = {};
     //logerr("started with %d initial params",initial_params.size());
-    
-    GeneticAlgorithm GA;
-    GeneticAlgorithm::OptFunction optF;
-    optF.f = func;
-    optF.name = gen_name;
-    optF.version = selection_settings.get_int("version", 1);
-    GA.perform(parList, mp, ex_c, optF, best_pars, initial_params);
-
+    {
+        GeneticAlgorithm GA;
+        GeneticAlgorithm::OptFunction optF;
+        optF.f = func;
+        optF.name = gen_name;
+        optF.version = selection_settings.get_int("version", 1);
+        std::vector<float> parList_f;
+        parList.to_simple_list(parList_f,true,true);
+        std::vector<std::pair<float,std::vector<float>>> best_pars_f;
+        std::vector<std::vector<float>> initial_params_f;
+        for (auto &p : initial_params)
+        {
+            initial_params_f.emplace_back();
+            p.to_simple_list(initial_params_f.back(), true, true);
+        }
+        GA.perform(parList_f, mp, ex_c, optF, best_pars_f, initial_params_f);
+        for (auto &p : best_pars_f)
+        {
+            best_pars.emplace_back();
+            best_pars.back().first = p.first;
+            best_pars.back().second = parList;
+            best_pars.back().second.from_simple_list(p.second, true, true);
+        }
+    }
    /*
     SimulatedAnnealing SA;
     SimulatedAnnealing::MetaParameters sa_mp;
@@ -527,15 +550,18 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
     
     debug_stat = true;
+    auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float> {
+        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
+    };
     if (ref_type && ref_type->generator_name == gen_name)
     {
         ParameterList referenceParList;
         ref_type->get_params()->write_parameter_list(referenceParList);
-        sel_quality(bestParList, referenceParList, func, 32);
+        sel_quality(bestParList, referenceParList, func_q, 32);
     }
     else
     {
-        sel_quality(bestParList, func, 32);
+        sel_quality(bestParList, func_q, 32);
     }
     debug_stat = false;
 

@@ -8,40 +8,18 @@ std::atomic<int> next_id(0);
 int di_cnt[256];
 long double di_res[256];
 long double di_dev[256];
-void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
+void GeneticAlgorithm::perform(std::vector<float> &param_list, MetaParameters params, ExitConditions exit_conditions,
                                const OptFunction &opt_f,
-                               std::vector<std::pair<float, ParameterList>> &best_results,
-                               std::vector<ParameterList> &initial_types)
+                               std::vector<std::pair<float, std::vector<float>>> &best_results,
+                               std::vector<std::vector<float>> &initial_types)
 {
     t_start = std::chrono::steady_clock::now();
 
     opt_function = opt_f;
-    original_param_list = param_list;
     metaParams = params;
     exitConditions = exit_conditions;
-    free_parameters_cnt = 0;
-    all_parameters_cnt = 0;
-    for (auto &p : original_param_list.categorialParameters)
-    {
-        parametersMask.categorialParameters.push_back(p);
-        all_parameters_cnt++;
-        if (!p.second.fixed())
-            free_parameters_cnt++;
-    }
-    for (auto &p : original_param_list.ordinalParameters)
-    {
-        parametersMask.ordinalParameters.push_back(p);
-        all_parameters_cnt++;
-        if (!p.second.fixed())
-            free_parameters_cnt++;
-    }
-    for (auto &p : original_param_list.continuousParameters)
-    {
-        parametersMask.continuousParameters.push_back(p);
-        all_parameters_cnt++;
-        if (!p.second.fixed())
-            free_parameters_cnt++;
-    }
+    free_parameters_cnt = param_list.size();
+    all_parameters_cnt = param_list.size();
 
     metaParams.heaven_size = MAX(metaParams.heaven_size, metaParams.best_genoms_count + 1);
     metaParams.min_population_size = MAX(MAX(metaParams.min_population_size,metaParams.elite), 
@@ -51,12 +29,13 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
     save_load_function_stat(true);
     tree_GA(initial_types);
     prepare_best_params(best_results);
+    save_load_function_stat(false);
 }
 
-void GeneticAlgorithm::tree_GA(std::vector<ParameterList> &initial_types)
+void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
 {
     PopulationBackup result;
-    tree_GA_internal(3, 50, 2, initial_types, result);
+    tree_GA_internal(4, 50, 2, initial_types, result);
     population = result.pop;
 }
 
@@ -112,7 +91,7 @@ glm::vec4 MM_regression(const std::vector<float> &values)
     return best_model;
 }
 
-void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::vector<ParameterList> &initial_types, PopulationBackup &result)
+void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::vector<std::vector<float>> &initial_types, PopulationBackup &result)
 {
     bool regression_test = false;
     metaParams.n_islands = 1;
@@ -225,7 +204,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     }
 }
 
-void GeneticAlgorithm::islands_GA(std::vector<ParameterList> &initial_types)
+void GeneticAlgorithm::islands_GA(std::vector<std::vector<float>> &initial_types)
 {
     for (int i=0;i<metaParams.n_islands;i++)
     {
@@ -402,7 +381,7 @@ void add_all_ids(std::set<int> &ids, int id, std::vector<glm::ivec3> &all_births
     }
 }
 
-void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, ParameterList>> &best_results)
+void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, std::vector<float>>> &best_results)
 {
     for (int i=0;i<population.size();i++)
     {
@@ -423,16 +402,14 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
     {
         best_results.emplace_back();
         best_results.back().first = heaven[i].metric;
-        best_results.back().second = original_param_list;
-        best_results.back().second.from_simple_list(heaven[i].main_genome);
+        best_results.back().second = heaven[i].main_genome;
         //best_results.back().second.print();
     }
     for (auto &creature : crio_camera)
     {
         best_results.emplace_back();
         best_results.back().first = creature.metric;
-        best_results.back().second = original_param_list;
-        best_results.back().second.from_simple_list(creature.main_genome);
+        best_results.back().second = creature.main_genome;
         //best_results.back().second.print();
     }
 
@@ -512,17 +489,13 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, Paramete
 
 GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
 {
-    Genome g;
-    for (auto &p : parametersMask.categorialParameters)
-        g.push_back(p.second.possible_values[(int)urandi(0, p.second.possible_values.size())]);
-    for (auto &p : parametersMask.ordinalParameters)
-        g.push_back((int)(p.second.min_val + urand()*(p.second.max_val - p.second.min_val)));
-    for (auto &p : parametersMask.continuousParameters)
-        g.push_back((p.second.min_val + urand()*(p.second.max_val - p.second.min_val)));
+    Genome g = Genome(all_parameters_cnt, 0);
+    for(int i=0;i<all_parameters_cnt;i++)
+        g[i] = urand();
     return g;
 }
 
-void GeneticAlgorithm::initialize_population(std::vector<ParameterList> &initial_types)
+void GeneticAlgorithm::initialize_population(std::vector<std::vector<float>> &initial_types)
 {
     population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
     new_population = std::vector<Creature>(MAX(metaParams.max_population_size, metaParams.initial_population_size), Creature());
@@ -536,7 +509,7 @@ void GeneticAlgorithm::initialize_population(std::vector<ParameterList> &initial
     {
         for (auto &t : initial_types)
         {
-            t.to_simple_list(population[i0].main_genome);
+            population[i0].main_genome = t;
             for (int j=1;j<metaParams.n_ploid_genes;j++)
                 population[i0].other_genomes.push_back(population[i0].main_genome);
             population[i0].alive = true;
@@ -569,7 +542,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
     float w_sum = 0;
     for (int i=0;i<G.size();i++)
     {
-        mutation_weights[i] = MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
+        mutation_weights[i] = single_mutation_pos ? 1 : MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
         w_sum += mutation_weights[i];
     }
     for (int gene = 0; gene < mutation_genes_count; gene++)
@@ -585,6 +558,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                 if (rnd < mutation_weights[i])
                 {
                     pos = i;
+                    found = true;
                     break;
                 }   
                 else
@@ -595,48 +569,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
             if (!single_mutation_pos)
                 mutation_power *= 1.0/MAX(1, 2*mutation_weights[pos]);
             int g_pos = pos;
-            if (pos < parametersMask.categorialParameters.size())
-            {
-                if (!parametersMask.categorialParameters[pos].second.fixed())
-                {
-                    if (urand() < mutation_power)
-                    {
-                        int val_pos = urandi(0, parametersMask.categorialParameters[pos].second.possible_values.size());
-                        G[g_pos] = parametersMask.categorialParameters[pos].second.possible_values[val_pos];
-                    }
-                    found = true;
-                }
-            }
-            else if (pos < parametersMask.categorialParameters.size() + parametersMask.ordinalParameters.size())
-            {
-                pos -= parametersMask.categorialParameters.size();
-                if (!parametersMask.ordinalParameters[pos].second.fixed())
-                {
-                    float len = mutation_power*(parametersMask.ordinalParameters[pos].second.max_val - parametersMask.ordinalParameters[pos].second.min_val);
-                    float from = CLAMP(G[g_pos] - len, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
-                    float to = CLAMP(G[g_pos] + len, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
-                    float val = urand(from,to);
-                    val = CLAMP(val, parametersMask.ordinalParameters[pos].second.min_val, parametersMask.ordinalParameters[pos].second.max_val);
-                    G[g_pos] = val;
-                    found = true;
-                }
-            }
-            else
-            {
-                pos -= parametersMask.categorialParameters.size() + parametersMask.ordinalParameters.size();
-                //logerr("continuous pos %d mutation", pos);
-                if (!parametersMask.continuousParameters[pos].second.fixed())
-                {
-                    float len = mutation_power*(parametersMask.continuousParameters[pos].second.max_val - parametersMask.continuousParameters[pos].second.min_val);
-                    float from = CLAMP(G[g_pos] - len, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
-                    float to = CLAMP(G[g_pos] + len, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
-                    float val = urand(from,to);
-                    val = CLAMP(val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
-                    G[g_pos] = val;
-                    //logerr("applied pos val %d %f in [%f %f]",pos, val, parametersMask.continuousParameters[pos].second.min_val, parametersMask.continuousParameters[pos].second.max_val);
-                    found = true;
-                }
-            }
+            G[g_pos] = CLAMP(G[g_pos] + mutation_power*urand(-1,1),0,1);
             tries++;
             if (single_mutation_pos && found == true && gene == mutation_genes_count-1)
             {
@@ -892,13 +825,14 @@ void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
 
 float GeneticAlgorithm::genes_dist(Creature &A, Creature &B)
 {
-    if (!A.alive || !B.alive)
+    if (!A.alive || !B.alive || A.main_genome.size() != B.main_genome.size())
         return 1;
-    ParameterList par1 = original_param_list;
-    par1.from_simple_list(A.main_genome);
-    ParameterList par2 = original_param_list;
-    par2.from_simple_list(B.main_genome);
-    return par1.diff(par2); 
+    float dist = 0;
+    for (int i=0;i<A.main_genome.size();i++)
+    {
+        dist += abs(A.main_genome[i] - B.main_genome.size());
+    }
+    return dist/A.main_genome.size();
 }
 
 float GeneticAlgorithm::closest_neighbour(Creature &C, std::vector<Creature> &population)
@@ -1054,33 +988,13 @@ void GeneticAlgorithm::print_function_stat()
     logerr("d_xi: ");
     for (int k = 0; k < population[0].main_genome.size(); k++)
     {
-        std::string name = "ERR";
-        bool active = false;
-        if (k < parametersMask.categorialParameters.size())
-        {
-            int pos = k;
-            name = parametersMask.categorialParameters[pos].first;
-            active = !parametersMask.categorialParameters[pos].second.fixed();
-        }
-        else if (k < parametersMask.categorialParameters.size() + parametersMask.ordinalParameters.size())
-        {
-            int pos = k - parametersMask.categorialParameters.size();
-            name = parametersMask.ordinalParameters[pos].first;
-            active = !parametersMask.ordinalParameters[pos].second.fixed();
-        }
-        else
-        {
-            int pos = k - parametersMask.categorialParameters.size() - parametersMask.ordinalParameters.size();
-            name = parametersMask.continuousParameters[pos].first;
-            active = !parametersMask.continuousParameters[pos].second.fixed();
-        }
-        logerr("%s %d (%.3f, %.3f, %d)",name.c_str(),active,  (float)di_res[k] / MAX(1, di_cnt[k]), (float)di_dev[k] / MAX(1, di_cnt[k]), di_cnt[k]);
+        logerr("(%.3f, %.3f, %d)", (float)di_res[k] / MAX(1, di_cnt[k]), (float)di_dev[k] / MAX(1, di_cnt[k]), di_cnt[k]);
     }
 }
 
 void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
 {
-    std::vector<ParameterList> params = {};
+    std::vector<std::vector<float>> params = {};
     enum ParOrigin
     {
         NEW_ENTITY,
@@ -1135,8 +1049,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
         {
             if (p.metric < 0)
             {
-                params.push_back(original_param_list);
-                params.back().from_simple_list(p.main_genome);
+                params.push_back(p.main_genome);
                 positions.push_back(std::pair<ParOrigin,int>(NEW_ENTITY, i));
             }
         }
@@ -1154,8 +1067,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             {
                 Genome modified = p.main_genome; 
                 mutation(modified, delta, 1, &(fine_tune_pos[recnt]));
-                params.push_back(original_param_list);
-                params.back().from_simple_list(modified);
+                params.push_back(modified);
                 positions.push_back(std::pair<ParOrigin, int>(CREATURE_MODIFIED, i));   
                 recnt++;           
             }
@@ -1200,7 +1112,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             if (c.metric < metrics[i])
             {
                 c.metric = metrics[i];
-                params[i].to_simple_list(c.main_genome);
+                c.main_genome = params[i];
                 c.metric_calc_n++;
             }
             ftp++;
@@ -1214,7 +1126,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             if (metrics[i] > c.metric)
             {
                 //logerr("elite individual %d %d improved %f --> %f", positions[i].second, c.id, c.metric, metrics[i]);
-                params[i].to_simple_list(c.main_genome);
+                c.main_genome = params[i];
                 c.metric = metrics[i];
                 c.metric_calc_n = 3;
             }
@@ -1409,9 +1321,9 @@ void GeneticAlgorithm::recalculate_fitness()
                         if (p2.alive && p2.sub_population_n == pop_n)
                         {
                             p_cnt++;
-                            ParameterList par1 = original_param_list;
+                            std::vector<float> par1 = original_param_list;
                             par1.from_simple_list(p1.main_genome);
-                            ParameterList par2 = original_param_list;
+                            std::vector<float> par2 = original_param_list;
                             par2.from_simple_list(p2.main_genome);
                             float dist =  par1.diff(par2);
                             p_dist += dist;
@@ -1440,9 +1352,9 @@ void GeneticAlgorithm::recalculate_fitness()
                         if (p2.alive && p2.sub_population_n == pop_n2)
                         {
                             p_cnt++;
-                            ParameterList par1 = original_param_list;
+                            std::vector<float> par1 = original_param_list;
                             par1.from_simple_list(p1.main_genome);
-                            ParameterList par2 = original_param_list;
+                            std::vector<float> par2 = original_param_list;
                             par2.from_simple_list(p2.main_genome);
                             float dist = par1.diff(par2);
                             p_dist += dist;
@@ -1479,17 +1391,19 @@ void GeneticAlgorithm::save_load_function_stat(bool load)
     {
         debug("new version of GA function %d --> %d\n", version, opt_function.version);
         bl->set_int("version", opt_function.version);
+        di_cnt_h = std::vector<int>(var_cnt, 0);
+        di_res_h = std::vector<float>(var_cnt, 0);
     }
     else
     {
         bl->get_arr("di_cnt", di_cnt_h);
         bl->get_arr("di_res", di_res_h);
-    }
-    if (di_cnt_h.size() != var_cnt || di_res_h.size() != var_cnt)
-    {
-        debug("reset function stat %d %d %d\n", di_cnt_h.size(), di_res_h.size(), var_cnt);
-        di_cnt_h = std::vector<int>(var_cnt, 0);
-        di_res_h = std::vector<float>(var_cnt, 0);
+        if (di_cnt_h.size() != var_cnt || di_res_h.size() != var_cnt)
+        {
+            debug("reset function stat %d %d %d\n", di_cnt_h.size(), di_res_h.size(), var_cnt);
+            di_cnt_h = std::vector<int>(var_cnt, 0);
+            di_res_h = std::vector<float>(var_cnt, 0);
+        }
     }
     if (load)
     {

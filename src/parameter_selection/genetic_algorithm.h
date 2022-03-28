@@ -39,21 +39,14 @@ public:
     {
         std::string name = "default";
         int version = 0;
-        std::function<std::vector<float>(std::vector<ParameterList> &)> f;
+        std::function<std::vector<float>(std::vector<std::vector<float>> &)> f;
     };
-    void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
+    void perform(std::vector<float> &param_list, MetaParameters params, ExitConditions exit_conditions,
                  const OptFunction &opt_f,
-                 std::vector<std::pair<float,ParameterList>> &best_results,
-                 std::vector<ParameterList> &initial_types);
+                 std::vector<std::pair<float,std::vector<float>>> &best_results,
+                 std::vector<std::vector<float>> &initial_types);
 private:
     OptFunction opt_function;
-    ParameterList original_param_list;
-    struct ParametersMask
-    {
-        std::vector<std::pair<std::string, CategorialParameter>> categorialParameters;
-        std::vector<std::pair<std::string, OrdinalParameter>> ordinalParameters;
-        std::vector<std::pair<std::string, ContinuousParameter>> continuousParameters;
-    } parametersMask;
     MetaParameters metaParams;
     ExitConditions exitConditions;
     int free_parameters_cnt = 0;
@@ -112,8 +105,8 @@ private:
     int iteration_n = 0;
 
     bool should_exit();
-    void prepare_best_params(std::vector<std::pair<float,ParameterList>> &best_results);
-    void initialize_population(std::vector<ParameterList> &initial_types);
+    void prepare_best_params(std::vector<std::pair<float,std::vector<float>>> &best_results);
+    void initialize_population(std::vector<std::vector<float>> &initial_types);
     void mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos = nullptr);
     void find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs);
     void kill_creature(int n);
@@ -132,9 +125,9 @@ private:
     bool better(Creature &A, Creature &B);
     void print_function_stat();
     void save_load_function_stat(bool load);
-    void islands_GA(std::vector<ParameterList> &initial_types);
-    void tree_GA(std::vector<ParameterList> &initial_types);
-    void tree_GA_internal(int depth, int iters, int width, std::vector<ParameterList> &initial_types, PopulationBackup &result);
+    void islands_GA(std::vector<std::vector<float>> &initial_types);
+    void tree_GA(std::vector<std::vector<float>> &initial_types);
+    void tree_GA_internal(int depth, int iters, int width, std::vector<std::vector<float>> &initial_types, PopulationBackup &result);
 
     std::vector<SubPopulationInfo> sub_population_infos;
 };

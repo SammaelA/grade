@@ -1632,8 +1632,8 @@ CHTurtle WeberPennGenerator::Tree::make_branch_pos_turtle(CHTurtle &dir_turtle, 
     }
     if (!std::isfinite(branch_pos_turtle.pos.x))
     {
-        logerr("dir %f %f %f right %f %f %f",dir_turtle.dir.x, dir_turtle.dir.y, dir_turtle.dir.z,
-        dir_turtle.right.x, dir_turtle.right.y, dir_turtle.right.z);
+        //logerr("dir %f %f %f right %f %f %f",dir_turtle.dir.x, dir_turtle.dir.y, dir_turtle.dir.z,
+        //dir_turtle.right.x, dir_turtle.right.y, dir_turtle.right.z);
         //logerr("%d",(int)radius_limit/0);
         throw std::exception();
     }

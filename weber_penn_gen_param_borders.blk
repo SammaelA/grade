@@ -7,7 +7,7 @@
     flare:p2 = 0, 1.2
     base_splits:p2 = -2, 2
     
-    base_size_x:p2 = 0.01, 1
+    base_size_x:p2 = 0.01, 0.9
     base_size_y:p2 = 0, 0.5
     base_size_z:p2 = 0, 0.1
     base_size_w:p2 = 0, 0.1

@@ -23,5 +23,5 @@
     time_elapsed_seconds:r = 2000
 
     //debug stuff
-    version:i = 6
+    version:i = 7
 }
