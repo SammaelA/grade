@@ -56,12 +56,65 @@ void GeneticAlgorithm::perform(ParameterList &param_list, MetaParameters params,
 void GeneticAlgorithm::tree_GA(std::vector<ParameterList> &initial_types)
 {
     PopulationBackup result;
-    tree_GA_internal(4, 75, 2, initial_types, result);
+    tree_GA_internal(3, 50, 2, initial_types, result);
     population = result.pop;
+}
+
+float MM_func(glm::vec4 model, float x)
+{
+    float x_p = model.z < 0  ? 1/(-model.z) : model.z;
+    x = pow(x, x_p);
+    return model.x*x/(model.y + x);
+}
+
+void MM_regression_grid(glm::vec4 model_start, glm::vec4 model_end, const std::vector<float> &values, 
+                        float &least_dist, glm::vec4 &best_model, int level)
+{
+    int steps = 20;
+    glm::vec4 step = (model_end - model_start)/(float)steps;
+    for (int i=0;i<steps;i++)
+    {
+        for (int j=0;j<steps;j++)
+        {
+            for (int k=0;k<steps;k++)
+            {
+                glm::vec4 model = model_start + glm::vec4(step.x*(float)(i + 0.5), step.y*(float)(j+0.5),step.z*(float)(k+0.5),0);
+                float sq_dist = 0;
+                for (int x=0;x<values.size();x++)
+                {
+                    sq_dist += SQR(values[x] - MM_func(model, x));
+                }
+                //logerr("model %f %f sq_dist %f",model.x, model.y, sq_dist);
+                if (sq_dist < least_dist)
+                {
+                    least_dist = sq_dist;
+                    best_model = model;
+                }
+            }
+        }
+    }
+    if (level > 1)
+    {
+        model_start = best_model - 0.5f*step;
+        model_end = best_model + 0.5f*step;
+        //logerr("%f %f -- %f %f", model_start.x, model_start.y, model_end.x, model_end.y);
+        MM_regression_grid(model_start, model_end, values, least_dist, best_model, level - 1);
+    }
+}
+
+glm::vec4 MM_regression(const std::vector<float> &values)
+{
+    int steps = 100;
+    float least_dist = 1e9;
+    glm::vec4 best_model = glm::vec4(0,0,0,0);
+    MM_regression_grid(glm::vec4(0,0,-5,0), glm::vec4(1,50,5,0), values, least_dist, best_model, 3);
+
+    return best_model;
 }
 
 void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::vector<ParameterList> &initial_types, PopulationBackup &result)
 {
+    bool regression_test = false;
     metaParams.n_islands = 1;
     if (depth == 1)
     {
@@ -71,15 +124,25 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     {
         std::vector<PopulationBackup> backups = std::vector<PopulationBackup>(width, PopulationBackup());
         int best_pos = 0;
+        std::vector<Creature> all_pop;
         for (int i=0;i<width;i++)
         {
             tree_GA_internal(depth - 1, iters, width, initial_types, backups[i]);
-            if (backups[i].best_value > backups[best_pos].best_value)
+            all_pop.insert(all_pop.end(), backups[i].pop.begin(), backups[i].pop.end());
+            if (backups[i].predicted_best_value > backups[best_pos].predicted_best_value)
             {
                 best_pos = i;
             }
         }
+        std::sort(all_pop.begin(), all_pop.end(), 
+              [&](const Creature& a, const Creature& b) -> bool{return a.alive*a.metric > b.alive*b.metric;});
+        //logerr("%d %f %f", all_pop.size(), all_pop.front().metric, all_pop.back().metric);
         population = backups[best_pos].pop;
+        for (int i=0;i<population.size();i++)
+        {
+            population[i] = all_pop[i];
+        }
+
     }
     calculate_metric(1, false);
     recalculate_fitness();
@@ -88,7 +151,11 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     debug("[%d] start %.3f\n", depth, best_metric_current);
 
     iteration_n = 0;
-    while (!should_exit() && iteration_n < iters)
+    int cur_iters = iters*MAX(1, depth-1);
+    std::vector<float> values;
+    std::vector<float> predictions;
+    values.push_back(0);
+    while (!should_exit() && iteration_n < cur_iters)
     {
         int c_id = next_id / 1000 * 1000;
         next_id.store(1000 + c_id);
@@ -126,16 +193,36 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
             }
             crio_camera.push_back(heaven[max_pos]);
         }
+        if (iteration_n % 10 == 0 && iteration_n > 0)
         //debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_current);
+        values.push_back(best_metric_current);
+        if (regression_test)
+        {
+            glm::vec4 model = MM_regression(values);
+            logerr("model %f %f %f %f", model.x, model.y, model.z);
+            predictions.push_back(MM_func(model, cur_iters - 1));
+        }
     }
+    glm::vec4 model = MM_regression(values);
 
     result.pop = population;
     result.best_value = 0;
+    result.model = model;
+    int predicted_iter = regression_test ? cur_iters : 3*cur_iters;
+    result.predicted_best_value = MM_func(model, predicted_iter);
     for (auto &p : result.pop)
     {
         result.best_value = MAX(result.best_value, p.metric);
     }
     debug("[%d] end %.3f\n", depth, result.best_value);
+    if (regression_test)
+    {
+        logerr("predicted %f",result.predicted_best_value);
+        for (int i=0;i<predictions.size();i++)
+        {
+            logerr("%d pred %f real %f quality %f",i,predictions[i], result.best_value, 1 - abs(predictions[i]- result.best_value)/result.best_value);
+        }
+    }
 }
 
 void GeneticAlgorithm::islands_GA(std::vector<ParameterList> &initial_types)

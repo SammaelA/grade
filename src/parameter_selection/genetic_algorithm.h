@@ -82,7 +82,9 @@ private:
     struct PopulationBackup
     {
         std::vector<Creature> pop;
-        float best_value;
+        float best_value = 0;
+        glm::vec4 model = glm::vec4(0,0,0,0);
+        float predicted_best_value = 0;
         int backup_uses = 0;
     };
 
