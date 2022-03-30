@@ -408,29 +408,40 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.leaf_scale = 1.0;
 
     AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
-    GeneticAlgorithm::MetaParameters mp;
-    mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
-    mp.heaven_size = selection_settings.get_int("heaven_size", mp.heaven_size);
-    mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
-    mp.max_population_size = selection_settings.get_int("max_population_size", mp.max_population_size);
-    mp.elite = selection_settings.get_int("elite", mp.elite);
-    mp.n_islands = selection_settings.get_int("n_islands", mp.n_islands);
-    mp.migration_interval = selection_settings.get_int("migration_interval", mp.migration_interval);
-    mp.clone_thr = selection_settings.get_double("clone_thr", mp.clone_thr);
-    mp.migration_chance = selection_settings.get_double("migration_chance", mp.migration_chance);
-    mp.evolution_stat = selection_settings.get_bool("evolution_stat", mp.evolution_stat);
-    mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
-    mp.heaven_fine_tuning_count = selection_settings.get_int("heaven_fine_tuning_count", mp.heaven_fine_tuning_count);
-    
-    GeneticAlgorithm::ExitConditions ex_c;
-    ex_c.function_calculated = selection_settings.get_int("function_calculated", ex_c.function_calculated);
-    ex_c.function_reached = selection_settings.get_double("function_reached", ex_c.function_reached);
-    ex_c.generations = selection_settings.get_int("generations", ex_c.generations);
-    ex_c.time_elapsed_seconds = selection_settings.get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
+    int imp_max_cnt = 32;
+    std::string opt_name = "GA";
+    my_opt::Optimizer *optimizer = nullptr;
+    my_opt::MetaParameters *meta_parameters = nullptr;
 
-    int imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
+    if (opt_name == "GA")
+    {
+        optimizer = new GeneticAlgorithm();
+        GeneticAlgorithm::MetaParameters *mpp = new GeneticAlgorithm::MetaParameters();
+        meta_parameters = mpp;   
+        GeneticAlgorithm::MetaParameters &mp = *mpp;
+        mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
+        mp.heaven_size = selection_settings.get_int("heaven_size", mp.heaven_size);
+        mp.initial_population_size = selection_settings.get_int("initial_population_size", mp.initial_population_size);
+        mp.max_population_size = selection_settings.get_int("max_population_size", mp.max_population_size);
+        mp.elite = selection_settings.get_int("elite", mp.elite);
+        mp.n_islands = selection_settings.get_int("n_islands", mp.n_islands);
+        mp.migration_interval = selection_settings.get_int("migration_interval", mp.migration_interval);
+        mp.clone_thr = selection_settings.get_double("clone_thr", mp.clone_thr);
+        mp.migration_chance = selection_settings.get_double("migration_chance", mp.migration_chance);
+        mp.evolution_stat = selection_settings.get_bool("evolution_stat", mp.evolution_stat);
+        mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
+        mp.heaven_fine_tuning_count = selection_settings.get_int("heaven_fine_tuning_count", mp.heaven_fine_tuning_count);
+
+        imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
                           MAX(mp.initial_population_size, mp.max_population_size) + 
                           (3+1)*(mp.heaven_fine_tuning_count)*mp.heaven_size);
+    }
+    else if (opt_name == "SA")
+    {
+        optimizer = new SimulatedAnnealing();
+        SimulatedAnnealing::MetaParameters *mpp = new SimulatedAnnealing::MetaParameters();     
+    }
+
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, tree_ggd.impostor_generation_params.slices_n, false);
     ParameterList parList, bestParList;
 
@@ -460,7 +471,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     float best_metric = 0;
     int cnt = 0;
 
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     std::vector<std::pair<float, ParameterList>> best_pars;
     auto func = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
         std::vector<ParameterList> gen_params(params.size(),parList);
@@ -472,82 +482,47 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         }
         return generate_for_par_selection(gen_params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
     };
-    
-    //initial_params = {};
-    //logerr("started with %d initial params",initial_params.size());
-    {
-        GeneticAlgorithm GA;
-        GeneticAlgorithm::OptFunction optF;
-        optF.f = func;
-        optF.name = gen_name;
-        optF.version = selection_settings.get_int("version", 1);
-        std::vector<float> parList_f;
-        parList.to_simple_list(parList_f,true,true);
-        std::vector<std::pair<float,std::vector<float>>> best_pars_f;
-        std::vector<std::vector<float>> initial_params_f;
-        for (auto &p : initial_params)
-        {
-            initial_params_f.emplace_back();
-            p.to_simple_list(initial_params_f.back(), true, true);
-        }
-        GA.perform(parList_f, mp, ex_c, optF, best_pars_f, initial_params_f);
-        for (auto &p : best_pars_f)
-        {
-            best_pars.emplace_back();
-            best_pars.back().first = p.first;
-            best_pars.back().second = parList;
-            best_pars.back().second.from_simple_list(p.second, true, true);
-        }
-    }
-   /*
-    SimulatedAnnealing SA;
-    SimulatedAnnealing::MetaParameters sa_mp;
-    SimulatedAnnealing::ExitConditions sa_ex;
-    sa_ex.function_calculated = 3500;
-    SA.perform(parList, sa_mp, sa_ex, func, best_pars, initial_params);
-    */
-/*
-    std::vector<float> lst;
-    parList.to_simple_list(lst, true, true);
-    logerr("function has %d parameters", lst.size());
-    Eval::cnt_p = &cnt;
-    Eval::imp_sim_p = &imp_sim;
-    Eval::parList_p = &parList;
-    Eval::ref_tree_p = &ref_tree;
-    Eval::scene_p = &scene;
-    Eval::tree_ggd_p = &tree_ggd;
-    using kernel_t = kernel::MaternFiveHalves<Params>;//default
-    using mean_t = mean::Data<Params>;//default
-    using gp_opt_t = model::gp::NoLFOpt<Params>;//default
-    using gp_t = model::GP<Params, kernel_t, mean_t, gp_opt_t>;//default
-    //using gp_t = model::GP<Params>;
-    using acqui_t = acqui::UCB<Params, gp_t>;
-    using acqui_opt_t = opt::NLOptNoGrad<Params, nlopt::GN_DIRECT_L_RAND>;//not default
-    using init_t = init::RandomSampling<Params>;//default
-    //using stop_t = boost::fusion::vector<stop::MaxIterations<Params>, MinTolerance<Params>>;
-    //using stat_t = boost::fusion::vector<stat::ConsoleSummary<Params>, stat::Samples<Params>, stat::Observations<Params>, stat::AggregatedObservations<Params>, stat::GPAcquisitions<Params>, stat::BestAggregatedObservations<Params>, stat::GPKernelHParams<Params>>;
 
-    //bayes_opt::BOptimizer<Params, modelfun<gp_t>, acquifun<acqui_t>, acquiopt<acqui_opt_t>, initfun<init_t>> boptimizer;
-    bayes_opt::BOptimizer<Params, modelfun<gp_t>, acquifun<acqui_t>, acquiopt<acqui_opt_t>> boptimizer;
-    // run the evaluation
-    boptimizer.optimize(Eval());
-    // the best sample found
-    std::cout << "Best sample: " << boptimizer.best_sample()(0) << " - Best observation: " << boptimizer.best_observation()(0) << std::endl;
-    best_pars.emplace_back();
-    best_pars.back().first = boptimizer.best_observation()(0);
-    best_pars.back().second = parList;
-    std::vector<float> norm_best_params;
-    for (int i=0;i<boptimizer.best_sample().size();i++)
+    my_opt::ExitConditions ex_c;
+    ex_c.function_calculated = selection_settings.get_int("function_calculated", ex_c.function_calculated);
+    ex_c.function_reached = selection_settings.get_double("function_reached", ex_c.function_reached);
+    ex_c.generations = selection_settings.get_int("generations", ex_c.generations);
+    ex_c.time_elapsed_seconds = selection_settings.get_double("time_elapsed_seconds", ex_c.time_elapsed_seconds);
+
+    my_opt::OptFunction optF;
+    optF.f = func;
+    optF.name = gen_name;
+    optF.version = selection_settings.get_int("version", 1);
+
+    std::vector<float> parList_f;
+    parList.to_simple_list(parList_f, true, true);
+    /*
     {
-        norm_best_params.push_back(boptimizer.best_sample()(i));
+        //test functions
+        ex_c.function_calculated = 100000;
+        ex_c.function_reached = 1e9;
+        my_opt::get_test_function("styblinski_tang10", optF, parList_f);
     }
-    best_pars.back().second.from_simple_list(norm_best_params, true, true);
-*/
+    */
+    std::vector<std::pair<float, std::vector<float>>> best_pars_f;
+    std::vector<std::vector<float>> initial_params_f;
+    for (auto &p : initial_params)
+    {
+        initial_params_f.emplace_back();
+        p.to_simple_list(initial_params_f.back(), true, true);
+    }
+    optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
+    for (auto &p : best_pars_f)
+    {
+        best_pars.emplace_back();
+        best_pars.back().first = p.first;
+        best_pars.back().second = parList;
+        best_pars.back().second.from_simple_list(p.second, true, true);
+    }
+
     bestParList = best_pars[0].second;
+    logerr("bpl %f %f",best_pars_f[0].second[0],best_pars_f[0].second[1]);
     best_metric = best_pars[0].first;
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    debug("best metric %f took %.2f seconds and %d tries to find\n", best_metric, time / 1000, cnt);
     
     debug_stat = true;
     auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float> {

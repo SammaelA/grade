@@ -1,13 +1,20 @@
 #pragma once
 #include "impostor_similarity.h"
 #include "tree_generators/abstract_generator.h"
+#include "generic_optimization_algorithm.h"
 #include <chrono>
 
-class GeneticAlgorithm
+class GeneticAlgorithm : public my_opt::Optimizer
 {
 public:
-    struct MetaParameters
+    enum GA_Type
     {
+        ISLANDS_GA,
+        TREE_GA
+    };
+    struct MetaParameters : public my_opt::MetaParameters
+    {
+        virtual void RW_vector(std::vector<float> &res) {};
         int initial_population_size = 100;
         int max_population_size = 50;
         int min_population_size = 5;
@@ -17,7 +24,7 @@ public:
         int heaven_fine_tuning_count = 0;
         int elite = 5;
         float weaks_to_kill = 0.5;
-        float dead_at_birth_thr = 0.0000;
+        float dead_at_birth_thr = -1e9;
         float mix_chance = 1;
         int n_ploid_genes = 1;
         int max_age = 100;
@@ -25,30 +32,18 @@ public:
         int n_islands = 1;
         int migration_interval = 5;
         float migration_chance = 0.2;
+        GA_Type type = GA_Type::TREE_GA;
         bool evolution_stat = false;
         bool debug_graph = false;
     };
-    struct ExitConditions
-    {
-        float time_elapsed_seconds = 45*60;
-        float function_reached = 1;
-        int function_calculated = 1000;
-        int generations = 10000;
-    };
-    struct OptFunction
-    {
-        std::string name = "default";
-        int version = 0;
-        std::function<std::vector<float>(std::vector<std::vector<float>> &)> f;
-    };
-    void perform(std::vector<float> &param_list, MetaParameters params, ExitConditions exit_conditions,
-                 const OptFunction &opt_f,
+    void perform(std::vector<float> &param_list, my_opt::MetaParameters *params, my_opt::ExitConditions exit_conditions,
+                 const my_opt::OptFunction &my_opt_f,
                  std::vector<std::pair<float,std::vector<float>>> &best_results,
                  std::vector<std::vector<float>> &initial_types);
 private:
-    OptFunction opt_function;
+    my_opt::OptFunction opt_function;
     MetaParameters metaParams;
-    ExitConditions exitConditions;
+    my_opt::ExitConditions exitConditions;
     int free_parameters_cnt = 0;
     int all_parameters_cnt = 0;
     typedef std::vector<float> Genome;

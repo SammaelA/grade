@@ -1,38 +1,27 @@
 #pragma once
 #include "impostor_similarity.h"
 #include "tree_generators/abstract_generator.h"
+#include "generic_optimization_algorithm.h"
 #include <chrono>
 
-class SimulatedAnnealing
+class SimulatedAnnealing : public my_opt::Optimizer
 {
 public:
-    struct MetaParameters
+    struct MetaParameters : public my_opt::MetaParameters
     {
         float t_start = 1;
         float t_pow = 1;
         float tries = 1;
+        virtual void RW_vector(std::vector<float> &res) {};
     };
-    struct ExitConditions
-    {
-        float time_elapsed_seconds = 45*60;
-        float function_reached = 1;
-        int function_calculated = 4000;
-        int generations = 10000;
-    };
-    void perform(ParameterList &param_list, MetaParameters params, ExitConditions exit_conditions,
-                 const std::function<std::vector<float>(std::vector<ParameterList> &)> &f,
-                 std::vector<std::pair<float,ParameterList>> &best_results,
-                 std::vector<ParameterList> &initial_types);
+
+    void perform(std::vector<float> &param_list, my_opt::MetaParameters *params, my_opt::ExitConditions exit_conditions,
+                 const my_opt::OptFunction &my_opt_f,
+                 std::vector<std::pair<float,std::vector<float>>> &best_results,
+                 std::vector<std::vector<float>> &initial_types);
 private:
-    std::function<std::vector<float>(std::vector<ParameterList> &)> function;
-    ParameterList original_param_list;
-    struct ParametersMask
-    {
-        std::vector<std::pair<std::string, CategorialParameter>> categorialParameters;
-        std::vector<std::pair<std::string, OrdinalParameter>> ordinalParameters;
-        std::vector<std::pair<std::string, ContinuousParameter>> continuousParameters;
-    } parametersMask;
-    ExitConditions exitConditions;
+    my_opt::OptFunction function;
+    my_opt::ExitConditions exitConditions;
     MetaParameters metaParams;
     int free_parameters_cnt = 0;
     std::chrono::steady_clock::time_point t_start, iter_start;

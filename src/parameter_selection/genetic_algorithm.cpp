@@ -8,15 +8,17 @@ std::atomic<int> next_id(0);
 int di_cnt[256];
 long double di_res[256];
 long double di_dev[256];
-void GeneticAlgorithm::perform(std::vector<float> &param_list, MetaParameters params, ExitConditions exit_conditions,
-                               const OptFunction &opt_f,
+void GeneticAlgorithm::perform(std::vector<float> &param_list, my_opt::MetaParameters *params, my_opt::ExitConditions exit_conditions,
+                               const my_opt::OptFunction &opt_f,
                                std::vector<std::pair<float, std::vector<float>>> &best_results,
                                std::vector<std::vector<float>> &initial_types)
 {
     t_start = std::chrono::steady_clock::now();
 
     opt_function = opt_f;
-    metaParams = params;
+    MetaParameters *ga_p = dynamic_cast<MetaParameters*>(params);
+    if (ga_p)
+        metaParams = *ga_p;
     exitConditions = exit_conditions;
     free_parameters_cnt = param_list.size();
     all_parameters_cnt = param_list.size();
@@ -27,15 +29,35 @@ void GeneticAlgorithm::perform(std::vector<float> &param_list, MetaParameters pa
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
     save_load_function_stat(true);
-    tree_GA(initial_types);
+    if (metaParams.type == GA_Type::ISLANDS_GA)
+        islands_GA(initial_types);
+    else
+        tree_GA(initial_types);
     prepare_best_params(best_results);
     save_load_function_stat(false);
+
+    std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+    float time = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+    debug("GA result: best metric %f took %.2f seconds and %d tries to find\n", best_metric_ever, time / 1000, func_called);
 }
 
 void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
 {
     PopulationBackup result;
-    tree_GA_internal(4, 50, 2, initial_types, result);
+    int base_size = 60;
+    int base_width = 2;
+    int tries = exitConditions.function_calculated;
+    int cur_tries = 0;
+    int cur_depth = 0;
+    while (cur_tries < tries)
+    {
+        cur_depth++;
+        cur_tries = base_width*cur_tries + (base_size*MAX(1, cur_depth - 1) - 1)*metaParams.max_population_size*metaParams.weaks_to_kill + 
+                    metaParams.initial_population_size;
+    }
+    int sz = base_size * tries/ cur_tries;
+    logerr("starting tree GA depth %d, size %d, tries %d", cur_depth, sz, sz*cur_tries/base_size);
+    tree_GA_internal(cur_depth, sz, base_width, initial_types, result);
     population = result.pop;
 }
 
@@ -1047,7 +1069,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
     {
         if (p.alive)
         {
-            if (p.metric < 0)
+            if (p.metric_calc_n == 0)
             {
                 params.push_back(p.main_genome);
                 positions.push_back(std::pair<ParOrigin,int>(NEW_ENTITY, i));
@@ -1168,7 +1190,7 @@ void GeneticAlgorithm::pick_best_to_heaven()
         else
         {
             int worst_pos = -1;
-            float worst_val = 1;
+            float worst_val = 1e9;
             bool same = false;
 
             //creature should be better that someone in heaven
@@ -1177,6 +1199,7 @@ void GeneticAlgorithm::pick_best_to_heaven()
                 if (heaven[i].id == population[n].id)
                 {
                     same = true;
+                    worst_pos = i;
                     break;
                 }
                 if (heaven[i].metric < population[n].metric && heaven[i].metric < worst_val)
@@ -1187,33 +1210,15 @@ void GeneticAlgorithm::pick_best_to_heaven()
             }
             if (!same && worst_pos >= 0)
             {
-                //but also it should be better than all it's clones
-                std::vector<int> clones;
-                bool better_all_clones = true;
-                for (int i=0;i<heaven.size();i++)
-                {
-                    if (genes_dist(population[n], heaven[i]) < 0*metaParams.clone_thr)
-                    {
-                        clones.push_back(i);
-                        if (!better(population[n], heaven[i]))
-                        {
-                            better_all_clones = false;
-                            break;
-                        }
-                    }
-                }
-                if (better_all_clones)
-                {
-                    //no need to keep clones that are worse than our creature
-                    for (int &c_n : clones)
-                    {
-                        heaven[c_n] = Creature();
-                    }
-                }
+                heaven[worst_pos] = population[n];
+            }
+            else if (same && worst_pos >= 0 && heaven[worst_pos].metric < population[n].metric)
+            {
                 heaven[worst_pos] = population[n];
             }
         }
     }
+    
     best_metric_ever = 0;
     for (auto &c : heaven)
     {
