@@ -10,6 +10,7 @@
 #include "tree_generators/all_generators.h"
 #include "hydra_utils/hydra_scene_exporter.h"
 #include "simulated_annealing.h"
+#include "function_stat.h"
 #include <thread>
 
 bool debug_stat = false;
@@ -511,6 +512,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         initial_params_f.emplace_back();
         p.to_simple_list(initial_params_f.back(), true, true);
     }
+    //my_opt::FunctionStat f_stat;
+    //my_opt::get_function_stat(parList_f, optF, f_stat);
+    //f_stat.print();
+    //return;
     optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
     for (auto &p : best_pars_f)
     {

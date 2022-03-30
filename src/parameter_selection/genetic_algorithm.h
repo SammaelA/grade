@@ -2,6 +2,7 @@
 #include "impostor_similarity.h"
 #include "tree_generators/abstract_generator.h"
 #include "generic_optimization_algorithm.h"
+#include "function_stat.h"
 #include <chrono>
 
 class GeneticAlgorithm : public my_opt::Optimizer
@@ -125,4 +126,5 @@ private:
     void tree_GA_internal(int depth, int iters, int width, std::vector<std::vector<float>> &initial_types, PopulationBackup &result);
 
     std::vector<SubPopulationInfo> sub_population_infos;
+    my_opt::FunctionStat function_stat;
 };

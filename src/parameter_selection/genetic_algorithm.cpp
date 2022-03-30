@@ -29,6 +29,8 @@ void GeneticAlgorithm::perform(std::vector<float> &param_list, my_opt::MetaParam
     metaParams.max_population_size = MAX(metaParams.max_population_size, metaParams.min_population_size);
     next_id.store(0);
     save_load_function_stat(true);
+
+    
     if (metaParams.type == GA_Type::ISLANDS_GA)
         islands_GA(initial_types);
     else
@@ -567,43 +569,60 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
         mutation_weights[i] = single_mutation_pos ? 1 : MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
         w_sum += mutation_weights[i];
     }
-    for (int gene = 0; gene < mutation_genes_count; gene++)
+    Genome GBase = G;
+    Genome GBest = G;
+    float best_mark = -100;
+    int g_tries = function_stat.tries > 10000 ? 100 : 1;
+    g_tries = 1;
+    for (int g_try = 0;g_try < g_tries;g_try++)
     {
-        bool found = false;
-        int tries = 0;
-        while (!found && tries < 100)
+        for (int gene = 0; gene < mutation_genes_count; gene++)
         {
-            float rnd = urand(0, w_sum);  
-            int pos = 0;
-            for (int i=0;i<G.size();i++)
+            bool found = false;
+            int tries = 0;
+            while (!found && tries < 100)
             {
-                if (rnd < mutation_weights[i])
+                float rnd = urand(0, w_sum);  
+                int pos = 0;
+                for (int i=0;i<G.size();i++)
                 {
-                    pos = i;
-                    found = true;
-                    break;
-                }   
-                else
+                    if (rnd < mutation_weights[i])
+                    {
+                        pos = i;
+                        found = true;
+                        break;
+                    }   
+                    else
+                    {
+                        rnd -= mutation_weights[i];
+                    }
+                }
+                if (!single_mutation_pos)
+                    mutation_power *= 1.0/MAX(1, 2*mutation_weights[pos]);
+                int g_pos = pos;
+                G[g_pos] = CLAMP(G[g_pos] + mutation_power*urand(-1,1),0,1);
+                tries++;
+                if (single_mutation_pos && found == true && gene == mutation_genes_count-1)
                 {
-                    rnd -= mutation_weights[i];
+                    //logerr("mutation %d", g_pos);
+                    *single_mutation_pos = g_pos;
                 }
             }
-            if (!single_mutation_pos)
-                mutation_power *= 1.0/MAX(1, 2*mutation_weights[pos]);
-            int g_pos = pos;
-            G[g_pos] = CLAMP(G[g_pos] + mutation_power*urand(-1,1),0,1);
-            tries++;
-            if (single_mutation_pos && found == true && gene == mutation_genes_count-1)
-            {
-                //logerr("mutation %d", g_pos);
-                *single_mutation_pos = g_pos;
-            }
+        }
+        float mark = 0;
+        for (int i=0;i<G.size();i++)
+        {
+            int bucket = CLAMP(G[i]*function_stat.Q_NUM,0,function_stat.Q_NUM-1);
+            mark += function_stat.marks[i][bucket];
+        }
+        if (mark > best_mark)
+        {
+            best_mark = mark;
+            GBest = G;
         }
     }
-    if (single_mutation_pos)
-    {
-        //logerr("single mut");
-    }
+    //logerr("%d mutation. Best mark = %f",function_stat.tries, best_mark);
+    G = GBest;
 }
 
 void GeneticAlgorithm::find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs)
@@ -1379,6 +1398,16 @@ void GeneticAlgorithm::save_load_function_stat(bool load)
 {
     BlkManager man;
     std::string stat_block_name = "GA_function_stats.blk";
+    std::string function_stat_block_name = "function_values_stat.blk";
+    if (load == true)
+    {
+        Block f_stat_block;
+        man.load_block_from_file(function_stat_block_name, f_stat_block);
+        Block *b2 = f_stat_block.get_block(opt_function.name);
+        function_stat = my_opt::FunctionStat(all_parameters_cnt);
+        if (b2 && opt_function.version == b2->get_int("version",-1))
+            function_stat.save_load_blk(*b2, false);
+    }
     Block stat_block;
     man.load_block_from_file(stat_block_name, stat_block);
     Block *bl = stat_block.get_block(opt_function.name);
