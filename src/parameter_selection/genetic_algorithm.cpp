@@ -42,7 +42,10 @@ void GeneticAlgorithm::perform(std::vector<float> &param_list, my_opt::MetaParam
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
     debug("GA result: best metric %f took %.2f seconds and %d tries to find\n", best_metric_ever, time / 1000, func_called);
 }
-
+int base_size_by_depth(int base_size, int cur_depth)
+{
+    return base_size;
+}
 void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
 {
     PopulationBackup result;
@@ -54,12 +57,18 @@ void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
     while (cur_tries < tries)
     {
         cur_depth++;
-        cur_tries = base_width*cur_tries + (base_size*MAX(1, cur_depth - 1) - 1)*metaParams.max_population_size*metaParams.weaks_to_kill + 
+        cur_tries = base_width*cur_tries + (base_size_by_depth(base_size, cur_depth) - 1)*metaParams.max_population_size*metaParams.weaks_to_kill + 
                     metaParams.initial_population_size;
     }
     int sz = base_size * tries/ cur_tries;
     logerr("starting tree GA depth %d, size %d, tries %d", cur_depth, sz, sz*cur_tries/base_size);
+    TreeGA_stat = std::vector<glm::vec2>(cur_depth, glm::vec2(0,0));
     tree_GA_internal(cur_depth, sz, base_width, initial_types, result);
+    logerr("tree GA stat:");
+    for (auto &s : TreeGA_stat)
+    {
+        logerr("%.3f %d", s[1] > 0 ? s[0]/s[1] : -1, (int)s[1]);
+    }
     population = result.pop;
 }
 
@@ -154,7 +163,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     debug("[%d] start %.3f\n", depth, best_metric_current);
 
     iteration_n = 0;
-    int cur_iters = iters*MAX(1, depth-1);
+    int cur_iters = base_size_by_depth(iters, depth);
     std::vector<float> values;
     std::vector<float> predictions;
     values.push_back(0);
@@ -196,7 +205,6 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
             }
             crio_camera.push_back(heaven[max_pos]);
         }
-        if (iteration_n % 10 == 0 && iteration_n > 0)
         //debug("iteration %d Pop: %d Best: %.4f\n", iteration_n, current_population_size, best_metric_current);
         values.push_back(best_metric_current);
         if (regression_test)
@@ -217,6 +225,8 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     {
         result.best_value = MAX(result.best_value, p.metric);
     }
+    TreeGA_stat[depth].x += result.best_value;
+    TreeGA_stat[depth].y++;
     debug("[%d] end %.3f\n", depth, result.best_value);
     if (regression_test)
     {
@@ -514,9 +524,21 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, std::vec
 GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
 {
     Genome g = Genome(all_parameters_cnt, 0);
-    for(int i=0;i<all_parameters_cnt;i++)
-        g[i] = urand();
-    return g;
+    Genome best_g = g;
+    float best_mark = -1000;
+    int tries = 1000;
+    for (int t =0;t<tries;t++)
+    {
+        for(int i=0;i<all_parameters_cnt;i++)
+            g[i] = urand();
+        float mark = get_mark(g);
+        if (mark > best_mark)
+        {
+            best_g = g;
+            best_mark = mark;
+        }
+    }
+    return best_g;
 }
 
 void GeneticAlgorithm::initialize_population(std::vector<std::vector<float>> &initial_types)
@@ -546,7 +568,7 @@ void GeneticAlgorithm::initialize_population(std::vector<std::vector<float>> &in
         }
         iter++;
     }
-    
+
     for (int i=i0;i<metaParams.initial_population_size;i++)
     {
         population[i].main_genome = random_genes();
@@ -558,6 +580,16 @@ void GeneticAlgorithm::initialize_population(std::vector<std::vector<float>> &in
         population[i].sub_population_n = metaParams.n_islands*i/metaParams.initial_population_size;
     }
     current_population_size = metaParams.initial_population_size;
+}
+
+float GeneticAlgorithm::get_mark(Genome &G)
+{
+    float mark = 0;
+    for (int i=0;i<G.size();i++)
+    {
+        int bucket = CLAMP(G[i]*function_stat.Q_NUM,0,function_stat.Q_NUM-1);
+        mark += function_stat.marks[i][bucket];
+    }
 }
 
 void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos)
@@ -609,12 +641,7 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                 }
             }
         }
-        float mark = 0;
-        for (int i=0;i<G.size();i++)
-        {
-            int bucket = CLAMP(G[i]*function_stat.Q_NUM,0,function_stat.Q_NUM-1);
-            mark += function_stat.marks[i][bucket];
-        }
+        float mark = get_mark(G);
         if (mark > best_mark)
         {
             best_mark = mark;

@@ -461,7 +461,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         {
             if (t.generator_name == tree_ggd.types[0].generator_name)
             {
-                initial_params.push_back(ParameterList());
+                initial_params.push_back(parList);
                 t.get_params()->write_parameter_list(initial_params.back());
             }
         }

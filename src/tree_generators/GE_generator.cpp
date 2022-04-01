@@ -391,8 +391,8 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
             nb->id = dst.id;
             //logerr("conv br 2 %d %d",b_src.level, i);
             convert(src, dst, chb, nb);
-            if (nb->segments.front().rel_r_begin > b_dst->segments.back().rel_r_begin)
-                logerr("aaaa %f %f", nb->segments.front().rel_r_begin, b_dst->segments.back().rel_r_begin);
+            //if (nb->segments.front().rel_r_begin > b_dst->segments.back().rel_r_begin)
+            //    logerr("aaaa %f %f", nb->segments.front().rel_r_begin, b_dst->segments.back().rel_r_begin);
         }
         i++;
     }

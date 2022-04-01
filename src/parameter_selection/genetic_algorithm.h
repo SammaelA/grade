@@ -90,7 +90,7 @@ private:
     std::vector<Creature> new_population;
     std::vector<Creature> heaven;
     std::vector<Creature> crio_camera;
-
+    std::vector<glm::vec2> TreeGA_stat;
 
     std::chrono::steady_clock::time_point t_start, iter_start;
     int current_population_size = 0;
@@ -103,6 +103,7 @@ private:
     bool should_exit();
     void prepare_best_params(std::vector<std::pair<float,std::vector<float>>> &best_results);
     void initialize_population(std::vector<std::vector<float>> &initial_types);
+    float get_mark(Genome &G);
     void mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos = nullptr);
     void find_pairs(int cnt, std::vector<std::pair<int, int>> &pairs);
     void kill_creature(int n);

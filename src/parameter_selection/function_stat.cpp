@@ -5,7 +5,7 @@
 void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat)
 {
     int batch_size = 256;
-    int batches = 500;
+    int batches = 200;
     stat = FunctionStat(param_list.size());
     stat.name = my_opt_f.name;
     stat.version = my_opt_f.version;
