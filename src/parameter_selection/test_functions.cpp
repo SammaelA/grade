@@ -70,5 +70,25 @@ void get_test_function(std::string name, my_opt::OptFunction &optF, std::vector<
             return res;
         };
     }
+    else if (name == "styblinski_tang100")
+    {
+        parList_f = std::vector<float>(100,0);
+        optF.f = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
+            float max_value = 39.166;
+            std::vector<float> res;
+            for (auto &x : params)
+            {
+                res.push_back(0);
+                double sum = 0;
+                for (auto &x_i : x)
+                {
+                    x_i = 10*x_i - 5;
+                    sum += x_i*x_i*x_i*x_i - 16*x_i*x_i + 5*x_i;
+                }
+                res.back() = -sum / (2*100*max_value);
+            }
+            return res;
+        };
+    }
 }
 }

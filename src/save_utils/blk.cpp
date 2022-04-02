@@ -756,7 +756,9 @@ void Block::add_block(const std::string name, Block *bl)
 {
     Block::Value val;
     val.type = Block::ValueType::BLOCK;
-    val.bl = bl;
+    
+    val.bl = new Block();
+    val.bl->copy(bl);
     add_value(name, val);
 }
 void Block::add_arr(const std::string name, std::vector<double> &_values)
@@ -864,7 +866,8 @@ void Block::set_block(const std::string name, Block *bl)
 {
     Block::Value val;
     val.type = Block::ValueType::BLOCK;
-    val.bl = bl;
+    val.bl = new Block();
+    val.bl->copy(bl);
     set_value(name, val);
 }
 void Block::set_arr(const std::string name, std::vector<double> &_values)
@@ -925,7 +928,10 @@ void Block::set_value(const std::string &name, const Block::Value &value)
 {
     int id = get_id(name);
     if (id >= 0)
+    {
+        values[id].clear();
         values[id] = value;
+    }
     else 
         add_value(name,value);
 }
@@ -945,6 +951,31 @@ void Block::add_detalization(Block &det)
             else
                 values[id] = det.values[i];
             logerr("detalization added %s %d %d",det.get_name(i).c_str(),values[id].bl, det.values[i].bl);
+        }
+    }
+}
+
+void Block::copy(Block *b)
+{
+    names = b->names;
+    values = b->values;
+    for (int i = 0;i<b->names.size();i++)
+    {
+        if (values[i].type == ValueType::ARRAY && values[i].a)
+        {
+            values[i].a = new DataArray();
+            values[i].a->type = b->values[i].a->type;
+            values[i].a->values = b->values[i].a->values;
+        }
+        if (values[i].type == ValueType::BLOCK && values[i].bl)
+        {
+            values[i].bl = new Block();
+            values[i].bl->copy(b->values[i].bl);
+        }
+        if (values[i].type == ValueType::STRING && values[i].s)
+        {
+            values[i].s = new std::string();
+            *(values[i].s) = *(b->values[i].s);
         }
     }
 }

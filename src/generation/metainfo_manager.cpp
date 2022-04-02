@@ -264,6 +264,7 @@ void MetainfoManager::save_tree_types()
                 b->set_string("wood_tex_name", type.wood_tex_name); \
                 b->set_string("leaf_tex_name", type.leaf_tex_name); \
                 bl.add_block(ttid->first, b); \
+                delete b; \
             } \
             ttid++; \
         } \

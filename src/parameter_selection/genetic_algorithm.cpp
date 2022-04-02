@@ -62,7 +62,7 @@ void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
     }
     int sz = base_size * tries/ cur_tries;
     logerr("starting tree GA depth %d, size %d, tries %d", cur_depth, sz, sz*cur_tries/base_size);
-    TreeGA_stat = std::vector<glm::vec2>(cur_depth, glm::vec2(0,0));
+    TreeGA_stat = std::vector<glm::vec2>(cur_depth+1, glm::vec2(0,0));
     tree_GA_internal(cur_depth, sz, base_width, initial_types, result);
     logerr("tree GA stat:");
     for (auto &s : TreeGA_stat)
@@ -160,7 +160,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     recalculate_fitness();
     pick_best_to_heaven();
     //debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_current);
-    debug("[%d] start %.3f\n", depth, best_metric_current);
+    //debug("[%d] start %.3f\n", depth, best_metric_current);
 
     iteration_n = 0;
     int cur_iters = base_size_by_depth(iters, depth);
@@ -227,7 +227,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     }
     TreeGA_stat[depth].x += result.best_value;
     TreeGA_stat[depth].y++;
-    debug("[%d] end %.3f\n", depth, result.best_value);
+    //debug("[%d] end %.3f\n", depth, result.best_value);
     if (regression_test)
     {
         logerr("predicted %f",result.predicted_best_value);
@@ -852,18 +852,6 @@ void GeneticAlgorithm::kill_weak(int cnt_to_kill)
         if (killed >= cnt_to_kill)
             break;
     }
-    /*
-    for (int i=0;i<population.size();i++)
-    {
-        if (population[i].alive)
-        {
-           kill_creature(i); 
-           killed++;
-        }
-        if (killed >= cnt_to_kill)
-            break;
-    }
-    */
 }
 
 void GeneticAlgorithm::crossingover(Genome &A, Genome &B, Genome &res)
@@ -971,17 +959,6 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
         //it's shit
     }
     float it = 1 + 0.5*sqrt(iteration_n);
-    float strong_chance = 0.4 - 0.35*(MAX(0.1*iteration_n*iteration_n,100)/100);
-    float medium_chance = 0.4 - 0.3*(MAX(iteration_n - 25,100)/100);
-    float rnd = urand();
-    /*
-    if (rnd < strong_chance)
-        mutation(C.main_genome, 1.0, 0.5*free_parameters_cnt);
-    else if (rnd < strong_chance + medium_chance)
-        mutation(C.main_genome, 0.75, 5);
-    else
-        mutation(C.main_genome, 0.5, 3);
-    */
     float mutation_power = CLAMP(0.2*(1 + 0.1*sub_population_infos[C.sub_population_n].no_progress_time),0,1);
     mutation_power = 1 - MAX(A.metric, B.metric);
     //mutation_power = 0.15;
@@ -1009,26 +986,6 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
 
 void GeneticAlgorithm::make_new_generation(std::vector<std::pair<int, int>> &pairs)
 {
-/*
-    //assume that the population is sorted by fitness;
-    int elite_count = metaParams.elite > 0 ? heaven.size() : 0;
-    if (elite_count)
-    {
-        for (int i=0;i<heaven.size();i++)
-        {
-            new_population[i] = heaven[i];
-        }
-    }
-    int pos = elite_count;
-    for (auto &p : pairs)
-    {
-        //logerr("children %d %d", p.first, p.second);
-        make_child(population[p.first], population[p.second], new_population[pos]);
-        pos++;
-    }
-
-    current_population_size = elite_count + pairs.size();
-*/
     int pos = 0;
     for (int i=0;i<population.size();i++)
     {
@@ -1072,44 +1029,6 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
     };
     std::vector<std::pair<ParOrigin,int>> positions;
     int fine_tune_pos[100];
-
-/*
-    for (int i=0;i<heaven_n;i++)
-    {
-        int h = 0;
-        for (auto &p : heaven)
-        {
-            if (p.metric_calc_n < 1 || !elite_fine_tuning)
-            {
-                params.push_back(original_param_list);
-                params.back().from_simple_list(p.main_genome);
-                positions.push_back(std::pair<ParOrigin, int>(ELITE_ORIGIN, h));
-            }
-            if (elite_fine_tuning)
-            {
-                int ft_cnt = 0;
-                if (iteration_n < 10)
-                    ft_cnt = 0;
-                else if (iteration_n < 40)
-                    ft_cnt = 1;
-                else if (iteration_n < 100)
-                    ft_cnt = 2;
-                else
-                    ft_cnt = 3;
-                ft_cnt *= metaParams.heaven_fine_tuning_count;
-                for (int j = 0; j < ft_cnt; j++)
-                {
-                    Genome modified = p.main_genome;
-                    mutation(modified, 0.5, 1);
-                    params.push_back(original_param_list);
-                    params.back().from_simple_list(modified);
-                    positions.push_back(std::pair<ParOrigin, int>(ELITE_MODIFIED, h));
-                }
-            }
-            h++;
-        }
-    }
-    */
     int i=0;
     for (auto &p : population)
     {
@@ -1167,16 +1086,8 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
                 di_cnt[var_num]++;
                 di_res[var_num]+= abs(c.metric - metrics[i])/delta;
                 di_dev[var_num]+= SQR(abs(c.metric - metrics[i])/delta);
-                if (abs(c.metric - metrics[i]) > 0.5)
-                {
-                    //logerr("large diff %f", abs(c.metric - metrics[i]));
-                }
-                if (ftp == 0 && iteration_n % 10 == 0)
-                {
-                    //print_function_stat();
-                }
             }
-            //logerr("%d times changed creature %f --> %f", c.metric_calc_n, c.metric, metrics[i]);
+
             if (c.metric < metrics[i])
             {
                 c.metric = metrics[i];
@@ -1200,19 +1111,6 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
             }
         }
     }
-/*
-    for (auto &p : population)
-    {
-        for (auto &h : heaven)
-        {
-            if (p.id == h.id)
-            {
-                p.metric = h.metric;
-                p.metric_calc_n = h.metric_calc_n;
-            }
-        }
-    }
-*/
 }
 
 bool GeneticAlgorithm::better(Creature &A, Creature &B)
@@ -1342,83 +1240,6 @@ void GeneticAlgorithm::recalculate_fitness()
         }
     }
 */
-    /*
-    std::sort(population.begin(), population.end(), 
-              [&](const Creature& a, const Creature& b) -> bool{return a.fitness < b.fitness;});
-    float min_v = 0.1;
-    float step = 0.025;
-    int n = 0;
-
-    for (auto &p : population)
-    {
-        if (p.alive && p.fitness > 0)
-        {
-            p.fitness = MAX(min_v, 1 - step*n);
-            n++;
-        }
-    }
-    
-   for (int pop_n = 0; pop_n < metaParams.n_islands;pop_n++)
-   {
-        int p_cnt = 0;
-        double p_dist = 0;
-        //debug("dist matrix:\n");
-        for (auto &p1 : population)
-        {
-            if (p1.alive && p1.sub_population_n == pop_n)
-            {
-                    for (auto &p2 : population)
-                    {
-                        if (p2.alive && p2.sub_population_n == pop_n)
-                        {
-                            p_cnt++;
-                            std::vector<float> par1 = original_param_list;
-                            par1.from_simple_list(p1.main_genome);
-                            std::vector<float> par2 = original_param_list;
-                            par2.from_simple_list(p2.main_genome);
-                            float dist =  par1.diff(par2);
-                            p_dist += dist;
-                            //debug("%.2f ", dist);
-                        }
-                    }
-                    //debugnl();
-                }
-        }
-        logerr("%d) average population diff %.3f",pop_n, (float)(p_dist/p_cnt));
-    }
-
-    debug("dist matrix:\n");
-    for (int pop_n1 = 0; pop_n1 < metaParams.n_islands; pop_n1++)
-    {
-        for (int pop_n2 = 0; pop_n2 < metaParams.n_islands; pop_n2++)
-        {
-            int p_cnt = 0;
-            double p_dist = 0;
-            for (auto &p1 : population)
-            {
-                if (p1.alive && p1.sub_population_n == pop_n1)
-                {
-                    for (auto &p2 : population)
-                    {
-                        if (p2.alive && p2.sub_population_n == pop_n2)
-                        {
-                            p_cnt++;
-                            std::vector<float> par1 = original_param_list;
-                            par1.from_simple_list(p1.main_genome);
-                            std::vector<float> par2 = original_param_list;
-                            par2.from_simple_list(p2.main_genome);
-                            float dist = par1.diff(par2);
-                            p_dist += dist;
-                        }
-                    }
-                }
-            }
-            debug(" %.3f", (float)(p_dist/p_cnt));
-        }
-        debugnl();
-    }
-    debugnl();
-    */
 }
 
 void GeneticAlgorithm::save_load_function_stat(bool load)
