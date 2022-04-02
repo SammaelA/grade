@@ -119,6 +119,7 @@ void my_opt::FunctionStat::save_load_blk(Block &b, bool save)
             bl->add_arr("values", bvv);
         }
         b.set_block("by_variable_values", bl);
+        delete bl;
 
         Block *m_bl = new Block();
         for (auto &v : marks)
@@ -129,6 +130,8 @@ void my_opt::FunctionStat::save_load_blk(Block &b, bool save)
             m_bl->add_arr("values", mvv);
         }
         b.set_block("marks", m_bl);
+        delete m_bl;
+        
         std::vector<int> marks_q_arr; 
         for (auto i = 0;i<2*Q_NUM;i++)
         {

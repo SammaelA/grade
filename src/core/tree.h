@@ -2,6 +2,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <atomic>
 #include "common_utils/utility.h"
 #include "../tinyEngine/texture.h"
 #include "common_utils/parameter.h"
@@ -14,6 +15,8 @@ struct Leaf;
 struct BranchHeap;
 struct LeafHeap;
 struct PackedBranch;
+
+extern std::atomic<int> br_h_cnt;
 
 struct Segment
 {
@@ -85,7 +88,8 @@ struct BranchHeap
         branches.push_back(Branch());
         return &branches.back();
     }
-    BranchHeap(){};
+    BranchHeap(){br_h_cnt.fetch_add(1);};
+   ~BranchHeap(){br_h_cnt.fetch_add(-1);};
     BranchHeap& operator=(BranchHeap&&h)
     {
         branches = std::move(h.branches);

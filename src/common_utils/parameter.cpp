@@ -174,6 +174,7 @@ void ParametersSet::save_to_blk(Block &b)
         par->add_double("normal_part",p.second.normal_part);
         par->add_string("randomnessLevel",ToString(p.second.randomnessLevel));
         b.add_block(p.first.name,par);
+        delete par;
     }
 }
 

@@ -895,7 +895,7 @@ float GeneticAlgorithm::closest_neighbour(Creature &C, std::vector<Creature> &po
 {
     int i=0;
     float min_dist = 1;
-    while (population[i].alive && i < population.size())
+    while (i < population.size() && population[i].alive)
     {
         if (population[i].id != C.id && population[i].sub_population_n == C.sub_population_n)
         {

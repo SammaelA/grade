@@ -41,6 +41,7 @@ public:
                  const my_opt::OptFunction &my_opt_f,
                  std::vector<std::pair<float,std::vector<float>>> &best_results,
                  std::vector<std::vector<float>> &initial_types);
+    virtual ~GeneticAlgorithm() {};
 private:
     my_opt::OptFunction opt_function;
     MetaParameters metaParams;

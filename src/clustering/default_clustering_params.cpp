@@ -32,7 +32,7 @@ void load_default_blocks()
     Block *b = base.get_block("trunks_default_params");
     if (b)
     {
-        trunks_default_params = *b;
+        trunks_default_params.copy(b);
     }
     else
     {
@@ -42,7 +42,7 @@ void load_default_blocks()
     b = base.get_block("branches_default_params");
     if (b)
     {
-        branches_default_params = *b;
+        branches_default_params.copy(b);
     }
     else
     {
@@ -52,7 +52,7 @@ void load_default_blocks()
     b = base.get_block("trees_default_params");
     if (b)
     {
-        trees_default_params = *b;
+        trees_default_params.copy(b);
     }
     else
     {

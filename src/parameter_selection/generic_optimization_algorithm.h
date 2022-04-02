@@ -29,6 +29,7 @@ public:
                  const OptFunction &opt_f,
                  std::vector<std::pair<float,std::vector<float>>> &best_results,
                  std::vector<std::vector<float>> &initial_types) = 0;
+    virtual ~Optimizer() {};
 };
 void get_test_function(std::string name, my_opt::OptFunction &optF, std::vector<float> &parList_f);
 };

@@ -550,6 +550,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         if (!valid)
         {
             //dummy tree
+            trees_external[i].clear();
             trees_external[i] = Tree();
             trees_external[i].root = &dummy_branch;
         }

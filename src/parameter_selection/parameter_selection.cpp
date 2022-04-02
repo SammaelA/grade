@@ -155,12 +155,12 @@ void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree)
     {
     }
     gen->finalize_generation(tree, voxels);
+    delete gen;
 }
 void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<TreeTypeData> *types, Tree *trees)
 {
     for (int i = start_n; i < stop_n; i++)
     {
-        //logerr("gen tree %d in %d %d", i, start_n, stop_n);
         gen_tree(*vox, &((*types)[i]), trees + i);
     }
 }
@@ -200,8 +200,10 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     bool voxels_needed = false;
     for (auto &t : tree_ggd.types)
     {
-        if (get_generator(t.generator_name)->use_voxels_for_generation())
+        auto *gen = get_generator(t.generator_name);
+        if (gen->use_voxels_for_generation())
          voxels_needed = true;
+        delete gen;
     }
     for (int i = 0; i < num_threads; i++)
     {
@@ -500,10 +502,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     bool test_functions = false;
     {
         //test functions
-        test_functions = true;
-        ex_c.function_calculated = 1000;
-        ex_c.function_reached = 1e9;
-        my_opt::get_test_function("styblinski_tang100", optF, parList_f);
+        //test_functions = true;
+        //ex_c.function_calculated = 1000;
+        //ex_c.function_reached = 1e9;
+        //my_opt::get_test_function("styblinski_tang100", optF, parList_f);
     }
     if (test_functions)
     {
@@ -519,10 +521,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
                 initial_params_f.emplace_back();
                 p.to_simple_list(initial_params_f.back(), true, true);
             }
-            //my_opt::FunctionStat f_stat;
-            //my_opt::get_function_stat(parList_f, optF, f_stat);
-            //f_stat.print();
-            //return;
             optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
             for (auto &p : best_pars_f)
             {
@@ -541,6 +539,32 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         logerr("av_res = %f", res/8);
 
         return;
+    }
+    else
+    {
+        std::vector<std::pair<float, std::vector<float>>> best_pars_f;
+        std::vector<std::vector<float>> initial_params_f;
+        for (auto &p : initial_params)
+        {
+            initial_params_f.emplace_back();
+            p.to_simple_list(initial_params_f.back(), true, true);
+        }
+        // my_opt::FunctionStat f_stat;
+        // my_opt::get_function_stat(parList_f, optF, f_stat);
+        // f_stat.print();
+        // return;
+        optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
+        for (auto &p : best_pars_f)
+        {
+            best_pars.emplace_back();
+            best_pars.back().first = p.first;
+            best_pars.back().second = parList;
+            best_pars.back().second.from_simple_list(p.second, true, true);
+        }
+
+        bestParList = best_pars[0].second;
+        best_metric = best_pars[0].first;
+        delete optimizer;
     }
 
     debug_stat = true;
@@ -617,8 +641,6 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     AbstractTreeGenerator::set_joints_limit(1000000);
     results.best_candidates = tree_ggd.types;
     results.best_res = best_metric;
-
-    delete optimizer;
 }
 
 void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color,

@@ -2,7 +2,7 @@
 #include "graphics_utils/texture_manager.h"
 #include "graphics_utils/billboard_cloud.h"
 #include "common_utils/spline.h"
-
+std::atomic<int> br_h_cnt(0);
 void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
     
