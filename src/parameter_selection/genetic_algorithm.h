@@ -33,6 +33,7 @@ public:
         int n_islands = 1;
         int migration_interval = 5;
         float migration_chance = 0.2;
+        int tree_GA_iters = 75;
         GA_Type type = GA_Type::TREE_GA;
         bool evolution_stat = false;
         bool debug_graph = false;

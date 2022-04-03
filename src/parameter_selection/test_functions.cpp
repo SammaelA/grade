@@ -90,5 +90,45 @@ void get_test_function(std::string name, my_opt::OptFunction &optF, std::vector<
             return res;
         };
     }
+    else if (name == "rastrigin100")
+    {
+        parList_f = std::vector<float>(100,0);
+        optF.f = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
+            float max_value = 100;
+            std::vector<float> res;
+            for (auto &x : params)
+            {
+                res.push_back(0);
+                double sum = 0;
+                for (auto &x_i : x)
+                {
+                    sum += x_i*x_i - 10*cos(2*PI*x_i);
+                }
+                res.back() = MAX(100 - 0.01*(100*10 + sum),0) / max_value;
+            }
+            return res;
+        };        
+    }
+    else if (name == "alpine100")
+    {
+        parList_f = std::vector<float>(100,0);
+        optF.f = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
+            float max_value = 110;
+            std::vector<float> res;
+            for (auto &x : params)
+            {
+                res.push_back(0);
+                double sum = 0;
+                int i=0;
+                for (auto &x_i : x)
+                {
+                    sum += 1.1 - abs((sin( 188*x_i - int(188*x_i) - 0.01*i) + 0.1));
+                    i++;
+                }
+                res.back() = (MAX(sum,60) - 60) / 50;
+            }
+            return res;
+        };         
+    }
 }
 }

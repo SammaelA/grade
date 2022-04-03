@@ -949,7 +949,7 @@ void Block::add_detalization(Block &det)
                     values[id].bl->add_detalization(*(det.values[i].bl));
             }
             else
-                values[id] = det.values[i];
+                values[id].copy(det.values[i]);
             logerr("detalization added %s %d %d",det.get_name(i).c_str(),values[id].bl, det.values[i].bl);
         }
     }

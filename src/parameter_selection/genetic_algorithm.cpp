@@ -49,7 +49,7 @@ int base_size_by_depth(int base_size, int cur_depth)
 void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
 {
     PopulationBackup result;
-    int base_size = 60;
+    int base_size = metaParams.tree_GA_iters;
     int base_width = 2;
     int tries = exitConditions.function_calculated;
     int cur_tries = 0;
@@ -629,10 +629,14 @@ void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_ge
                         rnd -= mutation_weights[i];
                     }
                 }
-                if (!single_mutation_pos)
-                    mutation_power *= 1.0/MAX(1, 2*mutation_weights[pos]);
                 int g_pos = pos;
-                G[g_pos] = CLAMP(G[g_pos] + mutation_power*urand(-1,1),0,1);
+                if (single_mutation_pos)
+                {
+                    G[g_pos] = G[g_pos] + mutation_power*urand(-1,1);
+                    G[g_pos] = CLAMP(G[g_pos],0,1);
+                }
+                else 
+                    G[g_pos] = urand(0,1);
                 tries++;
                 if (single_mutation_pos && found == true && gene == mutation_genes_count-1)
                 {
@@ -1219,27 +1223,10 @@ void GeneticAlgorithm::recalculate_fitness()
             current_population_size--;
         }
         if (p.alive)
-            p.fitness = pow(-log2(CLAMP(1 - p.metric,0.001,1)), 1 + 0.05*iteration_n) + 0.1*CLAMP(10-iteration_n,0,1);
-            //p.fitness = pow(p.metric, iteration_n < 10 ? 1 : 3) + 1e-4;
+            p.fitness = pow(p.metric, 1 + 0.1*iteration_n) + 1e-4;
         else
             p.fitness = -1;
-        //logerr("%d(%d) metr %f %f", p.id, p.sub_population_n, p.metric, p.fitness);
     }
-
-/*
-    float min_v = 0.01;
-    float step = 0.05;
-    int n = 0;
-    for (int i=population.size()-1;i>=0;i--)
-    {
-        if (population[i].alive)
-        {
-            population[i].fitness = MAX(min_v, 1 - step*n*n);
-            if (population[i].metric_calc_n == 1)
-                n++;
-        }
-    }
-*/
 }
 
 void GeneticAlgorithm::save_load_function_stat(bool load)

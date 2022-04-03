@@ -24,7 +24,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
             auto &p = params;
             float A = ((float)p.Xm / p.X0 - 1) * exp(-p.r * iteration);
             float dX_dt = p.Xm * p.r * A / SQR(1 + A);
-            int max_growth = round(dX_dt);
+            int max_growth = MIN(32, round(dX_dt));
 
             //logerr("iteration %d max growth %d", iteration, max_growth);
             if (iteration >= params.max_iterations || max_growth <= 0)
@@ -740,7 +740,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
         if (i > 0)
         {
             if (j.childBranches.empty())
-                total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_trilinear(j.pos),0)));
+                total_light += MIN(1, 1 / (0.5 + MAX(voxels.get_occlusion_simple(j.pos),0)));
             for (Branch &br : j.childBranches)
             {
                 if (br.alive)

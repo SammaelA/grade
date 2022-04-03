@@ -45,9 +45,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
     
     glm::vec3 center = t.pos + imp.bcyl.h_2;
     glm::vec3 sz = 1.25f*glm::vec3(imp.bcyl.r, imp.bcyl.h_2, imp.bcyl.r);
-    float v_max = MAX(sz.x, MAX(sz.y, sz.z))/16;
-    float v_min = MIN(sz.x, MIN(sz.y, sz.z))/8;
-    float v_sz = MIN(v_max, v_min);
+    float v_sz = MAX(sz.x, MAX(sz.y, sz.z))/32;
     //logerr("creating voxels cube size %f %f %f sz %f", sz.x, sz.y, sz.z, v_sz);
     LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz, 1.0f);
     LightVoxelsCube leaves_dens = LightVoxelsCube(center, sz, v_sz, 1.0f);

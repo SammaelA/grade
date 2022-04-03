@@ -499,21 +499,20 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     std::vector<float> parList_f;
     parList.to_simple_list(parList_f, true, true);
-    bool test_functions = false;
-    {
-        //test functions
-        //test_functions = true;
-        //ex_c.function_calculated = 1000;
-        //ex_c.function_reached = 1e9;
-        //my_opt::get_test_function("styblinski_tang100", optF, parList_f);
-    }
+    bool test_functions = true;
+
     if (test_functions)
     {
+        ex_c.function_calculated = 50000;
+        ex_c.function_reached = 1e9;
+        my_opt::get_test_function("alpine100", optF, parList_f);
         float res = 0;
-        for (int i=0;i<8;i++)
+        int cnt = 4;
+        for (int i=0;i<cnt;i++)
         {
             optimizer = new GeneticAlgorithm();
-            ((GeneticAlgorithm::MetaParameters *)(meta_parameters))->max_population_size = 20 + 10*i;
+            //((GeneticAlgorithm::MetaParameters *)(meta_parameters))->tree_GA_iters = 10 + 10*(i/2);
+            logerr("param %d", 10 + 10*(i/2));
             std::vector<std::pair<float, std::vector<float>>> best_pars_f;
             std::vector<std::vector<float>> initial_params_f;
             for (auto &p : initial_params)
@@ -522,6 +521,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
                 p.to_simple_list(initial_params_f.back(), true, true);
             }
             optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
+            best_pars.clear();
             for (auto &p : best_pars_f)
             {
                 best_pars.emplace_back();
@@ -536,7 +536,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             
             delete optimizer;
         }
-        logerr("av_res = %f", res/8);
+        logerr("av_res = %f", res/cnt);
 
         return;
     }
