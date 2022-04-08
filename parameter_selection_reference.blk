@@ -5,19 +5,19 @@
     //height:r = 60
     //branches_curvature:r = 0.1
     //branches_curvature:s = "DONT_CARE"
-    branches_density:r = 3.5
-    joints_cnt:i = 15000
+    branches_density:r = 2
+    joints_cnt:i = 10000
     //max_joints:i = 15000
     leaves_density:r = 2
     //trunk_thickness:s = "FROM_IMAGE"
     //trunk_thickness:r = 1.75
     //tropism:r = -0.1
-    //reference_type:s = "simpliest_tree_default"
+    //reference_type:s = "large_oak_simplified"
     reference_image
     {
-        image:s = "ref10.png"
+        image:s = "ref26.jpg"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
-        background_color:p3 = 0, 0, 0
+        background_color:p3 = 1, 1, 1
     }
 }

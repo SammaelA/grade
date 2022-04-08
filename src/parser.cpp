@@ -280,7 +280,7 @@ namespace parser
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("apple");
+      int t_id = metainfoManager.get_tree_type_id_by_name("ERROR_selected_params_9");
       int b_id = metainfoManager.get_tree_type_id_by_name("apple");
       int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
 

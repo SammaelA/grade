@@ -37,7 +37,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     //first step - calculate borders for every slice
 
     glm::ivec2 slice_size = images_atl.get_slice_size();
-    int stripe_height = 10;
+    int stripe_height = 8;
     int stripes_cnt = slice_size.y > stripe_height ? slice_size.y/stripe_height : 1;
     if (stripes_cnt*stripe_height != slice_size.y)
     {
@@ -348,28 +348,30 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                     float bs2 = stripes[s].branches_share;
                     float ls1 = reference.alternative_image_info[s].leaves_share;
                     float ls2 = stripes[s].leaves_share;
-                    float bp = bs1/(bs1 + ls1 + 1e-4);
-                    float sim = 0.3*(reflow_implow + 0.75*reflow_imphigh)/(reflow_implow + reflow_imphigh + reflow_impemp) +
-                                0.7*(refhigh_imphigh + 0.5*refhigh_implow)/(refhigh_imphigh + refhigh_implow + refhigh_impemp);
-                    float b_share_mult = MAX(0.01,bp*cmp_sim(bs1, bs2) + (1-bp)*cmp_sim(ls1,ls2));
-                    if (debug_print && i==0)
-                        logerr("[%d]%f %f -- %f %f",s,bs1,ls1,bs2,ls2);
+                    float bp1 = bs1/(bs1 + ls1 + 1e-4);
+                    float bp2 = bs2/(bs2 + ls2 + 1e-4);
+                    float b_share_mult = MAX(0.01,sqrt(bp1*cmp_sim(bs1, bs2) + (1-bp1)*cmp_sim(ls1,ls2)));
+                    float bl_mult = cmp_sim(bp1+0.1,bp2+0.1);
+                    b_share_mult = smoothstep3(b_share_mult);
                     float y_mult = MAX(0.01, (MIN(y1.y, y2.y) - MAX(y1.x, y2.x)))/MAX(1, y1.y - y1.x);
-                    float max_p_add = MAX(0.3*(b1.y - b1.x) + 0.7*(b1.z - b1.y) + 0.3*(b1.w - b1.z), 0.3*(b2.y - b2.x) + 0.7*(b2.z - b2.y) + 0.3*(b2.w - b2.z));
-                    float p_add = 0.3*(reflow_implow + 0.75*reflow_imphigh) + 0.7*(refhigh_imphigh + 0.5*refhigh_implow);
-                    p_add *= b_share_mult*y_mult;
+                    float max_p_add = MAX(0.5*(b1.y - b1.x) + 0.5*(b1.z - b1.y) + 0.5*(b1.w - b1.z), 0.5*(b2.y - b2.x) + 0.5*(b2.z - b2.y) + 0.5*(b2.w - b2.z));
+                    float p_add = 0.5*(reflow_implow + 0.9*reflow_imphigh) + 0.5*(refhigh_imphigh + 0.9*refhigh_implow);
+                    float sim = p_add / max_p_add;
+                    p_add = smoothstep3(sim)*max_p_add;
+                    p_add *= b_share_mult*y_mult*bl_mult;
                     max_points += max_p_add;
                     points += p_add;
                     if (debug_print && i==0)
                     {
+                        //logerr("[%d]%f %f -- %f %f",s,bs1,ls1,bs2,ls2);
                         //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
                         //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
                         //logerr("stripe %d max points %f", s, max_p_add);
                         //logerr("stripe %d points %f", s, p_add);
                         //logerr("quality [%f %f %f] [%f %f %f]", reflow_implow, reflow_imphigh, reflow_impemp, refhigh_imphigh, refhigh_implow, refhigh_impemp);
-                        //logerr("q %f %f %f", sim, b_share_mult, y_mult);
+                        //logerr("q %f %f %f %f", sim, b_share_mult, bl_mult, y_mult);
                     }
-                    if (b1.z - b1.y + 2 > 0.5*(b1.w - b1.x) && bp > 0.67)
+                    if (b1.z - b1.y + 2 > 0.5*(b1.w - b1.x) && bp1 > 0.67)
                     {
                         //it is probably trunk stripe
                         trunk_sum += max_p_add;
@@ -400,7 +402,7 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         #define LG(x) (1 + log2(x + 0.0001))
         res_dist = ((1 - d_sd)*(10*(1 - alt_imp_dist) + (1 - d_ld)+(1 - d_bd)+(1 - d_bc)+(1-d_jcnt)+(1-d_trop)))/15;
         #define AM(x) CLAMP(8*(1-(x)),0,1)
-        float adequate_mult = AM(d_sd)*AM(2*alt_imp_dist - 1)*AM(d_ld)*AM(d_bd)*AM(d_bc)*AM(d_jcnt)*AM(d_trop);
+        float adequate_mult = AM(d_sd)*AM(d_ld)*AM(d_bd)*AM(d_bc)*AM(d_jcnt)*AM(d_trop);
         res_dist *= adequate_mult;
         if (debug_print && i==0)
             logerr("%f = %f %f %f %f %f %f %f", res_dist, (1 - d_sd),(1 - alt_imp_dist),(1 - d_ld),(1 - d_bd),(1 - d_bc),(1-d_jcnt),(1-d_trop));

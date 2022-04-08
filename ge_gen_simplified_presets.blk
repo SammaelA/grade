@@ -22,18 +22,18 @@
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.0
         root_type:i = 1
-        Xm:r = 200
+        Xm:r = 250
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
-        r_s:r = 0.135
+        r_s:r = 0.155
         rs_size_factor:r = -0.0025
         r:r = 0.28
         mu:r = 0.6
-        leaves_cnt:r = 3.0
+        leaves_cnt:r = 2.5
         resource_mult:r = 5.0
         max_joints_in_branch:i = 32
-        tropism_params:p4 = 0.9, -1, 0.02, 1.5
-        res_decrease_step:r = 0.15
-        initial_trunk_scale:p2 = 1,0.2
+        tropism_params:p4 = 0.9, -1, 0.015, 1.25
+        res_decrease_step:r = 0.25
+        initial_trunk_scale:p2 = 0.75,0.8
     }
 }

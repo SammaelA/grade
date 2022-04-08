@@ -34,6 +34,10 @@ public:
         int migration_interval = 5;
         float migration_chance = 0.2;
         int tree_GA_iters = 75;
+        float m_ch_min = 0.5;
+        float m_ch_genes = 0.15;
+        bool use_genes_importance = true;
+        bool use_function_stat = true;
         GA_Type type = GA_Type::TREE_GA;
         bool evolution_stat = false;
         bool debug_graph = false;

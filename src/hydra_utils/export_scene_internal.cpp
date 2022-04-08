@@ -162,8 +162,8 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
 }
 bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
-  const int DEMO_WIDTH  = 1500;
-  const int DEMO_HEIGHT = 1500;
+  const int DEMO_WIDTH  = 2048;
+  const int DEMO_HEIGHT = 2048;
   bool need_terrain = export_settings.get_bool("need_terrain",true);
   hrErrorCallerPlace(L"demo_02_load_obj");
   std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
@@ -182,15 +182,15 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(g.c_str());
   g = temp_tex_dir + L"grass_atlas_alpha.png";
   HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(g.c_str());
-  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
+  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/white.bmp");
 
   HRTextureNodeRef cube[6] = {
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_east.bmp"),
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_west.bmp"),
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_up.bmp"),
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_down.bmp"),
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_north.bmp"),
-      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_south.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
     };
 
   HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
@@ -507,7 +507,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     node.append_child(L"trace_depth").text()      = 4;
     node.append_child(L"diff_trace_depth").text() = 3;
-    node.append_child(L"maxRaysPerPixel").text()  = 128;
+    node.append_child(L"maxRaysPerPixel").text()  = 512;
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);

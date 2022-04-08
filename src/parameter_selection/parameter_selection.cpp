@@ -378,7 +378,12 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
-    if (!ref_type || ref_type->generator_name != gen_name)
+    std::string ref_type_name = "";
+    if (ref_type_name != "" && !ref_type)
+    {
+        tree_ggd.types = {metainfoManager.get_tree_type(ref_type_name)};
+    }
+    else if (!ref_type || ref_type->generator_name != gen_name)
     {
         std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
         bool found = false;
@@ -499,48 +504,65 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
 
     std::vector<float> parList_f;
     parList.to_simple_list(parList_f, true, true);
-    bool test_functions = true;
-
+    bool test_functions = false;
+    bool selection = true;
     if (test_functions)
     {
         ex_c.function_calculated = 50000;
         ex_c.function_reached = 1e9;
+        ((GeneticAlgorithm::MetaParameters *)(meta_parameters))->use_genes_importance = false;
+        ((GeneticAlgorithm::MetaParameters *)(meta_parameters))->use_function_stat = false;
         my_opt::get_test_function("alpine100", optF, parList_f);
-        float res = 0;
-        int cnt = 4;
+        int tries = 16;
+        int cnt = 10;
+        std::vector<glm::vec4> stat;
         for (int i=0;i<cnt;i++)
         {
-            optimizer = new GeneticAlgorithm();
-            //((GeneticAlgorithm::MetaParameters *)(meta_parameters))->tree_GA_iters = 10 + 10*(i/2);
-            logerr("param %d", 10 + 10*(i/2));
-            std::vector<std::pair<float, std::vector<float>>> best_pars_f;
-            std::vector<std::vector<float>> initial_params_f;
-            for (auto &p : initial_params)
+            float res = 0;
+            float mn = 1;
+            float mx = 0;
+            float val = 25*(i+1);
+            ((GeneticAlgorithm::MetaParameters *)(meta_parameters))->initial_population_size = val;
+            for (int ii=0;ii<tries;ii++)
             {
-                initial_params_f.emplace_back();
-                p.to_simple_list(initial_params_f.back(), true, true);
-            }
-            optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
-            best_pars.clear();
-            for (auto &p : best_pars_f)
-            {
-                best_pars.emplace_back();
-                best_pars.back().first = p.first;
-                best_pars.back().second = parList;
-                best_pars.back().second.from_simple_list(p.second, true, true);
-            }
+                optimizer = new GeneticAlgorithm();
+                //((GeneticAlgorithm::MetaParameters *)(meta_parameters))->tree_GA_iters = 10 + 10*(i/2);
+                std::vector<std::pair<float, std::vector<float>>> best_pars_f;
+                std::vector<std::vector<float>> initial_params_f;
+                for (auto &p : initial_params)
+                {
+                    initial_params_f.emplace_back();
+                    p.to_simple_list(initial_params_f.back(), true, true);
+                }
+                optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
+                best_pars.clear();
+                for (auto &p : best_pars_f)
+                {
+                    best_pars.emplace_back();
+                    best_pars.back().first = p.first;
+                    best_pars.back().second = parList;
+                    best_pars.back().second.from_simple_list(p.second, true, true);
+                }
 
-            bestParList = best_pars[0].second;
-            best_metric = best_pars[0].first;
-            res += best_metric;
-            
-            delete optimizer;
+                bestParList = best_pars[0].second;
+                best_metric = best_pars[0].first;
+                res += best_metric;
+                if (best_metric < mn)
+                    mn = best_metric;
+                if (best_metric > mx)   
+                    mx = best_metric;
+                delete optimizer;
+            }
+            logerr("av_res = %f", res/tries);
+            stat.push_back(glm::vec4(val, res/tries, mn, mx));
         }
-        logerr("av_res = %f", res/cnt);
-
+        for (auto &v : stat)
+        {
+            logerr("val: %.3f, av: %.4f, [%.4f, %.4f]", v.x,v.y,v.z,v.w);
+        }
         return;
     }
-    else
+    else if (selection)
     {
         std::vector<std::pair<float, std::vector<float>>> best_pars_f;
         std::vector<std::vector<float>> initial_params_f;
@@ -565,24 +587,28 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         bestParList = best_pars[0].second;
         best_metric = best_pars[0].first;
         delete optimizer;
-    }
 
-    debug_stat = true;
-    auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float> {
-        return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
-    };
-    if (ref_type && ref_type->generator_name == gen_name)
-    {
-        ParameterList referenceParList;
-        ref_type->get_params()->write_parameter_list(referenceParList);
-        sel_quality(bestParList, referenceParList, func_q, 32);
+        debug_stat = true;
+        auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float> {
+            return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
+        };
+        if (ref_type && ref_type->generator_name == gen_name)
+        {
+            ParameterList referenceParList;
+            ref_type->get_params()->write_parameter_list(referenceParList);
+            sel_quality(bestParList, referenceParList, func_q, 32);
+        }
+        else
+        {
+            sel_quality(bestParList, func_q, 32);
+        }
+        debug_stat = false;
     }
     else
     {
-        sel_quality(bestParList, func_q, 32);
+        best_pars = {std::pair<float, ParameterList>(0, bestParList)};
+        AbstractTreeGenerator::set_joints_limit(1000000);
     }
-    debug_stat = false;
-
     //create preapred tree
     {
         LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
@@ -1365,7 +1391,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             float sz = 1.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
             export_settings.add_vec3("camera_look_at", glm::vec3(sz,0.5*sz,0));
             export_settings.add_vec3("camera_pos", glm::vec3(0,0.5*sz,0));
-            export_settings.add_bool("need_terrain",false);
+            export_settings.add_bool("need_terrain",true);
             export_settings.add_string("demo_copy_dir", "saves/"+file_name + "_res");
             exporter.export_scene("param_selection_scene", scene, export_settings);
         }

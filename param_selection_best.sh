@@ -6,3 +6,7 @@
 ./main -sandbox "{reference_image {image:s = \"ref10.png\" background_color:p3 = 0, 0, 0}}" 
 ./main -sandbox "{reference_image {image:s = \"ref11.png\" background_color:p3 = 0, 0, 0}}"
 ./main -sandbox "{reference_image {image:s = \"ref25.png\" background_color:p3 = 0, 0, 0}}" 
+./main -sandbox "{reference_image {image:s = \"ref26.jpg\" background_color:p3 = 1, 1, 1}}" 
+./main -sandbox "{reference_image {image:s = \"ref27.jpg\" background_color:p3 = 1, 1, 1}}" 
+./main -sandbox "{reference_image {image:s = \"ref28.jpg\" background_color:p3 = 1, 1, 1}}" 
+./main -sandbox "{reference_image {image:s = \"ref29.jpg\" background_color:p3 = 1, 1, 1}}" 

@@ -160,7 +160,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     recalculate_fitness();
     pick_best_to_heaven();
     //debug("iteration 0 Pop: %d Best: %.4f\n", current_population_size, best_metric_current);
-    //debug("[%d] start %.3f\n", depth, best_metric_current);
+    debug("[%d] start %.3f\n", depth, best_metric_current);
 
     iteration_n = 0;
     int cur_iters = base_size_by_depth(iters, depth);
@@ -227,7 +227,7 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
     }
     TreeGA_stat[depth].x += result.best_value;
     TreeGA_stat[depth].y++;
-    //debug("[%d] end %.3f\n", depth, result.best_value);
+    debug("[%d] end %.3f\n", depth, result.best_value);
     if (regression_test)
     {
         logerr("predicted %f",result.predicted_best_value);
@@ -526,7 +526,7 @@ GeneticAlgorithm::Genome GeneticAlgorithm::random_genes()
     Genome g = Genome(all_parameters_cnt, 0);
     Genome best_g = g;
     float best_mark = -1000;
-    int tries = 1000;
+    int tries = 10;
     for (int t =0;t<tries;t++)
     {
         for(int i=0;i<all_parameters_cnt;i++)
@@ -594,12 +594,16 @@ float GeneticAlgorithm::get_mark(Genome &G)
 
 void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos)
 {
-    std::vector<float> mutation_weights = std::vector<float>(G.size(), 0);
-    float w_sum = 0;
-    for (int i=0;i<G.size();i++)
+    std::vector<float> mutation_weights = std::vector<float>(G.size(), 1);
+    float w_sum = G.size();
+    if (!single_mutation_pos && metaParams.use_genes_importance)
     {
-        mutation_weights[i] = single_mutation_pos ? 1 : MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
-        w_sum += mutation_weights[i];
+        w_sum = 0;
+        for (int i=0;i<G.size();i++)
+        {
+            mutation_weights[i] = MAX(0.05, di_res[i]/MAX(1, di_cnt[i]));
+            w_sum += mutation_weights[i];
+        }
     }
     Genome GBase = G;
     Genome GBest = G;
@@ -964,12 +968,11 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     }
     float it = 1 + 0.5*sqrt(iteration_n);
     float mutation_power = CLAMP(0.2*(1 + 0.1*sub_population_infos[C.sub_population_n].no_progress_time),0,1);
-    mutation_power = 1 - MAX(A.metric, B.metric);
+    mutation_power = 1 - MIN(A.metric, B.metric);
     //mutation_power = 0.15;
-    if (urand() < 0.25 + mutation_power*mutation_power || iteration_n < 15)
+    if (urand() < metaParams.m_ch_min || iteration_n < 30)
     {
-        //C.main_genome = urand() < 0.5 ? A.main_genome : B.main_genome;
-        mutation(C.main_genome, 1, urandi(1, 1 + mutation_power*free_parameters_cnt));
+        mutation(C.main_genome, 1, urandi(1, 1 + metaParams.m_ch_genes*free_parameters_cnt));
     }
     for (auto &g : C.other_genomes)
     {
@@ -1054,7 +1057,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
         auto &p = population[i];
         if (p.alive)
         {
-            if (p.metric >= 0 && iteration_n > 20 && recnt < 10)
+            if (p.metric >= 0 && iteration_n > 20 && recnt < 0)
             {
                 Genome modified = p.main_genome; 
                 mutation(modified, delta, 1, &(fine_tune_pos[recnt]));
