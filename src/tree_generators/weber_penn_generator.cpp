@@ -616,9 +616,8 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
             //if this is a clone then correct initial direction to match original to make
             //split smoother
             new_point->co = turtle.pos;
-            //if (stem.depth <= 1)
-            //    logerr("add pos %d %f %f %f seg len %f", stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z,
-            //    seg_length);
+            //if (stem.depth == 0)
+            //    logerr("add pos %d %f %f %f seg len %f", stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z, seg_length);
             if (cloned_turtle and seg_ind == start)
             {
                 new_point->handle_left = turtle.pos - cloned_turtle->dir * (stem.length / (curve_res * 3));
@@ -1354,7 +1353,7 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
     Point &seg_end_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 1];
     Point end_point = seg_end_point;
     Point &seg_start_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 2];
-    Point start_point = seg_end_point;
+    Point start_point = seg_start_point;
     for (int k = 0; k < points_per_seg; k++)
     {
         // add new point and position
@@ -1379,12 +1378,14 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
                     throw std::exception();
                 }
                 curr_point = &(spline(stem).bezier_points[spline(stem).bezier_points.size() - 1]);
-            }
+            }   
             if (k == points_per_seg - 1)
             {
                 curr_point->co = end_point.co;
                 curr_point->handle_left = end_point.handle_left;
                 curr_point->handle_right = end_point.handle_right;
+                //if (stem.depth == 0)
+                //    logerr("add pos 1 %f %f %f", curr_point->co.x, curr_point->co.y, curr_point->co.z);
             }
             else
             {
@@ -1395,6 +1396,12 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
                 float dir_vec_mag = length(end_point.handle_left - end_point.co);
                 curr_point->handle_left = curr_point->co - tangent * dir_vec_mag;
                 curr_point->handle_right = curr_point->co + tangent * dir_vec_mag;
+                //if (stem.depth == 0)
+                //{
+                //    logerr("add pos 2 %f %f %f OFF %f", curr_point->co.x, curr_point->co.y, curr_point->co.z, offset);
+                //    logerr("stp %f %f %f", start_point.co.x,start_point.co.y,start_point.co.z);
+                //    logerr("enp %f %f %f", end_point.co.x,end_point.co.y,end_point.co.z);
+                //}
             }
         }
         curr_point->radius = radius_at_offset(stem, (offset + seg_ind - 1) / curve_res);
