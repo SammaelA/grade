@@ -10,6 +10,7 @@
 #include "parameter_selection/parameter_selection.h"
 #include "tree_generators/all_generators.h"
 #include "tree_generators/weber_penn_generator.h"
+#include "parameter_selection/neural_selection.h"
 #include <limbo/limbo.hpp>
 #include <thread>
 #include <chrono>
@@ -231,11 +232,34 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     return;
     */
-    metainfoManager.reload_all();
-    TreeTypeData type = metainfoManager.get_tree_type("small_oak");
-    scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
-    scene->heightmap->fill_const(0);
-    
+    {
+        metainfoManager.reload_all();
+        TreeTypeData type = metainfoManager.get_tree_type("apple");
+        scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+        scene->heightmap->fill_const(0);
+        
+        ParameterList par;
+        type.get_params()->write_parameter_list(par);
+        BlkManager man;
+        Block b;
+        man.load_block_from_file("weber_penn_gen_param_borders.blk", b);
+        par.load_borders_from_blk(b);
+
+        GroveGenerationData tree_ggd;
+        tree_ggd.trees_count = 1;
+        tree_ggd.types = {type};
+        tree_ggd.name = "single_tree";
+        tree_ggd.task = GenerationTask::IMPOSTORS;
+        tree_ggd.impostor_generation_params.slices_n = 8;
+        tree_ggd.impostor_generation_params.quality = 128;
+        tree_ggd.impostor_generation_params.monochrome = true;
+        tree_ggd.impostor_generation_params.normals_needed = false;
+        tree_ggd.impostor_generation_params.leaf_opacity = 0.95;
+
+        NeuralEstimator NE;
+        NE.prepare_dataset(par, tree_ggd, "saves/NE_dataset", 256, 4, 512, 64);
+        return;
+    }
     /*
     int cnt = 100;
     int _a;

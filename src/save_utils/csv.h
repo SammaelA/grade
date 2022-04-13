@@ -14,6 +14,7 @@ struct CSVData
     void add_row(std::vector<float> &values, float base_value = 0);
     void add_row(std::vector<double> &values, double base_value = 0);
     void add_row(std::vector<int> &values, int base_value = 0);
+    void add_row(std::vector<std::string> &values, std::string base_value = "NAN");
 };
 class CSVSaver
 {

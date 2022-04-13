@@ -81,6 +81,24 @@ void CSVData::add_row(std::vector<int> &values, int base_value)
     rows++;
 }
 
+void CSVData::add_row(std::vector<std::string> &values, std::string base_value)
+{
+    body.emplace_back();
+    for (int i=0;i<MIN(columns, values.size());i++)
+    {
+        body.back() += values[i];
+        if (i + 1 != columns)
+            body.back() += ",";
+    }
+    for (int i=MIN(columns, values.size());i<columns;i++)
+    {
+        body.back() += base_value;
+        if (i + 1 != columns)
+            body.back() += ",";        
+    }
+    rows++;
+}
+
 bool CSVSaver::save_csv_in_file(CSVData &data, std::string filename)
 {
     if (data.columns == 0)

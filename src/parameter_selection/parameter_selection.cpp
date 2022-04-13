@@ -9,6 +9,7 @@
 #include "generation/metainfo_manager.h"
 #include "tree_generators/all_generators.h"
 #include "hydra_utils/hydra_scene_exporter.h"
+#include "parameter_selection_utils.h"
 #include "simulated_annealing.h"
 #include "function_stat.h"
 #include <thread>
@@ -146,25 +147,6 @@ void sel_quality(ParameterList &parList, const std::function<std::vector<float>(
     debug("result stat [%.2f - %.2f] av=%.3f dev=%.4f\n", mn1, mx1, av, dev);
 }
 
-void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree)
-{
-    AbstractTreeGenerator *gen = get_generator(type->generator_name);
-    voxels.fill(0);
-    gen->plant_tree(glm::vec3(0, 0, 0), type);
-    while (gen->iterate(voxels))
-    {
-    }
-    gen->finalize_generation(tree, voxels);
-    delete gen;
-}
-void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<TreeTypeData> *types, Tree *trees)
-{
-    for (int i = start_n; i < stop_n; i++)
-    {
-        gen_tree(*vox, &((*types)[i]), trees + i);
-    }
-}
-
 LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 {
     int sz_x = 25*ceil(1.5*ref_tree.info.BCyl_sizes.x/25);
@@ -219,7 +201,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         {
             int start_n = step * i;
             int stop_n = MIN(step * (i + 1), params.size());
-            threads.push_back(std::thread(&gen_tree_task, start_n, stop_n, thr_voxels[i], &(tree_ggd.types), trees));
+            threads.push_back(std::thread(&ps_utils::gen_tree_task, start_n, stop_n, thr_voxels[i], &(tree_ggd.types), trees));
         }
 
         for (auto &t : threads)
@@ -229,7 +211,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     }
     else
     {
-        gen_tree_task(0, params.size(), thr_voxels[0], &(tree_ggd.types), trees);
+        ps_utils::gen_tree_task(0, params.size(), thr_voxels[0], &(tree_ggd.types), trees);
     }
     std::vector<float> res = std::vector<float>(params.size(),1);
     int valid_cnt = 0;
