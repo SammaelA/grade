@@ -25,9 +25,9 @@ struct WeberPennParametersNative : public ParametersSet
     glm::vec4 length= glm::vec4(1, 0.3, 0.6, 0);
     glm::vec4 length_v= glm::vec4(0, 0, 0, 0);
     glm::vec4 taper= glm::vec4(1, 1, 1, 1);
-    glm::vec4 seg_splits= glm::vec4(0, 0.3, 0, 0);
-    glm::vec4 split_angle= glm::vec4(40, 0, 0, 0);
-    glm::vec4 split_angle_v= glm::vec4(5, 0, 0, 0);
+    glm::vec4 seg_splits= glm::vec4(0, 0, 0, 0);
+    glm::vec4 split_angle= glm::vec4(0, 0, 0, 0);
+    glm::vec4 split_angle_v= glm::vec4(0, 0, 0, 0);
     glm::vec4 curve_res= glm::vec4(15, 5, 3, 1);
     glm::vec4 curve= glm::vec4(0, -40, -40, 0);
     glm::vec4 curve_back= glm::vec4(0, 0, 0, 0);

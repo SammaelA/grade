@@ -16,6 +16,7 @@ std::vector<std::vector<StripeInfo>>
 ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl, const std::vector<std::pair<int, int>> &slice_id_impostor_n,
                                                         TreeCompareInfo *impostors_info, ReferenceTree *reference, glm::vec4 *tc_transform)
 {
+    int image_debug = 0;
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     //set slices data
     int slices_cnt = slice_id_impostor_n.size();
@@ -37,7 +38,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     //first step - calculate borders for every slice
 
     glm::ivec2 slice_size = images_atl.get_slice_size();
-    int stripe_height = 8;
+    int stripe_height = 16;
     int stripes_cnt = slice_size.y > stripe_height ? slice_size.y/stripe_height : 1;
     if (stripes_cnt*stripe_height != slice_size.y)
     {
@@ -149,6 +150,11 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
 
     //get stripes data
     //bind buffers
+    if (image_debug)
+    { 
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, dbg_buf);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_size.x*slice_size.y*sizeof(glm::uvec4), nullptr, GL_STREAM_READ);
+    }
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, slices_info_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
@@ -164,6 +170,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     get_tree_stripes.uniform("impostor_y", slice_size.y);
     get_tree_stripes.uniform("slices_count", slices_cnt);
     get_tree_stripes.uniform("start_id", 0);
+    get_tree_stripes.uniform("image_debug", image_debug);
     get_tree_stripes.uniform("stripes_count", stripes_cnt); 
     
     get_tree_stripes.uniform("pass", 0); 
@@ -195,6 +202,25 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     }
 
     delete[] stripes_data;
+
+    if (image_debug)
+    { 
+        glm::uvec4 *data = new glm::uvec4[4*slice_size.x*slice_size.y];
+        unsigned char *data_ch = new unsigned char[4*4*slice_size.x*slice_size.y];
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, dbg_buf);
+        ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+        memcpy(data,ptr,4*slice_size.x*slice_size.y*sizeof(glm::uvec4));
+        for (int i=0;i<4*slice_size.x*slice_size.y;i++)
+        {
+            data_ch[4*i] = data[i].x;
+            data_ch[4*i+1] = data[i].y;
+            data_ch[4*i+2] = data[i].z;
+            data_ch[4*i+3] = data[i].w;
+        }
+        textureManager.save_png_raw(data_ch, slice_size.x, 4*slice_size.y, 4, "get_tree_info_debug");
+        delete[] data;
+        delete[] data_ch;
+    }
 
     return result;
 }
@@ -352,12 +378,13 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                     float bp2 = bs2/(bs2 + ls2 + 1e-4);
                     float b_share_mult = MAX(0.01,sqrt(bp1*cmp_sim(bs1, bs2) + (1-bp1)*cmp_sim(ls1,ls2)));
                     float bl_mult = cmp_sim(bp1+0.1,bp2+0.1);
+                    //bl_mult = smoothstep3(bl_mult);
                     b_share_mult = smoothstep3(b_share_mult);
                     float y_mult = MAX(0.01, (MIN(y1.y, y2.y) - MAX(y1.x, y2.x)))/MAX(1, y1.y - y1.x);
                     float max_p_add = MAX(0.5*(b1.y - b1.x) + 0.5*(b1.z - b1.y) + 0.5*(b1.w - b1.z), 0.5*(b2.y - b2.x) + 0.5*(b2.z - b2.y) + 0.5*(b2.w - b2.z));
                     float p_add = 0.5*(reflow_implow + 0.9*reflow_imphigh) + 0.5*(refhigh_imphigh + 0.9*refhigh_implow);
-                    float sim = p_add / max_p_add;
-                    p_add = smoothstep3(sim)*max_p_add;
+                    //float sim = p_add / max_p_add;
+                    //p_add = smoothstep3(sim)*max_p_add;
                     p_add *= b_share_mult*y_mult*bl_mult;
                     max_points += max_p_add;
                     points += p_add;
@@ -386,7 +413,8 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                 float d1 = points/max_points;
                 float d2 = trunk_val/(trunk_sum+0.1);
 
-                float trunk_importance = (trunk_stripes+1.0)/(crown_stripes + 1.0);
+                float trunk_importance = trunk_stripes/(crown_stripes+1e-6);
+                trunk_importance = CLAMP(trunk_importance,0,1);
                 float d = 1 - ((1-trunk_importance)*d1 + trunk_importance*d2);
                 if (debug_print && i==0)
                     logerr("altermative image dist %f %f", points/max_points, trunk_val/(trunk_sum+0.1));

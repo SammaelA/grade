@@ -412,8 +412,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 1;
-    tree_ggd.impostor_generation_params.leaf_scale = 1.0;
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.75;
+    tree_ggd.impostor_generation_params.leaf_scale = 2.5;
 
     AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
     int imp_max_cnt = 32;
@@ -571,9 +571,9 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             initial_params_f.emplace_back();
             p.to_simple_list(initial_params_f.back(), true, true);
         }
-        // my_opt::FunctionStat f_stat;
-        // my_opt::get_function_stat(parList_f, optF, f_stat);
-        // f_stat.print();
+        //my_opt::FunctionStat f_stat;
+        //my_opt::get_function_stat(parList_f, optF, f_stat, true);
+        //f_stat.print();
         // return;
         optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
         for (auto &p : best_pars_f)
@@ -829,7 +829,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     TextureAtlas sel_stat_atl = TextureAtlas(4 * sel_stat_w, sel_stat_h, 1, 1);
     sel_stat_atl.set_grid(sel_stat_w, sel_stat_h, false);
     std::string reference_name = "ERROR";
-    float reference_aspect_ratio = 0;
+    float reference_aspect_ratio = 1;
 
     int reference_images_cnt = 0;
     for (int i=0;i<reference_info.size();i++)
@@ -869,8 +869,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.impostor_generation_params.quality = imp_size;
             tree_ggd.impostor_generation_params.monochrome = true;
             tree_ggd.impostor_generation_params.normals_needed = false;
-            tree_ggd.impostor_generation_params.leaf_opacity = 1;
-            tree_ggd.impostor_generation_params.leaf_scale = 1.0;
+            tree_ggd.impostor_generation_params.leaf_opacity = 0.75;
+            tree_ggd.impostor_generation_params.leaf_scale = 2.5;
 
             LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
                                                             0.625f * reference_ttd.get_params()->get_scale_factor());

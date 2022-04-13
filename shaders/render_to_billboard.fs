@@ -11,12 +11,12 @@ uniform vec4 fixed_color;
 void main(void) 
 {
   fragColor = texture(tex,ex_Tex);
-  if (fragColor.a<0.05)
+  if (fragColor.a==0)
     discard;
   if (state == 1)
     fragColor = vec4(ex_Normal,projection_error_packed);
   else if (state == -1)
-    fragColor.xyz = fixed_color.xyz;
+    fragColor = fixed_color;
   else if (state == -2)
     fragColor.xyz = vec3(fixed_color.x, fixed_color.y,  gl_FragCoord.z / gl_FragCoord.w);
 }

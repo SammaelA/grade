@@ -19,5 +19,5 @@ namespace my_opt
         std::vector<float[Q_NUM]> marks;
         int marks_q[2*Q_NUM][2];
     };
-    void get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat);
+    void get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat, bool reload = false);
 };

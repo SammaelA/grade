@@ -532,7 +532,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         //apply full tropism if not trunk/main branch and horizontal tropism if is
         if (depth > 1)
             apply_tropism(turtle, param.tropism);
-        else
+        else if (depth > 0)
             apply_tropism(turtle, vec3(param.tropism[0], param.tropism[1], 0));
 
         calc_helix_points(turtle, hel_radius, hel_pitch, hel_p_0, hel_p_1, hel_p_2, hel_axis);
@@ -593,10 +593,14 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                 }
                 turtle.pos = new_point->co;
                 turtle.dir = glm::normalize(new_point->handle_right);
+                if (stem.depth == 0)//TODO: remove me
+                   turtle.dir = glm::vec3(0,0,1); 
             }
         }
         else
         {
+            if (stem.depth == 0)//TODO: remove me
+                   turtle.dir = glm::vec3(0,0,1); 
             //normal curved branch
             //get/make new point to be modified
             if (seg_ind != start)
@@ -617,7 +621,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
             //split smoother
             new_point->co = turtle.pos;
             //if (stem.depth == 0)
-            //    logerr("add pos %d %f %f %f seg len %f", stem.depth, turtle.pos.x, turtle.pos.y, turtle.pos.z, seg_length);
+            //    logerr("add pos %d %f %f %f seg len %f", stem.depth, turtle.dir.x, turtle.dir.y, turtle.dir.z, seg_length);
             if (cloned_turtle and seg_ind == start)
             {
                 new_point->handle_left = turtle.pos - cloned_turtle->dir * (stem.length / (curve_res * 3));
@@ -1236,6 +1240,9 @@ void WeberPennGenerator::Tree::make_branches(CHTurtle &turtle, Stem &stem, int s
             {
                 stem.leaves.push_back(leaves_array.size());
                 leaves_array.push_back(Leaf(b.pos_tur.pos, b.dir_tur.dir, b.dir_tur.right));
+                //logerr("too many leaves");
+                if (leaves_array.size() > 10*AbstractTreeGenerator::joints_limit)
+                    throw std::exception();
             }
         }
     }
@@ -1784,6 +1791,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
     
     convert(src, dst, src.root, dst.root);
     //logerr("convert %u", src.root, dst.branchHeaps[0]->branches.size());
+    //logerr("convert %d leaves", src.leaves_array.size());
 }
 
 void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch *dst_br)

@@ -2,10 +2,10 @@
 #include "common_utils/distribution.h"
 #include "common_utils/utility.h"
 
-void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat)
+void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat, bool reload)
 {
     int batch_size = 512;
-    int batches = 200;
+    int batches = 300;
     stat = FunctionStat(param_list.size());
     stat.name = my_opt_f.name;
     stat.version = my_opt_f.version;
@@ -14,7 +14,8 @@ void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction
 
     BlkManager man;
     Block b1;
-    man.load_block_from_file("function_values_stat.blk", b1);
+    if (!reload)
+        man.load_block_from_file("function_values_stat.blk", b1);
     Block *b2 = b1.get_block(stat.name);
     if (b2 && stat.version == b2->get_int("version",-1))
         stat.save_load_blk(*b2, false);
@@ -73,7 +74,7 @@ void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction
             }
             i++;
         }
-        stat.print();
+        //stat.print();
     }
 
     b2->set_int("version", stat.version);

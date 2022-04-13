@@ -10,7 +10,10 @@ struct StripeInfo
     float branches_share;
     float leaves_share;
 };
-
+layout(std430, binding = 4) buffer debug_buf
+{
+    uvec4 debug_image[];
+};
 layout(std430, binding = 5) readonly buffer slices_info_buf
 {
     uvec4 slices_info[];//x0,y0,layer for slice in atlas
@@ -26,7 +29,7 @@ uniform int slices_count;
 uniform int start_id;
 uniform int stripes_count;
 uniform int pass;//0 - crown, 1 - trunk
-
+uniform int image_debug;
 uniform sampler2DArray atlas;
 
 
@@ -62,12 +65,14 @@ void crown()
         for (int j=y_start;j<y_finish;j++)
         {
             vec4 p1 = texelFetch(atlas, slice_data + ivec3(i,j,0), 0);
+            if (image_debug > 0)
+                debug_image[j*impostor_x + i] = uvec4(255*p1);
             bs += p1.x;
             ls += p1.y;
             y_min = (p1.x + p1.y > 0) ? min(y_min, j) : y_min;
             y_max = (p1.x + p1.y > 0) ? max(y_max, j) : y_max;
         }
-        if (bs + ls > 0.67*(y_finish - y_start))
+        if (bs + ls > 0.9*(y_finish - y_start))
         {
             //thick crown
             if (a1 < 0)
@@ -113,6 +118,45 @@ void crown()
     float stripe_size = max((y_max - y_min + 1)*(a2 - a1 + 1), 1);
     stripes[id].branches_share = b_sum/stripe_size;
     stripes[id].leaves_share = l_sum/stripe_size;
+    if (image_debug > 0)
+    {
+        if (a1 >= 0)
+        {
+            for (int i=0;i<impostor_x;i++)
+            {
+                debug_image[y_start*impostor_x + i] = uvec4(255,255,255,255);
+                if (y_finish < impostor_y)
+                    debug_image[y_finish*impostor_x + i] = uvec4(255,255,255,255);
+            }
+            for (int j=y_start;j<y_finish;j++)
+            {
+                debug_image[j*impostor_x + int(a1)] = uvec4(255,255,0,255);
+                debug_image[j*impostor_x + int(b1_max)] = uvec4(0,100,0,255);
+                debug_image[j*impostor_x + int(b1_max + b_len_max-1)] = uvec4(70,150,70,255);
+                debug_image[j*impostor_x + int(a2)] = uvec4(200,255,200,255);
+            }
+            for (int i=0;i<impostor_x;i++)
+            {
+                for (int j=y_start;j<y_finish;j++)
+                {
+                    if (debug_image[j*impostor_x + i].a < 10)
+                    {
+                        if (b_sum > l_sum)
+                            debug_image[j*impostor_x + i] = uvec4(75,40,15,255);
+                        else
+                            debug_image[j*impostor_x + i] = uvec4(0, 50, 0,255);
+                    }
+                }
+            }
+        }
+        for (int i=0;i<impostor_x;i++)
+            {
+                for (int j=y_start;j<y_finish;j++)
+                {
+                    debug_image[j*impostor_x + i].a = 255;
+                }
+            }
+    }
 }
 
 void trunk()
