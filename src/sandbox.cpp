@@ -244,7 +244,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         Block b;
         man.load_block_from_file("weber_penn_gen_param_borders.blk", b);
         par.load_borders_from_blk(b);
-
+        par.print();
+        return;
         GroveGenerationData tree_ggd;
         tree_ggd.trees_count = 1;
         tree_ggd.types = {type};

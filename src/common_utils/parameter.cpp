@@ -218,35 +218,51 @@ void ParameterList::print()
 {
     debug("====Parameter List===\n");
     debug("Categorials:\n");
+    int n = 0;
+    int fn = 0;
     for (auto &p : categorialParameters)
     {
         if(p.second.fixed())
         {
-            debug("%s = %d\n", p.first.c_str(), p.second.val);
+            debug("[%d][%d]%s = %d\n",n,fn, p.first.c_str(), p.second.val);
         }
         else
         {
-            debug("%s = %d in {", p.first.c_str(), p.second.val);  
+            debug("[%d][%d]%s = %d in {",n,fn, p.first.c_str(), p.second.val);  
             for (auto &v : p.second.possible_values)
                 debug("%d ", v);
             debug("}\n");         
+            fn++;
         }
+        n++;
     }
     debug("Ordinals:\n");
     for (auto &p : ordinalParameters)
     {
         if(p.second.fixed())
-            debug("%s = %d\n", p.first.c_str(), p.second.val);
+        {
+            debug("[%d][%d]%s = %d\n", n, fn, p.first.c_str(), p.second.val);
+        }
         else
-            debug("%s = %d in [%d %d]\n", p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);        
+        {
+            debug("[%d][%d]%s = %d in [%d %d]\n", n, fn, p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);    
+            fn++;
+        }
+        n++;    
     }
     debug("Continuous:\n");
     for (auto &p : continuousParameters)
     {
         if(p.second.fixed())
-            debug("%s = %.2f\n", p.first.c_str(), p.second.val);
+        {
+            debug("[%d][%d]%s = %.2f\n",n,fn, p.first.c_str(), p.second.val);
+        }
         else
-            debug("%s = %.2f in [%.2f %.2f]\n", p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val);        
+        {
+            debug("[%d][%d]%s = %.2f in [%.2f %.2f]\n",n,fn, p.first.c_str(), p.second.val, p.second.min_val, p.second.max_val); 
+            fn++;
+        }
+        n++;       
     }
 }
 
