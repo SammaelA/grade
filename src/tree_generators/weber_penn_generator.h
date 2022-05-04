@@ -216,7 +216,7 @@ public:
         float trunk_length = 0;
         std::vector<Stem *> stems;
         Stem *root = nullptr;
-        unsigned long seed = 0;
+        unsigned long seed = 11;
         int total_points_cnt = 0;
     };
 

@@ -5,7 +5,7 @@
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);    
-        shadow_camera.pos = 500.f*light.dir;
+        shadow_camera.pos = 1500.f*light.dir;
         shadow_camera.front =  -shadow_camera.pos;
         shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
         view = shadow_camera.camera();

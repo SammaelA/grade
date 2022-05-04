@@ -40,7 +40,7 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   ctx.camera.front = glm::normalize(front);
   ctx.mousePos = glm::vec2(nx, ny);
   //Pause Toggle
-  float speed = 0.2;
+  float speed = 0.75;
   glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
   if (event.active[SDLK_1])
   {

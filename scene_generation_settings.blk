@@ -5,10 +5,10 @@
         simple_tree:tag
         simple_tree:tag
     }
-    scene_size:p2 = 150, 150
-    heightmap_size:p2 = 4000, 4000
+    scene_size:p2 = 1750, 1750
+    heightmap_size:p2 = 1750, 1750
     //max_trees_per_patch:i = 5
-    heightmap_cell_size:r = 10
+    heightmap_cell_size:r = 15
     grass
     {
         //grass_meadow_1:r = 0.7

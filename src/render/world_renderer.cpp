@@ -295,8 +295,6 @@ void WorldRenderer::render(float dt, Camera &camera)
   //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
   defferedTarget.target();
 
-  if (render_mode <= DEBUG_RENDER_MODE)
-  {
       /*
     debugShader->use();
     debugShader->uniform("projectionCamera", projection * camera.camera());
@@ -319,8 +317,15 @@ void WorldRenderer::render(float dt, Camera &camera)
       debugShader->uniform("slice", debug_layer);
     }
     */
+  if (render_mode >= DEBUG_ONLY_RENDER_MODE)
+  {
+    if (terrainRenderer)
+    {
+      terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+                                  camera.pos, light);
+    }
   }
-  else
+  if (render_mode == ALL_RENDER_MODE || render_mode == MODELS_ONLY_RENDER_MODE)
   {
     //depth prepass
     /*tr.render(projection * camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
@@ -343,11 +348,6 @@ void WorldRenderer::render(float dt, Camera &camera)
         glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
       }
     }
-    if (terrainRenderer)
-    {
-      terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
-                                  camera.pos, light);
-    }
     if (grassRenderer2)
     {
       grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
@@ -364,6 +364,9 @@ void WorldRenderer::render(float dt, Camera &camera)
                                  glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0 * shadowMap.getTex());
     }
+  }
+  if (render_mode == ALL_RENDER_MODE || render_mode == DEBUG_ONLY_RENDER_MODE)
+  {
     if (debugVisualizer)
       debugVisualizer->render(projection * camera.camera(), render_mode);
   }

@@ -12,7 +12,10 @@ public:
     Model *flat_terrain;
 private:
     float base_height = 0.0;
-    Texture terrain_tex;
+    Texture terrain_tex1;
+    Texture terrain_tex2;
+    Texture terrain_tex3;
+    Texture perlin;
     Shader terrain;
     Shader terrainShadow;
 };

@@ -280,10 +280,12 @@ namespace parser
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
-      int t_id = metainfoManager.get_tree_type_id_by_name("sphere_tree");
+      int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak");
       int b_id = metainfoManager.get_tree_type_id_by_name("apple");
-      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak");
-
+      int l_id = metainfoManager.get_tree_type_id_by_name("large_oak_simplified");
+      sceneGen.plant_tree(glm::vec2(-5, 56), t_id);
+      sceneGen.plant_tree(glm::vec2(67, 67), l_id);
+/*
       int ids[3] = {t_id, b_id, l_id};
       for (int i = 0; i < sz; i++)
       {
@@ -298,25 +300,27 @@ namespace parser
           }
         }
       }
-
+*/
       //sceneGen.set_biome_round(glm::vec2(0,0),50,"mixed_forest");
       //sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
       sceneGenerationContext.biome_map.save_as_image();
       //
       Block objs;
-      cnt = 0;
+      cnt = 1;
       for (int i = 0; i < cnt * cnt; i++)
       {
         Block *chb = new Block();
-        chb->add_string("name", "stone_1");
-        chb->add_bool("on_terrain", false);
-        glm::vec3 pos = glm::vec3(50 * (i / cnt - cnt / 2 + urand(-1, 1)), 0, 50 * (i % cnt - cnt / 2 + urand(-1, 1)));
-        glm::vec3 size = glm::vec3(urand(10, 30));
+        chb->add_string("name", "farm_1");
+        chb->add_bool("on_terrain", true);
+        glm::vec3 pos = glm::vec3(200 * (i / cnt - cnt / 2 + urand(0, 0.67)), 0, 200 * (i % cnt - cnt / 2 + urand(0, 0.67)));
+        if (i == 0)
+          pos  = glm::vec3(0,0,0);
+        glm::vec3 size = glm::vec3(125);
         pos.y = sceneGenerationContext.scene->heightmap->get_height(pos) - 0.4 * size.y;
         chb->add_mat4("transform", glm::scale(
                                        glm::rotate(
                                            glm::translate(glm::mat4(1.0f), pos),
-                                           (float)urand() * PI, glm::vec3(0, 1, 0)),
+                                           0*(float)urand() * PI, glm::vec3(0, 1, 0)),
                                        size));
         objs.add_block("obj", chb);
       }
@@ -374,6 +378,7 @@ namespace parser
       {
         worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);
         worldRenderer.set_forced_LOD(appContext.forced_LOD);
+        worldRenderer.set_render_mode(appContext.render_mode);
         worldRenderer.render(1, appContext.camera);
       };
       Tiny::view.interface = [&]() {

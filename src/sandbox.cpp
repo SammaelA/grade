@@ -232,6 +232,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     return;
     */
+   /*
     {
         metainfoManager.reload_all();
         TreeTypeData type = metainfoManager.get_tree_type("apple");
@@ -261,6 +262,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         NE.prepare_dataset(par, tree_ggd, "saves/NE_dataset", 256, 4, 512, 64);
         return;
     }
+    */
     /*
     int cnt = 100;
     int _a;
@@ -288,9 +290,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(cnt, 8, false);
     generate_for_par_selection(params, imp_sim, tree_ggd, scene->heightmap, ref_tree, _a, nullptr);  
     */
-    
+    /*
     Block b, ref_info;
     BlkManager man;
+    metainfoManager.reload_all();
     man.load_block_from_file("parameter_selection_settings.blk", b);
     man.load_block_from_file("parameter_selection_reference.blk", ref_info);
     std::string add_str = "";
@@ -307,33 +310,36 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
+    */
     
-    /*
-    float imp_size = 128;
+    metainfoManager.reload_all();
+    scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene->heightmap->fill_const(0);
+    TreeTypeData type = metainfoManager.get_tree_type("apple");
+    float imp_size = 512;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
     tree_ggd.types = {type};
     tree_ggd.name = "single_tree";
     tree_ggd.task = GenerationTask::IMPOSTORS;
-    tree_ggd.impostor_generation_params.slices_n = 8;
+    tree_ggd.impostor_generation_params.slices_n = 1;
     tree_ggd.impostor_generation_params.quality = imp_size;
     tree_ggd.impostor_generation_params.monochrome = true;
     tree_ggd.impostor_generation_params.normals_needed = false;
-    tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
-
+    tree_ggd.impostor_generation_params.leaf_opacity = 0.99;
+    tree_ggd.impostor_generation_params.leaf_scale = 2.5;
+    srand(2);
     ReferenceTree ref_tree;
 
     //create reference tree
 
         glm::vec3 pos = glm::vec3(0,0,0);
-        glm::vec3 sz = type.params->get_tree_max_size();
+        glm::vec3 sz = type.get_params()->get_tree_max_size();
         LightVoxelsCube *ref_voxels = new LightVoxelsCube(pos + glm::vec3(0, sz.y - 10, 0),sz,
-                                                          0.625f * type.params->get_scale_factor(), 1.0f, 1, 2);
+                                                          0.625f * type.get_params()->get_scale_factor(), 1.0f, 1, 2);
     
-    int cnt = 8;
+    int cnt = 1;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    AbstractTreeGenerator::set_joints_limit(10000);
-    GETreeGeneratorSimplified::set_joints_limit(10000);
     for (int i=0;i<cnt*cnt;i++)
     {
         pos = glm::vec3(100*(i / cnt),0,100*(i % cnt));
@@ -355,7 +361,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
     delete ref_voxels;
-   */
+    textureManager.save_png(scene->grove.impostors[1].atlas.tex(0), "original_atlas");
+   
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

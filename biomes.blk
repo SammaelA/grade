@@ -40,7 +40,7 @@
         grass
         {
             coverage:s = "full"
-            density:r = 25
+            density:r = 5
             types
             {
                 grass_meadow_1:r = 0.5

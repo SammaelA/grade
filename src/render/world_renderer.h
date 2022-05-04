@@ -83,7 +83,9 @@ private:
     int screen_w = 0, screen_h = 0;
     bool inited = false;
     unsigned long frame = 0;
-    const int DEBUG_RENDER_MODE = -2;
+    const int MODELS_ONLY_RENDER_MODE = 1;
+    const int ALL_RENDER_MODE = 0;
+    const int DEBUG_ONLY_RENDER_MODE = -1;
     const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
     const int MAX_RENDER_MODE = 2;
     const float fov = glm::radians(90.0f);

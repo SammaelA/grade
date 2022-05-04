@@ -1,5 +1,7 @@
 {
-    terrain:s = "terrain4.jpg"
+    terrain1:s = "terrain4.jpg"
+    terrain2:s = "terrain3.png"
+    terrain3:s = "rock.jpg"
     noise:s = "perlin.png"
     colored_noise:s = "noise.png"
     leaf1:s = "leaf1.png"
