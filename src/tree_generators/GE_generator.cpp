@@ -207,11 +207,11 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
         for (int i = 0; i < 10; i++)
         {
             float phi = 0.2*PI*(i + self_rand());
-            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, -2 + 0.1*(i+1)*sz_y, 0), iteration, true));
+            t.root.joints.push_back(Joint(t.pos + glm::vec3(0, (-2 + 0.03*(i+1))*sz_y, 0), iteration, true));
             t.root.joints.back().childBranches.push_back(Branch(1,t.root.joints.back().pos, iteration,false));
             auto &b = t.root.joints.back().childBranches.back();
-            b.joints.push_back(Joint(t.root.joints.back().pos + (float)self_rand(2.5,5.5)*sz_x*vec3(sin(phi),0,cos(phi)), iteration,false));
-            b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.3,0.3),4,self_rand(-0.3,0.3)), iteration, true));
+            b.joints.push_back(Joint(t.root.joints.back().pos + (float)self_rand(1,5)*sz_x*vec3(sin(phi),0,cos(phi)), iteration,false));
+            b.joints.push_back(Joint(b.joints.back().pos + vec3(self_rand(-0.2,0.2),4*sz_y,self_rand(-0.2,0.2)), iteration, true));
         }
     }
     else if (params.root_type == 3)

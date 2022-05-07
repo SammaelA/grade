@@ -44,7 +44,11 @@ namespace SceneGenHelper
       min_pos = min(min_pos, p3);
       max_pos = max(max_pos, p3);
     }
-
+    std::vector<ivec3> indices = std::vector<ivec3>(m->indices.size()/3, ivec3(0,0,0));
+    for (int i=0;i<m->indices.size();i+=3)
+    {
+      indices[i / 3] = ivec3(m->indices[i], m->indices[i+1], m->indices[i+2]);
+    }
     //inflate bbox
     vec3 full_sz = inflation_q * (max_pos - min_pos);
     vec3 center = 0.5f * (max_pos + min_pos);
@@ -61,6 +65,34 @@ namespace SceneGenHelper
     //we should be more precise in x,z coordinates than in y
     vec2 column_size = vec2(_column_size,_column_size);
     ivec2 columns_cnt = ivec2(ceil(full_sz.x/column_size.x), ceil(full_sz.z/column_size.y));
+
+    float csz = max(column_size.x, column_size.y);
+
+    int i = 0;
+    while (i < indices.size())
+    {
+      vec3 p1 = positions[indices[i].x];
+      vec3 p2 = positions[indices[i].y];
+      vec3 p3 = positions[indices[i].z];
+      float d1 = length(p1 - p2);
+      float d2 = length(p1 - p3);
+      float d3 = length(p2 - p3);
+      if (d1 > 2 * csz || d2 > 2 * csz || d3 > 2 * csz)
+      {
+        positions.push_back(0.5f * p1 + 0.5f * p3);
+        positions.push_back(0.5f * p2 + 0.5f * p3);
+        positions.push_back(0.5f * p1 + 0.5f * p2);
+        int ni[6] = {indices[i].x, indices[i].y, indices[i].z, (int)(positions.size() - 3), (int)(positions.size() - 2), (int)(positions.size() - 1)};
+        indices[i] = ivec3(ni[0], ni[5], ni[3]);
+        indices.push_back(ivec3(ni[1], ni[4], ni[5]));
+        indices.push_back(ivec3(ni[2], ni[3], ni[4]));
+        indices.push_back(ivec3(ni[3], ni[5], ni[4]));
+      }
+      else
+      {
+        i++;
+      }
+    }
     column_size = vec2(full_sz.x/columns_cnt.x, full_sz.z/columns_cnt.y);
     
     std::vector<ivec2> column_positions = std::vector<ivec2>(positions.size(), ivec2(0,0));
@@ -70,13 +102,13 @@ namespace SceneGenHelper
     }
 
     std::vector<vec2> columns = std::vector<vec2>(columns_cnt.x*columns_cnt.y, vec2(1,-1));
-    for (int i = 0;i<m->indices.size();i+=3)//assume that everything is triangles
+    for (int i = 0;i<indices.size();i++)//assume that everything is triangles
     {
-      ivec2 max_column = max(max(column_positions[m->indices[i]], column_positions[m->indices[i+1]]),column_positions[m->indices[i+2]]);
-      ivec2 min_column = min(min(column_positions[m->indices[i]], column_positions[m->indices[i+1]]),column_positions[m->indices[i+2]]);
+      ivec2 max_column = max(max(column_positions[indices[i].x], column_positions[indices[i].y]),column_positions[indices[i].z]);
+      ivec2 min_column = min(min(column_positions[indices[i].x], column_positions[indices[i].y]),column_positions[indices[i].z]);
     
-      float max_h = max(max(positions[m->indices[i]].y, positions[m->indices[i+1]].y), positions[m->indices[i+2]].y);
-      float min_h = max(max(positions[m->indices[i]].y, positions[m->indices[i+1]].y), positions[m->indices[i+2]].y);
+      float max_h = max(max(positions[indices[i].x].y, positions[indices[i].y].y), positions[indices[i].z].y);
+      float min_h = max(max(positions[indices[i].x].y, positions[indices[i].y].y), positions[indices[i].z].y);
 
       for (int x = min_column.x; x<= max_column.x;x++)
       {

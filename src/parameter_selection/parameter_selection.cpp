@@ -1370,10 +1370,12 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         {
             HydraSceneExporter exporter;
             Block export_settings;
-            float sz = 1.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
-            export_settings.add_vec3("camera_look_at", glm::vec3(sz,0.5*sz,0));
-            export_settings.add_vec3("camera_pos", glm::vec3(0,0.5*sz,0));
+            float sz = 0.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
+            logerr("%f %f %f", sz, ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y);
+            export_settings.add_vec3("camera_look_at", glm::vec3(0,1.5*sz,0));
+            export_settings.add_vec3("camera_pos", glm::vec3(2*sz,1*sz,0));
             export_settings.add_bool("need_terrain",true);
+            export_settings.add_bool("white_terrain",true);
             export_settings.add_string("demo_copy_dir", "saves/"+file_name + "_res");
             exporter.export_scene("param_selection_scene", scene, export_settings);
         }

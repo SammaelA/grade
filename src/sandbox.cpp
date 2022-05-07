@@ -263,7 +263,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         return;
     }
     */
-    /*
+/*
     int cnt = 100;
     int _a;
     ParameterList par;
@@ -286,11 +286,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     tree_ggd.impostor_generation_params.leaf_opacity = 0.33;
 
     ReferenceTree ref_tree;
-    ref_tree.info.
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(cnt, 8, false);
     generate_for_par_selection(params, imp_sim, tree_ggd, scene->heightmap, ref_tree, _a, nullptr);  
-    */
-    /*
+*/
     Block b, ref_info;
     BlkManager man;
     metainfoManager.reload_all();
@@ -310,8 +308,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
-    */
-    
+ /*   
     metainfoManager.reload_all();
     scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
     scene->heightmap->fill_const(0);
@@ -362,7 +359,21 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
     delete ref_voxels;
     textureManager.save_png(scene->grove.impostors[1].atlas.tex(0), "original_atlas");
-   
+
+    Texture tex1 = textureManager.load_unnamed_tex(image::base_img_path + "24_A_mono.png");
+    Texture tex2 = textureManager.load_unnamed_tex(image::base_img_path + "24_B_mono.png");
+    //Texture tex3 = textureManager.create_unnamed(tex1.get_W(), tex1.get_H());
+    TextureAtlas tmp_atlas = TextureAtlas(2*tex1.get_W(), 2*tex1.get_H(), 1);
+    tmp_atlas.set_grid(2*tex1.get_W(), 2*tex1.get_H());
+    int id = tmp_atlas.add_tex();
+    tmp_atlas.target_slice(id, 0);
+    PostFx pixel_dist = PostFx("pixel_difference.fs");
+    pixel_dist.use();
+    pixel_dist.get_shader().texture("tex1", tex1);
+    pixel_dist.get_shader().texture("tex2", tex2);
+    pixel_dist.render();
+    textureManager.save_png(tmp_atlas.tex(0), "cmp");
+*/
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);
    LightVoxelsCube ref = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

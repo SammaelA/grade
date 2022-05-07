@@ -45,8 +45,8 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   if (event.active[SDLK_1])
   {
     ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-591.20,173.6,18.33);
-    ctx.camera.front = glm::vec3(0.995,-0.09,-0.03);
+    ctx.camera.pos = glm::vec3(31,50,-83.3);
+    ctx.camera.front = glm::vec3(0,0,1);
   }
   if (event.active[SDLK_2])
   {

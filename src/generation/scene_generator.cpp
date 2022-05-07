@@ -969,7 +969,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
   //logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
   auto &im = ctx.scene->instanced_models[model_num];
   std::vector<AABB> boxes;
-  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 2*ctx.biome_map_pixel_size, 1.05);
+  SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4*ctx.biome_map_pixel_size, 1.1);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
   ctx.objects_bvh.add_bboxes(boxes, id);
   return id;

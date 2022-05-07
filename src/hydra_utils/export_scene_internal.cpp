@@ -88,7 +88,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, 1);
+            v.packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level));
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -182,7 +182,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(g.c_str());
   g = temp_tex_dir + L"grass_atlas_alpha.png";
   HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(g.c_str());
-  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/white.bmp");
+  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
+  HRTextureNodeRef texTerrainWhite = hrTexture2DCreateFromFile(L"data/textures/white.bmp");
 
   HRTextureNodeRef cube[6] = {
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
@@ -204,9 +205,10 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
     auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"0.6 0.6 0.6");
+    color.append_attribute(L"val").set_value(L"1 1 1");
     color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNode = hrTextureBind(texTerrain, color);
+    bool white_ter = export_settings.get_bool("white_terrain", false);
+    auto texNode = hrTextureBind(white_ter ? texTerrainWhite : texTerrain, color);
 
     VERIFY_XML(matNode);
   }
@@ -447,7 +449,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 	  lightNode.attribute(L"distribution").set_value(L"map");
     auto intensityNode = lightNode.append_child(L"intensity");
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
-    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"0.9");
+    intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1");
 
 	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
     //texNode.append_attribute(L"input_gamma").set_value(1.0f);

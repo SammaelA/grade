@@ -24,7 +24,7 @@ protected:
     static std::atomic<int> ids, t_ids;
     static GETreeParameters defaultParameters;
     //std::random_device rd{};
-    unsigned long seed = 0;
+    unsigned long seed = 1;
     std::mt19937 gen{0};
     std::uniform_real_distribution<double> d_ur = std::uniform_real_distribution<double>(0,1);
     int iteration = 0;

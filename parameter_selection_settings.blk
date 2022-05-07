@@ -1,9 +1,9 @@
 {
-    generator_name:s = "weber_penn_gen"
+    generator_name:s = "simpliest_gen"
     //save_best_result:s = "gen_gen_selected_4"
     save_best_result_auto:b = false
     use_existing_presets:b = false
-    save_result_image:b = false
+    save_result_image:b = true
     evolution_stat:b = false
     debug_graph:b = false
     initial_population_size:i = 125

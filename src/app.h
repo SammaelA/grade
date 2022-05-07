@@ -35,7 +35,7 @@ struct AppContext
     const int MAX_RENDER_MODE = 2;
     const float fov = glm::radians(90.0f);
     int forced_LOD = -1;
-    int render_mode = -1;
+    int render_mode = 0;
     int debug_tex = 0;
     int debug_layer = 0;
     int benchmark_grove_needed = -1;
