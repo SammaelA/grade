@@ -52,7 +52,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
     {
       int tex_id = source->groveTexturesAtlas.wood_tex_map.at(type_id);
       glm::vec4 tctr = source->groveTexturesAtlas.woodAtlas->tc_transform(tex_id);
-      logerr("type %d wood tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
+      //logerr("type %d wood tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
       w_tc_trans = tctr;
     }
     for (int id : branch.branches)
@@ -82,7 +82,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
       {
         int tex_id = source->groveTexturesAtlas.leaves_tex_map.at(type_id);
         glm::vec4 tctr = source->groveTexturesAtlas.leavesAtlas->tc_transform(tex_id);
-        logerr("type %d leaves tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
+        //logerr("type %d leaves tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
         w_tc_trans = tctr;
       }
         int type_slice = 0;
@@ -134,7 +134,7 @@ void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
   } 
   auto ind_ui = std::vector<int>(mesh.indices.size(), 0);
   memcpy(ind_ui.data(), mesh.indices.data(), mesh.indices.size()*sizeof(int));
-  logerr("%d %d %d %d", mesh.positions.size(), mesh.normals.size(), tc_2f.size(), ind_ui.size());
+  //logerr("%d %d %d %d", mesh.positions.size(), mesh.normals.size(), tc_2f.size(), ind_ui.size());
   hrMeshOpen(hr_mesh, HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
   {
     hrMeshVertexAttribPointer3f(hr_mesh, L"pos", mesh.positions.data());
@@ -146,7 +146,7 @@ void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
       hrMeshPrimitiveAttribPointer1i(hr_mesh, L"mind", mesh.mat_indicies.data());
     if (!mesh.tangents.empty())
       hrMeshVertexAttribPointer3f(hr_mesh, L"tangent", mesh.tangents.data());
-    logerr("%d %d", mesh.positions.size(), mesh.tangents.size());
+    //logerr("%d %d", mesh.positions.size(), mesh.tangents.size());
     hrMeshAppendTriangles3(hr_mesh, ind_ui.size(), ind_ui.data());
   }
   hrMeshClose(hr_mesh);

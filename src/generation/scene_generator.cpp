@@ -563,7 +563,12 @@ void SceneGenerator::generate_grove()
   while (threads_working)
   {
     std::lock(rawTreesDatabase.database_lock, ctx_lock);
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     rawTreesDatabase.pack_ready(packer, ctx, false);
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    if (ms > 0.1)
+      logerr("clustering took %.1f ms", ms);
     rawTreesDatabase.database_lock.unlock();
     ctx_lock.unlock();
 

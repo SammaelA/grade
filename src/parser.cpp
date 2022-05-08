@@ -214,6 +214,37 @@ namespace parser
     }
   }
 
+  void print_size(GrovePacked &grove)
+  {
+    int joints = 0;
+    int leaves = 0;
+    int matrixes = 0;
+    for (auto &br : grove.instancedBranches)
+    {
+      matrixes += br.IDA.transforms.size();
+      for (auto &bid : br.branches)
+      {
+        PackedBranch &b = grove.instancedCatalogue.get(bid);
+        joints += b.joints.size();
+        leaves += b.leaves.size();
+      }
+    }
+    int verts = 4*joints + 4*leaves;
+    int polys = 4*joints + 2*leaves;
+    int bytes_per_vert = sizeof(float)*(3 + 3 + 2);
+    int model_size = verts*bytes_per_vert + polys * 3 *sizeof(int);
+    int mat_size = matrixes*sizeof(int)*(1+1+3+3+16);
+    debug("Scene size:\n");
+    debug("%.1fk joints\n", joints*1e-3);
+    debug("%.1fk leaves\n", leaves*1e-3);
+    debug("%.1fk vertices\n", verts*1e-3);
+    debug("%.1fk polygons\n", polys*1e-3);
+    debug("%d instance matrices\n", matrixes);
+    debug("%.2f Mb models\n", model_size*1e-6);
+    debug("%.2f Mb matrices\n", mat_size*1e-6);
+    debug("%.2f Mb total\n", (model_size+ mat_size)*1e-6);
+  }
+
   void base_init()
   {
     glewInit();
@@ -304,16 +335,16 @@ namespace parser
       sceneGenerationContext.biome_map.save_as_image();
       //
       Block objs;
-      int p_cnt = 2;
+      int p_cnt = 14;
       for (int i=0;i<p_cnt;i++)
       {
         for (int j=0;j<p_cnt;j++)
         {
-          glm::vec pos = glm::vec2(60 * (i + urand()), 60 * (j + urand()));
+          glm::vec pos = glm::vec2(50 * (i + urand()), 50 * (j + urand()));
           sceneGen.plant_tree(pos, urand() > 0.5 ? t_id : l_id);
         }
       }
-      for (int i = 0; i < 3; i++)
+      for (int i = 0; i < 0; i++)
       {
         Block *chb = new Block();
         chb->add_string("name", "farm_1");
@@ -330,7 +361,7 @@ namespace parser
                                        size));
         objs.add_block("obj", chb);
       }
-      cnt = 10;
+      cnt = 0;
       for (int i = 0; i < cnt * cnt; i++)
       {
         Block *chb = new Block();
@@ -356,6 +387,7 @@ namespace parser
       //
       sceneGenerationContext.objects_bvh.rebuild();
       sceneGen.create_scene_auto();
+      print_size(scene.grove);
     }
     else if (sandbox)
     {
@@ -365,8 +397,8 @@ namespace parser
     {
       HydraSceneExporter hExp;
       Block export_settings;
-      glm::vec3 camera_pos = glm::vec3(-42, 80, -135);
-      glm::vec3 camera_dir = glm::vec3(0.4, -0.05, 0.85);
+      glm::vec3 camera_pos = glm::vec3(-2*84,2*61.35,6);
+      glm::vec3 camera_dir = glm::vec3(0.88,-0.15,0.47);
       export_settings.add_vec3("camera_look_at", camera_pos + camera_dir);
       export_settings.add_vec3("camera_pos", camera_pos);
       hExp.export_scene(hydra_scene_dir, scene, export_settings);
