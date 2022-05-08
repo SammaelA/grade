@@ -165,11 +165,13 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   const int DEMO_WIDTH  = 2048;
   const int DEMO_HEIGHT = 2048;
   bool need_terrain = export_settings.get_bool("need_terrain",true);
+  bool white_terrain = export_settings.get_bool("white_terrain", false);
   hrErrorCallerPlace(L"demo_02_load_obj");
   std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
   hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
   std::wstring permanent_tex_dir = L"../../../../resources/textures/";
   std::string base_dir = "../../../../";
+  std::wstring base_dir_w = L"../../../../";
   std::wstring temp_tex_dir = L"../../../../saves/";
   std::wstring g;
   g = temp_tex_dir + L"wood_atlas.png";
@@ -185,7 +187,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
   HRTextureNodeRef texTerrainWhite = hrTexture2DCreateFromFile(L"data/textures/white.bmp");
 
-  HRTextureNodeRef cube[6] = {
+  HRTextureNodeRef cube_white[6] = {
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
@@ -194,8 +196,18 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
     };
 
-  HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
+  HRTextureNodeRef texEnvWhite = HRUtils::Cube2SphereLDR(cube_white);
 
+  HRTextureNodeRef cube[6] = {
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_east.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_west.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_up.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_down.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_north.bmp"),
+      hrTexture2DCreateFromFile(L"data/textures/clouds1/clouds1_south.bmp"),
+    };
+
+  HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
 
   HRMaterialRef mat_land = hrMaterialCreate(L"land_material");
   hrMaterialOpen(mat_land, HR_WRITE_DISCARD);
@@ -207,8 +219,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     auto color = diff.append_child(L"color");
     color.append_attribute(L"val").set_value(L"1 1 1");
     color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    bool white_ter = export_settings.get_bool("white_terrain", false);
-    auto texNode = hrTextureBind(white_ter ? texTerrainWhite : texTerrain, color);
+    auto texNode = hrTextureBind(white_terrain ? texTerrainWhite : texTerrain, color);
 
     VERIFY_XML(matNode);
   }
@@ -297,6 +308,62 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
   }
   hrMeshClose(terrainMeshRef);
+
+  std::vector<SimpleMesh> instancedModelsS;
+  std::vector<HRMeshRef> instancedModels;
+  std::vector<HRMaterialRef> instancedModelsMaterials;
+  std::vector<HRTextureNodeRef> instancedModelsTextures;
+  std::vector<std::vector<glm::mat4> *> instancedModelsTransforms;
+
+  for (auto &im : scene.instanced_models)
+  {
+    if (!im.model || im.instances.empty())
+      continue;
+    instancedModelsS.emplace_back();
+    SimpleMesh &m = instancedModelsS.back();
+    model_to_simple_mesh(*(im.model), m);
+    
+    std::wstring mat_name = L"im_mat_" + std::wstring(im.name.begin(), im.name.end());
+    std::wstring mat_dir = base_dir_w + std::wstring(im.tex.origin.begin(), im.tex.origin.end());
+
+    instancedModelsTextures.push_back(hrTexture2DCreateFromFile(mat_dir.c_str()));
+
+    instancedModelsMaterials.push_back(hrMaterialCreate(mat_name.c_str()));
+    HRMaterialRef &mat = instancedModelsMaterials.back();
+    hrMaterialOpen(mat, HR_WRITE_DISCARD);
+    {
+      auto matNode = hrMaterialParamNode(mat);
+      auto diff = matNode.append_child(L"diffuse");
+      diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+      auto color = diff.append_child(L"color");
+      color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+      color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+      auto texNode = hrTextureBind(instancedModelsTextures.back(), color);
+
+      VERIFY_XML(matNode);
+    }
+    hrMaterialClose(mat);
+
+    if (m.triIndices.size() > 0)
+    {
+      instancedModelsTransforms.push_back(&(im.instances));
+      std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
+      instancedModels.push_back(hrMeshCreate(name.c_str()));
+      hrMeshOpen(instancedModels.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+      {
+        hrMeshVertexAttribPointer3f(instancedModels.back(), L"pos",      &m.vPos[0]);
+        hrMeshVertexAttribPointer3f(instancedModels.back(), L"norm",     &m.vNorm[0]);
+        hrMeshVertexAttribPointer2f(instancedModels.back(), L"texcoord", &m.vTexCoord[0]);
+        hrMeshMaterialId(instancedModels.back(), mat.id);
+
+        //logerr("tri id 2 %d",int(br.triIndices.size()));
+        hrMeshAppendTriangles3(instancedModels.back(), int(m.triIndices.size()), m.triIndices.data());
+      }
+      hrMeshClose(instancedModels.back());
+    }
+    logerr("tex %s", im.tex.origin.c_str());
+  }
 
   std::vector<HRMeshRef> branches;
   std::vector<SimpleMesh> meshes;
@@ -451,7 +518,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
     intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1");
 
-	  auto texNode = hrTextureBind(texEnv, intensityNode.child(L"color"));
+	  auto texNode = hrTextureBind(white_terrain ? texEnvWhite : texEnv, intensityNode.child(L"color"));
     //texNode.append_attribute(L"input_gamma").set_value(1.0f);
     //texNode.append_attribute(L"input_alpha").set_value(L"rgb");
 
@@ -526,6 +593,18 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     if (need_terrain)
     {
       hrMeshInstance(scnRef, terrainMeshRef, mind.L());
+    }
+    for (int i=0; i< instancedModels.size();i++)
+    {
+      for (auto &mat : *(instancedModelsTransforms[i]))
+      {
+        const float mat_vals2[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
+                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
+                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
+                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
+        auto m = hlm::float4x4(mat_vals2);
+        hrMeshInstance(scnRef, instancedModels[i], m.L());
+      }
     }
     for (int i=0;i<branches.size();i++)
     {

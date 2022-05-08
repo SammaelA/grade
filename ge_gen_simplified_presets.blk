@@ -45,13 +45,13 @@
         Xm:r = 100
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
-        r_s:r = 0.16
+        r_s:r = 0.275
         rs_size_factor:r = -0.005
         r:r = 0.26
         mu:r = 0.5
         leaves_cnt:r = 1.0
-        resource_mult:r = 3.9
-        tropism_params:p4 = 0.67, -1, 0.033, 1.2
+        resource_mult:r = 3.4
+        tropism_params:p4 = 0.67, -1, 0.02, 0.7
     }
     tree_1
     {
@@ -86,7 +86,7 @@
         r:r = 0.3
         mu:r = 0.5
         leaves_cnt:r = 2.25
-        tropism_params:p4 = 0.1, 0.1, 0.06, 1.5
+        tropism_params:p4 = 0.4, -1, 0.02, 1.5
         remove_min_level:i = 2
         initial_trunk_scale:p2 = 0.8,2.5
         //R0:r = 7.000000
