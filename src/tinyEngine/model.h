@@ -8,7 +8,18 @@
 #include <chrono>
 #include "common_utils/utility.h"
 
-struct Primitive : public Countable{
+
+struct Mesh : public Countable{
+  std::vector<GLfloat>  positions;//vec3
+  std::vector<GLfloat>  normals;//vec3
+  std::vector<GLfloat>  colors;//vec4
+  std::vector<GLfloat>  tangents;//vec4, optional
+  std::vector<GLuint>   indices;//3*triangles_cnt
+  std::vector<int>   mat_indicies;//triangles_cnt, optional
+  bool indexed = true;
+};
+
+struct Primitive : public Mesh{
 
   Primitive(){
     glGenVertexArrays(1, &vao);
@@ -185,10 +196,6 @@ public:
     glDeleteVertexArrays(1, &vao);
   }
 
-  std::vector<GLfloat>  positions, normals, colors;
-  std::vector<GLuint>   indices;
-
-  bool indexed = true;
 	GLuint ibo;
   int get_size() override
   {

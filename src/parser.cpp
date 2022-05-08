@@ -304,13 +304,13 @@ namespace parser
       sceneGenerationContext.biome_map.save_as_image();
       //
       Block objs;
-      int p_cnt = 6;
+      int p_cnt = 2;
       for (int i=0;i<p_cnt;i++)
       {
         for (int j=0;j<p_cnt;j++)
         {
           glm::vec pos = glm::vec2(60 * (i + urand()), 60 * (j + urand()));
-          //sceneGen.plant_tree(pos, urand() > 0.5 ? t_id : l_id);
+          sceneGen.plant_tree(pos, urand() > 0.5 ? t_id : l_id);
         }
       }
       for (int i = 0; i < 3; i++)
@@ -365,8 +365,8 @@ namespace parser
     {
       HydraSceneExporter hExp;
       Block export_settings;
-      glm::vec3 camera_pos = glm::vec3(229,61,-52.55);
-      glm::vec3 camera_dir = glm::vec3(-0.124, -0.118, 0.985);
+      glm::vec3 camera_pos = glm::vec3(-42, 80, -135);
+      glm::vec3 camera_dir = glm::vec3(0.4, -0.05, 0.85);
       export_settings.add_vec3("camera_look_at", camera_pos + camera_dir);
       export_settings.add_vec3("camera_pos", camera_pos);
       hExp.export_scene(hydra_scene_dir, scene, export_settings);

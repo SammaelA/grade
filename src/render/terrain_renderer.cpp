@@ -13,6 +13,7 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
             flat_terrain = new Model();
             Visualizer vis;
             vis.heightmap_to_model(h, flat_terrain, size, glm::vec2(8192, 8192), MIN(step.x, step.y),0);
+            flat_terrain->update();
             Texture *texs[3] = {&terrain_tex1, &terrain_tex2, &terrain_tex3};
             for (auto *tex : texs)
             {

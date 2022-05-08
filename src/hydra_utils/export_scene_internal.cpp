@@ -35,38 +35,14 @@ extern GLFWwindow* g_window;
   }
 
 void initGLIfNeeded(int a_width, int a_height, const char* name);
-void model_to_simple_mesh(Model &model, SimpleMesh &mesh)
-{
-  mesh.vPos = std::move(model.positions);
-  mesh.vNorm = std::move(model.normals);
-
-  mesh.triIndices = std::vector<int>(model.indices.size(), 0);
-  memcpy(mesh.triIndices.data(), model.indices.data(), mesh.triIndices.size() * sizeof(int));
-
-  mesh.vTexCoord = std::vector<GLfloat>(model.colors.size() / 2, 0);
-  for (int i = 0; i < model.colors.size() / 4; i++)
-  {
-    mesh.vTexCoord[2 * i] = model.colors[4 * i];
-    mesh.vTexCoord[2 * i + 1] = model.colors[4 * i + 1];
-  }
-}
-void heightmap_to_simple_mesh(Heightmap &h, SimpleMesh &mesh)
-{
-  Visualizer vis;
-  Model model;
-  vis.heightmap_to_model(h, &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
-  model_to_simple_mesh(model, mesh);
-}
-void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, InstancedBranch &branch, 
-                                  int up_to_level, bool need_leaves, int wood_mat_id, int leaves_mat_id)
+void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &branch, 
+                           int up_to_level, bool need_leaves, int wood_mat_id, int leaves_mat_id)
 {
   if (branch.branches.empty())
         return;
     //clusterization process guarantees that type of all branches in instance
     //will be the same
-    Model model;
     int type_id = branch.IDA.type_ids[0];
-    //uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
 
     Visualizer v = Visualizer();
     uint ind_offset = model.indices.size();
@@ -88,7 +64,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level));
+            v.packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level), glm::vec2(1,0), false);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -119,7 +95,7 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                v.packed_branch_to_model(b, &model, true, 4);
+                v.packed_branch_to_model(b, &model, true, 4, glm::vec2(1,0), false);
         }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -139,27 +115,43 @@ void packed_branch_to_simple_mesh(SimpleMesh &mesh, GrovePacked *source, Instanc
     }
     else
     {
-      mesh.vPos = std::move(model.positions);
-      mesh.vNorm = std::move(model.normals);
-      
-      mesh.triIndices = std::vector<int>(model.indices.size(),0);
-      memcpy(mesh.triIndices.data(),model.indices.data(),mesh.triIndices.size()*sizeof(int));
-      
-      mesh.vTexCoord = std::vector<GLfloat>(model.colors.size()/2, 0);
-      for (int i = 0;i<model.colors.size()/4;i++)
-      {
-        mesh.vTexCoord[2*i] = model.colors[4*i];
-        mesh.vTexCoord[2*i + 1] = model.colors[4*i + 1];
-      }
-
-      mesh.matIndices = std::vector<int>(model.indices.size()/3,wood_mat_id);
+      model.mat_indicies = std::vector<int>(model.indices.size()/3,wood_mat_id);
 
       for (int i=count/3;i<model.indices.size()/3;i++)
       {
-        mesh.matIndices[i] = leaves_mat_id;
+        model.mat_indicies[i] = leaves_mat_id;
       }
     }
 }
+
+void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
+{
+  std::vector<float> tc_2f = std::vector<float>(mesh.colors.size()/2,0);
+  for (int i=0;i<mesh.colors.size()/4;i++)
+  {
+    tc_2f[2*i] = mesh.colors[4*i];
+    tc_2f[2*i+1] = mesh.colors[4*i+1];
+  } 
+  auto ind_ui = std::vector<int>(mesh.indices.size(), 0);
+  memcpy(ind_ui.data(), mesh.indices.data(), mesh.indices.size()*sizeof(int));
+  logerr("%d %d %d %d", mesh.positions.size(), mesh.normals.size(), tc_2f.size(), ind_ui.size());
+  hrMeshOpen(hr_mesh, HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
+  {
+    hrMeshVertexAttribPointer3f(hr_mesh, L"pos", mesh.positions.data());
+    hrMeshVertexAttribPointer3f(hr_mesh, L"norm", mesh.normals.data());
+    hrMeshVertexAttribPointer2f(hr_mesh, L"texcoord", tc_2f.data());
+    if (mesh.mat_indicies.empty())
+      hrMeshMaterialId(hr_mesh, mat_id);
+    else
+      hrMeshPrimitiveAttribPointer1i(hr_mesh, L"mind", mesh.mat_indicies.data());
+    if (!mesh.tangents.empty())
+      hrMeshVertexAttribPointer3f(hr_mesh, L"tangent", mesh.tangents.data());
+    logerr("%d %d", mesh.positions.size(), mesh.tangents.size());
+    hrMeshAppendTriangles3(hr_mesh, ind_ui.size(), ind_ui.data());
+  }
+  hrMeshClose(hr_mesh);
+}
+
 bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
   const int DEMO_WIDTH  = 2048;
@@ -294,22 +286,14 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   }
   hrMaterialClose(mat_grass);
 
-  SimpleMesh terrain;
-  heightmap_to_simple_mesh(*(scene.heightmap), terrain);
   HRMeshRef terrainMeshRef = hrMeshCreate(L"terrain");
-  hrMeshOpen(terrainMeshRef, HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
   {
-    hrMeshVertexAttribPointer3f(terrainMeshRef, L"pos",      &terrain.vPos[0]);
-    hrMeshVertexAttribPointer3f(terrainMeshRef, L"norm",     &terrain.vNorm[0]);
-    hrMeshVertexAttribPointer2f(terrainMeshRef, L"texcoord", &terrain.vTexCoord[0]);
-    
-    hrMeshMaterialId(terrainMeshRef, mat_land.id);
-    //logerr("tri id 1 %d",int(terrain.triIndices.size()));
-    hrMeshAppendTriangles3(terrainMeshRef, int(terrain.triIndices.size()), &terrain.triIndices[0]);
+    Visualizer vis;
+    Model model;
+    vis.heightmap_to_model(*(scene.heightmap), &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
+    HrMesh_from_mesh(terrainMeshRef, model, mat_land.id);
   }
-  hrMeshClose(terrainMeshRef);
 
-  std::vector<SimpleMesh> instancedModelsS;
   std::vector<HRMeshRef> instancedModels;
   std::vector<HRMaterialRef> instancedModelsMaterials;
   std::vector<HRTextureNodeRef> instancedModelsTextures;
@@ -319,9 +303,6 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   {
     if (!im.model || im.instances.empty())
       continue;
-    instancedModelsS.emplace_back();
-    SimpleMesh &m = instancedModelsS.back();
-    model_to_simple_mesh(*(im.model), m);
     
     std::wstring mat_name = L"im_mat_" + std::wstring(im.name.begin(), im.name.end());
     std::wstring mat_dir = base_dir_w + std::wstring(im.tex.origin.begin(), im.tex.origin.end());
@@ -345,65 +326,30 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     }
     hrMaterialClose(mat);
 
-    if (m.triIndices.size() > 0)
-    {
-      instancedModelsTransforms.push_back(&(im.instances));
-      std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
-      instancedModels.push_back(hrMeshCreate(name.c_str()));
-      hrMeshOpen(instancedModels.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
-      {
-        hrMeshVertexAttribPointer3f(instancedModels.back(), L"pos",      &m.vPos[0]);
-        hrMeshVertexAttribPointer3f(instancedModels.back(), L"norm",     &m.vNorm[0]);
-        hrMeshVertexAttribPointer2f(instancedModels.back(), L"texcoord", &m.vTexCoord[0]);
-        hrMeshMaterialId(instancedModels.back(), mat.id);
-
-        //logerr("tri id 2 %d",int(br.triIndices.size()));
-        hrMeshAppendTriangles3(instancedModels.back(), int(m.triIndices.size()), m.triIndices.data());
-      }
-      hrMeshClose(instancedModels.back());
-    }
-    logerr("tex %s", im.tex.origin.c_str());
+    instancedModelsTransforms.push_back(&(im.instances));
+    std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
+    instancedModels.push_back(hrMeshCreate(name.c_str()));
+    HrMesh_from_mesh(instancedModels.back(), *(im.model), mat.id);
   }
 
   std::vector<HRMeshRef> branches;
-  std::vector<SimpleMesh> meshes;
   std::vector<InstanceDataArrays *> IDAs;
 
   for (auto &pb : scene.grove.instancedBranches)
   {
-    meshes.emplace_back();
-    SimpleMesh &br = meshes.back();
-    packed_branch_to_simple_mesh(br,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
-    if (br.triIndices.size() > 0)
-    {
-      std::wstring name = L"branch" + std::to_wstring(branches.size());
-      IDAs.push_back(&(pb.IDA));
-      branches.push_back(hrMeshCreate(name.c_str()));
-      hrMeshOpen(branches.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
-      {
-        hrMeshVertexAttribPointer3f(branches.back(), L"pos",      &br.vPos[0]);
-        hrMeshVertexAttribPointer3f(branches.back(), L"norm",     &br.vNorm[0]);
-        hrMeshVertexAttribPointer2f(branches.back(), L"texcoord", &br.vTexCoord[0]);
-        hrMeshPrimitiveAttribPointer1i(branches.back(), L"mind", br.matIndices.data());
-
-        //logerr("tri id 2 %d",int(br.triIndices.size()));
-        hrMeshAppendTriangles3(branches.back(), int(br.triIndices.size()), br.triIndices.data());
-      }
-      hrMeshClose(branches.back());
-    }
+    Mesh m;
+    packed_branch_to_mesh(m,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
+    std::wstring name = L"branch" + std::to_wstring(branches.size());
+    IDAs.push_back(&(pb.IDA));
+    branches.push_back(hrMeshCreate(name.c_str()));
+    HrMesh_from_mesh(branches.back(), m);
   }
 
     std::vector<Model *> grass_models;
-    std::vector<SimpleMesh> grass_meshes;
     std::vector<HRMeshRef> grasses;
 
     std::vector<int> inst_offsets;
     std::vector<int> inst_counts;
-    /*
-    std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
-    std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
-    std::vector<float> normals = {0,0,1, 0,0,1, 0,0,1, 0,0,1, 1,0,0, 1,0,0, 1,0,0, 1,0,0};
-    std::vector<GLuint> indices = {0, 1, 3, 2, 0, 3, 4,5,7, 6,4,7};*/
 
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
     Texture null = textureManager.empty();
@@ -445,23 +391,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     for (auto *model : grass_models)
     {
       std::wstring name = L"grass" + std::to_wstring(grasses.size());
-      grass_meshes.emplace_back();
-      SimpleMesh &mesh = grass_meshes.back();
-      model_to_simple_mesh(*model, mesh);
-
       grasses.push_back(hrMeshCreate(name.c_str()));
-      hrMeshOpen(grasses.back(), HR_TRIANGLE_IND3, HR_WRITE_DISCARD);
-      {
-        hrMeshVertexAttribPointer3f(grasses.back(), L"pos",      &mesh.vPos[0]);
-        hrMeshVertexAttribPointer3f(grasses.back(), L"norm",     &mesh.vNorm[0]);
-        hrMeshVertexAttribPointer2f(grasses.back(), L"texcoord", &mesh.vTexCoord[0]);
-        
-        hrMeshMaterialId(grasses.back(), mat_grass.id);
-        //logerr("tri id 3 %d",int(mesh.triIndices.size()));
-        hrMeshAppendTriangles3(grasses.back(), int(mesh.triIndices.size()), mesh.triIndices.data());
-      }
-      hrMeshClose(grasses.back());
-
+      HrMesh_from_mesh(grasses.back(), *model, mat_grass.id);
       delete model;
     }
 
