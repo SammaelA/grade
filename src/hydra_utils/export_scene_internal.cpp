@@ -69,7 +69,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
       for (int i=verts;i<model.colors.size();i+=4)
       {
         model.colors[i] = (model.colors[i] + w_tc_trans.z)*w_tc_trans.x;
-        model.colors[i + 1] = (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
+        model.colors[i + 1] = 1 - (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
       }
     uint l_ind_offset = model.indices.size();
     uint l_verts = model.colors.size();
@@ -100,7 +100,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
       for (int i=verts;i<model.colors.size();i+=4)
       {
         model.colors[i] = (model.colors[i] + w_tc_trans.z)*w_tc_trans.x;
-        model.colors[i + 1] = (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
+        model.colors[i + 1] = 1 - (model.colors[i + 1] + w_tc_trans.w)*w_tc_trans.y;
       }
     }
     uint l_end = model.indices.size();
@@ -568,7 +568,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     delete matrices;
     hrLightInstance(scnRef, sky, mind.L());
-    auto mres = hlm::mul(hlm::rotate4x4Z(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 100.0f, 0.0f}));
+    auto mres = hlm::mul(hlm::rotate4x4Z(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);

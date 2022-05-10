@@ -566,7 +566,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
     {
-        int type_slice = 0;//unused ggd->types[type].wood_id;
+        int type_slice = ggd->types[type].wood_id;
         if (id < 0)
         {
             logerr("invalid id = %d", id);
@@ -595,7 +595,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     verts = l_verts;
     if (need_leaves)
     {
-        int type_slice = 0;//unused ggd->types[type].leaf_id;
+        int type_slice = ggd->types[type].leaf_id;
         for (int id : branch.branches)
         {
             if (id < 0)
@@ -762,4 +762,5 @@ void GroveRenderer::prepare_wood_types_atlas()
     }
 
     atlas->gen_mipmaps();
+    textureManager.save_png(atlas->tex(0), "wl_atlas");
 }

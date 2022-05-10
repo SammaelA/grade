@@ -3,7 +3,30 @@
     {
 
     }
-    mixed_forest
+    simple_forest
+    {
+        trees
+        {
+            coverage:s = "full"
+            density:r = 3
+            types
+            {
+                medium_oak_simplified:r = 0.5
+                bush_s:r = 0.5
+            }
+        }
+        grass
+        {
+            coverage:s = "full"
+            density:r = 5
+            types
+            {
+                grass_meadow_1:r = 0.5
+                lily:r = 0.5
+            }
+        }
+    }
+    pine_forest
     {
         trees
         {
@@ -11,27 +34,45 @@
             density:r = 1
             types
             {
-                simple_tree:r = 1
-            }
-        }   
-        trees
-        {
-            coverage:s = "patches"
-            coverage_part:r = 0.25
-            density:r = 3
-            patch_size:r = 50
-            types
-            {
-                bush:r = 1
+                pine_small:r = 0.6
+                pine_large:r = 0.4
             }
         }
         grass
         {
             coverage:s = "full"
-            density:r = 0.4
+            density:r = 2
             types
             {
-                grass_meadow_1:r = 1.0
+                grass_meadow_1:r = 0.5
+                lily:r = 0.5
+            }
+        }        
+    }
+    mixed_forest
+    {
+        trees
+        {
+            coverage:s = "full"
+            density:r = 0.75
+            types
+            {
+                //simple_tree:r = 0.2
+                //small_oak_simplified:r = 0.3
+                //large_oak_simplified_2:r = 0.2 
+                //bush_s:r = 0.3
+                pine_small:r = 0.6
+                pine_large:r = 0.4
+            }
+        }   
+        grass
+        {
+            coverage:s = "full"
+            density:r = 2
+            types
+            {
+                grass_meadow_1:r = 0.5
+                lily:r = 0.5
             }
         }
     }
@@ -60,6 +101,16 @@
                 flowers_2:r = 0.5
             }
         }
+        trees
+        {
+            coverage:s = "full"
+            density:r = 0.0
+            types
+            {
+                bush_r:r = 0.3
+                bush_3:r = 0.7
+            }
+        }  
         //trees
         //{
         //    coverage:s = "patches"

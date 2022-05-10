@@ -5,19 +5,14 @@
         simple_tree:tag
         simple_tree:tag
     }
-    scene_size:p2 = 1750, 1750
-    heightmap_size:p2 = 1750, 1750
-    //max_trees_per_patch:i = 5
+    scene_size:p2 = 1800, 1800
+    heightmap_size:p2 = 4000, 4000
+    grass_field_size:p2 = 1800, 1800
     heightmap_cell_size:r = 15
-    grass
+    grass { }
+    biome:s = "simple_forest"
+    forest_size:r = 100
+    objects
     {
-        //grass_meadow_1:r = 0.7
-        //grass_meadow_3:r = 0.4
-        //lily:r = 1.5
-        //flowers_1:r = 0.18
-        //flowers_2:r = 0.25
-        
-        //grass_detailed_1:r = 0.5
-        //grass_detailed_3:r = 0.5
     }
 }

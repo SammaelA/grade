@@ -51,7 +51,7 @@ std::vector<glm::vec3> Planter::get_saplings()
     for (int i=0;i<cnt;i++)
     {
         const int max_points = 50;
-        const int max_tries = 1000;
+        const int max_tries = 50;
         int tries = 0;
         float sum = 0;
         std::vector<glm::vec3> points;

@@ -360,7 +360,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
-    std::string ref_type_name = "";
+    std::string ref_type_name = "pine_large";
     if (ref_type_name != "" && !ref_type)
     {
         tree_ggd.types = {metainfoManager.get_tree_type(ref_type_name)};
@@ -487,7 +487,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::vector<float> parList_f;
     parList.to_simple_list(parList_f, true, true);
     bool test_functions = false;
-    bool selection = true;
+    bool selection = false;
     if (test_functions)
     {
         ex_c.function_calculated = 50000;
@@ -1372,8 +1372,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             Block export_settings;
             float sz = 0.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
             logerr("%f %f %f", sz, ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y);
-            export_settings.add_vec3("camera_look_at", glm::vec3(0,1.5*sz,0));
-            export_settings.add_vec3("camera_pos", glm::vec3(2*sz,1*sz,0));
+            export_settings.add_vec3("camera_look_at", glm::vec3(0,53,0));
+            export_settings.add_vec3("camera_pos", glm::vec3(-18.6,53,8));
             export_settings.add_bool("need_terrain",true);
             export_settings.add_bool("white_terrain",true);
             export_settings.add_string("demo_copy_dir", "saves/"+file_name + "_res");

@@ -34,7 +34,7 @@ void MetainfoManager::load_tree_types()
                     std::string leaf_tex_name = bl->get_string("leaf_tex_name", "leaf"); \
                     Param *params = new Param(); \
                     params->load_from_blk(*bl); \
-                    TreeTypeData type = TreeTypeData(id, params, wood_tex_name, leaf_tex_name); \
+                    TreeTypeData type = TreeTypeData(i, params, wood_tex_name, leaf_tex_name); \
                     type.generator_name = gen_name; \
                     add_tree_type(type, name); \
                 } \
@@ -235,14 +235,14 @@ void MetainfoManager::add_tree_type(TreeTypeData &ttd, std::string name)
     auto it = tree_type_id_by_name.find(name);
     if (it == tree_type_id_by_name.end())
     { 
+        ttd.type_id = tree_types.size();
         tree_type_id_by_name.emplace(name, tree_types.size());
         tree_types.push_back(ttd);
-        //logerr("%s: type %s loaded", ttd.generator_name.c_str(), name.c_str());
     }
     else
     {
+        ttd.type_id = it->second;
         tree_types[it->second] = ttd;
-        //logerr("%s: type %s recreated", ttd.generator_name.c_str(), name.c_str());
     }
 }
 

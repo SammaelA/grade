@@ -1769,6 +1769,7 @@ void WeberPennGenerator::finalize_generation(::Tree *trees_external, LightVoxels
 
         Tree tree;
         tree.init(*params,true);
+        tree.seed = trees_external[i].id;
         tree.make();
         convert(tree, trees_external[i]);
         tree.clear();

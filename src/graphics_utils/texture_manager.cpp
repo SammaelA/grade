@@ -140,7 +140,7 @@ TextureManager::TextureManager(std::string base_path, Block &textures_used)
 {
     image::base_img_path = base_path;
     std::vector<std::string> names = {"texture not found"};
-    std::vector<std::string> paths = {"texture_not_found.png"};
+    std::vector<std::string> paths = {"wood3.jpg"};
     
     for (int i=0;i<textures_used.size();i++)
     {

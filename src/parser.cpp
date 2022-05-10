@@ -312,7 +312,7 @@ namespace parser
       int cnt = 0;
       float dist = 75;
       int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak_simplified");
-      int b_id = metainfoManager.get_tree_type_id_by_name("bush_s");
+      int b_id = metainfoManager.get_tree_type_id_by_name("ref30.jpg_selected_params_9");
       int l_id = metainfoManager.get_tree_type_id_by_name("bush_s");
 /*
       int ids[3] = {t_id, b_id, l_id};
@@ -330,18 +330,21 @@ namespace parser
         }
       }
 */
-      //sceneGen.set_biome_round(glm::vec2(0,0),50,"mixed_forest");
+
+      //sceneGen.set_biome_round(glm::vec2(0,0),500,"meadow");
+      //sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "mixed_forest"));
+      sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "pine_forest"));
       //sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
-      sceneGenerationContext.biome_map.save_as_image();
+      //sceneGenerationContext.biome_map.save_as_image();
       //
       Block objs;
-      int p_cnt = 14;
+      int p_cnt = 0;
       for (int i=0;i<p_cnt;i++)
       {
-        for (int j=0;j<p_cnt;j++)
+        for (int j=0;j<2;j++)
         {
-          glm::vec pos = glm::vec2(50 * (i + urand()), 50 * (j + urand()));
-          sceneGen.plant_tree(pos, urand() > 0.5 ? t_id : l_id);
+          glm::vec pos = glm::vec2(150 * (i + urand(-0.2, 0.2)), 150 * (-1 + 2*j));
+          sceneGen.plant_tree(pos, b_id);
         }
       }
       for (int i = 0; i < 0; i++)
@@ -384,6 +387,17 @@ namespace parser
         if (b)
           sceneGen.add_object_blk(*b);
       }
+      man.save_block_to_file("objs.blk", objs);
+      Block *objects = gen_settings.get_block("objects");
+      if (objects)
+      {
+        for (int i = 0; i < objects->size(); i++)
+        {
+          Block *b = objects->get_block(i);
+          if (b)
+            sceneGen.add_object_blk(*b);
+        }        
+      }
       //
       sceneGenerationContext.objects_bvh.rebuild();
       sceneGen.create_scene_auto();
@@ -397,9 +411,9 @@ namespace parser
     {
       HydraSceneExporter hExp;
       Block export_settings;
-      glm::vec3 camera_pos = glm::vec3(-2*84,2*61.35,6);
-      glm::vec3 camera_dir = glm::vec3(0.88,-0.15,0.47);
-      export_settings.add_vec3("camera_look_at", camera_pos + camera_dir);
+      glm::vec3 camera_pos = glm::vec3(-300, 100, -300);
+      glm::vec3 camera_dir = glm::vec3(1, 0, 0.15);
+      export_settings.add_vec3("camera_look_at", glm::vec3(0,130,0));
       export_settings.add_vec3("camera_pos", camera_pos);
       hExp.export_scene(hydra_scene_dir, scene, export_settings);
     }

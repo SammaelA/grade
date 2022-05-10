@@ -315,7 +315,7 @@ void SceneGenerator::create_heightmap_simple_auto()
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   ctx.scene->heightmap = new Heightmap(ctx.center3, ctx.heightmap_size,ctx.hmap_pixel_size);
-  ctx.scene->heightmap->load_from_image(0,0,25,"heightmap1.jpg");
+  ctx.scene->heightmap->load_from_image(0,0,100,"heightmap1.jpg");
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   debug("created heightmap. Took %.2f ms\n", ms);
@@ -364,7 +364,7 @@ void SceneGenerator::generate_grove()
   std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
   GroveGenerationData ggd;
   ggd.types = types; 
-
+  ggd.task = GENERATE | CLUSTERIZE | MODELS;
   std::vector<Cell> &cells = ctx.cells;
   int &cells_x = ctx.cells_x;
   int &cells_y = ctx.cells_y;

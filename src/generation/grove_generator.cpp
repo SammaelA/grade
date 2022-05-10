@@ -69,6 +69,10 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
                     trees_planted++;
                 }
             }
+            else
+            {
+                prototype.trees_count = trees_planted;
+            }
         }
 
         generating = false;
