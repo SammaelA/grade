@@ -6,14 +6,14 @@
         light_importance:r = 0.5
         max_clusters_in_layer:i = 1000
         recursive_clustering_layers:i = 2
-        average_cluster_size_goal:r = 1
+        average_cluster_size_goal:r = 30
         impostor_texture_size:i = 32
         leaves_opacity:r = 0.33
         impostor_hash_size:i = 8
     }
     trunks_params
     {
-        average_cluster_size_goal:r = 1
+        average_cluster_size_goal:r = 20
         wood_size_mult:r = 4
         light_importance:r = 0.5
     }

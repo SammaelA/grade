@@ -342,21 +342,20 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         {
             auto &stripes = alt_tree_infos[i*slices_per_impostor + sl];//TODO: fix for multisliced impostors
             float trunk_sum = 0;
-            float trunk_val = 0;
-            int trunk_stripes = 0;
-            int crown_stripes = 0;
             if (stripes.size() == reference.alternative_image_info.size())
             {
+                float trunk_val = 0;
+                int trunk_stripes = 0;
+                int crown_stripes = 0;
                 float max_points = 0;
                 float points = 0;
+                
                 for (int s = 0; s< stripes.size(); s++)
                 {
                     glm::vec4 &b1 = reference.alternative_image_info[s].crown_bord;
                     glm::vec4 &b2 = stripes[s].crown_bord;
                     if (b1.x < 0 && b2.x < 0)
-                    {
                         continue;
-                    }
                     crown_stripes++;
 
                     float reflow_implow = MAX(0, MIN(b1.y, b2.y) - MAX(b1.x, b2.x)) + MAX(0, MIN(b1.y, b2.w) - MAX(b1.x, b2.z)) + 
@@ -376,38 +375,20 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                     float ls2 = stripes[s].leaves_share;
                     float bp1 = bs1/(bs1 + ls1 + 1e-4);
                     float bp2 = bs2/(bs2 + ls2 + 1e-4);
-                    float b_share_mult = MAX(0.01,sqrt(bp1*cmp_sim(bs1, bs2) + (1-bp1)*cmp_sim(ls1,ls2)));
+                    float b_share_mult = smoothstep3(MAX(0.01,sqrt(bp1*cmp_sim(bs1, bs2) + (1-bp1)*cmp_sim(ls1,ls2))));
                     float bl_mult = cmp_sim(bp1+0.1,bp2+0.1);
-                    //bl_mult = smoothstep3(bl_mult);
-                    b_share_mult = smoothstep3(b_share_mult);
                     float y_mult = MAX(0.01, (MIN(y1.y, y2.y) - MAX(y1.x, y2.x)))/MAX(1, y1.y - y1.x);
                     float max_p_add = MAX(0.5*(b1.y - b1.x) + 0.5*(b1.z - b1.y) + 0.5*(b1.w - b1.z), 0.5*(b2.y - b2.x) + 0.5*(b2.z - b2.y) + 0.5*(b2.w - b2.z));
                     float p_add = 0.5*(reflow_implow + 0.9*reflow_imphigh) + 0.5*(refhigh_imphigh + 0.9*refhigh_implow);
-                    //float sim = p_add / max_p_add;
-                    //p_add = smoothstep3(sim)*max_p_add;
                     p_add *= b_share_mult*y_mult*bl_mult;
                     max_points += max_p_add;
                     points += p_add;
-                    if (debug_print && i==0)
-                    {
-                        //logerr("[%d]%f %f -- %f %f",s,bs1,ls1,bs2,ls2);
-                        //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
-                        //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
-                        //logerr("stripe %d max points %f", s, max_p_add);
-                        //logerr("stripe %d points %f", s, p_add);
-                        //logerr("quality [%f %f %f] [%f %f %f]", reflow_implow, reflow_imphigh, reflow_impemp, refhigh_imphigh, refhigh_implow, refhigh_impemp);
-                        //logerr("q %f %f %f %f", sim, b_share_mult, bl_mult, y_mult);
-                    }
                     if (b1.z - b1.y + 2 > 0.5*(b1.w - b1.x) && bp1 > 0.67)
                     {
                         //it is probably trunk stripe
                         trunk_sum += max_p_add;
                         trunk_val += p_add;
                         trunk_stripes++;
-                        //logerr("reference stripe %f %f %f %f -- %f %f -- %f",b1.x,b1.y,b1.z,b1.w,y1.x,y1.y,reference.alternative_image_info[s].branches_share);
-                        //logerr("impostor  stripe %f %f %f %f -- %f %f -- %f",b2.x,b2.y,b2.z,b2.w,y2.x,y2.y,stripes[s].branches_share);
-                        //logerr("stripe %d max points %f", s, max_p_add);
-                        //logerr("stripe %d points %f", s, p_add);
                     }
                 }
                 float d1 = points/max_points;

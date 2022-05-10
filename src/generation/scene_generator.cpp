@@ -368,21 +368,21 @@ void SceneGenerator::generate_grove()
   std::vector<Cell> &cells = ctx.cells;
   int &cells_x = ctx.cells_x;
   int &cells_y = ctx.cells_y;
-
-/*
-  for (auto &c : cells)
-  {
-    ctx.biome_map.get_stat(c.biome_stat, c.bbox);
-    
-    debug("cell %d stat:", c.id);
-    for (auto &p : c.biome_stat)
+  
+  /*
+    for (auto &c : cells)
     {
-      debug(" (%d, %d)",p.first,p.second);
+      ctx.biome_map.get_stat(c.biome_stat, c.bbox);
+
+      debug("cell %d stat:", c.id);
+      for (auto &p : c.biome_stat)
+      {
+        debug(" (%d, %d)",p.first,p.second);
+      }
+      debugnl();
+
     }
-    debugnl();
-    
-  }
-*/
+  */
   GrassGenerator grassGenerator;
   glm::vec2 mask_size = ctx.grass_field_size;
   GroveMask global_mask = GroveMask(glm::vec3(mask_pos.x,0,mask_pos.y), mask_size, ctx.biome_map_pixel_size);
