@@ -198,3 +198,5 @@ public:
     void save_block_to_string(std::string &str, Block &b);
     void save_block_to_file(std::string path, Block &b);
 };
+
+extern std::string base_blk_path;

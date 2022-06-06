@@ -57,7 +57,7 @@ namespace parser
   bool demo_mode = false;
   bool sandbox = false;
   bool param_selection = false;
-  int demo_mode_trees_cnt = 0;
+  int demo_mode_trees_cnt = 1;
   int demo_mode_patch_size = 5;
   bool debug_bvh = false;
   bool no_init = false;
@@ -109,25 +109,8 @@ namespace parser
       }
       else if (std::string(argv[k]) == "-demo")
       {
-        if (argc > k + 1)
-        {
-          int n = std::stoi(argv[k + 1]);
-          if (n <= 0)
-          {
-            logerr("use \"demo <trees_count>\"");
-          }
-          else
-          {
-            demo_mode = true;
-            demo_mode_trees_cnt = n;
-          }
-          k += 2;
-        }
-        else
-        {
-          logerr("use \"demo <trees_count>\"");
-          k++;
-        }
+        demo_mode = true;
+        k++;
       }
       else if (std::string(argv[k]) == "-patch_size")
       {
@@ -219,6 +202,7 @@ namespace parser
     int joints = 0;
     int leaves = 0;
     int matrixes = 0;
+    int models = 0;
     for (auto &br : grove.instancedBranches)
     {
       matrixes += br.IDA.transforms.size();
@@ -228,6 +212,7 @@ namespace parser
         joints += b.joints.size();
         leaves += b.leaves.size();
       }
+      models++;
     }
     int verts = 4*joints + 4*leaves;
     int polys = 4*joints + 2*leaves;
@@ -239,6 +224,7 @@ namespace parser
     debug("%.1fk leaves\n", leaves*1e-3);
     debug("%.1fk vertices\n", verts*1e-3);
     debug("%.1fk polygons\n", polys*1e-3);
+    debug("%d models\n", models);
     debug("%d instance matrices\n", matrixes);
     debug("%.2f Mb models\n", model_size*1e-6);
     debug("%.2f Mb matrices\n", mat_size*1e-6);
@@ -420,6 +406,9 @@ namespace parser
     {
       sandbox_main(argc, argv, &scene);
     }
+    
+    print_size(scene.grove);
+
     if (save_to_hydra)
     {
       HydraSceneExporter hExp;
@@ -461,6 +450,17 @@ namespace parser
       }
       Tiny::view.pipeline = [&]()
       {
+        if (appContext.save_to_hydra)
+        {
+          HydraSceneExporter hExp;
+          Block export_settings;
+          glm::vec3 camera_pos = appContext.camera.pos;
+          glm::vec3 camera_dir = appContext.camera.front;
+          export_settings.add_vec3("camera_look_at", camera_pos + camera_dir);
+          export_settings.add_vec3("camera_pos", camera_pos);
+          hExp.export_scene(hydra_scene_dir, scene, export_settings);
+          exit(0);
+        }
         worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);
         worldRenderer.set_forced_LOD(appContext.forced_LOD);
         worldRenderer.set_render_mode(appContext.render_mode);

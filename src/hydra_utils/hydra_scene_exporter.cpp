@@ -125,5 +125,6 @@ bool HydraSceneExporter::export_internal1(std::string directory, Scene &scene, B
 bool HydraSceneExporter::export_scene(std::string directory, Scene &scene, Block &export_settings)
 {
     export_internal1(directory, scene, export_settings);
+    debug("Scene successfully exported to hydra_scene/%s\n", directory.c_str());
     return true;
 }

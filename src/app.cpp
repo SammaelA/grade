@@ -154,6 +154,11 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
     ctx.add_generation_needed = true;
     event.active[SDLK_t] = false;
   }
+  if (event.active[SDLK_h])
+  {
+    ctx.save_to_hydra = true;
+    event.active[SDLK_h] = false;
+  }
   if (event.active[SDLK_ESCAPE])
   {
     exit(0);

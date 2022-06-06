@@ -5,6 +5,8 @@
 #include "common_utils/utility.h"
 #include <boost/algorithm/string.hpp>
 
+std::string base_blk_path = "config/";
+
 int cur_line = 0;
 bool in_comment_assume = false;
 bool in_comment = false;
@@ -392,7 +394,7 @@ bool BlkManager::load_block_from_string(std::string &str, Block &b)
 
 bool BlkManager::load_block_from_file(std::string path, Block &b)
 {
-    std::fstream f(path);
+    std::fstream f(base_blk_path + path);
     std::stringstream iss;
     if (f.fail())
     {
@@ -667,7 +669,7 @@ void BlkManager::save_block_to_file(std::string path, Block &b)
 
     save_block(input, b);
 
-    std::ofstream out(path);
+    std::ofstream out(base_blk_path + path);
     out << input;
     out.close();
 }

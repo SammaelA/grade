@@ -50,6 +50,7 @@ struct AppContext
 
     bool regeneration_needed = false;
     bool add_generation_needed = false;
+    bool save_to_hydra = false;
 };
 
 extern std::function<void(AppContext &, Event &)> eventHandler;
