@@ -373,6 +373,8 @@ bool load_block(const char *data, int &cur_pos, Block &b)
 
 bool BlkManager::load_block_from_string(std::string &str, Block &b)
 {
+    if (str.empty())
+        return false;
     cur_line = 0;
     int cur_pos = 0;
     const char *data = str.c_str();

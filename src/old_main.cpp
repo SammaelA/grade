@@ -28,7 +28,7 @@
 #include "common_utils/python_interaction.h"
 #include "gltf_utils/general_gltf_writer.h"
 #include <thread>
-#include "generation/parameter_selection.h"
+#include "generation/parameter_selection_old.h"
 #include "save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
 #include "tree_generators/load_tree_structure.h"

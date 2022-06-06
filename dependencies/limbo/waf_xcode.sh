@@ -1,1 +1,0 @@
-(/home/sammael/grade/dependencies/limbo/waf $1 ) 2> >( sed -E "s|../src/([^/][a-zA-Z/_]+\.cpp)|/home/sammael/grade/dependencies/limbo/src/\1|g;s|../src/([^/][a-zA-Z/_]+\.hpp)|/home/sammael/grade/dependencies/limbo/src/\1|g" >&2 )

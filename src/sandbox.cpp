@@ -11,7 +11,6 @@
 #include "tree_generators/all_generators.h"
 #include "tree_generators/weber_penn_generator.h"
 #include "parameter_selection/neural_selection.h"
-#include <limbo/limbo.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -295,7 +294,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     man.load_block_from_file("parameter_selection_settings.blk", b);
     man.load_block_from_file("parameter_selection_reference.blk", ref_info);
     std::string add_str = "";
-    if (argc == 3 && argv[2] != "-render")
+    if (argc == 3 && std::string(argv[2]) != "-render")
     {
         logerr("argv %s",argv[2]);
         add_str = argv[2];

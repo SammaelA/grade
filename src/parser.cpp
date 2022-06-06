@@ -26,7 +26,6 @@
 #include "common_utils/python_interaction.h"
 #include "gltf_utils/general_gltf_writer.h"
 #include <thread>
-#include "generation/parameter_selection.h"
 #include "save_utils/blk.h"
 #include "clustering/clustering_benchmark.h"
 #include "tree_generators/load_tree_structure.h"
@@ -46,7 +45,7 @@
 #include "graphics_utils/debug_transfer.h"
 #include "generation/metainfo_manager.h"
 #include "sandbox.h"
-
+#include "parameter_selection/parameter_selection.h"
 namespace parser
 {
   AppContext appContext;
@@ -57,6 +56,7 @@ namespace parser
   std::string hydra_scene_dir = "vegetation_scene";
   bool demo_mode = false;
   bool sandbox = false;
+  bool param_selection = false;
   int demo_mode_trees_cnt = 0;
   int demo_mode_patch_size = 5;
   bool debug_bvh = false;
@@ -173,6 +173,11 @@ namespace parser
       else if (std::string(argv[k]) == "-sandbox")
       {
         sandbox = true;
+        k++;
+      }
+      else if (std::string(argv[k]) == "-selection")
+      {
+        param_selection = true;
         k++;
       }
       else if (std::string(argv[k]) == "-debug")
@@ -400,6 +405,16 @@ namespace parser
       
       //print_size(scene.grove);
     */
+    }
+    else if (param_selection)
+    {
+      Block b, ref_info;
+      BlkManager man;
+      metainfoManager.reload_all();
+      man.load_block_from_file("parameter_selection_settings.blk", b);
+      man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+      ParameterSelector sel;
+      auto res = sel.parameter_selection(ref_info, b, &scene);
     }
     else if (sandbox)
     {

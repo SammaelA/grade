@@ -27,9 +27,6 @@ message(HYDRA_LIB3=${HYDRA_LIB3})
 find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
 message(HYDRA_LIB4=${HYDRA_LIB4})
 
-find_library(NLOPT libnlopt_cxx.a /usr/local/lib)
-message(NLOPT=${NLOPT})
-
 find_package(Boost REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
@@ -48,11 +45,11 @@ set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 set(CMAKE_CXX_FLAGS "-g -O3 -W -Wno-sign-compare -Wno-int-to-pointer-cast -pthread")
-set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lnlopt_cxx -lm")
+set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 file(GLOB IMGUI_SRC src/imgui/*.cpp)
 include_directories("dependencies/pyclustering/ccore/include" "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
-                    ${PYTHON_INCLUDE_DIRS} "dependencies/python" "src" "dependencies/Hydra" "dependencies/limbo/src")
+                    ${PYTHON_INCLUDE_DIRS} "dependencies/python" "src" "dependencies/Hydra")
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
 file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
 add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC})
@@ -64,7 +61,6 @@ target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBR
                         ${HYDRA_LIB2}
                         ${HYDRA_LIB3}
                         ${HYDRA_LIB4}
-                        ${NLOPT}
                         freeimage
                         glfw
                         dl
