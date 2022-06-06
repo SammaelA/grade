@@ -2,10 +2,10 @@
 #include "common_utils/distribution.h"
 #include "common_utils/utility.h"
 
-void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat, bool reload)
+void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction &my_opt_f, FunctionStat &stat, int count, bool reload)
 {
     int batch_size = 512;
-    int batches = 300;
+    int batches = ceil(count/batch_size);
     stat = FunctionStat(param_list.size());
     stat.name = my_opt_f.name;
     stat.version = my_opt_f.version;
@@ -239,16 +239,22 @@ void my_opt::FunctionStat::print()
 
     debug("By variable values:\n");
     int i=0;
+    debug("var_id, ");
+    for (int j=0;j<Q_NUM;j++)
+    {
+        debug("[%.1f - %.1f], ", (float)(j)/Q_NUM, (float)(j+1)/Q_NUM);
+    }
+    debugnl();
     for (auto &var : by_variable_values)
     {
-        debug("x_%d: ",i);
+        debug("x_%d, ",i);
         for (int j=0;j<Q_NUM;j++)
         {
             float mark = marks[i][j];
             if (mark > 0)
-                debug("+%.1f ", mark);
+                debug("+%.1f, ", mark);
             else
-                debug("%.1f ", mark);
+                debug("%.1f, ", mark);
         }
         debugnl();
         i++;
@@ -258,6 +264,6 @@ void my_opt::FunctionStat::print()
     for (int i=0;i<20;i++)
     {
         if (marks_q[i][1] > 0)
-            debug("%.1f -- %d %.2f\n", (float)(i-10), marks_q[i][1], (float)marks_q[i][0]/marks_q[i][1]);
+            debug("%.1f, %.2f\n", (float)(i-10), (float)marks_q[i][0]/marks_q[i][1]);
     }
 }

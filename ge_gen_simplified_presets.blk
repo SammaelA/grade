@@ -195,4 +195,30 @@
         initial_trunk_scale:p2 = 1,1
         //R0:r = 7.000000
     }
+    baobab
+    {
+        wood_tex_name:s = "wood5"
+        leaf_tex_name:s = "leaf3"
+        res_q:r = 0.75
+        root_type:i = 3
+        Xm:r = 50
+        resource_mult:r = 4.5
+        branching_angle_max:r = 4.0
+        branching_angle_min:r = 3.0
+        r_s:r = 0.0
+        r:r = 0.3
+        mu:r = 0.5
+        leaves_cnt:r = 1.5
+        tropism_params:p4 = 1, 1, 0.06, 1.0
+        remove_min_level:i = 2
+        initial_trunk_scale:p2 = 2,0.5
+        L0:r = 200
+        R0:r = 3.000000
+        iR:p4 = 0.5,0.3, 0.2, 0
+        Lt:p4 = 1,1,1,1
+        r_pow:r = 1.6
+        base_r:r = 0.035
+        B_cnt:i = 6
+        psi:p4 = 1,1,1,1
+    }
 }

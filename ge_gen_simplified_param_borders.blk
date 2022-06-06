@@ -29,8 +29,8 @@
     distance_fine_slope_y:p2 = 0, 500
 
     B_cnt:p2 = 0, 32
-    L0:p2 = 0, 100
-    R0:p2 = 0, 15
+    L0:p2 = 150, 250
+    R0:p2 = 10, 20
     dX:p2 = 0, 2
     iR_x:p2 = 0, 1
     iR_y:p2 = 0, 1

@@ -277,7 +277,7 @@ void GETreeGenerator::create_universal_initial_trink(Tree &t, GETreeParameters &
         float r = t.root.joints.back().r * params.dR[RND_N];
 
         float sectors = 8;
-        float phi = ((int)(sectors*params.phi[pos_phi_n[(int)self_rand(0,pos_phi_n.size() - 1e-4)]]) + self_rand(0,1))/sectors*2*PI;
+        float phi = ((int)(sectors*params.phi[pos_phi_n[(int)self_rand(0,pos_phi_n.size() - 1e-4)]]) + self_rand(0,1))/sectors*PI;
         float psi = ((int)(sectors*params.psi[RND_N]) + self_rand(0,1))/sectors*PI/2;
         float l = params.Lb[RND_N];
 

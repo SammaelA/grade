@@ -6,7 +6,7 @@
     leaves_density:r = 5
     reference_image
     {
-        image:s = "ref30.jpg"
+        image:s = "ref8.png"
         //wood_color:p3 = 0.0, 0.0, 0.0
         //leaves_color:p3 = 0, 0.5, 0
         background_color:p3 = 1, 1, 1

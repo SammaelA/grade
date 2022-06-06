@@ -360,7 +360,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::string gen_name = selection_settings.get_string("generator_name", "simpliest_gen");
     float imp_size = selection_settings.get_int("impostor_size", 128);
     GroveGenerationData tree_ggd;
-    std::string ref_type_name = "pine_large";
+    std::string ref_type_name = "";
     if (ref_type_name != "" && !ref_type)
     {
         tree_ggd.types = {metainfoManager.get_tree_type(ref_type_name)};
@@ -487,7 +487,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::vector<float> parList_f;
     parList.to_simple_list(parList_f, true, true);
     bool test_functions = false;
-    bool selection = false;
+    bool selection = true;
     if (test_functions)
     {
         ex_c.function_calculated = 50000;
@@ -553,10 +553,15 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             initial_params_f.emplace_back();
             p.to_simple_list(initial_params_f.back(), true, true);
         }
-        //my_opt::FunctionStat f_stat;
-        //my_opt::get_function_stat(parList_f, optF, f_stat, true);
-        //f_stat.print();
-        // return;
+        bool add_stat = selection_settings.get_bool("add_stat", false);
+        bool replace_stat = selection_settings.get_bool("replace_stat", false);
+        int stat_count = selection_settings.get_int("stat_count", 51200);
+        if (add_stat || replace_stat)
+        {
+            my_opt::FunctionStat f_stat;
+            my_opt::get_function_stat(parList_f, optF, f_stat, stat_count, replace_stat);
+            f_stat.print();
+        }
         optimizer->perform(parList_f, meta_parameters, ex_c, optF, best_pars_f, initial_params_f);
         for (auto &p : best_pars_f)
         {

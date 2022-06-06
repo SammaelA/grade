@@ -3,8 +3,6 @@
 #include "tinyEngine/TinyEngine.h"
 #include "glm/trigonometric.hpp"
 #include "tinyEngine/image.h"
-//#include "tinyEngine/color.h"
-//#include "tinyEngine/helper.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
@@ -51,9 +49,6 @@
 
 namespace parser
 {
-  //View Tiny::view;   //Window and Interface  (Requires Initialization)
-  //Event Tiny::event; //Event Handler
-  //Audio Tiny::audio; //Audio Processor       (Requires Initialization)
   AppContext appContext;
 
   bool render_needed = false;
@@ -307,14 +302,28 @@ namespace parser
       sceneGen.init_scene(gen_settings);
       sceneGen.create_heightmap_simple_auto();
       sceneGen.set_default_biome("meadow");
+      sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "mixed_forest"));
+      Block *objects = gen_settings.get_block("objects");
+      if (objects)
+      {
+        for (int i = 0; i < objects->size(); i++)
+        {
+          Block *b = objects->get_block(i);
+          if (b)
+            sceneGen.add_object_blk(*b);
+        }        
+      }
+      sceneGenerationContext.objects_bvh.rebuild();
+      sceneGen.create_scene_auto();
+      /*
       //sceneGen.set_biome_round(glm::vec2(0,0),100,"bush");
       int sz = ceil(sqrt((float)demo_mode_trees_cnt));
       int cnt = 0;
       float dist = 75;
       int t_id = metainfoManager.get_tree_type_id_by_name("medium_oak_simplified");
       int b_id = metainfoManager.get_tree_type_id_by_name("ref30.jpg_selected_params_9");
-      int l_id = metainfoManager.get_tree_type_id_by_name("bush_s");
-/*
+      int l_id = metainfoManager.get_tree_type_id_by_name("baobab");
+
       int ids[3] = {t_id, b_id, l_id};
       for (int i = 0; i < sz; i++)
       {
@@ -329,22 +338,22 @@ namespace parser
           }
         }
       }
-*/
+
 
       //sceneGen.set_biome_round(glm::vec2(0,0),500,"meadow");
       //sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "mixed_forest"));
-      sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "pine_forest"));
+      //sceneGen.set_biome_round(glm::vec2(0,0),gen_settings.get_double("forest_size",200),gen_settings.get_string("biome", "pine_forest"));
       //sceneGen.set_biome_round(glm::vec2(0,100),50,"bush");
       //sceneGenerationContext.biome_map.save_as_image();
       //
       Block objs;
-      int p_cnt = 0;
+      int p_cnt = 1;
       for (int i=0;i<p_cnt;i++)
       {
         for (int j=0;j<2;j++)
         {
           glm::vec pos = glm::vec2(150 * (i + urand(-0.2, 0.2)), 150 * (-1 + 2*j));
-          sceneGen.plant_tree(pos, b_id);
+          sceneGen.plant_tree(pos, l_id);
         }
       }
       for (int i = 0; i < 0; i++)
@@ -388,20 +397,9 @@ namespace parser
           sceneGen.add_object_blk(*b);
       }
       man.save_block_to_file("objs.blk", objs);
-      Block *objects = gen_settings.get_block("objects");
-      if (objects)
-      {
-        for (int i = 0; i < objects->size(); i++)
-        {
-          Block *b = objects->get_block(i);
-          if (b)
-            sceneGen.add_object_blk(*b);
-        }        
-      }
-      //
-      sceneGenerationContext.objects_bvh.rebuild();
-      sceneGen.create_scene_auto();
-      print_size(scene.grove);
+      
+      //print_size(scene.grove);
+    */
     }
     else if (sandbox)
     {
