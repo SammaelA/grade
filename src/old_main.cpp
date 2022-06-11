@@ -44,9 +44,6 @@
 #include "render/visualizer.h"
 #include "render/terrain_renderer.h"
 
-View Tiny::view;   //Window and Interface  (Requires Initialization)
-Event Tiny::event; //Event Handler
-Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
 Config config;
 AppContext appContext;
