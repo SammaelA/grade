@@ -23,7 +23,6 @@
 #include "tinyEngine/deffered_target.h"
 #include "render/ambient_occlusion.h"
 #include "tinyEngine/cubemap.h"
-#include "common_utils/python_interaction.h"
 #include "gltf_utils/general_gltf_writer.h"
 #include <thread>
 #include "save_utils/blk.h"

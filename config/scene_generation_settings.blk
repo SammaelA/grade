@@ -7,11 +7,11 @@
     }
     scene_size:p2 = 1800, 1800
     heightmap_size:p2 = 4000, 4000
-    grass_field_size:p2 = 1800, 1800
+    grass_field_size:p2 = 60, 60
     heightmap_cell_size:r = 15
     grass { }
     biome:s = "simple_forest"
-    forest_size:r = 100
+    forest_size:r = 40
     objects
     {
     }

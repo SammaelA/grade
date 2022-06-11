@@ -7,7 +7,7 @@ struct Camera
     glm::vec3 pos = glm::vec3(0, 10, 10);
     glm::vec3 front = glm::vec3(0, 0, -10);
     glm::vec3 up = glm::vec3(0, 1, 0);
-    glm::mat4 camera_mat;
+    glm::mat4 camera_mat = glm::mat4(1.0f);
     float yaw = 0;
     float pitch = 0;
     float roll = 0;

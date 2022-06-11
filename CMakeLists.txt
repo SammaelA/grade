@@ -36,6 +36,10 @@ string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 message(opgllib = ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS})
 message(include =  ${OPENGL_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+
+add_library(libnoise SHARED IMPORTED)
+set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
+
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread") 
@@ -66,5 +70,6 @@ target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBR
                         dl
                         rt
                         stdc++fs
-                        OpenCL)
+                        OpenCL
+                        libnoise)
 

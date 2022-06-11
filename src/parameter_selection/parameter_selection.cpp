@@ -18,10 +18,10 @@ bool debug_stat = false;
 
 glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 {
-    return glm::vec4(tc_tr_2.x + tc_tr_1.x*tc_tr_2.z,
-                    tc_tr_2.y + tc_tr_1.y*tc_tr_2.w,
-                    tc_tr_1.z*tc_tr_2.z,
-                    tc_tr_1.w*tc_tr_2.w);
+    return glm::vec4(tc_tr_2.x + tc_tr_1.x * tc_tr_2.z,
+                     tc_tr_2.y + tc_tr_1.y * tc_tr_2.w,
+                     tc_tr_1.z * tc_tr_2.z,
+                     tc_tr_1.w * tc_tr_2.w);
 }
 
 Texture load_reference(std::string name, int image_w, int image_h)
@@ -76,8 +76,8 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::s
         copy.get_shader().uniform("layer", (float)layer);
         copy.render();
     }
-    //textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
-    //textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
+    // textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
+    // textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
 }
 
 void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *average_p, float *stddev_p)
@@ -131,8 +131,8 @@ float sel_quality(ParameterList &parList, ParameterList &referenceParList,
     return q;
 }
 
-void sel_quality(ParameterList &parList, const std::function<std::vector<float>(std::vector<ParameterList> &)> &metric, 
-                  int samples = 16)
+void sel_quality(ParameterList &parList, const std::function<std::vector<float>(std::vector<ParameterList> &)> &metric,
+                 int samples = 16)
 {
     std::vector<float> res;
     std::vector<ParameterList> parLists;
@@ -149,10 +149,10 @@ void sel_quality(ParameterList &parList, const std::function<std::vector<float>(
 
 LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 {
-    int sz_x = 25*ceil(1.5*ref_tree.info.BCyl_sizes.x/25);
-    int sz_y = 25*ceil(1.5*ref_tree.info.BCyl_sizes.y/25);
-    glm::vec3 ref_size = glm::vec3(sz_x, 0.5f*sz_y, sz_x);
-    //logerr("ref size %d %d", sz_x, sz_y);
+    int sz_x = 25 * ceil(1.5 * ref_tree.info.BCyl_sizes.x / 25);
+    int sz_y = 25 * ceil(1.5 * ref_tree.info.BCyl_sizes.y / 25);
+    glm::vec3 ref_size = glm::vec3(sz_x, 0.5f * sz_y, sz_x);
+    // logerr("ref size %d %d", sz_x, sz_y);
     return new LightVoxelsCube(glm::vec3(0, ref_size.y, 0), ref_size, 0.625f, 1.0f, 1, 2);
 }
 
@@ -184,7 +184,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     {
         auto *gen = get_generator(t.generator_name);
         if (gen->use_voxels_for_generation())
-         voxels_needed = true;
+            voxels_needed = true;
         delete gen;
     }
     for (int i = 0; i < num_threads; i++)
@@ -192,7 +192,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         if (voxels_needed)
             thr_voxels[i] = gen_voxels_for_selection(ref_tree);
         else
-            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0),glm::ivec3(1,1,1),1,1,2);
+            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::ivec3(1, 1, 1), 1, 1, 2);
     }
     if (num_threads > 1)
     {
@@ -213,9 +213,9 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     {
         ps_utils::gen_tree_task(0, params.size(), thr_voxels[0], &(tree_ggd.types), trees);
     }
-    std::vector<float> res = std::vector<float>(params.size(),1);
+    std::vector<float> res = std::vector<float>(params.size(), 1);
     int valid_cnt = 0;
-    for (int i=0;i<params.size();i++)
+    for (int i = 0; i < params.size(); i++)
     {
         if (GrovePacker::is_valid_tree(trees[i]))
         {
@@ -259,14 +259,14 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
 
 void print_ref_tree_info(TreeCompareInfo &info)
 {
- debug(" sz (%.3f %.3f) b_curv %.3f b_dens %.3f l_dens %.3f j_cnt %d t_th %.3f\n", 
+    debug(" sz (%.3f %.3f) b_curv %.3f b_dens %.3f l_dens %.3f j_cnt %d t_th %.3f\n",
           info.BCyl_sizes.x, info.BCyl_sizes.y, info.branches_curvature,
           info.branches_density, info.leaves_density, info.joints_cnt,
-          info.trunk_thickness);   
+          info.trunk_thickness);
 }
 void print_ref_tree_image_info(TreeImageInfo &info)
 {
- debug(" cr_st %.3f l_sh %.3f b_sh %.3f\n",info.crown_start_level,info.crown_leaves_share, info.crown_branches_share);   
+    debug(" cr_st %.3f l_sh %.3f b_sh %.3f\n", info.crown_start_level, info.crown_leaves_share, info.crown_branches_share);
 }
 
 void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
@@ -315,7 +315,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     tree_ggd.impostor_generation_params.leaf_opacity = 0.75;
     tree_ggd.impostor_generation_params.leaf_scale = 2.5;
 
-    AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree.info.joints_cnt/5000.0f + 1));
+    AbstractTreeGenerator::set_joints_limit(5000 * ceil(2 * ref_tree.info.joints_cnt / 5000.0f + 1));
     int imp_max_cnt = 32;
     std::string opt_name = "GA";
     my_opt::Optimizer *optimizer = nullptr;
@@ -325,7 +325,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     {
         optimizer = new GeneticAlgorithm();
         GeneticAlgorithm::MetaParameters *mpp = new GeneticAlgorithm::MetaParameters();
-        meta_parameters = mpp;   
+        meta_parameters = mpp;
         GeneticAlgorithm::MetaParameters &mp = *mpp;
         mp.best_genoms_count = selection_settings.get_int("best_results_count", mp.best_genoms_count);
         mp.heaven_size = selection_settings.get_int("heaven_size", mp.heaven_size);
@@ -340,14 +340,14 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         mp.debug_graph = selection_settings.get_bool("debug_graph", mp.debug_graph);
         mp.heaven_fine_tuning_count = selection_settings.get_int("heaven_fine_tuning_count", mp.heaven_fine_tuning_count);
 
-        imp_max_cnt = MAX(MAX(32, mp.heaven_size*mp.heaven_recalc_n), 
-                          MAX(mp.initial_population_size, mp.max_population_size) + 
-                          (3+1)*(mp.heaven_fine_tuning_count)*mp.heaven_size);
+        imp_max_cnt = MAX(MAX(32, mp.heaven_size * mp.heaven_recalc_n),
+                          MAX(mp.initial_population_size, mp.max_population_size) +
+                              (3 + 1) * (mp.heaven_fine_tuning_count) * mp.heaven_size);
     }
     else if (opt_name == "SA")
     {
         optimizer = new SimulatedAnnealing();
-        SimulatedAnnealing::MetaParameters *mpp = new SimulatedAnnealing::MetaParameters();     
+        SimulatedAnnealing::MetaParameters *mpp = new SimulatedAnnealing::MetaParameters();
     }
 
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(imp_max_cnt, tree_ggd.impostor_generation_params.slices_n, false);
@@ -373,20 +373,21 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             }
         }
     }
-    //parList.print();
+    // parList.print();
 
     bestParList = parList;
     float best_metric = 0;
     int cnt = 0;
 
     std::vector<std::pair<float, ParameterList>> best_pars;
-    auto func = [&](std::vector<std::vector<float>> &params) -> std::vector<float> {
-        std::vector<ParameterList> gen_params(params.size(),parList);
-        for (int i=0;i<params.size();i++)
+    auto func = [&](std::vector<std::vector<float>> &params) -> std::vector<float>
+    {
+        std::vector<ParameterList> gen_params(params.size(), parList);
+        for (int i = 0; i < params.size(); i++)
         {
             gen_params[i].from_simple_list(params[i], true, true);
-            //logerr("params size %d. Res size %d %d %d", params[i].size(), gen_params[i].categorialParameters.size(), gen_params[i].ordinalParameters.size(),
-            //       gen_params[i].continuousParameters.size());
+            // logerr("params size %d. Res size %d %d %d", params[i].size(), gen_params[i].categorialParameters.size(), gen_params[i].ordinalParameters.size(),
+            //        gen_params[i].continuousParameters.size());
         }
         return generate_for_par_selection(gen_params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
     };
@@ -416,14 +417,14 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         int tries = 16;
         int cnt = 10;
         std::vector<glm::vec4> stat;
-        for (int i=0;i<cnt;i++)
+        for (int i = 0; i < cnt; i++)
         {
             float res = 0;
             float mn = 1;
             float mx = 0;
-            float val = 25*(i+1);
+            float val = 25 * (i + 1);
             ((GeneticAlgorithm::MetaParameters *)(meta_parameters))->initial_population_size = val;
-            for (int ii=0;ii<tries;ii++)
+            for (int ii = 0; ii < tries; ii++)
             {
                 optimizer = new GeneticAlgorithm();
                 //((GeneticAlgorithm::MetaParameters *)(meta_parameters))->tree_GA_iters = 10 + 10*(i/2);
@@ -449,16 +450,16 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
                 res += best_metric;
                 if (best_metric < mn)
                     mn = best_metric;
-                if (best_metric > mx)   
+                if (best_metric > mx)
                     mx = best_metric;
                 delete optimizer;
             }
-            logerr("av_res = %f", res/tries);
-            stat.push_back(glm::vec4(val, res/tries, mn, mx));
+            logerr("av_res = %f", res / tries);
+            stat.push_back(glm::vec4(val, res / tries, mn, mx));
         }
         for (auto &v : stat)
         {
-            logerr("val: %.3f, av: %.4f, [%.4f, %.4f]", v.x,v.y,v.z,v.w);
+            logerr("val: %.3f, av: %.4f, [%.4f, %.4f]", v.x, v.y, v.z, v.w);
         }
         return;
     }
@@ -494,7 +495,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         delete optimizer;
 
         debug_stat = true;
-        auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float> {
+        auto func_q = [&](std::vector<ParameterList> &params) -> std::vector<float>
+        {
             return generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, cnt);
         };
         if (ref_type && ref_type->generator_name == gen_name)
@@ -514,7 +516,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         best_pars = {std::pair<float, ParameterList>(0, bestParList)};
         AbstractTreeGenerator::set_joints_limit(1000000);
     }
-    //create preapred tree
+    // create preapred tree
     {
         LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
         tree_ggd.task = GenerationTask::IMPOSTORS | GenerationTask::MODELS;
@@ -533,7 +535,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         for (int i = 0; i < best_pars.size(); i++)
         {
             AbstractTreeGenerator *gen = get_generator(type.generator_name);
-            glm::vec3 pos =  glm::vec3(200 * (1 + i / 5), 0, 200 * (i % 5));
+            glm::vec3 pos = glm::vec3(200 * (1 + i / 5), 0, 200 * (i % 5));
             res_voxels->fill(0);
             res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
 
@@ -543,17 +545,15 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
             {
             }
             gen->finalize_generation(trees + i, *res_voxels);
-
         }
 
         tree_ggd.impostor_generation_params = ImpostorBaker::ImpostorGenerationParams();
         if (save_result_image)
         {
             tree_ggd.impostor_generation_params.slices_n = 1;
-            //tree_ggd.impostor_generation_params.need_top_view = false;
+            // tree_ggd.impostor_generation_params.need_top_view = false;
             tree_ggd.impostor_generation_params.normals_needed = false;
             tree_ggd.impostor_generation_params.quality = 512;
-
         }
         packer.add_trees_to_grove(tree_ggd, scene.grove, trees, scene.heightmap, false);
 
@@ -578,7 +578,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                                           glm::vec4 &tc_transform, float &width_height, float &tr_thick_height)
 {
     unsigned char *data = nullptr;
-    int w,h;
+    int w, h;
     if (!t.is_valid())
     {
         logerr("invalid reference texture");
@@ -590,15 +590,15 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
     {
         w = t.get_W();
         h = t.get_H();
-        data = new unsigned char[4*w*h];
+        data = new unsigned char[4 * w * h];
 
         glBindTexture(t.type, t.texture);
 
         glGetTexImage(t.type,
-                    0,
-                    GL_RGBA,
-                    GL_UNSIGNED_BYTE,
-                    data);
+                      0,
+                      GL_RGBA,
+                      GL_UNSIGNED_BYTE,
+                      data);
         glBindTexture(t.type, 0);
     }
     else
@@ -615,13 +615,13 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         int max_x = -1;
         int min_y = h;
         int max_y = -1;
-        for (int y=0;y<h;y++)
+        for (int y = 0; y < h; y++)
         {
-            min_max.push_back(glm::ivec2(-1,-1));
-            for (int x=0;x<w;x++)
+            min_max.push_back(glm::ivec2(-1, -1));
+            for (int x = 0; x < w; x++)
             {
-                int pos = 4*((h - y - 1)*w + x);
-                glm::vec3 color = (1.0f/255)*glm::vec3(data[pos], data[pos+1], data[pos+2]);
+                int pos = 4 * ((h - y - 1) * w + x);
+                glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
                 if (length(color - background_color) > 0.05)
                 {
                     min_max.back().x = x;
@@ -630,45 +630,45 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             }
             if (min_max.back().x >= 0)
             {
-                for (int x=w-1;x>=0;x--)
+                for (int x = w - 1; x >= 0; x--)
                 {
-                    int pos = 4*((h - y - 1)*w + x);
-                    glm::vec3 color = (1.0f/255)*glm::vec3(data[pos], data[pos+1], data[pos+2]);
+                    int pos = 4 * ((h - y - 1) * w + x);
+                    glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
                     if (length(color - background_color) > 0.05)
                     {
                         min_max.back().y = x;
                         break;
                     }
                 }
-                min_x = MIN(min_x,min_max.back().x);
+                min_x = MIN(min_x, min_max.back().x);
                 max_x = MAX(max_x, min_max.back().y);
                 min_y = MIN(min_y, y);
                 max_y = MAX(max_y, y);
             }
-            //logerr("[%d %d]", min_max.back().x, min_max.back().y);
+            // logerr("[%d %d]", min_max.back().x, min_max.back().y);
         }
-        //logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
+        // logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
         float sym_line = -1;
         for (auto &v : min_max)
         {
             if (v.x >= 0)
             {
-                sym_line = (v.y + v.x)/2.0;
+                sym_line = (v.y + v.x) / 2.0;
                 logerr("sym line %f %d %d %d %d", sym_line, v.y, v.x, max_x, min_x);
-                break;   
+                break;
             }
         }
-        
-        tc_transform.x = (float)(min_x)/w;
-        tc_transform.y = (float)(min_y)/h;
-        tc_transform.z = (float)(max_x - min_x)/w;
-        tc_transform.w = (float)(max_y - min_y)/h;
+
+        tc_transform.x = (float)(min_x) / w;
+        tc_transform.y = (float)(min_y) / h;
+        tc_transform.z = (float)(max_x - min_x) / w;
+        tc_transform.w = (float)(max_y - min_y) / h;
 
         float br = ReferenceTree::border_size;
-        glm::vec4 tc_tr_2 = glm::vec4(-br,-br,1,1)/(1-2*br);
+        glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
         tc_transform = tc_tr_mult(tc_transform, tc_tr_2);
 
-        width_height = 0.5*(float)(max_x - min_x)/(max_y - min_y);
+        width_height = 0.5 * (float)(max_x - min_x) / (max_y - min_y);
 
         float base_th = 0;
         float sum_th = 0;
@@ -677,12 +677,12 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         {
             if (v.x >= 0)
             {
-                float th = (float)(v.y - v.x)/h;
+                float th = (float)(v.y - v.x) / h;
                 if (base_th == 0)
                 {
                     if (th < 0.25)
                     {
-                        //logerr("base th [%d %d]", v.x, v.y);
+                        // logerr("base th [%d %d]", v.x, v.y);
                         base_th = th;
                         sum_th = th;
                         len++;
@@ -694,9 +694,9 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                         break;
                     }
                 }
-                else if (th < 1.5*base_th)
+                else if (th < 1.5 * base_th)
                 {
-                    //logerr("th [%d %d]", v.x, v.y);
+                    // logerr("th [%d %d]", v.x, v.y);
                     sum_th += th;
                     len++;
                 }
@@ -704,13 +704,283 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 {
                     break;
                 }
-
             }
         }
         if (len > 0)
-            tr_thick_height = 0.5*sum_th/len;
-        //logerr("trunk th %f", tr_thick_height);
+            tr_thick_height = 0.5 * sum_th / len;
+        // logerr("trunk th %f", tr_thick_height);
         delete[] data;
+    }
+}
+
+void get_reference_info(Block &reference_info, ReferenceTree &ref_tree, TreeCompareInfo &explicit_info, int reference_images_cnt,
+                        float original_tex_aspect_ratio, float original_tex_tr_thickness)
+{
+    Block &ri = reference_info;
+    explicit_info.BCyl_sizes = glm::vec2(0.5 * ri.get_double("width", -1), ri.get_double("height", -1));
+    explicit_info.BCyl_sizes /= (1 - 2 * ReferenceTree::border_size);
+    explicit_info.branches_curvature = ri.get_double("branches_curvature", -1);
+    explicit_info.branches_density = ri.get_double("branches_density", -1);
+    explicit_info.joints_cnt = ri.get_int("joints_cnt", -1);
+    explicit_info.leaves_density = ri.get_double("leaves_density", -1);
+    explicit_info.trunk_thickness = ri.get_double("trunk_thickness", -1);
+    explicit_info.tropism = ri.get_double("tropism", -100);
+    if (explicit_info.BCyl_sizes.x < 0)
+    {
+        auto status_str = ri.get_string("width", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree width is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
+        {
+            ref_tree.width_status = TCIFeatureStatus::FROM_IMAGE;
+            if (explicit_info.BCyl_sizes.y > 0)
+                ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio * explicit_info.BCyl_sizes.y;
+            else
+            {
+                auto h_status_str = ri.get_string("height", "");
+                if (h_status_str != "FROM_IMAGE")
+                {
+                    logerr("if width status is FROM_IMAGE height status should be either FROM_IMAGE or explicit");
+                }
+                else
+                {
+                    float max_height = ri.get_double("max_height", 200);
+                    ref_tree.info.BCyl_sizes.y = max_height / 1.5;
+                    ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio * ref_tree.info.BCyl_sizes.y;
+                }
+            }
+            logerr("%f %f %f", ref_tree.info.BCyl_sizes.x, original_tex_aspect_ratio, explicit_info.BCyl_sizes.y);
+        }
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for width", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.BCyl_sizes.x = explicit_info.BCyl_sizes.x;
+    }
+
+    if (explicit_info.BCyl_sizes.y < 0)
+    {
+        ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("height", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree height is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
+        {
+            ref_tree.height_status = TCIFeatureStatus::FROM_IMAGE;
+        }
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for height", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.BCyl_sizes.y = explicit_info.BCyl_sizes.y;
+    }
+
+    if (explicit_info.branches_density < 0)
+    {
+        ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("branches_density", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree branches_density is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for branches_density", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.branches_density = explicit_info.branches_density;
+    }
+
+    if (explicit_info.leaves_density < 0)
+    {
+        ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("leaves_density", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree leaves_density is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for leaves_density", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.leaves_density = explicit_info.leaves_density;
+    }
+
+    if (explicit_info.tropism < -1)
+    {
+        ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("tropism", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree tropism is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for tropism", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.leaves_density = explicit_info.leaves_density;
+    }
+
+    if (explicit_info.branches_curvature < 0)
+    {
+        ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("branches_curvature", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree branches_curvature is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for branches_curvature", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.branches_curvature = explicit_info.branches_curvature;
+    }
+
+    if (explicit_info.trunk_thickness < 0)
+    {
+        ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("trunk_thickness", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree trunk_thickness is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
+        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
+        {
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_IMAGE;
+            ref_tree.info.trunk_thickness = original_tex_tr_thickness * ref_tree.info.BCyl_sizes.y;
+        }
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for trunk_thickness", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.trunk_thickness = explicit_info.trunk_thickness;
+    }
+
+    if (explicit_info.joints_cnt < 0)
+    {
+        ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+        auto status_str = ri.get_string("joints_cnt", "");
+        if (status_str == "")
+        {
+            if (reference_images_cnt == 0)
+            {
+                ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
+            }
+            else
+            {
+                ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+                debug("expected tree joints_cnt is not set. DONT_CARE mode will be used by default\n");
+            }
+        }
+        else if (status_str == "DONT_CARE")
+        {
+            ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
+            int max_joints = ri.get_int("max_joints", 25000);
+            debug("joints_cnt status is set as DONT_CARE, but there is still a limit max_joints = %d\n", max_joints);
+            ref_tree.info.joints_cnt = 0.5 * max_joints;
+        }
+        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
+            ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
+        else
+            logerr("Parameter selection error: parameter status %s is not supported for joints_cnt", status_str.c_str());
+    }
+    else
+    {
+        ref_tree.info.joints_cnt = explicit_info.joints_cnt;
     }
 }
 
@@ -730,21 +1000,21 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     bool save_selection_stat = true;
     int sel_stat_w = 512;
     int sel_stat_h = 512;
-    
+
     TextureAtlas sel_stat_atl = TextureAtlas(4 * sel_stat_w, sel_stat_h, 1, 1);
     sel_stat_atl.set_grid(sel_stat_w, sel_stat_h, false);
     std::string reference_name = "ERROR";
     float reference_aspect_ratio = 1;
 
     int reference_images_cnt = 0;
-    for (int i=0;i<reference_info.size();i++)
+    for (int i = 0; i < reference_info.size(); i++)
     {
         if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
             reference_images_cnt++;
     }
     if (reference_images_cnt == 0)
     {
-        std::string type_name = reference_info.get_string("reference_type","");
+        std::string type_name = reference_info.get_string("reference_type", "");
         if (type_name == "")
         {
             logerr("Parameter selection error: No images or plant type selected as a reference");
@@ -758,11 +1028,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         else
         {
-            //existed type is a reference for selection
-            reference_ttd = metainfoManager.get_tree_type(type_id); 
+            // existed type is a reference for selection
+            reference_ttd = metainfoManager.get_tree_type(type_id);
             ParameterList referenceParList;
             reference_ttd.get_params()->write_parameter_list(referenceParList);
-            //referenceParList.print();
+            // referenceParList.print();
             reference_ttd.get_params()->read_parameter_list(referenceParList);
             GroveGenerationData tree_ggd;
             tree_ggd.trees_count = 1;
@@ -770,7 +1040,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.name = "single_tree";
             tree_ggd.task = GenerationTask::IMPOSTORS;
             tree_ggd.impostor_generation_params.slices_n = 1;
-            //tree_ggd.impostor_generation_params.need_top_view = false;
+            // tree_ggd.impostor_generation_params.need_top_view = false;
             tree_ggd.impostor_generation_params.quality = imp_size;
             tree_ggd.impostor_generation_params.monochrome = true;
             tree_ggd.impostor_generation_params.normals_needed = false;
@@ -778,16 +1048,16 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             tree_ggd.impostor_generation_params.leaf_scale = 2.5;
 
             LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
-                                                            0.625f * reference_ttd.get_params()->get_scale_factor());
-            logerr("AAAA %f %f %f",reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y,
-            reference_ttd.get_params()->get_tree_max_size().z);
+                                                              0.625f * reference_ttd.get_params()->get_scale_factor());
+            logerr("AAAA %f %f %f", reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y,
+                   reference_ttd.get_params()->get_tree_max_size().z);
             ReferenceTree ref_tree_init;
             ref_tree_init.info.BCyl_sizes = glm::vec2(reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y);
             ref_tree_init.info.joints_cnt = 100000;
-            //create reference tree
-            for (int i=0;i<10;i++)
+            // create reference tree
+            for (int i = 0; i < 10; i++)
             {
-                AbstractTreeGenerator::set_joints_limit(5000*ceil(2 * ref_tree_init.info.joints_cnt/5000.0f + 1));
+                AbstractTreeGenerator::set_joints_limit(5000 * ceil(2 * ref_tree_init.info.joints_cnt / 5000.0f + 1));
                 ref_voxels = gen_voxels_for_selection(ref_tree_init);
                 Scene init_scene;
                 init_scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
@@ -804,8 +1074,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 }
                 gen->finalize_generation(&single_tree, *ref_voxels);
                 packer.add_trees_to_grove(tree_ggd, init_scene.grove, &single_tree, init_scene.heightmap, false);
-                //save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
-                //ref_atlas_transform(ref_tree.atlas);
+                // save_impostor_as_reference(scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas);
+                // ref_atlas_transform(ref_tree.atlas);
                 ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree_init.info);
                 delete ref_voxels;
             }
@@ -827,27 +1097,26 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 }
                 gen->finalize_generation(&single_tree, *ref_voxels);
                 packer.add_trees_to_grove(tree_ggd, init_scene.grove, &single_tree, init_scene.heightmap, false);
-                logerr("%d",single_tree.branchHeaps[0]->branches.size());
-                logerr("impostors %d",init_scene.grove.impostors[1].impostors.size());
-                save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, glm::vec4(0,0,1,1));
-                textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_01");
-                imp_sim.get_reference_tree_image_info(ref_tree,1);
+                logerr("%d", single_tree.branchHeaps[0]->branches.size());
+                logerr("impostors %d", init_scene.grove.impostors[1].impostors.size());
+                save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, glm::vec4(0, 0, 1, 1));
+                textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_01");
+                imp_sim.get_reference_tree_image_info(ref_tree, 1);
                 ImpostorSimilarityCalc::get_tree_compare_info(init_scene.grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
                 ref_tree.info.BCyl_sizes *= glm::vec2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
-                
+
                 float br = ReferenceTree::border_size;
                 glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
                 glm::vec4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
                 save_impostor_as_reference(init_scene.grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, tc_tr);
-                textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_02");
+                textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_02");
             }
             delete ref_voxels;
         }
-
     }
     else
     {
-        //a set of images is a reference for selection
+        // a set of images is a reference for selection
         {
             TextureAtlas atl = TextureAtlas(reference_images_cnt * imp_size, imp_size, 1, 1);
             ref_tree.atlas = atl;
@@ -858,38 +1127,38 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(1, reference_images_cnt);
 
         bool ref_stat_saved = false;
-        for (int i=0;i<reference_info.size();i++)
+        for (int i = 0; i < reference_info.size(); i++)
         {
             if (reference_info.get_name(i) == "reference_image" && reference_info.get_type(i) == Block::ValueType::BLOCK)
             {
                 Block *ref_image_blk = reference_info.get_block(i);
                 if (!ref_image_blk)
                     continue;
-                std::string name = ref_image_blk->get_string("image","");
+                std::string name = ref_image_blk->get_string("image", "");
                 if (name == "")
                     continue;
                 reference_name = name;
                 Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
-                reference_aspect_ratio = ref_raw.get_H()/(float)ref_raw.get_W();
+                reference_aspect_ratio = ref_raw.get_H() / (float)ref_raw.get_W();
                 glm::vec4 ref_tc_transform;
                 float aspect_ratio = -1;
                 float tr_thickness = -1;
                 prepare_to_transform_reference_image(ref_raw, ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)),
-                ref_tc_transform, aspect_ratio, tr_thickness);
+                                                     ref_tc_transform, aspect_ratio, tr_thickness);
                 original_tex_aspect_ratio += aspect_ratio;
                 original_tex_tr_thickness += tr_thickness;
                 int slice_id = ref_tree.atlas.add_tex();
                 ref_tree.atlas.target_slice(slice_id, 0);
                 ref_transform.use();
-                ref_transform.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+                ref_transform.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
                 ref_transform.get_shader().texture("tex", ref_raw);
                 ref_transform.get_shader().uniform("wood_color",
-                                                ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
+                                                   ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
                 ref_transform.get_shader().uniform("leaves_color",
-                                                ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
+                                                   ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
                 ref_transform.get_shader().uniform("background_color",
-                                                ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
-                ref_transform.get_shader().uniform("ref_tc_transform",ref_tc_transform);
+                                                   ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
+                ref_transform.get_shader().uniform("ref_tc_transform", ref_tc_transform);
                 ref_transform.render();
                 glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -909,10 +1178,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                     sel_stat_atl.target_slice(tex_id, 0);
                     copy_arr.use();
                     copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
-                    copy_arr.get_shader().uniform("tex_transform", glm::vec4(0,1,1,-1));
+                    copy_arr.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
                     copy_arr.render();
-                    glMemoryBarrier(GL_ALL_BARRIER_BITS);       
-                    ref_stat_saved = true;             
+                    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+                    ref_stat_saved = true;
                 }
 
                 textureManager.delete_tex(ref_raw);
@@ -920,10 +1189,10 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         }
         original_tex_aspect_ratio /= reference_images_cnt;
         original_tex_tr_thickness /= reference_images_cnt;
-        textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_0");
+        textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_0");
         imp_sim.get_reference_tree_image_info(ref_tree);
     }
-    textureManager.save_png(ref_tree.atlas.tex(0),"reference_atlas_1");
+    textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_1");
     if (save_selection_stat)
     {
         PostFx copy_arr("copy_arr2.fs");
@@ -931,289 +1200,23 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         sel_stat_atl.target_slice(tex_id, 0);
         copy_arr.use();
         copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
-        copy_arr.get_shader().uniform("tex_transform", glm::vec4(0,1,1,-1));
+        copy_arr.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
         copy_arr.render();
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
-
-    Block &ri = reference_info;
     TreeCompareInfo explicit_info;
-    explicit_info.BCyl_sizes = glm::vec2(0.5*ri.get_double("width",-1),ri.get_double("height",-1));
-    explicit_info.BCyl_sizes /= (1 - 2*ReferenceTree::border_size);
-    explicit_info.branches_curvature = ri.get_double("branches_curvature",-1);
-    explicit_info.branches_density = ri.get_double("branches_density",-1);
-    explicit_info.joints_cnt = ri.get_int("joints_cnt",-1);
-    explicit_info.leaves_density = ri.get_double("leaves_density",-1);
-    explicit_info.trunk_thickness = ri.get_double("trunk_thickness",-1);
-    explicit_info.tropism = ri.get_double("tropism", -100);
-    if (explicit_info.BCyl_sizes.x < 0)
-    {
-        auto status_str = ri.get_string("width","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree width is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.width_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
-        {
-            ref_tree.width_status = TCIFeatureStatus::FROM_IMAGE;
-            if (explicit_info.BCyl_sizes.y > 0)
-                ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*explicit_info.BCyl_sizes.y;
-            else  
-            {
-                auto h_status_str = ri.get_string("height","");
-                if (h_status_str != "FROM_IMAGE")
-                {
-                    logerr("if width status is FROM_IMAGE height status should be either FROM_IMAGE or explicit");
-                }
-                else
-                {
-                    float max_height = ri.get_double("max_height", 200);
-                    ref_tree.info.BCyl_sizes.y = max_height/1.5;
-                    ref_tree.info.BCyl_sizes.x = original_tex_aspect_ratio*ref_tree.info.BCyl_sizes.y;
-                }
-            }
-                        logerr("%f %f %f",ref_tree.info.BCyl_sizes.x, original_tex_aspect_ratio, explicit_info.BCyl_sizes.y);
-        }
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.width_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for width", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.BCyl_sizes.x = explicit_info.BCyl_sizes.x;
-    }
+    get_reference_info(reference_info, ref_tree, explicit_info, reference_images_cnt, original_tex_aspect_ratio, original_tex_tr_thickness);
 
-    if (explicit_info.BCyl_sizes.y < 0)
-    {
-        ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("height","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree height is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.height_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
-        {
-            ref_tree.height_status = TCIFeatureStatus::FROM_IMAGE;
-        }
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.height_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for height", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.BCyl_sizes.y = explicit_info.BCyl_sizes.y;
-    }
-
-    if (explicit_info.branches_density < 0)
-    {
-        ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("branches_density","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree branches_density is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.branches_density_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.branches_density_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for branches_density", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.branches_density = explicit_info.branches_density;
-    }
-    
-    if (explicit_info.leaves_density < 0)
-    {
-        ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("leaves_density","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree leaves_density is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.leaves_density_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.leaves_density_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for leaves_density", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.leaves_density = explicit_info.leaves_density;
-    }
-
-    if (explicit_info.tropism < -1)
-    {
-        ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("tropism","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree tropism is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.tropism_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.tropism_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for tropism", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.leaves_density = explicit_info.leaves_density;
-    }
-
-    if (explicit_info.branches_curvature < 0)
-    {
-        ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("branches_curvature","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree branches_curvature is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.branches_curvature_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.branches_curvature_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for branches_curvature", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.branches_curvature = explicit_info.branches_curvature;
-    }
-
-    if (explicit_info.trunk_thickness < 0)
-    {
-        ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("trunk_thickness","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree trunk_thickness is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-            ref_tree.trunk_thickness_status = TCIFeatureStatus::DONT_CARE;
-        else if (status_str == "FROM_IMAGE" && reference_images_cnt > 0)
-        {
-            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_IMAGE;
-            ref_tree.info.trunk_thickness = original_tex_tr_thickness*ref_tree.info.BCyl_sizes.y;
-        }
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.trunk_thickness_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for trunk_thickness", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.trunk_thickness = explicit_info.trunk_thickness;
-    }
-
-    if (explicit_info.joints_cnt < 0)
-    {
-        ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
-        auto status_str = ri.get_string("joints_cnt","");
-        if (status_str == "")
-        {
-            if (reference_images_cnt == 0)
-            {
-                ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
-            }
-            else
-            {
-                ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
-                debug("expected tree joints_cnt is not set. DONT_CARE mode will be used by default\n");
-            }
-        }
-        else if (status_str == "DONT_CARE")
-        {
-            ref_tree.joints_cnt_status = TCIFeatureStatus::DONT_CARE;
-            int max_joints = ri.get_int("max_joints",25000);
-            debug("joints_cnt status is set as DONT_CARE, but there is still a limit max_joints = %d\n",max_joints);
-            ref_tree.info.joints_cnt = 0.5*max_joints;
-        }
-        else if (status_str == "FROM_TYPE" && reference_images_cnt == 0)
-            ref_tree.joints_cnt_status = TCIFeatureStatus::FROM_TYPE;
-        else 
-            logerr("Parameter selection error: parameter status %s is not supported for joints_cnt", status_str.c_str());
-    }
-    else
-    {
-        ref_tree.info.joints_cnt = explicit_info.joints_cnt;
-    }
-
-    bool save_result_image = selection_settings.get_bool("save_result_image",false);
+    bool save_result_image = selection_settings.get_bool("save_result_image", false);
     Results res;
     parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd,
                                  save_result_image);
-    
-    std::string type_name = selection_settings.get_string("save_best_result","");
-    if (selection_settings.get_bool("save_best_result_auto",false))
+
+    std::string type_name = selection_settings.get_string("save_best_result", "");
+    if (selection_settings.get_bool("save_best_result_auto", false))
     {
-        int version = selection_settings.get_int("version",-1);
-        type_name = reference_name + "_selected_params_"+std::to_string(version);
+        int version = selection_settings.get_int("version", -1);
+        type_name = reference_name + "_selected_params_" + std::to_string(version);
     }
     if (type_name != "")
         metainfoManager.add_tree_type(res.best_candidates[0], type_name);
@@ -1270,9 +1273,9 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         copy.render();
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
         logerr("dshdjsds %f", reference_aspect_ratio);
-        TextureAtlas atlas_asp = TextureAtlas(sel_stat_atl.get_sizes().x, 
-                                              reference_aspect_ratio*sel_stat_atl.get_sizes().y, 1, 1);
-        atlas_asp.set_grid(sel_stat_atl.get_sizes().x, reference_aspect_ratio*sel_stat_atl.get_sizes().y, false);
+        TextureAtlas atlas_asp = TextureAtlas(sel_stat_atl.get_sizes().x,
+                                              reference_aspect_ratio * sel_stat_atl.get_sizes().y, 1, 1);
+        atlas_asp.set_grid(sel_stat_atl.get_sizes().x, reference_aspect_ratio * sel_stat_atl.get_sizes().y, false);
         tex_id = atlas_asp.add_tex();
         atlas_asp.target_slice(tex_id, 0);
         copy.use();
@@ -1282,27 +1285,25 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         copy.render();
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-        int iters = selection_settings.get_int("function_calculated",-1);
-        int version = selection_settings.get_int("version",-1);
-        std::string gen_name = selection_settings.get_string("generator_name","unknown_gen");
-        std::string file_name = "selection/" + gen_name +"/" + reference_name + "_v" + std::to_string(version) + "_i"+std::to_string(iters)
-                                + "_q0."+std::to_string((int)(100*res.best_res));
+        int iters = selection_settings.get_int("function_calculated", -1);
+        int version = selection_settings.get_int("version", -1);
+        std::string gen_name = selection_settings.get_string("generator_name", "unknown_gen");
+        std::string file_name = "selection/" + gen_name + "/" + reference_name + "_v" + std::to_string(version) + "_i" + std::to_string(iters) + "_q0." + std::to_string((int)(100 * res.best_res));
         textureManager.save_png(atlas_asp.tex(0), file_name);
-        
-        //hydra scene
+
+        // hydra scene
         {
             HydraSceneExporter exporter;
             Block export_settings;
-            float sz = 0.5*MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
+            float sz = 0.5 * MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
             logerr("%f %f %f", sz, ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y);
-            export_settings.add_vec3("camera_look_at", glm::vec3(0,53,0));
-            export_settings.add_vec3("camera_pos", glm::vec3(-18.6,53,8));
-            export_settings.add_bool("need_terrain",true);
-            export_settings.add_bool("white_terrain",true);
-            export_settings.add_string("demo_copy_dir", "saves/"+file_name + "_res");
+            export_settings.add_vec3("camera_look_at", glm::vec3(0, 53, 0));
+            export_settings.add_vec3("camera_pos", glm::vec3(-18.6, 53, 8));
+            export_settings.add_bool("need_terrain", true);
+            export_settings.add_bool("white_terrain", true);
+            export_settings.add_string("demo_copy_dir", "saves/" + file_name + "_res");
             exporter.export_scene("param_selection_scene", scene, export_settings);
         }
-
     }
 
     return res;

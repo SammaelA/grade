@@ -59,7 +59,7 @@ GroveRenderer()
     {
         LODs.emplace_back();
         LODs.back().cloud = nullptr;
-        LODs.back().max_dist = max_distances[LODs_count - 1];
+        LODs.back().max_dist = max_distances.empty() ? 0 : max_distances.back();
 
         int max_level = 12;
 
