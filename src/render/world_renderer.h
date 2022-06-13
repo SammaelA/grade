@@ -43,6 +43,7 @@ public:
     void clear_all();
     
     void set_resolution(int w, int h);
+    bool is_inited() {return inited;}
 private:
     void on_scene_changed();
 

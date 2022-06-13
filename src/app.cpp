@@ -1,4 +1,5 @@
 #include "app.h"
+#include "cmd_buffers.h"
 
 FpsCounter::FpsCounter()
 {
@@ -156,7 +157,9 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   }
   if (event.active[SDLK_h])
   {
-    ctx.save_to_hydra = true;
+    //ctx.save_to_hydra = true;
+    inputCmdBuffer.push(InputCommands::IC_GEN_HMAP);
+    logerr("create hmap 1");
     event.active[SDLK_h] = false;
   }
   if (event.active[SDLK_ESCAPE])
