@@ -125,6 +125,12 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::INT;
             v.i = std::stol(val);
         }
+        else if (type == "u" || type == "u64")
+        {
+            std::string val = next_token(data, cur_pos);
+            v.type = Block::ValueType::UINT64;
+            v.u = std::stoul(val);
+        }
         else if (type == "r")
         {
             std::string val = next_token(data, cur_pos);
@@ -224,6 +230,103 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             if (!ok)
             {
                 logerr("line %d wrong description of vector", cur_line);
+                v.type = Block::ValueType::EMPTY;
+                return false;
+            }
+        }
+        else if (type == "i2")
+        {
+            v.type = Block::ValueType::IVEC2;
+            std::string val;
+            bool ok = true;
+            v.iv2 = glm::vec2(0, 0);
+
+            val = next_token(data, cur_pos);
+            v.iv2.x = std::stoi(val);
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv2.y = std::stoi(val);
+            }
+            if (!ok)
+            {
+                logerr("line %d wrong description of integer vector", cur_line);
+                v.type = Block::ValueType::EMPTY;
+                return false;
+            }
+        }
+        else if (type == "i3")
+        {
+            v.type = Block::ValueType::IVEC3;
+            std::string val;
+            bool ok = true;
+            v.iv3 = glm::vec3(0, 0, 0);
+
+            val = next_token(data, cur_pos);
+            v.iv3.x = std::stoi(val);
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv3.y = std::stoi(val);
+            }
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv3.z = std::stoi(val);
+            }
+            if (!ok)
+            {
+                logerr("line %d wrong description of integer vector", cur_line);
+                v.type = Block::ValueType::EMPTY;
+                return false;
+            }
+        }
+        else if (type == "i4")
+        {
+            v.type = Block::ValueType::IVEC4;
+            std::string val;
+            bool ok = true;
+            v.iv4 = glm::vec4(0, 0, 0, 0);
+
+            val = next_token(data, cur_pos);
+            v.iv4.x = std::stoi(val);
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv4.y = std::stoi(val);
+            }
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv4.z = std::stoi(val);
+            }
+
+            val = next_token(data, cur_pos);
+            ok = ok && (val == ",");
+            if (ok)
+            {
+                val = next_token(data, cur_pos);
+                v.iv4.w = std::stoi(val);
+            }
+            if (!ok)
+            {
+                logerr("line %d wrong description of integer vector", cur_line);
                 v.type = Block::ValueType::EMPTY;
                 return false;
             }
@@ -441,6 +544,10 @@ int Block::get_int(int id, int base_val)
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::INT) ? values[id].i : base_val;
 }
+uint64_t Block::get_uint64(int id, uint64_t base_val)
+{
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::UINT64) ? values[id].u : base_val;
+}
 double Block::get_double(int id, double base_val)
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::DOUBLE) ? values[id].d : base_val;
@@ -456,6 +563,18 @@ glm::vec3 Block::get_vec3(int id, glm::vec3 base_val)
 glm::vec4 Block::get_vec4(int id, glm::vec4 base_val)
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC4) ? values[id].v4 : base_val;
+}
+glm::ivec2 Block::get_ivec2(int id, glm::ivec2 base_val)
+{
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC2) ? values[id].iv2 : base_val;
+}
+glm::ivec3 Block::get_ivec3(int id, glm::ivec3 base_val)
+{
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC3) ? values[id].iv3 : base_val;
+}
+glm::ivec4 Block::get_ivec4(int id, glm::ivec4 base_val)
+{
+    return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC4) ? values[id].iv4 : base_val;
 }
 glm::mat4 Block::get_mat4(int id, glm::mat4 base_val)
 {
@@ -523,6 +642,10 @@ int Block::get_int(const std::string name, int base_val)
 {
     return get_int(get_id(name), base_val);
 }
+uint64_t Block::get_uint64(const std::string name, uint64_t base_val)
+{
+    return get_uint64(get_id(name), base_val);
+}
 double Block::get_double(const std::string name, double base_val)
 {
     return get_double(get_id(name), base_val);
@@ -538,6 +661,18 @@ glm::vec3 Block::get_vec3(const std::string name, glm::vec3 base_val)
 glm::vec4 Block::get_vec4(const std::string name, glm::vec4 base_val)
 {
     return get_vec4(get_id(name), base_val);
+}
+glm::ivec2 Block::get_ivec2(const std::string name, glm::ivec2 base_val)
+{
+    return get_ivec2(get_id(name), base_val);
+}
+glm::ivec3 Block::get_ivec3(const std::string name, glm::ivec3 base_val)
+{
+    return get_ivec3(get_id(name), base_val);
+}
+glm::ivec4 Block::get_ivec4(const std::string name, glm::ivec4 base_val)
+{
+    return get_ivec4(get_id(name), base_val);
 }
 glm::mat4 Block::get_mat4(const std::string name, glm::mat4 base_val)
 {
@@ -606,6 +741,11 @@ void save_value(std::string &str, Block::Value &v)
         str += ":i = ";
         str += std::to_string(v.i);
     }
+    else if (v.type == Block::ValueType::UINT64)
+    {
+        str += ":u64 = ";
+        str += std::to_string(v.u);
+    }
     else if (v.type == Block::ValueType::DOUBLE)
     {
         str += ":r = ";
@@ -626,6 +766,22 @@ void save_value(std::string &str, Block::Value &v)
         str += ":p4 = ";
         str += std::to_string(v.v4.x) + ", " + std::to_string(v.v4.y) + ", " + std::to_string(v.v4.z) +
                ", " + std::to_string(v.v4.w);
+    }
+    else if (v.type == Block::ValueType::IVEC2)
+    {
+        str += ":i2 = ";
+        str += std::to_string(v.iv2.x) + ", " + std::to_string(v.iv2.y);
+    }
+    else if (v.type == Block::ValueType::IVEC3)
+    {
+        str += ":i3 = ";
+        str += std::to_string(v.iv3.x) + ", " + std::to_string(v.iv3.y) + ", " + std::to_string(v.iv3.z);
+    }
+    else if (v.type == Block::ValueType::IVEC4)
+    {
+        str += ":i4 = ";
+        str += std::to_string(v.iv4.x) + ", " + std::to_string(v.iv4.y) + ", " + std::to_string(v.iv4.z) +
+               ", " + std::to_string(v.iv4.w);
     }
     else if (v.type == Block::ValueType::MAT4)
     {
@@ -714,6 +870,13 @@ void Block::add_int(const std::string name, int base_val)
     val.i = base_val;
     add_value(name, val);
 }
+void Block::add_uint64(const std::string name, uint64_t base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::UINT64;
+    val.u = base_val;
+    add_value(name, val);
+}
 void Block::add_double(const std::string name, double base_val)
 {
     Block::Value val;
@@ -740,6 +903,27 @@ void Block::add_vec4(const std::string name, glm::vec4 base_val)
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
+    add_value(name, val);
+}
+void Block::add_ivec2(const std::string name, glm::ivec2 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC2;
+    val.iv2 = base_val;
+    add_value(name, val);
+}
+void Block::add_ivec3(const std::string name, glm::ivec3 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC3;
+    val.iv3 = base_val;
+    add_value(name, val);
+}
+void Block::add_ivec4(const std::string name, glm::ivec4 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC4;
+    val.iv4 = base_val;
     add_value(name, val);
 }
 void Block::add_mat4(const std::string name, glm::mat4 base_val)
@@ -824,6 +1008,13 @@ void Block::set_int(const std::string name, int base_val)
     val.i = base_val;
     set_value(name, val);
 }
+void Block::set_uint64(const std::string name, uint64_t base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::UINT64;
+    val.u = base_val;
+    set_value(name, val);
+}
 void Block::set_double(const std::string name, double base_val)
 {
     Block::Value val;
@@ -850,6 +1041,27 @@ void Block::set_vec4(const std::string name, glm::vec4 base_val)
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
+    set_value(name, val);
+}
+void Block::set_ivec2(const std::string name, glm::ivec2 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC2;
+    val.iv2 = base_val;
+    set_value(name, val);
+}
+void Block::set_ivec3(const std::string name, glm::ivec3 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC3;
+    val.iv3 = base_val;
+    set_value(name, val);
+}
+void Block::set_ivec4(const std::string name, glm::ivec4 base_val)
+{
+    Block::Value val;
+    val.type = Block::ValueType::IVEC4;
+    val.iv4 = base_val;
     set_value(name, val);
 }
 void Block::set_mat4(const std::string name, glm::mat4 base_val)
