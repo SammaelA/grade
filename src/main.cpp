@@ -36,12 +36,11 @@ int main(int argc, char *argv[])
     textureManager = TextureManager("./resources/textures/", textures_list);
     ModelLoader::load_default_blk();
 
-    Scene scene;
     SceneGenerator::SceneGenerationContext sceneGenerationContext;
-    sceneGenerationContext.scene = &scene;
+    sceneGenerationContext.scene = new Scene();
 
-    InputCmdExecutor ice = InputCmdExecutor();
-    GenerationCmdExecutor gce = GenerationCmdExecutor(appContext, sceneGenerationContext);
+    InputCmdExecutor ice = InputCmdExecutor(sceneGenerationContext);
+    GenerationCmdExecutor gce = GenerationCmdExecutor(sceneGenerationContext);
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);
 
     Tiny::view.pipeline = [&]()

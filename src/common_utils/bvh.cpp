@@ -181,11 +181,25 @@ int BVH::add_node_rec(std::vector<int> &boxes)
     //                    nodes.size(),obj_bboxes.size());
     return node_id;
 }
-
+void BVH::clear()
+{
+    for (auto &p : obj_bboxes)
+    {
+        p.second = 0;
+    }
+    rebuild();
+}
 void BVH::rebuild()
 {
     if (removed_boxes_cnt)
     {
+        auto old_boxes = obj_bboxes;
+        obj_bboxes.clear();
+        for (auto &p : old_boxes)
+        {
+            if (p.second > 0)
+                obj_bboxes.push_back(p);
+        }
         //TODO - remove boxes with id = 0 from list
         removed_boxes_cnt = 0;
     }

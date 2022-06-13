@@ -26,6 +26,7 @@ struct BVH
     int removed_boxes_cnt = 0;
     //different bboxes can have the same tag is they will always be added and deleted together
     void rebuild();
+    void clear();
     int add_node_rec(std::vector<int> &boxes);
     void add_bboxes(std::vector<AABB> &bboxes, uint64_t tag);
     void remove_bboxes(int64_t tag);

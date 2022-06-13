@@ -8,20 +8,25 @@ class InputCmdExecutor
 {
 public:
     void execute(int max_cmd_count = -1);
+    InputCmdExecutor(const SceneGenerator::SceneGenerationContext &gCtx):
+    genCtx(gCtx)
+    {
+
+    }
+private:
+    const SceneGenerator::SceneGenerationContext &genCtx;
 };
 
 class GenerationCmdExecutor
 {
 public:
     void execute(int max_cmd_count = -1);
-    GenerationCmdExecutor(AppContext &aCtx, SceneGenerator::SceneGenerationContext &gCtx):
-    appCtx(aCtx),
+    GenerationCmdExecutor(SceneGenerator::SceneGenerationContext &gCtx):
     genCtx(gCtx)
     {
 
     }
 private:
-    AppContext &appCtx;
     SceneGenerator::SceneGenerationContext &genCtx;
 };
 

@@ -21,7 +21,8 @@ public:
         {
             type = _type;
             id = _id;
-            args = _args;
+            args = Block();
+            args.copy(&_args);
         }
     };
     void push(T cmd_type)
@@ -38,12 +39,14 @@ public:
     {
         return commands.empty();
     }
-    Command pop()
+    Command &front()
     {
-        Command c = commands.front();
+        return commands.front();
+    }
+    void pop()
+    {
         current_command_id++;
         commands.pop();
-        return c;
     }
 private:
     std::queue<Command> commands;

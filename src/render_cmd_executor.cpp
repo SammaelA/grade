@@ -5,29 +5,38 @@
 
 void RenderCmdExecutor::execute(int max_cmd_count)
 {
-    Block default_render_settings;
-    if (!worldRenderer.is_inited())
-        worldRenderer.init(appCtx.HEIGHT, appCtx.WIDTH, default_render_settings);
-
     int cmd_left = max_cmd_count;
     while (!renderCmdBuffer.empty() && cmd_left != 0)
     {
-        auto cmd = renderCmdBuffer.pop();
+        auto &cmd = renderCmdBuffer.front();
         switch (cmd.type)
         {
         case RC_UPDATE_HMAP:
             if (genCtx.scene->heightmap)
                 worldRenderer.set_heightmap(*(genCtx.scene->heightmap));
+            else 
+                worldRenderer.remove_heightmap();
             break;
-        
+        case RC_UPDATE_OBJECTS:
+            worldRenderer.remove_all_instanced_models();
+            worldRenderer.add_instanced_models(genCtx.scene->instanced_models);
+            break;
+        case RC_INIT_RENDER:
+            if (!worldRenderer.is_inited())
+            {
+                Block default_render_settings;
+                worldRenderer.init(appCtx.HEIGHT, appCtx.WIDTH, default_render_settings);
+            }
+            break;
         default:
             logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
             break;
         }
+        renderCmdBuffer.pop();
         cmd_left--;
     }
-
-    render();
+    if (worldRenderer.is_inited())
+        render();
 }
 
 void RenderCmdExecutor::render()

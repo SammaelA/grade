@@ -22,7 +22,7 @@ public:
     struct SceneGenerationContext
     {
       SceneGenerationContext(): objects_bvh(false) {};
-        Scene *scene;
+        Scene *scene = nullptr;
         Block settings;
         BVH objects_bvh;
         BiomeMap biome_map;
@@ -35,6 +35,7 @@ public:
         glm::vec3 center3;
 
         int base_biome_id = 0;
+        bool inited = false;
     };
     
     SceneGenerator(SceneGenerationContext &_ctx);
