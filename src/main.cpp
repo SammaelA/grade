@@ -51,6 +51,9 @@ int main(int argc, char *argv[])
         rce.execute();
     };
     Tiny::view.interface = [&]() {
+        ImGui::Begin("Demo window");
+        ImGui::Button("Hello!");
+        ImGui::End();
     };
 
     Tiny::loop([&]() {});
