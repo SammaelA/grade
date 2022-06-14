@@ -1,0 +1,7 @@
+{
+cmd {cmd_code:i=3}
+cmd {cmd_code:i=0}
+cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,17,  0,125,0,-34,  0,0,125,50,  0,0,0,1}
+cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,87,  0,125,0,-34,  0,0,125,50,  0,0,0,1}
+cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,157,  0,125,0,-34,  0,0,125,50,  0,0,0,1}
+}
