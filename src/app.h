@@ -41,6 +41,8 @@ struct AppContext
     int benchmark_grove_needed = -1;
     int benchmark_grove_current = -1;
     glm::vec2 mousePos = glm::vec2(-1, -1);
+    glm::vec4 mouseWorldPosDist = glm::vec4(0,0,0,-1);//-1 means that mouse is not on scene geometry
+
     glm::mat4 projection = glm::perspective(fov, (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
 
     GroveRendererDebugParams groveRendererDebugParams;
@@ -51,6 +53,7 @@ struct AppContext
     bool regeneration_needed = false;
     bool add_generation_needed = false;
     bool save_to_hydra = false;
+    bool free_camera = false;
 };
 
 extern std::function<void(AppContext &, Event &)> eventHandler;

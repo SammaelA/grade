@@ -15,6 +15,7 @@ public:
     GLuint get_normals(){ return normalsTex;}
     GLuint get_view_pos(){ return viewPosTex;}
     GLuint get_world_pos(){ return worldPosTex;}
+    glm::vec2 size(){ return glm::vec2(width,height);}
 private:
     glm::vec4 clear_color;
     int width, height;

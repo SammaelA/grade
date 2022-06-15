@@ -1,0 +1,19 @@
+#version 430
+layout( local_size_x = 1, local_size_y = 1) in;
+layout(std430, binding=13) writeonly buffer res_buf
+{
+    float results[];
+};
+uniform vec2 screen_pos;
+uniform sampler2D world_pos_tex;
+uniform sampler2D color_tex;
+void main()
+{
+    vec3 world_pos = texelFetch(world_pos_tex, ivec2(screen_pos),0).xyz;
+    float a = texelFetch(color_tex, ivec2(screen_pos),0).a;
+    
+    results[0] = world_pos.x;
+    results[1] = world_pos.y;
+    results[2] = world_pos.z;
+    results[3] = a >= 0.01 ? 1 : -1;
+}

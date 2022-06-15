@@ -39,7 +39,6 @@ void read_from_console_nonblock()
         if (!command_block)
         {
             std::string blk_path = b.get_string("pack_path","");
-            logerr("aa %s", blk_path.c_str());
             if (blk_path != "")
             {
                 //list of commands from file

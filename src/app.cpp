@@ -18,30 +18,37 @@ void FpsCounter::tick()
 
 std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Event &event)
 {
+  float sensitivity = 0.1;
+  float speed = 1;
+  float mouse_scroll_speed = 5;
+
   float nx = event.mouse.x;
   float ny = event.mouse.y;
-  GLfloat xoffset = nx - ctx.mousePos.x;
-  GLfloat yoffset = ctx.mousePos.y - ny;
-
-  GLfloat sensitivity = 0.1;
-  xoffset *= sensitivity;
-  yoffset *= sensitivity;
-
-  ctx.camera.yaw += xoffset;
-  ctx.camera.pitch += yoffset;
-
-  if (ctx.camera.pitch > 89.0f)
-    ctx.camera.pitch = 89.0f;
-  if (ctx.camera.pitch < -89.0f)
-    ctx.camera.pitch = -89.0f;
-  glm::vec3 front;
-  front.x = cos(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
-  front.y = sin(glm::radians(ctx.camera.pitch));
-  front.z = sin(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
-  ctx.camera.front = glm::normalize(front);
+  float xoffset = nx - ctx.mousePos.x;
+  float yoffset = ctx.mousePos.y - ny;
   ctx.mousePos = glm::vec2(nx, ny);
+  if (event.active[SDLK_LALT] || event.click[SDL_BUTTON_MIDDLE] || ctx.free_camera)
+  {
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    ctx.camera.yaw += xoffset;
+    ctx.camera.pitch += yoffset;
+
+    if (ctx.camera.pitch > 89.0f)
+      ctx.camera.pitch = 89.0f;
+    if (ctx.camera.pitch < -89.0f)
+      ctx.camera.pitch = -89.0f;
+    glm::vec3 front;
+    front.x = cos(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
+    front.y = sin(glm::radians(ctx.camera.pitch));
+    front.z = sin(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
+    ctx.camera.front = glm::normalize(front);
+  }
+
+  ctx.camera.pos += mouse_scroll_speed*(event.mouseWheel.y + 0.0f)*ctx.camera.front;
+
   //Pause Toggle
-  float speed = 0.75;
   glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
   if (event.active[SDLK_1])
   {

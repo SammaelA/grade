@@ -44,5 +44,12 @@ void RenderCmdExecutor::render()
     worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);
     worldRenderer.set_forced_LOD(appCtx.forced_LOD);
     worldRenderer.set_render_mode(appCtx.render_mode);
+    RenderReadbackInputData rrid;
+    RenderReadbackData rrd;
+    rrid.cursor_screen_pos =  glm::vec2(appCtx.mousePos.x/Tiny::view.WIDTH, 1-(appCtx.mousePos.y)/Tiny::view.HEIGHT);
+    worldRenderer.set_readback(rrid);
     worldRenderer.render(1, appCtx.camera);
+    rrd = worldRenderer.get_readback();
+    float dist = rrd.cursor_on_geometry ? length(appCtx.camera.pos - rrd.cursor_world_pos) : -1;
+    appCtx.mouseWorldPosDist = glm::vec4(rrd.cursor_world_pos, dist);
 }

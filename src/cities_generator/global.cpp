@@ -81,8 +81,7 @@ void checkForGlErrors(std::string text, bool clean)
     GLenum err;
     while((err = glGetError()) != GL_NO_ERROR)
     {
-        if (!clean)
-            debug("ERROR:", text, err);
+        debug("ERROR:", text, err);
         noErrorsFlag = false;
     }
     if (!noErrorsFlag && !clean)

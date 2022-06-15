@@ -30,7 +30,7 @@ public:
   //Movement Events
   bool mousemove = false;
   SDL_MouseMotionEvent mouse;
-
+  SDL_MouseWheelEvent mouseWheel;
   //Clicking Events
   std::unordered_map<Uint8, bool> click;      //Active Buttons
   std::deque<Uint8> clicked;                  //Button Events

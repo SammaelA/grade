@@ -45,13 +45,23 @@ public:
     }
     void pop()
     {
-        current_command_id++;
+        commands.front().args.set_int("cmd_code", (int)commands.front().type);
+        cmd_log.add_block("cmd_"+std::to_string(commands.front().id), &(commands.front().args));
         commands.pop();
+        current_command_id++;
+    }
+    CommandBuffer() = default;
+    ~CommandBuffer()
+    {
+        BlkManager man;
+        T t;
+        man.save_block_to_file(std::string("../logs/") + typeid(t).name() + std::string("_log.blk"), cmd_log);
     }
 private:
     std::queue<Command> commands;
-    int current_command_id = -1;
-    int next_command_id = 0;
+    Block cmd_log;
+    unsigned current_command_id = 0;
+    unsigned next_command_id = 0;
 };
 
 extern CommandBuffer<InputCommands> inputCmdBuffer;

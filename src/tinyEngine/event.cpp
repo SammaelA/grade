@@ -20,6 +20,7 @@ void Event::input(){
       scroll.negy = (in.wheel.y < -0.99);
       scroll.posx = (in.wheel.x > 0.99);
       scroll.negx = (in.wheel.x < -0.99);
+      mouseWheel = in.wheel;
       break;
     case SDL_MOUSEMOTION:
       mouse = in.motion;
@@ -69,4 +70,5 @@ void Event::handle(View &view){
   scroll.reset();
   mousemove = false;
   windowEventTrigger = false;
+  mouseWheel = SDL_MouseWheelEvent();
 }

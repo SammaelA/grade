@@ -72,6 +72,10 @@ void View::drawInterface(){
   ImGui::Render();
   glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  while(glGetError() != GL_NO_ERROR)
+  {
+    //ImGUI produces invalid value error every frame, I dont know why. 
+  }
 }
 
 void View::target(glm::vec3 clearcolor){

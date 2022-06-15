@@ -2,6 +2,7 @@
 #define GLEW_EXPERIMENTAL
 #include "tinyEngine/TinyEngine.h"
 #include "core/body.h"
+#include "cities_generator/global.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
 const int HALTON_COUNT = 8;
@@ -30,6 +31,7 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(terrainRenderer)
   DEL_IT(debugVisualizer)
   DEL_IT(grassRenderer2);
+  DEL_IT(renderReadback);
 }
 
 void WorldRenderer::set_resolution(int w, int h)
@@ -78,7 +80,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), defaultShader);
-
+  renderReadback = new RenderReadback();
   targets[0].create(w,h);
   targets[1].create(w,h);
   taa = new PostFx("taa.fs");
@@ -228,9 +230,10 @@ void WorldRenderer::render(float dt, Camera &camera)
   projection[3][0] += jitter.x * JITTER_SCALE;
   projection[3][1] += jitter.y * JITTER_SCALE;
 
+  // SHADOW PASS //
+  checkForGlErrors("render pre shadow", true);
   if (regenerate_shadows)
   {
-    //shadows pass
     regenerate_shadows = false;
     shadowMap.use(light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
@@ -292,9 +295,7 @@ void WorldRenderer::render(float dt, Camera &camera)
 
     shadowMap.blur();
   }
-  //Tiny::view.target(glm::vec3(0.6, 0.7, 1));
-  defferedTarget.target();
-
+  checkForGlErrors("render shadow", true);
       /*
     debugShader->use();
     debugShader->uniform("projectionCamera", projection * camera.camera());
@@ -317,6 +318,9 @@ void WorldRenderer::render(float dt, Camera &camera)
       debugShader->uniform("slice", debug_layer);
     }
     */
+  // FILL GBUFFER //
+
+  defferedTarget.target();
   if (render_mode >= DEBUG_ONLY_RENDER_MODE)
   {
     if (terrainRenderer)
@@ -325,14 +329,9 @@ void WorldRenderer::render(float dt, Camera &camera)
                                   camera.pos, light);
     }
   }
+  checkForGlErrors("render terrain", true);
   if (render_mode == ALL_RENDER_MODE || render_mode == MODELS_ONLY_RENDER_MODE)
   {
-    //depth prepass
-    /*tr.render(projection * camera.camera(),shadowMap.get_transform(),shadowMap.getTex(),
-                camera.pos,light, true);
-
-      glClearColor(clearcolor.x, clearcolor.y, clearcolor.z, 1.0f);*/
-    //color pass
     if (!models.empty())
     {
       simpleInstancingShader->use();
@@ -348,6 +347,7 @@ void WorldRenderer::render(float dt, Camera &camera)
         glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
       }
     }
+    checkForGlErrors("render models", true);
     if (grassRenderer2)
     {
       grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
@@ -358,31 +358,37 @@ void WorldRenderer::render(float dt, Camera &camera)
       grassRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
                                 camera.pos, *heightmapTex, light);
     }
+    checkForGlErrors("render grass", true);
     if (render_mode != 2 && groveRenderer)
     {
       groveRenderer->render(forced_LOD, projection, camera.camera(), camera,
                                  glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0 * shadowMap.getTex());
     }
+    checkForGlErrors("render trees", true);
   }
   if (render_mode == ALL_RENDER_MODE || render_mode == DEBUG_ONLY_RENDER_MODE)
   {
     if (debugVisualizer)
       debugVisualizer->render(projection * camera.camera(), render_mode);
   }
-
-  //postfx
-  /*uniform vec3 dir_to_sun;
-uniform vec3 camera_pos;
-uniform vec3 ambient_diffuse_specular;
-uniform vec3 light_color;
-uniform vec2 sts_inv;
-uniform sampler2D shadowMap;
-uniform bool need_shadow;
-uniform mat4 shadow_mat;*/
-  //hbaoRenderer.render(ctx,defferedTarget.get_view_pos());
+  checkForGlErrors("render debug", true);
 
   cubemap->render(projection, camera.camera(), camera);
+  checkForGlErrors("render cubemap", true);
+
+  // READBACK FROM GBUFFER //
+  if (readback_required && renderReadback)
+  {
+    RRD.valid = true;
+    glm::vec4 wp = renderReadback->get_world_pos(RRID.cursor_screen_pos*defferedTarget.size(), 
+                                                 defferedTarget.get_world_pos(), defferedTarget.get_color());
+    RRD.cursor_world_pos = wp;
+    RRD.cursor_on_geometry = wp.w > 0;
+  }
+  checkForGlErrors("render readback", true);
+
+  // RESOLVE //
 
   targets[current_target].target();
 
@@ -411,7 +417,8 @@ uniform mat4 shadow_mat;*/
   taa->get_shader().texture("prevTarget",targets[(current_target + 1) % 2].get_tex());
   taa->get_shader().uniform("weight",0.95f);
   taa->render();
-
+  checkForGlErrors("render resolve", true);
+  
   current_target = (current_target + 1) % 2;
   projection = projectionNoJitter;
 }

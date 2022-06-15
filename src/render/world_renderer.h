@@ -9,6 +9,7 @@
 #include "terrain_renderer.h"
 #include "tinyEngine/render_target.h"
 #include "core/scene.h"
+#include "render_readback.h"
 
 class WorldRenderer
 {
@@ -17,7 +18,12 @@ public:
     ~WorldRenderer();
     void init(int h, int w, Block &render_settings);
     void render(float dt, Camera &camera);
-
+    void set_readback(RenderReadbackInputData &rrid)
+    {
+        RRID = rrid;
+        readback_required = true;
+    }
+    RenderReadbackData get_readback() {return RRD;}
     void set_heightmap(Heightmap &heightmap);
     void remove_heightmap();
 
@@ -72,6 +78,7 @@ private:
     GrassRenderer2 *grassRenderer2 = nullptr;
     TerrainRenderer *terrainRenderer = nullptr;
     DebugVisualizer *debugVisualizer = nullptr;
+    RenderReadback *renderReadback = nullptr;
     DirectedLight light;
     RenderTarget targets[2];
     
@@ -91,4 +98,7 @@ private:
     const int MAX_RENDER_MODE = 2;
     const float fov = glm::radians(90.0f);
     
+    RenderReadbackInputData RRID;
+    RenderReadbackData RRD;
+    bool readback_required = false;
 };

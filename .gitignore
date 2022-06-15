@@ -35,7 +35,7 @@ dist/
 /original_trees/*
 /hydra_scenes/*
 callgrind.*
-
+/logs/*
 profile.txt
 *.npy
 # Compiled Java class files
