@@ -32,7 +32,7 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
             delete flat_terrain;
     }
     void TerrainRenderer::render(glm::mat4 projection, glm::mat4 view, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                 DirectedLight &light, bool to_shadow)
+                                 DirectedLight &light, int debug_type, glm::vec4 grid_params, bool to_shadow)
     {
         Shader &shader = to_shadow ? terrainShadow : terrain;
         shader.use();
@@ -43,6 +43,8 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
         shader.uniform("projection",projection);
         shader.uniform("view",view);
         shader.uniform("model",flat_terrain->model);
+        shader.uniform("debug_render",debug_type);
+        shader.uniform("grid_params",grid_params);
 
         flat_terrain->render();
     }

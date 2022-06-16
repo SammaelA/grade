@@ -35,6 +35,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
                 renderCmdBuffer.push(RC_UPDATE_OBJECTS);
             }
             genCmdBuffer.push(GC_INIT_SCENE, cmd.args);
+            renderCmdBuffer.push(RC_GLOBAL_PARAMS_UPDATE);
             break;
         case IC_REMOVE_OBJECT:
         for (int i=0;i<cmd.args.size();i++)
@@ -59,6 +60,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
                 }
             }
             }
+            break;
+        case IC_UPDATE_RENDER_DEBUG_PARAMS:
+            renderCmdBuffer.push(RC_UPDATE_DEBUG_PARAMS, cmd.args);
             break;
         default:
             logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

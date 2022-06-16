@@ -12,7 +12,7 @@ layout (location = 3) out vec4 fragWorldPos;
 void main()
 {    
     fragColor = texture(skybox, TexCoords);
-    fragNormal = vec4(0,0,0,-1000);
+    fragNormal = vec4(0,0,0,0);
     fragViewPos = vec4(0);
     fragWorldPos = vec4(0);
 }

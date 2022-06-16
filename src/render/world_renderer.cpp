@@ -261,7 +261,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (terrainRenderer)
     {
       terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
-                                  0, camera.pos, light, true);
+                                  0, camera.pos, light, 0, glm::vec4(0,0,1,1), true);
     }
     if (grassRenderer2)
     {
@@ -326,7 +326,9 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (terrainRenderer)
     {
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
-                                  camera.pos, light);
+                              camera.pos, light, 
+                              debugInfo.get_bool("render_grid_debug", false) ? 1 : 0,
+                              debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)));
     }
   }
   checkForGlErrors("render terrain", true);

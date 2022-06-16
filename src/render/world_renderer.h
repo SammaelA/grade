@@ -11,9 +11,11 @@
 #include "core/scene.h"
 #include "render_readback.h"
 
+class RenderCmdExecutor;
 class WorldRenderer
 {
 public:
+    friend class RenderCmdExecutor;
     WorldRenderer() {}
     ~WorldRenderer();
     void init(int h, int w, Block &render_settings);
@@ -101,4 +103,5 @@ private:
     RenderReadbackInputData RRID;
     RenderReadbackData RRD;
     bool readback_required = false;
+    Block debugInfo;
 };

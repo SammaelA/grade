@@ -17,7 +17,7 @@ void main(void)
   fragColor = texture(tex,ex_Tex.xy);
   fragColor.a = 1;
 
-  fragNormal = vec4(ex_Normal.xyz,1);
+  fragNormal = vec4(ex_Normal.xyz,4);
   fragViewPos = vec4(ex_FragPosView.xyz,1);
   fragWorldPos = vec4(ex_FragPos,1);
 

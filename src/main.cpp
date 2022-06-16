@@ -6,6 +6,7 @@
 #include "graphics_utils/modeling.h"
 #include "generation/scene_generator.h"
 #include "cmd_executors.h"
+#include "gui.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
@@ -51,9 +52,7 @@ int main(int argc, char *argv[])
         rce.execute();
     };
     Tiny::view.interface = [&]() {
-        ImGui::Begin("Demo window");
-        ImGui::Button("Hello!");
-        ImGui::End();
+        gui::render_debug_settings();
     };
 
     Tiny::loop([&]() {});

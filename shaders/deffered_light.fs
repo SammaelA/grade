@@ -21,6 +21,15 @@ uniform mat4 shadow_mat;
 out vec4 fragColor;
 #define VSM 1
 
+//different types of pixel
+const int PIXEL_TYPE_NONE = 0;
+const int PIXEL_TYPE_TERRAIN = 1;
+const int PIXEL_TYPE_TREES = 2;
+const int PIXEL_TYPE_GRASS = 3;
+const int PIXEL_TYPE_MODELS = 4;
+const int PIXEL_TYPE_DEBUG_LIGHT = 5;
+const int PIXEL_TYPE_DEBUG_NO_LIGHT = 6;
+
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 world_pos, float bias, int samples)
 {
 vec2 poissonDisk[64];
@@ -127,30 +136,29 @@ poissonDisk[63] = vec2(-0.178564, -0.596057);
 
 void main(void) 
 {
-    if (mode == 0)
-    {
-      vec4 color_none = texture(colorTex,ex_Tex);
+      vec4 color_alpha = texture(colorTex,ex_Tex);
       vec4 normal_type = texture(normalsTex,ex_Tex);
       vec3 cube_color = pow(texture(cubeTex, ex_Tex).xyz,vec3(1/2.2));//remove pow is cube tex is in sRGB
-      if (color_none.a < -0.01)
+      int type = int(normal_type.a);
+      
+      if (color_alpha.a < -0.01)
       {
         fragColor = vec4(cube_color,1);
       }
-      else
+      else if (type != PIXEL_TYPE_DEBUG_NO_LIGHT)
       {
         vec3 world_pos = texture(worldPosTex,ex_Tex).xyz;
         vec3 view_pos = texture(viewPosTex,ex_Tex).xyz;
         float ao = texture(aoTex,ex_Tex).x;
-        fragColor = vec4(color_none.xyz/color_none.a,1);
-        fragColor = vec4(pow(color_none.xyz,vec3(2.2)),1);
+        fragColor = vec4(color_alpha.xyz/color_alpha.a,1);
+        fragColor = vec4(pow(color_alpha.xyz,vec3(2.2)),1);
         float shadow = 0;
         if (need_shadow)
         {
             float bias = 3*1e-6;
             int samples = 2;
-            int type = int(normal_type.a);
 
-            if (type == 0)
+            if (type == PIXEL_TYPE_TERRAIN)
                 samples = 16;
             else 
                 bias = 1e-5;
@@ -174,12 +182,10 @@ void main(void)
         vec3 color = vec3(1,1,1)*ads.x + (1-shadow)*(light_color*ads.y*lambertian + vec3(1,1,1)*ads.z*specular);
         fragColor.xyz *= color;
         fragColor.xyz = pow(fragColor.xyz,vec3(1.0/2.2));
-        fragColor.xyz = fragColor.xyz*color_none.a + cube_color*(1 - color_none.a);
-        //fragColor.xyz = 0.025*world_pos;
+        fragColor.xyz = fragColor.xyz*color_alpha.a + cube_color*(1 - color_alpha.a);
       }
-    }
-    else
-    {
-        fragColor = texture(colorTex,ex_Tex);
-    }
+      else
+      {
+        fragColor = color_alpha;
+      }
 }

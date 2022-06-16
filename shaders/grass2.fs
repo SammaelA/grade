@@ -19,7 +19,7 @@ void main(void)
     discard;
   fragColor.rgb/fragColor.a;
 
-  fragNormal = vec4(ex_Normal.xyz,2);
+  fragNormal = vec4(ex_Normal.xyz,3);
   fragViewPos = vec4(ex_FragPosView.xyz,1);
   fragWorldPos = vec4(ex_FragPos,1);
 

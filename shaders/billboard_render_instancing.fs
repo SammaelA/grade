@@ -42,7 +42,7 @@ void main(void)
     fragColor = vec4(1,0,1,1);
   }
 
-  fragNormal = vec4(ex_Normal.xyz,1);
+  fragNormal = vec4(ex_Normal.xyz,2);
   fragViewPos = vec4(ex_FragPosView.xyz,1);
   fragWorldPos = vec4(ex_FragPos,1);
 

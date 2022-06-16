@@ -1166,7 +1166,7 @@ void Block::add_detalization(Block &det)
             }
             else
                 values[id].copy(det.values[i]);
-            logerr("detalization added %s %d %d",det.get_name(i).c_str(),values[id].bl, det.values[i].bl);
+            //logerr("detalization added %s %d %d",det.get_name(i).c_str(),values[id].bl, det.values[i].bl);
         }
     }
 }

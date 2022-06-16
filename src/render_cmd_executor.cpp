@@ -28,6 +28,13 @@ void RenderCmdExecutor::execute(int max_cmd_count)
                 worldRenderer.init(appCtx.HEIGHT, appCtx.WIDTH, default_render_settings);
             }
             break;
+        case RC_GLOBAL_PARAMS_UPDATE:
+            worldRenderer.debugInfo.set_bool("render_grid_debug", false);
+            worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.center, genCtx.cell_size));
+            break;
+        case RC_UPDATE_DEBUG_PARAMS:
+            worldRenderer.debugInfo.add_detalization(cmd.args);
+            break;
         default:
             logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
             break;
