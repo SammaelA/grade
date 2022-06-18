@@ -41,7 +41,7 @@ struct AppContext
     int benchmark_grove_needed = -1;
     int benchmark_grove_current = -1;
     glm::vec2 mousePos = glm::vec2(-1, -1);
-    glm::vec4 mouseWorldPosDist = glm::vec4(0,0,0,-1);//-1 means that mouse is not on scene geometry
+    glm::vec4 mouseWorldPosType = glm::vec4(0,0,0,-1);//-1 means that mouse is not on scene geometry
 
     glm::mat4 projection = glm::perspective(fov, (float)WIDTH / HEIGHT, 1.0f, 3000.0f);
 

@@ -45,7 +45,7 @@ void main(void)
     {
       fragColor.xyz = grid_render_params.xyz;
       fragColor.w = 1;
-      fragNormal.w = 5;
+      fragNormal.w = 5;//debug type
     }
   }
 }

@@ -22,6 +22,7 @@ out vec4 fragColor;
 #define VSM 1
 
 //different types of pixel
+//should match with scene_generation_helper.cpp
 const int PIXEL_TYPE_NONE = 0;
 const int PIXEL_TYPE_TERRAIN = 1;
 const int PIXEL_TYPE_TREES = 2;

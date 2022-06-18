@@ -102,8 +102,8 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
     ctx.forced_LOD = 1;
   if (event.active[SDLK_o])
     ctx.forced_LOD = 2;
-  if (event.active[SDLK_p])
-    ctx.forced_LOD = 3;
+  //if (event.active[SDLK_p])
+  //  ctx.forced_LOD = 3;
   if (event.active[SDLK_LEFTBRACKET])
     ctx.forced_LOD = 4;
   if (event.active[SDLK_RIGHTBRACKET])
@@ -173,6 +173,13 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
   {
     exit(0);
     event.active[SDLK_ESCAPE] = false;
+  }
+  if (event.active[SDLK_p])
+  {
+    Block b;
+    b.add_vec4("world_pos_type", ctx.mouseWorldPosType);
+    inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
+    event.active[SDLK_p] = false;
   }
   if (!event.press.empty())
   {

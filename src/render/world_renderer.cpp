@@ -385,7 +385,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     RRD.valid = true;
     glm::vec4 wp = renderReadback->get_world_pos(RRID.cursor_screen_pos*defferedTarget.size(), 
                                                  defferedTarget.get_world_pos(), defferedTarget.get_color());
-    RRD.cursor_world_pos = wp;
+    RRD.cursor_world_pos_type = wp;
     RRD.cursor_on_geometry = wp.w > 0;
   }
   checkForGlErrors("render readback", true);

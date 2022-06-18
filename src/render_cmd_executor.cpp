@@ -2,6 +2,7 @@
 #include "common_utils/utility.h"
 #include "render/world_renderer.h"
 #include "tinyEngine/TinyEngine.h"
+#include "generation/metainfo_manager.h"
 
 void RenderCmdExecutor::execute(int max_cmd_count)
 {
@@ -35,6 +36,14 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         case RC_UPDATE_DEBUG_PARAMS:
             worldRenderer.debugInfo.add_detalization(cmd.args);
             break;
+        case RC_UPDATE_TREES:
+          if (worldRenderer.is_inited())
+          {
+            GroveGenerationData ggd;
+            ggd.types = metainfoManager.get_all_tree_types();
+            worldRenderer.set_grove(genCtx.scene->grove, ggd);
+            break;
+          }
         default:
             logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
             break;
@@ -57,6 +66,5 @@ void RenderCmdExecutor::render()
     worldRenderer.set_readback(rrid);
     worldRenderer.render(1, appCtx.camera);
     rrd = worldRenderer.get_readback();
-    float dist = rrd.cursor_on_geometry ? length(appCtx.camera.pos - rrd.cursor_world_pos) : -1;
-    appCtx.mouseWorldPosDist = glm::vec4(rrd.cursor_world_pos, dist);
+    appCtx.mouseWorldPosType = rrd.cursor_world_pos_type;
 }
