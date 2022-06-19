@@ -285,6 +285,13 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     case GC_GEN_TREES_CELL:
     {
       std::vector<int> ids = {};
+      for (int i=0;i<cmd.args.size();i++)
+      {
+        glm::ivec2 ij = cmd.args.get_ivec2(i,glm::ivec2(-1,-1));
+        int id = ij.x*genCtx.cells_y + ij.y;
+        if (id >= 0)
+          ids.push_back(id);
+      }
       scene_gen::generate_plants_cells(genCtx, ids);
     }
       break;

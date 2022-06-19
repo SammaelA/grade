@@ -14,7 +14,7 @@ enum GenerationTask
     MODELS = 64
 };
 #define ALL_GENERATION_TASKS (2*MODELS - 1)
-#define MINIMUM_FOR_RENDER (GENERATE|MODELS|BILLBOARDS)
+#define MINIMUM_FOR_RENDER (GENERATE|CLUSTERIZE|MODELS)
 struct GroveGenerationData
 {
     std::vector<TreeTypeData> types;

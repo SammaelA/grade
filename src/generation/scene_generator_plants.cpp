@@ -499,23 +499,35 @@ namespace scene_gen
 
     return border_cells.empty();
   }
-  void generate_plants_cells(SceneGenerator::SceneGenerationContext &ctx, std::vector<int> cell_ids)
+  void generate_plants_cells(SceneGenerator::SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
   {
+    std::vector<int> cell_ids;//only valid cells where we have something to generate
+    for (auto &id : all_cell_ids)
+    {
+      if (id < 0 || id >= ctx.cells.size())
+        logerr("trying to make plants in invalid cell id = %d",id);
+      else if (ctx.cells[id].prototypes.size() > 0)
+      {
+        cell_ids.push_back(id);
+        ctx.cells[id].status = Cell::CellStatus::WAITING;
+      }
+    }
+    if (cell_ids.empty())
+      return;
+    
     GrovePacker packer;
     RawTreesDatabase rawTreesDatabase;
     std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
     GroveGenerationData ggd;
     ggd.types = types; 
-    ggd.task = GENERATE | CLUSTERIZE | MODELS;
+    ggd.task = MINIMUM_FOR_RENDER;
     std::vector<Cell> &cells = ctx.cells;
-    int &cells_x = ctx.cells_x;
-    int &cells_y = ctx.cells_y;
 
     std::vector<GenerationJob *> generationJobs;
     const int max_jobs_cnt = 8;
-    int job_size = MAX(ceil((float)cells_x/max_jobs_cnt), 1);
-    int jobs_cnt = MAX(ceil((float)cells_x/job_size), 1);
-    logerr("starting generation %dx%d cells with %d jobs (job size = %d)", cells_x, cells_y, jobs_cnt, job_size);
+    int job_size = MAX(ceil((float)cell_ids.size()/max_jobs_cnt), 1);
+    int jobs_cnt = MAX(ceil((float)cell_ids.size()/job_size), 1);
+    logerr("starting generation %d cells with %d jobs (job size = %d)", cell_ids.size(), jobs_cnt, job_size);
 
     GrassGenerator grassGenerator;//tmp
     bool grass_needed = false;//tmp
@@ -528,25 +540,21 @@ namespace scene_gen
     thread_finished = {};
     for (int i=0;i<jobs_cnt;i++)
     {
-      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, grassGenerator, global_mask, cells_x, cells_y, 
-                                                grass_needed, i));
+      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, grassGenerator, global_mask, 
+                                                 ctx.cells_x, ctx.cells_y, grass_needed, i));
       std::atomic<bool> ab(false);
       thread_finished.push_back(ab);                                      
     }
 
-    for (int i = 0; i < cells_x; i++)
+    int cur_job = 0;
+    for (auto &id : cell_ids)
     {
-      for (int j = 0; j < cells_y; j++)
+      if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        int id = i * cells_y + j;
-        if (cells[id].prototypes.size() > 0 || grass_needed)
-          cells[id].status = Cell::CellStatus::WAITING;
-
-        if (cells[id].status == Cell::CellStatus::WAITING)
-        {
-          cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene->heightmap));
-          generationJobs[i / job_size]->waiting_cells.push_back(id);
-        }
+        cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene->heightmap));
+        generationJobs[cur_job]->waiting_cells.push_back(id);
+        if (jobs_cnt > 1)
+          cur_job = (cur_job + 1)%jobs_cnt;
       }
     }
 
@@ -591,8 +599,9 @@ namespace scene_gen
 
     rawTreesDatabase.pack_ready(packer, ctx, true);
 
-    for (auto &c : cells)
+    for (auto &id : cell_ids)
     {
+      auto &c = cells[id];
       if (c.planar_occlusion)
         delete c.planar_occlusion;
       if (c.voxels_small)
