@@ -3,6 +3,7 @@
 #include "render/world_renderer.h"
 #include "tinyEngine/TinyEngine.h"
 #include "generation/metainfo_manager.h"
+#include "generation/scene_generator_helper.h"
 
 void RenderCmdExecutor::execute(int max_cmd_count)
 {
@@ -31,7 +32,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             break;
         case RC_GLOBAL_PARAMS_UPDATE:
             worldRenderer.debugInfo.set_bool("render_grid_debug", false);
-            worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.center, genCtx.cell_size));
+            worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.start_pos, genCtx.cell_size));
             break;
         case RC_UPDATE_DEBUG_PARAMS:
             worldRenderer.debugInfo.add_detalization(cmd.args);
@@ -42,8 +43,72 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             GroveGenerationData ggd;
             ggd.types = metainfoManager.get_all_tree_types();
             worldRenderer.set_grove(genCtx.scene->grove, ggd);
-            break;
           }
+          break;
+        case RC_VISUALIZE_VOXELS_DEBUG:
+        {
+          int cell_id = cmd.args.get_int("cell_id",-1);
+          if (cell_id >= 0)
+          {
+            logerr("visualize voxels in cell %d", cell_id);
+            uint64_t model_id = SceneGenHelper::pack_id(0, (int)Scene::DEBUG_MODEL, 1, cell_id);
+            bool found = false;
+            for (auto &dm : worldRenderer.debug_models)
+            {
+              if (dm.id == model_id)
+              {
+                found = true;
+                break;
+              }
+            }
+            if (!found && genCtx.cells[cell_id].voxels_small)
+            {
+              worldRenderer.debug_models.emplace_back();
+              worldRenderer.debug_models.back().apply_light = false;
+              worldRenderer.debug_models.back().m = visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small);
+              worldRenderer.debug_models.back().id = model_id;
+            }
+          }
+          break;
+        }
+        case RC_REMOVE_VOXELS_DEBUG:
+        {
+          int cell_id = cmd.args.get_int("cell_id",-1);
+          if (cell_id >= 0)
+          {
+            logerr("remove voxels in cell %d", cell_id);
+            uint64_t model_id = SceneGenHelper::pack_id(0, (int)Scene::DEBUG_MODEL, 1, cell_id);
+            for (auto dm = worldRenderer.debug_models.begin(); dm != worldRenderer.debug_models.end(); dm++)
+            {
+              if (dm->id == model_id)
+              {
+                delete dm->m;
+                worldRenderer.debug_models.erase(dm);
+                break;
+              }
+            }
+          }
+          break;
+        }
+        case RC_UPDATE_CELL:
+          for (int i=0;i<cmd.args.size();i++)
+          {
+            int cell_id = cmd.args.get_int(i,-1);
+            if (cell_id >= 0)
+            {
+              uint64_t model_id = SceneGenHelper::pack_id(0, (int)Scene::DEBUG_MODEL, 1, cell_id);
+              for (auto &dm : worldRenderer.debug_models)
+              {
+                if (dm.id == model_id)
+                {
+                  delete dm.m;
+                  if (genCtx.cells[cell_id].voxels_small)
+                    dm.m = visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small);
+                }
+              }
+            }
+          }
+          break;
         default:
             logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
             break;

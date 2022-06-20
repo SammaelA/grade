@@ -32,6 +32,8 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(debugVisualizer)
   DEL_IT(grassRenderer2);
   DEL_IT(renderReadback);
+  DEL_IT(simpleInstancingShader)
+  DEL_IT(simpleInstancingShaderShadow)
 }
 
 void WorldRenderer::set_resolution(int w, int h)
@@ -75,8 +77,8 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   hbaoRenderer->create(w/2, h/2);
   cubemap = new Cubemap(w, h);
   defferedLight = new PostFx("deffered_light.fs");
-  debugShader = new Shader({"debug.vs", "debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+  debugShader = new Shader({"simple_debug.vs", "simple_debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugVisualizer = new DebugVisualizer(textureManager.get("wood"), defaultShader);
@@ -296,28 +298,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     shadowMap.blur();
   }
   checkForGlErrors("render shadow", true);
-      /*
-    debugShader->use();
-    debugShader->uniform("projectionCamera", projection * camera.camera());
-    if (render_mode == DEBUG_RENDER_MODE)
-    {
-      debugShader->texture("tex", textureManager.get(debug_tex));
-      debugShader->texture("tex_arr", textureManager.get(debug_tex));
-      debugShader->uniform("need_tex", true);
-      debugShader->uniform("need_arr_tex", false);
-      debugShader->uniform("need_coord", false);
-      debugShader->uniform("slice", 0);
-    }
-    else if (render_mode == ARRAY_TEX_DEBUG_RENDER_MODE)
-    {
-      debugShader->texture("tex", textureManager.get_arr(debug_tex));
-      debugShader->texture("tex_arr", textureManager.get_arr(debug_tex));
-      debugShader->uniform("need_tex", false);
-      debugShader->uniform("need_arr_tex", true);
-      debugShader->uniform("need_coord", false);
-      debugShader->uniform("slice", debug_layer);
-    }
-    */
+
   // FILL GBUFFER //
 
   defferedTarget.target();
@@ -339,6 +320,7 @@ void WorldRenderer::render(float dt, Camera &camera)
       simpleInstancingShader->use();
       simpleInstancingShader->uniform("projection", projection);
       simpleInstancingShader->uniform("view", camera.camera());
+      simpleInstancingShader->uniform("type",(int)(RenderPixelTypes::PIXEL_TYPE_MODELS));
       for (int i=0;i<models.size();i++)
       {
         simpleInstancingShader->uniform("inst_buf_offset", inst_offsets[i]);
@@ -369,10 +351,23 @@ void WorldRenderer::render(float dt, Camera &camera)
     }
     checkForGlErrors("render trees", true);
   }
-  if (render_mode == ALL_RENDER_MODE || render_mode == DEBUG_ONLY_RENDER_MODE)
+  //if (render_mode == ALL_RENDER_MODE || render_mode == DEBUG_ONLY_RENDER_MODE)
+  //{
+  //  if (debugVisualizer)
+  //    debugVisualizer->render(projection * camera.camera(), render_mode);
+  //}
+  debugShader->use();
+  debugShader->uniform("projection", projection);
+  debugShader->uniform("view", camera.camera());
+  for (int i=0;i<debug_models.size();i++)
   {
-    if (debugVisualizer)
-      debugVisualizer->render(projection * camera.camera(), render_mode);
+    debugShader->uniform("model", glm::mat4(1.0f));
+    if (debug_models[i].apply_light)
+      debugShader->uniform("type",(int)(RenderPixelTypes::PIXEL_TYPE_DEBUG_LIGHT));
+    else
+      debugShader->uniform("type",(int)(RenderPixelTypes::PIXEL_TYPE_DEBUG_NO_LIGHT));
+    if (debug_models[i].m)
+      debug_models[i].m->render();
   }
   checkForGlErrors("render debug", true);
 

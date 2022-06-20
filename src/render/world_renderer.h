@@ -55,6 +55,13 @@ public:
 private:
     void on_scene_changed();
 
+    struct DebugModel
+    {
+      Model *m;
+      uint64_t id;
+      bool apply_light = false;
+    };
+
     Block render_settings;
     int render_mode = -1;
     int forced_LOD = -1;
@@ -88,6 +95,7 @@ private:
     std::vector<Scene::InstancedModel> models;
     std::vector<int> inst_offsets;//same size ^
 
+    std::vector<DebugModel> debug_models;
     int current_target = 0;
     int target_w = 0, target_h = 0;
     int screen_w = 0, screen_h = 0;

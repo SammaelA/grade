@@ -86,8 +86,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
         {
           glm::ivec2 c_ij = (pos - genCtx.start_pos) / genCtx.cell_size;
           Block cb;
-          cb.add_ivec2("cell_ij", c_ij);
+          cb.add_int("cell_id", c_ij.x*genCtx.cells_y + c_ij.y);
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
+          renderCmdBuffer.push(RC_UPDATE_CELL, cb);
           renderCmdBuffer.push(RC_UPDATE_TREES);
         }
       }
@@ -107,7 +108,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
             {
               if (p.trees_count > 0 || p.preplanted_trees.size() > 0)
               {
-                cb.add_ivec2("cell_ij", glm::ivec2(i,j));
+                cb.add_int("cell_id", i*genCtx.cells_y + j);
                 cells_to_update++;
               }
             }
@@ -117,9 +118,16 @@ void InputCmdExecutor::execute(int max_cmd_count)
         {
           logerr("updating %d cells", cells_to_update);
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
+          renderCmdBuffer.push(RC_UPDATE_CELL, cb);
           renderCmdBuffer.push(RC_UPDATE_TREES);
         }
       }
+      break;
+    case IC_VISUALIZE_VOXELS_DEBUG:
+      renderCmdBuffer.push(RC_VISUALIZE_VOXELS_DEBUG, cmd.args);
+      break;
+    case IC_REMOVE_VOXELS_DEBUG:
+      renderCmdBuffer.push(RC_REMOVE_VOXELS_DEBUG, cmd.args);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

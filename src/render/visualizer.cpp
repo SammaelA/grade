@@ -179,3 +179,44 @@ void DebugVisualizer::visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 p
         }
     }
 }
+
+Model *visualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 shift, glm::vec3 scale)
+{
+  return visualize_light_voxels(voxels,
+                                voxels->get_center() - voxels->get_voxel_size() * glm::vec3(voxels->get_vox_sizes()),
+                                voxels->get_voxel_size() * (2.0f * glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
+                                2.0f * glm::vec3(voxels->get_voxel_size()),
+                                0.5f * voxels->get_voxel_size(),
+                                0.1,
+                                shift,
+                                scale);
+}
+Model *visualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 pos, glm::vec3 size, glm::vec3 step,
+                                          float dot_size, float threshold, glm::vec3 shift, glm::vec3 scale, int mip)
+{
+  int count = ((int)(size.x / step.x)) * ((int)(size.y / step.y)) * ((int)(size.z / step.z));
+  Model *m = new Model();
+  Visualizer vis;
+  for (float x = pos.x; x < pos.x + size.x; x += step.x)
+  {
+    for (float y = pos.y; y < pos.y + size.y; y += step.y)
+    {
+      for (float z = pos.z; z < pos.z + size.z; z += step.z)
+      {
+        float occ = voxels->get_occlusion_simple_mip(glm::vec3(x, y, z), mip);
+        if (occ < threshold || occ > 1e8)
+          continue;
+        glm::vec4 tex;
+        tex.w = 1;
+        tex.z = MIN(1, occ / (10 * threshold));
+        tex.y = MIN(1, occ / (100 * threshold));
+        tex.x = MIN(1, occ / (1000 * threshold));
+        Box b = Box(shift + glm::vec3(scale.x * x, scale.y * y, scale.z * z), glm::vec3(dot_size, 0, 0), glm::vec3(0, dot_size, 0), glm::vec3(0, 0, dot_size));
+        vis.body_to_model(&b, m, true, tex);
+      }
+    }
+  }
+  logerr("created model %d", m->positions.size());
+  m->update();
+  return m;
+}

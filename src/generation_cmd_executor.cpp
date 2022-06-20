@@ -287,8 +287,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       std::vector<int> ids = {};
       for (int i=0;i<cmd.args.size();i++)
       {
-        glm::ivec2 ij = cmd.args.get_ivec2(i,glm::ivec2(-1,-1));
-        int id = ij.x*genCtx.cells_y + ij.y;
+        int id = cmd.args.get_int(i,-1);
         if (id >= 0)
           ids.push_back(id);
       }

@@ -140,18 +140,6 @@ namespace SceneGenHelper
     }
   }
 
-  enum RenderPixelTypes
-  {
-    // should match with deffered_light.fs
-    PIXEL_TYPE_NONE = 0,
-    PIXEL_TYPE_TERRAIN = 1,
-    PIXEL_TYPE_TREES = 2,
-    PIXEL_TYPE_GRASS = 3,
-    PIXEL_TYPE_MODELS = 4,
-    PIXEL_TYPE_DEBUG_LIGHT = 5,
-    PIXEL_TYPE_DEBUG_NO_LIGHT = 6
-  };
-
   bool is_terrain(glm::vec4 world_pos_type)
   {
     return (int)(world_pos_type.w) == PIXEL_TYPE_TERRAIN;

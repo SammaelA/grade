@@ -27,3 +27,11 @@ private:
     void branch_to_model_debug(Branch *b, int level, Model &m);
     std::vector<int> currentModes;
 };
+
+namespace visualizer
+{
+    Model *visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 shift = glm::vec3(0,0,0), glm::vec3 scale = glm::vec3(1,1,1));
+    Model *visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step, float dot_size, 
+                                  float threshold = 0, glm::vec3 shift = glm::vec3(0,0,0), glm::vec3 scale = glm::vec3(1,1,1),
+                                  int mip = 0);
+};
