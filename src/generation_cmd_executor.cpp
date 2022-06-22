@@ -28,7 +28,7 @@ namespace scene_gen
 
     ctx.heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000, 1000));
     ctx.hmap_pixel_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
-    ctx.biome_map_pixel_size = ctx.settings.get_double("biome_map_pixel_size", 4.0f);
+    ctx.biome_map_pixel_size = ctx.settings.get_double("biome_map_pixel_size", 1.0f);
     ctx.full_size = ctx.settings.get_vec2("scene_size", glm::vec2(100, 100));
     ctx.grass_field_size = ctx.settings.get_vec2("grass_field_size", glm::vec2(1750, 1750));
     ctx.grass_field_size = max(min(ctx.grass_field_size, ctx.heightmap_size), ctx.full_size);

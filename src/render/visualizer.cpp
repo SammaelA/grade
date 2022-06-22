@@ -220,3 +220,32 @@ Model *visualizer::visualize_light_voxels(LightVoxelsCube *voxels, glm::vec3 pos
   m->update();
   return m;
 }
+
+Model *visualizer::visualize_aabb(AABB &box, glm::vec3 &color)
+{
+  ::std::vector<AABB> boxes = {box};
+  ::std::vector<glm::vec3> colors = {color};
+  return visualize_aabb(boxes, colors);
+}
+
+Model *visualizer::visualize_aabb(::std::vector<AABB> &boxes, ::std::vector<glm::vec3> &colors)
+{
+  if (colors.size() == boxes.size())
+  {
+    Model *m = new Model();
+    Visualizer vis;
+    for (int i=0;i<colors.size();i++)
+    {
+      glm::vec3 sz = boxes[i].max_pos - boxes[i].min_pos;
+      Box *box_ptr = new Box(boxes[i].min_pos, glm::vec3(sz.x,0,0), glm::vec3(0,sz.y,0), glm::vec3(0,0,sz.z));
+      vis.body_to_model(box_ptr, m, true, glm::vec4(colors[i], 1));
+      delete box_ptr;
+    }
+    m->update();
+    return m;
+  }
+  else
+  {
+    logerr("visualize_aabb colors and boxes arrays should have the same size");
+  }
+}

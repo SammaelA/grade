@@ -1,6 +1,7 @@
 #pragma once
 #include "graphics_utils/modeling.h"
-
+#include <vector>
+#include "common_utils/bbox.h"
 class DebugVisualizer : public Visualizer
 {
 public:
@@ -34,4 +35,6 @@ namespace visualizer
     Model *visualize_light_voxels(LightVoxelsCube *voxels,glm::vec3 pos, glm::vec3 size, glm::vec3 step, float dot_size, 
                                   float threshold = 0, glm::vec3 shift = glm::vec3(0,0,0), glm::vec3 scale = glm::vec3(1,1,1),
                                   int mip = 0);
+    Model *visualize_aabb(AABB &box, glm::vec3 &color);
+    Model *visualize_aabb(::std::vector<AABB> &boxes, ::std::vector<glm::vec3> &colors);
 };

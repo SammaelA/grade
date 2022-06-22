@@ -34,6 +34,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         {
             worldRenderer.debugInfo.set_bool("render_grid_debug", false);
             worldRenderer.debugInfo.set_bool("render_grove_mask_debug", false);
+            worldRenderer.debugInfo.set_bool("render_bvh_debug", false);
             worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.start_pos, genCtx.cell_size));
             glm::vec2 gm_st_ps = glm::vec2(genCtx.global_mask->get_borders().x, genCtx.global_mask->get_borders().y);
             glm::vec2 gm_st_sz = glm::vec2((2*genCtx.global_mask->get_grid_size().x + 1) * genCtx.global_mask->get_cell_size(),
@@ -131,6 +132,47 @@ void RenderCmdExecutor::execute(int max_cmd_count)
               worldRenderer.debug_textures.emplace("grove_mask", t);
             }
           }
+          break;
+        case RC_VISUALIZE_BVH_DEBUG:
+          if (worldRenderer.debugInfo.get_bool("render_bvh_debug", false))
+          {
+            uint64_t model_id = SceneGenHelper::pack_id(0, (int)Scene::DEBUG_MODEL, 2, 0);
+            for (auto &dm : worldRenderer.debug_models)
+            {
+              if (dm.id == model_id)
+                delete dm.m;
+            }
+            std::vector<AABB> boxes;
+            std::vector<glm::vec3> colors;
+            int cnt = 0;
+            auto func = [&](const std::pair<AABB, uint64_t> &p)
+            {
+              cnt = (cnt + 1)%27+1;
+              boxes.push_back(p.first);
+              colors.push_back(glm::vec3(0.5*(cnt % 3), 0.5*(cnt / 3 % 3), 0.5*(cnt / 9 % 3)));
+            };
+            genCtx.objects_bvh.iterate_over_intersected_bboxes(AABB(glm::vec3(-1e9, -1e9, -1e9),
+                                                                    glm::vec3(1e9, 1e9, 1e9)),
+                                                              func, false);
+            worldRenderer.debug_models.emplace_back();
+            worldRenderer.debug_models.back().apply_light = false;
+            worldRenderer.debug_models.back().m = visualizer::visualize_aabb(boxes, colors);
+            worldRenderer.debug_models.back().id = model_id;
+          }
+          break;
+        case RC_REMOVE_BVH_DEBUG:
+        {
+          uint64_t model_id = SceneGenHelper::pack_id(0, (int)Scene::DEBUG_MODEL, 2, 0);
+          for (auto dm = worldRenderer.debug_models.begin(); dm != worldRenderer.debug_models.end(); dm++)
+          {
+            if (dm->id == model_id)
+            {
+              delete dm->m;
+              worldRenderer.debug_models.erase(dm);
+              break;
+            }
+          }
+        }
           break;
         default:
           logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

@@ -18,6 +18,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       genCmdBuffer.push(GC_ADD_OBJECT, cmd.args);
       genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
       renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+      renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
       renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
       break;
     case IC_CLEAR_SCENE:
@@ -60,6 +61,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
             genCmdBuffer.push(GC_REMOVE_BY_ID, rm_ids);
             genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
             renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+            renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
             renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
           }
         }
@@ -70,6 +72,13 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (cmd.args.get_bool("render_grove_mask_debug", false))
       {
         renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+      }
+      if (cmd.args.get_id("render_bvh_debug") >= 0)
+      {
+        if (cmd.args.get_bool("render_bvh_debug", false))
+          renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
+        else 
+          renderCmdBuffer.push(RC_REMOVE_BVH_DEBUG);
       }
       break;
     case IC_PLANT_TREE:
