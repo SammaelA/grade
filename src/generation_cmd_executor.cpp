@@ -28,7 +28,7 @@ namespace scene_gen
 
     ctx.heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000, 1000));
     ctx.hmap_pixel_size = ctx.settings.get_double("heightmap_cell_size", 10.0f);
-    ctx.biome_map_pixel_size = ctx.settings.get_double("biome_map_pixel_size", 1.0f);
+    ctx.biome_map_pixel_size = ctx.settings.get_double("biome_map_pixel_size", 4.0f);
     ctx.full_size = ctx.settings.get_vec2("scene_size", glm::vec2(100, 100));
     ctx.grass_field_size = ctx.settings.get_vec2("grass_field_size", glm::vec2(1750, 1750));
     ctx.grass_field_size = max(min(ctx.grass_field_size, ctx.heightmap_size), ctx.full_size);
@@ -59,6 +59,8 @@ namespace scene_gen
     }
 
     ctx.biome_map.create(AABB2D(ctx.center - 0.5f * ctx.grass_field_size, ctx.center + 0.5f * ctx.grass_field_size), 1);
+    ctx.global_mask = new GroveMask(glm::vec3(ctx.center.x,0,ctx.center.y), ctx.grass_field_size, ctx.biome_map_pixel_size);
+    ctx.global_mask->fill_const(1);
 
     debug("Initialized scene\n");
     debug("Heightmap size %.1fx%.1f\n", ctx.heightmap_size.x, ctx.heightmap_size.y);
@@ -91,6 +93,30 @@ namespace scene_gen
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     debug("created heightmap. Took %.2f ms\n", ms);
+  }
+
+  void create_global_grove_mask(GroveMask &mask, SceneGenerator::SceneGenerationContext &ctx)
+  {
+    glm::vec2 mask_size = ctx.grass_field_size;
+    std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
+    {
+      glm::vec3 p0 = glm::vec3(po.x + 0.5*mask.get_cell_size(), 0, po.y + 0.5*mask.get_cell_size());
+      p0.y = ctx.scene->heightmap->get_height(p0) + ctx.biome_map_pixel_size;
+      int hits = 0;
+      float kernel[9] = {1, 3, 1,
+                        3, 6, 3,
+                        1, 3, 1};
+      for (int i=-1;i<=1;i++)
+      {
+        for (int j=-1;j<=1;j++)
+        {
+          glm::vec3 p = p0 + glm::vec3(i*0.5*mask.get_cell_size(), 0, j*0.5*mask.get_cell_size());
+          hits += kernel[3*(i+1) + j + 1]*((int)ctx.objects_bvh.contains(p));
+        }
+      }
+      return 1 - hits / 22.0; 
+    };
+    mask.fill_func(func);
   }
 
   uint64_t add_object_blk(Block &b, SceneGenerator::SceneGenerationContext &ctx)
@@ -140,6 +166,7 @@ namespace scene_gen
     SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4 * ctx.biome_map_pixel_size, 1.1);
     uint64_t id = SceneGenHelper::pack_id(0, (int)Scene::SIMPLE_OBJECT, model_num, pos);
     ctx.objects_bvh.add_bboxes(boxes, id);
+    ctx.objects_bvh.rebuild();
     return id;
   }
 
@@ -222,7 +249,6 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       for (int i = 0; i < cmd.args.size(); i++)
       {
         glm::ivec4 unpacked_id = cmd.args.get_ivec4(i, glm::ivec4(-1, 0, 0, 0));
-        logerr("remove by mask %d %d %d %d %d", unpacked_id.x, unpacked_id.y, unpacked_id.z, unpacked_id.w, cmd.args.size());
         if (unpacked_id.x < 0)
           continue;
         else if (unpacked_id.y < 0)
@@ -247,8 +273,8 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         else
         {
           uint64_t id = SceneGenHelper::pack_id(unpacked_id.x, unpacked_id.y, unpacked_id.z, unpacked_id.w);
-          logerr("remove by mask %d %d %d %d %lu", unpacked_id.x, unpacked_id.y, unpacked_id.z, unpacked_id.w, id);
           genCtx.objects_bvh.remove_bboxes(id);
+          genCtx.objects_bvh.rebuild();
           if (unpacked_id.y == Scene::ObjCategories::SIMPLE_OBJECT)
           {
             int m_num = unpacked_id.z;
@@ -293,6 +319,10 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       }
       scene_gen::generate_plants_cells(genCtx, ids);
     }
+      break;
+    case GC_UPDATE_GLOBAL_MASK:
+      if (genCtx.global_mask)
+        scene_gen::create_global_grove_mask(*(genCtx.global_mask), genCtx);
       break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

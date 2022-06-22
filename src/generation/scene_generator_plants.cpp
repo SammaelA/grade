@@ -405,14 +405,10 @@ namespace scene_gen
     int jobs_cnt = MAX(ceil((float)cell_ids.size()/job_size), 1);
     logerr("starting generation %d cells with %d jobs (job size = %d)", cell_ids.size(), jobs_cnt, job_size);
 
-
-    GroveMask global_mask = GroveMask(glm::vec3(ctx.center.x,0,ctx.center.y), ctx.grass_field_size, ctx.biome_map_pixel_size);
-    global_mask.fill_const(1);
-
     thread_finished = {};
     for (int i=0;i<jobs_cnt;i++)
     {
-      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, global_mask, ctx.cells_x, ctx.cells_y, i));
+      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, *(ctx.global_mask), ctx.cells_x, ctx.cells_y, i));
       std::atomic<bool> ab(false);
       thread_finished.push_back(ab);                                      
     }

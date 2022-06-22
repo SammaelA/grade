@@ -10,11 +10,12 @@ uniform sampler2D grass1;
 uniform sampler2D grass2;
 uniform sampler2D rock;
 uniform sampler2D perlin;
+uniform sampler2D debug_tex;
 
-uniform int debug_render = 1;//0 - no debug, 1 - show grid
+uniform int debug_render = 1;//0 - no debug, 1 - show grid, 2 - show debug tex, 3 - show both
 uniform vec4 grid_params = vec4(0,0,50,50);//(start_x, start_y, size_x, size_y)
 uniform vec4 grid_render_params = vec4(0.7,0.85,1,0.05);//(r,g,b,thickness as part of grid size)
-
+uniform vec4 debug_tex_scale = vec4(0,0,0.01, 0.01);//tc = (worldPos.xz - scale.xy)*scale.zw;
 layout (location = 0) out vec4 fragColor;
 layout (location = 1) out vec4 fragNormal;
 layout (location = 2) out vec4 fragViewPos;
@@ -36,16 +37,20 @@ void main(void)
   fragViewPos = vec4(ex_FragPosView.xyz,1);
   fragWorldPos = vec4(ex_FragPos,1);
 
-  if (debug_render == 1)
+  if (debug_render % 2 == 1)
   {
     vec2 grd_pos = (ex_FragPos.xz - grid_params.xy)/grid_params.zw;
     grd_pos = abs(grd_pos - vec2(ivec2(grd_pos)));
     if ((min(min(grd_pos.x, grd_pos.y), min(1 - grd_pos.x, 1 - grd_pos.y)) < 0.5*grid_render_params.w) &&
         length(fragViewPos) < 1000)
     {
-      fragColor.xyz = grid_render_params.xyz;
+      fragColor.xyz += grid_render_params.xyz;
       fragColor.w = 1;
-      fragNormal.w = 5;//debug type
     }
+  }
+  if (debug_render / 2 % 2 == 1)
+  {
+    vec2 dbg_uv = (ex_FragPos.xz - debug_tex_scale.xy)*debug_tex_scale.zw;
+    fragColor.xyz = (0.1 + 0.8*texture(debug_tex,dbg_uv).xyz);
   }
 }

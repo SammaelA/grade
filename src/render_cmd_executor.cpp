@@ -31,8 +31,15 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             }
             break;
         case RC_GLOBAL_PARAMS_UPDATE:
+        {
             worldRenderer.debugInfo.set_bool("render_grid_debug", false);
+            worldRenderer.debugInfo.set_bool("render_grove_mask_debug", false);
             worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.start_pos, genCtx.cell_size));
+            glm::vec2 gm_st_ps = glm::vec2(genCtx.global_mask->get_borders().x, genCtx.global_mask->get_borders().y);
+            glm::vec2 gm_st_sz = glm::vec2((2*genCtx.global_mask->get_grid_size().x + 1) * genCtx.global_mask->get_cell_size(),
+                                           (2*genCtx.global_mask->get_grid_size().y + 1) * genCtx.global_mask->get_cell_size());
+            worldRenderer.debugInfo.set_vec4("debug_tex_scale", glm::vec4(gm_st_ps, 1.0f/gm_st_sz));
+        }
             break;
         case RC_UPDATE_DEBUG_PARAMS:
             worldRenderer.debugInfo.add_detalization(cmd.args);
@@ -109,9 +116,25 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             }
           }
           break;
+        case RC_SAVE_GROVE_MASK_TO_TEXTURE:
+          if (worldRenderer.debugInfo.get_bool("render_grove_mask_debug", false))
+          {
+            Texture t = genCtx.global_mask->save_as_texture_RGBA8();
+            auto it = worldRenderer.debug_textures.find("grove_mask");
+            if (it != worldRenderer.debug_textures.end())
+            {
+              textureManager.delete_tex(it->second);
+              it->second = t;
+            }
+            else
+            {
+              worldRenderer.debug_textures.emplace("grove_mask", t);
+            }
+          }
+          break;
         default:
-            logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
-            break;
+          logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
+          break;
         }
         renderCmdBuffer.pop();
         cmd_left--;

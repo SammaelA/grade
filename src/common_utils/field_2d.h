@@ -1,6 +1,7 @@
 #pragma once
 #include "glm/glm.hpp"
 #include <functional>
+class Texture;
 class Field_2d
 {
 public:
@@ -28,6 +29,7 @@ public:
                                glm::vec2 *max_pos = nullptr);//real_min >= min_v, real_max <= max_v 
     void print();
     void save_as_image(std::string name, float min_val = 0, float max_val = 0);
+    Texture save_as_texture_RGBA8(float min_val = 0, float max_val = 0);
     glm::vec3 get_pos() {return pos;}
     glm::vec2 get_size() {return size;}
     glm::ivec2 get_grid_size() {return glm::ivec2(w,h);}

@@ -96,6 +96,7 @@ private:
     std::vector<int> inst_offsets;//same size ^
 
     std::vector<DebugModel> debug_models;
+    std::map<std::string, Texture> debug_textures;
     int current_target = 0;
     int target_w = 0, target_h = 0;
     int screen_w = 0, screen_h = 0;

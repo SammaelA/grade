@@ -16,14 +16,18 @@ void InputCmdExecutor::execute(int max_cmd_count)
       break;
     case IC_ADD_OBJECT:
       genCmdBuffer.push(GC_ADD_OBJECT, cmd.args);
+      genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
       renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+      renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
       break;
     case IC_CLEAR_SCENE:
       if (genCtx.inited)
       {
         genCmdBuffer.push(GC_CLEAR_SCENE);
+        genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
         renderCmdBuffer.push(RC_UPDATE_HMAP);
         renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+        renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
       }
       break;
     case IC_INIT_SCENE:
@@ -44,7 +48,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
         BlkManager man;
         std::string s;
         man.save_block_to_string(s, cmd.args);
-        logerr("%lu %s", u_id, s.c_str());
         if (u_id > 0)
         {
           unsigned a, b, c, d;
@@ -54,15 +57,20 @@ void InputCmdExecutor::execute(int max_cmd_count)
             Block rm_ids;
             //-1 in last field means that all objects of that type should be removed
             rm_ids.add_ivec4("remove_mask", glm::ivec4(a, b, c, d));
-            logerr("remove by mask %d %d %d %d", a, b, c, d);
             genCmdBuffer.push(GC_REMOVE_BY_ID, rm_ids);
+            genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
             renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+            renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
           }
         }
       }
       break;
     case IC_UPDATE_RENDER_DEBUG_PARAMS:
       renderCmdBuffer.push(RC_UPDATE_DEBUG_PARAMS, cmd.args);
+      if (cmd.args.get_bool("render_grove_mask_debug", false))
+      {
+        renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+      }
       break;
     case IC_PLANT_TREE:
     case IC_PLANT_TREE_IMMEDIATE:
@@ -116,7 +124,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
         }
         if (cells_to_update > 0)
         {
-          logerr("updating %d cells", cells_to_update);
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
           renderCmdBuffer.push(RC_UPDATE_CELL, cb);
           renderCmdBuffer.push(RC_UPDATE_TREES);

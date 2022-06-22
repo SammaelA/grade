@@ -263,7 +263,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (terrainRenderer)
     {
       terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
-                                  0, camera.pos, light, 0, glm::vec4(0,0,1,1), true);
+                                  0, camera.pos, light, true);
     }
     if (grassRenderer2)
     {
@@ -306,10 +306,20 @@ void WorldRenderer::render(float dt, Camera &camera)
   {
     if (terrainRenderer)
     {
+      int debug_type = debugInfo.get_bool("render_grid_debug", false) ? 1 : 0;
+      Texture *debug_tex = nullptr;
+      if (debugInfo.get_bool("render_grove_mask_debug", false))
+      {
+        debug_type += 2;
+        auto it = debug_textures.find("grove_mask");
+        if (it != debug_textures.end())
+          debug_tex = &(it->second);
+      }
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
-                              camera.pos, light, 
-                              debugInfo.get_bool("render_grid_debug", false) ? 1 : 0,
-                              debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)));
+                              camera.pos, light, false, debug_type,
+                              debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)),
+                              debugInfo.get_vec4("debug_tex_scale", glm::vec4(0,0,0.01,0.01)),
+                              debug_tex);
     }
   }
   checkForGlErrors("render terrain", true);

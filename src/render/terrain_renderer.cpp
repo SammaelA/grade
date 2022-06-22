@@ -32,19 +32,23 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
             delete flat_terrain;
     }
     void TerrainRenderer::render(glm::mat4 projection, glm::mat4 view, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                 DirectedLight &light, int debug_type, glm::vec4 grid_params, bool to_shadow)
+                                 DirectedLight &light, bool to_shadow, int debug_type, glm::vec4 grid_params, glm::vec4 debug_tex_scale,
+                                 Texture *debug_tex_ptr)
     {
-        Shader &shader = to_shadow ? terrainShadow : terrain;
-        shader.use();
-        shader.texture("grass1",terrain_tex1);
-        shader.texture("grass2",terrain_tex2);
-        shader.texture("rock",terrain_tex3);
-        shader.texture("perlin",perlin);
-        shader.uniform("projection",projection);
-        shader.uniform("view",view);
-        shader.uniform("model",flat_terrain->model);
-        shader.uniform("debug_render",debug_type);
-        shader.uniform("grid_params",grid_params);
+      Shader &shader = to_shadow ? terrainShadow : terrain;
+      shader.use();
+      shader.texture("grass1", terrain_tex1);
+      shader.texture("grass2", terrain_tex2);
+      shader.texture("rock", terrain_tex3);
+      shader.texture("perlin", perlin);
+      shader.uniform("projection", projection);
+      shader.uniform("view", view);
+      shader.uniform("model", flat_terrain->model);
+      shader.uniform("debug_render", debug_type);
+      shader.uniform("grid_params", grid_params);
+      if (debug_tex_ptr)
+        shader.texture("debug_tex", *debug_tex_ptr);
+      shader.uniform("debug_tex_scale", debug_tex_scale);
 
-        flat_terrain->render();
+      flat_terrain->render();
     }

@@ -22,10 +22,12 @@ public:
     struct SceneGenerationContext
     {
       SceneGenerationContext(): objects_bvh(false) {};
-        Scene *scene = nullptr;
+      //~SceneGenerationContext() {if (global_mask) delete global_mask;}
+        Scene *scene = nullptr;//only a pointer, should not be deleted
         Block settings;
         BVH objects_bvh;
         BiomeMap biome_map;
+        GroveMask *global_mask = nullptr;
         std::vector<Cell> cells;
         std::vector<Patch> trees_patches;
         std::vector<Patch> grass_patches;

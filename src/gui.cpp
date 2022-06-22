@@ -5,11 +5,11 @@
 
 void gui::render_debug_settings()
 {
-    constexpr int options_cnt = 1;
-    static bool checks[options_cnt] = {false};
-    static bool prev_checks[options_cnt] = {false};
-    static std::string check_names[options_cnt] = {"Show grid"};
-    static std::string options_names[options_cnt] = {"render_grid_debug"};
+    constexpr int options_cnt = 2;
+    static bool checks[options_cnt] = {false, false};
+    static bool prev_checks[options_cnt] = {false, false};
+    static std::string check_names[options_cnt] = {"Show grid", "Show global mask"};
+    static std::string options_names[options_cnt] = {"render_grid_debug", "render_grove_mask_debug"};
     ImGui::Begin("Render debug params");
     for (int i=0;i<options_cnt;i++)
         ImGui::Checkbox(check_names[i].c_str(), &(checks[i]));

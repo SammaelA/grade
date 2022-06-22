@@ -220,6 +220,43 @@
 
         delete[] image_data;
     }
+    
+    Texture Field_2d::save_as_texture_RGBA8(float mnv, float mxv)
+    {
+      if (mnv == mxv)
+        {
+            mnv = min_val;
+            mxv = max_val;
+        }
+        if (mnv <= mxv)
+        {
+            mnv = 0;
+            mxv = 1;
+        }
+
+        if (!data)
+            return textureManager.empty();
+        unsigned char *image_data = new unsigned char[4*(2*w + 1)*(2*h+1)];
+        for (int i=-h;i<=h;i++)
+        {
+            for (int j=-w;j<=w;j++)
+            {
+                float val = (get(i,j) - mnv)/(mxv - mnv);
+                int pos = (j+w)*(2*h + 1) + i + h;
+                image_data[4*pos]   = 255*val;
+                image_data[4*pos+1] = 255*val;
+                image_data[4*pos+2] = 255*val;
+                image_data[4*pos+3] = 255;
+            }
+        }
+
+        Texture t = textureManager.create_unnamed(2*w+1, 2*h+1, false, 1);
+        t = textureManager.load_unnamed(t, image_data);
+
+        delete[] image_data;
+        return t;
+    }
+
     void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
                                          glm::vec2 *min_pos, glm::vec2 *max_pos)
     {
