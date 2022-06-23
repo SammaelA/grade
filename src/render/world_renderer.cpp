@@ -236,6 +236,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   checkForGlErrors("render pre shadow", true);
   if (regenerate_shadows)
   {
+    logerr("regenerate shadows");
     regenerate_shadows = false;
     shadowMap.use(light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();
@@ -253,27 +254,10 @@ void WorldRenderer::render(float dt, Camera &camera)
         glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
       }
     }
-    if (groveRenderer)
-    {
-      groveRenderer->render(groveRenderer->get_max_LOD(), shadowMap.get_projection(),
-                                shadowMap.get_view(), camera,
-                                glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
-                                light, groveRendererDebugParams, sh_viewproj, 0, true);
-    }
     if (terrainRenderer)
     {
-      terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
-                                  0, camera.pos, light, true);
-    }
-    if (grassRenderer2)
-    {
-           grassRenderer2->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
-                                camera.pos, *heightmapTex, light, true); 
-    }
-    else if (grassRenderer)
-    {
-      grassRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(), 0,
-                                camera.pos, *heightmapTex, light, true);
+      //terrainRenderer->render(shadowMap.get_projection(), shadowMap.get_view(), shadowMap.get_transform(),
+      //                            0, camera.pos, light, true);
     }
     shadowMap.start_trans_pass();
     if (groveRenderer)
@@ -294,7 +278,6 @@ void WorldRenderer::render(float dt, Camera &camera)
                                 camera.pos, *heightmapTex, light, true);
     }
     shadowMap.finish_trans_pass();
-
     shadowMap.blur();
   }
   checkForGlErrors("render shadow", true);

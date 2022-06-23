@@ -8,7 +8,12 @@ out vec4 fragColor;
 
 void main(void)
 {
-    float tr = texture(trans,ex_Tex).a;
-    vec3 d = texture(depth,ex_Tex).xyz;
-    fragColor = vec4(d,tr > 0 ? 0.5*(2 - 1/(tr+1)) : 0);
+    vec4 tr = texture(trans,ex_Tex);
+    vec4 d = texture(depth,ex_Tex);
+    fragColor = vec4(1,0,0,1);
+    if (d.w > 0.95)
+      fragColor.xy = d.xy;//z and z*z
+    if (tr.w > 0.05)
+      fragColor.zw = tr.wx;//z and a
+    //fragColor = vec4(d,tr > 0 ? 0.5*(2 - 1/(tr+1)) : 0);
 }

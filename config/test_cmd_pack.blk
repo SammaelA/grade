@@ -4,5 +4,6 @@ cmd {cmd_code:i=0}
 cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,-100,  0,125,0,-34,  0,0,125,100,  0,0,0,1}
 cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,0,  0,125,0,-34,  0,0,125,100,  0,0,0,1}
 cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,300,  0,125,0,-34,  0,0,125,-100,  0,0,0,1}
+cmd {cmd_code:i =4 id:u64=562949953421312}
 //cmd {cmd_code:i=9 cell_id:i=25}{cmd_code:i =4 id:u64=562949953421312 
 }

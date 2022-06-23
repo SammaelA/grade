@@ -25,8 +25,9 @@ public:
   int get_H() { return H; }
   int get_layers() { return layers; }
   int get_mip_levels() { return mip_levels; }
-protected:
+
   int W,H,layers;
+  protected:
   int tag = 0;//tag show to which part of program this texture belongs. Used by texture manager
   unsigned id = 0;
   int mip_levels = 0;

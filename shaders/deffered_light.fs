@@ -107,29 +107,29 @@ poissonDisk[63] = vec2(-0.178564, -0.596057);
   if(projCoords.z > 1.0)
     return 0.0;
 
-    float base_depth = texture(shadowMap, projCoords.xy).b;
+    float base_depth = texture(shadowMap, projCoords.xy).w;
     float currentDepth = projCoords.z;
-    float delta = 1 + 30*smoothstep(0.0,0.006,currentDepth - base_depth);
+    float delta = 0.5 + 10*smoothstep(0.0,0.006,currentDepth - base_depth);
     int start = int(13*fract(40*world_pos.x + 41*world_pos.y + 51*world_pos.z));
 
     for (int i = 0;i< samples;i++)
     {
-      vec2 cD_tD = texture(shadowMap, projCoords.xy + delta*sts_inv*poissonDisk[(start + 13*i) % 64]).zw; 
+      vec2 cD_tD = texture(shadowMap, projCoords.xy + delta*sts_inv*poissonDisk[(start + 13*i) % 64]).wz; 
       float trans_mult = sqrt(sqrt(cD_tD.y));
       float shadow = currentDepth - bias > cD_tD.x ? trans_mult : 0.0;
       res += shadow/samples;
     }
   
   #if VSM == 1
-    vec3 vsm = texture(shadowMap, projCoords.xy).rgb; 
+    vec2 vsm = texture(shadowMap, projCoords.xy).xy; 
     if (projCoords.z >= vsm.x + bias)
     {
       float mu = vsm.x;
       float s2 = vsm.y - mu*mu;
       float	pmax = s2 / ( s2 + (projCoords.z - mu)*(projCoords.z - mu) );
-      res += 0.25*clamp(pmax,0,1);
+      res += 0.75*clamp(pmax,0,1);
     }
-    res = clamp((1/1.25)*res,0,1);
+    res = clamp(res,0,1);
   #endif
 
   return res;
