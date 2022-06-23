@@ -5,10 +5,12 @@ class Texture;
 class Field_2d
 {
 public:
-    Field_2d(glm::vec3 pos, glm::vec2 size, float cell_size);
-    Field_2d(glm::vec3 pos, int w, int h);
+    Field_2d(glm::vec3 pos, glm::vec2 size, float cell_size){ create(pos, size, cell_size);}
+    Field_2d(glm::vec3 pos, int w, int h){ create(pos, w, h);}
     Field_2d() {data = nullptr;}
     ~Field_2d();
+    void create(glm::vec3 pos, glm::vec2 size, float cell_size);
+    void create(glm::vec3 pos, int w, int h);
     float get_bilinear(glm::vec3 pos);
     float get_bilinear(glm::vec2 pos);
     void set(glm::vec3 pos, float val);
@@ -46,6 +48,6 @@ protected:
     glm::vec3 pos;
     glm::vec2 size;
     float cell_size = 1;
-    float *data;
+    float *data = nullptr;
     float base_val;
 };

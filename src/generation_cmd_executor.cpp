@@ -59,8 +59,8 @@ namespace scene_gen
     }
 
     ctx.biome_map.create(AABB2D(ctx.center - 0.5f * ctx.grass_field_size, ctx.center + 0.5f * ctx.grass_field_size), 1);
-    ctx.global_mask = new GroveMask(glm::vec3(ctx.center.x,0,ctx.center.y), ctx.grass_field_size, ctx.biome_map_pixel_size);
-    ctx.global_mask->fill_const(1);
+    ctx.global_mask.create(glm::vec3(ctx.center.x,0,ctx.center.y), ctx.grass_field_size, ctx.biome_map_pixel_size);
+    ctx.global_mask.fill_const(1);
 
     debug("Initialized scene\n");
     debug("Heightmap size %.1fx%.1f\n", ctx.heightmap_size.x, ctx.heightmap_size.y);
@@ -322,8 +322,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case GC_UPDATE_GLOBAL_MASK:
-      if (genCtx.global_mask)
-        scene_gen::create_global_grove_mask(*(genCtx.global_mask), genCtx);
+      scene_gen::create_global_grove_mask(genCtx.global_mask, genCtx);
       break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

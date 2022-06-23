@@ -408,7 +408,7 @@ namespace scene_gen
     thread_finished = {};
     for (int i=0;i<jobs_cnt;i++)
     {
-      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, *(ctx.global_mask), ctx.cells_x, ctx.cells_y, i));
+      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, ctx.global_mask, ctx.cells_x, ctx.cells_y, i));
       std::atomic<bool> ab(false);
       thread_finished.push_back(ab);                                      
     }

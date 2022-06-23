@@ -3,23 +3,25 @@
 #include "graphics_utils/texture_manager.h"
 #include "perlin.h"
 #include <vector>
-    Field_2d::Field_2d(glm::vec3 pos, glm::vec2 size, float cell_size):
-    Field_2d(pos, ceil(size.x/cell_size), ceil(size.y/cell_size))
+    void Field_2d::create(glm::vec3 pos, glm::vec2 size, float cell_size)
     {
-        this->cell_size = cell_size;
-        this->pos = pos;
-        this->size = size;
+      create(pos, ceil(size.x/cell_size), ceil(size.y/cell_size));
+      this->cell_size = cell_size;
+      this->pos = pos;
+      this->size = size;
     }
-    Field_2d::Field_2d(glm::vec3 _pos, int _w, int _h)
+    void Field_2d::create(glm::vec3 _pos, int _w, int _h)
     {
-        w = _w;
-        h = _h;
-        pos = _pos;
-
-        data = new float[(2*w + 1)*(2*h + 1)];
+      w = _w;
+      h = _h;
+      pos = _pos;
+      if (data)
+        delete[] data;
+      data = new float[(2*w + 1)*(2*h + 1)];
     }
     Field_2d::~Field_2d()
     {
+      if (data)
         delete[] data;
     }
     float Field_2d::get(int x, int y)
