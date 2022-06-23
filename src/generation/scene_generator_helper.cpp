@@ -7,7 +7,6 @@ namespace SceneGenHelper
   {
     //[_empty][category][type][id]
     //[8][8][16][32]
-    logerr("pack %d %d %d %d", _empty, category, type, id);
     return ((_empty & ((1UL << 8) - 1UL)) << 56) |
            ((category & ((1UL << 8) - 1UL)) << 48) |
            ((type & ((1UL << 16) - 1UL)) << 32) |

@@ -16,6 +16,7 @@ CommandBuffer<GenerationCommands> genCmdBuffer;
 CommandBuffer<RenderCommands> renderCmdBuffer;
 
 extern void read_from_console_nonblock();
+extern void read_commands_from_string(std::string &block_str);
 
 int main(int argc, char *argv[])
 {
@@ -44,6 +45,12 @@ int main(int argc, char *argv[])
     GenerationCmdExecutor gce = GenerationCmdExecutor(sceneGenerationContext);
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);
 
+    if (argc == 2)
+    {
+      std::string str(argv[1]);
+      read_commands_from_string(str);
+    }
+
     Tiny::view.pipeline = [&]()
     {
         read_from_console_nonblock();
@@ -56,7 +63,5 @@ int main(int argc, char *argv[])
     };
 
     Tiny::loop([&]() {});
-    {};
-
     Tiny::quit();
 }

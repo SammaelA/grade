@@ -191,22 +191,18 @@ void BVH::clear()
 }
 void BVH::rebuild()
 {
-    if (removed_boxes_cnt)
-    {
-        auto old_boxes = obj_bboxes;
-        obj_bboxes.clear();
-        for (auto &p : old_boxes)
-        {
-            if (p.second > 0)
-                obj_bboxes.push_back(p);
-        }
-        //TODO - remove boxes with id = 0 from list
-        removed_boxes_cnt = 0;
-    }
-    nodes = {};
-    std::vector<int> boxes = std::vector<int>(obj_bboxes.size(),0);
-    for (int i=0;i<obj_bboxes.size();i++)
-        boxes[i] = i;
-    root_node_idx = add_node_rec(boxes);
-    added_boxes_cnt = 0;
+  auto old_boxes = obj_bboxes;
+  obj_bboxes.clear();
+  for (auto &p : old_boxes)
+  {
+    if (p.second > 0)
+      obj_bboxes.push_back(p);
+  }
+  removed_boxes_cnt = 0;
+  nodes = {};
+  std::vector<int> boxes = std::vector<int>(obj_bboxes.size(), 0);
+  for (int i = 0; i < obj_bboxes.size(); i++)
+    boxes[i] = i;
+  root_node_idx = add_node_rec(boxes);
+  added_boxes_cnt = 0;
 }
