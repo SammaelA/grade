@@ -1,12 +1,14 @@
 #include "cmd_executors.h"
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
+#include <chrono>
 
 void InputCmdExecutor::execute(int max_cmd_count)
 {
   int cmd_left = max_cmd_count;
   while (!inputCmdBuffer.empty() && cmd_left != 0)
   {
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     auto &cmd = inputCmdBuffer.front();
     switch (cmd.type)
     {
@@ -149,6 +151,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
     }
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    logerr("%s took %.3f ms", ToString(cmd.type), ms);
     inputCmdBuffer.pop();
     cmd_left--;
   }

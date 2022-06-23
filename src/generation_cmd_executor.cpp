@@ -214,6 +214,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
   while (!genCmdBuffer.empty() && cmd_left != 0)
   {
     auto &cmd = genCmdBuffer.front();
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     switch (cmd.type)
     {
     case GC_GEN_HMAP:
@@ -328,6 +329,9 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
     }
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    logerr("%s took %.3f ms", ToString(cmd.type), ms);
     genCmdBuffer.pop();
     cmd_left--;
   }

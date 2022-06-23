@@ -4,6 +4,7 @@
 #include "tinyEngine/TinyEngine.h"
 #include "generation/metainfo_manager.h"
 #include "generation/scene_generator_helper.h"
+#include <chrono>
 
 void RenderCmdExecutor::execute(int max_cmd_count)
 {
@@ -11,6 +12,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
     while (!renderCmdBuffer.empty() && cmd_left != 0)
     {
         auto &cmd = renderCmdBuffer.front();
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         switch (cmd.type)
         {
         case RC_UPDATE_HMAP:
@@ -178,6 +180,9 @@ void RenderCmdExecutor::execute(int max_cmd_count)
           logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
           break;
         }
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        logerr("%s took %.3f ms", ToString(cmd.type), ms);
         renderCmdBuffer.pop();
         cmd_left--;
     }
