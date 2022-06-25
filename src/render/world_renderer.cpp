@@ -51,7 +51,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   if (inited)
     return;
   inited = true;
-  float rt_overscale = render_settings.get_double("rt_overscale",1.5);
+  float rt_overscale = render_settings.get_double("rt_overscale",1);
   int w = rt_overscale*_w;
   int h = rt_overscale*_h;
   target_w = w;
@@ -66,7 +66,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   light.diffuse_q = 0.8;
   light.specular_q = 0.1;
   light.has_shadow_map = true;
-  light.shadow_map_size = glm::vec2(4096, 4096);
+  light.shadow_map_size = glm::vec2(2048, 2048);
 
   startScreenShader = new PostFx("simple_render.fs");
   shadowMap.create(light.shadow_map_size.x, light.shadow_map_size.y);

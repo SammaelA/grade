@@ -16,7 +16,7 @@ void FpsCounter::tick()
     frame++;
 }
 
-std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Event &event)
+void InputHandler::handle_input(Event &event)
 {
   float sensitivity = 0.1;
   float speed = 1;
@@ -108,60 +108,6 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
     ctx.forced_LOD = 4;
   if (event.active[SDLK_RIGHTBRACKET])
     ctx.forced_LOD = 5;
-
-  if (event.active[SDLK_m])
-  {
-    if (ctx.benchmark_grove_current == -1)
-    {
-      ctx.render_mode++;
-      if (ctx.render_mode > ctx.MAX_RENDER_MODE)
-        ctx.render_mode = ctx.ARRAY_TEX_DEBUG_RENDER_MODE;
-      logerr("render mode %d",ctx.render_mode);
-    }
-    else
-    {
-      ctx.benchmark_grove_needed = ctx.benchmark_grove_current + 1;
-    }
-    event.active[SDLK_m] = false;
-  }
-  if (event.active[SDLK_n])
-  {
-    if (ctx.render_mode <= ctx.DEBUG_RENDER_MODE)
-      ctx.debug_tex++;
-    event.active[SDLK_n] = false;
-  }
-  if (event.active[SDLK_b])
-  {
-    if (ctx.groveRendererDebugParams.need_focus_model)
-      ctx.groveRendererDebugParams.model_focused++;
-    if (ctx.render_mode == ctx.ARRAY_TEX_DEBUG_RENDER_MODE)
-      ctx.debug_layer++;
-    event.active[SDLK_b] = false;
-  }
-    if (event.active[SDLK_v])
-  {
-    if (ctx.groveRendererDebugParams.need_focus_model)
-      ctx.groveRendererDebugParams.model_focused--;
-    if (ctx.render_mode == ctx.ARRAY_TEX_DEBUG_RENDER_MODE)
-      ctx.debug_layer--;
-    event.active[SDLK_v] = false;
-  }
-  if (event.active[SDLK_f])
-  {
-    ctx.groveRendererDebugParams.need_focus_model = !ctx.groveRendererDebugParams.need_focus_model;
-    ctx.render_mode = -1;
-    event.active[SDLK_f] = false;
-  }
-  if (event.active[SDLK_r])
-  {
-    ctx.regeneration_needed = true;
-    event.active[SDLK_r] = false;
-  }
-  if (event.active[SDLK_t])
-  {
-    ctx.add_generation_needed = true;
-    event.active[SDLK_t] = false;
-  }
   if (event.active[SDLK_h])
   {
     //ctx.save_to_hydra = true;
@@ -180,6 +126,26 @@ std::function<void(AppContext &, Event &)> eventHandler = [](AppContext &ctx, Ev
     b.add_vec4("world_pos_type", ctx.mouseWorldPosType);
     inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
     event.active[SDLK_p] = false;
+  }
+
+  if (event.click[SDL_BUTTON_RIGHT])
+  {
+    glm::vec2 pos_xz = glm::vec2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
+    glm::ivec2 c_ij = (pos_xz - genCtx.start_pos)/genCtx.cell_size;
+    int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
+    if (cell_id >= 0 && cell_id < genCtx.cells.size())
+    {
+      if (cell_id == ctx.active_cell_id)
+        ctx.active_cell_id = -1;
+      else
+      {
+        auto it = ctx.cells.find(cell_id);
+        if (it == ctx.cells.end())
+          ctx.cells.emplace(cell_id, AppContext::CellUiInfo()).first;
+        ctx.active_cell_id = cell_id;
+      }
+    }
+    event.click[SDL_BUTTON_RIGHT] = false;
   }
   if (!event.press.empty())
   {

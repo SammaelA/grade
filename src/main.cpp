@@ -30,8 +30,6 @@ int main(int argc, char *argv[])
     glewInit();
     Tiny::view.lineWidth = 1.0f;
     Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
-    Tiny::event.handler = [&]()
-    { eventHandler(appContext, Tiny::event); };
     BlkManager man;
     Block textures_list;
     man.load_block_from_file("resources.blk", textures_list);
@@ -44,22 +42,28 @@ int main(int argc, char *argv[])
     InputCmdExecutor ice = InputCmdExecutor(sceneGenerationContext);
     GenerationCmdExecutor gce = GenerationCmdExecutor(sceneGenerationContext);
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);
-
+    GUI gui = GUI(appContext, sceneGenerationContext);
+    InputHandler inputHandler = InputHandler(appContext, sceneGenerationContext);
     if (argc == 2)
     {
       std::string str(argv[1]);
       read_commands_from_string(str);
     }
-
+    Tiny::event.handler = [&]()
+    { 
+      inputHandler.handle_input(Tiny::event);
+    };
     Tiny::view.pipeline = [&]()
     {
+        appContext.fpsCounter.tick();
         read_from_console_nonblock();
         ice.execute();
         gce.execute();
         rce.execute();
     };
     Tiny::view.interface = [&]() {
-        gui::render_debug_settings();
+        gui.render_debug_settings();
+        gui.render_cell_info();
     };
 
     Tiny::loop([&]() {});

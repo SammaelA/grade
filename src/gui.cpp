@@ -2,8 +2,9 @@
 #include "third_party/imgui/imgui.h"
 #include "cmd_buffers.h"
 #include "common_utils/utility.h"
+#include <map>
 
-void gui::render_debug_settings()
+void GUI::render_debug_settings()
 {
     constexpr int options_cnt = 3;
     static bool checks[options_cnt] = {false, false, false};
@@ -31,4 +32,29 @@ void gui::render_debug_settings()
     {
         inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
     }
+}
+
+void GUI::render_cell_info()
+{
+  if (appCtx.active_cell_id < 0)
+    return;
+  auto &cell = appCtx.cells.at(appCtx.active_cell_id);
+  bool visualize_prev = cell.visualize_voxels_array;
+  ImGui::Begin("Cell info"); 
+  ImGui::Text("Cell id: %d", appCtx.active_cell_id);
+  ImGui::Checkbox("Show voxels array", &(cell.visualize_voxels_array));
+  ImGui::End();
+
+  if (visualize_prev && !cell.visualize_voxels_array)
+  {
+    Block b;
+    b.add_int("cell_id",appCtx.active_cell_id);
+    inputCmdBuffer.push(InputCommands::IC_REMOVE_VOXELS_DEBUG, b);
+  }
+  else if (!visualize_prev && cell.visualize_voxels_array)
+  {
+    Block b;
+    b.add_int("cell_id",appCtx.active_cell_id);
+    inputCmdBuffer.push(InputCommands::IC_VISUALIZE_VOXELS_DEBUG, b);    
+  }
 }
