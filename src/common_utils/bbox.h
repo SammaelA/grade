@@ -8,7 +8,7 @@ struct BBox
     glm::vec3 a;
     glm::vec3 b;
     glm::vec3 c;
-    float V() { return sizes.x * sizes.y * sizes.z; }
+    float V() const { return sizes.x * sizes.y * sizes.z; }
     bool special = false;
 };
 
@@ -48,13 +48,13 @@ struct AABB
         min_pos = _min_pos;
         max_pos = _max_pos;
     }
-    inline bool contains(glm::vec3 &p)
+    inline bool contains(glm::vec3 &p) const
     {
         return (p.x >= min_pos.x) && (p.x < max_pos.x) &&
                (p.y >= min_pos.y) && (p.y < max_pos.y) &&
                (p.z >= min_pos.z) && (p.z < max_pos.z);
     }
-    inline bool intersects(AABB &aabb)
+    inline bool intersects(const AABB &aabb) const
     {
         return (aabb.min_pos.x <= max_pos.x) &&
                (aabb.max_pos.x >= min_pos.x) &&
@@ -63,14 +63,14 @@ struct AABB
                (aabb.min_pos.z <= max_pos.z) &&
                (aabb.max_pos.z >= min_pos.z);
     }
-    inline bool empty()
+    inline bool empty() const
     {
         return min_pos.x >= max_pos.x ||
                min_pos.y >= max_pos.y ||
                min_pos.z >= max_pos.z;
     }
-    bool intersects(Sphere &s);
-    inline AABB intersect_bbox(AABB &bbox)
+    bool intersects(const Sphere &s) const;
+    inline AABB intersect_bbox(const AABB &bbox) const
     {
         return AABB(max(min_pos, bbox.min_pos), min(max_pos, bbox.max_pos));
     }
@@ -114,25 +114,25 @@ struct Sphere
         pos = glm::vec3(_pos_r.x, _pos_r.y, _pos_r.z);
         r = _pos_r.w;
     }
-    inline glm::vec4 compact() { return glm::vec4(pos.x, pos.y, pos.z, r); }
-    inline bool empty() { return r <= 0; }
-    inline bool contains(glm::vec3 _pos)
+    inline glm::vec4 compact() const { return glm::vec4(pos.x, pos.y, pos.z, r); }
+    inline bool empty() const { return r <= 0; }
+    inline bool contains(glm::vec3 _pos) const
     {
         return (SQR(_pos.x - pos.x) + SQR(_pos.y - pos.y) + SQR(_pos.z - pos.z) <= r * r);
     }
-    inline bool intersects(Sphere &s)
+    inline bool intersects(const Sphere &s) const
     {
         return (SQR(s.pos.x - pos.x) + SQR(s.pos.y - pos.y) + SQR(s.pos.z - pos.z) <= SQR(r + s.r));
     }
-    inline bool intersects(AABB &bbox)
+    inline bool intersects(const AABB &bbox) const
     {
         return bbox.intersects(*this);
     }
-    inline AABB get_bbox()
+    inline AABB get_bbox() const
     {
         return AABB(pos - glm::vec3(r, r, r), pos + glm::vec3(r, r, r));
     }
-    inline AABB intersect_bbox(AABB &bbox)
+    inline AABB intersect_bbox(const AABB &bbox) const
     {
         if (intersects(bbox))
         {
@@ -186,25 +186,25 @@ struct AABB2D
         min_pos = glm::vec2(compact.x, compact.y);
         max_pos = glm::vec2(compact.z, compact.w);
     }
-    inline bool contains(glm::vec2 &p)
+    inline bool contains(const glm::vec2 &p) const
     {
         return (p.x >= min_pos.x) && (p.x < max_pos.x) &&
                (p.x >= min_pos.x) && (p.y < max_pos.y);
     }
-    inline bool intersects(AABB2D &aabb)
+    inline bool intersects(const AABB2D &aabb) const
     {
         return (aabb.min_pos.x <= max_pos.x) &&
                (aabb.max_pos.x >= min_pos.x) &&
                (aabb.min_pos.y <= max_pos.y) &&
                (aabb.max_pos.y >= min_pos.y);
     }
-    inline bool empty()
+    inline bool empty() const
     {
         return min_pos.x >= max_pos.x ||
                min_pos.y >= max_pos.y;
     }
-    bool intersects(Sphere2D &s);
-    inline AABB2D intersect_bbox(AABB2D &bbox)
+    bool intersects(const Sphere2D &s) const;
+    inline AABB2D intersect_bbox(const AABB2D &bbox) const
     {
         return AABB2D(max(min_pos, bbox.min_pos), min(max_pos, bbox.max_pos));
     }
@@ -254,11 +254,11 @@ struct Sphere2D
     {
         return (SQR(_pos.x - pos.x) + SQR(_pos.y - pos.y) <= r * r);
     }
-    inline bool intersects(Sphere2D &s)
+    inline bool intersects(const Sphere2D &s)
     {
         return (SQR(s.pos.x - pos.x) + SQR(s.pos.y - pos.y) <= SQR(r + s.r));
     }
-    inline bool intersects(AABB2D &bbox)
+    inline bool intersects(const AABB2D &bbox)
     {
         return bbox.intersects(*this);
     }
@@ -266,7 +266,7 @@ struct Sphere2D
     {
         return AABB2D(pos - glm::vec2(r, r), pos + glm::vec2(r, r));
     }
-    inline AABB2D intersect_bbox(AABB2D &bbox)
+    inline AABB2D intersect_bbox(const AABB2D &bbox)
     {
         if (intersects(bbox))
         {

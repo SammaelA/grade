@@ -21,7 +21,7 @@ void BVH::remove_bboxes(int64_t tag)
     }
 }
 
-void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const std::pair<AABB, uint64_t> &)> func, bool debug)
+void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const std::pair<AABB, uint64_t> &)> func, bool debug) const
 {
     if (simple_list)
     {
@@ -33,8 +33,6 @@ void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const st
     }
     else
     {
-        if (added_boxes_cnt)
-            rebuild();
         if (root_node_idx >= 0 && obj_bboxes[nodes[root_node_idx].bbox_idx].first.intersects(bbox))
         {
             std::stack<int> stack;
@@ -56,7 +54,7 @@ void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const st
     }
 }
 
-bool BVH::contains(glm::vec3 point)
+bool BVH::contains(glm::vec3 point) const
 {
     if (simple_list)
     {
@@ -68,8 +66,6 @@ bool BVH::contains(glm::vec3 point)
     }
     else
     {
-        if (added_boxes_cnt)
-            rebuild();
         if (root_node_idx >= 0 && obj_bboxes[nodes[root_node_idx].bbox_idx].first.contains(point))
         {
             std::stack<int> stack;

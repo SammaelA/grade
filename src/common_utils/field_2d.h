@@ -11,8 +11,8 @@ public:
     ~Field_2d();
     void create(glm::vec3 pos, glm::vec2 size, float cell_size);
     void create(glm::vec3 pos, int w, int h);
-    float get_bilinear(glm::vec3 pos);
-    float get_bilinear(glm::vec2 pos);
+    float get_bilinear(glm::vec3 pos) const;
+    float get_bilinear(glm::vec2 pos) const;
     void set(glm::vec3 pos, float val);
     void add(Field_2d &field, bool same_size_expected = false);
     void sub(Field_2d &field, bool same_size_expected = false);
@@ -21,24 +21,24 @@ public:
     void fill_const(float val);
     void fill_func(std::function<float(glm::vec2 &)> filler);
     void fill_func(std::function<float(glm::vec2 &, float )> filler);
-    void read_func(std::function<void(glm::vec2 &, float )> reader);
+    void read_func(std::function<void(glm::vec2 &, float )> reader) const;
     void fill_perlin(float base, float min, float max, glm::ivec2 sh = glm::ivec2(0,0));
-    glm::vec2 get_range() {return glm::vec2(min_val,max_val);}
-    glm::vec2 get_grad_bilinear(glm::vec3 pos);
-    glm::vec4 get_borders();//[x0,y0] - [x1,y1]
+    glm::vec2 get_range() const{return glm::vec2(min_val,max_val);}
+    glm::vec2 get_grad_bilinear(glm::vec3 pos) const;
+    glm::vec4 get_borders() const;//[x0,y0] - [x1,y1]
     void get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
                                glm::vec2 *min_pos = nullptr,
-                               glm::vec2 *max_pos = nullptr);//real_min >= min_v, real_max <= max_v 
-    void print();
-    void save_as_image(std::string name, float min_val = 0, float max_val = 0);
-    Texture save_as_texture_RGBA8(float min_val = 0, float max_val = 0);
-    glm::vec3 get_pos() {return pos;}
-    glm::vec2 get_size() {return size;}
-    glm::ivec2 get_grid_size() {return glm::ivec2(w,h);}
-    float get_cell_size() {return cell_size;}
+                               glm::vec2 *max_pos = nullptr) const;//real_min >= min_v, real_max <= max_v 
+    void print() const;
+    void save_as_image(std::string name, float min_val = 0, float max_val = 0) const;
+    Texture save_as_texture_RGBA8(float min_val = 0, float max_val = 0) const;
+    glm::vec3 get_pos() const {return pos;}
+    glm::vec2 get_size() const {return size;}
+    glm::ivec2 get_grid_size() const {return glm::ivec2(w,h);}
+    float get_cell_size() const {return cell_size;}
 protected:
-    float get(int x, int y);
-    glm::vec2 get_grad(int x, int y);
+    float get(int x, int y) const;
+    glm::vec2 get_grad(int x, int y) const;
     void set(int x, int y, float val);
     void set_safe(int x, int y, float val);
     void add(int x, int y, float val);

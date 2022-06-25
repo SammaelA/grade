@@ -33,7 +33,7 @@ private:
 class RenderCmdExecutor
 {
 public:
-    RenderCmdExecutor(AppContext &aCtx, SceneGenerator::SceneGenerationContext &gCtx):
+    RenderCmdExecutor(AppContext &aCtx, const SceneGenerator::SceneGenerationContext &gCtx):
     appCtx(aCtx),
     genCtx(gCtx)
     {
@@ -44,5 +44,5 @@ private:
     void render();
     WorldRenderer worldRenderer;
     AppContext &appCtx;
-    SceneGenerator::SceneGenerationContext &genCtx;
+    const SceneGenerator::SceneGenerationContext &genCtx;
 };

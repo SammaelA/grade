@@ -24,7 +24,7 @@
       if (data)
         delete[] data;
     }
-    float Field_2d::get(int x, int y)
+    float Field_2d::get(int x, int y) const
     {
         if (x >= -w && x <= w && y >= -h && y <= h)
         {
@@ -33,7 +33,7 @@
         else
             return base_val;
     }
-    float Field_2d::get_bilinear(glm::vec2 position)
+    float Field_2d::get_bilinear(glm::vec2 position) const
     {
         if (!data)
             return base_val;
@@ -46,7 +46,7 @@
         
     }
 
-    float Field_2d::get_bilinear(glm::vec3 position)
+    float Field_2d::get_bilinear(glm::vec3 position) const
     {
         return get_bilinear(glm::vec2(position.x, position.z));
     }
@@ -89,7 +89,7 @@
             }
         }
     }
-    void Field_2d::read_func(std::function<void(glm::vec2 &, float )> reader)
+    void Field_2d::read_func(std::function<void(glm::vec2 &, float )> reader) const
     {
         for (int i = -w;i<=w;i++)
         {
@@ -117,7 +117,7 @@
             }
         }
     }
-    glm::vec2 Field_2d::get_grad(int x, int y)
+    glm::vec2 Field_2d::get_grad(int x, int y) const
     {
         std::vector<std::vector<float>> sobel_x = {{-1,0,1},
                                                    {-2,0,2},
@@ -137,7 +137,7 @@
         }
         return g;
     }
-    glm::vec2 Field_2d::get_grad_bilinear(glm::vec3 position)
+    glm::vec2 Field_2d::get_grad_bilinear(glm::vec3 position) const
     {
         if (!data)
             return glm::vec2(0,0);
@@ -174,11 +174,11 @@
             add(x,y,val);
         }
     }
-    glm::vec4 Field_2d::get_borders()
+    glm::vec4 Field_2d::get_borders() const
     {
         return glm::vec4(pos.x - size.x, pos.z - size.y, pos.x + size.x, pos.z + size.y);
     }
-    void Field_2d::print()
+    void Field_2d::print() const
     {
         debug("field 2d\n-------\n");
         for (int i = -w;i<=w;i++)
@@ -191,7 +191,7 @@
             debugnl();
         }
     }
-    void Field_2d::save_as_image(std::string name, float mnv, float mxv)
+    void Field_2d::save_as_image(std::string name, float mnv, float mxv) const
     {
         if (mnv == mxv)
         {
@@ -223,7 +223,7 @@
         delete[] image_data;
     }
     
-    Texture Field_2d::save_as_texture_RGBA8(float mnv, float mxv)
+    Texture Field_2d::save_as_texture_RGBA8(float mnv, float mxv) const
     {
       if (mnv == mxv)
         {
@@ -260,7 +260,7 @@
     }
 
     void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
-                                         glm::vec2 *min_pos, glm::vec2 *max_pos)
+                                         glm::vec2 *min_pos, glm::vec2 *max_pos) const
     {
         if (!data)
         {

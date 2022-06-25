@@ -30,6 +30,6 @@ struct BVH
     int add_node_rec(std::vector<int> &boxes);
     void add_bboxes(std::vector<AABB> &bboxes, uint64_t tag);
     void remove_bboxes(int64_t tag);
-    void iterate_over_intersected_bboxes(AABB bbox, std::function<void(const std::pair<AABB, uint64_t> &)> func, bool debug = false);
-    bool contains(glm::vec3 point);
+    void iterate_over_intersected_bboxes(AABB bbox, std::function<void(const std::pair<AABB, uint64_t> &)> func, bool debug = false) const;
+    bool contains(glm::vec3 point) const;
 };

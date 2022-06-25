@@ -1,6 +1,6 @@
 #include "bbox.h"
 
-bool AABB::intersects(Sphere &s)
+bool AABB::intersects(const Sphere &s) const
 {
     float dmin = 0;
     for (int i = 0; i < 3; i++)
@@ -13,7 +13,7 @@ bool AABB::intersects(Sphere &s)
     return (dmin <= s.r * s.r);
 }
 
-bool AABB2D::intersects(Sphere2D &s)
+bool AABB2D::intersects(const Sphere2D &s) const
 {
     float dmin = 0;
     for (int i = 0; i < 2; i++)
