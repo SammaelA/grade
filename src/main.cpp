@@ -1,4 +1,3 @@
-#include "parser.h"
 #include "cities_generator/cities_gen_main.h"
 #include "tinyEngine/TinyEngine.h"
 #include "cmd_buffers.h"
@@ -11,6 +10,7 @@
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
+TextureManager textureManager;
 CommandBuffer<InputCommands> inputCmdBuffer;
 CommandBuffer<GenerationCommands> genCmdBuffer;
 CommandBuffer<RenderCommands> renderCmdBuffer;
