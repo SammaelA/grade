@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     Block textures_list;
     man.load_block_from_file("resources.blk", textures_list);
     textureManager = TextureManager("./resources/textures/", textures_list);
-    ModelLoader::load_default_blk();
+    model_loader::load_default_blk();
 
     SceneGenerator::SceneGenerationContext sceneGenerationContext;
     sceneGenerationContext.scene = new Scene();

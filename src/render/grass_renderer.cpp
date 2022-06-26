@@ -53,13 +53,12 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
 
     int total_instances = 0;
-    ModelLoader ML;
     Texture null = textureManager.empty();
     int type_n = 0;
     for (auto &p : data.grass_instances)
     {
         tex_transform = data.grass_textures.tc_transform(p.first);
-        models.push_back(ML.create_model_by_name(data.used_grass_types[type_n].model_name,null));
+        models.push_back(model_loader::create_model_by_name(data.used_grass_types[type_n].model_name,null));
         for (int i=0;i<models.back()->colors.size();i+=4)
         {
             models.back()->colors[i] = tex_transform.x*(models.back()->colors[i] + tex_transform.z);

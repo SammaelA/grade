@@ -9,7 +9,6 @@
 #include <list>
 #include <vector>
 #include "tinyEngine/postfx.h"
-class Visualizer;
 class BillboardCloudRaw : Countable
 {
 
@@ -29,11 +28,11 @@ public:
                  BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &out_billboards);
     void  extend(int quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
                  BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards);
-    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill,
+    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, int id, Billboard &bill,
                           TextureAtlas &atlas, BillboardGenerationParams params);
-    void create_billboard_model(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill,
+    void create_billboard_model(TreeTypeData &ttd, Branch *b, BBox &min_box, int id, Billboard &bill,
                                 TextureAtlas &atlas, BillboardGenerationParams params, Model &m_b, Model &m_l);
-    void create_models(Branch *branch, Visualizer &tg, BillboardGenerationParams params, Model &br_m, Model &l_m);
+    void create_models(Branch *branch, BillboardGenerationParams params, Model &br_m, Model &l_m);
     BillboardCloudRaw();
     ~BillboardCloudRaw();
 
@@ -82,8 +81,8 @@ protected:
 
     AtlasParams set_atlas_params(int quality, int cnt);
     void split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res);
-    void prepare_branch(Tree &t, Branch *b, BBox &min_box, Visualizer &tg, int billboards_count);
-    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, Visualizer &tg, int id, Billboard &bill, 
+    void prepare_branch(Tree &t, Branch *b, BBox &min_box, int billboards_count);
+    void create_billboard(TreeTypeData &ttd, Branch *b, BBox &min_box, int id, Billboard &bill, 
                           float leaf_scale, float wood_scale = 1,
                           bool monochrome = false, int level_from = 0, int level_to = 1000);
     static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);

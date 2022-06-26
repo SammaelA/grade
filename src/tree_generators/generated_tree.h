@@ -14,7 +14,6 @@
 #include "mygen_parameters.h"
 #include "generation/generation_settings.h"
 
-class DebugVisualizer;
 class Heightmap;
 
 #define MAX_TREES 1500
@@ -134,7 +133,6 @@ public:
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual bool use_voxels_for_generation() {return true;}
-    bool tree_to_model(::Tree &t, bool leaves, DebugVisualizer &debug);
     void reset();
     Tree *curTree = nullptr;
     Branch *root = nullptr;
@@ -174,7 +172,6 @@ public:
     bool random_tree(Tree &t);
     void plant_tree(Tree &t, ParameterSetWrapper params);
     void grow_tree(Tree &t);
-    void create_tree(Tree &t, ParameterSetWrapper params, DebugVisualizer &debug);
     void create_grove(Tree *trees, int count);
     void convert(mygen::Tree *src, ::Tree *dst, int count);
     void convert(mygen::Tree &src, ::Tree &dst);

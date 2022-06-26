@@ -1035,7 +1035,7 @@ void GeneticAlgorithm::calculate_metric(int heaven_n, bool elite_fine_tuning)
         CREATURE_MODIFIED
     };
     std::vector<std::pair<ParOrigin,int>> positions;
-    int fine_tune_pos[100];
+    int fine_tune_pos[100] = {-1};
     int i=0;
     for (auto &p : population)
     {

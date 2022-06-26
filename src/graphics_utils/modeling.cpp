@@ -4,8 +4,9 @@
 
 #define PI 3.14159265f
 using namespace glm;
-
-void Visualizer::leaf_to_model(Leaf &l, Mesh *m, float scale)
+namespace visualizer
+{
+void leaf_to_model(Leaf &l, Mesh *m, float scale)
 {
     if (l.edges.size() < 4)
     {
@@ -39,7 +40,7 @@ void Visualizer::leaf_to_model(Leaf &l, Mesh *m, float scale)
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-void Visualizer::packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, bool need_tangent)
+void packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, bool need_tangent)
 {
     if (l.edges.size() % 4 || l.edges.empty())
     {
@@ -83,7 +84,7 @@ void Visualizer::packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, b
         m->indices.push_back(_b);
     }
 }
-void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
+void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
                           float rel_ring_pos, std::vector<float> &mults, glm::vec3 p)
 {
     sv.ringsize = ring_size;
@@ -110,7 +111,7 @@ void Visualizer::get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, Segmen
         n = r * n;
     }
 }
-void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
+void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
     glm::vec3 start = s.begin;
@@ -118,7 +119,7 @@ void Visualizer::get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, f
     glm::vec3 dir = end - start;
     get_ring(start, dir, scale*s.rel_r_begin, sv, ring_size, rel_ring_pos,s.mults);
 }
-void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
+void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
     glm::vec3 start = s.begin;
@@ -129,7 +130,7 @@ void Visualizer::get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring
     sv.smallRing = sv.bigRing;
     sv.bigRing = data;
 }
-void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, glm::vec2 tc_zw, bool need_tangents)
+void seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, glm::vec2 tc_zw, bool need_tangents)
 {
     Mesh *h = m;
     int _b = h->positions.size() / 3;
@@ -203,10 +204,10 @@ void Visualizer::seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, glm::vec2 t
         h->indices.push_back(_b + (i + 1) % (ringsize) + ringsize);
     }
 }
-void Visualizer::joint_to_model(Joint &j, Mesh *m, bool leaves)
+void joint_to_model(Joint &j, Mesh *m, bool leaves)
 {
 }
-void Visualizer::recursive_branch_to_model(Branch &b, Mesh *m, bool leaves, float scale, int level_from, int level_to)
+void recursive_branch_to_model(Branch &b, Mesh *m, bool leaves, float scale, int level_from, int level_to)
 {
     if (b.level < 0 || b.level > level_to)
         return;
@@ -267,7 +268,7 @@ int s_cnt(Branch *b)
     }
     return cnt;
 }
-void Visualizer::recursive_branch_to_model_fast(Branch &branch, Mesh *m, bool leaves, float scale, int level_from, 
+void recursive_branch_to_model_fast(Branch &branch, Mesh *m, bool leaves, float scale, int level_from, 
                                                 int level_to)
 {
     /*
@@ -280,7 +281,7 @@ void Visualizer::recursive_branch_to_model_fast(Branch &branch, Mesh *m, bool le
     recursive_branch_to_model_fast_i(branch, m, leaves, scale, level_from, level_to);
 }
 
-void Visualizer::recursive_branch_to_model_fast_i(Branch &branch, Mesh *m, bool leaves, float scale, int level_from, 
+void recursive_branch_to_model_fast_i(Branch &branch, Mesh *m, bool leaves, float scale, int level_from, 
                                                   int level_to)
 {
     if (branch.level < 0 || branch.level > level_to)
@@ -389,7 +390,7 @@ void Visualizer::recursive_branch_to_model_fast_i(Branch &branch, Mesh *m, bool 
     }
 }
 
-void Visualizer::branch_to_model(Branch &b, Mesh *m, bool leaves)
+void branch_to_model(Branch &b, Mesh *m, bool leaves)
 {
     if (!leaves)
     {
@@ -433,7 +434,7 @@ void Visualizer::branch_to_model(Branch &b, Mesh *m, bool leaves)
             joint_to_model(joint, m, leaves);
     }
 }
-void Visualizer::segment_to_model(Segment &s, Mesh *m, bool leaves)
+void segment_to_model(Segment &s, Mesh *m, bool leaves)
 {
 
     glm::vec3 start = s.begin;
@@ -484,7 +485,7 @@ void Visualizer::segment_to_model(Segment &s, Mesh *m, bool leaves)
         n = r * n;
     }
 }
-void Visualizer::add_branch_layer(Tree &t, int layer, Mesh *m)
+void add_branch_layer(Tree &t, int layer, Mesh *m)
 {
     if (layer >= 0 && layer < t.branchHeaps.size())
     {
@@ -494,7 +495,7 @@ void Visualizer::add_branch_layer(Tree &t, int layer, Mesh *m)
         }
     }
 }
-void Visualizer::packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precision, glm::vec2 tc_zw, bool need_tangents)
+void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precision, glm::vec2 tc_zw, bool need_tangents)
 {
     if (!leaves)
     {
@@ -542,20 +543,8 @@ void Visualizer::packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, f
         }
     }
 }
-Visualizer::Visualizer():
-tree_tex(textureManager.empty()),
-leaves_tex(textureManager.empty())
-{
 
-}
-Visualizer::Visualizer(Texture _tree_tex, Texture _leaves_tex, Shader *_tree_shader):
-tree_tex(_tree_tex),
-leaves_tex(_leaves_tex)
-
-{
-    tree_shader = _tree_shader;
-}
-void Visualizer::box_to_model(Box *box, Mesh *m)
+void box_to_model(Box *box, Mesh *m)
 {
     std::vector<glm::vec3> pos;
     std::vector<glm::vec2> colors;
@@ -588,7 +577,7 @@ void Visualizer::box_to_model(Box *box, Mesh *m)
         m->indices.push_back(_b + indicies[i]);
     }
 }
-void Visualizer::ellipsoid_to_model(Ellipsoid *b, Mesh *m, int sectors, int stacks, bool smooth)
+void ellipsoid_to_model(Ellipsoid *b, Mesh *m, int sectors, int stacks, bool smooth)
 {
     float x, y, z, xy;                              // vertex position
     float nx, ny, nz, lengthInv = 1.0f;             // normal
@@ -668,7 +657,7 @@ void Visualizer::ellipsoid_to_model(Ellipsoid *b, Mesh *m, int sectors, int stac
         }
     }
 }
-void Visualizer::cylinder_to_model(Cylinder *b, Mesh *m, int sectors)
+void cylinder_to_model(Cylinder *b, Mesh *m, int sectors)
 {
     int v0 = m->positions.size()/3;
     for (int i=0;i<sectors;i++)
@@ -762,7 +751,7 @@ void Visualizer::cylinder_to_model(Cylinder *b, Mesh *m, int sectors)
         m->indices.push_back(v1 + i1);
     }
 }
-void Visualizer::body_to_model(Body *b, Mesh *m, bool fixed_tc, glm::vec4 tc)
+void body_to_model(Body *b, Mesh *m, bool fixed_tc, glm::vec4 tc)
 {
     int last_tc = m->colors.size();
     Box *box = dynamic_cast<Box *>(b);
@@ -823,7 +812,7 @@ void add_vertex(Heightmap &h, glm::vec3 &terr_pos, Mesh *m, glm::vec2 step)
     m->colors.push_back(0);
 }
 
-void Visualizer::heightmap_to_model(Heightmap &h, Mesh *m, glm::vec2 detailed_size, glm::vec2 full_size, 
+void heightmap_to_model(Heightmap &h, Mesh *m, glm::vec2 detailed_size, glm::vec2 full_size, 
                                     float precision, int LODs)
 {
     int x = MAX(pow(2, round(log2(2*detailed_size.x / precision))), 4);
@@ -1128,4 +1117,66 @@ void Visualizer::heightmap_to_model(Heightmap &h, Mesh *m, glm::vec2 detailed_si
         HMLOD*=2;
         total_size += step;
     }
+}
+
+void visualize_light_voxels(LightVoxelsCube *voxels, Mesh *m, glm::vec3 shift, glm::vec3 scale)
+{
+  visualize_light_voxels(voxels, m, 
+                         voxels->get_center() - voxels->get_voxel_size() * glm::vec3(voxels->get_vox_sizes()),
+                         voxels->get_voxel_size() * (2.0f * glm::vec3(voxels->get_vox_sizes()) + glm::vec3(1)),
+                         2.0f * glm::vec3(voxels->get_voxel_size()),
+                         0.5f * voxels->get_voxel_size(),
+                         0.1,
+                         shift,
+                         scale);
+}
+void visualize_light_voxels(LightVoxelsCube *voxels, Mesh *m, glm::vec3 pos, glm::vec3 size, glm::vec3 step,
+                            float dot_size, float threshold, glm::vec3 shift, glm::vec3 scale, int mip)
+{
+  int count = ((int)(size.x / step.x)) * ((int)(size.y / step.y)) * ((int)(size.z / step.z));
+  for (float x = pos.x; x < pos.x + size.x; x += step.x)
+  {
+    for (float y = pos.y; y < pos.y + size.y; y += step.y)
+    {
+      for (float z = pos.z; z < pos.z + size.z; z += step.z)
+      {
+        float occ = voxels->get_occlusion_simple_mip(glm::vec3(x, y, z), mip);
+        if (occ < threshold || occ > 1e8)
+          continue;
+        glm::vec4 tex;
+        tex.w = 1;
+        tex.z = MIN(1, occ / (10 * threshold));
+        tex.y = MIN(1, occ / (100 * threshold));
+        tex.x = MIN(1, occ / (1000 * threshold));
+        Box b = Box(shift + glm::vec3(scale.x * x, scale.y * y, scale.z * z), glm::vec3(dot_size, 0, 0), glm::vec3(0, dot_size, 0), glm::vec3(0, 0, dot_size));
+        body_to_model(&b, m, true, tex);
+      }
+    }
+  }
+}
+
+void visualize_aabb(AABB &box, Mesh *m, glm::vec3 &color)
+{
+  ::std::vector<AABB> boxes = {box};
+  ::std::vector<glm::vec3> colors = {color};
+  visualize_aabb(boxes, m, colors);
+}
+
+void visualize_aabb(::std::vector<AABB> &boxes, Mesh *m, ::std::vector<glm::vec3> &colors)
+{
+  if (colors.size() == boxes.size())
+  {
+    for (int i = 0; i < colors.size(); i++)
+    {
+      glm::vec3 sz = boxes[i].max_pos - boxes[i].min_pos;
+      Box *box_ptr = new Box(boxes[i].min_pos, glm::vec3(sz.x, 0, 0), glm::vec3(0, sz.y, 0), glm::vec3(0, 0, sz.z));
+      body_to_model(box_ptr, m, true, glm::vec4(colors[i], 1));
+      delete box_ptr;
+    }
+  }
+  else
+  {
+    logerr("visualize_aabb colors and boxes arrays should have the same size");
+  }
+}
 }

@@ -44,7 +44,6 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
     //will be the same
     int type_id = branch.IDA.type_ids[0];
 
-    Visualizer v = Visualizer();
     uint ind_offset = model.indices.size();
     uint verts = model.colors.size();
     glm::vec4 w_tc_trans = glm::vec4(1,1,0,0);
@@ -52,7 +51,6 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
     {
       int tex_id = source->groveTexturesAtlas.wood_tex_map.at(type_id);
       glm::vec4 tctr = source->groveTexturesAtlas.woodAtlas->tc_transform(tex_id);
-      //logerr("type %d wood tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
       w_tc_trans = tctr;
     }
     for (int id : branch.branches)
@@ -64,7 +62,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level), glm::vec2(1,0), false);
+            visualizer::packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level), glm::vec2(1,0), false);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -95,7 +93,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                v.packed_branch_to_model(b, &model, true, 4, glm::vec2(1,0), false);
+                visualizer::packed_branch_to_model(b, &model, true, 4, glm::vec2(1,0), false);
         }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -288,9 +286,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
   HRMeshRef terrainMeshRef = hrMeshCreate(L"terrain");
   {
-    Visualizer vis;
     Model model;
-    vis.heightmap_to_model(*(scene.heightmap), &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
+    visualizer::heightmap_to_model(*(scene.heightmap), &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
     HrMesh_from_mesh(terrainMeshRef, model, mat_land.id);
   }
 
@@ -353,15 +350,14 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
     Texture null = textureManager.empty();
-    ModelLoader ML;
-    std::string prev_base_dir = ModelLoader::base_path;
-    ModelLoader::base_path = base_dir + prev_base_dir;
+    std::string prev_base_dir = model_loader::base_path;
+    model_loader::base_path = base_dir + prev_base_dir;
     int total_instances = 0;
     int type_n = 0;
     for (auto &p : scene.grass.grass_instances)
     {
         tex_transform = scene.grass.grass_textures.tc_transform(p.first);
-        grass_models.push_back(ML.create_model_by_name(scene.grass.used_grass_types[type_n].model_name,null));
+        grass_models.push_back(model_loader::create_model_by_name(scene.grass.used_grass_types[type_n].model_name,null));
         for (int i=0;i<grass_models.back()->colors.size();i+=4)
         {
             grass_models.back()->colors[i] = tex_transform.x*(grass_models.back()->colors[i] + tex_transform.z);
@@ -373,7 +369,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
         total_instances += p.second.size();
         type_n++;
     }
-    ModelLoader::base_path = prev_base_dir;
+    model_loader::base_path = prev_base_dir;
 
     glm::mat4 *matrices = new glm::mat4[total_instances];
     int i=0;

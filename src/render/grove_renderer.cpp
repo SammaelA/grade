@@ -7,7 +7,6 @@
 #include "tinyEngine/camera.h"
 #include "render/billboard_cloud_renderer.h"
 #include "render/impostor_renderer.h"
-#include "render/visualizer.h"
 #include "generation/generation_settings.h"
 #include <chrono>
 
@@ -37,7 +36,6 @@ GroveRenderer()
         }
     }
     
-    Visualizer v = Visualizer();
     source = _source;
     ggd = _ggd;
     debugl(10,"creating grove renderer with %d LODs\n", _source->clouds.size());
@@ -561,7 +559,6 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     //will be the same
     uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
     glm::vec3 pos = source->instancedCatalogue.get(branch.branches.front()).joints.front().pos;
-    Visualizer v = Visualizer();
     uint ind_offset = base_container->indices.size();
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
@@ -574,7 +571,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            v.packed_branch_to_model(b, base_container, false, 2, glm::vec2(type_slice, 0));
+            visualizer::packed_branch_to_model(b, base_container, false, 2, glm::vec2(type_slice, 0));
     }
     uint l_ind_offset = base_container->indices.size();
     uint l_verts = base_container->positions.size();
@@ -605,7 +602,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                v.packed_branch_to_model(b, base_container, true, 2, glm::vec2(type_slice, 0));
+                visualizer::packed_branch_to_model(b, base_container, true, 2, glm::vec2(type_slice, 0));
         }
     }
     uint l_end = base_container->indices.size();

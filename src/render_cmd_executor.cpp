@@ -75,7 +75,10 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             {
               worldRenderer.debug_models.emplace_back();
               worldRenderer.debug_models.back().apply_light = false;
-              worldRenderer.debug_models.back().m = visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small);
+              Model *m = new Model();
+              visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small, m);
+              m->update();
+              worldRenderer.debug_models.back().m  = m; 
               worldRenderer.debug_models.back().id = model_id;
             }
           }
@@ -113,7 +116,12 @@ void RenderCmdExecutor::execute(int max_cmd_count)
                 {
                   delete dm.m;
                   if (genCtx.cells[cell_id].voxels_small)
-                    dm.m = visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small);
+                  {
+                    Model *m = new Model();
+                    visualizer::visualize_light_voxels(genCtx.cells[cell_id].voxels_small, m);
+                    m->update();
+                    dm.m = m;
+                  }
                 }
               }
             }
@@ -158,7 +166,10 @@ void RenderCmdExecutor::execute(int max_cmd_count)
                                                               func, false);
             worldRenderer.debug_models.emplace_back();
             worldRenderer.debug_models.back().apply_light = false;
-            worldRenderer.debug_models.back().m = visualizer::visualize_aabb(boxes, colors);
+            Model *m = new Model();
+            visualizer::visualize_aabb(boxes, m, colors);
+            m->update();
+            worldRenderer.debug_models.back().m = m;
             worldRenderer.debug_models.back().id = model_id;
           }
           break;

@@ -234,7 +234,7 @@ struct HRSceneLibraryFileInfo
 {
   HRSceneLibraryFileInfo() : exists(false), valid(false), empty(false), lastStateId(0){}
 
-  const bool isOk() const { return exists && valid && !empty && (lastStateId > 0); }
+  bool isOk() const { return exists && valid && !empty && (lastStateId > 0); }
 
   bool    exists;
   bool    valid;

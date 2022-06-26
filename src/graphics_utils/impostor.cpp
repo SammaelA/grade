@@ -151,9 +151,8 @@ void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor 
     int num;
     vec3 base_joint;
     Billboard bill;
-    Visualizer tg;
     Model br_m, l_m;
-    create_models(&br, tg, params, br_m, l_m);
+    create_models(&br, params, br_m, l_m);
     if (params.need_top_view)
     {
         cur.position = imp.bcyl.center - glm::vec3(a) - b - glm::vec3(c);
@@ -169,9 +168,8 @@ void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor 
 
         num = atl.add_tex();
         base_joint = vec3(0, 0, 0);
-        tg = Visualizer(tree_type.wood, tree_type.leaf, nullptr);
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
-        create_billboard_model(tree_type, &br, cur, tg, num, bill, atl, params, br_m, l_m);
+        create_billboard_model(tree_type, &br, cur, num, bill, atl, params, br_m, l_m);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) + glm::vec3(c);
         bill.positions[1] = imp.bcyl.center + glm::vec3(a) + glm::vec3(c);
@@ -195,7 +193,7 @@ void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor 
         //logerr("imp scale %f %f %f -- from %f %f %f", cur.sizes.x, cur.sizes.y, cur.sizes.z, bbox.sizes.x, bbox.sizes.y,
         //       bbox.sizes.z);
         bill = Billboard(cur, num, br.mark_A, 0, base_joint);
-        create_billboard_model(tree_type, &br, cur, tg, num, bill, atl, params, br_m, l_m);
+        create_billboard_model(tree_type, &br, cur, num, bill, atl, params, br_m, l_m);
 
         bill.positions[0] = imp.bcyl.center - glm::vec3(a) - b;
         bill.positions[1] = imp.bcyl.center + glm::vec3(a) - b;

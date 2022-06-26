@@ -18,7 +18,6 @@ namespace gltf
     }
     void GeneralGltfWriter::add_packed_grove(GrovePacked &grove, GroveGenerationData &ggd)
     {
-        Visualizer v;
         int start = temp_models.size();
 
         for (auto &inst : grove.instancedBranches)
@@ -36,7 +35,7 @@ namespace gltf
                     auto &br = grove.instancedCatalogue.get(br_id);
                     if (br.type_id != type_id)
                         continue;
-                    v.packed_branch_to_model(br,m,false,4);
+                    visualizer::packed_branch_to_model(br,m,false,4);
                 }
                 if (!m->positions.empty())
                 {
@@ -56,7 +55,7 @@ namespace gltf
                     auto &br = grove.instancedCatalogue.get(br_id);
                     if (br.type_id != type_id)
                         continue;
-                    v.packed_branch_to_model(br,m_l,true,4);
+                    visualizer::packed_branch_to_model(br,m_l,true,4);
                 }
                 if (!m_l->positions.empty())
                 {

@@ -17,7 +17,6 @@
 #include "clustering/impostor_metric.h"
 #include "generation/generation_settings.h"
 
-class DebugVisualizer;
 class Heightmap;
 struct ClusterAdditionalData
 {

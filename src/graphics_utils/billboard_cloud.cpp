@@ -88,27 +88,27 @@ float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
     return err;
 }
 
-void BillboardCloudRaw::create_models(Branch *branch, Visualizer &tg, BillboardGenerationParams params, Model &br_m, Model &l_m)
+void BillboardCloudRaw::create_models(Branch *branch, BillboardGenerationParams params, Model &br_m, Model &l_m)
 {
     std::function<void(Model *)> _c_wood = [&](Model *h) { 
-        tg.recursive_branch_to_model_fast(*branch, &br_m, false, params.wood_scale, params.level_from, params.level_to); 
+        visualizer::recursive_branch_to_model_fast(*branch, &br_m, false, params.wood_scale, params.level_from, params.level_to); 
     };
     std::function<void(Model *)> _c_leaves = [&](Model *h) { 
-        tg.recursive_branch_to_model_fast(*branch, &l_m, true, params.leaf_scale, params.level_from, params.level_to); 
+        visualizer::recursive_branch_to_model_fast(*branch, &l_m, true, params.leaf_scale, params.level_from, params.level_to); 
     };
     br_m.construct(_c_wood);
     if (params.leaf_opacity > 0)
         l_m.construct(_c_leaves);
 }
 
-void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill,
+void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
                                          TextureAtlas &atlas, BillboardGenerationParams params)
 {
     Model br_m, l_m;
-    create_models(branch, tg, params, br_m, l_m);
-    create_billboard_model(ttd, branch, min_bbox, tg, num, bill, atlas, params, br_m, l_m);
+    create_models(branch, params, br_m, l_m);
+    create_billboard_model(ttd, branch, min_bbox, num, bill, atlas, params, br_m, l_m);
 }
-void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num, Billboard &bill,
+void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
                                                TextureAtlas &atlas, BillboardGenerationParams params, Model &br_m, Model &l_m)
 {
     if (num < 0)
@@ -179,7 +179,7 @@ void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch
     }
 }
 
-void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, Visualizer &tg, int num,
+void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num,
                                          Billboard &bill, float leaf_scale,  float wood_scale, 
                                          bool monochrome, int level_from, int level_to)
 {
@@ -190,7 +190,7 @@ void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox
     bgp.level_from = level_from;
     bgp.level_to = level_to;
 
-    create_billboard(ttd, branch, min_bbox, tg, num, bill, *atlas, bgp);
+    create_billboard(ttd, branch, min_bbox, num, bill, *atlas, bgp);
 }
 void center_of_mass(Branch *b,glm::vec3 &sum, double &mass)
 {
@@ -692,7 +692,6 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
     }
 
     int add_billboards_count = 0; //1 + layer*4;
-    Visualizer tg(ttd[0].wood, ttd[0].leaf, nullptr);
 
     billboards.clear();
     bool external_atlas = false;
@@ -764,7 +763,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
             p.base_joint = proj;
             b.branch_id = parent_billboard.branch_id;
         }
-        create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, tg, num, b, 1.5);
+        create_billboard(ttd[p.b->type_id], p.b, p.min_bbox, num, b, 1.5);
     }
     debugl(8,"created %d billboards\n", billboard_boxes.size());
     atlas->gen_mipmaps();

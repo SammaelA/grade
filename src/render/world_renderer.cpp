@@ -3,6 +3,7 @@
 #include "tinyEngine/TinyEngine.h"
 #include "core/body.h"
 #include "cities_generator/global.h"
+#include "graphics_utils/modeling.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
 const int HALTON_COUNT = 8;
@@ -29,9 +30,8 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(heightmapTex)
   DEL_IT(grassRenderer)
   DEL_IT(terrainRenderer)
-  DEL_IT(debugVisualizer)
-  DEL_IT(grassRenderer2);
-  DEL_IT(renderReadback);
+  DEL_IT(grassRenderer2)
+  DEL_IT(renderReadback)
   DEL_IT(simpleInstancingShader)
   DEL_IT(simpleInstancingShaderShadow)
 }
@@ -81,7 +81,6 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   debugShader = new Shader({"simple_debug.vs", "simple_debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
-  debugVisualizer = new DebugVisualizer(textureManager.get("wood"), defaultShader);
   renderReadback = new RenderReadback();
   targets[0].create(w,h);
   targets[1].create(w,h);
@@ -123,38 +122,8 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     }
     void WorldRenderer::remove_grove()
     {
-        delete groveRenderer;
-        on_scene_changed();
-    }
-
-    void WorldRenderer::set_voxels_debug(LightVoxelsCube &voxels)
-    {
-        remove_voxels_debug();
-        debugVisualizer->visualize_light_voxels(&voxels);
-    }
-    void WorldRenderer::remove_voxels_debug()
-    {
-        on_scene_changed();
-    }
-
-    void WorldRenderer::add_body_debug(Body *body)
-    {
-        remove_body_debug();
-        debugVisualizer->add_bodies(body, 1);
-    }
-
-    void WorldRenderer::add_aabb_debug(const AABB &box)
-    {
-      glm::vec3 sz = box.max_pos - box.min_pos;
-      Box *box_ptr = new Box(box.min_pos, glm::vec3(sz.x,0,0), glm::vec3(0,sz.y,0), glm::vec3(0,0,sz.z));
-      debugVisualizer->add_bodies(box_ptr,1);
+      delete groveRenderer;
       on_scene_changed();
-      delete box_ptr;
-    }
-
-    void WorldRenderer::remove_body_debug()
-    {
-        on_scene_changed();
     }
 
     void WorldRenderer::set_grass(GrassPacked &grass_data)
@@ -212,8 +181,6 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     {
         remove_heightmap();
         remove_grove();
-        remove_voxels_debug();
-        remove_body_debug();
         render_mode = -1;
         forced_LOD = -1;
     }
@@ -344,11 +311,6 @@ void WorldRenderer::render(float dt, Camera &camera)
     }
     checkForGlErrors("render trees", true);
   }
-  //if (render_mode == ALL_RENDER_MODE || render_mode == DEBUG_ONLY_RENDER_MODE)
-  //{
-  //  if (debugVisualizer)
-  //    debugVisualizer->render(projection * camera.camera(), render_mode);
-  //}
   debugShader->use();
   debugShader->uniform("projection", projection);
   debugShader->uniform("view", camera.camera());

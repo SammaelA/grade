@@ -2,17 +2,19 @@
 #include "texture_manager.h"
 #include "third_party/obj_loader.h"
 
+namespace model_loader
+{
 Block obj_models_blk;
 bool obj_models_blk_loaded = false;
-std::string ModelLoader::base_path = "resources/models";
+std::string base_path = "resources/models";
 
-Model *ModelLoader::create_model_from_block(Block &bl, Texture &tex)
+Model *create_model_from_block(Block &bl, Texture &tex)
 {
     std::string name = bl.get_string("name", "debug_box");
     return create_model_by_name(name, tex);
 }
 
-Model *ModelLoader::create_model_by_name(std::string name, Texture &tex)
+Model *create_model_by_name(std::string name, Texture &tex)
 {
     if (name == "debug_box")
     {
@@ -29,18 +31,15 @@ Model *ModelLoader::create_model_by_name(std::string name, Texture &tex)
     }
 }
 
-Model *ModelLoader::create_debug_box_model()
+Model *create_debug_box_model()
 {
     Box b = Box(glm::vec3(0,0,0), glm::vec3(1,0,0), glm::vec3(0,1,0), glm::vec3(0,0,1));
-    //Ellipsoid cyl = Ellipsoid(glm::vec3(0,0,0), glm::vec3(1,0,0), glm::vec3(0,1,0), glm::vec3(0,0,1));
-    Visualizer v;
     Model *m = new Model;
-    //v.ellipsoid_to_model(&cyl, m, 16, 16);
-    v.box_to_model(&b, m);
+    visualizer::box_to_model(&b, m);
     return m;
 }
 
-Model *ModelLoader::create_simple_grass_model()
+Model *create_simple_grass_model()
 {
     std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
     std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
@@ -76,14 +75,14 @@ void transform_model_to_standart_form(Model *m)
     }
 }
 
-void ModelLoader::load_default_blk()
+void load_default_blk()
 {
     BlkManager man;
     man.load_block_from_file("models.blk", obj_models_blk);
     obj_models_blk_loaded = true;
 }
 
-Model *ModelLoader::load_model_from_obj(std::string name, Texture &tex)
+Model *load_model_from_obj(std::string name, Texture &tex)
 {
     if (!obj_models_blk_loaded)
     {
@@ -145,4 +144,5 @@ Model *ModelLoader::load_model_from_obj(std::string name, Texture &tex)
     }
     transform_model_to_standart_form(m);
     return m;
+}
 }

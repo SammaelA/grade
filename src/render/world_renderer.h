@@ -1,7 +1,6 @@
 #pragma once
 #include "grove_renderer.h"
 #include "shadow.h"
-#include "visualizer.h"
 #include "grass_renderer.h"
 #include "ambient_occlusion.h"
 #include "tinyEngine/cubemap.h"
@@ -31,13 +30,6 @@ public:
 
     void set_grove(GrovePacked &source, GroveGenerationData &gen_data);
     void remove_grove();
-
-    void set_voxels_debug(LightVoxelsCube &voxels);
-    void remove_voxels_debug();
-
-    void add_body_debug(Body *body);
-    void add_aabb_debug(const AABB &box);
-    void remove_body_debug();
     
     void add_instanced_models(std::vector<Scene::InstancedModel> &models);
     void remove_all_instanced_models();
@@ -86,7 +78,6 @@ private:
     GrassRenderer *grassRenderer = nullptr;
     GrassRenderer2 *grassRenderer2 = nullptr;
     TerrainRenderer *terrainRenderer = nullptr;
-    DebugVisualizer *debugVisualizer = nullptr;
     RenderReadback *renderReadback = nullptr;
     DirectedLight light;
     RenderTarget targets[2];
