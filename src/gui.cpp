@@ -2,6 +2,7 @@
 #include "third_party/imgui/imgui.h"
 #include "cmd_buffers.h"
 #include "common_utils/utility.h"
+#include "generation/metainfo_manager.h"
 #include <map>
 
 void GUI::render_debug_settings()
@@ -56,5 +57,28 @@ void GUI::render_cell_info()
     Block b;
     b.add_int("cell_id",appCtx.active_cell_id);
     inputCmdBuffer.push(InputCommands::IC_VISUALIZE_VOXELS_DEBUG, b);    
+  }
+}
+
+void GUI::render_tree_plant_info()
+{
+  static int cur_item = -1;
+  int prev_cur_item = cur_item;
+  const char * types[256] = {nullptr};
+  auto &types_map = metainfoManager.see_all_tree_type_names();
+  int i=0;
+  for (auto &p : types_map)
+  {
+    types[i] = p.first.c_str();
+    i++;
+  }
+  ImGui::Begin("Plant tree"); 
+  ImGui::ListBox("Available Types", &cur_item, types, types_map.size());
+  ImGui::End();
+  if (cur_item != prev_cur_item)
+  {
+    prev_cur_item = cur_item;
+    if (cur_item >= 0)
+      appCtx.active_tree_type = types[cur_item];
   }
 }

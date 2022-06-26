@@ -14,16 +14,20 @@ public:
     TreeTypeData &get_tree_type(int id);
     int get_tree_type_id_by_name(std::string name);
     std::vector<TreeTypeData> get_all_tree_types() {return tree_types;}
-
+    const std::vector<TreeTypeData> &see_all_tree_types() {return tree_types;}
+    const std::map<std::string, int> &see_all_tree_type_names() {return tree_type_id_by_name;}
+    
     GrassType &get_grass_type(std::string name);
     GrassType &get_grass_type(int id);
     int get_grass_type_id_by_name(std::string name);
     std::vector<GrassType> get_all_grass_types() {return grass_types;}
+    const std::vector<GrassType> &see_all_grass_types() {return grass_types;}
 
     Biome &get_biome(std::string name);
     Biome &get_biome(int id);
     int get_biome_id_by_name(std::string name);
     std::vector<Biome> get_all_biomes() {return biomes;}
+    const std::vector<Biome> &see_all_biomes() {return biomes;}
 private:
     void load_tree_types();
     void load_grass_types();

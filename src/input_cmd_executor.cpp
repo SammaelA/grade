@@ -94,11 +94,10 @@ void InputCmdExecutor::execute(int max_cmd_count)
           abs(world_pos_type.z - genCtx.start_pos.y) < genCtx.heightmap_size.y)
       {
         //we can plant the tree actually
-        std::string tree_name = "small_oak_simplified";//TODO - choose tree name
         Block b;
         glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
         b.add_vec2("pos", pos);
-        b.add_string("type_name", tree_name);
+        b.add_string("type_name", cmd.args.get_string("type_name"));
         genCmdBuffer.push(GC_PLANT_TREE, b);
 
         if (cmd.type == IC_PLANT_TREE_IMMEDIATE)

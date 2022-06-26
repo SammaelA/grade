@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
     Tiny::view.interface = [&]() {
         gui.render_debug_settings();
         gui.render_cell_info();
+        gui.render_tree_plant_info();
     };
 
     Tiny::loop([&]() {});

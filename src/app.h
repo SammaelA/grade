@@ -43,6 +43,8 @@ struct AppContext
   };
   std::map<int, CellUiInfo> cells;
   int active_cell_id = -1;
+
+  std::string active_tree_type = "small_oak_simplified";
 };
 
 class InputHandler

@@ -203,7 +203,6 @@ void WorldRenderer::render(float dt, Camera &camera)
   checkForGlErrors("render pre shadow", true);
   if (regenerate_shadows)
   {
-    logerr("regenerate shadows");
     regenerate_shadows = false;
     shadowMap.use(light);
     glm::mat4 sh_viewproj = shadowMap.get_transform();

@@ -46,7 +46,8 @@ void InputHandler::handle_input(Event &event)
     ctx.camera.front = glm::normalize(front);
   }
 
-  ctx.camera.pos += mouse_scroll_speed*(event.mouseWheel.y + 0.0f)*ctx.camera.front;
+  if (event.active[SDLK_LALT])
+    ctx.camera.pos += mouse_scroll_speed*(event.mouseWheel.y + 0.0f)*ctx.camera.front;
 
   //Pause Toggle
   glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
@@ -124,6 +125,7 @@ void InputHandler::handle_input(Event &event)
   {
     Block b;
     b.add_vec4("world_pos_type", ctx.mouseWorldPosType);
+    b.add_string("type_name", ctx.active_tree_type);
     inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
     event.active[SDLK_p] = false;
   }
