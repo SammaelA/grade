@@ -1,6 +1,7 @@
 #pragma once
 #include "common_utils/field_2d.h"
 #include "common_utils/utility.h"
+#include "tinyEngine/texture.h"
 class DirectedLight;
 class Heightmap : public Field_2d
 {
@@ -19,11 +20,11 @@ public:
 class HeightmapTex 
 {
 public:
-    unsigned get() {return hmtex;}
+    Texture &get() {return hmtex;}
     HeightmapTex(Heightmap &heightmap, int w = 1024, int h = 1024);
     ~HeightmapTex();
 private:
-    unsigned hmtex;
+    Texture hmtex;
     float base_value = 0;
     float size_x,size_y,height;
 };

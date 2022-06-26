@@ -10,37 +10,19 @@ long tex_mem = 0;
 int tex_count = 0;
 const int mipLevelCount = 5;
 
-Texture TextureManager::get_unnamed(GLuint n)
+Texture TextureManager::load_unnamed(Texture &stub, unsigned char *data)
 {
-    auto t_it = unnamed_textures.find(n);
-    if (t_it == unnamed_textures.end())
-        return textures.at("texture not found");
-    else
-        return t_it->second;
+  Texture t = create_texture(stub.W, stub.H, GL_RGBA8, stub.mip_levels, (void*)data);
+  return t;
 }
-Texture TextureManager::get_unnamed_arr(GLuint n)
+Texture TextureManager::load_unnamed_arr(Texture &stub, unsigned char *data)
 {
-    auto t_it = unnamed_array_textures.find(n);
-    if (t_it == unnamed_array_textures.end())
-        return textures.at("texture not found");
-    else
-        return t_it->second;
+  Texture t = create_texture_array(stub.W, stub.H, stub.layers, GL_RGBA8, stub.mip_levels, (void*)data);
+  return t;
 }
-    Texture TextureManager::load_unnamed(Texture &stub, unsigned char *data)
-    {
-        Texture t = Texture(stub,data);
-        unnamed_textures.emplace(t.texture,t);
-        return t;
-    }
-    Texture TextureManager::load_unnamed_arr(Texture &stub, unsigned char *data)
-    {
-        Texture t = Texture(stub,data);
-        unnamed_array_textures.emplace(t.texture,t);
-        return t;
-    }
 bool TextureManager::is_correct(Texture &t)
 {
-    return t.texture != textures.at("texture not found").texture;
+    return t.texture && t.texture != textures.at("texture not found").texture;
 }
 Texture TextureManager::get(std::string name)
 {
@@ -50,31 +32,9 @@ Texture TextureManager::get(std::string name)
     else
         return textures.at(name);
 }
-Texture TextureManager::get(int n)
-{
-    n = n % textures.size();
-    int i =0;
-    for (auto it = textures.begin(); it != textures.end(); it++)
-    {
-        if (i == n)
-            return it->second;
-        i++;
-    }
-}
-Texture TextureManager::get_arr(int n)
-{
-    n = n % unnamed_array_textures.size();
-    int i =0;
-    for (auto it = unnamed_array_textures.begin(); it != unnamed_array_textures.end(); it++)
-    {
-        if (i == n)
-            return it->second;
-        i++;
-    }
-}
 TextureManager::TextureManager()
 {
-    Texture t(false);
+    Texture t = empty();
     textures.emplace("empty",t);
 }
 void mipmap(Texture t, int w, int h, int mips = 9)
@@ -100,7 +60,7 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         glBindTexture(t.type, t.texture);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
-        Texture ctex(textureManager.create_unnamed(w,h));
+        Texture ctex(textureManager.create_texture(w,h));
         glGenFramebuffers(1, &fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
@@ -167,8 +127,7 @@ bool TextureManager::load_tex(std::string name, std::string path)
         auto ptr = image::load(path);
         if (!ptr)
             return false;
-        Texture t(ptr);
-        t.origin = path;
+        Texture t = create_texture(ptr->w, ptr->h, GL_RGBA8, 9, ptr->pixels, GL_RGBA, GL_UNSIGNED_BYTE, path);
         textures.emplace(name, t);
         mipmap(t, ptr->w, ptr->h, 9);
         SDL_FreeSurface(ptr);
@@ -187,9 +146,8 @@ Texture TextureManager::load_unnamed_tex(std::string path)
     {
         auto ptr = image::load(path);
         if (!ptr)
-            return Texture();
-        Texture t(ptr);
-        t.origin = path;
+            return empty();
+        Texture t = create_texture(ptr->w, ptr->h, GL_RGBA8, 9, ptr->pixels, GL_RGBA, GL_UNSIGNED_BYTE, path);
         mipmap(t, ptr->w, ptr->h, 9);
         SDL_FreeSurface(ptr);
         unnamed_textures.emplace(t.texture, t);
@@ -198,46 +156,84 @@ Texture TextureManager::load_unnamed_tex(std::string path)
     catch (const std::exception &e)
     {
         logerr("texture not found %s", path.c_str());
-        return Texture();
+        return empty();
     }
 }
 
-Texture TextureManager::create_unnamed(int w, int h, bool shadow, int mip_levels)
+Texture TextureManager::create_texture(int w, int h, GLenum format, int mip_levels, void *data,
+                                       GLenum data_format, GLenum pixel_format, std::string origin_name)
 {
-    tex_mem += 4*w*h;
-    tex_count++;
-    debugl(10,"created unnamed %dx%d ",w,h);
-    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
-    Texture t(w,h,shadow, mip_levels);
-    t.tag = current_textures_tag;
-    unnamed_textures.emplace(t.texture,t);
-    return t;
+  GLuint texture;
+  GLuint type = GL_TEXTURE_2D;
+  glGenTextures(1, &texture);
+  glBindTexture(type, texture);
+  glTexStorage2D(texture, mip_levels, format, w, h);
+  glTexImage2D(type, 0, format, w, h, 0, data_format, pixel_format, data);
+
+  glTexParameteri(type, GL_TEXTURE_MIN_FILTER, mip_levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+  glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
+  if (mip_levels > 1)
+    glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+  if (mip_levels > 1 && data)
+    glGenerateMipmap(type);
+  glBindTexture(type, 0);
+  Texture t = Texture(texture, type, w, h, 1, current_textures_tag, mip_levels, format, origin_name);
+  unnamed_textures.emplace(t.texture, t);
+  return t;
 }
-Texture TextureManager::create_unnamed_array(int w, int h, bool shadow, int layers, int mip_levels)
+
+Texture TextureManager::create_texture_cube(int w, int h, GLenum format, int mip_levels)
 {
-    tex_mem += 4*w*h*layers;
-    tex_count++;
-    debugl(10,"created unnamed array %dx%dx%d ",w,h,layers);
-    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
-    Texture t(w,h,shadow,layers,mip_levels);
-    t.tag = current_textures_tag;
-    unnamed_array_textures.emplace(t.texture,t);
-    return t;
+  GLuint texture;
+  GLuint type = GL_TEXTURE_CUBE_MAP;
+  glGenTextures(1, &texture);
+  glBindTexture(type, texture);
+  glTexStorage2D(texture, mip_levels, format, w, h);
+
+  glTexParameteri(type, GL_TEXTURE_MIN_FILTER, mip_levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+  glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
+  if (mip_levels > 1)
+    glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+  glBindTexture(type, 0);
+  Texture t = Texture(texture, type, w, h, 1, current_textures_tag, mip_levels, format, "");
+  unnamed_cube_textures.emplace(t.texture, t);
+  return t;
 }
-Texture TextureManager::create_unnamed(SDL_Surface *s)
+
+Texture TextureManager::create_texture_array(int w, int h, int layers, GLenum format, int mip_levels,
+                                             void *data, GLenum data_format, GLenum pixel_format, std::string origin_name)
 {
-    tex_mem += 4*s->w*s->h;
-    tex_count++;
-    debugl(10,"created unnamed from SDL surface %dx%d ",s->w,s->h);
-    debugl(10,"allocated %d Mb total for %d textures\n",(int)(1e-6*tex_mem), tex_count);
-    Texture t(s);
-    t.tag = current_textures_tag;
-    unnamed_textures.emplace(t.texture,t);
-    return t;
+  GLuint texture;
+  GLuint type = GL_TEXTURE_2D_ARRAY;
+  glGenTextures(1, &texture);
+  glBindTexture(type, texture);
+  glTextureStorage3D(texture, mip_levels, GL_RGBA8, w, h, layers);
+  glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+  glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
+  glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+  Texture t = Texture(texture, type, w, h, layers, current_textures_tag, mip_levels, format, origin_name);
+  unnamed_array_textures.emplace(t.texture, t);
+  return t;
 }
+
 Texture TextureManager::empty()
 {
-    return textures.empty() ? Texture() : get("empty");
+    return Texture(0, GL_TEXTURE_2D, 1, 1, 1, -1, 1, GL_RGBA8);
 }
 void TextureManager::clear_unnamed()
 {
@@ -245,6 +241,9 @@ void TextureManager::clear_unnamed()
         glDeleteTextures(1, &(p.second.texture));
     
     for (auto const &p : unnamed_array_textures)
+        glDeleteTextures(1, &(p.second.texture));
+    
+    for (auto const &p : unnamed_cube_textures)
         glDeleteTextures(1, &(p.second.texture));
 }
 void TextureManager::set_textures_tag(int tag)
@@ -255,6 +254,7 @@ void TextureManager::clear_unnamed_with_tag(int tag)
 {
     std::map<GLuint, Texture> unnamed_new;
     std::map<GLuint, Texture> unnamed_array_new;
+    std::map<GLuint, Texture> unnamed_cube_new;
 
     for (auto const &p : unnamed_textures)
     {
@@ -282,8 +282,22 @@ void TextureManager::clear_unnamed_with_tag(int tag)
         }
     }
 
+    for (auto const &p : unnamed_cube_textures)
+    {
+        if (p.second.tag != tag)
+            unnamed_cube_new.emplace(p);
+        else
+        {
+            tex_count--;
+            tex_mem -= 4*6*p.second.W*p.second.H;
+            debugl(10,"unnamed cubemap texture of size %dx%d deleted\n",p.second.W, p.second.H);
+            glDeleteTextures(1, &(p.second.texture));
+        }
+    }
+
     unnamed_textures = unnamed_new;
     unnamed_array_textures = unnamed_array_new;
+    unnamed_cube_textures = unnamed_cube_new;
     current_textures_tag = 0;
     debugl(10, "texture clearing completed. %d Mb allocated memory left\n", (int)(1e-6*tex_mem));
 }
@@ -436,6 +450,21 @@ void TextureManager::delete_tex(Texture &t)
             tex_count--;
             tex_mem -= 4*it->second.W*it->second.H*it->second.layers;
             unnamed_array_textures.erase(it);
+        }
+    }
+    else if (t.type == GL_TEXTURE_CUBE_MAP)
+    {
+        auto it = unnamed_cube_textures.find(t.texture);
+        if (it == unnamed_cube_textures.end())
+        {
+            logerr("trying to delete unregisteredcubemap texture");
+        }
+        else
+        {
+            glDeleteTextures(1, &(it->second.texture));
+            tex_count--;
+            tex_mem -= 4*6*it->second.W*it->second.H*it->second.layers;
+            unnamed_cube_textures.erase(it);
         }
     }
 }

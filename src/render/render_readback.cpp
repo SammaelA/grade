@@ -13,7 +13,7 @@ RenderReadback::~RenderReadback()
 {
     glDeleteBuffers(1, &results_buf);
 }
-glm::vec4 RenderReadback::get_world_pos(glm::vec2 screen_pos, GLuint world_pos_tex, GLuint color_tex)
+glm::vec4 RenderReadback::get_world_pos(glm::vec2 screen_pos, Texture &world_pos_tex, Texture &color_tex)
 {
     screen_to_world_pos.use();
     screen_to_world_pos.texture("world_pos_tex", world_pos_tex);

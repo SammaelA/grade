@@ -74,7 +74,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
     }
     tex_h = cur_h + layer_h;
 
-    Texture res(textureManager.create_unnamed(tex_w, tex_h));
+    Texture res(textureManager.create_texture(tex_w, tex_h));
 
     if (false)
     {

@@ -14,8 +14,8 @@ HBAORenderer::HBAORenderer():
 }
 HBAORenderer::~HBAORenderer()
 {
-    glDeleteTextures(1, &aoTex);
-    glDeleteFramebuffers(1, &frBuffer);
+  textureManager.delete_tex(aoTex);
+  glDeleteFramebuffers(1, &frBuffer);
 }
 void HBAORenderer::render(AppContext &ctx, GLuint viewPosTex)
 {
@@ -40,10 +40,8 @@ void HBAORenderer::create(int w, int h)
     float borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
     glGenFramebuffers(1, &frBuffer);
 
-
-    glGenTextures(1, &aoTex);
-    glBindTexture(GL_TEXTURE_2D, aoTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, aoTexFmt, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    aoTex = textureManager.create_texture(width, height, aoTexFmt, 1, nullptr, GL_RGB, GL_UNSIGNED_BYTE);
+    glBindTexture(GL_TEXTURE_2D, aoTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -51,6 +49,6 @@ void HBAORenderer::create(int w, int h)
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     glBindFramebuffer(GL_FRAMEBUFFER, frBuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aoTex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aoTex.texture, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

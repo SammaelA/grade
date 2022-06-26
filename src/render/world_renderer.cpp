@@ -264,7 +264,7 @@ void WorldRenderer::render(float dt, Camera &camera)
         if (it != debug_textures.end())
           debug_tex = &(it->second);
       }
-      terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+      terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                               camera.pos, light, false, debug_type,
                               debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)),
                               debugInfo.get_vec4("debug_tex_scale", glm::vec4(0,0,0.01,0.01)),
@@ -293,12 +293,12 @@ void WorldRenderer::render(float dt, Camera &camera)
     checkForGlErrors("render models", true);
     if (grassRenderer2)
     {
-      grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+      grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                                 camera.pos, *heightmapTex, light);
     }
     else if (grassRenderer)
     {
-      grassRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0 * shadowMap.getTex(),
+      grassRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                                 camera.pos, *heightmapTex, light);
     }
     checkForGlErrors("render grass", true);
@@ -306,7 +306,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     {
       groveRenderer->render(forced_LOD, projection, camera.camera(), camera,
                                  glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light,
-                                 groveRendererDebugParams, shadowMap.get_transform(), 0 * shadowMap.getTex());
+                                 groveRendererDebugParams, shadowMap.get_transform(), 0);
     }
     checkForGlErrors("render trees", true);
   }
@@ -356,7 +356,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   defferedLight->get_shader().uniform("camera_pos", camera.pos);
   defferedLight->get_shader().uniform("ambient_diffuse_specular", ads);
   defferedLight->get_shader().uniform("light_color", light.color*light.intensity);
-  defferedLight->get_shader().uniform("need_shadow", shadowMap.getTex() != 0);
+  defferedLight->get_shader().uniform("need_shadow", shadowMap.getTex().texture != 0);
   defferedLight->get_shader().uniform("shadow_mat", shadowMap.get_transform());
   defferedLight->get_shader().uniform("sts_inv", 1.0f / light.shadow_map_size);
   defferedLight->render();

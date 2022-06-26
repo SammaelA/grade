@@ -10,11 +10,11 @@ public:
     void target();
 
     void set_clear_color(glm::vec4 cl_color) {clear_color = cl_color;}
-    GLuint get_tex(){ return tex;}
+    Texture get_tex(){ return tex;}
 private:
     glm::vec4 clear_color;
     int width, height;
     GLuint frBuffer;
-    GLuint tex;
+    Texture tex;
     GLuint texFmt = GL_RGBA8;
 };

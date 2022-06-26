@@ -97,9 +97,8 @@
                 data[i*h + j] = (1e-3)*heightmap.get_height(pos);
             }
         }
-        glGenTextures(1, &hmtex);
-        glBindTexture(GL_TEXTURE_2D, hmtex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, data);
+        hmtex = textureManager.create_texture(w, h, GL_R16F, 1, (void*)data, GL_RED, GL_FLOAT);
+        glBindTexture(GL_TEXTURE_2D, hmtex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -111,5 +110,5 @@
     }
     HeightmapTex::~HeightmapTex()
     {
-        glDeleteTextures(1, &hmtex);
+      textureManager.delete_tex(hmtex);
     }

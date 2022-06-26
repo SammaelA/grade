@@ -7,27 +7,18 @@ struct Block;
 class TextureManager
 {
 public:
-    const static int baseMipLevelCount = 5;
+    const static int baseMipLevelCount = 1;
 
     Texture get(std::string name);
-    Texture get(int n);
-    Texture get_arr(int n);
-    Texture create_unnamed(int w, int h, bool shadow = false, int mip_levels = baseMipLevelCount);
-    Texture create_unnamed_array(int w, int h, bool shadow, int layers, int mip_levels = baseMipLevelCount);
-    Texture create_unnamed(SDL_Surface *s);
-    Texture get_unnamed(GLuint n);
-    Texture get_unnamed_arr(GLuint n);
-    Texture load_unnamed(Texture &stub, unsigned char *data);
-    Texture load_unnamed_arr(Texture &stub, unsigned char *data);
+    Texture create_texture(int w, int h, GLenum format = GL_RGBA8, int mip_levels = baseMipLevelCount, void *data = nullptr,
+                           GLenum data_format = GL_RGBA, GLenum pixel_format = GL_UNSIGNED_BYTE, std::string origin_name = "");
+    Texture create_texture_cube(int w, int h, GLenum format = GL_RGBA8, int mip_levels = baseMipLevelCount);
+    Texture create_texture_array(int w, int h, int layers, GLenum format = GL_RGBA8, int mip_levels = baseMipLevelCount, 
+                                 void *data = nullptr, GLenum data_format = GL_RGBA, GLenum pixel_format = GL_UNSIGNED_BYTE,
+                                 std::string origin_name = "");
+    Texture load_unnamed(Texture &stub, unsigned char *data);//obsolete, to be removed
+    Texture load_unnamed_arr(Texture &stub, unsigned char *data);//obsolete, to be removed
     Texture empty();
-    void save_png(Texture &t, std::string name);
-    void save_png_raw(unsigned char *data, int w, int h, int channels, std::string name);
-    void save_png_directly(Texture &t, std::string name);
-    void save_png_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
-    void save_bmp(Texture &t, std::string name);
-    void save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name);
-    void save_bmp_directly(Texture &t, std::string name);
-    void save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
     TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
     bool load_tex(std::string name, std::string path);
@@ -37,10 +28,20 @@ public:
     void set_textures_tag(int tag);
     void clear_unnamed_with_tag(int tag);
     void delete_tex(Texture &t);
+
+    void save_png(Texture &t, std::string name);
+    void save_png_raw(unsigned char *data, int w, int h, int channels, std::string name);
+    void save_png_directly(Texture &t, std::string name);
+    void save_png_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
+    void save_bmp(Texture &t, std::string name);
+    void save_bmp_raw(unsigned char *data, int w, int h, int channels, std::string name);
+    void save_bmp_directly(Texture &t, std::string name);
+    void save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
 private:
     std::map<std::string, Texture> textures;
     std::map<GLuint, Texture> unnamed_textures;
     std::map<GLuint, Texture> unnamed_array_textures;
+    std::map<GLuint, Texture> unnamed_cube_textures;
 
     int current_textures_tag = 0; 
 };

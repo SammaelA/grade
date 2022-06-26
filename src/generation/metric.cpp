@@ -88,7 +88,7 @@ reference(_reference_image)
         h = (int)Quality::ULTRALOW;
         GLuint fbo;
         glGenFramebuffers(1, &fbo);
-        Texture ref_resized = textureManager.create_unnamed(w,h);
+        Texture ref_resized = textureManager.create_texture(w,h);
         PostFx copy = PostFx("copy.fs");
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);

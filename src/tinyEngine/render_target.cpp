@@ -1,4 +1,5 @@
 #include "render_target.h"
+#include "graphics_utils/texture_manager.h"
 
 bool RenderTarget::create(int w, int h)
 {
@@ -8,17 +9,12 @@ bool RenderTarget::create(int w, int h)
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
     glGenFramebuffers(1, &frBuffer);
 
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, texFmt, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    tex = textureManager.create_texture(width, height, texFmt, 1);
+    glBindTexture(GL_TEXTURE_2D, tex.texture);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     glBindFramebuffer(GL_FRAMEBUFFER, frBuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.texture, 0);
 
     unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, attachments);
@@ -42,6 +38,6 @@ void RenderTarget::target()
 }
 RenderTarget::~RenderTarget()
 {
-    glDeleteTextures(1, &tex);
-    glDeleteFramebuffers(1, &frBuffer);
+  textureManager.delete_tex(tex);
+  glDeleteFramebuffers(1, &frBuffer);
 }

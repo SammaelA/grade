@@ -252,7 +252,7 @@
             }
         }
 
-        Texture t = textureManager.create_unnamed(2*w+1, 2*h+1, false, 1);
+        Texture t = textureManager.create_texture(2*w+1, 2*h+1);
         t = textureManager.load_unnamed(t, image_data);
 
         delete[] image_data;

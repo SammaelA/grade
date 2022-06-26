@@ -27,7 +27,7 @@ glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 Texture load_reference(std::string name, int image_w, int image_h)
 {
     Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
-    Texture ref = textureManager.create_unnamed(image_w, image_h);
+    Texture ref = textureManager.create_texture(image_w, image_h);
     PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
 
     GLuint fbo;

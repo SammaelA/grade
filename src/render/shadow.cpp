@@ -6,7 +6,7 @@
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp.texture, 0);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
         shadow_camera.pos = 1500.f*light.dir;
         shadow_camera.front =  -shadow_camera.pos;
@@ -31,7 +31,7 @@
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcDepthTex, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcDepthTex.texture, 0);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);  
     }
     void ShadowMap::finish_trans_pass()
@@ -47,9 +47,8 @@
         SHADOW_HEIGHT = h;
         glGenFramebuffers(1, &depthMapFBO);  
 
-        glGenTextures(1, &depthMap);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        depthMap = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT16, 1, nullptr, GL_DEPTH_COMPONENT, GL_FLOAT);
+        glBindTexture(GL_TEXTURE_2D, depthMap.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -57,34 +56,31 @@
         float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);  
         
-        glGenTextures(1, &VSMdepthTex);
-        glBindTexture(GL_TEXTURE_2D, VSMdepthTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        VSMdepthTex = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        glBindTexture(GL_TEXTURE_2D, VSMdepthTex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor); 
        
-        glGenTextures(1, &srcDepthTex);
-        glBindTexture(GL_TEXTURE_2D, srcDepthTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        srcDepthTex = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        glBindTexture(GL_TEXTURE_2D, srcDepthTex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glGenTextures(1, &VSMdepthTexTemp);
-        glBindTexture(GL_TEXTURE_2D, VSMdepthTexTemp);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        VSMdepthTexTemp = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        glBindTexture(GL_TEXTURE_2D, VSMdepthTexTemp.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap.texture, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp.texture, 0);
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
@@ -98,8 +94,8 @@
     ShadowMap::~ShadowMap() 
     {
         delete postFx;
-        glDeleteTextures(1,&depthMap);
-        glDeleteTextures(1,&VSMdepthTex);
+        textureManager.delete_tex(depthMap);
+        textureManager.delete_tex(VSMdepthTex);
     }
     void ShadowMap::blur()
     {
@@ -108,14 +104,14 @@
         glDisable(GL_DEPTH_TEST);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTex, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTex.texture, 0);
         merge.use();
         merge.get_shader().texture("trans",srcDepthTex);
         merge.get_shader().texture("depth",VSMdepthTexTemp);
         merge.render();
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp.texture, 0);
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTex);
         postFx->get_shader().uniform("pass",0);
@@ -123,7 +119,7 @@
         postFx->render();
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTex, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTex.texture, 0);
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTexTemp);
         postFx->get_shader().uniform("pass",1);
