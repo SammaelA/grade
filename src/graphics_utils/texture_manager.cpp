@@ -22,15 +22,20 @@ Texture TextureManager::load_unnamed_arr(Texture &stub, unsigned char *data)
 }
 bool TextureManager::is_correct(Texture &t)
 {
-    return t.texture && t.texture != textures.at("texture not found").texture;
+    return t.texture != Texture::INVALID_ID && t.texture != get("texture not found").texture;
 }
 Texture TextureManager::get(std::string name)
 {
     auto t_it = textures.find(name);
     if (t_it == textures.end())
-        return textures.at("texture not found");
+        return Texture();
+    else if (t_it->second.texture == Texture::INVALID_ID)
+    {
+      textures.at(name) = load_tex(t_it->first, t_it->second.origin);
+      return textures.at(name);
+    }
     else
-        return textures.at(name);
+      return textures.at(name);
 }
 TextureManager::TextureManager()
 {
@@ -115,29 +120,43 @@ TextureManager::TextureManager(std::string base_path, Block &textures_used)
     
     for (int i=0;i<paths.size();i++)
     {
-        load_tex(names[i], image::base_img_path + paths[i]);
+      textures.emplace(names[i], Texture(Texture::INVALID_ID, GL_TEXTURE_2D, 1,1,1,0,1,GL_RGBA8,image::base_img_path + paths[i]));
     }
     debugl(10,"textures loaded %d\n",textures.size());
 }
-
-bool TextureManager::load_tex(std::string name, std::string path)
+bool TextureManager::load_tex_to_catalog(std::string name, std::string path)
+{
+  if (get(name).texture != Texture::INVALID_ID)
+    return true;
+  
+  Texture t = load_tex(name, path);
+  if (t.texture != Texture::INVALID_ID)
+  {
+    textures.emplace(name, t);
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+Texture TextureManager::load_tex(std::string name, std::string path)
 {
     try
     {
         auto ptr = image::load(path);
         if (!ptr)
-            return false;
+            return Texture();
         Texture t = create_texture(ptr->w, ptr->h, GL_RGBA8, 9, ptr->pixels, GL_RGBA, GL_UNSIGNED_BYTE, path);
-        textures.emplace(name, t);
         mipmap(t, ptr->w, ptr->h, 9);
         SDL_FreeSurface(ptr);
+        return t;
     }
     catch (const std::exception &e)
     {
         logerr("texture not found %s", path.c_str());
-        return false;
+        return Texture();
     }
-    return true;
 }
 
 Texture TextureManager::load_unnamed_tex(std::string path)

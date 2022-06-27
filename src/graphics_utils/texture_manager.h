@@ -21,7 +21,8 @@ public:
     Texture empty();
     TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
-    bool load_tex(std::string name, std::string path);
+    Texture load_tex(std::string name, std::string path);
+    bool load_tex_to_catalog(std::string name, std::string path);
     Texture load_unnamed_tex(std::string path);
     bool is_correct(Texture &t);
     void clear_unnamed();

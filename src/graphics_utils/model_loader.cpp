@@ -99,7 +99,7 @@ Model *load_model_from_obj(std::string name, Texture &tex)
     std::string obj_filename = base_path + "/" + folder_name + "/" + obj->get_string("obj", "");
     std::string obj_color_tex = base_path + "/" + folder_name + "/" + obj->get_string("color", "");
 
-    bool success = textureManager.load_tex(name + "_tex", obj_color_tex);
+    bool success = textureManager.load_tex_to_catalog(name + "_tex", obj_color_tex);
     if (!success)
     {
         logerr("texture manager cannot load file %s", obj_color_tex.c_str());
