@@ -515,7 +515,8 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
     std::chrono::steady_clock::time_point tt2 = std::chrono::steady_clock::now();
     glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
 
-    for (auto &type : types_descs)
+
+    auto rend_lod = [&](TypeDescriptionForRender &type)
     {
         if (type.imp)
         {
@@ -545,6 +546,15 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
             glMultiDrawElementsIndirectCountARB(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)mdrd.cmd_buffer_offset,
                                                 mdrd.current_types_offset, mdrd.max_models, mdrd.cmd_size);
         }
+    };
+    if (explicit_lod >= 0)
+      rend_lod(types_descs.back());
+    else
+    {
+      for (auto &type : types_descs)
+      {
+        rend_lod(type);
+      }
     }
     ts.resolve();
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

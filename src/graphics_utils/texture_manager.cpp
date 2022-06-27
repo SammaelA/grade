@@ -8,22 +8,8 @@
 
 long tex_mem = 0;
 int tex_count = 0;
-const int mipLevelCount = 5;
+long calls = 0;
 
-Texture TextureManager::load_unnamed(Texture &stub, unsigned char *data)
-{
-  Texture t = create_texture(stub.W, stub.H, GL_RGBA8, stub.mip_levels, (void*)data);
-  return t;
-}
-Texture TextureManager::load_unnamed_arr(Texture &stub, unsigned char *data)
-{
-  Texture t = create_texture_array(stub.W, stub.H, stub.layers, GL_RGBA8, stub.mip_levels, (void*)data);
-  return t;
-}
-bool TextureManager::is_correct(Texture &t)
-{
-    return t.texture != Texture::INVALID_ID && t.texture != get("texture not found").texture;
-}
 Texture TextureManager::get(std::string name)
 {
     auto t_it = textures.find(name);
@@ -41,6 +27,10 @@ TextureManager::TextureManager()
 {
     Texture t = empty();
     textures.emplace("empty",t);
+}
+TextureManager::~TextureManager()
+{
+  clear_unnamed();
 }
 void mipmap(Texture t, int w, int h, int mips = 9)
 {
@@ -182,6 +172,11 @@ Texture TextureManager::load_unnamed_tex(std::string path)
 Texture TextureManager::create_texture(int w, int h, GLenum format, int mip_levels, void *data,
                                        GLenum data_format, GLenum pixel_format, std::string origin_name)
 {
+  calls++;
+  clean_unused();
+
+  tex_count++;
+  tex_mem += 4*w*h;
   GLuint texture;
   GLuint type = GL_TEXTURE_2D;
   glGenTextures(1, &texture);
@@ -208,6 +203,12 @@ Texture TextureManager::create_texture(int w, int h, GLenum format, int mip_leve
 
 Texture TextureManager::create_texture_cube(int w, int h, GLenum format, int mip_levels)
 {
+  calls++;
+  clean_unused();
+
+  tex_count++;
+  tex_mem += 4*6*w*h;
+
   GLuint texture;
   GLuint type = GL_TEXTURE_CUBE_MAP;
   glGenTextures(1, &texture);
@@ -232,6 +233,12 @@ Texture TextureManager::create_texture_cube(int w, int h, GLenum format, int mip
 Texture TextureManager::create_texture_array(int w, int h, int layers, GLenum format, int mip_levels,
                                              void *data, GLenum data_format, GLenum pixel_format, std::string origin_name)
 {
+  calls++;
+  clean_unused();
+
+  tex_count++;
+  tex_mem += 4*w*h*layers;
+
   GLuint texture;
   GLuint type = GL_TEXTURE_2D_ARRAY;
   glGenTextures(1, &texture);
@@ -252,7 +259,7 @@ Texture TextureManager::create_texture_array(int w, int h, int layers, GLenum fo
 
 Texture TextureManager::empty()
 {
-    return Texture(0, GL_TEXTURE_2D, 1, 1, 1, -1, 1, GL_RGBA8);
+    return Texture(Texture::INVALID_ID, GL_TEXTURE_2D, 1, 1, 1, -1, 1, GL_RGBA8);
 }
 void TextureManager::clear_unnamed()
 {
@@ -264,6 +271,10 @@ void TextureManager::clear_unnamed()
     
     for (auto const &p : unnamed_cube_textures)
         glDeleteTextures(1, &(p.second.texture));
+}
+void TextureManager::clean_unused()
+{
+  clear_unnamed_with_tag(-1);
 }
 void TextureManager::set_textures_tag(int tag)
 {
@@ -277,7 +288,7 @@ void TextureManager::clear_unnamed_with_tag(int tag)
 
     for (auto const &p : unnamed_textures)
     {
-        if (p.second.tag != tag)
+        if ((p.second.tag != tag || tag < 0) && (ref_count.at(p.first) > 1))
             unnamed_new.emplace(p);
         else
         {
@@ -290,7 +301,7 @@ void TextureManager::clear_unnamed_with_tag(int tag)
     
     for (auto const &p : unnamed_array_textures)
     {
-        if (p.second.tag != tag)
+        if ((p.second.tag != tag || tag < 0) && (ref_count.at(p.first) > 1))
             unnamed_array_new.emplace(p);
         else
         {
@@ -303,7 +314,7 @@ void TextureManager::clear_unnamed_with_tag(int tag)
 
     for (auto const &p : unnamed_cube_textures)
     {
-        if (p.second.tag != tag)
+        if ((p.second.tag != tag || tag < 0) && (ref_count.at(p.first) > 1))
             unnamed_cube_new.emplace(p);
         else
         {
@@ -441,6 +452,8 @@ void TextureManager::save_bmp_directly(Texture &t, std::string name)
 }
 void TextureManager::delete_tex(Texture &t)
 {
+  if (t.texture == Texture::INVALID_ID)
+    return;
     if (t.type == GL_TEXTURE_2D)
     {
         auto it = unnamed_textures.find(t.texture);

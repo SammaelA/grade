@@ -304,7 +304,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     checkForGlErrors("render grass", true);
     if (render_mode != 2 && groveRenderer)
     {
-      groveRenderer->render(forced_LOD, projection, camera.camera(), camera,
+      groveRenderer->render(groveRenderer->get_max_LOD(), projection, camera.camera(), camera,
                                  glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0);
     }

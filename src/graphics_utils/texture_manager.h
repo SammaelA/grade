@@ -7,6 +7,7 @@ struct Block;
 class TextureManager
 {
 public:
+  friend class Texture;
     const static int baseMipLevelCount = 1;
 
     Texture get(std::string name);
@@ -16,16 +17,12 @@ public:
     Texture create_texture_array(int w, int h, int layers, GLenum format = GL_RGBA8, int mip_levels = baseMipLevelCount, 
                                  void *data = nullptr, GLenum data_format = GL_RGBA, GLenum pixel_format = GL_UNSIGNED_BYTE,
                                  std::string origin_name = "");
-    Texture load_unnamed(Texture &stub, unsigned char *data);//obsolete, to be removed
-    Texture load_unnamed_arr(Texture &stub, unsigned char *data);//obsolete, to be removed
     Texture empty();
     TextureManager();
+    ~TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
-    Texture load_tex(std::string name, std::string path);
     bool load_tex_to_catalog(std::string name, std::string path);
     Texture load_unnamed_tex(std::string path);
-    bool is_correct(Texture &t);
-    void clear_unnamed();
     void set_textures_tag(int tag);
     void clear_unnamed_with_tag(int tag);
     void delete_tex(Texture &t);
@@ -39,6 +36,11 @@ public:
     void save_bmp_directly(Texture &t, std::string name);
     void save_bmp_raw_directly(unsigned char *data, int w, int h, int channels, std::string name);
 private:
+    void clear_unnamed();
+    void clean_unused();
+    Texture load_tex(std::string name, std::string path);
+
+    std::map<GLuint, int> ref_count;
     std::map<std::string, Texture> textures;
     std::map<GLuint, Texture> unnamed_textures;
     std::map<GLuint, Texture> unnamed_array_textures;

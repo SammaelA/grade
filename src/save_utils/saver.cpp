@@ -176,10 +176,10 @@ bool load(FILE *f, Texture &t)
     status = status && 4*t.W*t.H*t.layers;
 
     if (status && t.type == GL_TEXTURE_2D)
-        t = textureManager.load_unnamed(t,pixels);
+        t = textureManager.create_texture(t.W, t.H, GL_RGBA8, t.mip_levels, (void*)pixels);
     else if (status && t.type == GL_TEXTURE_2D_ARRAY)
     {
-        t = textureManager.load_unnamed_arr(t,pixels);
+        t = textureManager.create_texture_array(t.W, t.H, t.layers, GL_RGBA8, t.mip_levels, (void*)pixels);
     }
     else
     {

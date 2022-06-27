@@ -252,8 +252,7 @@
             }
         }
 
-        Texture t = textureManager.create_texture(2*w+1, 2*h+1);
-        t = textureManager.load_unnamed(t, image_data);
+        Texture t = textureManager.create_texture(2*w+1, 2*h+1, GL_RGBA8, 1, image_data, GL_RGBA);
 
         delete[] image_data;
         return t;

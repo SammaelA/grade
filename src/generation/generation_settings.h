@@ -23,9 +23,9 @@ struct GroveGenerationData
     int synts_precision;
     float clustering_max_individual_distance = 0.7;
     ImpostorBaker::ImpostorGenerationParams impostor_generation_params;
-    Quality bill_1_quality = Quality::MEDIUM;
-    Quality bill_2_quality = Quality::LOW;
-    unsigned task = GENERATE | CLUSTERIZE | BILLBOARDS | IMPOSTORS | MODELS;
+    Quality bill_1_quality = Quality::LOW_AS_F;
+    Quality bill_2_quality = Quality::LOW_AS_F;
+    unsigned task = MINIMUM_FOR_RENDER;
     glm::vec3 pos;
     glm::vec3 size;
     std::string name;

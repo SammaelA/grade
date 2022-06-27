@@ -661,6 +661,15 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
                                       bool alpha_tex_needed)
 {
     auto &atl = grove.groveTexturesAtlas;
+    atl.leaves_tex_map.clear();
+    atl.wood_tex_map.clear();
+    atl.atlases_valid = false;
+    atl.maps_valid = false;
+    if (atl.leavesAtlas)
+      delete atl.leavesAtlas;
+    if (atl.woodAtlas)
+      delete atl.woodAtlas;
+
     std::vector<Texture> unique_wood_texs;
     std::vector<Texture> unique_leaves_texs;
     std::vector<bool> ids_found = std::vector<bool>(1024, false);
