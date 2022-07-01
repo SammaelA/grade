@@ -424,7 +424,7 @@ namespace scene_gen
     {
       generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, ctx.global_mask, ctx.cells_x, ctx.cells_y, i));
       std::atomic<bool> ab(false);
-      thread_finished.push_back(ab);                                      
+      thread_finished.push_back(ab);                                                                         
     }
 
     int cur_job = 0;
@@ -439,39 +439,46 @@ namespace scene_gen
       }
     }
 
-    std::vector<std::thread> threads;
     for (auto *j : generationJobs)
     {
       j->prepare_dependencies();
     }
-    for (auto *j : generationJobs)
+    if (jobs_cnt > 1)
     {
-      threads.push_back(std::thread(&GenerationJob::generate, j));
-    }
-
-    for (auto &t : threads)
-    {
-      t.detach();
-    }
-
-    bool threads_working = true;
-    while (threads_working)
-    {
-      std::lock(rawTreesDatabase.database_lock, ctx_lock);
-      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      rawTreesDatabase.pack_ready(packer, ctx, false);
-      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-      float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-      if (ms > 0.1)
-        logerr("clustering took %.1f ms", ms);
-      rawTreesDatabase.database_lock.unlock();
-      ctx_lock.unlock();
-
-      threads_working = false;
-      for (auto fin : thread_finished)
+      std::vector<std::thread> threads;
+      for (auto *j : generationJobs)
       {
-        threads_working = threads_working || !fin._a.load();
+        threads.push_back(std::thread(&GenerationJob::generate, j));
       }
+
+      for (auto &t : threads)
+      {
+        t.detach();
+      }
+
+      bool threads_working = true;
+      while (threads_working)
+      {
+        std::lock(rawTreesDatabase.database_lock, ctx_lock);
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        rawTreesDatabase.pack_ready(packer, ctx, false);
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        if (ms > 0.1)
+          logerr("clustering took %.1f ms", ms);
+        rawTreesDatabase.database_lock.unlock();
+        ctx_lock.unlock();
+
+        threads_working = false;
+        for (auto fin : thread_finished)
+        {
+          threads_working = threads_working || !fin._a.load();
+        }
+      }
+    }
+    else if (jobs_cnt == 1)
+    {
+      generationJobs[0]->generate();
     }
     for (auto *j : generationJobs)
       delete j;
@@ -479,4 +486,4 @@ namespace scene_gen
     rawTreesDatabase.pack_ready(packer, ctx, true);
     packer.prepare_grove_atlas(ctx.scene->grove, 512, 512, true, true, true);
   }
-};
+}
