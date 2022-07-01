@@ -6,14 +6,19 @@
 #include "common_utils/sun.h"
 #include <chrono>
 #include <atomic>
+#include <numeric>
 
 using namespace glm;
 
 std::atomic<int> sum_memory(0);
 std::atomic<int> sum_allocs(1);
+#define LIN(x,y,z, mx, my, mz) ((mx)*(my)*(z) + (mx)*(y) + (x))
+
 glm::ivec3 vox_sizes(glm::vec3 sizes, float voxel_size)
 {
-    return glm::ivec3(MAX(1,sizes.x/voxel_size),MAX(1,sizes.y/voxel_size),MAX(1,sizes.z/voxel_size));
+  glm::ivec3 vsz = glm::ivec3(MAX(1,sizes.x/voxel_size - 0.5),MAX(1,sizes.y/voxel_size - 0.5),MAX(1,sizes.z/voxel_size - 0.5));
+  //logerr("vsz %f %f %f %d %d %d",sizes.x, sizes.y, sizes.z, vsz.x, vsz.y, vsz.z);
+  return vsz;
 }
 int LVC_divisible(int a, int b)
 {
@@ -43,13 +48,16 @@ LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size /
     lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
     lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
 }
-LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size, int _mip_levels, int _mip_decrease):
+LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size, int _mip_levels, int _mip_decrease, int preferred_block_size):
 voxel_size(vox_size)
 {
     center = cent;
     mip_levels = _mip_levels;
     mip_decrease = _mip_decrease;
-    block_size = (mip_levels == 1) ? 5 : 1;
+    if (preferred_block_size == 1 || preferred_block_size == get_default_block_size())
+      block_size = preferred_block_size;
+    else
+      block_size = (mip_levels == 1) ? get_default_block_size() : 1;
     block_cnt = block_size*block_size*block_size;
     vox_x = LVC_divisible(sizes.x, block_size);
     vox_y = LVC_divisible(sizes.y, block_size);
@@ -95,63 +103,94 @@ LightVoxelsCube(source,
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes, int size_decrease, glm::vec2 min_max):
 LightVoxelsCube(source,
                 source->pos_to_voxel(pos),
-                vox_sizes(sizes,source->voxel_size*size_decrease),
+                vox_sizes(sizes,source->voxel_size),
                 size_decrease,
                 min_max)
 
 {
     glm::ivec3 vsz = vox_sizes(sizes, source->voxel_size);
     glm::ivec3 vox_pos = source->pos_to_voxel(pos);
-    if (size_decrease > 1 && (vsz.x % size_decrease || vsz.y % size_decrease || vsz.z % size_decrease))
+    glm::vec3 diff = 2.0f*sizes - (get_bbox().max_pos - get_bbox().min_pos);
+    if (length(diff) > source->voxel_size)
     {
-        debug("warning: trying to get slice [cent: %d %d %d, size: %d %d %d] of volumetric occlusion \
-               with size_decrease = %d. It will make the real size smaller %d %d %d\n",vox_pos.x,vox_pos.y,vox_pos.z,
-               vsz.x,vsz.y,vsz.z, size_decrease, source->vox_x, source->vox_y, source->vox_z);
+        debug("warning: trying to get slice [cent: %d %d %d, size: %d %d %d] of volumetric occlusion [%d %d %d] with size_decrease = %d. It will make the real size smaller. Diff (%f %f %f)\n",
+               vox_pos.x,vox_pos.y,vox_pos.z,
+               vsz.x,vsz.y,vsz.z, source->vox_x, source->vox_y, source->vox_z, size_decrease, diff);
     }
     center = pos;
 }
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source, glm::ivec3 vox_pos, glm::ivec3 src_vox_sizes, int size_decrease, glm::vec2 min_max):
-LightVoxelsCube(source->voxel_to_pos(vox_pos),src_vox_sizes/size_decrease,source->voxel_size*size_decrease,
-                source->mip_levels, source->mip_decrease)
+LightVoxelsCube(source->voxel_to_pos(vox_pos),
+                ((2*src_vox_sizes + 1)/size_decrease - 1)/2,
+                source->voxel_size*size_decrease,
+                source->mip_levels, source->mip_decrease,
+                1)
 {
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     glm::ivec3 vox_sizes = glm::ivec3(vox_x, vox_y, vox_z);
     //logerr("creating voxels %d %d %d from %d %d %d",get_vox_sizes().x,get_vox_sizes().y,get_vox_sizes().z,
-    //source->get_vox_sizes().x,source->get_vox_sizes().y,source->get_vox_sizes().z);
+    //       source->get_vox_sizes().x,source->get_vox_sizes().y,source->get_vox_sizes().z);
 
-    for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
+    if (size_decrease == source->block_size && src_vox_sizes.x <= source->vox_x && src_vox_sizes.y <= source->vox_y && src_vox_sizes.z <= source->vox_z)
     {
+      //fast copy src block to dst voxel
+      glm::ivec3 bl_src_start = (source->get_vox_sizes() - src_vox_sizes)/source->block_size;
+      for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
+      {
         for (int j = -vox_sizes.y; j <= +vox_sizes.y; j++)
         {
-            for (int k = -vox_sizes.z; k <= +vox_sizes.z; k++)
-            {
-                float occ = 0;
-                int sm = 0;
-                for (int x0 = 0; x0 < size_decrease; x0+=(size_decrease - 1)/2)
-                {
-                    for (int y0 = 0; y0 < size_decrease; y0+=(size_decrease - 1)/2)
-                    {
-                        for (int z0 = 0; z0 < size_decrease; z0+=(size_decrease - 1)/2)
-                        {
-                            int x = size_decrease*i + x0 + vox_pos.x;
-                            int y = size_decrease*j + y0 + vox_pos.y;
-                            int z = size_decrease*k + z0 + vox_pos.z;
-                            if (source->in_voxel_cube(x,y,z))
-                            {
-                                float f = source->get_occlusion_voxel_unsafe(x,y,z);
-                                if (f >= min_max.x && f < min_max.y)
-                                {
-                                    occ += f;
-                                    sm ++;
-                                }
-                            }
-                        }
-                    }
-                }
-                voxels[v_to_i(i,j,k)] = sm > 0 ? occ/sm : 0;
-            }
+          for (int k = -vox_sizes.z; k <= +vox_sizes.z; k++)
+          {
+            int bl_st = source->block_cnt*LIN(bl_src_start.x + i + vox_sizes.x, 
+                                              bl_src_start.y + j + vox_sizes.y, 
+                                              bl_src_start.z + k + vox_sizes.z, 
+                                              source->block_x, source->block_y, source->block_z);
+            float r = std::accumulate(source->voxels + bl_st, source->voxels + bl_st + source->block_cnt, 0, std::plus<int>());;
+            voxels[v_to_i(i,j,k)] = r/source->block_cnt;
+          }
         }
+      }
+    }
+    else
+    {
+      for (int i = -vox_sizes.x; i <= +vox_sizes.x; i++)
+      {
+          for (int j = -vox_sizes.y; j <= +vox_sizes.y; j++)
+          {
+              for (int k = -vox_sizes.z; k <= +vox_sizes.z; k++)
+              {
+                  float occ = 0;
+                  int sm = 0;
+                  for (int x0 = 0; x0 < size_decrease; x0+=(size_decrease - 1)/2)
+                  {
+                      for (int y0 = 0; y0 < size_decrease; y0+=(size_decrease - 1)/2)
+                      {
+                          for (int z0 = 0; z0 < size_decrease; z0+=(size_decrease - 1)/2)
+                          {
+                              int x = size_decrease*i + x0 + vox_pos.x;
+                              int y = size_decrease*j + y0 + vox_pos.y;
+                              int z = size_decrease*k + z0 + vox_pos.z;
+                              if (source->in_voxel_cube(x,y,z))
+                              {
+                                  float f = source->get_occlusion_voxel_unsafe(x,y,z);
+                                  if (f >= min_max.x && f < min_max.y)
+                                  {
+                                      occ += f;
+                                      sm ++;
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  voxels[v_to_i(i,j,k)] = sm > 0 ? occ/sm : 0;
+              }
+          }
+      }
     }
     prepare_mip_levels();
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    float time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    logerr("copy voxels decreased size took %.2f ms", 0.001*time);
 }
 void LightVoxelsCube::get_data(float **data, glm::ivec3 &size)
 {
@@ -203,7 +242,8 @@ glm::vec3 LightVoxelsCube::get_center()
 }
 AABB LightVoxelsCube::get_bbox()
 {
-    return AABB(voxel_to_pos(-get_vox_sizes()), voxel_to_pos(get_vox_sizes()));
+  glm::vec3 hv = glm::vec3(0.5f*voxel_size, 0.5f*voxel_size, 0.5f*voxel_size);
+  return AABB(voxel_to_pos(-get_vox_sizes())-hv, voxel_to_pos(get_vox_sizes())+hv);
 }
 float LightVoxelsCube::get_voxel_size()
 {
@@ -409,8 +449,6 @@ glm::ivec3 LightVoxelsCube::pos_to_block(glm::vec3 pos)
                       ((int)(pos.y / voxel_size) + vox_y) / block_size,
                       ((int)(pos.z / voxel_size) + vox_z) / block_size);
 }
-
-#define LIN(x,y,z, mx, my, mz) ((mx)*(my)*(z) + (mx)*(y) + (x))
 
 void LightVoxelsCube::fill_blocks(glm::ivec3 from, glm::ivec3 to, float val)
 {

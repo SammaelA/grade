@@ -12,7 +12,7 @@ struct LightVoxelsCube
 {
 public:
     LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);
-    LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size, int mip_levels = 1, int mip_decrease = 2);
+    LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size, int mip_levels = 1, int mip_decrease = 2, int preferred_block_size=-1);
     LightVoxelsCube(LightVoxelsCube *source);
     LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes, int size_decrease = 1, 
                     glm::vec2 min_max = glm::vec2(0,1e10));
@@ -70,6 +70,7 @@ public:
     void read_func_simple(const std::function<void(float )> reader);
     void relocate(glm::vec3 new_pos) { center = new_pos; }
     int get_block_size() { return block_size; }
+    static int get_default_block_size() { return 5; }
 private:
     struct LightParams
     {

@@ -28,11 +28,10 @@ namespace scene_gen
 
   std::mutex ctx_lock;
   std::vector<atomwrapper<bool>> thread_finished;
-  LightVoxelsCube *create_grove_voxels(std::vector<GrovePrototype> &prototypes, std::vector<TreeTypeData> &types,
-                                      AABB &influence_box)
+  LightVoxelsCube *create_grove_voxels(Cell &c, std::vector<TreeTypeData> &types)
   {
     float min_scale_factor = 1000;
-    for (auto &prototype : prototypes)
+    for (auto &prototype : c.prototypes)
     {
       for (auto &p : prototype.possible_types)
       {
@@ -41,10 +40,23 @@ namespace scene_gen
       }
     }
     float vox_scale = 0.5/0.8;
-    glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
-    glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
+    glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+    glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
+    //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
+    //as the cell it belongs to
+    float small_voxel_size = LightVoxelsCube::get_default_block_size()*vox_scale*min_scale_factor;
+    float cell_size = (c.bbox.max_pos.x - c.bbox.min_pos.x);
+    int vox_cnt = ceil(0.5*(cell_size/small_voxel_size - 1));
+    small_voxel_size = cell_size/(2*vox_cnt + 1);
+    int vox_cnt_y = ceil(0.5*(2*voxel_sz.y/small_voxel_size - 1));
+    voxel_sz.y = 0.5*((2*vox_cnt_y + 1)*small_voxel_size);
 
-    return new LightVoxelsCube(voxel_center, voxel_sz, vox_scale*min_scale_factor, 1.0f);
+    auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size(), 1.0f);
+    //AABB box = v->get_bbox();
+    //debug("created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f]\n",
+    //box.min_pos.x,box.min_pos.y,
+    //box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z);
+    return v;
   }
 
   LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
@@ -66,16 +78,14 @@ namespace scene_gen
     return voxels;
   }
 
-  AABB get_influence_AABB(std::vector<GrovePrototype> &prototypes, std::vector<TreeTypeData> &types,
+  AABB get_influence_AABB(Cell &c, std::vector<TreeTypeData> &types,
                           Heightmap &h)
   {
-    if (prototypes.empty())
-      return AABB();
-    glm::vec2 pos = prototypes[0].pos;
-    glm::vec2 size = prototypes[0].size;
+    glm::vec2 pos = 0.5f*(c.bbox.max_pos + c.bbox.min_pos);
+    glm::vec2 size = 0.5f*(c.bbox.max_pos - c.bbox.min_pos);
 
     glm::vec3 max_tree_size = glm::vec3(0,0,0);
-    for (auto &prototype : prototypes)
+    for (auto &prototype : c.prototypes)
     {
       for (auto &p : prototype.possible_types)
       {
@@ -293,7 +303,6 @@ namespace scene_gen
     {
       //generation trees
       auto &c = cells[c_id];
-      auto influence_bb = c.influence_bbox;
 
       int tc = 0;
       for (auto &prot : c.prototypes)
@@ -315,7 +324,7 @@ namespace scene_gen
         ggd.trees_count = tc;
 
         GroveGenerator grove_gen;
-        LightVoxelsCube *voxels = create_grove_voxels(c.prototypes, ggd.types, influence_bb);
+        LightVoxelsCube *voxels = create_grove_voxels(c, ggd.types);
         
         ctx_lock.lock();
         auto func = [&](const std::pair<AABB, uint64_t> &p)
@@ -358,8 +367,13 @@ namespace scene_gen
         c.cell_lock.lock();
         if (c.voxels_small)
           delete c.voxels_small;
-        c.voxels_small = new LightVoxelsCube(voxels,glm::ivec3(0,0,0), voxels->get_vox_sizes(),
-                                             voxels->get_block_size() > 1 ? voxels->get_block_size() : 5,
+        glm::vec3 center = glm::vec3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
+                                     voxels->get_center().y,
+                                     0.5f*(c.bbox.max_pos.y + c.bbox.min_pos.y));
+        glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
+                                   0.5f*(voxels->get_bbox().max_pos.y - voxels->get_bbox().min_pos.y),
+                                   0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
+        c.voxels_small = new LightVoxelsCube(voxels, center, size, voxels->get_block_size() > 1 ? voxels->get_block_size() : 5,
                                              glm::vec2(0,1e8));
         c.cell_lock.unlock();
 
@@ -418,7 +432,7 @@ namespace scene_gen
     {
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene->heightmap));
+        cells[id].influence_bbox = get_influence_AABB(cells[id], ggd.types, *(ctx.scene->heightmap));
         generationJobs[cur_job]->waiting_cells.push_back(id);
         if (jobs_cnt > 1)
           cur_job = (cur_job + 1)%jobs_cnt;

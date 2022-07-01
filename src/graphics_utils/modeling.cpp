@@ -1140,14 +1140,20 @@ void visualize_light_voxels(LightVoxelsCube *voxels, Mesh *m, glm::vec3 pos, glm
     {
       for (float z = pos.z; z < pos.z + size.z; z += step.z)
       {
-        float occ = voxels->get_occlusion_simple_mip(glm::vec3(x, y, z), mip);
-        if (occ < threshold || occ > 1e8)
+        float occ = 1e8;
+        int bord = (x < pos.x + 0.5f*step.x) + (x > pos.x + size.x - step.x) +
+                   (y < pos.y + 0.5f*step.y) + (y > pos.y + size.y - step.y) +
+                   (z < pos.z + 0.5f*step.z) + (z > pos.z + size.z - step.z);
+        occ = voxels->get_occlusion_simple_mip(glm::vec3(x, y, z), mip);
+        if (bord < 2 && (occ < threshold || occ > 1e8))
           continue;
         glm::vec4 tex;
         tex.w = 1;
         tex.z = MIN(1, occ / (10 * threshold));
         tex.y = MIN(1, occ / (100 * threshold));
         tex.x = MIN(1, occ / (1000 * threshold));
+        if (bord >= 2)
+          tex = glm::vec4(1,0,0,1);
         Box b = Box(shift + glm::vec3(scale.x * x, scale.y * y, scale.z * z), glm::vec3(dot_size, 0, 0), glm::vec3(0, dot_size, 0), glm::vec3(0, 0, dot_size));
         body_to_model(&b, m, true, tex);
       }
