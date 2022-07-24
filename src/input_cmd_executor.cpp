@@ -5,6 +5,8 @@
 
 void InputCmdExecutor::execute(int max_cmd_count)
 {
+  std::vector<int> plants_ids_to_remove;//much faster to remove all plants in one call
+
   int cmd_left = max_cmd_count;
   while (!inputCmdBuffer.empty() && cmd_left != 0)
   {
@@ -146,6 +148,20 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_REMOVE_VOXELS_DEBUG:
       renderCmdBuffer.push(RC_REMOVE_VOXELS_DEBUG, cmd.args);
       break;
+    case IC_CLEAR_CELL:
+    {
+      int cell_id = cmd.args.get_int("cell_id",-1);
+      if (cell_id >=0 && cell_id < genCtx.cells.size())
+      {
+        auto &c = genCtx.cells[cell_id];
+        for (auto &t : genCtx.scene->grove.compressedTrees)
+        {
+          if (c.bbox.contains(glm::vec2(t.pos.x, t.pos.z)))
+            plants_ids_to_remove.push_back(t.global_id);
+        }
+      }
+    }
+      break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
@@ -155,5 +171,13 @@ void InputCmdExecutor::execute(int max_cmd_count)
     logerr("%s took %.3f ms", ToString(cmd.type), ms);
     inputCmdBuffer.pop();
     cmd_left--;
+  }
+
+  if (!plants_ids_to_remove.empty())
+  {
+    Block b;
+    b.add_arr("ids",plants_ids_to_remove);
+    genCmdBuffer.push(GC_REMOVE_PLANTS, b);
+    renderCmdBuffer.push(RC_UPDATE_TREES);
   }
 }

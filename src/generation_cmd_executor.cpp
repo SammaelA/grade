@@ -3,6 +3,7 @@
 #include "generation/scene_generator_helper.h"
 #include "generation/metainfo_manager.h"
 #include "generation/scene_generator_plants.h"
+#include "generation/grove_packer.h"
 
 namespace scene_gen
 {
@@ -322,6 +323,14 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       break;
     case GC_UPDATE_GLOBAL_MASK:
       scene_gen::create_global_grove_mask(genCtx.global_mask, genCtx);
+      break;
+    case GC_REMOVE_PLANTS:
+    {
+      std::vector<int> trees;
+      cmd.args.get_arr("ids",trees);
+      logerr("removing %d trees", trees.size());
+      GrovePacker::remove_trees_from_grove(genCtx.scene->grove, trees);
+    }
       break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

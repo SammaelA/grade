@@ -37,6 +37,7 @@ class GrovePacker
 public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                             bool visualize_clusters = false, bool save_cluster_data = false);
+    static void remove_trees_from_grove(GrovePacked &grove, std::vector<int> &ids);
     void init(Block &packing_params_block);
     void prepare_grove_atlas(GrovePacked &grove, int tex_x, int tex_y, bool save_atlases, bool save_png, 
                              bool alpha_tex_needed);
@@ -46,6 +47,7 @@ public:
     std::vector<FullClusteringData *> saved_clustering_data;
     static bool is_valid_tree(::Tree &t);
 protected:
+    static void recreate_compressed_trees(GrovePacked &grove);
     void add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                      bool visualize_clusters, bool save_cluster_data);
     void pack_layer(Block &settings, GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,

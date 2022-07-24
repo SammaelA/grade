@@ -18,6 +18,7 @@
 #include "clustering/clustering_debug_utils.h"
 #include "clustering/clustering_debug_status.h"
 #include "metainfo_manager.h"
+#include "scene_generator_helper.h"
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -572,6 +573,9 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 
     if (false)
     {
+      //There are some clustering algorithms (they are not used now and will probably be never used again),
+      //that uses footprint of a branch in voxel array to measure branches similarity
+      //this code creates such voxel array for this cases
         float r = sqrt(count);
         glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
         glm::vec3 vox_size = curGgd.size;
@@ -617,6 +621,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
                0, 1000, false, false, true, false);
 
     //transform_all_according_to_root(grove);
+    recreate_compressed_trees(grove);
     
     originalBranches.clear_removed();
     originalLeaves.clear_removed();
@@ -624,6 +629,75 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     delete (post_voxels);
     delete (post_seeder);
 }
+
+void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
+{
+  // fill tree structures
+  // TODO: work only with tree structures that changed after clustering
+  std::map<int, int> tree_by_id;
+  grove.compressedTrees.clear();
+  int j = 0;
+  for (auto &ib : grove.instancedBranches)
+  {
+    int branch_level = 1000;
+    if (ib.branches.empty())
+    {
+      logerr("instancedBranches contains malformed branch");
+      continue;
+    }
+    else
+    {
+      branch_level = grove.instancedCatalogue.get(ib.branches[0]).level;
+      if (branch_level > 1)
+      {
+        logerr("instancedBranches with level > 1 are not supported correctly for branch structure creation. It will be added to trunk directly");
+      }
+    }
+    for (int i = 0; i < ib.IDA.centers_par.size(); i++)
+    {
+      auto it = tree_by_id.find(ib.IDA.tree_ids[i]);
+      if (it == tree_by_id.end())
+      {
+        int global_id = ib.IDA.tree_ids[i];
+
+        it = tree_by_id.emplace(ib.IDA.tree_ids[i], grove.compressedTrees.size()).first;
+        grove.trees_by_global_id.emplace(global_id, grove.compressedTrees.size());
+        grove.compressedTrees.emplace_back();
+        grove.compressedTrees.back().global_id = ib.IDA.tree_ids[i];
+        grove.compressedTrees.back().LOD_roots.emplace_back();
+      }
+      auto &root = grove.compressedTrees[it->second].LOD_roots[0];
+      if (branch_level == 0)
+      {
+        if (root.model_num >= 0)
+          logerr("tree %d has more than one root node. It's strange", ib.IDA.tree_ids[i]);
+        else
+        {
+          grove.compressedTrees[it->second].pos = ib.IDA.centers_self[i];
+          root.model_num = j;
+          root.instance_num = i;
+        }
+      }
+      else
+      {
+        root.children.push_back(CompressedTree::Node(CompressedTree::MODEL, j, i));
+      }
+    }
+    j++;
+  }
+/*
+  for (auto &t : grove.compressedTrees)
+  {
+    debug("tree %d. Root {%d %d} childen:", t.LOD_roots[0].type, t.LOD_roots[0].model_num, t.LOD_roots[0].instance_num);
+    for (auto &n : t.LOD_roots[0].children)
+    {
+      debug("{%d %d}", n.model_num, n.instance_num);
+    }
+    debugnl();
+  }
+*/
+}
+
 void GrovePacker::base_init()
 {
     if (shared_context)
@@ -782,4 +856,87 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
         delete atl.leavesAtlas;
         atl.leavesAtlas = nullptr;
     }
+}
+
+void GrovePacker::remove_trees_from_grove(GrovePacked &grove, std::vector<int> &ids)
+{
+  //bitsets representing what to delete
+  std::vector<bool> models_to_delete(grove.instancedBranches.size(), false);
+  std::vector<std::vector<bool>> instances_to_delete(grove.instancedBranches.size());
+  std::vector<int> instances_detele_cnt(grove.instancedBranches.size(), 0);
+  {
+  int i=0;
+  for (auto &m : grove.instancedBranches)
+  {
+    instances_to_delete[i] = std::vector<bool>(m.IDA.centers_par.size(), false);
+    i++;
+  }
+  }
+
+  //filling these bitsets
+  for (int id : ids)
+  {
+    auto it = grove.trees_by_global_id.find(id);
+    if (it == grove.trees_by_global_id.end())
+      continue;
+    
+    std::vector<CompressedTree::Node> nodes = grove.compressedTrees[it->second].LOD_roots;
+    while (!nodes.empty())
+    {
+      std::vector<CompressedTree::Node> new_nodes;
+      for (auto &node : nodes)
+      {
+        if (node.type == CompressedTree::MODEL)
+        {
+          if (instances_to_delete[node.model_num][node.instance_num] == false)
+            instances_detele_cnt[node.model_num]++;
+          instances_to_delete[node.model_num][node.instance_num] = true;
+        }
+        new_nodes.insert(new_nodes.end(), node.children.begin(), node.children.end());
+      }
+      nodes = new_nodes;
+    }
+  }
+
+  {
+  int i=0;
+  for (auto &m : grove.instancedBranches)
+  {
+    if (instances_detele_cnt[i] == m.IDA.centers_par.size())
+      models_to_delete[i] = true;
+    i++;
+  }
+  }
+  //remove all needed structures in efficient way
+  {
+  int i=0;
+  auto it = grove.instancedBranches.begin();
+  while (it != grove.instancedBranches.end())
+  {
+    if (models_to_delete[i])
+    {
+      for (int id : it->branches)
+        grove.instancedCatalogue.remove(id);
+      it = grove.instancedBranches.erase(it);
+    }
+    else
+    {
+      for (int j=it->IDA.centers_par.size()-1;j>=0;j--)
+      {
+        if (instances_to_delete[i][j])
+        {
+          it->IDA.centers_par.erase(it->IDA.centers_par.begin()+j);
+          it->IDA.centers_self.erase(it->IDA.centers_self.begin()+j);
+          it->IDA.transforms.erase(it->IDA.transforms.begin()+j);
+          it->IDA.tree_ids.erase(it->IDA.tree_ids.begin()+j);
+          it->IDA.type_ids.erase(it->IDA.type_ids.begin()+j);
+        }
+      }
+      it++;
+    }
+    i++;
+  }
+  }
+  //recalculate tree structures as they contain positions of instances that may change
+  recreate_compressed_trees(grove);
 }

@@ -63,6 +63,33 @@ struct InstancedBranch
     BBox bbox;
 };
 
+struct CompressedTree
+{
+  enum NodeType
+  {
+    MODEL,
+    BILLBOARD,
+    IMPOSTOR
+  };
+  struct Node
+  {
+    Node() = default;
+    Node(NodeType t, int mn, int in)
+    {
+      type = t;
+      model_num = mn;
+      instance_num = in;
+    }
+    NodeType type = MODEL;
+    int model_num = -1;
+    int instance_num = -1;
+    std::vector<Node> children;
+  };
+
+  glm::vec3 pos;
+  std::vector<Node> LOD_roots;  //root node for every LOD that this tree has
+  int global_id;
+};
 struct GroveTexturesAtlas
 {
     bool atlases_valid = false;
@@ -81,7 +108,8 @@ struct GrovePacked
     std::list<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
     std::vector<ImpostorsData> impostors;
-
+    std::vector<CompressedTree> compressedTrees;
+    std::map<int, int> trees_by_global_id;
     GroveTexturesAtlas groveTexturesAtlas;
     GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
 };

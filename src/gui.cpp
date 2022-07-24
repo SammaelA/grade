@@ -44,6 +44,7 @@ void GUI::render_cell_info()
   ImGui::Begin("Cell info"); 
   ImGui::Text("Cell id: %d", appCtx.active_cell_id);
   ImGui::Checkbox("Show voxels array", &(cell.visualize_voxels_array));
+  bool remove_trees = ImGui::Button("Remove trees");
   ImGui::End();
 
   if (visualize_prev && !cell.visualize_voxels_array)
@@ -57,6 +58,12 @@ void GUI::render_cell_info()
     Block b;
     b.add_int("cell_id",appCtx.active_cell_id);
     inputCmdBuffer.push(InputCommands::IC_VISUALIZE_VOXELS_DEBUG, b);    
+  }
+  if (remove_trees)
+  {
+    Block b;
+    b.add_int("cell_id",appCtx.active_cell_id);
+    inputCmdBuffer.push(InputCommands::IC_CLEAR_CELL, b);  
   }
 }
 

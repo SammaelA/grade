@@ -12,7 +12,8 @@ struct Scene
         UNKNOWN,
         ERROR,
         SIMPLE_OBJECT,
-        DEBUG_MODEL
+        DEBUG_MODEL,
+        TREE
     };
     struct InstancedModel
     {
