@@ -73,7 +73,7 @@ namespace scene_gen
     c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1.0, 1, 2);
     auto func = [&](const std::pair<AABB, uint64_t> &p)
     {
-      c.voxels_small->add_AABB(p.first,false, 10000);
+      c.voxels_small->add_AABB(p.first,true, 10000);
     };
     ctx.objects_bvh.iterate_over_intersected_bboxes(c.voxels_small->get_bbox(), func);
   }

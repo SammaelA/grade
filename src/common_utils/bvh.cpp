@@ -11,14 +11,27 @@ void BVH::add_bboxes(std::vector<AABB> &bboxes, uint64_t tag)
 
 void BVH::remove_bboxes(int64_t tag)
 {
-    for (auto &p : obj_bboxes)
+  for (auto &p : obj_bboxes)
+  {
+    if (p.second == tag)
     {
-        if (p.second == tag)
-        {
-            p.second = 0;
-            removed_boxes_cnt++;
-        }
+      p.second = 0;
+      removed_boxes_cnt++;
     }
+  }
+}
+
+void BVH::remove_bboxes_iterate(int64_t tag, std::function<void(const std::pair<AABB, uint64_t> &)> func)
+{
+  for (auto &p : obj_bboxes)
+  {
+    if (p.second == tag)
+    {
+      func(p);
+      p.second = 0;
+      removed_boxes_cnt++;
+    }
+  }
 }
 
 void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const std::pair<AABB, uint64_t> &)> func, bool debug) const

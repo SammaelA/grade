@@ -157,9 +157,8 @@ namespace scene_gen
     {
       if (im.name == name)
       {
-        im.instances.push_back(transform);
         new_model = false;
-        pos = im.instances.size() - 1;
+        pos = im.instances.size();
         break;
       }
       model_num++;
@@ -170,18 +169,54 @@ namespace scene_gen
       ctx.scene->instanced_models.emplace_back();
       ctx.scene->instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene->instanced_models.back().tex);
       ctx.scene->instanced_models.back().model->update();
-      ctx.scene->instanced_models.back().instances.push_back(transform);
       ctx.scene->instanced_models.back().name = name;
       pos = 0;
     }
 
-    // logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
+    //add object to scene BVH
     auto &im = ctx.scene->instanced_models[model_num];
     std::vector<AABB> boxes;
     SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4 * ctx.biome_map_pixel_size, 1.1);
     uint64_t id = SceneGenHelper::pack_id(0, (int)Scene::SIMPLE_OBJECT, model_num, pos);
     ctx.objects_bvh.add_bboxes(boxes, id);
     ctx.objects_bvh.rebuild();
+
+    // get instance AABB
+    glm::vec3 mn_pos = boxes[0].min_pos;
+    glm::vec3 mx_pos = boxes[0].max_pos;
+    for (AABB &box : boxes)
+    {
+      mn_pos = min(mn_pos, box.min_pos);
+      mx_pos = max(mx_pos, box.max_pos);
+    }
+    
+    im.bboxes.push_back(AABB(mn_pos, mx_pos));
+    logerr("mn mx %f %f -- %f %f",mn_pos.x, mn_pos.z, mx_pos.x, mx_pos.z);
+    im.instances.push_back(transform);
+
+    //update voxel arrays in cells
+    glm::ivec2 c_ij_min = (glm::vec2(mn_pos.x, mn_pos.z) - ctx.start_pos) / ctx.cell_size;
+    c_ij_min = max(c_ij_min, glm::ivec2(0,0));
+    c_ij_min = min(c_ij_min, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
+    glm::ivec2 c_ij_max = (glm::vec2(mx_pos.x, mx_pos.z) - ctx.start_pos) / ctx.cell_size;
+    c_ij_max = max(c_ij_max, glm::ivec2(0,0));
+    c_ij_max = min(c_ij_max, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
+    logerr("%d %d -- %d %d",c_ij_min.x, c_ij_min.y, c_ij_max.x, c_ij_max.y);
+    for (int i=c_ij_min.x; i<=c_ij_max.x;i++)
+    {
+      for (int j=c_ij_min.y; j<=c_ij_max.y;j++)
+      {
+        Cell &c = ctx.cells[i * ctx.cells_y + j];
+        if (c.voxels_small)
+        {
+          for (auto &box : boxes)
+          {
+            if (c.voxels_small->get_bbox().intersects(box))
+              c.voxels_small->add_AABB(box,true, 10000);
+          }
+        }
+      }
+    }
     return id;
   }
 
@@ -294,7 +329,29 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         else
         {
           uint64_t id = SceneGenHelper::pack_id(unpacked_id.x, unpacked_id.y, unpacked_id.z, unpacked_id.w);
-          genCtx.objects_bvh.remove_bboxes(id);
+          auto func = [&](const std::pair<AABB, uint64_t> &p)
+          {
+            auto &ctx = genCtx;
+            glm::ivec2 c_ij_min = (glm::vec2(p.first.min_pos.x, p.first.min_pos.z) - ctx.start_pos) / ctx.cell_size;
+            c_ij_min = max(c_ij_min, glm::ivec2(0,0));
+            c_ij_min = min(c_ij_min, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
+            glm::ivec2 c_ij_max = (glm::vec2(p.first.max_pos.x, p.first.max_pos.z) - ctx.start_pos) / ctx.cell_size;
+            c_ij_max = max(c_ij_max, glm::ivec2(0,0));
+            c_ij_max = min(c_ij_max, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
+            logerr("%d %d -- %d %d",c_ij_min.x, c_ij_min.y, c_ij_max.x, c_ij_max.y);
+            for (int i=c_ij_min.x; i<=c_ij_max.x;i++)
+            {
+              for (int j=c_ij_min.y; j<=c_ij_max.y;j++)
+              {
+                Cell &c = ctx.cells[i * ctx.cells_y + j];
+                if (c.voxels_small)
+                {
+                  c.voxels_small->add_AABB(p.first,true, -10000);
+                }
+              }
+            }
+          };
+          genCtx.objects_bvh.remove_bboxes_iterate(id, func);
           genCtx.objects_bvh.rebuild();
           if (unpacked_id.y == Scene::ObjCategories::SIMPLE_OBJECT)
           {
@@ -306,7 +363,10 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
               if (inst_num >= 0 && inst_num < im.instances.size())
               {
                 if (im.instances.size() > 1)
+                {
                   im.instances.erase(im.instances.begin() + inst_num);
+                  im.bboxes.erase(im.bboxes.begin() + inst_num);
+                }
                 else
                   genCtx.scene->instanced_models.erase(genCtx.scene->instanced_models.begin() + m_num);
               }

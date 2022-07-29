@@ -953,7 +953,7 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
     {
       im.instances.push_back(transform);
       new_model = false;
-      pos = im.instances.size() - 1;
+      pos = im.instances.size();
       break;
     }
     model_num++;

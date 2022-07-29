@@ -21,6 +21,7 @@ struct Scene
         Texture tex;
         Model *model;
         std::vector<glm::mat4> instances;
+        std::vector<AABB> bboxes;
         InstancedModel();
     };
     Scene(){};

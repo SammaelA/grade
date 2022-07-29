@@ -276,11 +276,11 @@
         glm::vec2 mnp = (from - glm::vec2(pos.x,pos.y))/cell_size;
         glm::vec2 mxp = (to - glm::vec2(pos.x,pos.y))/cell_size;
         
-        float mn = FLT_MAX;
-        float mx = FLT_MIN;
+        float mn =  1e8;
+        float mx =  -1e8;
         glm::ivec2 mn_pos = glm::ivec2(-1,-1);
         glm::ivec2 mx_pos = glm::ivec2(-1,-1);
-        if (mnp.x < 0 || mnp.y < 0)
+        if (mnp.x < -w || mnp.y < -h)
         {
             mn = base_val;
             mx = base_val;
@@ -294,11 +294,12 @@
             mn_pos = glm::ivec2(w+1,h+1);
             mx_pos = glm::ivec2(w+1,h+1);
         }
-        for (int x = MAX(floor(mnp.x), 0);x<MIN(ceil(mxp.x),w);x++)
+        for (int x = MAX(floor(mnp.x), -w);x<MIN(ceil(mxp.x),w);x++)
         {
-            for (int y = MAX(floor(mnp.y), 0);y<MIN(ceil(mxp.y),h);y++)
+            for (int y = MAX(floor(mnp.y), -h);y<MIN(ceil(mxp.y),h);y++)
             {
                 float val = get(x,y);
+                logerr("%d %d %f %f", x, y, val, mn);
                 if (val > mx)
                 {
                     mx = val;
