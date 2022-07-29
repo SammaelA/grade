@@ -2,10 +2,13 @@
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
 #include <chrono>
+#include <set>
 
 void InputCmdExecutor::execute(int max_cmd_count)
 {
   std::vector<int> plants_ids_to_remove;//much faster to remove all plants in one call
+  std::set<int> cell_ids_to_update;
+  bool need_update_trees = false;
 
   int cmd_left = max_cmd_count;
   while (!inputCmdBuffer.empty() && cmd_left != 0)
@@ -105,11 +108,12 @@ void InputCmdExecutor::execute(int max_cmd_count)
         if (cmd.type == IC_PLANT_TREE_IMMEDIATE)
         {
           glm::ivec2 c_ij = (pos - genCtx.start_pos) / genCtx.cell_size;
+          int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
           Block cb;
-          cb.add_int("cell_id", c_ij.x*genCtx.cells_y + c_ij.y);
+          cb.add_int("cell_id", cell_id);
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
-          renderCmdBuffer.push(RC_UPDATE_CELL, cb);
-          renderCmdBuffer.push(RC_UPDATE_TREES);
+          cell_ids_to_update.emplace(cell_id);
+          need_update_trees = true;
         }
       }
       break;
@@ -129,6 +133,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
               if (p.trees_count > 0 || p.preplanted_trees.size() > 0)
               {
                 cb.add_int("cell_id", i*genCtx.cells_y + j);
+                cell_ids_to_update.emplace(i*genCtx.cells_y + j);
                 cells_to_update++;
               }
             }
@@ -137,8 +142,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
         if (cells_to_update > 0)
         {
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
-          renderCmdBuffer.push(RC_UPDATE_CELL, cb);
-          renderCmdBuffer.push(RC_UPDATE_TREES);
+          need_update_trees = true;
         }
       }
       break;
@@ -177,7 +181,25 @@ void InputCmdExecutor::execute(int max_cmd_count)
   {
     Block b;
     b.add_arr("ids",plants_ids_to_remove);
-    genCmdBuffer.push(GC_REMOVE_PLANTS, b);
-    renderCmdBuffer.push(RC_UPDATE_TREES);
+    genCmdBuffer.push(GC_REMOVE_TREES, b);
+    need_update_trees = true;
   }
+
+  if (!cell_ids_to_update.empty())
+  {
+      Block cb;
+    std::set<int> cells_deps = cell_ids_to_update;
+    for (auto &cell_id : cell_ids_to_update)
+    {
+
+      for (auto &dep : genCtx.cells[cell_id].depends)
+        cells_deps.emplace(dep);
+    }
+    for (auto &cell_id : cells_deps)
+      cb.add_int("cell_id", cell_id);
+    renderCmdBuffer.push(RC_UPDATE_CELL, cb);
+  }
+
+  if (need_update_trees)
+    renderCmdBuffer.push(RC_UPDATE_TREES);
 }

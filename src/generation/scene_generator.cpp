@@ -701,8 +701,7 @@ void GenerationJob::prepare_dependencies()
             auto &c = cells[ncid];
             if (c.status == Cell::CellStatus::WAITING && c.influence_bbox.intersects(cells[c_id].influence_bbox))
             {
-              cells[c_id].depends.push_back(ncid);
-              c.depends_from.push_back(c_id);
+              c.depends.push_back(c_id);
               search = true;
             }
           }
@@ -766,7 +765,7 @@ void GenerationJob::generate()
       ctx_lock.unlock();
 
       c.cell_lock.lock();
-      std::vector<int> deps = c.depends_from;
+      std::vector<int> deps = c.depends;
       c.cell_lock.unlock();
       for (auto &dep_cid : deps)
       {

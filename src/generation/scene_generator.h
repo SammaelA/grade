@@ -73,8 +73,7 @@ struct Cell
   int id = -1;
   AABB2D bbox;
   std::atomic<CellStatus> status;
-  std::vector<int> depends;//list of waiting cell (ids) that will use voxels from this cell
-  std::vector<int> depends_from;
+  std::vector<int> depends;
   std::vector<int> grass_patches;//set and used by grass generator
   std::vector<int> trees_patches;
   std::vector<std::pair<int,int>> biome_stat;//<biome_id, number_of_pixels> 
@@ -88,7 +87,6 @@ struct Cell
     status.store(cell.status);
     influence_bbox = cell.influence_bbox;
     depends = cell.depends;
-    depends_from = cell.depends_from;
 
     if (voxels_small || planar_occlusion || !grass_patches.empty())
     {

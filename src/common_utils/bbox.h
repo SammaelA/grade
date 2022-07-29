@@ -198,6 +198,13 @@ struct AABB2D
                (aabb.min_pos.y <= max_pos.y) &&
                (aabb.max_pos.y >= min_pos.y);
     }
+    inline bool intersectsXZ(const AABB &aabb) const
+    {
+        return (aabb.min_pos.x <= max_pos.x) &&
+               (aabb.max_pos.x >= min_pos.x) &&
+               (aabb.min_pos.z <= max_pos.y) &&
+               (aabb.max_pos.z >= min_pos.y);
+    }
     inline bool empty() const
     {
         return min_pos.x >= max_pos.x ||

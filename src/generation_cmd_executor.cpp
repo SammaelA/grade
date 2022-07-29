@@ -56,6 +56,8 @@ namespace scene_gen
         int id = i * ctx.cells_y + j;
         ctx.cells[id].id = id;
         ctx.cells[id].bbox = AABB2D(ctx.start_pos + ctx.cell_size * glm::vec2(i, j), ctx.start_pos + ctx.cell_size * glm::vec2(i + 1, j + 1));
+        ctx.cells[id].influence_bbox = AABB(glm::vec3(ctx.cells[id].bbox.min_pos.x, -10, ctx.cells[id].bbox.min_pos.y),
+                                            glm::vec3(ctx.cells[id].bbox.max_pos.x, 300, ctx.cells[id].bbox.max_pos.y));
       }
     }
 
@@ -72,6 +74,19 @@ namespace scene_gen
 
     ctx.scene->grove.center = ctx.center3;
     ctx.scene->grove.ggd_name = "blank";
+  }
+
+
+  AABB get_influence_AABB(Cell &c, const Heightmap &h)
+  {
+    glm::vec3 max_tree_size = glm::vec3(0.33f*(c.bbox.max_pos.x - c.bbox.min_pos.x),128,0.33f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
+    float min_hmap = 10000, max_hmap = 0;
+    h.get_min_max_imprecise(c.bbox.min_pos, c.bbox.max_pos, &min_hmap, &max_hmap);
+    float br = 5;
+    float min_y = min_hmap - br;
+    float max_y = max_hmap + max_tree_size.y;
+    return AABB(glm::vec3(c.bbox.min_pos.x - max_tree_size.x, min_y, c.bbox.min_pos.y - max_tree_size.z),
+                glm::vec3(c.bbox.max_pos.x + max_tree_size.x, max_y, c.bbox.max_pos.y + max_tree_size.z));
   }
 
   void create_heightmap(Block &settings, SceneGenerator::SceneGenerationContext &ctx)
@@ -221,6 +236,11 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       if (genCtx.scene->heightmap)
         delete genCtx.scene->heightmap;
       scene_gen::create_heightmap(cmd.args, genCtx);
+      if (genCtx.scene->heightmap)
+      {
+        for (auto &c : genCtx.cells)
+          c.influence_bbox = scene_gen::get_influence_AABB(c, *(genCtx.scene->heightmap));
+      }
       break;
     case GC_ADD_OBJECT:
       if (genCtx.scene->heightmap)
@@ -324,12 +344,12 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     case GC_UPDATE_GLOBAL_MASK:
       scene_gen::create_global_grove_mask(genCtx.global_mask, genCtx);
       break;
-    case GC_REMOVE_PLANTS:
+    case GC_REMOVE_TREES:
     {
       std::vector<int> trees;
       cmd.args.get_arr("ids",trees);
       logerr("removing %d trees", trees.size());
-      GrovePacker::remove_trees_from_grove(genCtx.scene->grove, trees);
+      scene_gen::remove_trees_from_scene(genCtx, trees);
     }
       break;
     default:

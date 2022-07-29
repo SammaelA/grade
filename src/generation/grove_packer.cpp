@@ -19,6 +19,7 @@
 #include "clustering/clustering_debug_status.h"
 #include "metainfo_manager.h"
 #include "scene_generator_helper.h"
+#include <set>
 
 GrovePacker::GrovePacker(bool shared_ctx)
 {
@@ -620,9 +621,12 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
                0, 1000, false, false, true, false);
 
-    //transform_all_according_to_root(grove);
+    grove.instancedBranchesDirect.clear();
+    grove.instancedBranchesDirect.reserve(grove.instancedBranches.size());
+    for (auto it = grove.instancedBranches.begin(); it != grove.instancedBranches.end(); it++)
+      grove.instancedBranchesDirect.emplace_back(it);
     recreate_compressed_trees(grove);
-    
+
     originalBranches.clear_removed();
     originalLeaves.clear_removed();
 
@@ -634,8 +638,11 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
 {
   // fill tree structures
   // TODO: work only with tree structures that changed after clustering
-  std::map<int, int> tree_by_id;
+  std::set<int> p_t_ids;
+  for (auto &t : grove.compressedTrees)
+    p_t_ids.emplace(t.global_id);
   grove.compressedTrees.clear();
+  grove.trees_by_global_id.clear();
   int j = 0;
   for (auto &ib : grove.instancedBranches)
   {
@@ -655,13 +662,12 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
     }
     for (int i = 0; i < ib.IDA.centers_par.size(); i++)
     {
-      auto it = tree_by_id.find(ib.IDA.tree_ids[i]);
-      if (it == tree_by_id.end())
+      auto it = grove.trees_by_global_id.find(ib.IDA.tree_ids[i]);
+      if (it == grove.trees_by_global_id.end())
       {
         int global_id = ib.IDA.tree_ids[i];
 
-        it = tree_by_id.emplace(ib.IDA.tree_ids[i], grove.compressedTrees.size()).first;
-        grove.trees_by_global_id.emplace(global_id, grove.compressedTrees.size());
+        it = grove.trees_by_global_id.emplace(global_id, grove.compressedTrees.size()).first;
         grove.compressedTrees.emplace_back();
         grove.compressedTrees.back().global_id = ib.IDA.tree_ids[i];
         grove.compressedTrees.back().LOD_roots.emplace_back();
@@ -685,17 +691,36 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
     }
     j++;
   }
-/*
+
   for (auto &t : grove.compressedTrees)
   {
-    debug("tree %d. Root {%d %d} childen:", t.LOD_roots[0].type, t.LOD_roots[0].model_num, t.LOD_roots[0].instance_num);
-    for (auto &n : t.LOD_roots[0].children)
+    glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
+    glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+    std::vector<CompressedTree::Node> nodes = t.LOD_roots;
+    while (!nodes.empty())
     {
-      debug("{%d %d}", n.model_num, n.instance_num);
+      std::vector<CompressedTree::Node> new_nodes;
+      for (auto &node : nodes)
+      {
+        if (node.type == CompressedTree::MODEL)
+        {
+          auto &bb = grove.instancedBranchesDirect[node.model_num]->bbox;
+          auto &tr = grove.instancedBranchesDirect[node.model_num]->IDA.transforms[node.instance_num];
+          glm::mat4 rot_inv(glm::vec4(bb.a, 0), glm::vec4(bb.b, 0), glm::vec4(bb.c, 0), glm::vec4(0, 0, 0, 1));
+          glm::vec3 pos = rot_inv * glm::vec4(bb.position, 1.0f);
+          glm::vec3 p1 = tr * glm::vec4(pos,1);
+          glm::vec3 p2 = tr * glm::vec4(pos + bb.sizes.x*bb.a + bb.sizes.y*bb.b + bb.sizes.z*bb.c,1);
+          min_pos = min(min_pos, p1);
+          min_pos = min(min_pos, p2);
+          max_pos = max(max_pos, p1);
+          max_pos = max(max_pos, p2);
+        }
+        new_nodes.insert(new_nodes.end(), node.children.begin(), node.children.end());
+      }
+      nodes = std::move(new_nodes);
     }
-    debugnl();
+    t.bbox = AABB(min_pos, max_pos);
   }
-*/
 }
 
 void GrovePacker::base_init()

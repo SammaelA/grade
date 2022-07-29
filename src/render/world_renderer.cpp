@@ -119,6 +119,16 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
         if (pres == GroveRenderer::Precision::LOW)
             LODs_dists.back() = -10;
         groveRenderer = new GroveRenderer(&source, &gen_data, 5, LODs_dists, print_perf, pres);
+      /*for (auto &t : source.compressedTrees)
+        {
+          std::vector<AABB> boxes = {t.bbox};
+          std::vector<glm::vec3> colors = {glm::vec3(1,0,0)};
+          Model *m = new Model();
+          visualizer::visualize_aabb(boxes, m, colors);
+          m->update();
+          debug_models.push_back(DebugModel{m, 0ul, true});
+        }
+      */
     }
     void WorldRenderer::remove_grove()
     {

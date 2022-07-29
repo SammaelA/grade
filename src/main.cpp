@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);
     GUI gui = GUI(appContext, sceneGenerationContext);
     InputHandler inputHandler = InputHandler(appContext, sceneGenerationContext);
-    if (argc == 2)
+    if (argc >= 2)
     {
       std::string str(argv[1]);
       read_commands_from_string(str);

@@ -26,7 +26,7 @@ void read_commands_from_string(std::string &block_str)
   bool command_block = add_command_block(b);
   if (!command_block)
   {
-    std::string blk_path = b.get_string("pack_path", "");
+    std::string blk_path = block_str;
     if (blk_path != "")
     {
       // list of commands from file

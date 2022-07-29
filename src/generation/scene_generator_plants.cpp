@@ -28,26 +28,28 @@ namespace scene_gen
 
   std::mutex ctx_lock;
   std::vector<atomwrapper<bool>> thread_finished;
-  LightVoxelsCube *create_grove_voxels(Cell &c, std::vector<TreeTypeData> &types)
+  
+  float get_small_voxels_size(Cell &c)
   {
-    float min_scale_factor = 1000;
-    for (auto &prototype : c.prototypes)
-    {
-      for (auto &p : prototype.possible_types)
-      {
-        auto &type = types[p.first];
-        min_scale_factor = MIN(min_scale_factor,type.get_params()->get_scale_factor());
-      }
-    }
     float vox_scale = 0.5/0.8;
-    glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
-    glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
-    //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
-    //as the cell it belongs to
-    float small_voxel_size = LightVoxelsCube::get_default_block_size()*vox_scale*min_scale_factor;
+    int block_sz = LightVoxelsCube::get_default_block_size();
+    float small_voxel_size = block_sz*vox_scale;
     float cell_size = (c.bbox.max_pos.x - c.bbox.min_pos.x);
     int vox_cnt = ceil(0.5*(cell_size/small_voxel_size - 1));
+    vox_cnt = block_sz*ceil(vox_cnt/(block_sz + 0.0));
     small_voxel_size = cell_size/(2*vox_cnt + 1);
+
+    return small_voxel_size;
+  }
+  
+  LightVoxelsCube *create_grove_voxels(Cell &c)
+  {
+    glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+    glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
+
+    //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
+    //as the cell it belongs to
+    float small_voxel_size = get_small_voxels_size(c);
     int vox_cnt_y = ceil(0.5*(2*voxel_sz.y/small_voxel_size - 1));
     voxel_sz.y = 0.5*((2*vox_cnt_y + 1)*small_voxel_size);
 
@@ -59,55 +61,82 @@ namespace scene_gen
     return v;
   }
 
-  LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
+  void create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
   {
-    float vox_scale = 4*ctx.biome_map_pixel_size;
-    glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
-    glm::vec3 voxel_center = c.influence_bbox.min_pos + voxel_sz;
-    
-    auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale, 1.0f);
-
+    float vox_scale = get_small_voxels_size(c);
+    glm::vec3 center = glm::vec3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
+                                 0.5f*(c.influence_bbox.max_pos.y + c.influence_bbox.min_pos.y),
+                                 0.5f*(c.bbox.max_pos.y + c.bbox.min_pos.y));
+    glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
+                               0.5f*(c.influence_bbox.max_pos.y - c.influence_bbox.min_pos.y),
+                               0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
+    c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1.0, 1, 2);
     auto func = [&](const std::pair<AABB, uint64_t> &p)
     {
-      logerr("added bbox");
-      voxels->add_AABB(p.first,false, 10000);
+      c.voxels_small->add_AABB(p.first,false, 10000);
     };
-    logerr("added bbox 1");
-    ctx.objects_bvh.iterate_over_intersected_bboxes(voxels->get_bbox(), func);
-
-    return voxels;
+    ctx.objects_bvh.iterate_over_intersected_bboxes(c.voxels_small->get_bbox(), func);
   }
 
-  AABB get_influence_AABB(Cell &c, std::vector<TreeTypeData> &types,
-                          Heightmap &h)
+  enum {BRANCH_OCC_MUL = 100};
+  
+  void add_trees_to_voxels_array(int cnt, Tree *trees, LightVoxelsCube *voxels)
   {
-    glm::vec2 pos = 0.5f*(c.bbox.max_pos + c.bbox.min_pos);
-    glm::vec2 size = 0.5f*(c.bbox.max_pos - c.bbox.min_pos);
-
-    glm::vec3 max_tree_size = glm::vec3(0,0,0);
-    for (auto &prototype : c.prototypes)
+    float blm = BRANCH_OCC_MUL/pow(voxels->get_voxel_size(),3);
+    for (int i=0;i<cnt;i++)
     {
-      for (auto &p : prototype.possible_types)
+      for (auto bh : trees[i].branchHeaps)
       {
-        auto &type = types[p.first];
-        max_tree_size = max(max_tree_size,type.get_params()->get_tree_max_size());
+        for (auto &b : bh->branches)
+        {
+          for (auto &seg : b.segments)
+          {
+            float v = (1.0/3)*PI*length(seg.begin - seg.end)*
+                      (seg.rel_r_begin*seg.rel_r_begin + seg.rel_r_begin*seg.rel_r_end + seg.rel_r_end*seg.rel_r_end);
+            voxels->set_occluder_simple(seg.end, blm*v);
+          }
+        }
       }
     }
-
-    float min_hmap = 0, max_hmap = 0;
-    h.get_min_max_imprecise(pos - size, pos + size, &min_hmap, &max_hmap);
-    float br = 5;
-    float min_y = min_hmap - br;
-    float max_y = max_hmap + max_tree_size.y;
-    float y_center = (min_y + max_y)/2;
-    float y_sz = (max_y - min_y)/2;
-
-    glm::vec3 voxel_sz = glm::vec3(size.x + max_tree_size.x, y_sz, size.y + max_tree_size.z);
-    glm::vec3 voxel_center = glm::vec3(pos.x, y_center, pos.y);
-    return AABB(voxel_center - voxel_sz, voxel_center + voxel_sz);
-
   }
 
+  void remove_compressed_tree_from_voxels_array(SceneGenerator::SceneGenerationContext &ctx, CompressedTree &t, LightVoxelsCube *voxels)
+  {
+    if (!voxels)
+      return;
+    
+    float blm = BRANCH_OCC_MUL/pow(voxels->get_voxel_size(),3);
+    std::vector<CompressedTree::Node> nodes = t.LOD_roots;
+    while (!nodes.empty())
+    {
+      std::vector<CompressedTree::Node> new_nodes;
+      for (auto &node : nodes)
+      {
+        if (node.type == CompressedTree::MODEL)
+        {
+          auto &tr = ctx.scene->grove.instancedBranchesDirect[node.model_num]->IDA.transforms[node.instance_num];
+          float size_mul_sq = 1;
+          for (auto &br_id : ctx.scene->grove.instancedBranchesDirect[node.model_num]->branches)
+          {
+            auto &b = ctx.scene->grove.instancedCatalogue.get(br_id);
+            if (b.joints.size() < 2)
+              continue;
+            glm::vec3 prev_pos = tr * glm::vec4(b.joints[0].pos, 1);
+            for (int i=1;i<b.joints.size();i++)
+            {
+              glm::vec3 pos = tr * glm::vec4(b.joints[i].pos, 1);
+              float v = (1.0/3)*PI*length(pos - prev_pos)*size_mul_sq*
+                      (b.joints[i-1].r*b.joints[i-1].r + b.joints[i-1].r*b.joints[i].r + b.joints[i].r*b.joints[i].r);
+              voxels->set_occluder_simple(pos, -blm*v);
+              prev_pos = pos;
+            }
+          }
+        }
+        new_nodes.insert(new_nodes.end(), node.children.begin(), node.children.end());
+      }
+      nodes = std::move(new_nodes);
+    }
+  }
   class RawTreesDatabase
   {
   public:
@@ -158,7 +187,6 @@ namespace scene_gen
       }
       else
       {
-        //logerr("%d do not fin in %d/%d", cnt, arrays[i].cnt_real, arrays[i].cnt_max);
         //cannot place more trees here, array is filled
         arrays[i].filled = true;
       }
@@ -247,6 +275,8 @@ namespace scene_gen
   {
     for (int c_id : waiting_cells)
     {
+      if (!cells[c_id].depends.empty())
+        continue;
       int tc = 0;
       for (auto &prot : cells[c_id].prototypes)
         tc += prot.trees_count;
@@ -256,7 +286,7 @@ namespace scene_gen
       int j0 = c_id % cells_y;
       int i0 = c_id / cells_y;
       bool search = true;
-      int d = 3;
+      int d = 1;
       int d_prev = 0;
       while (search)
       {
@@ -267,13 +297,12 @@ namespace scene_gen
             int j = j0 + j1;
 
             int ncid = i*cells_y + j;
-            if (i >= 0 && j >= 0 && i < cells_x && j < cells_y && ncid > c_id)
+            if (i >= 0 && j >= 0 && i < cells_x && j < cells_y && c_id != ncid)
             {
               auto &c = cells[ncid];
-              if (c.status == Cell::CellStatus::WAITING && c.influence_bbox.intersects(cells[c_id].influence_bbox))
+              if (c.influence_bbox.intersects(cells[c_id].influence_bbox))
               {
                 cells[c_id].depends.push_back(ncid);
-                c.depends_from.push_back(c_id);
                 search = true;
               }
             }
@@ -289,12 +318,12 @@ namespace scene_gen
         d++;
         d_prev = d;
       }
-      /*
+      
       debug("depends of cell %d: ",c_id);
       for (auto &d : cells[c_id].depends)
         debug("%d ",d);
       debugnl();
-      */
+      
     }
   }
   void GenerationJob::generate()
@@ -324,23 +353,18 @@ namespace scene_gen
         ggd.trees_count = tc;
 
         GroveGenerator grove_gen;
-        LightVoxelsCube *voxels = create_grove_voxels(c, ggd.types);
-        
-        ctx_lock.lock();
-        auto func = [&](const std::pair<AABB, uint64_t> &p)
-        {
-          voxels->add_AABB(p.first,false, 10000);
-        };
-        ctx.objects_bvh.iterate_over_intersected_bboxes(voxels->get_bbox(), func);
-        ctx_lock.unlock();
-
+        LightVoxelsCube *voxels = create_grove_voxels(c);
         c.cell_lock.lock();
-        std::vector<int> deps = c.depends_from;
+        std::vector<int> deps = c.depends;
+        if (!c.voxels_small)
+          create_cell_small_voxels(c, ctx);
         voxels->add_voxels_cube(c.voxels_small);
         c.cell_lock.unlock();
         for (auto &dep_cid : deps)
         {
           cells[dep_cid].cell_lock.lock();
+          if (!cells[dep_cid].voxels_small)
+            create_cell_small_voxels(cells[dep_cid], ctx);
           voxels->add_voxels_cube(cells[dep_cid].voxels_small);
           cells[dep_cid].cell_lock.unlock();
         }
@@ -362,21 +386,20 @@ namespace scene_gen
           rawTreesDatabase.database_lock.lock();
           rawTreesDatabase.generation_finished(token);
           rawTreesDatabase.database_lock.unlock();
-        }
-        
-        c.cell_lock.lock();
-        if (c.voxels_small)
-          delete c.voxels_small;
-        glm::vec3 center = glm::vec3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
-                                     voxels->get_center().y,
-                                     0.5f*(c.bbox.max_pos.y + c.bbox.min_pos.y));
-        glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
-                                   0.5f*(voxels->get_bbox().max_pos.y - voxels->get_bbox().min_pos.y),
-                                   0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
-        c.voxels_small = new LightVoxelsCube(voxels, center, size, voxels->get_block_size() > 1 ? voxels->get_block_size() : 5,
-                                             glm::vec2(0,1e8));
-        c.cell_lock.unlock();
 
+          if (c.voxels_small)
+          {
+            c.cell_lock.lock();
+            add_trees_to_voxels_array(ggd.trees_count, token.trees, c.voxels_small);
+            c.cell_lock.unlock();
+          }
+          for (auto &dep_cid : deps)
+          {
+            cells[dep_cid].cell_lock.lock();
+            add_trees_to_voxels_array(ggd.trees_count, token.trees, cells[dep_cid].voxels_small);
+            cells[dep_cid].cell_lock.unlock();
+          }
+        }
         delete voxels;
       } 
 
@@ -432,7 +455,6 @@ namespace scene_gen
     {
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        cells[id].influence_bbox = get_influence_AABB(cells[id], ggd.types, *(ctx.scene->heightmap));
         generationJobs[cur_job]->waiting_cells.push_back(id);
         if (jobs_cnt > 1)
           cur_job = (cur_job + 1)%jobs_cnt;
@@ -485,5 +507,33 @@ namespace scene_gen
 
     rawTreesDatabase.pack_ready(packer, ctx, true);
     packer.prepare_grove_atlas(ctx.scene->grove, 512, 512, true, true, true);
+  }
+
+  void remove_trees_from_scene(SceneGenerator::SceneGenerationContext &ctx, std::vector<int> &ids)
+  {
+    for (int &id : ids)
+    {
+      auto it = ctx.scene->grove.trees_by_global_id.find(id);
+      logerr("%d %d", id, ctx.scene->grove.trees_by_global_id.size());
+      if (it != ctx.scene->grove.trees_by_global_id.end())
+      {
+        auto &t = ctx.scene->grove.compressedTrees[it->second];
+        glm::vec2 pos_xz = glm::vec2(t.pos.x, t.pos.z);
+        glm::ivec2 c_ij = (pos_xz - ctx.start_pos)/ctx.cell_size;
+        int cell_id = c_ij.x*ctx.cells_y + c_ij.y;
+        if (cell_id >= 0 && cell_id < ctx.cells.size())
+        {
+          logerr("remove tree cell %d %d", cell_id, t.global_id);
+          remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cell_id].voxels_small);
+          for (int &cid : ctx.cells[cell_id].depends)
+          {
+            if (ctx.cells[cid].bbox.intersectsXZ(t.bbox))
+              logerr("remove tree cell %d %d", cid, t.global_id);
+              remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cid].voxels_small);
+          }
+        }
+      }
+    }
+    GrovePacker::remove_trees_from_grove(ctx.scene->grove, ids);
   }
 }

@@ -88,6 +88,7 @@ struct CompressedTree
 
   glm::vec3 pos;
   std::vector<Node> LOD_roots;  //root node for every LOD that this tree has
+  AABB bbox;
   int global_id;
 };
 struct GroveTexturesAtlas
@@ -110,6 +111,7 @@ struct GrovePacked
     std::vector<ImpostorsData> impostors;
     std::vector<CompressedTree> compressedTrees;
     std::map<int, int> trees_by_global_id;
+    std::vector<std::list<InstancedBranch>::const_iterator> instancedBranchesDirect;
     GroveTexturesAtlas groveTexturesAtlas;
     GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
 };
