@@ -13,6 +13,7 @@ public:
   void render_debug_settings();
   void render_cell_info();
   void render_tree_plant_info();
+  void render_model_creation_info();
 private:
   AppContext &appCtx;
   const SceneGenerator::SceneGenerationContext &genCtx;

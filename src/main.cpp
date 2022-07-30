@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
         gui.render_debug_settings();
         gui.render_cell_info();
         gui.render_tree_plant_info();
+        gui.render_model_creation_info();
     };
 
     Tiny::loop([&]() {});

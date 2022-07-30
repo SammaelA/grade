@@ -45,6 +45,10 @@ struct AppContext
   int active_cell_id = -1;
 
   std::string active_tree_type = "small_oak_simplified";
+  std::string active_object_name = "farm_1";
+  glm::vec3 cur_obj_angles = glm::vec3(0,0,0);
+  bool cur_object_on_terrain = false;
+  float cur_obj_scale = 1;
 };
 
 class InputHandler

@@ -1,5 +1,7 @@
 #include "app.h"
 #include "cmd_buffers.h"
+#define GLM_ENABLE_EXPERIMENTAL 1
+#include <glm/gtx/euler_angles.hpp>
 
 FpsCounter::FpsCounter()
 {
@@ -95,20 +97,6 @@ void InputHandler::handle_input(Event &event)
     ctx.camera.pos += speed * ctx.camera.up;
   if (event.active[SDLK_c])
     ctx.camera.pos -= speed * ctx.camera.up;
-  if (event.active[SDLK_y])
-    ctx.forced_LOD = -1;
-  if (event.active[SDLK_u])
-    ctx.forced_LOD = 0;
-  if (event.active[SDLK_i])
-    ctx.forced_LOD = 1;
-  if (event.active[SDLK_o])
-    ctx.forced_LOD = 2;
-  //if (event.active[SDLK_p])
-  //  ctx.forced_LOD = 3;
-  if (event.active[SDLK_LEFTBRACKET])
-    ctx.forced_LOD = 4;
-  if (event.active[SDLK_RIGHTBRACKET])
-    ctx.forced_LOD = 5;
   if (event.active[SDLK_h])
   {
     //ctx.save_to_hydra = true;
@@ -129,7 +117,18 @@ void InputHandler::handle_input(Event &event)
     inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
     event.active[SDLK_p] = false;
   }
-
+  if (event.active[SDLK_o])
+  {
+    Block b;
+    glm::mat4 transform = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(ctx.mouseWorldPosType)), glm::vec3(ctx.cur_obj_scale));
+    glm::mat4 transform2 = glm::eulerAngleXYZ(ctx.cur_obj_angles.x, ctx.cur_obj_angles.y, ctx.cur_obj_angles.z);
+    transform = transform*transform2;
+    b.set_string("name", ctx.active_object_name);
+    b.set_bool("on_terrain", ctx.cur_object_on_terrain);
+    b.set_mat4("transform", transform);
+    inputCmdBuffer.push(InputCommands::IC_ADD_OBJECT, b);
+    event.active[SDLK_o] = false;
+  }
   if (event.click[SDL_BUTTON_RIGHT])
   {
     glm::vec2 pos_xz = glm::vec2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
