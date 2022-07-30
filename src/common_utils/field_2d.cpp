@@ -299,7 +299,6 @@
             for (int y = MAX(floor(mnp.y), -h);y<MIN(ceil(mxp.y),h);y++)
             {
                 float val = get(x,y);
-                logerr("%d %d %f %f", x, y, val, mn);
                 if (val > mx)
                 {
                     mx = val;

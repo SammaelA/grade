@@ -191,7 +191,6 @@ namespace scene_gen
     }
     
     im.bboxes.push_back(AABB(mn_pos, mx_pos));
-    logerr("mn mx %f %f -- %f %f",mn_pos.x, mn_pos.z, mx_pos.x, mx_pos.z);
     im.instances.push_back(transform);
 
     //update voxel arrays in cells
@@ -201,7 +200,6 @@ namespace scene_gen
     glm::ivec2 c_ij_max = (glm::vec2(mx_pos.x, mx_pos.z) - ctx.start_pos) / ctx.cell_size;
     c_ij_max = max(c_ij_max, glm::ivec2(0,0));
     c_ij_max = min(c_ij_max, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
-    logerr("%d %d -- %d %d",c_ij_min.x, c_ij_min.y, c_ij_max.x, c_ij_max.y);
     for (int i=c_ij_min.x; i<=c_ij_max.x;i++)
     {
       for (int j=c_ij_min.y; j<=c_ij_max.y;j++)
@@ -338,7 +336,6 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
             glm::ivec2 c_ij_max = (glm::vec2(p.first.max_pos.x, p.first.max_pos.z) - ctx.start_pos) / ctx.cell_size;
             c_ij_max = max(c_ij_max, glm::ivec2(0,0));
             c_ij_max = min(c_ij_max, glm::ivec2(ctx.cells_x-1, ctx.cells_y-1));
-            logerr("%d %d -- %d %d",c_ij_min.x, c_ij_min.y, c_ij_max.x, c_ij_max.y);
             for (int i=c_ij_min.x; i<=c_ij_max.x;i++)
             {
               for (int j=c_ij_min.y; j<=c_ij_max.y;j++)
