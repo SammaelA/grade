@@ -48,6 +48,8 @@ void InputCmdExecutor::execute(int max_cmd_count)
       }
       genCmdBuffer.push(GC_INIT_SCENE, cmd.args);
       renderCmdBuffer.push(RC_GLOBAL_PARAMS_UPDATE);
+      inputCmdBuffer.pop();
+      return;
       break;
     case IC_REMOVE_OBJECT:
       for (int i = 0; i < cmd.args.size(); i++)
@@ -94,27 +96,22 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (!genCtx.inited)
         break;
       glm::vec4 world_pos_type = cmd.args.get_vec4("world_pos_type");
-      if (SceneGenHelper::is_terrain(world_pos_type) && 
-          abs(world_pos_type.x - genCtx.start_pos.x) < genCtx.heightmap_size.x &&
-          abs(world_pos_type.z - genCtx.start_pos.y) < genCtx.heightmap_size.y)
-      {
-        //we can plant the tree actually
-        Block b;
-        glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
-        b.add_vec2("pos", pos);
-        b.add_string("type_name", cmd.args.get_string("type_name"));
-        genCmdBuffer.push(GC_PLANT_TREE, b);
+      // we can plant the tree actually
+      Block b;
+      glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
+      b.add_vec2("pos", pos);
+      b.add_string("type_name", cmd.args.get_string("type_name"));
+      genCmdBuffer.push(GC_PLANT_TREE, b);
 
-        if (cmd.type == IC_PLANT_TREE_IMMEDIATE)
-        {
-          glm::ivec2 c_ij = (pos - genCtx.start_pos) / genCtx.cell_size;
-          int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
-          Block cb;
-          cb.add_int("cell_id", cell_id);
-          genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
-          cell_ids_to_update.emplace(cell_id);
-          need_update_trees = true;
-        }
+      if (cmd.type == IC_PLANT_TREE_IMMEDIATE)
+      {
+        glm::ivec2 c_ij = (pos - genCtx.start_pos) / genCtx.cell_size;
+        int cell_id = c_ij.x * genCtx.cells_y + c_ij.y;
+        Block cb;
+        cb.add_int("cell_id", cell_id);
+        genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
+        cell_ids_to_update.emplace(cell_id);
+        need_update_trees = true;
       }
       break;
     }
@@ -165,6 +162,17 @@ void InputCmdExecutor::execute(int max_cmd_count)
         }
       }
     }
+      break;
+    case IC_EXIT:
+      //genCmdBuffer.push(GC_CLEAR_SCENE);
+      //genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
+      //renderCmdBuffer.push(RC_UPDATE_HMAP);
+      //renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+      inputCmdBuffer.pop();
+      inputCmdBuffer.push(IC_EXIT_FINISH);
+      return;
+    case IC_EXIT_FINISH:
+      exit(0);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

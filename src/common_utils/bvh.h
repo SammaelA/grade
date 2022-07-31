@@ -21,7 +21,7 @@ struct BVH
     std::vector<std::pair<AABB, uint64_t>> obj_bboxes;//<bbox, tag>
 
     std::vector<BVH_node> nodes;
-    int root_node_idx;
+    int root_node_idx = -1;
     int added_boxes_cnt = 0;
     int removed_boxes_cnt = 0;
     //different bboxes can have the same tag is they will always be added and deleted together

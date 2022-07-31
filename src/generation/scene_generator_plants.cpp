@@ -50,9 +50,6 @@ namespace scene_gen
     //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
     //as the cell it belongs to
     float small_voxel_size = get_small_voxels_size(c);
-    int vox_cnt_y = ceil(0.5*(2*voxel_sz.y/small_voxel_size - 1));
-    voxel_sz.y = 0.5*((2*vox_cnt_y + 1)*small_voxel_size);
-
     auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size(), 1.0f);
     //AABB box = v->get_bbox();
     //debug("created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f]\n",
@@ -70,7 +67,7 @@ namespace scene_gen
     glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
                                0.5f*(c.influence_bbox.max_pos.y - c.influence_bbox.min_pos.y),
                                0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
-    c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1.0, 1, 2);
+    c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1.0, 1, 2, 1);
     auto func = [&](const std::pair<AABB, uint64_t> &p)
     {
       c.voxels_small->add_AABB(p.first,true, 10000);
@@ -358,14 +355,14 @@ namespace scene_gen
         std::vector<int> deps = c.depends;
         if (!c.voxels_small)
           create_cell_small_voxels(c, ctx);
-        voxels->add_voxels_cube(c.voxels_small);
+        voxels->add_voxels_cube(c.voxels_small, true);
         c.cell_lock.unlock();
         for (auto &dep_cid : deps)
         {
           cells[dep_cid].cell_lock.lock();
           if (!cells[dep_cid].voxels_small)
             create_cell_small_voxels(cells[dep_cid], ctx);
-          voxels->add_voxels_cube(cells[dep_cid].voxels_small);
+          voxels->add_voxels_cube(cells[dep_cid].voxels_small, true);
           cells[dep_cid].cell_lock.unlock();
         }
 
@@ -514,7 +511,6 @@ namespace scene_gen
     for (int &id : ids)
     {
       auto it = ctx.scene->grove.trees_by_global_id.find(id);
-      logerr("%d %d", id, ctx.scene->grove.trees_by_global_id.size());
       if (it != ctx.scene->grove.trees_by_global_id.end())
       {
         auto &t = ctx.scene->grove.compressedTrees[it->second];
@@ -523,12 +519,10 @@ namespace scene_gen
         int cell_id = c_ij.x*ctx.cells_y + c_ij.y;
         if (cell_id >= 0 && cell_id < ctx.cells.size())
         {
-          logerr("remove tree cell %d %d", cell_id, t.global_id);
           remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cell_id].voxels_small);
           for (int &cid : ctx.cells[cell_id].depends)
           {
             if (ctx.cells[cid].bbox.intersectsXZ(t.bbox))
-              logerr("remove tree cell %d %d", cid, t.global_id);
               remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cid].voxels_small);
           }
         }

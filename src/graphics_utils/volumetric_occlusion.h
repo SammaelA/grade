@@ -11,7 +11,7 @@
 struct LightVoxelsCube
 {
 public:
-    LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2);
+    LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision, int mip_levels = 1, int mip_decrease = 2, int preferred_block_size=-1);
     LightVoxelsCube(glm::vec3 center, glm::ivec3 sizes, float voxel_size, int mip_levels = 1, int mip_decrease = 2, int preferred_block_size=-1);
     LightVoxelsCube(LightVoxelsCube *source);
     LightVoxelsCube(LightVoxelsCube *source, glm::vec3 pos, glm::vec3 sizes, int size_decrease = 1, 
@@ -55,7 +55,7 @@ public:
     void add_body(Body *b, float opacity = 1e9, bool solid = true, float infl_distance = 0, float base_infl_occ = 0);
     void add_AABB(const AABB &box, bool precise, float opacity = 1e9);
     void add_heightmap(Heightmap &h);
-    void add_voxels_cube(LightVoxelsCube *cube);
+    void add_voxels_cube(LightVoxelsCube *cube, bool fast_fill_expected = false);
     void calculte_precise_occlusion_from_bodies();
     void get_data(float **data, glm::ivec3 &size);
     AABB get_bbox();

@@ -1,5 +1,6 @@
 #include "app.h"
 #include "cmd_buffers.h"
+#include "generation/scene_generator_helper.h"
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/gtx/euler_angles.hpp>
 
@@ -114,7 +115,11 @@ void InputHandler::handle_input(Event &event)
     Block b;
     b.add_vec4("world_pos_type", ctx.mouseWorldPosType);
     b.add_string("type_name", ctx.active_tree_type);
-    inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
+    bool can_plant_tree_here = (SceneGenHelper::is_terrain(ctx.mouseWorldPosType) && 
+          abs(ctx.mouseWorldPosType.x - genCtx.start_pos.x) < genCtx.heightmap_size.x &&
+          abs(ctx.mouseWorldPosType.z - genCtx.start_pos.y) < genCtx.heightmap_size.y);
+    if (can_plant_tree_here)
+      inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
     event.active[SDLK_p] = false;
   }
   if (event.active[SDLK_o])

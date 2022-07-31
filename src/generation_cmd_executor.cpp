@@ -79,12 +79,15 @@ namespace scene_gen
 
   AABB get_influence_AABB(Cell &c, const Heightmap &h)
   {
-    glm::vec3 max_tree_size = glm::vec3(0.33f*(c.bbox.max_pos.x - c.bbox.min_pos.x),128,0.33f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
+    glm::vec3 max_tree_size = glm::vec3(0.33f*(c.bbox.max_pos.x - c.bbox.min_pos.x),200,0.33f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
     float min_hmap = 10000, max_hmap = 0;
     h.get_min_max_imprecise(c.bbox.min_pos, c.bbox.max_pos, &min_hmap, &max_hmap);
     float br = 5;
     float min_y = min_hmap - br;
     float max_y = max_hmap + max_tree_size.y;
+    //TODO: handle different y of neighbour cells
+    min_y = 0;
+    max_y = max_tree_size.y;
     return AABB(glm::vec3(c.bbox.min_pos.x - max_tree_size.x, min_y, c.bbox.min_pos.y - max_tree_size.z),
                 glm::vec3(c.bbox.max_pos.x + max_tree_size.x, max_y, c.bbox.max_pos.y + max_tree_size.z));
   }
