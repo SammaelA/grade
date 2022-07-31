@@ -56,4 +56,5 @@ namespace model_loader
   
   extern std::string base_path;
   extern Block obj_models_blk;
+  extern bool obj_models_blk_loaded;
 };

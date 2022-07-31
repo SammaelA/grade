@@ -94,13 +94,13 @@ void GUI::render_model_creation_info()
   bool b_update = ImGui::Button("Update objects list");
   ImGui::End();
 
-  if (update || b_update)
+  if ((update || b_update) && model_loader::obj_models_blk_loaded)
   {
-    update = false;
     names.clear();
     for (int i=0;i<256;i++)
       types[i] = nullptr;
     types_cnt = model_loader::obj_models_blk.size();
+    names.reserve(types_cnt);
     for (int j=0;j<types_cnt;j++)
     {
       if (j>255)
@@ -108,6 +108,7 @@ void GUI::render_model_creation_info()
       names.push_back(model_loader::obj_models_blk.get_name(j));
       types[j] = names.back().c_str();
     }
+    update = false;
   }
 
   if (cur_item != prev_cur_item)

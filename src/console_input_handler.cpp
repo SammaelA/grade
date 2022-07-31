@@ -5,8 +5,10 @@
 #include "save_utils/blk.h"
 #include "common_utils/utility.h"
 #include "cmd_buffers.h"
+#include "gui.h"
 
-char _console_buf[4096];
+#define BUF_SIZE 4096
+char _console_buf[BUF_SIZE];
 bool add_command_block(Block &b)
 {
   int cmd_code = b.get_int("cmd_code", -1);
@@ -18,7 +20,7 @@ bool add_command_block(Block &b)
   }
   return false;
 }
-void read_commands_from_string(std::string &block_str)
+void GUI::read_commands_from_string(std::string &block_str)
 {
   BlkManager man;
   Block b;
@@ -41,7 +43,7 @@ void read_commands_from_string(std::string &block_str)
     }
   }
 }
-void read_from_console_nonblock()
+void GUI::read_from_console_nonblock()
 {
   static bool set_nonblock = false;
 
@@ -51,10 +53,24 @@ void read_from_console_nonblock()
     set_nonblock = true;
   }
 
-  int numRead = read(0, _console_buf, 4096);
+  int numRead = read(0, _console_buf, BUF_SIZE);
   if (numRead > 0)
   {
     std::string block_str = std::string(_console_buf);
     read_commands_from_string(block_str);
+  }
+}
+
+void GUI::text_input()
+{
+  ImGui::Begin("Console"); 
+  bool get = ImGui::InputText("Text", _console_buf, BUF_SIZE, ImGuiInputTextFlags_EnterReturnsTrue);
+  ImGui::End();
+
+  if (get)
+  {
+    std::string block_str = std::string(_console_buf);
+    read_commands_from_string(block_str);
+    memset(_console_buf, 0, BUF_SIZE);
   }
 }

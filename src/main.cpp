@@ -15,9 +15,6 @@ CommandBuffer<InputCommands> inputCmdBuffer;
 CommandBuffer<GenerationCommands> genCmdBuffer;
 CommandBuffer<RenderCommands> renderCmdBuffer;
 
-extern void read_from_console_nonblock();
-extern void read_commands_from_string(std::string &block_str);
-
 int main(int argc, char *argv[])
 {
     //if (argc == 1)
@@ -47,7 +44,7 @@ int main(int argc, char *argv[])
     if (argc >= 2)
     {
       std::string str(argv[1]);
-      read_commands_from_string(str);
+      gui.read_commands_from_string(str);
     }
     Tiny::event.handler = [&]()
     { 
@@ -56,7 +53,6 @@ int main(int argc, char *argv[])
     Tiny::view.pipeline = [&]()
     {
         appContext.fpsCounter.tick();
-        read_from_console_nonblock();
         ice.execute();
         gce.execute();
         rce.execute();
@@ -66,6 +62,8 @@ int main(int argc, char *argv[])
         gui.render_cell_info();
         gui.render_tree_plant_info();
         gui.render_model_creation_info();
+        gui.text_input();
+        gui.read_from_console_nonblock();
     };
 
     Tiny::loop([&]() {});
