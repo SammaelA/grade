@@ -70,7 +70,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
 
   startScreenShader = new PostFx("simple_render.fs");
   shadowMap.create(light.shadow_map_size.x, light.shadow_map_size.y);
-  defferedTarget.create(w, h);
+  defferedTarget.create(2*w, 2*h);
   defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 
   hbaoRenderer = new HBAORenderer();

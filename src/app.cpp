@@ -3,6 +3,7 @@
 #include "generation/scene_generator_helper.h"
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/gtx/euler_angles.hpp>
+#include "tinyEngine/TinyEngine.h"
 
 FpsCounter::FpsCounter()
 {
@@ -21,6 +22,9 @@ void FpsCounter::tick()
 
 void InputHandler::handle_input(Event &event)
 {
+  ctx.window_width = Tiny::view.WIDTH;
+  ctx.windows_height = Tiny::view.HEIGHT;
+  
   float sensitivity = 0.1;
   float speed = 1;
   float mouse_scroll_speed = 5;

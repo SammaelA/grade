@@ -4,7 +4,77 @@
 #include "common_utils/utility.h"
 #include "generation/metainfo_manager.h"
 #include "graphics_utils/modeling.h"
+#include "third_party/icons.h"
 #include <map>
+
+GUI::GUI(AppContext &app_ctx, const SceneGenerator::SceneGenerationContext &gen_ctx) : appCtx(app_ctx),
+                                                                                       genCtx(gen_ctx)
+{
+  ImGuiIO &io = ImGui::GetIO();
+  io.Fonts->AddFontDefault();
+
+  // merge in icons from Font Awesome
+  static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+  ImFontConfig icons_config;
+  icons_config.MergeMode = true;
+  icons_config.PixelSnapH = true;
+  io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges);
+};
+
+void GUI::render_main_toolbar()
+{
+  ImGuiWindowFlags window_flags = 0;
+  window_flags |= ImGuiWindowFlags_NoMove;
+  window_flags |= ImGuiWindowFlags_NoResize;
+  window_flags |= ImGuiWindowFlags_NoCollapse;
+  window_flags |= ImGuiWindowFlags_NoTitleBar;
+  window_flags |= ImGuiWindowFlags_NoScrollbar;
+  ImGui::SetNextWindowPos(ImVec2(0, -10), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(appCtx.window_width, 60), ImGuiCond_Always);
+  ImGui::SetNextWindowContentSize(ImVec2(appCtx.window_width, 60));
+  ImGui::Begin(" ", nullptr, window_flags);
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(15, 15));
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+
+  bool press_1 = ImGui::Button(ICON_FA_GEAR);ImGui::SameLine();
+  bool press_2 = ImGui::Button(ICON_FA_HOUSE);ImGui::SameLine();
+  bool press_3 = ImGui::Button(ICON_FA_TREE);ImGui::SameLine();
+  bool press_4 = ImGui::Button(ICON_FA_COMPUTER);
+
+  ImGui::PopStyleVar(2);
+  ImGui::End();
+  {
+    static bool show = false;
+    if (press_1)
+      show = !show;
+    if (show)
+      render_debug_settings();
+  }
+  {
+    static bool show = false;
+    if (press_2)
+      show = !show;
+    if (show)
+      render_model_creation_info();
+  }
+  {
+    static bool show = false;
+    if (press_3)
+      show = !show;
+    if (show)
+      render_tree_plant_info();
+  }
+  {
+    static bool show = false;
+    if (press_4)
+      show = !show;
+    if (show)
+      text_input();
+  }
+
+  if (appCtx.active_cell_id >= 0)
+    render_cell_info();
+}
 
 void GUI::render_debug_settings()
 {

@@ -28,7 +28,7 @@ void HBAORenderer::render(AppContext &ctx, GLuint viewPosTex)
     shader.use();
     shader.get_shader().texture("noiseTex",noise.texture);
     shader.get_shader().texture("viewPosTex",viewPosTex);
-    shader.get_shader().uniform("FocalLen",calcFocalLen(ctx.fov,ctx.WIDTH,ctx.HEIGHT));
+    shader.get_shader().uniform("FocalLen",calcFocalLen(ctx.fov,ctx.window_width,ctx.windows_height));
     shader.render();
     
     glEnable(GL_DEPTH_TEST);

@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
     glewInit();
     Tiny::view.lineWidth = 1.0f;
-    Tiny::window("Procedural Tree", appContext.WIDTH, appContext.HEIGHT);
+    Tiny::window("Procedural Tree", appContext.window_width, appContext.windows_height);
     BlkManager man;
     Block textures_list;
     man.load_block_from_file("resources.blk", textures_list);
@@ -58,11 +58,7 @@ int main(int argc, char *argv[])
         rce.execute();
     };
     Tiny::view.interface = [&]() {
-        gui.render_debug_settings();
-        gui.render_cell_info();
-        gui.render_tree_plant_info();
-        gui.render_model_creation_info();
-        gui.text_input();
+        gui.render_main_toolbar();
         gui.read_from_console_nonblock();
     };
 

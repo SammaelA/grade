@@ -29,7 +29,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             if (!worldRenderer.is_inited())
             {
                 Block default_render_settings;
-                worldRenderer.init(appCtx.HEIGHT, appCtx.WIDTH, default_render_settings);
+                worldRenderer.init(appCtx.windows_height, appCtx.window_width, default_render_settings);
             }
             break;
         case RC_GLOBAL_PARAMS_UPDATE:
