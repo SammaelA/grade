@@ -21,7 +21,7 @@ cellsCompute({"cells_compute.comp"},{})
 {
 
 }
-GroveRenderer::GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
+GroveRenderer::GroveRenderer(const GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
                              bool print_perf, Precision precision) :
 GroveRenderer()
 {
@@ -36,7 +36,7 @@ GroveRenderer()
         }
     }
     
-    source = _source;
+    source = (GrovePacked *)_source;
     ggd = _ggd;
     debugl(10,"creating grove renderer with %d LODs\n", _source->clouds.size());
     base_container = new Model();

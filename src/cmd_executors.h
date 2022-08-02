@@ -8,32 +8,32 @@ class InputCmdExecutor
 {
 public:
     void execute(int max_cmd_count = -1);
-    InputCmdExecutor(const SceneGenerator::SceneGenerationContext &gCtx):
+    InputCmdExecutor(const SceneGenerationContext &gCtx):
     genCtx(gCtx)
     {
 
     }
 private:
-    const SceneGenerator::SceneGenerationContext &genCtx;
+    const SceneGenerationContext &genCtx;
 };
 
 class GenerationCmdExecutor
 {
 public:
     void execute(int max_cmd_count = -1);
-    GenerationCmdExecutor(SceneGenerator::SceneGenerationContext &gCtx):
+    GenerationCmdExecutor(SceneGenerationContext &gCtx):
     genCtx(gCtx)
     {
 
     }
 private:
-    SceneGenerator::SceneGenerationContext &genCtx;
+    SceneGenerationContext &genCtx;
 };
 
 class RenderCmdExecutor
 {
 public:
-    RenderCmdExecutor(AppContext &aCtx, const SceneGenerator::SceneGenerationContext &gCtx):
+    RenderCmdExecutor(AppContext &aCtx, const SceneGenerationContext &gCtx):
     appCtx(aCtx),
     genCtx(gCtx)
     {
@@ -44,5 +44,5 @@ private:
     void render();
     WorldRenderer worldRenderer;
     AppContext &appCtx;
-    const SceneGenerator::SceneGenerationContext &genCtx;
+    const SceneGenerationContext &genCtx;
 };

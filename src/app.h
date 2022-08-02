@@ -55,7 +55,7 @@ struct AppContext
 class InputHandler
 {
 public:
-  InputHandler(AppContext &app_ctx, const SceneGenerator::SceneGenerationContext &gen_ctx):
+  InputHandler(AppContext &app_ctx, const SceneGenerationContext &gen_ctx):
   ctx(app_ctx),
   genCtx(gen_ctx)
   {
@@ -64,5 +64,5 @@ public:
   void handle_input(Event &e);
 private:
   AppContext &ctx;
-  const SceneGenerator::SceneGenerationContext &genCtx;
+  const SceneGenerationContext &genCtx;
 };

@@ -16,14 +16,14 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         switch (cmd.type)
         {
         case RC_UPDATE_HMAP:
-            if (genCtx.scene->heightmap)
-                worldRenderer.set_heightmap(*(genCtx.scene->heightmap));
+            if (genCtx.scene.heightmap)
+                worldRenderer.set_heightmap(*(genCtx.scene.heightmap));
             else 
                 worldRenderer.remove_heightmap();
             break;
         case RC_UPDATE_OBJECTS:
             worldRenderer.remove_all_instanced_models();
-            worldRenderer.add_instanced_models(genCtx.scene->instanced_models);
+            worldRenderer.add_instanced_models(genCtx.scene.instanced_models);
             break;
         case RC_INIT_RENDER:
             if (!worldRenderer.is_inited())
@@ -52,7 +52,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
           {
             GroveGenerationData ggd;
             ggd.types = metainfoManager.get_all_tree_types();
-            worldRenderer.set_grove(genCtx.scene->grove, ggd);
+            worldRenderer.set_grove(genCtx.scene.grove, ggd);
           }
           break;
         case RC_VISUALIZE_VOXELS_DEBUG:

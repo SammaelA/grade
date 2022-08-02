@@ -7,7 +7,7 @@
 #include "third_party/icons.h"
 #include <map>
 
-GUI::GUI(AppContext &app_ctx, const SceneGenerator::SceneGenerationContext &gen_ctx) : appCtx(app_ctx),
+GUI::GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx) : appCtx(app_ctx),
                                                                                        genCtx(gen_ctx)
 {
   ImGuiIO &io = ImGui::GetIO();

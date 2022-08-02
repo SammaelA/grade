@@ -58,7 +58,7 @@ namespace scene_gen
     return v;
   }
 
-  void create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
+  void create_cell_small_voxels(Cell &c, SceneGenerationContext &ctx)
   {
     float vox_scale = get_small_voxels_size(c);
     glm::vec3 center = glm::vec3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
@@ -97,7 +97,7 @@ namespace scene_gen
     }
   }
 
-  void remove_compressed_tree_from_voxels_array(SceneGenerator::SceneGenerationContext &ctx, CompressedTree &t, LightVoxelsCube *voxels)
+  void remove_compressed_tree_from_voxels_array(SceneGenerationContext &ctx, CompressedTree &t, LightVoxelsCube *voxels)
   {
     if (!voxels)
       return;
@@ -111,11 +111,11 @@ namespace scene_gen
       {
         if (node.type == CompressedTree::MODEL)
         {
-          auto &tr = ctx.scene->grove.instancedBranchesDirect[node.model_num]->IDA.transforms[node.instance_num];
+          auto &tr = ctx.scene.grove.instancedBranchesDirect[node.model_num]->IDA.transforms[node.instance_num];
           float size_mul_sq = 1;
-          for (auto &br_id : ctx.scene->grove.instancedBranchesDirect[node.model_num]->branches)
+          for (auto &br_id : ctx.scene.grove.instancedBranchesDirect[node.model_num]->branches)
           {
-            auto &b = ctx.scene->grove.instancedCatalogue.get(br_id);
+            auto &b = ctx.scene.grove.instancedCatalogue.get(br_id);
             if (b.joints.size() < 2)
               continue;
             glm::vec3 prev_pos = tr * glm::vec4(b.joints[0].pos, 1);
@@ -149,7 +149,7 @@ namespace scene_gen
     RawTreesDatabase( RawTreesDatabase&) = delete;
     TreeToken get_empty_trees(int cnt, GroveGenerationData &ggd);
     void generation_finished(TreeToken &token);
-    bool pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx, bool forced);
+    bool pack_ready(GrovePacker &packer, SceneGenerationContext &ctx, bool forced);
 
     std::mutex database_lock;
   private:
@@ -216,7 +216,7 @@ namespace scene_gen
     }
   }
 
-  bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx, bool forced)
+  bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerationContext &ctx, bool forced)
   {
     if (arrays.empty())
       return false;
@@ -227,7 +227,7 @@ namespace scene_gen
       {
         logerr("adding %d trees to grove",arr.cnt_real);
         arr.ggd.trees_count = arr.cnt_real;
-        packer.add_trees_to_grove(arr.ggd, ctx.scene->grove, arr.data, ctx.scene->heightmap);
+        packer.add_trees_to_grove(arr.ggd, ctx.scene.grove, arr.data, ctx.scene.heightmap);
         delete[] arr.data;
         arr.closed = true;
       }
@@ -239,7 +239,7 @@ namespace scene_gen
 
   struct GenerationJob
   {
-    SceneGenerator::SceneGenerationContext &ctx;
+    SceneGenerationContext &ctx;
 
     std::vector<Cell> &cells;
 
@@ -251,7 +251,7 @@ namespace scene_gen
     int cells_x;
     int cells_y;
     int id;
-    GenerationJob(SceneGenerator::SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
+    GenerationJob(SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
                   std::vector<TreeTypeData> &_types, RawTreesDatabase &_database,
                   GroveMask &_mask, int _cells_x, int _cells_y, int _id) : ctx(_ctx),
                                                                   cells(_cells),
@@ -342,7 +342,7 @@ namespace scene_gen
         ggd.pos.z = 0.5f * (c.bbox.max_pos.y + c.bbox.min_pos.y);
 
         ctx_lock.lock();
-        ggd.pos.y = ctx.scene->heightmap->get_height(ggd.pos);
+        ggd.pos.y = ctx.scene.heightmap->get_height(ggd.pos);
         ctx_lock.unlock();
 
         ggd.size.x = 0.5f * (c.bbox.max_pos.x - c.bbox.min_pos.x);
@@ -367,7 +367,7 @@ namespace scene_gen
         }
 
         ctx_lock.lock();
-        voxels->add_heightmap(*(ctx.scene->heightmap));
+        voxels->add_heightmap(*(ctx.scene.heightmap));
         ctx_lock.unlock();
 
         for (auto &prototype : c.prototypes)
@@ -377,7 +377,7 @@ namespace scene_gen
           auto token = rawTreesDatabase.get_empty_trees(ggd.trees_count, ggd);
           rawTreesDatabase.database_lock.unlock();
 
-          grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, token.trees);
+          grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene.heightmap), mask, *voxels, token.trees);
           debugl(1, "created patch with %d trees\n", ggd.trees_count);
 
           rawTreesDatabase.database_lock.lock();
@@ -409,7 +409,7 @@ namespace scene_gen
     thread_finished[id]._a.store(true);
   }
 
-  void generate_plants_cells(SceneGenerator::SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
+  void generate_plants_cells(SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
   {
     std::vector<int> cell_ids;//only valid cells where we have something to generate
     for (auto &id : all_cell_ids)
@@ -503,17 +503,17 @@ namespace scene_gen
       delete j;
 
     rawTreesDatabase.pack_ready(packer, ctx, true);
-    packer.prepare_grove_atlas(ctx.scene->grove, 512, 512, true, true, true);
+    packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
   }
 
-  void remove_trees_from_scene(SceneGenerator::SceneGenerationContext &ctx, std::vector<int> &ids)
+  void remove_trees_from_scene(SceneGenerationContext &ctx, std::vector<int> &ids)
   {
     for (int &id : ids)
     {
-      auto it = ctx.scene->grove.trees_by_global_id.find(id);
-      if (it != ctx.scene->grove.trees_by_global_id.end())
+      auto it = ctx.scene.grove.trees_by_global_id.find(id);
+      if (it != ctx.scene.grove.trees_by_global_id.end())
       {
-        auto &t = ctx.scene->grove.compressedTrees[it->second];
+        auto &t = ctx.scene.grove.compressedTrees[it->second];
         glm::vec2 pos_xz = glm::vec2(t.pos.x, t.pos.z);
         glm::ivec2 c_ij = (pos_xz - ctx.start_pos)/ctx.cell_size;
         int cell_id = c_ij.x*ctx.cells_y + c_ij.y;
@@ -528,6 +528,6 @@ namespace scene_gen
         }
       }
     }
-    GrovePacker::remove_trees_from_grove(ctx.scene->grove, ids);
+    GrovePacker::remove_trees_from_grove(ctx.scene.grove, ids);
   }
 }

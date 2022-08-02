@@ -291,7 +291,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
 
     debugl(10,"generate mipmaps end\n");
 }
-TextureAtlas &TextureAtlas::operator=(TextureAtlas &atlas)
+TextureAtlas &TextureAtlas::operator=(const TextureAtlas &atlas)
 {
     curNum = atlas.curNum;
     width = atlas.width;

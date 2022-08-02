@@ -305,7 +305,7 @@ void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &m
     }
 }
 
-std::vector<glm::vec3> Billboard::get_tc(TextureAtlas &atlas)
+std::vector<glm::vec3> Billboard::get_tc(const TextureAtlas &atlas)
 {
     if (positions.size() == 4)
     {
@@ -319,7 +319,7 @@ std::vector<glm::vec3> Billboard::get_tc(TextureAtlas &atlas)
         return tcs;
     }
 }
-void Billboard::to_model(Model *m, TextureAtlas &atlas)
+void Billboard::to_model(Model *m, const TextureAtlas &atlas)
 {
     if (positions.size() == 4)
     {

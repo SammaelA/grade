@@ -4,7 +4,7 @@
 class GUI
 {
 public:
-  GUI(AppContext &app_ctx, const SceneGenerator::SceneGenerationContext &gen_ctx);
+  GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx);
   void render_main_toolbar();
   void render_debug_settings();
   void render_cell_info();
@@ -16,5 +16,5 @@ public:
   void read_from_console_nonblock();
 private:
   AppContext &appCtx;
-  const SceneGenerator::SceneGenerationContext &genCtx;
+  const SceneGenerationContext &genCtx;
 };

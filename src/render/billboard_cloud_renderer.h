@@ -12,7 +12,7 @@ struct BillboardCloudRenderer : Countable
         ONLY_INSTANCES,
         BOTH
     };
-    BillboardCloudRenderer(BillboardCloudData *data = nullptr);
+    BillboardCloudRenderer(const BillboardCloudData *data = nullptr);
     ~BillboardCloudRenderer();
     void render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light,
                 glm::mat4 &shadow_tr, GLuint shadow_tex,

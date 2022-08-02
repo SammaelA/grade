@@ -26,6 +26,17 @@ struct Scene
     };
     Scene(){};
     ~Scene();
+    Scene& operator=(Scene &&s) = default;
+    /*
+    {
+      heightmap = s.heightmap;
+      instanced_models = std::move(instanced_models);
+      grove = s.grove;
+      grass = s.grass;
+
+      return *this;
+    }
+    */
     Heightmap *heightmap = nullptr;
     std::vector<InstancedModel> instanced_models;
 

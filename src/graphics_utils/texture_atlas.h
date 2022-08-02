@@ -59,7 +59,7 @@ public:
     {
         clearColor = color;
     }
-    TextureAtlas &operator=(TextureAtlas &atlas);
+    TextureAtlas &operator=(const TextureAtlas &atlas);
     void set_grid(int w, int h, bool resizable = true);
     int add_tex();
     void remove_tex(int pos);

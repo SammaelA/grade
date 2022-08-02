@@ -33,8 +33,8 @@ struct InstancingReadyModel
         std::vector<glm::vec3> positions;
         glm::vec4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
         bool instancing;
-        void to_model(Model *m, TextureAtlas &atlas);
-        std::vector<glm::vec3> get_tc(TextureAtlas &atlas);
+        void to_model(Model *m, const TextureAtlas &atlas);
+        std::vector<glm::vec3> get_tc(const TextureAtlas &atlas);
         Billboard(){};
         Billboard(const Billboard &b)
         {

@@ -6,6 +6,7 @@
 #include <atomic>
 
 struct Cell;
+struct SceneGenerationContext;
 class SceneGenerator
 {
 public:
@@ -18,25 +19,6 @@ public:
       int biome_id;
       Patch() {};
       Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int biome_id, int patch_type_id);
-    };
-    struct SceneGenerationContext
-    {
-      SceneGenerationContext(): objects_bvh(false) {};
-        Scene *scene = nullptr;//only a pointer, should not be deleted
-        Block settings;
-        BVH objects_bvh;
-        BiomeMap biome_map;
-        GroveMask global_mask;
-        std::vector<Cell> cells;
-        std::vector<Patch> trees_patches;
-        std::vector<Patch> grass_patches;
-        int cells_x, cells_y;
-        float hmap_pixel_size, biome_map_pixel_size;
-        glm::vec2 heightmap_size, grass_field_size, full_size, cell_size, center, start_pos;
-        glm::vec3 center3;
-
-        int base_biome_id = 0;
-        bool inited = false;
     };
     
     SceneGenerator(SceneGenerationContext &_ctx);
@@ -54,7 +36,26 @@ private:
     void create_global_grove_mask(GroveMask &mask);
     SceneGenerationContext &ctx;
 };
+struct SceneGenerationContext
+{
+  SceneGenerationContext() : objects_bvh(false){};
+  SceneGenerationContext &operator=(SceneGenerationContext &&ctx) = default;
+  Scene scene;
+  Block settings;
+  BVH objects_bvh;
+  BiomeMap biome_map;
+  GroveMask global_mask;
+  std::vector<Cell> cells;
+  std::vector<SceneGenerator::Patch> trees_patches;
+  std::vector<SceneGenerator::Patch> grass_patches;
+  int cells_x, cells_y;
+  float hmap_pixel_size, biome_map_pixel_size;
+  glm::vec2 heightmap_size, grass_field_size, full_size, cell_size, center, start_pos;
+  glm::vec3 center3;
 
+  int base_biome_id = 0;
+  bool inited = false;
+};
 struct Cell
 {
   enum CellStatus

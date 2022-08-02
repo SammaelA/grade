@@ -3,14 +3,14 @@
 
 using namespace glm;
 
-BillboardCloudRenderer::BillboardCloudRenderer(BillboardCloudData *data):
+BillboardCloudRenderer::BillboardCloudRenderer(const BillboardCloudData *_data):
 Countable(3),
 rendererToTexture({"render_to_billboard.vs", "render_to_billboard.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 billboardRenderer({"billboard_render.vs", "billboard_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 billboardRendererInstancing({"billboard_render_instancing.vs", "billboard_render_instancing.fs"},
                             {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"})
 {
-    this->data = data;
+    this->data = (BillboardCloudData *)_data;
     if (!data || !data->valid)
     {
         return;

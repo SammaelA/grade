@@ -49,7 +49,7 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   return v;
 }
 
-LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerator::SceneGenerationContext &ctx)
+LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerationContext &ctx)
 {
   float vox_scale = 4*ctx.biome_map_pixel_size;
   glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
@@ -115,7 +115,7 @@ public:
   RawTreesDatabase( RawTreesDatabase&) = delete;
   TreeToken get_empty_trees(int cnt, GroveGenerationData &ggd);
   void generation_finished(TreeToken &token);
-  bool pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx, bool forced);
+  bool pack_ready(GrovePacker &packer, SceneGenerationContext &ctx, bool forced);
 
   std::mutex database_lock;
 private:
@@ -183,7 +183,7 @@ void RawTreesDatabase::generation_finished(TreeToken &token)
   }
 }
 
-bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGenerationContext &ctx, bool forced)
+bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerationContext &ctx, bool forced)
 {
   if (arrays.empty())
     return false;
@@ -194,7 +194,7 @@ bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGene
     {
       logerr("adding %d trees to grove",arr.cnt_real);
       arr.ggd.trees_count = arr.cnt_real;
-      packer.add_trees_to_grove(arr.ggd, ctx.scene->grove, arr.data, ctx.scene->heightmap);
+      packer.add_trees_to_grove(arr.ggd, ctx.scene.grove, arr.data, ctx.scene.heightmap);
       delete[] arr.data;
       arr.closed = true;
     }
@@ -206,7 +206,7 @@ bool RawTreesDatabase::pack_ready(GrovePacker &packer, SceneGenerator::SceneGene
 
 struct GenerationJob
 {
-  SceneGenerator::SceneGenerationContext &ctx;
+  SceneGenerationContext &ctx;
 
   std::vector<Cell> &cells;
 
@@ -224,7 +224,7 @@ struct GenerationJob
   int cells_y;
   bool grass_needed;
   int id;
-  GenerationJob(SceneGenerator::SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
+  GenerationJob(SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
                 std::vector<TreeTypeData> &_types, RawTreesDatabase &_database, GrassGenerator &_grassGenerator,
                 GroveMask &_mask, int _cells_x, int _cells_y, bool _grass_needed, int _id) : ctx(_ctx),
                                                                 cells(_cells),
@@ -314,8 +314,8 @@ void SceneGenerator::init_scene(Block &_settings)
 void SceneGenerator::create_heightmap_simple_auto()
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  ctx.scene->heightmap = new Heightmap(ctx.center3, ctx.heightmap_size,ctx.hmap_pixel_size);
-  ctx.scene->heightmap->load_from_image(0,0,100,"heightmap1.jpg");
+  ctx.scene.heightmap = new Heightmap(ctx.center3, ctx.heightmap_size,ctx.hmap_pixel_size);
+  ctx.scene.heightmap->load_from_image(0,0,100,"heightmap1.jpg");
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   debug("created heightmap. Took %.2f ms\n", ms);
@@ -327,7 +327,7 @@ void SceneGenerator::create_global_grove_mask(GroveMask &mask)
   std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
   {
     glm::vec3 p0 = glm::vec3(po.x + 0.5*mask.get_cell_size(), 0, po.y + 0.5*mask.get_cell_size());
-    p0.y = ctx.scene->heightmap->get_height(p0) + ctx.biome_map_pixel_size;
+    p0.y = ctx.scene.heightmap->get_height(p0) + ctx.biome_map_pixel_size;
     int hits = 0;
     float kernel[9] = {1, 3, 1,
                        3, 6, 3,
@@ -358,8 +358,8 @@ void SceneGenerator::generate_grove()
   Block *grass_blk = ctx.settings.get_block("grass");
   bool grass_needed = (grass_blk != nullptr);
 
-  ctx.scene->grove.center = ctx.center3;
-  ctx.scene->grove.ggd_name = "blank";
+  ctx.scene.grove.center = ctx.center3;
+  ctx.scene.grove.ggd_name = "blank";
   
   std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
   GroveGenerationData ggd;
@@ -532,7 +532,7 @@ void SceneGenerator::generate_grove()
 
       if (cells[id].status == Cell::CellStatus::WAITING)
       {
-        cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene->heightmap));
+        cells[id].influence_bbox = get_influence_AABB(cells[id].prototypes, ggd.types, *(ctx.scene.heightmap));
         generationJobs[i/job_size]->waiting_cells.push_back(id);
       }
     }
@@ -655,7 +655,7 @@ void SceneGenerator::generate_grove()
         }
       }
     }
-    grassGenerator.pack_all_grass(ctx.scene->grass, *(ctx.scene->heightmap));
+    grassGenerator.pack_all_grass(ctx.scene.grass, *(ctx.scene.heightmap));
   }
 
   for (auto &c : cells)
@@ -669,7 +669,7 @@ void SceneGenerator::generate_grove()
     }
   }
 
-  packer.prepare_grove_atlas(ctx.scene->grove, 512, 512, true, true, true);
+  packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
 }
 
 void GenerationJob::prepare_dependencies()
@@ -746,7 +746,7 @@ void GenerationJob::generate()
       ggd.pos.z = base_prototype.pos.y;
 
       ctx_lock.lock();
-      ggd.pos.y = ctx.scene->heightmap->get_height(ggd.pos);
+      ggd.pos.y = ctx.scene.heightmap->get_height(ggd.pos);
       ctx_lock.unlock();
 
       ggd.size.x = base_prototype.size.x;
@@ -775,7 +775,7 @@ void GenerationJob::generate()
       }
 
       ctx_lock.lock();
-      voxels->add_heightmap(*(ctx.scene->heightmap));
+      voxels->add_heightmap(*(ctx.scene.heightmap));
       ctx_lock.unlock();
 
       for (auto &prototype : c.prototypes)
@@ -785,7 +785,7 @@ void GenerationJob::generate()
         auto token = rawTreesDatabase.get_empty_trees(ggd.trees_count, ggd);
         rawTreesDatabase.database_lock.unlock();
 
-        grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene->heightmap), mask, *voxels, token.trees);
+        grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene.heightmap), mask, *voxels, token.trees);
         debugl(1, "created patch with %d trees\n", ggd.trees_count);
 
         rawTreesDatabase.database_lock.lock();
@@ -854,7 +854,7 @@ void GenerationJob::generate()
         std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) -> float
         {
           glm::vec3 pos = glm::vec3(p.x, 0, p.y);
-          pos.y = ctx.scene->heightmap->get_height(pos) + 1;
+          pos.y = ctx.scene.heightmap->get_height(pos) + 1;
           if (ctx.objects_bvh.contains(pos))
             return 1e9;
           else
@@ -941,13 +941,13 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
     glm::vec4 from = transform*glm::vec4(0,0,0,1);
     glm::vec3 pos = glm::vec3(from);
     float min_h, float_max_h;
-    pos.y = ctx.scene->heightmap->get_height(pos);
+    pos.y = ctx.scene.heightmap->get_height(pos);
     transform[3][1] += (pos.y - from.y);
   }
   bool new_model = true;
   unsigned model_num = 0;
   unsigned pos = 0;
-  for (auto &im : ctx.scene->instanced_models)
+  for (auto &im : ctx.scene.instanced_models)
   {
     if (im.name == name)
     {
@@ -961,16 +961,16 @@ uint64_t SceneGenerator::add_object_blk(Block &b)
 
   if (new_model)
   {
-    ctx.scene->instanced_models.emplace_back();
-    ctx.scene->instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene->instanced_models.back().tex);
-    ctx.scene->instanced_models.back().model->update();
-    ctx.scene->instanced_models.back().instances.push_back(transform);
-    ctx.scene->instanced_models.back().name = name;
+    ctx.scene.instanced_models.emplace_back();
+    ctx.scene.instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().tex);
+    ctx.scene.instanced_models.back().model->update();
+    ctx.scene.instanced_models.back().instances.push_back(transform);
+    ctx.scene.instanced_models.back().name = name;
     pos = 0;
   }
   
-  //logerr("model num %d %d", model_num, ctx.scene->instanced_models.size());
-  auto &im = ctx.scene->instanced_models[model_num];
+  //logerr("model num %d %d", model_num, ctx.scene.instanced_models.size());
+  auto &im = ctx.scene.instanced_models[model_num];
   std::vector<AABB> boxes;
   SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4*ctx.biome_map_pixel_size, 1.1);
   uint64_t id = SceneGenHelper::pack_id(0,(int)Scene::SIMPLE_OBJECT,model_num,pos);
@@ -986,11 +986,11 @@ bool SceneGenerator::remove_object(uint64_t packed_id)
   unsigned id;
 
   SceneGenHelper::unpack_id(packed_id, _empty, category, type, id);
-  if (category == (int)Scene::SIMPLE_OBJECT && type < ctx.scene->instanced_models.size() && 
-      id < ctx.scene->instanced_models[type].instances.size())
+  if (category == (int)Scene::SIMPLE_OBJECT && type < ctx.scene.instanced_models.size() && 
+      id < ctx.scene.instanced_models[type].instances.size())
   {
-    auto beg = ctx.scene->instanced_models[type].instances.begin();
-    ctx.scene->instanced_models[type].instances.erase(std::next(beg, id));
+    auto beg = ctx.scene.instanced_models[type].instances.begin();
+    ctx.scene.instanced_models[type].instances.erase(std::next(beg, id));
     ctx.objects_bvh.remove_bboxes(packed_id);
     return true;
   }
@@ -1036,7 +1036,7 @@ void SceneGenerator::plant_tree(glm::vec2 pos, int type)
   if (c_ij.x >= 0 && c_ij.x < ctx.cells_x && c_ij.y >= 0 && c_ij.y < ctx.cells_y)
   {
     glm::vec3 p = glm::vec3(pos.x, 0, pos.y);
-    p.y = ctx.scene->heightmap->get_bilinear(p);
+    p.y = ctx.scene.heightmap->get_bilinear(p);
     Cell &c = ctx.cells[c_ij.x*ctx.cells_y + c_ij.y];
     if (c.prototypes.empty())
     {

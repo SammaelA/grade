@@ -53,7 +53,7 @@ public:
     int get_max_LOD() {return MIN(4,LODs.size() - 1);}
     void render(int lod, glm::mat4 &projection, glm::mat4 &view, Camera &camera, glm::vec2 screen_size, DirectedLight &light, 
                 GroveRendererDebugParams dbgpar, glm::mat4 &shadow_tr, GLuint shadow_tex, bool to_shadow = false);
-    GroveRenderer(GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
+    GroveRenderer(const GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
                   bool print_perf, Precision precision);
     GroveRenderer();
     ~GroveRenderer();

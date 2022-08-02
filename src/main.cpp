@@ -33,9 +33,7 @@ int main(int argc, char *argv[])
     textureManager = TextureManager("./resources/textures/", textures_list);
     model_loader::load_default_blk();
 
-    SceneGenerator::SceneGenerationContext sceneGenerationContext;
-    sceneGenerationContext.scene = new Scene();
-
+    SceneGenerationContext sceneGenerationContext;
     InputCmdExecutor ice = InputCmdExecutor(sceneGenerationContext);
     GenerationCmdExecutor gce = GenerationCmdExecutor(sceneGenerationContext);
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);

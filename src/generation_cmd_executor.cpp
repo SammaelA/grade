@@ -22,7 +22,7 @@ namespace scene_gen
     from.y = ceil(from.y / by) * by;
   }
 
-  void init_scene(Block &_settings, SceneGenerator::SceneGenerationContext &ctx)
+  void init_scene(Block &_settings, SceneGenerationContext &ctx)
   {
     metainfoManager.reload_all();
     ctx.settings = _settings;
@@ -72,8 +72,8 @@ namespace scene_gen
     debug("created %dx%d cells with %.1fx%.1f size each\n", ctx.cells_x, ctx.cells_y, ctx.cell_size.x, ctx.cell_size.y);
     debug("created biome map %dx%d pixels\n", ctx.biome_map.pixels_w(), ctx.biome_map.pixels_h());
 
-    ctx.scene->grove.center = ctx.center3;
-    ctx.scene->grove.ggd_name = "blank";
+    ctx.scene.grove.center = ctx.center3;
+    ctx.scene.grove.ggd_name = "blank";
   }
 
 
@@ -92,10 +92,10 @@ namespace scene_gen
                 glm::vec3(c.bbox.max_pos.x + max_tree_size.x, max_y, c.bbox.max_pos.y + max_tree_size.z));
   }
 
-  void create_heightmap(Block &settings, SceneGenerator::SceneGenerationContext &ctx)
+  void create_heightmap(Block &settings, SceneGenerationContext &ctx)
   {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    ctx.scene->heightmap = new Heightmap(ctx.center3, ctx.heightmap_size, ctx.hmap_pixel_size);
+    ctx.scene.heightmap = new Heightmap(ctx.center3, ctx.heightmap_size, ctx.hmap_pixel_size);
     bool load_from_image = settings.get_bool("load_from_image", true);
     float base = settings.get_double("base_height", 0);
     float mn = settings.get_double("min_height", 0);
@@ -103,24 +103,24 @@ namespace scene_gen
     if (load_from_image)
     {
       std::string hmap_tex_name = settings.get_string("tex_name", "heightmap1.jpg");
-      ctx.scene->heightmap->load_from_image(base, mn, mx, hmap_tex_name);
+      ctx.scene.heightmap->load_from_image(base, mn, mx, hmap_tex_name);
     }
     else
     {
-      ctx.scene->heightmap->random_generate(base, mn, mx);
+      ctx.scene.heightmap->random_generate(base, mn, mx);
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     debug("created heightmap. Took %.2f ms\n", ms);
   }
 
-  void create_global_grove_mask(GroveMask &mask, SceneGenerator::SceneGenerationContext &ctx)
+  void create_global_grove_mask(GroveMask &mask, SceneGenerationContext &ctx)
   {
     glm::vec2 mask_size = ctx.grass_field_size;
     std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
     {
       glm::vec3 p0 = glm::vec3(po.x + 0.5*mask.get_cell_size(), 0, po.y + 0.5*mask.get_cell_size());
-      p0.y = ctx.scene->heightmap->get_height(p0) + ctx.biome_map_pixel_size;
+      p0.y = ctx.scene.heightmap->get_height(p0) + ctx.biome_map_pixel_size;
       int hits = 0;
       float kernel[9] = {1, 3, 1,
                         3, 6, 3,
@@ -138,7 +138,7 @@ namespace scene_gen
     mask.fill_func(func);
   }
 
-  uint64_t add_object_blk(Block &b, SceneGenerator::SceneGenerationContext &ctx)
+  uint64_t add_object_blk(Block &b, SceneGenerationContext &ctx)
   {
     std::string name = b.get_string("name", "debug_box");
     glm::mat4 transform = b.get_mat4("transform");
@@ -150,13 +150,13 @@ namespace scene_gen
       glm::vec4 from = transform * glm::vec4(0, 0, 0, 1);
       glm::vec3 pos = glm::vec3(from);
       float min_h, float_max_h;
-      pos.y = ctx.scene->heightmap->get_height(pos);
+      pos.y = ctx.scene.heightmap->get_height(pos);
       transform[3][1] += (pos.y - from.y);
     }
     bool new_model = true;
     unsigned model_num = 0;
     unsigned pos = 0;
-    for (auto &im : ctx.scene->instanced_models)
+    for (auto &im : ctx.scene.instanced_models)
     {
       if (im.name == name)
       {
@@ -169,15 +169,15 @@ namespace scene_gen
 
     if (new_model)
     {
-      ctx.scene->instanced_models.emplace_back();
-      ctx.scene->instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene->instanced_models.back().tex);
-      ctx.scene->instanced_models.back().model->update();
-      ctx.scene->instanced_models.back().name = name;
+      ctx.scene.instanced_models.emplace_back();
+      ctx.scene.instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().tex);
+      ctx.scene.instanced_models.back().model->update();
+      ctx.scene.instanced_models.back().name = name;
       pos = 0;
     }
 
     //add object to scene BVH
-    auto &im = ctx.scene->instanced_models[model_num];
+    auto &im = ctx.scene.instanced_models[model_num];
     std::vector<AABB> boxes;
     SceneGenHelper::get_AABB_list_from_instance(im.model, transform, boxes, 4 * ctx.biome_map_pixel_size, 1.1);
     uint64_t id = SceneGenHelper::pack_id(0, (int)Scene::SIMPLE_OBJECT, model_num, pos);
@@ -221,7 +221,7 @@ namespace scene_gen
     return id;
   }
 
-  void plant_tree(glm::vec2 pos, int type, SceneGenerator::SceneGenerationContext &ctx)
+  void plant_tree(glm::vec2 pos, int type, SceneGenerationContext &ctx)
   {
     if (type < 0 || type >= metainfoManager.get_all_tree_types().size())
     {
@@ -232,7 +232,7 @@ namespace scene_gen
     if (c_ij.x >= 0 && c_ij.x < ctx.cells_x && c_ij.y >= 0 && c_ij.y < ctx.cells_y)
     {
       glm::vec3 p = glm::vec3(pos.x, 0, pos.y);
-      p.y = ctx.scene->heightmap->get_bilinear(p);
+      p.y = ctx.scene.heightmap->get_bilinear(p);
       Cell &c = ctx.cells[c_ij.x * ctx.cells_y + c_ij.y];
       if (c.prototypes.empty())
       {
@@ -269,17 +269,17 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     switch (cmd.type)
     {
     case GC_GEN_HMAP:
-      if (genCtx.scene->heightmap)
-        delete genCtx.scene->heightmap;
+      if (genCtx.scene.heightmap)
+        delete genCtx.scene.heightmap;
       scene_gen::create_heightmap(cmd.args, genCtx);
-      if (genCtx.scene->heightmap)
+      if (genCtx.scene.heightmap)
       {
         for (auto &c : genCtx.cells)
-          c.influence_bbox = scene_gen::get_influence_AABB(c, *(genCtx.scene->heightmap));
+          c.influence_bbox = scene_gen::get_influence_AABB(c, *(genCtx.scene.heightmap));
       }
       break;
     case GC_ADD_OBJECT:
-      if (genCtx.scene->heightmap)
+      if (genCtx.scene.heightmap)
       {
         uint64_t id = scene_gen::add_object_blk(cmd.args, genCtx);
         debug("added object id = %lu \n", id);
@@ -288,10 +288,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     case GC_CLEAR_SCENE:
       if (genCtx.inited)
       {
-        if (genCtx.scene)
-          delete genCtx.scene;
-        genCtx = SceneGenerator::SceneGenerationContext();
-        genCtx.scene = new Scene();
+        genCtx = SceneGenerationContext();
         genCtx.inited = false;
       }
       break;
@@ -311,7 +308,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         else if (unpacked_id.y < 0)
         {
           // remove everything
-          genCtx.scene->instanced_models.clear();
+          genCtx.scene.instanced_models.clear();
           genCtx.objects_bvh.clear();
         }
         else if (unpacked_id.z < 0)
@@ -319,7 +316,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
           // remove everything in this category
           if (unpacked_id.z == Scene::ObjCategories::SIMPLE_OBJECT)
           {
-            genCtx.scene->instanced_models.clear();
+            genCtx.scene.instanced_models.clear();
             genCtx.objects_bvh.clear();
           }
         }
@@ -357,9 +354,9 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
           {
             int m_num = unpacked_id.z;
             int inst_num = unpacked_id.w;
-            if (m_num >= 0 && m_num < genCtx.scene->instanced_models.size())
+            if (m_num >= 0 && m_num < genCtx.scene.instanced_models.size())
             {
-              auto &im = genCtx.scene->instanced_models[m_num];
+              auto &im = genCtx.scene.instanced_models[m_num];
               if (inst_num >= 0 && inst_num < im.instances.size())
               {
                 if (im.instances.size() > 1)
@@ -368,7 +365,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
                   im.bboxes.erase(im.bboxes.begin() + inst_num);
                 }
                 else
-                  genCtx.scene->instanced_models.erase(genCtx.scene->instanced_models.begin() + m_num);
+                  genCtx.scene.instanced_models.erase(genCtx.scene.instanced_models.begin() + m_num);
               }
             }
           }

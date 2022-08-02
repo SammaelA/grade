@@ -155,7 +155,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (cell_id >=0 && cell_id < genCtx.cells.size())
       {
         auto &c = genCtx.cells[cell_id];
-        for (auto &t : genCtx.scene->grove.compressedTrees)
+        for (auto &t : genCtx.scene.grove.compressedTrees)
         {
           if (c.bbox.contains(glm::vec2(t.pos.x, t.pos.z)))
             plants_ids_to_remove.push_back(t.global_id);

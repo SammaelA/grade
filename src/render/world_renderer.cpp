@@ -109,7 +109,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
         on_scene_changed();
     }
 
-    void WorldRenderer::set_grove(GrovePacked &source, GroveGenerationData &gen_data)
+    void WorldRenderer::set_grove(const GrovePacked &source, GroveGenerationData &gen_data)
     {
         remove_grove();
         int p_int = render_settings.get_int("grove_renderer_precision", (int)GroveRenderer::MEDIUM);   
@@ -146,7 +146,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
       on_scene_changed();
     }
     
-    void WorldRenderer::add_instanced_models(std::vector<Scene::InstancedModel> &_models)
+    void WorldRenderer::add_instanced_models(const std::vector<Scene::InstancedModel> &_models)
     {
       models = _models;
       int offset = 0;

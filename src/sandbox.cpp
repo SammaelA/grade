@@ -235,8 +235,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     {
         metainfoManager.reload_all();
         TreeTypeData type = metainfoManager.get_tree_type("apple");
-        scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
-        scene->heightmap->fill_const(0);
+        scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+        scene.heightmap->fill_const(0);
         
         ParameterList par;
         type.get_params()->write_parameter_list(par);
@@ -286,7 +286,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
     ReferenceTree ref_tree;
     ImpostorSimilarityCalc imp_sim = ImpostorSimilarityCalc(cnt, 8, false);
-    generate_for_par_selection(params, imp_sim, tree_ggd, scene->heightmap, ref_tree, _a, nullptr);  
+    generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, _a, nullptr);  
 */
     Block b, ref_info;
     BlkManager man;
@@ -309,8 +309,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     auto res = sel.parameter_selection(ref_info, b, scene);
  /*   
     metainfoManager.reload_all();
-    scene->heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
-    scene->heightmap->fill_const(0);
+    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap->fill_const(0);
     TreeTypeData type = metainfoManager.get_tree_type("apple");
     float imp_size = 512;
     GroveGenerationData tree_ggd;
@@ -351,13 +351,13 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         {
         }
         gen->finalize_generation(&single_tree, *ref_voxels);
-        packer.add_trees_to_grove(tree_ggd, scene->grove, &single_tree, scene->heightmap, false);
+        packer.add_trees_to_grove(tree_ggd, scene.grove, &single_tree, scene.heightmap, false);
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
     delete ref_voxels;
-    textureManager.save_png(scene->grove.impostors[1].atlas.tex(0), "original_atlas");
+    textureManager.save_png(scene.grove.impostors[1].atlas.tex(0), "original_atlas");
 
     Texture tex1 = textureManager.load_unnamed_tex(image::base_img_path + "24_A_mono.png");
     Texture tex2 = textureManager.load_unnamed_tex(image::base_img_path + "24_B_mono.png");
