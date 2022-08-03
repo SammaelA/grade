@@ -176,14 +176,21 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_TREE_GEN_PARAMETER_SELECTION:
     {
       Block b, set_info, ref_info;
-      BlkManager man;
-      man.load_block_from_file("parameter_selection_settings.blk", set_info);
-      man.load_block_from_file("parameter_selection_reference.blk", ref_info);
-      b.add_block("settings", &set_info);
-      b.add_block("reference", &ref_info);
+      Block *set_info_p = cmd.args.get_block("settings");
+      Block *ref_info_p = cmd.args.get_block("reference");
+      if (!set_info_p || !ref_info_p)
+      {
+        BlkManager man;
+        man.load_block_from_file("parameter_selection_settings.blk", set_info);
+        man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+        set_info_p = &set_info;
+        ref_info_p = &ref_info;
+      }
+      b.add_block("settings", set_info_p);
+      b.add_block("reference", ref_info_p);
       genCmdBuffer.push(GC_TREE_GEN_PARAMETER_SELECTION, b);
-      int types_cnt = set_info.get_int("best_results_count",1);
-      bool show_res = set_info.get_bool("show_results",true);
+      int types_cnt = set_info_p->get_int("best_results_count",1);
+      bool show_res = set_info_p->get_bool("show_results",true);
       if (show_res)
       {
         for (int i=0;i<types_cnt;i++)

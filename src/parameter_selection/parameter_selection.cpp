@@ -1219,9 +1219,11 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         type_name = reference_name + "_selected_params_" + std::to_string(version);
     }
     if (type_name != "")
-        metainfoManager.add_tree_type(res.best_candidates[0], type_name);
-    metainfoManager.save_all();
-
+    {
+      metainfoManager.add_tree_type(res.best_candidates[0], type_name);
+      metainfoManager.save_all();
+    }
+    
     if (save_result_image)
     {
         int tex_w = 512;

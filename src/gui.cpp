@@ -21,6 +21,69 @@ GUI::GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx) : appCtx(ap
   io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges);
 };
 
+void GUI::render_parameter_selection_menu()
+{
+  static bool selection_finished = false;
+
+  if (selection_finished)
+  {
+    static std::string selected_name = "";
+    if (selected_name != "")
+    {
+      static char name_buf[256];
+      bool get = ImGui::InputText("New name", name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue);
+      if (get)
+      {
+        std::string new_name(name_buf);
+        TreeTypeData type = metainfoManager.get_tree_type(selected_name);
+        metainfoManager.add_tree_type(type, new_name);
+        selected_name = "";
+      }
+    }
+    else
+    {
+      static int cur_item = -1;
+      const char * types[16] = {nullptr};
+      auto &types_map = metainfoManager.see_all_tree_type_names();
+      int i=0;
+      for (auto &p : types_map)
+      {
+        if (i>255)
+          break;
+        if (strncmp(p.first.c_str(),"__tmp", 5) == 0)
+        {
+          types[i] = p.first.c_str();
+          i++;
+        }
+      }
+      ImGui::ListBox("Selected types", &cur_item, types, i);
+      bool add = ImGui::Button("Add this type");
+      bool finish = ImGui::Button("Finish selection");
+      if (add && cur_item >= 0)
+        selected_name = std::string(types[cur_item]);
+      if (finish)
+      {
+        metainfoManager.save_all();
+        selection_finished = false;
+      }
+    }
+  }
+  else
+  {
+    ImGui::Begin("Create new tree type by parameter selection");
+    ImGui::Text("Default settings %sparameter_selection_settings.blk",base_blk_path.c_str());
+    ImGui::Text("Default reference %sparameter_selection_reference.blk",base_blk_path.c_str());
+    bool start = ImGui::Button("Start");
+    ImGui::End();
+
+    if (start)
+    {
+      inputCmdBuffer.push(IC_TREE_GEN_PARAMETER_SELECTION);
+      selection_finished = true;
+    }
+  }
+}
+
 void GUI::render_main_toolbar()
 {
   ImGuiWindowFlags window_flags = 0;
@@ -39,7 +102,8 @@ void GUI::render_main_toolbar()
   bool press_1 = ImGui::Button(ICON_FA_GEAR);ImGui::SameLine();
   bool press_2 = ImGui::Button(ICON_FA_HOUSE);ImGui::SameLine();
   bool press_3 = ImGui::Button(ICON_FA_TREE);ImGui::SameLine();
-  bool press_4 = ImGui::Button(ICON_FA_COMPUTER);
+  bool press_4 = ImGui::Button(ICON_FA_COMPUTER);ImGui::SameLine();
+  bool press_5 = ImGui::Button(ICON_FA_DIAGRAM_PROJECT);
 
   ImGui::PopStyleVar(2);
   ImGui::End();
@@ -71,7 +135,13 @@ void GUI::render_main_toolbar()
     if (show)
       text_input();
   }
-
+  {
+    static bool show = false;
+    if (press_5)
+      show = !show;
+    if (show)
+      render_parameter_selection_menu();
+  }
   if (appCtx.active_cell_id >= 0)
     render_cell_info();
 }
@@ -200,11 +270,14 @@ void GUI::render_tree_plant_info()
   {
     if (i>255)
       break;
-    types[i] = p.first.c_str();
-    i++;
+    if (strncmp(p.first.c_str(),"__", 2) != 0)
+    {
+      types[i] = p.first.c_str();
+      i++;
+    }
   }
   ImGui::Begin("Plant tree"); 
-  ImGui::ListBox("Available Types", &cur_item, types, types_map.size());
+  ImGui::ListBox("Available Types", &cur_item, types, i);
   ImGui::End();
   if (cur_item != prev_cur_item)
   {

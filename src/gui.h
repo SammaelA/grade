@@ -11,6 +11,7 @@ public:
   void render_tree_plant_info();
   void render_model_creation_info();
   void text_input();
+  void render_parameter_selection_menu();
 
   void read_commands_from_string(std::string &block_str);
   void read_from_console_nonblock();
