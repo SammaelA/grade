@@ -23,6 +23,8 @@ bool get_dedicated_bbox(Branch *branch, BBox &bbox)
     }
     if (length(cross(a, b)) < 0.01)
         b = vec3(0, 1, 0);
+    if (length(cross(a, b)) < 0.01)
+        b = vec3(0, 0, 1);
     b = normalize(b - dot(a, b) * a);
     c = cross(a, b);
 

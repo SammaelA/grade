@@ -47,6 +47,7 @@ void debugl(uint level, const char *__restrict __fmt, ...);
 void debug(const char *__restrict __fmt, ...);
 void logerr(const char *__restrict __fmt, ...);
 void print_FB_status(GLuint status);
+std::string print_mat4x4(glm::mat4x4 mat);
 struct AllocData
 {
     long active_allocs = 0;

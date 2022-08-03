@@ -271,3 +271,24 @@ bool prepare_directory(std::string &save_path)
 }
 float smoothstep3(float x) { return -2*x*x*x + 3*x*x; }
 float smoothstep5(float x) { return 6*x*x*x*x*x - 15*x*x*x*x + 10*x*x*x; }
+std::string print_mat4x4(glm::mat4x4 mat)
+{
+  std::string res = "[";
+  for (int i=0;i<4;i++)
+  {
+    res +="[";
+    for (int j=0;j<4;j++)
+    {
+      float x = mat[i][j];
+      if (x == x)
+        res += std::to_string(mat[i][j]);
+      else 
+        res += "NaN";
+      if (j!=3)
+        res+=", ";
+    }
+    res +="]";
+  }
+  res+="]";
+  return res;
+}

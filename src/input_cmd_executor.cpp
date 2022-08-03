@@ -96,7 +96,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (!genCtx.inited)
         break;
       glm::vec4 world_pos_type = cmd.args.get_vec4("world_pos_type");
-      // we can plant the tree actually
       Block b;
       glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
       b.add_vec2("pos", pos);
@@ -173,6 +172,31 @@ void InputCmdExecutor::execute(int max_cmd_count)
       return;
     case IC_EXIT_FINISH:
       exit(0);
+      break;
+    case IC_TREE_GEN_PARAMETER_SELECTION:
+    {
+      Block b, set_info, ref_info;
+      BlkManager man;
+      man.load_block_from_file("parameter_selection_settings.blk", set_info);
+      man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+      b.add_block("settings", &set_info);
+      b.add_block("reference", &ref_info);
+      genCmdBuffer.push(GC_TREE_GEN_PARAMETER_SELECTION, b);
+      int types_cnt = set_info.get_int("best_results_count",1);
+      bool show_res = set_info.get_bool("show_results",true);
+      if (show_res)
+      {
+        for (int i=0;i<types_cnt;i++)
+        {
+          std::string type_name = "__tmp_"+std::to_string(i);
+          Block b;
+          glm::vec4 pos = glm::vec4(100*i,0,0,1);
+          b.add_vec4("world_pos_type", pos);
+          b.add_string("type_name", type_name);
+          inputCmdBuffer.push(IC_PLANT_TREE_IMMEDIATE, b);
+        }
+      }
+    }
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

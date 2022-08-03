@@ -621,10 +621,6 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
                0, 1000, false, false, true, false);
 
-    grove.instancedBranchesDirect.clear();
-    grove.instancedBranchesDirect.reserve(grove.instancedBranches.size());
-    for (auto it = grove.instancedBranches.begin(); it != grove.instancedBranches.end(); it++)
-      grove.instancedBranchesDirect.emplace_back(it);
     recreate_compressed_trees(grove);
 
     originalBranches.clear_removed();
@@ -636,6 +632,12 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 
 void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
 {
+
+  grove.instancedBranchesDirect.clear();
+  grove.instancedBranchesDirect.reserve(grove.instancedBranches.size());
+  for (auto it = grove.instancedBranches.begin(); it != grove.instancedBranches.end(); it++)
+    grove.instancedBranchesDirect.emplace_back(it);
+
   // fill tree structures
   // TODO: work only with tree structures that changed after clustering
   std::set<int> p_t_ids;

@@ -4,7 +4,7 @@
 #include "generation/metainfo_manager.h"
 #include "generation/scene_generator_plants.h"
 #include "generation/grove_packer.h"
-
+#include "parameter_selection/parameter_selection.h"
 namespace scene_gen
 {
   void align(float &from, float by)
@@ -407,6 +407,28 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       cmd.args.get_arr("ids",trees);
       logerr("removing %d trees", trees.size());
       scene_gen::remove_trees_from_scene(genCtx, trees);
+    }
+      break;
+    case GC_TREE_GEN_PARAMETER_SELECTION:
+    {
+      Block *set_bl = cmd.args.get_block("settings");
+      Block *ref_bl = cmd.args.get_block("reference");
+      if (set_bl && ref_bl)
+      {
+        ParameterSelector sel;
+        auto result = sel.parameter_selection(*ref_bl, *set_bl, nullptr);
+
+        int i = 0;
+        for (auto &res : result.best_candidates)
+        {
+          metainfoManager.add_tree_type(res,std::string("__tmp_")+std::to_string(i));
+          i++;
+        }
+      }
+      else
+      {
+        logerr("cannot perform parameter selection settings or/and reference blocks are not found");
+      }
     }
       break;
     default:

@@ -1,11 +1,12 @@
 {
 cmd {cmd_code:i=3}
 cmd {cmd_code:i=0}
-cmd {
-  cmd_code:i = 7
-world_pos_type:p4 = 0, 67.937500, 0, 1.000000
-type_name:s = "small_oak_simplified"
-}
+cmd {cmd_code:i=14}
+//cmd {
+//  cmd_code:i = 7
+//world_pos_type:p4 = 0, 67.937500, 0, 1.000000
+//type_name:s = "small_oak_simplified"
+//}
 //cmd {cmd_code:i=12}
 //cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,-100,  0,125,0,-34,  0,0,125,100,  0,0,0,1}
 //cmd {cmd_code:i=1 name:s = "farm_1" on_terrain:b = true transform:m4 = 125,0,0,0,  0,125,0,-34,  0,0,125,100,  0,0,0,1}
