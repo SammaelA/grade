@@ -55,9 +55,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
       for (int i = 0; i < cmd.args.size(); i++)
       {
         uint64_t u_id = cmd.args.get_uint64(i, 0);
-        BlkManager man;
+        
         std::string s;
-        man.save_block_to_string(s, cmd.args);
+        save_block_to_string(s, cmd.args);
         if (u_id > 0)
         {
           unsigned a, b, c, d;
@@ -180,9 +180,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
       Block *ref_info_p = cmd.args.get_block("reference");
       if (!set_info_p || !ref_info_p)
       {
-        BlkManager man;
-        man.load_block_from_file("parameter_selection_settings.blk", set_info);
-        man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+        
+        load_block_from_file("parameter_selection_settings.blk", set_info);
+        load_block_from_file("parameter_selection_reference.blk", ref_info);
         set_info_p = &set_info;
         ref_info_p = &ref_info;
       }

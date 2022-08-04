@@ -354,10 +354,10 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     ParameterList parList, bestParList;
 
     tree_ggd.types[0].get_params()->write_parameter_list(parList);
-    BlkManager man;
+    
     Block b;
 
-    man.load_block_from_file(gen_name + "_param_borders.blk", b);
+    load_block_from_file(gen_name + "_param_borders.blk", b);
     parList.load_borders_from_blk(b);
     std::vector<ParameterList> initial_params;
     bool use_existing_presets = selection_settings.get_bool("use_existing_presets", true);

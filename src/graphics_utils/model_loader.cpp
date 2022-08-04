@@ -77,8 +77,8 @@ void transform_model_to_standart_form(Model *m)
 
 void load_default_blk()
 {
-    BlkManager man;
-    man.load_block_from_file("models.blk", obj_models_blk);
+    
+    load_block_from_file("models.blk", obj_models_blk);
     obj_models_blk_loaded = true;
 }
 

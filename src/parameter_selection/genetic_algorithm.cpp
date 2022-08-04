@@ -1234,20 +1234,20 @@ void GeneticAlgorithm::recalculate_fitness()
 
 void GeneticAlgorithm::save_load_function_stat(bool load)
 {
-    BlkManager man;
+    
     std::string stat_block_name = "GA_function_stats.blk";
     std::string function_stat_block_name = "function_values_stat.blk";
     if (load == true)
     {
         Block f_stat_block;
-        man.load_block_from_file(function_stat_block_name, f_stat_block);
+        load_block_from_file(function_stat_block_name, f_stat_block);
         Block *b2 = f_stat_block.get_block(opt_function.name);
         function_stat = my_opt::FunctionStat(all_parameters_cnt);
         if (b2 && opt_function.version == b2->get_int("version",-1))
             function_stat.save_load_blk(*b2, false);
     }
     Block stat_block;
-    man.load_block_from_file(stat_block_name, stat_block);
+    load_block_from_file(stat_block_name, stat_block);
     Block *bl = stat_block.get_block(opt_function.name);
     if (!bl)
     {
@@ -1296,6 +1296,6 @@ void GeneticAlgorithm::save_load_function_stat(bool load)
         bl->set_arr("di_cnt", di_cnt_h);
         bl->set_arr("di_res", di_res_h);
 
-        man.save_block_to_file(stat_block_name, stat_block);
+        save_block_to_file(stat_block_name, stat_block);
     }
 }

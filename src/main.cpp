@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
     glewInit();
     Tiny::view.lineWidth = 1.0f;
     Tiny::window("Procedural Tree", appContext.window_width, appContext.windows_height);
-    BlkManager man;
+    
     Block textures_list;
-    man.load_block_from_file("resources.blk", textures_list);
+    load_block_from_file("resources.blk", textures_list);
     textureManager = TextureManager("./resources/textures/", textures_list);
     model_loader::load_default_blk();
 

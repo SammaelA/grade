@@ -618,9 +618,9 @@ float simulated_annealing_selection(ParametersSet *param, Metric *metric,
 }
 void ParameterSelector::select(ParametersSet *param, std::string selection_program_name)
 {
-    BlkManager man;
+    
     Block blk;
-    man.load_block_from_file("parameter_selection.blk",blk);
+    load_block_from_file("parameter_selection.blk",blk);
     SetSelectionProgram set_p;
     load_from_blk(set_p,selection_program_name,blk);
     Metric *metric = nullptr;
@@ -665,7 +665,7 @@ void ParameterSelector::select(ParametersSet *param, std::string selection_progr
     
     Block res_blk;
     param->save_to_blk(res_blk);
-    man.save_block_to_file("selection_result.blk",res_blk);
+    save_block_to_file("selection_result.blk",res_blk);
     res_blk.clear();
 }
 

@@ -12,10 +12,10 @@ void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction
     
     std::vector<std::vector<float>> params(batch_size, param_list);
 
-    BlkManager man;
+    
     Block b1;
     if (!reload)
-        man.load_block_from_file("function_values_stat.blk", b1);
+        load_block_from_file("function_values_stat.blk", b1);
     Block *b2 = b1.get_block(stat.name);
     if (b2 && stat.version == b2->get_int("version",-1))
         stat.save_load_blk(*b2, false);
@@ -80,7 +80,7 @@ void my_opt::get_function_stat(std::vector<float> &param_list, const OptFunction
     b2->set_int("version", stat.version);
     stat.save_load_blk(*b2, true);
     b1.set_block(stat.name, b2);
-    man.save_block_to_file("function_values_stat.blk", b1);
+    save_block_to_file("function_values_stat.blk", b1);
 }
 my_opt::FunctionStat::FunctionStat(int variables_cnt)
 {

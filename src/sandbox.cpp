@@ -240,9 +240,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         
         ParameterList par;
         type.get_params()->write_parameter_list(par);
-        BlkManager man;
+        
         Block b;
-        man.load_block_from_file("weber_penn_gen_param_borders.blk", b);
+        load_block_from_file("weber_penn_gen_param_borders.blk", b);
         par.load_borders_from_blk(b);
         par.print();
         return;
@@ -289,10 +289,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     generate_for_par_selection(params, imp_sim, tree_ggd, scene.heightmap, ref_tree, _a, nullptr);  
 */
     Block b, ref_info;
-    BlkManager man;
+    
     metainfoManager.reload_all();
-    man.load_block_from_file("parameter_selection_settings.blk", b);
-    man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+    load_block_from_file("parameter_selection_settings.blk", b);
+    load_block_from_file("parameter_selection_reference.blk", ref_info);
     std::string add_str = "";
     if (argc == 3 && std::string(argv[2]) != "-render")
     {
@@ -302,7 +302,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     if (add_str != "")
     {
         Block add_ref;
-        man.load_block_from_string(add_str, add_ref);
+        load_block_from_string(add_str, add_ref);
         ref_info.add_detalization(add_ref);
     }
     ParameterSelector sel;

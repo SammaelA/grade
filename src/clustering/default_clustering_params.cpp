@@ -26,9 +26,9 @@ void load_default_blocks()
     if (params_loaded)
         return;
     params_loaded = true;
-    BlkManager man;
+    
     Block base;
-    man.load_block_from_file(default_params_name,base);
+    load_block_from_file(default_params_name,base);
     Block *b = base.get_block("trunks_default_params");
     if (b)
     {

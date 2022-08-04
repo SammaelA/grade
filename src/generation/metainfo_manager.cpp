@@ -10,20 +10,20 @@ Biome dummy3;
 void MetainfoManager::load_tree_types()
 {
     int id = 0;
-    BlkManager man;
+    
     /*
     Block ge_gen_types, my_gen_types, simple_gen_types, simpliest_gen_types;
-    man.load_block_from_file("ge_gen_presets.blk", ge_gen_types);
-    man.load_block_from_file("my_gen_presets.blk", my_gen_types);
-    man.load_block_from_file("simple_gen_presets.blk", simple_gen_types);
-    man.load_block_from_file("simpliest_gen_presets.blk", simpliest_gen_types);
+    load_block_from_file("ge_gen_presets.blk", ge_gen_types);
+    load_block_from_file("my_gen_presets.blk", my_gen_types);
+    load_block_from_file("simple_gen_presets.blk", simple_gen_types);
+    load_block_from_file("simpliest_gen_presets.blk", simpliest_gen_types);
     */
 
     #define LOAD2(gen_name, Param, Suffix) \
     { \
         Block b; \
         std::string block_name = std::string(gen_name) + std::string(Suffix); \
-        man.load_block_from_file(block_name, b); \
+        load_block_from_file(block_name, b); \
         for (int i = 0; i < b.size(); i++) \
             { \
                 Block *bl = b.get_block(i); \
@@ -55,10 +55,10 @@ void MetainfoManager::load_tree_types()
 
 void MetainfoManager::load_grass_types()
 {
-    BlkManager man;
+    
     Block grass_types_blk;
 
-    man.load_block_from_file("grass_presets.blk", grass_types_blk);
+    load_block_from_file("grass_presets.blk", grass_types_blk);
     for (int i = 0; i < grass_types_blk.size(); i++)
     {
         Block *bl = grass_types_blk.get_block(i);
@@ -77,10 +77,10 @@ void MetainfoManager::load_grass_types()
 
 void MetainfoManager::load_biomes()
 {
-    BlkManager man;
+    
     Block biomes_blk;
 
-    man.load_block_from_file("biomes.blk", biomes_blk);
+    load_block_from_file("biomes.blk", biomes_blk);
     for (int i = 0; i < biomes_blk.size(); i++)
     {
         Block *bl = biomes_blk.get_block(i);
@@ -248,7 +248,7 @@ void MetainfoManager::add_tree_type(TreeTypeData &ttd, std::string name)
 
 void MetainfoManager::save_tree_types()
 {
-    BlkManager man;
+    
 
     #define SAVE(gen_name, Param) \
     { \
@@ -269,7 +269,7 @@ void MetainfoManager::save_tree_types()
             ttid++; \
         } \
         std::string block_name = std::string(gen_name) + std::string("_saved_presets.blk"); \
-        man.save_block_to_file(block_name, bl); \
+        save_block_to_file(block_name, bl); \
     }
 
     SAVE("ge_gen", GETreeParameters);

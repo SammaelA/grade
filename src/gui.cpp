@@ -219,11 +219,11 @@ void GUI::render_parameter_selection_menu()
     if (!settings_loaded)
     {
       settings_loaded = true;
-      BlkManager man;
+      
       set_info.clear();
       ref_info.clear();
-      man.load_block_from_file("parameter_selection_settings.blk", set_info);
-      man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+      load_block_from_file("parameter_selection_settings.blk", set_info);
+      load_block_from_file("parameter_selection_reference.blk", ref_info);
     }
     ImGui::Begin("Create new tree type by parameter selection");
     blk_modification_interface(&set_info, "Parameter selection settings");
@@ -233,9 +233,9 @@ void GUI::render_parameter_selection_menu()
       settings_loaded = false;
     if (ImGui::Button("Save settings"))
     {
-      BlkManager man;
-      man.save_block_to_file("parameter_selection_settings.blk", set_info);
-      man.save_block_to_file("parameter_selection_reference.blk", ref_info);
+      
+      save_block_to_file("parameter_selection_settings.blk", set_info);
+      save_block_to_file("parameter_selection_reference.blk", ref_info);
     }
     bool start = ImGui::Button("Start");
     ImGui::End();

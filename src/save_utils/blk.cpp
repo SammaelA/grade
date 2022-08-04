@@ -476,7 +476,7 @@ bool load_block(const char *data, int &cur_pos, Block &b)
     }
 }
 
-bool BlkManager::load_block_from_string(std::string &str, Block &b)
+bool load_block_from_string(std::string &str, Block &b)
 {
     if (str.empty())
         return false;
@@ -495,7 +495,7 @@ bool BlkManager::load_block_from_string(std::string &str, Block &b)
     }    
 }
 
-bool BlkManager::load_block_from_file(std::string path, Block &b)
+bool load_block_from_file(std::string path, Block &b)
 {
     std::fstream f(base_blk_path + path);
     std::stringstream iss;
@@ -814,12 +814,12 @@ void save_value(std::string &str, Block::Value &v)
     }
 }
 
-void BlkManager::save_block_to_string(std::string &str, Block &b)
+void save_block_to_string(std::string &str, Block &b)
 {
     save_block(str, b);   
 }
 
-void BlkManager::save_block_to_file(std::string path, Block &b)
+void save_block_to_file(std::string path, Block &b)
 {
     std::string input;
 

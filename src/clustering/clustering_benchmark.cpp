@@ -61,10 +61,10 @@ void ClusteringBenchmark::perform_benchmark(std::string benchmark_blk_path, Abst
     generation_time  = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     debug("Original grove created. Took %f seconds\n",1e-4*generation_time);
     
-    BlkManager man;
+    
     Block settings;
     Block default_settings;
-    man.load_block_from_file(benchmark_blk_path, settings);
+    load_block_from_file(benchmark_blk_path, settings);
     std::vector<ClusteringResult> results;
     settings.add_block("default", &default_settings);
 

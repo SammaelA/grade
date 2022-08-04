@@ -22,9 +22,9 @@ bool add_command_block(Block &b)
 }
 void GUI::read_commands_from_string(std::string &block_str)
 {
-  BlkManager man;
+  
   Block b;
-  man.load_block_from_string(block_str, b);
+  load_block_from_string(block_str, b);
   bool command_block = add_command_block(b);
   if (!command_block)
   {
@@ -33,7 +33,7 @@ void GUI::read_commands_from_string(std::string &block_str)
     {
       // list of commands from file
       Block pack;
-      man.load_block_from_file(blk_path, pack);
+      load_block_from_file(blk_path, pack);
       for (int i = 0; i < pack.size(); i++)
       {
         Block *cmd = pack.get_block(i);

@@ -321,12 +321,12 @@ void TreeLoaderBlk::load_tree(GroveGenerationData ggd, ::Tree &tree_external, He
 }
 void TreeLoaderBlk::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
 {
-    BlkManager man;
+    
     for (int i=0;i<ggd.trees_count;i++)
     {
         std::string blk_path = trees_directory + "/" + blks_base_name + "_" + std::to_string(trees_taken) + ".bsg";
         Block b;
-        man.load_block_from_file(blk_path, b);
+        load_block_from_file(blk_path, b);
         load_tree(ggd,trees_external[i],h,b);
         trees_taken++;
         

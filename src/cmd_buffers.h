@@ -53,9 +53,9 @@ public:
     CommandBuffer() = default;
     ~CommandBuffer()
     {
-        BlkManager man;
+        
         T t;
-        man.save_block_to_file(std::string("../logs/") + typeid(t).name() + std::string("_log.blk"), cmd_log);
+        save_block_to_file(std::string("../logs/") + typeid(t).name() + std::string("_log.blk"), cmd_log);
     }
 private:
     std::queue<Command> commands;

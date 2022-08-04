@@ -230,13 +230,8 @@ struct Block
     std::vector<Value> values;
 };
 
-class BlkManager
-{
-public:
-    bool load_block_from_string(std::string &str, Block &b);
-    bool load_block_from_file(std::string path, Block &b);
-    void save_block_to_string(std::string &str, Block &b);
-    void save_block_to_file(std::string path, Block &b);
-};
-
+extern bool load_block_from_string(std::string &str, Block &b);
+extern bool load_block_from_file(std::string path, Block &b);
+extern void save_block_to_string(std::string &str, Block &b);
+extern void save_block_to_file(std::string path, Block &b);
 extern std::string base_blk_path;

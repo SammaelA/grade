@@ -50,7 +50,7 @@ void PythonTreeGen::create_grove(GroveGenerationData ggd, ::Tree *trees_external
 
     PythonHelper ph;
     ph.init(scripts_path);
-    BlkManager man;
+    
 
     for (int i=0;i<ggd.trees_count;i++)
     {
@@ -73,7 +73,7 @@ void PythonTreeGen::create_grove(GroveGenerationData ggd, ::Tree *trees_external
             b.add_vec3("position",pos);
             b.add_double("scale",scale);
 
-            man.load_block_from_file(blk_path, b);
+            load_block_from_file(blk_path, b);
             load_tree(ggd,trees_external[i],h,b);
             trees_taken++;
         }

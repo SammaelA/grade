@@ -753,8 +753,8 @@ void GrovePacker::init(Block &packing_params_block)
 void GrovePacker::init()
 {
     inited = true;
-    BlkManager man;
-    man.load_block_from_file("settings.blk",settings_block);  
+    
+    load_block_from_file("settings.blk",settings_block);  
     base_init(); 
 }
 
