@@ -12,7 +12,7 @@ public:
   void render_model_creation_info();
   void text_input();
   void render_parameter_selection_menu();
-
+  void blk_modification_interface(Block *b, const std::string &title);
   void read_commands_from_string(std::string &block_str);
   void read_from_console_nonblock();
 private:

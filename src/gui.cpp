@@ -7,8 +7,152 @@
 #include "third_party/icons.h"
 #include <map>
 
+char __input_buf[4096];
+
+void GUI::blk_modification_interface(Block *b, const std::string &title)
+{
+  if (ImGui::CollapsingHeader(title.c_str()))
+  {
+    if (b)
+    {
+      for (int i=0;i<b->size();i++)
+      {
+        Block::Value &val = b->values[i];
+        const char *name = b->names[i].c_str();
+        switch (val.type)
+        {
+        case Block::ValueType::BOOL:
+          ImGui::Checkbox(name, &(val.b));
+        break;
+        case Block::ValueType::INT:
+        {
+          int v = val.i;
+          ImGui::InputInt(name, &v);
+          val.i = v;
+        }
+        break;
+        case Block::ValueType::UINT64:
+        {
+          int v = val.u;
+          ImGui::InputInt(name, &v);
+          val.u = v;
+        }
+        break;
+        case Block::ValueType::DOUBLE:
+          ImGui::InputDouble(name, &(val.d));
+        break;
+        case Block::ValueType::VEC2:
+        {
+          float v[2];
+          v[0] = val.v2.x;
+          v[1] = val.v2.y;
+          ImGui::InputFloat2(name, v);
+          val.v2.x = v[0];
+          val.v2.y = v[1];
+        }
+        break;
+        case Block::ValueType::VEC3:
+        {
+          float v[3];
+          v[0] = val.v3.x;
+          v[1] = val.v3.y;
+          v[2] = val.v3.z;
+          ImGui::InputFloat3(name, v);
+          val.v3.x = v[0];
+          val.v3.y = v[1];
+          val.v3.z = v[2];
+        }
+        break;
+        case Block::ValueType::VEC4:
+        {
+          float v[4];
+          v[0] = val.v4.x;
+          v[1] = val.v4.y;
+          v[2] = val.v4.z;
+          v[3] = val.v4.w;
+          ImGui::InputFloat4(name, v);
+          val.v4.x = v[0];
+          val.v4.y = v[1];
+          val.v4.z = v[2];
+          val.v4.w = v[3];
+        }
+        break;
+        case Block::ValueType::IVEC2:
+        {
+          int v[2];
+          v[0] = val.iv2.x;
+          v[1] = val.iv2.y;
+          ImGui::InputInt2(name, v);
+          val.iv2.x = v[0];
+          val.iv2.y = v[1];
+        }
+        break;
+        case Block::ValueType::IVEC3:
+        {
+          int v[3];
+          v[0] = val.iv3.x;
+          v[1] = val.iv3.y;
+          v[2] = val.iv3.z;
+          ImGui::InputInt3(name, v);
+          val.iv3.x = v[0];
+          val.iv3.y = v[1];
+          val.iv3.z = v[2];
+        }
+        break;
+        case Block::ValueType::IVEC4:
+        {
+          int v[4];
+          v[0] = val.iv4.x;
+          v[1] = val.iv4.y;
+          v[2] = val.iv4.z;
+          v[3] = val.iv4.w;
+          ImGui::InputInt4(name, v);
+          val.iv4.x = v[0];
+          val.iv4.y = v[1];
+          val.iv4.z = v[2];
+          val.iv4.w = v[3];
+        }
+        break;
+        case Block::ValueType::MAT4:
+        {
+          std::string n0 = std::string(name)+"[0]";
+          std::string n1 = std::string(name)+"[1]";
+          std::string n2 = std::string(name)+"[2]";
+          std::string n3 = std::string(name)+"[3]";
+          ImGui::InputFloat4(n0.c_str(), &(val.m4[0].x));
+          ImGui::InputFloat4(n1.c_str(), &(val.m4[1].x));
+          ImGui::InputFloat4(n2.c_str(), &(val.m4[2].x));
+          ImGui::InputFloat4(n3.c_str(), &(val.m4[3].x));
+        }
+        break;
+        case Block::ValueType::STRING:
+        {
+          strncpy( __input_buf, val.s->c_str(), val.s->size()+1);
+          bool get = ImGui::InputText(name, __input_buf, 4096, ImGuiInputTextFlags_EnterReturnsTrue);
+          if (get)
+          {
+            *(val.s) = std::string(__input_buf);
+          }
+        }
+        break;
+        case Block::ValueType::BLOCK:
+          blk_modification_interface(val.bl, b->names[i]);
+          break;
+        default:
+          ImGui::Text("not supported");
+          break;
+        }
+      }
+    }
+    else
+    {
+      ImGui::Text("empty");
+    }
+  }
+}
+
 GUI::GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx) : appCtx(app_ctx),
-                                                                                       genCtx(gen_ctx)
+                                                                       genCtx(gen_ctx)
 {
   ImGuiIO &io = ImGui::GetIO();
   io.Fonts->AddFontDefault();
@@ -70,15 +214,38 @@ void GUI::render_parameter_selection_menu()
   }
   else
   {
+    static bool settings_loaded = false;
+    static Block set_info, ref_info;
+    if (!settings_loaded)
+    {
+      settings_loaded = true;
+      BlkManager man;
+      set_info.clear();
+      ref_info.clear();
+      man.load_block_from_file("parameter_selection_settings.blk", set_info);
+      man.load_block_from_file("parameter_selection_reference.blk", ref_info);
+    }
     ImGui::Begin("Create new tree type by parameter selection");
-    ImGui::Text("Default settings %sparameter_selection_settings.blk",base_blk_path.c_str());
-    ImGui::Text("Default reference %sparameter_selection_reference.blk",base_blk_path.c_str());
+    blk_modification_interface(&set_info, "Parameter selection settings");
+    blk_modification_interface(&ref_info, "Parameter selection reference");
+
+    if (ImGui::Button("Load settings"))
+      settings_loaded = false;
+    if (ImGui::Button("Save settings"))
+    {
+      BlkManager man;
+      man.save_block_to_file("parameter_selection_settings.blk", set_info);
+      man.save_block_to_file("parameter_selection_reference.blk", ref_info);
+    }
     bool start = ImGui::Button("Start");
     ImGui::End();
 
     if (start)
     {
-      inputCmdBuffer.push(IC_TREE_GEN_PARAMETER_SELECTION);
+      Block b;
+      b.add_block("settings", &set_info);
+      b.add_block("reference", &ref_info);
+      inputCmdBuffer.push(IC_TREE_GEN_PARAMETER_SELECTION, b);
       selection_finished = true;
     }
   }
