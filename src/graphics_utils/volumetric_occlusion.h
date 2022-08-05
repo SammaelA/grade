@@ -70,6 +70,7 @@ public:
     void read_func_simple(const std::function<void(float )> reader);
     void relocate(glm::vec3 new_pos) { center = new_pos; }
     int get_block_size() { return block_size; }
+    bool empty() {return (voxels == nullptr);}
     static int get_default_block_size() { return 5; }
 private:
     struct LightParams
@@ -104,7 +105,7 @@ private:
     std::vector<int> mip_offsets;
     std::vector<int> mip_size_decrease;
     std::vector<glm::ivec3> mip_vox_xyz;
-    float *voxels;
+    float *voxels = nullptr;
     std::list<Light> point_lights;
     std::list<Light> directed_lights;
     float fast_voxel_occlusion(glm::ivec3 voxel);

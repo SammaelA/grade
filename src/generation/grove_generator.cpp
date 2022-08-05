@@ -39,7 +39,10 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
         t_counts.at(treeTypesCatalogue[p.first].generator_name)++;
         trees_planted++;
     }
-
+    for (auto &p : generators)
+    {
+      p.second->set_seed(urandi(0, RAND_MAX));
+    }    
     while (trees_planted < prototype.trees_count || generating)
     {
         if (trees_planted < prototype.trees_count)

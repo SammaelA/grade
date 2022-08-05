@@ -42,20 +42,41 @@ namespace scene_gen
     return small_voxel_size;
   }
   
-  LightVoxelsCube *create_grove_voxels(Cell &c)
+  LightVoxelsCube *create_grove_voxels(Cell &c, std::vector<TreeTypeData> &types)
   {
-    glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
-    glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
+    bool voxels_needed = false;
+    //we need voxels array only if we use generators that requires it
+    for (auto prototype : c.prototypes)
+    {
+      if (voxels_needed)
+        break;
+      for (auto &p : prototype.possible_types)
+      {
+        std::string g_name = types[p.first].generator_name;
+        if (get_generator(g_name)->use_voxels_for_generation())
+        {
+          voxels_needed = true;
+          break;
+        }
+      }
+    }
+    if (voxels_needed)
+    {
+      glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+      glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
 
-    //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
-    //as the cell it belongs to
-    float small_voxel_size = get_small_voxels_size(c);
-    auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size(), 1.0f);
-    //AABB box = v->get_bbox();
-    //debug("created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f]\n",
-    //box.min_pos.x,box.min_pos.y,
-    //box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z);
-    return v;
+      //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
+      //as the cell it belongs to
+      float small_voxel_size = get_small_voxels_size(c);
+      auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size(), 1.0f);
+      //AABB box = v->get_bbox();
+      //debug("created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f]\n",
+      //box.min_pos.x,box.min_pos.y,
+      //box.min_pos.z, box.max_pos.x,box.max_pos.y,box.max_pos.z);
+      return v;
+    }
+    else
+      return new LightVoxelsCube();
   }
 
   void create_cell_small_voxels(Cell &c, SceneGenerationContext &ctx)
@@ -350,25 +371,40 @@ namespace scene_gen
         ggd.trees_count = tc;
 
         GroveGenerator grove_gen;
-        LightVoxelsCube *voxels = create_grove_voxels(c);
+        LightVoxelsCube *voxels = create_grove_voxels(c, ggd.types);
+
         c.cell_lock.lock();
         std::vector<int> deps = c.depends;
         if (!c.voxels_small)
           create_cell_small_voxels(c, ctx);
-        voxels->add_voxels_cube(c.voxels_small, true);
         c.cell_lock.unlock();
         for (auto &dep_cid : deps)
         {
           cells[dep_cid].cell_lock.lock();
           if (!cells[dep_cid].voxels_small)
             create_cell_small_voxels(cells[dep_cid], ctx);
-          voxels->add_voxels_cube(cells[dep_cid].voxels_small, true);
           cells[dep_cid].cell_lock.unlock();
         }
+        
+        if (!voxels->empty())
+        {
+          c.cell_lock.lock();
+          voxels->add_voxels_cube(c.voxels_small, true);
+          c.cell_lock.unlock();
 
-        ctx_lock.lock();
-        voxels->add_heightmap(*(ctx.scene.heightmap));
-        ctx_lock.unlock();
+          for (auto &dep_cid : deps)
+          {
+            cells[dep_cid].cell_lock.lock();
+            if (!cells[dep_cid].voxels_small)
+              create_cell_small_voxels(cells[dep_cid], ctx);
+            voxels->add_voxels_cube(cells[dep_cid].voxels_small, true);
+            cells[dep_cid].cell_lock.unlock();
+          }
+
+          ctx_lock.lock();
+          voxels->add_heightmap(*(ctx.scene.heightmap));
+          ctx_lock.unlock();
+        }
 
         for (auto &prototype : c.prototypes)
         {
