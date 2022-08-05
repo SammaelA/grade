@@ -13,15 +13,22 @@ occlusion(_center, _size, _cell_size)
     cell_size = _cell_size;
     mask = _mask;
     biome_mask = _bm;
-    AABB box = voxels->get_bbox();
     glm::vec4 bord = heightmap->get_borders();//(min_pos,max_pos)
-    if (center.x - size.x < box.min_pos.x ||
-        center.z - size.y < box.min_pos.z ||
-        center.x + size.x > box.max_pos.x ||
-        center.z + size.y > box.max_pos.z)
+    if (!voxels->empty())
     {
-        logerr("planter error: plant area is outside the provided voxels array");
-        return;
+      AABB box = voxels->get_bbox();
+      if (center.x - size.x < box.min_pos.x ||
+          center.z - size.y < box.min_pos.z ||
+          center.x + size.x > box.max_pos.x ||
+          center.z + size.y > box.max_pos.z)
+      {
+          logerr("planter error: plant area is outside the provided voxels array");
+          return;
+      }
+    }
+    else
+    {
+      voxels = nullptr;
     }
     if (center.x - size.x < bord.x ||
         center.z - size.y < bord.y ||
@@ -42,12 +49,14 @@ std::vector<glm::vec3> Planter::get_saplings()
     int cnt = saplings_left >= 2 ? saplings_left/2 : saplings_left;
     std::vector<glm::vec3> saplings;
     //спроецировать воксельный массив на occlusion
-    std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) ->float
+    if (voxels)
     {
-        return voxels->get_occlusion_projection(glm::vec3(p.x,0,p.y));
-    };
-    occlusion.fill_func(func);
-
+      std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) ->float
+      {
+          return voxels->get_occlusion_projection(glm::vec3(p.x,0,p.y));
+      };
+      occlusion.fill_func(func);
+    }
     for (int i=0;i<cnt;i++)
     {
         const int max_points = 50;
