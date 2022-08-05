@@ -41,12 +41,11 @@ int LVC_divisible(int a, int b)
         return a;
     }
 }
-LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size, float light_precision,
+LightVoxelsCube::LightVoxelsCube(glm::vec3 center, glm::vec3 size, float base_size,
                                  int mip_levels, int mip_decrease, int preferred_block_size):
-LightVoxelsCube(center, vox_sizes(size,base_size / light_precision), base_size / light_precision, mip_levels, mip_decrease,preferred_block_size)
+LightVoxelsCube(center, vox_sizes(size,base_size), base_size, mip_levels, mip_decrease,preferred_block_size)
 {
-    lightParams.penumbraDepth = MAX(1, lightParams.penumbraDepth/voxel_size);
-    lightParams.searchDepth = MAX(1, light_precision * lightParams.searchDepth);
+
 }
 LightVoxelsCube::LightVoxelsCube(glm::vec3 cent, glm::ivec3 sizes, float vox_size, int _mip_levels, int _mip_decrease, int preferred_block_size):
 voxel_size(vox_size)
@@ -66,8 +65,6 @@ voxel_size(vox_size)
     block_x = ceil((2*vox_x + 1.0)/block_size);
     block_y = ceil((2*vox_y + 1.0)/block_size);
     block_z = ceil((2*vox_z + 1.0)/block_size);
-
-    set_directed_light(glm::vec3(0, 1, 0), 1);
 
     count = 0;
     for (int i=0;i<mip_levels;i++)
@@ -207,20 +204,6 @@ void LightVoxelsCube::get_data(float **data, glm::ivec3 &size)
     size.y = vox_y;
     size.z = vox_z;
 }
-void LightVoxelsCube::set_occluder_voxel(glm::ivec3 voxel, float strength)
-{
-    if (in_voxel_cube(voxel))
-    {
-        voxels[v_to_i(voxel)] += strength;
-    }
-}
-void LightVoxelsCube::replace_occluder_voxel(glm::ivec3 voxel, float strength)
-{
-    if (in_voxel_cube(voxel))
-    {
-        voxels[v_to_i(voxel)] = strength;
-    }
-}
 float LightVoxelsCube::get_occlusion_voxel(glm::ivec3 voxel)
 {
     if (in_voxel_cube(voxel))
@@ -268,10 +251,6 @@ int LightVoxelsCube::get_mip_decrease()
     return mip_decrease;
 }
 
-void LightVoxelsCube::print_average_occlusion()
-{
-    debugl(2, "average_occ %f\n", sum_occlusion / occ_count);
-}
 void LightVoxelsCube::clear()
 {
     if (voxels)
@@ -289,135 +268,13 @@ LightVoxelsCube::~LightVoxelsCube()
 }
 void LightVoxelsCube::set_occluder(glm::vec3 pos, float strenght)
 {
-    set_occluder_pyramid(pos,strenght);
-}
-inline void LightVoxelsCube::set_point_light(glm::vec3 pos, float strength)
-{
-    point_lights.push_back(Light(pos, strength));
-}
-inline void LightVoxelsCube::set_directed_light(glm::vec3 direction, float strength)
-{
-    directed_lights.push_back(Light(glm::normalize(direction), strength));
+    set_occluder_simple(pos,strenght);
 }
 float LightVoxelsCube::get_occlusion(glm::vec3 pos)
 {
     if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
         return 1e9;
     return get_occlusion_trilinear(pos);
-}
-glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ext(glm::vec3 pos, int light_test_r, float *occlusion = nullptr)
-{
-    float min_occ = 1e10;
-    const float BIAS = 0.001;
-    glm::vec3 min_shift(1, 1, 1);
-    std::vector<glm::vec3> min_shifts;
-    for (int i = -light_test_r; i <= light_test_r; i++)
-    {
-        for (int j = -light_test_r; j <= light_test_r; j++)
-        {
-            for (int k = -light_test_r; k <= light_test_r; k++)
-            {
-                glm::vec3 shift = voxel_size * glm::vec3(i, j, k);
-                float cur_occ = get_occlusion(pos + shift);
-                if (abs(cur_occ - min_occ) < BIAS)
-                {
-                    min_shifts.push_back(shift);
-                }
-                if (cur_occ < min_occ)
-                {
-                    min_occ = cur_occ;
-                    min_shifts.clear();
-                    min_shifts.push_back(shift);
-                }
-            }
-        }
-    }
-    int min_sz = min_shifts.size();
-    min_shift = min_shifts[urandi(0,min_sz)];
-    min_shift = glm::normalize(min_shift + glm::vec3(0.0, 0.0001, 0.0));
-    if (occlusion)
-        *occlusion = get_occlusion(pos - voxel_size*light_test_r*min_shift);
-    return min_shift;
-}
-float LightVoxelsCube::get_occlusion_cone(glm::vec3 pos, glm::vec3 dir, glm::vec3 n, float H, float R, 
-                         int num_samples, Uniform &phi_distr, Uniform &h_distr, Uniform &l_distr)
-{
-    float occ = 0;
-    float w_sum = 0;
-    for (int i = 0; i<num_samples; i++)
-    {
-        float phi = phi_distr.get();
-        float h = h_distr.get();
-        float l = l_distr.get();
-        float wl = l/R;
-        l /= (h/H);
-        float wh = (h/H)*(h/H);
-        glm::vec3 nr = glm::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
-        glm::vec3 sample = pos + h*dir + l*nr;
-        occ += wl*wh*get_occlusion_trilinear(sample);
-        w_sum += wl*wh;
-    }
-    if (w_sum < 1e-6)
-        return 10000;
-    else
-        return occ/w_sum;
-}
-glm::vec3 LightVoxelsCube::get_dir_to_bright_place_cone(glm::vec3 pos, float r, int cones, float *occlusion)
-{
-    const int num_samples = 64;
-    const float BIAS = 0.1;
-    float alpha = PI/10;
-    float cone_R = r*sin(alpha); 
-    float cone_H = r;
-    Uniform phi_distr = Uniform(0,2*PI);
-    Uniform h_distr = Uniform(0,cone_H);
-    Uniform l_distr = Uniform(0,cone_R);
-    Uniform box_distr = Uniform(-r,r);
-    float min_occ = 1e10;
-
-    glm::vec3 min_shift = glm::normalize(glm::vec3(1,1,1));
-    std::vector<glm::vec3> min_shifts;
-    glm::vec3 prev_dir = glm::normalize(glm::vec3(1,1,1));
-    for (int i = 0; i < cones; i++)
-    {
-        bool in_sph = false;
-        glm::vec3 dir; 
-        while (!in_sph)
-        {
-            dir.x = box_distr.get();
-            dir.y = box_distr.get();
-            dir.z = box_distr.get();
-            in_sph = (glm::length(dir) < r) && (glm::dot(glm::normalize(dir),prev_dir) < 0.9);
-        }
-
-        dir = glm::normalize(dir);
-        glm::vec3 n = glm::cross(dir,prev_dir);
-
-        float occ = get_occlusion_cone(pos,dir,n,cone_H,cone_R,num_samples,phi_distr,h_distr,l_distr);
-        if (occ < (1-BIAS)*min_occ)
-        {
-            min_shifts.clear();
-            min_shifts.push_back(dir);
-            min_occ = occ;
-        }
-        else if (occ < (1+BIAS)*min_occ)
-        {
-            min_shifts.push_back(dir);
-            min_occ = MIN(occ,min_occ);
-        }
-        prev_dir = dir;
-    }
-
-    int min_sz = min_shifts.size();
-    min_shift = min_shifts[urandi(0,min_sz)];
-    min_shift = glm::normalize(min_shift + glm::vec3(0.0, 0.0001, 0.0));
-    if (occlusion)
-        *occlusion = min_occ;
-    return min_shift;
-}
-glm::vec3 LightVoxelsCube::get_dir_to_bright_place(glm::vec3 pos, float *occlusion = nullptr)
-{
-    return get_dir_to_bright_place_ext(pos, lightParams.searchDepth, occlusion);
 }
 inline bool LightVoxelsCube::in_voxel_cube(glm::ivec3 voxel)
 {
@@ -550,72 +407,6 @@ int LightVoxelsCube::v_to_i_mip_no_offset(int x, int y, int z, int mip)
            mip_vox_xyz[mip].x * (y) + 
            (x));    
 }
-void LightVoxelsCube::set_occluder_pyramid(glm::vec3 pos, float strenght)
-{
-    if (pos.x != pos.x || pos.y != pos.y || pos.z != pos.z)//if pos in NAN
-        return;
-    float base_str = strenght;
-    glm::ivec3 voxel = pos_to_voxel(pos);
-    for (int i = 0; i < (int)lightParams.penumbraDepth; i++)
-    {
-        int wd = i * lightParams.penumbraWidthInc;
-        for (int j = -wd; j <= wd; j++)
-        {
-            for (int k = -wd; k <= wd; k++)
-            {
-                glm::ivec3 vx = voxel + glm::ivec3(j, -i, k);
-                if (in_voxel_cube(vx))
-                {
-                    float dist_sq = (i*i + j*j + k*k) + 1;
-                    voxels[v_to_i(vx)] += base_str / dist_sq;
-                }
-            }
-        }
-        base_str *= lightParams.penumbraDepthDecay;
-    }
-}
-
-//int cnt = 0;
-//double tm = 0.0;
-
-void LightVoxelsCube::set_occluder_pyramid2(glm::vec3 pos, float strenght, float pow_b, int max_r)
-{
-    #define CH 0.6
-    float occ = 0.0;
-    glm::ivec3 voxel = pos_to_voxel(pos);
-    int x0 = voxel.x;
-    int y0 = voxel.y;
-    int z0 = voxel.z;
-    for (int i = 0; voxel.y - i > -vox_y; i++)
-    {
-        int wd = MIN(i, max_r);
-        if (wd == max_r) 
-        {
-            if (urand() < CH)
-                continue;
-            else 
-                occ = 1/(1-CH);
-        }
-        else
-            occ = 1;
-
-        if (abs(pow_b - 2) < 1e-4)
-            occ *= strenght / SQR(i + 2);
-        else
-            occ *= strenght * pow(i + 2, -pow_b);
-        if (abs(occ) < 0.00025)
-            return;
-        int y = y0 - i;
-        for (int j = MAX(z0 - wd, -vox_z); j <= MIN(z0 + wd, vox_z); j++)
-        {
-            for (int k = MAX(x0 - wd, -vox_x); k <= MIN(x0 + wd, vox_x); k++)
-            {
-                voxels[v_to_i(k, y, j)] += occ;
-            }
-        }
-    }
-}
-
 void LightVoxelsCube::set_occluder_pyramid_tail_5(glm::ivec3 voxel, float strenght, int max_r, int rnd_seed)
 {
     #define BLOCK_SIZE_5 5
@@ -864,13 +655,6 @@ void LightVoxelsCube::set_occluder_simple(glm::vec3 pos, float strenght)
         voxels[v_to_i(voxel)] += strenght;
 }
 
-void LightVoxelsCube::set_occluder_voxel_mip(glm::ivec3 voxel, float strenght, int mip)
-{
-    mip = CLAMP(mip, 0, mip_levels);
-    if (in_voxel_cube(voxel))
-        voxels[v_to_i_mip(voxel, mip)] += strenght;
-}
-
 void LightVoxelsCube::set_occluder_simple_mip(glm::vec3 pos, float strenght, int mip)
 {
     mip = CLAMP(mip, 0, mip_levels);
@@ -917,37 +701,6 @@ void LightVoxelsCube::set_occluder_trilinear(glm::vec3 pos, float strenght)
                 C(0,0,0) += strenght;
     }
     
-}
-float LightVoxelsCube::get_occlusion_view_ray(glm::vec3 pos, glm::vec3 light)
-{
-    int prev_v = -1;
-    float sum_occ = 0;
-    glm::vec3 start = (pos - center) / voxel_size;
-    glm::vec3 step = light / (2 * voxel_size);
-    glm::ivec3 voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
-    while (in_voxel_cube(voxel))
-    {
-        int v = v_to_i(voxel);
-        if (v != prev_v)
-        {
-            sum_occ += voxels[v];
-            prev_v = v;
-        }
-        start += step;
-        voxel = glm::ivec3((int)start.x, (int)start.y, (int)start.z);
-    }
-    return sum_occ;
-}
-float LightVoxelsCube::get_occlusion_view_ray(glm::vec3 pos)
-{
-    float sum_occ = 0.0;
-    for (auto &light : directed_lights)
-    {
-        sum_occ += get_occlusion_view_ray(pos, light.vec);
-    }
-    sum_occlusion += sum_occ;
-    occ_count += 1;
-    return sum_occ;
 }
 float LightVoxelsCube::get_occlusion_simple(glm::vec3 pos)
 {
@@ -1284,109 +1037,6 @@ void LightVoxelsCube::add_AABB(const AABB &box, bool precise, float opacity)
 
         fill_voxels(st_v, end_v, opacity);        
     }
-}
-
-void LightVoxelsCube::calculte_precise_occlusion_from_bodies()
-{
-    glm::vec3 dv = glm::vec3(voxel_size,voxel_size,voxel_size);
-    std::vector<glm::vec3> sun_dirs;
-    int steps = lightParams.sunPositions;
-    steps = 6;
-    logerr("body occlusion %d steps", steps);
-    if (steps < 3)
-        return;
-    for (int i=0;i<steps;i++)
-    {
-        EnvironmentParameters params;
-        params.hours = 6 + (12.0*i)/steps;
-        glm::vec3 sun = Sun::sun_direction(params);
-        if (sun.y < 0) //sun above horizon
-            sun_dirs.push_back(-sun);   
-    }
-    if (sun_dirs.size() < 3)
-        return;
-    std::vector<glm::vec3> main_dirs = {sun_dirs.front(),sun_dirs[sun_dirs.size()/2],sun_dirs.back()};
-    logerr("body occlusion %d dirs", sun_dirs.size());
-    for (int i=-vox_x;i<=vox_x;i++)
-    {
-        for (int j=-vox_y;j<=vox_y;j++)
-        {
-            for (int k=-vox_z;k<=vox_z;k++)
-            {
-                glm::vec3 pos = center + voxel_size*glm::vec3(i,j,k);
-                float steps = 0;
-                float occs = 0;
-                float max_occ = 50;
-                for (glm::vec3 &dir : main_dirs)
-                {
-                    steps+=dir.y;
-                    float occ = get_occlusion_view_ray(pos,dir);
-                    if (occ > 1e6)//body intersected
-                        occs+=dir.y;
-                }
-                if (occs > 0)
-                {
-                    for (glm::vec3 &dir : sun_dirs)
-                    {
-                        steps+=dir.y;
-                        float occ = get_occlusion_view_ray(pos,dir);
-                        if (occ > 1e6)//body intersected
-                            occs+=dir.y;
-                    }
-                    set_occluder_simple(pos,max_occ*occs/(steps));
-                }
-            }
-        }
-    }
-}
-glm::vec3 LightVoxelsCube::get_dir_to_bright_place_ray(glm::vec3 pos, float length, int rays_sqrt, float *occlusion)
-{
-    const float BIAS = 0.01;
-    float step = 2*PI/rays_sqrt;
-    float r_step = 0.75*voxel_size;
-    float *occlusions = new float[rays_sqrt*rays_sqrt];
-    for (int i=0;i<rays_sqrt*rays_sqrt;i++)
-    {
-        occlusions[i] = 0;
-    }
-    for (float r = r_step; r < length; r+= r_step)
-    {
-        for (float phi=0;phi<2*PI - step;phi += step)
-        {
-            for (float psi=0;psi<2*PI;psi += step)
-            {
-                float x = pos.x + r*cosf(phi)*cosf(psi);
-                float y = pos.y + r*sinf(phi)*cosf(psi);
-                float z = pos.z + r*sinf(psi);
-                occlusions[((int)(phi/step))*rays_sqrt + (int)(psi/step)] += get_occlusion_trilinear(glm::vec3(x,y,z))/(r*r);
-            }
-        }
-    }
-    std::vector<int> mps;
-    float mo = occlusions[0];
-    for (int i=0;i<rays_sqrt*rays_sqrt;i++)
-    {
-        if (occlusions[i] < mo - BIAS)
-        {
-            mo = occlusions[i];
-            mps.clear();
-            mps.push_back(i);
-        }
-        else if (abs(occlusions[i] - mo) < BIAS)
-            mps.push_back(i);
-    }
-    int min_sz = mps.size();
-    int mp = mps[urandi(0,min_sz)];
-    float phi = step * (mp / rays_sqrt);
-    float psi = step * (mp % rays_sqrt);
-    float x = cosf(phi)*cosf(psi);
-    float y = sinf(phi)*cosf(psi);
-    float z = sinf(psi);
-
-    *occlusion = mo;
-    if (occlusions)
-        delete[] occlusions;
-    return glm::vec3(x,y,z);
 }
 
 void LightVoxelsCube::prepare_mip_levels()

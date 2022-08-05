@@ -153,7 +153,7 @@ LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
     int sz_y = 25 * ceil(1.5 * ref_tree.info.BCyl_sizes.y / 25);
     glm::vec3 ref_size = glm::vec3(sz_x, 0.5f * sz_y, sz_x);
     // logerr("ref size %d %d", sz_x, sz_y);
-    return new LightVoxelsCube(glm::vec3(0, ref_size.y, 0), ref_size, 0.625f, 1.0f, 1, 2);
+    return new LightVoxelsCube(glm::vec3(0, ref_size.y, 0), ref_size, 0.625f);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
@@ -192,7 +192,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         if (voxels_needed)
             thr_voxels[i] = gen_voxels_for_selection(ref_tree);
         else
-            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::ivec3(1, 1, 1), 1, 1, 2);
+            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::ivec3(1, 1, 1), 1.0f);
     }
     if (num_threads > 1)
     {

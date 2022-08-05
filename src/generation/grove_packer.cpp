@@ -582,7 +582,7 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         glm::vec3 vox_size = curGgd.size;
         float single_voxel_size = 0.5;
 
-        post_voxels = new LightVoxelsCube(vox_center, vox_size, single_voxel_size, 1.0f);
+        post_voxels = new LightVoxelsCube(vox_center, vox_size, single_voxel_size);
         post_seeder = new Seeder(ggd, 10, h);
 
         post_voxels->add_heightmap(*h);

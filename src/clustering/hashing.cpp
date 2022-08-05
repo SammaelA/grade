@@ -64,8 +64,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
             auto *l = new LightVoxelsCube(
                             glm::vec3(0.5f*canonical_bbox().x,0,0),
                             glm::ivec3(sz,sz,sz),
-                            0.5f*canonical_bbox().x/sz,
-                            1, 1);
+                            0.5f*canonical_bbox().x/sz);
             
             branchHash->hashes.emplace_back();
             set_occlusion(b, l);
@@ -76,8 +75,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
                 auto *vb = new LightVoxelsCube(
                                 glm::vec3(0.5f*canonical_bbox().x,0,0),
                                 glm::ivec3(sz,sz,sz),
-                                0.5f*canonical_bbox().x/sz,
-                                1, 1);
+                                0.5f*canonical_bbox().x/sz);
                 
                 branchHash->hashes.back().start_points.push_back(branchHash->hashes.back().data.size());
                 branchHash->hashes.back().weights.emplace_back();

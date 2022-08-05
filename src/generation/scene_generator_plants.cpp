@@ -68,7 +68,7 @@ namespace scene_gen
       //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
       //as the cell it belongs to
       float small_voxel_size = get_small_voxels_size(c);
-      auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size(), 1.0f);
+      auto *v = new LightVoxelsCube(voxel_center, voxel_sz, small_voxel_size/LightVoxelsCube::get_default_block_size());
       //AABB box = v->get_bbox();
       //debug("created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f]\n",
       //box.min_pos.x,box.min_pos.y,
@@ -88,7 +88,7 @@ namespace scene_gen
     glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
                                0.5f*(c.influence_bbox.max_pos.y - c.influence_bbox.min_pos.y),
                                0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
-    c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1.0, 1, 2, 1);
+    c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1, 2, 1);
     auto func = [&](const std::pair<AABB, uint64_t> &p)
     {
       c.voxels_small->add_AABB(p.first,true, 10000);
@@ -385,7 +385,7 @@ namespace scene_gen
             create_cell_small_voxels(cells[dep_cid], ctx);
           cells[dep_cid].cell_lock.unlock();
         }
-        
+
         if (!voxels->empty())
         {
           c.cell_lock.lock();

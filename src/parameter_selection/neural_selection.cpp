@@ -79,9 +79,9 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
         for (int i = 0; i < num_threads; i++)
         {
             if (voxels_needed)
-                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0), max_size, min_base_size, 1.0f);
+                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0), max_size, min_base_size);
             else
-                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0),glm::ivec3(1,1,1),1.0f);
+                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0),glm::ivec3(1,1,1), 1.0f);
         }
         std::vector<std::thread> threads;
         for (int i = 0; i < num_threads; i++)

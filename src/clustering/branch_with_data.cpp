@@ -43,7 +43,7 @@ BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationP
         leavesDensity.push_back(new LightVoxelsCube(
             glm::vec3(0.5f * canonical_bbox().x, 0, 0),
             glm::vec3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
-            1 / clusterizationParams.voxels_size_mult, 1.0f));
+            1 / clusterizationParams.voxels_size_mult));
 
         set_occlusion(b, leavesDensity.back());
         if (clusterizationParams.voxelized_structure)
@@ -51,7 +51,7 @@ BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationP
             voxelizedStructures.push_back(new LightVoxelsCube(
                 glm::vec3(0.5f * canonical_bbox().x, 0, 0),
                 glm::vec3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
-                1 / clusterizationParams.structure_voxels_size_mult, 1.0f));
+                1 / clusterizationParams.structure_voxels_size_mult));
 
             voxelize_original_branch(b, voxelizedStructures.back(), 1, 1);
         }

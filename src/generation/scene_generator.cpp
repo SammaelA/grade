@@ -38,7 +38,7 @@ LightVoxelsCube *create_grove_voxels(GrovePrototype &prototype, std::vector<Tree
   float vox_scale = 0.5/0.8;
   glm::vec3 voxel_sz = 0.5f*(influence_box.max_pos - influence_box.min_pos);
   glm::vec3 voxel_center = influence_box.min_pos + voxel_sz;
-  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale*min_scale_factor, 1.0f);
+  auto *v = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale*min_scale_factor);
   AABB &box = influence_box;
   float Mvoxels = 1e-6*v->get_size_cnt();
   debugl(1, "created voxels array [%.1f %.1f %.1f] - [%.1f %.1f %.1f] for patch [%.1f %.1f] - [%.1f %.1f] with %.2f Mvoxels\n",
@@ -55,7 +55,7 @@ LightVoxelsCube *create_cell_small_voxels(Cell &c, SceneGenerationContext &ctx)
   glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
   glm::vec3 voxel_center = c.influence_bbox.min_pos + voxel_sz;
   
-  auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale, 1.0f);
+  auto *voxels = new LightVoxelsCube(voxel_center, voxel_sz, vox_scale);
 
   auto func = [&](const std::pair<AABB, uint64_t> &p)
   {
