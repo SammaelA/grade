@@ -4,14 +4,14 @@
     }
     simpliest_tree_test
     {
-        branch_angle:arr = { 1.1, 1.1, 1.1, 1.5}
+        branch_angle:p4 = 1.1, 1.1, 1.1, 1.5
     }
     simpliest_tree_2
     {
-        branching_start:arr = {0.5, 0.7, 0, 0}
-        branch_angle:arr = { 1.1, 2.5, 2.5, 0.0}
-        branch_count:arr = {20,25,10,13}   
-        branch_len:arr = {60,30,5,10}
+        branching_start:p4 = 0.5, 0.7, 0, 0
+        branch_angle:p4 = 1.1, 2.5, 2.5, 0.0
+        branch_count:p4 = 20,25,10,13}  
+        branch_len:p4 = 60,30,5,10
         leaf_size:r = 3.25
     }
 }

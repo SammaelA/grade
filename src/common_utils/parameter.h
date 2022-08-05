@@ -321,15 +321,7 @@ protected:
     Distribution *uniform = nullptr;
     RandomnessLevel randomnessLevel = NO_RANDOM;
 };
-struct ParameterDesc
-{
-    ParameterMaskValues mask;
-    RandomnessLevel randomnessLevel;
-    int var_count;
-    Parameter<float> original;
-    std::string name;
-    ParameterDesc(Parameter<float> &p):original(p) {};
-};
+
 struct ParameterTinyDesc
 {
     ParameterMaskValues val;
@@ -337,14 +329,17 @@ struct ParameterTinyDesc
 };
 struct ParametersSet
 {
+    enum SaveLoadMode
+    {
+      BLK_SAVE,
+      BLK_LOAD,
+      PAR_LIST_SAVE,
+      PAR_LIST_LOAD
+    };
     static Parameter<int> from_float(Parameter<float> source);
     static Parameter<float> from_int(Parameter<int> source);
     virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
                             ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) {};
-    virtual void get_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data, 
-                           ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
-    virtual void load_from_mask_and_data(std::vector<ParameterDesc> &mask, std::vector<double> &data,
-                                 ParameterVariablesSet v_set = ParameterVariablesSet::ONLY_BASE_VALUES);
     virtual void save_to_blk(Block &b);
     virtual void load_from_blk(Block &b);
     virtual void set_state(int state) {};
@@ -354,6 +349,7 @@ struct ParametersSet
     virtual void write_parameter_list(ParameterList &list) { RW_parameter_list(true, list);}
     virtual void read_parameter_list(ParameterList &list) {RW_parameter_list(false, list);}
 private:
+    virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) {};
     virtual void RW_parameter_list(bool write, ParameterList &list){};
 };
 

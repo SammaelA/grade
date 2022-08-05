@@ -4,7 +4,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.15
-        root_type:i = 3
+        root_type:r = 3
         Xm:r = 40
         branching_angle_max:r = 3.5
         branching_angle_min:r = 2.0
@@ -16,7 +16,7 @@
         resource_mult:r = 2
         tropism_params:p4 = 0.75, 0.5, 0.04, 1 
         L0:r = 30
-        B_cnt:i = 10
+        B_cnt:r = 10
         R0:r = 0.75
     }
     pine_large
@@ -24,7 +24,7 @@
         wood_tex_name:s = "wood4"
         leaf_tex_name:s = "leaf1"
         res_q:r = 0.15
-        root_type:i = 3
+        root_type:r = 3
         Xm:r = 80
         branching_angle_max:r = 3.5
         branching_angle_min:r = 4
@@ -36,7 +36,7 @@
         resource_mult:r = 3.5
         tropism_params:p4 = 0.75, 0.25, 0.01, 1 
         L0:r = 100
-        B_cnt:i = 8
+        B_cnt:r = 8
         R0:r = 1
     }
     pine_small
@@ -44,7 +44,7 @@
         wood_tex_name:s = "wood4"
         leaf_tex_name:s = "leaf1"
         res_q:r = 0.15
-        root_type:i = 3
+        root_type:r = 3
         Xm:r = 70
         branching_angle_max:r = 3.5
         branching_angle_min:r = 4
@@ -56,7 +56,7 @@
         resource_mult:r = 3
         tropism_params:p4 = 0.75, 0.25, 0.05, 1 
         L0:r = 100
-        B_cnt:i = 5
+        B_cnt:r = 5
         R0:r = 1
     }
     large_oak_simplified
@@ -64,7 +64,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf4"
         res_q:r = 0.0
-        root_type:i = 1
+        root_type:r = 1
         Xm:r = 250
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
@@ -74,7 +74,7 @@
         mu:r = 0.6
         leaves_cnt:r = 2.5
         resource_mult:r = 5.0
-        max_joints_in_branch:i = 32
+        max_joints_in_branch:r = 32
         tropism_params:p4 = 0.9, -1, 0.015, 1.25
         res_decrease_step:r = 0.25
         initial_trunk_scale:p2 = 0.75,0.8
@@ -84,7 +84,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf4"
         res_q:r = 0.75
-        root_type:i = 3
+        root_type:r = 3
         Xm:r = 250
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
@@ -94,12 +94,12 @@
         mu:r = 0.6
         leaves_cnt:r = 0.75
         resource_mult:r = 7.0
-        max_joints_in_branch:i = 48
+        max_joints_in_branch:r = 48
         tropism_params:p4 = 0.7, -1, 0.01, 1.0
         res_decrease_step:r = 0.05
         initial_trunk_scale:p2 = 0.75,0.8
         L0:r = 80
-        B_cnt:i = 10
+        B_cnt:r = 10
         dX:r = 1.000000
     }
     medium_oak_simplified
@@ -107,7 +107,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.15
-        root_type:i = 1
+        root_type:r = 1
         Xm:r = 100
         branching_angle_max:r = 4.0
         branching_angle_min:r = 2.0
@@ -124,7 +124,7 @@
         wood_tex_name:s = "wood1"
         leaf_tex_name:s = "leaf4"
         res_q:r = 0.75
-        root_type:i = 1
+        root_type:r = 1
         Xm:r = 50
         resource_mult:r = 3.0
         branching_angle_max:r = 4.0
@@ -134,7 +134,7 @@
         mu:r = 0.5
         leaves_cnt:r = 2.25
         tropism_params:p4 = 1, -1, 0.06, 1.5
-        remove_min_level:i = 2
+        remove_min_level:r = 2
         initial_trunk_scale:p2 = 2,2
         //R0:r = 7.000000
     }
@@ -143,7 +143,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.5
-        root_type:i = 2
+        root_type:r = 2
         Xm:r = 50
         resource_mult:r = 7.0
         branching_angle_max:r = 4.0
@@ -153,7 +153,7 @@
         mu:r = 0.5
         leaves_cnt:r = 2.25
         tropism_params:p4 = 0.4, -1, 0.02, 1.5
-        remove_min_level:i = 2
+        remove_min_level:r = 2
         initial_trunk_scale:p2 = 0.8,2.5
         //R0:r = 7.000000
     }
@@ -162,7 +162,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.5
-        root_type:i = 0
+        root_type:r = 0
         Xm:r = 50
         resource_mult:r = 7.0
         branching_angle_max:r = 4.0
@@ -172,7 +172,7 @@
         mu:r = 0.5
         leaves_cnt:r = 2.25
         tropism_params:p4 = 0.4, -1, 0.05, 1.5
-        remove_min_level:i = 2
+        remove_min_level:r = 2
         initial_trunk_scale:p2 = 1,1
         //R0:r = 7.000000
     }
@@ -181,7 +181,7 @@
         wood_tex_name:s = "wood3"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.5
-        root_type:i = 0
+        root_type:r = 0
         Xm:r = 25
         resource_mult:r = 7.0
         branching_angle_max:r = 4.0
@@ -191,7 +191,7 @@
         mu:r = 0.5
         leaves_cnt:r = 2.25
         tropism_params:p4 = 0.4, -1, 0.1, 1.5
-        remove_min_level:i = 2
+        remove_min_level:r = 2
         initial_trunk_scale:p2 = 1,1
         //R0:r = 7.000000
     }
@@ -200,7 +200,7 @@
         wood_tex_name:s = "wood5"
         leaf_tex_name:s = "leaf3"
         res_q:r = 0.75
-        root_type:i = 3
+        root_type:r = 3
         Xm:r = 50
         resource_mult:r = 4.5
         branching_angle_max:r = 4.0
@@ -210,7 +210,7 @@
         mu:r = 0.5
         leaves_cnt:r = 1.5
         tropism_params:p4 = 1, 1, 0.06, 1.0
-        remove_min_level:i = 2
+        remove_min_level:r = 2
         initial_trunk_scale:p2 = 2,0.5
         L0:r = 200
         R0:r = 3.000000
@@ -218,7 +218,7 @@
         Lt:p4 = 1,1,1,1
         r_pow:r = 1.6
         base_r:r = 0.035
-        B_cnt:i = 6
+        B_cnt:r = 6
         psi:p4 = 1,1,1,1
     }
 }

@@ -5,11 +5,11 @@
 struct SimpliestTreeStructureParameters : public ParametersSet
 {
     int max_depth = 4;
-    std::vector<float> branch_len = {60,20,12,7};
-    std::vector<float> branch_r = {1.75,0.75,0.2, 0.075};
-    std::vector<float> branch_angle = {PI/6, PI/6, PI/4, PI/4};
-    std::vector<int> branch_count = {20,10,8,10};
-    std::vector<float> branching_start = {0.5,0.0,0,0};
+    glm::vec4 branch_len = glm::vec4(60,20,12,7);
+    glm::vec4 branch_r = glm::vec4(1.75,0.75,0.2, 0.075);
+    glm::vec4 branch_angle = glm::vec4(PI/6, PI/6, PI/4, PI/4);
+    glm::vec4 branch_count = glm::vec4(20,10,8,10);
+    glm::vec4 branching_start = glm::vec4(0.5,0.0,0,0);
     float leaves_count = 0.75;
     float leaf_size = 3;
     virtual ParametersSet *copy() override
@@ -25,16 +25,25 @@ struct SimpliestTreeStructureParameters : public ParametersSet
     }
     virtual glm::vec3 get_tree_max_size() override
     {
-        float len = 0;
-        for (float &l : branch_len)
-            len += l;
+        float len = branch_len[0] + branch_len[1] + branch_len[2] + branch_len[3];
         return glm::vec3(len,len,len);
     }
-    virtual void save_to_blk(Block &b) override;
-    virtual void load_from_blk(Block &b) override;
-    //virtual void write_parameter_list(ParameterList &list) override;
-    //virtual void read_parameter_list(ParameterList &list) override;
-    virtual void RW_parameter_list(bool write, ParameterList &list) override;
+    virtual void save_to_blk(Block &b) override
+    {
+      ParameterList list;
+      save_load_define(SaveLoadMode::BLK_SAVE, b, list);
+    }
+    virtual void load_from_blk(Block &b) override
+    {
+      ParameterList list;
+      save_load_define(SaveLoadMode::BLK_LOAD, b, list);
+    }
+    virtual void RW_parameter_list(bool write, ParameterList &list) override 
+    {
+      Block b;
+      save_load_define(write ? SaveLoadMode::PAR_LIST_LOAD : SaveLoadMode::PAR_LIST_SAVE, b, list);
+    }
+    virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) override;
 };
 
 class SimpliestTreeGenerator : public AbstractTreeGenerator

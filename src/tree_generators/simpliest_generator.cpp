@@ -1,5 +1,6 @@
 #include "simpliest_generator.h"
 #include "common_utils/distribution.h"
+#include "common_utils/parameter_save_load_defines.h"
 
 using namespace glm;
 
@@ -23,6 +24,7 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
             logerr("simpliest tree generator got wrong tree type");
             params = &dummy_params;
         }
+        params->max_depth = MIN(params->max_depth, 4);
 
         for (int j=0;j<params->max_depth;j++)
         {
@@ -177,69 +179,14 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
     }
 }
 
-void SimpliestTreeStructureParameters::save_to_blk(Block &b)
+void SimpliestTreeStructureParameters::save_load_define(SaveLoadMode mode, Block &b, ParameterList &list)
 {
-    b.set_arr("branch_len", branch_len);
-    b.set_arr("branch_r", branch_r);
-    b.set_arr("branch_angle", branch_angle);
-    b.set_arr("branch_count", branch_count);
-    b.set_arr("branching_start", branching_start);
-
-    b.set_int("max_depth",max_depth);
-    b.set_double("leaves_count",leaves_count);
-    b.set_double("leaf_size",leaf_size);
-}
-void SimpliestTreeStructureParameters::load_from_blk(Block &b)
-{
-    b.get_arr("branch_len", branch_len, true);
-    b.get_arr("branch_r", branch_r, true);
-    b.get_arr("branch_angle", branch_angle, true);
-    b.get_arr("branch_count", branch_count, true);
-    b.get_arr("branching_start", branching_start, true);
-
-    max_depth = b.get_int("max_depth",max_depth);
-    leaves_count = b.get_double("leaves_count",leaves_count);
-    leaf_size = b.get_double("leaf_size",leaf_size);
-}
-
-void SimpliestTreeStructureParameters::RW_parameter_list(bool write, ParameterList &list)
-{
-    #define ORD1(par) if (write) {list.ordinalParameters.emplace(#par, par);} else {par = list.ordinalParameters.at(#par);}
-    #define ORD2(par_name, par) if (write) {list.ordinalParameters.emplace(#par_name, par);} else {par = list.ordinalParameters.at(#par_name);}
-
-    #define CAT1(par) if (write) {list.categorialParameters.emplace(#par, par);} else {par = list.categorialParameters.at(#par);}
-    #define CAT2(par_name, par) if (write) {list.categorialParameters.emplace(#par_name, par);} else {par = list.categorialParameters.at(#par_name);}
-
-    #define CON1(par) if (write) {list.continuousParameters.emplace(#par, par);} else {par = list.continuousParameters.at(#par);}
-    #define CON2(par_name, par) if (write) {list.continuousParameters.emplace(#par_name, par);} else {par = list.continuousParameters.at(#par_name);}
-    
-    ORD1(max_depth);
-
-    CON2(branch_len_0, branch_len[0]);
-    CON2(branch_len_1, branch_len[1]);
-    CON2(branch_len_2, branch_len[2]);
-    CON2(branch_len_3, branch_len[3]);
-
-    CON2(branch_r_0, branch_r[0]);
-    CON2(branch_r_1, branch_r[1]);
-    CON2(branch_r_2, branch_r[2]);
-    CON2(branch_r_3, branch_r[3]);
-
-    CON2(branch_angle_0, branch_angle[0]);
-    CON2(branch_angle_1, branch_angle[1]);
-    CON2(branch_angle_2, branch_angle[2]);
-    CON2(branch_angle_3, branch_angle[3]);
-
-    CON2(branch_count_0, branch_count[0]);
-    CON2(branch_count_1, branch_count[1]);
-    CON2(branch_count_2, branch_count[2]);
-    CON2(branch_count_3, branch_count[3]);
-
-    CON2(branching_start_0, branching_start[0]);
-    CON2(branching_start_1, branching_start[1]);
-    CON2(branching_start_2, branching_start[2]);
-    CON2(branching_start_3, branching_start[3]);
-
-    CON1(leaves_count);
-    CON1(leaf_size);
+  P_INT(max_depth, mode);
+  P_VEC4(branch_len, mode);
+  P_VEC4(branch_r, mode);
+  P_VEC4(branch_angle, mode);
+  P_VEC4(branch_count, mode);
+  P_VEC4(branching_start, mode);
+  P_FLOAT(leaves_count, mode);
+  P_FLOAT(leaf_size, mode);
 }
