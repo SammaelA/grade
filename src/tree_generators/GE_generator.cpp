@@ -87,25 +87,6 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
     trees.clear();
     iteration = 0;
 }
-void GETreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
-{
-    GETreeParameters params;
-    ggd.types[0].set_params(&params);
-
-    ivec3 voxels_sizes = ivec3(2 * ggd.trees_count * params.Xm, 3.5 * params.Xm, 2 * params.Xm);
-    LightVoxelsCube voxels = LightVoxelsCube(vec3(0,0,0), voxels_sizes, 0.5 * params.ro);
-    for (int i = 0; i < ggd.trees_count; i++)
-    {
-        vec3 pos = vec3( i % 2 ? 15 * ((i + 1)/2) : -15*(i/2), 0, 0);
-        plant_tree(pos, &(ggd.types[0]));
-    }
-    bool grow = true;
-    while (grow)
-    {
-        grow = iterate(voxels);
-    }
-    finalize_generation(trees_external, voxels);
-}
 
 void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels)
 {

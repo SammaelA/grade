@@ -9,12 +9,9 @@ struct LightVoxelsCube;
 class AbstractTreeGenerator
 {
 public:
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) = 0;
-
     virtual bool iterate(LightVoxelsCube &voxels) { return false;};//return true if everything is finished
-    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) {};
-    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) {};
-    virtual bool iteration_method_implemented() {return false;}
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) = 0;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) = 0;
     virtual bool use_voxels_for_generation() {return false;}
     virtual void set_seed(int seed) {};
     static void set_joints_limit(int lim) {joints_limit = lim;}

@@ -9,7 +9,8 @@
 class TreeLoaderBlk : public AbstractTreeGenerator
 {
 public:
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     static void set_trees_directory(std::string &_trees_directory)
     {
         if (_trees_directory != trees_directory)
@@ -18,7 +19,8 @@ public:
     }
     static std::string blks_base_name;
 protected:
-    void load_tree(GroveGenerationData ggd, ::Tree &tree_external, Heightmap &h, Block &b);
+    void load_tree(TreeTypeData *type, ::Tree &tree_external, Block &b);
     static int trees_taken;
     static std::string trees_directory;
+    std::vector<std::pair<glm::vec3, TreeTypeData *>> tree_saplings;
 };

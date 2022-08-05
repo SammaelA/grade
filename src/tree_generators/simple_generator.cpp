@@ -122,34 +122,6 @@ void SimpleTreeGenerator::create_tree(Tree *tree, vec3 pos)
     create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params().base_thickness(), 0);
 }
 
-void SimpleTreeGenerator::create_grove(GroveGenerationData _ggd, ::Tree *trees_external, Heightmap &_h)
-{
-    ggd = _ggd;
-    h = &_h;
-    SimpleTreeStructureParameters s_params;
-    params = BaseParameterSetWrapper<SimpleTreeStructureParameters>(s_params, s_params.max_depth());
-    params.set_state(0);
-    for (int i=0;i<ggd.trees_count;i++)
-    {
-        vec3 pos = vec3(50*(tree_next_id % 10), 0, 50 * (tree_next_id / 10));
-        pos.y = h->get_height(pos);
-
-        for (int j=0;j<params().max_depth();j++)
-        {
-            BranchHeap *br = new BranchHeap();
-            trees_external[i].branchHeaps.push_back(br);
-        }
-
-        trees_external[i].leaves = new LeafHeap();
-        trees_external[i].id = tree_next_id.fetch_add(1);
-        trees_external[i].pos = pos;
-        trees_external[i].type = &(ggd.types[0]);
-        trees_external[i].valid = true;
-
-        create_tree(trees_external + i, pos);
-    }
-}
-
 void SimpleTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
     tree_positions.push_back(pos);

@@ -678,65 +678,6 @@ bool TreeGenerator::is_branch_productive(Branch *b)
     return false && (b->level < curParams().max_depth() - 1) && (b->max_seg_count > b->segments.size());
 }
 
-void TreeGenerator::create_grove(Tree *trees, int count)
-{
-    float r = sqrt(count);
-    glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
-    glm::vec3 vox_size = curGgd.size;
-    ParameterSetWrapper params = trees[0].params;
-    params.set_state(params().max_depth() - 1);
-    float single_voxel_size = params().seg_len_mult()/ params().light_precision();
-    
-    voxels = new LightVoxelsCube(vox_center, vox_size, params().seg_len_mult(), params().light_precision());
-
-    voxels->add_heightmap(*heightmap);
-    for (int i=0;i<curGgd.obstacles.size();i++)
-    {
-        voxels->add_body(curGgd.obstacles[i]);
-        seeder->add_body(curGgd.obstacles[i]);
-    }
-    voxels->calculte_precise_occlusion_from_bodies();
-    const int growth_step = 10;
-    int trees_planted = 0;  
-    for (int j = 0; j < params().growth_iterations(); j++)
-    {
-        if (j % growth_step == 0)
-        {
-            seeder->recalcuate_shadows(trees,trees_planted);
-
-            int cnt = MAX((count - trees_planted < 3) ? count - trees_planted : (count - trees_planted)/2,0);
-            std::vector<Seed> seeds;
-            seeder->choose_places_for_seeds(cnt,seeds);
-            for (Seed &seed : seeds)
-            {
-                glm::vec3 pos = glm::vec3(seed.pos.x,0,seed.pos.y);
-                pos.y = heightmap->get_height(pos);
-                
-                trees[trees_planted].pos = pos;
-                plant_tree(trees[trees_planted], trees[trees_planted].params);
-                trees_planted++;
-            }
-        }
-        
-        for (int i = 0; i < trees_planted; i++)
-        {
-            if (trees[i].iter < params().growth_iterations())
-            {
-                grow_tree(trees[i]);
-            }
-        }
-    }
-    for (int j = 0; j < params().growth_iterations(); j++)
-    {
-        for (int i = 0; i < trees_planted; i++)
-        {
-            if (trees[i].iter < params().growth_iterations())
-            {
-                grow_tree(trees[i]);
-            }
-        }
-    }
-}
 void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to)
 {
     if (b->level > lvl_to)
@@ -767,56 +708,7 @@ void TreeGenerator::reset()
     j_count = 0;
     b_count = 0;
 }
-void TreeGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
-{
-    reset();
-    Tree trees[MAX_TREES];
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    heightmap = &h;
-    curGgd = ggd;
-    seeder = new Seeder(ggd,10,&h);
-    int synts = ggd.synts_count;
-    int count = ggd.trees_count;
-    TreeStructureParameters default_params;
-    for (int i = 0; i < count; i++)
-    {
-        int k = i % ggd.types.size();
-        auto &type = ggd.types[k];
-        trees[i] = Tree();
-        trees[i].type_id = type.type_id;
-        TreeStructureParameters *ptr = dynamic_cast<TreeStructureParameters*>(type.get_params());
-        if (!ptr)
-        {
-            logerr("mygen::TreeGenerator : type of parameters set and generator mismatch. Default parameters will be used.");
-            ptr = &default_params;
-        }
-        trees[i].params = ParameterSetWrapper(*ptr,ptr->max_depth() + 1);
-        trees[i].wood = type.wood;
-        trees[i].leaf = type.leaf;
-    }
-    for (int i = 0; i < count + synts; i++)
-    {
-        int k = i % ggd.types.size();
-        auto &type = ggd.types[k];
-        trees_external[i] = ::Tree();
-        trees_external[i].type = &(ggd.types[k]);
-    }
 
-    create_grove(trees, count);
-
-    for (int i = 0; i < count; i++)
-    {
-        post_process(ggd, trees[i]);
-    }
-
-    convert(trees,trees_external,count);
-
-    delete voxels;
-    voxels = nullptr;
-    delete seeder;
-    seeder = nullptr;
-    debugl(10,"created %d joints %d branches totally\n",j_count, b_count);
-}
 void down_stripe(std::vector<float> &res, float start, float end, int count, float pw,float sigma)
 {
     res.push_back(start);

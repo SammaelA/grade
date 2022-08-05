@@ -40,15 +40,12 @@ struct SimpliestTreeStructureParameters : public ParametersSet
 class SimpliestTreeGenerator : public AbstractTreeGenerator
 {
 public:
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override {};
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
 private:
     void create_tree(Tree *tree, glm::vec3 pos, SimpliestTreeStructureParameters &params);
     void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
                        SimpliestTreeStructureParameters &params, int &leaves_tries, int &leaves_cnt);
-    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
-    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
-    virtual bool iteration_method_implemented() {return false;}
-    
     std::vector<glm::vec3> tree_positions;
     std::vector<TreeTypeData *> types;
 };

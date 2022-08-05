@@ -129,7 +129,6 @@ class TreeGenerator : public AbstractTreeGenerator
 {
 public:
     TreeGenerator() : curTree(nullptr), curParams(TreeStructureParameters(),1){};
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual bool use_voxels_for_generation() {return true;}
@@ -172,7 +171,6 @@ public:
     bool random_tree(Tree &t);
     void plant_tree(Tree &t, ParameterSetWrapper params);
     void grow_tree(Tree &t);
-    void create_grove(Tree *trees, int count);
     void convert(mygen::Tree *src, ::Tree *dst, int count);
     void convert(mygen::Tree &src, ::Tree &dst);
     void convert(mygen::Tree &src_tree, ::Tree &dst_tree, mygen::Branch &src, ::Branch &dst);

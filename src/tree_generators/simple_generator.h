@@ -78,15 +78,12 @@ struct SimpleTreeStructureParameters : public ParametersSet
 class SimpleTreeGenerator : public AbstractTreeGenerator
 {
 public:
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
+    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
 private:
     void create_tree(Tree *tree, glm::vec3 pos);
     void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
                        float base_r, float leaves_chance);
-    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
-    virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
-    virtual bool iteration_method_implemented() {return true;}
-    
     BaseParameterSetWrapper<SimpleTreeStructureParameters> params;
     GroveGenerationData ggd;
     Heightmap *h;

@@ -5,7 +5,6 @@
 #include "tree_generators/weber_penn_parameters.h"
 #include "tree_generators/simple_generator.h"
 #include "tree_generators/simpliest_generator.h"
-#include "tree_generators/proctree.h"
 #include "tree_generators/generated_tree.h"
 #include "tree_generators/GE_generator_simplified.h"
 #include "tree_generators/weber_penn_generator.h"

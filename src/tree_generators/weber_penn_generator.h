@@ -73,11 +73,9 @@ struct WeberPennParametersNative : public ParametersSet
 class WeberPennGenerator : public AbstractTreeGenerator
 {
 public:
-    virtual void create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h) override;
     virtual bool iterate(LightVoxelsCube &voxels) override { return false;};
     virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
-    virtual bool iteration_method_implemented() override {return true;}
     virtual void set_seed(int _seed) override {seed = _seed;}
 //private:
     struct Tree;

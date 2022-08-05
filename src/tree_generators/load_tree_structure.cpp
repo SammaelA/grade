@@ -293,16 +293,12 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
         }
     }
 }
-void convert_tree(SavedTree &st, GroveGenerationData ggd, ::Tree &external_tree, Heightmap &h)
+void convert_tree(SavedTree &st, TreeTypeData *type, ::Tree &external_tree)
 {
     external_tree.pos = st.pos;
-    if (st.on_heightmap)
-    {
-        external_tree.pos.y = h.get_height(st.pos);
-    }
     external_tree.id = tlb_ids;
     external_tree.valid = true;
-    external_tree.type = &(ggd.types[0]);
+    external_tree.type = type;
     external_tree.leaves = new LeafHeap();
     external_tree.branchHeaps.push_back(new BranchHeap());
     Branch *root = external_tree.branchHeaps[0]->new_branch();
@@ -312,34 +308,29 @@ void convert_tree(SavedTree &st, GroveGenerationData ggd, ::Tree &external_tree,
 
     tlb_ids++;
 }
-void TreeLoaderBlk::load_tree(GroveGenerationData ggd, ::Tree &tree_external, Heightmap &h, Block &b)
+void TreeLoaderBlk::load_tree(TreeTypeData *type, ::Tree &tree_external, Block &b)
 {
     SavedTree st;
     ::load_tree(b, st);
-    convert_tree(st, ggd, tree_external, h);
+    convert_tree(st, type, tree_external);
     logerr("converted tree %d joints loaded %d joint transformed",st.joints_count,st.joints_transformed);
 }
-void TreeLoaderBlk::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
+
+void TreeLoaderBlk::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
-    
-    for (int i=0;i<ggd.trees_count;i++)
-    {
-        std::string blk_path = trees_directory + "/" + blks_base_name + "_" + std::to_string(trees_taken) + ".bsg";
-        Block b;
-        load_block_from_file(blk_path, b);
-        load_tree(ggd,trees_external[i],h,b);
-        trees_taken++;
-        
-        /*for (auto *bh : trees_external[i].branchHeaps)
-        {
-            for (auto &b : bh->branches)
-            {
-                for (auto &s : b.segments)
-                {
-                    logerr("%d %d segment %f %f %f --> %f %f %f",b.level, b.self_id, s.begin.x, s.begin.y, s.begin.z,
-                    s.end.x, s.end.y, s.end.z);
-                }
-            }
-        }*/
-    }
+  tree_saplings.push_back(std::pair<glm::vec3, TreeTypeData *>(pos, type));
+}
+
+void TreeLoaderBlk::finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels)
+{
+  int i = 0;
+  for (auto &p : tree_saplings)
+  {
+    std::string blk_path = trees_directory + "/" + blks_base_name + "_" + std::to_string(i) + ".bsg";
+    Block b;
+    load_block_from_file(blk_path, b);
+    load_tree(p.second,trees_external[i],b);
+    i++;
+  }
+  tree_saplings.clear();
 }

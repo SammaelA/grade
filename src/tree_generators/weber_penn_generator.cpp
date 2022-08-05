@@ -1728,11 +1728,6 @@ WeberPennGenerator::Stem::Stem(Stem &other)
 
 }
 
-void WeberPennGenerator::create_grove(GroveGenerationData ggd, ::Tree *trees_external, Heightmap &h)
-{
-    logerr("create_grove is not yet implemented for WeberPennGenerator");
-}
-
 void WeberPennGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
 {
     types.push_back(type);

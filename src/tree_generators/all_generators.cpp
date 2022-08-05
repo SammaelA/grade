@@ -3,9 +3,7 @@
 AbstractTreeGenerator *get_generator(std::string &generator_name)
 {
     AbstractTreeGenerator *gen;
-    if (generator_name == "proctree")
-        gen = new Proctree::ProctreeGenerator();
-    else if (generator_name == "simple_gen")
+    if (generator_name == "simple_gen")
         gen = new SimpleTreeGenerator();
     else if (generator_name == "simpliest_gen")
         gen = new SimpliestTreeGenerator();
@@ -28,9 +26,7 @@ AbstractTreeGenerator *get_generator(std::string &generator_name)
 ParametersSet *get_default_parameters(std::string &generator_name)
 {
     ParametersSet *gen;
-    if (generator_name == "proctree")
-        gen = new Proctree::Properties();
-    else if (generator_name == "simple_gen")
+    if (generator_name == "simple_gen")
         gen = new SimpleTreeStructureParameters();
     else if (generator_name == "simpliest_gen")
         gen = new SimpliestTreeStructureParameters();
