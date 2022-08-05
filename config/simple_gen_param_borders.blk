@@ -1,0 +1,6 @@
+{
+  segment_count_x:p2 = 5, 20
+  segment_count_y:p2 = 5, 20
+  segment_count_z:p2 = 5, 20
+  segment_count_w:p2 = 5, 20
+}

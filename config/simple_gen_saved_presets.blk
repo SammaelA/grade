@@ -1,5 +1,39 @@
 {
 fast_simple_tree {
+max_depth:r = 4.000000
+segment_size:p4 = 3.000000, 1.500000, 0.500000, 0.500000
+segment_count:p4 = 15.000000, 12.000000, 10.000000, 15.000000
+base_thickness:p4 = 2.000000, 1.400000, 0.600000, 0.400000
+base_dir_mult:r = 5.000000
+rand_dir_mult:r = 1.000000
+up_dir_mult:r = 1.000000
+down_dir_mult:r = 1.000000
+up_dir_pow:r = 1.000000
+down_dir_pow:r = 2.000000
+sectors_count:r = 6.000000
+base_branch_angle:r = 0.785398
+branching_chance:r = 0.750000
+leaves_chance:r = 1.000000
+leaf_mult:r = 2.000000
+wood_tex_name:s = "wood"
+leaf_tex_name:s = "leaf"
+}
+simple_tree_2 {
+max_depth:r = 4.000000
+segment_size:p4 = 3.000000, 1.500000, 0.500000, 0.500000
+segment_count:p4 = 18.105515, 19.122917, 13.305632, 9.334850
+base_thickness:p4 = 2.000000, 1.400000, 0.600000, 0.400000
+base_dir_mult:r = 5.000000
+rand_dir_mult:r = 1.000000
+up_dir_mult:r = 1.000000
+down_dir_mult:r = 1.000000
+up_dir_pow:r = 1.000000
+down_dir_pow:r = 2.000000
+sectors_count:r = 6.000000
+base_branch_angle:r = 0.785398
+branching_chance:r = 0.750000
+leaves_chance:r = 1.000000
+leaf_mult:r = 2.000000
 wood_tex_name:s = "wood"
 leaf_tex_name:s = "leaf"
 }

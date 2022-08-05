@@ -4,68 +4,41 @@
 #include "mygen_parameters.h"
 struct SimpleTreeStructureParameters : public ParametersSet
 {
-    Parameter<float> max_depth;
-    Parameter<float> segment_size;
-    Parameter<float> segment_count;
-    Parameter<float> base_thickness;
-    Parameter<float> base_dir_mult;
-    Parameter<float> rand_dir_mult;
-    Parameter<float> up_dir_mult;
-    Parameter<float> down_dir_mult;
-    Parameter<float> up_dir_pow;
-    Parameter<float> down_dir_pow;
-    Parameter<float> sectors_count;
-    Parameter<float> base_branch_angle;
-    Parameter<float> branching_chance;
-    Parameter<float> leaves_chance;
-    Parameter<float> leaf_mult;
+    int max_depth = 4;
+    glm::vec4 segment_size = glm::vec4(3.0,1.5,0.5,0.5);
+    glm::vec4 segment_count = glm::vec4(15, 12, 10, 15);
+    glm::vec4 base_thickness = glm::vec4(2,1.4,0.6,0.4);
+    float base_dir_mult = 5;
+    float rand_dir_mult = 1;
+    float    up_dir_mult = 1;
+    float    down_dir_mult = 1;
+    float    up_dir_pow = 1;
+    float    down_dir_pow = 2;
+    float    sectors_count = 6;
+    float    base_branch_angle = PI/4;
+    float    branching_chance = 0.75;
+    float    leaves_chance = 1;
+    float    leaf_mult = 2;
 
-    virtual void set_state(int state) override
+    virtual void save_to_blk(Block &b) override
     {
-        max_depth.set_state(state);
-        segment_size.set_state(state);
-        segment_count.set_state(state);
-        base_thickness.set_state(state);
-        base_dir_mult.set_state(state);
-        rand_dir_mult.set_state(state);
-        up_dir_mult.set_state(state);
-        down_dir_mult.set_state(state);
-        up_dir_pow.set_state(state);
-        down_dir_pow.set_state(state);
-        sectors_count.set_state(state);
-        base_branch_angle.set_state(state);
-        branching_chance.set_state(state);
-        leaves_chance.set_state(state);
-        leaf_mult.set_state(state);
+      ParameterList list;
+      save_load_define(SaveLoadMode::BLK_SAVE, b, list);
     }
-    SimpleTreeStructureParameters():
-    max_depth(4),
-        segment_size(1,std::vector<float>{3.0,1.5,0.5,0.5}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.15, 0.15)),
-        segment_count(15, std::vector<float>{15, 12, 10, 15}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-10, 10)),
-        base_thickness(1.5,std::vector<float>{2,1.4,0.6,0.4}, REGENERATE_ON_GET, distibutionGenerator.get_uniform(-0.08, 0.08)),
-        base_dir_mult(5),
-        rand_dir_mult(1),
-        up_dir_mult(1),
-        down_dir_mult(1),
-        up_dir_pow(1),
-        down_dir_pow(2),
-        sectors_count(6),
-        base_branch_angle(PI/4),
-        branching_chance(0.75),
-        leaves_chance(1.0),
-        leaf_mult(2.0)
+    virtual void load_from_blk(Block &b) override
     {
-
-    };
-    virtual void get_parameter_list(std::vector<std::pair<ParameterTinyDesc,Parameter<float> &>> &list,
-                            ParameterVariablesSet v_set = ParameterVariablesSet::ALL_VALUES) override
-    {
-
+      ParameterList list;
+      save_load_define(SaveLoadMode::BLK_LOAD, b, list);
     }
+    virtual void RW_parameter_list(bool write, ParameterList &list) override 
+    {
+      Block b;
+      save_load_define(write ? SaveLoadMode::PAR_LIST_LOAD : SaveLoadMode::PAR_LIST_SAVE, b, list);
+    }
+    virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) override;
     virtual glm::vec3 get_tree_max_size() override
     {
-        set_state(0);
-        return 2.0f*glm::vec3(segment_size()*segment_count());
+      return 2.0f*glm::vec3(segment_size[0]*segment_count[0]);
     }
     virtual ParametersSet *copy() override
     { 
@@ -84,7 +57,7 @@ private:
     void create_tree(Tree *tree, glm::vec3 pos);
     void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
                        float base_r, float leaves_chance);
-    BaseParameterSetWrapper<SimpleTreeStructureParameters> params;
+    SimpleTreeStructureParameters params;
     GroveGenerationData ggd;
     Heightmap *h;
     std::vector<glm::vec3> tree_positions;

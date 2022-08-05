@@ -1,25 +1,25 @@
 {
-    branch_angle_0:p2 = 0.01, 3
-    branch_angle_1:p2 = 0.01, 3
-    branch_angle_2:p2 = 0.01, 3
-    branch_angle_3:p2 = 0.01, 3
+    branch_angle_x:p2 = 0.01, 3
+    branch_angle_y:p2 = 0.01, 3
+    branch_angle_z:p2 = 0.01, 3
+    branch_angle_w:p2 = 0.01, 3
 
-    branch_r_0:p2 = 0.5, 25
+    branch_r_x:p2 = 0.5, 25
 
-    branch_len_0:p2 = 1, 100
-    branch_len_1:p2 = 1, 100
-    branch_len_2:p2 = 1, 100
-    branch_len_3:p2 = 1, 100
+    branch_len_x:p2 = 1, 100
+    branch_len_y:p2 = 1, 100
+    branch_len_z:p2 = 1, 100
+    branch_len_w:p2 = 1, 100
 
-    branch_count_0:p2 = 5, 20
-    branch_count_1:p2 = 5, 20
-    branch_count_2:p2 = 5, 20
-    branch_count_3:p2 = 5, 20
+    branch_count_x:p2 = 5, 20
+    branch_count_y:p2 = 5, 20
+    branch_count_z:p2 = 5, 20
+    branch_count_w:p2 = 5, 20
 
-    branching_start_0:p2 = 0, 1
-    branching_start_1:p2 = 0, 1
-    branching_start_2:p2 = 0, 1
-    branching_start_3:p2 = 0, 1
+    branching_start_x:p2 = 0, 1
+    branching_start_y:p2 = 0, 1
+    branching_start_z:p2 = 0, 1
+    branching_start_w:p2 = 0, 1
     leaves_count:p2 = 0.1,1
     leaf_size:p2 = 1,4
 }

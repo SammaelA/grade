@@ -1,35 +1,35 @@
 {
 simpliest_tree_2 {
-branch_len:p4 = 60.000000, 30.000000, 5.000000, 10.000000
+max_depth:r = 4.000000
+branch_len:p4 = 60.000000, 20.000000, 12.000000, 7.000000
 branch_r:p4 = 1.750000, 0.750000, 0.200000, 0.075000
 branch_angle:p4 = 1.100000, 2.500000, 2.500000, 0.000000
 branch_count:p4 = 20.000000, 25.000000, 10.000000, 13.000000
 branching_start:p4 = 0.500000, 0.700000, 0.000000, 0.000000
-max_depth:r = 4
 leaves_count:r = 0.750000
-leaf_size:r = 3.250000
+leaf_size:r = 3.000000
 wood_tex_name:s = "wood"
 leaf_tex_name:s = "leaf"
 }
 simpliest_tree_default {
+max_depth:r = 4.000000
 branch_len:p4 = 60.000000, 20.000000, 12.000000, 7.000000
 branch_r:p4 = 1.750000, 0.750000, 0.200000, 0.075000
 branch_angle:p4 = 0.523599, 0.523599, 0.785398, 0.785398
 branch_count:p4 = 20.000000, 10.000000, 8.000000, 10.000000
 branching_start:p4 = 0.500000, 0.000000, 0.000000, 0.000000
-max_depth:r = 4
 leaves_count:r = 0.750000
 leaf_size:r = 3.000000
 wood_tex_name:s = "wood"
 leaf_tex_name:s = "leaf"
 }
 simpliest_tree_test {
+max_depth:r = 4.000000
 branch_len:p4 = 60.000000, 20.000000, 12.000000, 7.000000
 branch_r:p4 = 1.750000, 0.750000, 0.200000, 0.075000
 branch_angle:p4 = 1.100000, 1.100000, 1.100000, 1.500000
 branch_count:p4 = 20.000000, 10.000000, 8.000000, 10.000000
 branching_start:p4 = 0.500000, 0.000000, 0.000000, 0.000000
-max_depth:r = 4
 leaves_count:r = 0.750000
 leaf_size:r = 3.000000
 wood_tex_name:s = "wood"
