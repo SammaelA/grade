@@ -1,8 +1,8 @@
 #include "generation/grove_generation_utils.h"
+#include "generation_settings.h"
 #include "common_utils/distribution.h"
 #include "core/tree.h"
 #include "core/body.h"
-#include "tree_generators/generated_tree.h"
 
 void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
 {
@@ -287,57 +287,4 @@ void Seeder::add_tree_shadow(Tree &t)
 {
     recalculate_planar_shadows(t.root, psm, 1);
     dsm.create(hm, psm);
-}
-
-void Seeder::recalcuate_shadows(mygen::Tree *trees, int count)
-{
-    psm.set(const_psm);
-    for (int i = 0; i < count; i++)
-    {
-        recalculate_planar_shadows(trees[i].root, psm, 1);
-    }
-   
-    dsm.create(hm, psm);
-}
-void Seeder::add_tree_shadow(mygen::Tree &t)
-{
-    recalculate_planar_shadows(t.root, psm, 1);
-    dsm.create(hm, psm);
-}
-int Seeder::joints_count(mygen::Branch *b)
-{
-    if (!b)
-        return 0;
-    int cnt = b->joints.size();
-    for (mygen::Joint &j : b->joints)
-    {
-        for (mygen::Branch *br : j.childBranches)
-            cnt += joints_count(br);
-    }
-    return cnt;
-}
-void Seeder::recalculate_planar_shadows(mygen::Branch *b, PlanarShadowsMap &psm, int level)
-{
-    if (!b || b->level > level)
-        return;
-    if (b->level < level)
-    {
-        for (mygen::Joint &j : b->joints)
-        {
-            for (mygen::Branch *br : j.childBranches)
-                recalculate_planar_shadows(br,psm,level);
-        }
-    }
-    else //b->level == level
-    {
-        if (b->joints.size() < 2)
-            return;
-
-        int cnt = joints_count(b);
-        glm::vec3 pos = 0.5f*(b->joints.back().pos + b->joints.front().pos);
-        float height = MAX(0,pos.y - heightmap->get_height(pos));
-        float size = 0.5f*(length(b->joints.back().pos - b->joints.front().pos) + height);
-        psm.set_occluder(pos,cnt,size,1);
-
-    }
 }

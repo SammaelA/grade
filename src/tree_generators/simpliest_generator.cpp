@@ -169,12 +169,9 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                     vec2 p_dir = f*normalize(vec2(nb_dir.x, nb_dir.z) - dir_sum);
                     nb_dir = normalize(vec3(p_dir.x, nb_dir.y, p_dir.y));
                     dir_sum += vec2(nb_dir.x, nb_dir.z);
-                    //if (level == 0)
-                    //logerr("nb %f %f",nb_dir.x, nb_dir.z);
                     nb_norm = normalize(cross(base_dir, nb_dir));
                 }
                 create_branch(tree, ch_b, j.pos, nb_dir, nb_norm, level+1, params, leaves_tries, leaves_cnt);
-                params.set_state(level);
             }
     }
 }

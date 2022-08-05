@@ -1,12 +1,11 @@
 #pragma once
 #include "abstract_generator.h"
-#include "weber_penn_parameters.h"
 
 class CHTurtle;
 struct SetUpBranchRetStruct;
 template<typename T, typename Q>
 struct tquat;
-struct WeberPennParametersNative : public ParametersSet
+struct WeberPennParametersNative : public ParameterSet
 {
     int shape = 7;
     float g_scale = 13;
@@ -59,27 +58,13 @@ struct WeberPennParametersNative : public ParametersSet
     {
         return 1;
     }
-    virtual ParametersSet *copy() override
+    virtual ParameterSet *copy() override
     { 
         auto Ps = new WeberPennParametersNative();
         *Ps = *this;
         return Ps;
     };
-    virtual void save_to_blk(Block &b) override
-    {
-      ParameterList list;
-      save_load_define(SaveLoadMode::BLK_SAVE, b, list);
-    }
-    virtual void load_from_blk(Block &b) override
-    {
-      ParameterList list;
-      save_load_define(SaveLoadMode::BLK_LOAD, b, list);
-    }
-    virtual void RW_parameter_list(bool write, ParameterList &list) override 
-    {
-      Block b;
-      save_load_define(write ? SaveLoadMode::PAR_LIST_LOAD : SaveLoadMode::PAR_LIST_SAVE, b, list);
-    }
+    
     virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) override;
 };
 

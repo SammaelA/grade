@@ -5,6 +5,7 @@
 #include "common_utils/bbox.h"
 #include "graphics_utils/texture_manager.h"
 #include "grove_generation_utils.h"
+#include "common_utils/distribution.h"
 
 int gr = 0;
 void load_biome_types(Block *bl, std::vector<std::pair<int, float>> &types)

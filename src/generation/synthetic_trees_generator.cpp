@@ -1,4 +1,5 @@
 #include "synthetic_trees_generator.h"
+#include "generation_settings.h"
 #include <iostream>
 SyntheticTreeGenerator::SyntheticTreeGenerator(Seeder &_seeder, std::vector<ClusterData> &_trunks_clusters,
                                                std::vector<ClusterData> &_branches_clusters, GroveGenerationData &_ggd) : seeder(_seeder),

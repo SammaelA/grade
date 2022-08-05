@@ -1,5 +1,4 @@
 #pragma once
-#include "tree_generators/generated_tree.h"
 #include "common_utils/utility.h"
 #include "clustering/clustering.h"
 #include "graphics_utils/texture_manager.h"

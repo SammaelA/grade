@@ -47,7 +47,6 @@ void MetainfoManager::load_tree_types()
     }
     LOAD("ge_gen", GETreeParameters);
     LOAD("ge_gen_simplified", GETreeParameters);
-    LOAD("my_gen", TreeStructureParameters);
     LOAD("simple_gen", SimpleTreeStructureParameters);
     LOAD("simpliest_gen", SimpliestTreeStructureParameters);
     LOAD("weber_penn_gen", WeberPennParametersNative);
@@ -274,7 +273,6 @@ void MetainfoManager::save_tree_types()
 
     SAVE("ge_gen", GETreeParameters);
     SAVE("ge_gen_simplified", GETreeParameters);
-    SAVE("my_gen", TreeStructureParameters);
     SAVE("simple_gen", SimpleTreeStructureParameters);
     SAVE("simpliest_gen", SimpliestTreeStructureParameters);
     SAVE("weber_penn_gen", WeberPennParametersNative);

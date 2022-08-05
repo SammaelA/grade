@@ -104,9 +104,9 @@ struct TreeTypeData
     TreeTypeData &operator=(const TreeTypeData &t);
     TreeTypeData(TreeTypeData &&t) = default;
     TreeTypeData &operator=(TreeTypeData &&t) = default;
-    TreeTypeData(int id, ParametersSet *params, std::string wood_tex_name, std::string leaf_tex_name);
-    ParametersSet *get_params();
-    void set_params(ParametersSet *_params);
+    TreeTypeData(int id, ParameterSet *params, std::string wood_tex_name, std::string leaf_tex_name);
+    ParameterSet *get_params();
+    void set_params(ParameterSet *_params);
     ~TreeTypeData();
     int type_id;
     Texture wood;
@@ -118,7 +118,7 @@ struct TreeTypeData
     std::string wood_tex_name = "wood";
     std::string leaf_tex_name = "leaf";
 private:
-    ParametersSet *params = nullptr;
+    ParameterSet *params = nullptr;
 };
 struct Tree
 {

@@ -1,8 +1,7 @@
 #pragma once
 #include "abstract_generator.h"
 #include "common_utils/parameter.h"
-#include "mygen_parameters.h"
-struct SimpleTreeStructureParameters : public ParametersSet
+struct SimpleTreeStructureParameters : public ParameterSet
 {
     int max_depth = 4;
     glm::vec4 segment_size = glm::vec4(3.0,1.5,0.5,0.5);
@@ -20,27 +19,13 @@ struct SimpleTreeStructureParameters : public ParametersSet
     float    leaves_chance = 1;
     float    leaf_mult = 2;
 
-    virtual void save_to_blk(Block &b) override
-    {
-      ParameterList list;
-      save_load_define(SaveLoadMode::BLK_SAVE, b, list);
-    }
-    virtual void load_from_blk(Block &b) override
-    {
-      ParameterList list;
-      save_load_define(SaveLoadMode::BLK_LOAD, b, list);
-    }
-    virtual void RW_parameter_list(bool write, ParameterList &list) override 
-    {
-      Block b;
-      save_load_define(write ? SaveLoadMode::PAR_LIST_LOAD : SaveLoadMode::PAR_LIST_SAVE, b, list);
-    }
+    
     virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) override;
     virtual glm::vec3 get_tree_max_size() override
     {
       return 2.0f*glm::vec3(segment_size[0]*segment_count[0]);
     }
-    virtual ParametersSet *copy() override
+    virtual ParameterSet *copy() override
     { 
         auto Ps = new SimpleTreeStructureParameters();
         *Ps = *this;
