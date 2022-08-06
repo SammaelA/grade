@@ -37,6 +37,7 @@ struct AppContext
   FpsCounter fpsCounter;
   Camera camera;
   bool free_camera = false;
+  int frames_from_last_input = 1000;
 
   struct CellUiInfo
   {

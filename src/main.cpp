@@ -44,22 +44,28 @@ int main(int argc, char *argv[])
       std::string str(argv[1]);
       gui.read_commands_from_string(str);
     }
-    Tiny::event.handler = [&]()
-    { 
-      inputHandler.handle_input(Tiny::event);
-    };
-    Tiny::view.pipeline = [&]()
-    {
-        appContext.fpsCounter.tick();
-        ice.execute();
-        gce.execute();
-        rce.execute();
-    };
+
     Tiny::view.interface = [&]() {
         gui.render_main_toolbar();
         gui.read_from_console_nonblock();
     };
 
-    Tiny::loop([&]() {});
+    while(!Tiny::event.quit)
+    {    
+      if(Tiny::audio.enabled) 
+        Tiny::audio.process();
+
+      if(Tiny::view.enabled)
+      {
+        appContext.fpsCounter.tick();
+        ice.execute();
+        gce.execute();
+        rce.execute();
+        Tiny::view.drawInterface();
+        SDL_GL_SwapWindow(Tiny::view.gWindow);
+        Tiny::event.input();
+        inputHandler.handle_input(Tiny::event);
+      }
+    }
     Tiny::quit();
 }

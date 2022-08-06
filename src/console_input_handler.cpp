@@ -64,13 +64,13 @@ void GUI::read_from_console_nonblock()
 void GUI::text_input()
 {
   ImGui::Begin("Console"); 
-  bool get = ImGui::InputText("Text", _console_buf, BUF_SIZE, ImGuiInputTextFlags_EnterReturnsTrue);
+  static std::string block_str = "";
+  bool get = input_text("Text", block_str);
   ImGui::End();
 
   if (get)
   {
-    std::string block_str = std::string(_console_buf);
     read_commands_from_string(block_str);
-    memset(_console_buf, 0, BUF_SIZE);
+    block_str = "";
   }
 }

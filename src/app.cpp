@@ -22,6 +22,13 @@ void FpsCounter::tick()
 
 void InputHandler::handle_input(Event &event)
 {
+  if (ctx.frames_from_last_input < 5) //do not use hotkeys when we are typing something
+  {
+    for (auto &e : event.active)
+      event.active[e.first] = false;
+    return;
+  }
+  
   ctx.window_width = Tiny::view.WIDTH;
   ctx.windows_height = Tiny::view.HEIGHT;
   
@@ -58,35 +65,11 @@ void InputHandler::handle_input(Event &event)
 
   //Pause Toggle
   glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
-  if (event.active[SDLK_1])
-  {
-    ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-84,61.35,6);
-    ctx.camera.front = glm::vec3(0.88,-0.05,0.47);
-  }
-  if (event.active[SDLK_2])
-  {
-    ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-223.5,68,23);
-    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
-  }
-  if (event.active[SDLK_3])
-  {
-    ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(-168,67.8,2.1);
-    ctx.camera.front = glm::vec3(0.996,-0.056,-0.07);
-  }
-  if (event.active[SDLK_4])
-  {
-    ctx.camera = Camera();
-    ctx.camera.pos = glm::vec3(0,70,-400);
-    ctx.camera.front = glm::vec3(0,70,0) - ctx.camera.pos;
-  }
-  if (event.active[SDLK_5])
+  if (event.active[SDLK_t])
   {
     logerr("camera pos %f,%f,%f",ctx.camera.pos.x,ctx.camera.pos.y,ctx.camera.pos.z);
     logerr("camera front %f,%f,%f",ctx.camera.front.x,ctx.camera.front.y,ctx.camera.front.z);
-    event.active[SDLK_5] = false;
+    event.active[SDLK_t] = false;
   }
   if (event.active[SDLK_w])
     ctx.camera.pos += speed * ctx.camera.front;
@@ -114,7 +97,7 @@ void InputHandler::handle_input(Event &event)
     exit(0);
     event.active[SDLK_ESCAPE] = false;
   }
-  if (event.active[SDLK_p])
+  if ((event.active[SDLK_LSHIFT] || event.active[SDLK_RSHIFT]) && event.active[SDLK_p])
   {
     Block b;
     b.add_vec4("world_pos_type", ctx.mouseWorldPosType);

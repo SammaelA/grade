@@ -9,6 +9,18 @@
 
 char __input_buf[4096];
 
+bool GUI::input_text(const char *label, std::string &text)
+{
+  int len = text.size();
+  strncpy(__input_buf, text.c_str(), text.size() + 1);
+  bool get = ImGui::InputText(label, __input_buf, 4096, ImGuiInputTextFlags_EnterReturnsTrue);
+  text = std::string(__input_buf);
+  if (len != strlen(__input_buf))
+    input_active = true;
+
+  return get;
+}
+
 void GUI::blk_modification_interface(Block *b, const std::string &title)
 {
   if (ImGui::CollapsingHeader(title.c_str()))
@@ -127,12 +139,7 @@ void GUI::blk_modification_interface(Block *b, const std::string &title)
         break;
         case Block::ValueType::STRING:
         {
-          strncpy( __input_buf, val.s->c_str(), val.s->size()+1);
-          bool get = ImGui::InputText(name, __input_buf, 4096, ImGuiInputTextFlags_EnterReturnsTrue);
-          if (get)
-          {
-            *(val.s) = std::string(__input_buf);
-          }
+          input_text(name, *(val.s));
         }
         break;
         case Block::ValueType::BLOCK:
@@ -174,14 +181,14 @@ void GUI::render_parameter_selection_menu()
     static std::string selected_name = "";
     if (selected_name != "")
     {
-      static char name_buf[256];
-      bool get = ImGui::InputText("New name", name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue);
+      static std::string new_name = "";
+      bool get = input_text("New name", new_name);
       if (get)
       {
-        std::string new_name(name_buf);
         TreeTypeData type = metainfoManager.get_tree_type(selected_name);
         metainfoManager.add_tree_type(type, new_name);
         selected_name = "";
+        new_name = "";
       }
     }
     else
@@ -253,6 +260,8 @@ void GUI::render_parameter_selection_menu()
 
 void GUI::render_main_toolbar()
 {
+  input_active = false;
+
   ImGuiWindowFlags window_flags = 0;
   window_flags |= ImGuiWindowFlags_NoMove;
   window_flags |= ImGuiWindowFlags_NoResize;
@@ -311,6 +320,11 @@ void GUI::render_main_toolbar()
   }
   if (appCtx.active_cell_id >= 0)
     render_cell_info();
+  
+  if (input_active)
+    appCtx.frames_from_last_input = 0;
+  else 
+    appCtx.frames_from_last_input++;
 }
 
 void GUI::render_debug_settings()

@@ -44,7 +44,12 @@ void quit();
 
 template<typename F, typename... Args>
 void loop(F function, Args&&... args){
-  while(!event.quit){
+  while(!event.quit){    
+    if(Tiny::audio.enabled) audio.process();      //Audio Processor
+
+    function(args...);      //User-defined Game Loop
+
+    if(Tiny::view.enabled)  view.render();        //Render View
     if(Tiny::view.enabled){
       event.input();        //Get Input
       event.handle(view);   //Call the event-handling system
@@ -53,13 +58,6 @@ void loop(F function, Args&&... args){
     {
       logerr("view not enabled\n");
     }
-    
-    if(Tiny::audio.enabled) audio.process();      //Audio Processor
-
-    function(args...);      //User-defined Game Loop
-
-    if(Tiny::view.enabled)  view.render();        //Render View
-
   }
 }
 
