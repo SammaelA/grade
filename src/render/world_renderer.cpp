@@ -274,6 +274,13 @@ void WorldRenderer::render(float dt, Camera &camera)
         if (it != debug_textures.end())
           debug_tex = &(it->second);
       }
+      else if (debugInfo.get_bool("render_biome_mask_debug", false))
+      {
+        debug_type += 2;
+        auto it = debug_textures.find("biome_mask");
+        if (it != debug_textures.end())
+          debug_tex = &(it->second);
+      }
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                               camera.pos, light, false, debug_type,
                               debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)),

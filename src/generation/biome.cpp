@@ -103,11 +103,11 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
     data = new biome_type_t[w*h];
 }
 
-    int BiomeMap::get(int x, int y)
+    int BiomeMap::get(int x, int y) const
     {
         return data[y*w + x];
     }
-    int BiomeMap::get(glm::vec2 pos)
+    int BiomeMap::get(glm::vec2 pos) const
     {
         int x = (pos.x - bbox.min_pos.x)/pixel_size;
         int y = (pos.y - bbox.min_pos.y)/pixel_size;
@@ -116,7 +116,7 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         else
             return get(x, y);
     }
-    int BiomeMap::get(glm::vec3 pos)
+    int BiomeMap::get(glm::vec3 pos) const
     {
         return get(glm::vec2(pos.x, pos.z));
     }
@@ -191,28 +191,35 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         }
     }
 
-    void BiomeMap::save_as_image(std::string name)
+    Texture BiomeMap::save_as_texture_RGBA8() const
     {
-        if (!data)
-            return;
-        unsigned char *image_data = new unsigned char[3*w*h];
-        for (int i=0;i<h;i++)
+      if (!data)
+        return textureManager.empty();
+      unsigned char *image_data = new unsigned char[4 * w * h];
+      for (int i = 0; i < h; i++)
+      {
+        for (int j = 0; j < w; j++)
         {
-            for (int j=0;j<w;j++)
-            {
-                int type = ((int)data[i*w + j]) % 8 + 1;
-                image_data[3*(i*w + j)] = 255*(type % 2);
-                image_data[3*(i*w + j)+1] = 255*(type / 2 % 2);
-                image_data[3*(i*w + j)+2] = 255*(type / 4 % 2);
-                //image_data[4*(i*w + j)+3] = 1;
-            }
+          int type = ((int)data[i * w + j]) % 8 + 1;
+          image_data[4 * (i * w + j)] = 255 * (type % 2);
+          image_data[4 * (i * w + j) + 1] = 255 * (type / 2 % 2);
+          image_data[4 * (i * w + j) + 2] = 255 * (type / 4 % 2);
+          image_data[4 * (i * w + j) + 3] = 255;
         }
-        textureManager.save_bmp_raw(image_data, w, h, 3, name);
-
-        delete[] image_data;
+      }
+      Texture t = textureManager.create_texture(w, h, GL_RGBA8, 1, image_data, GL_RGBA);
+      delete[] image_data;
+      return t;
     }
 
-    void BiomeMap::get_stat(std::vector<std::pair<int,int>> &stat, AABB2D box)
+    void BiomeMap::save_as_image(std::string name) const
+    {
+      Texture t = save_as_texture_RGBA8();
+      textureManager.save_png(t, name);
+      textureManager.delete_tex(t);
+    }
+
+    void BiomeMap::get_stat(std::vector<std::pair<int,int>> &stat, AABB2D box) const
     {
         int x0 = CLAMP(ceil(box.min_pos.x - bbox.min_pos.x)/pixel_size,0,w);
         int y0 = CLAMP(ceil(box.min_pos.y - bbox.min_pos.y)/pixel_size,0,h);
@@ -247,4 +254,14 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
             return (get(p) == biome_id) ? 1.0 : 0.0;
         };
         mask.fill_func(func);
+    }
+
+    void BiomeMap::set_default_biome(int id)
+    {
+      for (int i=0;i<w*h;i++)
+      {
+        if (data[i] == default_biome_id)
+          data[i] = id;
+      }
+      default_biome_id = id;
     }

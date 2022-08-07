@@ -36,6 +36,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         {
             worldRenderer.debugInfo.set_bool("render_grid_debug", false);
             worldRenderer.debugInfo.set_bool("render_grove_mask_debug", false);
+            worldRenderer.debugInfo.set_bool("render_biome_mask_debug", false);
             worldRenderer.debugInfo.set_bool("render_bvh_debug", false);
             worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.start_pos, genCtx.cell_size));
             glm::vec2 gm_st_ps = glm::vec2(genCtx.global_mask.get_borders().x, genCtx.global_mask.get_borders().y);
@@ -140,6 +141,22 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             else
             {
               worldRenderer.debug_textures.emplace("grove_mask", t);
+            }
+          }
+          break;
+        case RC_SAVE_BIOME_MASK_TO_TEXTURE:
+          if (worldRenderer.debugInfo.get_bool("render_biome_mask_debug", false))
+          {
+            Texture t = genCtx.biome_map.save_as_texture_RGBA8();
+            auto it = worldRenderer.debug_textures.find("biome_mask");
+            if (it != worldRenderer.debug_textures.end())
+            {
+              textureManager.delete_tex(it->second);
+              it->second = t;
+            }
+            else
+            {
+              worldRenderer.debug_textures.emplace("biome_mask", t);
             }
           }
           break;

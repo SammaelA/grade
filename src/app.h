@@ -51,6 +51,9 @@ struct AppContext
   glm::vec3 cur_obj_angles = glm::vec3(0,0,0);
   bool cur_object_on_terrain = false;
   float cur_obj_scale = 1;
+
+  int biome_brush = -1;
+  float biome_brush_size = 40;
 };
 
 class InputHandler

@@ -279,8 +279,8 @@ void GUI::render_main_toolbar()
   bool press_2 = ImGui::Button(ICON_FA_HOUSE);ImGui::SameLine();
   bool press_3 = ImGui::Button(ICON_FA_TREE);ImGui::SameLine();
   bool press_4 = ImGui::Button(ICON_FA_COMPUTER);ImGui::SameLine();
-  bool press_5 = ImGui::Button(ICON_FA_DIAGRAM_PROJECT);
-
+  bool press_5 = ImGui::Button(ICON_FA_DIAGRAM_PROJECT);ImGui::SameLine();
+  bool press_6 = ImGui::Button(ICON_FA_MOUNTAIN);
   ImGui::PopStyleVar(2);
   ImGui::End();
   {
@@ -318,6 +318,13 @@ void GUI::render_main_toolbar()
     if (show)
       render_parameter_selection_menu();
   }
+  {
+    static bool show = false;
+    if (press_6)
+      show = !show;
+    if (show)
+      render_biome_toolbar();    
+  }
   if (appCtx.active_cell_id >= 0)
     render_cell_info();
   
@@ -327,13 +334,100 @@ void GUI::render_main_toolbar()
     appCtx.frames_from_last_input++;
 }
 
+void GUI::render_biome_toolbar()
+{
+  static bool update = true;
+  static std::vector<std::string> names;
+  static const char *types[256];
+  static int types_cnt = 0;
+  static int cur_item = -1;
+  static bool biome_brush = false;
+  bool start_brush = false, end_brush = false, create_new_map = false, b_update = false;
+  ImGui::Begin("Biome Map");
+
+  if (ImGui::CollapsingHeader("BiomesList"))
+  {
+    ImGui::ListBox("Biomes", &cur_item, types, types_cnt);
+  }
+  else
+    cur_item = -1;
+  if (cur_item != -1)
+  {
+    if (ImGui::Button("Set as default biome"))
+    {}
+  }
+  if (biome_brush && appCtx.biome_brush == -1)
+  {
+    biome_brush = false;
+    end_brush = true;
+  }
+  if (biome_brush)
+  {
+    ImGui::SliderFloat("Brush scale", &appCtx.biome_brush_size, 10, 500);
+    if (ImGui::Button("Stop modification [B]"))
+    {
+      end_brush = true;
+    }
+  }
+  else 
+  {
+    if (ImGui::Button("Modify map"))
+    {
+      Block b;
+      b.add_bool("render_biome_mask_debug", true);
+      inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
+      biome_brush = true;
+      end_brush = false;
+    }
+    create_new_map = ImGui::Button("Create biome map");
+    b_update = ImGui::Button("Update biome list");
+  }
+
+  ImGui::End();
+  if (end_brush)
+  {
+    Block b;
+    b.add_bool("render_biome_mask_debug", false);
+    inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
+    biome_brush = false;
+  }
+
+  if (update || b_update)
+  {
+    names.clear();
+    for (int i=0;i<256;i++)
+      types[i] = nullptr;
+    auto &b_names = metainfoManager.see_all_biome_names();
+
+    types_cnt = b_names.size();
+    names.reserve(types_cnt);
+    int j = 0;
+    for (auto &p : b_names)
+    {
+      if (j>255)
+        break;
+      names.push_back(p.first);
+      types[j] = names.back().c_str();
+      j++;
+    }
+    update = false;
+  }
+  if (create_new_map)
+    inputCmdBuffer.push(IC_GEN_BIOME_MAP);
+  if (biome_brush && cur_item >= 0)
+    appCtx.biome_brush = metainfoManager.get_biome_id_by_name(names[cur_item]);
+  else  
+    appCtx.biome_brush = -1;
+}
+
 void GUI::render_debug_settings()
 {
-    constexpr int options_cnt = 3;
-    static bool checks[options_cnt] = {false, false, false};
-    static bool prev_checks[options_cnt] = {false, false, false};
-    static std::string check_names[options_cnt] = {"Show grid", "Show global mask", "Show bvh"};
-    static std::string options_names[options_cnt] = {"render_grid_debug", "render_grove_mask_debug", "render_bvh_debug"};
+    constexpr int options_cnt = 4;
+    static bool checks[options_cnt] = {false, false, false, false};
+    static bool prev_checks[options_cnt] = {false, false, false, false};
+    static std::string check_names[options_cnt] = {"Show grid", "Show global mask", "Show_biome_mask", "Show bvh"};
+    static std::string options_names[options_cnt] = {"render_grid_debug", "render_grove_mask_debug", "render_biome_mask_debug", 
+                                                     "render_bvh_debug"};
     ImGui::Begin("Render debug params");
     for (int i=0;i<options_cnt;i++)
         ImGui::Checkbox(check_names[i].c_str(), &(checks[i]));

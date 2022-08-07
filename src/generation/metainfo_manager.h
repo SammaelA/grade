@@ -22,12 +22,14 @@ public:
     int get_grass_type_id_by_name(std::string name);
     std::vector<GrassType> get_all_grass_types() {return grass_types;}
     const std::vector<GrassType> &see_all_grass_types() {return grass_types;}
+    const std::map<std::string, int> &see_all_grass_type_names() {return grass_type_id_by_name;}
 
     Biome &get_biome(std::string name);
     Biome &get_biome(int id);
     int get_biome_id_by_name(std::string name);
     std::vector<Biome> get_all_biomes() {return biomes;}
     const std::vector<Biome> &see_all_biomes() {return biomes;}
+    const std::map<std::string, int> &see_all_biome_names() {return biome_id_by_name;}
 private:
     void load_tree_types();
     void load_grass_types();

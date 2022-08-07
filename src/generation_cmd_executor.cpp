@@ -61,7 +61,7 @@ namespace scene_gen
       }
     }
 
-    ctx.biome_map.create(AABB2D(ctx.center - 0.5f * ctx.grass_field_size, ctx.center + 0.5f * ctx.grass_field_size), 1);
+    ctx.biome_map.create(AABB2D(ctx.center - ctx.grass_field_size, ctx.center + ctx.grass_field_size), ctx.biome_map_pixel_size);
     ctx.global_mask.create(glm::vec3(ctx.center.x,0,ctx.center.y), ctx.grass_field_size, ctx.biome_map_pixel_size);
     ctx.global_mask.fill_const(1);
 
@@ -428,6 +428,33 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       else
       {
         logerr("cannot perform parameter selection settings or/and reference blocks are not found");
+      }
+    }
+      break;
+    case GC_GEN_BIOME_MAP:
+      genCtx.biome_map.set_rect(genCtx.biome_map.borders(), metainfoManager.get_biome_id_by_name("empty_biome"));
+      genCtx.biome_map.set_default_biome(metainfoManager.get_biome_id_by_name("empty_biome"));
+      genCtx.biome_map.set_round(glm::vec3(0,0,0), 100, 150, metainfoManager.get_biome_id_by_name("simple_forest"));
+      break;
+    case GC_SET_DEFAULT_BIOME:
+    {
+      int id = cmd.args.get_int("id",-1);
+      if (id != -1)
+        genCtx.biome_map.set_default_biome(id);
+    }
+      break;
+    case GC_SET_BIOME_ROUND:
+    {
+      int id = cmd.args.get_int("id",-1);
+      if (id == -1)//we should remove biome i.e. set it to default
+        id = genCtx.biome_map.get_default_biome();
+      if (id != -1)
+      {
+        float outer_radius = cmd.args.get_double("outer_radius",-1);
+        float inner_radius = cmd.args.get_double("inner_radius",-1);
+        glm::vec3 pos = cmd.args.get_vec3("pos");
+        if (inner_radius > 0 && outer_radius > inner_radius)
+          genCtx.biome_map.set_round(glm::vec2(pos.x, pos.z), inner_radius, outer_radius, id);
       }
     }
       break;

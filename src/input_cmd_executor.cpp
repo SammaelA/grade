@@ -36,6 +36,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
         renderCmdBuffer.push(RC_UPDATE_HMAP);
         renderCmdBuffer.push(RC_UPDATE_OBJECTS);
         renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+        renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       }
       break;
     case IC_INIT_SCENE:
@@ -81,6 +82,10 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (cmd.args.get_bool("render_grove_mask_debug", false))
       {
         renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+      }
+      if (cmd.args.get_bool("render_biome_mask_debug", false))
+      {
+        renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       }
       if (cmd.args.get_id("render_bvh_debug") >= 0)
       {
@@ -204,6 +209,18 @@ void InputCmdExecutor::execute(int max_cmd_count)
         }
       }
     }
+      break;
+    case IC_GEN_BIOME_MAP:
+      genCmdBuffer.push(GC_GEN_BIOME_MAP, cmd.args);
+      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+      break;
+    case IC_SET_DEFAULT_BIOME:
+      genCmdBuffer.push(GC_SET_DEFAULT_BIOME, cmd.args);
+      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+      break;
+    case IC_SET_BIOME_ROUND:
+      genCmdBuffer.push(GC_SET_BIOME_ROUND, cmd.args);
+      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

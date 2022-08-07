@@ -22,7 +22,7 @@ void FpsCounter::tick()
 
 void InputHandler::handle_input(Event &event)
 {
-  if (ctx.frames_from_last_input < 5) //do not use hotkeys when we are typing something
+  if (ctx.frames_from_last_input < 25) //do not use hotkeys when we are typing something
   {
     for (auto &e : event.active)
       event.active[e.first] = false;
@@ -121,25 +121,58 @@ void InputHandler::handle_input(Event &event)
     inputCmdBuffer.push(InputCommands::IC_ADD_OBJECT, b);
     event.active[SDLK_o] = false;
   }
-  if (event.click[SDL_BUTTON_RIGHT])
+  if (event.active[SDLK_b])
   {
-    glm::vec2 pos_xz = glm::vec2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
-    glm::ivec2 c_ij = (pos_xz - genCtx.start_pos)/genCtx.cell_size;
-    int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
-    if (cell_id >= 0 && cell_id < genCtx.cells.size())
-    {
-      if (cell_id == ctx.active_cell_id)
-        ctx.active_cell_id = -1;
-      else
-      {
-        auto it = ctx.cells.find(cell_id);
-        if (it == ctx.cells.end())
-          ctx.cells.emplace(cell_id, AppContext::CellUiInfo()).first;
-        ctx.active_cell_id = cell_id;
-      }
-    }
-    event.click[SDL_BUTTON_RIGHT] = false;
+    if (ctx.biome_brush >= 0)
+      ctx.biome_brush = -1;
+    event.active[SDLK_b] = false;
   }
+  if (ctx.biome_brush >= 0)
+  {
+    if (event.click[SDL_BUTTON_LEFT] && SceneGenHelper::is_terrain(ctx.mouseWorldPosType))
+    {
+      Block b;
+      b.set_vec3("pos", glm::vec3(ctx.mouseWorldPosType));
+      b.set_double("outer_radius", ctx.biome_brush_size);
+      b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
+      b.set_int("id", ctx.biome_brush);
+      inputCmdBuffer.push(IC_SET_BIOME_ROUND, b);
+      event.click[SDL_BUTTON_LEFT] = false;
+    }
+    else if (event.click[SDL_BUTTON_RIGHT] && SceneGenHelper::is_terrain(ctx.mouseWorldPosType))
+    {
+      Block b;
+      b.set_vec3("pos", glm::vec3(ctx.mouseWorldPosType));
+      b.set_double("outer_radius", ctx.biome_brush_size);
+      b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
+      b.set_int("id", -1);
+      inputCmdBuffer.push(IC_SET_BIOME_ROUND, b);
+      event.click[SDL_BUTTON_RIGHT] = false;
+    }
+  }
+  else
+  {
+    if (event.click[SDL_BUTTON_RIGHT])
+    {
+      glm::vec2 pos_xz = glm::vec2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
+      glm::ivec2 c_ij = (pos_xz - genCtx.start_pos)/genCtx.cell_size;
+      int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
+      if (cell_id >= 0 && cell_id < genCtx.cells.size())
+      {
+        if (cell_id == ctx.active_cell_id)
+          ctx.active_cell_id = -1;
+        else
+        {
+          auto it = ctx.cells.find(cell_id);
+          if (it == ctx.cells.end())
+            ctx.cells.emplace(cell_id, AppContext::CellUiInfo()).first;
+          ctx.active_cell_id = cell_id;
+        }
+      }
+      event.click[SDL_BUTTON_RIGHT] = false;
+    }
+  }
+
   if (!event.press.empty())
   {
 
