@@ -2,7 +2,7 @@
 #include <functional>
 #include <chrono>
 #include "core/grove.h"
-#include "generation/scene_generator.h"
+#include "generation/scene_generation.h"
 #include "tinyEngine/camera.h"
 #include "core/tree.h"
 #include "common_utils/sun.h"

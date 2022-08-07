@@ -2,7 +2,6 @@
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
 #include "generation/metainfo_manager.h"
-#include "generation/scene_generator_plants.h"
 #include "generation/grove_packer.h"
 #include "parameter_selection/parameter_selection.h"
 namespace scene_gen

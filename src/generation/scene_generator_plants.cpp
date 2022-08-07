@@ -1,4 +1,4 @@
-#include "scene_generator_plants.h"
+#include "scene_generation.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "grove_packer.h"
 #include "core/tree.h"
@@ -616,7 +616,7 @@ namespace scene_gen
           {
             if (p.second > rnd)
             {
-              patches.push_back(SceneGenerator::Patch(pos, p.first, type, desc_n));
+              patches.push_back(Patch(pos, p.first, type, desc_n));
               for (auto &c : ctx.cells) // TODO: optimize me
               {
                 if (patches.back().border.intersects(c.bbox))
@@ -770,5 +770,16 @@ namespace scene_gen
         }
       }
     }
+  }
+
+  Patch::Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int _biome_id, int _patch_type_id)
+  {
+    Normal norm = Normal(0, 1);
+    float r = patchDesc.size + patchDesc.size_std_dev*norm.get();
+    border = Sphere2D(pos, r);
+    density = patchDesc.density + patchDesc.density_std_dev*norm.get();
+    types = patchDesc.types;
+    patch_type_id = _patch_type_id;
+    biome_id = _biome_id;
   }
 }

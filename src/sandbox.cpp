@@ -1,5 +1,5 @@
 #include "sandbox.h"
-#include "generation/scene_generator.h"
+#include "generation/scene_generation.h"
 #include "generation/grove_packer.h"
 #include "generation/metainfo_manager.h"
 #include "graphics_utils/texture_manager.h"

@@ -1,7 +1,7 @@
 #pragma once
 #include "cmd_buffers.h"
 #include "render/world_renderer.h"
-#include "generation/scene_generator.h"
+#include "generation/scene_generation.h"
 #include "app.h"
 
 class InputCmdExecutor

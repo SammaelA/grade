@@ -3,7 +3,7 @@
 #include "cmd_buffers.h"
 #include "app.h"
 #include "graphics_utils/modeling.h"
-#include "generation/scene_generator.h"
+#include "generation/scene_generation.h"
 #include "cmd_executors.h"
 #include "gui.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "app.h"
-#include "generation/scene_generator.h"
+#include "generation/scene_generation.h"
 class GUI
 {
 public:

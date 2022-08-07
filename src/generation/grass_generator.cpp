@@ -1,5 +1,5 @@
 #include "grass_generator.h"
-#include "scene_generator.h"
+#include "scene_generation.h"
 #include <algorithm>
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/postfx.h"
