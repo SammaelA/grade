@@ -8,11 +8,11 @@
         trees
         {
             coverage:s = "full"
-            density:r = 3
+            density:r = 15
             types
             {
-                medium_oak_simplified:r = 0.5
-                bush_s:r = 0.5
+                medium_oak_simplified:r = 0.4
+                bush_s:r = 0.6
             }
         }
         grass

@@ -6,7 +6,6 @@
 
 void InputCmdExecutor::execute(int max_cmd_count)
 {
-  std::vector<int> plants_ids_to_remove;//much faster to remove all plants in one call
   std::set<int> cell_ids_to_update;
   bool need_update_trees = false;
 
@@ -156,6 +155,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_CLEAR_CELL:
     {
       int cell_id = cmd.args.get_int("cell_id",-1);
+      std::vector<int> plants_ids_to_remove;
       if (cell_id >=0 && cell_id < genCtx.cells.size())
       {
         auto &c = genCtx.cells[cell_id];
@@ -164,6 +164,13 @@ void InputCmdExecutor::execute(int max_cmd_count)
           if (c.bbox.contains(glm::vec2(t.pos.x, t.pos.z)))
             plants_ids_to_remove.push_back(t.global_id);
         }
+      }
+      if (plants_ids_to_remove.size() >= 1)
+      {
+        Block b;
+        b.add_arr("ids",plants_ids_to_remove);
+        genCmdBuffer.push(GC_REMOVE_TREES, b);
+        need_update_trees = true;
       }
     }
       break;
@@ -222,6 +229,25 @@ void InputCmdExecutor::execute(int max_cmd_count)
       genCmdBuffer.push(GC_SET_BIOME_ROUND, cmd.args);
       renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       break;
+    case IC_PREPARE_PLANT_PROTOTYPES:
+      genCmdBuffer.push(GC_PREPARE_PLANT_PROTOTYPES, cmd.args);
+      break;
+    case IC_REMOVE_ALL_PLANTS:
+    {
+      std::vector<int> plants_ids_to_remove;
+      for (auto &t : genCtx.scene.grove.compressedTrees)
+      {
+        plants_ids_to_remove.push_back(t.global_id);
+      }
+      if (plants_ids_to_remove.size() >= 1)
+      {
+        Block b;
+        b.add_arr("ids",plants_ids_to_remove);
+        genCmdBuffer.push(GC_REMOVE_TREES, b);
+        need_update_trees = true;
+      }
+    }
+      break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
@@ -231,14 +257,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
     logerr("%s took %.3f ms", ToString(cmd.type), ms);
     inputCmdBuffer.pop();
     cmd_left--;
-  }
-
-  if (!plants_ids_to_remove.empty())
-  {
-    Block b;
-    b.add_arr("ids",plants_ids_to_remove);
-    genCmdBuffer.push(GC_REMOVE_TREES, b);
-    need_update_trees = true;
   }
 
   if (!cell_ids_to_update.empty())

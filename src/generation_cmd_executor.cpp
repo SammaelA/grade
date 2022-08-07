@@ -79,7 +79,7 @@ namespace scene_gen
 
   AABB get_influence_AABB(Cell &c, const Heightmap &h)
   {
-    glm::vec3 max_tree_size = glm::vec3(0.33f*(c.bbox.max_pos.x - c.bbox.min_pos.x),200,0.33f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
+    glm::vec3 max_tree_size = glm::vec3(0.33f*(c.bbox.max_pos.x - c.bbox.min_pos.x),400,0.33f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
     float min_hmap = 10000, max_hmap = 0;
     h.get_min_max_imprecise(c.bbox.min_pos, c.bbox.max_pos, &min_hmap, &max_hmap);
     float br = 5;
@@ -456,6 +456,25 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         if (inner_radius > 0 && outer_radius > inner_radius)
           genCtx.biome_map.set_round(glm::vec2(pos.x, pos.z), inner_radius, outer_radius, id);
       }
+    }
+      break;
+    case GC_PREPARE_PLANT_PROTOTYPES:
+    {
+      scene_gen::prepare_tree_prototypes(genCtx);
+      int t_cnt = 0;
+      int c_cnt = 0;
+      int p_cnt = 0;
+      for (auto &c : genCtx.cells)
+      {
+        if (!c.prototypes.empty())
+          c_cnt++;
+        p_cnt += c.prototypes.size();
+        for (auto &p : c.prototypes)
+        {
+          t_cnt += p.trees_count;
+        }
+      }
+      logerr("created %d prototypes in %d cells. %d trees to generate",p_cnt, c_cnt, t_cnt);
     }
       break;
     default:

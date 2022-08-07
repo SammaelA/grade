@@ -380,9 +380,15 @@ void GUI::render_biome_toolbar()
       end_brush = false;
     }
     create_new_map = ImGui::Button("Create biome map");
+    if (ImGui::Button("Prepare for trees generation"))
+      inputCmdBuffer.push(InputCommands::IC_PREPARE_PLANT_PROTOTYPES);
+    if (ImGui::Button("Regenerate all trees"))
+    {
+      inputCmdBuffer.push(InputCommands::IC_REMOVE_ALL_PLANTS);
+      inputCmdBuffer.push(InputCommands::IC_GEN_ALL_PLANTED_TREES);
+    }
     b_update = ImGui::Button("Update biome list");
   }
-
   ImGui::End();
   if (end_brush)
   {
@@ -392,6 +398,10 @@ void GUI::render_biome_toolbar()
     biome_brush = false;
   }
 
+  if (b_update)
+  {
+    metainfoManager.reload_all();
+  }
   if (update || b_update)
   {
     names.clear();

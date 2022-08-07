@@ -447,15 +447,32 @@ namespace scene_gen
 
   void generate_plants_cells(SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
   {
+    //empty all_cell_ids means we should try all cells
     std::vector<int> cell_ids;//only valid cells where we have something to generate
-    for (auto &id : all_cell_ids)
+    if (all_cell_ids.empty())
     {
-      if (id < 0 || id >= ctx.cells.size())
-        logerr("trying to make plants in invalid cell id = %d",id);
-      else if (ctx.cells[id].prototypes.size() > 0)
+      for (int id = 0; id<ctx.cells.size(); id++)
       {
-        cell_ids.push_back(id);
-        ctx.cells[id].status = Cell::CellStatus::WAITING;
+        if (id < 0 || id >= ctx.cells.size())
+          logerr("trying to make plants in invalid cell id = %d",id);
+        else if (ctx.cells[id].prototypes.size() > 0)
+        {
+          cell_ids.push_back(id);
+          ctx.cells[id].status = Cell::CellStatus::WAITING;
+        }
+      }
+    }
+    else
+    {
+      for (auto &id : all_cell_ids)
+      {
+        if (id < 0 || id >= ctx.cells.size())
+          logerr("trying to make plants in invalid cell id = %d",id);
+        else if (ctx.cells[id].prototypes.size() > 0)
+        {
+          cell_ids.push_back(id);
+          ctx.cells[id].status = Cell::CellStatus::WAITING;
+        }
       }
     }
     if (cell_ids.empty())
@@ -565,5 +582,193 @@ namespace scene_gen
       }
     }
     GrovePacker::remove_trees_from_grove(ctx.scene.grove, ids);
+  }
+
+  void prepare_patches(SceneGenerationContext &ctx, int patch_type)
+  {
+    auto biomes = metainfoManager.get_all_biomes();
+    std::vector<std::vector<std::pair<Biome::PatchDesc, float>>> patch_descs;
+
+    for (auto &b : biomes)
+    {
+      patch_descs.emplace_back();
+      auto &descs = ((patch_type == 0) ? b.trees.patch_descs : b.grass.patch_descs);
+      for (auto &pd : descs)
+      {
+        float chance = pd.coverage_part * SQR(ctx.biome_map_pixel_size) / (PI * SQR(pd.size));
+        if (chance > 1e-6)
+          patch_descs.back().push_back(std::pair<Biome::PatchDesc, float>(pd, chance));
+      }
+    }
+
+    auto &patches = (patch_type == 0) ? ctx.trees_patches : ctx.grass_patches;
+    for (int i = 0; i < ctx.biome_map.pixels_h(); i++)
+    {
+      for (int j = 0; j < ctx.biome_map.pixels_w(); j++)
+      {
+        int type = ctx.biome_map.get(j, i);
+        if (type >= 0 && type < patch_descs.size() && patch_descs[type].size() > 0)
+        {
+          glm::vec2 pos = ctx.biome_map.borders().min_pos + ctx.biome_map_pixel_size * glm::vec2(j, i);
+          float rnd = urand();
+          int desc_n = 0;
+          for (auto &p : patch_descs[type])
+          {
+            if (p.second > rnd)
+            {
+              patches.push_back(SceneGenerator::Patch(pos, p.first, type, desc_n));
+              for (auto &c : ctx.cells) // TODO: optimize me
+              {
+                if (patches.back().border.intersects(c.bbox))
+                {
+                  if (patch_type == 0)
+                    c.trees_patches.push_back(patches.size() - 1);
+                  else
+                  {
+                    c.grass_patches.push_back(patches.size() - 1);
+                  }
+                }
+              }
+              break;
+            }
+            else
+            {
+              rnd -= p.second;
+            }
+            desc_n++;
+          }
+        }
+      }
+    }
+  }
+
+  void prepare_tree_prototypes(SceneGenerationContext &ctx)
+  {
+    //remove old prototypes and patches
+    ctx.trees_patches.clear();
+    ctx.grass_patches.clear();
+    for (auto &c : ctx.cells)
+    {
+      c.biome_stat.clear();
+      for (auto &p : c.prototypes)
+      {
+        if (p.biome_mask)
+          delete p.biome_mask;
+      }
+      c.prototypes.clear();
+    }
+
+    //prepare trees and grass patches
+    prepare_patches(ctx, 0);
+    prepare_patches(ctx, 1);
+
+    //prepare trees prototypes
+    for (int i = 0; i < ctx.cells_x; i++)
+    {
+      for (int j = 0; j < ctx.cells_y; j++)
+      {
+        glm::vec2 cell_center = ctx.start_pos + ctx.cell_size * glm::vec2(i + 0.5, j + 0.5);
+        int id = i * ctx.cells_y + j;
+        ctx.biome_map.get_stat(ctx.cells[id].biome_stat, ctx.cells[id].bbox);
+        int cnt_all = 0;
+        for (auto &p : ctx.cells[id].biome_stat)
+        {
+          cnt_all += p.second;
+        }
+
+        for (auto &p : ctx.cells[id].biome_stat)
+        {
+          // prepare main prototype for biome
+          float fract = p.second / (float)cnt_all;
+
+          if (fract < 0.01)
+            continue;
+
+          Biome &biome = metainfoManager.get_biome(p.first);
+
+          for (auto &pn : ctx.cells[id].trees_patches)
+          {
+            if (ctx.trees_patches[pn].biome_id == p.first)
+            {
+              auto &patch = ctx.trees_patches[pn];
+
+              GroveMask *mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y),
+                                              0.5f * ctx.cell_size, ctx.biome_map_pixel_size);
+
+              std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
+              {
+                return patch.border.contains(po) ? 1 : 0;
+              };
+              mask->fill_func(func);
+              if (ctx.cells[id].prototypes.size() > 0 && ctx.cells[id].prototypes.back().biome_mask)
+                mask->mul(*(ctx.cells[id].prototypes.back().biome_mask));
+              else
+              {
+                GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y),
+                                                      0.5f * ctx.cell_size, ctx.biome_map_pixel_size);
+                ctx.biome_map.set_mask(*biome_mask, p.first);
+                mask->mul(*(biome_mask));
+              }
+
+              auto patch_prototype = GrovePrototype();
+              ctx.cells[id].prototypes.back();
+
+              int cells_cnt = 0;
+              std::function<void(glm::vec2 &, float)> reader = [&](glm::vec2 &po, float val)
+              {
+                if (val > 0)
+                  cells_cnt++;
+              };
+              mask->read_func(reader);
+              float tk = 1e-3 * patch.density * cells_cnt;
+              float tk_frac = tk - (int)tk;
+
+              patch_prototype.pos = cell_center;
+              patch_prototype.size = 0.5f * ctx.cell_size;
+              patch_prototype.possible_types = patch.types;
+              patch_prototype.trees_count = (int)tk + (tk_frac > urand());
+              patch_prototype.biome_mask = mask;
+              // logerr("cell %d prepared biome %d patch (%d cells) Expected %d trees",id,p.first,cells_cnt,
+              // patch_prototype.trees_count);
+              if (patch_prototype.trees_count > 0)
+              {
+                ctx.cells[id].prototypes.push_back(patch_prototype);
+              }
+              else if (patch_prototype.biome_mask)
+              {
+                delete patch_prototype.biome_mask;
+              }
+            }
+          }
+
+          if (!biome.trees.main_types.empty())
+          {
+            auto prototype = GrovePrototype();
+
+            prototype.pos = cell_center;
+            prototype.size = 0.5f * ctx.cell_size;
+            prototype.possible_types = biome.trees.main_types;
+            float tk = 1e-3 * biome.trees.main_density * p.second;
+            float tk_frac = tk - (int)tk;
+            prototype.trees_count = (int)tk + (tk_frac > urand());
+
+            if (fract < 0.95)
+            {
+              prototype.biome_mask = new GroveMask(glm::vec3(prototype.pos.x, 0, prototype.pos.y), prototype.size, ctx.biome_map_pixel_size);
+              ctx.biome_map.set_mask(*(prototype.biome_mask), p.first);
+            }
+            if (prototype.trees_count > 0)
+            {
+              ctx.cells[id].prototypes.push_back(prototype);
+            }
+            else if (prototype.biome_mask)
+            {
+              delete prototype.biome_mask;
+            }
+            // logerr("cell %d prepared biome %d Expected %d trees",id,p.first,prototype.trees_count);
+          }
+        }
+      }
+    }
   }
 }
