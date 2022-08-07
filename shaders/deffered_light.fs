@@ -156,13 +156,13 @@ void main(void)
         float shadow = 0;
         if (need_shadow)
         {
-            float bias = 3*1e-6;
-            int samples = 2;
+            float bias = 0.001;
+            int samples = 16;
 
             if (type == PIXEL_TYPE_TERRAIN)
                 samples = 16;
             else 
-                bias = 1e-5;
+                bias = 0.015;
             vec4 FragPosLightSpace = shadow_mat * vec4(world_pos,1);
             shadow = ShadowCalculation(FragPosLightSpace, world_pos, bias, samples);
         }

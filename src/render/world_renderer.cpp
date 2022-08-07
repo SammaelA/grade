@@ -59,7 +59,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
 
   set_resolution(w, h);
 
-  light.dir = glm::normalize(glm::vec3(-0.2, 0.5, -0));
+  light.dir = glm::normalize(glm::vec3(-0.5, 0.5, -0.15));
   light.color = glm::vec3(0.99, 0.9, 0.7);
   light.intensity = 2;
   light.ambient_q = 0.1;
@@ -211,7 +211,7 @@ void WorldRenderer::render(float dt, Camera &camera)
 
   // SHADOW PASS //
   checkForGlErrors("render pre shadow", true);
-  if (regenerate_shadows)
+  if (regenerate_shadows || true)
   {
     regenerate_shadows = false;
     shadowMap.use(light);

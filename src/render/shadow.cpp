@@ -13,9 +13,9 @@
         shadow_camera.front =  -shadow_camera.pos;
         shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
         view = shadow_camera.camera();
-        float near_plane = 1.0f, far_plane = 7.5f;
-        projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane); 
-        projection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
+        float near_plane = 100, far_plane = 2000;
+        projection = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, near_plane, far_plane); 
+        //projection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
         viewproj = projection * view;
 
     }
@@ -27,8 +27,8 @@
     {
         glEnable(GL_BLEND); 
         glDisable(GL_DEPTH_TEST); 
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendEquationSeparate(GL_MIN, GL_FUNC_ADD);
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
@@ -39,6 +39,8 @@
     void ShadowMap::finish_trans_pass()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         glEnable(GL_DEPTH_TEST); 
         glDisable(GL_BLEND); 
     }
