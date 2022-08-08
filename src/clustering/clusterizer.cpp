@@ -141,6 +141,8 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
     {
         for (Branch &b : t.branchHeaps[layer]->branches)
         {
+            if (b.joints.size() < 2 || b.joints.size() != b.segments.size() + 1)
+              continue;
             base_clusters.push_back(ClusterData());
             base_clusters.back().base = &b;
             base_clusters.back().base_pos = 0;

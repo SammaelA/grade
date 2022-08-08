@@ -121,9 +121,6 @@ void Branch::transform(glm::mat4 &trans_matrix, float r_transform)
 }
 void Branch::pack(PackedBranch &branch)
 {
-    if (joints.size() <= 1 || (joints.size() != segments.size() + 1))
-        return;
-
     auto jit = joints.begin();
     auto sit = segments.begin();
 

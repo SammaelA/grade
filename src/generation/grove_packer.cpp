@@ -92,7 +92,6 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
         PackedBranch pb;
         b->pack(pb);
         ids.push_back(grove.instancedCatalogue.add(pb, b->level));
-        //b_struct.childBranches.push_back(BranchStructure(ids.back()));
     }
     for (::Joint &j : b->joints)
     {
@@ -521,6 +520,36 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
     }
 }
 
+bool clear_and_validate_branch_structure(Branch *br)
+{
+  if (br->joints.size() < 2)
+    return false; 
+  else if (br->joints.size() != br->segments.size() + 1)
+    return false;
+  for (Joint &j : br->joints)
+  {
+    auto it = j.childBranches.begin();
+    while (it != j.childBranches.end())
+    {
+      bool valid = clear_and_validate_branch_structure(*it);
+      if (valid)
+        it++;
+      else
+      {
+        (*it)->joints.clear();
+        (*it)->segments.clear();
+        it = j.childBranches.erase(it);
+      }
+    }
+  }
+  return true;
+}
+
+bool clear_and_validate_tree_structure(::Tree &tree)
+{
+  return (tree.root->level == 0) && clear_and_validate_branch_structure(tree.root);
+}
+
 void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                                               bool visualize_clusters, bool save_cluster_data)
 {
@@ -549,6 +578,8 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     for (int i = 0; i < count; i++)
     {
         bool valid = is_valid_tree(trees_external[i]);
+        if (valid)
+          valid = clear_and_validate_tree_structure(trees_external[i]);
         if (!valid)
         {
             //dummy tree
@@ -671,7 +702,7 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
         grove.compressedTrees.back().LOD_roots.emplace_back();
       }
       auto &root = grove.compressedTrees[it->second].LOD_roots[0];
-      if (branch_level == 0)
+      if (branch_level == 0 && ib.branches.size() == 1)//it's trunk
       {
         if (root.model_num >= 0)
           logerr("tree %d has more than one root node. It's strange", ib.IDA.tree_ids[i]);
