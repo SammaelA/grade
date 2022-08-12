@@ -121,19 +121,6 @@ bool load(FILE *f, BranchCatalogue &t)
     return status;
 }
 
-bool save(FILE *f, BranchStructure &t)
-{
-    bool status = true;
-    status = status && savev(f,t.childBranchesInstanced) && savev(f,t.childBranches) && save(f,t.pos);
-    return status;
-}
-bool load(FILE *f, BranchStructure &t)
-{
-    bool status = true;
-    status = status && loadv(f,t.childBranchesInstanced) && loadv(f,t.childBranches) && load(f,t.pos);
-    return status;
-}
-
 bool save(FILE *f, InstancedBranch &t)
 {
     bool status = true;

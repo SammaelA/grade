@@ -76,10 +76,6 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
             cd.IDA.centers_par.push_back(tmp_b->center_par);
             cd.IDA.centers_self.push_back(tmp_b->center_self);
             cd.IDA.transforms.push_back(glm::mat4(1.0f));
-            cd.ACDA.originals.push_back(nullptr);
-            //since we delete full trees right after packing the in clusters originals now mean nothing
-            cd.ACDA.ids.push_back(base->self_id);
-            cd.ACDA.rotations.push_back(0);
             cd.ACDA.clustering_data.push_back(nullptr);
 
             ictx->self_impostors_data->impostors.emplace_back();

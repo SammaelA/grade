@@ -26,29 +26,14 @@ GrovePacker::GrovePacker(bool shared_ctx)
     shared_context = shared_ctx;
 }
 
-void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to);
-std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePacked &grove,
-                                                  std::vector<BranchStructure> &instanced_structures, int lvl_from, int lvl_to)
+void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, int lvl_from, int lvl_to);
+std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePacked &grove, int lvl_from, int lvl_to)
 {
-    instanced_structures.push_back(BranchStructure());
     grove.instancedBranches.push_back(InstancedBranch());
     grove.instancedBranches.back().IDA = cluster.IDA;
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
     ::Branch *base = cluster.base;
-    pack_branch_recursively(base, grove, ids, instanced_structures.back(), lvl_from, lvl_to);
-    if (instanced_structures.back().childBranches.size() == 1)
-    {
-        BranchStructure bs = instanced_structures.back().childBranches[0];
-        instanced_structures.back() = bs;
-    }
-    for (int i = 0; i < cluster.ACDA.originals.size(); i++) //leave marks on branch to construct tree structure in future
-    {
-        if (cluster.ACDA.originals[i])
-        {
-            cluster.ACDA.originals[i]->mark_A = instanced_structures.size() - 1; //cluster id
-            cluster.ACDA.originals[i]->mark_B = -i - 100;                        //i is number in cluster
-        }
-    }
+    pack_branch_recursively(base, grove, ids, lvl_from, lvl_to);
     grove.instancedBranches.back().bbox = BillboardCloudRaw::get_minimal_bbox(base);
 
     std::list<InstancedBranch>::iterator it = grove.instancedBranches.end();
@@ -56,34 +41,7 @@ std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePac
     return it;
 }
 
-void pack_structure(::Branch *rt, GrovePacked &grove, BranchStructure &str, std::vector<BranchStructure> &instanced_structures)
-{
-    return;
-    /*
-    str.pos = rt->mark_B;
-    for (::Joint &j : rt->joints)
-    {
-        for (::Branch *br : j.childBranches)
-        {
-            if (br->mark_B < 0)//it is a mark made by pack_cluster
-            {
-                unsigned transform_n = - (br->mark_B + 100);
-                unsigned instance_n = br->mark_A;
-                BranchStructure bs = instanced_structures[instance_n];
-                glm::mat4 tr = grove.instancedBranches[instance_n].IDA.transforms[transform_n];
-                str.childBranchesInstanced.push_back(std::pair<glm::mat4,BranchStructure>(tr,bs));
-            }
-            else
-            {
-                BranchStructure bs;
-                pack_structure(br,grove,bs,instanced_structures);
-                str.childBranches.push_back(bs);
-            }
-            
-        }
-    }*/
-}
-void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, BranchStructure &b_struct, int lvl_from, int lvl_to)
+void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, int lvl_from, int lvl_to)
 {
     if (b->level > lvl_to)
         return;
@@ -96,7 +54,7 @@ void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsign
     for (::Joint &j : b->joints)
     {
         for (::Branch *br : j.childBranches)
-            pack_branch_recursively(br, grove, ids, b_struct, lvl_from, lvl_to);
+            pack_branch_recursively(br, grove, ids, lvl_from, lvl_to);
     }
 }
 void add_occluder(LightVoxelsCube *voxels, Branch *b)
@@ -142,6 +100,25 @@ bool GrovePacker::is_valid_tree(::Tree &t)
     return true;
 }
 
+Clusterizer2 *get_clusterizer(Block &settings, ClusteringStrategy &cStrategy)
+{
+  std::string c_strategy_name = "merge";
+  c_strategy_name = settings.get_string("clustering_strategy", c_strategy_name);
+
+  if (c_strategy_name == "recreate")
+  {
+    cStrategy = ClusteringStrategy::Recreate;
+  }
+  else
+  {
+    cStrategy = ClusteringStrategy::Merge;
+  }
+  Clusterizer2 *cl = new Clusterizer2(cStrategy);
+  cl->prepare(settings);
+
+  return cl;
+}
+
 void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                              std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
                              int layer_from, int layer_to, bool models, bool bill, bool imp,
@@ -149,17 +126,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
 {
 
 
-    std::string c_strategy_name = "merge";
-    c_strategy_name = settings.get_string("clustering_strategy",c_strategy_name);
 
-    if (c_strategy_name == "recreate")
-    {
-        cStrategy = ClusteringStrategy::Recreate;
-    }
-    else 
-    {
-        cStrategy = ClusteringStrategy::Merge;
-    }
 
     bool need_something = ggd.task & (GenerationTask::SYNTS | GenerationTask::CLUSTERIZE) ||
                           ((ggd.task & GenerationTask::MODELS) && models) ||
@@ -172,11 +139,10 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
 
     int count = ggd.trees_count;
     int clusters_before = packingLayers[clustering_base_level].clusters.size();
-    Clusterizer2 *cl = new Clusterizer2(cStrategy);
 
     ctx->light = post_voxels;
     ctx->types = &(ggd.types);
-    cl->prepare(settings);
+    Clusterizer2 *cl = get_clusterizer(settings, cStrategy);
 
     struct ClusterInfo
     {
@@ -301,9 +267,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     
         if (models && (ggd.task & (GenerationTask::MODELS)))
         {
-            std::vector<BranchStructure> instanced_structures;
-
-            auto it = pack_cluster(packingLayers[info.layer].clusters[info.pos], grove, instanced_structures, layer_from, layer_to);
+            auto it = pack_cluster(packingLayers[info.layer].clusters[info.pos], grove, layer_from, layer_to);
             packingLayers[info.layer].additional_data[info.pos].instanced_branch = it;
             packingLayers[info.layer].additional_data[info.pos].has_instanced_branch = true;
             packingLayers[info.layer].additional_data[info.pos].is_presented = true;
@@ -948,13 +912,22 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
 {
   //tmp structures that connects internal data from grove packer with grove structure
   std::vector<ClusterPackingLayer *> cpls;
+  std::vector<int> layer_by_cpl_n;
   for (auto &cpl : packingLayersBranches)
+  {
+    layer_by_cpl_n.push_back(0);
     cpls.push_back(&cpl);
+  }
   for (auto &cpl : packingLayersTrunks)
+  {
+    layer_by_cpl_n.push_back(1);
     cpls.push_back(&cpl);
+  }
   for (auto &cpl : packingLayersTrees)
+  {
+    layer_by_cpl_n.push_back(2);
     cpls.push_back(&cpl);
-
+  }
   //key is mesh id of first mesh of instanced branch
   //ivec2 is <index of ClusterPackingLayer in cpls>,<index of cluster inside it>
   //we don't modify these arrays until the very end, so it's safe to use that indexing 
@@ -1046,11 +1019,23 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
   auto it = grove.instancedBranches.begin();
   while (it != grove.instancedBranches.end())
   {
+    glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
+    auto &ACDA = cpls[l_cl.x]->clusters[l_cl.y].ACDA;
+    // we need to remove clustering data using right clusterizer
+    //(because there is different data inside depends of clusterizer)
+    // don't worry - creating of a clusterizer is fast, as it does not contain heavy data
+    Clusterizer2 *cl = nullptr;
+    if (layer_by_cpl_n[l_cl.x] == 0)
+      cl = get_clusterizer(*branches_params, cStrategy);
+    else if (layer_by_cpl_n[l_cl.x] == 1)
+      cl = get_clusterizer(*trunks_params, cStrategy);
+    else
+      cl = get_clusterizer(*trees_params, cStrategy);
+
     //if we removed all instances of this branch, we can delete it
     if (models_to_delete[i])
     {
       //we do not remove clusters immediately, because it will spoil cluster_by_packed_branch structure
-      glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
       cpls[l_cl.x]->clusters[l_cl.y].base = nullptr;//mark as invalid
       removed_ib++;
       //then remove all meshes of this branch
@@ -1059,13 +1044,17 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
       
       //then remove the branch itself
       it = grove.instancedBranches.erase(it);
+
+      //we still need to clear all clustering data from ACDA
+      for (BranchClusteringData *cd : ACDA.clustering_data)
+      {
+        if (ctx && cd)
+          cl->clear_branch_data(cd, ctx);
+      }
     }
     else
     {
       //this branch remains, but we probably need to delete some of it's instances
-      glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
-      auto &ACDA = cpls[l_cl.x]->clusters[l_cl.y].ACDA;
-
       for (int j=it->IDA.centers_par.size()-1;j>=0;j--)
       {
         if (instances_to_delete[i][j])
@@ -1078,14 +1067,16 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
           it->IDA.type_ids.erase(it->IDA.type_ids.begin()+j);
 
           //remove instances from ACDA
+          if (ctx && ACDA.clustering_data[j])
+          { 
+            cl->clear_branch_data(ACDA.clustering_data[j], ctx);
+          }
           ACDA.clustering_data.erase(ACDA.clustering_data.begin()+j);
-          ACDA.ids.erase(ACDA.ids.begin()+j);
-          ACDA.originals.erase(ACDA.originals.begin()+j);
-          ACDA.rotations.erase(ACDA.rotations.begin()+j);
         }
       }
       it++;
     }
+    delete cl;
     i++;
   }
   }

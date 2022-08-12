@@ -15,7 +15,6 @@ struct PackedBranch;
 struct PackedLeaf;
 struct PackedJoint;
 struct BranchCatalogue;
-struct BranchStructure;
 struct InstancedBranch;
 class Texture;
 class TextureAtlas;
@@ -51,9 +50,6 @@ namespace saver
 
     bool save(FILE *f, BranchCatalogue &t);
     bool load(FILE *f, BranchCatalogue &t);
-
-    bool save(FILE *f, BranchStructure &t);
-    bool load(FILE *f, BranchStructure &t);
 
     bool save(FILE *f, InstancedBranch &t);
     bool load(FILE *f, InstancedBranch &t);

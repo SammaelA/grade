@@ -42,9 +42,9 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
     std::vector<float> phi_s, psi_s, r_s, rots;
     std::map<int, int> type_id_and_count;
 
-    for (int i = 0; i < cd.ACDA.originals.size(); i++)
+    for (int i = 0; i < cd.ACDA.clustering_data.size(); i++)
     {
-        Branch *b = cd.ACDA.originals[i];
+        Branch *b = nullptr;//FIXME
         if (type_id_and_count.empty())
         {
             type_id_and_count.emplace(b->type_id, 1);
@@ -61,7 +61,7 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
                 it->second++;
             }
         }
-        rots.push_back(cd.ACDA.rotations[i]);
+        rots.push_back(0);//FIXME
         glm::vec3 dir = b->joints.size() > 2 ? b->joints.back().pos - b->joints.front().pos : glm::vec3(1, 1, 1);
         r_s.push_back(length(dir));
         dir = glm::normalize(dir);
@@ -98,9 +98,9 @@ DiscreteGeneral *SyntheticTreeGenerator::get_child_branches_cluster_stat(Cluster
 {
     std::map<int, int> cluster_id_and_count;
     int child_branches_count = 0;
-    for (int i = 0; i < cd.ACDA.originals.size(); i++)
+    for (int i = 0; i < cd.ACDA.clustering_data.size(); i++)
     {
-        Branch *b = cd.ACDA.originals[i];
+        Branch *b = nullptr;//FIXME
         for (Joint &j : b->joints)
         {
             for (Branch *chb : j.childBranches)
@@ -134,9 +134,9 @@ void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<Dis
 {
     const int max_child_branches = 4;
     std::vector<std::vector<double>> cbs;
-    for (int i = 0; i < cd.ACDA.originals.size(); i++)
+    for (int i = 0; i < cd.ACDA.clustering_data.size(); i++)
     {
-        Branch *b = cd.ACDA.originals[i];
+        Branch *b = nullptr;//FIXME
         int k = 0;
         for (Joint &j : b->joints)
         {

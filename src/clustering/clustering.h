@@ -86,10 +86,7 @@ public:
 };
 struct AdditionalClusterDataArrays
 {
-    std::vector<float> rotations;
-    std::vector<Branch *> originals;
-    std::vector<int> ids;//branch ids
-    std::vector<BranchClusteringData *> clustering_data;
+  std::vector<BranchClusteringData *> clustering_data;
 };
 struct ClusterData
 {
@@ -110,7 +107,6 @@ struct FullClusteringData
     std::vector<ClusterData> *result_clusters;
     Block *settings;
     std::map<int,int> pos_in_table_by_id;
-    std::map<int,int> pos_in_table_by_branch_id;
 };
 DEFINE_ENUM_WITH_STRING_CONVERSIONS(ClusteringStrategy,(Merge)(Recreate))
 
@@ -122,6 +118,11 @@ public:
                            ClusteringContext *ctx, bool clustering_data_needed);
     void clusterize(Block &settings, std::vector<ClusterData> &base_clusters, std::vector<ClusterData> &clusters,
                     ClusteringContext *ctx, bool need_save_full_data = false, bool visualize_clusters = false);
+    void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) 
+    {
+      if (clusteringHelper)
+        clusteringHelper->clear_branch_data(base, ctx);
+    }
     FullClusteringData *get_full_data() { return fcd; }
     explicit Clusterizer2(ClusteringStrategy _cStrategy = ClusteringStrategy::Merge)
     {
@@ -133,7 +134,6 @@ private:
     struct ClusterizationTmpData
     {
         std::map<int,int> pos_in_table_by_id;
-        std::map<int,int> pos_in_table_by_branch_id;
     };
     void get_base_clusters(Block &settings, Tree &t, int layer, std::vector<ClusterData> &base_clusters,
                            ClusteringContext *ctx, bool clustering_data_needed);

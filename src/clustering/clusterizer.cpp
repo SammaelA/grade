@@ -151,10 +151,6 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
             base_clusters.back().IDA.centers_par.push_back(b.center_par);
             base_clusters.back().IDA.centers_self.push_back(b.center_self);
             base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
-            base_clusters.back().ACDA.originals.push_back(nullptr);
-            //since we delete full trees right after packing the in clusters originals now mean nothing
-            base_clusters.back().ACDA.ids.push_back(b.self_id);
-            base_clusters.back().ACDA.rotations.push_back(0);
             if (clustering_data_needed)
                 base_clusters.back().ACDA.clustering_data.push_back(convert_branch(settings, &b, ctx));
             else 
@@ -189,7 +185,6 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
             branches.back()->base_cluster_id = c.id;
             branches.back()->id = 0;
             branches.back()->tree_type = type;
-            tmpData.pos_in_table_by_branch_id.emplace(c.base->self_id, branches.size() - 1);
             debugl(3, "cluster id %d %d %d\n",c.id, c.base_pos, branches.back());
         }
     }
@@ -221,7 +216,6 @@ void Clusterizer2::prepare_branches(Block &settings, std::vector<ClusterData> &b
                     branches.back()->can_be_center = (i == c.base_pos);
                     branches.back()->base_cluster_id = c.id;
                     branches.back()->id = i;
-                    tmpData.pos_in_table_by_branch_id.emplace(c.ACDA.ids[i], branches.size() - 1);
                 }
                 else
                 {
@@ -289,7 +283,6 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
             fcd->ctx = ctx;
             fcd->settings = &settings;
             fcd->pos_in_table_by_id = tmpData.pos_in_table_by_id;
-            fcd->pos_in_table_by_branch_id = tmpData.pos_in_table_by_branch_id;
         }
         else
         {
@@ -356,7 +349,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                 glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
                 if (base_bcd == center)
                 {
-                    res_cluster.base_pos = ACDA.originals.size() + base.base_pos;
+                    res_cluster.base_pos = ACDA.clustering_data.size() + base.base_pos;
                 }
                 if (!base.is_valid())
                 {
@@ -364,7 +357,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                 }
                 else
                 {
-                    int sz = base.ACDA.originals.size();
+                    int sz = base.ACDA.clustering_data.size();
                     for (int i = 0; i < sz; i++)
                     {
                         IDA.transforms.push_back(base.IDA.transforms[i] * tr);
@@ -372,9 +365,6 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                         IDA.centers_self.push_back(base.IDA.centers_self[i]);
                         IDA.type_ids.push_back(base.IDA.type_ids[i]);
                         IDA.tree_ids.push_back(base.IDA.tree_ids[i]);
-                        ACDA.rotations.push_back(base.ACDA.rotations[i]);
-                        ACDA.originals.push_back(base.ACDA.originals[i]);
-                        ACDA.ids.push_back(base.ACDA.ids[i]);
                         ACDA.clustering_data.push_back(base.ACDA.clustering_data[i]);
                     }
                 }
@@ -385,7 +375,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                 int i = base_bcd->id;
                 if (base_bcd == center)
                 {
-                    res_cluster.base_pos = ACDA.originals.size();
+                    res_cluster.base_pos = ACDA.clustering_data.size();
                 }
                 if (!base.is_valid())
                 {
@@ -398,9 +388,6 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
                     IDA.centers_self.push_back(base.IDA.centers_self[i]);
                     IDA.type_ids.push_back(base.IDA.type_ids[i]);
                     IDA.tree_ids.push_back(base.IDA.tree_ids[i]);
-                    ACDA.rotations.push_back(base.ACDA.rotations[i]);
-                    ACDA.originals.push_back(base.ACDA.originals[i]);
-                    ACDA.ids.push_back(base.ACDA.ids[i]);
                     ACDA.clustering_data.push_back(base.ACDA.clustering_data[i]);
                 }
             }

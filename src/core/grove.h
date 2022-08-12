@@ -49,13 +49,7 @@ private:
     std::vector<int> first_free;
 
 };
-struct BranchStructure
-{
-    unsigned pos;
-    std::vector<BranchStructure> childBranches;
-    std::vector<std::pair<glm::mat4, BranchStructure>> childBranchesInstanced;
-    explicit BranchStructure(unsigned _pos = 0) {pos = _pos;}
-};
+
 struct InstancedBranch
 {
     std::vector<unsigned> branches;
