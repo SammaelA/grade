@@ -90,6 +90,24 @@ void LightVoxelsCube::fill(float val)
 {
     std::fill(voxels,voxels+count,0);
 }
+void LightVoxelsCube::clamp_values(float mn, float mx)
+{
+  if (mn < 0 && mx >= 0)
+  {
+    for (int i=0;i<count;i++)
+      voxels[i] = min(voxels[i], mx);
+  }
+  else if (mn >= 0 && mx < 0)
+  {
+    for (int i=0;i<count;i++)
+      voxels[i] = max(voxels[i], mn);
+  }
+  else if (mn >= 0 && mx >= 0)
+  {
+    for (int i=0;i<count;i++)
+      voxels[i] = CLAMP(voxels[i], mn, mx);
+  }
+}
 LightVoxelsCube::LightVoxelsCube(LightVoxelsCube *source):
 LightVoxelsCube(source,
                 glm::ivec3(0,0,0),

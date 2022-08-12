@@ -4,6 +4,7 @@
 #include "grove_generation_utils.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "grove_generator.h"
+#include "grove_packer.h"
 #include <mutex>
 
 struct SceneGenerationContext;
@@ -36,6 +37,7 @@ struct SceneGenerationContext
   BVH objects_bvh;
   BiomeMap biome_map;
   GroveMask global_mask;
+  GrovePacker packer;
   std::vector<Cell> cells;
   std::vector<scene_gen::Patch> trees_patches;
   std::vector<scene_gen::Patch> grass_patches;

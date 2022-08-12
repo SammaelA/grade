@@ -97,7 +97,7 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree *t, int count, int la
     }
     pb.finish();
     if (clustering_data_needed)
-    clusteringHelper->branch_conversion_flush(settings, ctx);
+      clusteringHelper->branch_conversion_flush(settings, ctx);
 }
 BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base, ClusteringContext *ctx)
 {

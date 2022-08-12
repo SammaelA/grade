@@ -88,12 +88,12 @@ struct AdditionalClusterDataArrays
 {
     std::vector<float> rotations;
     std::vector<Branch *> originals;
-    std::vector<int> ids;
+    std::vector<int> ids;//branch ids
     std::vector<BranchClusteringData *> clustering_data;
 };
 struct ClusterData
 {
-    long id = -1;
+    long id = -1;//cluster id
     int base_pos = 0;
     Branch *base = nullptr;
     InstanceDataArrays IDA;

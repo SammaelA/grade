@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <set>
 
 namespace scene_gen
 {
@@ -478,7 +479,6 @@ namespace scene_gen
     if (cell_ids.empty())
       return;
     
-    GrovePacker packer;
     RawTreesDatabase rawTreesDatabase;
     std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
     GroveGenerationData ggd;
@@ -533,7 +533,7 @@ namespace scene_gen
       {
         std::lock(rawTreesDatabase.database_lock, ctx_lock);
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        rawTreesDatabase.pack_ready(packer, ctx, false);
+        rawTreesDatabase.pack_ready(ctx.packer, ctx, false);
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         float ms = 1e-4*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         if (ms > 0.1)
@@ -555,12 +555,14 @@ namespace scene_gen
     for (auto *j : generationJobs)
       delete j;
 
-    rawTreesDatabase.pack_ready(packer, ctx, true);
-    packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
+    rawTreesDatabase.pack_ready(ctx.packer, ctx, true);
+    ctx.packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
   }
 
   void remove_trees_from_scene(SceneGenerationContext &ctx, std::vector<int> &ids)
   {
+    //remove trees from voxels arrays
+    std::set<int> modified_voxels;
     for (int &id : ids)
     {
       auto it = ctx.scene.grove.trees_by_global_id.find(id);
@@ -573,15 +575,25 @@ namespace scene_gen
         if (cell_id >= 0 && cell_id < ctx.cells.size())
         {
           remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cell_id].voxels_small);
+          modified_voxels.emplace(cell_id);
           for (int &cid : ctx.cells[cell_id].depends)
           {
             if (ctx.cells[cid].bbox.intersectsXZ(t.bbox))
+            {
               remove_compressed_tree_from_voxels_array(ctx, t, ctx.cells[cid].voxels_small);
+              modified_voxels.emplace(cid);
+            }
           }
         }
       }
     }
-    GrovePacker::remove_trees_from_grove(ctx.scene.grove, ids);
+    //removing trees from voxel arrays is not very precise. It can produce areas with negative occlusion
+    //to prevent this we should clamp occlusion to values >= 0
+    for (int cid : modified_voxels)
+    {
+      ctx.cells[cid].voxels_small->clamp_values(0);
+    }
+    ctx.packer.remove_trees(ctx.scene.grove, ids);
   }
 
   void prepare_patches(SceneGenerationContext &ctx, int patch_type)

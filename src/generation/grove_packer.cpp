@@ -171,7 +171,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     }
 
     int count = ggd.trees_count;
-    int clusters_before = packingLayers[0].clusters.size();
+    int clusters_before = packingLayers[clustering_base_level].clusters.size();
     Clusterizer2 *cl = new Clusterizer2(cStrategy);
 
     ctx->light = post_voxels;
@@ -196,13 +196,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     /* && cStrategy == ClusteringStrategy::Merge*/
     if ((ggd.task & (GenerationTask::CLUSTERIZE)))
     {
-        std::vector<ClusterData> clusters_base;
-        //create base clusters one element in each
-        cl->get_base_clusters(settings, trees_external,count, layer_from, clusters_base, ctx, true);
-        //clusterize this base clusters and put result at the end of cluster list
-        //on zero level
-        cl->clusterize(settings, clusters_base, packingLayers[clustering_base_level].clusters, ctx, 
-                       save_clusterizer, visualize_clusters);
+        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[clustering_base_level].clusters, ctx, true);
         if (save_clusterizer)
         {
             saved_clustering_data.push_back(cl->get_full_data());
@@ -241,6 +235,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
                 std::map<long, int> old_cl_poses;
                 BitVector remains;
                 remains.resize(prev_size, false);
+                int old_size = packingLayers[i + 1].clusters.size();
                 cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, ctx,
                                save_clusterizer, visualize_clusters);
                 int new_size = packingLayers[i + 1].clusters.size();
@@ -250,7 +245,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
                     old_cl_poses.emplace(packingLayers[i].clusters[j].id, j);
                     debugl(6, "old cluster %d %d\n", j, (int)(packingLayers[i].clusters[j].id));
                 }
-                for (int j = 0; j < new_size; j++)
+                for (int j = old_size; j < new_size; j++)
                 {
                     auto it = old_cl_poses.find(packingLayers[i + 1].clusters[j].id);
                     if (it == old_cl_poses.end())
@@ -310,6 +305,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
 
             auto it = pack_cluster(packingLayers[info.layer].clusters[info.pos], grove, instanced_structures, layer_from, layer_to);
             packingLayers[info.layer].additional_data[info.pos].instanced_branch = it;
+            packingLayers[info.layer].additional_data[info.pos].has_instanced_branch = true;
             packingLayers[info.layer].additional_data[info.pos].is_presented = true;
         }
         if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
@@ -326,9 +322,10 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         }
         if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
         {
+          packingLayers[info.layer].additional_data[info.pos].has_impostor = true;
             ImpostorBaker ib;
             ib.prepare(ggd.impostor_generation_params, layer_from, packingLayers[info.layer].clusters[info.pos], 
-                       ggd.types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostors,
+                       ggd.types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostor,
                     new_clusters.size());
         }
 
@@ -346,6 +343,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
             auto &it = packingLayers[info.from.layer].additional_data[info.from.pos].instanced_branch;
             it->IDA = packingLayers[info.to.layer].clusters[info.to.pos].IDA;
             packingLayers[info.to.layer].additional_data[info.to.pos].instanced_branch = it;
+            packingLayers[info.to.layer].additional_data[info.to.pos].has_instanced_branch = true;
             packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
         }
         if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
@@ -368,8 +366,9 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
             auto &from_a = packingLayers[info.from.layer].additional_data[info.from.pos];
             auto &to_a = packingLayers[info.to.layer].additional_data[info.to.pos];
 
-            to_a.impostors = from_a.impostors;
-            to_a.impostors->IDA = packingLayers[info.to.layer].clusters[info.to.pos].IDA;
+            to_a.has_impostor = from_a.has_impostor;
+            to_a.impostor = from_a.impostor;
+            to_a.impostor->IDA = packingLayers[info.to.layer].clusters[info.to.pos].IDA;
         }
         debugl(6, "replaced cluster %d with %d\n", packingLayers[info.from.layer].clusters[info.from.pos].id,
                packingLayers[info.to.layer].clusters[info.to.pos].id);
@@ -408,7 +407,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
             }
             if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
             {
-                auto &it = packingLayers[info.layer].additional_data[info.pos].impostors;
+                auto &it = packingLayers[info.layer].additional_data[info.pos].impostor;
                 for (auto &bill : it->slices)
                 {
                     grove.impostors[1].atlas.remove_tex(bill.id);
@@ -427,6 +426,37 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         packingLayers[i].clusters.clear();
         debugl(6, "level cleared %d\n", i);
     }
+    debug("After:");
+    for (int i=0;i<packingLayers.size();i++)
+    {
+      debug("[%d]", packingLayers[i].clusters.size());
+    }
+    debugnl();
+    int total_cl_cnt = 0;
+  int br_cl_cnt = 0;
+  std::vector<ClusterPackingLayer *> cpls;
+  for (auto &cpl : packingLayersBranches)
+    cpls.push_back(&cpl);
+  for (auto &cpl : packingLayersTrunks)
+    cpls.push_back(&cpl);
+  for (auto &cpl : packingLayersTrees)
+    cpls.push_back(&cpl);
+  for (int i=0;i<cpls.size();i++)
+  {
+    if (cpls[i]->clusters.size() != cpls[i]->additional_data.size())
+          logerr("Clusted packing layer is corrupted. %d clusters, %d additional data", cpls[i]->clusters.size(), cpls[i]->additional_data.size());
+    for (int j=0;j<cpls[i]->clusters.size();j++)
+    {
+      total_cl_cnt++;
+      if (cpls[i]->additional_data[j].has_instanced_branch)
+      {
+        br_cl_cnt++;
+      }
+    }
+  }
+  if (br_cl_cnt != grove.instancedBranches.size())
+    logerr("we have %d clusters, %d with branches and %d instanced branches",total_cl_cnt, br_cl_cnt, grove.instancedBranches.size());
+
     if (cl)
         delete cl;
 }
@@ -643,11 +673,13 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
     current_clustering_step = ClusteringStep::BRANCHES;
     pack_layer(*branches_params, ggd, grove, trees_external, h, packingLayersBranches, post_voxels,
                1, 1000, true, true, false, visualize_clusters);
-
-    current_clustering_step = ClusteringStep::TREES;
-    pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
-               0, 1000, false, false, true, false);
-
+    if (ggd.task & (GenerationTask::IMPOSTORS))
+    {
+      //TODO: support impostors
+      current_clustering_step = ClusteringStep::TREES;
+      pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
+                0, 1000, false, false, true, false);
+    }
     recreate_compressed_trees(grove);
 
     originalBranches.clear_removed();
@@ -912,8 +944,53 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
     }
 }
 
-void GrovePacker::remove_trees_from_grove(GrovePacked &grove, std::vector<int> &ids)
+void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
 {
+  //tmp structures that connects internal data from grove packer with grove structure
+  std::vector<ClusterPackingLayer *> cpls;
+  for (auto &cpl : packingLayersBranches)
+    cpls.push_back(&cpl);
+  for (auto &cpl : packingLayersTrunks)
+    cpls.push_back(&cpl);
+  for (auto &cpl : packingLayersTrees)
+    cpls.push_back(&cpl);
+
+  //key is mesh id of first mesh of instanced branch
+  //ivec2 is <index of ClusterPackingLayer in cpls>,<index of cluster inside it>
+  //we don't modify these arrays until the very end, so it's safe to use that indexing 
+  std::map<int, glm::ivec2> cluster_by_packed_branch; 
+  int total_cl_cnt = 0;
+  int br_cl_cnt = 0;
+  for (int i=0;i<cpls.size();i++)
+  {
+    if (cpls[i]->clusters.size() != cpls[i]->additional_data.size())
+          logerr("Clusted packing layer is corrupted. %d clusters, %d additional data", cpls[i]->clusters.size(), cpls[i]->additional_data.size());
+    for (int j=0;j<cpls[i]->clusters.size();j++)
+    {
+      total_cl_cnt++;
+      if (cpls[i]->additional_data[j].has_instanced_branch)
+      {
+        br_cl_cnt++;
+        if (!cluster_by_packed_branch.emplace(cpls[i]->additional_data[j].instanced_branch->branches[0], glm::ivec2(i,j)).second)
+        {
+          logerr("Clusted %d %d connected to the already existed branch",i,j);
+        }
+      }
+      else
+      {
+        //it is not a problem, if cluster represent impostor, it does not have an instanced branch
+        //logerr("Clusted %d %d does not have branch",i,j);
+      }
+    }
+  }
+  if (br_cl_cnt != grove.instancedBranches.size())
+    logerr("we have %d clusters, %d with branches and %d instanced branches",total_cl_cnt, br_cl_cnt, grove.instancedBranches.size());
+  for (auto it=grove.instancedBranches.begin(); it != grove.instancedBranches.end(); it++)
+  {
+    auto mit = cluster_by_packed_branch.find(it->branches[0]);
+    if (mit==cluster_by_packed_branch.end())
+      logerr("instanced branch is not presented in any cluster");
+  }
   //bitsets representing what to delete
   std::vector<bool> models_to_delete(grove.instancedBranches.size(), false);
   std::vector<std::vector<bool>> instances_to_delete(grove.instancedBranches.size());
@@ -961,29 +1038,50 @@ void GrovePacker::remove_trees_from_grove(GrovePacked &grove, std::vector<int> &
     i++;
   }
   }
+
+  int removed_ib = 0;
   //remove all needed structures in efficient way
   {
   int i=0;
   auto it = grove.instancedBranches.begin();
   while (it != grove.instancedBranches.end())
   {
+    //if we removed all instances of this branch, we can delete it
     if (models_to_delete[i])
     {
+      //we do not remove clusters immediately, because it will spoil cluster_by_packed_branch structure
+      glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
+      cpls[l_cl.x]->clusters[l_cl.y].base = nullptr;//mark as invalid
+      removed_ib++;
+      //then remove all meshes of this branch
       for (int id : it->branches)
         grove.instancedCatalogue.remove(id);
+      
+      //then remove the branch itself
       it = grove.instancedBranches.erase(it);
     }
     else
     {
+      //this branch remains, but we probably need to delete some of it's instances
+      glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
+      auto &ACDA = cpls[l_cl.x]->clusters[l_cl.y].ACDA;
+
       for (int j=it->IDA.centers_par.size()-1;j>=0;j--)
       {
         if (instances_to_delete[i][j])
         {
+          //remove instances from IDA
           it->IDA.centers_par.erase(it->IDA.centers_par.begin()+j);
           it->IDA.centers_self.erase(it->IDA.centers_self.begin()+j);
           it->IDA.transforms.erase(it->IDA.transforms.begin()+j);
           it->IDA.tree_ids.erase(it->IDA.tree_ids.begin()+j);
           it->IDA.type_ids.erase(it->IDA.type_ids.begin()+j);
+
+          //remove instances from ACDA
+          ACDA.clustering_data.erase(ACDA.clustering_data.begin()+j);
+          ACDA.ids.erase(ACDA.ids.begin()+j);
+          ACDA.originals.erase(ACDA.originals.begin()+j);
+          ACDA.rotations.erase(ACDA.rotations.begin()+j);
         }
       }
       it++;
@@ -991,6 +1089,23 @@ void GrovePacker::remove_trees_from_grove(GrovePacked &grove, std::vector<int> &
     i++;
   }
   }
+
+  int removed_cl = 0;
+  //remove unnecessary clusters
+  for (auto *cpl : cpls)
+  {
+    for (int i=cpl->additional_data.size()-1;i>=0;i--)
+    {
+      if (cpl->clusters[i].base == nullptr)
+      {
+        cpl->clusters.erase(cpl->clusters.begin()+i);
+        cpl->additional_data.erase(cpl->additional_data.begin()+i);
+        removed_cl++;
+      }
+    }
+  }
+  if (removed_ib != removed_cl)
+    logerr("removed %d instanced branches and %d clusters", removed_ib, removed_cl);
   //recalculate tree structures as they contain positions of instances that may change
   recreate_compressed_trees(grove);
 }

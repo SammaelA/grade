@@ -22,6 +22,7 @@ public:
     ~LightVoxelsCube();
     void clear();
     void fill(float val);
+    void clamp_values(float min = -1, float max = -1);
     void set_occluder(glm::vec3 pos, float strenght);
     void set_occluder_pyramid_fast(glm::vec3 pos, float strenght, int max_r, int rnd_seed);
     void set_occluder_simple(glm::vec3 pos, float strenght);

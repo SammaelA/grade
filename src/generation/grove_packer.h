@@ -23,8 +23,10 @@ struct ClusterAdditionalData
     std::list<InstancedBranch>::iterator instanced_branch;
     std::vector<std::list<BillboardData>::iterator> small_billboards;
     std::vector<std::list<BillboardData>::iterator> large_billboards;
-    std::list<Impostor>::iterator impostors;
+    std::list<Impostor>::iterator impostor;
     bool is_presented = false;
+    bool has_instanced_branch = false;
+    bool has_impostor = false;
 };
 struct ClusterPackingLayer
 {
@@ -37,7 +39,7 @@ class GrovePacker
 public:
     void add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
                             bool visualize_clusters = false, bool save_cluster_data = false);
-    static void remove_trees_from_grove(GrovePacked &grove, std::vector<int> &ids);
+    void remove_trees(GrovePacked &grove, std::vector<int> &ids);
     void init(Block &packing_params_block);
     void prepare_grove_atlas(GrovePacked &grove, int tex_x, int tex_y, bool save_atlases, bool save_png, 
                              bool alpha_tex_needed);
