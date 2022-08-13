@@ -54,7 +54,9 @@ int main(int argc, char *argv[])
     {    
       if(Tiny::audio.enabled) 
         Tiny::audio.process();
-
+      Tiny::event.input();
+      inputHandler.handle_input(Tiny::event);
+      
       if(Tiny::view.enabled)
       {
         appContext.fpsCounter.tick();
@@ -63,8 +65,6 @@ int main(int argc, char *argv[])
         rce.execute();
         Tiny::view.drawInterface();
         SDL_GL_SwapWindow(Tiny::view.gWindow);
-        Tiny::event.input();
-        inputHandler.handle_input(Tiny::event);
       }
     }
     Tiny::quit();

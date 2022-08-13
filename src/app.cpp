@@ -22,6 +22,12 @@ void FpsCounter::tick()
 
 void InputHandler::handle_input(Event &event)
 {
+  if(event.windowEventTrigger)
+  {
+    Tiny::view.WIDTH = event.windowEvent.window.data1;
+    Tiny::view.HEIGHT = event.windowEvent.window.data2;
+  }
+
   if (ctx.frames_from_last_input < 25) //do not use hotkeys when we are typing something
   {
     for (auto &e : event.active)
@@ -173,8 +179,23 @@ void InputHandler::handle_input(Event &event)
     }
   }
 
-  if (!event.press.empty())
+  if(!event.press.empty())
   {
+    if(event.press.back() == SDLK_F11)//Toggle fullscreen
+    {   
+      Tiny::view.fullscreen = !Tiny::view.fullscreen;
+      if(!Tiny::view.fullscreen) 
+        SDL_SetWindowFullscreen(Tiny::view.gWindow, 0);
+      else 
+        SDL_SetWindowFullscreen(Tiny::view.gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
 
+    event.press.pop_back();
   }
+
+  if(!event.clicked.empty()) event.clicked.pop_back();  //Reset Event Triggers
+  event.scroll.reset();
+  event.mousemove = false;
+  event.windowEventTrigger = false;
+  event.mouseWheel = SDL_MouseWheelEvent();
 };
