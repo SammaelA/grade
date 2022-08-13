@@ -1,4 +1,5 @@
 #include "simulated_annealing.h"
+#include "common_utils/distribution.h"
 
 void SimulatedAnnealing::perform(std::vector<float> &param_list, my_opt::MetaParameters *params, my_opt::ExitConditions exit_conditions,
                                  const my_opt::OptFunction &my_opt_f,

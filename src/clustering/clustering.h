@@ -44,8 +44,7 @@ struct IntermediateClusteringData
 };
 struct ClusteringContext
 {
-    LightVoxelsCube *light = nullptr;
-    std::vector<TreeTypeData> *types = nullptr;
+    std::vector<TreeTypeData> types = {};
     ImpostorsData *self_impostors_data = nullptr;
     TextureAtlasRawData *self_impostors_raw_atlas = nullptr;
     virtual void clear() {    

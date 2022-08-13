@@ -53,9 +53,8 @@ public:
     int get_max_LOD() {return MIN(4,LODs.size() - 1);}
     void render(int lod, glm::mat4 &projection, glm::mat4 &view, Camera &camera, glm::vec2 screen_size, DirectedLight &light, 
                 GroveRendererDebugParams dbgpar, glm::mat4 &shadow_tr, GLuint shadow_tex, bool to_shadow = false);
-    GroveRenderer(const GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
-                  bool print_perf, Precision precision);
-    GroveRenderer();
+    GroveRenderer(const GrovePacked *_source, AABB2D scene_bbox, const std::vector<TreeTypeData> &types, 
+                  int LODs_count, std::vector<float> &max_distances, bool print_perf, Precision precision);
     ~GroveRenderer();
 private:
     struct TypeDescriptionForRender
@@ -87,7 +86,8 @@ private:
     Shader cellsCompute;
     Shader shadowRendererInstancing;
     GrovePacked *source;
-    GroveGenerationData *ggd;
+    AABB2D scene_bbox;
+    std::vector<TreeTypeData> types;
     GLuint lods_buf, instances_buf, models_buf, types_buf;
     GLuint cur_insts_buf, cur_models_buf, cur_types_buf;
     GLuint draw_indirect_buffer, cells_buf;

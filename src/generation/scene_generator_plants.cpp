@@ -43,7 +43,7 @@ namespace scene_gen
     return small_voxel_size;
   }
   
-  LightVoxelsCube *create_grove_voxels(Cell &c, std::vector<TreeTypeData> &types)
+  LightVoxelsCube *create_grove_voxels(Cell &c, const std::vector<TreeTypeData> &types)
   {
     bool voxels_needed = false;
     //we need voxels array only if we use generators that requires it
@@ -169,7 +169,7 @@ namespace scene_gen
     RawTreesDatabase() {};
     RawTreesDatabase(const RawTreesDatabase&) = delete;
     RawTreesDatabase( RawTreesDatabase&) = delete;
-    TreeToken get_empty_trees(int cnt, GroveGenerationData &ggd);
+    TreeToken get_empty_trees(int cnt);
     void generation_finished(TreeToken &token);
     bool pack_ready(GrovePacker &packer, SceneGenerationContext &ctx, bool forced);
 
@@ -185,12 +185,11 @@ namespace scene_gen
       bool all_finished = false;
       bool filled = false;
       bool closed = false;
-      GroveGenerationData ggd;
     };
     std::vector<TreeArray> arrays;
   };
 
-  RawTreesDatabase::TreeToken RawTreesDatabase::get_empty_trees(int cnt, GroveGenerationData &_ggd)
+  RawTreesDatabase::TreeToken RawTreesDatabase::get_empty_trees(int cnt)
   {
     for (int i=0;i<arrays.size();i++)
     {
@@ -218,7 +217,6 @@ namespace scene_gen
     arrays.back().data = new Tree[arrays.back().cnt_max];
     arrays.back().cnt_real = cnt;
     arrays.back().filled = (cnt == arrays.back().cnt_max);
-    arrays.back().ggd = _ggd;
     arrays.back().finished = std::vector<bool>(cnt, false);
 
     return TreeToken{arrays.back().data, cnt, (int)arrays.size() - 1, 0};
@@ -248,8 +246,8 @@ namespace scene_gen
       if (!arr.closed && (arr.cnt_real > 0) && (arr.all_finished || forced))
       {
         logerr("adding %d trees to grove",arr.cnt_real);
-        arr.ggd.trees_count = arr.cnt_real;
-        packer.add_trees_to_grove(arr.ggd, ctx.scene.grove, arr.data, ctx.scene.heightmap);
+        packer.add_trees_to_grove(GrovePackingParams(MINIMUM_FOR_RENDER, ImpostorBaker::ImpostorGenerationParams()), 
+                                  ctx.scene.grove, arr.data, arr.cnt_real);
         delete[] arr.data;
         arr.closed = true;
       }
@@ -266,7 +264,7 @@ namespace scene_gen
     std::vector<Cell> &cells;
 
     std::list<int> waiting_cells;
-    GroveGenerationData ggd;
+    const std::vector<TreeTypeData> &types;
     RawTreesDatabase &rawTreesDatabase;
     GroveMask &mask;
 
@@ -274,13 +272,13 @@ namespace scene_gen
     int cells_y;
     int id;
     GenerationJob(SceneGenerationContext &_ctx, std::vector<Cell> &_cells,
-                  std::vector<TreeTypeData> &_types, RawTreesDatabase &_database,
+                  const std::vector<TreeTypeData> &_types, RawTreesDatabase &_database,
                   GroveMask &_mask, int _cells_x, int _cells_y, int _id) : ctx(_ctx),
                                                                   cells(_cells),
                                                                   rawTreesDatabase(_database),
-                                                                  mask(_mask)
+                                                                  mask(_mask),
+                                                                  types(_types)
     {
-      ggd.types = _types;
       cells_x = _cells_x;
       cells_y = _cells_y;
       id = _id;
@@ -359,20 +357,8 @@ namespace scene_gen
       if (tc > 0)
       {
         logerr("cell %d creating %d trees in %d tree prototypes", c.id, tc, c.prototypes.size());
-
-        ggd.pos.x = 0.5f * (c.bbox.max_pos.x + c.bbox.min_pos.x);
-        ggd.pos.z = 0.5f * (c.bbox.max_pos.y + c.bbox.min_pos.y);
-
-        ctx_lock.lock();
-        ggd.pos.y = ctx.scene.heightmap->get_height(ggd.pos);
-        ctx_lock.unlock();
-
-        ggd.size.x = 0.5f * (c.bbox.max_pos.x - c.bbox.min_pos.x);
-        ggd.size.z = 0.5f * (c.bbox.max_pos.y - c.bbox.min_pos.y);
-        ggd.trees_count = tc;
-
         GroveGenerator grove_gen;
-        LightVoxelsCube *voxels = create_grove_voxels(c, ggd.types);
+        LightVoxelsCube *voxels = create_grove_voxels(c, types);
 
         c.cell_lock.lock();
         std::vector<int> deps = c.depends;
@@ -409,13 +395,12 @@ namespace scene_gen
 
         for (auto &prototype : c.prototypes)
         {
-          ggd.trees_count = prototype.trees_count;
           rawTreesDatabase.database_lock.lock();
-          auto token = rawTreesDatabase.get_empty_trees(ggd.trees_count, ggd);
+          auto token = rawTreesDatabase.get_empty_trees(prototype.trees_count);
           rawTreesDatabase.database_lock.unlock();
 
-          grove_gen.prepare_patch(prototype, ggd.types, *(ctx.scene.heightmap), mask, *voxels, token.trees);
-          debugl(1, "created patch with %d trees\n", ggd.trees_count);
+          grove_gen.prepare_patch(prototype, types, *(ctx.scene.heightmap), mask, *voxels, token.trees);
+          debugl(1, "created patch with %d trees\n", prototype.trees_count);
 
           rawTreesDatabase.database_lock.lock();
           rawTreesDatabase.generation_finished(token);
@@ -424,13 +409,13 @@ namespace scene_gen
           if (c.voxels_small)
           {
             c.cell_lock.lock();
-            add_trees_to_voxels_array(ggd.trees_count, token.trees, c.voxels_small);
+            add_trees_to_voxels_array(prototype.trees_count, token.trees, c.voxels_small);
             c.cell_lock.unlock();
           }
           for (auto &dep_cid : deps)
           {
             cells[dep_cid].cell_lock.lock();
-            add_trees_to_voxels_array(ggd.trees_count, token.trees, cells[dep_cid].voxels_small);
+            add_trees_to_voxels_array(prototype.trees_count, token.trees, cells[dep_cid].voxels_small);
             cells[dep_cid].cell_lock.unlock();
           }
         }
@@ -480,10 +465,6 @@ namespace scene_gen
       return;
     
     RawTreesDatabase rawTreesDatabase;
-    std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
-    GroveGenerationData ggd;
-    ggd.types = types; 
-    ggd.task = MINIMUM_FOR_RENDER;
     std::vector<Cell> &cells = ctx.cells;
 
     std::vector<GenerationJob *> generationJobs;
@@ -495,7 +476,8 @@ namespace scene_gen
     thread_finished = {};
     for (int i=0;i<jobs_cnt;i++)
     {
-      generationJobs.push_back(new GenerationJob(ctx, cells, types, rawTreesDatabase, ctx.global_mask, ctx.cells_x, ctx.cells_y, i));
+      generationJobs.push_back(new GenerationJob(ctx, cells, metainfoManager.see_all_tree_types(), rawTreesDatabase, ctx.global_mask,
+                                                 ctx.cells_x, ctx.cells_y, i));
       std::atomic<bool> ab(false);
       thread_finished.push_back(ab);                                                                         
     }

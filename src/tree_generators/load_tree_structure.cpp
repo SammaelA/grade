@@ -293,7 +293,7 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
         }
     }
 }
-void convert_tree(SavedTree &st, TreeTypeData *type, ::Tree &external_tree)
+void convert_tree(SavedTree &st, const TreeTypeData *type, ::Tree &external_tree)
 {
     external_tree.pos = st.pos;
     external_tree.id = tlb_ids;
@@ -308,7 +308,7 @@ void convert_tree(SavedTree &st, TreeTypeData *type, ::Tree &external_tree)
 
     tlb_ids++;
 }
-void TreeLoaderBlk::load_tree(TreeTypeData *type, ::Tree &tree_external, Block &b)
+void TreeLoaderBlk::load_tree(const TreeTypeData *type, ::Tree &tree_external, Block &b)
 {
     SavedTree st;
     ::load_tree(b, st);
@@ -316,9 +316,9 @@ void TreeLoaderBlk::load_tree(TreeTypeData *type, ::Tree &tree_external, Block &
     logerr("converted tree %d joints loaded %d joint transformed",st.joints_count,st.joints_transformed);
 }
 
-void TreeLoaderBlk::plant_tree(glm::vec3 pos, TreeTypeData *type)
+void TreeLoaderBlk::plant_tree(glm::vec3 pos, const TreeTypeData *type)
 {
-  tree_saplings.push_back(std::pair<glm::vec3, TreeTypeData *>(pos, type));
+  tree_saplings.push_back(std::pair<glm::vec3, const TreeTypeData *>(pos, type));
 }
 
 void TreeLoaderBlk::finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels)

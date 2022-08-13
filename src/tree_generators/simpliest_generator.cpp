@@ -6,7 +6,7 @@ using namespace glm;
 
 #define NO_RANDOM_GEN 1
 
-void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
 {
     tree_positions.push_back(pos);
     types.push_back(type);

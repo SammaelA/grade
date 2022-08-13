@@ -165,7 +165,7 @@ TreeTypeData::~TreeTypeData()
     if (params)
         delete params;
 }
-ParameterSet *TreeTypeData::get_params()
+ParameterSet *TreeTypeData::get_params() const
 {
     return params;
 }

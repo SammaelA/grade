@@ -1,6 +1,6 @@
 #include "general_gltf_writer.h"
 #include "common_utils/utility.h"
-#include "generation/generation_settings.h"
+#include "generation/generation_task.h"
 namespace gltf
 {
     void GeneralGltfWriter::clear()
@@ -16,7 +16,7 @@ namespace gltf
     {
         models.push_back(ModelData{m,nullptr,{m->model}});
     }
-    void GeneralGltfWriter::add_packed_grove(GrovePacked &grove, GroveGenerationData &ggd)
+    void GeneralGltfWriter::add_packed_grove(GrovePacked &grove, const std::vector<TreeTypeData> &types)
     {
         int start = temp_models.size();
 
@@ -43,7 +43,7 @@ namespace gltf
                     ModelData md;
                     md.m = m;
                     md.transforms = ida.transforms;
-                    md.t = &(ggd.types[type_id].wood);
+                    md.t = (::Texture *)(&(types[type_id].wood));
                     models.push_back(md);
                 }
 
@@ -63,7 +63,7 @@ namespace gltf
                     ModelData md;
                     md.m = m_l;
                     md.transforms = ida.transforms;
-                    md.t = &(ggd.types[type_id].leaf);
+                    md.t = (::Texture *)(&(types[type_id].leaf));
                     models.push_back(md);
                 }
             }

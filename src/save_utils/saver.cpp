@@ -257,15 +257,15 @@ bool load(FILE *f, BillboardCloudData &t)
 bool save(FILE *f, GrovePacked &t)
 {
     bool status = true;
-    status = status && save(f,t.center) && savev(f,t.clouds) && savev(f,t.impostors) && savelst(f,t.instancedBranches) &&
-             save(f,t.instancedCatalogue) && save(f,t.ggd_name);
+    status = status && savev(f,t.clouds) && savev(f,t.impostors) && savelst(f,t.instancedBranches) &&
+             save(f,t.instancedCatalogue);
     return status;
 }
 bool load(FILE *f, GrovePacked &t)
 {
     bool status = true;
-    status = status && load(f,t.center) && loadv(f,t.clouds) &&loadv(f,t.impostors) && loadlst(f,t.instancedBranches) &&
-             load(f,t.instancedCatalogue) && load(f,t.ggd_name);
+    status = status && loadv(f,t.clouds) &&loadv(f,t.impostors) && loadlst(f,t.instancedBranches) &&
+             load(f,t.instancedCatalogue);
     return status; 
 }
 bool save(FILE *f, ImpostorsData &t)

@@ -51,9 +51,8 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         case RC_UPDATE_TREES:
           if (worldRenderer.is_inited())
           {
-            GroveGenerationData ggd;
-            ggd.types = metainfoManager.get_all_tree_types();
-            worldRenderer.set_grove(genCtx.scene.grove, ggd);
+            worldRenderer.set_grove(genCtx.scene.grove, AABB2D(genCtx.center - genCtx.grass_field_size, genCtx.center + genCtx.grass_field_size),
+                                    metainfoManager.see_all_tree_types());
           }
           break;
         case RC_VISUALIZE_VOXELS_DEBUG:

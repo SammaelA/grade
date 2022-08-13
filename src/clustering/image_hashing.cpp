@@ -40,7 +40,7 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     cd.ACDA.clustering_data.push_back(nullptr);
     
     BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
-    ib.make_impostor(*tmp_b, (*(ctx->types))[base->type_id], imp, params, temp_atlas, bbox);
+    ib.make_impostor(*tmp_b, ctx->types[base->type_id], imp, params, temp_atlas, bbox);
 }
 
 BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &settings, Branch *base, ClusteringContext *ctx,

@@ -33,7 +33,7 @@ public:
         int material_id = -1;
     };
     void add_model(Model *m);
-    void add_packed_grove(GrovePacked &grove, GroveGenerationData &ggd);
+    void add_packed_grove(GrovePacked &grove, const std::vector<TreeTypeData> &types);
     void add_camera(Camera *c) {cameras.push_back(c);}
     void clear();
     void convert_to_gltf(std::string name);

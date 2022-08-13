@@ -1728,7 +1728,7 @@ WeberPennGenerator::Stem::Stem(Stem &other)
 
 }
 
-void WeberPennGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+void WeberPennGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
 {
     types.push_back(type);
     positions.push_back(pos);

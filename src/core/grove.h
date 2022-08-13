@@ -4,7 +4,6 @@
 #include "billboard_cloud_data.h"
 #include "limits.h"
 
-class GroveGenerationData;
 struct BBox;
 struct PackedLeaf
 {
@@ -96,10 +95,7 @@ struct GroveTexturesAtlas
 };
 struct GrovePacked
 {
-    glm::vec3 center;
-    std::string ggd_name;
     BranchCatalogue instancedCatalogue;
-
     std::list<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
     std::vector<ImpostorsData> impostors;

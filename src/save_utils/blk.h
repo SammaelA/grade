@@ -144,7 +144,7 @@ struct Block
 
     int size();
     void clear();
-    void copy(Block *b);
+    void copy(const Block *b);
     ~Block() {clear();}
     bool has_tag(const std::string &name);
     int get_id(const std::string &name);

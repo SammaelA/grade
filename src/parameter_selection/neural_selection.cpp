@@ -7,13 +7,13 @@
 #include <vector>
 #include <thread>
 
-void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGenerationData &tree_ggd, 
+void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingParams &gp_params, const std::vector<TreeTypeData> &_types,
                                       std::string save_path, int impostor_size, int impostor_slices,
                                       int batch_size, int batches_cnt, bool save_metainfo,
                                       int joints_limit)
 {
     AbstractTreeGenerator::set_joints_limit(joints_limit);
-    Heightmap hmap = Heightmap(glm::vec3(0,0,0), glm::vec2(100,100), 10);
+    std::vector<TreeTypeData> types = _types;
     std::vector<float> par_list_normalized;
     param_list.to_simple_list(par_list_normalized, true, true);
     if (par_list_normalized.empty())
@@ -23,8 +23,8 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
     }
     std::vector<ParameterList> params(batch_size, param_list);
     std::vector<std::vector<float>> params_normalzied(batch_size);
-    tree_ggd.impostor_generation_params.slices_n = impostor_slices;
-    tree_ggd.impostor_generation_params.quality = impostor_size;
+    gp_params.impostor_generation_params.slices_n = impostor_slices;
+    gp_params.impostor_generation_params.quality = impostor_size;
     
     int total_images_count = 0;
     int params_cnt = par_list_normalized.size();
@@ -51,14 +51,13 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
         GrovePacker packer;
         Tree *trees = new Tree[params.size()];
         GrovePacked tmp_g;
-        for (int i = tree_ggd.types.size(); i < params.size(); i++)
+        for (int i = types.size(); i < params.size(); i++)
         {
-            tree_ggd.types.push_back(tree_ggd.types[0]);
+            types.push_back(types[0]);
         }
-        tree_ggd.trees_count = params.size();
         for (int i = 0; i < params.size(); i++)
         {
-            tree_ggd.types[i].get_params()->read_parameter_list(params[i]);
+            types[i].get_params()->read_parameter_list(params[i]);
         }
 
         int num_threads = MIN(16, params.size());
@@ -67,7 +66,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
         bool voxels_needed = false;
         glm::vec3 max_size = glm::vec3(100,100,100);
         float min_base_size = 1000;
-        for (auto &t : tree_ggd.types)
+        for (auto &t : types)
         {
             auto *gen = get_generator(t.generator_name);
             if (gen->use_voxels_for_generation())
@@ -88,7 +87,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
         {
             int start_n = step * i;
             int stop_n = MIN(step * (i + 1), params.size());
-            threads.push_back(std::thread(&ps_utils::gen_tree_task, start_n, stop_n, thr_voxels[i], &(tree_ggd.types), trees));
+            threads.push_back(std::thread(&ps_utils::gen_tree_task, start_n, stop_n, thr_voxels[i], &(types), trees));
         }
         for (auto &t : threads)
             t.join();
@@ -107,7 +106,8 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GroveGeneration
             }
         }
         logerr("valid %d/%d", valid_cnt, batch_size);
-        packer.add_trees_to_grove(tree_ggd, tmp_g, trees, &hmap, false);
+        packer.init(Block(), types);
+        packer.add_trees_to_grove(gp_params, tmp_g, trees, params.size(), false);
         TextureAtlasRawData raw_atlas(tmp_g.impostors[1].atlas);
         int imp_n = 0;
         for (auto &imp : tmp_g.impostors[1].impostors)

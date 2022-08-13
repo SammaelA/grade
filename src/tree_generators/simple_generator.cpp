@@ -1,5 +1,6 @@
 #include "simple_generator.h"
 #include "common_utils/parameter_save_load_defines.h"
+#include "common_utils/distribution.h"
 
 using namespace glm;
 
@@ -119,7 +120,7 @@ void SimpleTreeGenerator::create_tree(Tree *tree, vec3 pos)
     create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params.base_thickness[0], 0);
 }
 
-void SimpleTreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+void SimpleTreeGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
 {
     tree_positions.push_back(pos);
     types.push_back(type);

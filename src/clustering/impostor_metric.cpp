@@ -80,7 +80,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
 
             ictx->self_impostors_data->impostors.emplace_back();
             BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
-            ib.make_impostor(*tmp_b, (*ictx->types)[base->type_id], ictx->self_impostors_data->impostors.back(), params, 
+            ib.make_impostor(*tmp_b, ictx->types[base->type_id], ictx->self_impostors_data->impostors.back(), params, 
                              ictx->self_impostors_data->atlas, bbox);
             id->self_impostor = ictx->self_impostors_data->impostors.end();
             id->self_impostor--;

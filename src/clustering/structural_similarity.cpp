@@ -30,7 +30,7 @@ IntermediateClusteringData *CPUSSClusteringHelper::prepare_intermediate_data(Blo
                                                                              ClusteringContext *ctx)
 {
     clusterizationParams.load(&settings);
-    current_light = ctx->light;
+    current_light = nullptr;//TODO: to resurrect this algorithm you need to calculate current_light right here 
 
     IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
 
@@ -84,7 +84,7 @@ IntermediateClusteringData *GPUSSClusteringHelper::prepare_intermediate_data(Blo
                                                                              ClusteringContext *ctx)
 {
     clusterizationParams.load(&settings);
-    current_light = ctx->light;
+    current_light = nullptr;//TODO: to resurrect this algorithm you need to calculate current_light right here 
 
     IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
 

@@ -7,23 +7,19 @@
 #include "tinyEngine/camera.h"
 #include "render/billboard_cloud_renderer.h"
 #include "render/impostor_renderer.h"
-#include "generation/generation_settings.h"
+#include "generation/generation_task.h"
 #include <chrono>
 
-GroveRenderer::GroveRenderer(): 
+GroveRenderer::GroveRenderer(const GrovePacked *_source, AABB2D _scene_bbox, const std::vector<TreeTypeData> &_types, 
+                             int LODs_count, std::vector<float> &max_distances, bool print_perf, Precision precision) :
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
                    {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
 shadowRendererInstancing({"simple_render_instancing.vs", "depth_billboard_array.fs"},
                    {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
 lodCompute({"lod_compute.comp"},{}),
-cellsCompute({"cells_compute.comp"},{})
-{
-
-}
-GroveRenderer::GroveRenderer(const GrovePacked *_source, GroveGenerationData *_ggd, int LODs_count, std::vector<float> &max_distances,
-                             bool print_perf, Precision precision) :
-GroveRenderer()
+cellsCompute({"cells_compute.comp"},{}),
+types(_types)
 {
     ts = Timestamp(print_perf);
     if (LODs_count != _source->clouds.size() + 1 || max_distances.size() != _source->clouds.size() + 1)
@@ -37,7 +33,7 @@ GroveRenderer()
     }
     
     source = (GrovePacked *)_source;
-    ggd = _ggd;
+    scene_bbox = _scene_bbox;
     debugl(10,"creating grove renderer with %d LODs\n", _source->clouds.size());
     base_container = new Model();
     prepare_wood_types_atlas();
@@ -231,9 +227,9 @@ GroveRenderer()
     //save cells_info;
     cellsInfo.x_cells = 32;
     cellsInfo.y_cells = 32;
-    cellsInfo.x_size = 2*ggd->size.x/cellsInfo.x_cells;
-    cellsInfo.y_size = 2*ggd->size.y/cellsInfo.y_cells;
-    cellsInfo.start_pos = ggd->pos - ggd->size;
+    cellsInfo.x_size = (scene_bbox.max_pos.x - scene_bbox.min_pos.x)/cellsInfo.x_cells;
+    cellsInfo.y_size = (scene_bbox.max_pos.y - scene_bbox.min_pos.y)/cellsInfo.y_cells;
+    cellsInfo.start_pos = glm::vec3(scene_bbox.min_pos.x, 0, scene_bbox.min_pos.y);
     for (int i=0;i<instances.size();i++)
     {
         int par_cell_id, self_cell_id;
@@ -360,7 +356,7 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
     return cmd;
 }
 void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,
-                                 std::vector<ModelData> &models, std::vector<TypeData> &types, bool is_leaf)
+                                 std::vector<ModelData> &models, std::vector<TypeData> &, bool is_leaf)
 {
     uint st = instances.size();
     if (ida.centers_par.size() != ida.centers_self.size() || ida.centers_par.size() != ida.transforms.size())
@@ -372,7 +368,7 @@ void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &
     {
         float type_slice = 0;
         if (ida.type_ids.size() > i)
-            type_slice = is_leaf ? ggd->types[ida.type_ids[i]].leaf_id : ggd->types[ida.type_ids[i]].wood_id;
+            type_slice = is_leaf ? types[ida.type_ids[i]].leaf_id : types[ida.type_ids[i]].wood_id;
         instances.push_back(InstanceData());
         instances.back().projection_camera = ida.transforms[i];
         instances.back().center_par = glm::vec4(ida.centers_par[i], type_slice);
@@ -425,8 +421,10 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
 
     if (explicit_lod == -1)
     {
-        float len = glm::length(source->center - camera_pos);
-        float sz = sqrt(ggd->size.x * ggd->size.x + ggd->size.z * ggd->size.z);
+        glm::vec2 center = 0.5f*(scene_bbox.max_pos + scene_bbox.min_pos);
+        float len = glm::length(center - glm::vec2(camera_pos.x, camera_pos.z));
+        glm::vec2 sz_2 = 0.5f*(scene_bbox.max_pos - scene_bbox.min_pos);
+        float sz = sqrt(sz_2.x*sz_2.x + sz_2.y*sz_2.y);
         for (int i = 0; i < LODs.size() - 1; i++)
         {
             if (LODs[i + 1].max_dist < len + sz && LODs[i].max_dist >= len - sz)
@@ -573,7 +571,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
     {
-        int type_slice = ggd->types[type].wood_id;
+        int type_slice = types[type].wood_id;
         if (id < 0)
         {
             logerr("invalid id = %d", id);
@@ -602,7 +600,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     verts = l_verts;
     if (need_leaves)
     {
-        int type_slice = ggd->types[type].leaf_id;
+        int type_slice = types[type].leaf_id;
         for (int id : branch.branches)
         {
             if (id < 0)
@@ -689,13 +687,10 @@ GroveRenderer::Instance2::~Instance2()
 }
 void GroveRenderer::prepare_wood_types_atlas()
 {
-    if (!ggd)
-        return;
-
     const int tex_size = 512;
     int num_texs = 0;
     std::map<GLuint, std::pair<Texture,int>> tex_map;
-    for (auto &type : ggd->types)
+    for (auto &type : types)
     {
         auto it = tex_map.find(type.wood.texture);
         if (it == tex_map.end())
@@ -753,7 +748,7 @@ void GroveRenderer::prepare_wood_types_atlas()
         copy.texture("tex", pr.second.first);
         bm.render(GL_TRIANGLES);
 
-        for (auto &type : ggd->types)
+        for (auto &type : types)
         {
             if (type.leaf_id == pr.second.second)
                 type.leaf_id = k+1000;
@@ -762,7 +757,7 @@ void GroveRenderer::prepare_wood_types_atlas()
                 type.wood_id = k+1000;
         }
     }
-    for (auto &type : ggd->types)
+    for (auto &type : types)
         {
             type.leaf_id = -1000+type.leaf_id;
             type.wood_id = -1000+type.wood_id;

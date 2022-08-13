@@ -1,4 +1,5 @@
 #include "genetic_algorithm.h"
+#include "common_utils/distribution.h"
 #include <algorithm>
 #include <atomic>
 #include "GA_utils.h"

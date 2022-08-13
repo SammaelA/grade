@@ -15,7 +15,7 @@ class GroveGenerator
 {
 public:
     void prepare_patch(GrovePrototype &prototype, 
-                       std::vector<TreeTypeData> &treeTypesCatalogue,
+                       const std::vector<TreeTypeData> &treeTypesCatalogue,
                        Heightmap &hmap,
                        GroveMask &mask,
                        LightVoxelsCube &voxels,

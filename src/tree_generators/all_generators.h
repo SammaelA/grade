@@ -7,5 +7,5 @@
 #include "tree_generators/GE_generator_simplified.h"
 #include "tree_generators/weber_penn_generator.h"
 
-AbstractTreeGenerator *get_generator(std::string &generator_name);
-ParameterSet *get_default_parameters(std::string &generator_name);
+AbstractTreeGenerator *get_generator(const std::string &generator_name);
+ParameterSet *get_default_parameters(const std::string &generator_name);

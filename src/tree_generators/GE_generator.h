@@ -14,7 +14,7 @@ class GETreeGenerator : public AbstractTreeGenerator
 {
 public:
     virtual bool iterate(LightVoxelsCube &voxels) override;
-    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual void set_seed(int _seed) override {gen = std::mt19937{_seed}; seed = _seed;}
     virtual bool use_voxels_for_generation() {return true;}
@@ -95,7 +95,7 @@ protected:
         glm::vec3 pos;
         Branch root;
         int max_depth = 1;
-        TreeTypeData *type = nullptr;
+        const TreeTypeData *type = nullptr;
         TreeStatus status = SEED;
         int iteration = 0;
         int joints_total = 0;
@@ -141,28 +141,28 @@ protected:
         }
     };
 
-    void create_initial_trunk(Tree &t, GETreeParameters &params);
-    void create_universal_initial_trink(Tree &t, GETreeParameters &params);
-    void set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level);
+    void create_initial_trunk(Tree &t, const GETreeParameters &params);
+    void create_universal_initial_trink(Tree &t, const GETreeParameters &params);
+    void set_levels_rec(Tree &t, Branch &b, const GETreeParameters &params, int level);
     void convert(Tree &src, ::Tree &dst);
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
-    void calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params);
-    void calc_distance_from_root(Branch &b, GETreeParameters &params, glm::vec2 start_distance);
-    void distribute_resource(Branch &b, GETreeParameters &params, float res_mult);
-    void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
+    void calc_light(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params);
+    void calc_distance_from_root(Branch &b, const GETreeParameters &params, glm::vec2 start_distance);
+    void distribute_resource(Branch &b, const GETreeParameters &params, float res_mult);
+    void prepare_nodes_and_space_colonization(Tree &t, Branch &b, const GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
                                               int max_growth_per_node);
-    void grow_nodes(Tree &t, GETreeParameters &params, 
+    void grow_nodes(Tree &t, const GETreeParameters &params, 
                     std::vector<GrowPoint> &growth_points,
                     LightVoxelsCube &voxels,
                     int max_growth_per_node);
-    void remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels);
-    void recalculate_radii(Tree &t, Branch &b, GETreeParameters &params);
+    void remove_branches(Tree &t, Branch &b, const GETreeParameters &params, LightVoxelsCube &voxels);
+    void recalculate_radii(Tree &t, Branch &b, const GETreeParameters &params);
     void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi);
-    void set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul);
-    void create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
-    void set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels);
+    void set_occlusion(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params, float mul);
+    void create_leaves(Branch &b, const GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
+    void set_occlusion_joint(Joint &j, float base_value, const GETreeParameters &params, LightVoxelsCube &voxels);
     virtual bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
                                glm::vec3 &best_pos, float &best_occ);
     inline float self_rand(double from = 0.0, double to = 1.0) 
@@ -179,7 +179,7 @@ protected:
         b = glm::cross(a, b);
         c = glm::cross(a, b);
     }
-    inline glm::vec3 tropism(float n, GETreeParameters &params)
+    inline glm::vec3 tropism(float n, const GETreeParameters &params)
     {
         glm::vec4 p = params.tropism_params;
         float trop = 0;

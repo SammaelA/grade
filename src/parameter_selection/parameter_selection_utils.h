@@ -4,6 +4,6 @@
 
 namespace ps_utils
 {
-    void gen_tree(LightVoxelsCube &voxels, TreeTypeData *type, Tree *tree);
-    void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, std::vector<TreeTypeData> *types, Tree *trees);
+    void gen_tree(LightVoxelsCube &voxels, const TreeTypeData *type, Tree *tree);
+    void gen_tree_task(int start_n, int stop_n, LightVoxelsCube *vox, const std::vector<TreeTypeData> *types, Tree *trees);
 };

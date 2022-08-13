@@ -71,8 +71,9 @@ namespace scene_gen
     debug("created %dx%d cells with %.1fx%.1f size each\n", ctx.cells_x, ctx.cells_y, ctx.cell_size.x, ctx.cell_size.y);
     debug("created biome map %dx%d pixels\n", ctx.biome_map.pixels_w(), ctx.biome_map.pixels_h());
 
-    ctx.scene.grove.center = ctx.center3;
-    ctx.scene.grove.ggd_name = "blank";
+    Block clustering_settings;
+    load_block_from_file("settings.blk", clustering_settings);
+    ctx.packer.init(clustering_settings, metainfoManager.see_all_tree_types());
   }
 
 

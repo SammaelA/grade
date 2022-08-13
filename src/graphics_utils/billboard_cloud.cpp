@@ -101,14 +101,14 @@ void BillboardCloudRaw::create_models(Branch *branch, BillboardGenerationParams 
         l_m.construct(_c_leaves);
 }
 
-void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
+void BillboardCloudRaw::create_billboard(const TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
                                          TextureAtlas &atlas, BillboardGenerationParams params)
 {
     Model br_m, l_m;
     create_models(branch, params, br_m, l_m);
     create_billboard_model(ttd, branch, min_bbox, num, bill, atlas, params, br_m, l_m);
 }
-void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
+void BillboardCloudRaw::create_billboard_model(const TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num, Billboard &bill,
                                                TextureAtlas &atlas, BillboardGenerationParams params, Model &br_m, Model &l_m)
 {
     if (num < 0)
@@ -153,7 +153,7 @@ void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch
                 glDisable(GL_DEPTH_TEST); 
             }
 
-            Texture &leaf = ttd.leaf;
+            const Texture &leaf = ttd.leaf;
             glBindTexture(leaf.type,leaf.texture);
             glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
             glTexParameteri(leaf.type, GL_TEXTURE_MAX_LEVEL, 0);
@@ -179,7 +179,7 @@ void BillboardCloudRaw::create_billboard_model(TreeTypeData &ttd, Branch *branch
     }
 }
 
-void BillboardCloudRaw::create_billboard(TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num,
+void BillboardCloudRaw::create_billboard(const TreeTypeData &ttd, Branch *branch, BBox &min_bbox, int num,
                                          Billboard &bill, float leaf_scale,  float wood_scale, 
                                          bool monochrome, int level_from, int level_to)
 {
@@ -501,7 +501,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<ClusterData> &clus
         }
     }
 }
-void BillboardCloudRaw::prepare(int _quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void BillboardCloudRaw::prepare(int _quality, int branch_level, ClusterData &cluster, const std::vector<TreeTypeData> &_ttd,
              BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &out_billboards)
 {
     quality = _quality;
@@ -593,7 +593,7 @@ void BillboardCloudRaw::prepare(int _quality, int branch_level, ClusterData &clu
         }
     }
 }
-void BillboardCloudRaw::extend(int quality, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void BillboardCloudRaw::extend(int quality, int branch_level, ClusterData &cluster, const std::vector<TreeTypeData> &_ttd,
              BillboardCloudData *data, std::vector<std::list<BillboardData>::iterator> &billboards)
 {
     std::vector<InstanceDataArrays> idas;

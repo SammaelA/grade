@@ -1,6 +1,6 @@
 #include "all_generators.h"
 
-AbstractTreeGenerator *get_generator(std::string &generator_name)
+AbstractTreeGenerator *get_generator(const std::string &generator_name)
 {
     AbstractTreeGenerator *gen;
     if (generator_name == "simple_gen")
@@ -21,7 +21,7 @@ AbstractTreeGenerator *get_generator(std::string &generator_name)
     return gen;
 }
 
-ParameterSet *get_default_parameters(std::string &generator_name)
+ParameterSet *get_default_parameters(const std::string &generator_name)
 {
     ParameterSet *gen;
     if (generator_name == "simple_gen")

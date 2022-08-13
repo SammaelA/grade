@@ -1,20 +1,20 @@
 #include "graphics_utils/impostor.h"
 #include "graphics_utils/texture_manager.h"
-#include "generation/generation_settings.h"
+#include "generation/generation_task.h"
 
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
 
 void ImpostorBaker::prepare(Quality _quality, int branch_level, ClusterData &cluster, 
-                            std::vector<TreeTypeData> &_ttd, ImpostorsData *data, std::list<Impostor>::iterator &impostor)
+                            const std::vector<TreeTypeData> &_ttd, ImpostorsData *data, std::list<Impostor>::iterator &impostor)
 {
     ImpostorGenerationParams params;
     params.quality = _quality;
     prepare(params, branch_level, cluster, _ttd, data, impostor);
 }
 
-void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, ClusterData &cluster, std::vector<TreeTypeData> &_ttd,
+void ImpostorBaker::prepare(ImpostorGenerationParams params, int branch_level, ClusterData &cluster, const std::vector<TreeTypeData> &_ttd,
                             ImpostorsData *data, std::list<Impostor>::iterator &impostor, int clusters_expected)
 {
     quality = params.quality;
@@ -133,7 +133,7 @@ void ImpostorBaker::prepare(int branch_level, std::vector<ClusterData> &clusters
     data->valid = !data->impostors.empty();
     data->level = 0;
 }
-void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor &imp, ImpostorGenerationParams &params, 
+void ImpostorBaker::make_impostor(Branch &br, const TreeTypeData &tree_type, Impostor &imp, ImpostorGenerationParams &params, 
                                   TextureAtlas &atl, BBox &bbox)
 {
     imp.bcyl.center = bbox.position + 0.5f*bbox.sizes;
@@ -205,27 +205,4 @@ void ImpostorBaker::make_impostor(Branch &br, TreeTypeData &tree_type, Impostor 
         a = rot * a;
         c = rot * c;
     }
-}
-
-void ImpostorBaker::prepare_all_grove(GroveGenerationData &ggd, int branch_level, std::vector<ClusterData> &clusters,
-                                      ImpostorsData *data)
-{
-    if (!data)
-        return;
-
-    data->level = branch_level;
-    data->valid = true;
-    data->atlas = *atlas;
-    data->impostors.clear();
-    data->impostors.push_back(Impostor());
-    data->impostors.back().id = 0;
-
-    InstanceDataArrays ida;
-    ida.centers_par = {ggd.pos};
-    ida.centers_self = {ggd.pos};
-    ida.transforms = {glm::mat4(1.0f)};
-
-    data->impostors.back().IDA = ida;
-
-    return;
 }

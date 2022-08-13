@@ -72,7 +72,7 @@ class WeberPennGenerator : public AbstractTreeGenerator
 {
 public:
     virtual bool iterate(LightVoxelsCube &voxels) override { return false;};
-    virtual void plant_tree(glm::vec3 pos, TreeTypeData *type) override;
+    virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual void set_seed(int _seed) override {seed = _seed;}
 //private:
@@ -216,7 +216,7 @@ public:
         int total_points_cnt = 0;
     };
 
-    std::vector<TreeTypeData *> types;
+    std::vector<const TreeTypeData *> types;
     std::vector<glm::vec3> positions;
     static WeberPennParametersNative defaultParameters;
     unsigned long seed = 0;

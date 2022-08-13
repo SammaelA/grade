@@ -1,6 +1,7 @@
 #include "synthetic_trees_generator.h"
-#include "generation_settings.h"
+#include "generation_task.h"
 #include <iostream>
+/*
 SyntheticTreeGenerator::SyntheticTreeGenerator(Seeder &_seeder, std::vector<ClusterData> &_trunks_clusters,
                                                std::vector<ClusterData> &_branches_clusters, GroveGenerationData &_ggd) : seeder(_seeder),
                                                                                                                           ggd(_ggd),
@@ -501,7 +502,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
 }
 FullStat::~FullStat()
 {
-    /*
+    
 #define DEL(a) \
     if (a)     \
         delete (a);
@@ -526,5 +527,6 @@ FullStat::~FullStat()
         DEL(st.transformStat.psi);
         DEL(st.transformStat.r);
         DEL(st.transformStat.rot_angle);
-    }*/
+    }
 }
+*/

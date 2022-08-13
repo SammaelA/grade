@@ -28,7 +28,7 @@ public:
     void set_heightmap(Heightmap &heightmap);
     void remove_heightmap();
 
-    void set_grove(const GrovePacked &source, GroveGenerationData &gen_data);
+    void set_grove(const GrovePacked &source, AABB2D scene_bbox, const std::vector<TreeTypeData> &types);
     void remove_grove();
     
     void add_instanced_models(const std::vector<Scene::InstancedModel> &models);

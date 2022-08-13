@@ -119,29 +119,21 @@ Clusterizer2 *get_clusterizer(Block &settings, ClusteringStrategy &cStrategy)
   return cl;
 }
 
-void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
-                             std::vector<ClusterPackingLayer> &packingLayers, LightVoxelsCube *post_voxels,
+void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, GrovePacked &grove, ::Tree *trees_external, int trees_count,
+                             std::vector<ClusterPackingLayer> &packingLayers,
                              int layer_from, int layer_to, bool models, bool bill, bool imp,
                              bool visualize_clusters)
 {
+    unsigned task = params.task;
 
-
-
-
-    bool need_something = ggd.task & (GenerationTask::SYNTS | GenerationTask::CLUSTERIZE) ||
-                          ((ggd.task & GenerationTask::MODELS) && models) ||
-                          ((ggd.task & GenerationTask::BILLBOARDS) && bill) ||
-                          ((ggd.task & GenerationTask::IMPOSTORS) && imp);
+    bool need_something = task & (GenerationTask::SYNTS | GenerationTask::CLUSTERIZE) ||
+                          ((task & GenerationTask::MODELS) && models) ||
+                          ((task & GenerationTask::BILLBOARDS) && bill) ||
+                          ((task & GenerationTask::IMPOSTORS) && imp);
     if (!need_something)
-    {
-        return;
-    }
+      return;
 
-    int count = ggd.trees_count;
     int clusters_before = packingLayers[clustering_base_level].clusters.size();
-
-    ctx->light = post_voxels;
-    ctx->types = &(ggd.types);
     Clusterizer2 *cl = get_clusterizer(settings, cStrategy);
 
     struct ClusterInfo
@@ -160,9 +152,9 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     std::vector<int> cleared_layers;
 
     /* && cStrategy == ClusteringStrategy::Merge*/
-    if ((ggd.task & (GenerationTask::CLUSTERIZE)))
+    if ((task & (GenerationTask::CLUSTERIZE)))
     {
-        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[clustering_base_level].clusters, ctx, true);
+        cl->get_base_clusters(settings, trees_external, trees_count, layer_from, packingLayers[clustering_base_level].clusters, ctx, true);
         if (save_clusterizer)
         {
             saved_clustering_data.push_back(cl->get_full_data());
@@ -171,7 +163,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
     else
     {
         //just add base clusters to zero level cluster list
-        cl->get_base_clusters(settings, trees_external,count, layer_from, packingLayers[clustering_base_level].clusters, 
+        cl->get_base_clusters(settings, trees_external, trees_count, layer_from, packingLayers[clustering_base_level].clusters, 
                               ctx, false);
     }
 
@@ -182,7 +174,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         new_clusters.push_back(ClusterInfo{clustering_base_level, i});
     }
 
-    if (ggd.task & (GenerationTask::CLUSTERIZE))
+    if (task & (GenerationTask::CLUSTERIZE))
     {
         int max_clusters_in_layer = settings.get_int("max_clusters_in_layer",1000);
         int max_layer = settings.get_int("recursive_clustering_layers",1);
@@ -265,31 +257,31 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         else if (layer_from == 1)
             transform_by_nodes(packingLayers[info.layer].clusters[info.pos]);
     
-        if (models && (ggd.task & (GenerationTask::MODELS)))
+        if (models && (task & (GenerationTask::MODELS)))
         {
             auto it = pack_cluster(packingLayers[info.layer].clusters[info.pos], grove, layer_from, layer_to);
             packingLayers[info.layer].additional_data[info.pos].instanced_branch = it;
             packingLayers[info.layer].additional_data[info.pos].has_instanced_branch = true;
             packingLayers[info.layer].additional_data[info.pos].is_presented = true;
         }
-        if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+        if (bill && (task & (GenerationTask::BILLBOARDS)))
         {
             BillboardCloudRaw cloud;
-            cloud.prepare(ULTRALOW, layer_from, packingLayers[info.layer].clusters[info.pos], ggd.types,
+            cloud.prepare(ULTRALOW, layer_from, packingLayers[info.layer].clusters[info.pos], ctx->types,
                           &grove.clouds[2], packingLayers[info.layer].additional_data[info.pos].large_billboards);
-            cloud.prepare(ULTRALOW, layer_from + 1, packingLayers[info.layer].clusters[info.pos], ggd.types,
+            cloud.prepare(ULTRALOW, layer_from + 1, packingLayers[info.layer].clusters[info.pos], ctx->types,
                           &grove.clouds[3], packingLayers[info.layer].additional_data[info.pos].small_billboards);
         }
-        if (imp && (ggd.task & (GenerationTask::IMPOSTOR_FULL_GROVE)))
+        if (imp && (task & (GenerationTask::IMPOSTOR_FULL_GROVE)))
         {
             debugl(6, "full grove impostors are temporary unavailable\n");
         }
-        if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
+        if (imp && (task & (GenerationTask::IMPOSTORS)))
         {
           packingLayers[info.layer].additional_data[info.pos].has_impostor = true;
             ImpostorBaker ib;
-            ib.prepare(ggd.impostor_generation_params, layer_from, packingLayers[info.layer].clusters[info.pos], 
-                       ggd.types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostor,
+            ib.prepare(params.impostor_generation_params, layer_from, packingLayers[info.layer].clusters[info.pos], 
+                       ctx->types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostor,
                     new_clusters.size());
         }
 
@@ -302,7 +294,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         else if (layer_from == 1)
             transform_by_nodes(packingLayers[info.to.layer].clusters[info.to.pos]);
         
-        if (models && (ggd.task & (GenerationTask::MODELS)))
+        if (models && (task & (GenerationTask::MODELS)))
         {
             auto &it = packingLayers[info.from.layer].additional_data[info.from.pos].instanced_branch;
             it->IDA = packingLayers[info.to.layer].clusters[info.to.pos].IDA;
@@ -310,7 +302,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
             packingLayers[info.to.layer].additional_data[info.to.pos].has_instanced_branch = true;
             packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
         }
-        if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+        if (bill && (task & (GenerationTask::BILLBOARDS)))
         {
             BillboardCloudRaw cloud;
             auto &from_a = packingLayers[info.from.layer].additional_data[info.from.pos];
@@ -318,14 +310,14 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
             to_a.large_billboards = from_a.large_billboards;
             to_a.small_billboards = from_a.small_billboards;
 
-            cloud.extend(ULTRALOW, layer_from, packingLayers[info.to.layer].clusters[info.to.pos], ggd.types,
+            cloud.extend(ULTRALOW, layer_from, packingLayers[info.to.layer].clusters[info.to.pos], ctx->types,
                          &grove.clouds[2], to_a.large_billboards);
-            cloud.extend(ULTRALOW, layer_from + 1, packingLayers[info.to.layer].clusters[info.to.pos], ggd.types,
+            cloud.extend(ULTRALOW, layer_from + 1, packingLayers[info.to.layer].clusters[info.to.pos], ctx->types,
                          &grove.clouds[3], to_a.small_billboards);
 
             packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
         }
-        if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
+        if (imp && (task & (GenerationTask::IMPOSTORS)))
         {
             auto &from_a = packingLayers[info.from.layer].additional_data[info.from.pos];
             auto &to_a = packingLayers[info.to.layer].additional_data[info.to.pos];
@@ -342,14 +334,14 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
         bool need_clear_data = true;
         if (need_clear_data)
         {
-            if (models && (ggd.task & (GenerationTask::MODELS)))
+            if (models && (task & (GenerationTask::MODELS)))
             {
                 auto &it = packingLayers[info.layer].additional_data[info.pos].instanced_branch;
                 for (unsigned &id : it->branches)
                     grove.instancedCatalogue.remove(id);
                 grove.instancedBranches.erase(it);
             }
-            if (bill && (ggd.task & (GenerationTask::BILLBOARDS)))
+            if (bill && (task & (GenerationTask::BILLBOARDS)))
             {
                 for (auto &it : packingLayers[info.layer].additional_data[info.pos].large_billboards)
                 {
@@ -369,7 +361,7 @@ void GrovePacker::pack_layer(Block &settings, GroveGenerationData ggd, GrovePack
                     grove.clouds[3].billboards.erase(it);
                 }
             }
-            if (imp && (ggd.task & (GenerationTask::IMPOSTORS)))
+            if (imp && (task & (GenerationTask::IMPOSTORS)))
             {
                 auto &it = packingLayers[info.layer].additional_data[info.pos].impostor;
                 for (auto &bill : it->slices)
@@ -476,14 +468,14 @@ void GrovePacker::transform_by_nodes(ClusterData &cl)
     }
 }
 
-void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+void GrovePacker::add_trees_to_grove(const GrovePackingParams &params, GrovePacked &grove, ::Tree *trees_external, int trees_count,
                                      bool visualize_clusters, bool save_cluster_data)
 {
     int max_trees_in_patch = settings_block.get_int("max_trees_in_patch",1000);
     visualize_clusters = visualize_clusters || clusteringDebugInfo.visualize_clusters;
     if (visualize_clusters || clusteringDebugInfo.prepare_dataset || clusteringDebugInfo.save_csv)
     {
-        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters, true);
+        add_trees_to_grove_internal(params, grove, trees_external, trees_count, visualize_clusters, true);
 
         if (clusteringDebugInfo.prepare_dataset)
         {
@@ -496,21 +488,19 @@ void GrovePacker::add_trees_to_grove(GroveGenerationData ggd, GrovePacked &grove
         if (clusteringDebugInfo.save_csv)
             save_csv(clusteringDebugInfo.csv_file_name, ctx, packingLayersBranches);
     }
-    else if (ggd.trees_count <= max_trees_in_patch)
+    else if (trees_count <= max_trees_in_patch)
     {
-        add_trees_to_grove_internal(ggd, grove, trees_external, h, visualize_clusters, save_cluster_data);
+        add_trees_to_grove_internal(params, grove, trees_external, trees_count, visualize_clusters, save_cluster_data);
     }
     else
     {
         int start_pos = 0;
-        int trees_count = ggd.trees_count;
-        ggd.trees_count = max_trees_in_patch;
+        int t_cnt = MIN(max_trees_in_patch, trees_count - start_pos);
         while (start_pos < trees_count)
         {
-            add_trees_to_grove_internal(ggd, grove, trees_external + start_pos, h, visualize_clusters, save_cluster_data);
+            add_trees_to_grove_internal(params, grove, trees_external + start_pos, t_cnt, visualize_clusters, save_cluster_data);
             start_pos+=max_trees_in_patch;
         }
-        ggd.trees_count = trees_count;
     }
 }
 
@@ -544,11 +534,14 @@ bool clear_and_validate_tree_structure(::Tree &tree)
   return (tree.root->level == 0) && clear_and_validate_branch_structure(tree.root);
 }
 
-void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePacked &grove, ::Tree *trees_external, Heightmap *h,
+void GrovePacker::add_trees_to_grove_internal(const GrovePackingParams &params, GrovePacked &grove, ::Tree *trees_external, int trees_count,
                                               bool visualize_clusters, bool save_cluster_data)
 {
     if (!inited)
-        init();
+    {
+      logerr("Grove Packer not inited");
+      return;
+    }
     
     for (int i = grove.impostors.size(); i < 2; i++)
     {
@@ -559,17 +552,9 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         grove.clouds.push_back(BillboardCloudData());
 
     save_clusterizer = save_cluster_data;
-    grove.center = glm::vec3(0, 0, 0);
-    grove.ggd_name = ggd.name;
-    int synts = ggd.synts_count;
-    int count = ggd.trees_count;
-    LightVoxelsCube *post_voxels = nullptr;
-    Seeder *post_seeder = nullptr;
-    GroveGenerationData &curGgd = ggd;
-
     int valid_trees_cnt = 0;
     Branch dummy_branch;
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < trees_count; i++)
     {
         bool valid = is_valid_tree(trees_external[i]);
         if (valid)
@@ -584,43 +569,20 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
         trees_external[i].valid = valid;
         valid_trees_cnt += valid;
     }
-    if (count == 0)
+    if (trees_count == 0)
     {
-        logerr("Grove %s is empty. ", ggd.name.c_str());
+        logerr("Grove is empty. ");
         return;
     }
     if (valid_trees_cnt == 0)
     {
-        logerr("Grove %s has %d tree(s) but none of them are valid.", ggd.name.c_str(), count);
+        logerr("Grove has %d tree(s) but none of them are valid.", trees_count);
         return;
     }
 
-    debugl(1, "Packing grove %s with %d/%d valid trees\n", ggd.name.c_str(), valid_trees_cnt, count);
+    debugl(1, "Packing grove with %d/%d valid trees\n", valid_trees_cnt, trees_count);
 
-    if (false)
-    {
-      //There are some clustering algorithms (they are not used now and will probably be never used again),
-      //that uses footprint of a branch in voxel array to measure branches similarity
-      //this code creates such voxel array for this cases
-        float r = sqrt(count);
-        glm::vec3 vox_center = glm::vec3(0, 100, 0) + curGgd.pos;
-        glm::vec3 vox_size = curGgd.size;
-        float single_voxel_size = 0.5;
-
-        post_voxels = new LightVoxelsCube(vox_center, vox_size, single_voxel_size);
-        post_seeder = new Seeder(ggd, 10, h);
-
-        post_voxels->add_heightmap(*h);
-        for (int i = 0; i < curGgd.obstacles.size(); i++)
-        {
-            post_voxels->add_body(curGgd.obstacles[i]);
-            post_seeder->add_body(curGgd.obstacles[i]);
-        }
-        post_seeder->recalcuate_shadows(trees_external, count);
-        add_occluder(post_voxels, trees_external, count);
-    }
-
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < trees_count; i++)
     {
         auto it = trees_nodes.emplace(trees_external[i].id,std::vector<Node>{});
         for (Joint &j : trees_external[i].root->joints)
@@ -631,26 +593,23 @@ void GrovePacker::add_trees_to_grove_internal(GroveGenerationData ggd, GrovePack
 
 
     current_clustering_step = ClusteringStep::TRUNKS;
-    pack_layer(*trunks_params, ggd, grove, trees_external, h, packingLayersTrunks, post_voxels,
+    pack_layer(*trunks_params, params, grove, trees_external, trees_count, packingLayersTrunks,
                0, 0, true, false, false, false);
 
     current_clustering_step = ClusteringStep::BRANCHES;
-    pack_layer(*branches_params, ggd, grove, trees_external, h, packingLayersBranches, post_voxels,
+    pack_layer(*branches_params, params, grove, trees_external, trees_count, packingLayersBranches,
                1, 1000, true, true, false, visualize_clusters);
-    if (ggd.task & (GenerationTask::IMPOSTORS))
+    if (params.task & (GenerationTask::IMPOSTORS))
     {
       //TODO: support impostors
       current_clustering_step = ClusteringStep::TREES;
-      pack_layer(*trees_params, ggd, grove, trees_external, h, packingLayersTrees, post_voxels,
+      pack_layer(*trees_params, params, grove, trees_external, trees_count, packingLayersTrees,
                 0, 1000, false, false, true, false);
     }
     recreate_compressed_trees(grove);
 
     originalBranches.clear_removed();
     originalLeaves.clear_removed();
-
-    delete (post_voxels);
-    delete (post_seeder);
 }
 
 void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
@@ -748,12 +707,15 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
   }
 }
 
-void GrovePacker::base_init()
+void GrovePacker::init(const Block &packing_params_block, const std::vector<TreeTypeData> &types)
 {
-    if (shared_context)
+    inited = true;
+    settings_block.copy(&packing_params_block);
+        if (shared_context)
         ctx = new ClusteringContext();
     else    
         ctx = &self_ctx;
+    ctx->types = types;
     Block *b;
     b = settings_block.get_block("trunks_params");
     if (b)
@@ -766,19 +728,6 @@ void GrovePacker::base_init()
     b = settings_block.get_block("trees_params");
     if (b)
         trees_params = b;
-}
-void GrovePacker::init(Block &packing_params_block)
-{
-    inited = true;
-    settings_block = packing_params_block;
-    base_init();
-}
-void GrovePacker::init()
-{
-    inited = true;
-    
-    load_block_from_file("settings.blk",settings_block);  
-    base_init(); 
 }
 
 void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, bool save_atlases, bool save_png, 

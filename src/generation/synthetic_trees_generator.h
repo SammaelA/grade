@@ -1,4 +1,5 @@
 #pragma once
+/*
 #include "common_utils/utility.h"
 #include "clustering/clustering.h"
 #include "graphics_utils/texture_manager.h"
@@ -75,3 +76,4 @@ private:
     LightVoxelsCube *voxels = nullptr;
     FullStat stat;
 };
+*/

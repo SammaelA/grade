@@ -105,7 +105,7 @@ struct TreeTypeData
     TreeTypeData(TreeTypeData &&t) = default;
     TreeTypeData &operator=(TreeTypeData &&t) = default;
     TreeTypeData(int id, ParameterSet *params, std::string wood_tex_name, std::string leaf_tex_name);
-    ParameterSet *get_params();
+    ParameterSet *get_params() const;
     void set_params(ParameterSet *_params);
     ~TreeTypeData();
     int type_id;
@@ -127,7 +127,7 @@ struct Tree
     glm::vec3 pos = glm::vec3(0,0,0);
     Branch *root= nullptr;
     uint id = 0;
-    TreeTypeData *type = nullptr;
+    const TreeTypeData *type = nullptr;
     bool valid = false;
     Tree() {};
     ~Tree() {clear();};

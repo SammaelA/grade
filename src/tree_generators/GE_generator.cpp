@@ -10,8 +10,8 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
     bool growing = false;
     for (auto &t : trees)
     {
-        GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->get_params());
-        GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
+        const GETreeParameters *p_ptr = dynamic_cast<const GETreeParameters *>(t.type->get_params());
+        const GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         if (t.status == TreeStatus::SEED)
         {
             create_initial_trunk(t, params);
@@ -58,7 +58,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
 
     return growing;
 }
-void GETreeGenerator::plant_tree(glm::vec3 pos, TreeTypeData *type)
+void GETreeGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
 {
     GETreeParameters *ps = dynamic_cast<GETreeParameters *>(type->get_params());
     if (!ps)
@@ -77,7 +77,7 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
     for (auto &t : trees)
     {
         GETreeParameters *p_ptr = dynamic_cast<GETreeParameters *>(t.type->get_params());
-        GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
+        const GETreeParameters &params = p_ptr ? *(p_ptr) : defaultParameters;
         set_levels_rec(t, t.root, params, 0);
         recalculate_radii(t, t.root, params);
         create_leaves(t.root, params, 2, voxels);
@@ -88,7 +88,7 @@ void GETreeGenerator::finalize_generation(::Tree *trees_external, LightVoxelsCub
     iteration = 0;
 }
 
-void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int level_from, LightVoxelsCube &voxels)
+void GETreeGenerator::create_leaves(Branch &b, const GETreeParameters &params, int level_from, LightVoxelsCube &voxels)
 {
     if (!b.alive || b.joints.size() < 2)
         return;
@@ -141,7 +141,7 @@ void GETreeGenerator::create_leaves(Branch &b, GETreeParameters &params, int lev
         prev_jit++;
     }
 }
-void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
+void GETreeGenerator::create_initial_trunk(Tree &t, const GETreeParameters &params)
 {
     long param_dependant_seed = 71*params.initial_trunk_scale.x  + 
                                 73*params.initial_trunk_scale.y  +
@@ -204,7 +204,7 @@ void GETreeGenerator::create_initial_trunk(Tree &t, GETreeParameters &params)
     t.status = TreeStatus::GROWING;
 }
 
-void GETreeGenerator::create_universal_initial_trink(Tree &t, GETreeParameters &params)
+void GETreeGenerator::create_universal_initial_trink(Tree &t, const GETreeParameters &params)
 {
     t.status = TreeStatus::GROWING;
     t.root = Branch();
@@ -271,7 +271,7 @@ void GETreeGenerator::create_universal_initial_trink(Tree &t, GETreeParameters &
     }
 }
 
-void GETreeGenerator::set_levels_rec(Tree &t, Branch &b, GETreeParameters &params, int level)
+void GETreeGenerator::set_levels_rec(Tree &t, Branch &b, const GETreeParameters &params, int level)
 {
     //logerr("level %d", level);
     b.level = level;
@@ -379,7 +379,7 @@ void GETreeGenerator::convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b
     }
 }
 
-void GETreeGenerator::calc_distance_from_root(Branch &b, GETreeParameters &params, glm::vec2 start_distance)
+void GETreeGenerator::calc_distance_from_root(Branch &b, const GETreeParameters &params, glm::vec2 start_distance)
 {
     if (b.joints.size() < 2)
         return;
@@ -400,7 +400,7 @@ void GETreeGenerator::calc_distance_from_root(Branch &b, GETreeParameters &param
     }
 }
 
-void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params)
+void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params)
 {
     if (b.joints.empty())
         return;
@@ -447,7 +447,7 @@ void GETreeGenerator::calc_light(Branch &b, LightVoxelsCube &voxels, GETreeParam
     b.total_joints = total_joints;
 }
 
-void GETreeGenerator::distribute_resource(Branch &b, GETreeParameters &params, float res_mult)
+void GETreeGenerator::distribute_resource(Branch &b, const GETreeParameters &params, float res_mult)
 {
     {
         std::vector<std::pair<Joint *, float>> gp;
@@ -548,7 +548,7 @@ void GETreeGenerator::add_SPCol_points_solid_angle(vec3 pos, vec3 dir, float r_m
     }
 }
 
-void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params,
+void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, const GETreeParameters &params,
                                                            std::vector<GrowPoint> &growth_points,
                                                            int max_growth_per_node)
 {
@@ -603,7 +603,7 @@ void GETreeGenerator::prepare_nodes_and_space_colonization(Tree &t, Branch &b, G
     }
 }
 
-void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
+void GETreeGenerator::grow_nodes(Tree &t, const GETreeParameters &params,
                                  std::vector<GrowPoint> &growth_points,
                                  LightVoxelsCube &voxels,
                                  int max_growth_per_node)
@@ -701,7 +701,7 @@ void GETreeGenerator::grow_nodes(Tree &t, GETreeParameters &params,
     }
 }
 
-void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &params, LightVoxelsCube &voxels)
+void GETreeGenerator::remove_branches(Tree &t, Branch &b, const GETreeParameters &params, LightVoxelsCube &voxels)
 {
     b.total_resource = 0;
 
@@ -791,7 +791,7 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, GETreeParameters &para
     }
 }
 
-void GETreeGenerator::recalculate_radii(Tree &t, Branch &b, GETreeParameters &params)
+void GETreeGenerator::recalculate_radii(Tree &t, Branch &b, const GETreeParameters &params)
 {
     //it should be called only once - during finalize step
     float r = pow(params.base_r, params.r_pow);
@@ -815,7 +815,7 @@ void GETreeGenerator::recalculate_radii(Tree &t, Branch &b, GETreeParameters &pa
     b.base_r = b.joints.front().r;
 }
 
-void GETreeGenerator::set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreeParameters &params, float mul)
+void GETreeGenerator::set_occlusion(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params, float mul)
 {
     int i = 0;
     for (Joint &j : b.joints)
@@ -833,7 +833,7 @@ void GETreeGenerator::set_occlusion(Branch &b, LightVoxelsCube &voxels, GETreePa
     }
 }
 
-void GETreeGenerator::set_occlusion_joint(Joint &j, float base_value, GETreeParameters &params, LightVoxelsCube &voxels)
+void GETreeGenerator::set_occlusion_joint(Joint &j, float base_value, const GETreeParameters &params, LightVoxelsCube &voxels)
 {
     glm::vec3 p = j.pos;
     int rnd_seed = 17*abs(p.x) + 19*abs(p.y) + 23*abs(p.z);

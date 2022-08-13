@@ -1171,7 +1171,7 @@ void Block::add_detalization(Block &det)
     }
 }
 
-void Block::copy(Block *b)
+void Block::copy(const Block *b)
 {
     names = b->names;
     values = b->values;
