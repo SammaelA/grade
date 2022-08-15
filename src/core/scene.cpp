@@ -5,13 +5,13 @@ Scene::~Scene()
 {
     if (heightmap) delete heightmap;
     for (auto &im : instanced_models)
-        if (im.model)
-            delete im.model;
+      for (auto *m : im.model.models)
+        if (m)
+          delete m;
 }
 
 Scene::InstancedModel::InstancedModel():
-tex(textureManager.empty()),
-model(nullptr)
+tex(textureManager.empty())
 {
 
 }

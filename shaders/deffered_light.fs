@@ -127,7 +127,7 @@ poissonDisk[63] = vec2(-0.178564, -0.596057);
       float mu = vsm.x;
       float s2 = vsm.y - mu*mu;
       float	pmax = s2 / ( s2 + (projCoords.z - mu)*(projCoords.z - mu) );
-      res += 0.75*clamp(pmax,0,1);
+      res += max(mu, 0.75*clamp(pmax,0,1));
     }
     res = clamp(res,0,1);
   #endif
@@ -156,7 +156,7 @@ void main(void)
         float shadow = 0;
         if (need_shadow)
         {
-            float bias = 0.001;
+            float bias = 0.0001;
             int samples = 16;
 
             if (type == PIXEL_TYPE_TERRAIN)

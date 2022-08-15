@@ -298,35 +298,38 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
 
   for (auto &im : scene.instanced_models)
   {
-    if (!im.model || im.instances.empty())
-      continue;
-    
-    std::wstring mat_name = L"im_mat_" + std::wstring(im.name.begin(), im.name.end());
-    std::wstring mat_dir = base_dir_w + std::wstring(im.tex.origin.begin(), im.tex.origin.end());
-
-    instancedModelsTextures.push_back(hrTexture2DCreateFromFile(mat_dir.c_str()));
-
-    instancedModelsMaterials.push_back(hrMaterialCreate(mat_name.c_str()));
-    HRMaterialRef &mat = instancedModelsMaterials.back();
-    hrMaterialOpen(mat, HR_WRITE_DISCARD);
+    for (int i=0;i<im.model.models.size();i++)
     {
-      auto matNode = hrMaterialParamNode(mat);
-      auto diff = matNode.append_child(L"diffuse");
-      diff.append_attribute(L"brdf_type").set_value(L"lambert");
+      if (im.instances.empty())
+        continue;
+      
+      std::wstring mat_name = L"im_mat_" + std::wstring(im.name.begin(), im.name.end());
+      std::wstring mat_dir = base_dir_w + std::wstring(im.tex.origin.begin(), im.tex.origin.end());
 
-      auto color = diff.append_child(L"color");
-      color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-      color.append_attribute(L"tex_apply_mode").set_value(L"replace");
-      auto texNode = hrTextureBind(instancedModelsTextures.back(), color);
+      instancedModelsTextures.push_back(hrTexture2DCreateFromFile(mat_dir.c_str()));
 
-      VERIFY_XML(matNode);
+      instancedModelsMaterials.push_back(hrMaterialCreate(mat_name.c_str()));
+      HRMaterialRef &mat = instancedModelsMaterials.back();
+      hrMaterialOpen(mat, HR_WRITE_DISCARD);
+      {
+        auto matNode = hrMaterialParamNode(mat);
+        auto diff = matNode.append_child(L"diffuse");
+        diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+        auto color = diff.append_child(L"color");
+        color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+        color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+        auto texNode = hrTextureBind(instancedModelsTextures.back(), color);
+
+        VERIFY_XML(matNode);
+      }
+      hrMaterialClose(mat);
+
+      instancedModelsTransforms.push_back(&(im.instances));
+      std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
+      instancedModels.push_back(hrMeshCreate(name.c_str()));
+      HrMesh_from_mesh(instancedModels.back(), *(im.model.models[i]), mat.id);
     }
-    hrMaterialClose(mat);
-
-    instancedModelsTransforms.push_back(&(im.instances));
-    std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
-    instancedModels.push_back(hrMeshCreate(name.c_str()));
-    HrMesh_from_mesh(instancedModels.back(), *(im.model), mat.id);
   }
 
   std::vector<HRMeshRef> branches;

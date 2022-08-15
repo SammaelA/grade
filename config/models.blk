@@ -55,4 +55,18 @@
         obj:s = "grass_6.obj"
         color:s = "grass_6.png"
     }
+    horse_chestnut
+    {
+      obj:s = "Horse-chestnut N051218.obj"
+      color:s = "COLOR.JPG"
+    }
+    VAZ_2106
+    {
+      obj:s = "VAZ2106.obj"
+      color:s = "falloff_Falloff.jpg"
+    }
+    medieval_house_4
+    {
+      obj:s = "Medieval house 4.obj"
+    }
 }

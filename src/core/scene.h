@@ -19,7 +19,7 @@ struct Scene
     {
         std::string name;
         Texture tex;
-        Model *model;
+        ComplexModel model;
         std::vector<glm::mat4> instances;
         std::vector<AABB> bboxes;
         InstancedModel();

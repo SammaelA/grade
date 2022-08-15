@@ -145,17 +145,19 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
       {
         inst_offsets.push_back(offset);
         offset += im.instances.size();
-        all_matrices.insert(all_matrices.end(), im.instances.begin(), im.instances.end());
+        for (auto &in : im.instances)
+          all_matrices.push_back(in);
       }
       glGenBuffers(1, &simple_instances_buffer);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, simple_instances_buffer);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*offset, all_matrices.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*all_matrices.size(), all_matrices.data(), GL_STATIC_DRAW);
       
       on_scene_changed();
     }
 
     void WorldRenderer::remove_all_instanced_models()
     {
+      inst_offsets.clear();
       glDeleteBuffers(1, &simple_instances_buffer);
       on_scene_changed();
     }
@@ -201,7 +203,7 @@ void WorldRenderer::render(float dt, Camera &camera)
 
   // SHADOW PASS //
   checkForGlErrors("render pre shadow", true);
-  if (regenerate_shadows || true)
+  if (regenerate_shadows)
   {
     regenerate_shadows = false;
     shadowMap.use(light);
@@ -215,9 +217,15 @@ void WorldRenderer::render(float dt, Camera &camera)
       {
         simpleInstancingShaderShadow->uniform("inst_buf_offset", inst_offsets[i]);
 
-        glBindVertexArray(models[i].model->vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i].model->ibo);
-        glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+        for (int j=0;j<models[i].model.models.size();j++)
+        {
+          Model &pm = *(models[i].model.models[j]);
+          Material &mat = models[i].model.materials[j];
+
+          glBindVertexArray(pm.vao);
+          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pm.ibo);
+          glDrawElementsInstanced(GL_TRIANGLES, pm.SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+        }
       }
     }
     if (terrainRenderer)
@@ -290,11 +298,19 @@ void WorldRenderer::render(float dt, Camera &camera)
       for (int i=0;i<models.size();i++)
       {
         simpleInstancingShader->uniform("inst_buf_offset", inst_offsets[i]);
-        simpleInstancingShader->texture("tex", models[i].tex.texture);
+        for (int j=0;j<models[i].model.models.size();j++)
+        {
+          Model &pm = *(models[i].model.models[j]);
+          Material &mat = models[i].model.materials[j];
 
-        glBindVertexArray(models[i].model->vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i].model->ibo);
-        glDrawElementsInstanced(GL_TRIANGLES, models[i].model->SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+          glActiveTexture(GL_TEXTURE0);
+          glBindTexture(mat.map_Ka.type, mat.map_Ka.texture);
+          simpleInstancingShader->uniform("tex", 0);
+
+          glBindVertexArray(pm.vao);
+          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pm.ibo);
+          glDrawElementsInstanced(GL_TRIANGLES, pm.SIZE, GL_UNSIGNED_INT, 0, models[i].instances.size());
+        }
       }
     }
     checkForGlErrors("render models", true);

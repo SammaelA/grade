@@ -119,7 +119,7 @@
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTex);
         postFx->get_shader().uniform("pass",0);
-        postFx->get_shader().uniform("tex_size_inv",glm::vec2(1.0/SHADOW_WIDTH, 1.0/SHADOW_HEIGHT));
+        postFx->get_shader().uniform("tex_size_inv",glm::vec2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
         postFx->render();
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
@@ -127,7 +127,7 @@
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTexTemp);
         postFx->get_shader().uniform("pass",1);
-        postFx->get_shader().uniform("tex_size_inv",glm::vec2(1.0/SHADOW_WIDTH, 1.0/SHADOW_HEIGHT));
+        postFx->get_shader().uniform("tex_size_inv",glm::vec2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
         postFx->render();
 
         glEnable(GL_DEPTH_TEST);

@@ -2,7 +2,6 @@
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/shader.h"
 #include "tinyEngine/model.h"
-#include "tinyEngine/instance.h"
 #include "core/tree.h"
 #include "clustering/clustering.h"
 #include "core/billboard_cloud_data.h"

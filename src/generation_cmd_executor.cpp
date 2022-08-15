@@ -170,8 +170,7 @@ namespace scene_gen
     if (new_model)
     {
       ctx.scene.instanced_models.emplace_back();
-      ctx.scene.instanced_models.back().model = model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().tex);
-      ctx.scene.instanced_models.back().model->update();
+      model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().model);
       ctx.scene.instanced_models.back().name = name;
       pos = 0;
     }

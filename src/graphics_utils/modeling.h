@@ -48,7 +48,7 @@ namespace visualizer
 namespace model_loader
 {
   void load_default_blk();
-  Model *create_model_from_block(Block &bl, Texture &tex);
+  bool create_model_from_block(Block &bl, ComplexModel &mod);
   Model *create_model_by_name(std::string name, Texture &tex);
   Model *create_debug_box_model();
   Model *create_simple_grass_model();

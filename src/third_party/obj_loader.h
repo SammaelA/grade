@@ -488,6 +488,11 @@ namespace objl
 			std::string curline;
 			while (std::getline(file, curline))
 			{
+        for (int i=0;i<curline.size();i++)
+        {
+          if (curline[i] == '\r')
+            curline[i] = ' ';
+        }
 				#ifdef OBJL_CONSOLE_OUTPUT
 				if ((outputIndicator = ((outputIndicator + 1) % outputEveryNth)) == 1)
 				{
@@ -1045,6 +1050,11 @@ namespace objl
 			std::string curline;
 			while (std::getline(file, curline))
 			{
+        for (int i=0;i<curline.size();i++)
+        {
+          if (curline[i] == '\r')
+            curline[i] = ' ';
+        }
 				// new material and material name
 				if (algorithm::firstToken(curline) == "newmtl")
 				{
