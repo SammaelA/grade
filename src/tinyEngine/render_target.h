@@ -12,7 +12,7 @@ public:
     void set_clear_color(glm::vec4 cl_color) {clear_color = cl_color;}
     Texture get_tex(){ return tex;}
 private:
-    glm::vec4 clear_color;
+    glm::vec4 clear_color = glm::vec4(0,0,0,1);
     int width, height;
     GLuint frBuffer;
     Texture tex;

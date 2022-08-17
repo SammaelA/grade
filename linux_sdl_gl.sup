@@ -1,0 +1,225 @@
+# Copyright (c) <'2019'> <'Alrick Grandison'>
+
+# This software is provided 'as-is', without any express or implied
+# warranty. In no event will the authors be held liable for any damages
+# arising from the use of this software.
+
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+
+# 1. The origin of this software must not be misrepresented; you must not
+#    claim that you wrote the original software. If you use this software
+#    in a product, an acknowledgment in the product documentation would be
+#    appreciated but is not required.
+# 2. Altered source versions must be plainly marked as such, and must not be
+#    misrepresented as being the original software.
+# 3. This notice may not be removed or altered from any source distribution.
+
+{
+   opengl_memcpy_addr8
+   Memcheck:Addr8
+   fun:memcpy@GLIBC*
+   obj:/usr/lib/x86_64-linux-gnu/dri/*_dri.so
+   ...
+}
+
+{
+   opengl_memcpy_addr1
+   Memcheck:Addr1
+   fun:memcpy@GLIBC*
+   obj:/usr/lib/x86_64-linux-gnu/dri/*_dri.so
+   ...
+}
+
+{
+   opengl_memset_addr8
+   Memcheck:Addr8
+   fun:memset
+   obj:/usr/lib/x86_64-linux-gnu/dri/*_dri.so
+   ...
+}
+
+{
+   sdl_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:SDL_Init_REAL
+   ...
+}
+
+{
+   x11_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   sdl_leak_indirect
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   ...
+   fun:SDL_Init_REAL
+   ...
+}
+
+{
+  sdl_leak_definite
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:SDL_Init_REAL
+   ...
+}
+
+# OpenGL Calls DL under the Hood - Taken straight out of Valgrind --gen-suppressions
+# Could overlap with non-graphics DL api calls
+# But, If you are not using DL directly, then don't worry about this
+{
+   dl_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:dlopen@@GLIBC*
+   ...
+}
+
+# Same as above but more generic
+# Could overlap with non-graphics DL api calls
+# But, If you are not using DL directly, then don't worry about this
+{
+   dl_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_dl_*
+   ...
+}
+
+{
+   x11_leak_indirect
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   x11_leak_definite
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   x11_leak_possible
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   opengl_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.*
+   ...
+}
+{
+   opengl_leak_indirect
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.*
+   ...
+}
+{
+   nvidia_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.*
+   ...
+}
+{
+   pulse_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libpulse.so.*
+   ...
+}
+{
+   sdl_leak_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.*
+   ...
+}
+{
+   sdl_leak_reachable2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:/lib/x86_64-linux-gnu/libdbus-1.so.*
+   ...
+}
+{
+   sdl_leak_reachable3
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:/lib/x86_64-linux-gnu/libdbus-1.so.*
+   ...
+}
+{
+   sdl_leak_reachable4
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   ...
+   obj:/lib/x86_64-linux-gnu/libdbus-1.so.*
+   ...
+}
+{
+   sdl_leak_reachable_audio
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_ZN4Tiny6windowENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEii
+   ...
+}
+{
+   singletones1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:__libc_csu_init
+   ...
+}
+{
+   singletones2
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:__libc_csu_init
+   ...
+}
+{
+   nvidia_l
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.*
+   ...
+}

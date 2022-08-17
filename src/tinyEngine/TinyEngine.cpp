@@ -34,10 +34,12 @@ namespace Tiny
 
   return true;
 }
-void quit(){
-  if(Tiny::view.enabled)  view.quit();
-  if(Tiny::audio.enabled) audio.quit();
+void quit()
+{
+  view.quit();
+  audio.quit();
   TTF_Quit();
+  IMG_Quit();
   SDL_Quit();
 }
 }

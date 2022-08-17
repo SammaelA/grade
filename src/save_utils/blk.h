@@ -145,7 +145,9 @@ struct Block
     int size();
     void clear();
     void copy(const Block *b);
-    ~Block() {clear();}
+    ~Block();
+    Block& operator=(Block &b);
+    Block& operator=(Block &&b);
     bool has_tag(const std::string &name);
     int get_id(const std::string &name);
     int get_next_id(const std::string &name, int pos);

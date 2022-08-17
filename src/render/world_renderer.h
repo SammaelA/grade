@@ -82,7 +82,7 @@ private:
     DirectedLight light;
     RenderTarget targets[2];
     
-    GLuint simple_instances_buffer;
+    GLuint simple_instances_buffer = 0;
     std::vector<Scene::InstancedModel> models;
     std::vector<int> inst_offsets;//same size ^
 

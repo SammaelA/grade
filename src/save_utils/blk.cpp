@@ -833,7 +833,10 @@ void save_block_to_file(std::string path, Block &b)
 void Block::Value::clear()
 {
     if (type == Block::ValueType::BLOCK && bl)
+    {
+        bl->clear();
         delete bl;
+    }
     else if (type == Block::ValueType::ARRAY && a)
         delete a;
     else if (type == Block::ValueType::STRING && s)
@@ -1194,4 +1197,22 @@ void Block::copy(const Block *b)
             *(values[i].s) = *(b->values[i].s);
         }
     }
+}
+
+Block::~Block()
+{
+  clear();
+}
+Block &Block::operator=(Block &b)
+{
+  clear();
+  copy(&b);
+  return *this;
+}
+Block &Block::operator=(Block &&b)
+{
+  clear();
+  names = std::move(b.names);
+  values = std::move(b.values);
+  return *this;
 }

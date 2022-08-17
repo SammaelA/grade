@@ -41,6 +41,19 @@ public:
 
     BiomeMap();
     ~BiomeMap();
+    BiomeMap& operator=(BiomeMap &&s)
+    {
+      if (data)
+        delete[] data;
+      data = s.data;
+      s.data = nullptr;
+      w = s.w;
+      h = s.h;
+      bbox = s.bbox;
+      pixel_size = s.pixel_size;
+      default_biome_id = s.default_biome_id;
+      return *this;
+    }
     void create(AABB2D bbox, float pixel_size);
     int pixels_w() const {return w;}
     int pixels_h() const {return h;}

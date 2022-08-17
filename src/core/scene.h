@@ -26,17 +26,25 @@ struct Scene
     };
     Scene(){};
     ~Scene();
-    Scene& operator=(Scene &&s) = default;
-    /*
+    Scene& operator=(Scene &&s)
     {
+      if (heightmap)
+        delete heightmap;
       heightmap = s.heightmap;
+      s.heightmap = nullptr;
+
+      for (auto &im : instanced_models)
+        for (auto *m : im.model.models)
+          if (m)
+            delete m;
       instanced_models = std::move(instanced_models);
+
       grove = s.grove;
       grass = s.grass;
 
       return *this;
     }
-    */
+    
     Heightmap *heightmap = nullptr;
     std::vector<InstancedModel> instanced_models;
 

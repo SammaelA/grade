@@ -1,6 +1,7 @@
 #include "cmd_executors.h"
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
+#include "tinyEngine/TinyEngine.h"
 #include <chrono>
 #include <set>
 
@@ -175,15 +176,15 @@ void InputCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case IC_EXIT:
-      //genCmdBuffer.push(GC_CLEAR_SCENE);
-      //genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
-      //renderCmdBuffer.push(RC_UPDATE_HMAP);
-      //renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+      genCmdBuffer.push(GC_CLEAR_SCENE);
+      genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
+      renderCmdBuffer.push(RC_UPDATE_HMAP);
+      renderCmdBuffer.push(RC_UPDATE_OBJECTS);
       inputCmdBuffer.pop();
       inputCmdBuffer.push(IC_EXIT_FINISH);
       return;
     case IC_EXIT_FINISH:
-      exit(0);
+      Tiny::event.quit = true;
       break;
     case IC_TREE_GEN_PARAMETER_SELECTION:
     {

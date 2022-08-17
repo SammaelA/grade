@@ -289,6 +289,8 @@ TreeTypeData &TreeTypeData::operator=(const TreeTypeData &t)
     generator_name = t.generator_name;
     wood_tex_name = t.wood_tex_name;
     leaf_tex_name = t.leaf_tex_name;
+    if (params)
+      delete params;
     if (t.params)
     {
         params = t.params->copy();

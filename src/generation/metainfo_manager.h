@@ -6,6 +6,8 @@
 class MetainfoManager
 {
 public:
+    void clear();
+    ~MetainfoManager() {clear();}
     bool reload_all(std::string dir = ".");
     bool save_all(std::string dir = ".");
     

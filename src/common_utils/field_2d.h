@@ -8,6 +8,23 @@ public:
     Field_2d(glm::vec3 pos, glm::vec2 size, float cell_size){ create(pos, size, cell_size);}
     Field_2d(glm::vec3 pos, int w, int h){ create(pos, w, h);}
     Field_2d() {data = nullptr;}
+    Field_2d& operator=(Field_2d &&s)
+    {
+      w = s.w;
+      h = s.h;
+      min_val = s.min_val;
+      max_val = s.max_val;
+      base_val = s.base_val;
+      pos = s.pos;
+      size = s.size;
+      cell_size = s.cell_size;
+
+      if (data)
+        delete[] data;
+      data = s.data;
+      s.data = nullptr;
+      return *this;
+    }
     ~Field_2d();
     void create(glm::vec3 pos, glm::vec2 size, float cell_size);
     void create(glm::vec3 pos, int w, int h);

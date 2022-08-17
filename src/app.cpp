@@ -100,7 +100,7 @@ void InputHandler::handle_input(Event &event)
   }
   if (event.active[SDLK_ESCAPE])
   {
-    exit(0);
+    inputCmdBuffer.push(InputCommands::IC_EXIT);
     event.active[SDLK_ESCAPE] = false;
   }
   if ((event.active[SDLK_LSHIFT] || event.active[SDLK_RSHIFT]) && event.active[SDLK_p])

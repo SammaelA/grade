@@ -1,5 +1,5 @@
 {
-    
+    max_trees_in_patch:i = 1000
     branches_params
     {
         wood_size_mult:r = 4

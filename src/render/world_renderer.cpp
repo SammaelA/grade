@@ -34,6 +34,7 @@ WorldRenderer::~WorldRenderer()
   DEL_IT(renderReadback)
   DEL_IT(simpleInstancingShader)
   DEL_IT(simpleInstancingShaderShadow)
+  DEL_IT(taa)
 }
 
 void WorldRenderer::set_resolution(int w, int h)
@@ -82,7 +83,10 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   renderReadback = new RenderReadback();
+  targets[0] = RenderTarget();
   targets[0].create(w,h);
+
+  targets[1] = RenderTarget();
   targets[1].create(w,h);
   taa = new PostFx("taa.fs");
 
@@ -158,7 +162,11 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     void WorldRenderer::remove_all_instanced_models()
     {
       inst_offsets.clear();
-      glDeleteBuffers(1, &simple_instances_buffer);
+      if (simple_instances_buffer)
+      {
+        glDeleteBuffers(1, &simple_instances_buffer);
+        simple_instances_buffer = 0;
+      }
       on_scene_changed();
     }
 

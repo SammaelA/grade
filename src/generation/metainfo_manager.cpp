@@ -2,11 +2,6 @@
 #include "save_utils/blk.h"
 #include "tree_generators/all_generators.h"
 
-MetainfoManager metainfoManager;
-TreeTypeData dummy1;
-GrassType dummy2;
-Biome dummy3;
-
 void MetainfoManager::load_tree_types()
 {
     int id = 0;
@@ -35,6 +30,7 @@ void MetainfoManager::load_tree_types()
                     Param *params = new Param(); \
                     params->load_from_blk(*bl); \
                     TreeTypeData type = TreeTypeData(i, params, wood_tex_name, leaf_tex_name); \
+                    delete params; \
                     type.generator_name = gen_name; \
                     add_tree_type(type, name); \
                 } \
@@ -120,7 +116,7 @@ TreeTypeData &MetainfoManager::get_tree_type(std::string name)
     if (it == tree_type_id_by_name.end())
     {
         logerr("invalid tree type name = %s", name.c_str());
-        return dummy1;
+        return tree_types[0];
     }
     else
         return get_tree_type(it->second);
@@ -131,7 +127,7 @@ TreeTypeData &MetainfoManager::get_tree_type(int id)
     if (id < 0 || id >= tree_types.size())
     {
         logerr("invalid tree type id = %d", id);
-        return dummy1;
+        return tree_types[0];
     }
     else
         return tree_types[id];
@@ -155,7 +151,7 @@ GrassType &MetainfoManager::get_grass_type(std::string name)
     if (it == grass_type_id_by_name.end())
     {
         logerr("invalid grass type name = %s", name.c_str());
-        return dummy2;
+        return grass_types[0];
     }
     else
         return get_grass_type(it->second);
@@ -166,7 +162,7 @@ GrassType &MetainfoManager::get_grass_type(int id)
     if (id < 0 || id >= grass_types.size())
     {
         logerr("invalid tree type id = %d", id);
-        return dummy2;
+        return grass_types[0];
     }
     else
         return grass_types[id];
@@ -190,7 +186,7 @@ Biome &MetainfoManager::get_biome(std::string name)
     if (it == biome_id_by_name.end())
     {
         logerr("invalid biome name = %s", name.c_str());
-        return dummy3;
+        return biomes[0];
     }
     else
         return get_biome(it->second);
@@ -200,8 +196,8 @@ Biome &MetainfoManager::get_biome(int id)
 {
     if (id < 0 || id >= biomes.size())
     {
-        logerr("invalid tree type id = %d", id);
-        return dummy3;
+        logerr("invalid biome type id = %d", id);
+        return biomes[0];
     }
     else
         return biomes[id];
@@ -276,4 +272,11 @@ void MetainfoManager::save_tree_types()
     SAVE("simple_gen", SimpleTreeStructureParameters);
     SAVE("simpliest_gen", SimpliestTreeStructureParameters);
     SAVE("weber_penn_gen", WeberPennParametersNative);
+}
+
+void MetainfoManager::clear()
+{
+  tree_types.clear();
+  grass_types.clear();
+  biomes.clear();
 }

@@ -75,6 +75,7 @@ struct ParameterSet
       PAR_LIST_SAVE,
       PAR_LIST_LOAD
     };
+    virtual ~ParameterSet() = default;
     virtual glm::vec3 get_tree_max_size() = 0;
     virtual ParameterSet *copy() { return nullptr;};
     virtual float get_scale_factor() {return 1;}

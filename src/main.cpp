@@ -6,11 +6,13 @@
 #include "generation/scene_generation.h"
 #include "cmd_executors.h"
 #include "gui.h"
+#include "generation/metainfo_manager.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
 Event Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
+MetainfoManager metainfoManager;
 CommandBuffer<InputCommands> inputCmdBuffer;
 CommandBuffer<GenerationCommands> genCmdBuffer;
 CommandBuffer<RenderCommands> renderCmdBuffer;
@@ -68,4 +70,5 @@ int main(int argc, char *argv[])
       }
     }
     Tiny::quit();
+    logerr("exiting normally");
 }

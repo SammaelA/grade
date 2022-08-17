@@ -78,6 +78,7 @@
                 set(i,j,height);
             }
         }
+        stbi_image_free(image_data);
     }
     glm::vec2 Heightmap::get_grad(glm::vec3 position)
     {

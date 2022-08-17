@@ -15,12 +15,12 @@ struct Camera
 };
 struct DirectedLight
 {
-    glm::vec3 dir;
-    float intensity;
-    glm::vec3 color;
-    float ambient_q;
-    float diffuse_q;
-    float specular_q;
-    bool has_shadow_map;
-    glm::vec2 shadow_map_size;
+    glm::vec3 dir = glm::vec3(0,1,0);
+    float intensity = 0;
+    glm::vec3 color = glm::vec3(1,1,1);
+    float ambient_q = 1;
+    float diffuse_q = 0;
+    float specular_q = 0;
+    bool has_shadow_map = false;
+    glm::vec2 shadow_map_size = glm::vec2(4096, 4096);
 };

@@ -265,6 +265,8 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
   {
     auto &cmd = genCmdBuffer.front();
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    if (genCtx.inited || cmd.type == GC_INIT_SCENE)
+    {
     switch (cmd.type)
     {
     case GC_GEN_HMAP:
@@ -285,11 +287,8 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       }
       break;
     case GC_CLEAR_SCENE:
-      if (genCtx.inited)
-      {
         genCtx = SceneGenerationContext();
         genCtx.inited = false;
-      }
       break;
     case GC_INIT_SCENE:
       if (!genCtx.inited)
@@ -479,6 +478,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
+    }
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
