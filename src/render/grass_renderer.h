@@ -21,7 +21,7 @@ private:
 class GrassRenderer2
 {
 public:
-    GrassRenderer2(GrassPacked &data);
+    GrassRenderer2(const GrassPacked &data);
     ~GrassRenderer2();
     void render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                 HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow = false);
@@ -32,5 +32,5 @@ private:
     std::vector<int> inst_offsets;
     std::vector<int> inst_counts;
     GLuint instances_buffer;
-    TextureAtlas &grass_atlas;
+    const TextureAtlas &grass_atlas;
 };

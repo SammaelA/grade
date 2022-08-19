@@ -34,7 +34,7 @@ public:
     void add_instanced_models(const std::vector<Scene::InstancedModel> &models);
     void remove_all_instanced_models();
 
-    void set_grass(GrassPacked &grass_data);
+    void set_grass(const GrassPacked &grass_data);
     void remove_grass();
 
     void set_render_mode(int _render_mode);

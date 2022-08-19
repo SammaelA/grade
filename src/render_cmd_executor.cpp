@@ -203,6 +203,9 @@ void RenderCmdExecutor::execute(int max_cmd_count)
           }
         }
           break;
+        case RC_UPDATE_GRASS:
+          worldRenderer.set_grass(genCtx.scene.grass);
+          break;
         default:
           logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
           break;

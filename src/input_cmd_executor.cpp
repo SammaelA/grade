@@ -9,6 +9,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
 {
   std::set<int> cell_ids_to_update;
   bool need_update_trees = false;
+  bool need_update_grass = false;
 
   int cmd_left = max_cmd_count;
   while (!inputCmdBuffer.empty() && cmd_left != 0)
@@ -116,14 +117,16 @@ void InputCmdExecutor::execute(int max_cmd_count)
         genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
         cell_ids_to_update.emplace(cell_id);
         need_update_trees = true;
+        need_update_grass = true;
       }
       break;
     }
     case IC_GEN_ALL_PLANTED_TREES:
       if (genCtx.inited)
       {
-        int cells_to_update = 0;
+        int cells_to_update = 1;
         Block cb;
+        /*
         for (int i=0;i<genCtx.cells_x;i++)
         {
           for (int j=0;j<genCtx.cells_y;j++)
@@ -140,10 +143,12 @@ void InputCmdExecutor::execute(int max_cmd_count)
             }
           }
         }
+        */
         if (cells_to_update > 0)
         {
           genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
           need_update_trees = true;
+          need_update_grass = true;
         }
       }
       break;
@@ -173,6 +178,11 @@ void InputCmdExecutor::execute(int max_cmd_count)
         genCmdBuffer.push(GC_REMOVE_TREES, b);
         need_update_trees = true;
       }
+      
+      Block cb;
+        cb.add_int("cell_id", cell_id);
+      genCmdBuffer.push(GC_REMOVE_GRASS_IN_CELLS, cb);
+      need_update_grass = true;
     }
       break;
     case IC_EXIT:
@@ -247,6 +257,14 @@ void InputCmdExecutor::execute(int max_cmd_count)
         genCmdBuffer.push(GC_REMOVE_TREES, b);
         need_update_trees = true;
       }
+
+      Block cb;
+      for (auto &c : genCtx.cells)
+      {
+        cb.add_int("cell_id", c.id);
+      }
+      genCmdBuffer.push(GC_REMOVE_GRASS_IN_CELLS, cb);
+      need_update_grass = true;
     }
       break;
     default:
@@ -277,4 +295,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
 
   if (need_update_trees)
     renderCmdBuffer.push(RC_UPDATE_TREES);
+  if (need_update_grass)
+    renderCmdBuffer.push(RC_UPDATE_GRASS);
 }

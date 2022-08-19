@@ -394,6 +394,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
           ids.push_back(id);
       }
       scene_gen::generate_plants_cells(genCtx, ids);
+      scene_gen::generate_grass_cells(genCtx, ids);
     }
       break;
     case GC_UPDATE_GLOBAL_MASK:
@@ -473,6 +474,19 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         }
       }
       logerr("created %d prototypes in %d cells. %d trees to generate",p_cnt, c_cnt, t_cnt);
+    }
+      break;
+    case GC_REMOVE_GRASS_IN_CELLS:
+    {
+      for (int i = 0; i < cmd.args.size(); i++)
+      {
+        int cell_id = cmd.args.get_int(i, -1);
+        if (cell_id >= 0)
+        {
+          genCtx.grass_generator.remove_grass_in_cell(cell_id);
+        }
+      }
+      genCtx.grass_generator.pack_all_grass(genCtx.scene.grass, *(genCtx.scene.heightmap));
     }
       break;
     default:

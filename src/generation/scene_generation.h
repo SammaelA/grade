@@ -5,6 +5,7 @@
 #include "graphics_utils/volumetric_occlusion.h"
 #include "grove_generator.h"
 #include "grove_packer.h"
+#include "grass_generator.h"
 #include <mutex>
 
 struct SceneGenerationContext;
@@ -24,6 +25,7 @@ namespace scene_gen
   };
 
   void generate_plants_cells(SceneGenerationContext &ctx, std::vector<int> cell_ids);
+  void generate_grass_cells(SceneGenerationContext &ctx, std::vector<int> cell_ids);
   void remove_trees_from_scene(SceneGenerationContext &ctx, std::vector<int> &ids);
   void prepare_tree_prototypes(SceneGenerationContext &ctx);
 };
@@ -39,6 +41,7 @@ struct SceneGenerationContext
   BiomeMap biome_map;
   GroveMask global_mask;
   GrovePacker packer;
+  GrassGenerator grass_generator;
   std::vector<Cell> cells;
   std::vector<scene_gen::Patch> trees_patches;
   std::vector<scene_gen::Patch> grass_patches;
@@ -57,6 +60,7 @@ struct SceneGenerationContext
     objects_bvh.clear();
     biome_map = BiomeMap();
     global_mask = GroveMask();
+    grass_generator = GrassGenerator();
     packer.clear();
     cells.clear();
     trees_patches.clear();
@@ -107,5 +111,13 @@ struct Cell
       delete voxels_small;
     if (planar_occlusion)
       delete planar_occlusion; 
+    for (auto &prototype : prototypes)
+    {
+      if (prototype.biome_mask)
+      {
+        delete prototype.biome_mask;
+        prototype.biome_mask = nullptr;
+      }
+    }
   }
 };

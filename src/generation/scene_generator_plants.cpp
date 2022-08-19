@@ -47,7 +47,7 @@ namespace scene_gen
   {
     bool voxels_needed = false;
     //we need voxels array only if we use generators that requires it
-    for (auto prototype : c.prototypes)
+    for (auto &prototype : c.prototypes)
     {
       if (voxels_needed)
         break;
@@ -434,6 +434,95 @@ namespace scene_gen
     thread_finished[id]._a.store(true);
   }
 
+  void generate_grass_cells(SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
+  {
+    //empty all_cell_ids means we should try all cells
+    std::vector<int> cell_ids;//only valid cells where we have something to generate
+    if (all_cell_ids.empty())
+    {
+      for (int id = 0; id<ctx.cells.size(); id++)
+      {
+        if (id < 0 || id >= ctx.cells.size())
+          logerr("trying to make plants in invalid cell id = %d",id);
+        else
+          cell_ids.push_back(id);
+      }
+    }
+    else
+    {
+      cell_ids = all_cell_ids;
+    }
+
+    if (cell_ids.empty())
+      return;
+
+    for (auto &id : cell_ids)
+    {
+      Cell &c = ctx.cells[id];
+        glm::vec2 cell_center = 0.5f * (c.bbox.max_pos + c.bbox.min_pos);
+        int cnt_all = 0;
+        for (auto &p : c.biome_stat)
+          cnt_all += p.second;
+
+        for (auto &p : c.biome_stat)
+        {
+          // prepare grass for biome
+          float fract = p.second / (float)cnt_all;
+          if (fract < 0.01)
+            continue;
+          Biome &biome = metainfoManager.get_biome(p.first);
+          GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
+                                                ctx.biome_map_pixel_size);
+          ctx.biome_map.set_mask(*(biome_mask), p.first);
+          for (int patch_id : c.grass_patches)
+          {
+            if (ctx.grass_patches[patch_id].biome_id == p.first)
+            {
+              auto &patch = ctx.grass_patches[patch_id];
+              std::function<float(glm::vec2 &)> patch_func = [&](glm::vec2 &po) -> float
+              {
+                return patch.border.contains(po) ? 1 : 0;
+              };
+              GroveMask *patch_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
+                                                    ctx.biome_map_pixel_size);
+              patch_mask->fill_func(patch_func);
+              patch_mask->mul(*biome_mask);
+              ctx.grass_generator.generate_grass_in_cell(c, c.planar_occlusion, patch_mask, &ctx.global_mask,
+                                                         patch.density, patch.types);
+              delete patch_mask;
+            }
+          }
+
+          std::function<float(glm::vec2 &, float)> func = [&](glm::vec2 &po, float occ) -> float
+          {
+            float res = occ;
+            for (int patch_id : c.grass_patches)
+            {
+              if (ctx.grass_patches[patch_id].biome_id == p.first && ctx.grass_patches[patch_id].border.contains(po))
+              {
+                auto &patch_desc = biome.grass.patch_descs[ctx.grass_patches[patch_id].patch_type_id];
+                res = CLAMP(MIN(res, 1 - patch_desc.push), 0, 1);
+              }
+            }
+            return res;
+          };
+          biome_mask->fill_func(func);
+
+          ctx.grass_generator.generate_grass_in_cell(c, c.planar_occlusion, biome_mask, &ctx.global_mask,
+                                                     biome.grass.main_density, biome.grass.main_types);
+          delete biome_mask;
+        }
+    }
+
+    ctx.grass_generator.pack_all_grass(ctx.scene.grass, *(ctx.scene.heightmap));
+    for (auto &id : cell_ids)
+    {
+      ctx.cells[id].status == Cell::CellStatus::FINISHED_ALL;
+      ctx.cells[id].grass_patches.clear();
+    }
+    ctx.grass_patches.clear();
+  }
+
   void generate_plants_cells(SceneGenerationContext &ctx, std::vector<int> all_cell_ids)
   {
     //empty all_cell_ids means we should try all cells
@@ -542,6 +631,10 @@ namespace scene_gen
 
     rawTreesDatabase.pack_ready(ctx.packer, ctx, true);
     ctx.packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
+    for (auto &id : cell_ids)
+    {
+      ctx.cells[id].status == Cell::CellStatus::FINISHED_PLANTS;
+    }
   }
 
   void remove_trees_from_scene(SceneGenerationContext &ctx, std::vector<int> &ids)
@@ -702,8 +795,7 @@ namespace scene_gen
                 mask->mul(*(biome_mask));
               }
 
-              auto patch_prototype = GrovePrototype();
-              ctx.cells[id].prototypes.back();
+              GrovePrototype patch_prototype;
 
               int cells_cnt = 0;
               std::function<void(glm::vec2 &, float)> reader = [&](glm::vec2 &po, float val)
@@ -735,7 +827,7 @@ namespace scene_gen
 
           if (!biome.trees.main_types.empty())
           {
-            auto prototype = GrovePrototype();
+            GrovePrototype prototype;
 
             prototype.pos = cell_center;
             prototype.size = 0.5f * ctx.cell_size;

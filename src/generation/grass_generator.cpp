@@ -286,7 +286,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, Gro
             //new grass type is used
             used_grass_types.push_back(metainfoManager.get_grass_type(p.first));
             grass_quantity.push_back(0);
-            grass_instances.push_back(std::vector<Sphere2D>{});
+            grass_instances.push_back(std::vector<GrassInstance>{});
 
             types_in_vector.push_back(std::pair<int, float>(used_grass_types.size()-1, p.second));
         }
@@ -349,7 +349,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, Gro
                         auto &type = used_grass_types[types_in_vector[tp].first];
                         float sz = type.plant_size + type.plant_size_std_dev*norm.get();
                         sz = MAX(sz,0.25*type.plant_size);
-                        grass_instances[types_in_vector[tp].first].push_back(Sphere2D(i_pos,sz));
+                        grass_instances[types_in_vector[tp].first].push_back(GrassInstance(i_pos,sz, cell.id));
                     }
                     else
                     {
@@ -361,8 +361,34 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, Gro
     }
 }
 
+void GrassGenerator::remove_grass_in_cell(int cell_id)
+{
+  //resizing large vectors is a costly operation. We avoid it.
+  //Instead of it, we set instance cell_id = -1, which means invalid
+  for (auto &v : grass_instances)
+  {
+    for (auto &i : v)
+    {
+      if (i.cell_id == cell_id)
+        i.cell_id = -1;
+    }
+  }
+}
+
 void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
-{  
+{ 
+  for (auto &v : grass_instances)
+  {
+    std::vector<GrassInstance> valid_instances;
+    for (auto &i : v)
+    {
+      if (i.cell_id >= 0)
+      {
+        valid_instances.emplace_back(i);
+      }
+    }
+    v = valid_instances;
+  }
     PostFx copy = PostFx("copy.fs");
     grass_packed.grass_instances = {};
     grass_packed.used_grass_types = used_grass_types;
@@ -426,7 +452,7 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
         {
             glm::vec3 pos3 = glm::vec3(in.pos.x, 0, in.pos.y);
             pos3.y = h.get_height(pos3);
-            instances.push_back(GrassInstanceData(pos3,in.r,urand(0, 2*PI)));
+            instances.push_back(GrassInstanceData(pos3,in.size,urand(0, 2*PI)));
             //logerr("added grass instance %d (%f %f %f) r= %f",in_cnt,pos3.x,pos3.y,pos3.z,in.r);
             in_cnt++;
         }    

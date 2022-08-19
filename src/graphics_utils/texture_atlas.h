@@ -74,6 +74,8 @@ public:
     glm::ivec2 get_slice_size() const {return glm::ivec2(width/gridWN, height/gridHN); }
     bool clear();
     Texture &tex(int type);
+    const Texture &color() const {return colorTex;}
+    const Texture &normal() const {return normalTex;}
     void gen_mipmaps(std::string mipmap_shader_name = "mipmap_render.fs");
     int layers_count() const {return layers;}
     int tex_count() const {return 2;}

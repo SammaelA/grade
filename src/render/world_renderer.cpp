@@ -130,8 +130,9 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
       on_scene_changed();
     }
 
-    void WorldRenderer::set_grass(GrassPacked &grass_data)
+    void WorldRenderer::set_grass(const GrassPacked &grass_data)
     {
+      remove_grass();
       grassRenderer2 = new GrassRenderer2(grass_data);
     }
     void WorldRenderer::remove_grass()

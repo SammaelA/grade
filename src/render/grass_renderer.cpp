@@ -45,7 +45,7 @@ void GrassRenderer::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &sh
     glDrawElementsInstanced(GL_TRIANGLES, m.SIZE, GL_UNSIGNED_INT, 0, 40000);
 }
 
-GrassRenderer2::GrassRenderer2(GrassPacked &data):
+GrassRenderer2::GrassRenderer2(const GrassPacked &data):
 grass_atlas(data.grass_textures),
 grass({"grass2.vs", "grass2.fs"}, {"in_Position","in_Normal", "in_Tex"}),
 grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_Tex"})
@@ -55,7 +55,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
     int total_instances = 0;
     Texture null = textureManager.empty();
     int type_n = 0;
-    for (auto &p : data.grass_instances)
+    for (const auto &p : data.grass_instances)
     {
         tex_transform = data.grass_textures.tc_transform(p.first);
         models.push_back(model_loader::create_model_by_name(data.used_grass_types[type_n].model_name,null));
@@ -75,7 +75,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
     int i=0;
     for (auto &p : data.grass_instances)
     {
-        for (auto &in : p.second)
+        for (const auto &in : p.second)
         {
             matrices[i] = glm::scale(
                           glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
@@ -106,7 +106,7 @@ void GrassRenderer2::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &s
     shader.uniform("view", view);
     if (to_shadow)
         shader.uniform("opaqueness",0.67f);
-    shader.texture("tex",grass_atlas.tex(0));
+    shader.texture("tex",grass_atlas.color());
     for (int i=0;i<models.size();i++)
     {
         shader.uniform("inst_buf_offset",inst_offsets[i]);

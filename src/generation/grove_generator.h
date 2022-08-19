@@ -9,12 +9,7 @@ struct GrovePrototype
     glm::vec2 size;//size from center, BBox is [pos - (size.x,0,size.z)] - [pos + size]
     std::vector<std::pair<int,float>> possible_types;//type id and chance to create tree of that type
     std::vector<std::pair<int, glm::vec3>> preplanted_trees;
-    GroveMask *biome_mask = nullptr;
-    ~GrovePrototype()
-    {
-      if (biome_mask)
-          delete biome_mask;
-    }
+    GroveMask *biome_mask = nullptr;//should be deleted manually
 };
 class GroveGenerator
 {

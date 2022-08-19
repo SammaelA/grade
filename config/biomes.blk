@@ -8,7 +8,7 @@
         trees
         {
             coverage:s = "full"
-            density:r = 15
+            density:r = 1
             types
             {
                 medium_oak_simplified:r = 0.4
