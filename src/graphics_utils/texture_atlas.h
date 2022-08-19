@@ -1,5 +1,5 @@
 #pragma once
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include "../tinyEngine/texture.h"
@@ -40,8 +40,8 @@ private:
     int w = 0,h = 0, layers = 0, slices = 0;
     int gridWN = 0;
     int gridHN = 0;
-    int slice_h;
-    int slice_w;
+    int slice_h = 0;
+    int slice_w = 0;
     unsigned char *raw_data = nullptr;
 };
 class TextureAtlas : public Countable
@@ -96,7 +96,7 @@ private:
     bool resizable = false;
     bool valid = false;
     glm::vec4 clearColor;
-    GLuint fbo;
+    GLuint fbo = 0;
     Texture colorTex;
     Texture normalTex;
     Shader mipMapRenderer;

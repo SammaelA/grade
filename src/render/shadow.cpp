@@ -49,7 +49,7 @@
         postFx = new PostFx("gaussian_blur.fs");
         SHADOW_WIDTH = w;
         SHADOW_HEIGHT = h;
-        glGenFramebuffers(1, &depthMapFBO);  
+        depthMapFBO = create_framebuffer();
 
         depthMap = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT16, 1, nullptr, GL_DEPTH_COMPONENT, GL_FLOAT);
         glBindTexture(GL_TEXTURE_2D, depthMap.texture);

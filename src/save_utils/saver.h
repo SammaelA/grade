@@ -7,7 +7,7 @@
 #include <limits>
 #include <iostream>
 #include <stdexcept>
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <glm/glm.hpp>
 #include "common_utils/utility.h"
 

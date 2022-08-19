@@ -30,7 +30,7 @@ cube_shader({"cubemap.vs", "cubemap.fs"}, {"in_Position"})
     };
     loadCubemap(faces);
     
-    glGenFramebuffers(1, &cubeFBO);
+    cubeFBO = create_framebuffer();
 
     tex = textureManager.create_texture(w, h, GL_RGB8, 1, nullptr, GL_RGB, GL_UNSIGNED_BYTE);
 
@@ -62,7 +62,7 @@ Cubemap::~Cubemap()
 {
   textureManager.delete_tex(cube);
   textureManager.delete_tex(tex);
-  glDeleteFramebuffers(1, &cubeFBO);
+  delete_framebuffer(cubeFBO);
 }
 void Cubemap::loadCubemap(std::vector<std::string> faces)
 {

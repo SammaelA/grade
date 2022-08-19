@@ -54,7 +54,10 @@ namespace scene_gen
       for (auto &p : prototype.possible_types)
       {
         std::string g_name = types[p.first].generator_name;
-        if (get_generator(g_name)->use_voxels_for_generation())
+        AbstractTreeGenerator *g = get_generator(g_name);
+        bool use_voxels = g->use_voxels_for_generation();
+        delete g;
+        if (use_voxels)
         {
           voxels_needed = true;
           break;
@@ -644,11 +647,6 @@ namespace scene_gen
     for (auto &c : ctx.cells)
     {
       c.biome_stat.clear();
-      for (auto &p : c.prototypes)
-      {
-        if (p.biome_mask)
-          delete p.biome_mask;
-      }
       c.prototypes.clear();
     }
 

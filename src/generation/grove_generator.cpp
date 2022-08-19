@@ -97,4 +97,9 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
     {
         t_prep.preprocess_tree(trees[i],prep_settings);
     }
+    for (auto &p : generators)
+    {
+      if (p.second)
+        delete p.second;
+    }
 }

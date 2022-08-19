@@ -83,7 +83,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
             i++;
         }
     }
-    glGenBuffers(1, &instances_buffer);
+    instances_buffer = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, instances_buffer);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*total_instances, matrices, GL_STATIC_DRAW);
 
@@ -92,7 +92,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
 
 GrassRenderer2::~GrassRenderer2()
 {
-    glDeleteBuffers(1, &instances_buffer);
+    delete_buffer(instances_buffer);
     for (auto *m : models)
         delete m;
 }

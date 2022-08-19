@@ -11,17 +11,19 @@ void Timestamp::start(std::string name)
     if (it == TS.end())
     {
         Stamp s;
-        glGenQueries( 1, &s.startQuery);
-        glGenQueries( 1, &s.endQuery);
+        s.startQuery = create_query();
+        s.endQuery = create_query();
         s.started = false;
         s.ended = false;
 
         TS.emplace(name, s);
         it = TS.find(name);
     }
-
-    glQueryCounter(it->second.startQuery, GL_TIMESTAMP);
-    it->second.started = true;
+    if (it != TS.end())
+    {
+      glQueryCounter(it->second.startQuery, GL_TIMESTAMP);
+      it->second.started = true;
+    }
 }
 void Timestamp::end(std::string name)
 {
@@ -29,17 +31,19 @@ void Timestamp::end(std::string name)
     if (it == TS.end())
     {
         Stamp s;
-        glGenQueries( 1, &s.startQuery);
-        glGenQueries( 1, &s.endQuery);
+        s.startQuery = create_query();
+        s.endQuery = create_query();
         s.started = false;
         s.ended = false;
 
         TS.emplace(name, s);
         it = TS.find(name);
     }
-
-    glQueryCounter(it->second.endQuery, GL_TIMESTAMP);
-    it->second.ended = true;
+    if (it != TS.end())
+    {
+      glQueryCounter(it->second.endQuery, GL_TIMESTAMP);
+      it->second.ended = true;
+    }
 }
 void Timestamp::resolve()
 {

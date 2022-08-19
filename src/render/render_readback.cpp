@@ -5,13 +5,13 @@
 RenderReadback::RenderReadback():
 screen_to_world_pos({"screen_to_world_pos.comp"},{})
 {
-    glGenBuffers(1, &results_buf);
+    results_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, results_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), NULL, GL_STREAM_READ);
 }
 RenderReadback::~RenderReadback()
 {
-    glDeleteBuffers(1, &results_buf);
+    delete_buffer(results_buf);
 }
 glm::vec4 RenderReadback::get_world_pos(glm::vec2 screen_pos, Texture &world_pos_tex, Texture &color_tex)
 {

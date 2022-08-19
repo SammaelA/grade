@@ -243,7 +243,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     safe_delete<float>(all_structure_voxels, "all_structure_voxels");
     safe_delete<float>(dist_data, "dist_data");
 
-    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+    #define DELBUF(a) if (a) { delete_buffer((a)); a = 0;}
 
     DELBUF(pos_buf);
     DELBUF(voxels_buf);
@@ -643,39 +643,39 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     }
     void GPUClusterizationHelper::setup_buffers()
     {
-        glGenBuffers(1, &pos_buf);
+        pos_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, pos_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*positions.size(), positions.data(), GL_STATIC_DRAW);
     
-        glGenBuffers(1, &voxels_buf);
+        voxels_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxels_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*cur_voxels_pointer, all_voxels, GL_STATIC_DRAW);
             
-        glGenBuffers(1, &structure_voxels_buf);
+        structure_voxels_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, structure_voxels_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*cur_structure_voxels_pointer, all_structure_voxels, GL_STATIC_DRAW);
 
-        glGenBuffers(1, &rs_buf);
+        rs_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rs_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*joint_rs.size(), joint_rs.data(), GL_STATIC_DRAW);
 
-        glGenBuffers(1, &sticks_buf);
+        sticks_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sticks_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(gBranch)*sticks.size(), sticks.data(), GL_STATIC_DRAW);
         
-        glGenBuffers(1, &branches_buf);
+        branches_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, branches_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(gBranchWithData)*branches.size(), branches.data(), GL_STATIC_DRAW);
 
-        glGenBuffers(1, &dist_data_buf);
+        dist_data_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, dist_data_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*2*branches_size*branches_size, dist_data, GL_STATIC_DRAW);
 
-        glGenBuffers(1, &params_buf);
+        params_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, params_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(gClusterizationParams), &params, GL_STATIC_DRAW);
 
-        glGenBuffers(1, &joints_buf);
+        joints_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, joints_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(gJoint)*joints.size(), joints.data(), GL_STATIC_DRAW);
 

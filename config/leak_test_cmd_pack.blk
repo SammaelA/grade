@@ -1,0 +1,30 @@
+{
+  cmd_0 {
+cmd_code:i = 3
+}
+cmd_1 {
+cmd_code:i = 0
+}
+cmd_2 {
+cmd_code:i = 15
+}
+cmd_3 {
+world_pos_type:p4 = -1.216797, 64.125000, -12.718750, 1.000000
+type_name:s = "small_oak_simplified"
+cmd_code:i = 7
+}
+cmd_4 {
+cell_id:i = 24
+cmd_code:i = 11
+}
+cmd_5 {
+cell_id:i = 24
+cmd_code:i = 11
+}
+cmd_6 {
+cmd_code:i = 12
+}
+cmd_7 {
+cmd_code:i = 13
+}
+}

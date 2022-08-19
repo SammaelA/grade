@@ -9,6 +9,7 @@ struct LightVoxelsCube;
 class AbstractTreeGenerator
 {
 public:
+    virtual ~AbstractTreeGenerator() {};
     virtual bool iterate(LightVoxelsCube &voxels) { return false;};//return true if everything is finished
     virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) = 0;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) = 0;

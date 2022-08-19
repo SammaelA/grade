@@ -15,7 +15,7 @@ HBAORenderer::HBAORenderer():
 HBAORenderer::~HBAORenderer()
 {
   textureManager.delete_tex(aoTex);
-  glDeleteFramebuffers(1, &frBuffer);
+  delete_framebuffer(frBuffer);
 }
 void HBAORenderer::render(AppContext &ctx, GLuint viewPosTex)
 {
@@ -38,7 +38,7 @@ void HBAORenderer::create(int w, int h)
     width = w;
     height = h;
     float borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    glGenFramebuffers(1, &frBuffer);
+    frBuffer = create_framebuffer();
 
     aoTex = textureManager.create_texture(width, height, aoTexFmt, 1, nullptr, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, aoTex.texture);

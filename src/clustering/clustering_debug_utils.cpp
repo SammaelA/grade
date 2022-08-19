@@ -81,7 +81,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         PostFx copy = PostFx("copy_arr2.fs");
         PostFx frame = PostFx("thick_frame.fs");
         GLuint fbo;
-        glGenFramebuffers(1, &fbo);
+        fbo = create_framebuffer();
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res.texture, 0);

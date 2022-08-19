@@ -69,17 +69,17 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
         glm::ivec4 sizes = atlas.get_sizes();
         int layers = atlas.layers_count();
 
-        glGenBuffers(1, &results_buf);
+        results_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, results_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*2*SQR(sz), nullptr, GL_STREAM_READ);
 
-        glGenBuffers(1, &slices_info_buf);
+        slices_info_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slices_info_buf);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info, GL_STATIC_DRAW);
 
         if (gpu_impostor_use_mips)
         {
-            glGenBuffers(1, &branches_sizes_buf);
+            branches_sizes_buf = create_buffer();
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, branches_sizes_buf);
             glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*sz, branches_sizes, GL_STATIC_DRAW);
         }
@@ -152,9 +152,9 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
             GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
             memcpy(results,ptr,sizeof(float)*2*SQR(sz));
 
-            glDeleteBuffers(1, &slices_info_buf);
-            glDeleteBuffers(1, &results_buf);
-            glDeleteBuffers(1, &branches_sizes_buf);
+            delete_buffer(slices_info_buf);
+            delete_buffer(results_buf);
+            delete_buffer(branches_sizes_buf);
 
     int cnt = 0;
     ProgressBar pb_finalize = ProgressBar("GPU impostor clustering finalize", SQR(sz), "branches");

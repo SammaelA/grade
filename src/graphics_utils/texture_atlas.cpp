@@ -14,7 +14,7 @@ TextureAtlas::TextureAtlas():
                               copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
 
-    glGenFramebuffers(1, &fbo);
+    fbo = create_framebuffer();
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -39,7 +39,7 @@ normalTex(atlas.normalTex)
     clearColor = atlas.clearColor;
     occupied = atlas.occupied;
     valid = atlas.valid;
-    glGenFramebuffers(1, &fbo);
+    fbo = create_framebuffer();
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(0,0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -61,7 +61,7 @@ TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels) :
     height = h;
     layers = l;
     valid = true;
-    glGenFramebuffers(1, &fbo);
+    fbo = create_framebuffer();
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(0,0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -74,7 +74,7 @@ TextureAtlas::~TextureAtlas()
 {
     //atlases_count--;
     debugl(10, "atlas deleted %dx%dx%d %f Mbytes\n",width,height,layers,1e-6*2*width*height*layers*4);
-    glDeleteFramebuffers(1, &fbo);
+    delete_framebuffer(fbo);
 }
 void TextureAtlas::destroy()
 {
@@ -250,7 +250,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
                 glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
                 glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
                 Texture ctex(textureManager.create_texture(w,h));
-                glGenFramebuffers(1, &fbo1);
+                fbo1 = create_framebuffer();
                 glBindFramebuffer(GL_FRAMEBUFFER, fbo1);
                 glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
                 glViewport(0, 0, w, h);
@@ -278,7 +278,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
                 bm.render(GL_TRIANGLES);
                 glEnable(GL_DEPTH_TEST);
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                glDeleteFramebuffers(1, &fbo1);
+                delete_framebuffer(fbo1);
                 w /= 2;
                 h /= 2;
                 textureManager.delete_tex(ctex);

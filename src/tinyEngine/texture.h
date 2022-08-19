@@ -1,5 +1,5 @@
 #pragma once 
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <SDL2/SDL.h>
 #include <functional>
 #include "common_utils/utility.h"

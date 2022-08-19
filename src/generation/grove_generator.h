@@ -10,6 +10,11 @@ struct GrovePrototype
     std::vector<std::pair<int,float>> possible_types;//type id and chance to create tree of that type
     std::vector<std::pair<int, glm::vec3>> preplanted_trees;
     GroveMask *biome_mask = nullptr;
+    ~GrovePrototype()
+    {
+      if (biome_mask)
+          delete biome_mask;
+    }
 };
 class GroveGenerator
 {

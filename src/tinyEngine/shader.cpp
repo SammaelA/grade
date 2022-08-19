@@ -45,7 +45,7 @@ int Shader::addProgram(std::string fileName, GLenum shaderType){
 
 void Shader::compile(GLuint shader){
   glCompileShader(shader);
-  int success;
+  int success = 0;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if(success) glAttachShader(program, shader);
   else        error(shader, true);
@@ -53,7 +53,7 @@ void Shader::compile(GLuint shader){
 
 void Shader::link(){
   glLinkProgram(program);
-  int success;
+  int success = 0;
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if(!success) error(program, false);
 }
@@ -94,8 +94,7 @@ std::string Shader::readGLSLFile(std::string file, int32_t &size){
 /* Shader Storage Buffer Objects */
 
 void Shader::addBuffer(std::string name){
-  unsigned int b;
-  glGenBuffers(1, &b);
+  unsigned int b = create_buffer();
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, b);
   glShaderStorageBlockBinding(program, glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, name.c_str()), ssbo.size());
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ssbo.size(), b);

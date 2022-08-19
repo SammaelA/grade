@@ -40,5 +40,11 @@ struct GrassPacked
     std::vector<GrassType> used_grass_types;
     TextureAtlas grass_textures;
     std::vector<std::pair<int, std::vector<GrassInstanceData>>> grass_instances;
+    void clear()
+    {
+      used_grass_types.clear(); 
+      grass_instances.clear();
+    }
+    ~GrassPacked() {clear();}
     //each member is a type: int is texture id in atlas, second is list of instances for this type
 };

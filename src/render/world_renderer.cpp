@@ -152,7 +152,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
         for (auto &in : im.instances)
           all_matrices.push_back(in);
       }
-      glGenBuffers(1, &simple_instances_buffer);
+      simple_instances_buffer = create_buffer();
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, simple_instances_buffer);
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*all_matrices.size(), all_matrices.data(), GL_STATIC_DRAW);
       
@@ -164,7 +164,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
       inst_offsets.clear();
       if (simple_instances_buffer)
       {
-        glDeleteBuffers(1, &simple_instances_buffer);
+        delete_buffer(simple_instances_buffer);
         simple_instances_buffer = 0;
       }
       on_scene_changed();

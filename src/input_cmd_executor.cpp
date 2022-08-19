@@ -123,7 +123,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       if (genCtx.inited)
       {
         int cells_to_update = 0;
-        Block cb = Block();
+        Block cb;
         for (int i=0;i<genCtx.cells_x;i++)
         {
           for (int j=0;j<genCtx.cells_y;j++)

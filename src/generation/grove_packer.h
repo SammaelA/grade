@@ -52,8 +52,14 @@ public:
     void init(const Block &packing_params_block, const std::vector<TreeTypeData> &types);
     void prepare_grove_atlas(GrovePacked &grove, int tex_x, int tex_y, bool save_atlases, bool save_png, 
                              bool alpha_tex_needed);
+    void clear();
+    ~GrovePacker() {clear();}
     GrovePacker() = default;
     explicit GrovePacker(bool shared_ctx);
+    GrovePacker& operator=(GrovePacker&&)
+    {
+      clear();
+    }
     ClusteringStrategy get_clustering_strategy() { return cStrategy; }
     std::vector<FullClusteringData *> saved_clustering_data;
     static bool is_valid_tree(::Tree &t);
@@ -77,9 +83,9 @@ protected:
     ClusteringContext self_ctx;
     Block dummy_block;
     Block settings_block;
-    Block *trunks_params = &dummy_block;
-    Block *branches_params = &dummy_block;
-    Block *trees_params = &dummy_block;
+    Block trunks_params;
+    Block branches_params;
+    Block trees_params;
     std::vector<TreeTypeData> types;
     BranchHeap originalBranches;
     LeafHeap originalLeaves;

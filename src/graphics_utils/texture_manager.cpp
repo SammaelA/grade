@@ -47,7 +47,7 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         bm.indices = indices;
     };
     GLuint fbo,fbo1;
-    glGenFramebuffers(1, &fbo1);
+    fbo1 = create_framebuffer();
     glBindFramebuffer(GL_FRAMEBUFFER, fbo1);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, t.texture, 0);
     for (int i=1;i<mips;i++)
@@ -56,7 +56,7 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
         Texture ctex(textureManager.create_texture(w,h));
-        glGenFramebuffers(1, &fbo);
+        fbo = create_framebuffer();
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
         glViewport(0, 0, w, h);
@@ -85,11 +85,11 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         glDisable(GL_DEPTH_TEST);
         bm.render(GL_TRIANGLES);
         glEnable(GL_DEPTH_TEST);
-        glDeleteFramebuffers(1, &fbo);
+        delete_framebuffer(fbo);
         w /= 2;
         h /= 2;
     }
-    glDeleteFramebuffers(1, &fbo1);
+    delete_framebuffer(fbo1);
 }
 TextureManager::TextureManager(std::string base_path, Block &textures_used)
 {

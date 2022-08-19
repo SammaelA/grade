@@ -92,6 +92,17 @@ struct GroveTexturesAtlas
     std::map<int, int> wood_tex_map;//<type_id, tex n in atlas> 
     TextureAtlas *leavesAtlas = nullptr;
     std::map<int, int> leaves_tex_map;
+    void clear()
+    {
+      if (woodAtlas)
+        delete woodAtlas;
+      woodAtlas = nullptr;
+      if (leavesAtlas)
+        delete leavesAtlas;
+      leavesAtlas = nullptr;
+    }
+    GroveTexturesAtlas& operator=(GroveTexturesAtlas &&s) = delete;
+    ~GroveTexturesAtlas(){clear();}
 };
 struct GrovePacked
 {
@@ -104,4 +115,16 @@ struct GrovePacked
     std::vector<std::list<InstancedBranch>::const_iterator> instancedBranchesDirect;
     GroveTexturesAtlas groveTexturesAtlas;
     GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
+    void clear()
+    {
+      instancedCatalogue = BranchCatalogue(MAX_BRANCH_LEVELS);
+      instancedBranches.clear();
+      clouds.clear();
+      impostors.clear();
+      compressedTrees.clear();
+      trees_by_global_id.clear();
+      instancedBranchesDirect.clear();
+      groveTexturesAtlas.clear();
+    }
+    ~GrovePacked() {clear();}
 };

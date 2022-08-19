@@ -18,13 +18,13 @@ tree_info_shader({"get_tree_info.comp"},{})
     shader_imp_data = new glm::vec4[max_impostors + 1];
     tree_image_info_data = new TreeImageInfo[(slices_per_impostor + 1)*max_impostors];
 
-    glGenBuffers(1, &results_buf);
-    glGenBuffers(1, &slices_info_buf);
-    glGenBuffers(1, &impostors_info_buf);
-    glGenBuffers(1, &dbg_buf);
-    glGenBuffers(1, &tree_image_info_buf);
-    glGenBuffers(1, &stripes_results_buf);
-    glGenBuffers(1, &stripes_info_buf);
+    results_buf = create_buffer();
+    slices_info_buf = create_buffer();
+    impostors_info_buf = create_buffer();
+    dbg_buf = create_buffer();
+    tree_image_info_buf = create_buffer();
+    stripes_results_buf = create_buffer();
+    stripes_info_buf = create_buffer();
 }
 
 void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeCompareInfo &info)
@@ -653,14 +653,14 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
         delete[] shader_imp_data;
     if (tree_image_info_data)
         delete[] tree_image_info_data;
-    glDeleteFramebuffers(1, &fbo);
-    glDeleteBuffers(1, &results_buf);
-    glDeleteBuffers(1, &slices_info_buf);
-    glDeleteBuffers(1, &impostors_info_buf);
-    glDeleteBuffers(1, &dbg_buf);
-    glDeleteBuffers(1, &tree_image_info_buf);
-    glDeleteBuffers(1, &stripes_results_buf);
-    glDeleteBuffers(1, &stripes_info_buf);
+    delete_framebuffer(fbo);
+    delete_buffer(results_buf);
+    delete_buffer(slices_info_buf);
+    delete_buffer(impostors_info_buf);
+    delete_buffer(dbg_buf);
+    delete_buffer(tree_image_info_buf);
+    delete_buffer(stripes_results_buf);
+    delete_buffer(stripes_info_buf);
 }
 
 void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)

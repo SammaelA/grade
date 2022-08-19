@@ -10,7 +10,7 @@ using glm::mat4;
 
 ImpostorRenderer::~ImpostorRenderer()
 {
-    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+    #define DELBUF(a) if (a) { delete_buffer((a)); a = 0;}
 
     DELBUF(slicesBuffer);
     DELBUF(impostorsDataBuffer);
@@ -107,10 +107,10 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
         imp_data_buffer.push_back(dat);
         it++;
     }
-    glGenBuffers(1, &impostorsDataBuffer);
+    impostorsDataBuffer = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, impostorsDataBuffer);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ImpostorData)*imp_data_buffer.size(), imp_data_buffer.data(), GL_STATIC_DRAW);
-    glGenBuffers(1, &slicesBuffer);
+    slicesBuffer = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slicesBuffer);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*s_verts.size(), s_verts.data(), GL_STATIC_DRAW);
 

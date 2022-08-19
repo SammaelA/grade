@@ -31,7 +31,7 @@ Texture load_reference(std::string name, int image_w, int image_h)
     PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
 
     GLuint fbo;
-    glGenFramebuffers(1, &fbo);
+    fbo = create_framebuffer();
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ref.texture, 0);
@@ -47,7 +47,7 @@ Texture load_reference(std::string name, int image_w, int image_h)
     ref_transform.render();
 
     textureManager.delete_tex(ref_raw);
-    glDeleteFramebuffers(1, &fbo);
+    delete_framebuffer(fbo);
     return ref;
 }
 

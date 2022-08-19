@@ -50,6 +50,8 @@ struct ClusteringContext
     virtual void clear() {    
         if (self_impostors_data)
             delete self_impostors_data;
+        if (self_impostors_raw_atlas)
+          delete self_impostors_raw_atlas;
     };
     virtual ~ClusteringContext()
     {

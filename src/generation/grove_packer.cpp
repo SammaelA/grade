@@ -593,17 +593,17 @@ void GrovePacker::add_trees_to_grove_internal(const GrovePackingParams &params, 
 
 
     current_clustering_step = ClusteringStep::TRUNKS;
-    pack_layer(*trunks_params, params, grove, trees_external, trees_count, packingLayersTrunks,
+    pack_layer(trunks_params, params, grove, trees_external, trees_count, packingLayersTrunks,
                0, 0, true, false, false, false);
 
     current_clustering_step = ClusteringStep::BRANCHES;
-    pack_layer(*branches_params, params, grove, trees_external, trees_count, packingLayersBranches,
+    pack_layer(branches_params, params, grove, trees_external, trees_count, packingLayersBranches,
                1, 1000, true, true, false, visualize_clusters);
     if (params.task & (GenerationTask::IMPOSTORS))
     {
       //TODO: support impostors
       current_clustering_step = ClusteringStep::TREES;
-      pack_layer(*trees_params, params, grove, trees_external, trees_count, packingLayersTrees,
+      pack_layer(trees_params, params, grove, trees_external, trees_count, packingLayersTrees,
                 0, 1000, false, false, true, false);
     }
     recreate_compressed_trees(grove);
@@ -719,15 +719,15 @@ void GrovePacker::init(const Block &packing_params_block, const std::vector<Tree
     Block *b;
     b = settings_block.get_block("trunks_params");
     if (b)
-        trunks_params = b;
+        trunks_params.copy(b);
     
     b = settings_block.get_block("branches_params");
     if (b)
-        branches_params = b;
+        branches_params.copy(b);
     
     b = settings_block.get_block("trees_params");
     if (b)
-        trees_params = b;
+        trees_params.copy(b);
 }
 
 void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, bool save_atlases, bool save_png, 
@@ -813,7 +813,7 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
     else
     {
         delete atl.woodAtlas;
-        atl.leavesAtlas = nullptr;
+        atl.woodAtlas = nullptr;
     }
 
     for (int i=0;i<unique_leaves_texs.size();i++)
@@ -975,11 +975,11 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
     // don't worry - creating of a clusterizer is fast, as it does not contain heavy data
     Clusterizer2 *cl = nullptr;
     if (layer_by_cpl_n[l_cl.x] == 0)
-      cl = get_clusterizer(*branches_params, cStrategy);
+      cl = get_clusterizer(branches_params, cStrategy);
     else if (layer_by_cpl_n[l_cl.x] == 1)
-      cl = get_clusterizer(*trunks_params, cStrategy);
+      cl = get_clusterizer(trunks_params, cStrategy);
     else
-      cl = get_clusterizer(*trees_params, cStrategy);
+      cl = get_clusterizer(trees_params, cStrategy);
 
     //if we removed all instances of this branch, we can delete it
     if (models_to_delete[i])
@@ -1048,4 +1048,53 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
     logerr("removed %d instanced branches and %d clusters", removed_ib, removed_cl);
   //recalculate tree structures as they contain positions of instances that may change
   recreate_compressed_trees(grove);
+}
+
+void GrovePacker::clear()
+{
+  originalBranches.branches.clear();
+  originalLeaves.leaves.clear();
+
+  std::vector<ClusterPackingLayer *> cpls;
+  std::vector<int> layer_by_cpl_n;
+  for (auto &cpl : packingLayersBranches)
+  {
+    layer_by_cpl_n.push_back(0);
+    cpls.push_back(&cpl);
+  }
+  for (auto &cpl : packingLayersTrunks)
+  {
+    layer_by_cpl_n.push_back(1);
+    cpls.push_back(&cpl);
+  }
+  for (auto &cpl : packingLayersTrees)
+  {
+    layer_by_cpl_n.push_back(2);
+    cpls.push_back(&cpl);
+  }
+
+  for (int i=0;i<layer_by_cpl_n.size();i++)
+  {
+    int l = layer_by_cpl_n[i];
+    Clusterizer2 *cl = nullptr;
+    if (layer_by_cpl_n[l] == 0)
+      cl = get_clusterizer(branches_params, cStrategy);
+    else if (layer_by_cpl_n[l] == 1)
+      cl = get_clusterizer(trunks_params, cStrategy);
+    else
+      cl = get_clusterizer(trees_params, cStrategy);
+    for (auto &cluster : cpls[i]->clusters)
+    {
+      for (BranchClusteringData *cd : cluster.ACDA.clustering_data)
+      {
+        if (ctx && cd)
+          cl->clear_branch_data(cd, ctx);
+      }
+    }
+    delete cl;
+  }  
+
+  packingLayersBranches.clear();
+  packingLayersTrees.clear();
+  packingLayersTrunks.clear();
 }

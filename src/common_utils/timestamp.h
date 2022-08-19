@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
-#include "GL/glew.h"
+#include "tinyEngine/resources.h"
 
 class Timestamp
 {
@@ -23,5 +23,5 @@ private:
     static constexpr int debug_time = 100;
     bool need_debug = false;
     uint64_t ticks = 0;
-    std::map<std::string, Stamp> TS;
+    std::map<std::string, Stamp> TS = {};
 };

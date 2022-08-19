@@ -254,43 +254,43 @@ types(_types)
             instances[i].center_self.w = -1;
         }
     }
-    glGenBuffers(1, &lods_buf);
+    lods_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lods_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LodData)*lods.size(), lods.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &types_buf);
+    types_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, types_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TypeData)*types.size(), types.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &instances_buf);
+    instances_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, instances_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(InstanceData)*instances.size(), instances.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &models_buf);
+    models_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, models_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ModelData)*models.size(), models.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &cur_insts_buf);
+    cur_insts_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, cur_insts_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(currentInstancesData)*instances.size(), NULL, GL_STREAM_DRAW);
 
-    glGenBuffers(1, &cur_models_buf);
+    cur_models_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, cur_models_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(currentModelsData)*models.size(), NULL, GL_STREAM_DRAW);
 
-    glGenBuffers(1, &draw_indirect_buffer);
+    draw_indirect_buffer = create_buffer();
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, draw_indirect_buffer);
 	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(DrawElementsIndirectCommand)*models.size(), NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0); // unbind
 
-    glGenBuffers(1, &cur_types_buf);
+    cur_types_buf = create_buffer();
 	glBindBuffer(GL_PARAMETER_BUFFER_ARB, cur_types_buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, cur_types_buf);
 	glBufferData(GL_PARAMETER_BUFFER_ARB, sizeof(currentTypesData)*types.size(), NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_PARAMETER_BUFFER_ARB, 0); // unbind
 
-    glGenBuffers(1, &cells_buf);
+    cells_buf = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, cells_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CellInfo)*(cellsInfo.x_cells*cellsInfo.y_cells), NULL, GL_STREAM_DRAW);
 
@@ -390,7 +390,7 @@ GroveRenderer::~GroveRenderer()
             delete LODs[i].imp_rend;
     }
 
-    #define DELBUF(a) if (a) { glDeleteBuffers(1, &(a)); a = 0;}
+    #define DELBUF(a) if (a) { delete_buffer((a)); a = 0;}
 
     DELBUF(lods_buf);
     DELBUF(instances_buf);
@@ -455,7 +455,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
                           (length(camera.up - prev_camera.up) > 1e-4);
     if (true || frames<10 || (frames % 2 == 0 && camera_changed))
     {
-        ts.start("cellsCompute");
+        //ts.start("cellsCompute");
         cellsCompute.use();
         cellsCompute.uniform("count", (uint)types_descs.size());
         cellsCompute.uniform("grid_sizes", glm::vec2(cellsInfo.x_size,cellsInfo.y_size));
@@ -471,14 +471,14 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
 
 
         glDispatchCompute(1, 1, 1);
-        ts.end("cellsCompute");
+        //ts.end("cellsCompute");
         
-        ts.start("flushCompute");
+        //ts.start("flushCompute");
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
         
-        ts.end("flushCompute");
+        //ts.end("flushCompute");
         
-        ts.start("lodCompute");
+        //ts.start("lodCompute");
         lodCompute.use();
         lodCompute.uniform("lods_count", (uint)LODs.size());
         lodCompute.uniform("camera_pos", camera_pos);
@@ -500,16 +500,16 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
         
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
         
-        ts.end("lodCompute");
+        //ts.end("lodCompute");
         prev_camera = camera;
     }
     std::chrono::steady_clock::time_point tt1 = std::chrono::steady_clock::now();
-    ts.start("bind");
+    //ts.start("bind");
     glBindVertexArray(base_container->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, base_container->ibo);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
     glBindBuffer(GL_PARAMETER_BUFFER_ARB, cur_types_buf);
-    ts.end("bind");
+    ////ts.end("bind");
     std::chrono::steady_clock::time_point tt2 = std::chrono::steady_clock::now();
     glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
 
@@ -554,7 +554,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
         rend_lod(type);
       }
     }
-    ts.resolve();
+    //ts.resolve();
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     frames++;
 }

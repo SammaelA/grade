@@ -6,7 +6,7 @@
 #include "../third_party/imgui/imgui_impl_sdl.h"
 #include "../third_party/imgui/imgui_impl_opengl3.h"
 
-#include <GL/glew.h>                                //Rendering Dependencies
+#include "tinyEngine/resources.h"                                //Rendering Dependencies
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>

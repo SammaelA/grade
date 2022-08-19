@@ -287,7 +287,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       }
       break;
     case GC_CLEAR_SCENE:
-        genCtx = SceneGenerationContext();
+        genCtx.clear();
         genCtx.inited = false;
       break;
     case GC_INIT_SCENE:

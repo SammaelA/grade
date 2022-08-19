@@ -60,11 +60,11 @@ protected:
     void set_safe(int x, int y, float val);
     void add(int x, int y, float val);
     void add_safe(int x, int y, float val);
-    int w, h;
+    int w = 0, h = 0;
     float min_val = 1e10, max_val = -1e10;
-    glm::vec3 pos;
-    glm::vec2 size;
+    glm::vec3 pos = glm::vec3(0,0,0);
+    glm::vec2 size = glm::vec2(0,0);
     float cell_size = 1;
     float *data = nullptr;
-    float base_val;
+    float base_val = 0;
 };

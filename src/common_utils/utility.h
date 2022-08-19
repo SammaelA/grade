@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <string>
 #include <map>
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <boost/preprocessor.hpp>
 #include <chrono>
 

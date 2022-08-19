@@ -1,5 +1,5 @@
 #pragma once
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -65,13 +65,12 @@ public:
   }
   Model()
   {
-    glGenVertexArrays(1, &vao);
+    vao = create_vertex_array();
     glBindVertexArray(vao);
-    glGenBuffers(1, &ibo);  //Additional Index Buffer
+    ibo = create_buffer();
     for(int i = 0; i < 3; i++)//positions, normals, colors
     {
-      GLuint nvbo;
-      glGenBuffers(1, &nvbo);
+      GLuint nvbo = create_buffer();
       vbo.push_back(nvbo);
     }
   }
@@ -79,10 +78,10 @@ public:
   ~Model()
   {
     glDisableVertexAttribArray(vao);
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &ibo);
+    delete_vertex_array(vao);
+    delete_buffer(ibo);
     for (auto vb : vbo)
-      glDeleteBuffers(1, &vb);
+      delete_buffer(vb);
   }
 
   void update()

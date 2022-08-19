@@ -7,7 +7,7 @@ bool RenderTarget::create(int w, int h)
     height = h;
     float borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    glGenFramebuffers(1, &frBuffer);
+    frBuffer = create_framebuffer();
 
     tex = textureManager.create_texture(width, height, texFmt, 1);
     glBindTexture(GL_TEXTURE_2D, tex.texture);
@@ -39,5 +39,5 @@ void RenderTarget::target()
 RenderTarget::~RenderTarget()
 {
   textureManager.delete_tex(tex);
-  glDeleteFramebuffers(1, &frBuffer);
+  delete_framebuffer(frBuffer);
 }

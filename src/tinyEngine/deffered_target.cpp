@@ -7,7 +7,7 @@ bool DefferedTarget::create(int w, int h)
     height = h;
     float borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    glGenFramebuffers(1, &frBuffer);
+    frBuffer = create_framebuffer();
 
     depthTex = textureManager.create_texture(width, height, GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
     glBindTexture(GL_TEXTURE_2D, depthTex.texture);
@@ -83,5 +83,5 @@ DefferedTarget::~DefferedTarget()
   textureManager.delete_tex(normalsTex);
   textureManager.delete_tex(viewPosTex);
   textureManager.delete_tex(worldPosTex);
-  glDeleteFramebuffers(1, &frBuffer);
+  delete_framebuffer(frBuffer);
 }

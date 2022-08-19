@@ -8,7 +8,7 @@
 #include "../third_party/imgui/imgui.h"                    //Interface Dependencies
 #include "../third_party/imgui/imgui_impl_sdl.h"
 #include "../third_party/imgui/imgui_impl_opengl3.h"
-#include <GL/glew.h>    
+#include "tinyEngine/resources.h"    
 
 class View{
   using Handle = std::function<void()>;

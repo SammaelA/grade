@@ -1,5 +1,5 @@
 #pragma once
-#include <GL/glew.h>
+#include "tinyEngine/resources.h"
 #include <string>
 #include <initializer_list>
 #include <unordered_map>

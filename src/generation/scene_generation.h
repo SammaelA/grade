@@ -31,7 +31,8 @@ namespace scene_gen
 struct SceneGenerationContext
 {
   SceneGenerationContext() : objects_bvh(false){};
-  SceneGenerationContext &operator=(SceneGenerationContext &&ctx) = default;
+  ~SceneGenerationContext() {if (inited) clear();}
+  SceneGenerationContext &operator=(SceneGenerationContext &&ctx) = delete;
   Scene scene;
   Block settings;
   BVH objects_bvh;
@@ -48,6 +49,19 @@ struct SceneGenerationContext
 
   int base_biome_id = 0;
   bool inited = false;
+
+  void clear()
+  {
+    scene.clear();
+    settings = Block();
+    objects_bvh.clear();
+    biome_map = BiomeMap();
+    global_mask = GroveMask();
+    packer.clear();
+    cells.clear();
+    trees_patches.clear();
+    grass_patches.clear();
+  }
 };
 struct Cell
 {
@@ -87,4 +101,11 @@ struct Cell
       logerr("only copying of empty cells is allowed");
     }
   };
+  ~Cell()
+  {
+    if (voxels_small)
+      delete voxels_small;
+    if (planar_occlusion)
+      delete planar_occlusion; 
+  }
 };
