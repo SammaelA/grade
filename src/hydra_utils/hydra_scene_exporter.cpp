@@ -57,74 +57,78 @@ void sig_handler(int signo)
 #endif
 };
 
-bool HydraSceneExporter::export_internal1(std::string directory, Scene &scene, Block &export_settings)
+namespace hydra
 {
-  hrInfoCallback(&h_inter::InfoCallBack);
-
-  hrErrorCallerPlace(L"main");  // for debug needs only
-
-  atexit(&h_inter::destroy);                           // if application will terminated you have to call hrSceneLibraryClose to free all connections with hydra.exe
-#if defined WIN32
-  SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
-  wchar_t NPath[512];
-  GetCurrentDirectoryW(512, NPath);
-#ifdef NEED_DIR_CHANGE
-  SetCurrentDirectoryW(L"../../main");
-#endif
-  std::wcout << L"[main]: curr_dir = " << NPath << std::endl;
-#else
-  std::string workingDir = "dependencies/Hydra/HydraAPI/main";
-  if(chdir(workingDir.c_str()) != 0)
-    std::cout << "chdir failed: " << workingDir.c_str() << std::endl;
-
-  char cwd[1024];
-  if (getcwd(cwd, sizeof(cwd)) != nullptr)
-    std::cout << "[main]: curr_dir = " << cwd <<std::endl;
-  else
-    std::cout << "getcwd() error" <<std::endl;
-  
+  bool export_internal1(std::string directory, Scene &scene, Block &export_settings)
   {
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = h_inter::sig_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = SA_RESETHAND;
-    sigaction(SIGINT,  &sigIntHandler, NULL);
-    sigaction(SIGSTOP, &sigIntHandler, NULL);
-    sigaction(SIGABRT, &sigIntHandler, NULL);
-    sigaction(SIGILL,  &sigIntHandler, NULL);
-    sigaction(SIGTERM, &sigIntHandler, NULL);
-    sigaction(SIGSEGV, &sigIntHandler, NULL);
-    sigaction(SIGFPE,  &sigIntHandler, NULL);
-  }
-#endif
-  
-  std::cout << "sizeof(size_t) = " << sizeof(size_t) <<std::endl;
-  
-  try
-  {
-    export_internal2(directory, scene, export_settings);
-  }
-  catch (std::runtime_error& e)
-  {
-    std::cout << "std::runtime_error: " << e.what() << std::endl;
-  }
-  catch (std::exception &e)
-  {
-    std::cout << "unknown exception" << e.what() << std::endl;
+    hrInfoCallback(&h_inter::InfoCallBack);
+
+    hrErrorCallerPlace(L"main");  // for debug needs only
+
+    atexit(&h_inter::destroy);                           // if application will terminated you have to call hrSceneLibraryClose to free all connections with hydra.exe
+  #if defined WIN32
+    SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
+    wchar_t NPath[512];
+    GetCurrentDirectoryW(512, NPath);
+  #ifdef NEED_DIR_CHANGE
+    SetCurrentDirectoryW(L"../../main");
+  #endif
+    std::wcout << L"[main]: curr_dir = " << NPath << std::endl;
+  #else
+    std::string workingDir = "dependencies/Hydra/HydraAPI/main";
+    if(chdir(workingDir.c_str()) != 0)
+      std::cout << "chdir failed: " << workingDir.c_str() << std::endl;
+
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+      std::cout << "[main]: curr_dir = " << cwd <<std::endl;
+    else
+      std::cout << "getcwd() error" <<std::endl;
+    
+    {
+      struct sigaction sigIntHandler;
+      sigIntHandler.sa_handler = h_inter::sig_handler;
+      sigemptyset(&sigIntHandler.sa_mask);
+      sigIntHandler.sa_flags = SA_RESETHAND;
+      sigaction(SIGINT,  &sigIntHandler, NULL);
+      sigaction(SIGSTOP, &sigIntHandler, NULL);
+      sigaction(SIGABRT, &sigIntHandler, NULL);
+      sigaction(SIGILL,  &sigIntHandler, NULL);
+      sigaction(SIGTERM, &sigIntHandler, NULL);
+      sigaction(SIGSEGV, &sigIntHandler, NULL);
+      sigaction(SIGFPE,  &sigIntHandler, NULL);
+    }
+  #endif
+    
+    std::cout << "sizeof(size_t) = " << sizeof(size_t) <<std::endl;
+    
+    try
+    {
+      export_internal2(directory, scene, export_settings);
+    }
+    catch (std::runtime_error& e)
+    {
+      std::cout << "std::runtime_error: " << e.what() << std::endl;
+    }
+    catch (std::exception &e)
+    {
+      std::cout << "unknown exception" << e.what() << std::endl;
+    }
+
+    hrErrorCallerPlace(L"main"); // for debug needs only
+
+    hrSceneLibraryClose();
+    
+    glfwTerminate();
+    
+    return 0;
   }
 
-  hrErrorCallerPlace(L"main"); // for debug needs only
-
-  hrSceneLibraryClose();
+  bool export_scene(std::string directory, Scene &scene, Block &export_settings)
+  {
+      export_internal1(directory, scene, export_settings);
+      debug("Scene successfully exported to hydra_scene/%s\n", directory.c_str());
+      return true;
+  }
   
-  glfwTerminate();
-  
-  return 0;
-}
-
-bool HydraSceneExporter::export_scene(std::string directory, Scene &scene, Block &export_settings)
-{
-    export_internal1(directory, scene, export_settings);
-    debug("Scene successfully exported to hydra_scene/%s\n", directory.c_str());
-    return true;
 }

@@ -2,6 +2,7 @@
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
 #include "tinyEngine/TinyEngine.h"
+#include "hydra_utils/hydra_scene_exporter.h"
 #include <chrono>
 #include <set>
 
@@ -265,6 +266,12 @@ void InputCmdExecutor::execute(int max_cmd_count)
       }
       genCmdBuffer.push(GC_REMOVE_GRASS_IN_CELLS, cb);
       need_update_grass = true;
+    }
+      break;
+    case IC_EXPORT_SCENE_TO_HYDRA:
+    {
+      hydra::export_scene("hydra_scene", (Scene &)genCtx.scene, cmd.args);
+      exit(0);
     }
       break;
     default:

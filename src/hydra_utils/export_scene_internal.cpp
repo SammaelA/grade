@@ -22,7 +22,9 @@
 namespace hlm = LiteMath;
 using pugi::xml_node;
 extern GLFWwindow* g_window;
-
+void initGLIfNeeded(int a_width, int a_height, const char* name);
+namespace hydra
+{
   static inline void WriteMatrix4x4(pugi::xml_node a_node, const wchar_t* a_attrib_name, float a_value[16])
   {
     std::wstringstream outStream;
@@ -34,7 +36,6 @@ extern GLFWwindow* g_window;
     a_node.attribute(a_attrib_name).set_value(outStream.str().c_str());
   }
 
-void initGLIfNeeded(int a_width, int a_height, const char* name);
 void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &branch, 
                            int up_to_level, bool need_leaves, int wood_mat_id, int leaves_mat_id)
 {
@@ -128,7 +129,7 @@ void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
   for (int i=0;i<mesh.colors.size()/4;i++)
   {
     tc_2f[2*i] = mesh.colors[4*i];
-    tc_2f[2*i+1] = mesh.colors[4*i+1];
+    tc_2f[2*i+1] = 1 - mesh.colors[4*i+1];
   } 
   auto ind_ui = std::vector<int>(mesh.indices.size(), 0);
   memcpy(ind_ui.data(), mesh.indices.data(), mesh.indices.size()*sizeof(int));
@@ -150,10 +151,10 @@ void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
   hrMeshClose(hr_mesh);
 }
 
-bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, Block &export_settings)
+bool export_internal2(std::string directory, Scene &scene, Block &export_settings)
 {
-  const int DEMO_WIDTH  = 2048;
-  const int DEMO_HEIGHT = 2048;
+  const int DEMO_WIDTH  = export_settings.get_int("image_width", 512);
+  const int DEMO_HEIGHT = export_settings.get_int("image_height", 512);
   bool need_terrain = export_settings.get_bool("need_terrain",true);
   bool white_terrain = export_settings.get_bool("white_terrain", false);
   hrErrorCallerPlace(L"demo_02_load_obj");
@@ -302,9 +303,10 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     {
       if (im.instances.empty())
         continue;
-      
-      std::wstring mat_name = L"im_mat_" + std::wstring(im.name.begin(), im.name.end());
-      std::wstring mat_dir = base_dir_w + std::wstring(im.tex.origin.begin(), im.tex.origin.end());
+      Texture &tex = im.model.materials[i].map_Ka;
+      std::wstring name = std::wstring(im.name.begin(), im.name.end()) + L"_" + std::to_wstring(i);
+      std::wstring mat_name = L"im_mat_" + name;
+      std::wstring mat_dir = base_dir_w + std::wstring(tex.origin.begin(), tex.origin.end());
 
       instancedModelsTextures.push_back(hrTexture2DCreateFromFile(mat_dir.c_str()));
 
@@ -326,8 +328,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
       hrMaterialClose(mat);
 
       instancedModelsTransforms.push_back(&(im.instances));
-      std::wstring name = L"branch" + std::wstring(im.name.begin(), im.name.end());
-      instancedModels.push_back(hrMeshCreate(name.c_str()));
+      std::wstring model_name = L"model_" + name;
+      instancedModels.push_back(hrMeshCreate(model_name.c_str()));
       HrMesh_from_mesh(instancedModels.back(), *(im.model.models[i]), mat.id);
     }
   }
@@ -465,6 +467,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   //
   glm::vec3 camera_pos = export_settings.get_vec3("camera_pos",glm::vec3(0,200,200));
   glm::vec3 camera_look_at = export_settings.get_vec3("camera_look_at",glm::vec3(0,0,0));
+  glm::vec3 camera_up = export_settings.get_vec3("camera_up", glm::vec3(0,1,0));
   HRCameraRef camRef = hrCameraCreate(L"my camera");
   
   hrCameraOpen(camRef, HR_WRITE_DISCARD);
@@ -475,8 +478,8 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     camNode.append_child(L"nearClipPlane").text().set(L"0.01");
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
-    camNode.append_child(L"up").text().set(L"0 1 0");
-    logerr("camera pos %f %f %f", camera_pos.x, camera_pos.y,camera_pos.z);
+    std::wstring camera_up_s = std::to_wstring(camera_up.x)+L" "+std::to_wstring(camera_up.y)+L" "+std::to_wstring(camera_up.z);
+    camNode.append_child(L"up").text().set(camera_up_s.c_str());
     std::wstring camera_pos_s = std::to_wstring(camera_pos.x)+L" "+std::to_wstring(camera_pos.y)+L" "+std::to_wstring(camera_pos.z);
     camNode.append_child(L"position").text().set(camera_pos_s.c_str());
     
@@ -506,7 +509,7 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
     
     node.append_child(L"trace_depth").text()      = 4;
     node.append_child(L"diff_trace_depth").text() = 3;
-    node.append_child(L"maxRaysPerPixel").text()  = 512;
+    node.append_child(L"maxRaysPerPixel").text()  = export_settings.get_int("max_rays_per_pixel", 64);
     node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   }
   hrRenderClose(renderRef);
@@ -617,3 +620,16 @@ bool HydraSceneExporter::export_internal2(std::string directory, Scene &scene, B
   return true;
 }
 
+void get_default_settings(Block &b)
+{
+  b.set_vec3("camera_pos", glm::vec3(0,200,200));
+  b.set_vec3("camera_look_at",glm::vec3(0,0,0));
+  b.set_vec3("camera_up", glm::vec3(0,1,0));
+  b.set_int("max_rays_per_pixel", 64);
+  b.set_int("image_width", 512);
+  b.set_int("image_height", 512);
+  b.set_string("demo_copy_dir","");
+  b.set_bool("need_terrain",true);
+  b.set_bool("white_terrain", false);
+}
+}

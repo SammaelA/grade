@@ -5,6 +5,7 @@
 #include "generation/metainfo_manager.h"
 #include "graphics_utils/modeling.h"
 #include "third_party/icons.h"
+#include "hydra_utils/hydra_scene_exporter.h"
 #include <map>
 
 char __input_buf[4096];
@@ -280,7 +281,8 @@ void GUI::render_main_toolbar()
   bool press_3 = ImGui::Button(ICON_FA_TREE);ImGui::SameLine();
   bool press_4 = ImGui::Button(ICON_FA_COMPUTER);ImGui::SameLine();
   bool press_5 = ImGui::Button(ICON_FA_DIAGRAM_PROJECT);ImGui::SameLine();
-  bool press_6 = ImGui::Button(ICON_FA_MOUNTAIN);
+  bool press_6 = ImGui::Button(ICON_FA_MOUNTAIN);ImGui::SameLine();
+  bool press_7 = ImGui::Button(ICON_FA_IMAGE);
   ImGui::PopStyleVar(2);
   ImGui::End();
   {
@@ -324,6 +326,13 @@ void GUI::render_main_toolbar()
       show = !show;
     if (show)
       render_biome_toolbar();    
+  }
+  {
+    static bool show = false;
+    if (press_7)
+      show = !show;
+    if (show)
+      render_hydra_toolbar();    
   }
   if (appCtx.active_cell_id >= 0)
     render_cell_info();
@@ -569,5 +578,32 @@ void GUI::render_tree_plant_info()
     prev_cur_item = cur_item;
     if (cur_item >= 0)
       appCtx.active_tree_type = types[cur_item];
+  }
+}
+
+void GUI::render_hydra_toolbar()
+{
+  static bool inited = false;
+  static Block settings;
+  if (!inited)
+  {
+    hydra::get_default_settings(settings);
+    inited = true;
+  }
+
+  settings.set_vec3("camera_pos", appCtx.camera.pos);
+  settings.set_vec3("camera_look_at",appCtx.camera.pos + appCtx.camera.front);
+  settings.set_vec3("camera_up", appCtx.camera.up);
+
+  blk_modification_interface(&settings, "hydra exporter settings");
+  bool exp = ImGui::Button("Export");
+  if (exp)
+  {
+    inputCmdBuffer.push(IC_EXPORT_SCENE_TO_HYDRA, settings);
+  }
+  {
+    appCtx.camera.pos = settings.get_vec3("camera_pos");
+    appCtx.camera.front = glm::normalize(settings.get_vec3("camera_look_at") - appCtx.camera.pos);
+    appCtx.camera.up = glm::normalize(settings.get_vec3("camera_up"));
   }
 }

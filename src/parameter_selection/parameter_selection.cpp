@@ -1293,7 +1293,6 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
         // hydra scene
         {
-            HydraSceneExporter exporter;
             Block export_settings;
             float sz = 0.5 * MAX(ref_tree.info.BCyl_sizes.y, ref_tree.info.BCyl_sizes.x);
             logerr("%f %f %f", sz, ref_tree.info.BCyl_sizes.x, ref_tree.info.BCyl_sizes.y);
@@ -1302,7 +1301,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             export_settings.add_bool("need_terrain", true);
             export_settings.add_bool("white_terrain", true);
             export_settings.add_string("demo_copy_dir", "saves/" + file_name + "_res");
-            exporter.export_scene("param_selection_scene", scene, export_settings);
+            hydra::export_scene("param_selection_scene", scene, export_settings);
         }
     }
 
