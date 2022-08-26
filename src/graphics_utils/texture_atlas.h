@@ -5,7 +5,6 @@
 #include "../tinyEngine/texture.h"
 #include "../tinyEngine/shader.h"
 #include "common_utils/bit_vector.h"
-#include "save_utils/saver.h"
 class TextureAtlas;
 enum Channel
 {
@@ -49,8 +48,6 @@ class TextureAtlas : public Countable
 public:
     friend class BillboardCloudRaw;
     friend class TextureAtlasRawData;
-    friend bool saver::save(FILE *f, TextureAtlas &t); 
-    friend bool saver::load(FILE *f, TextureAtlas &t); 
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
     TextureAtlas(int w, int h, int layers, int mip_levels = 5, bool need_normals = false);

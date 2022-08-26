@@ -7,7 +7,6 @@
 #include <algorithm>
 #include "core/body.h"
 #include <chrono>
-#include "save_utils/saver.h"
 #include "graphics_utils/impostor.h"
 #include "graphics_utils/terrain.h"
 #include "common_utils/field_2d.h"
@@ -1087,6 +1086,6 @@ void GrovePacker::clear()
   packingLayersTrees.clear();
   packingLayersTrunks.clear();
   ctx.clear();
-  
+
   ib_id_counter = 1;
 }

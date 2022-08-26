@@ -130,15 +130,15 @@ private:
     {
       ar & inited;
       ar & ctx;
-      //ar & packingLayersBranches;
-      //ar & packingLayersTrees;
+      ar & packingLayersBranches;
+      ar & packingLayersTrees;
       ar & packingLayersTrunks;
       ar & settings_block;
       ar & branches_params;
       ar & trees_params;
       ar & trunks_params;
-      //ar & originalLeaves;
-      //ar & originalBranches;
+      ar & originalLeaves;
+      ar & originalBranches;
       ar & cStrategy;
       ar & save_clusterizer;
       ar & clustering_base_level;

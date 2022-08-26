@@ -669,6 +669,7 @@ namespace scene_gen
     //to prevent this we should clamp occlusion to values >= 0
     for (int cid : modified_voxels)
     {
+      if (ctx.cells[cid].voxels_small)
       ctx.cells[cid].voxels_small->clamp_values(0);
     }
     ctx.packer.remove_trees(ctx.scene.grove, ids);

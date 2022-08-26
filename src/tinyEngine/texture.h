@@ -3,13 +3,10 @@
 #include <SDL2/SDL.h>
 #include <functional>
 #include "common_utils/utility.h"
-#include "save_utils/saver.h"
 class TextureManager;
 class Texture
 {
   friend class TextureManager;
-  friend bool saver::save(FILE *f, Texture &t);
-  friend bool saver::load(FILE *f, Texture &t);
   static constexpr GLuint INVALID_ID = ~0u;
 public:
   GLuint texture = INVALID_ID;  //Texture int (OpenGL: everything is an int!)
