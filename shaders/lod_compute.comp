@@ -106,7 +106,7 @@ void main()
     uint object_id = THREADS*gl_WorkGroupID.x + gl_LocalInvocationIndex;
     if (object_id >= objects_count)
         return;
-    object_id = objects_count - object_id;
+    object_id = objects_count - object_id - 1;
     uvec2 interval = modelData[object_id].interval;
     int k = int(modelData[object_id].LOD);
 
