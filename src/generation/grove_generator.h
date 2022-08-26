@@ -4,12 +4,26 @@
 
 struct GrovePrototype
 {
+    friend class boost::serialization::access;
+
     int trees_count;
     glm::vec2 pos;//pos of center
     glm::vec2 size;//size from center, BBox is [pos - (size.x,0,size.z)] - [pos + size]
     std::vector<std::pair<int,float>> possible_types;//type id and chance to create tree of that type
     std::vector<std::pair<int, glm::vec3>> preplanted_trees;
     GroveMask *biome_mask = nullptr;//should be deleted manually
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & trees_count;
+      ar & pos;
+      ar & size;
+      ar & possible_types;
+      ar & preplanted_trees;
+      ar & biome_mask;
+    }
 };
 class GroveGenerator
 {

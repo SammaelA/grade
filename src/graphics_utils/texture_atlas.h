@@ -53,7 +53,7 @@ public:
     friend bool saver::load(FILE *f, TextureAtlas &t); 
     TextureAtlas();
     TextureAtlas(const TextureAtlas &a);
-    TextureAtlas(int w, int h, int layers, int mip_levels = 5);
+    TextureAtlas(int w, int h, int layers, int mip_levels = 5, bool need_normals = false);
     ~TextureAtlas();
     void set_clear_color(glm::vec4 color)
     {
@@ -83,7 +83,7 @@ public:
     bool is_valid() const {return valid && (capacity() > 0);}
     std::vector<int> get_all_valid_slices_ids();
     void destroy();
-private:
+
     bool bind(int layer, int type);
     int new_layers_count();
     void increase_capacity_tex(Texture &t, int layers);

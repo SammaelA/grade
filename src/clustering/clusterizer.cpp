@@ -15,6 +15,7 @@
 
 using namespace glm;
 int cur_cluster_id = 0;
+ClusteringSerializationHelper *cur_ser_helper = nullptr;
 ClusterData::ClusterData()
 {
     id = cur_cluster_id;

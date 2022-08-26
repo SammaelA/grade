@@ -243,7 +243,15 @@ Texture TextureManager::create_texture_array(int w, int h, int layers, GLenum fo
   GLuint type = GL_TEXTURE_2D_ARRAY;
   glGenTextures(1, &texture);
   glBindTexture(type, texture);
-  glTextureStorage3D(texture, mip_levels, GL_RGBA8, w, h, layers);
+  glTexImage3D(type, 0, GL_RGBA, w, h, layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  int m_w = w/2;
+  int m_h = h/2;
+  for (int i=1;i<mip_levels;i++)
+  {
+    glTexImage3D(type, i, GL_RGBA, m_w, m_h, layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    m_w /= 2;
+    m_h /= 2;
+  }
   glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -251,7 +259,12 @@ Texture TextureManager::create_texture_array(int w, int h, int layers, GLenum fo
   glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
   glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
   glTexParameteri(type, GL_TEXTURE_BASE_LEVEL, 0);
-  glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+  glTexParameteri(type, GL_TEXTURE_MAX_LEVEL, mip_levels - 1);
+  if (mip_levels > 1)
+    glTexParameteri(type, GL_GENERATE_MIPMAP, GL_TRUE);
+  if (mip_levels > 1 && data)
+    glGenerateMipmap(type);
+  glBindTexture(type, 0);
   Texture t = Texture(texture, type, w, h, layers, current_textures_tag, mip_levels, format, origin_name);
   unnamed_array_textures.emplace(t.texture, t);
   return t;

@@ -9,7 +9,7 @@
 #include "generation/metainfo_manager.h"
 
 View Tiny::view;   //Window and Interface  (Requires Initialization)
-Event Tiny::event; //Event Handler
+Event *Tiny::event; //Event Handler
 Audio Tiny::audio; //Audio Processor       (Requires Initialization)
 TextureManager textureManager;
 MetainfoManager metainfoManager;
@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
     RenderCmdExecutor rce = RenderCmdExecutor(appContext, sceneGenerationContext);
     GUI gui = GUI(appContext, sceneGenerationContext);
     InputHandler inputHandler = InputHandler(appContext, sceneGenerationContext);
+    Event evt;
+    Tiny::event = &evt;
     if (argc >= 2)
     {
       std::string str(argv[1]);
@@ -52,12 +54,12 @@ int main(int argc, char *argv[])
         gui.read_from_console_nonblock();
     };
 
-    while(!Tiny::event.quit)
+    while(!evt.quit)
     {    
       if(Tiny::audio.enabled) 
         Tiny::audio.process();
-      Tiny::event.input();
-      inputHandler.handle_input(Tiny::event);
+      evt.input();
+      inputHandler.handle_input(evt);
       
       if(Tiny::view.enabled)
       {

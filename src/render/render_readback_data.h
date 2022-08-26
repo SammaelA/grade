@@ -1,7 +1,7 @@
 #pragma once
 struct RenderReadbackInputData
 {
-    glm::vec2 cursor_screen_pos;
+    glm::vec2 cursor_screen_pos = glm::vec2(0,0);
 };
 struct RenderReadbackData
 {

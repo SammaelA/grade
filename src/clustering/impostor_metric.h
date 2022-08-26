@@ -6,17 +6,30 @@
 
 struct BranchClusteringDataImpostor : public BranchClusteringData
 {
+    friend class boost::serialization::access;
+
     std::list<Impostor>::iterator self_impostor;
     virtual void clear() override;
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & boost::serialization::base_object<BranchClusteringData>(*this);
+      if (!Archive::is_loading::value)
+      {
+        int pos = cur_ser_helper->clust_metric_impostors.pos_by_it(self_impostor);
+        ar & pos;
+      }
+      else
+      {
+        int pos = -1;
+        ar & pos;
+        self_impostor = cur_ser_helper->clust_metric_impostors.it_by_pos(pos);
+      }
+    }
 };
 
-/*struct ImpostorClusteringContext : public ClusteringContext
-{
-    ImpostorsData *self_impostors_data = nullptr;
-    TextureAtlasRawData *self_impostors_raw_atlas = nullptr;
-    virtual void clear() override;
-    ~ImpostorClusteringContext() { clear(); }
-};*/
 struct DistData;
 class ImpostorClusteringHelper : public ClusteringHelper
 {

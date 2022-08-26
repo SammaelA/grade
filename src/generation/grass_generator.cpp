@@ -410,8 +410,6 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
         grass_packed.grass_instances.push_back(std::pair<int, std::vector<GrassInstanceData>>(tex_id,{}));
     }
     grass_packed.grass_textures.gen_mipmaps();
-    textureManager.save_png(grass_packed.grass_textures.tex(0),"grass_atlas");
-
 
     PostFx copy_alpha = PostFx("alpha_split_alpha.fs");
     TextureAtlas atl_alpha = TextureAtlas(grass_tex_size.x,grass_tex_size.y*used_grass_types.size(),1);
@@ -425,7 +423,6 @@ void GrassGenerator::pack_all_grass(GrassPacked &grass_packed, Heightmap &h)
         copy_alpha.render();
     }
     atl_alpha.gen_mipmaps();
-    textureManager.save_png(atl_alpha.tex(0),"grass_atlas_alpha");
 
 
     int in_cnt = 0;

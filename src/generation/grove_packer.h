@@ -20,18 +20,51 @@
 class Heightmap;
 struct ClusterAdditionalData
 {
-    std::list<InstancedBranch>::iterator instanced_branch;
-    std::vector<std::list<BillboardData>::iterator> small_billboards;
-    std::vector<std::list<BillboardData>::iterator> large_billboards;
-    std::list<Impostor>::iterator impostor;
+    friend class boost::serialization::access;
+
+    std::list<InstancedBranch>::iterator instanced_branch;//points in grove.instancedBranches list
+
+    std::vector<std::list<BillboardData>::iterator> small_billboards;//unused right now
+    std::vector<std::list<BillboardData>::iterator> large_billboards;//unused right now
+    std::list<Impostor>::iterator impostor;//unused right now
     bool is_presented = false;
     bool has_instanced_branch = false;
     bool has_impostor = false;
+
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      if (!Archive::is_loading::value)
+      {
+        int pos = cur_ser_helper->instanced_branches.pos_by_it(instanced_branch);
+        ar & pos;
+      }
+      else
+      {
+        int pos = -1;
+        ar & pos;
+        instanced_branch = cur_ser_helper->instanced_branches.it_by_pos(pos);
+      }
+      ar & is_presented;
+      ar & has_instanced_branch;
+      ar & has_impostor;
+    }
 };
 struct ClusterPackingLayer
 {
+    friend class boost::serialization::access;
+
     std::vector<ClusterData> clusters;
     std::vector<ClusterAdditionalData> additional_data;
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & clusters;
+      ar & additional_data;
+    }
 };
 struct GrovePackingParams
 {
@@ -46,22 +79,20 @@ struct GrovePackingParams
 class GrovePacker
 {
 public:
+    friend class boost::serialization::access;
+
     void add_trees_to_grove(const GrovePackingParams &params, GrovePacked &grove, ::Tree *trees_external, int trees_count,
                             bool visualize_clusters = false, bool save_cluster_data = false);
     void remove_trees(GrovePacked &grove, std::vector<int> &ids);
     void init(const Block &packing_params_block, const std::vector<TreeTypeData> &types);
     void prepare_grove_atlas(GrovePacked &grove, int tex_x, int tex_y, bool save_atlases, bool save_png, 
                              bool alpha_tex_needed);
+    void post_serialization_recover(GrovePacked &grove);
     void clear();
     ~GrovePacker() {clear();}
     GrovePacker() = default;
-    explicit GrovePacker(bool shared_ctx);
-    GrovePacker& operator=(GrovePacker&&)
-    {
-      clear();
-    }
+    GrovePacker& operator=(GrovePacker&&) = delete;
     ClusteringStrategy get_clustering_strategy() { return cStrategy; }
-    std::vector<FullClusteringData *> saved_clustering_data;
     static bool is_valid_tree(::Tree &t);
 protected:
     static void recreate_compressed_trees(GrovePacked &grove);
@@ -74,31 +105,47 @@ protected:
 
     void recalculate_nodes(ClusterData &cl);
     void transform_by_nodes(ClusterData &cl);
+    std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePacked &grove, int lvl_from, int lvl_to);
+
     std::vector<ClusterPackingLayer> packingLayersBranches = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrunks = {ClusterPackingLayer()};
     std::vector<ClusterPackingLayer> packingLayersTrees = {ClusterPackingLayer()};
-
     bool inited = false;
-    ClusteringContext *ctx = nullptr;
-    ClusteringContext self_ctx;
-    Block dummy_block;
+    ClusteringContext ctx;
     Block settings_block;
     Block trunks_params;
     Block branches_params;
     Block trees_params;
-    std::vector<TreeTypeData> types;
     BranchHeap originalBranches;
     LeafHeap originalLeaves;
     ClusteringStrategy cStrategy = ClusteringStrategy::Merge;
     bool save_clusterizer = false;
-    bool shared_context = false;
     int clustering_base_level = 0;
-
-    struct Node
+    std::map<int, std::vector<glm::vec3> > trees_nodes;//for each tree in grove it represents joints of current instance
+                                                       //for this tree
+    int ib_id_counter = 1;
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
     {
-        glm::vec3 position;
-    };
+      ar & inited;
+      ar & ctx;
+      //ar & packingLayersBranches;
+      //ar & packingLayersTrees;
+      ar & packingLayersTrunks;
+      ar & settings_block;
+      ar & branches_params;
+      ar & trees_params;
+      ar & trunks_params;
+      //ar & originalLeaves;
+      //ar & originalBranches;
+      ar & cStrategy;
+      ar & save_clusterizer;
+      ar & clustering_base_level;
+      ar & trees_nodes;
 
-    std::map<int, std::vector<Node> > trees_nodes;//for each tree in grove it represents joints of current instance
-                                                  //for this tree
+      //we need to save and restore this global id counters to prevent id collision
+      ar & ib_id_counter;
+      ar & cur_cluster_id;
+    }
 };

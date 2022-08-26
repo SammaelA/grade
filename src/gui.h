@@ -12,6 +12,7 @@ public:
   void render_model_creation_info();
   void render_biome_toolbar();
   void render_hydra_toolbar();
+  bool render_save_settings();
   void text_input();
   void render_parameter_selection_menu();
   void blk_modification_interface(Block *b, const std::string &title);

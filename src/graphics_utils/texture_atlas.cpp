@@ -48,10 +48,11 @@ normalTex(atlas.normalTex)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels) :
+TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels, bool need_normals) :
                            Countable(1),
                            colorTex(textureManager.create_texture_array(w, h, l, GL_RGBA8, mip_levels)),
-                           normalTex(textureManager.create_texture_array(w, h,l, GL_RGBA8, mip_levels)),
+                           normalTex(need_normals ? textureManager.create_texture_array(w, h,l, GL_RGBA8, mip_levels) : 
+                                                    Texture()),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
@@ -286,7 +287,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
         }
         glBindTexture(tex(k).type, tex(k).texture);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1000);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, tex(k).get_mip_levels());
     }
 
     debugl(10,"generate mipmaps end\n");

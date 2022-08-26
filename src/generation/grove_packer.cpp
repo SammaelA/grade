@@ -21,16 +21,13 @@
 #include "scene_generator_helper.h"
 #include <set>
 
-GrovePacker::GrovePacker(bool shared_ctx)
-{
-    shared_context = shared_ctx;
-}
-
 void pack_branch_recursively(::Branch *b, GrovePacked &grove, std::vector<unsigned> &ids, int lvl_from, int lvl_to);
-std::list<InstancedBranch>::iterator pack_cluster(ClusterData &cluster, GrovePacked &grove, int lvl_from, int lvl_to)
+std::list<InstancedBranch>::iterator GrovePacker::pack_cluster(ClusterData &cluster, GrovePacked &grove, 
+                                                               int lvl_from, int lvl_to)
 {
     grove.instancedBranches.push_back(InstancedBranch());
     grove.instancedBranches.back().IDA = cluster.IDA;
+    grove.instancedBranches.back().id = ib_id_counter++;
     std::vector<unsigned> &ids = grove.instancedBranches.back().branches;
     ::Branch *base = cluster.base;
     pack_branch_recursively(base, grove, ids, lvl_from, lvl_to);
@@ -154,17 +151,13 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
     /* && cStrategy == ClusteringStrategy::Merge*/
     if ((task & (GenerationTask::CLUSTERIZE)))
     {
-        cl->get_base_clusters(settings, trees_external, trees_count, layer_from, packingLayers[clustering_base_level].clusters, ctx, true);
-        if (save_clusterizer)
-        {
-            saved_clustering_data.push_back(cl->get_full_data());
-        }
+        cl->get_base_clusters(settings, trees_external, trees_count, layer_from, packingLayers[clustering_base_level].clusters, &ctx, true);
     }
     else
     {
         //just add base clusters to zero level cluster list
         cl->get_base_clusters(settings, trees_external, trees_count, layer_from, packingLayers[clustering_base_level].clusters, 
-                              ctx, false);
+                              &ctx, false);
     }
 
     //we do not modify previously existed clusters on this step. Only add some new
@@ -194,7 +187,7 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
                 BitVector remains;
                 remains.resize(prev_size, false);
                 int old_size = packingLayers[i + 1].clusters.size();
-                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, ctx,
+                cl->clusterize(settings, packingLayers[i].clusters, packingLayers[i + 1].clusters, &ctx,
                                save_clusterizer, visualize_clusters);
                 int new_size = packingLayers[i + 1].clusters.size();
 
@@ -267,9 +260,9 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
         if (bill && (task & (GenerationTask::BILLBOARDS)))
         {
             BillboardCloudRaw cloud;
-            cloud.prepare(ULTRALOW, layer_from, packingLayers[info.layer].clusters[info.pos], ctx->types,
+            cloud.prepare(ULTRALOW, layer_from, packingLayers[info.layer].clusters[info.pos], ctx.types,
                           &grove.clouds[2], packingLayers[info.layer].additional_data[info.pos].large_billboards);
-            cloud.prepare(ULTRALOW, layer_from + 1, packingLayers[info.layer].clusters[info.pos], ctx->types,
+            cloud.prepare(ULTRALOW, layer_from + 1, packingLayers[info.layer].clusters[info.pos], ctx.types,
                           &grove.clouds[3], packingLayers[info.layer].additional_data[info.pos].small_billboards);
         }
         if (imp && (task & (GenerationTask::IMPOSTOR_FULL_GROVE)))
@@ -281,7 +274,7 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
           packingLayers[info.layer].additional_data[info.pos].has_impostor = true;
             ImpostorBaker ib;
             ib.prepare(params.impostor_generation_params, layer_from, packingLayers[info.layer].clusters[info.pos], 
-                       ctx->types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostor,
+                       ctx.types, &(grove.impostors[1]), packingLayers[info.layer].additional_data[info.pos].impostor,
                     new_clusters.size());
         }
 
@@ -310,9 +303,9 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
             to_a.large_billboards = from_a.large_billboards;
             to_a.small_billboards = from_a.small_billboards;
 
-            cloud.extend(ULTRALOW, layer_from, packingLayers[info.to.layer].clusters[info.to.pos], ctx->types,
+            cloud.extend(ULTRALOW, layer_from, packingLayers[info.to.layer].clusters[info.to.pos], ctx.types,
                          &grove.clouds[2], to_a.large_billboards);
-            cloud.extend(ULTRALOW, layer_from + 1, packingLayers[info.to.layer].clusters[info.to.pos], ctx->types,
+            cloud.extend(ULTRALOW, layer_from + 1, packingLayers[info.to.layer].clusters[info.to.pos], ctx.types,
                          &grove.clouds[3], to_a.small_billboards);
 
             packingLayers[info.to.layer].additional_data[info.to.pos].is_presented = true;
@@ -455,7 +448,7 @@ void GrovePacker::transform_by_nodes(ClusterData &cl)
         {
             for (auto &node : it->second)
             {
-                glm::vec3 dist = node.position - pos;
+                glm::vec3 dist = node - pos;
                 float d = glm::dot(dist, dist);
                 if (d < min_dist)
                 {
@@ -481,12 +474,12 @@ void GrovePacker::add_trees_to_grove(const GrovePackingParams &params, GrovePack
         {
             bool status = prepare_directory(clusteringDebugInfo.dataset_name);
             if (status)
-                prepare_dataset(clusteringDebugInfo.dataset_name, ctx, packingLayersBranches);
+                prepare_dataset(clusteringDebugInfo.dataset_name, &ctx, packingLayersBranches);
             else
                 logerr("unable to create directory to save dataset. Exiting.");
         }
         if (clusteringDebugInfo.save_csv)
-            save_csv(clusteringDebugInfo.csv_file_name, ctx, packingLayersBranches);
+            save_csv(clusteringDebugInfo.csv_file_name, &ctx, packingLayersBranches);
     }
     else if (trees_count <= max_trees_in_patch)
     {
@@ -584,10 +577,10 @@ void GrovePacker::add_trees_to_grove_internal(const GrovePackingParams &params, 
 
     for (int i = 0; i < trees_count; i++)
     {
-        auto it = trees_nodes.emplace(trees_external[i].id,std::vector<Node>{});
+        auto it = trees_nodes.emplace(trees_external[i].id,std::vector<glm::vec3>{});
         for (Joint &j : trees_external[i].root->joints)
         {
-            it.first->second.push_back({j.pos});
+            it.first->second.push_back(j.pos);
         }
     }
 
@@ -711,11 +704,7 @@ void GrovePacker::init(const Block &packing_params_block, const std::vector<Tree
 {
     inited = true;
     settings_block.copy(&packing_params_block);
-        if (shared_context)
-        ctx = new ClusteringContext();
-    else    
-        ctx = &self_ctx;
-    ctx->types = types;
+    ctx.types = types;
     Block *b;
     b = settings_block.get_block("trunks_params");
     if (b)
@@ -997,8 +986,8 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
       //we still need to clear all clustering data from ACDA
       for (BranchClusteringData *cd : ACDA.clustering_data)
       {
-        if (ctx && cd)
-          cl->clear_branch_data(cd, ctx);
+        if (cd)
+          cl->clear_branch_data(cd, &ctx);
       }
     }
     else
@@ -1016,9 +1005,9 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
           it->IDA.type_ids.erase(it->IDA.type_ids.begin()+j);
 
           //remove instances from ACDA
-          if (ctx && ACDA.clustering_data[j])
+          if (ACDA.clustering_data[j])
           { 
-            cl->clear_branch_data(ACDA.clustering_data[j], ctx);
+            cl->clear_branch_data(ACDA.clustering_data[j], &ctx);
           }
           ACDA.clustering_data.erase(ACDA.clustering_data.begin()+j);
         }
@@ -1087,8 +1076,8 @@ void GrovePacker::clear()
     {
       for (BranchClusteringData *cd : cluster.ACDA.clustering_data)
       {
-        if (ctx && cd)
-          cl->clear_branch_data(cd, ctx);
+        if (cd)
+          cl->clear_branch_data(cd, &ctx);
       }
     }
     delete cl;
@@ -1097,4 +1086,7 @@ void GrovePacker::clear()
   packingLayersBranches.clear();
   packingLayersTrees.clear();
   packingLayersTrunks.clear();
+  ctx.clear();
+  
+  ib_id_counter = 1;
 }

@@ -23,8 +23,8 @@ public:
   Texture();
   Texture(const Texture &t);
   Texture &operator=(const Texture &t);
-  bool is_valid() {return texture != INVALID_ID && W > 1 && H > 1 && layers > 0;}
-  bool is_array() {return is_valid() && layers>1;}
+  bool is_valid() const {return texture != INVALID_ID && W > 1 && H > 1 && layers > 0;}
+  bool is_array() const {return is_valid() && layers>1;}
   int get_W() { return W; }
   int get_H() { return H; }
   int get_layers() { return layers; }

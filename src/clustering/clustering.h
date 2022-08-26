@@ -7,6 +7,12 @@
 #include "save_utils/blk.h"
 #include "common_utils/hash.h"
 #include "default_clustering_params.h"
+#include "generation/metainfo_manager.h"
+#include "clustering_serialization_helper.h"
+
+struct ClusteringSerializationHelper;
+extern ClusteringSerializationHelper *cur_ser_helper;
+extern int cur_cluster_id;
 
 struct BaseBranchClusteringData
 {
@@ -16,6 +22,8 @@ struct BaseBranchClusteringData
 };
 struct BranchClusteringData
 {
+    friend class boost::serialization::access;
+
     int base_cluster_id;
     int id;  
     unsigned short tree_type;
@@ -31,6 +39,19 @@ struct BranchClusteringData
         r_transform = base.r_transform;
         can_be_center = base.can_be_center;
     }
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & base_cluster_id;
+      ar & id;
+      ar & tree_type;
+      ar & transform;
+      ar & r_transform;
+      ar & can_be_center;
+      ar & sizes;
+    }
 };
 struct ClusteringContext;
 struct IntermediateClusteringData
@@ -44,18 +65,38 @@ struct IntermediateClusteringData
 };
 struct ClusteringContext
 {
+    friend class boost::serialization::access;
+
     std::vector<TreeTypeData> types = {};
     ImpostorsData *self_impostors_data = nullptr;
     TextureAtlasRawData *self_impostors_raw_atlas = nullptr;
     virtual void clear() {    
         if (self_impostors_data)
+        {
             delete self_impostors_data;
+            self_impostors_data = nullptr;
+        }
         if (self_impostors_raw_atlas)
+        {
           delete self_impostors_raw_atlas;
+          self_impostors_raw_atlas = nullptr;
+        }
     };
     virtual ~ClusteringContext()
     {
         clear();
+    }
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      if (Archive::is_loading::value)
+        types = metainfoManager.get_all_tree_types();
+      
+      ar & self_impostors_data;
+
+      if (cur_ser_helper && self_impostors_data)
+        cur_ser_helper->clust_metric_impostors.set_container(&(self_impostors_data->impostors));
     }
 };
 class ClusteringHelper
@@ -87,10 +128,21 @@ public:
 };
 struct AdditionalClusterDataArrays
 {
+  friend class boost::serialization::access;
+
   std::vector<BranchClusteringData *> clustering_data;
+
+private:
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & clustering_data;
+  }
 };
 struct ClusterData
-{
+{   
+    friend class boost::serialization::access;
+
     long id = -1;//cluster id
     int base_pos = 0;
     Branch *base = nullptr;
@@ -98,6 +150,16 @@ struct ClusterData
     AdditionalClusterDataArrays ACDA;
     bool is_valid();
     ClusterData();
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & id;
+      ar & base_pos;
+      ar & IDA;
+      ar & ACDA;
+    }
 };
 struct FullClusteringData
 {

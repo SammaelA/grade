@@ -3,14 +3,26 @@
 #include "common_utils/bit_vector.h"
 #include "billboard_cloud_data.h"
 #include "limits.h"
+#include "save_utils/serialization.h"
 
 struct BBox;
 struct PackedLeaf
 {
+    friend class boost::serialization::access;
+
     std::vector<glm::vec3> edges;
+
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & edges;
+    }
 };
 struct PackedJoint
 {
+    friend class boost::serialization::access;
+
     glm::vec3 pos;
     float r;
     PackedJoint() { r = 0; }
@@ -19,18 +31,42 @@ struct PackedJoint
         pos = _pos;
         r = _r;
     }
+
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & pos;
+      ar & r;
+    }
 };
 struct PackedBranch
 {
+    friend class boost::serialization::access;
+
     std::vector<PackedJoint> joints;
     std::vector<PackedLeaf> leaves;
     std::vector<std::vector<float>> r_mults;
     int level = 0;
     uint type_id = 0;
     glm::vec4 plane_coef;
+
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & joints;
+      ar & leaves;
+      ar & r_mults;
+      ar & level;
+      ar & type_id;
+      ar & plane_coef;
+    }
 };
 struct BranchCatalogue
 {
+    friend class boost::serialization::access;
+
     std::vector<std::vector<PackedBranch>> branches;
     BranchCatalogue(int levels);
 
@@ -47,13 +83,32 @@ private:
     std::vector<BitVector> occupied;
     std::vector<int> first_free;
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & branches;
+      ar & occupied;
+      ar & first_free;
+    }
 };
 
 struct InstancedBranch
 {
+  friend class boost::serialization::access;
+
     std::vector<unsigned> branches;
     InstanceDataArrays IDA;
     BBox bbox;
+    int id = -1;
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & branches;
+      ar & IDA;
+      ar & bbox;
+      ar & id;
+    }
 };
 
 struct CompressedTree
@@ -66,6 +121,8 @@ struct CompressedTree
   };
   struct Node
   {
+    friend class boost::serialization::access;
+
     Node() = default;
     Node(NodeType t, int mn, int in)
     {
@@ -77,15 +134,39 @@ struct CompressedTree
     int model_num = -1;
     int instance_num = -1;
     std::vector<Node> children;
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & type;
+      ar & model_num;
+      ar & instance_num;
+      ar & children;
+    }
   };
+
+  friend class boost::serialization::access;
 
   glm::vec3 pos;
   std::vector<Node> LOD_roots;  //root node for every LOD that this tree has
   AABB bbox;
   int global_id;
+
+private:
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & pos;
+    ar & LOD_roots;
+    ar & bbox;
+    ar & global_id;
+  }
 };
 struct GroveTexturesAtlas
 {
+    friend class boost::serialization::access;
+
     bool atlases_valid = false;
     bool maps_valid = false;
     TextureAtlas *woodAtlas = nullptr;
@@ -103,9 +184,23 @@ struct GroveTexturesAtlas
     }
     GroveTexturesAtlas& operator=(GroveTexturesAtlas &&s) = delete;
     ~GroveTexturesAtlas(){clear();}
+
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & atlases_valid;
+      ar & maps_valid;
+      ar & wood_tex_map;
+      ar & leaves_tex_map;
+      ar & woodAtlas;
+      ar & leavesAtlas;
+    }
 };
 struct GrovePacked
 {
+    friend class boost::serialization::access;
+
     BranchCatalogue instancedCatalogue;
     std::list<InstancedBranch> instancedBranches;
     std::vector<BillboardCloudData> clouds;
@@ -115,6 +210,7 @@ struct GrovePacked
     std::vector<std::list<InstancedBranch>::const_iterator> instancedBranchesDirect;
     GroveTexturesAtlas groveTexturesAtlas;
     GrovePacked() : instancedCatalogue(MAX_BRANCH_LEVELS){};
+    ~GrovePacked() {clear();}
     void clear()
     {
       instancedCatalogue = BranchCatalogue(MAX_BRANCH_LEVELS);
@@ -126,5 +222,20 @@ struct GrovePacked
       instancedBranchesDirect.clear();
       groveTexturesAtlas.clear();
     }
-    ~GrovePacked() {clear();}
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & instancedCatalogue;
+      ar & instancedBranches;
+      //ar & clouds;
+      //ar & impostors;
+      ar & compressedTrees;
+      ar & trees_by_global_id;
+      ar & groveTexturesAtlas;
+
+      instancedBranchesDirect.clear();
+      for (auto it = instancedBranches.begin(); it != instancedBranches.end(); it++)
+        instancedBranchesDirect.push_back(it);
+    }
 };

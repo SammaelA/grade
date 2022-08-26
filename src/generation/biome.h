@@ -4,6 +4,7 @@
 #include "common_utils/utility.h"
 #include "common_utils/bbox.h"
 #include "tinyEngine/texture.h"
+#include <boost/serialization/array.hpp>
 
 class GroveMask;
 struct Biome
@@ -37,6 +38,8 @@ struct Biome
 class BiomeMap
 {
 public:
+    friend class boost::serialization::access;
+
     typedef unsigned char biome_type_t; 
 
     BiomeMap();
@@ -77,4 +80,20 @@ private:
    AABB2D bbox;
    float pixel_size;
    int default_biome_id = -1;
+
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & w;
+    ar & h;
+    ar & bbox;
+    ar & pixel_size;
+    ar & default_biome_id;
+    if (Archive::is_loading::value)
+    {
+      assert(data == nullptr);
+      data = new biome_type_t[w*h];
+    }
+    ar & boost::serialization::make_array(data, w*h);
+  }
 };

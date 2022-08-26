@@ -12,7 +12,8 @@
   }
   Texture::Texture()
   {
-
+    texture = INVALID_ID;
+    type = GL_TEXTURE_2D;
   }
   Texture::Texture(const Texture &t)
   {

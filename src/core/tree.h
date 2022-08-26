@@ -6,6 +6,7 @@
 #include "common_utils/utility.h"
 #include "../tinyEngine/texture.h"
 #include "common_utils/parameter.h"
+#include "save_utils/serialization.h"
 
 class Texture;
 struct Joint;
@@ -20,21 +21,65 @@ extern std::atomic<int> br_h_cnt;
 
 struct Segment
 {
+    friend class boost::serialization::access;
+
     glm::vec3 begin;
     glm::vec3 end;
     float rel_r_begin;
     float rel_r_end;
     std::vector<float> mults;
+  
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & begin;
+      ar & end;
+      ar & rel_r_begin;
+      ar & rel_r_end;
+      ar & mults;
+    }
 };
 struct Joint
 {
+    friend class boost::serialization::access;
+
     Leaf *leaf = nullptr;
     glm::vec3 pos;
     std::list<Branch *> childBranches;
     short mark_A;
+
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & leaf;
+      ar & pos;
+      ar & mark_A;
+
+      if (Archive::is_loading::value)
+      {
+        std::vector<uint64_t> branch_ids;
+        ar & branch_ids;
+        for (uint64_t id : branch_ids)
+        {
+          childBranches.push_back(reinterpret_cast<Branch *>(id));//dirty hack to resolve pointer conflict 
+          //it will be replaced in heap serialization
+        }
+      }
+      else
+      {
+        std::vector<uint64_t> branch_ids;
+        save_ids(branch_ids);
+        ar & branch_ids;
+      }
+    }
+    void save_ids(std::vector<uint64_t> &branch_ids);
 };
 struct Branch
 {
+    friend class boost::serialization::access;
+
     bool dead = false;
     int self_id = 0;
     int id = 0;
@@ -53,15 +98,46 @@ struct Branch
     void pack(PackedBranch &branch);
     void mark_dead();
     static float get_r_mult(float phi, std::vector<float> &mults);
+
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & dead;
+      ar & self_id;
+      ar & id;
+      ar & type_id;
+      ar & level;
+      ar & segments;
+      ar & joints;
+      ar & plane_coef;
+      ar & center_par;
+      ar & center_self;
+      ar & mark_A;
+      ar & mark_B;
+    }
 };
 struct Leaf
 {
+    friend class boost::serialization::access;
+
     glm::vec3 pos;
     std::vector<glm::vec3> edges;
     ushort type;
+
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & pos;
+      ar & edges;
+      ar & type;
+    }
 };
 struct LeafHeap
 {
+    friend class boost::serialization::access;
+
     std::list<Leaf> leaves;
     Leaf *new_leaf()
     {
@@ -78,10 +154,17 @@ struct LeafHeap
     {
         leaves = std::move(h.leaves);
     }
-
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & leaves;
+    }
 };
 struct BranchHeap
-{
+{   
+    friend class boost::serialization::access;
+
     std::list<Branch> branches;
     Branch *new_branch()
     {
@@ -95,6 +178,38 @@ struct BranchHeap
         branches = std::move(h.branches);
     }
     void clear_removed();
+    private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & branches;
+      if (Archive::is_loading::value)
+      {
+        //we need to restore pointers
+        std::map<uint64_t, Branch *> branch_by_id;
+        for (auto &b : branches)
+          branch_by_id.emplace(b.self_id, &b);
+        for (auto &b : branches)
+        {
+          for (auto &j : b.joints)
+          {
+            for (Branch *& chb: j.childBranches)
+            {
+              uint64_t br_id = reinterpret_cast<uint64_t>(chb);
+              auto it = branch_by_id.find(br_id);
+              if (it == branch_by_id.end())
+              {
+                logerr("cannot find branch with id %d", br_id);
+              }
+              else
+              {
+                chb = it->second;
+              }
+            }
+          }
+        }
+      }
+    }
 };
 
 struct TreeTypeData

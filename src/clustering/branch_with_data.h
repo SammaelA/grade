@@ -22,6 +22,8 @@ struct ClassicStructureSimilarityParams
 };
     struct BranchWithData : public BranchClusteringData
     {
+        friend class boost::serialization::access;
+
         Branch *original;
         Branch *b;
         BranchHeap branchHeap;
@@ -36,4 +38,11 @@ struct ClassicStructureSimilarityParams
                        glm::mat4 _transform, float r_transform);
         ~BranchWithData();
         virtual void clear() override;
+
+    private:
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+          logerr("BranchWithData cannot be serialized. Serialization is not implemented");
+        }
     };

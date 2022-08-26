@@ -53,7 +53,7 @@ public:
     glm::vec2 get_size() const {return size;}
     glm::ivec2 get_grid_size() const {return glm::ivec2(w,h);}
     float get_cell_size() const {return cell_size;}
-protected:
+
     float get(int x, int y) const;
     glm::vec2 get_grad(int x, int y) const;
     void set(int x, int y, float val);

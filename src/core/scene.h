@@ -7,6 +7,8 @@
 struct TreeTypeData;
 struct Scene
 {
+    friend class boost::serialization::access;
+    
     enum ObjCategories
     {
         UNKNOWN,
@@ -16,13 +18,24 @@ struct Scene
         TREE
     };
     struct InstancedModel
-    {
+    {   
+        friend class boost::serialization::access;
+
         std::string name;
-        Texture tex;
         ComplexModel model;
         std::vector<glm::mat4> instances;
         std::vector<AABB> bboxes;
         InstancedModel();
+
+      private:
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+          ar & name;
+          ar & model;
+          ar & instances;
+          ar & bboxes;
+        }
     };
     Scene(){};
     void clear();
@@ -35,6 +48,16 @@ struct Scene
 
     GrovePacked grove;
     GrassPacked grass;
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & heightmap;
+      ar & instanced_models;
+      ar & grove;
+      ar & grass;
+    }
 };
 
   enum RenderPixelTypes

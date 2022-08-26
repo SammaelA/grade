@@ -15,6 +15,7 @@ private:
   SDL_Event in;
 
 public:
+  Event() {};
   bool quit = false;
   void input();                   //Take inputs and add them to stack
 

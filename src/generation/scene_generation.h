@@ -15,6 +15,8 @@ namespace scene_gen
 {
   struct Patch
   {
+    friend class boost::serialization::access;
+
     Sphere2D border;
     float density;
     std::vector<std::pair<int, float>> types;
@@ -22,6 +24,17 @@ namespace scene_gen
     int biome_id;
     Patch(){};
     Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int biome_id, int patch_type_id);
+
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & border;
+      ar & density;
+      ar & types;
+      ar & patch_type_id;
+      ar & biome_id;
+    }
   };
 
   void generate_plants_cells(SceneGenerationContext &ctx, std::vector<int> cell_ids);
@@ -32,6 +45,8 @@ namespace scene_gen
 
 struct SceneGenerationContext
 {
+  friend class boost::serialization::access;
+
   SceneGenerationContext() : objects_bvh(false){};
   ~SceneGenerationContext() {if (inited) clear();}
   SceneGenerationContext &operator=(SceneGenerationContext &&ctx) = delete;
@@ -50,7 +65,6 @@ struct SceneGenerationContext
   glm::vec2 heightmap_size, grass_field_size, full_size, cell_size, center, start_pos;
   glm::vec3 center3;
 
-  int base_biome_id = 0;
   bool inited = false;
 
   void clear()
@@ -66,9 +80,56 @@ struct SceneGenerationContext
     trees_patches.clear();
     grass_patches.clear();
   }
+
+private:
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    {
+      int b_id = AbstractTreeGenerator::branch_next_id;
+      int t_id = AbstractTreeGenerator::tree_next_id;
+
+      ar & b_id;
+      ar & t_id;
+
+      AbstractTreeGenerator::branch_next_id.store(b_id);
+      AbstractTreeGenerator::tree_next_id.store(t_id);
+    }
+    
+
+    ar & scene;
+    if (cur_ser_helper)
+      cur_ser_helper->instanced_branches.set_container(&(scene.grove.instancedBranches));
+    ar & settings;
+    ar & objects_bvh;
+    ar & biome_map;
+    ar & global_mask;
+    //if (Archive::is_loading::value)
+    //  packer.clear();
+    ar & packer;
+    ar & grass_generator;
+    ar & cells;
+    ar & trees_patches;
+    ar & grass_patches;
+
+    ar & cells_x;
+    ar & cells_y;
+    ar & hmap_pixel_size;
+    ar & biome_map_pixel_size;
+    ar & heightmap_size;
+    ar & grass_field_size;
+    ar & full_size;
+    ar & cell_size;
+    ar & center;
+    ar & start_pos;
+    ar & center3;
+    ar & inited;
+  }
 };
 struct Cell
 {
+  friend class boost::serialization::access;
+
   enum CellStatus
   {
     EMPTY,//nothing to do with it or task is not set
@@ -119,5 +180,20 @@ struct Cell
         prototype.biome_mask = nullptr;
       }
     }
+  }
+private:
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & prototypes;
+    ar & planar_occlusion;
+    ar & id;
+    ar & bbox;
+    status = EMPTY;
+    ar & depends;
+    ar & grass_patches;
+    ar & trees_patches;
+    ar & biome_stat;
+    ar & influence_bbox;
   }
 };

@@ -100,6 +100,9 @@ GrassRenderer2::~GrassRenderer2()
 void GrassRenderer2::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
                             HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow)
 {
+  if (models.empty())
+    return;
+    
     Shader &shader = to_shadow ? grassShadow : grass;
     shader.use();
     shader.uniform("projection", projection);

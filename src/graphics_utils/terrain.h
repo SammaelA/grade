@@ -8,7 +8,7 @@ class Heightmap : public Field_2d
 public:
     Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size);
     Heightmap(glm::vec3 pos, int w, int h);
-
+    Heightmap() : Field_2d() {};
     float get_height(glm::vec3 pos);
     float get_height_simple(glm::vec3 pos);
     void random_generate(float base, float min, float max);

@@ -195,7 +195,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       inputCmdBuffer.push(IC_EXIT_FINISH);
       return;
     case IC_EXIT_FINISH:
-      Tiny::event.quit = true;
+      Tiny::event->quit = true;
       break;
     case IC_TREE_GEN_PARAMETER_SELECTION:
     {
@@ -273,6 +273,24 @@ void InputCmdExecutor::execute(int max_cmd_count)
       hydra::export_scene("hydra_scene", (Scene &)genCtx.scene, cmd.args);
       exit(0);
     }
+      break;
+    case IC_SAVE_SCENE:
+      genCmdBuffer.push(GC_SAVE_SCENE, cmd.args);
+      break;
+    case IC_LOAD_SCENE:
+      genCmdBuffer.push(GC_LOAD_SCENE, cmd.args);
+      {
+        renderCmdBuffer.push(RC_UPDATE_DEBUG_PARAMS);
+        renderCmdBuffer.push(RC_UPDATE_HMAP);
+        renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+        renderCmdBuffer.push(RC_UPDATE_TREES);
+        renderCmdBuffer.push(RC_UPDATE_GRASS);
+
+        Block cb;
+        for (auto &cell : genCtx.cells)
+          cb.add_int("cell_id", cell.id);
+        renderCmdBuffer.push(RC_UPDATE_CELL, cb);
+      }
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

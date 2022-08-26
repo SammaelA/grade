@@ -4,6 +4,10 @@
 #include "generation/metainfo_manager.h"
 #include "generation/grove_packer.h"
 #include "parameter_selection/parameter_selection.h"
+#include "save_utils/serialization.h"
+#include <fstream>
+BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
+
 namespace scene_gen
 {
   void align(float &from, float by)
@@ -487,6 +491,49 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         }
       }
       genCtx.grass_generator.pack_all_grass(genCtx.scene.grass, *(genCtx.scene.heightmap));
+    }
+      break;
+    case GC_SAVE_SCENE:
+    {     
+      std::string save_name = cmd.args.get_string("name","scene");
+      std::string dir = "saved_scenes/" + save_name;
+      if (prepare_directory(dir))
+      {
+        TextureSaveManager tsm;
+        texSaveManager = &tsm;
+        ClusteringSerializationHelper csh;
+        cur_ser_helper = &csh;
+        tsm.start_save(dir,false);
+        std::ofstream ofs(dir + "/scene.save");
+        boost::archive::binary_oarchive oa(ofs);
+
+        oa << genCtx;
+
+        tsm.finish_save();
+        texSaveManager = nullptr;
+        cur_ser_helper = nullptr;
+      }
+    }
+      break;
+    case GC_LOAD_SCENE:
+    {
+      std::string save_name = cmd.args.get_string("name","scene");
+      std::string dir = "saved_scenes/" + save_name;
+      {
+        TextureSaveManager tsm;
+        texSaveManager = &tsm;
+        ClusteringSerializationHelper csh;
+        cur_ser_helper = &csh;
+        std::ifstream ifs(dir + "/scene.save");
+        boost::archive::binary_iarchive ia(ifs);
+
+        genCtx.clear();
+
+        ia >> genCtx;
+
+        texSaveManager = nullptr;
+        cur_ser_helper = nullptr;
+      }
     }
       break;
     default:

@@ -30,8 +30,9 @@ public:
         MEDIUM = 1,
         DEBUG = 2
     };
-    struct Instance2 : InstancingReadyModel
+    struct Instance2
     {
+        int id = -1;
         Model *m;
         DrawElementsIndirectCommand cmd;
         uint type;

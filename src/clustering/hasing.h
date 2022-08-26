@@ -5,7 +5,16 @@
 
 struct BranchHash : public BranchClusteringData
 {
-    std::vector<Hash> hashes;
+  friend class boost::serialization::access;
+
+  std::vector<Hash> hashes;
+
+private:
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int version)
+  {
+    logerr("BranchHash cannot be serialized. Serialization is not implemented");
+  }
 };
 struct ImpostorSimilarityParams;
 class HashBasedClusteringHelper : public ClusteringHelper

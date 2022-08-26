@@ -12,8 +12,7 @@ void Scene::clear()
     instanced_models.clear();
 }
 
-Scene::InstancedModel::InstancedModel():
-tex(textureManager.empty())
+Scene::InstancedModel::InstancedModel()
 {
 
 }

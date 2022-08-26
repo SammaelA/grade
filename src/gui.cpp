@@ -282,7 +282,8 @@ void GUI::render_main_toolbar()
   bool press_4 = ImGui::Button(ICON_FA_COMPUTER);ImGui::SameLine();
   bool press_5 = ImGui::Button(ICON_FA_DIAGRAM_PROJECT);ImGui::SameLine();
   bool press_6 = ImGui::Button(ICON_FA_MOUNTAIN);ImGui::SameLine();
-  bool press_7 = ImGui::Button(ICON_FA_IMAGE);
+  bool press_7 = ImGui::Button(ICON_FA_IMAGE);ImGui::SameLine();
+  bool press_8 = ImGui::Button(ICON_FA_FILE);
   ImGui::PopStyleVar(2);
   ImGui::End();
   {
@@ -333,6 +334,13 @@ void GUI::render_main_toolbar()
       show = !show;
     if (show)
       render_hydra_toolbar();    
+  }
+  {
+    static bool show = false;
+    if (press_8)
+      show = !show;
+    if (show)
+      show = !render_save_settings();    
   }
   if (appCtx.active_cell_id >= 0)
     render_cell_info();
@@ -606,4 +614,38 @@ void GUI::render_hydra_toolbar()
     appCtx.camera.front = glm::normalize(settings.get_vec3("camera_look_at") - appCtx.camera.pos);
     appCtx.camera.up = glm::normalize(settings.get_vec3("camera_up"));
   }
+}
+
+bool GUI::render_save_settings()
+{
+  static std::string save_name = "scene";
+  static std::string load_name = "scene";
+
+  ImGui::Begin("Save/Load scene");
+
+  input_text("Save as", save_name);
+  bool sv = ImGui::Button("Save");
+
+  input_text("Load from file", load_name);
+  bool ld = ImGui::Button("Load");
+  bool clear = ImGui::Button("Clear scene");
+  ImGui::End();
+
+  if (sv)
+  {
+    Block b;
+    b.add_string("name", save_name);
+    inputCmdBuffer.push(IC_SAVE_SCENE, b);
+  }
+  if (ld)
+  {
+    Block b;
+    b.add_string("name", load_name);
+    inputCmdBuffer.push(IC_LOAD_SCENE, b);
+  }
+  if (clear)
+  {
+    inputCmdBuffer.push(IC_CLEAR_SCENE);
+  }
+  return sv || ld || clear;
 }

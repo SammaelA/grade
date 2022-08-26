@@ -35,7 +35,7 @@
 namespace Tiny {
 
 extern View view;           //Window and Interface  (Requires Initialization)
-extern Event event;         //Event Handler
+extern Event *event;         //Event Handler
 extern Audio audio;         //Audio Processor       (Requires Initialization)
 
 bool window(std::string windowName, int width, int height);
@@ -43,15 +43,15 @@ void quit();
 
 template<typename F, typename... Args>
 void loop(F function, Args&&... args){
-  while(!event.quit){    
+  while(!event->quit){    
     if(Tiny::audio.enabled) audio.process();      //Audio Processor
 
     function(args...);      //User-defined Game Loop
 
     if(Tiny::view.enabled)  view.render();        //Render View
     if(Tiny::view.enabled){
-      event.input();        //Get Input
-      event.handle(view);   //Call the event-handling system
+      event->input();        //Get Input
+      event->handle(view);   //Call the event-handling system
     }
     else
     {

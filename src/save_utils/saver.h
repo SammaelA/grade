@@ -23,7 +23,6 @@ struct Billboard;
 struct BillboardData;
 struct BillboardCloudData;
 struct GrovePacked;
-struct InstancingReadyModel;
 struct Impostor;
 struct ImpostorsData;
 namespace saver

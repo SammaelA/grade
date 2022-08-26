@@ -39,7 +39,7 @@ public:
         cur_size = new_size;
         values = std::vector<bool>(cur_size, value);
     }
-private:
+
     std::vector<bool> values;
     bool default_value = false;
     int cur_size = 0;

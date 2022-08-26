@@ -17,7 +17,7 @@ public:
     glm::vec2 size(){ return glm::vec2(width,height);}
 private:
     glm::vec4 clear_color;
-    int width, height;
+    int width = 1, height = 1;
     GLuint frBuffer;
     Texture colorTex, normalsTex, viewPosTex, depthTex, worldPosTex;
     GLuint colorTexFmt = GL_RGBA8, normalsTexFmt = GL_RGBA16F, viewPosTexFmt = GL_RGB16F, worldPosTexFmt = GL_RGB16F;

@@ -303,3 +303,9 @@ TreeTypeData &TreeTypeData::operator=(const TreeTypeData &t)
 
     return *this;
 }
+
+void Joint::save_ids(std::vector<uint64_t> &branch_ids)
+{
+  for (auto &b : childBranches)
+    branch_ids.push_back(b->self_id);
+}

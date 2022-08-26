@@ -56,7 +56,7 @@ public:
     int get_block_size() { return block_size; }
     bool empty() {return (voxels == nullptr);}
     static int get_default_block_size() { return 5; }
-private:
+
     float *voxels = nullptr;
 
     glm::vec3 center;
@@ -72,6 +72,7 @@ private:
     std::vector<int> mip_size_decrease;
     std::vector<glm::ivec3> mip_vox_xyz;
 
+private:
 
     float fast_voxel_occlusion(glm::ivec3 voxel);
     float voxel_occlusion(glm::ivec3 voxel);
