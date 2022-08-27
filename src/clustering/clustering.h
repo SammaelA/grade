@@ -4,7 +4,7 @@
 #include "graphics_utils/volumetric_occlusion.h"
 #include <vector>
 #include <map>
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "common_utils/hash.h"
 #include "default_clustering_params.h"
 #include "generation/metainfo_manager.h"
@@ -91,7 +91,7 @@ struct ClusteringContext
     void serialize(Archive & ar, const unsigned int version)
     {
       if (Archive::is_loading::value)
-        types = metainfoManager.get_all_tree_types();
+        types = metainfoManager->get_all_tree_types();
       
       ar & self_impostors_data;
 

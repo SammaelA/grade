@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/postfx.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "generation/grove_generation_utils.h"
 #include "metainfo_manager.h"
@@ -16,7 +16,7 @@ void GrassGenerator::set_grass_types(Block &grass_settings)
         float q = grass_settings.get_double(i, -1);
         if (q > 0)
         {
-            used_grass_types.push_back(metainfoManager.get_grass_type(name));
+            used_grass_types.push_back(metainfoManager->get_grass_type(name));
             grass_quantity.push_back(q);
         }
     }
@@ -284,7 +284,7 @@ void GrassGenerator::generate_grass_in_cell(Cell &cell, Field_2d *occlusion, Gro
         if (!t_found)
         {
             //new grass type is used
-            used_grass_types.push_back(metainfoManager.get_grass_type(p.first));
+            used_grass_types.push_back(metainfoManager->get_grass_type(p.first));
             grass_quantity.push_back(0);
             grass_instances.push_back(std::vector<GrassInstance>{});
 

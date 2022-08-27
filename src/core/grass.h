@@ -2,7 +2,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "graphics_utils/texture_atlas.h"
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "save_utils/serialization.h"
 
 struct GrassType

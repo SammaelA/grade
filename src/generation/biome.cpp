@@ -1,9 +1,9 @@
 #include "biome.h"
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "common_utils/utility.h"
 #include "metainfo_manager.h"
 #include "common_utils/bbox.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "grove_generation_utils.h"
 #include "common_utils/distribution.h"
 
@@ -22,7 +22,7 @@ void load_biome_types(Block *bl, std::vector<std::pair<int, float>> &types)
         if (dens > 0)
         {
             std::string name = bl->get_name(i);
-            int id = gr ? metainfoManager.get_grass_type_id_by_name(name) : metainfoManager.get_tree_type_id_by_name(name);
+            int id = gr ? metainfoManager->get_grass_type_id_by_name(name) : metainfoManager->get_tree_type_id_by_name(name);
             if (id >= 0)
                 types.push_back(std::pair<int, float>(id,dens));
         }
@@ -194,7 +194,7 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
     Texture BiomeMap::save_as_texture_RGBA8() const
     {
       if (!data)
-        return textureManager.empty();
+        return engine::textureManager->empty();
       unsigned char *image_data = new unsigned char[4 * w * h];
       for (int i = 0; i < h; i++)
       {
@@ -207,7 +207,7 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
           image_data[4 * (i * w + j) + 3] = 255;
         }
       }
-      Texture t = textureManager.create_texture(w, h, GL_RGBA8, 1, image_data, GL_RGBA);
+      Texture t = engine::textureManager->create_texture(w, h, GL_RGBA8, 1, image_data, GL_RGBA);
       delete[] image_data;
       return t;
     }
@@ -215,8 +215,8 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
     void BiomeMap::save_as_image(std::string name) const
     {
       Texture t = save_as_texture_RGBA8();
-      textureManager.save_png(t, name);
-      textureManager.delete_tex(t);
+      engine::textureManager->save_png(t, name);
+      engine::textureManager->delete_tex(t);
     }
 
     void BiomeMap::get_stat(std::vector<std::pair<int,int>> &stat, AABB2D box) const

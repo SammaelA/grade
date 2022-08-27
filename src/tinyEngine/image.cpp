@@ -1,4 +1,5 @@
 #include "image.h"
+#include <SDL2/SDL_image.h>
 
 namespace image {
   std::string base_img_path = "resources/textures/";

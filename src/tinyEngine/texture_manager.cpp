@@ -1,14 +1,17 @@
-#include "graphics_utils/texture_manager.h"
-#include "../tinyEngine/image.h"
+#include "tinyEngine/engine.h"
+#include "tinyEngine/image.h"
+#include "tinyEngine/shader.h"
+#include "tinyEngine/model.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../third_party/stb_image_write.h"
-#include "save_utils/blk.h"
-
+#include "third_party/stb_image_write.h"
+#include "common_utils/blk.h"
 #include <exception>
 
 long tex_mem = 0;
 int tex_count = 0;
 long calls = 0;
+
+TextureManager *engine::textureManager = nullptr;
 
 Texture TextureManager::get(std::string name)
 {
@@ -55,7 +58,7 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         glBindTexture(t.type, t.texture);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
-        Texture ctex(textureManager.create_texture(w,h));
+        Texture ctex(engine::textureManager->create_texture(w,h));
         fbo = create_framebuffer();
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);

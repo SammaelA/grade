@@ -1,5 +1,5 @@
 #include "core/tree.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "graphics_utils/billboard_cloud.h"
 #include "common_utils/spline.h"
 std::atomic<int> br_h_cnt(0);
@@ -152,8 +152,8 @@ void Branch::pack(PackedBranch &branch)
     }
 }
 TreeTypeData::TreeTypeData(int id, ParameterSet *_params, std::string _wood_tex_name, std::string _leaf_tex_name):
-wood(textureManager.get(_wood_tex_name)),
-leaf(textureManager.get(_leaf_tex_name))
+wood(engine::textureManager->get(_wood_tex_name)),
+leaf(engine::textureManager->get(_leaf_tex_name))
 {
     type_id = id;
     params = _params->copy();
@@ -249,8 +249,8 @@ void Branch::mark_dead()
 }
 
 TreeTypeData::TreeTypeData():
-wood(textureManager.empty()),
-leaf(textureManager.empty())
+wood(engine::textureManager->empty()),
+leaf(engine::textureManager->empty())
 {
 
 }

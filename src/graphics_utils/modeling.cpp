@@ -1,6 +1,6 @@
 #include "modeling.h"
 #include "common_utils/utility.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 #define PI 3.14159265f
 using namespace glm;

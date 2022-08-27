@@ -1,5 +1,5 @@
 #include "scene.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 void Scene::clear() 
 {

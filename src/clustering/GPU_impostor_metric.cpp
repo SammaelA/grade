@@ -1,8 +1,8 @@
 #include "GPU_impostor_metric.h"
 #include "dist_data_table.h"
 #include "graphics_utils/billboard_cloud.h"
-#include "graphics_utils/texture_manager.h"
-#include "../tinyEngine/TinyEngine.h"
+#include "tinyEngine/engine.h"
+#include "tinyEngine/engine.h"
 
 IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_data(Block &settings, 
                                                                                    std::vector<BranchClusteringData *> branches,
@@ -139,7 +139,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                     {
                         if (kk % 5 == 0)
                             pb_dispatch.iter(p);
-                        SDL_GL_SwapWindow(Tiny::view.gWindow);
+                        engine::view->next_frame();
                         prev_p = p;
                         kk++;
                     }

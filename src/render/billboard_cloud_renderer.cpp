@@ -1,5 +1,5 @@
 #include "billboard_cloud_renderer.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 using namespace glm;
 
@@ -77,7 +77,7 @@ void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projecti
         billboardRendererInstancing.uniform("screen_size",screen_size);
         billboardRendererInstancing.texture("color_tex", data->atlas.tex(0));
         billboardRendererInstancing.texture("normal_tex", data->atlas.tex(1));
-        billboardRendererInstancing.texture("noise",textureManager.get("noise"));
+        billboardRendererInstancing.texture("noise",engine::textureManager->get("noise"));
         billboardRendererInstancing.uniform("projection", projection);
         billboardRendererInstancing.uniform("view", view);
         billboardRendererInstancing.uniform("type_id", (uint)mdrd.type_id);

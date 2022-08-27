@@ -1,7 +1,7 @@
 #include "grove_renderer.h"
 #include "core/tree.h"
 #include "graphics_utils/modeling.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "graphics_utils/billboard_cloud.h"
 #include "graphics_utils/impostor.h"
 #include "tinyEngine/camera.h"
@@ -527,7 +527,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
         else
         {
             auto &mdrd = type.rendDesc;
-            Texture noise = textureManager.get("noise");
+            Texture noise = engine::textureManager->get("noise");
             Shader &shader = to_shadow ? shadowRendererInstancing : rendererInstancing;
             shader.use();
 
@@ -764,5 +764,5 @@ void GroveRenderer::prepare_wood_types_atlas()
     }
 
     atlas->gen_mipmaps();
-    textureManager.save_png(atlas->tex(0), "wl_atlas");
+    engine::textureManager->save_png(atlas->tex(0), "wl_atlas");
 }

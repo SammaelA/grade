@@ -1,12 +1,12 @@
 #include "texture.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
   Texture::~Texture()
   {
     if (texture != INVALID_ID)
     {
-      auto it = textureManager.ref_count.find(texture);
-      if (it != textureManager.ref_count.end())
+      auto it = engine::textureManager->ref_count.find(texture);
+      if (it != engine::textureManager->ref_count.end())
         it->second--;
     }
   }
@@ -19,7 +19,7 @@
   {
     if (t.texture != INVALID_ID)
     {
-      textureManager.ref_count.at(t.texture)++;
+      engine::textureManager->ref_count.at(t.texture)++;
     }
     texture = t.texture;
     type = t.type;
@@ -35,11 +35,11 @@
   {
     if (texture != INVALID_ID)
     {
-      textureManager.ref_count.at(texture)--;
+      engine::textureManager->ref_count.at(texture)--;
     }
     if (t.texture != INVALID_ID)
     {
-      textureManager.ref_count.at(t.texture)++;
+      engine::textureManager->ref_count.at(t.texture)++;
     }
     texture = t.texture;
     type = t.type;
@@ -66,9 +66,9 @@
   {
     if (texture != INVALID_ID)
     {
-      textureManager.ref_count.emplace(texture, 0);//this is an initial texture, that is stored in texture manager,
+      engine::textureManager->ref_count.emplace(texture, 0);//this is an initial texture, that is stored in texture manager,
                                                    //it is not counted in ref_count, as if we don't have references 
                                                    //to this texture outside of manager -> we don't need it
-      textureManager.ref_count.at(texture)++;
+      engine::textureManager->ref_count.at(texture)++;
     }
   };

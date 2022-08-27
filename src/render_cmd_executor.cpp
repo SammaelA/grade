@@ -1,17 +1,51 @@
 #include "cmd_executors.h"
 #include "common_utils/utility.h"
 #include "render/world_renderer.h"
-#include "tinyEngine/TinyEngine.h"
 #include "generation/metainfo_manager.h"
 #include "generation/scene_generator_helper.h"
 #include <chrono>
 
+Texture save_as_texture_RGBA8(const Field_2d &f, float mnv = 0, float mxv = 0)
+{
+      if (mnv == mxv)
+        {
+            mnv = f.min_val;
+            mxv = f.max_val;
+        }
+        if (mnv <= mxv)
+        {
+            mnv = 0;
+            mxv = 1;
+        }
+
+        if (!f.data)
+            return engine::textureManager->empty();
+        unsigned char *image_data = new unsigned char[4*(2*f.w + 1)*(2*f.h+1)];
+        for (int i=-f.h;i<=f.h;i++)
+        {
+            for (int j=-f.w;j<=f.w;j++)
+            {
+                float val = (f.get(i,j) - mnv)/(mxv - mnv);
+                int pos = (j+f.w)*(2*f.h + 1) + i + f.h;
+                image_data[4*pos]   = 255*val;
+                image_data[4*pos+1] = 255*val;
+                image_data[4*pos+2] = 255*val;
+                image_data[4*pos+3] = 255;
+            }
+        }
+
+        Texture t = engine::textureManager->create_texture(2*f.w+1, 2*f.h+1, GL_RGBA8, 1, image_data, GL_RGBA);
+
+        delete[] image_data;
+        return t;
+}
+
 void RenderCmdExecutor::execute(int max_cmd_count)
 {
     int cmd_left = max_cmd_count;
-    while (!renderCmdBuffer.empty() && cmd_left != 0)
+    while (!renderCmdBuffer->empty() && cmd_left != 0)
     {
-        auto &cmd = renderCmdBuffer.front();
+        auto &cmd = renderCmdBuffer->front();
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         switch (cmd.type)
         {
@@ -52,7 +86,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
           if (worldRenderer.is_inited())
           {
             worldRenderer.set_grove(genCtx.scene.grove, AABB2D(genCtx.center - genCtx.grass_field_size, genCtx.center + genCtx.grass_field_size),
-                                    metainfoManager.see_all_tree_types());
+                                    metainfoManager->see_all_tree_types());
           }
           break;
         case RC_VISUALIZE_VOXELS_DEBUG:
@@ -130,11 +164,11 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         case RC_SAVE_GROVE_MASK_TO_TEXTURE:
           if (worldRenderer.debugInfo.get_bool("render_grove_mask_debug", false))
           {
-            Texture t = genCtx.global_mask.save_as_texture_RGBA8();
+            Texture t = save_as_texture_RGBA8(genCtx.global_mask);
             auto it = worldRenderer.debug_textures.find("grove_mask");
             if (it != worldRenderer.debug_textures.end())
             {
-              textureManager.delete_tex(it->second);
+              engine::textureManager->delete_tex(it->second);
               it->second = t;
             }
             else
@@ -150,7 +184,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             auto it = worldRenderer.debug_textures.find("biome_mask");
             if (it != worldRenderer.debug_textures.end())
             {
-              textureManager.delete_tex(it->second);
+              engine::textureManager->delete_tex(it->second);
               it->second = t;
             }
             else
@@ -206,6 +240,9 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         case RC_UPDATE_GRASS:
           worldRenderer.set_grass(genCtx.scene.grass);
           break;
+        case RC_FINISH:
+          appCtx.event.quit = true;
+          break;
         default:
           logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
           break;
@@ -213,7 +250,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         logerr("%s took %.3f ms", ToString(cmd.type), ms);
-        renderCmdBuffer.pop();
+        renderCmdBuffer->pop();
         cmd_left--;
     }
     if (worldRenderer.is_inited())
@@ -222,12 +259,12 @@ void RenderCmdExecutor::execute(int max_cmd_count)
 
 void RenderCmdExecutor::render()
 {
-    worldRenderer.set_resolution(Tiny::view.WIDTH, Tiny::view.HEIGHT);
+    worldRenderer.set_resolution(engine::view->WIDTH, engine::view->HEIGHT);
     worldRenderer.set_forced_LOD(appCtx.forced_LOD);
     worldRenderer.set_render_mode(appCtx.render_mode);
     RenderReadbackInputData rrid;
     RenderReadbackData rrd;
-    rrid.cursor_screen_pos =  glm::vec2(appCtx.mousePos.x/Tiny::view.WIDTH, 1-(appCtx.mousePos.y)/Tiny::view.HEIGHT);
+    rrid.cursor_screen_pos =  glm::vec2(appCtx.mousePos.x/engine::view->WIDTH, 1-(appCtx.mousePos.y)/engine::view->HEIGHT);
     worldRenderer.set_readback(rrid);
     worldRenderer.render(1, appCtx.camera);
     rrd = worldRenderer.get_readback();

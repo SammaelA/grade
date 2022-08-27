@@ -1,5 +1,5 @@
 #include "graphics_utils/impostor.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "impostor_renderer.h"
 #include "rendering_SSBO_structs.h"
 #include "grove_renderer.h"
@@ -135,7 +135,7 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, gl
     impostorRendererInstancing.texture("normal_tex", data->atlas.tex(1));
     impostorRendererInstancing.uniform("camera_pos", camera_pos);
     impostorRendererInstancing.uniform("screen_size", screen_size);
-    impostorRendererInstancing.texture("noise", textureManager.get("noise"));
+    impostorRendererInstancing.texture("noise", engine::textureManager->get("noise"));
     impostorRendererInstancing.uniform("hor_vert_transition_thr", glm::vec2(hth,vth));
     impostorRendererInstancing.uniform("delta",0.5f);
     impostorRendererInstancing.uniform("type_id",(uint)mdrd.type_id);

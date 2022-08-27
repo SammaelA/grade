@@ -26,8 +26,8 @@ glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 
 Texture load_reference(std::string name, int image_w, int image_h)
 {
-    Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
-    Texture ref = textureManager.create_texture(image_w, image_h);
+    Texture ref_raw = engine::textureManager->load_unnamed_tex(image::base_img_path + name);
+    Texture ref = engine::textureManager->create_texture(image_w, image_h);
     PostFx ref_transform = PostFx("image_to_monochrome_impostor.fs");
 
     GLuint fbo;
@@ -46,7 +46,7 @@ Texture load_reference(std::string name, int image_w, int image_h)
     ref_transform.get_shader().uniform("background_color", glm::vec3(0, 0, 0));
     ref_transform.render();
 
-    textureManager.delete_tex(ref_raw);
+    engine::textureManager->delete_tex(ref_raw);
     delete_framebuffer(fbo);
     return ref;
 }
@@ -76,8 +76,8 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::s
         copy.get_shader().uniform("layer", (float)layer);
         copy.render();
     }
-    // textureManager.save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
-    // textureManager.save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
+    // engine::textureManager->save_png(imp.atlas.tex(0), "ref_atlass_gauss_0");
+    // engine::textureManager->save_png(ref_atl.tex(0), "ref_atlass_gauss_1");
 }
 
 void vector_stat(std::vector<float> &vals, float *min_p, float *max_p, float *average_p, float *stddev_p)
@@ -161,7 +161,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
                                               std::vector<TreeTypeData> &types,
                                               ReferenceTree &ref_tree, int &cnt)
 {
-    textureManager.set_textures_tag(1);
+    engine::textureManager->set_textures_tag(1);
     if (params.empty())
         return std::vector<float>();
     Tree *trees = new Tree[params.size()];
@@ -254,7 +254,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
     {
         imp.atlas.destroy();
     }
-    textureManager.clear_unnamed_with_tag(1);
+    engine::textureManager->clear_unnamed_with_tag(1);
     return res;
 }
 
@@ -291,11 +291,11 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     std::string ref_type_name = "";
     if (ref_type_name != "" && !ref_type)
     {
-        tmp_types = {metainfoManager.get_tree_type(ref_type_name)};
+        tmp_types = {metainfoManager->get_tree_type(ref_type_name)};
     }
     else if (!ref_type || ref_type->generator_name != gen_name)
     {
-        std::vector<TreeTypeData> types = metainfoManager.get_all_tree_types();
+        std::vector<TreeTypeData> types = metainfoManager->get_all_tree_types();
         bool found = false;
         for (auto &type : types)
         {
@@ -366,7 +366,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     bool use_existing_presets = selection_settings.get_bool("use_existing_presets", true);
     if (use_existing_presets)
     {
-        auto all_types = metainfoManager.get_all_tree_types();
+        auto all_types = metainfoManager->get_all_tree_types();
         for (auto &t : all_types)
         {
             if (t.generator_name == tmp_types[0].generator_name)
@@ -1022,7 +1022,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             logerr("Parameter selection error: No images or plant type selected as a reference");
             return Results();
         }
-        int type_id = metainfoManager.get_tree_type_id_by_name(type_name);
+        int type_id = metainfoManager->get_tree_type_id_by_name(type_name);
         if (type_id < 0)
         {
             logerr("Parameter selection error: reference type %s is invalid", type_name.c_str());
@@ -1031,7 +1031,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         else
         {
             // existed type is a reference for selection
-            reference_ttd = metainfoManager.get_tree_type(type_id);
+            reference_ttd = metainfoManager->get_tree_type(type_id);
             ParameterList referenceParList;
             reference_ttd.get_params()->write_parameter_list(referenceParList);
             // referenceParList.print();
@@ -1098,7 +1098,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 logerr("%d", single_tree.branchHeaps[0]->branches.size());
                 logerr("impostors %d", grove.impostors[1].impostors.size());
                 save_impostor_as_reference(grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, glm::vec4(0, 0, 1, 1));
-                textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_01");
+                engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_01");
                 imp_sim.get_reference_tree_image_info(ref_tree, 1);
                 ImpostorSimilarityCalc::get_tree_compare_info(grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
                 ref_tree.info.BCyl_sizes *= glm::vec2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
@@ -1107,7 +1107,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
                 glm::vec4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
                 save_impostor_as_reference(grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, tc_tr);
-                textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_02");
+                engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_02");
             }
             delete ref_voxels;
         }
@@ -1136,7 +1136,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 if (name == "")
                     continue;
                 reference_name = name;
-                Texture ref_raw = textureManager.load_unnamed_tex(image::base_img_path + name);
+                Texture ref_raw = engine::textureManager->load_unnamed_tex(image::base_img_path + name);
                 reference_aspect_ratio = ref_raw.get_H() / (float)ref_raw.get_W();
                 glm::vec4 ref_tc_transform;
                 float aspect_ratio = -1;
@@ -1182,15 +1182,15 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                     ref_stat_saved = true;
                 }
 
-                textureManager.delete_tex(ref_raw);
+                engine::textureManager->delete_tex(ref_raw);
             }
         }
         original_tex_aspect_ratio /= reference_images_cnt;
         original_tex_tr_thickness /= reference_images_cnt;
-        textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_0");
+        engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_0");
         imp_sim.get_reference_tree_image_info(ref_tree);
     }
-    textureManager.save_png(ref_tree.atlas.tex(0), "reference_atlas_1");
+    engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_1");
     if (save_selection_stat)
     {
         PostFx copy_arr("copy_arr2.fs");
@@ -1218,8 +1218,8 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     }
     if (type_name != "")
     {
-      metainfoManager.add_tree_type(res.best_candidates[0], type_name);
-      metainfoManager.save_all();
+      metainfoManager->add_tree_type(res.best_candidates[0], type_name);
+      metainfoManager->save_all();
     }
     
     if (save_result_image)
@@ -1289,7 +1289,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         int version = selection_settings.get_int("version", -1);
         std::string gen_name = selection_settings.get_string("generator_name", "unknown_gen");
         std::string file_name = "selection/" + gen_name + "/" + reference_name + "_v" + std::to_string(version) + "_i" + std::to_string(iters) + "_q0." + std::to_string((int)(100 * res.best_res));
-        textureManager.save_png(atlas_asp.tex(0), file_name);
+        engine::textureManager->save_png(atlas_asp.tex(0), file_name);
 
         // hydra scene
         {

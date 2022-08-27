@@ -9,28 +9,24 @@
 #include "../third_party/imgui/imgui_impl_sdl.h"
 #include "../third_party/imgui/imgui_impl_opengl3.h"
 #include "tinyEngine/resources.h"    
+#include "tinyEngine/audio.h"
 
-class View{
-  using Handle = std::function<void()>;
+class View
+{
   public:
+    void target(glm::vec3 clearcolor);  //Target main window for drawing
     bool init(std::string windowName, int width, int height);
     void quit();
+    void next_frame();
+    void handle_input();
+
     bool enabled = false;
-
     unsigned int WIDTH, HEIGHT;
-
     SDL_Window* gWindow;        //Window Pointer
     SDL_GLContext gContext;     //Render Context
-
+    Audio audio;
     ImGuiIO io;
-    Handle interface = [](){};  //User defined Interface
     bool showInterface = true;
-    void drawInterface();
-
-    Handle pipeline = [](){};           //User defined Pipeline
-    void render();
-    void target(glm::vec3 clearcolor);  //Target main window for drawing
-
     bool fullscreen = false;    //Settings
     bool vsync = true;
     bool ccw = true;

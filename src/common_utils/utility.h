@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <string>
 #include <map>
-#include "tinyEngine/resources.h"
 #include <boost/preprocessor.hpp>
 #include <chrono>
 
@@ -46,7 +45,6 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec);
 void debugl(uint level, const char *__restrict __fmt, ...);
 void debug(const char *__restrict __fmt, ...);
 void logerr(const char *__restrict __fmt, ...);
-void print_FB_status(GLuint status);
 std::string print_mat4x4(glm::mat4x4 mat);
 struct AllocData
 {
@@ -147,6 +145,21 @@ private:
     long prev_iter = 0;
     float t_estimate_q = 0.9;
     bool finished = false;
+};
+
+
+class FpsCounter
+{
+  float average_fps;
+  uint64_t frame = 0;
+  float mu = 0.99;
+  std::chrono::steady_clock::time_point t1, t_prev;
+
+public:
+  FpsCounter();
+  void tick();
+  float get_average_fps() { return average_fps; }
+  int get_frame_n() { return frame; }
 };
 
 bool prepare_directory(std::string &save_path);

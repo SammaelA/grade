@@ -1,5 +1,5 @@
 #include "texture_save_manager.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 TextureSaveManager *texSaveManager = nullptr;
 
@@ -50,7 +50,7 @@ void TextureSaveManager::finish_save()
     FILE *tex = fopen(name.c_str(), "wb");
     fwrite(pixels, sizeof(unsigned char), 4 * t.W * t.H * t.layers, tex);
     fclose(tex);
-    textureManager.save_png_directly(t, name+".png");
+    engine::textureManager->save_png_directly(t, name+".png");
     delete[] pixels;
   }
   textures_to_save.clear();
@@ -59,7 +59,7 @@ bool TextureSaveManager::load_texture(std::string token, Texture &t)
 {
   if (token == "")
   {
-    t = textureManager.empty();
+    t = engine::textureManager->empty();
     return false;
   }
   if (token.substr(token.size() - 4, 4) == std::string(".tex"))
@@ -70,24 +70,24 @@ bool TextureSaveManager::load_texture(std::string token, Texture &t)
     int c = fread(pixels, sizeof(unsigned char), 4 * t.W * t.H * t.layers, tex);
 
     if (t.type == GL_TEXTURE_2D)
-      t = textureManager.create_texture(t.W, t.H, t.format, t.mip_levels, (void *)pixels);
+      t = engine::textureManager->create_texture(t.W, t.H, t.format, t.mip_levels, (void *)pixels);
     else if (t.type == GL_TEXTURE_2D_ARRAY)
     {
-      t = textureManager.create_texture_array(t.W, t.H, t.layers, t.format, t.mip_levels, (void *)pixels);
+      t = engine::textureManager->create_texture_array(t.W, t.H, t.layers, t.format, t.mip_levels, (void *)pixels);
     }
     else
     {
-      t = textureManager.empty();
+      t = engine::textureManager->empty();
     }
     fclose(tex);
     delete[] pixels;
-    textureManager.save_png_directly(t, token+"_loaded.png");
+    engine::textureManager->save_png_directly(t, token+"_loaded.png");
     //logerr("loaded texture %d", t.texture);
     return true;
   }
   else
   {
-    t = textureManager.load_unnamed_tex(token);
+    t = engine::textureManager->load_unnamed_tex(token);
     return true;
   }
 }

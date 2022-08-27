@@ -1,7 +1,7 @@
 #include "deep_hashing.h"
 #include "impostor_similarity_params.h"
 #include "graphics_utils/impostor.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>
@@ -41,7 +41,7 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
     }
     
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(atl);
-    //textureManager.save_png(impData.atlas.tex(0),"flush_atlas");
+    //engine::textureManager->save_png(impData.atlas.tex(0),"flush_atlas");
         
         int hash_discrete_steps = get_default_block().get_int("hash_discrete_steps", -1);
         hash_discrete_steps = settings.get_int("hash_discrete_steps", hash_discrete_steps);
@@ -67,7 +67,7 @@ void DeepHashBasedClusteringHelper::branch_conversion_flush(Block &settings, Clu
             std::string file_path = dir_path + "/" + std::to_string(sl)+".png";
             auto &bill = imp_iter.slices[hash_n];
             rawAtlas.get_slice(bill.id, sl_data, &ww, &hh);
-            textureManager.save_png_raw_directly(sl_data, ww, hh, 4, file_path);
+            engine::textureManager->save_png_raw_directly(sl_data, ww, hh, 4, file_path);
             std::string record = "./" + std::to_string(sl)+".png" + cluster_labels + "\n";
             database_file += record;
             sl++;

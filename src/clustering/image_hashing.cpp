@@ -1,7 +1,7 @@
 #include "hasing.h"
 #include "impostor_similarity_params.h"
 #include "graphics_utils/impostor.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *base, ClusteringContext *ctx, 
                           BaseBranchClusteringData &data, ImpostorSimilarityParams &isimParams, 

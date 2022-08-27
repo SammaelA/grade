@@ -1,6 +1,6 @@
 #include "clustering_debug_utils.h"
 #include "../tinyEngine/postfx.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "generation/grove_packer.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
@@ -74,7 +74,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
     }
     tex_h = cur_h + layer_h;
 
-    Texture res(textureManager.create_texture(tex_w, tex_h));
+    Texture res(engine::textureManager->create_texture(tex_w, tex_h));
 
     if (false)
     {
@@ -215,8 +215,8 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
     }
 
-    textureManager.save_png_raw(data, tex_w, tex_h, 4, file_name);
-    textureManager.delete_tex(res);
+    engine::textureManager->save_png_raw(data, tex_w, tex_h, 4, file_name);
+    engine::textureManager->delete_tex(res);
     delete data;
 
     if (ctx->self_impostors_raw_atlas)
@@ -548,10 +548,10 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
                                         tmp_data[4 * (y * ww + x) + 3] = 255;
                                     }
                                 }
-                                textureManager.save_png_raw_directly(tmp_data, ww, hh, 4, file_path);
+                                engine::textureManager->save_png_raw_directly(tmp_data, ww, hh, 4, file_path);
                             }
                             else
-                                textureManager.save_png_raw_directly(sl_data, ww, hh, 4, file_path);
+                                engine::textureManager->save_png_raw_directly(sl_data, ww, hh, 4, file_path);
                             
                             std::vector<int> row;
                             for (int y = 0; y < hh; y++)

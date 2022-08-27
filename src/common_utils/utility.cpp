@@ -4,7 +4,6 @@
 #include <vector>
 #include <boost/filesystem.hpp>
 #include <iostream>
-
 #include "malloc.h"
 
 int debug_level = 1000;
@@ -68,18 +67,7 @@ void logerr(const char *__restrict __fmt, ...)
     va_end(args);
     fprintf(stderr,"\n");
 }
-void print_FB_status(GLuint status)
-{
-    if (status == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n");
-    else if (status == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS\n");
-    else if (status == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-        debugl(9,"GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT\n");
-    else if (status == GL_FRAMEBUFFER_UNSUPPORTED)
-        debugl(9,"GL_FRAMEBUFFER_UNSUPPORTED\n");
-    else  debugl(9,"GL_FRAMEBUFFER_INCOMPLETE %#010x\n",status);
-}
+
 std::map<std::string, AllocData> alloc_info;
 long counts[256];
 long full_counts[256];
@@ -291,4 +279,19 @@ std::string print_mat4x4(glm::mat4x4 mat)
   }
   res+="]";
   return res;
+}
+
+FpsCounter::FpsCounter()
+{
+    t1 = std::chrono::steady_clock::now();
+    t_prev = std::chrono::steady_clock::now();
+}
+void FpsCounter::tick()
+{
+    t_prev = t1;
+    t1 = std::chrono::steady_clock::now();
+    float frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t_prev).count();
+    frame_time = MAX(frame_time,0.1);
+    average_fps = mu*average_fps + (1 - mu)*(1000/frame_time);
+    frame++;
 }

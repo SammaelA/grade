@@ -1,6 +1,5 @@
 #include "common_utils/field_2d.h"
 #include "common_utils/utility.h"
-#include "graphics_utils/texture_manager.h"
 #include "perlin.h"
 #include <vector>
     void Field_2d::create(glm::vec3 pos, glm::vec2 size, float cell_size)
@@ -190,72 +189,6 @@
             }
             debugnl();
         }
-    }
-    void Field_2d::save_as_image(std::string name, float mnv, float mxv) const
-    {
-        if (mnv == mxv)
-        {
-            mnv = min_val;
-            mxv = max_val;
-        }
-        if (mnv <= mxv)
-        {
-            mnv = 0;
-            mxv = 1;
-        }
-
-        if (!data)
-            return;
-        unsigned char *image_data = new unsigned char[3*(2*w + 1)*(2*h+1)];
-        for (int i=-h;i<=h;i++)
-        {
-            for (int j=-w;j<=w;j++)
-            {
-                float val = (get(i,j) - mnv)/(mxv - mnv);
-                int pos = (i+h)*(2*w + 1) + j + w;
-                image_data[3*pos]   = 255*val;
-                image_data[3*pos+1] = 255*val;
-                image_data[3*pos+2] = 255*val;
-            }
-        }
-        textureManager.save_bmp_raw(image_data, 2*w+1, 2*h+1, 3, name);
-
-        delete[] image_data;
-    }
-    
-    Texture Field_2d::save_as_texture_RGBA8(float mnv, float mxv) const
-    {
-      if (mnv == mxv)
-        {
-            mnv = min_val;
-            mxv = max_val;
-        }
-        if (mnv <= mxv)
-        {
-            mnv = 0;
-            mxv = 1;
-        }
-
-        if (!data)
-            return textureManager.empty();
-        unsigned char *image_data = new unsigned char[4*(2*w + 1)*(2*h+1)];
-        for (int i=-h;i<=h;i++)
-        {
-            for (int j=-w;j<=w;j++)
-            {
-                float val = (get(i,j) - mnv)/(mxv - mnv);
-                int pos = (j+w)*(2*h + 1) + i + h;
-                image_data[4*pos]   = 255*val;
-                image_data[4*pos+1] = 255*val;
-                image_data[4*pos+2] = 255*val;
-                image_data[4*pos+3] = 255;
-            }
-        }
-
-        Texture t = textureManager.create_texture(2*w+1, 2*h+1, GL_RGBA8, 1, image_data, GL_RGBA);
-
-        delete[] image_data;
-        return t;
     }
 
     void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 

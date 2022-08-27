@@ -1,6 +1,6 @@
 #pragma once
 #include "commands.h"
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include <queue>
 
 template <typename T>
@@ -64,6 +64,6 @@ private:
     unsigned next_command_id = 0;
 };
 
-extern CommandBuffer<InputCommands> inputCmdBuffer;
-extern CommandBuffer<GenerationCommands> genCmdBuffer;
-extern CommandBuffer<RenderCommands> renderCmdBuffer;
+extern CommandBuffer<InputCommands> *inputCmdBuffer;
+extern CommandBuffer<GenerationCommands> *genCmdBuffer;
+extern CommandBuffer<RenderCommands> *renderCmdBuffer;

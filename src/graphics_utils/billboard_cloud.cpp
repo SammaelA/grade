@@ -6,7 +6,7 @@
 #include "tinyEngine/shader.h"
 #include "common_utils/utility.h"
 #include "graphics_utils/modeling.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "common_utils/distribution.h"
 
 using namespace glm;

@@ -2,14 +2,14 @@
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../tinyEngine/model.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 //long TextureAtlas::count = 0;
 int atlases_count = 0;
 
 TextureAtlas::TextureAtlas(): 
                               Countable(1),
-                              colorTex(textureManager.empty()),
-                              normalTex(textureManager.empty()),
+                              colorTex(engine::textureManager->empty()),
+                              normalTex(engine::textureManager->empty()),
                               mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                               copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
 {
@@ -50,8 +50,8 @@ normalTex(atlas.normalTex)
 }
 TextureAtlas::TextureAtlas(int w, int h, int l, int mip_levels, bool need_normals) :
                            Countable(1),
-                           colorTex(textureManager.create_texture_array(w, h, l, GL_RGBA8, mip_levels)),
-                           normalTex(need_normals ? textureManager.create_texture_array(w, h,l, GL_RGBA8, mip_levels) : 
+                           colorTex(engine::textureManager->create_texture_array(w, h, l, GL_RGBA8, mip_levels)),
+                           normalTex(need_normals ? engine::textureManager->create_texture_array(w, h,l, GL_RGBA8, mip_levels) : 
                                                     Texture()),
                            mipMapRenderer({"mipmap_render.vs", "mipmap_render.fs"}, {"in_Position", "in_Tex"}),
                            copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"})
@@ -81,8 +81,8 @@ void TextureAtlas::destroy()
 {
     if (valid)
     {
-        textureManager.delete_tex(colorTex);
-        textureManager.delete_tex(normalTex);
+        engine::textureManager->delete_tex(colorTex);
+        engine::textureManager->delete_tex(normalTex);
         valid = false;
         isGrid = false;
     }
@@ -250,7 +250,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
                 glBindTexture(tex(k).type, tex(k).texture);
                 glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, i - 1);
                 glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, i - 1);
-                Texture ctex(textureManager.create_texture(w,h));
+                Texture ctex(engine::textureManager->create_texture(w,h));
                 fbo1 = create_framebuffer();
                 glBindFramebuffer(GL_FRAMEBUFFER, fbo1);
                 glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ctex.texture, 0);
@@ -282,7 +282,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
                 delete_framebuffer(fbo1);
                 w /= 2;
                 h /= 2;
-                textureManager.delete_tex(ctex);
+                engine::textureManager->delete_tex(ctex);
             }
         }
         glBindTexture(tex(k).type, tex(k).texture);
@@ -338,7 +338,7 @@ void TextureAtlas::increase_capacity()
 }
 void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
 {
-    Texture new_tex = textureManager.create_texture_array(width, height, new_layers, GL_RGBA8, t.get_mip_levels());
+    Texture new_tex = engine::textureManager->create_texture_array(width, height, new_layers, GL_RGBA8, t.get_mip_levels());
     Shader copy({"copy_arr.vs", "copy_arr.fs"}, {"in_Position", "in_Tex"});
     Model bm;
     std::vector<float> vertexes = {0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0};
@@ -362,7 +362,7 @@ void TextureAtlas::increase_capacity_tex(Texture &t, int new_layers)
         bm.render(GL_TRIANGLES);
     }
     
-    textureManager.delete_tex(t);
+    engine::textureManager->delete_tex(t);
     t = new_tex;
 }
 

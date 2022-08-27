@@ -1,7 +1,7 @@
 #include "impostor_metric.h"
 #include "dist_data_table.h"
 #include "graphics_utils/billboard_cloud.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "impostor_similarity_params.h"
 
 ImpostorSimilarityParams isimParams;
@@ -116,7 +116,7 @@ IntermediateClusteringData *ImpostorClusteringHelper::prepare_intermediate_data(
     /*
     if (current_clustering_step == ClusteringStep::BRANCHES)
     {
-        textureManager.save_png_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
+        engine::textureManager->save_png_raw(ictx->self_impostors_raw_atlas->get_raw_data(),
                                     ictx->self_impostors_raw_atlas->get_w(),
                                     ictx->self_impostors_raw_atlas->get_h(),
                                     4,
@@ -220,7 +220,7 @@ float imp_dist(int w, int h, Billboard &b1, Billboard &b2, TextureAtlasRawData *
     }
     if (data)
     {
-        textureManager.save_png_raw(data, w, h, 4, "debug_"+std::to_string(ccnt));
+        engine::textureManager->save_png_raw(data, w, h, 4, "debug_"+std::to_string(ccnt));
         delete data;
     }
     return (double)diff/(sum+1);

@@ -1,5 +1,5 @@
 #include "shadow.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
     void ShadowMap::use(DirectedLight &light)
     {
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -51,7 +51,7 @@
         SHADOW_HEIGHT = h;
         depthMapFBO = create_framebuffer();
 
-        depthMap = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT16, 1, nullptr, GL_DEPTH_COMPONENT, GL_FLOAT);
+        depthMap = engine::textureManager->create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT16, 1, nullptr, GL_DEPTH_COMPONENT, GL_FLOAT);
         glBindTexture(GL_TEXTURE_2D, depthMap.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -60,7 +60,7 @@
         float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);  
         
-        VSMdepthTex = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        VSMdepthTex = engine::textureManager->create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
         glBindTexture(GL_TEXTURE_2D, VSMdepthTex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -68,14 +68,14 @@
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor); 
        
-        srcDepthTex = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        srcDepthTex = engine::textureManager->create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
         glBindTexture(GL_TEXTURE_2D, srcDepthTex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        VSMdepthTexTemp = textureManager.create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+        VSMdepthTexTemp = engine::textureManager->create_texture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_RGBA32F, 1, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
         glBindTexture(GL_TEXTURE_2D, VSMdepthTexTemp.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -98,8 +98,8 @@
     ShadowMap::~ShadowMap() 
     {
         delete postFx;
-        textureManager.delete_tex(depthMap);
-        textureManager.delete_tex(VSMdepthTex);
+        engine::textureManager->delete_tex(depthMap);
+        engine::textureManager->delete_tex(VSMdepthTex);
     }
     void ShadowMap::blur()
     {

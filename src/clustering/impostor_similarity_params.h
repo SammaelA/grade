@@ -1,5 +1,5 @@
 #pragma once
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "default_clustering_params.h"
 
 struct ImpostorSimilarityParams

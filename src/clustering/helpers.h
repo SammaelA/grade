@@ -4,7 +4,7 @@
 #include "graphics_utils/volumetric_occlusion.h"
 #include <vector>
 #include <map>
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "graphics_utils/billboard_cloud.h"
 
 glm::vec3 canonical_bbox();

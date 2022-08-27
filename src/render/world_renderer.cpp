@@ -1,9 +1,9 @@
 #include "world_renderer.h"
 #define GLEW_EXPERIMENTAL
-#include "tinyEngine/TinyEngine.h"
 #include "core/body.h"
 #include "cities_generator/global.h"
 #include "graphics_utils/modeling.h"
+#include "tinyEngine/engine.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
 const int HALTON_COUNT = 8;
@@ -337,7 +337,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (render_mode != 2 && groveRenderer)
     {
       groveRenderer->render(groveRenderer->get_max_LOD(), projection, camera.camera(), camera,
-                                 glm::vec2(Tiny::view.WIDTH, Tiny::view.HEIGHT), light,
+                                 glm::vec2(engine::view->WIDTH, engine::view->HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0);
     }
     checkForGlErrors("render trees", true);
@@ -393,7 +393,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   defferedLight->get_shader().uniform("sts_inv", 1.0f / light.shadow_map_size);
   defferedLight->render();
 
-  Tiny::view.target(glm::vec3(0.6, 0.7, 1));
+  engine::view->target(glm::vec3(0.6, 0.7, 1));
   
   taa->use();
   taa->get_shader().texture("target",targets[current_target].get_tex());

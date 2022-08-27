@@ -1,5 +1,4 @@
 #include "impostor_similarity.h"
-#include "tinyEngine/TinyEngine.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "tinyEngine/postfx.h"
 #include "generation/grove_packer.h"
@@ -66,7 +65,6 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     
     get_tree_borders.uniform("pass", 0); 
     glDispatchCompute(ceil((float)slices_cnt*stripes_cnt/THREADS), 1, 1);
-    //SDL_GL_SwapWindow(Tiny::viezw.gWindow);
     glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
     get_tree_borders.uniform("pass", 1); 
@@ -145,7 +143,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     if (!reference)
-        textureManager.save_png(atl_tmp.tex(0), "alternative_atlas");
+        engine::textureManager->save_png(atl_tmp.tex(0), "alternative_atlas");
 }
 
     //get stripes data
@@ -175,7 +173,6 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     
     get_tree_stripes.uniform("pass", 0); 
     glDispatchCompute(ceil((float)slices_cnt*stripes_cnt/THREADS), 1, 1);
-    //SDL_GL_SwapWindow(Tiny::viezw.gWindow);
     glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
     get_tree_stripes.uniform("pass", 1); 
@@ -217,7 +214,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
             data_ch[4*i+2] = data[i].z;
             data_ch[4*i+3] = data[i].w;
         }
-        textureManager.save_png_raw(data_ch, slice_size.x, 4*slice_size.y, 4, "get_tree_info_debug");
+        engine::textureManager->save_png_raw(data_ch, slice_size.x, 4*slice_size.y, 4, "get_tree_info_debug");
         delete[] data;
         delete[] data_ch;
     }

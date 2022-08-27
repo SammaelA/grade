@@ -5,6 +5,7 @@ class GUI
 {
 public:
   GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx);
+  void render();
   void render_main_toolbar();
   void render_debug_settings();
   void render_cell_info();

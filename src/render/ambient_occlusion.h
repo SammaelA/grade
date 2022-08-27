@@ -2,15 +2,15 @@
 #include "tinyEngine/shader.h"
 #include "tinyEngine/postfx.h"
 #include "tinyEngine/camera.h"
-#include "app.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
+#include "tinyEngine/engine.h"
 
 class HBAORenderer
 {
 public:
     HBAORenderer();
     ~HBAORenderer();
-    void render(AppContext &ctx, GLuint viewPosTex);
+    void render(float fovRad, float width, float height, GLuint viewPosTex);
     void create(int w, int h);
     Texture &get_tex() {return aoTex;}
 private:

@@ -5,24 +5,15 @@
 #include "generation/scene_generation.h"
 #include "tinyEngine/camera.h"
 #include "core/tree.h"
-#include "common_utils/sun.h"
 #include "tinyEngine/event.h"
-class FpsCounter
-{
-  float average_fps;
-  uint64_t frame = 0;
-  float mu = 0.99;
-  std::chrono::steady_clock::time_point t1, t_prev;
-
-public:
-  FpsCounter();
-  void tick();
-  float get_average_fps() { return average_fps; }
-  int get_frame_n() { return frame; }
-};
+#include "tinyEngine/audio.h"
+#include "tinyEngine/view.h"
+#include "tinyEngine/engine.h"
 
 struct AppContext
 {
+  Event event; //Event Handler
+
   const int DEBUG_RENDER_MODE = -2;
   const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
   const int MAX_RENDER_MODE = 2;
@@ -54,19 +45,4 @@ struct AppContext
 
   int biome_brush = -1;
   float biome_brush_size = 40;
-};
-
-class InputHandler
-{
-public:
-  InputHandler(AppContext &app_ctx, const SceneGenerationContext &gen_ctx):
-  ctx(app_ctx),
-  genCtx(gen_ctx)
-  {
-
-  };
-  void handle_input(Event &e);
-private:
-  AppContext &ctx;
-  const SceneGenerationContext &genCtx;
 };

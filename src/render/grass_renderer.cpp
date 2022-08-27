@@ -1,15 +1,15 @@
 #include "grass_renderer.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "tinyEngine/camera.h"
 #include "graphics_utils/modeling.h"
 
 GrassRenderer::GrassRenderer():
  grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
  grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"}),
- grass_base(textureManager.get("grass")),
- grass_tall(textureManager.get("grass")),
- perlin(textureManager.get("noise")),
- noise(textureManager.get("colored_noise"))
+ grass_base(engine::textureManager->get("grass")),
+ grass_tall(engine::textureManager->get("grass")),
+ perlin(engine::textureManager->get("noise")),
+ noise(engine::textureManager->get("colored_noise"))
 {
     std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
     std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
@@ -53,7 +53,7 @@ grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_T
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
 
     int total_instances = 0;
-    Texture null = textureManager.empty();
+    Texture null = engine::textureManager->empty();
     int type_n = 0;
     for (const auto &p : data.grass_instances)
     {

@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "common_utils/utility.h"
 #include "cmd_buffers.h"
 #include "gui.h"
@@ -15,7 +15,7 @@ bool add_command_block(Block &b)
   if (cmd_code >= 0 && cmd_code < InputCommands::IC_COMMANDS_COUNT)
   {
     // single command
-    inputCmdBuffer.push((InputCommands)cmd_code, b);
+    inputCmdBuffer->push((InputCommands)cmd_code, b);
     return true;
   }
   return false;

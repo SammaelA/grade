@@ -1,5 +1,5 @@
 #include "GPU_clusterization.h"
-#include "../tinyEngine/TinyEngine.h"
+#include "tinyEngine/engine.h"
 
 int min_count = 0;
 double error_full = 0;
@@ -286,7 +286,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                     debugl(13,"GPU clusterization in process %d/%d\n",a,iters*iters);
                     glDispatchCompute(ceil((float)x_sz/threads),ceil((float)y_sz/threads), 1);
 
-                    SDL_GL_SwapWindow(Tiny::view.gWindow);
+                    engine::view->next_frame();
                 }
             }
             

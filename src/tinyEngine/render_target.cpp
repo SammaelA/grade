@@ -1,5 +1,5 @@
 #include "render_target.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 bool RenderTarget::create(int w, int h)
 {
@@ -9,7 +9,7 @@ bool RenderTarget::create(int w, int h)
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
     frBuffer = create_framebuffer();
 
-    tex = textureManager.create_texture(width, height, texFmt, 1);
+    tex = engine::textureManager->create_texture(width, height, texFmt, 1);
     glBindTexture(GL_TEXTURE_2D, tex.texture);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
@@ -38,6 +38,6 @@ void RenderTarget::target()
 }
 RenderTarget::~RenderTarget()
 {
-  textureManager.delete_tex(tex);
+  engine::textureManager->delete_tex(tex);
   delete_framebuffer(frBuffer);
 }

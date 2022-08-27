@@ -8,16 +8,16 @@ static glm::vec2 calcFocalLen(float fovRad, float width, float height)
 }
 HBAORenderer::HBAORenderer():
               shader("hbao.fs"),
-              noise(textureManager.get("colored_noise"))
+              noise(engine::textureManager->get("colored_noise"))
 {
 
 }
 HBAORenderer::~HBAORenderer()
 {
-  textureManager.delete_tex(aoTex);
+  engine::textureManager->delete_tex(aoTex);
   delete_framebuffer(frBuffer);
 }
-void HBAORenderer::render(AppContext &ctx, GLuint viewPosTex)
+void HBAORenderer::render(float fovRad, float width, float height, GLuint viewPosTex)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, frBuffer);
     glViewport(0, 0, width, height);
@@ -28,7 +28,7 @@ void HBAORenderer::render(AppContext &ctx, GLuint viewPosTex)
     shader.use();
     shader.get_shader().texture("noiseTex",noise.texture);
     shader.get_shader().texture("viewPosTex",viewPosTex);
-    shader.get_shader().uniform("FocalLen",calcFocalLen(ctx.fov,ctx.window_width,ctx.windows_height));
+    shader.get_shader().uniform("FocalLen",calcFocalLen(fovRad,width,height));
     shader.render();
     
     glEnable(GL_DEPTH_TEST);
@@ -40,7 +40,7 @@ void HBAORenderer::create(int w, int h)
     float borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
     frBuffer = create_framebuffer();
 
-    aoTex = textureManager.create_texture(width, height, aoTexFmt, 1, nullptr, GL_RGB, GL_UNSIGNED_BYTE);
+    aoTex = engine::textureManager->create_texture(width, height, aoTexFmt, 1, nullptr, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, aoTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

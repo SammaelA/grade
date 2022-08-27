@@ -1,8 +1,8 @@
 #include "cmd_executors.h"
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
-#include "tinyEngine/TinyEngine.h"
 #include "hydra_utils/hydra_scene_exporter.h"
+#include "app.h"
 #include <chrono>
 #include <set>
 
@@ -13,45 +13,45 @@ void InputCmdExecutor::execute(int max_cmd_count)
   bool need_update_grass = false;
 
   int cmd_left = max_cmd_count;
-  while (!inputCmdBuffer.empty() && cmd_left != 0)
+  while (!inputCmdBuffer->empty() && cmd_left != 0)
   {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    auto &cmd = inputCmdBuffer.front();
+    auto &cmd = inputCmdBuffer->front();
     switch (cmd.type)
     {
     case IC_GEN_HMAP:
-      genCmdBuffer.push(GC_GEN_HMAP, cmd.args);
-      renderCmdBuffer.push(RC_UPDATE_HMAP);
+      genCmdBuffer->push(GC_GEN_HMAP, cmd.args);
+      renderCmdBuffer->push(RC_UPDATE_HMAP);
       break;
     case IC_ADD_OBJECT:
-      genCmdBuffer.push(GC_ADD_OBJECT, cmd.args);
-      genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
-      renderCmdBuffer.push(RC_UPDATE_OBJECTS);
-      renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
-      renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+      genCmdBuffer->push(GC_ADD_OBJECT, cmd.args);
+      genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
+      renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+      renderCmdBuffer->push(RC_VISUALIZE_BVH_DEBUG);
+      renderCmdBuffer->push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
       break;
     case IC_CLEAR_SCENE:
       if (genCtx.inited)
       {
-        genCmdBuffer.push(GC_CLEAR_SCENE);
-        genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
-        renderCmdBuffer.push(RC_UPDATE_HMAP);
-        renderCmdBuffer.push(RC_UPDATE_OBJECTS);
-        renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
-        renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+        genCmdBuffer->push(GC_CLEAR_SCENE);
+        genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
+        renderCmdBuffer->push(RC_UPDATE_HMAP);
+        renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+        renderCmdBuffer->push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+        renderCmdBuffer->push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       }
       break;
     case IC_INIT_SCENE:
-      renderCmdBuffer.push(RC_INIT_RENDER);
+      renderCmdBuffer->push(RC_INIT_RENDER);
       if (genCtx.inited)
       {
-        genCmdBuffer.push(GC_CLEAR_SCENE);
-        renderCmdBuffer.push(RC_UPDATE_HMAP);
-        renderCmdBuffer.push(RC_UPDATE_OBJECTS);
+        genCmdBuffer->push(GC_CLEAR_SCENE);
+        renderCmdBuffer->push(RC_UPDATE_HMAP);
+        renderCmdBuffer->push(RC_UPDATE_OBJECTS);
       }
-      genCmdBuffer.push(GC_INIT_SCENE, cmd.args);
-      renderCmdBuffer.push(RC_GLOBAL_PARAMS_UPDATE);
-      inputCmdBuffer.pop();
+      genCmdBuffer->push(GC_INIT_SCENE, cmd.args);
+      renderCmdBuffer->push(RC_GLOBAL_PARAMS_UPDATE);
+      inputCmdBuffer->pop();
       return;
       break;
     case IC_REMOVE_OBJECT:
@@ -70,31 +70,31 @@ void InputCmdExecutor::execute(int max_cmd_count)
             Block rm_ids;
             //-1 in last field means that all objects of that type should be removed
             rm_ids.add_ivec4("remove_mask", glm::ivec4(a, b, c, d));
-            genCmdBuffer.push(GC_REMOVE_BY_ID, rm_ids);
-            genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
-            renderCmdBuffer.push(RC_UPDATE_OBJECTS);
-            renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
-            renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+            genCmdBuffer->push(GC_REMOVE_BY_ID, rm_ids);
+            genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
+            renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+            renderCmdBuffer->push(RC_VISUALIZE_BVH_DEBUG);
+            renderCmdBuffer->push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
           }
         }
       }
       break;
     case IC_UPDATE_RENDER_DEBUG_PARAMS:
-      renderCmdBuffer.push(RC_UPDATE_DEBUG_PARAMS, cmd.args);
+      renderCmdBuffer->push(RC_UPDATE_DEBUG_PARAMS, cmd.args);
       if (cmd.args.get_bool("render_grove_mask_debug", false))
       {
-        renderCmdBuffer.push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
+        renderCmdBuffer->push(RC_SAVE_GROVE_MASK_TO_TEXTURE);
       }
       if (cmd.args.get_bool("render_biome_mask_debug", false))
       {
-        renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+        renderCmdBuffer->push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       }
       if (cmd.args.get_id("render_bvh_debug") >= 0)
       {
         if (cmd.args.get_bool("render_bvh_debug", false))
-          renderCmdBuffer.push(RC_VISUALIZE_BVH_DEBUG);
+          renderCmdBuffer->push(RC_VISUALIZE_BVH_DEBUG);
         else 
-          renderCmdBuffer.push(RC_REMOVE_BVH_DEBUG);
+          renderCmdBuffer->push(RC_REMOVE_BVH_DEBUG);
       }
       break;
     case IC_PLANT_TREE:
@@ -107,7 +107,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
       b.add_vec2("pos", pos);
       b.add_string("type_name", cmd.args.get_string("type_name"));
-      genCmdBuffer.push(GC_PLANT_TREE, b);
+      genCmdBuffer->push(GC_PLANT_TREE, b);
 
       if (cmd.type == IC_PLANT_TREE_IMMEDIATE)
       {
@@ -115,7 +115,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
         int cell_id = c_ij.x * genCtx.cells_y + c_ij.y;
         Block cb;
         cb.add_int("cell_id", cell_id);
-        genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
+        genCmdBuffer->push(GC_GEN_TREES_CELL, cb);
         cell_ids_to_update.emplace(cell_id);
         need_update_trees = true;
         need_update_grass = true;
@@ -147,17 +147,17 @@ void InputCmdExecutor::execute(int max_cmd_count)
         */
         if (cells_to_update > 0)
         {
-          genCmdBuffer.push(GC_GEN_TREES_CELL, cb);
+          genCmdBuffer->push(GC_GEN_TREES_CELL, cb);
           need_update_trees = true;
           need_update_grass = true;
         }
       }
       break;
     case IC_VISUALIZE_VOXELS_DEBUG:
-      renderCmdBuffer.push(RC_VISUALIZE_VOXELS_DEBUG, cmd.args);
+      renderCmdBuffer->push(RC_VISUALIZE_VOXELS_DEBUG, cmd.args);
       break;
     case IC_REMOVE_VOXELS_DEBUG:
-      renderCmdBuffer.push(RC_REMOVE_VOXELS_DEBUG, cmd.args);
+      renderCmdBuffer->push(RC_REMOVE_VOXELS_DEBUG, cmd.args);
       break;
     case IC_CLEAR_CELL:
     {
@@ -176,27 +176,23 @@ void InputCmdExecutor::execute(int max_cmd_count)
       {
         Block b;
         b.add_arr("ids",plants_ids_to_remove);
-        genCmdBuffer.push(GC_REMOVE_TREES, b);
+        genCmdBuffer->push(GC_REMOVE_TREES, b);
         need_update_trees = true;
       }
       
       Block cb;
         cb.add_int("cell_id", cell_id);
-      genCmdBuffer.push(GC_REMOVE_GRASS_IN_CELLS, cb);
+      genCmdBuffer->push(GC_REMOVE_GRASS_IN_CELLS, cb);
       need_update_grass = true;
     }
       break;
     case IC_EXIT:
-      genCmdBuffer.push(GC_CLEAR_SCENE);
-      genCmdBuffer.push(GC_UPDATE_GLOBAL_MASK);
-      renderCmdBuffer.push(RC_UPDATE_HMAP);
-      renderCmdBuffer.push(RC_UPDATE_OBJECTS);
-      inputCmdBuffer.pop();
-      inputCmdBuffer.push(IC_EXIT_FINISH);
+      genCmdBuffer->push(GC_CLEAR_SCENE);
+      genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
+      renderCmdBuffer->push(RC_UPDATE_HMAP);
+      renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+      renderCmdBuffer->push(RC_FINISH);
       return;
-    case IC_EXIT_FINISH:
-      Tiny::event->quit = true;
-      break;
     case IC_TREE_GEN_PARAMETER_SELECTION:
     {
       Block b, set_info, ref_info;
@@ -212,7 +208,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       }
       b.add_block("settings", set_info_p);
       b.add_block("reference", ref_info_p);
-      genCmdBuffer.push(GC_TREE_GEN_PARAMETER_SELECTION, b);
+      genCmdBuffer->push(GC_TREE_GEN_PARAMETER_SELECTION, b);
       int types_cnt = set_info_p->get_int("best_results_count",1);
       bool show_res = set_info_p->get_bool("show_results",true);
       if (show_res)
@@ -224,25 +220,25 @@ void InputCmdExecutor::execute(int max_cmd_count)
           glm::vec4 pos = glm::vec4(100*i,0,0,1);
           b.add_vec4("world_pos_type", pos);
           b.add_string("type_name", type_name);
-          inputCmdBuffer.push(IC_PLANT_TREE_IMMEDIATE, b);
+          inputCmdBuffer->push(IC_PLANT_TREE_IMMEDIATE, b);
         }
       }
     }
       break;
     case IC_GEN_BIOME_MAP:
-      genCmdBuffer.push(GC_GEN_BIOME_MAP, cmd.args);
-      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+      genCmdBuffer->push(GC_GEN_BIOME_MAP, cmd.args);
+      renderCmdBuffer->push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       break;
     case IC_SET_DEFAULT_BIOME:
-      genCmdBuffer.push(GC_SET_DEFAULT_BIOME, cmd.args);
-      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+      genCmdBuffer->push(GC_SET_DEFAULT_BIOME, cmd.args);
+      renderCmdBuffer->push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       break;
     case IC_SET_BIOME_ROUND:
-      genCmdBuffer.push(GC_SET_BIOME_ROUND, cmd.args);
-      renderCmdBuffer.push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
+      genCmdBuffer->push(GC_SET_BIOME_ROUND, cmd.args);
+      renderCmdBuffer->push(RC_SAVE_BIOME_MASK_TO_TEXTURE);
       break;
     case IC_PREPARE_PLANT_PROTOTYPES:
-      genCmdBuffer.push(GC_PREPARE_PLANT_PROTOTYPES, cmd.args);
+      genCmdBuffer->push(GC_PREPARE_PLANT_PROTOTYPES, cmd.args);
       break;
     case IC_REMOVE_ALL_PLANTS:
     {
@@ -255,7 +251,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       {
         Block b;
         b.add_arr("ids",plants_ids_to_remove);
-        genCmdBuffer.push(GC_REMOVE_TREES, b);
+        genCmdBuffer->push(GC_REMOVE_TREES, b);
         need_update_trees = true;
       }
 
@@ -264,7 +260,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       {
         cb.add_int("cell_id", c.id);
       }
-      genCmdBuffer.push(GC_REMOVE_GRASS_IN_CELLS, cb);
+      genCmdBuffer->push(GC_REMOVE_GRASS_IN_CELLS, cb);
       need_update_grass = true;
     }
       break;
@@ -275,21 +271,21 @@ void InputCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case IC_SAVE_SCENE:
-      genCmdBuffer.push(GC_SAVE_SCENE, cmd.args);
+      genCmdBuffer->push(GC_SAVE_SCENE, cmd.args);
       break;
     case IC_LOAD_SCENE:
-      genCmdBuffer.push(GC_LOAD_SCENE, cmd.args);
+      genCmdBuffer->push(GC_LOAD_SCENE, cmd.args);
       {
-        renderCmdBuffer.push(RC_UPDATE_DEBUG_PARAMS);
-        renderCmdBuffer.push(RC_UPDATE_HMAP);
-        renderCmdBuffer.push(RC_UPDATE_OBJECTS);
-        renderCmdBuffer.push(RC_UPDATE_TREES);
-        renderCmdBuffer.push(RC_UPDATE_GRASS);
+        renderCmdBuffer->push(RC_UPDATE_DEBUG_PARAMS);
+        renderCmdBuffer->push(RC_UPDATE_HMAP);
+        renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+        renderCmdBuffer->push(RC_UPDATE_TREES);
+        renderCmdBuffer->push(RC_UPDATE_GRASS);
 
         Block cb;
         for (auto &cell : genCtx.cells)
           cb.add_int("cell_id", cell.id);
-        renderCmdBuffer.push(RC_UPDATE_CELL, cb);
+        renderCmdBuffer->push(RC_UPDATE_CELL, cb);
       }
       break;
     default:
@@ -299,7 +295,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     logerr("%s took %.3f ms", ToString(cmd.type), ms);
-    inputCmdBuffer.pop();
+    inputCmdBuffer->pop();
     cmd_left--;
   }
 
@@ -315,11 +311,11 @@ void InputCmdExecutor::execute(int max_cmd_count)
     }
     for (auto &cell_id : cells_deps)
       cb.add_int("cell_id", cell_id);
-    renderCmdBuffer.push(RC_UPDATE_CELL, cb);
+    renderCmdBuffer->push(RC_UPDATE_CELL, cb);
   }
 
   if (need_update_trees)
-    renderCmdBuffer.push(RC_UPDATE_TREES);
+    renderCmdBuffer->push(RC_UPDATE_TREES);
   if (need_update_grass)
-    renderCmdBuffer.push(RC_UPDATE_GRASS);
+    renderCmdBuffer->push(RC_UPDATE_GRASS);
 }

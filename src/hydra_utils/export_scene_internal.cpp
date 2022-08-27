@@ -17,7 +17,7 @@
 
 #include "core/scene.h"
 #include "graphics_utils/modeling.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 namespace hlm = LiteMath;
 using pugi::xml_node;
@@ -354,7 +354,7 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
     std::vector<int> inst_counts;
 
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
-    Texture null = textureManager.empty();
+    Texture null = engine::textureManager->empty();
     std::string prev_base_dir = model_loader::base_path;
     model_loader::base_path = base_dir + prev_base_dir;
     int total_instances = 0;

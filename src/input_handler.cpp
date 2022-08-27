@@ -1,31 +1,20 @@
+#include "input_handler.h"
+#include "core/grove.h"
+#include "generation/scene_generation.h"
+#include "tinyEngine/camera.h"
+#include "core/tree.h"
 #include "app.h"
-#include "cmd_buffers.h"
+#include "cmd_executors.h"
 #include "generation/scene_generator_helper.h"
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/gtx/euler_angles.hpp>
-#include "tinyEngine/TinyEngine.h"
-
-FpsCounter::FpsCounter()
-{
-    t1 = std::chrono::steady_clock::now();
-    t_prev = std::chrono::steady_clock::now();
-}
-void FpsCounter::tick()
-{
-    t_prev = t1;
-    t1 = std::chrono::steady_clock::now();
-    float frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t_prev).count();
-    frame_time = MAX(frame_time,0.1);
-    average_fps = mu*average_fps + (1 - mu)*(1000/frame_time);
-    frame++;
-}
 
 void InputHandler::handle_input(Event &event)
 {
   if(event.windowEventTrigger)
   {
-    Tiny::view.WIDTH = event.windowEvent.window.data1;
-    Tiny::view.HEIGHT = event.windowEvent.window.data2;
+    engine::view->WIDTH = event.windowEvent.window.data1;
+    engine::view->HEIGHT = event.windowEvent.window.data2;
   }
 
   if (ctx.frames_from_last_input < 25) //do not use hotkeys when we are typing something
@@ -35,8 +24,8 @@ void InputHandler::handle_input(Event &event)
     return;
   }
   
-  ctx.window_width = Tiny::view.WIDTH;
-  ctx.windows_height = Tiny::view.HEIGHT;
+  ctx.window_width = engine::view->WIDTH;
+  ctx.windows_height = engine::view->HEIGHT;
   
   float sensitivity = 0.1;
   float speed = 1;
@@ -94,13 +83,13 @@ void InputHandler::handle_input(Event &event)
   if (event.active[SDLK_h])
   {
     //ctx.save_to_hydra = true;
-    inputCmdBuffer.push(InputCommands::IC_GEN_HMAP);
+    inputCmdBuffer->push(InputCommands::IC_GEN_HMAP);
     logerr("create hmap 1");
     event.active[SDLK_h] = false;
   }
   if (event.active[SDLK_ESCAPE])
   {
-    inputCmdBuffer.push(InputCommands::IC_EXIT);
+    inputCmdBuffer->push(InputCommands::IC_EXIT);
     event.active[SDLK_ESCAPE] = false;
   }
   if ((event.active[SDLK_LSHIFT] || event.active[SDLK_RSHIFT]) && event.active[SDLK_p])
@@ -112,7 +101,7 @@ void InputHandler::handle_input(Event &event)
           abs(ctx.mouseWorldPosType.x - genCtx.start_pos.x) < genCtx.heightmap_size.x &&
           abs(ctx.mouseWorldPosType.z - genCtx.start_pos.y) < genCtx.heightmap_size.y);
     if (can_plant_tree_here)
-      inputCmdBuffer.push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
+      inputCmdBuffer->push(InputCommands::IC_PLANT_TREE_IMMEDIATE, b);
     event.active[SDLK_p] = false;
   }
   if (event.active[SDLK_o])
@@ -124,7 +113,7 @@ void InputHandler::handle_input(Event &event)
     b.set_string("name", ctx.active_object_name);
     b.set_bool("on_terrain", ctx.cur_object_on_terrain);
     b.set_mat4("transform", transform);
-    inputCmdBuffer.push(InputCommands::IC_ADD_OBJECT, b);
+    inputCmdBuffer->push(InputCommands::IC_ADD_OBJECT, b);
     event.active[SDLK_o] = false;
   }
   if (event.active[SDLK_b])
@@ -142,7 +131,7 @@ void InputHandler::handle_input(Event &event)
       b.set_double("outer_radius", ctx.biome_brush_size);
       b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
       b.set_int("id", ctx.biome_brush);
-      inputCmdBuffer.push(IC_SET_BIOME_ROUND, b);
+      inputCmdBuffer->push(IC_SET_BIOME_ROUND, b);
       event.click[SDL_BUTTON_LEFT] = false;
     }
     else if (event.click[SDL_BUTTON_RIGHT] && SceneGenHelper::is_terrain(ctx.mouseWorldPosType))
@@ -152,7 +141,7 @@ void InputHandler::handle_input(Event &event)
       b.set_double("outer_radius", ctx.biome_brush_size);
       b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
       b.set_int("id", -1);
-      inputCmdBuffer.push(IC_SET_BIOME_ROUND, b);
+      inputCmdBuffer->push(IC_SET_BIOME_ROUND, b);
       event.click[SDL_BUTTON_RIGHT] = false;
     }
   }
@@ -183,11 +172,11 @@ void InputHandler::handle_input(Event &event)
   {
     if(event.press.back() == SDLK_F11)//Toggle fullscreen
     {   
-      Tiny::view.fullscreen = !Tiny::view.fullscreen;
-      if(!Tiny::view.fullscreen) 
-        SDL_SetWindowFullscreen(Tiny::view.gWindow, 0);
+      engine::view->fullscreen = !engine::view->fullscreen;
+      if(!engine::view->fullscreen) 
+        SDL_SetWindowFullscreen(engine::view->gWindow, 0);
       else 
-        SDL_SetWindowFullscreen(Tiny::view.gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_SetWindowFullscreen(engine::view->gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
     }
 
     event.press.pop_back();
@@ -198,4 +187,4 @@ void InputHandler::handle_input(Event &event)
   event.mousemove = false;
   event.windowEventTrigger = false;
   event.mouseWheel = SDL_MouseWheelEvent();
-};
+}

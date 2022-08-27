@@ -2,10 +2,9 @@
 #include "graphics_utils/volumetric_occlusion.h"
 #include "grove_packer.h"
 #include "core/tree.h"
-#include "save_utils/blk.h"
+#include "common_utils/blk.h"
 #include "tree_generators/all_generators.h"
 #include "grass_generator.h"
-#include "graphics_utils/debug_transfer.h"
 #include "scene_generator_helper.h"
 #include "metainfo_manager.h"
 #include <algorithm>
@@ -470,7 +469,7 @@ namespace scene_gen
           float fract = p.second / (float)cnt_all;
           if (fract < 0.01)
             continue;
-          Biome &biome = metainfoManager.get_biome(p.first);
+          Biome &biome = metainfoManager->get_biome(p.first);
           GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
                                                 ctx.biome_map_pixel_size);
           ctx.biome_map.set_mask(*(biome_mask), p.first);
@@ -568,7 +567,7 @@ namespace scene_gen
     thread_finished = {};
     for (int i=0;i<jobs_cnt;i++)
     {
-      generationJobs.push_back(new GenerationJob(ctx, cells, metainfoManager.see_all_tree_types(), rawTreesDatabase, ctx.global_mask,
+      generationJobs.push_back(new GenerationJob(ctx, cells, metainfoManager->see_all_tree_types(), rawTreesDatabase, ctx.global_mask,
                                                  ctx.cells_x, ctx.cells_y, i));
       std::atomic<bool> ab(false);
       thread_finished.push_back(ab);                                                                         
@@ -677,7 +676,7 @@ namespace scene_gen
 
   void prepare_patches(SceneGenerationContext &ctx, int patch_type)
   {
-    auto biomes = metainfoManager.get_all_biomes();
+    auto biomes = metainfoManager->get_all_biomes();
     std::vector<std::vector<std::pair<Biome::PatchDesc, float>>> patch_descs;
 
     for (auto &b : biomes)
@@ -770,7 +769,7 @@ namespace scene_gen
           if (fract < 0.01)
             continue;
 
-          Biome &biome = metainfoManager.get_biome(p.first);
+          Biome &biome = metainfoManager->get_biome(p.first);
 
           for (auto &pn : ctx.cells[id].trees_patches)
           {

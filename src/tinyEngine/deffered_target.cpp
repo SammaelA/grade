@@ -1,5 +1,5 @@
 #include "deffered_target.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 bool DefferedTarget::create(int w, int h)
 {
@@ -9,7 +9,7 @@ bool DefferedTarget::create(int w, int h)
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
     frBuffer = create_framebuffer();
 
-    depthTex = textureManager.create_texture(width, height, GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
+    depthTex = engine::textureManager->create_texture(width, height, GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
     glBindTexture(GL_TEXTURE_2D, depthTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -17,7 +17,7 @@ bool DefferedTarget::create(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColorDepth);
 
-    colorTex = textureManager.create_texture(width, height, colorTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
+    colorTex = engine::textureManager->create_texture(width, height, colorTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, colorTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -25,7 +25,7 @@ bool DefferedTarget::create(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-    normalsTex = textureManager.create_texture(width, height, normalsTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
+    normalsTex = engine::textureManager->create_texture(width, height, normalsTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, normalsTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -33,7 +33,7 @@ bool DefferedTarget::create(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-    viewPosTex = textureManager.create_texture(width, height, viewPosTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
+    viewPosTex = engine::textureManager->create_texture(width, height, viewPosTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, viewPosTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -41,7 +41,7 @@ bool DefferedTarget::create(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-    worldPosTex = textureManager.create_texture(width, height, worldPosTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
+    worldPosTex = engine::textureManager->create_texture(width, height, worldPosTexFmt, 1, NULL, GL_RGB, GL_UNSIGNED_BYTE);
     glBindTexture(GL_TEXTURE_2D, worldPosTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -78,10 +78,10 @@ void DefferedTarget::target()
 }
 DefferedTarget::~DefferedTarget()
 {
-  textureManager.delete_tex(colorTex);
-  textureManager.delete_tex(depthTex);
-  textureManager.delete_tex(normalsTex);
-  textureManager.delete_tex(viewPosTex);
-  textureManager.delete_tex(worldPosTex);
+  engine::textureManager->delete_tex(colorTex);
+  engine::textureManager->delete_tex(depthTex);
+  engine::textureManager->delete_tex(normalsTex);
+  engine::textureManager->delete_tex(viewPosTex);
+  engine::textureManager->delete_tex(worldPosTex);
   delete_framebuffer(frBuffer);
 }

@@ -2,7 +2,7 @@
 #include "generation/scene_generation.h"
 #include "generation/grove_packer.h"
 #include "generation/metainfo_manager.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "tinyEngine/image.h"
 #include "parameter_selection/impostor_similarity.h"
 #include "parameter_selection/genetic_algorithm.h"
@@ -233,8 +233,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     */
    /*
     {
-        metainfoManager.reload_all();
-        TreeTypeData type = metainfoManager.get_tree_type("apple");
+        metainfoManager->reload_all();
+        TreeTypeData type = metainfoManager->get_tree_type("apple");
         scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
         scene.heightmap->fill_const(0);
         
@@ -290,7 +290,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 */
     Block b, ref_info;
     
-    metainfoManager.reload_all();
+    metainfoManager->reload_all();
     load_block_from_file("parameter_selection_settings.blk", b);
     load_block_from_file("parameter_selection_reference.blk", ref_info);
     std::string add_str = "";
@@ -308,10 +308,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     ParameterSelector sel;
     auto res = sel.parameter_selection(ref_info, b, scene);
  /*   
-    metainfoManager.reload_all();
+    metainfoManager->reload_all();
     scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
     scene.heightmap->fill_const(0);
-    TreeTypeData type = metainfoManager.get_tree_type("apple");
+    TreeTypeData type = metainfoManager->get_tree_type("apple");
     float imp_size = 512;
     GroveGenerationData tree_ggd;
     tree_ggd.trees_count = 1;
@@ -357,11 +357,11 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
     delete ref_voxels;
-    textureManager.save_png(scene.grove.impostors[1].atlas.tex(0), "original_atlas");
+    engine::textureManager->save_png(scene.grove.impostors[1].atlas.tex(0), "original_atlas");
 
-    Texture tex1 = textureManager.load_unnamed_tex(image::base_img_path + "24_A_mono.png");
-    Texture tex2 = textureManager.load_unnamed_tex(image::base_img_path + "24_B_mono.png");
-    //Texture tex3 = textureManager.create_unnamed(tex1.get_W(), tex1.get_H());
+    Texture tex1 = engine::textureManager->load_unnamed_tex(image::base_img_path + "24_A_mono.png");
+    Texture tex2 = engine::textureManager->load_unnamed_tex(image::base_img_path + "24_B_mono.png");
+    //Texture tex3 = engine::textureManager->create_unnamed(tex1.get_W(), tex1.get_H());
     TextureAtlas tmp_atlas = TextureAtlas(2*tex1.get_W(), 2*tex1.get_H(), 1);
     tmp_atlas.set_grid(2*tex1.get_W(), 2*tex1.get_H());
     int id = tmp_atlas.add_tex();
@@ -371,7 +371,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     pixel_dist.get_shader().texture("tex1", tex1);
     pixel_dist.get_shader().texture("tex2", tex2);
     pixel_dist.render();
-    textureManager.save_png(tmp_atlas.tex(0), "cmp");
+    engine::textureManager->save_png(tmp_atlas.tex(0), "cmp");
 */
 /*
    LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

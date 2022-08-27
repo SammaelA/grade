@@ -51,4 +51,4 @@ private:
     bool loaded = false;
 };
 
-extern MetainfoManager metainfoManager;
+extern MetainfoManager *metainfoManager;

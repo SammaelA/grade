@@ -5,12 +5,13 @@
 #include <initializer_list>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
-class Audio{
+class Audio
+{
 public:
   bool enabled = false;
 
-  std::unordered_map<std::string, Mix_Chunk*> sounds;
-  std::deque<Mix_Chunk*> unprocessed;
+  std::unordered_map<std::string, Mix_Chunk *> sounds;
+  std::deque<Mix_Chunk *> unprocessed;
 
   bool init();
   bool quit();

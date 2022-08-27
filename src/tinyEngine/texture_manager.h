@@ -48,4 +48,3 @@ private:
 
     int current_textures_tag = 0; 
 };
-extern TextureManager textureManager;

@@ -1,5 +1,5 @@
 #include "modeling.h"
-#include "texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "third_party/obj_loader.h"
 
 namespace model_loader
@@ -18,7 +18,7 @@ Model *create_model_by_name(std::string name, Texture &tex)
 {
     if (name == "debug_box")
     {
-        tex = textureManager.get("noise");
+        tex = engine::textureManager->get("noise");
         return create_debug_box_model();
     }
     else if (name == "simple_grass")
@@ -99,13 +99,13 @@ Model *load_model_from_obj(std::string name, Texture &tex)
     std::string obj_filename = base_path + "/" + folder_name + "/" + obj->get_string("obj", "");
     std::string obj_color_tex = base_path + "/" + folder_name + "/" + obj->get_string("color", "");
 
-    bool success = textureManager.load_tex_to_catalog(name + "_tex", obj_color_tex);
+    bool success = engine::textureManager->load_tex_to_catalog(name + "_tex", obj_color_tex);
     if (!success)
     {
         logerr("texture manager cannot load file %s", obj_color_tex.c_str());
         return nullptr;
     }
-    tex = textureManager.get(name + "_tex");
+    tex = engine::textureManager->get(name + "_tex");
 
     objl::Loader loader;
     success = loader.LoadFile(obj_filename);
@@ -225,8 +225,8 @@ bool create_model_from_block(Block &bl, ComplexModel &mod)
         base_name = obj->get_string("color", "");
       std::string obj_color_tex = base_path + "/" + folder_name + "/" + base_name;
       Texture tex = base_name == "" ? 
-                    textureManager.get("white") :
-                    textureManager.load_unnamed_tex(obj_color_tex);
+                    engine::textureManager->get("white") :
+                    engine::textureManager->load_unnamed_tex(obj_color_tex);
       if (!tex.is_valid())
       {
         logerr("texture manager cannot load file %s", obj_color_tex.c_str());

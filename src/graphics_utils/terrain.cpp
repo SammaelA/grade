@@ -2,7 +2,7 @@
 #include <cmath>
 #include "common_utils/utility.h"
 #include "tinyEngine/camera.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "common_utils/bbox.h"
 #include "third_party/stb_image.h"
 #include "tinyEngine/image.h"
@@ -98,7 +98,7 @@
                 data[i*h + j] = (1e-3)*heightmap.get_height(pos);
             }
         }
-        hmtex = textureManager.create_texture(w, h, GL_R16F, 1, (void*)data, GL_RED, GL_FLOAT);
+        hmtex = engine::textureManager->create_texture(w, h, GL_R16F, 1, (void*)data, GL_RED, GL_FLOAT);
         glBindTexture(GL_TEXTURE_2D, hmtex.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -111,5 +111,5 @@
     }
     HeightmapTex::~HeightmapTex()
     {
-      textureManager.delete_tex(hmtex);
+      engine::textureManager->delete_tex(hmtex);
     }

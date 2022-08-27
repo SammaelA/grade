@@ -1,7 +1,7 @@
 #include "neural_selection.h"
 #include "tree_generators/all_generators.h"
 #include "generation/grove_packer.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "parameter_selection_utils.h"
 #include "save_utils/csv.h"
 #include <vector>
@@ -47,7 +47,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingPar
             
         }
 
-        textureManager.set_textures_tag(1);
+        engine::textureManager->set_textures_tag(1);
         GrovePacker packer;
         Tree *trees = new Tree[params.size()];
         GrovePacked tmp_g;
@@ -123,7 +123,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingPar
                     values.push_back(std::to_string(params_normalzied[imp_n][i]));
                 }
                 dataset.add_row(values);
-                textureManager.save_png_raw_directly(sl_data, impostor_size, impostor_size, 4, save_path + "/" + dir);
+                engine::textureManager->save_png_raw_directly(sl_data, impostor_size, impostor_size, 4, save_path + "/" + dir);
                 total_images_count++;
             }
             imp_n++;
@@ -140,7 +140,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingPar
         {
             imp.atlas.destroy();
         }
-        textureManager.clear_unnamed_with_tag(1);
+        engine::textureManager->clear_unnamed_with_tag(1);
     }
 
     CSVSaver saver;

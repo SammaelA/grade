@@ -10,6 +10,21 @@
 
 char __input_buf[4096];
 
+void GUI::render()
+{
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame(engine::view->gWindow);
+  ImGui::NewFrame();
+
+  render_main_toolbar();
+  read_from_console_nonblock();
+
+  ImGui::Render();
+  glViewport(0, 0, (int)engine::view->io.DisplaySize.x, (int)engine::view->io.DisplaySize.y);
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  while(glGetError() != GL_NO_ERROR){}//ImGUI produces invalid value error every frame, I dont know why
+}
+
 bool GUI::input_text(const char *label, std::string &text)
 {
   int len = text.size();
@@ -186,8 +201,8 @@ void GUI::render_parameter_selection_menu()
       bool get = input_text("New name", new_name);
       if (get)
       {
-        TreeTypeData type = metainfoManager.get_tree_type(selected_name);
-        metainfoManager.add_tree_type(type, new_name);
+        TreeTypeData type = metainfoManager->get_tree_type(selected_name);
+        metainfoManager->add_tree_type(type, new_name);
         selected_name = "";
         new_name = "";
       }
@@ -196,7 +211,7 @@ void GUI::render_parameter_selection_menu()
     {
       static int cur_item = -1;
       const char * types[16] = {nullptr};
-      auto &types_map = metainfoManager.see_all_tree_type_names();
+      auto &types_map = metainfoManager->see_all_tree_type_names();
       int i=0;
       for (auto &p : types_map)
       {
@@ -215,7 +230,7 @@ void GUI::render_parameter_selection_menu()
         selected_name = std::string(types[cur_item]);
       if (finish)
       {
-        metainfoManager.save_all();
+        metainfoManager->save_all();
         selection_finished = false;
       }
     }
@@ -253,7 +268,7 @@ void GUI::render_parameter_selection_menu()
       Block b;
       b.add_block("settings", &set_info);
       b.add_block("reference", &ref_info);
-      inputCmdBuffer.push(IC_TREE_GEN_PARAMETER_SELECTION, b);
+      inputCmdBuffer->push(IC_TREE_GEN_PARAMETER_SELECTION, b);
       selection_finished = true;
     }
   }
@@ -392,17 +407,17 @@ void GUI::render_biome_toolbar()
     {
       Block b;
       b.add_bool("render_biome_mask_debug", true);
-      inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
+      inputCmdBuffer->push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
       biome_brush = true;
       end_brush = false;
     }
     create_new_map = ImGui::Button("Create biome map");
     if (ImGui::Button("Prepare for trees generation"))
-      inputCmdBuffer.push(InputCommands::IC_PREPARE_PLANT_PROTOTYPES);
+      inputCmdBuffer->push(InputCommands::IC_PREPARE_PLANT_PROTOTYPES);
     if (ImGui::Button("Regenerate all trees"))
     {
-      inputCmdBuffer.push(InputCommands::IC_REMOVE_ALL_PLANTS);
-      inputCmdBuffer.push(InputCommands::IC_GEN_ALL_PLANTED_TREES);
+      inputCmdBuffer->push(InputCommands::IC_REMOVE_ALL_PLANTS);
+      inputCmdBuffer->push(InputCommands::IC_GEN_ALL_PLANTED_TREES);
     }
     b_update = ImGui::Button("Update biome list");
   }
@@ -411,20 +426,20 @@ void GUI::render_biome_toolbar()
   {
     Block b;
     b.add_bool("render_biome_mask_debug", false);
-    inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
+    inputCmdBuffer->push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
     biome_brush = false;
   }
 
   if (b_update)
   {
-    metainfoManager.reload_all();
+    metainfoManager->reload_all();
   }
   if (update || b_update)
   {
     names.clear();
     for (int i=0;i<256;i++)
       types[i] = nullptr;
-    auto &b_names = metainfoManager.see_all_biome_names();
+    auto &b_names = metainfoManager->see_all_biome_names();
 
     types_cnt = b_names.size();
     names.reserve(types_cnt);
@@ -440,9 +455,9 @@ void GUI::render_biome_toolbar()
     update = false;
   }
   if (create_new_map)
-    inputCmdBuffer.push(IC_GEN_BIOME_MAP);
+    inputCmdBuffer->push(IC_GEN_BIOME_MAP);
   if (biome_brush && cur_item >= 0)
-    appCtx.biome_brush = metainfoManager.get_biome_id_by_name(names[cur_item]);
+    appCtx.biome_brush = metainfoManager->get_biome_id_by_name(names[cur_item]);
   else  
     appCtx.biome_brush = -1;
 }
@@ -474,7 +489,7 @@ void GUI::render_debug_settings()
 
     if (change)
     {
-        inputCmdBuffer.push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
+        inputCmdBuffer->push(InputCommands::IC_UPDATE_RENDER_DEBUG_PARAMS, b);
     }
 }
 
@@ -494,19 +509,19 @@ void GUI::render_cell_info()
   {
     Block b;
     b.add_int("cell_id",appCtx.active_cell_id);
-    inputCmdBuffer.push(InputCommands::IC_REMOVE_VOXELS_DEBUG, b);
+    inputCmdBuffer->push(InputCommands::IC_REMOVE_VOXELS_DEBUG, b);
   }
   else if (!visualize_prev && cell.visualize_voxels_array)
   {
     Block b;
     b.add_int("cell_id",appCtx.active_cell_id);
-    inputCmdBuffer.push(InputCommands::IC_VISUALIZE_VOXELS_DEBUG, b);    
+    inputCmdBuffer->push(InputCommands::IC_VISUALIZE_VOXELS_DEBUG, b);    
   }
   if (remove_trees)
   {
     Block b;
     b.add_int("cell_id",appCtx.active_cell_id);
-    inputCmdBuffer.push(InputCommands::IC_CLEAR_CELL, b);  
+    inputCmdBuffer->push(InputCommands::IC_CLEAR_CELL, b);  
   }
 }
 
@@ -566,7 +581,7 @@ void GUI::render_tree_plant_info()
   static int cur_item = -1;
   int prev_cur_item = cur_item;
   const char * types[256] = {nullptr};
-  auto &types_map = metainfoManager.see_all_tree_type_names();
+  auto &types_map = metainfoManager->see_all_tree_type_names();
   int i=0;
   for (auto &p : types_map)
   {
@@ -607,7 +622,7 @@ void GUI::render_hydra_toolbar()
   bool exp = ImGui::Button("Export");
   if (exp)
   {
-    inputCmdBuffer.push(IC_EXPORT_SCENE_TO_HYDRA, settings);
+    inputCmdBuffer->push(IC_EXPORT_SCENE_TO_HYDRA, settings);
   }
   {
     appCtx.camera.pos = settings.get_vec3("camera_pos");
@@ -635,17 +650,17 @@ bool GUI::render_save_settings()
   {
     Block b;
     b.add_string("name", save_name);
-    inputCmdBuffer.push(IC_SAVE_SCENE, b);
+    inputCmdBuffer->push(IC_SAVE_SCENE, b);
   }
   if (ld)
   {
     Block b;
     b.add_string("name", load_name);
-    inputCmdBuffer.push(IC_LOAD_SCENE, b);
+    inputCmdBuffer->push(IC_LOAD_SCENE, b);
   }
   if (clear)
   {
-    inputCmdBuffer.push(IC_CLEAR_SCENE);
+    inputCmdBuffer->push(IC_CLEAR_SCENE);
   }
   return sv || ld || clear;
 }

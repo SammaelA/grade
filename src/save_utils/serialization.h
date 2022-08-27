@@ -18,10 +18,11 @@
 #include "common_utils/field_2d.h"
 #include "graphics_utils/terrain.h"
 #include "graphics_utils/volumetric_occlusion.h"
-#include "blk.h"
+#include "common_utils/blk.h"
 #include "common_utils/bvh.h"
 #include "texture_save_manager.h"
 #include "graphics_utils/texture_atlas.h"
+#include "tinyEngine/engine.h"
 
 namespace boost
 {

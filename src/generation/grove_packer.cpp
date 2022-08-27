@@ -1,6 +1,6 @@
 #include "common_utils/utility.h"
 #include "clustering/clustering.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "graphics_utils/modeling.h"
 #include "common_utils/distribution.h"
 #include <math.h>
@@ -741,7 +741,7 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
             if (!ids_found[tid])
             {
                 ids_found[tid] = true;
-                auto &type = metainfoManager.get_tree_type(tid);
+                auto &type = metainfoManager->get_tree_type(tid);
                 int w_tex_n = unique_wood_texs.size();
                 for (int i=0;i<unique_wood_texs.size();i++)
                 {
@@ -795,7 +795,7 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
     }
 
     if (save_png)
-        textureManager.save_png(atl.woodAtlas->tex(0),"wood_atlas");
+        engine::textureManager->save_png(atl.woodAtlas->tex(0),"wood_atlas");
     if (save_atlases)
         atl.woodAtlas->gen_mipmaps();
     else
@@ -819,7 +819,7 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
     }
 
     if (save_png)
-        textureManager.save_png(atl.leavesAtlas->tex(0),"leaves_atlas");
+        engine::textureManager->save_png(atl.leavesAtlas->tex(0),"leaves_atlas");
     if (alpha_tex_needed)
     {
         PostFx copy_alpha = PostFx("alpha_split_alpha.fs");
@@ -834,7 +834,7 @@ void GrovePacker::prepare_grove_atlas(GrovePacked &grove, int tex_w, int tex_h, 
             copy_alpha.get_shader().texture("tex",unique_leaves_texs[i]);
             copy_alpha.render();
         }
-        textureManager.save_png(atl_alpha.tex(0),"leaves_atlas_alpha");
+        engine::textureManager->save_png(atl_alpha.tex(0),"leaves_atlas_alpha");
     }
     if (save_atlases)
         atl.leavesAtlas->gen_mipmaps();

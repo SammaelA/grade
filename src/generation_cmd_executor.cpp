@@ -27,7 +27,7 @@ namespace scene_gen
 
   void init_scene(Block &_settings, SceneGenerationContext &ctx)
   {
-    metainfoManager.reload_all();
+    metainfoManager->reload_all();
     ctx.settings = _settings;
 
     ctx.heightmap_size = ctx.settings.get_vec2("heightmap_size", glm::vec2(1000, 1000));
@@ -77,7 +77,7 @@ namespace scene_gen
 
     Block clustering_settings;
     load_block_from_file("settings.blk", clustering_settings);
-    ctx.packer.init(clustering_settings, metainfoManager.see_all_tree_types());
+    ctx.packer.init(clustering_settings, metainfoManager->see_all_tree_types());
   }
 
 
@@ -226,7 +226,7 @@ namespace scene_gen
 
   void plant_tree(glm::vec2 pos, int type, SceneGenerationContext &ctx)
   {
-    if (type < 0 || type >= metainfoManager.get_all_tree_types().size())
+    if (type < 0 || type >= metainfoManager->get_all_tree_types().size())
     {
       logerr("Failed to place tree manually. Invalid type = %d", type);
       return;
@@ -265,9 +265,9 @@ namespace scene_gen
 void GenerationCmdExecutor::execute(int max_cmd_count)
 {
   int cmd_left = max_cmd_count;
-  while (!genCmdBuffer.empty() && cmd_left != 0)
+  while (!genCmdBuffer->empty() && cmd_left != 0)
   {
-    auto &cmd = genCmdBuffer.front();
+    auto &cmd = genCmdBuffer->front();
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (genCtx.inited || cmd.type == GC_INIT_SCENE)
     {
@@ -377,7 +377,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     case GC_PLANT_TREE:
       {
       std::string type_name = cmd.args.get_string("type_name");
-      int type_id = metainfoManager.get_tree_type_id_by_name(type_name);
+      int type_id = metainfoManager->get_tree_type_id_by_name(type_name);
       if (type_id >= 0)
       {
         scene_gen::plant_tree(cmd.args.get_vec2("pos"), type_id, genCtx);
@@ -424,7 +424,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         int i = 0;
         for (auto &res : result.best_candidates)
         {
-          metainfoManager.add_tree_type(res,std::string("__tmp_")+std::to_string(i));
+          metainfoManager->add_tree_type(res,std::string("__tmp_")+std::to_string(i));
           i++;
         }
       }
@@ -435,9 +435,9 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case GC_GEN_BIOME_MAP:
-      genCtx.biome_map.set_rect(genCtx.biome_map.borders(), metainfoManager.get_biome_id_by_name("empty_biome"));
-      genCtx.biome_map.set_default_biome(metainfoManager.get_biome_id_by_name("empty_biome"));
-      genCtx.biome_map.set_round(glm::vec3(0,0,0), 100, 150, metainfoManager.get_biome_id_by_name("simple_forest"));
+      genCtx.biome_map.set_rect(genCtx.biome_map.borders(), metainfoManager->get_biome_id_by_name("empty_biome"));
+      genCtx.biome_map.set_default_biome(metainfoManager->get_biome_id_by_name("empty_biome"));
+      genCtx.biome_map.set_round(glm::vec3(0,0,0), 100, 150, metainfoManager->get_biome_id_by_name("simple_forest"));
       break;
     case GC_SET_DEFAULT_BIOME:
     {
@@ -544,7 +544,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     logerr("%s took %.3f ms", ToString(cmd.type), ms);
-    genCmdBuffer.pop();
+    genCmdBuffer->pop();
     cmd_left--;
   }
 }

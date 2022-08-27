@@ -1,5 +1,4 @@
 #include "impostor_similarity.h"
-#include "tinyEngine/TinyEngine.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include "tinyEngine/postfx.h"
 #include "generation/grove_packer.h"
@@ -235,7 +234,6 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
     tree_info_shader.uniform("image_debug", (int)image_debug); 
 
     glDispatchCompute(ceil(slices_cnt), 1, 1);
-    //SDL_GL_SwapWindow(Tiny::view.gWindow);
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, tree_image_info_buf);
@@ -265,7 +263,7 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
             data_ch[4*i+3] = data[i].w;
             //debug("%d %d %d %d  ",data[i].x, data[i].y, data[i].z, data[i].w);
         }
-        textureManager.save_png_raw(data_ch, slice_sizes.x, 4*slice_sizes.y, 4, "get_tree_info_debug");
+        engine::textureManager->save_png_raw(data_ch, slice_sizes.x, 4*slice_sizes.y, 4, "get_tree_info_debug");
         delete[] data;
         delete[] data_ch;
     }
@@ -384,7 +382,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     int slices_cnt = grove.impostors[1].impostors.size()*(slices_per_impostor);
 
     std::map<int, TreeImageInfo> images_info;
-    //textureManager.save_png(grove.impostors[1].atlas.tex(0),"atlas_original");
+    //engine::textureManager->save_png(grove.impostors[1].atlas.tex(0),"atlas_original");
     get_tree_image_info(grove.impostors[1].atlas, images_info, false);
 
     int imp_n = 0;
@@ -507,7 +505,6 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     similarity_shader.uniform("relative_scale", relative_scale); 
 
     glDispatchCompute(slices_cnt, 1, 1);
-    //SDL_GL_SwapWindow(Tiny::view.gWindow);
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, results_buf);
@@ -529,7 +526,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
             data_ch[4*i+3] = data[i].w;
             //debug("%d %d %d %d  ",data[i].x, data[i].y, data[i].z, data[i].w);
         }
-        textureManager.save_png_raw(data_ch, slice_sizes.x, 4*slice_sizes.y, 4, "atlas_comp");
+        engine::textureManager->save_png_raw(data_ch, slice_sizes.x, 4*slice_sizes.y, 4, "atlas_comp");
         delete[] data;
         delete[] data_ch;
     }
@@ -686,7 +683,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_0");
+    //engine::textureManager->save_png(atl_tmp.tex(0), "atlass_gauss_0");
     for (int l = 0; l < atl.layers_count(); l++)
     {
         atl.target(l, 0);
@@ -701,7 +698,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         gauss.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl.tex(0), "atlass_gauss_1");
+    //engine::textureManager->save_png(atl.tex(0), "atlass_gauss_1");
 
     PostFx sil_fill = PostFx("silhouette_fill.fs");
     for (int l = 0; l < atl.layers_count(); l++)
@@ -749,7 +746,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_fill.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl_tmp.tex(0), "atlass_gauss_2");
+    //engine::textureManager->save_png(atl_tmp.tex(0), "atlass_gauss_2");
 
     PostFx sil_sharp = PostFx("silhouette_sharpen.fs");
     for (int l = 0; l < atl.layers_count(); l++)
@@ -763,5 +760,5 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         sil_sharp.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    //textureManager.save_png(atl.tex(0), "atlass_gauss_3");
+    //engine::textureManager->save_png(atl.tex(0), "atlass_gauss_3");
 }

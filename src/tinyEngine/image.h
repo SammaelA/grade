@@ -1,5 +1,9 @@
 #pragma once
-#include "TinyEngine.h"
+#include <string>
+#include <functional>
+#include <SDL2/SDL_surface.h>
+#include <glm/glm.hpp>
+
 namespace image {
   extern std::string base_img_path;
   SDL_Surface* load(std::string path);

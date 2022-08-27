@@ -1,6 +1,6 @@
 #pragma once
 #include "core/scene.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "common_utils/utility.h"
 
 

@@ -1,5 +1,5 @@
 #include "graphics_utils/impostor.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 #include "generation/generation_task.h"
 
 using glm::vec3;

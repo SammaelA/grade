@@ -105,6 +105,6 @@ void DebugGraph::save_as_image(std::string name, int pix_x, int pix_y)
         }
     }
 
-    textureManager.save_png_raw(image, pix_x, pix_y, 4, name);
+    engine::textureManager->save_png_raw(image, pix_x, pix_y, 4, name);
     delete[] image;
 }

@@ -1,6 +1,6 @@
 #include "experimental_hashing.h"
 #include "impostor_similarity_params.h"
-#include "graphics_utils/texture_manager.h"
+#include "tinyEngine/engine.h"
 
 BranchClusteringData *ImpostorHashClusteringHelper2::convert_branch(Block &settings, Branch *base,
                                                                     ClusteringContext *ctx,
