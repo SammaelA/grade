@@ -7,6 +7,8 @@
 #include "gui.h"
 #include "generation/metainfo_manager.h"
 #include "input_handler.h"
+#include "sandbox.h"
+
 MetainfoManager *metainfoManager = nullptr;
 CommandBuffer<InputCommands> *inputCmdBuffer = nullptr;
 CommandBuffer<GenerationCommands> *genCmdBuffer = nullptr;
@@ -14,21 +16,25 @@ CommandBuffer<RenderCommands> *renderCmdBuffer = nullptr;
 
 int main(int argc, char *argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "-sandbox")
+    {
+      sandbox_main(argc, argv, nullptr);
+      return 0;
+    }
+    AppContext appContext;
+    View view;
+    view.lineWidth = 1.0f;
+    view.init("Procedural Tree", appContext.window_width, appContext.windows_height);
+    engine::view = &view;
+
+    model_loader::load_default_blk();
     Block textures_list;
     load_block_from_file("resources.blk", textures_list);
-
-    AppContext appContext;
     TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
     CommandBuffer<InputCommands> input_cmd_buffer;
     CommandBuffer<GenerationCommands> gen_cmd_buffer;
     CommandBuffer<RenderCommands> render_cmd_buffer;
     MetainfoManager metainfo_manager;
-    View view;
-    view.lineWidth = 1.0f;
-    view.init("Procedural Tree", appContext.window_width, appContext.windows_height);
-    model_loader::load_default_blk();
-
-    engine::view = &view;
     engine::textureManager = &textureManager;
     inputCmdBuffer = &input_cmd_buffer;
     genCmdBuffer = &gen_cmd_buffer;

@@ -11,6 +11,7 @@
 #include "tree_generators/all_generators.h"
 #include "tree_generators/weber_penn_generator.h"
 #include "parameter_selection/neural_selection.h"
+#include "diff_generators/diff_geometry_generation.h"
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -220,6 +221,10 @@ float dot_metric(Tree &single_tree, float dst_dot)
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
+  std::vector<float> model;
+  dgen::dgen_test(model);
+  return;
+
     /*
     for (int i=0;i<2500;i++)
     {

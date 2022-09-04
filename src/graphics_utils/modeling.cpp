@@ -1185,4 +1185,37 @@ void visualize_aabb(::std::vector<AABB> &boxes, Mesh *m, ::std::vector<glm::vec3
     logerr("visualize_aabb colors and boxes arrays should have the same size");
   }
 }
+
+void simple_mesh_to_model_332(const std::vector<float> &verts, Mesh *m)
+{
+  const int FPV = 8;
+  if (verts.size() == 0 || verts.size() % FPV*3 != 0)
+  {
+    logerr("simple_mesh_to_model_332: invalid input data. Should have %d*3*n floats", FPV);
+    return;
+  }
+  int verts_cnt = verts.size()/FPV;
+  m->positions.resize(3*verts_cnt);
+  m->normals.resize(3*verts_cnt);
+  m->colors.resize(4*verts_cnt);
+  m->indices.resize(verts_cnt);
+
+  for (int i=0;i<verts_cnt;i++)
+  {
+    m->positions[3*i] = verts[FPV*i];
+    m->positions[3*i+1] = verts[FPV*i+1];
+    m->positions[3*i+2] = verts[FPV*i+2];
+
+    m->normals[3*i] = verts[FPV*i+3];
+    m->normals[3*i+1] = verts[FPV*i+4];
+    m->normals[3*i+2] = verts[FPV*i+5];
+
+    m->colors[4*i] = verts[FPV*i+6];
+    m->colors[4*i+1] = verts[FPV*i+7];
+    m->colors[4*i+2] = 0;
+    m->colors[4*i+3] = 1;
+
+    m->indices[i] = i;
+  }
+}
 }

@@ -43,6 +43,7 @@ namespace visualizer
                                   int mip = 0);
     void visualize_aabb(AABB &box, Mesh *m, glm::vec3 &color);
     void visualize_aabb(::std::vector<AABB> &boxes, Mesh *m, ::std::vector<glm::vec3> &colors);
+    void simple_mesh_to_model_332(const std::vector<float> &verts, Mesh *m);
 };
 
 namespace model_loader
