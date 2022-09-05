@@ -1,94 +1,15 @@
 #include "diff_geometry_generation.h"
 #include "common_utils/utility.h"
+#include "graphics_utils/modeling.h"
 #include <cppad/cppad.hpp>
 
 namespace dgen
 {
-  typedef CppAD::AD<float> dfloat;
-
-  typedef dfloat dvec2[2];
-  typedef dfloat dvec3[3];
-  typedef dfloat dvec4[4];
-  typedef dfloat dmat44[16];
-
-  #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
-  typedef dfloat dvertex[FLOAT_PER_VERTEX];
   #define MODEL_ARG std::vector<dfloat> &vert
   #define MODEL vert
 
-  inline void get_dvec2(dvec2 res, dfloat x, dfloat y)
-  {
-    res[0] = x;
-    res[1] = y;
-  }
-
-  #define __DVEC3_CONSTRUCTOR(t1,t2,t3) \
-  inline void get_dvec3(dvec3 res, t1 x, t2 y, t3 z) \
-  { \
-    res[0] = x;\
-    res[1] = y;\
-    res[2] = z;\
-  }
-
-  __DVEC3_CONSTRUCTOR( float,  float,  float)
-  __DVEC3_CONSTRUCTOR( float,  float, dfloat)
-  __DVEC3_CONSTRUCTOR( float, dfloat,  float)
-  __DVEC3_CONSTRUCTOR( float, dfloat, dfloat)
-  __DVEC3_CONSTRUCTOR(dfloat,  float,  float)
-  __DVEC3_CONSTRUCTOR(dfloat,  float, dfloat)
-  __DVEC3_CONSTRUCTOR(dfloat, dfloat,  float)
-  __DVEC3_CONSTRUCTOR(dfloat, dfloat, dfloat)
-
-  inline void get_dvec4(dvec4 res, dfloat x, dfloat y, dfloat z, dfloat w)
-  {
-    res[0] = x;
-    res[1] = y;
-    res[2] = z;
-    res[3] = w;
-  }
-
-  inline void get_dvec4(dvec4 res, dvec3 xyz, dfloat w)
-  {
-    res[0] = xyz[0];
-    res[1] = xyz[1];
-    res[2] = xyz[2];
-    res[3] = w;
-  }
-
-  inline void get_dvec4_1(dvec4 res, dvec3 xyz)
-  {
-    res[0] = xyz[0];
-    res[1] = xyz[1];
-    res[2] = xyz[2];
-    res[3] = 1;
-  }
-
-  inline void get_dvec4_0(dvec4 res, dvec3 xyz)
-  {
-    res[0] = xyz[0];
-    res[1] = xyz[1];
-    res[2] = xyz[2];
-    res[3] = 0;
-  }
-
-  inline void get_dvec4_xyz(dvec4 res, dfloat x, dfloat y, dfloat z)
-  {
-    res[0] = x;
-    res[1] = y;
-    res[2] = z;
-    res[3] = 1;
-  }
-
-  inline void add_dvec3(dvec4 res, const dvec4 a, const dvec4 b)
-  {
-    res[0] = a[0] + b[0];
-    res[1] = a[1] + b[1];
-    res[2] = a[2] + b[2];
-  }
-
   inline void add_vertex(MODEL_ARG, int n, const dvec3 pos, const dvec3 norm, const dvec2 tc)
   {
-    //int sz = vert.size();
     int sz = n*FLOAT_PER_VERTEX;
     vert.resize(sz + FLOAT_PER_VERTEX);
     vert[sz+0] = pos[0];
@@ -102,72 +23,128 @@ namespace dgen
     vert[sz+6] = tc[0];
     vert[sz+7] = tc[1];
   }
-/*
-  inline void add_triangle(MODEL_ARG, int v1, int v2, int v3)
-  {
-    int sz = ind.size();
-    ind.resize(sz+3);
-    ind[sz] = v1;
-    ind[sz+1] = v2;
-    ind[sz+2] = v3;
-  }
-*/
+
   inline int verts(MODEL_ARG)
   {
     return vert.size()/FLOAT_PER_VERTEX;
   }
-/*
-  inline int triangles(MODEL_ARG)
-  {
-    return ind.size()/3;
-  }
-*/
-  void test_triangle(MODEL_ARG, std::vector<dfloat> &params)
-  {
-    dvec3 pos0, pos1, pos2, norm;
-    dvec2 tc0, tc1, tc2;
-    get_dvec3(pos0, params[0], params[1], params[2]);
-    get_dvec3(pos1, params[0]+ params[3], params[1], params[2]);
-    get_dvec3(pos2, params[0], params[1], params[2]+ params[4]);
-    get_dvec3(norm, 0, 1, 0);
-    tc0[0] = 0;
-    tc0[1] = 0;
-    tc1[0] = 0;
-    tc1[1] = 1;
-    tc2[0] = 1;
-    tc2[1] = 0;
 
-    add_vertex(MODEL, 0, pos0, norm, tc0);
-    add_vertex(MODEL, 1, pos1, norm, tc1);
-    add_vertex(MODEL, 2, pos2, norm, tc2);
-    logerr("triangle");
+  inline std::vector<float> get_triangle()
+  {
+    std::vector<float> res = {
+      0,0,0, 0,0,1, 0,0,
+      1,0,0, 0,0,1, 0,1,
+      0,1,0, 0,0,1, 1,0
+    };
+    return res;
   }
 
-  void test_cube(MODEL_ARG, std::vector<dfloat> &params)
+  void model_to_simple_model(Mesh *m, std::vector<float> &s_model)
   {
-    
+    s_model.resize(m->indices.size()*FLOAT_PER_VERTEX);
+    int pos = 0;
+    for (int ind : m->indices)
+    {
+      s_model[pos] = m->positions[3*ind];
+      s_model[pos+1] = m->positions[3*ind+1];
+      s_model[pos+2] = m->positions[3*ind+2];
+      
+      if (m->normals.size() >= m->positions.size())
+      {
+        s_model[pos+3] = m->normals[3*ind];
+        s_model[pos+4] = m->normals[3*ind+1];
+        s_model[pos+5] = m->normals[3*ind+2];
+      }
+      else
+      {
+        s_model[pos+3] = 1;
+        s_model[pos+4] = 0;
+        s_model[pos+5] = 0;
+      }
+      if (m->colors.size()/4 >= m->positions.size()/3)
+      {
+        s_model[pos+6] = m->colors[4*ind];
+        s_model[pos+7] = m->colors[4*ind+1];
+      }
+      else
+      {
+        s_model[pos+6] = 0;
+        s_model[pos+7] = 0;
+      }
+      pos+=FLOAT_PER_VERTEX;
+    }
   }
 
-  void Cube(dfloat x0, dfloat y0, dfloat z0,
-            dfloat x1, dfloat y1, dfloat z1,
-            std::vector<dfloat> &res)
+  std::vector<float> get_cube()
   {
-    #define ADD_VEC(x, y, z, i) \
-      res[3 * i] = x;           \
-      res[3 * i + 1] = y;       \
-      res[3 * i + 2] = z;
+    Box b = Box(glm::vec3(0,0,0), glm::vec3(1,0,0), glm::vec3(0,1,0), glm::vec3(0,0,1));
+    Mesh m;
+    visualizer::box_to_model(&b, &m);
 
-    ADD_VEC(x0, y0, z0, 0);
-    ADD_VEC(x1, y0, z0, 1);
-    ADD_VEC(x0, y1, z0, 2);
-    ADD_VEC(x1, y1, z0, 3);
-    ADD_VEC(x0, y0, z1, 4);
-    ADD_VEC(x1, y0, z1, 5);
-    ADD_VEC(x0, y1, z1, 6);
-    ADD_VEC(x1, y1, z1, 7);
-    logerr("cube");
+    std::vector<float> res;
+    model_to_simple_model(&m, res);
+    return res;
   }
-  
+
+  inline void add_model(std::vector<dfloat> &dst, const std::vector<dfloat> &src)
+  {
+    dst.reserve(dst.size()+src.size());
+    for (int i=0;i<src.size();i++)
+      dst.push_back(src[i]);
+  }
+
+  inline void add_model(std::vector<dfloat> &dst, const std::vector<float> &src)
+  {
+    dst.reserve(dst.size()+src.size());
+    for (int i=0;i<src.size();i++)
+      dst.push_back(src[i]);
+  }
+
+  inline void shift(MODEL_ARG, dvec3 shift)
+  {
+    for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
+    {
+      vert[FLOAT_PER_VERTEX*i] += shift[0];
+      vert[FLOAT_PER_VERTEX*i+1] += shift[1];
+      vert[FLOAT_PER_VERTEX*i+2] += shift[2];
+    }
+  }
+
+  inline void scale(MODEL_ARG, dvec3 scale)
+  {
+    for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
+    {
+      vert[FLOAT_PER_VERTEX*i] *= scale[0];
+      vert[FLOAT_PER_VERTEX*i+1] *= scale[1];
+      vert[FLOAT_PER_VERTEX*i+2] *= scale[2];
+    }
+  }
+
+  void transform(MODEL_ARG, dmat43 mat)
+  {
+    for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
+    {
+      mulp(mat, vert[FLOAT_PER_VERTEX*i], vert[FLOAT_PER_VERTEX*i+1], vert[FLOAT_PER_VERTEX*i+2]);
+    }
+  }
+
+  void test_model(MODEL_ARG, std::vector<dfloat> &params)
+  {
+    dvec3 shift_v, scale_v;
+    get_dvec3(shift_v, params[0], params[1], params[2]);
+    get_dvec3(scale_v, params[3], params[4], params[5]);
+    std::vector<dfloat> tri_model;
+    add_model(tri_model, get_cube());
+    dmat43 mat;
+    dvec3 axis;
+    get_dvec3(axis, 0, 1, 0);
+    rotate(mat, axis, PI/4);
+    scale(tri_model, scale_v);
+    transform(tri_model, mat);
+    shift(tri_model, shift_v);
+    add_model(MODEL,tri_model);
+  }
+
   void print_model(const std::vector<float> &res)
   {
     debug("Model\n");
@@ -198,7 +175,7 @@ namespace dgen
           debug("-");
         debugnl();
       }
-      debug("%s_%.4d ", names[i % FLOAT_PER_VERTEX].c_str(), i);
+      debug("%s_%.4d ", names[i % FLOAT_PER_VERTEX].c_str(), i/FLOAT_PER_VERTEX);
       for (int j = 0; j < x_n; j++)
         debug("%.2f ", jac[i * x_n + j]);
       debugnl();
@@ -207,7 +184,7 @@ namespace dgen
 
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 5;
+    size_t x_n = 6;
     std::vector<dfloat> X(x_n);
     std::vector<int> inds;
     std::vector<dfloat> Y;
@@ -217,7 +194,7 @@ namespace dgen
     CppAD::Independent(X);
 
     //Cube(X[0], X[1], X[2], X[3], X[4], X[5], Y);
-    test_triangle(Y, X);
+    test_model(Y, X);
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
     logerr("gen_finish");
@@ -228,9 +205,9 @@ namespace dgen
     X0[0] = 100;
     X0[1] = 100;
     X0[2] = 0;
-    X0[3] = 50;
-    X0[4] = 20;
-
+    X0[3] = 30;
+    X0[4] = 30;
+    X0[5] = 30;
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
