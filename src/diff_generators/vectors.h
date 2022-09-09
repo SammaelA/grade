@@ -50,6 +50,7 @@ namespace dgen
   void div3(const dvec3 a, const dvec3 b, dvec3 res);
   dfloat dot3(const dvec3 a, const dvec3 b);
   void normalize3(dvec3 v);
+  void normalize3(dfloat &x, dfloat &y, dfloat &z);
   dfloat len3(dvec3 v);
   void cross3(const dvec3 a, const dvec3 b, dvec3 res);
 
@@ -85,6 +86,7 @@ namespace dgen
   void get_dvec4_0(dvec4 res, dvec3 xyz);
   
   //matrices
+  void copy_mat(dmat43 res, dmat43 m);
   void get_mat43(dmat43 mat, float *data);
   void get_mat43(dmat43 mat,const dvec3 a,const dvec3 b, const dvec3 c, const dvec3 tr);
   void ident(dmat43 mat);
@@ -93,10 +95,16 @@ namespace dgen
   void scale(dmat43 mat, const dfloat x, const dfloat y, const dfloat z);
   void scale(dmat43 mat, const dvec3 tr);
   void rotate(dmat43 mat, const dvec3 axis, const dfloat angle);
-  void mul(dmat43 mat, const dmat43 a, const dmat43 b);
+  void mul_mat(dmat43 mat, const dmat43 a, const dmat43 b);
   void mulp(dvec3 res, const dmat43 mat, const dvec3 vec);
   void mulp(const dmat43 mat, dfloat &x, dfloat &y, dfloat &z);
   void mulv(dvec3 res, const dmat43 mat, const dvec3 vec);
   void mulv(const dmat43 mat, dfloat &x, dfloat &y, dfloat &z);
   void mul4(dvec3 res, const dmat43 mat, const dvec4 vec);
+  void transpose3x3(dmat43 res, dmat43 m);
+  void transpose3x3(dmat43 m);
+  void transposedInverse3x3(dmat43 res, dmat43 m);
+  void transposedInverse3x3(dmat43 m);
+  void inverse3x4(dmat43 res, dmat43 m);
+  void inverse3x4(dmat43 m);
 }

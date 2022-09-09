@@ -5,10 +5,11 @@
 
 namespace dgen
 {
-  #define MODEL_ARG std::vector<dfloat> &vert
+  #define MODEL_ARG_NAMED(name) std::vector<dfloat> &vert##name
+  #define MODEL_ARG MODEL_ARG_NAMED()
   #define MODEL vert
 
-  inline void add_vertex(MODEL_ARG, int n, const dvec3 pos, const dvec3 norm, const dvec2 tc)
+  inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 pos, const dvec3 norm, const dvec2 tc)
   {
     int sz = n*FLOAT_PER_VERTEX;
     vert.resize(sz + FLOAT_PER_VERTEX);
@@ -24,7 +25,7 @@ namespace dgen
     vert[sz+7] = tc[1];
   }
 
-  inline int verts(MODEL_ARG)
+  inline int verts(std::vector<dfloat> &vert)
   {
     return vert.size()/FLOAT_PER_VERTEX;
   }
@@ -100,7 +101,7 @@ namespace dgen
       dst.push_back(src[i]);
   }
 
-  inline void shift(MODEL_ARG, dvec3 shift)
+  inline void shift(std::vector<dfloat> &vert, dvec3 shift)
   {
     for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
     {
@@ -110,39 +111,72 @@ namespace dgen
     }
   }
 
-  inline void scale(MODEL_ARG, dvec3 scale)
+  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3)
   {
-    for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
+    dmat43 norm_mat;
+    transposedInverse3x3(norm_mat, mat);
+
+    if (norm_start >= 0)
     {
-      vert[FLOAT_PER_VERTEX*i] *= scale[0];
-      vert[FLOAT_PER_VERTEX*i+1] *= scale[1];
-      vert[FLOAT_PER_VERTEX*i+2] *= scale[2];
+      for (int i=0;i<vert.size()/floats_per_vertex;i++)
+      {
+        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
+        mulv(norm_mat, vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
+        normalize3(vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
+      }
+    }
+    else
+    {
+      for (int i=0;i<vert.size()/floats_per_vertex;i++)
+      {
+        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
+      }
     }
   }
 
-  void transform(MODEL_ARG, dmat43 mat)
-  {
-    for (int i=0;i<vert.size()/FLOAT_PER_VERTEX;i++)
-    {
-      mulp(mat, vert[FLOAT_PER_VERTEX*i], vert[FLOAT_PER_VERTEX*i+1], vert[FLOAT_PER_VERTEX*i+2]);
-    }
-  }
-
-  void test_model(MODEL_ARG, std::vector<dfloat> &params)
+  void test_model(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
     dvec3 shift_v, scale_v;
     get_dvec3(shift_v, params[0], params[1], params[2]);
     get_dvec3(scale_v, params[3], params[4], params[5]);
     std::vector<dfloat> tri_model;
     add_model(tri_model, get_cube());
-    dmat43 mat;
+
     dvec3 axis;
-    get_dvec3(axis, 0, 1, 0);
+    get_dvec3(axis, 1, 1, 1);
+    dmat43 mat;
+    ident(mat);
     rotate(mat, axis, PI/4);
-    scale(tri_model, scale_v);
+    translate(mat, shift_v);
+    scale(mat, scale_v);
+
+    dmat43 inv;
+    copy_mat(inv, mat);
+    //transposedInverse3x3(inv);
+    //transpose3x3(inv);
+    //inverse3x4(inv);
+    //mul_mat(mat, inv, mat);
     transform(tri_model, mat);
-    shift(tri_model, shift_v);
-    add_model(MODEL,tri_model);
+    for (int i=0;i<4;i++)
+    {
+      for (int j=0;j<3;j++)
+        debug("%.3f ", mat[3*i+j]);
+      debugnl();
+    }
+    add_model(vert, tri_model);
+
+    //dmat43 inv;
+    //copy_mat(inv, mat);
+    //transposedInverse3x3(inv);
+    //transpose3x3(inv);
+    //mul_mat(inv, inv, mat);
+    for (int i=0;i<4;i++)
+    {
+      for (int j=0;j<3;j++)
+        debug("%.3f ", mat[3*i+j]);
+      debugnl();
+    }
+
   }
 
   void print_model(const std::vector<float> &res)
@@ -206,7 +240,7 @@ namespace dgen
     X0[1] = 100;
     X0[2] = 0;
     X0[3] = 30;
-    X0[4] = 30;
+    X0[4] = 120;
     X0[5] = 30;
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
