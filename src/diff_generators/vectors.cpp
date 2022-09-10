@@ -3,302 +3,175 @@
 
 namespace dgen
 {
-#define __DVEC2_CONSTRUCTOR(t1, t2)     \
-  void get_dvec2(dvec2 res, t1 x, t2 y) \
-  {                                     \
-    res[0] = x;                         \
-    res[1] = y;                         \
-  }
-  __DVEC2_CONSTRUCTOR(float, float)
-  __DVEC2_CONSTRUCTOR(float, dfloat)
-  __DVEC2_CONSTRUCTOR(dfloat, float)
-  __DVEC2_CONSTRUCTOR(dfloat, dfloat)
-
-  void copy2(dvec2 res, const dvec2 a)
+  dvec2 add(const dvec2 &a, const dvec2 &b)
   {
-    get_dvec2(res, a[0], a[1]);
+    dvec2 res{a[0] + b[0], a[1] + b[1]};
+    return res;
   }
-
-  void add2(const dvec2 a, const dvec2 b, dvec2 res)
+  dvec2 sub(const dvec2 &a, const dvec2 &b)
   {
-    res[0] = a[0] + b[0];
-    res[1] = a[1] + b[1];
+    dvec2 res{a[0] - b[0], a[1] - b[1]};
+    return res;
   }
-
-  void sub2(const dvec2 a, const dvec2 b, dvec2 res)
+  dvec2 mul(const dvec2 &a, const dvec2 &b)
   {
-    res[0] = a[0] - b[0];
-    res[1] = a[1] - b[1];
+    dvec2 res{a[0] * b[0], a[1] * b[1]};
+    return res;
   }
-
-  void mul2(const dvec2 a, const dvec2 b, dvec2 res)
+  dvec2 div(const dvec2 &a, const dvec2 &b)
   {
-    res[0] = a[0] * b[0];
-    res[1] = a[1] * b[1];
+    dvec2 res{a[0] / b[0], a[1] / b[1]};
+    return res;
   }
-  void mul2(const dvec2 a, dfloat m, dvec2 res)
+  dvec2 mul(dfloat a, const dvec2 &b)
   {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
+    dvec2 res{a * b[0], a * b[1]};
+    return res;
   }
-  void mul2(const dvec2 a, float m, dvec2 res)
-  {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
-  }
-
-  void div2(const dvec2 a, const dvec2 b, dvec2 res)
-  {
-    res[0] = a[0] / b[0];
-    res[1] = a[1] / b[1];
-  }
-
-  dfloat dot2(const dvec2 a, const dvec2 b)
+  dfloat dot(const dvec2 &a, const dvec2 &b)
   {
     return a[0] * b[0] + a[1] * b[1];
   }
-
-  void normalize2(dvec2 v)
+  dvec2 normalize(const dvec2 &v)
   {
-    dfloat len = CppAD::sqrt(v[0] * v[0] + v[1] * v[1]);
-    v[0] /= len;
-    v[1] /= len;
-  }
+    dfloat len = CppAD::sqrt(v[0] * v[0] + v[1] * v[1]) + 1e-18;
+    dvec2 res;
+    res[0] = v[0] / len;
+    res[1] = v[1] / len;
 
-  dfloat len2(dvec2 v)
+    return res;
+  }
+  dfloat len(const dvec2 &v)
   {
     return CppAD::sqrt(v[0] * v[0] + v[1] * v[1]);
   }
 
-#define __DVEC3_CONSTRUCTOR(t1, t2, t3)       \
-  void get_dvec3(dvec3 res, t1 x, t2 y, t3 z) \
-  {                                           \
-    res[0] = x;                               \
-    res[1] = y;                               \
-    res[2] = z;                               \
-  }
 
-  __DVEC3_CONSTRUCTOR(float, float, float)
-  __DVEC3_CONSTRUCTOR(float, float, dfloat)
-  __DVEC3_CONSTRUCTOR(float, dfloat, float)
-  __DVEC3_CONSTRUCTOR(float, dfloat, dfloat)
-  __DVEC3_CONSTRUCTOR(dfloat, float, float)
-  __DVEC3_CONSTRUCTOR(dfloat, float, dfloat)
-  __DVEC3_CONSTRUCTOR(dfloat, dfloat, float)
-  __DVEC3_CONSTRUCTOR(dfloat, dfloat, dfloat)
-
-  void copy3(dvec3 res, const dvec3 a)
+  dvec3 add(const dvec3 &a, const dvec3 &b)
   {
-    get_dvec3(res, a[0], a[1], a[2]);
+    dvec3 res{a[0] + b[0], a[1] + b[1], a[2] + b[2]};
+    return res;
   }
-
-  void add3(const dvec3 a, const dvec3 b, dvec3 res)
+  dvec3 sub(const dvec3 &a, const dvec3 &b)
   {
-    res[0] = a[0] + b[0];
-    res[1] = a[1] + b[1];
-    res[2] = a[2] + b[2];
+    dvec3 res{a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+    return res;
   }
-
-  void sub3(const dvec3 a, const dvec3 b, dvec3 res)
+  dvec3 mul(const dvec3 &a, const dvec3 &b)
   {
-    res[0] = a[0] - b[0];
-    res[1] = a[1] - b[1];
-    res[2] = a[2] - b[2];
+    dvec3 res{a[0] * b[0], a[1] * b[1], a[2] * b[2]};
+    return res;
   }
-
-  void mul3(const dvec3 a, const dvec3 b, dvec3 res)
+  dvec3 div(const dvec3 &a, const dvec3 &b)
   {
-    res[0] = a[0] * b[0];
-    res[1] = a[1] * b[1];
-    res[2] = a[2] * b[2];
+    dvec3 res{a[0] / b[0], a[1] / b[1], a[2] / b[2]};
+    return res;
   }
-  void mul3(const dvec3 a, dfloat m, dvec3 res)
+  dvec3 mul(dfloat a, const dvec3 &b)
   {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
-    res[2] = a[2] * m;
+    dvec3 res{a * b[0], a * b[1], a * b[2]};
+    return res;
   }
-  void mul3(const dvec3 a, float m, dvec3 res)
-  {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
-    res[2] = a[2] * m;
-  }
-
-  void div3(const dvec3 a, const dvec3 b, dvec3 res)
-  {
-    res[0] = a[0] / b[0];
-    res[1] = a[1] / b[1];
-    res[2] = a[2] / b[2];
-  }
-
-  dfloat dot3(const dvec3 a, const dvec3 b)
+  dfloat dot(const dvec3 &a, const dvec3 &b)
   {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   }
-
-  void normalize3(dfloat &x, dfloat &y, dfloat &z)
-  {
-    dfloat len = CppAD::sqrt(x * x + y * y + z * z) + 1e-18;
-    x /= len;
-    y /= len;
-    z /= len;
-  }
-
-  void normalize3(dvec3 v)
+  dvec3 normalize(const dvec3 &v)
   {
     dfloat len = CppAD::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) + 1e-18;
-    v[0] /= len;
-    v[1] /= len;
-    v[2] /= len;
-  }
+    dvec3 res;
+    res[0] = v[0] / len;
+    res[1] = v[1] / len;
+    res[2] = v[2] / len;
 
-  dfloat len3(dvec3 v)
+    return res;
+  }
+  dfloat len(const dvec3 &v)
   {
     return CppAD::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
   }
-
-  void cross3(const dvec3 a, const dvec3 b, dvec3 res)
+  dvec3 cross(const dvec3 &a, const dvec3 &b)
   {
+    dvec3 res;
+
     res[0] = a[1] * b[2] - a[2] * b[1];
     res[1] = a[2] * b[0] - a[0] * b[2];
     res[2] = a[0] * b[1] - a[1] * b[0];
+
+    return res;
   }
 
-#define __DVEC4_CONSTRUCTOR(t1, t2, t3, t4)         \
-  void get_dvec4(dvec3 res, t1 x, t2 y, t3 z, t4 w) \
-  {                                                 \
-    res[0] = x;                                     \
-    res[1] = y;                                     \
-    res[2] = z;                                     \
-    res[3] = w;                                     \
-  }
 
-  __DVEC4_CONSTRUCTOR(float, float, float, float)
-  __DVEC4_CONSTRUCTOR(float, float, float, dfloat)
-  __DVEC4_CONSTRUCTOR(float, float, dfloat, float)
-  __DVEC4_CONSTRUCTOR(float, float, dfloat, dfloat)
-  __DVEC4_CONSTRUCTOR(float, dfloat, float, float)
-  __DVEC4_CONSTRUCTOR(float, dfloat, float, dfloat)
-  __DVEC4_CONSTRUCTOR(float, dfloat, dfloat, float)
-  __DVEC4_CONSTRUCTOR(float, dfloat, dfloat, dfloat)
-  __DVEC4_CONSTRUCTOR(dfloat, float, float, float)
-  __DVEC4_CONSTRUCTOR(dfloat, float, float, dfloat)
-  __DVEC4_CONSTRUCTOR(dfloat, float, dfloat, float)
-  __DVEC4_CONSTRUCTOR(dfloat, float, dfloat, dfloat)
-  __DVEC4_CONSTRUCTOR(dfloat, dfloat, float, float)
-  __DVEC4_CONSTRUCTOR(dfloat, dfloat, float, dfloat)
-  __DVEC4_CONSTRUCTOR(dfloat, dfloat, dfloat, float)
-  __DVEC4_CONSTRUCTOR(dfloat, dfloat, dfloat, dfloat)
-
-  void copy4(dvec4 res, const dvec4 a)
+  dvec4 add(const dvec4 &a, const dvec4 &b)
   {
-    get_dvec4(res, a[0], a[1], a[2], a[3]);
+    dvec4 res{a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]};
+    return res;
   }
-
-  void add4(const dvec4 a, const dvec4 b, dvec4 res)
+  dvec4 sub(const dvec4 &a, const dvec4 &b)
   {
-    res[0] = a[0] + b[0];
-    res[1] = a[1] + b[1];
-    res[2] = a[2] + b[2];
-    res[3] = a[3] + b[3];
+    dvec4 res{a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]};
+    return res;
   }
-
-  void sub4(const dvec4 a, const dvec4 b, dvec4 res)
+  dvec4 mul(const dvec4 &a, const dvec4 &b)
   {
-    res[0] = a[0] - b[0];
-    res[1] = a[1] - b[1];
-    res[2] = a[2] - b[2];
-    res[3] = a[3] - b[3];
+    dvec4 res{a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]};
+    return res;
   }
-
-  void mul4(const dvec4 a, const dvec4 b, dvec4 res)
+  dvec4 div(const dvec4 &a, const dvec4 &b)
   {
-    res[0] = a[0] * b[0];
-    res[1] = a[1] * b[1];
-    res[2] = a[2] * b[2];
-    res[3] = a[3] * b[3];
+    dvec4 res{a[0] / b[0], a[1] / b[1], a[2] / b[2], a[3] / b[3]};
+    return res;
   }
-  void mul4(const dvec4 a, dfloat m, dvec4 res)
+  dvec4 mul(dfloat a, const dvec4 &b)
   {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
-    res[2] = a[2] * m;
-    res[3] = a[3] * m;
+    dvec4 res{a * b[0], a * b[1], a * b[2], a * b[3]};
+    return res;
   }
-  void mul4(const dvec4 a, float m, dvec4 res)
-  {
-    res[0] = a[0] * m;
-    res[1] = a[1] * m;
-    res[2] = a[2] * m;
-    res[3] = a[3] * m;
-  }
-
-  void div4(const dvec4 a, const dvec4 b, dvec4 res)
-  {
-    res[0] = a[0] / b[0];
-    res[1] = a[1] / b[1];
-    res[2] = a[2] / b[2];
-    res[3] = a[3] / b[3];
-  }
-
-  dfloat dot4(const dvec4 a, const dvec4 b)
+  dfloat dot(const dvec4 &a, const dvec4 &b)
   {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
   }
-
-  void normalize4(dvec4 v)
+  dvec4 normalize(const dvec4 &v)
   {
-    dfloat len = CppAD::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
-    v[0] /= len;
-    v[1] /= len;
-    v[2] /= len;
-    v[3] /= len;
-  }
+    dfloat len = CppAD::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]) + 1e-18;
+    dvec4 res;
+    res[0] = v[0] / len;
+    res[1] = v[1] / len;
+    res[2] = v[2] / len;
+    res[3] = v[3] / len;
 
-  dfloat len4(dvec4 v)
+    return res;
+  }
+  dfloat len(const dvec4 &v)
   {
     return CppAD::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
   }
-
-  void get_dvec4(dvec4 res, dvec3 xyz, dfloat w)
+  dvec4 get_dvec4(const dvec3 &xyz, dfloat w)
   {
+    dvec4 res;
+
     res[0] = xyz[0];
     res[1] = xyz[1];
     res[2] = xyz[2];
     res[3] = w;
+
+    return res;
   }
 
-  void get_dvec4_1(dvec4 res, dvec3 xyz)
+  dmat43 get_mat43(float *data)
   {
-    res[0] = xyz[0];
-    res[1] = xyz[1];
-    res[2] = xyz[2];
-    res[3] = 1;
-  }
+    dmat43 mat;
 
-  void get_dvec4_0(dvec4 res, dvec3 xyz)
-  {
-    res[0] = xyz[0];
-    res[1] = xyz[1];
-    res[2] = xyz[2];
-    res[3] = 0;
-  }
-
-  void copy_mat(dmat43 a, dmat43 b)
-  {
-    for (int i=0;i<12;i++)
-      a[i] = b[i];
-  }
-
-  void get_mat43(dmat43 mat, float *data)
-  {
     for (int i = 0; i < 12; i++)
       mat[i] = data[i];
+    
+    return mat;
   }
 
-  void get_mat43(dmat43 mat, const dvec3 a, const dvec3 b, const dvec3 c, const dvec3 tr)
+  dmat43 get_mat43(const dvec3 &a, const dvec3 &b, const dvec3 &c, const dvec3 &tr)
   {
+    dmat43 mat;
+
     mat[0] = a[0];
     mat[1] = a[1];
     mat[2] = a[2];
@@ -314,10 +187,14 @@ namespace dgen
     mat[9] = tr[0];
     mat[10] = tr[1];
     mat[11] = tr[2];
+
+    return mat;
   }
 
-  void ident(dmat43 mat)
+  dmat43 ident()
   {
+    dmat43 mat;
+
     mat[0] = 1;
     mat[1] = 0;
     mat[2] = 0;
@@ -333,9 +210,11 @@ namespace dgen
     mat[9] = 0;
     mat[10] = 0;
     mat[11] = 0;
+
+    return mat;
   }
 
-  void translate(dmat43 input_mat, const dfloat x, const dfloat y, const dfloat z)
+  dmat43 translate(const dmat43 &input_mat, const dfloat x, const dfloat y, const dfloat z)
   {
     dmat43 mat;
     
@@ -355,15 +234,15 @@ namespace dgen
     mat[10] = y;
     mat[11] = z;
 
-    mul_mat(input_mat, input_mat, mat);
+    return mul(input_mat, mat);
   }
 
-  void translate(dmat43 mat, const dvec3 tr)
+  dmat43 translate(const dmat43 &mat, const dvec3 &tr)
   {
-    translate(mat, tr[0], tr[1], tr[2]);
+    return translate(mat, tr[0], tr[1], tr[2]);
   }
 
-  void scale(dmat43 input_mat, const dfloat x, const dfloat y, const dfloat z)
+  dmat43 scale(const dmat43 &input_mat, const dfloat x, const dfloat y, const dfloat z)
   {
     dmat43 mat;
 
@@ -383,20 +262,18 @@ namespace dgen
     mat[10] = 0;
     mat[11] = 0;
 
-    mul_mat(input_mat, input_mat, mat);
+    return mul(input_mat, mat);
   }
 
-  void scale(dmat43 mat, const dvec3 tr)
+  dmat43 scale(const dmat43 &mat, const dvec3 &sc)
   {
-    scale(mat, tr[0], tr[1], tr[2]);
+    return scale(mat, sc[0], sc[1], sc[2]);
   }
 
-  void rotate(dmat43 input_mat, const dvec3 axis, const dfloat angle)
+  dmat43 rotate(const dmat43 &input_mat, const dvec3 &axis, dfloat angle)
   {
     dmat43 mat;
-    dvec3 u;
-    copy3(u, axis);
-    normalize3(u);
+    dvec3 u = normalize(axis);
     dfloat sn = CppAD::sin(angle);
     dfloat cs = CppAD::cos(angle);
 
@@ -416,10 +293,10 @@ namespace dgen
     mat[10] = 0;
     mat[11] = 0;
 
-    mul_mat(input_mat, input_mat, mat);
+    return mul(input_mat, mat);
   }
 
-  void mul_mat(dmat43 out_mat, const dmat43 a, const dmat43 b)
+  dmat43 mul(const dmat43 &a, const dmat43 &b)
   {
     dmat43 mat;
     mat[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
@@ -437,19 +314,20 @@ namespace dgen
     mat[9] = a[0] * b[9] + a[3] * b[10] + a[6] * b[11] + a[9];
     mat[10] = a[1] * b[9] + a[4] * b[10] + a[7] * b[11] + a[10];
     mat[11] = a[2] * b[9] + a[5] * b[10] + a[8] * b[11] + a[11];
-    copy_mat(out_mat, mat);
+    
+    return mat;
   }
 
-  void mulp(dvec3 out_vec, const dmat43 mat, const dvec3 vec) // mul (vec.x, vec.y, vec.z, 1)
+  dvec3 mulp(const dmat43 &mat, const dvec3 &vec) // mul (vec.x, vec.y, vec.z, 1)
   {
     dvec3 res;
     res[0] = mat[0] * vec[0] + mat[3] * vec[1] + mat[6] * vec[2] + mat[9];
     res[1] = mat[1] * vec[0] + mat[4] * vec[1] + mat[7] * vec[2] + mat[10];
     res[2] = mat[2] * vec[0] + mat[5] * vec[1] + mat[8] * vec[2] + mat[11];
-    copy3(out_vec, res);
+    return res;
   }
 
-  void mulp(const dmat43 mat, dfloat &x, dfloat &y, dfloat &z) // mul (vec.x, vec.y, vec.z, 1)
+  void mulp(const dmat43 &mat, dfloat &x, dfloat &y, dfloat &z) // mul (vec.x, vec.y, vec.z, 1)
   {
     dfloat x1 = mat[0] * x + mat[3] * y + mat[6] * z + mat[9];
     dfloat y1 = mat[1] * x + mat[4] * y + mat[7] * z + mat[10];
@@ -460,16 +338,16 @@ namespace dgen
     z = z1;
   }
 
-  void mulv(dvec3 out_vec, const dmat43 mat, const dvec3 vec) // mul (vec.x, vec.y, vec.z, 0)
+  dvec3 mulv(const dmat43 &mat, const dvec3 &vec) // mul (vec.x, vec.y, vec.z, 0)
   {
     dvec3 res;
     res[0] = mat[0] * vec[0] + mat[3] * vec[1] + mat[6] * vec[2];
     res[1] = mat[1] * vec[0] + mat[4] * vec[1] + mat[7] * vec[2];
     res[2] = mat[2] * vec[0] + mat[5] * vec[1] + mat[8] * vec[2];
-    copy3(out_vec, res);
+    return res;
   }
 
-  void mulv(const dmat43 mat, dfloat &x, dfloat &y, dfloat &z) // mul (vec.x, vec.y, vec.z, 0)
+  void mulv(const dmat43 &mat, dfloat &x, dfloat &y, dfloat &z) // mul (vec.x, vec.y, vec.z, 0)
   {
     dfloat x1 = mat[0] * x + mat[3] * y + mat[6] * z;
     dfloat y1 = mat[1] * x + mat[4] * y + mat[7] * z;
@@ -480,16 +358,16 @@ namespace dgen
     z = z1;
   }
 
-  void mul4(dvec3 out_vec, const dmat43 mat, const dvec4 vec)
+  dvec3 mul4(const dmat43 &mat, const dvec4 &vec)
   {
     dvec3 res;
     res[0] = mat[0] * vec[0] + mat[3] * vec[1] + mat[6] * vec[2] + mat[9] * vec[3];
     res[1] = mat[1] * vec[0] + mat[4] * vec[1] + mat[7] * vec[2] + mat[10] * vec[3];
     res[2] = mat[2] * vec[0] + mat[5] * vec[1] + mat[8] * vec[2] + mat[11] * vec[3];
-    copy3(out_vec, res);
+    return res;
   }
 
-  void transpose3x3(dmat43 a, dmat43 b)
+  dmat43 transpose3x3(const dmat43 &b)
   {
     dmat43 mat;
     mat[0] = b[0];
@@ -507,15 +385,10 @@ namespace dgen
     mat[9] = b[9];
     mat[10] = b[10];
     mat[11] = b[11];
-    copy_mat(a, mat);
-  }
-
-  void transpose3x3(dmat43 a)
-  {
-    transpose3x3(a, a);
+    return mat;
   }
   
-  void transposedInverse3x3(dmat43 res, dmat43 m)
+  dmat43 transposedInverse3x3(const dmat43 &m)
   {
     #define A(i,j) m[3*i + j] 
     dmat43 result;
@@ -536,15 +409,10 @@ namespace dgen
     result[10] = m[10];
     result[11] = m[11];
 
-    copy_mat(res, result);
-  }
-  
-  void transposedInverse3x3(dmat43 m)
-  {
-    transposedInverse3x3(m, m);
+    return result;
   }
 
-  void inverse3x4(dmat43 res, dmat43 m)
+  dmat43 inverse3x4(const dmat43 &m)
   {
     #define A(i,j) m[3*i + j] 
     dmat43 result;
@@ -562,16 +430,12 @@ namespace dgen
     result[7] = -(A(0,0)*A(2,1)-A(2,0)*A(0,1))*invdet;
     result[8] =  (A(0,0)*A(1,1)-A(1,0)*A(0,1))*invdet;
     dvec3 inv_tr;
-    mulv(inv_tr, result, m+9);
+    dvec3 tr{m[9],m[10],m[11]};
+    inv_tr = mulv(result, tr);
     result[9] =  -inv_tr[0];
     result[10] = -inv_tr[1];
     result[11] = -inv_tr[2];
 
-    copy_mat(res, result);
-  }
-
-  void inverse3x4(dmat43 m)
-  {
-    inverse3x4(m, m);
+    return result;
   }
 }

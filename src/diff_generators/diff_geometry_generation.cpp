@@ -5,9 +5,7 @@
 #include "tinyEngine/engine.h"
 namespace dgen
 {
-  #define MODEL_ARG_NAMED(name) std::vector<dfloat> &vert##name
-  #define MODEL_ARG MODEL_ARG_NAMED()
-  #define MODEL vert
+  #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
 
   inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 pos, const dvec3 norm, const dvec2 tc)
   {
@@ -162,8 +160,7 @@ namespace dgen
 
   void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3)
   {
-    dmat43 norm_mat;
-    transposedInverse3x3(norm_mat, mat);
+    dmat43 norm_mat = transposedInverse3x3(mat);
 
     if (norm_start >= 0)
     {
@@ -171,7 +168,14 @@ namespace dgen
       {
         mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
         mulv(norm_mat, vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
-        normalize3(vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
+
+        dfloat a = vert[norm_start+floats_per_vertex*i];
+        dfloat b = vert[norm_start+floats_per_vertex*i+1];
+        dfloat c = vert[norm_start+floats_per_vertex*i+2];
+        dfloat len = CppAD::sqrt(a*a + b*b + c*c) + 1e-18;
+        vert[norm_start+floats_per_vertex*i] = a/len;
+        vert[norm_start+floats_per_vertex*i+1] = b/len;
+        vert[norm_start+floats_per_vertex*i+2] = c/len;
       }
     }
     else
@@ -185,19 +189,16 @@ namespace dgen
 
   void test_model(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
-    dvec3 shift_v, scale_v;
-    get_dvec3(shift_v, params[0], params[1], params[2]);
-    get_dvec3(scale_v, params[3], params[4], params[5]);
+    dvec3 shift_v{params[0], params[1], params[2]};
+    dvec3 scale_v{params[3], params[4], params[5]};
     std::vector<dfloat> tri_model;
     add_model(tri_model, get_cube_expl());
 
-    dvec3 axis;
-    get_dvec3(axis, 1, 1, 1);
-    dmat43 mat;
-    ident(mat);
-    rotate(mat, axis, PI/4);
-    translate(mat, shift_v);
-    scale(mat, scale_v);
+    dvec3 axis{0,1,0};
+    dmat43 mat = ident();
+    mat = rotate(mat, axis, PI/4);
+    mat = translate(mat, shift_v);
+    mat = scale(mat, scale_v);
     transform(tri_model, mat);
     for (int i=0;i<4;i++)
     {
@@ -265,12 +266,12 @@ namespace dgen
     std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
-    X0[0] = 100;
-    X0[1] = 100;
+    X0[0] = 0;
+    X0[1] = 0;
     X0[2] = 0;
-    X0[3] = 30;
-    X0[4] = 120;
-    X0[5] = 30;
+    X0[3] = 1;
+    X0[4] = 1;
+    X0[5] = 1;
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
