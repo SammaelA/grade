@@ -80,7 +80,7 @@ void main(void)
 	ex_FragPos = (inst_mat * vec4(in_Position, 1.0f)).xyz;
 	a_mult = vec2(curInsts[offset].mn, curInsts[offset].mx);
 	
-	ex_Normal = (transpose(inverse(inst_mat))*vec4(in_Normal,0)).xyz;
+	ex_Normal = normalize(ex_Normal = (transpose(inverse(inst_mat))*vec4(in_Normal,0)).xyz);
 	ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
     gl_Position = projection * ex_FragPosView;
 	ex_Tex = in_Tex.xyz;

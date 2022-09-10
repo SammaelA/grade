@@ -23,7 +23,7 @@ void main(void)
 { 
     int instance_n = inst_buf_offset + int(gl_InstanceID);
     mat4 inst_mat = instances[instance_n];
-    ex_Normal = (transpose(inverse(inst_mat))*vec4(in_Normal,0)).xyz;
+    ex_Normal = normalize(ex_Normal = (transpose(inverse(inst_mat))*vec4(in_Normal,0)).xyz);
     ex_FragPos = (inst_mat*vec4(in_Position, 1.0f)).xyz;
     ex_FragPosView = view * vec4(ex_FragPos, 1.0f);
     gl_Position = projection * ex_FragPosView;
