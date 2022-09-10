@@ -69,4 +69,8 @@
     {
       obj:s = "Medieval house 4.obj"
     }
+    diff_test
+    {
+      
+    }
 }

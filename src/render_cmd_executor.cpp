@@ -3,7 +3,6 @@
 #include "render/world_renderer.h"
 #include "generation/metainfo_manager.h"
 #include "generation/scene_generator_helper.h"
-#include "diff_generators/diff_geometry_generation.h"
 #include <chrono>
 
 Texture save_as_texture_RGBA8(const Field_2d &f, float mnv = 0, float mxv = 0)
@@ -218,10 +217,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             worldRenderer.debug_models.emplace_back();
             worldRenderer.debug_models.back().apply_light = false;
             Model *m = new Model();
-            //visualizer::visualize_aabb(boxes, m, colors);
-            std::vector<float> res;
-            dgen::dgen_test(res);
-            visualizer::simple_mesh_to_model_332(res, m);
+            visualizer::visualize_aabb(boxes, m, colors);
             m->update();
             worldRenderer.debug_models.back().m = m;
             worldRenderer.debug_models.back().id = model_id;

@@ -38,7 +38,7 @@ struct Material
   Texture map_bump; // Bump Map
 
   Material() {};
-  Material(Texture &tex)
+  Material(const Texture &tex)
   {
     //simple material with only albedo texture
     map_Ka = tex;

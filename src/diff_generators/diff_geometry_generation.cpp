@@ -2,7 +2,7 @@
 #include "common_utils/utility.h"
 #include "graphics_utils/modeling.h"
 #include <cppad/cppad.hpp>
-
+#include "tinyEngine/engine.h"
 namespace dgen
 {
   #define MODEL_ARG_NAMED(name) std::vector<dfloat> &vert##name
@@ -40,17 +40,66 @@ namespace dgen
     return res;
   }
 
+  inline std::vector<float> get_cube_expl()
+  {
+    std::vector<float> res = {
+      0.00,0.00,0.00, -1.00,-0.00,-0.00, 0.00,0.00,
+      0.00,1.00,0.00, -1.00,-0.00,-0.00, 0.00,1.00,
+      0.00,0.00,1.00, -1.00,-0.00,-0.00, 1.00,0.00,
+      0.00,1.00,1.00, -1.00,-0.00,-0.00, 1.00,1.00,
+      0.00,0.00,1.00, -1.00,-0.00,-0.00, 1.00,0.00,
+      0.00,1.00,0.00, -1.00,-0.00,-0.00, 0.00,1.00,
+
+      0.00,1.00,0.00, 0.00,1.00, 0.00, 0.00,1.00,
+      0.00,1.00,1.00, 0.00,1.00, 0.00, 1.00,1.00,
+      1.00,1.00,0.00, 0.00,1.00, 0.00, 0.00,1.00,
+      1.00,1.00,1.00, 0.00,1.00, 0.00, 1.00,1.00,
+      1.00,1.00,0.00, 0.00,1.00, 0.00, 0.00,1.00,
+      0.00,1.00,1.00, 0.00,1.00, 0.00, 1.00,1.00,
+
+      1.00,1.00,1.00, 1.00,-0.00,-0.00, 1.00,1.00,
+      1.00,0.00,1.00, 1.00,-0.00,-0.00, 1.00,0.00,
+      1.00,1.00,0.00, 1.00,-0.00,-0.00, 0.00,1.00,
+      1.00,0.00,0.00, 1.00,-0.00,-0.00, 0.00,0.00,
+      1.00,1.00,0.00, 1.00,-0.00,-0.00, 0.00,1.00,
+      1.00,0.00,1.00, 1.00,-0.00,-0.00, 1.00,0.00,
+      
+      0.00,0.00,0.00, 0.00,-1.00,0.00, 0.00,0.00,
+      0.00,0.00,1.00, 0.00,-1.00,0.00, 1.00,0.00,
+      1.00,0.00,0.00, 0.00,-1.00,0.00, 0.00,0.00,
+      1.00,0.00,1.00, 0.00,-1.00,0.00, 1.00,0.00,
+      0.00,0.00,1.00, 0.00,-1.00,0.00, 1.00,0.00,
+      1.00,0.00,0.00, 0.00,-1.00,0.00, 0.00,0.00,
+
+      0.00,0.00,0.00, 0.00,-0.00,-1.00, 0.00,0.00,
+      1.00,0.00,0.00, 0.00,-0.00,-1.00, 0.00,0.00,
+      0.00,1.00,0.00, 0.00,-0.00,-1.00, 0.00,1.00,
+      1.00,1.00,0.00, 0.00,-0.00,-1.00, 0.00,1.00,
+      0.00,1.00,0.00, 0.00,-0.00,-1.00, 0.00,1.00,
+      1.00,0.00,0.00, 0.00,-0.00,-1.00, 0.00,0.00,
+
+      0.00,0.00,1.00, 0.00,-0.00,1.00, 1.00,0.00,
+      1.00,0.00,1.00, 0.00,-0.00,1.00, 1.00,0.00,
+      0.00,1.00,1.00, 0.00,-0.00,1.00, 1.00,1.00,
+      1.00,1.00,1.00, 0.00,-0.00,1.00, 1.00,1.00,
+      0.00,1.00,1.00, 0.00,-0.00,1.00, 1.00,1.00,
+      1.00,0.00,1.00, 0.00,-0.00,1.00, 1.00,0.00
+    };
+    return res;
+  }
+
   void model_to_simple_model(Mesh *m, std::vector<float> &s_model)
   {
     s_model.resize(m->indices.size()*FLOAT_PER_VERTEX);
     int pos = 0;
+    bool have_normals = (m->normals.size() == m->positions.size());
     for (int ind : m->indices)
     {
       s_model[pos] = m->positions[3*ind];
       s_model[pos+1] = m->positions[3*ind+1];
       s_model[pos+2] = m->positions[3*ind+2];
       
-      if (m->normals.size() >= m->positions.size())
+      if (have_normals)
       {
         s_model[pos+3] = m->normals[3*ind];
         s_model[pos+4] = m->normals[3*ind+1];
@@ -140,7 +189,7 @@ namespace dgen
     get_dvec3(shift_v, params[0], params[1], params[2]);
     get_dvec3(scale_v, params[3], params[4], params[5]);
     std::vector<dfloat> tri_model;
-    add_model(tri_model, get_cube());
+    add_model(tri_model, get_cube_expl());
 
     dvec3 axis;
     get_dvec3(axis, 1, 1, 1);
@@ -149,13 +198,6 @@ namespace dgen
     rotate(mat, axis, PI/4);
     translate(mat, shift_v);
     scale(mat, scale_v);
-
-    dmat43 inv;
-    copy_mat(inv, mat);
-    //transposedInverse3x3(inv);
-    //transpose3x3(inv);
-    //inverse3x4(inv);
-    //mul_mat(mat, inv, mat);
     transform(tri_model, mat);
     for (int i=0;i<4;i++)
     {
@@ -164,19 +206,6 @@ namespace dgen
       debugnl();
     }
     add_model(vert, tri_model);
-
-    //dmat43 inv;
-    //copy_mat(inv, mat);
-    //transposedInverse3x3(inv);
-    //transpose3x3(inv);
-    //mul_mat(inv, inv, mat);
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<3;j++)
-        debug("%.3f ", mat[3*i+j]);
-      debugnl();
-    }
-
   }
 
   void print_model(const std::vector<float> &res)
@@ -249,5 +278,17 @@ namespace dgen
     print_jackobian(jac, x_n, y_n);
 
     model = res;
+  }
+
+  bool create_model_from_block(Block &bl, ComplexModel &mod)
+  {
+    Model *m = new Model();
+    std::vector<float> res;
+    dgen::dgen_test(res);
+    visualizer::simple_mesh_to_model_332(res, m);
+
+    mod.models.push_back(m);
+    mod.materials.push_back(Material(engine::textureManager->get("wood")));
+    mod.update();
   }
 }

@@ -5,6 +5,7 @@
 #include "generation/grove_packer.h"
 #include "parameter_selection/parameter_selection.h"
 #include "save_utils/serialization.h"
+#include "diff_generators/diff_geometry_generation.h"
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
 
@@ -174,7 +175,10 @@ namespace scene_gen
     if (new_model)
     {
       ctx.scene.instanced_models.emplace_back();
-      model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().model);
+      if (strncmp(name.c_str(),"diff_",5) == 0)//TODO: it should be in block, not in the name itself
+        dgen::create_model_from_block(b, ctx.scene.instanced_models.back().model);
+      else
+        model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().model);
       ctx.scene.instanced_models.back().name = name;
       pos = 0;
     }
