@@ -1,6 +1,7 @@
 import drjit as dr
 import mitsuba as mi
 from matplotlib import pyplot as plt
+import csv
 
 mi.set_variant('cuda_ad_rgb')
 integrator = {
@@ -64,22 +65,23 @@ mi.util.convert_to_bitmap(img_ref)
 params = mi.traverse(scene)
 initial_vertex_positions = dr.unravel(mi.Point3f, params['bunny.vertex_positions'])
 opt = mi.ad.Adam(lr=0.025)
-opt['angle'] = mi.Float(0.25)
-opt['trans'] = mi.Point3f(0, 0.5, 0)
+#opt['angle'] = mi.Float(0.25)
+#opt['trans'] = mi.Point3f(0, 0.5, 0)
+opt['bunny.vertex_positions'] = params['bunny.vertex_positions']
 print(opt)
 print(params)
 print(params['bunny.vertex_positions'][0])
 loss_hist = []
 
 def F_transform(params, opt):
-    opt['trans'] = dr.clamp(opt['trans'], -10, 10)
-    opt['angle'] = dr.clamp(opt['angle'], -1, 1)
+    #opt['trans'] = dr.clamp(opt['trans'], -10, 10)
+    #opt['angle'] = dr.clamp(opt['angle'], -1, 1)
 
-    trafo = mi.Transform4f.translate([opt['trans'].x, opt['trans'].y, opt['trans'].z]).rotate([0, 1, 0], opt['angle'] * 100.0)
+    #trafo = mi.Transform4f.translate([opt['trans'].x, opt['trans'].y, opt['trans'].z]).rotate([0, 1, 0], opt['angle'] * 100.0)
 
-    tr_positions = trafo @ initial_vertex_positions
-    print(dr.slice(tr_positions, 0))
-    params['bunny.vertex_positions'] = dr.ravel(tr_positions)
+    #tr_positions = trafo @ initial_vertex_positions
+    #params['bunny.vertex_positions'] = dr.ravel(tr_positions)
+    params['bunny.vertex_positions'] = opt['bunny.vertex_positions']
     params.update()
 
 def F_loss(img):
@@ -90,16 +92,22 @@ def F_loss(img):
 F_transform(params, opt)
 img_init = mi.render(scene, seed=0, spp=256)
 mi.util.convert_to_bitmap(img_init)
-steps = 50
+steps = 2
+
 
 for it in range(steps):
+  dr.enable_grad(params['bunny.vertex_positions'])
   F_transform(params, opt) # Scene = F_transform(input)
   img = mi.render(scene, params, seed=it, spp=32) # image = F_render(scene)
   loss = F_loss(img) # loss = F_loss(image)
 
   dr.backward(loss) # calculate F_loss(F_render(F_transform(input))) gradient
+  #print(tuple(dr.grad(params['bunny.vertex_positions'])))
+  tup = tuple(dr.grad(params['bunny.vertex_positions']))
+  with open("grad.txt", 'w') as f:
+    f.write((' '.join(['%10.6f ']*len(tup))+'\n\n') % tup)
   opt.step()
-  print(f"Iteration {it:02d}: error={loss[0]:6f}, angle={opt['angle'][0]:.4f}, trans=[{opt['trans'].x[0]:.4f}, {opt['trans'].y[0]:.4f}]", end='\n')
+  #print(f"Iteration {it:02d}: error={loss[0]:6f}, angle={opt['angle'][0]:.4f}, trans=[{opt['trans'].x[0]:.4f}, {opt['trans'].y[0]:.4f}]", end='\n')
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 10))
 img_optimized = mi.render(scene, spp=256)

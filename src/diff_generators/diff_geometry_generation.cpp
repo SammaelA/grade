@@ -7,7 +7,7 @@ namespace dgen
 {
   #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
 
-  inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 pos, const dvec3 norm, const dvec2 tc)
+  inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc)
   {
     int sz = n*FLOAT_PER_VERTEX;
     vert.resize(sz + FLOAT_PER_VERTEX);
@@ -245,10 +245,72 @@ namespace dgen
       debugnl();
     }
   }
+  void create_spline(std::vector<dvec3> &spline, const std::vector<dfloat> &params, int axis_x, int axis_y)
+  {
+    //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
+    spline.reserve(spline.size() + 3*params.size());
+    for (int i=0;i<params.size();i++)
+    {
+      dvec3 vec{0,0,0};
+      vec[axis_x] = ((float)i)/(params.size()-1);
+      vec[axis_y] = params[i];
+
+      spline.push_back(vec);
+    }
+  }
+
+  void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
+  {
+    dmat43 rot_mat = ident();
+    dfloat angle = (2*PI)/rotations;
+    rot_mat = rotate(rot_mat, axis, angle);
+    int sp_sz = spline.size();
+    model.reserve(FLOAT_PER_VERTEX*3*2*(sp_sz-1));
+    std::vector<dvec3> verts = spline;
+    std::vector<dvec3> prev_verts = spline;
+
+    dfloat full_len = 1e-9;
+    for (int i=1;i<sp_sz;i++)
+    {
+      full_len += len(sub(verts[i],verts[i-1]));
+    }
+
+    for (int sector = 1; sector <= rotations; sector++)
+    {
+      for (int i=0;i<sp_sz;i++)
+      {
+        verts[i] = mulp(rot_mat, verts[i]);
+      }
+      dfloat prev_len = 0;
+      dfloat new_len = 0;
+      for (int i=1;i<sp_sz;i++)
+      {
+        new_len = prev_len + len(sub(verts[i],verts[i-1]));
+        dvec3 v1 = sub(prev_verts[i], verts[i]);
+        dvec3 v2 = sub(verts[i-1], verts[i]); 
+        dvec3 n = normalize(cross(v1, v2));
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
+        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        prev_len = new_len;
+      }
+      prev_verts = verts;
+    }
+  }
+
+  void test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
+  {
+    std::vector<dvec3> spline;
+    create_spline(spline, params, 0, 1);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},128);
+  }
 
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 6;
+    size_t x_n = 14;
     std::vector<dfloat> X(x_n);
     std::vector<int> inds;
     std::vector<dfloat> Y;
@@ -258,7 +320,7 @@ namespace dgen
     CppAD::Independent(X);
 
     //Cube(X[0], X[1], X[2], X[3], X[4], X[5], Y);
-    test_model(Y, X);
+    test_spline(Y, X);
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
     logerr("gen_finish");
@@ -266,17 +328,25 @@ namespace dgen
     std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
-    X0[0] = 0;
-    X0[1] = 0;
-    X0[2] = 0;
-    X0[3] = 1;
-    X0[4] = 1;
-    X0[5] = 1;
+    X0[0] = 0.3 + 0.0;
+    X0[1] = 0.3 + 0.01;
+    X0[2] = 0.3 + 0.04;
+    X0[3] = 0.3 + 0.09;
+    X0[4] = 0.3 + 0.16;
+    X0[5] = 0.3 + 0.25;
+    X0[6] = 0.3 + 0.36;
+    X0[7] = 0.3 + 0.49;
+    X0[8] = 0.3 + 0.64;
+    X0[9] = 0.3 + 0.81;
+    X0[10] = 0.3 + 1.0;
+    X0[11] = 0.3 + 1.21;
+    X0[12] = 0.3 + 1.44;
+    X0[13] = 0.3 + 1.69;
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
     print_model(res);
-    print_jackobian(jac, x_n, y_n);
+    //print_jackobian(jac, x_n, y_n);
 
     model = res;
   }
@@ -289,7 +359,7 @@ namespace dgen
     visualizer::simple_mesh_to_model_332(res, m);
 
     mod.models.push_back(m);
-    mod.materials.push_back(Material(engine::textureManager->get("wood")));
+    mod.materials.push_back(Material(engine::textureManager->get("porcelain")));
     mod.update();
   }
 }

@@ -192,8 +192,8 @@ namespace scene_gen
     ctx.objects_bvh.rebuild();
 
     // get instance AABB
-    glm::vec3 mn_pos = boxes[0].min_pos;
-    glm::vec3 mx_pos = boxes[0].max_pos;
+    glm::vec3 mn_pos = boxes.empty() ? glm::vec3(0,0,0) : boxes[0].min_pos;
+    glm::vec3 mx_pos = boxes.empty() ? glm::vec3(0,0,0) : boxes[0].max_pos;
     for (AABB &box : boxes)
     {
       mn_pos = min(mn_pos, box.min_pos);

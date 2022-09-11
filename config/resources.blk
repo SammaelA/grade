@@ -38,4 +38,5 @@
     lily_texture:s = "grass16.png"
     ref:s = "transformed_reference_tree_test.png"
     white:s = "white.bmp"
+    porcelain:s = "porcelain.jpg"
 }
