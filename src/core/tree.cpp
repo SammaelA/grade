@@ -1,7 +1,7 @@
 #include "core/tree.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/billboard_cloud.h"
-#include "common_utils/spline.h"
+#include "common_utils/interpolation.h"
 std::atomic<int> br_h_cnt(0);
 void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
 {
@@ -194,7 +194,7 @@ float Branch::get_r_mult(float phi, std::vector<float> &mults)
         }
         x.push_back(2*PI);
         y.push_back(mults[0]);
-        auto s = spline(x,y);
+        auto s = interpolation::spline<double>(x,y);
         int b = (int)(phi/(2*PI)*mults.size());
         return s[b].get(phi);
     } 

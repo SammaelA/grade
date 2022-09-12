@@ -3,6 +3,7 @@
 #include "graphics_utils/modeling.h"
 #include <cppad/cppad.hpp>
 #include "tinyEngine/engine.h"
+#include "common_utils/interpolation.h"
 namespace dgen
 {
   #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
@@ -259,6 +260,37 @@ namespace dgen
     }
   }
 
+  std::vector<dvec3> spline_make_smoother(const std::vector<dvec3> &in_spline, int axis_x, int axis_y, int detail_q)
+  {
+    if (detail_q <= 1)
+      return in_spline;
+    std::vector<dfloat> xs;
+    std::vector<dfloat> ys;
+    for (auto &v : in_spline)
+    {
+      xs.push_back(v[axis_x]);
+      ys.push_back(v[axis_y]);
+    }
+    std::vector<interpolation::Spline<dfloat>> splines = interpolation::spline<dfloat>(xs, ys);
+    std::vector<dvec3> sp;
+    dfloat step = 1.0f/(detail_q+1);
+    for (int s_n = 0; s_n < splines.size(); s_n++)
+    {
+      for (int i=0;i<detail_q;i++)
+      {
+        dfloat pos = splines[s_n].x + i*step*(xs[s_n+1] - xs[s_n]);
+        dfloat val = splines[s_n].get(pos);
+        dvec3 vec{0,0,0};
+      vec[axis_x] = pos;
+      vec[axis_y] = val;
+
+      sp.push_back(vec);
+      }
+    }
+
+    return sp;
+  }
+
   void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
   {
     dmat43 rot_mat = ident();
@@ -304,13 +336,14 @@ namespace dgen
   void test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
     std::vector<dvec3> spline;
-    create_spline(spline, params, 0, 1);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},128);
+    create_spline(spline, params, 1, 0);
+    spline = spline_make_smoother(spline, 1, 0, 4);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
   }
 
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 14;
+    size_t x_n = 3;
     std::vector<dfloat> X(x_n);
     std::vector<int> inds;
     std::vector<dfloat> Y;
@@ -329,6 +362,10 @@ namespace dgen
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
     X0[0] = 0.3 + 0.0;
+    X0[1] = 0.3 + 0.25;
+    X0[2] = 0.3 + 1;
+    /*
+    X0[0] = 0.3 + 0.0;
     X0[1] = 0.3 + 0.01;
     X0[2] = 0.3 + 0.04;
     X0[3] = 0.3 + 0.09;
@@ -342,6 +379,7 @@ namespace dgen
     X0[11] = 0.3 + 1.21;
     X0[12] = 0.3 + 1.44;
     X0[13] = 0.3 + 1.69;
+    */
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
