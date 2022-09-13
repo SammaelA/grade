@@ -188,6 +188,14 @@ namespace dgen
     }
   }
 
+  void transform(std::vector<dvec3> &verts, dmat43 mat)
+  {
+    for (auto &vert : verts)
+    {
+      vert = mulp(mat, vert); 
+    }
+  }
+
   void test_model(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
     dvec3 shift_v{params[0], params[1], params[2]};
@@ -246,10 +254,17 @@ namespace dgen
       debugnl();
     }
   }
-  void create_spline(std::vector<dvec3> &spline, const std::vector<dfloat> &params, int axis_x, int axis_y)
+  std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int axis_x, int axis_y, bool from_zero)
   {
     //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
-    spline.reserve(spline.size() + 3*params.size());
+    std::vector<dvec3> spline;
+    spline.reserve(3*(params.size() + from_zero));
+    if (from_zero)
+    {
+      dvec3 vec{0,0,0};
+      vec[axis_x] = -1e-4;
+      spline.push_back(vec);
+    }
     for (int i=0;i<params.size();i++)
     {
       dvec3 vec{0,0,0};
@@ -258,22 +273,74 @@ namespace dgen
 
       spline.push_back(vec);
     }
+
+    return spline;
   }
 
-  std::vector<dvec3> spline_make_smoother(const std::vector<dvec3> &in_spline, int axis_x, int axis_y, int detail_q)
+  std::vector<dvec3> spline_to_closed_curve_thickness(const std::vector<dvec3> &in_spline, dfloat thickness, int axis_x, int axis_y)
   {
+    std::vector<dvec3> spline = in_spline;
+    std::vector<dvec3> offset_dirs;
+    dvec3 x = dvec3{0,0,0};
+    x[axis_x] = 1;
+    dvec3 y = dvec3{0,0,0};
+    y[axis_y] = -1;
+    offset_dirs.push_back(add(in_spline[0],mul(thickness,x)));
+
+    dvec3 l0 = sub(in_spline[1], in_spline[0]);
+    dvec3 n0 = cross(l0, x);
+    dvec3 d_prev = cross(n0, l0);
+
+    for (int i=1;i<in_spline.size()-1;i++)
+    {
+      dvec3 l = sub(in_spline[i+1], in_spline[i]);
+      dvec3 n = cross(l, x);
+      dvec3 d = cross(n, l);
+      offset_dirs.push_back(add(in_spline[i],mul(thickness,normalize(add(d_prev, d))))); //pos + thickness*dir
+      d_prev = d;
+    }
+
+    offset_dirs.push_back(add(in_spline[in_spline.size()-1],mul(thickness,y)));
+
+    for (int i=in_spline.size()-1; i>=0; i--)
+    {
+      spline.push_back(offset_dirs[i]);
+    }
+
+    return spline;
+  }
+
+  std::vector<dvec3> spline_to_closed_curve_mirror(const std::vector<dvec3> &in_spline, int axis_x, int axis_y)
+  {
+    std::vector<dvec3> spline = in_spline;
+    for (int i=in_spline.size()-1; i>=0; i--)
+    {
+      dvec3 vec_m = in_spline[i];
+      vec_m[axis_y] *= -1;
+      spline.push_back(vec_m);
+    }
+    return spline;
+  }
+
+  std::vector<dvec3> spline_make_smoother(const std::vector<dvec3> &in_spline, int detail_q, int index_from, int index_to, int axis_x, int axis_y)
+  {
+    index_from = index_from < 0 ? 0 : index_from;
+    index_to = index_to < 0 ? in_spline.size() : index_to;
     if (detail_q <= 1)
       return in_spline;
     std::vector<dfloat> xs;
     std::vector<dfloat> ys;
-    for (auto &v : in_spline)
+    for (int i = index_from; i < index_to; i++)
     {
-      xs.push_back(v[axis_x]);
-      ys.push_back(v[axis_y]);
+      xs.push_back(in_spline[i][axis_x]);
+      ys.push_back(in_spline[i][axis_y]);
     }
     std::vector<interpolation::Spline<dfloat>> splines = interpolation::spline<dfloat>(xs, ys);
     std::vector<dvec3> sp;
     dfloat step = 1.0f/(detail_q+1);
+
+    for (int i = 0; i < index_from; i++)
+      sp.push_back(in_spline[i]);
     for (int s_n = 0; s_n < splines.size(); s_n++)
     {
       for (int i=0;i<detail_q;i++)
@@ -281,12 +348,14 @@ namespace dgen
         dfloat pos = splines[s_n].x + i*step*(xs[s_n+1] - xs[s_n]);
         dfloat val = splines[s_n].get(pos);
         dvec3 vec{0,0,0};
-      vec[axis_x] = pos;
-      vec[axis_y] = val;
+        vec[axis_x] = pos;
+        vec[axis_y] = val;
 
-      sp.push_back(vec);
+        sp.push_back(vec);
       }
     }
+    for (int i = index_to; i < in_spline.size(); i++)
+      sp.push_back(in_spline[i]);
 
     return sp;
   }
@@ -335,15 +404,17 @@ namespace dgen
 
   void test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
-    std::vector<dvec3> spline;
-    create_spline(spline, params, 1, 0);
-    spline = spline_make_smoother(spline, 1, 0, 4);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+    std::vector<dvec3> spline = create_spline(params, 1, 0, true);
+    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
+    transform(spline, sc);
+    spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
+    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
   }
 
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 3;
+    size_t x_n = 9;
     std::vector<dfloat> X(x_n);
     std::vector<int> inds;
     std::vector<dfloat> Y;
@@ -361,25 +432,22 @@ namespace dgen
     std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
-    X0[0] = 0.3 + 0.0;
-    X0[1] = 0.3 + 0.25;
-    X0[2] = 0.3 + 1;
-    /*
-    X0[0] = 0.3 + 0.0;
-    X0[1] = 0.3 + 0.01;
-    X0[2] = 0.3 + 0.04;
-    X0[3] = 0.3 + 0.09;
-    X0[4] = 0.3 + 0.16;
-    X0[5] = 0.3 + 0.25;
-    X0[6] = 0.3 + 0.36;
-    X0[7] = 0.3 + 0.49;
-    X0[8] = 0.3 + 0.64;
-    X0[9] = 0.3 + 0.81;
-    X0[10] = 0.3 + 1.0;
-    X0[11] = 0.3 + 1.21;
-    X0[12] = 0.3 + 1.44;
-    X0[13] = 0.3 + 1.69;
-    */
+    
+    X0[0] = 4 - 1.45;
+    X0[1] = 4 - 1.0;
+    X0[2] = 4 - 0.65;
+    X0[3] = 4 - 0.45;
+    X0[4] = 4 - 0.25;
+    X0[5] = 4 - 0.18;
+    X0[6] = 4 - 0.1;
+    X0[7] = 4 - 0.05;
+    X0[8] = 4 - 0;
+    //X0[9] = 0.3 + 0.81;
+    //X0[10] = 0.3 + 1.0;
+    //X0[11] = 0.3 + 1.21;
+    //X0[12] = 0.3 + 1.44;
+    //X0[13] = 0.3 + 1.69;
+  
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
