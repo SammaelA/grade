@@ -467,5 +467,6 @@ namespace dgen
     mod.models.push_back(m);
     mod.materials.push_back(Material(engine::textureManager->get("porcelain")));
     mod.update();
+    return true;
   }
 }

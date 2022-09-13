@@ -22,12 +22,14 @@ bool RenderTarget::create(int w, int h)
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        return false;
     }
     else
     {
         debugl(10, "Render target created %d %d", width, height);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return true;
 }
 void RenderTarget::target()
 {
