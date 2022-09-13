@@ -72,7 +72,6 @@ vec2 SnapUVOffset(vec2 uv)
 
 float Falloff(float d2)
 {
-    return 1;
 	return d2 * NegInvR2 + 1.0f;
 }
 
@@ -182,8 +181,8 @@ void main(void)
     if(rayRadiusPix > 1.0)
     {
     	ao = 0.0;
-    	float numSteps;
-    	vec2 stepSizeUV;
+    	float numSteps = 1;
+    	vec2 stepSizeUV = vec2(0,0);
 
     	// Compute the number of steps
     	ComputeSteps(stepSizeUV, numSteps, rayRadiusPix, random.z);
