@@ -281,6 +281,7 @@ bool PythonHelper::get_numpy_2d_array_double(std::string name, int *size_x, int 
         memcpy(&d, raw_data + sizeof(double)*i, sizeof(double));
         (*data)[i] = d;
     }
+    return true;
 }
 
 void PythonHelper::test()

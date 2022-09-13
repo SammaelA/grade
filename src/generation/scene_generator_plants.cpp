@@ -23,7 +23,7 @@ namespace scene_gen
     atomwrapper() : _a() {}
     atomwrapper(const std::atomic<T> &a) : _a(a.load()) {}
     atomwrapper(const atomwrapper &other) : _a(other._a.load()) {}
-    atomwrapper &operator=(const atomwrapper &other) { _a.store(other._a.load()); }
+    atomwrapper &operator=(const atomwrapper &other) { _a.store(other._a.load()); return *this;}
   };
 
   std::mutex ctx_lock;

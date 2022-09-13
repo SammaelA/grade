@@ -203,6 +203,8 @@ bool TextureAtlas::clear()
     target(0,1);
     glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    return true;
 }
 glm::mat4 TextureAtlas::tex_transform(int num) const
 {
@@ -306,6 +308,8 @@ TextureAtlas &TextureAtlas::operator=(const TextureAtlas &atlas)
     normalTex = atlas.normalTex;
     valid = atlas.valid;
     bind(0,0);
+
+    return *this;
 }
 Texture &TextureAtlas::tex(int type) 
 {
@@ -313,6 +317,8 @@ Texture &TextureAtlas::tex(int type)
         return colorTex;
     else if (type == 1)
         return normalTex;
+    
+    return colorTex;
 }
 
 int TextureAtlas::new_layers_count()

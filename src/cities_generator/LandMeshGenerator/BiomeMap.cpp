@@ -62,7 +62,7 @@ unsigned CGenBiomeMap::PointToPixel(BiomePoint point)
     static const unsigned CITY_HIGH = (110 << 16) | (93 << 8) | (83);
 
 
-    unsigned color;
+    unsigned color = 0u;
     switch (point.biome)
     {
         case (Biome::WATER):

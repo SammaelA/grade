@@ -270,7 +270,7 @@ void SpriteWithTagRenderSystem(std::string tag)
 {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    GLint TransformUniformPos;
+    GLint TransformUniformPos = 0;
     bool firstSprite = true;
     std::vector<Entity*> spriteEntities = std::move(Entity::AllEntitiesWithComponentsAndTags(
                                             1, 0, std::vector<unsigned>{SpriteComponent::GetCompId()},

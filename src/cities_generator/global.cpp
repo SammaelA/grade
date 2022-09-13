@@ -36,6 +36,7 @@ int& vec2Int::operator[](int index)
     {
         return y;
     }
+    return x;
 }
 
 vec2Int vec2Int::operator+(const vec2Int& v) const

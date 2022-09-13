@@ -30,9 +30,9 @@ class DefaultMap : RenderableAsMap
         bool IsPointValid_Normalized(glm::vec2 v);
         virtual bool IsPointValid_IntContinuous(glm::vec2 v);
         virtual unsigned PointToPixel(T val);
-        virtual glm::vec2 PointIntToNormalized(vec2Int, bool = false) {};
-        virtual glm::vec2 PointIntContinuousToNormalized(glm::vec2, bool = false) {debug("NO METHOD");throw std::exception{};};
-        virtual glm::vec2 PointNormalizedToIntContinuous(glm::vec2, bool = false) {debug("NO METHOD");throw std::exception{};};
+        virtual glm::vec2 PointIntToNormalized(vec2Int, bool = false) { return glm::vec2(0,0);};
+        virtual glm::vec2 PointIntContinuousToNormalized(glm::vec2, bool = false) {debug("NO METHOD");throw std::exception{}; return glm::vec2(0,0);};
+        virtual glm::vec2 PointNormalizedToIntContinuous(glm::vec2, bool = false) {debug("NO METHOD");throw std::exception{}; return glm::vec2(0,0);};
         // virtual vec2Int PointNormalizedToInt(glm::vec2 pos) = 0;
         unsigned ColorLerp(unsigned col1, unsigned col2, float t);
     

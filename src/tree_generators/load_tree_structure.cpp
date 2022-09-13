@@ -157,6 +157,8 @@ SavedTree dummy_tree()
     j2.r = 0.5;
     st.splines.back().joints = {j1, j2};
     st.splines.back().level = 0;
+
+    return st;
 }
 
 void load_tree(Block &blk, SavedTree &st)

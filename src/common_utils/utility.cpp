@@ -112,10 +112,12 @@ Countable::Countable(Countable &&c)
 Countable &Countable::operator=(Countable &&c)
 {
     countable_type_num = c.countable_type_num;
+    return *this;
 }
 Countable &Countable::operator=(Countable &c)
 {
     countable_type_num = c.countable_type_num;
+    return *this;
 }
 Countable::~Countable() {count--;counts[countable_type_num]--;};
 void Countable::get_cur_count()  {logerr("count = %d %d",count, full_count);}

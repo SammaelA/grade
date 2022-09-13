@@ -451,7 +451,7 @@ namespace gltf
     }
     bool GeneralGltfWriter::camera_to_gltf(Camera *c, FullData &full_data, int id)
     {
-
+      return true;
     }
     bool GeneralGltfWriter::add_to_binary_file(const char *data, int size, BinaryFile &b_file)
     {

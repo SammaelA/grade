@@ -435,7 +435,7 @@ glm::vec2 Polygon::GetPoint(int index)
 
 Rect Polygon::Outscribe()
 {
-    std::array<std::array<float, 2>, 2> bounds;
+    std::array<std::array<float, 2>, 2> bounds = {std::array<float, 2>{0,0},std::array<float, 2>{0,0}};
     for (int i = 0; i < points.size(); i++)
     {
         if (i == 0)

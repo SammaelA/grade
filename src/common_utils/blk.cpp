@@ -474,6 +474,7 @@ bool load_block(const char *data, int &cur_pos, Block &b)
             correct = correct && read_value(data, cur_pos, b.values.back());
         }
     }
+    return true;
 }
 
 bool load_block_from_string(std::string &str, Block &b)
@@ -492,7 +493,8 @@ bool load_block_from_string(std::string &str, Block &b)
     {
         logerr("global block should start with {");
         return false;
-    }    
+    }  
+    return true;  
 }
 
 bool load_block_from_file(std::string path, Block &b)
@@ -507,6 +509,7 @@ bool load_block_from_file(std::string path, Block &b)
     iss << f.rdbuf();
     std::string entireFile = iss.str();
     load_block_from_string(entireFile, b);
+    return true;  
 }
 
 int Block::size()

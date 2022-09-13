@@ -25,6 +25,7 @@ float HeightMap::GetSafe_EdgeStrectched(int x, int y)
         return (GetSafe_EdgeStrectched(m_width, y));
     if (y > m_height)
         return (GetSafe_EdgeStrectched(x, m_height));
+    return 0;
 }
 
 float HeightMap::GetSafe_EdgeStrectched(vec2Int c)
@@ -46,6 +47,7 @@ float HeightMap::GetSafe_EdgeRepeated(int x, int y)
         return (GetSafe_EdgeRepeated(x - 2 * m_width, y));
     if (y > m_height)
         return (GetSafe_EdgeRepeated(x, y - 2 * m_height));
+    return 0;
 }
 
 float HeightMap::GetSafe_EdgeMirrored(vec2Int v)

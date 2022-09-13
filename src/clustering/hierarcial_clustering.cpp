@@ -66,6 +66,7 @@ bool HierarcialClusteringBase::clusterize(Block &settings, IntermediateClusterin
             result.back().members.push_back({cl->branch_n,t});
         }
     }
+    return true;
 }
 
 ClusterDendrogramm::Dist

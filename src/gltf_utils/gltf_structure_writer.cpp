@@ -417,5 +417,7 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
     std::ofstream out(name + ".gltf");
     out << str;
     out.close();
+
+    return true;
 }
 }

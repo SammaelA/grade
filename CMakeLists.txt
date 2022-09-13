@@ -48,7 +48,7 @@ set(CMAKE_USE_WIN32_THREADS_INIT 0)
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-set(CMAKE_CXX_FLAGS "-g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register")
+set(CMAKE_CXX_FLAGS "-g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result")
 set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 file(GLOB IMGUI_SRC src/imgui/*.cpp)

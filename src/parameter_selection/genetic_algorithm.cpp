@@ -591,6 +591,8 @@ float GeneticAlgorithm::get_mark(Genome &G)
         int bucket = CLAMP(G[i]*function_stat.Q_NUM,0,function_stat.Q_NUM-1);
         mark += function_stat.marks[i][bucket];
     }
+
+    return mark;
 }
 
 void GeneticAlgorithm::mutation(Genome &G, float mutation_power, int mutation_genes_count, int *single_mutation_pos)

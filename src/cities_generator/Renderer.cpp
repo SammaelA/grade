@@ -190,9 +190,9 @@ void Renderer::RenderDebugSpheres()
 
         model->m_shader->Use();
 
-        GLint ViewProjMatrixUniformPos, GlobalIlluminationPointUniformPos,
-                GlobalIlluminationColorUniformPos, diffuseColorPos, isIsotropicColorPos,
-                isDepthOnlyPos, GlobalIlluminationViewProjUniformPos, CameraPositionPos;
+        GLint ViewProjMatrixUniformPos=0, GlobalIlluminationPointUniformPos=0,
+                GlobalIlluminationColorUniformPos=0, diffuseColorPos=0, isIsotropicColorPos=0,
+                isDepthOnlyPos=0, GlobalIlluminationViewProjUniformPos=0, CameraPositionPos=0;
         
         ViewProjMatrixUniformPos = glGetUniformLocation(model->m_shader->Program, "view_proj_matrix");
         GlobalIlluminationPointUniformPos = glGetUniformLocation(model->m_shader->Program, "sun_pos");

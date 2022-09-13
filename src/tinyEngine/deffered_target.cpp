@@ -68,6 +68,7 @@ bool DefferedTarget::create(int w, int h)
         debugl(10, "Deferred target created %d %d", width, height);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
 void DefferedTarget::target()
 {

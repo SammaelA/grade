@@ -49,5 +49,6 @@ public:
                 result.back().members.push_back(std::pair<int, Transform>(i+1,Transform()));
             }
         }
+        return true;
     }
 };

@@ -152,6 +152,7 @@ double DiscreteGeneral::get()
 }
 double *DiscreteGeneral::get_series(unsigned size)
 {
+  return nullptr;
 }
 glm::vec3 rand_dir()
 {

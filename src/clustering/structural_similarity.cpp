@@ -103,6 +103,8 @@ IntermediateClusteringData *GPUSSClusteringHelper::prepare_intermediate_data(Blo
     }
     GPUClusterizationHelper gpuch;
     gpuch.prepare_ddt(real_branches,data->ddt,clusterizationParams);
+
+    return data;
 }
 namespace structsim
 {
@@ -213,7 +215,7 @@ Answer partial_dist(std::vector<int> &jc, std::vector<int> &jp, std::vector<floa
     num_p /= denom;
     return Answer(num_p > 0.9999, num_p - num_m, 1 - num_m);
 }
-int pass_all_joints(std::vector<int> &jp, Branch *b)
+void pass_all_joints(std::vector<int> &jp, Branch *b)
 {
     jp[b->level] += b->joints.size();
     for (Joint &j1 : b->joints)
@@ -248,6 +250,7 @@ bool match_child_branches(Joint *j1, Joint *j2, std::vector<float> &matches, std
             j2 = tmp;
         }
     }
+    return false;
 }
 float r_NMSE(Branch *b1, Branch *b2)
 {
@@ -455,6 +458,7 @@ Answer dist_simple(BranchWithData &bwd1, BranchWithData &bwd2, float min, float 
 }
 Answer dist_slow(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max)
 {
+  return Answer();
 }
 Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {
@@ -548,6 +552,8 @@ Answer dist_trunc(BranchWithData &bwd1, BranchWithData &bwd2, float min, float m
         it1++;
         it2++;
     }
+
+    return Answer();
 }
 Answer dist(BranchWithData &bwd1, BranchWithData &bwd2, float min, float max, DistData *data)
 {

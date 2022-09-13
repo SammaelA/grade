@@ -65,6 +65,7 @@ bool Octree::Node::insert(glm::vec3 &pos)
                 return true;
         }
     }
+    return false;
 }
 void Octree::Node::subdivide_half()
 {

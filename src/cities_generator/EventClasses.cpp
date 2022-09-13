@@ -41,7 +41,7 @@ ConsoleInputEvent::ConsoleInputEvent(std::string name, std::string arg) : comman
 
 Event* EventHandler::NewEvent(std::string name, ...)
 {
-    Event* result;
+    Event* result = nullptr;
     auto it = nameIds.find(name);
     int type;
     if (it == nameIds.end())

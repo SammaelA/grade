@@ -152,7 +152,8 @@ struct LeafHeap
     LeafHeap(){};
     LeafHeap& operator=(LeafHeap&&h)
     {
-        leaves = std::move(h.leaves);
+      leaves = std::move(h.leaves);
+      return *this;
     }
     private:
     template<class Archive>
@@ -176,6 +177,7 @@ struct BranchHeap
     BranchHeap& operator=(BranchHeap&&h)
     {
         branches = std::move(h.branches);
+        return *this;
     }
     void clear_removed();
     private:

@@ -318,6 +318,8 @@ std::vector<glm::vec3> Billboard::get_tc(const TextureAtlas &atlas)
         }
         return tcs;
     }
+
+    return std::vector<glm::vec3>{};
 }
 void Billboard::to_model(Model *m, const TextureAtlas &atlas)
 {
