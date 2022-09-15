@@ -54,7 +54,15 @@ private:
       bool apply_light = false;
     };
 
-    Block render_settings;
+    struct RenderSettings
+    {
+      float RT_overscale = 2.0;
+      enum {
+        NONE, LOW, HIGH
+      } shadow_quality = HIGH;
+    };
+
+    RenderSettings render_settings;
     int render_mode = -1;
     int forced_LOD = -1;
     GroveRendererDebugParams groveRendererDebugParams;

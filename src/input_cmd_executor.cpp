@@ -42,7 +42,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
       }
       break;
     case IC_INIT_SCENE:
-      renderCmdBuffer->push(RC_INIT_RENDER);
       if (genCtx.inited)
       {
         genCmdBuffer->push(GC_CLEAR_SCENE);
@@ -287,6 +286,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
           cb.add_int("cell_id", cell.id);
         renderCmdBuffer->push(RC_UPDATE_CELL, cb);
       }
+      break;
+    case IC_INIT_RENDER:
+      renderCmdBuffer->push(RC_INIT_RENDER, cmd.args);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

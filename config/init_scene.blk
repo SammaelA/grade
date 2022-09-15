@@ -1,0 +1,15 @@
+{
+cmd {
+  cmd_code:i=22
+  preset:s = "low_quality"//can also be medium_quality, low_quality
+}
+cmd {
+  cmd_code:i=3
+}
+cmd {
+  cmd_code:i=0
+}
+cmd {
+  cmd_code:i=15
+}
+}

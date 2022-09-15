@@ -45,16 +45,41 @@ void WorldRenderer::set_resolution(int w, int h)
   screen_h = h;
   
   projection = glm::perspective(fov, (float)w / h, 1.0f, 3000.0f);
+  
+  defferedTarget = DefferedTarget();
+  defferedTarget.create(render_settings.RT_overscale *w, render_settings.RT_overscale*h);
+  defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 }
 
-void WorldRenderer::init(int _h, int _w, Block &render_settings)
+void WorldRenderer::init(int _h, int _w, Block &render_preset)
 {
   if (inited)
     return;
+
+  std::string preset = render_preset.get_string("preset","high_quality");
+  if (preset == "high_quality")
+  {
+    render_settings.RT_overscale = 2.0;
+    render_settings.shadow_quality = RenderSettings::HIGH;
+  }
+  else if (preset == "medium_quality")
+  {
+    render_settings.RT_overscale = 1.5;
+    render_settings.shadow_quality = RenderSettings::LOW;
+  }
+  else if (preset == "low_quality")
+  {
+    render_settings.RT_overscale = 1.0;
+    render_settings.shadow_quality = RenderSettings::NONE;
+  }
+  else
+  {
+    logerr("Unknown render preset %s", preset.c_str());
+  }
+
   inited = true;
-  float rt_overscale = render_settings.get_double("rt_overscale",1);
-  int w = rt_overscale*_w;
-  int h = rt_overscale*_h;
+  int w = _w;
+  int h = _h;
   target_w = w;
   target_h = h;
 
@@ -67,21 +92,26 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
   light.diffuse_q = 0.8;
   light.specular_q = 0.1;
   light.has_shadow_map = true;
-  light.shadow_map_size = glm::vec2(4096, 4096);
+  light.shadow_map_size = render_settings.shadow_quality == RenderSettings::HIGH ? glm::vec2(4096, 4096) : glm::vec2(2048, 2048);
 
   startScreenShader = new PostFx("simple_render.fs");
   shadowMap.create(light.shadow_map_size.x, light.shadow_map_size.y);
-  defferedTarget.create(2*w, 2*h);
-  defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
 
   hbaoRenderer = new HBAORenderer();
   hbaoRenderer->create(w/2, h/2);
   cubemap = new Cubemap(w, h);
-  defferedLight = new PostFx("deffered_light.fs");
   defaultShader = new Shader({"default.vs", "default.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   debugShader = new Shader({"simple_debug.vs", "simple_debug.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShader = new Shader({"simple_instancing.vs", "simple_instancing.fs"}, {"in_Position", "in_Normal", "in_Tex"});
   simpleInstancingShaderShadow = new Shader({"simple_instancing.vs", "simple_instancing_shadow.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+
+  if (render_settings.shadow_quality == RenderSettings::HIGH)
+    defferedLight = new PostFx("deffered_light.fs");
+  else if (render_settings.shadow_quality == RenderSettings::LOW)
+    defferedLight = new PostFx("deffered_light_simple_shadows.fs");
+  else 
+    defferedLight = new PostFx("deffered_light_no_shadows.fs");
+
   renderReadback = new RenderReadback();
   targets[0] = RenderTarget();
   targets[0].create(w,h);
@@ -116,9 +146,9 @@ void WorldRenderer::init(int _h, int _w, Block &render_settings)
     void WorldRenderer::set_grove(const GrovePacked &source, AABB2D scene_bbox, const std::vector<TreeTypeData> &types)
     {
         remove_grove();
-        int p_int = render_settings.get_int("grove_renderer_precision", (int)GroveRenderer::MEDIUM);   
+        int p_int = (int)GroveRenderer::MEDIUM;  
         GroveRenderer::Precision pres = p_int <= 0 ? GroveRenderer::LOW : (p_int == 1 ? GroveRenderer::MEDIUM : GroveRenderer::DEBUG);
-        bool print_perf = render_settings.get_bool("print_perf",false);
+        bool print_perf = false;
         std::vector<float> LODs_dists = {15000, 1500, 500, 200, 30};
         if (pres == GroveRenderer::Precision::LOW)
             LODs_dists.back() = -10;
@@ -207,12 +237,12 @@ void WorldRenderer::render(float dt, Camera &camera)
   
   projectionNoJitter = projection;
 
-  projection[3][0] += jitter.x * JITTER_SCALE;
-  projection[3][1] += jitter.y * JITTER_SCALE;
+  projection[3][0] += jitter.x * render_settings.RT_overscale;
+  projection[3][1] += jitter.y * render_settings.RT_overscale;
 
   // SHADOW PASS //
   checkForGlErrors("render pre shadow", true);
-  if (regenerate_shadows)
+  if (regenerate_shadows && render_settings.shadow_quality != RenderSettings::NONE)
   {
     regenerate_shadows = false;
     shadowMap.use(light);
