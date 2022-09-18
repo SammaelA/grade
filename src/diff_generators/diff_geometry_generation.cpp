@@ -258,7 +258,7 @@ namespace dgen
   {
     //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
     std::vector<dvec3> spline;
-    spline.reserve(3*(params.size() + from_zero));
+    spline.reserve((params.size() + from_zero));
     if (from_zero)
     {
       dvec3 vec{0,0,0};
