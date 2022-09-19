@@ -40,9 +40,9 @@ scene = mi.load_dict({
         }
     },
     'bunny': {
-        'type': 'ply',
-        'filename': base_path + 'meshes/bunny.ply',
-        'to_world': T.scale(6.5),
+        'type': 'obj',
+        'filename': base_path + 'meshes/sphere.obj',
+        'to_world': T.scale(0.25),
         'bsdf': {
             'type': 'diffuse',
             'reflectance': { 'type': 'rgb', 'value': (0.3, 0.3, 0.75) },
@@ -87,7 +87,7 @@ def F_loss(img):
 F_transform(params, opt)
 img_init = mi.render(scene, seed=0, spp=256)
 mi.util.convert_to_bitmap(img_init)
-steps = 50
+steps = 10
 
 
 for it in range(steps):
@@ -98,6 +98,9 @@ for it in range(steps):
 
   opt.step()
   print(f"Iteration {it:02d}: error={loss[0]:6f}, angle={opt['angle'][0]:.4f}, trans=[{opt['trans'].x[0]:.4f}, {opt['trans'].y[0]:.4f}]", end='\n')
+  print(len(params['bunny.vertex_positions']))
+  print(len(params['bunny.vertex_normals']))
+  print(len(params['bunny.vertex_texcoords']))
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 10))
 img_optimized = mi.render(scene, spp=256)

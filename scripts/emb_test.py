@@ -41,9 +41,9 @@ def init(base_path):
           }
       },
       'bunny': {
-          'type': 'ply',
-          'filename': base_path + 'meshes/bunny.ply',
-          'to_world': T.scale(6.5),
+          'type': 'obj',
+          'filename': base_path + 'meshes/sphere.obj',
+          'to_world': T.scale(0.25),
           'bsdf': {
               'type': 'diffuse',
               'reflectance': { 'type': 'rgb', 'value': (0.3, 0.3, 0.75) },
@@ -77,6 +77,9 @@ def init(base_path):
     'img_ref' : img_ref,
     'params' : params, 
     'initial_vertex_positions' : initial_vertex_positions,
+    'vertex_positions' : params['bunny.vertex_positions'],
+    'vertex_normals' : params['bunny.vertex_normals'],
+    'vertex_texcoords' : params['bunny.vertex_texcoords'],
     'opt' : opt
   }
   return context
@@ -112,19 +115,47 @@ def opt_iter(it, context):
   it = it+1
   return loss[0]
 
-def get_params(context):
-  lst = list(context['params']['bunny.vertex_positions'])
-  print("Python: sent ",len(lst)," floats to C++")
-  for i in range(10):
-    print(lst[i])
+def render(it, context):
+  scene = context['scene']
+  params = context['params']
+  opt = context['opt']
+  img_ref = context['img_ref']
+
+  params['bunny.vertex_positions'] = context['vertex_positions']
+  params['bunny.vertex_normals'] = context['vertex_normals']
+  params['bunny.vertex_texcoords'] = context['vertex_texcoords']
+  params.update()
+
+  dr.enable_grad(params['bunny.vertex_positions'])
+  dr.enable_grad(params['bunny.vertex_normals'])
+  dr.enable_grad(params['bunny.vertex_texcoords'])
+  
+  img = mi.render(scene, params, seed=it, spp=4) # image = F_render(scene)
+  loss = F_loss(img, img_ref) # loss = F_loss(image)
+  dr.backward(loss)
+
+  context['vertex_positions_grad'] = dr.grad(params['bunny.vertex_positions'])
+  context['vertex_normals_grad'] = dr.grad(params['bunny.vertex_normals'])
+  context['vertex_texcoords_grad'] = dr.grad(params['bunny.vertex_texcoords'])
+
+  print(f"Iteration {it:02d}: error={loss[0]:6f}, angle={opt['angle'][0]:.4f}, trans=[{opt['trans'].x[0]:.4f}, {opt['trans'].y[0]:.4f}]", end='\n')
+  mi.util.write_bitmap("iter.png", img)
+  it = it+1
+  return loss[0]
+
+def get_params(context, key):
+  lst = list(context[key])
+  #print("Python: sent ",len(lst)," floats to C++")
+  #for i in range(10):
+  #  print(lst[i])
   return struct.pack('%sf' % len(lst), *lst)
 
-def set_params(context, bytes, n):
+def set_params(context, key, bytes, n):
   tup = struct.unpack('%sf' % n, bytes)
-  context['params']['bunny.vertex_positions'] = tup
-  print("Python: receive ",len(tup)," floats from C++")
-  for i in range(10):
-    print(tup[i])
+  context[key] = tup
+  #print("Python: receive ",len(tup)," floats from C++")
+  #for i in range(10):
+  #  print(tup[i])
 
 def pow2(val):
   return val*2

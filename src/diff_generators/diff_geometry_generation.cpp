@@ -6,8 +6,6 @@
 #include "common_utils/interpolation.h"
 namespace dgen
 {
-  #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
-
   inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc)
   {
     int sz = n*FLOAT_PER_VERTEX;
@@ -159,7 +157,7 @@ namespace dgen
     }
   }
 
-  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3)
+  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex, int pos_start, int norm_start)
   {
     dmat43 norm_mat = transposedInverse3x3(mat);
 
@@ -231,7 +229,7 @@ namespace dgen
     }
   }
 
-  void print_jackobian(const std::vector<float> &jac, int x_n, int y_n)
+  void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines)
   {
     std::string names[FLOAT_PER_VERTEX] = {" pos_x", " pos_y", " pos_z", 
                                            "norm_x", "norm_y", "norm_z",
@@ -240,7 +238,7 @@ namespace dgen
     for (int j = 0; j < x_n; j++)
       debug("x_%.2d ", j);
     debugnl();
-    for (int i = 0; i < y_n; i++)
+    for (int i = 0; i < MIN(y_n, lines); i++)
     {
       if (i % FLOAT_PER_VERTEX == 0)
       {

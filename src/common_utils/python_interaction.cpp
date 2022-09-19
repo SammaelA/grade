@@ -344,11 +344,13 @@ void PythonHelper::test()
       Py_DECREF(initArgs);
       Py_DECREF(basePath);
     }
+
     if (!mitsubaContext)
       show_errors();
     {
-      PyObject *func, *args, *params, *params_bytes;
-      args = PyTuple_Pack(1, mitsubaContext);
+      PyObject *func, *args, *params, *params_bytes, *params_name;
+      params_name = PyUnicode_FromString("vertex_positions");
+      args = PyTuple_Pack(2, mitsubaContext, params_name);
       func = PyObject_GetAttrString(pModule, (char*)"get_params");
       params = PyObject_CallObject(func, args);
       if (!params)
@@ -370,11 +372,12 @@ void PythonHelper::test()
       Py_DECREF(args);
       Py_DECREF(func);
       Py_DECREF(params); 
-      Py_DECREF(params_bytes); 
+      Py_DECREF(params_bytes);
+      Py_DECREF(params_name); 
     }
     {
       float rotate = 0.0;
-      glm::vec3 translate = glm::vec3(0,1,0);
+      glm::vec3 translate = glm::vec3(0,0.3,0);
       glm::mat4 tr_mat = glm::translate(glm::rotate(rotate, glm::vec3(0,1,0)), translate);
       for (int j = 0;j<data_floats;j+=3)
       {
@@ -388,10 +391,11 @@ void PythonHelper::test()
       for (int i=0;i<10;i++)
         logerr("%f", (float)(data_to_transport[i]));
 
-      PyObject *func, *args, *params_n, *params_bytes, *params;
+      PyObject *func, *args, *params_n, *params_bytes, *params, *params_name;
+      params_name = PyUnicode_FromString("vertex_positions");
       params_n = PyLong_FromLong(data_floats);
       params_bytes = PyBytes_FromStringAndSize((const char *)data_to_transport, sizeof(float)*data_floats);
-      args = PyTuple_Pack(3, mitsubaContext, params_bytes, params_n);
+      args = PyTuple_Pack(4, mitsubaContext, params_name, params_bytes, params_n);
       func = PyObject_GetAttrString(pModule, (char*)"set_params");
       params = PyObject_CallObject(func, args);
       
@@ -400,11 +404,12 @@ void PythonHelper::test()
       Py_DECREF(params); 
       Py_DECREF(params_n); 
       Py_DECREF(params_bytes); 
+      Py_DECREF(params_name);
     }
-    pFunc = PyObject_GetAttrString(pModule, (char*)"opt_iter");
+    pFunc = PyObject_GetAttrString(pModule, (char*)"render");
     if (!pFunc)
       show_errors();
-    for (int i=0;i<10;i++)
+    for (int i=0;i<1;i++)
     {
       
       pIndex = PyLong_FromLong(i);
