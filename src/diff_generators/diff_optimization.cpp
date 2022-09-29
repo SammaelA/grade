@@ -6,125 +6,213 @@
 
 namespace dopt
 {
-  void test()
+  class Optimizer
   {
-    MitsubaInterface mi;
-    mi.init("/home/sammael/grade/scripts", "emb_test"); // TODO: replace absolute path
-    mi.set_model_max_size(49917);
-    int sz = mi.get_array_from_ctx_internal("vertex_positions", 0);
-    mi.get_array_from_ctx_internal("vertex_normals", 1);
-    mi.get_array_from_ctx_internal("vertex_texcoords", 2);
-    int vertex_count = sz/3;
-    logerr("wrote %d vertices (%d pos buffer size)", vertex_count, sz);
-    std::vector<float> model_332 = std::vector<float>(8*vertex_count);
-    for (int i=0;i<vertex_count;i++)
+  public:
+    Optimizer(){};
+    virtual ~Optimizer(){};
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) = 0;
+  };
+
+  class GradientDescentSimple : public Optimizer
+  {
+  public:
+    GradientDescentSimple(float _alpha = 0.1) 
     {
-      model_332[8*i] = mi.buffers[0][3*i];
-      model_332[8*i+1] = mi.buffers[0][3*i+1];
-      model_332[8*i+2] = mi.buffers[0][3*i+2];
-
-      model_332[8*i+3] = mi.buffers[1][3*i];
-      model_332[8*i+4] = mi.buffers[1][3*i+1];
-      model_332[8*i+5] = mi.buffers[1][3*i+2];
-
-      model_332[8*i+6] = mi.buffers[2][2*i];
-      model_332[8*i+7] = mi.buffers[2][2*i+1];
+      assert(_alpha > 0);
+      alpha = _alpha;
     }
-    for (int i = 0; i < 24; i++)
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
     {
-      //logerr("%d model %f", i, model_332[i]);
-    }
+      assert(x_prev.size() == x_grad.size());
+      std::vector<float> x(x_prev.size(),0);
+      for (int i=0;i<x_prev.size();i++)
+      {
+        x[i] = x_prev[i] - alpha*x_grad[i];
+      }
 
-    size_t x_n = 4;
+      return x;
+    }
+  private:
+    float alpha = 1;
+  };
+
+  class RMSprop : public Optimizer
+  {
+  public:
+    RMSprop(float _alpha = 0.01, float _beta = 0.99, float _eps = 1e-8)
+    {
+      assert(_alpha > 0);
+      assert(_beta > 0);
+      assert(_beta < 1);
+      assert(_eps > 0);
+
+      alpha = _alpha;
+      beta = _beta;
+      eps = _eps;
+    }
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
+    {
+      assert(x_prev.size() == x_grad.size());
+      if (S.empty())
+        S = std::vector<float>(x_prev.size(), 0);
+      else
+        assert(x_prev.size() == S.size());
+      std::vector<float> x(x_prev.size(),0);
+      for (int i=0;i<x_prev.size();i++)
+      {
+        S[i] = beta * S[i] + (1-beta)*x_grad[i]*x_grad[i];
+        x[i] = x_prev[i] - alpha*x_grad[i]/(sqrt(S[i]) + eps);
+      }
+
+      return x;
+    }
+  private:
+    std::vector<float> S; 
+    float alpha = 1;
+    float beta = 1;
+    float eps = 1;
+  };
+
+  class Adam : public Optimizer
+  {
+  public:
+    Adam(float _alpha = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8)
+    {
+      assert(_alpha > 0);
+      assert(_beta_1 > 0);
+      assert(_beta_1 < 1);
+      assert(_beta_2 > 0);
+      assert(_beta_2 < 1);
+      assert(_eps > 0);
+      
+      alpha = _alpha;
+      beta_1 = _beta_1;
+      beta_2 = _beta_2;
+      eps = _eps;
+    }
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
+    {
+      assert(x_prev.size() == x_grad.size());
+      if (S.empty())
+        S = std::vector<float>(x_prev.size(), 0);
+      else
+        assert(x_prev.size() == S.size());
+      if (V.empty())
+        V = std::vector<float>(x_prev.size(), 0);
+      else
+        assert(x_prev.size() == V.size());
+
+      iter++;
+      std::vector<float> x(x_prev.size(),0);
+      for (int i=0;i<x_prev.size();i++)
+      {
+        V[i] = beta_1 * V[i] + (1-beta_1)*x_grad[i];
+        float Vh = V[i] / (1 - pow(beta_1, iter)); 
+        S[i] = beta_2 * S[i] + (1-beta_2)*x_grad[i]*x_grad[i];
+        float Sh = S[i] / (1 - pow(beta_2, iter)); 
+
+        x[i] = x_prev[i] - alpha*Vh/(sqrt(Sh) + eps);
+      }
+
+      return x;
+    }
+  private:
+    std::vector<float> V; 
+    std::vector<float> S; 
+    float alpha = 1;
+    float beta_1 = 1;
+    float beta_2 = 1;
+    float eps = 1;
+    int iter = 0;
+  };
+
+  void test()
+  {    
+    size_t x_n = 3;
     std::vector<dgen::dfloat> X(x_n);
-    std::vector<int> inds;
+    int model_size = 0;
     std::vector<dgen::dfloat> Y;
 
     CppAD::Independent(X);
     {
-      dgen::dmat43 sc = dgen::translate(dgen::rotate(dgen::ident(), dgen::dvec3{0,1,0}, X[0]), dgen::dvec3{X[1], X[2], X[3]});
-      Y.reserve(model_332.size());
-      for (float &f : model_332)
-        Y.push_back(f);
-      dgen::transform(Y, sc);
+      dgen::create_cup(X, Y);
     }
     size_t y_n = Y.size();
+    int vertex_count = y_n/FLOAT_PER_VERTEX;
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 
     std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
     
-    X0[0] = 0;
-    X0[1] = 0;
-    X0[2] = 0.25;
-    X0[3] = 0;
+    X0[0] = 4 - 1.45;
+    //X0[1] = 4 - 1.0;
+    //X0[2] = 4 - 0.65;
+    //X0[3] = 4 - 0.45;
+    X0[1] = 4 - 0.25;
+    //X0[5] = 4 - 0.18;
+    //X0[6] = 4 - 0.1;
+    //X0[7] = 4 - 0.05;
+    X0[2] = 4 - 0;
 
-    for (int iter = 0; iter < 10; iter++)
+    res = f.Forward(0, X0); 
+    
+    MitsubaInterface mi;
+    mi.init("scripts", "emb_test");
+    mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 64), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
+    mi.render_model_to_file(res, MitsubaInterface::RenderSettings(512, 512, 64), "saves/reference.png");
+
+    X0[0] = 4;
+    X0[1] = 4;
+    X0[2] = 4;
+    //X0[3] = 4;
+    //X0[4] = 4;
+    //X0[5] = 4;
+    //X0[6] = 4;
+    //X0[7] = 4;
+    //X0[8] = 4;
+
+    Optimizer *opt = new Adam(0.025);
+
+    int steps = 100;
+    for (int iter = 0; iter < steps; iter++)
     {
-      jac = f.Jacobian(X0); // Jacobian for operation sequence
-      //dgen::print_jackobian(jac, x_n, y_n, 100);
-      res = f.Forward(0, X0); 
-      for (int i = 0; i < 24; i++)
-      {
-        //logerr("%d res %f", i, res[i]);
-      }
-
-      for (int i=0;i<vertex_count;i++)
-      {
-        mi.buffers[0][3*i] = res[8*i];
-        mi.buffers[0][3*i+1] = res[8*i+1];
-        mi.buffers[0][3*i+2] = res[8*i+2];
-
-        mi.buffers[1][3*i] = res[8*i+3];
-        mi.buffers[1][3*i+1] = res[8*i+4];
-        mi.buffers[1][3*i+2] = res[8*i+5];
-
-        mi.buffers[2][2*i] = res[8*i+6];
-        mi.buffers[2][2*i+1] = res[8*i+7];
-      }
-
-      mi.set_array_to_ctx_internal("vertex_positions", 0, 3*vertex_count);
-      mi.set_array_to_ctx_internal("vertex_normals", 1, 3*vertex_count);
-      mi.set_array_to_ctx_internal("vertex_texcoords", 2, 2*vertex_count);
-      float loss = mi.render_and_compare_internal(4);
-
-      mi.get_array_from_ctx_internal("vertex_positions_grad", 0);
-      mi.get_array_from_ctx_internal("vertex_normals_grad", 1);
-      mi.get_array_from_ctx_internal("vertex_texcoords_grad", 2);
-
-      std::vector<float> final_grad = std::vector<float>(x_n, 0);
-      for (int i=0;i<vertex_count;i++)
-      {
-        for (int j=0;j<x_n;j++)
-        {
-          final_grad[j] += jac[(8*i)*x_n + j]*mi.buffers[0][3*i];
-          final_grad[j] += jac[(8*i+1)*x_n + j]*mi.buffers[0][3*i+1];
-          final_grad[j] += jac[(8*i+2)*x_n + j]*mi.buffers[0][3*i+2];
-
-          final_grad[j] += jac[(8*i+3)*x_n + j]*mi.buffers[1][3*i];
-          final_grad[j] += jac[(8*i+4)*x_n + j]*mi.buffers[1][3*i+1];
-          final_grad[j] += jac[(8*i+5)*x_n + j]*mi.buffers[1][3*i+2];
-
-          final_grad[j] += jac[(8*i+6)*x_n + j]*mi.buffers[2][2*i];
-          final_grad[j] += jac[(8*i+7)*x_n + j]*mi.buffers[2][2*i+1];
-        }
-      }
-
       debug("[");
       for (int j=0;j<x_n;j++)
       {
         debug("%.6f ", X0[j]);
       }
       debug("]\n");
+
+      jac = f.Jacobian(X0);
+      //dgen::print_jackobian(jac, x_n, y_n, 100);
+      res = f.Forward(0, X0); 
+      for (int i = 0; i < 24; i++)
+      {
+        //logerr("%d res %f", i, res[i]);
+      }
+      std::vector<float> final_grad = std::vector<float>(x_n, 0);
+      float loss = mi.render_and_compare(res);
+      debug("[%d/%d] loss = %.4f\n", iter, steps, loss);
+      /*dgen::print_model(res);
+      dgen::print_jackobian(jac, vertex_count, vertex_count, 100000);
+      for (int i = 0; i < vertex_count; i++)
+      {
+        debug("%f %f %f\n", mi.buffers[0][3 * i], mi.buffers[0][3 * i+1], mi.buffers[0][3 * i+2]);
+      }*/
+      mi.compute_final_grad(jac, x_n, vertex_count, final_grad);
+
       debug("{");
       for (int j=0;j<x_n;j++)
       {
         debug("%.6f ", final_grad[j]);
-        X0[j] = X0[j] - final_grad[j];
       }
-      debug("]}\n");
+      debug("}\n");
+      X0 = opt->step(X0, final_grad);
     }
+
+    delete opt;
     mi.finish();
   }
 }

@@ -1,4 +1,5 @@
 #include "mitsuba_python_interaction.h"
+#include "diff_geometry_generation.h"
 #include <iostream>
 #include "common_utils/utility.h"
 #define GLM_ENABLE_EXPERIMENTAL
@@ -84,6 +85,107 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   Py_DECREF(basePath);
 }
 
+void MitsubaInterface::init_optimization(const std::string &reference_image_dir, RenderSettings render_settings, LossFunction loss_function, 
+                                         int model_max_size)
+{
+  PyObject *func, *args, *iw_arg, *ih_arg, *spp_arg, *ref_dir_arg, *func_ret;
+
+  func = PyObject_GetAttrString(pModule, (char *)"init_optimization");
+  iw_arg = PyLong_FromLong(render_settings.image_w);
+  ih_arg = PyLong_FromLong(render_settings.image_h);
+  spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
+  ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
+  args = PyTuple_Pack(5, mitsubaContext, iw_arg, ih_arg, spp_arg, ref_dir_arg);
+  func_ret = PyObject_CallObject(func, args);
+  show_errors();
+  set_model_max_size(model_max_size);
+
+  Py_DECREF(func);
+  Py_DECREF(args);
+  Py_DECREF(iw_arg);
+  Py_DECREF(ih_arg);
+  Py_DECREF(spp_arg);
+  Py_DECREF(ref_dir_arg);
+  Py_DECREF(func_ret);
+}
+
+void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
+{
+  int vertex_count = model.size() / FLOAT_PER_VERTEX;
+  clear_buffer(0, 0.0f);
+  clear_buffer(1, 1.0f);
+  clear_buffer(2, 0.0f);
+  for (int i = 0; i < vertex_count; i++)
+  {
+    buffers[0][3 * i] = model[FLOAT_PER_VERTEX * i];
+    buffers[0][3 * i + 1] = model[FLOAT_PER_VERTEX * i + 1];
+    buffers[0][3 * i + 2] = model[FLOAT_PER_VERTEX * i + 2];
+
+    buffers[1][3 * i] = model[FLOAT_PER_VERTEX * i + 3];
+    buffers[1][3 * i + 1] = model[FLOAT_PER_VERTEX * i + 4];
+    buffers[1][3 * i + 2] = model[FLOAT_PER_VERTEX * i + 5];
+
+    buffers[2][2 * i] = model[FLOAT_PER_VERTEX * i + 6];
+    buffers[2][2 * i + 1] = model[FLOAT_PER_VERTEX * i + 7];
+  }
+
+  set_array_to_ctx_internal("vertex_positions", 0, 3 * vertex_count);
+  set_array_to_ctx_internal("vertex_normals", 1, 3 * vertex_count);
+  set_array_to_ctx_internal("vertex_texcoords", 2, 2 * vertex_count);
+}
+
+void MitsubaInterface::render_model_to_file(const std::vector<float> &model, RenderSettings render_settings, const std::string &image_dir)
+{
+  model_to_ctx(model);
+
+  PyObject *func, *args, *iw_arg, *ih_arg, *spp_arg, *ref_dir_arg, *func_ret;
+
+  func = PyObject_GetAttrString(pModule, (char *)"render_and_save_to_file");
+  iw_arg = PyLong_FromLong(render_settings.image_w);
+  ih_arg = PyLong_FromLong(render_settings.image_h);
+  spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
+  ref_dir_arg = PyUnicode_FromString(image_dir.c_str());
+  args = PyTuple_Pack(5, mitsubaContext, iw_arg, ih_arg, spp_arg, ref_dir_arg);
+  func_ret = PyObject_CallObject(func, args);
+  show_errors();
+
+  Py_DECREF(func);
+  Py_DECREF(args);
+  Py_DECREF(iw_arg);
+  Py_DECREF(ih_arg);
+  Py_DECREF(spp_arg);
+  Py_DECREF(ref_dir_arg);
+  Py_DECREF(func_ret);
+}
+
+float MitsubaInterface::render_and_compare(const std::vector<float> &model)
+{
+  model_to_ctx(model);
+  float loss = render_and_compare_internal();
+  return loss;
+}
+
+void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
+                                          std::vector<float> &final_grad)
+{
+  for (int i = 0; i < vertex_count; i++)
+  {
+    for (int j = 0; j < params_count; j++)
+    {
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i) * params_count + j] * buffers[0][3 * i];
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 1) * params_count + j] * buffers[0][3 * i + 1];
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 2) * params_count + j] * buffers[0][3 * i + 2];
+
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 3) * params_count + j] * buffers[1][3 * i];
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 4) * params_count + j] * buffers[1][3 * i + 1];
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 5) * params_count + j] * buffers[1][3 * i + 2];
+
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 6) * params_count + j] * buffers[2][2 * i];
+      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 7) * params_count + j] * buffers[2][2 * i + 1];
+    }
+  }
+}
+
 void MitsubaInterface::set_model_max_size(int _model_max_size)
 {
   model_max_size = _model_max_size;
@@ -119,9 +221,6 @@ int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int b
   }
   char *data = PyBytes_AsString(params_bytes);
   memcpy(buffers[buffer_id], data, MIN(sz, model_max_size*sizeof(float)));
-  //logerr("C++: recieve %d floats from Python", data_floats);
-  //for (int i = 0; i < 10; i++)
-  //  logerr("%f", (float)(buffers[buffer_id][i]));
   Py_DECREF(args);
   Py_DECREF(func);
   Py_DECREF(params);
@@ -133,10 +232,6 @@ int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int b
 
 void MitsubaInterface::set_array_to_ctx_internal(const std::string &name, int buffer_id, int size)
 {
-  //logerr("C++: send %d floats to Python", size);
-  //for (int i = 0; i < 10; i++)
-  //  logerr("%f", (float)(buffers[buffer_id][i]));
-
   PyObject *func, *args, *params_n, *params_bytes, *params, *params_name;
   params_name = PyUnicode_FromString(name.c_str());
   params_n = PyLong_FromLong(size);
@@ -153,7 +248,7 @@ void MitsubaInterface::set_array_to_ctx_internal(const std::string &name, int bu
   Py_DECREF(params_name);
 }
 
-float MitsubaInterface::render_and_compare_internal(int grad_buffer_id)
+float MitsubaInterface::render_and_compare_internal()
 {
   PyObject *pFunc, *pIndex, *pArgs, *pValue;
 
@@ -166,7 +261,6 @@ float MitsubaInterface::render_and_compare_internal(int grad_buffer_id)
   if (!pValue)
     show_errors();
   double result = PyFloat_AsDouble(pValue);
-  logerr("val %f", (float)result);
 
   Py_DECREF(pValue);
   Py_DECREF(pIndex);
@@ -176,26 +270,7 @@ float MitsubaInterface::render_and_compare_internal(int grad_buffer_id)
   return result;
 }
 
-void MitsubaInterface::test()
+void MitsubaInterface::clear_buffer(int buffer_id, float val)
 {
-  init("/home/sammael/grade/scripts", "emb_test"); // TODO: replace absolute path
-  set_model_max_size(49917);
-  int sz = get_array_from_ctx_internal("vertex_positions", 0);
-  {
-    float *data_initial = buffers[0];
-    float *data_to_transport = buffers[1];
-    float rotate = 0.0;
-    glm::vec3 translate = glm::vec3(0, 0.25, 0);
-    glm::mat4 tr_mat = glm::translate(glm::rotate(rotate, glm::vec3(0, 1, 0)), translate);
-    for (int j = 0; j < model_max_size; j += 3)
-    {
-      glm::vec4 res = tr_mat * glm::vec4(data_initial[j], data_initial[j + 1], data_initial[j + 2], 1);
-      data_to_transport[j] = res.x;
-      data_to_transport[j + 1] = res.y;
-      data_to_transport[j + 2] = res.z;
-    }
-  }
-  set_array_to_ctx_internal("vertex_positions", 1, sz);
-  float loss = render_and_compare_internal(2);
-  finish();
+  std::fill_n(buffers[buffer_id], model_max_size, val);
 }
