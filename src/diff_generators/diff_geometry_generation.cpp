@@ -6,8 +6,6 @@
 #include "common_utils/interpolation.h"
 namespace dgen
 {
-  #define FLOAT_PER_VERTEX (3+3+2) //vec3 pos, vec3 norm, vec2 tc
-
   inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc)
   {
     int sz = n*FLOAT_PER_VERTEX;
@@ -159,7 +157,7 @@ namespace dgen
     }
   }
 
-  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3)
+  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex, int pos_start, int norm_start)
   {
     dmat43 norm_mat = transposedInverse3x3(mat);
 
@@ -231,7 +229,7 @@ namespace dgen
     }
   }
 
-  void print_jackobian(const std::vector<float> &jac, int x_n, int y_n)
+  void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines)
   {
     std::string names[FLOAT_PER_VERTEX] = {" pos_x", " pos_y", " pos_z", 
                                            "norm_x", "norm_y", "norm_z",
@@ -240,7 +238,7 @@ namespace dgen
     for (int j = 0; j < x_n; j++)
       debug("x_%.2d ", j);
     debugnl();
-    for (int i = 0; i < y_n; i++)
+    for (int i = 0; i < MIN(y_n, lines); i++)
     {
       if (i % FLOAT_PER_VERTEX == 0)
       {
@@ -301,7 +299,7 @@ namespace dgen
   {
     //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
     std::vector<dvec3> spline;
-    spline.reserve(idx + from_zero);
+    spline.reserve((params.size() + from_zero));
     if (from_zero)
     {
       dvec3 vec{0,0,0};
@@ -446,7 +444,7 @@ namespace dgen
     return sp;
   }
 
-  void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
+  void spline_to_model_rotate(std::vector<dfloat> &model, int &model_size, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
   {
     dmat43 rot_mat = ident();
     dfloat angle = (2*PI)/rotations;
@@ -544,7 +542,28 @@ namespace dgen
     transform(spline, sc);
     spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
+    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0},32);
+  }
+
+  void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  {
+    int model_size = 0;
+    std::vector<dvec3> spline = create_spline(params, 1, 0, true);
+    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
+    transform(spline, sc);
+    //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
+    //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0}, 32);
+  }
+
+  void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model)
+  {
+    add_vertex(model, 0, dvec3{0,0,1}, dvec3{0,0,-1}, dvec2{0,0});
+    add_vertex(model, 1, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
+    add_vertex(model, 2, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
+    add_vertex(model, 3, dvec3{params[0],params[1],1}, dvec3{0,0,-1}, dvec2{params[0],params[1]});
+    add_vertex(model, 4, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
+    add_vertex(model, 5, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
   }
 
   void test_test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)

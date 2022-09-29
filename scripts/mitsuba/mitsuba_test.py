@@ -6,5 +6,4 @@ mi.set_variant('scalar_rgb')
 scene = mi.load_dict(mi.cornell_box())
 # Render the scene
 img = mi.render(scene)
-# Write the rendered image to an EXR file
-mi.Bitmap(img).write('cbox.exr')
+mi.util.write_bitmap("cbox.png", img)
