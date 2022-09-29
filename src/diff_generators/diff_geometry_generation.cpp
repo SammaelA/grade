@@ -286,7 +286,7 @@ namespace dgen
   {
     dvec3 shift{0, 0, 0};
     shift[y] = (y1 + y2) / 2;
-    shift[x] = (x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0)) / 2;
+    shift[x] = -(x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0)) / 2;
     return shift;
   }
 
@@ -444,7 +444,7 @@ namespace dgen
     return sp;
   }
 
-  void spline_to_model_rotate(std::vector<dfloat> &model, int &model_size, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
+  void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
   {
     dmat43 rot_mat = ident();
     dfloat angle = (2*PI)/rotations;
@@ -542,18 +542,18 @@ namespace dgen
     transform(spline, sc);
     spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0},32);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
   }
 
   void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     int model_size = 0;
-    std::vector<dvec3> spline = create_spline(params, 1, 0, true);
+    std::vector<dvec3> spline = create_spline(params, params.size(), 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
     transform(spline, sc);
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
     //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0}, 32);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 32);
   }
 
   void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model)
@@ -584,8 +584,21 @@ namespace dgen
 
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 11;
+    size_t x_n = 12;
     std::vector<dfloat> X(x_n);
+    X[0] = 4 - 1.45;
+    X[1] = 4 - 1.0;
+    X[2] = 4 - 0.65;
+    X[3] = 4 - 0.45;
+    X[4] = 4 - 0.25;
+    X[5] = 4 - 0.18;
+    X[6] = 4 - 0.1;
+    X[7] = 4 - 0.05;
+    X[8] = 4 - 0;
+    X[9] = 0.08;//0.3 + 0.81;
+    X[10] = 0.17;//0.3 + 1.0;
+    X[11] = 0.83;//0.3 + 1.21;
+
     std::vector<int> inds;
     std::vector<dfloat> Y;
 
