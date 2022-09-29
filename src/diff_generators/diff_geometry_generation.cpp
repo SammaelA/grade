@@ -422,7 +422,17 @@ namespace dgen
     transform(spline, sc);
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
     //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0},8);
+    spline_to_model_rotate(vert, model_size, spline, dvec3{0,1,0}, 32);
+  }
+
+  void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model)
+  {
+    add_vertex(model, 0, dvec3{0,0,1}, dvec3{0,0,-1}, dvec2{0,0});
+    add_vertex(model, 1, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
+    add_vertex(model, 2, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
+    add_vertex(model, 3, dvec3{params[0],params[1],1}, dvec3{0,0,-1}, dvec2{params[0],params[1]});
+    add_vertex(model, 4, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
+    add_vertex(model, 5, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
   }
 
   void dgen_test(std::vector<float> &model)

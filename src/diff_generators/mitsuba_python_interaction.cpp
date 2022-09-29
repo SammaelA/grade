@@ -98,7 +98,9 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
   args = PyTuple_Pack(5, mitsubaContext, iw_arg, ih_arg, spp_arg, ref_dir_arg);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
+
   set_model_max_size(model_max_size);
+  iteration = 0;
 
   Py_DECREF(func);
   Py_DECREF(args);
@@ -162,6 +164,9 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model)
 {
   model_to_ctx(model);
   float loss = render_and_compare_internal();
+  get_array_from_ctx_internal("vertex_positions_grad", 0);
+  get_array_from_ctx_internal("vertex_normals_grad", 1);
+  get_array_from_ctx_internal("vertex_texcoords_grad", 2);
   return loss;
 }
 
@@ -255,7 +260,8 @@ float MitsubaInterface::render_and_compare_internal()
   pFunc = PyObject_GetAttrString(pModule, (char *)"render");
   if (!pFunc)
     show_errors();
-  pIndex = PyLong_FromLong(0);
+  pIndex = PyLong_FromLong(iteration);
+  iteration++;
   pArgs = PyTuple_Pack(2, pIndex, mitsubaContext);
   pValue = PyObject_CallObject(pFunc, pArgs);
   if (!pValue)

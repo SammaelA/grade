@@ -46,6 +46,7 @@ public:
   void model_to_ctx(const std::vector<float> &model);
   void clear_buffer(int buffer_id, float val = 0);
   int model_max_size = 0;
+  int iteration = 0;
   std::array<float *, 4> buffers = {nullptr, nullptr, nullptr, nullptr};
   PyObject *pModule, *mitsubaContext;
 };

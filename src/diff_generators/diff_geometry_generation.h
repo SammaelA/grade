@@ -12,4 +12,5 @@ namespace dgen
   bool create_model_from_block(Block &bl, ComplexModel &mod);
   void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3);
   void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &model);
+  void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model);
 };

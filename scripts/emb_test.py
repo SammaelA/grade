@@ -55,10 +55,6 @@ def init(base_path):
   #mi.util.write_bitmap("img_ref.png", img_ref)
   #mi.util.convert_to_bitmap(img_ref)
   params = mi.traverse(scene)
-  print(len(params['model.faces']))
-  print(params['model.face_count'])
-  print(params['model.vertex_count'])
-  print(params)
   context = {
     'scene' : scene,
     #'img_ref' : img_ref,
@@ -150,7 +146,8 @@ def render(it, context):
   context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
   context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
 
-  mi.util.write_bitmap("saves/iter.png", img)
+  if (int(it) % 100 == 0):
+    mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
   return loss[0]
 
 def get_params(context, key):

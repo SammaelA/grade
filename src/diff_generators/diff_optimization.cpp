@@ -129,7 +129,7 @@ namespace dopt
 
   void test()
   {    
-    size_t x_n = 3;
+    size_t x_n = 9;
     std::vector<dgen::dfloat> X(x_n);
     int model_size = 0;
     std::vector<dgen::dfloat> Y;
@@ -147,14 +147,14 @@ namespace dopt
     std::vector<float> X0(x_n);        // domain space vector
     
     X0[0] = 4 - 1.45;
-    //X0[1] = 4 - 1.0;
-    //X0[2] = 4 - 0.65;
-    //X0[3] = 4 - 0.45;
-    X0[1] = 4 - 0.25;
-    //X0[5] = 4 - 0.18;
-    //X0[6] = 4 - 0.1;
-    //X0[7] = 4 - 0.05;
-    X0[2] = 4 - 0;
+    X0[1] = 4 - 1.0;
+    X0[2] = 4 - 0.65;
+    X0[3] = 4 - 0.45;
+    X0[4] = 4 - 0.25;
+    X0[5] = 4 - 0.18;
+    X0[6] = 4 - 0.1;
+    X0[7] = 4 - 0.05;
+    X0[8] = 4 - 0;
 
     res = f.Forward(0, X0); 
     
@@ -166,16 +166,16 @@ namespace dopt
     X0[0] = 4;
     X0[1] = 4;
     X0[2] = 4;
-    //X0[3] = 4;
-    //X0[4] = 4;
-    //X0[5] = 4;
-    //X0[6] = 4;
-    //X0[7] = 4;
-    //X0[8] = 4;
+    X0[3] = 4;
+    X0[4] = 4;
+    X0[5] = 4;
+    X0[6] = 4;
+    X0[7] = 4;
+    X0[8] = 4;
 
-    Optimizer *opt = new Adam(0.025);
+    Optimizer *opt = new Adam(0.01);
 
-    int steps = 100;
+    int steps = 250;
     for (int iter = 0; iter < steps; iter++)
     {
       debug("[");
@@ -195,12 +195,14 @@ namespace dopt
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
       float loss = mi.render_and_compare(res);
       debug("[%d/%d] loss = %.4f\n", iter, steps, loss);
-      /*dgen::print_model(res);
-      dgen::print_jackobian(jac, vertex_count, vertex_count, 100000);
+      /*
+      dgen::print_model(res);
+      dgen::print_jackobian(jac, x_n, y_n, 100000);
       for (int i = 0; i < vertex_count; i++)
       {
         debug("%f %f %f\n", mi.buffers[0][3 * i], mi.buffers[0][3 * i+1], mi.buffers[0][3 * i+2]);
-      }*/
+      }
+      */
       mi.compute_final_grad(jac, x_n, vertex_count, final_grad);
 
       debug("{");
