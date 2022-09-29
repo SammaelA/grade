@@ -12,6 +12,7 @@
 #include "tree_generators/weber_penn_generator.h"
 #include "parameter_selection/neural_selection.h"
 #include "diff_generators/diff_geometry_generation.h"
+#include "diff_generators/diff_optimization.h"
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -219,10 +220,43 @@ float dot_metric(Tree &single_tree, float dst_dot)
     return metric;
 }
 
+float f(float x)
+{
+  return 2*(sin(PI*x + 0.1)*cos(PI*x + 0.1)) - 1e-8;
+}
+
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
+  dopt::test();
+  return;
+
+
   std::vector<float> model;
   dgen::dgen_test(model);
+  return;
+
+  int quantiles[101];
+  for (int i = 0;i<101;i++)
+  quantiles[i] = 0;
+  int cnt_x = 100;
+  int cnt_y = 10000;
+  for (int j=0;j<cnt_x;j++)
+  {
+    float x = 0.35;
+    for (int i=0;i<cnt_y;i++)
+    {
+      int pers = 100*(0.5*(x+1));
+      if (pers < 0 || pers >= 100)
+      {
+        //logerr("%.4f", x);
+        pers = 100;
+      }
+      quantiles[pers]++;
+      x = f(x);
+    }
+  }
+  for (int i = 0;i<100;i++)
+    logerr("%.3f",(100*(double)quantiles[i])/(cnt_x*cnt_y));
   return;
 
     /*
