@@ -254,26 +254,112 @@ namespace dgen
       debugnl();
     }
   }
-  std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int axis_x, int axis_y, bool from_zero)
+
+  dfloat triangle_func(dfloat y, int n, int i)
+  {
+    if (1 - abs(n * y - i) > 0)
+    {
+      return 1 - abs(n * y - i);
+    }
+    return 0;
+  }
+
+  dfloat x_for_spline_y(const std::vector<dvec3> &in_spline, dfloat y, int axis_x)
+  {
+    dfloat sum = 0;
+    for (int i = 0; i < in_spline.size(); ++i)
+    {
+      sum += in_spline[i][axis_x] * triangle_func(y, in_spline.size() - 1, i);
+    }
+    return sum;
+  }
+
+  dfloat dist(dfloat x1, dfloat y1, dfloat x2, dfloat y2)
+  {
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+  }
+
+  dfloat rad_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2)
+  {
+    return dist(x_for_spline_y(in_spline, y1, 0), y1, x_for_spline_y(in_spline, y2, 0), y2) / 2.0;
+  }
+
+  dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, int x, int y)
+  {
+    dvec3 shift{0, 0, 0};
+    shift[y] = (y1 + y2) / 2;
+    shift[x] = (x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0)) / 2;
+    return shift;
+  }
+
+  dfloat sin_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2)
+  {
+    return (x_for_spline_y(in_spline, y1, 0) - x_for_spline_y(in_spline, y2, 0)) / (2.0 * rad_by_points(in_spline, y1, y2));
+  }
+
+  std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y, bool from_zero)
   {
     //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
     std::vector<dvec3> spline;
-    spline.reserve(3*(params.size() + from_zero));
+    spline.reserve(idx + from_zero);
     if (from_zero)
     {
       dvec3 vec{0,0,0};
       vec[axis_x] = -1e-4;
       spline.push_back(vec);
     }
-    for (int i=0;i<params.size();i++)
+    for (int i=0;i<idx;i++)
     {
       dvec3 vec{0,0,0};
-      vec[axis_x] = ((float)i)/(params.size()-1);
+      vec[axis_x] = ((float)i)/(idx-1);
       vec[axis_y] = params[i];
 
       spline.push_back(vec);
     }
 
+    return spline;
+  }
+
+  std::vector<dvec3> create_spline_for_handle(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y)
+  {
+    std::vector<dvec3> spline;
+    spline.reserve(1);
+    dvec3 vec{0, 0, 0};
+    vec[axis_y] = params[idx];
+    spline.push_back(vec);
+    return spline;
+  }
+
+  std::vector<dvec3> spline_rotation(const std::vector<dvec3> &in_spline, dvec3 axis, int rotations)
+  {
+    std::vector<dvec3> spline;
+    spline.reserve(in_spline.size() * rotations);
+    dmat43 rot_mat = ident();
+    dfloat angle = (2 * PI) / rotations;
+    rot_mat = rotate(rot_mat, axis, angle);
+    for (int i = 0; i < in_spline.size(); ++i)
+    {
+      dvec3 vec = in_spline[i];
+      for (int j = 0; j < rotations; ++j)
+      {
+        spline.push_back(vec);
+        vec = mulp(rot_mat, vec);
+      }
+      spline.push_back(vec);
+    }
+    return spline;
+  }
+
+  std::vector<dvec3> spline_shifting(const std::vector<dvec3> &in_spline, dvec3 shift)
+  {
+    std::vector<dvec3> spline;
+    spline.reserve(in_spline.size());
+    for (int i = 0; i < in_spline.size(); ++i)
+    {
+      
+      dvec3 vec = add(in_spline[i], shift);
+      spline.push_back(vec);
+    }
     return spline;
   }
 
@@ -366,7 +452,8 @@ namespace dgen
     dfloat angle = (2*PI)/rotations;
     rot_mat = rotate(rot_mat, axis, angle);
     int sp_sz = spline.size();
-    model.reserve(FLOAT_PER_VERTEX*3*2*(sp_sz-1));
+    int prev_size = model.size();
+    model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
     std::vector<dvec3> verts = spline;
     std::vector<dvec3> prev_verts = spline;
 
@@ -390,12 +477,60 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
-        add_vertex(model, 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        prev_len = new_len;
+      }
+      prev_verts = verts;
+    }
+  }
+
+  void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part, int rotations, dvec3 shift)
+  {
+    dmat43 rot_mat = ident();
+    dmat43 first_rot_mat = ident();
+    dfloat angle = 2*part*PI/(rotations);
+    rot_mat = rotate(rot_mat, axis, angle);
+    first_rot_mat = rotate(first_rot_mat, axis, beg_angle);
+    int sp_sz = spline.size();
+    int prev_size = model.size();
+    model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
+    std::vector<dvec3> verts = spline;
+    std::vector<dvec3> prev_verts = spline;
+
+    dfloat full_len = 1e-9;
+    for (int i=1;i<sp_sz;i++)
+    {
+      full_len += len(sub(verts[i],verts[i-1]));
+      verts[i - 1] = mulp(first_rot_mat, verts[i - 1]);
+    }
+
+    verts[sp_sz - 1] = mulp(first_rot_mat, verts[sp_sz - 1]);
+
+    for (int sector = 1; sector <= rotations; sector++)
+    {
+      for (int i=0;i<sp_sz;i++)
+      {
+        verts[i] = mulp(rot_mat, verts[i]);
+      }
+      dfloat prev_len = 0;
+      dfloat new_len = 0;
+      for (int i=1;i<sp_sz;i++)
+      {
+        new_len = prev_len + len(sub(verts[i],verts[i-1]));
+        dvec3 v1 = sub(prev_verts[i], verts[i]);
+        dvec3 v2 = sub(verts[i-1], verts[i]); 
+        dvec3 n = normalize(cross(v1, v2));
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
         prev_len = new_len;
       }
       prev_verts = verts;
@@ -404,7 +539,7 @@ namespace dgen
 
   void test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
-    std::vector<dvec3> spline = create_spline(params, 1, 0, true);
+    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
     transform(spline, sc);
     spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
@@ -412,9 +547,25 @@ namespace dgen
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
   }
 
+  void test_test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
+  {
+    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
+    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
+    transform(spline, sc);
+    spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
+
+    std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
+    spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
+    spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
+    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0, 1));
+
+    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
+  }
+
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 9;
+    size_t x_n = 11;
     std::vector<dfloat> X(x_n);
     std::vector<int> inds;
     std::vector<dfloat> Y;
@@ -424,8 +575,10 @@ namespace dgen
     CppAD::Independent(X);
 
     //Cube(X[0], X[1], X[2], X[3], X[4], X[5], Y);
-    test_spline(Y, X);
+    //test_spline(Y, X);
+    test_test_spline(Y, X);
     size_t y_n = Y.size();
+    logerr("aaa");
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
     logerr("gen_finish");
     // compute derivative using operation sequence stored in f
@@ -442,9 +595,9 @@ namespace dgen
     X0[6] = 4 - 0.1;
     X0[7] = 4 - 0.05;
     X0[8] = 4 - 0;
-    //X0[9] = 0.3 + 0.81;
-    //X0[10] = 0.3 + 1.0;
-    //X0[11] = 0.3 + 1.21;
+    X0[9] = 0.08;//0.3 + 0.81;
+    X0[10] = 0.17;//0.3 + 1.0;
+    X0[11] = 0.83;//0.3 + 1.21;
     //X0[12] = 0.3 + 1.44;
     //X0[13] = 0.3 + 1.69;
   
@@ -452,7 +605,7 @@ namespace dgen
     res = f.Forward(0, X0);
 
     print_model(res);
-    //print_jackobian(jac, x_n, y_n);
+    print_jackobian(jac, x_n, y_n);
 
     model = res;
   }
