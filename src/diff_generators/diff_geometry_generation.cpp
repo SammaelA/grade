@@ -282,17 +282,17 @@ namespace dgen
     return dist(x_for_spline_y(in_spline, y1, 0), y1, x_for_spline_y(in_spline, y2, 0), y2) / 2.0;
   }
 
-  dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, int x, int y)
+  dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, dfloat thick, int x, int y)
   {
     dvec3 shift{0, 0, 0};
     shift[y] = (y1 + y2) / 2;
-    shift[x] = -(x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0)) / 2;
+    shift[x] = -(x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0) - thick) / 2;
     return shift;
   }
 
-  dfloat sin_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2)
+  dfloat sin_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, dfloat thick)
   {
-    return (x_for_spline_y(in_spline, y1, 0) - x_for_spline_y(in_spline, y2, 0)) / (2.0 * rad_by_points(in_spline, y1, y2));
+    return (x_for_spline_y(in_spline, y1, 0) - x_for_spline_y(in_spline, y2, 0) + thick / 2.0) / (2.0 * rad_by_points(in_spline, y1, y2));
   }
 
   std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y, bool from_zero)
@@ -505,9 +505,11 @@ namespace dgen
     {
       full_len += len(sub(verts[i],verts[i-1]));
       verts[i - 1] = mulp(first_rot_mat, verts[i - 1]);
+      prev_verts[i - 1] = mulp(first_rot_mat, prev_verts[i - 1]);
     }
 
     verts[sp_sz - 1] = mulp(first_rot_mat, verts[sp_sz - 1]);
+    prev_verts[sp_sz - 1] = mulp(first_rot_mat, prev_verts[sp_sz - 1]);
 
     for (int sector = 1; sector <= rotations; sector++)
     {
@@ -576,7 +578,7 @@ namespace dgen
     std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
     spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
     spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
-    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0, 1));
+    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
 
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
