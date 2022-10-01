@@ -557,7 +557,7 @@ namespace dgen
     std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
     spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
     spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
-    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0, 1));
+    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
 
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
