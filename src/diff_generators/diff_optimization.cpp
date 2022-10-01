@@ -129,8 +129,12 @@ namespace dopt
 
   void test()
   {    
-    size_t x_n = 9;
+    constexpr size_t x_n = 9;
+    float reference_params[x_n] = {4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4}; 
+    float init_params[x_n] = {4, 4, 4, 4, 4, 4, 4, 4, 4};
     std::vector<dgen::dfloat> X(x_n);
+    for (int i=0;i<x_n;i++)
+      X[i] = init_params[i];
     int model_size = 0;
     std::vector<dgen::dfloat> Y;
 
@@ -145,16 +149,8 @@ namespace dopt
     std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
     std::vector<float> res(y_n); 
     std::vector<float> X0(x_n);        // domain space vector
-    
-    X0[0] = 4 - 1.45;
-    X0[1] = 4 - 1.0;
-    X0[2] = 4 - 0.65;
-    X0[3] = 4 - 0.45;
-    X0[4] = 4 - 0.25;
-    X0[5] = 4 - 0.18;
-    X0[6] = 4 - 0.1;
-    X0[7] = 4 - 0.05;
-    X0[8] = 4 - 0;
+    for (int i=0;i<x_n;i++)
+      X0[i] = reference_params[i];
 
     res = f.Forward(0, X0); 
     
@@ -163,19 +159,12 @@ namespace dopt
     mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 64), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
     mi.render_model_to_file(res, MitsubaInterface::RenderSettings(512, 512, 64), "saves/reference.png");
 
-    X0[0] = 4;
-    X0[1] = 4;
-    X0[2] = 4;
-    X0[3] = 4;
-    X0[4] = 4;
-    X0[5] = 4;
-    X0[6] = 4;
-    X0[7] = 4;
-    X0[8] = 4;
+    for (int i=0;i<x_n;i++)
+      X0[i] = init_params[i];
 
-    Optimizer *opt = new Adam(0.01);
+    Optimizer *opt = new Adam(0.04);
 
-    int steps = 250;
+    int steps = 50;
     for (int iter = 0; iter < steps; iter++)
     {
       debug("[");

@@ -372,20 +372,22 @@ namespace dgen
     offset_dirs.push_back(add(in_spline[0],mul(thickness,x)));
 
     dvec3 l0 = sub(in_spline[1], in_spline[0]);
-    dvec3 n0 = cross(l0, x);
-    dvec3 d_prev = cross(n0, l0);
-
+    dvec3 d_prev = dvec3{0,0,0};
+    d_prev[axis_x] = l0[axis_y];
+    d_prev[axis_y] = -l0[axis_x];
     for (int i=1;i<in_spline.size()-1;i++)
     {
       dvec3 l = sub(in_spline[i+1], in_spline[i]);
-      dvec3 n = cross(l, x);
-      dvec3 d = cross(n, l);
+      dvec3 d = dvec3{0,0,0};
+      d[axis_x] = l[axis_y];
+      d[axis_y] = -l[axis_x];
       offset_dirs.push_back(add(in_spline[i],mul(thickness,normalize(add(d_prev, d))))); //pos + thickness*dir
       d_prev = d;
     }
 
     offset_dirs.push_back(add(in_spline[in_spline.size()-1],mul(thickness,y)));
-
+    for (auto &v : offset_dirs)
+      std::cerr << v[0] << " " << v[1] << " " << v[2] <<"\n";
     for (int i=in_spline.size()-1; i>=0; i--)
     {
       spline.push_back(offset_dirs[i]);
@@ -551,8 +553,8 @@ namespace dgen
     std::vector<dvec3> spline = create_spline(params, params.size(), 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
     transform(spline, sc);
-    //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
-    //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
+    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 32);
   }
 
