@@ -16,7 +16,8 @@ PostFx::PostFx(std::string pixel_shader):
 }
 void PostFx::use()
 {
-    shader.use();
+  shader.use();
+  shader.uniform("tex_transform", glm::vec4(0, 0, 1, 1));
 }
 void PostFx::render()
 {
