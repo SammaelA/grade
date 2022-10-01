@@ -225,7 +225,7 @@ float f(float x)
   return 2 * (sin(PI * x + 0.1) * cos(PI * x + 0.1)) - 1e-8;
 }
 
-#include "graphics_utils/gauss_blur_precise.h"
+#include "graphics_utils/canny.h"
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
@@ -239,19 +239,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
 
-  // load texture from disk with FULL path.
-  // image::base_img_path is "resources/textures usually"
-  Texture t = engine::textureManager->load_unnamed_tex(image::base_img_path + "porcelain.jpg");
-
-  // save png to saves folder
-  engine::textureManager->save_png(t, "porcelain_0");
-
-  // perform gauss filter
-  GaussFilter gf(1.0f);
-  gf.perform_gauss_blur(t);
-
-  // save result
-  engine::textureManager->save_png(t, "porcelain_1");
+  Texture t = engine::textureManager->load_unnamed_tex(image::base_img_path + "cup.png");
+  Canny canny = Canny(1.0f, 0.1, 0.225);
+  Texture tex = canny.detect_edges(t);
+  engine::textureManager->save_png(tex, "canny_res");
   engine::view->next_frame();
   return;
 

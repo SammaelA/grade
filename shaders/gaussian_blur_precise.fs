@@ -19,12 +19,12 @@ void main(void)
     if (pass == 0)
     {
       for (int i = -steps; i <= steps; i++)
-        res += texelFetch(tex, clamp(pixel_coords + ivec2(i, 0),ivec2(0,0),ivec2(tex_size)), 0) * kernel[abs(i)].x;
+        res += texelFetch(tex, clamp(pixel_coords + ivec2(i, 0),ivec2(0,0),ivec2(tex_size-1)), 0) * kernel[abs(i)].x;
     }
     else
     {
       for (int i = -steps; i <= steps; i++)
-        res += texelFetch(tex, clamp(pixel_coords + ivec2(0, i),ivec2(0,0),ivec2(tex_size)), 0) * kernel[abs(i)].x;
+        res += texelFetch(tex, clamp(pixel_coords + ivec2(0, i),ivec2(0,0),ivec2(tex_size-1)), 0) * kernel[abs(i)].x;
     }
     fragColor = res;
 }

@@ -550,7 +550,7 @@ namespace dgen
   void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
+    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
 
