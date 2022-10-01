@@ -146,7 +146,7 @@ def render(it, context):
   context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
   context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
 
-  if (int(it) % 100 == 0):
+  if (int(it) % 10 == 0):
     mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
   return loss[0]
 

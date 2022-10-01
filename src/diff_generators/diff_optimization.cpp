@@ -129,12 +129,14 @@ namespace dopt
 
   void test()
   {    
-    constexpr size_t x_n = 9;
-    float reference_params[x_n] = {4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4}; 
-    float init_params[x_n] = {4, 4, 4, 4, 4, 4, 4, 4, 4};
+    constexpr size_t x_n = 13;
+    float reference_params[x_n] = {4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                                   0.08, 0.17, 0.83, PI/4}; //hand params - 
+    float init_params[x_n] = {4, 4, 4, 4, 4, 4, 4, 4, 4,
+                              0.05, 0.17, 0.83, PI/5};
     std::vector<dgen::dfloat> X(x_n);
     for (int i=0;i<x_n;i++)
-      X[i] = init_params[i];
+      X[i] = reference_params[i];
     int model_size = 0;
     std::vector<dgen::dfloat> Y;
 
@@ -162,9 +164,9 @@ namespace dopt
     for (int i=0;i<x_n;i++)
       X0[i] = init_params[i];
 
-    Optimizer *opt = new Adam(0.04);
+    Optimizer *opt = new Adam(0.01);
 
-    int steps = 50;
+    int steps = 250;
     for (int iter = 0; iter < steps; iter++)
     {
       debug("[");
