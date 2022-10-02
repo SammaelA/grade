@@ -158,13 +158,13 @@ namespace dopt
     
     MitsubaInterface mi;
     mi.init("scripts", "emb_test");
-    mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 64), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
-    mi.render_model_to_file(res, MitsubaInterface::RenderSettings(512, 512, 64), "saves/reference.png");
+    mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 1), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
+    mi.render_model_to_file(res, MitsubaInterface::RenderSettings(512, 512, 1), "saves/reference.png");
 
     for (int i=0;i<x_n;i++)
       X0[i] = init_params[i];
 
-    Optimizer *opt = new Adam(0.01);
+    Optimizer *opt = new Adam(0.025);
 
     int steps = 250;
     for (int iter = 0; iter < steps; iter++)

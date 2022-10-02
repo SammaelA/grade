@@ -80,8 +80,17 @@ GaussFilter::~GaussFilter()
   delete_buffer(kernel_buf);
   delete_framebuffer(fbo);
 }
-
-void GaussFilter::perform_gauss_blur(Texture &t)
+Texture GaussFilter::perform_gauss_blur(Texture &t)
+{
+  Texture tex = engine::textureManager->create_texture(t.get_W(), t.get_H());
+  gauss_blur(t, tex);
+  return tex;
+}
+void GaussFilter::perform_gauss_blur_inplace(Texture &t)
+{
+  gauss_blur(t,t);
+}
+void GaussFilter::gauss_blur(Texture &t, Texture &to)
 {
   //check texture type
   assert(t.type == GL_TEXTURE_2D);
@@ -117,7 +126,7 @@ void GaussFilter::perform_gauss_blur(Texture &t)
 
   //second pass from tmp_tex to t
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, to.texture, 0);
   glViewport(0, 0, t.get_W(), t.get_H());
 
   blur.use();

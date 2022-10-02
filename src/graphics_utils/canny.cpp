@@ -22,9 +22,7 @@ Texture Canny::detect_edges(Texture &t)
   float h = t.get_H();
 
   Texture grad_tex = engine::textureManager->create_texture(w, h);
-  Texture res_tex = engine::textureManager->create_texture(w, h);
-
-  gauss.perform_gauss_blur(t);
+  Texture res_tex = gauss.perform_gauss_blur(t);
   
   GLuint fbo = create_framebuffer();
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -33,21 +31,21 @@ Texture Canny::detect_edges(Texture &t)
   glViewport(0, 0, w, h);
 
   get_grad_discrete.use();
-  get_grad_discrete.get_shader().texture("tex", t);
+  get_grad_discrete.get_shader().texture("tex", res_tex);
   get_grad_discrete.get_shader().uniform("tex_size",glm::vec2(w, h));
   get_grad_discrete.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res_tex.texture, 0);
   non_maximum_supression.use();
   non_maximum_supression.get_shader().texture("tex", grad_tex);
   non_maximum_supression.get_shader().uniform("tex_size",glm::vec2(w, h));
   non_maximum_supression.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res_tex.texture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, grad_tex.texture, 0);
   hysteresis.use();
-  hysteresis.get_shader().texture("tex", t);
+  hysteresis.get_shader().texture("tex", res_tex);
   hysteresis.get_shader().uniform("tex_size",glm::vec2(w, h));
   hysteresis.get_shader().uniform("thresholds",glm::vec2(low_thr, high_thr));
   hysteresis.render();
@@ -56,5 +54,5 @@ Texture Canny::detect_edges(Texture &t)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   delete_framebuffer(fbo);
 
-  return res_tex;
+  return grad_tex;
 }

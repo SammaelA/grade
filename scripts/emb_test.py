@@ -1,9 +1,11 @@
 import drjit as dr
 import mitsuba as mi
 from matplotlib import pyplot as plt
-import csv
+from PIL import Image
 from mitsuba.scalar_rgb import Transform4f as T
 import struct
+import time
+import numpy
 
 def init(base_path):
   image_size = 256
@@ -35,9 +37,9 @@ def init(base_path):
           'type': 'obj',
           'filename': base_path + 'meshes/sphere.obj',
           'to_world': T.scale(0.67),
-          'bsdf': {
-              'type': 'diffuse',
-              'reflectance': { 'type': 'rgb', 'value': (0.9, 0.8, 0.3) },
+          'emitter': {
+              'type': 'area',
+              'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
           },
       },
       'light': {
@@ -113,6 +115,7 @@ def render_and_save_to_file(context, image_w, image_h, spp, save_filename):
   mi.util.write_bitmap(save_filename, img_ref)
   mi.util.convert_to_bitmap(img_ref)
   context['img_ref'] = img_ref
+  time.sleep(5)
 
   #context['params']['sensor'] = sensor_prev
   context['spp'] = spp_prev
@@ -121,6 +124,14 @@ def F_loss(img, img_ref):
     return loss
 
 def render(it, context):
+  if (int(it) == 0):
+    with Image.open("saves/reference.png") as img:
+      img.load()
+    img = img.convert('RGB')
+    img_raw = numpy.asarray(img)
+    img_raw = img_raw/255.0
+    print(context['img_ref'].shape, img_raw.shape)
+    context['img_ref'] = mi.TensorXf(img_raw)
   scene = context['scene']
   params = context['params']
   img_ref = context['img_ref']
@@ -139,6 +150,7 @@ def render(it, context):
   dr.enable_grad(params['model.vertex_texcoords'])
   
   img = mi.render(scene, params, seed=it, spp=context['spp']) # image = F_render(scene)
+  img = img ** 0.5
   loss = F_loss(img, img_ref) # loss = F_loss(image)
   dr.backward(loss)
 

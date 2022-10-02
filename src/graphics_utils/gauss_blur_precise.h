@@ -8,8 +8,10 @@ class GaussFilter
 public:
   GaussFilter(float sigma, float precision = 0.003);
   ~GaussFilter();
-  void perform_gauss_blur(Texture &t);
+  void perform_gauss_blur_inplace(Texture &t);
+  Texture perform_gauss_blur(Texture &t);
 private:
+  void gauss_blur(Texture &from, Texture &to);
   std::vector<float> kernel;//1D gauss kernel
   Texture tmp_tex;//intermediate texture
   GLuint fbo;//frame buffer, tmp_tex and buffer will be attached to it

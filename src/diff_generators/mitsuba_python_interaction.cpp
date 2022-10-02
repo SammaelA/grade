@@ -1,4 +1,6 @@
 #include "mitsuba_python_interaction.h"
+#include "tinyEngine/engine.h"
+#include "graphics_utils/silhouette.h"
 #include "diff_geometry_generation.h"
 #include <iostream>
 #include "common_utils/utility.h"
@@ -158,6 +160,11 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, Ren
   Py_DECREF(spp_arg);
   Py_DECREF(ref_dir_arg);
   Py_DECREF(func_ret);
+
+  Texture t = engine::textureManager->load_unnamed_tex(image_dir);
+  SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+  Texture tex = se.get_silhouette(t);
+  engine::textureManager->save_png_directly(tex, image_dir);
 }
 
 float MitsubaInterface::render_and_compare(const std::vector<float> &model)
