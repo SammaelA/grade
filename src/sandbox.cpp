@@ -225,11 +225,12 @@ float f(float x)
   return 2 * (sin(PI * x + 0.1) * cos(PI * x + 0.1)) - 1e-8;
 }
 
-#include "graphics_utils/canny.h"
+#include "graphics_utils/silhouette.h"
 
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
   // we don't init engine in sandbox, so need to init textures manager
+ 
   View view;
   view.lineWidth = 1.0f;
   view.init("Procedural Tree", 256, 256);
@@ -238,19 +239,32 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   Block textures_list;
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
-
+ /*
   Texture t = engine::textureManager->load_unnamed_tex(image::base_img_path + "cup.png");
-  Canny canny = Canny(1.0f, 0.1, 0.225);
-  Texture tex = canny.detect_edges(t);
-  engine::textureManager->save_png(tex, "canny_res");
+  SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+  Texture tex = se.get_silhouette(t);
   engine::view->next_frame();
   return;
 
   dopt::test();
-  return;
+  return;*/
 
-  std::vector<float> model;
-  dgen::dgen_test(model);
+  //std::vector<float> model;
+  //dgen::dgen_test(model);
+  std::vector<float> X0(12);
+    X0[0] = 4 - 1.45;
+    X0[1] = 4 - 1.0;
+    X0[2] = 4 - 0.65;
+    X0[3] = 4 - 0.45;
+    X0[4] = 4 - 0.25;
+    X0[5] = 4 - 0.18;
+    X0[6] = 4 - 0.1;
+    X0[7] = 4 - 0.05;
+    X0[8] = 4 - 0;
+    X0[9] = 0.08;//0.3 + 0.81;
+    X0[10] = 0.17;//0.3 + 1.0;
+    X0[11] = 0.83;//0.3 + 1.21;
+  dgen::check_stability(X0, 4);
   return;
 
   int quantiles[101];

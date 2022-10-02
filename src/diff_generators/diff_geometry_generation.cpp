@@ -591,42 +591,108 @@ namespace dgen
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
   }
 
+  bool check_stability(const std::vector<float> &params, int iterations)
+  {
+    float eps = 1e-4;
+    std::vector<float> model_ref;
+    std::vector<float> jac_ref;
+    dgen_test_internal(model_ref, params, params, &jac_ref);
+    int x_n = params.size();
+    int y_n = model_ref.size();
+    debug("Checking stability of differential procedural model\n");
+    debug("Model has %d params and %d vertices\n", x_n, y_n/FLOAT_PER_VERTEX);
+
+    std::vector<int> failed_params;
+    for (int param_n = 0; param_n < x_n; param_n++)
+    {
+      int failed_tests = 0;
+      for (int i=0;i<iterations;i++)
+      {
+        std::vector<float> par = params;
+        par[param_n] *= urand(0.5, 2);
+        std::vector<float> model;
+        std::vector<float> jac;
+        bool model_created = false;
+        try
+        {
+          dgen_test_internal(model, par, params, &jac);
+          model_created = true;
+        }
+        catch(const std::exception& e)
+        {
+          std::cerr << e.what() << '\n';
+        }
+        if (!model_created)
+        {
+          debug("Test %d failed. Generator crashed", i);
+        }
+        else if (model.size() != model_ref.size())
+        {
+          debug("Test %d failed. Model has wrong number of vertices (%d)\n", i, model.size()/FLOAT_PER_VERTEX);
+          failed_tests++;
+        }
+        else
+        {
+          int diff_mod = 0;
+          for (int j=0;j<model.size();j++)
+          {
+            if (abs(model[j] - model_ref[j])/(abs(model[j] + model_ref[j]) + eps) > eps)
+              diff_mod++;
+          }
+          int diff_jac = 0;
+          for (int j=0;j<jac.size();j++)
+          {
+            if (abs(jac[j] - jac_ref[j])/(abs(jac[j] + jac_ref[j]) + eps) > eps)
+              diff_jac++;
+          }
+          if (diff_jac > 0 || diff_mod > 0)
+            failed_tests++;
+          if (diff_mod > 0)
+          {
+            debug("Test %d failed. Model has difference in %d values with the base one\n", i, diff_mod);
+          }
+          if (diff_jac > 0)
+          {
+            debug("Test %d failed. Jacobian has difference in %d values with the base one\n", i, diff_jac);
+          }
+        }
+      }
+
+      if (failed_tests == 0)
+      {
+        debug("Param %d. Stability check PASSED\n", param_n);
+      }
+      else
+      {
+        debug("Param %d. Stability check FAILED (%d/%d fails)\n", param_n, failed_tests, iterations);
+        failed_params.push_back(param_n);
+      }
+    }
+
+    if (failed_params.empty())
+    {
+      debug("Stability check PASSED\n");
+      return true;
+    }
+    else
+    {
+      debug("Stability check FAILED\n");
+      debug("%d unstable parameters: {", failed_params.size());
+      for (int i=0;i<failed_params.size();i++)
+      {
+        debug("%d", failed_params[i]);
+        if (i != failed_params.size() - 1)
+          debug(", ");
+      }
+      debug("}\n");
+
+      return false;
+    }
+  }
+
   void dgen_test(std::vector<float> &model)
   {
-    size_t x_n = 12;
-    std::vector<dfloat> X(x_n);
-    X[0] = 4 - 1.45;
-    X[1] = 4 - 1.0;
-    X[2] = 4 - 0.65;
-    X[3] = 4 - 0.45;
-    X[4] = 4 - 0.25;
-    X[5] = 4 - 0.18;
-    X[6] = 4 - 0.1;
-    X[7] = 4 - 0.05;
-    X[8] = 4 - 0;
-    X[9] = 0.08;//0.3 + 0.81;
-    X[10] = 0.17;//0.3 + 1.0;
-    X[11] = 0.83;//0.3 + 1.21;
-
-    std::vector<int> inds;
-    std::vector<dfloat> Y;
-
-    // declare independent variables and start recording operation sequence
-    logerr("gen");
-    CppAD::Independent(X);
-
-    //Cube(X[0], X[1], X[2], X[3], X[4], X[5], Y);
-    //test_spline(Y, X);
-    test_test_spline(Y, X);
-    size_t y_n = Y.size();
-    logerr("aaa");
-    CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
-    logerr("gen_finish");
-    // compute derivative using operation sequence stored in f
-    std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
-    std::vector<float> res(y_n); 
-    std::vector<float> X0(x_n);        // domain space vector
-    
+    std::vector<float> X0(12);
     X0[0] = 4 - 1.45;
     X0[1] = 4 - 1.0;
     X0[2] = 4 - 0.65;
@@ -639,16 +705,43 @@ namespace dgen
     X0[9] = 0.08;//0.3 + 0.81;
     X0[10] = 0.17;//0.3 + 1.0;
     X0[11] = 0.83;//0.3 + 1.21;
-    //X0[12] = 0.3 + 1.44;
-    //X0[13] = 0.3 + 1.69;
+    dgen_test_internal(model, X0, X0);
+  }
+  void dgen_test_internal(std::vector<float> &model, const std::vector<float> &check_params, const std::vector<float> &params,
+                          std::vector<float> *jacobian)
+  {
+    assert(check_params.size() > 0);
+    assert(check_params.size() == params.size());
+    assert(model.empty());
+
+    size_t x_n = check_params.size();
+    std::vector<dfloat> X(x_n);
+    std::vector<dfloat> Y;
+    for (int i=0;i<x_n;i++)
+      X[i] = check_params[i];
+
+    // declare independent variables and start recording operation sequence
+    CppAD::Independent(X);
+    test_test_spline(Y, X);
+    size_t y_n = Y.size();
+    CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
+
+    // compute derivative using operation sequence stored in f
+    std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
+    std::vector<float> res(y_n); 
+    std::vector<float> X0(x_n);        // domain space vector
+    for (int i=0;i<x_n;i++)
+      X0[i] = params[i];
   
     jac = f.Jacobian(X0); // Jacobian for operation sequence
     res = f.Forward(0, X0);
 
-    print_model(res);
-    print_jackobian(jac, x_n, y_n);
+    //print_model(res);
+    //print_jackobian(jac, x_n, y_n);
 
     model = res;
+    if (jacobian)
+      *jacobian = jac;
   }
 
   bool create_model_from_block(Block &bl, ComplexModel &mod)
