@@ -253,13 +253,13 @@ namespace dgen
     }
   }
 
+  dfloat smoothmax(dfloat a, dfloat b, float alpha = 16)
+  {
+    return (a*exp(a*alpha) + b*exp(b*alpha))/(exp(a*alpha) + exp(b*alpha));
+  }
   dfloat triangle_func(dfloat y, int n, int i)
   {
-    if (1 - abs(n * y - i) > 0)
-    {
-      return 1 - abs(n * y - i);
-    }
-    return 0;
+    return smoothmax(1 - abs(n * y - i), 0);
   }
 
   dfloat x_for_spline_y(const std::vector<dvec3> &in_spline, dfloat y, int axis_x)
