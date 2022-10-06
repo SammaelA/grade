@@ -1,8 +1,10 @@
 #include "diff_optimization.h"
 #include "diff_geometry_generation.h"
 #include "mitsuba_python_interaction.h"
+#include "common_utils/distribution.h"
 #include <cppad/cppad.hpp>
 #include "common_utils/utility.h"
+#include <functional>
 
 namespace dopt
 {
@@ -11,7 +13,7 @@ namespace dopt
   public:
     Optimizer(){};
     virtual ~Optimizer(){};
-    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) = 0;
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) = 0;
   };
 
   class GradientDescentSimple : public Optimizer
@@ -22,7 +24,7 @@ namespace dopt
       assert(_alpha > 0);
       alpha = _alpha;
     }
-    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) override
     {
       assert(x_prev.size() == x_grad.size());
       std::vector<float> x(x_prev.size(),0);
@@ -51,7 +53,7 @@ namespace dopt
       beta = _beta;
       eps = _eps;
     }
-    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) override
     {
       assert(x_prev.size() == x_grad.size());
       if (S.empty())
@@ -91,7 +93,7 @@ namespace dopt
       beta_2 = _beta_2;
       eps = _eps;
     }
-    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad) override
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) override
     {
       assert(x_prev.size() == x_grad.size());
       if (S.empty())
@@ -127,85 +129,236 @@ namespace dopt
     int iter = 0;
   };
 
-  void test()
-  {    
-    constexpr size_t x_n = 13;
-    float reference_params[x_n] = {4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                                   0.08, 0.17, 0.83, PI/4}; //hand params - 
-    float init_params[x_n] = {4, 4, 4, 4, 4, 4, 4, 4, 4,
-                              0.05, 0.17, 0.83, PI/5};
-    std::vector<dgen::dfloat> X(x_n);
-    for (int i=0;i<x_n;i++)
-      X[i] = reference_params[i];
-    int model_size = 0;
-    std::vector<dgen::dfloat> Y;
-
-    CppAD::Independent(X);
+  class Adam2 : public Optimizer
+  {
+  public:
+    Adam2(float _alpha = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8)
     {
-      dgen::create_cup(X, Y);
+      assert(_alpha > 0);
+      assert(_beta_1 > 0);
+      assert(_beta_1 < 1);
+      assert(_beta_2 > 0);
+      assert(_beta_2 < 1);
+      assert(_eps > 0);
+      
+      alpha = _alpha;
+      beta_1 = _beta_1;
+      beta_2 = _beta_2;
+      eps = _eps;
     }
-    size_t y_n = Y.size();
-    int vertex_count = y_n/FLOAT_PER_VERTEX;
-    CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
+    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) override
+    {
+      assert(x_prev.size() == x_grad.size());
+      if (S.empty())
+        S = std::vector<float>(x_prev.size(), 0);
+      else
+        assert(x_prev.size() == S.size());
+      if (V.empty())
+        V = std::vector<float>(x_prev.size(), 0);
+      else
+        assert(x_prev.size() == V.size());
+      std::vector<float> x(x_prev.size(),0);
 
-    std::vector<float> jac(y_n * x_n); // Jacobian of f (m by n matrix)
-    std::vector<float> res(y_n); 
-    std::vector<float> X0(x_n);        // domain space vector
-    for (int i=0;i<x_n;i++)
-      X0[i] = reference_params[i];
+      if (value < 1.2*prev_val)
+      {
+        iter++;
+        for (int i=0;i<x_prev.size();i++)
+        {
+          V[i] = beta_1 * V[i] + (1-beta_1)*x_grad[i];
+          float Vh = V[i] / (1 - pow(beta_1, iter)); 
+          S[i] = beta_2 * S[i] + (1-beta_2)*x_grad[i]*x_grad[i];
+          float Sh = S[i] / (1 - pow(beta_2, iter)); 
 
-    res = f.Forward(0, X0); 
+          x[i] = x_prev[i] - alpha*Vh/(sqrt(Sh) + eps);
+        }
+        prev_x = x_prev; 
+        prev_val = value;
+      }
+      else
+      {
+        for (int i=0;i<x_prev.size();i++)
+        {
+          float rnd = urand();
+          x[i] = rnd*prev_x[i] + (1-rnd)*x_prev[i];
+        } 
+        logerr("Adam2 redirecting");
+      }
+      return x;
+    }
+  private:
+    std::vector<float> V; 
+    std::vector<float> S; 
+    std::vector<float> prev_x;
+    float prev_val = 1e9;
+    float alpha = 1;
+    float beta_1 = 1;
+    float beta_2 = 1;
+    float eps = 1;
+    int iter = 0;
+  };
+
+  class DiffFunctionEvaluator
+  {
+  public:
+    ~DiffFunctionEvaluator()
+    {
+      for (auto f : functions)
+      {
+        if (f)
+          delete f;
+      }
+    }
+    void init(std::function<void(std::vector<dgen::dfloat> &X, std::vector<dgen::dfloat> &Y)> _model_creator)
+    {
+      model_creator = _model_creator;
+    }
+    std::vector<float> get(const std::vector<float> &params)
+    {
+      return functions[find_or_add(params)]->Forward(0, params); 
+    }
+    std::vector<float> get_jac(const std::vector<float> &params)
+    {
+      return functions[find_or_add(params)]->Jacobian(params); 
+    }
+  private:
+    int find_or_add(const std::vector<float> &params)
+    {
+      int hash = get_function_hash(params);
+      auto it = hash_to_function_pos.find(hash);
+      if (it == hash_to_function_pos.end())
+      {
+        std::vector<dgen::dfloat> X(params.size());
+        //std::vector<float> test_params = {3.264063, 3.752163, 4.444632, 4.231698, 3.847324, 3.966257, 3.936437, 4.553413, 4.441343, 0.050000, 0.441019, 0.468129, 3.219785};
+        for (int i=0;i<params.size();i++)
+          X[i] = params[i];
+        std::vector<dgen::dfloat> Y;
+        CppAD::Independent(X);
+        model_creator(X, Y);
+        CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
+        functions.push_back(f);
+        output_sizes.push_back(Y.size());
+        int f_pos = functions.size()-1;
+        hash_to_function_pos.emplace(hash, f_pos);
+
+        return f_pos;
+      }
+      return it->second;
+    }
+
+    int get_function_hash(const std::vector<float> &params)
+    {
+      return 0;
+    }
+    std::function<void(std::vector<dgen::dfloat> &X, std::vector<dgen::dfloat> &Y)> model_creator;
+    std::map<int, int> hash_to_function_pos;
+    std::vector<CppAD::ADFun<float> *> functions;
+    std::vector<int> output_sizes;//same size as functions vector
+  };
+
+  struct OptimizationUnitGD
+  {
+    void init(const std::vector<float> &init_params, DiffFunctionEvaluator &_func, MitsubaInterface &_mi, bool _verbose = false)
+    {
+      verbose = _verbose;
+      func = &_func;
+      mi = &_mi;
+      params = init_params;
+      opt = new Adam2(0.015);
+      x_n = init_params.size();
+    }
+    void iterate()
+    {
+      std::vector<float> jac = func->get_jac(params);
+      std::vector<float> res = func->get(params); 
+      std::vector<float> final_grad = std::vector<float>(x_n, 0);
+      float loss = mi->render_and_compare(res);
+      mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
+
+      if (verbose)
+      {
+        debug("[%d] loss = %.3f\n", iterations, loss);
+
+        debug("params [");
+        for (int j=0;j<x_n;j++)
+        {
+          debug("%.3f, ", params[j]);
+        }
+        debug("]\n");
+
+        debug("grad {");
+        for (int j=0;j<x_n;j++)
+        {
+          debug("%.3f ", final_grad[j]);
+        }
+        debug("}\n");
+      }
+      else if (iterations % 10 == 0)
+        debug("[%d] loss = %.3f\n", iterations, loss);
+
+      iterations++;
+      if (loss < best_error)
+      {
+        best_error = loss;
+        best_params = params;
+      }
+      params = opt->step(params, final_grad, loss);
+      for (int i=0;i<12;i++)
+      {
+        float &p = params[i];
+        if (p > 5)
+          p = 5;
+        if (p < 0.05)
+          p = 0.05;
+      }
+      float d = params[11] - params[10];
+      if (d < 3 * params[9])
+      {
+        params[10] -= 1.5*params[9];
+        params[11] += 1.5*params[9];
+      }
+    }
+    ~OptimizationUnitGD()
+    {
+      if (opt)
+        delete opt;
+    }
+
+    DiffFunctionEvaluator *func = nullptr;
+    MitsubaInterface *mi = nullptr;
+    Optimizer *opt = nullptr;
+    std::vector<float> params;
+    std::vector<float> best_params;
+    float best_error = 1e9;
+    int iterations = 0;
+    int x_n = 0;
+    bool verbose = false;
+  };
+
+  void test()
+  {
+    constexpr size_t x_n = 18;
+    std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                                        0.08, 0.17, 0.83, //hand params
+                                        0, PI/4, 0, 0, 0, 0};//rotation and transform
+    std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
+                                   0.05, 0.3, 0.7,
+                                   0, PI/5, 0, 0, 0, 0};
     
+    DiffFunctionEvaluator func;
+    func.init(dgen::create_cup);
+
+    std::vector<float> reference = func.get(reference_params);
+
     MitsubaInterface mi;
     mi.init("scripts", "emb_test");
     mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 1), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
-    mi.render_model_to_file(res, MitsubaInterface::RenderSettings(512, 512, 1), "saves/reference.png");
+    mi.render_model_to_file(reference, MitsubaInterface::RenderSettings(128, 128, 1), "saves/reference.png");
 
-    for (int i=0;i<x_n;i++)
-      X0[i] = init_params[i];
+    OptimizationUnitGD opt_unit;
+    opt_unit.init(init_params, func, mi, true);
+    for (int j=0;j<200;j++)
+        opt_unit.iterate();
 
-    Optimizer *opt = new Adam(0.025);
-
-    int steps = 250;
-    for (int iter = 0; iter < steps; iter++)
-    {
-      debug("[");
-      for (int j=0;j<x_n;j++)
-      {
-        debug("%.6f ", X0[j]);
-      }
-      debug("]\n");
-
-      jac = f.Jacobian(X0);
-      //dgen::print_jackobian(jac, x_n, y_n, 100);
-      res = f.Forward(0, X0); 
-      for (int i = 0; i < 24; i++)
-      {
-        //logerr("%d res %f", i, res[i]);
-      }
-      std::vector<float> final_grad = std::vector<float>(x_n, 0);
-      float loss = mi.render_and_compare(res);
-      debug("[%d/%d] loss = %.4f\n", iter, steps, loss);
-      /*
-      dgen::print_model(res);
-      dgen::print_jackobian(jac, x_n, y_n, 100000);
-      for (int i = 0; i < vertex_count; i++)
-      {
-        debug("%f %f %f\n", mi.buffers[0][3 * i], mi.buffers[0][3 * i+1], mi.buffers[0][3 * i+2]);
-      }
-      */
-      mi.compute_final_grad(jac, x_n, vertex_count, final_grad);
-
-      debug("{");
-      for (int j=0;j<x_n;j++)
-      {
-        debug("%.6f ", final_grad[j]);
-      }
-      debug("}\n");
-      X0 = opt->step(X0, final_grad);
-    }
-
-    delete opt;
     mi.finish();
   }
 }

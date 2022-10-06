@@ -257,6 +257,14 @@ namespace dgen
   {
     return (a*exp(a*alpha) + b*exp(b*alpha))/(exp(a*alpha) + exp(b*alpha));
   }
+  dfloat smoothmin(dfloat a, dfloat b, float alpha = 16)
+  {
+    return (a*exp(-a*alpha) + b*exp(-b*alpha))/(exp(-a*alpha) + exp(-b*alpha));
+  }
+  dfloat smoothclamp(dfloat a, dfloat from, dfloat to, float alpha = 16)
+  {
+    return smoothmin(smoothmax(a, from, alpha), to, alpha);
+  }
   dfloat triangle_func(dfloat y, int n, int i)
   {
     return smoothmax(1 - abs(n * y - i), 0);
@@ -493,7 +501,8 @@ namespace dgen
     dmat43 first_rot_mat = ident();
     dfloat angle = 2*part*PI/(rotations);
     rot_mat = rotate(rot_mat, axis, angle);
-    first_rot_mat = rotate(first_rot_mat, axis, beg_angle);
+    dfloat ba = beg_angle + 1e-6;
+    first_rot_mat = rotate(first_rot_mat, axis, ba);
     int sp_sz = spline.size();
     int prev_size = model.size();
     model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
@@ -554,15 +563,19 @@ namespace dgen
     transform(spline, sc);
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
 
-    //std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
-    //spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
-    //spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
-    //spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
+    std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
+    spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
+    spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
+    dfloat sin_p = sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025);
+    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
 
     //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
-    //dmat43 rot = rotate(ident(), dvec3{0,1,0}, params[12]);
-    //transform(vert, rot);
+    dmat43 rot = rotate(ident(), dvec3{1,0,0}, params[12]);
+    rot = rotate(rot, dvec3{0,1,0}, params[13]);
+    rot = rotate(rot, dvec3{0,0,1}, params[14]);
+    rot = translate(rot, dvec3{params[15], params[16], params[17]});
+    transform(vert, rot);
   }
 
   void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model)

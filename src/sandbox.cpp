@@ -245,9 +245,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   Texture tex = se.get_silhouette(t);
   engine::view->next_frame();
   return;
-
+*/
   dopt::test();
-  return;*/
+  return;
 
   //std::vector<float> model;
   //dgen::dgen_test(model);

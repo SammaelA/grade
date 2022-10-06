@@ -8,7 +8,7 @@ import time
 import numpy
 
 def init(base_path):
-  image_size = 256
+  image_size = 200
   print("base_path = ", base_path)
   mi.set_variant('cuda_ad_rgb')
   integrator = {
@@ -20,8 +20,8 @@ def init(base_path):
       'sensor':  {
           'type': 'perspective',
           'to_world': T.look_at(
-                          origin=(0, 0, 2),
-                          target=(0, 0, 0),
+                          origin=(0, 0.5, 1.5),
+                          target=(0, 0.5, 0),
                           up=(0, 1, 0)
                       ),
           'fov': 60,
