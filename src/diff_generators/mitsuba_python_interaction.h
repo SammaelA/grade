@@ -7,12 +7,20 @@
 class MitsubaInterface
 {
 public:
+  enum MitsubaVariant
+  {
+    CUDA,
+    LLVM
+  };
+
   struct RenderSettings
   {
-    RenderSettings(int iw, int ih, int spp) : image_w(iw), image_h(ih), samples_per_pixel(spp) {};
+    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv) : 
+                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv) {};
     int image_w = 128;
     int image_h = 128;
     int samples_per_pixel = 16;
+    MitsubaVariant mitsubaVar = MitsubaVariant::CUDA;
   };
   enum LossFunction
   {
@@ -20,15 +28,15 @@ public:
     LOSS_MSE_SQRT
   };
   //basic mitsuba initialization, call before any other functions
-  void init(const std::string &scripts_dir, const std::string &file_name);
+  void init(const std::string &scripts_dir, const std::string &file_name, RenderSettings render_settings);
 
   void set_model_max_size(int model_max_size);
 
   //initialize optimization cycle, set model to compare with. Set loss function and render settings for optimization cycle
-  void init_optimization(const std::string &reference_image_dir, RenderSettings render_settings, LossFunction loss_function, int model_max_size);
+  void init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size);
 
   //render model and save image to file, for debug purposes
-  void render_model_to_file(const std::vector<float> &model, RenderSettings render_settings, const std::string &image_dir);
+  void render_model_to_file(const std::vector<float> &model, const std::string &image_dir);
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
   //that are used by compute_final_grad

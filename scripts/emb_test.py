@@ -7,10 +7,9 @@ import struct
 import time
 import numpy
 
-def init(base_path):
-  image_size = 200
+def init(base_path, image_w, image_h, spp, mitsuba_variant):
   print("base_path = ", base_path)
-  mi.set_variant('cuda_ad_rgb')
+  mi.set_variant(mitsuba_variant)
   integrator = {
       'type': 'direct_reparam',
   }
@@ -27,8 +26,8 @@ def init(base_path):
           'fov': 60,
           'film': {
               'type': 'hdrfilm',
-              'width': image_size,
-              'height': image_size,
+              'width': image_w,
+              'height': image_h,
               'rfilter': { 'type': 'gaussian' },
               'sample_border': True
           },
@@ -59,12 +58,11 @@ def init(base_path):
   params = mi.traverse(scene)
   context = {
     'scene' : scene,
-    #'img_ref' : img_ref,
     'params' : params, 
     'vertex_positions' : params['model.vertex_positions'],
     'vertex_normals' : params['model.vertex_normals'],
     'vertex_texcoords' : params['model.vertex_texcoords'],
-    'spp' : 16
+    'spp' : spp
   }
   return context
 
@@ -87,18 +85,11 @@ def get_sensor(image_w, image_h):
       }
   return sensor
 
-def init_optimization(context, image_w, image_h, spp, img_ref_dir):
-  #context['params']['sensor'] = get_sensor(image_w, image_h)
-  context['spp'] = spp
-  #mi.util.write_bitmap
+def init_optimization(context, img_ref_dir, loss):
+  context['img_ref_dir'] = img_ref_dir
+  context['loss_function'] = loss
 
-def render_and_save_to_file(context, image_w, image_h, spp, save_filename):
-  #sensor_prev = context['params']['sensor']
-  spp_prev = context['spp']
-
-  #context['params']['sensor'] = get_sensor(image_w, image_h)
-  context['spp'] = spp
-
+def render_and_save_to_file(context, save_filename):
   scene = context['scene']
   params = context['params']
 
@@ -117,15 +108,17 @@ def render_and_save_to_file(context, image_w, image_h, spp, save_filename):
   context['img_ref'] = img_ref
   time.sleep(5)
 
-  #context['params']['sensor'] = sensor_prev
-  context['spp'] = spp_prev
 def F_loss(img, img_ref):
+    loss = dr.sum(dr.sqr(img - img_ref)) / len(img)
+    return loss
+
+def F_loss_sqrt(img, img_ref):
     loss = dr.sqrt(dr.sum(dr.sqr(img - img_ref)) / len(img))
     return loss
 
 def render(it, context):
   if (int(it) == 0):
-    with Image.open("saves/reference.png") as img:
+    with Image.open(context['img_ref_dir']) as img:
       img.load()
     img = img.convert('RGB')
     img_raw = numpy.asarray(img)
@@ -151,7 +144,7 @@ def render(it, context):
   
   img = mi.render(scene, params, seed=it, spp=context['spp']) # image = F_render(scene)
   img = img ** 0.5
-  loss = F_loss(img, img_ref) # loss = F_loss(image)
+  loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
   dr.backward(loss)
 
   context['vertex_positions_grad'] = dr.grad(params['model.vertex_positions'])

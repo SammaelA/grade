@@ -53,7 +53,7 @@ void MitsubaInterface::finish()
   Py_Finalize();
 }
 
-void MitsubaInterface::init(const std::string &scripts_dir, const std::string &file_name)
+void MitsubaInterface::init(const std::string &scripts_dir, const std::string &file_name, RenderSettings render_settings)
 {
   //Interpreter initialization
   std::string append_path_str = std::string("sys.path.append(\"")+scripts_dir+"\")";
@@ -70,9 +70,26 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
     show_errors();
   
   //mitsuba context initialization
-  PyObject *initFunc, *initArgs, *basePath;
+  std::string mitsuba_var = "";
+  switch (render_settings.mitsubaVar)
+  {
+  case MitsubaVariant::CUDA :
+    mitsuba_var = "cuda_ad_rgb";
+    break;
+  case MitsubaVariant::LLVM :
+    mitsuba_var = "llvm_ad_rgb";
+    break;
+  default:
+    mitsuba_var = "cuda_ad_rgb";
+    break;
+  }
+  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv;
   basePath = PyUnicode_FromString("resources/mitsuba_data/");
-  initArgs = PyTuple_Pack(1, basePath);
+  iw_arg = PyLong_FromLong(render_settings.image_w);
+  ih_arg = PyLong_FromLong(render_settings.image_h);
+  spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
+  mv = PyUnicode_FromString(mitsuba_var.c_str());
+  initArgs = PyTuple_Pack(5, basePath, iw_arg, ih_arg, spp_arg, mv);
   
   initFunc = PyObject_GetAttrString(pModule, (char *)"init");
   if (!initFunc)
@@ -85,19 +102,35 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   Py_DECREF(initFunc);
   Py_DECREF(initArgs);
   Py_DECREF(basePath);
+  Py_DECREF(iw_arg);
+  Py_DECREF(ih_arg);
+  Py_DECREF(spp_arg);
+  Py_DECREF(mv);
 }
 
-void MitsubaInterface::init_optimization(const std::string &reference_image_dir, RenderSettings render_settings, LossFunction loss_function, 
-                                         int model_max_size)
+void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size)
 {
-  PyObject *func, *args, *iw_arg, *ih_arg, *spp_arg, *ref_dir_arg, *func_ret;
+  std::string loss_function_name = "F_loss";
+  switch (loss_function)
+  {
+  case LossFunction::LOSS_MSE :
+    loss_function_name = "F_loss";
+    break;
+
+  case LossFunction::LOSS_MSE_SQRT :
+    loss_function_name = "F_loss_sqrt";
+    break;
+
+  default:
+    loss_function_name = "F_loss";
+    break;
+  }
+  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func;
 
   func = PyObject_GetAttrString(pModule, (char *)"init_optimization");
-  iw_arg = PyLong_FromLong(render_settings.image_w);
-  ih_arg = PyLong_FromLong(render_settings.image_h);
-  spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
   ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
-  args = PyTuple_Pack(5, mitsubaContext, iw_arg, ih_arg, spp_arg, ref_dir_arg);
+  loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
+  args = PyTuple_Pack(3, mitsubaContext, ref_dir_arg, loss_func);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
@@ -106,11 +139,9 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
 
   Py_DECREF(func);
   Py_DECREF(args);
-  Py_DECREF(iw_arg);
-  Py_DECREF(ih_arg);
-  Py_DECREF(spp_arg);
   Py_DECREF(ref_dir_arg);
   Py_DECREF(func_ret);
+  Py_DECREF(loss_func);
 }
 
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
@@ -138,26 +169,20 @@ void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
   set_array_to_ctx_internal("vertex_texcoords", 2, 2 * vertex_count);
 }
 
-void MitsubaInterface::render_model_to_file(const std::vector<float> &model, RenderSettings render_settings, const std::string &image_dir)
+void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir)
 {
   model_to_ctx(model);
 
-  PyObject *func, *args, *iw_arg, *ih_arg, *spp_arg, *ref_dir_arg, *func_ret;
+  PyObject *func, *args, *ref_dir_arg, *func_ret;
 
   func = PyObject_GetAttrString(pModule, (char *)"render_and_save_to_file");
-  iw_arg = PyLong_FromLong(render_settings.image_w);
-  ih_arg = PyLong_FromLong(render_settings.image_h);
-  spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
   ref_dir_arg = PyUnicode_FromString(image_dir.c_str());
-  args = PyTuple_Pack(5, mitsubaContext, iw_arg, ih_arg, spp_arg, ref_dir_arg);
+  args = PyTuple_Pack(2, mitsubaContext, ref_dir_arg);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
   Py_DECREF(func);
   Py_DECREF(args);
-  Py_DECREF(iw_arg);
-  Py_DECREF(ih_arg);
-  Py_DECREF(spp_arg);
   Py_DECREF(ref_dir_arg);
   Py_DECREF(func_ret);
 

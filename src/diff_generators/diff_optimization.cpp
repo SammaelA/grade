@@ -181,7 +181,6 @@ namespace dopt
           float rnd = urand();
           x[i] = rnd*prev_x[i] + (1-rnd)*x_prev[i];
         } 
-        logerr("Adam2 redirecting");
       }
       return x;
     }
@@ -350,13 +349,13 @@ namespace dopt
     std::vector<float> reference = func.get(reference_params);
 
     MitsubaInterface mi;
-    mi.init("scripts", "emb_test");
-    mi.init_optimization("saves/reference.png", MitsubaInterface::RenderSettings(128, 128, 1), MitsubaInterface::LOSS_MSE_SQRT, 1 << 16);
-    mi.render_model_to_file(reference, MitsubaInterface::RenderSettings(128, 128, 1), "saves/reference.png");
+    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::LLVM));
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16);
+    mi.render_model_to_file(reference, "saves/reference.png");
 
     OptimizationUnitGD opt_unit;
-    opt_unit.init(init_params, func, mi, true);
-    for (int j=0;j<200;j++)
+    opt_unit.init(init_params, func, mi, false);
+    for (int j=0;j<20;j++)
         opt_unit.iterate();
 
     mi.finish();
