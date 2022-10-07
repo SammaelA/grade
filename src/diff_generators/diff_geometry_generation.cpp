@@ -564,10 +564,12 @@ namespace dgen
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
 
     std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
+    dfloat start_pos = params[10] - params[9];
+    dfloat end_pos = params[10] + params[11] + params[9];
     spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
-    spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
-    dfloat sin_p = sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025);
-    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
+    spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
+    dfloat sin_p = sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, 0.025);
+    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, start_pos, end_pos, 0.025, 0, 1));
 
     //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
@@ -701,6 +703,22 @@ namespace dgen
 
       return false;
     }
+  }
+
+  bool check_robustness(const std::vector<float> &params_min, const std::vector<float> &params_max, int iterations)
+  {
+    for (int i=0;i<iterations;i++)
+    {
+      std::vector<float> X0;
+      std::vector<float> model;
+      for (int j=0;j<params_min.size();j++)
+      {
+        float rnd = urand(0,1);
+        X0.push_back(rnd*params_min[j] + (1-rnd)*params_max[j]);
+      }
+      dgen_test_internal(model, X0, X0);
+    }
+    return true;
   }
 
   void dgen_test(std::vector<float> &model)

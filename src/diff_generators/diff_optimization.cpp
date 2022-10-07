@@ -317,12 +317,7 @@ namespace dopt
         if (p < 0.05)
           p = 0.05;
       }
-      float d = params[11] - params[10];
-      if (d < 3 * params[9])
-      {
-        params[10] -= 1.5*params[9];
-        params[11] += 1.5*params[9];
-      }
+
       std::chrono::steady_clock::time_point t8 = std::chrono::steady_clock::now();
       timers[0] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       timers[1] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
@@ -379,10 +374,10 @@ namespace dopt
   {
     constexpr size_t x_n = 18;
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                                        0.08, 0.17, 0.83, //hand params
+                                        0.08, 0.25, 0.5, //hand params
                                         0, PI/4, 0, 0, 0, 0};//rotation and transform
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
-                                   0.05, 0.3, 0.7,
+                                   0.05, 0.3, 0.4,
                                    0, PI/5, 0, 0, 0, 0};
     
     DiffFunctionEvaluator func;
@@ -391,12 +386,12 @@ namespace dopt
     std::vector<float> reference = func.get(reference_params);
 
     MitsubaInterface mi;
-    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::CUDA));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
+    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::LLVM));
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, true);
     mi.render_model_to_file(reference, "saves/reference.png");
 
     OptimizationUnitGD opt_unit;
-    opt_unit.init(0, init_params, func, mi, false);
+    opt_unit.init(0, init_params, func, mi, true);
     for (int j=0;j<100;j++)
         opt_unit.iterate();
     opt_unit.print_stat();
