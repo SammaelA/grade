@@ -33,7 +33,7 @@ public:
   void set_model_max_size(int model_max_size);
 
   //initialize optimization cycle, set model to compare with. Set loss function and render settings for optimization cycle
-  void init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size);
+  void init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, bool save_intermediate_images);
 
   //render model and save image to file, for debug purposes
   void render_model_to_file(const std::vector<float> &model, const std::string &image_dir);

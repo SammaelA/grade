@@ -85,9 +85,10 @@ def get_sensor(image_w, image_h):
       }
   return sensor
 
-def init_optimization(context, img_ref_dir, loss):
+def init_optimization(context, img_ref_dir, loss, save_intermediate_images):
   context['img_ref_dir'] = img_ref_dir
   context['loss_function'] = loss
+  context['save_intermediate_images'] = int(save_intermediate_images)
 
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
@@ -151,7 +152,7 @@ def render(it, context):
   context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
   context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
 
-  if (int(it) % 10 == 0):
+  if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
     mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
   return loss[0]
 

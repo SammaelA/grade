@@ -5,7 +5,7 @@
 #include <cppad/cppad.hpp>
 #include "common_utils/utility.h"
 #include <functional>
-
+#include <chrono>
 namespace dopt
 {
   class Optimizer
@@ -256,23 +256,31 @@ namespace dopt
 
   struct OptimizationUnitGD
   {
-    void init(const std::vector<float> &init_params, DiffFunctionEvaluator &_func, MitsubaInterface &_mi, bool _verbose = false)
+    void init(int _id, const std::vector<float> &init_params, DiffFunctionEvaluator &_func, MitsubaInterface &_mi, bool _verbose = false)
     {
+      id = _id;
       verbose = _verbose;
       func = &_func;
       mi = &_mi;
       params = init_params;
       opt = new Adam2(0.015);
       x_n = init_params.size();
+      for (int i=0;i<8;i++)
+        timers[i] = 0;
     }
     void iterate()
     {
+      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    //float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       std::vector<float> jac = func->get_jac(params);
+      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
       std::vector<float> res = func->get(params); 
+      std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
       float loss = mi->render_and_compare(res);
+      std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
       mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
-
+      std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
       if (verbose)
       {
         debug("[%d] loss = %.3f\n", iterations, loss);
@@ -293,7 +301,7 @@ namespace dopt
       }
       else if (iterations % 10 == 0)
         debug("[%d] loss = %.3f\n", iterations, loss);
-
+      std::chrono::steady_clock::time_point t7 = std::chrono::steady_clock::now();
       iterations++;
       if (loss < best_error)
       {
@@ -315,11 +323,43 @@ namespace dopt
         params[10] -= 1.5*params[9];
         params[11] += 1.5*params[9];
       }
+      std::chrono::steady_clock::time_point t8 = std::chrono::steady_clock::now();
+      timers[0] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+      timers[1] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+      timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t5 - t3).count();
+      timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count();
+      timers[4] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
+      timers[5] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
     }
     ~OptimizationUnitGD()
     {
       if (opt)
         delete opt;
+    }
+
+    void print_stat()
+    {
+      float total_time = 1e-6;
+      for (int i=0;i<8;i++)
+        total_time += timers[i];
+      total_time *= 1e-3;
+
+      debug("Optimization Unit %d statistics\n", id);
+      debug("Input parameters count: %d\n", x_n);
+      debug("Itarations: %d\n", iterations);
+      debug("Best value: %.4f\n", best_error);
+      debug("Total time: %.3f s\n", total_time);
+      std::vector<std::string> markers = {
+        "Model jacobian calculation", "Model calculation", "Rendering", "Final Gradient calculation",
+        "Debug print", "Optimizaiton"
+      };
+      for (int i=0;i<markers.size();i++)
+      {
+        float time = 1e-3*timers[i];
+        float part = 100*time/total_time;
+        float per_iter = 1000*time/iterations;
+        debug("%s: %.3f s (%.1f %), %.1f ms per iteration\n", markers[i].c_str(), time, part, per_iter);
+      }
     }
 
     DiffFunctionEvaluator *func = nullptr;
@@ -331,6 +371,8 @@ namespace dopt
     int iterations = 0;
     int x_n = 0;
     bool verbose = false;
+    double timers[8];
+    int id = 0;
   };
 
   void test()
@@ -349,15 +391,15 @@ namespace dopt
     std::vector<float> reference = func.get(reference_params);
 
     MitsubaInterface mi;
-    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::LLVM));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16);
+    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::CUDA));
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
     mi.render_model_to_file(reference, "saves/reference.png");
 
     OptimizationUnitGD opt_unit;
-    opt_unit.init(init_params, func, mi, false);
-    for (int j=0;j<20;j++)
+    opt_unit.init(0, init_params, func, mi, false);
+    for (int j=0;j<100;j++)
         opt_unit.iterate();
-
+    opt_unit.print_stat();
     mi.finish();
   }
 }

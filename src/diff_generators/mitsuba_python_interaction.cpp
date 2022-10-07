@@ -108,7 +108,7 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   Py_DECREF(mv);
 }
 
-void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size)
+void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, bool save_intermediate_images)
 {
   std::string loss_function_name = "F_loss";
   switch (loss_function)
@@ -125,12 +125,13 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
     loss_function_name = "F_loss";
     break;
   }
-  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func;
+  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
 
   func = PyObject_GetAttrString(pModule, (char *)"init_optimization");
   ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
-  args = PyTuple_Pack(3, mitsubaContext, ref_dir_arg, loss_func);
+  int_im = PyLong_FromLong((int)save_intermediate_images);
+  args = PyTuple_Pack(4, mitsubaContext, ref_dir_arg, loss_func, int_im);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
@@ -142,6 +143,7 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
   Py_DECREF(ref_dir_arg);
   Py_DECREF(func_ret);
   Py_DECREF(loss_func);
+  Py_DECREF(int_im);
 }
 
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
