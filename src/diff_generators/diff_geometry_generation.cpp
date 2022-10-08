@@ -546,16 +546,6 @@ namespace dgen
     }
   }
 
-  void test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
-  {
-    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
-    transform(spline, sc);
-    spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
-    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
-  }
-
   void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
@@ -573,45 +563,23 @@ namespace dgen
 
     //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
-    dmat43 rot = rotate(ident(), dvec3{1,0,0}, params[12]);
-    rot = rotate(rot, dvec3{0,1,0}, params[13]);
-    rot = rotate(rot, dvec3{0,0,1}, params[14]);
-    rot = translate(rot, dvec3{params[15], params[16], params[17]});
-    transform(vert, rot);
   }
 
-  void create_plate(std::vector<dfloat> &params, std::vector<dfloat> &model)
+  void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model)
   {
-    add_vertex(model, 0, dvec3{0,0,1}, dvec3{0,0,-1}, dvec2{0,0});
-    add_vertex(model, 1, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
-    add_vertex(model, 2, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
-    add_vertex(model, 3, dvec3{params[0],params[1],1}, dvec3{0,0,-1}, dvec2{params[0],params[1]});
-    add_vertex(model, 4, dvec3{0,params[1],1}, dvec3{0,0,-1}, dvec2{0,params[1]});
-    add_vertex(model, 5, dvec3{params[0],0,1}, dvec3{0,0,-1}, dvec2{params[0],0});
+    dmat43 rot = rotate(ident(), dvec3{1,0,0}, params[offset]);
+    rot = rotate(rot, dvec3{0,1,0}, params[offset+1]);
+    rot = rotate(rot, dvec3{0,0,1}, params[offset+2]);
+    rot = translate(rot, dvec3{params[offset+3], params[offset+4], params[offset+5]});
+    transform(model, rot);
   }
 
-  void test_test_spline(std::vector<dfloat> &vert, std::vector<dfloat> &params)
-  {
-    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.1,1,0.1});
-    transform(spline, sc);
-    spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
-
-    std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
-    spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
-    spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, params[10], params[11]), 0});
-    spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_by_points(spline, params[11], (params[10] + params[11]) / 2.0, 0.025)), 0.5, 16, shift_by_points(spline, params[10], params[11], 0.025, 0, 1));
-
-    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},32);
-  }
-
-  bool check_stability(const std::vector<float> &params, int iterations)
+  bool check_stability(generator_func func, const std::vector<float> &params, int iterations)
   {
     float eps = 1e-4;
     std::vector<float> model_ref;
     std::vector<float> jac_ref;
-    dgen_test_internal(model_ref, params, params, &jac_ref);
+    dgen_test_internal(model_ref, func, params, params, &jac_ref);
     int x_n = params.size();
     int y_n = model_ref.size();
     debug("Checking stability of differential procedural model\n");
@@ -630,7 +598,7 @@ namespace dgen
         bool model_created = false;
         try
         {
-          dgen_test_internal(model, par, params, &jac);
+          dgen_test_internal(model, func, par, params, &jac);
           model_created = true;
         }
         catch(const std::exception& e)
@@ -705,7 +673,7 @@ namespace dgen
     }
   }
 
-  bool check_robustness(const std::vector<float> &params_min, const std::vector<float> &params_max, int iterations)
+  bool check_robustness(generator_func func, const std::vector<float> &params_min, const std::vector<float> &params_max, int iterations)
   {
     for (int i=0;i<iterations;i++)
     {
@@ -716,30 +684,19 @@ namespace dgen
         float rnd = urand(0,1);
         X0.push_back(rnd*params_min[j] + (1-rnd)*params_max[j]);
       }
-      dgen_test_internal(model, X0, X0);
+      dgen_test_internal(model, func, X0, X0);
     }
     return true;
   }
 
   void dgen_test(std::vector<float> &model)
   {
-    std::vector<float> X0(12);
-    X0[0] = 4 - 1.45;
-    X0[1] = 4 - 1.0;
-    X0[2] = 4 - 0.65;
-    X0[3] = 4 - 0.45;
-    X0[4] = 4 - 0.25;
-    X0[5] = 4 - 0.18;
-    X0[6] = 4 - 0.1;
-    X0[7] = 4 - 0.05;
-    X0[8] = 4 - 0;
-    X0[9] = 0.08;//0.3 + 0.81;
-    X0[10] = 0.17;//0.3 + 1.0;
-    X0[11] = 0.83;//0.3 + 1.21;
-    dgen_test_internal(model, X0, X0);
+    std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                          0.08, 0.25, 0.5};//handle params
+    dgen_test_internal(model, create_cup, X0, X0);
   }
-  void dgen_test_internal(std::vector<float> &model, const std::vector<float> &check_params, const std::vector<float> &params,
-                          std::vector<float> *jacobian)
+  void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
+                          const std::vector<float> &params, std::vector<float> *jacobian )
   {
     assert(check_params.size() > 0);
     assert(check_params.size() == params.size());
@@ -753,7 +710,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    test_test_spline(Y, X);
+    func(X, Y);
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 

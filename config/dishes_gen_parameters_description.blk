@@ -1,0 +1,14 @@
+{
+  curve_offset_0{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 0"}
+  curve_offset_1{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 1"}
+  curve_offset_2{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 2"}
+  curve_offset_3{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 3"}
+  curve_offset_4{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 4"}
+  curve_offset_5{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 5"}
+  curve_offset_6{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 6"}
+  curve_offset_7{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 7"}
+  curve_offset_8{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 8"}
+  handle_radius{ values:p2 = 0.01, 0.5 desc:s = "handle radius"}
+  handle_upper_inner_point{ values:p2 = 0.0, 0.5 desc:s = "Upper of 2 points where handle is attached to the cup. It's y value minus radius"}
+  handle_distance_between_inner_points{ values:p2 = 0.0, 0.5 desc:s = "Handle size (y coord) minus 2*radius"}
+}

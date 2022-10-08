@@ -233,7 +233,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
  
   View view;
   view.lineWidth = 1.0f;
-  view.init("Procedural Tree", 256, 256);
+  view.init("Sandbox", 256, 256);
   engine::view = &view;
 
   Block textures_list;
@@ -264,7 +264,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     X0[9] = 0.08;//0.3 + 0.81;
     X0[10] = 0.17;//0.3 + 1.0;
     X0[11] = 0.83;//0.3 + 1.21;
-  dgen::check_stability(X0, 4);
+  dgen::check_stability(dgen::create_cup, X0, 4);
   return;
 
   int quantiles[101];
