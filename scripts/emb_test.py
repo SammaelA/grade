@@ -8,7 +8,6 @@ import time
 import numpy
 
 def init(base_path, image_w, image_h, spp, mitsuba_variant):
-  print("base_path = ", base_path)
   mi.set_variant(mitsuba_variant)
   integrator = {
       'type': 'direct_reparam',
@@ -124,7 +123,6 @@ def render(it, context):
     img = img.convert('RGB')
     img_raw = numpy.asarray(img)
     img_raw = img_raw/255.0
-    print(context['img_ref'].shape, img_raw.shape)
     context['img_ref'] = mi.TensorXf(img_raw)
   scene = context['scene']
   params = context['params']

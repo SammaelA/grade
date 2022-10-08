@@ -61,7 +61,6 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   PyRun_SimpleString("import sys");
   PyRun_SimpleString("import os");
   PyRun_SimpleString(append_path_str.c_str());
-  PyRun_SimpleString("print(sys.path)");
   PyObject *pName;
   pName = PyUnicode_FromString(file_name.c_str());
   pModule = PyImport_Import(pName);
