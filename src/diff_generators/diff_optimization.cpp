@@ -6,7 +6,9 @@
 #include "common_utils/utility.h"
 #include <functional>
 #include <chrono>
+#include <algorithm>
 #include "common_utils/blk.h"
+
 namespace dopt
 {
   class Optimizer
@@ -280,6 +282,17 @@ namespace dopt
     }
     void iterate()
     {
+      if (!func || !mi)
+        return;
+      if (verbose)
+      {
+        debug("params [");
+        for (int j=0;j<x_n;j++)
+        {
+          debug("%.3f, ", params[j]);
+        }
+        debug("]\n");
+      }
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     //float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       std::vector<float> jac = func->get_jac(params);
@@ -295,13 +308,6 @@ namespace dopt
       {
         debug("[%d] loss = %.3f, quality = %.3f\n", iterations, loss, get_quality());
 
-        debug("params [");
-        for (int j=0;j<x_n;j++)
-        {
-          debug("%.3f, ", params[j]);
-        }
-        debug("]\n");
-
         debug("grad {");
         for (int j=0;j<x_n;j++)
         {
@@ -309,8 +315,6 @@ namespace dopt
         }
         debug("}\n");
       }
-      else if (iterations % 5 == 0)
-        debug("[%d] loss = %.3f, quality = %.3f\n", iterations, loss, get_quality());
       std::chrono::steady_clock::time_point t7 = std::chrono::steady_clock::now();
 
       if (loss < best_error)
@@ -320,6 +324,7 @@ namespace dopt
         best_error_iter = iterations;
       }
       best_error_stat.push_back(best_error);
+      quality = get_quality();
       params = opt->step(params, final_grad, loss);
       for (int i=0;i<params.size();i++)
       {
@@ -353,13 +358,18 @@ namespace dopt
 
     float get_quality()
     {
-      float time_stat = (iterations <= 10) ? (11 - iterations) : (1 - 0.01*iterations);
+      float time_stat = (iterations <= 10) ? 0.1*(20 - iterations) : (1.1 - 0.01*iterations);
       float val_stat = 1/(0.001 + best_error);
       float change_stat = 0;
       if (iterations >= 10)
         change_stat = 1 - best_error_stat[best_error_stat.size()-1 - 10] / (1e-9 + best_error);
-      float decay_stat = MAX(0, 0.1*(iterations - best_error_iter - 10));
-      return val_stat*exp(time_stat)*exp(change_stat)*exp(-decay_stat);
+      float decay_stat = MAX(0, 0.075*(iterations - best_error_iter - 10));
+      return pow(val_stat, 2)*exp(time_stat)*exp(change_stat)*exp(-decay_stat);
+    }
+
+    void print_current_state()
+    {
+      debug("[%d][%d] q = %.3f, l = %.3f\n", id, iterations, quality, best_error);
     }
 
     void print_stat()
@@ -402,17 +412,37 @@ namespace dopt
     bool verbose = false;
     double timers[8];
     int id = 0;
+    float quality = 1000;
+  };
+
+  class UShortVecComparator
+  {
+  public:
+    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2)
+    {
+      for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
+      {
+        if (v1[i] < v2[i])
+          return true;
+        else if (v1[i] > v2[i])
+          return false;
+      }
+      return false;
+    }
   };
 
   void test()
   {
     Block gen_params, scene_params;
     std::vector<float> params_min, params_max;
+    std::vector<unsigned short> init_bins_count;
+    std::vector<unsigned short> init_bins_positions;
     load_block_from_file("dishes_gen_parameters_description.blk", gen_params);
     load_block_from_file("diff_gen_scene_parameters_description.blk", scene_params);
 
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
+    int have_init_bins_cnt = 0;
     auto process_blk = [&](Block &blk){
       for (int i=0;i<blk.size();i++)
       {
@@ -428,6 +458,18 @@ namespace dopt
             logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i));
           params_min.push_back(min_max.x);
           params_max.push_back(min_max.y);
+          int bins_cnt = pb->get_int("init_bins_count", 0);
+          if (bins_cnt<0 || bins_cnt>512)
+          {
+            bins_cnt = 0;
+            logerr("invalid parameter description\"%s\". Bin count should be in [0, 512] interval", blk.get_name(i));
+          }
+          init_bins_count.push_back((unsigned short)bins_cnt);
+          if (bins_cnt>0)
+          {
+            init_bins_positions.push_back(init_bins_count.size()-1);
+            have_init_bins_cnt++;
+          }
         }
       }
     };
@@ -435,12 +477,13 @@ namespace dopt
     process_blk(scene_params);
 
     size_t x_n = gen_params_cnt + scene_params_cnt;
-    debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene)\n", 
-          x_n, gen_params_cnt, scene_params_cnt);
+    debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d need start point selection\n", 
+          x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt);
     
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
                                         0.08, 0.25, 0.5, //hand params
                                         0, PI/4, 0, 0, 0, 0};//rotation and transform
+    //reference_params = std::vector<float>{4.281, 4.277, 4.641, 4.702, 4.639, 4.102, 3.748, 3.413, 3.771, 0.079, 0.013, 0.051, 0.659, 2.917, 0.098, 0.192, 0.210, 0.054};
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
                                    0.05, 0.3, 0.4,
                                    0, PI/5, 0, 0, 0, 0};
@@ -454,11 +497,90 @@ namespace dopt
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
     mi.render_model_to_file(reference, "saves/reference.png");
 
-    OptimizationUnitGD opt_unit;
-    opt_unit.init(0, init_params, func, mi, params_min, params_max, false);
-    for (int j=0;j<250;j++)
-        opt_unit.iterate();
-    opt_unit.print_stat();
+    int full_cnt = 32;
+    int use_cnt = 8;
+    int base_iters = 50;
+    int gd_iters = 2;
+    std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
+    std::vector<OptimizationUnitGD> opt_units(full_cnt);
+    std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
+    std::vector<int> indices_to_sort(full_cnt);
+    int next_unit_id = 0;
+    for (int i=0;i<full_cnt;i++)
+    {
+      indices_to_sort[i] = i;
+      std::vector<unsigned short> descr(have_init_bins_cnt, 0);
+      bool searching = true;
+      int tries = 0;
+      while (searching && tries<1000)
+      {
+        for (int j=0;j<have_init_bins_cnt;j++)
+        {
+          int max_bins = init_bins_count[init_bins_positions[j]];
+          int bin = urandi(0, max_bins);
+          descr[j] = bin;
+        }
+        tries++;
+        if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
+          searching = false;
+      }
+
+      if (!searching)
+      {
+        opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
+        std::vector<float> params = init_params;
+        for (int j=0;j<have_init_bins_cnt;j++)
+        {
+          int pos = init_bins_positions[j];
+          float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[pos];
+          float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[pos];
+          params[pos] = urand(val_from, val_to);
+        }
+        opt_unit_bins[i] = descr;
+        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, false);
+        next_unit_id++;
+      }
+    }
+    for (int i=0;i<base_iters;i++)
+    {
+      int iter_cnt = MAX(2, use_cnt - 0.33*i);
+      if (i < 3)
+        iter_cnt = full_cnt;
+      for (int j=0;j<iter_cnt;j++)
+      {
+        for (int k=0;k<gd_iters;k++)
+          opt_units[indices_to_sort[j]].iterate();
+      }
+      std::sort(indices_to_sort.begin(), indices_to_sort.end(), 
+                [&](const int& a, const int& b) -> bool{return opt_units[a].quality > opt_units[b].quality;});
+      for (int ind : indices_to_sort)
+      {
+        opt_units[ind].print_current_state();
+      }
+      debugnl();
+    }
+    std::vector<float> best_params = init_params;
+    float best_err = 1000;
+    int total_iters = 0;
+    for (auto &unit : opt_units)
+    {
+      total_iters += unit.iterations;
+      if (unit.best_error < best_err)
+      {
+        best_err = unit.best_error;
+        best_params = unit.best_params;
+      }
+    }
+    std::vector<float> best_model = func.get(best_params);
+    mi.render_model_to_file(best_model, "saves/selected.png");
+    debug("Model optimization finished. %d iterations total. Best result saved to \"saves/selected.png\"\n", total_iters);
+    debug("Best error: %f\n", best_err);
+    debug("Best params: [");
+    for (int j = 0; j < x_n; j++)
+    {
+      debug("%.3f, ", best_params[j]);
+    }
+    debug("]\n");
     mi.finish();
   }
 }
