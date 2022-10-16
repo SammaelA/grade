@@ -8,6 +8,8 @@
 #include <chrono>
 #include <algorithm>
 #include "common_utils/blk.h"
+#include "tinyEngine/engine.h"
+#include "graphics_utils/silhouette.h"
 
 namespace dopt
 {
@@ -135,7 +137,7 @@ namespace dopt
   class Adam2 : public Optimizer
   {
   public:
-    Adam2(float _alpha = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8)
+    Adam2(float _alpha = 0.01, std::vector<float> _mask = {}, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8)
     {
       assert(_alpha > 0);
       assert(_beta_1 > 0);
@@ -144,53 +146,60 @@ namespace dopt
       assert(_beta_2 < 1);
       assert(_eps > 0);
       
+      mask = _mask;
       alpha = _alpha;
       beta_1 = _beta_1;
       beta_2 = _beta_2;
       eps = _eps;
     }
-    virtual std::vector<float> step(const std::vector<float> &x_prev, const std::vector<float> &x_grad, float value) override
+    virtual std::vector<float> step(const std::vector<float> &cur_x, const std::vector<float> &x_grad, float value) override
     {
-      assert(x_prev.size() == x_grad.size());
+      assert(cur_x.size() == x_grad.size());
       if (S.empty())
-        S = std::vector<float>(x_prev.size(), 0);
+        S = std::vector<float>(cur_x.size(), 0);
       else
-        assert(x_prev.size() == S.size());
+        assert(cur_x.size() == S.size());
       if (V.empty())
-        V = std::vector<float>(x_prev.size(), 0);
+        V = std::vector<float>(cur_x.size(), 0);
       else
-        assert(x_prev.size() == V.size());
-      std::vector<float> x(x_prev.size(),0);
+        assert(cur_x.size() == V.size());
+      if (mask.empty())
+        mask = std::vector<float>(cur_x.size(), 1);
+      else
+        assert(cur_x.size() == mask.size());
+
+      std::vector<float> next_x(cur_x.size(),0);
 
       if (value < 1.2*prev_val)
       {
         iter++;
-        for (int i=0;i<x_prev.size();i++)
+        for (int i=0;i<cur_x.size();i++)
         {
           V[i] = beta_1 * V[i] + (1-beta_1)*x_grad[i];
           float Vh = V[i] / (1 - pow(beta_1, iter)); 
           S[i] = beta_2 * S[i] + (1-beta_2)*x_grad[i]*x_grad[i];
           float Sh = S[i] / (1 - pow(beta_2, iter)); 
 
-          x[i] = x_prev[i] - alpha*Vh/(sqrt(Sh) + eps);
+          next_x[i] = cur_x[i] - mask[i]*alpha*Vh/(sqrt(Sh) + eps);
         }
-        prev_x = x_prev; 
+        prev_x = cur_x; 
         prev_val = value;
       }
       else
       {
-        for (int i=0;i<x_prev.size();i++)
+        for (int i=0;i<cur_x.size();i++)
         {
-          float rnd = urand();
-          x[i] = rnd*prev_x[i] + (1-rnd)*x_prev[i];
+          float rnd = mask[i]*urand();
+          next_x[i] = (1-rnd)*prev_x[i] + rnd*cur_x[i];
         } 
       }
-      return x;
+      return next_x;
     }
   private:
     std::vector<float> V; 
     std::vector<float> S; 
     std::vector<float> prev_x;
+    std::vector<float> mask;
     float prev_val = 1e9;
     float alpha = 1;
     float beta_1 = 1;
@@ -263,6 +272,7 @@ namespace dopt
   {
     void init(int _id, const std::vector<float> &init_params, DiffFunctionEvaluator &_func, MitsubaInterface &_mi, 
               const std::vector<float> &_params_min, const std::vector<float> &_params_max,
+              const std::vector<float> params_mask = {},
               bool _verbose = false)
     {
       assert(init_params.size() > 0);
@@ -275,7 +285,7 @@ namespace dopt
       func = &_func;
       mi = &_mi;
       params = init_params;
-      opt = new Adam2(0.015);
+      opt = new Adam2(0.015, params_mask);
       x_n = init_params.size();
       for (int i=0;i<8;i++)
         timers[i] = 0;
@@ -358,12 +368,12 @@ namespace dopt
 
     float get_quality()
     {
-      float time_stat = (iterations <= 10) ? 0.1*(20 - iterations) : (1.1 - 0.01*iterations);
+      float time_stat = (iterations <= 10) ? 0.2*(15 - iterations) : (1.1 - 0.01*iterations);
       float val_stat = 1/(0.001 + best_error);
       float change_stat = 0;
       if (iterations >= 10)
         change_stat = 1 - best_error_stat[best_error_stat.size()-1 - 10] / (1e-9 + best_error);
-      float decay_stat = MAX(0, 0.075*(iterations - best_error_iter - 10));
+      float decay_stat = MAX(0, 0.025*(iterations - best_error_iter - 10));
       return pow(val_stat, 2)*exp(time_stat)*exp(change_stat)*exp(-decay_stat);
     }
 
@@ -404,7 +414,7 @@ namespace dopt
     std::vector<float> best_params;
     std::vector<float> params_min;
     std::vector<float> params_max;
-    float best_error = 1e9;
+    float best_error = 1;
     std::vector<float> best_error_stat;
     int best_error_iter = 0;
     int iterations = 0;
@@ -412,7 +422,7 @@ namespace dopt
     bool verbose = false;
     double timers[8];
     int id = 0;
-    float quality = 1000;
+    float quality = 10000;
   };
 
   class UShortVecComparator
@@ -481,26 +491,63 @@ namespace dopt
           x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt);
     
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                                        0.08, 0.25, 0.5, //hand params
-                                        0, PI/4, 0, 0, 0, 0};//rotation and transform
+                                        0.05, 0.35, 0.35, //hand params
+                                        PI/5, PI, 0, 0, 0, 0};//rotation and transform
     //reference_params = std::vector<float>{4.281, 4.277, 4.641, 4.702, 4.639, 4.102, 3.748, 3.413, 3.771, 0.079, 0.013, 0.051, 0.659, 2.917, 0.098, 0.192, 0.210, 0.054};
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
                                    0.05, 0.3, 0.4,
-                                   0, PI/5, 0, 0, 0, 0};
+                                   0, PI, 0, 0, 0, 0};
+    std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                   1, 1, 1,
+                                   1, 1, 1, 1, 1, 1};
+    int ref_image_size = 1024;
+    int sel_image_size = 196;
     DiffFunctionEvaluator func;
     func.init(dgen::create_cup, gen_params_cnt);
 
     std::vector<float> reference = func.get(reference_params);
 
-    MitsubaInterface mi;
-    mi.init("scripts", "emb_test", MitsubaInterface::RenderSettings(196, 196, 1, MitsubaInterface::MitsubaVariant::LLVM));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
+    MitsubaInterface mi("scripts", "emb_test");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(reference, "saves/reference.png");
+    Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
+    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+    Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
+    engine::textureManager->save_png_directly(tex, "saves/reference.png");
 
-    int full_cnt = 32;
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
+    /*
+    Texture t = engine::textureManager->load_unnamed_tex("resources/textures/cup2.jpg");
+    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+    Texture tex = se.get_silhouette(t, mi.render_settings.image_w, mi.render_settings.image_h);
+    engine::textureManager->save_png_directly(tex, "saves/reference.png");
+    */
+    bool simple_search = true;
+    std::vector<float> best_params = init_params;
+    float best_err = 1000;
+    int total_iters = 0;
+
+    if (simple_search)
+    {
+      OptimizationUnitGD opt_unit;
+      opt_unit.init(0, init_params, func, mi, params_min, params_max, params_mask);
+      for (int j=0;j<10;j++)
+      {
+          opt_unit.iterate();
+          opt_unit.print_current_state();
+      }
+      opt_unit.print_stat();
+      best_params = opt_unit.best_params;
+      best_err = opt_unit.best_error;
+      total_iters = opt_unit.iterations;
+    }
+    else
+    {
+    int full_cnt = 4;
     int use_cnt = 8;
-    int base_iters = 50;
-    int gd_iters = 2;
+    int base_iters = 500;
+    int gd_iters = 5;
     std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
     std::vector<OptimizationUnitGD> opt_units(full_cnt);
     std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
@@ -537,12 +584,13 @@ namespace dopt
           params[pos] = urand(val_from, val_to);
         }
         opt_unit_bins[i] = descr;
-        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, false);
+        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, params_mask);
         next_unit_id++;
       }
     }
     for (int i=0;i<base_iters;i++)
     {
+      /*choose a few best
       int iter_cnt = MAX(2, use_cnt - 0.33*i);
       if (i < 3)
         iter_cnt = full_cnt;
@@ -551,6 +599,27 @@ namespace dopt
         for (int k=0;k<gd_iters;k++)
           opt_units[indices_to_sort[j]].iterate();
       }
+      */
+     //choose random, chance proportional to quality
+      std::vector<double> sums;
+      for (auto &unit : opt_units)
+      {
+        if (sums.empty())
+          sums.push_back(unit.quality);
+        else
+          sums.push_back(sums.back() + unit.quality);
+      }
+      double rnd = urand(0, sums.back());
+      for (int j=0;j<sums.size();j++)
+      {
+        if (sums[j] > rnd)
+        {
+          for (int k=0;k<gd_iters;k++)
+            opt_units[j].iterate();
+          break;
+        }
+      }
+
       std::sort(indices_to_sort.begin(), indices_to_sort.end(), 
                 [&](const int& a, const int& b) -> bool{return opt_units[a].quality > opt_units[b].quality;});
       for (int ind : indices_to_sort)
@@ -559,9 +628,6 @@ namespace dopt
       }
       debugnl();
     }
-    std::vector<float> best_params = init_params;
-    float best_err = 1000;
-    int total_iters = 0;
     for (auto &unit : opt_units)
     {
       total_iters += unit.iterations;
@@ -571,6 +637,8 @@ namespace dopt
         best_params = unit.best_params;
       }
     }
+    }
+    
     std::vector<float> best_model = func.get(best_params);
     mi.render_model_to_file(best_model, "saves/selected.png");
     debug("Model optimization finished. %d iterations total. Best result saved to \"saves/selected.png\"\n", total_iters);
