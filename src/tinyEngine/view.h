@@ -19,6 +19,7 @@ class View
     void quit();
     void next_frame();
     void handle_input();
+    unsigned int get_antialiasing();
 
     bool enabled = false;
     unsigned int WIDTH, HEIGHT;
@@ -30,6 +31,5 @@ class View
     bool fullscreen = false;    //Settings
     bool vsync = true;
     bool ccw = true;
-    unsigned int antialias = 16;
     float lineWidth = 1.0f;
 };

@@ -1,4 +1,5 @@
 #include "view.h"
+#include "configuration.h"
 #include "third_party/imgui/imgui.h"                    //Interface Dependencies
 #include "third_party/imgui/imgui_impl_sdl.h"
 #include "third_party/imgui/imgui_impl_opengl3.h"
@@ -26,6 +27,9 @@ bool View::init(std::string _name, int W, int H)
   
   if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
+      //Если тут возникает ошибшка, попробуйте запуск в том же терминале
+      // комманды $ export SDL_VIDEO_X11_VISUALID= 
+      //Или сразу отключайте мультисэмплинг
       printf("SDL could not initialize! Error: %s\n", SDL_GetError());
       return false;
     }
@@ -54,8 +58,9 @@ bool View::init(std::string _name, int W, int H)
   // Core OpenGL Profile!
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-  if (antialias)
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, antialias);
+  //В случае segfault на базовых openGL коммандах попробуйте отключить мультисамплинг
+  if (get_antialiasing())
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, get_antialiasing());
 
   // Initialize the Window and Context
   gWindow = SDL_CreateWindow(_name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
@@ -79,7 +84,7 @@ bool View::init(std::string _name, int W, int H)
   ImGui_ImplOpenGL3_Init("#version 330 core");
   ImGui::StyleColorsCustom();
 
-  if (antialias)
+  if (get_antialiasing())
     glEnable(GL_MULTISAMPLE);
   glEnable(GL_DEPTH_TEST); // Setup Global OpenGL State!
   glDepthFunc(GL_LEQUAL);
@@ -127,4 +132,9 @@ void View::target(glm::vec3 clearcolor)
 void View::next_frame()
 {
   SDL_GL_SwapWindow(gWindow);
+}
+
+unsigned int View::get_antialiasing()
+{
+  return VIEW_ANTIALIASING;
 }
