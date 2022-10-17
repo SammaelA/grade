@@ -441,7 +441,7 @@ namespace dopt
   class UShortVecComparator
   {
   public:
-    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2)
+    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2) const
     {
       for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
       {
