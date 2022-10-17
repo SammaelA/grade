@@ -18,5 +18,12 @@ namespace dgen
   bool create_model_from_block(Block &bl, ComplexModel &mod);
   void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3);
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model);
-  void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &model);
+  
+  //create model of a cup with given parameters (dishes procedural generator)
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &model);
+  //returns 0 is each parameters is in [min+edge_size, max-edge_size] interval
+  dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
+                               float edge_size = 0.01);
+  //estimates how weird are parametes of this cup (0 for good parameters)
+  dfloat parameters_cup_reg(const std::vector<dfloat> &params);
 };

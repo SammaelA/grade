@@ -546,7 +546,7 @@ namespace dgen
     }
   }
 
-  void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
@@ -564,6 +564,29 @@ namespace dgen
 
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+  }
+
+  dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
+                               float edge_size)
+  {
+    dfloat res = 0;
+    for (int i = 0; i < params.size(); i++)
+    {
+      res += smoothmax((params_min[i] + edge_size - params[i])/edge_size, 0.0f);
+      res += smoothmax((params[i] - (params_max[i] - edge_size))/edge_size, 0.0f);
+    }
+    return smoothmax(smoothmax(res, 0), 0);
+  }
+  dfloat parameters_cup_reg(const std::vector<dfloat> &params)
+  {
+    int spline_offsets_cnt = 9;
+    dfloat res = 0;
+    for (int i = 1; i < spline_offsets_cnt; i++)
+    {
+      res += smoothmax(params[i-1] - params[i] - 0.01f, 0);
+    }
+    res = smoothmax(smoothmax(res, 0), 0);
+    return res;
   }
 
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model)

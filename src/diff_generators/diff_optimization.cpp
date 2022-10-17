@@ -272,6 +272,7 @@ namespace dopt
   {
     void init(int _id, const std::vector<float> &init_params, DiffFunctionEvaluator &_func, MitsubaInterface &_mi, 
               const std::vector<float> &_params_min, const std::vector<float> &_params_max,
+              CppAD::ADFun<float> *pr = nullptr,
               const std::vector<float> params_mask = {},
               bool _verbose = false)
     {
@@ -280,6 +281,7 @@ namespace dopt
       assert(init_params.size() == _params_max.size());
       params_min = _params_min;
       params_max = _params_max;
+      params_regularizer = pr;
       id = _id;
       verbose = _verbose;
       func = &_func;
@@ -314,6 +316,16 @@ namespace dopt
       std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
       mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
       std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
+      float reg_q = 0.1;
+      if (params_regularizer)
+      {
+        std::vector<float> reg_res = params_regularizer->Forward(0, params);
+        std::vector<float> reg_jac = params_regularizer->Jacobian(params);
+        logerr("reg res %f",reg_res[0]);
+        loss += reg_q*reg_res[0];
+        for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
+          final_grad[i] += reg_q*reg_jac[i];
+      }
       if (verbose)
       {
         debug("[%d] loss = %.3f, quality = %.3f\n", iterations, loss, get_quality());
@@ -410,6 +422,7 @@ namespace dopt
     DiffFunctionEvaluator *func = nullptr;
     MitsubaInterface *mi = nullptr;
     Optimizer *opt = nullptr;
+    CppAD::ADFun<float> *params_regularizer = nullptr;
     std::vector<float> params;
     std::vector<float> best_params;
     std::vector<float> params_min;
@@ -500,8 +513,21 @@ namespace dopt
     std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
                                    1, 1, 1,
                                    1, 1, 1, 1, 1, 1};
-    int ref_image_size = 1024;
+    int ref_image_size = 512;
     int sel_image_size = 196;
+
+    CppAD::ADFun<float> f_reg;
+    {
+      std::vector<dgen::dfloat> X(init_params.size());
+      for (int i = 0; i < init_params.size(); i++)
+        X[i] = init_params[i];
+      std::vector<dgen::dfloat> Y;
+      CppAD::Independent(X);
+      Y.resize(1);
+      Y[0] = dgen::parameters_limits_reg(X, params_min, params_max) + dgen::parameters_cup_reg(X);
+      f_reg = CppAD::ADFun<float>(X, Y);
+    }
+
     DiffFunctionEvaluator func;
     func.init(dgen::create_cup, gen_params_cnt);
 
@@ -531,8 +557,8 @@ namespace dopt
     if (simple_search)
     {
       OptimizationUnitGD opt_unit;
-      opt_unit.init(0, init_params, func, mi, params_min, params_max, params_mask);
-      for (int j=0;j<10;j++)
+      opt_unit.init(0, init_params, func, mi, params_min, params_max, &f_reg, params_mask);
+      for (int j=0;j<400;j++)
       {
           opt_unit.iterate();
           opt_unit.print_current_state();
@@ -546,7 +572,7 @@ namespace dopt
     {
     int full_cnt = 4;
     int use_cnt = 8;
-    int base_iters = 500;
+    int base_iters = 200;
     int gd_iters = 5;
     std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
     std::vector<OptimizationUnitGD> opt_units(full_cnt);
@@ -584,7 +610,7 @@ namespace dopt
           params[pos] = urand(val_from, val_to);
         }
         opt_unit_bins[i] = descr;
-        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, params_mask);
+        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, &f_reg, params_mask);
         next_unit_id++;
       }
     }
@@ -640,6 +666,7 @@ namespace dopt
     }
     
     std::vector<float> best_model = func.get(best_params);
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, "saves/selected.png");
     debug("Model optimization finished. %d iterations total. Best result saved to \"saves/selected.png\"\n", total_iters);
     debug("Best error: %f\n", best_err);
