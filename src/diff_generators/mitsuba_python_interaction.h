@@ -67,6 +67,6 @@ public:
   int model_max_size = 0;
   int iteration = 0;
   std::array<float *, 4> buffers = {nullptr, nullptr, nullptr, nullptr};
-  PyObject *pModule, *mitsubaContext;
+  PyObject *pModule = nullptr, *mitsubaContext = nullptr;
   RenderSettings render_settings;
 };

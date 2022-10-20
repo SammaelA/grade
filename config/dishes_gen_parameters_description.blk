@@ -8,6 +8,7 @@
   curve_offset_6{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 6"}
   curve_offset_7{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 7"}
   curve_offset_8{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 8"}
+  y_scale{ values:p2 = 0.1, 1 desc:s = "Multiplier of y coordinate. Small value for dishes, large - for cups"}
   handle_radius{ values:p2 = 0.01, 0.5 desc:s = "handle radius"}
   handle_upper_inner_point{ values:p2 = 0.0, 0.5 desc:s = "Upper of 2 points where handle is attached to the cup. It's y value minus radius"}
   handle_distance_between_inner_points{ values:p2 = 0.0, 0.5 desc:s = "Handle size (y coord) minus 2*radius"}

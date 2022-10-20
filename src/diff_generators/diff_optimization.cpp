@@ -321,7 +321,6 @@ namespace dopt
       {
         std::vector<float> reg_res = params_regularizer->Forward(0, params);
         std::vector<float> reg_jac = params_regularizer->Jacobian(params);
-        logerr("reg res %f",reg_res[0]);
         loss += reg_q*reg_res[0];
         for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
           final_grad[i] += reg_q*reg_jac[i];
@@ -504,18 +503,22 @@ namespace dopt
           x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt);
     
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                                        0.4,// y_scale
                                         0.05, 0.35, 0.35, //hand params
                                         PI/5, PI, 0, 0, 0, 0};//rotation and transform
     //reference_params = std::vector<float>{4.281, 4.277, 4.641, 4.702, 4.639, 4.102, 3.748, 3.413, 3.771, 0.079, 0.013, 0.051, 0.659, 2.917, 0.098, 0.192, 0.210, 0.054};
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
-                                   0.05, 0.3, 0.4,
+                                   1,
+                                   0.05, 0.1, 0.1,
                                    0, PI, 0, 0, 0, 0};
     std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                   1,
                                    1, 1, 1,
                                    1, 1, 1, 1, 1, 1};
     int ref_image_size = 512;
     int sel_image_size = 196;
-
+    bool simple_search = true;
+    bool by_reference = true;
     CppAD::ADFun<float> f_reg;
     {
       std::vector<dgen::dfloat> X(init_params.size());
@@ -534,22 +537,25 @@ namespace dopt
     std::vector<float> reference = func.get(reference_params);
 
     MitsubaInterface mi("scripts", "emb_test");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(reference, "saves/reference.png");
-    Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
-    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-    Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
-    engine::textureManager->save_png_directly(tex, "saves/reference.png");
-
+    if (by_reference)
+    {
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+      mi.render_model_to_file(reference, "saves/reference.png");
+      Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
+      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+      Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
+      engine::textureManager->save_png_directly(tex, "saves/reference.png");
+    }
+    else
+    {
+      Texture t = engine::textureManager->load_unnamed_tex("resources/textures/cup1.jpg");
+      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+      Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
+      engine::textureManager->save_png_directly(tex, "saves/reference.png");
+    }
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, false);
-    /*
-    Texture t = engine::textureManager->load_unnamed_tex("resources/textures/cup2.jpg");
-    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-    Texture tex = se.get_silhouette(t, mi.render_settings.image_w, mi.render_settings.image_h);
-    engine::textureManager->save_png_directly(tex, "saves/reference.png");
-    */
-    bool simple_search = true;
+
     std::vector<float> best_params = init_params;
     float best_err = 1000;
     int total_iters = 0;
@@ -558,7 +564,7 @@ namespace dopt
     {
       OptimizationUnitGD opt_unit;
       opt_unit.init(0, init_params, func, mi, params_min, params_max, &f_reg, params_mask);
-      for (int j=0;j<400;j++)
+      for (int j=0;j<40;j++)
       {
           opt_unit.iterate();
           opt_unit.print_current_state();
@@ -666,8 +672,10 @@ namespace dopt
     }
     
     std::vector<float> best_model = func.get(best_params);
+    std::vector<float> initial_model = func.get(init_params);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, "saves/selected.png");
+    mi.render_model_to_file(best_model, "saves/selected_final.png");
+    mi.render_model_to_file(initial_model, "saves/selected_initial.png");
     debug("Model optimization finished. %d iterations total. Best result saved to \"saves/selected.png\"\n", total_iters);
     debug("Best error: %f\n", best_err);
     debug("Best params: [");
