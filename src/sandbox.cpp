@@ -246,9 +246,37 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   engine::view->next_frame();
   return;
 */
-  dopt::test();
-  return;
-
+  if (argc >= 3 && (std::string(argv[2]) == "help" || 
+      std::string(argv[2]) == "-help" || std::string(argv[2]) == "-h"))
+  {
+    logerr("./main -sandbox -h -- print help");
+    logerr("./main -sandbox -opt -- optimization");
+    logerr("./main -sandbox -sil_test -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
+    return;
+  }
+  else if ((argc >= 3 && std::string(argv[2]) == "-opt") || argc == 2)
+  {
+    dopt::test();
+    return;
+  }
+  else if (argc >= 4 && std::string(argv[2]) == "-sil_test")
+  {
+    Texture t = engine::textureManager->load_unnamed_tex(std::string(argv[3]));
+    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+    Texture tex = se.get_silhouette(t, 256, 256);
+    textureManager.save_png(tex, "silhouette_test");
+    engine::view->next_frame();
+    logerr("Silhouette test completed. Saved to saves/silhouette_test.png");
+    return;
+  }
+  else
+  {
+    logerr("unknows sandbox command");
+    logerr("./main -sandbox -h -- print help");
+    logerr("./main -sandbox -opt -- optimization");
+    logerr("./main -sandbox -sil_test -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
+    return;
+  }
   //std::vector<float> model;
   //dgen::dgen_test(model);
   std::vector<float> X0(12);
