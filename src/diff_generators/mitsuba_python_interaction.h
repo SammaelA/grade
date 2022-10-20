@@ -31,7 +31,8 @@ public:
   enum LossFunction
   {
     LOSS_MSE,
-    LOSS_MSE_SQRT
+    LOSS_MSE_SQRT,
+    LOSS_MIXED
   };
 
   MitsubaInterface(const std::string &scripts_dir, const std::string &file_name);

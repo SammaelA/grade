@@ -542,7 +542,7 @@ namespace dopt
     engine::textureManager->save_png_directly(tex, "saves/reference.png");
 
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MSE, 1 << 16, false);
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, false);
     /*
     Texture t = engine::textureManager->load_unnamed_tex("resources/textures/cup2.jpg");
     SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);

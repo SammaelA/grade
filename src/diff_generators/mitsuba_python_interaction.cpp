@@ -135,19 +135,23 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
 
 void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, bool save_intermediate_images)
 {
-  std::string loss_function_name = "F_loss";
+  std::string loss_function_name = "F_loss_mse";
   switch (loss_function)
   {
   case LossFunction::LOSS_MSE :
-    loss_function_name = "F_loss";
+    loss_function_name = "F_loss_mse";
     break;
 
   case LossFunction::LOSS_MSE_SQRT :
-    loss_function_name = "F_loss_sqrt";
+    loss_function_name = "F_loss_mse_sqrt";
+    break;
+  
+  case LossFunction::LOSS_MIXED :
+    loss_function_name = "F_loss_mixed";
     break;
 
   default:
-    loss_function_name = "F_loss";
+    loss_function_name = "F_loss_mse";
     break;
   }
   PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;

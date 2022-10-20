@@ -105,12 +105,16 @@ def render_and_save_to_file(context, save_filename):
   context['img_ref'] = img_ref
   time.sleep(5)
 
-def F_loss(img, img_ref):
+def F_loss_mse(img, img_ref):
     loss = dr.sum(dr.sqr(img - img_ref)) / len(img)
     return loss
 
-def F_loss_sqrt(img, img_ref):
+def F_loss_mse_sqrt(img, img_ref):
     loss = dr.sqrt(dr.sum(dr.sqr(img - img_ref)) / len(img))
+    return loss
+
+def F_loss_mixed(img, img_ref):
+    loss = dr.sum(0.5*dr.sqr(img - img_ref) + 0.5*dr.abs(img - img_ref)) / len(img)
     return loss
 
 def render(it, context):
