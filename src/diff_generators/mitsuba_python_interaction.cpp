@@ -47,13 +47,16 @@ void MitsubaInterface::finish()
       buffers[i] = nullptr;
     }
   }
+}
 
+MitsubaInterface::~MitsubaInterface()
+{
   Py_DECREF(mitsubaContext);
   Py_DECREF(pModule);
   Py_Finalize();
 }
 
-void MitsubaInterface::init(const std::string &scripts_dir, const std::string &file_name, RenderSettings render_settings)
+MitsubaInterface::MitsubaInterface(const std::string &scripts_dir, const std::string &file_name)
 {
   //Interpreter initialization
   std::string append_path_str = std::string("sys.path.append(\"")+scripts_dir+"\")";
@@ -67,7 +70,11 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   Py_DECREF(pName);
   if (!pModule)
     show_errors();
-  
+}
+
+void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
+{
+  render_settings = _render_settings;
   //mitsuba context initialization
   std::string mitsuba_var = "";
   switch (render_settings.mitsubaVar)
@@ -82,18 +89,36 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
     mitsuba_var = "cuda_ad_rgb";
     break;
   }
-  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv;
+
+  std::string render_style = "";
+  switch (render_settings.renderStyle)
+  {
+  case RenderStyle::SILHOUETTE:
+    render_style = "silhouette";
+    break;
+  case RenderStyle::MONOCHROME:
+    render_style = "monochrome";
+    break;
+  default:
+    render_style = "silhouette";
+    break;
+  }
+  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs;
   basePath = PyUnicode_FromString("resources/mitsuba_data/");
   iw_arg = PyLong_FromLong(render_settings.image_w);
   ih_arg = PyLong_FromLong(render_settings.image_h);
   spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
   mv = PyUnicode_FromString(mitsuba_var.c_str());
-  initArgs = PyTuple_Pack(5, basePath, iw_arg, ih_arg, spp_arg, mv);
+  rs = PyUnicode_FromString(render_style.c_str());
+  initArgs = PyTuple_Pack(6, basePath, iw_arg, ih_arg, spp_arg, mv, rs);
   
   initFunc = PyObject_GetAttrString(pModule, (char *)"init");
   if (!initFunc)
     show_errors();
   
+  if (mitsubaContext)
+    Py_DECREF(mitsubaContext);
+
   mitsubaContext = PyObject_CallObject(initFunc, initArgs);
   if (!mitsubaContext)
     show_errors();
@@ -105,23 +130,28 @@ void MitsubaInterface::init(const std::string &scripts_dir, const std::string &f
   Py_DECREF(ih_arg);
   Py_DECREF(spp_arg);
   Py_DECREF(mv);
+  Py_DECREF(rs);
 }
 
 void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, bool save_intermediate_images)
 {
-  std::string loss_function_name = "F_loss";
+  std::string loss_function_name = "F_loss_mse";
   switch (loss_function)
   {
   case LossFunction::LOSS_MSE :
-    loss_function_name = "F_loss";
+    loss_function_name = "F_loss_mse";
     break;
 
   case LossFunction::LOSS_MSE_SQRT :
-    loss_function_name = "F_loss_sqrt";
+    loss_function_name = "F_loss_mse_sqrt";
+    break;
+  
+  case LossFunction::LOSS_MIXED :
+    loss_function_name = "F_loss_mixed";
     break;
 
   default:
-    loss_function_name = "F_loss";
+    loss_function_name = "F_loss_mse";
     break;
   }
   PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
@@ -172,6 +202,9 @@ void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
 
 void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir)
 {
+  if (model_max_size < model.size()/FLOAT_PER_VERTEX)
+    set_model_max_size(model.size()/FLOAT_PER_VERTEX);
+  
   model_to_ctx(model);
 
   PyObject *func, *args, *ref_dir_arg, *func_ret;
@@ -186,11 +219,6 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   Py_DECREF(args);
   Py_DECREF(ref_dir_arg);
   Py_DECREF(func_ret);
-
-  Texture t = engine::textureManager->load_unnamed_tex(image_dir);
-  SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-  Texture tex = se.get_silhouette(t);
-  engine::textureManager->save_png_directly(tex, image_dir);
 }
 
 float MitsubaInterface::render_and_compare(const std::vector<float> &model)
@@ -233,7 +261,7 @@ void MitsubaInterface::set_model_max_size(int _model_max_size)
     {
       if (buffers[i])
         delete[] buffers[i];
-      buffers[i] = new float[model_max_size];
+      buffers[i] = new float[3*model_max_size];
     }
   }
 }

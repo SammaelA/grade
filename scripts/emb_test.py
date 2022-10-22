@@ -7,15 +7,13 @@ import struct
 import time
 import numpy
 
-def init(base_path, image_w, image_h, spp, mitsuba_variant):
+def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style):
   mi.set_variant(mitsuba_variant)
-  integrator = {
+  scene_dict = {'type': 'scene'}
+  scene_dict['integrator'] = {
       'type': 'direct_reparam',
   }
-  scene = mi.load_dict({
-      'type': 'scene',
-      'integrator': integrator,
-      'sensor':  {
+  scene_dict['sensor'] = {
           'type': 'perspective',
           'to_world': T.look_at(
                           origin=(0, 0.5, 1.5),
@@ -30,30 +28,48 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant):
               'rfilter': { 'type': 'gaussian' },
               'sample_border': True
           },
-      },
-      'model': {
+      }
+  if (render_style == "silhouette"):
+    scene_dict['model'] = {
           'type': 'obj',
           'filename': base_path + 'meshes/sphere.obj',
           'to_world': T.scale(0.67),
           'emitter': {
               'type': 'area',
               'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
-          },
-      },
-      'light': {
+          }
+    }
+  elif (render_style == "monochrome"):
+    scene_dict['model'] = {
+            'type': 'obj',
+            'filename': base_path + 'meshes/sphere.obj',
+            'to_world': T.scale(0.67),
+            'bsdf': {
+                'type': 'diffuse',
+                'reflectance': { 'type': 'rgb', 'value': (0.9, 0.8, 0.3) },
+            },
+        }
+    scene_dict['light'] = {
+            'type': 'obj',
+            'filename': base_path + 'meshes/sphere.obj',
+            'emitter': {
+                'type': 'area',
+                'radiance': {'type': 'rgb', 'value': [1e3, 1e3, 1e3]}
+            },
+            'to_world': T.translate([2.5, 2.5, 7.0]).scale(0.25)
+        }
+    scene_dict['rectangle'] = {
           'type': 'obj',
-          'filename': base_path + 'meshes/sphere.obj',
+          'filename': base_path + 'meshes/rectangle.obj',
+          'to_world': T.translate([0, 0, -10]).scale(25),
           'emitter': {
               'type': 'area',
-              'radiance': {'type': 'rgb', 'value': [1e3, 1e3, 1e3]}
-          },
-          'to_world': T.translate([2.5, 2.5, 7.0]).scale(0.25)
-      }
-  })
-
-  #img_ref = mi.render(scene, seed=0, spp=256)
-  #mi.util.write_bitmap("img_ref.png", img_ref)
-  #mi.util.convert_to_bitmap(img_ref)
+              'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
+          }
+    }
+  else:
+    print("Unknown render_style = ", render_style)
+  scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
   context = {
     'scene' : scene,
@@ -64,25 +80,6 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant):
     'spp' : spp
   }
   return context
-
-def get_sensor(image_w, image_h):
-  sensor = {
-          'type': 'perspective',
-          'to_world': T.look_at(
-                          origin=(0, 0, 2),
-                          target=(0, 0, 0),
-                          up=(0, 1, 0)
-                      ),
-          'fov': 60,
-          'film': {
-              'type': 'hdrfilm',
-              'width': image_w,
-              'height': image_h,
-              'rfilter': { 'type': 'gaussian' },
-              'sample_border': True
-          },
-      }
-  return sensor
 
 def init_optimization(context, img_ref_dir, loss, save_intermediate_images):
   context['img_ref_dir'] = img_ref_dir
@@ -108,12 +105,16 @@ def render_and_save_to_file(context, save_filename):
   context['img_ref'] = img_ref
   time.sleep(5)
 
-def F_loss(img, img_ref):
+def F_loss_mse(img, img_ref):
     loss = dr.sum(dr.sqr(img - img_ref)) / len(img)
     return loss
 
-def F_loss_sqrt(img, img_ref):
+def F_loss_mse_sqrt(img, img_ref):
     loss = dr.sqrt(dr.sum(dr.sqr(img - img_ref)) / len(img))
+    return loss
+
+def F_loss_mixed(img, img_ref):
+    loss = dr.sum(0.5*dr.sqr(img - img_ref) + 0.5*dr.abs(img - img_ref)) / len(img)
     return loss
 
 def render(it, context):

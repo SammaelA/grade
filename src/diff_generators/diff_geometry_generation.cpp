@@ -546,24 +546,47 @@ namespace dgen
     }
   }
 
-  void create_cup(std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
-    transform(spline, sc);
+    dmat43 sc = scale(ident(), dvec3{0.09,0.9*params[9],0.09});
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
 
-    std::vector<dvec3> spline1 = create_spline_for_handle(params, 9, 0, 1);
-    dfloat thick = smoothmin(params[9], 0.02, 8);
-    dfloat start_pos = params[10] - params[9];
-    dfloat end_pos = params[10] + params[11] + params[9] + thick;
+    std::vector<dvec3> spline1 = create_spline_for_handle(params, 10, 0, 1);
+    dfloat thick = smoothmin(params[10], 0.02, 8);
+    dfloat start_pos = params[11] - params[10];
+    dfloat end_pos = params[11] + params[12] + params[10] + thick;
     spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
     spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
     dfloat sin_p = sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick);
     spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, start_pos, end_pos, thick, 0, 1));
 
-    //spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+    transform(vert, sc);
+  }
+
+  dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
+                               float edge_size)
+  {
+    dfloat res = 0;
+    for (int i = 0; i < params.size(); i++)
+    {
+      res += smoothmax((params_min[i] + edge_size - params[i])/edge_size, 0.0f);
+      res += smoothmax((params[i] - (params_max[i] - edge_size))/edge_size, 0.0f);
+    }
+    return smoothmax(smoothmax(res, 0), 0);
+  }
+  dfloat parameters_cup_reg(const std::vector<dfloat> &params)
+  {
+    int spline_offsets_cnt = 9;
+    dfloat res = 0;
+    for (int i = 1; i < spline_offsets_cnt; i++)
+    {
+      res += smoothmax(params[i-1] - params[i] - 0.01f, 0);
+    }
+    res = smoothmax(smoothmax(res, 0), 0);
+    return res;
   }
 
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model)
@@ -693,6 +716,7 @@ namespace dgen
   void dgen_test(std::vector<float> &model)
   {
     std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                          1,
                           0.08, 0.25, 0.5};//handle params
     dgen_test_internal(model, create_cup, X0, X0);
   }

@@ -321,7 +321,7 @@ void PythonHelper::test()
     Py_Initialize();
     PyRun_SimpleString("import sys");
     PyRun_SimpleString("import os");
-    PyRun_SimpleString("sys.path.append(\"/home/sammael/grade/scripts\")");
+    PyRun_SimpleString("sys.path.append(\"scripts\")");
     PyRun_SimpleString("print(sys.path)");
     PyObject *pName, *pModule, *pFunc, *pArgs, *pValue, *pIndex;
     float *data_initial = nullptr;

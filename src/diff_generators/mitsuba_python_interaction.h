@@ -12,23 +12,34 @@ public:
     CUDA,
     LLVM
   };
-
+  enum RenderStyle
+  {
+    SILHOUETTE,
+    MONOCHROME
+  };
   struct RenderSettings
   {
-    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv) : 
-                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv) {};
+    RenderSettings() = default;
+    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs) : 
+                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs) {};
     int image_w = 128;
     int image_h = 128;
     int samples_per_pixel = 16;
     MitsubaVariant mitsubaVar = MitsubaVariant::CUDA;
+    RenderStyle renderStyle = RenderStyle::SILHOUETTE;
   };
   enum LossFunction
   {
     LOSS_MSE,
-    LOSS_MSE_SQRT
+    LOSS_MSE_SQRT,
+    LOSS_MIXED
   };
+
+  MitsubaInterface(const std::string &scripts_dir, const std::string &file_name);
+  ~MitsubaInterface();
+
   //basic mitsuba initialization, call before any other functions
-  void init(const std::string &scripts_dir, const std::string &file_name, RenderSettings render_settings);
+  void init_scene_and_settings(RenderSettings render_settings);
 
   void set_model_max_size(int model_max_size);
 
@@ -56,5 +67,6 @@ public:
   int model_max_size = 0;
   int iteration = 0;
   std::array<float *, 4> buffers = {nullptr, nullptr, nullptr, nullptr};
-  PyObject *pModule, *mitsubaContext;
+  PyObject *pModule = nullptr, *mitsubaContext = nullptr;
+  RenderSettings render_settings;
 };

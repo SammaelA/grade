@@ -16,7 +16,7 @@ CommandBuffer<RenderCommands> *renderCmdBuffer = nullptr;
 
 int main(int argc, char *argv[])
 {
-    if (argc == 2 && std::string(argv[1]) == "-sandbox")
+    if (argc >= 2 && std::string(argv[1]) == "-sandbox")
     {
       sandbox_main(argc, argv, nullptr);
       return 0;

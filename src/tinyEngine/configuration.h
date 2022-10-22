@@ -1,0 +1,1 @@
+const unsigned int VIEW_ANTIALIASING = 0;
