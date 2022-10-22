@@ -549,7 +549,8 @@ namespace dgen
   void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.09,0.9*params[9],0.09});
+    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
+    transform(spline, sc);
     //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
 
     std::vector<dvec3> spline1 = create_spline_for_handle(params, 10, 0, 1);
@@ -563,7 +564,8 @@ namespace dgen
 
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
-    transform(vert, sc);
+    dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
+    transform(vert, sc2);
   }
 
   dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
