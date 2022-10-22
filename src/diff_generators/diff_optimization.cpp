@@ -455,16 +455,76 @@ namespace dopt
 
   void test()
   {
+    std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                                        0.4,// y_scale
+                                        0.05, 0.35, 0.35, //hand params
+                                        PI/5, PI, 0, 0, 0, 0};//rotation and transform
+    std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
+                                   1,
+                                   0.05, 0.1, 0.1,
+                                   0, PI, 0, 0, 0, 0};
+    std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                   1,
+                                   1, 1, 1,
+                                   1, 1, 1, 1, 1, 1};
+    Block settings_blk;
+    settings_blk.add_string("parameters_description", "dishes_gen_parameters_description.blk");
+    settings_blk.add_string("scene_description", "diff_gen_scene_parameters_description.blk");
+    settings_blk.add_bool("synthetic_reference", false);
+    settings_blk.add_string("reference_path", "resources/textures/cup1.jpg");
+
+    image_based_optimization(settings_blk);
+  }
+
+  float image_based_optimization(Block &settings_blk)
+  {
     Block gen_params, scene_params;
     std::vector<float> params_min, params_max;
     std::vector<unsigned short> init_bins_count;
     std::vector<unsigned short> init_bins_positions;
-    load_block_from_file("dishes_gen_parameters_description.blk", gen_params);
-    load_block_from_file("diff_gen_scene_parameters_description.blk", scene_params);
-
+    load_block_from_file(settings_blk.get_string("parameters_description"), gen_params);
+    load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
     int have_init_bins_cnt = 0;
+    size_t x_n = gen_params_cnt + scene_params_cnt;
+
+    int verbose_level = settings_blk.get_int("verbose_level", 1);
+    int ref_image_size = settings_blk.get_int("reference_image_size", 512);
+    int sel_image_size = settings_blk.get_int("selection_image_size", 196);
+    bool simple_search = settings_blk.get_bool("simple_search_algorithm", true);
+    bool by_reference = settings_blk.get_bool("synthetic_reference", true);
+    std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
+    std::string saved_initial_path = settings_blk.get_string("saved_initial_path", "");
+    std::string reference_path = settings_blk.get_string("reference_path", "");
+
+    std::vector<float> reference_params, init_params, params_mask;
+    if (by_reference)
+    {
+      settings_blk.get_arr("reference_params", reference_params);
+      if (reference_params.size() != x_n)
+      {
+        logerr("DOpt Error: reference_params has %d values, it should have %d", reference_params.size(), x_n);
+        return 1.0;
+      }
+    }
+
+    settings_blk.get_arr("params_mask", params_mask);
+    if (params_mask.empty())
+      params_mask = std::vector<float>(x_n, 1);
+    else if (params_mask.size() != x_n)
+    {
+      logerr("DOpt Error: params_mask has %d values, it should have %d", params_mask.size(), x_n);
+      return 1.0;
+    }
+
+    settings_blk.get_arr("init_params", init_params);
+    if (init_params.size() != x_n && init_params.size() > 0)
+    {
+      logerr("DOpt Error: init_params has %d values, it should have %d", params_mask.size(), x_n);
+      return 1.0;
+    }
+
     auto process_blk = [&](Block &blk){
       for (int i=0;i<blk.size();i++)
       {
@@ -498,27 +558,18 @@ namespace dopt
     process_blk(gen_params);
     process_blk(scene_params);
 
-    size_t x_n = gen_params_cnt + scene_params_cnt;
+    if (init_params.empty())
+    {
+      init_params = std::vector<float>(x_n, 0);
+      for (int i=0;i<x_n;i++)
+      {
+        init_params[i] = 0.5*(params_min[i] + params_max[i]);
+      }
+    }
+
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d need start point selection\n", 
           x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt);
-    
-    std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                                        0.4,// y_scale
-                                        0.05, 0.35, 0.35, //hand params
-                                        PI/5, PI, 0, 0, 0, 0};//rotation and transform
-    //reference_params = std::vector<float>{4.281, 4.277, 4.641, 4.702, 4.639, 4.102, 3.748, 3.413, 3.771, 0.079, 0.013, 0.051, 0.659, 2.917, 0.098, 0.192, 0.210, 0.054};
-    std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
-                                   1,
-                                   0.05, 0.1, 0.1,
-                                   0, PI, 0, 0, 0, 0};
-    std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                   1,
-                                   1, 1, 1,
-                                   1, 1, 1, 1, 1, 1};
-    int ref_image_size = 512;
-    int sel_image_size = 196;
-    bool simple_search = true;
-    bool by_reference = true;
+
     CppAD::ADFun<float> f_reg;
     {
       std::vector<dgen::dfloat> X(init_params.size());
@@ -534,11 +585,10 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(dgen::create_cup, gen_params_cnt);
 
-    std::vector<float> reference = func.get(reference_params);
-
     MitsubaInterface mi("scripts", "emb_test");
     if (by_reference)
     {
+      std::vector<float> reference = func.get(reference_params);
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
       mi.render_model_to_file(reference, "saves/reference.png");
       Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
@@ -548,7 +598,7 @@ namespace dopt
     }
     else
     {
-      Texture t = engine::textureManager->load_unnamed_tex("resources/textures/cup1.jpg");
+      Texture t = engine::textureManager->load_unnamed_tex(reference_path);
       SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
       Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
       engine::textureManager->save_png_directly(tex, "saves/reference.png");
@@ -562,128 +612,140 @@ namespace dopt
 
     if (simple_search)
     {
+      int iterations = settings_blk.get_int("simple_search_iterations", 40);
       OptimizationUnitGD opt_unit;
-      opt_unit.init(0, init_params, func, mi, params_min, params_max, &f_reg, params_mask);
-      for (int j=0;j<40;j++)
+      opt_unit.init(0, init_params, func, mi, params_min, params_max, &f_reg, params_mask, verbose_level == 2);
+      for (int j=0;j<iterations;j++)
       {
           opt_unit.iterate();
-          opt_unit.print_current_state();
+          if (verbose_level > 0)
+            opt_unit.print_current_state();
       }
-      opt_unit.print_stat();
+      if (verbose_level > 0)
+        opt_unit.print_stat();
       best_params = opt_unit.best_params;
       best_err = opt_unit.best_error;
       total_iters = opt_unit.iterations;
     }
     else
     {
-    int full_cnt = 4;
-    int use_cnt = 8;
-    int base_iters = 200;
-    int gd_iters = 5;
-    std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
-    std::vector<OptimizationUnitGD> opt_units(full_cnt);
-    std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
-    std::vector<int> indices_to_sort(full_cnt);
-    int next_unit_id = 0;
-    for (int i=0;i<full_cnt;i++)
-    {
-      indices_to_sort[i] = i;
-      std::vector<unsigned short> descr(have_init_bins_cnt, 0);
-      bool searching = true;
-      int tries = 0;
-      while (searching && tries<1000)
+      int full_cnt = settings_blk.get_int("advanced_search_start_points", 4);
+      int base_iters = settings_blk.get_int("advanced_search_base_iterations", 200);
+      int gd_iters = settings_blk.get_int("advanced_search_gd_iterations_per_base_iteration", 1);
+      
+      std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
+      std::vector<OptimizationUnitGD> opt_units(full_cnt);
+      std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
+      std::vector<int> indices_to_sort(full_cnt);
+      int next_unit_id = 0;
+      for (int i=0;i<full_cnt;i++)
       {
-        for (int j=0;j<have_init_bins_cnt;j++)
+        indices_to_sort[i] = i;
+        std::vector<unsigned short> descr(have_init_bins_cnt, 0);
+        bool searching = true;
+        int tries = 0;
+        while (searching && tries<1000)
         {
-          int max_bins = init_bins_count[init_bins_positions[j]];
-          int bin = urandi(0, max_bins);
-          descr[j] = bin;
+          for (int j=0;j<have_init_bins_cnt;j++)
+          {
+            int max_bins = init_bins_count[init_bins_positions[j]];
+            int bin = urandi(0, max_bins);
+            descr[j] = bin;
+          }
+          tries++;
+          if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
+            searching = false;
         }
-        tries++;
-        if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
-          searching = false;
-      }
 
-      if (!searching)
-      {
-        opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
-        std::vector<float> params = init_params;
-        for (int j=0;j<have_init_bins_cnt;j++)
+        if (!searching)
         {
-          int pos = init_bins_positions[j];
-          float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[pos];
-          float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[pos];
-          params[pos] = urand(val_from, val_to);
+          opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
+          std::vector<float> params = init_params;
+          for (int j=0;j<have_init_bins_cnt;j++)
+          {
+            int pos = init_bins_positions[j];
+            float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[pos];
+            float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[pos];
+            params[pos] = urand(val_from, val_to);
+          }
+          opt_unit_bins[i] = descr;
+          opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, &f_reg, params_mask, verbose_level == 2);
+          next_unit_id++;
         }
-        opt_unit_bins[i] = descr;
-        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, &f_reg, params_mask);
-        next_unit_id++;
       }
-    }
-    for (int i=0;i<base_iters;i++)
-    {
-      /*choose a few best
-      int iter_cnt = MAX(2, use_cnt - 0.33*i);
-      if (i < 3)
-        iter_cnt = full_cnt;
-      for (int j=0;j<iter_cnt;j++)
+      for (int i=0;i<base_iters;i++)
       {
-        for (int k=0;k<gd_iters;k++)
-          opt_units[indices_to_sort[j]].iterate();
-      }
-      */
-     //choose random, chance proportional to quality
-      std::vector<double> sums;
-      for (auto &unit : opt_units)
-      {
-        if (sums.empty())
-          sums.push_back(unit.quality);
-        else
-          sums.push_back(sums.back() + unit.quality);
-      }
-      double rnd = urand(0, sums.back());
-      for (int j=0;j<sums.size();j++)
-      {
-        if (sums[j] > rnd)
+        /*choose a few best
+        int use_cnt = 8;
+        int iter_cnt = MAX(2, use_cnt - 0.33*i);
+        if (i < 3)
+          iter_cnt = full_cnt;
+        for (int j=0;j<iter_cnt;j++)
         {
           for (int k=0;k<gd_iters;k++)
-            opt_units[j].iterate();
-          break;
+            opt_units[indices_to_sort[j]].iterate();
+        }
+        */
+      //choose random, chance proportional to quality
+        std::vector<double> sums;
+        for (auto &unit : opt_units)
+        {
+          if (sums.empty())
+            sums.push_back(unit.quality);
+          else
+            sums.push_back(sums.back() + unit.quality);
+        }
+        double rnd = urand(0, sums.back());
+        for (int j=0;j<sums.size();j++)
+        {
+          if (sums[j] > rnd)
+          {
+            for (int k=0;k<gd_iters;k++)
+              opt_units[j].iterate();
+            break;
+          }
+        }
+
+        std::sort(indices_to_sort.begin(), indices_to_sort.end(), 
+                  [&](const int& a, const int& b) -> bool{return opt_units[a].quality > opt_units[b].quality;});
+        if (verbose_level > 0)
+        {
+          for (int ind : indices_to_sort)
+          {
+            opt_units[ind].print_current_state();
+          }
+          debugnl();
         }
       }
-
-      std::sort(indices_to_sort.begin(), indices_to_sort.end(), 
-                [&](const int& a, const int& b) -> bool{return opt_units[a].quality > opt_units[b].quality;});
-      for (int ind : indices_to_sort)
+      for (auto &unit : opt_units)
       {
-        opt_units[ind].print_current_state();
+        total_iters += unit.iterations;
+        if (unit.best_error < best_err)
+        {
+          best_err = unit.best_error;
+          best_params = unit.best_params;
+        }
       }
-      debugnl();
-    }
-    for (auto &unit : opt_units)
-    {
-      total_iters += unit.iterations;
-      if (unit.best_error < best_err)
-      {
-        best_err = unit.best_error;
-        best_params = unit.best_params;
-      }
-    }
     }
     
     std::vector<float> best_model = func.get(best_params);
-    std::vector<float> initial_model = func.get(init_params);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, "saves/selected_final.png");
-    mi.render_model_to_file(initial_model, "saves/selected_initial.png");
-    debug("Model optimization finished. %d iterations total. Best result saved to \"saves/selected.png\"\n", total_iters);
+    mi.render_model_to_file(best_model, saved_result_path);
+    if (saved_initial_path != "")
+    {
+      std::vector<float> initial_model = func.get(init_params);
+      mi.render_model_to_file(initial_model, saved_initial_path);
+    }
+    debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", best_err);
     debug("Best params: [");
     for (int j = 0; j < x_n; j++)
     {
-      debug("%.3f, ", best_params[j]);
+      debug("%.3f, ", init_params[j]);
     }
     debug("]\n");
     mi.finish();
+
+    return best_err;
   }
 }
