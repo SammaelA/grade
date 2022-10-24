@@ -472,11 +472,12 @@ namespace dopt
     settings_blk.add_string("scene_description", "diff_gen_scene_parameters_description.blk");
     settings_blk.add_bool("synthetic_reference", false);
     settings_blk.add_string("reference_path", "resources/textures/cup1.jpg");
-
-    image_based_optimization(settings_blk);
+    
+    MitsubaInterface mi("scripts", "emb_test");
+    image_based_optimization(settings_blk, mi);
   }
 
-  float image_based_optimization(Block &settings_blk)
+  float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
     Block gen_params, scene_params;
     std::vector<float> params_min, params_max;
@@ -585,7 +586,6 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(dgen::create_cup, gen_params_cnt);
 
-    MitsubaInterface mi("scripts", "emb_test");
     if (by_reference)
     {
       std::vector<float> reference = func.get(reference_params);

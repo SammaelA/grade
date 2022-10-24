@@ -13,6 +13,7 @@
 #include "parameter_selection/neural_selection.h"
 #include "diff_generators/diff_geometry_generation.h"
 #include "diff_generators/diff_optimization.h"
+#include "diff_generators/mitsuba_python_interaction.h"
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -230,7 +231,6 @@ float f(float x)
 void sandbox_main(int argc, char **argv, Scene *scene)
 {
   // we don't init engine in sandbox, so need to init textures manager
- 
   View view;
   view.lineWidth = 1.0f;
   view.init("Sandbox", 256, 256);
@@ -239,13 +239,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   Block textures_list;
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
- /*
-  Texture t = engine::textureManager->load_unnamed_tex(image::base_img_path + "cup.png");
-  SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-  Texture tex = se.get_silhouette(t);
-  engine::view->next_frame();
-  return;
-*/
+
   if (argc >= 3 && (std::string(argv[2]) == "help" || 
       std::string(argv[2]) == "-help" || std::string(argv[2]) == "-h"))
   {
@@ -269,31 +263,57 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     logerr("Silhouette test completed. Saved to saves/silhouette_test.png");
     return;
   }
+  else if ((argc >= 3 && std::string(argv[2]) == "-check_stability"))
+  {
+    std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                                        0.4,// y_scale
+                                        0.05, 0.35, 0.35};//rotation and transform
+    dgen::check_stability(dgen::create_cup, reference_params, 4);
+    return;
+  }
+  else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
+  {
+    std::string blk_name = std::string(argv[3]);
+    Block b;
+    load_block_from_file(blk_name, b);
+    std::vector<std::string> reference_images;
+    for (int i=0;i<b.size();i++)
+    {
+      if (b.get_name(i) == "reference")
+      {
+        reference_images.push_back(b.get_string(i));
+      }
+    }
+    if (reference_images.empty())
+    {
+      logerr("no reference images found in blk");
+      return;
+    }
+    float av_loss = 0;
+    MitsubaInterface mi("scripts", "emb_test");
+    for (std::string &ref : reference_images)
+    {
+      b.set_string("reference_path", ref);
+      av_loss += dopt::image_based_optimization(b, mi);
+    }
+    av_loss /= reference_images.size();
+    debug("Benchmak finished. %d images tested\n", reference_images.size());
+    debug("Average loss: %.4f\n", av_loss);
+    return;
+  }
   else
   {
     logerr("unknows sandbox command");
     logerr("./main -sandbox -h -- print help");
     logerr("./main -sandbox -opt -- optimization");
-    logerr("./main -sandbox -sil_test -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
+    logerr("./main -sandbox -sil_test <filename> -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
+    logerr("./main -sandbox -check_stability -- checks stability of diff procedural generator (dgen::create_cup)");
+    logerr("./main -sandbox -opt_benchmark <blk> -- performs optimization with different references and settings (all set in blk)");
     return;
   }
+  return;
   //std::vector<float> model;
   //dgen::dgen_test(model);
-  std::vector<float> X0(12);
-    X0[0] = 4 - 1.45;
-    X0[1] = 4 - 1.0;
-    X0[2] = 4 - 0.65;
-    X0[3] = 4 - 0.45;
-    X0[4] = 4 - 0.25;
-    X0[5] = 4 - 0.18;
-    X0[6] = 4 - 0.1;
-    X0[7] = 4 - 0.05;
-    X0[8] = 4 - 0;
-    X0[9] = 0.08;//0.3 + 0.81;
-    X0[10] = 0.17;//0.3 + 1.0;
-    X0[11] = 0.83;//0.3 + 1.21;
-  dgen::check_stability(dgen::create_cup, X0, 4);
-  return;
 
   int quantiles[101];
   for (int i = 0; i < 101; i++)
