@@ -14,6 +14,7 @@
 #include "diff_generators/diff_geometry_generation.h"
 #include "diff_generators/diff_optimization.h"
 #include "diff_generators/mitsuba_python_interaction.h"
+#include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -291,13 +292,18 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     float av_loss = 0;
     MitsubaInterface mi("scripts", "emb_test");
-    for (std::string &ref : reference_images)
+    int count = MIN(b.get_int("count",1000), reference_images.size());
+    for (int i=0;i<count;i++)
     {
+      std::string &ref = reference_images[i];
       b.set_string("reference_path", ref);
+      std::vector<std::string> split_res;
+      boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
+      std::string save_name = "saves/"+split_res.back()+"_result";
       av_loss += dopt::image_based_optimization(b, mi);
     }
-    av_loss /= reference_images.size();
-    debug("Benchmak finished. %d images tested\n", reference_images.size());
+    av_loss /= count;
+    debug("Benchmak finished. %d images tested\n", count);
     debug("Average loss: %.4f\n", av_loss);
     return;
   }

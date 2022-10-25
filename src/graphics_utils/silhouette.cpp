@@ -5,6 +5,7 @@
 #include <vector>
 
 SilhouetteExtractor::SilhouetteExtractor(float blur_sigma, float low_thr, float high_thr):
+gauss(1.0f),
 canny(blur_sigma, low_thr, high_thr),
 fill_edges("fill_edges.fs"),
 fill_silhouette("fill_edges.fs"),
@@ -59,8 +60,10 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   engine::textureManager->save_png(canny_tex, "initial_mask");
   engine::textureManager->save_png(res, "res_tex");
 
+  Texture res_blurred = gauss.perform_gauss_blur(res);
+
   delete_framebuffer(fbo);
   engine::view->next_frame();
 
-  return res;
+  return res_blurred;
 }
