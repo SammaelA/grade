@@ -221,13 +221,20 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   Py_DECREF(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const std::vector<float> &model)
+float MitsubaInterface::render_and_compare(const std::vector<float> &model, double *timers)
 {
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   model_to_ctx(model);
+  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float loss = render_and_compare_internal();
+  std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
   get_array_from_ctx_internal("vertex_positions_grad", 0);
   get_array_from_ctx_internal("vertex_normals_grad", 1);
   get_array_from_ctx_internal("vertex_texcoords_grad", 2);
+  std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+  timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+  timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+  timers[4] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
   return loss;
 }
 

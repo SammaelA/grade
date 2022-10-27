@@ -339,7 +339,7 @@ namespace dopt
       std::vector<float> res = func->get(params); 
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
-      float loss = mi->render_and_compare(res);
+      float loss = mi->render_and_compare(res, timers);
       std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
       mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
       std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
@@ -392,10 +392,10 @@ namespace dopt
       std::chrono::steady_clock::time_point t8 = std::chrono::steady_clock::now();
       timers[0] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       timers[1] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
-      timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t5 - t3).count();
-      timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count();
-      timers[4] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
-      timers[5] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
+      //timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t5 - t3).count();
+      timers[5] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count();
+      timers[6] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
+      timers[7] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
     }
 
     ~OptimizationUnitGD()
@@ -433,8 +433,8 @@ namespace dopt
       debug("Best value: %.4f\n", best_error);
       debug("Total time: %.3f s\n", total_time);
       std::vector<std::string> markers = {
-        "Model jacobian calculation", "Model calculation", "Rendering", "Final Gradient calculation",
-        "Debug print", "Optimizaiton"
+        "Model jacobian calculation", "Model calculation", "Send model to mitsuba", "Rendering", "Get result from mitsuba",
+        "Final Gradient calculation", "Debug print", "Optimizaiton"
       };
       for (int i=0;i<markers.size();i++)
       {
@@ -764,6 +764,8 @@ namespace dopt
           best_err = unit.best_error;
           best_params = unit.best_params;
         }
+        if (verbose_level > 0)
+          unit.print_stat();
       }
     }
     

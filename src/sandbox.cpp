@@ -300,7 +300,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       b.set_string("reference_path", ref);
       std::vector<std::string> split_res;
       boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
-      std::string save_name = "saves/"+split_res.back()+"_result";
+      std::string save_name = "saves/"+split_res.back()+"_result.png";
+      b.set_string("saved_result_path", save_name);
       av_loss += dopt::image_based_optimization(b, mi);
     }
     av_loss /= count;
