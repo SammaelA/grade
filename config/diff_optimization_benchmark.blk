@@ -1,30 +1,30 @@
 {
   //list of reference images
-  count:i = 1
+  count:i = 3
 
   reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
   reference:s = "resources/textures/DishesData/cup_3.jpg"
-  reference:s = "resources/textures/DishesData/cup_4.jpg"
+  //reference:s = "resources/textures/DishesData/cup_4.jpg"
   reference:s = "resources/textures/DishesData/cup_5.jpg"
-  reference:s = "resources/textures/DishesData/cup_6.jpg"
+  //reference:s = "resources/textures/DishesData/cup_6.jpg"
 
-  reference:s = "resources/textures/DishesData/plate_1.jpg"
+  //reference:s = "resources/textures/DishesData/plate_1.jpg"
   reference:s = "resources/textures/DishesData/plate_2.jpg"
   reference:s = "resources/textures/DishesData/plate_3.jpg"
-  reference:s = "resources/textures/DishesData/plate_4.jpg"
+  //reference:s = "resources/textures/DishesData/plate_4.jpg"
   reference:s = "resources/textures/DishesData/plate_5.jpg"
   reference:s = "resources/textures/DishesData/plate_6.jpg"
   reference:s = "resources/textures/DishesData/plate_7.jpg"
   reference:s = "resources/textures/DishesData/plate_8.jpg"
   reference:s = "resources/textures/DishesData/plate_9.jpg"
-  reference:s = "resources/textures/DishesData/plate_10.jpg"
+  //reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
-  simple_search_algorithm:b = false
+  simple_search_algorithm:b = true
 
   //active is simple search is true
-  simple_search_iterations:i = 400
+  simple_search_iterations:i = 250
 
   //active is simple search is false
   advanced_search_start_points:i = 8
