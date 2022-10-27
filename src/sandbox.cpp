@@ -268,7 +268,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
                                         0.4,// y_scale
-                                        0.05, 0.35, 0.35};//rotation and transform
+                                        1, //has handle variant
+                                        0.05, 0.35, 0.35};//handle params
     dgen::check_stability(dgen::create_cup, reference_params, 4);
     return;
   }

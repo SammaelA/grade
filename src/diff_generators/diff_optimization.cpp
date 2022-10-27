@@ -13,6 +13,22 @@
 
 namespace dopt
 {
+  class UShortVecComparator
+  {
+  public:
+    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2) const
+    {
+      for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
+      {
+        if (v1[i] < v2[i])
+          return true;
+        else if (v1[i] > v2[i])
+          return false;
+      }
+      return false;
+    }
+  };
+
   class Optimizer
   {
   public:
@@ -190,7 +206,7 @@ namespace dopt
         for (int i=0;i<cur_x.size();i++)
         {
           float rnd = mask[i]*urand();
-          next_x[i] = (1-rnd)*prev_x[i] + rnd*cur_x[i];
+          next_x[i] = rnd*prev_x[i] + (1-rnd)*cur_x[i];
         } 
       }
       return next_x;
@@ -219,10 +235,11 @@ namespace dopt
           delete f;
       }
     }
-    void init(dgen::generator_func _model_creator, int _model_creator_params_cnt)
+    void init(dgen::generator_func _model_creator, int _model_creator_params_cnt, std::vector<unsigned short> &variant_positions)
     {
       model_creator = _model_creator;
       model_creator_params_cnt = _model_creator_params_cnt;
+      variant_params_positions = variant_positions;
     }
     std::vector<float> get(const std::vector<float> &params)
     {
@@ -235,10 +252,14 @@ namespace dopt
   private:
     int find_or_add(const std::vector<float> &params)
     {
-      int hash = get_function_hash(params);
-      auto it = hash_to_function_pos.find(hash);
-      if (it == hash_to_function_pos.end())
+      auto vs = get_variant_set(params);
+      auto it = variant_set_to_function_pos.find(vs);
+      if (it == variant_set_to_function_pos.end())
       {
+        debug("added new function {");
+        for (auto &v : vs)
+          debug("%d ", (int)v);
+        debug("}\n");
         std::vector<dgen::dfloat> X(params.size());
         for (int i=0;i<params.size();i++)
           X[i] = params[i];
@@ -250,22 +271,28 @@ namespace dopt
         functions.push_back(f);
         output_sizes.push_back(Y.size());
         int f_pos = functions.size()-1;
-        hash_to_function_pos.emplace(hash, f_pos);
+        variant_set_to_function_pos.emplace(vs, f_pos);
 
         return f_pos;
       }
       return it->second;
     }
 
-    int get_function_hash(const std::vector<float> &params)
+    std::vector<unsigned short> get_variant_set(const std::vector<float> &params)
     {
-      return 0;
+      std::vector<unsigned short> vs;
+      for (auto &pos : variant_params_positions)
+      {
+        vs.push_back((unsigned short)round(params[pos]));
+      }
+      return vs;
     }
     int model_creator_params_cnt = 0;
     dgen::generator_func model_creator;
-    std::map<int, int> hash_to_function_pos;
+    std::map<std::vector<unsigned short>, int, UShortVecComparator> variant_set_to_function_pos;
     std::vector<CppAD::ADFun<float> *> functions;
     std::vector<int> output_sizes;//same size as functions vector
+    std::vector<unsigned short> variant_params_positions;
   };
 
   struct OptimizationUnitGD
@@ -437,33 +464,20 @@ namespace dopt
     float quality = 10000;
   };
 
-  class UShortVecComparator
-  {
-  public:
-    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2) const
-    {
-      for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
-      {
-        if (v1[i] < v2[i])
-          return true;
-        else if (v1[i] > v2[i])
-          return false;
-      }
-      return false;
-    }
-  };
-
   void test()
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
                                         0.4,// y_scale
+                                        1, //has handle variant
                                         0.05, 0.35, 0.35, //hand params
                                         PI/5, PI, 0, 0, 0, 0};//rotation and transform
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
                                    1,
+                                   1,
                                    0.05, 0.1, 0.1,
                                    0, PI, 0, 0, 0, 0};
     std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                   1,
                                    1,
                                    1, 1, 1,
                                    1, 1, 1, 1, 1, 1};
@@ -483,6 +497,9 @@ namespace dopt
     std::vector<float> params_min, params_max;
     std::vector<unsigned short> init_bins_count;
     std::vector<unsigned short> init_bins_positions;
+    std::vector<unsigned short> variant_count;
+    std::vector<unsigned short> variant_positions;
+
     load_block_from_file(settings_blk.get_string("parameters_description"), gen_params);
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
     int gen_params_cnt = gen_params.size();
@@ -541,16 +558,35 @@ namespace dopt
             logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i));
           params_min.push_back(min_max.x);
           params_max.push_back(min_max.y);
+
           int bins_cnt = pb->get_int("init_bins_count", 0);
+          bool is_variant = pb->get_bool("is_variant", false);
+          if (is_variant)
+          {
+            if (bins_cnt > 0)
+            {
+              logerr("invalid parameter description\"%s\". Variant parameter should not have explicit init_bins_count", blk.get_name(i));
+            }
+            int imin = round(min_max.x);
+            int imax = round(min_max.y);
+            if (abs((float)imin - min_max.x) > 1e-3 || abs((float)imax - min_max.y) > 1e-3)
+            {
+              logerr("invalid parameter description\"%s\". Variant parameter should have integer min max values", blk.get_name(i));
+            }
+            bins_cnt = imax - imin + 1;
+            variant_count.push_back(bins_cnt);
+            variant_positions.push_back(params_min.size()-1);
+          }
           if (bins_cnt<0 || bins_cnt>512)
           {
             bins_cnt = 0;
             logerr("invalid parameter description\"%s\". Bin count should be in [0, 512] interval", blk.get_name(i));
           }
-          init_bins_count.push_back((unsigned short)bins_cnt);
+
           if (bins_cnt>0)
           {
-            init_bins_positions.push_back(init_bins_count.size()-1);
+            init_bins_count.push_back((unsigned short)bins_cnt);
+            init_bins_positions.push_back(params_min.size()-1);
             have_init_bins_cnt++;
           }
         }
@@ -558,6 +594,9 @@ namespace dopt
     };
     process_blk(gen_params);
     process_blk(scene_params);
+
+    for (unsigned short &pos : variant_positions)
+      params_mask[pos] = 0;
 
     if (init_params.empty())
     {
@@ -568,8 +607,8 @@ namespace dopt
       }
     }
 
-    debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d need start point selection\n", 
-          x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt);
+    debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d SP %d var\n", 
+          x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt, variant_count.size());
 
     CppAD::ADFun<float> f_reg;
     {
@@ -584,7 +623,7 @@ namespace dopt
     }
 
     DiffFunctionEvaluator func;
-    func.init(dgen::create_cup, gen_params_cnt);
+    func.init(dgen::create_cup, gen_params_cnt, variant_positions);
 
     if (by_reference)
     {
@@ -648,7 +687,7 @@ namespace dopt
         {
           for (int j=0;j<have_init_bins_cnt;j++)
           {
-            int max_bins = init_bins_count[init_bins_positions[j]];
+            int max_bins = init_bins_count[j];
             int bin = urandi(0, max_bins);
             descr[j] = bin;
           }
@@ -664,8 +703,8 @@ namespace dopt
           for (int j=0;j<have_init_bins_cnt;j++)
           {
             int pos = init_bins_positions[j];
-            float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[pos];
-            float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[pos];
+            float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[j];
+            float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[j];
             params[pos] = urand(val_from, val_to);
           }
           opt_unit_bins[i] = descr;
@@ -741,7 +780,7 @@ namespace dopt
     debug("Best params: [");
     for (int j = 0; j < x_n; j++)
     {
-      debug("%.3f, ", init_params[j]);
+      debug("%.3f, ", best_params[j]);
     }
     debug("]\n");
     mi.finish();
