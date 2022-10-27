@@ -14,6 +14,7 @@
 #include "diff_generators/diff_geometry_generation.h"
 #include "diff_generators/diff_optimization.h"
 #include "diff_generators/mitsuba_python_interaction.h"
+#include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -267,7 +268,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
                                         0.4,// y_scale
-                                        0.05, 0.35, 0.35};//rotation and transform
+                                        1, //has handle variant
+                                        0.05, 0.35, 0.35};//handle params
     dgen::check_stability(dgen::create_cup, reference_params, 4);
     return;
   }
@@ -291,13 +293,19 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     float av_loss = 0;
     MitsubaInterface mi("scripts", "emb_test");
-    for (std::string &ref : reference_images)
+    int count = MIN(b.get_int("count",1000), reference_images.size());
+    for (int i=0;i<count;i++)
     {
+      std::string &ref = reference_images[i];
       b.set_string("reference_path", ref);
+      std::vector<std::string> split_res;
+      boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
+      std::string save_name = "saves/"+split_res.back()+"_result.png";
+      b.set_string("saved_result_path", save_name);
       av_loss += dopt::image_based_optimization(b, mi);
     }
-    av_loss /= reference_images.size();
-    debug("Benchmak finished. %d images tested\n", reference_images.size());
+    av_loss /= count;
+    debug("Benchmak finished. %d images tested\n", count);
     debug("Average loss: %.4f\n", av_loss);
     return;
   }

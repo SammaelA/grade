@@ -11,5 +11,6 @@ public:
   Texture get_silhouette(Texture &input, int w, int h);
 private:
   Canny canny;
-  PostFx fill_edges, detect_object, fill_silhouette, copy;
+  GaussFilter gauss;
+  PostFx fill_edges, detect_object, fill_silhouette, remove_holes, copy;
 };

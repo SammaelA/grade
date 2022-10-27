@@ -135,7 +135,8 @@ def render(it, context):
   vertex_count = int(len(params['model.vertex_positions'])/3)
   params['model.vertex_count'] = vertex_count
   params['model.face_count'] = int(vertex_count/3)
-  params['model.faces'] = list(range(vertex_count))
+  if (len(params['model.faces']) != vertex_count):
+    params['model.faces'] = list(range(vertex_count))
   params.update()
 
   dr.enable_grad(params['model.vertex_positions'])

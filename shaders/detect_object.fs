@@ -3,7 +3,7 @@
 in vec2 ex_Tex;
 uniform sampler2D tex_edges;
 uniform sampler2D tex_color;
-float color_thr;
+uniform float color_thr;
 uniform vec2 tex_size;
 out vec4 fragColor;
 
