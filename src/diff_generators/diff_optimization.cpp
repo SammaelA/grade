@@ -467,10 +467,10 @@ namespace dopt
   void test()
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                                        0.4,// y_scale
+                                        0.8,// y_scale
                                         1, //has handle variant
                                         0.05, 0.35, 0.35, //hand params
-                                        PI/5, PI, 0, 0, 0, 0};//rotation and transform
+                                        0, PI, 0, 0, 0, 0};//rotation and transform
     std::vector<float> init_params{4, 4, 4, 4, 4, 4, 4, 4, 4,
                                    1,
                                    1,
@@ -484,9 +484,13 @@ namespace dopt
     Block settings_blk;
     settings_blk.add_string("parameters_description", "dishes_gen_parameters_description.blk");
     settings_blk.add_string("scene_description", "diff_gen_scene_parameters_description.blk");
-    settings_blk.add_bool("synthetic_reference", false);
+    settings_blk.add_bool("synthetic_reference", true);
     settings_blk.add_string("reference_path", "resources/textures/cup1.jpg");
-    
+    settings_blk.add_arr("reference_params", reference_params);
+    settings_blk.add_arr("init_params", init_params);
+    settings_blk.add_arr("params_mask", params_mask);
+    settings_blk.add_int("simple_search_iterations", 100);
+
     MitsubaInterface mi("scripts", "emb_test");
     image_based_optimization(settings_blk, mi);
   }
