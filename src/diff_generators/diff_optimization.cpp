@@ -465,6 +465,177 @@ namespace dopt
     float quality = 10000;
   };
 
+  struct OptimizationResult
+  {
+    std::vector<float> best_params;
+    float best_err;
+    int total_iters;
+  };
+
+  void optimizer_simple_search(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
+                       std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
+                       std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                       std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                       OptimizationResult &opt_result)
+  {
+    int iterations = settings->get_int("iterations", 40);
+    OptimizationUnitGD opt_unit;
+    opt_unit.init(0, init_params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+    for (int j = 0; j < iterations; j++)
+    {
+      opt_unit.iterate();
+      if (verbose_level > 0)
+        opt_unit.print_current_state();
+    }
+    if (verbose_level > 0)
+      opt_unit.print_stat();
+
+    opt_result.best_params = opt_unit.best_params;
+    opt_result.best_err = opt_unit.best_error;
+    opt_result.total_iters = opt_unit.iterations;
+
+    if (save_stat_path != "")
+    {
+      // save optimization staticstics to csv
+      CSVData csv = CSVData({"iteration", "unit_id", "loss"});
+      int i = 0;
+      for (auto &val : opt_unit.best_error_stat)
+      {
+        std::vector<float> row{(float)i, (float)opt_unit.id, val};
+        csv.add_row(row);
+        i++;
+      }
+      CSVSaver saver;
+      saver.save_csv_in_file(csv, save_stat_path);
+    }
+  }
+
+  void optimizer_advanced_search(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
+                        std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
+                        std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                        std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                        OptimizationResult &opt_result)
+  {
+    int full_cnt = settings->get_int("start_points", 4);
+    int base_iters = settings->get_int("base_iterations", 200);
+    int gd_iters = settings->get_int("gd_iterations_per_base_iteration", 1);
+
+    std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
+    std::vector<OptimizationUnitGD> opt_units(full_cnt);
+    std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
+    std::vector<int> indices_to_sort(full_cnt);
+    int next_unit_id = 0;
+    for (int i = 0; i < full_cnt; i++)
+    {
+      indices_to_sort[i] = i;
+      std::vector<unsigned short> descr(have_init_bins_cnt, 0);
+      bool searching = true;
+      int tries = 0;
+      while (searching && tries < 1000)
+      {
+        for (int j = 0; j < have_init_bins_cnt; j++)
+        {
+          int max_bins = init_bins_count[j];
+          int bin = urandi(0, max_bins);
+          descr[j] = bin;
+        }
+        tries++;
+        if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
+          searching = false;
+      }
+
+      if (!searching)
+      {
+        opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
+        std::vector<float> params = init_params;
+        for (int j = 0; j < have_init_bins_cnt; j++)
+        {
+          int pos = init_bins_positions[j];
+          float val_from = params_min[pos] + descr[j] * (params_max[pos] - params_min[pos]) / init_bins_count[j];
+          float val_to = params_min[pos] + (descr[j] + 1) * (params_max[pos] - params_min[pos]) / init_bins_count[j];
+          params[pos] = urand(val_from, val_to);
+        }
+        opt_unit_bins[i] = descr;
+        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+        next_unit_id++;
+      }
+    }
+    for (int i = 0; i < base_iters; i++)
+    {
+      /*choose a few best
+      int use_cnt = 8;
+      int iter_cnt = MAX(2, use_cnt - 0.33*i);
+      if (i < 3)
+        iter_cnt = full_cnt;
+      for (int j=0;j<iter_cnt;j++)
+      {
+        for (int k=0;k<gd_iters;k++)
+          opt_units[indices_to_sort[j]].iterate();
+      }
+      */
+      // choose random, chance proportional to quality
+      std::vector<double> sums;
+      for (auto &unit : opt_units)
+      {
+        if (sums.empty())
+          sums.push_back(unit.quality);
+        else
+          sums.push_back(sums.back() + unit.quality);
+      }
+      double rnd = urand(0, sums.back());
+      for (int j = 0; j < sums.size(); j++)
+      {
+        if (sums[j] > rnd)
+        {
+          for (int k = 0; k < gd_iters; k++)
+            opt_units[j].iterate();
+          break;
+        }
+      }
+
+      std::sort(indices_to_sort.begin(), indices_to_sort.end(),
+                [&](const int &a, const int &b) -> bool
+                { return opt_units[a].quality > opt_units[b].quality; });
+      if (verbose_level > 0)
+      {
+        for (int ind : indices_to_sort)
+        {
+          opt_units[ind].print_current_state();
+        }
+        debugnl();
+      }
+    }
+    for (auto &unit : opt_units)
+    {
+      opt_result.total_iters += unit.iterations;
+      if (unit.best_error < opt_result.best_err)
+      {
+        opt_result.best_err = unit.best_error;
+        opt_result.best_params = unit.best_params;
+      }
+      if (verbose_level > 0)
+        unit.print_stat();
+    }
+
+    if (save_stat_path != "")
+    {
+      // save optimization staticstics to csv
+      CSVData csv = CSVData({"iteration", "unit_id", "loss"});
+      for (auto &unit : opt_units)
+      {
+        int i = 0;
+        for (auto &val : unit.best_error_stat)
+        {
+          std::vector<float> row{(float)i, (float)unit.id, val};
+          csv.add_row(row);
+          i++;
+        }
+      }
+      CSVSaver saver;
+      saver.save_csv_in_file(csv, save_stat_path);
+    }
+  }
+
   void test()
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
@@ -490,7 +661,10 @@ namespace dopt
     settings_blk.add_arr("reference_params", reference_params);
     settings_blk.add_arr("init_params", init_params);
     settings_blk.add_arr("params_mask", params_mask);
-    settings_blk.add_int("simple_search_iterations", 100);
+
+    Block opt_settings_block;
+    opt_settings_block.add_int("iterations", 100);
+    settings_blk.add_block("simple_search", &opt_settings_block);
 
     MitsubaInterface mi("scripts", "emb_test");
     image_based_optimization(settings_blk, mi);
@@ -515,8 +689,8 @@ namespace dopt
     int verbose_level = settings_blk.get_int("verbose_level", 1);
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     int sel_image_size = settings_blk.get_int("selection_image_size", 196);
-    bool simple_search = settings_blk.get_bool("simple_search_algorithm", true);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
+    std::string search_algorithm = settings_blk.get_string("search_algorithm", "simple_search");
     std::string save_stat_path = settings_blk.get_string("save_stat_path", "");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
     std::string saved_initial_path = settings_blk.get_string("saved_initial_path", "");
@@ -676,149 +850,31 @@ namespace dopt
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, false);
 
-    std::vector<float> best_params = init_params;
-    float best_err = 1000;
-    int total_iters = 0;
+    OptimizationResult opt_result{init_params, 1000, 0};
 
-    if (simple_search)
+    Block *opt_settings = settings_blk.get_block(search_algorithm);
+    if (!opt_settings)
     {
-      int iterations = settings_blk.get_int("simple_search_iterations", 40);
-      OptimizationUnitGD opt_unit;
-      opt_unit.init(0, init_params, func, mi, params_min, params_max, &f_reg, params_mask, verbose_level == 2);
-      for (int j=0;j<iterations;j++)
-      {
-          opt_unit.iterate();
-          if (verbose_level > 0)
-            opt_unit.print_current_state();
-      }
-      if (verbose_level > 0)
-        opt_unit.print_stat();
-      best_params = opt_unit.best_params;
-      best_err = opt_unit.best_error;
-      total_iters = opt_unit.iterations;
+      logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
+      return 1.0;
+    }
+    if (search_algorithm == "simple_search")
+    {
+      optimizer_simple_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
+                      have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
+    }
+    else if (search_algorithm == "advanced_search")
+    {
+      optimizer_advanced_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
+                       have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
     }
     else
     {
-      int full_cnt = settings_blk.get_int("advanced_search_start_points", 4);
-      int base_iters = settings_blk.get_int("advanced_search_base_iterations", 200);
-      int gd_iters = settings_blk.get_int("advanced_search_gd_iterations_per_base_iteration", 1);
-      
-      std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
-      std::vector<OptimizationUnitGD> opt_units(full_cnt);
-      std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
-      std::vector<int> indices_to_sort(full_cnt);
-      int next_unit_id = 0;
-      for (int i=0;i<full_cnt;i++)
-      {
-        indices_to_sort[i] = i;
-        std::vector<unsigned short> descr(have_init_bins_cnt, 0);
-        bool searching = true;
-        int tries = 0;
-        while (searching && tries<1000)
-        {
-          for (int j=0;j<have_init_bins_cnt;j++)
-          {
-            int max_bins = init_bins_count[j];
-            int bin = urandi(0, max_bins);
-            descr[j] = bin;
-          }
-          tries++;
-          if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
-            searching = false;
-        }
-
-        if (!searching)
-        {
-          opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
-          std::vector<float> params = init_params;
-          for (int j=0;j<have_init_bins_cnt;j++)
-          {
-            int pos = init_bins_positions[j];
-            float val_from = params_min[pos] + descr[j]*(params_max[pos] - params_min[pos])/init_bins_count[j];
-            float val_to = params_min[pos] + (descr[j]+1)*(params_max[pos] - params_min[pos])/init_bins_count[j];
-            params[pos] = urand(val_from, val_to);
-          }
-          opt_unit_bins[i] = descr;
-          opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, &f_reg, params_mask, verbose_level == 2);
-          next_unit_id++;
-        }
-      }
-      for (int i=0;i<base_iters;i++)
-      {
-        /*choose a few best
-        int use_cnt = 8;
-        int iter_cnt = MAX(2, use_cnt - 0.33*i);
-        if (i < 3)
-          iter_cnt = full_cnt;
-        for (int j=0;j<iter_cnt;j++)
-        {
-          for (int k=0;k<gd_iters;k++)
-            opt_units[indices_to_sort[j]].iterate();
-        }
-        */
-      //choose random, chance proportional to quality
-        std::vector<double> sums;
-        for (auto &unit : opt_units)
-        {
-          if (sums.empty())
-            sums.push_back(unit.quality);
-          else
-            sums.push_back(sums.back() + unit.quality);
-        }
-        double rnd = urand(0, sums.back());
-        for (int j=0;j<sums.size();j++)
-        {
-          if (sums[j] > rnd)
-          {
-            for (int k=0;k<gd_iters;k++)
-              opt_units[j].iterate();
-            break;
-          }
-        }
-
-        std::sort(indices_to_sort.begin(), indices_to_sort.end(), 
-                  [&](const int& a, const int& b) -> bool{return opt_units[a].quality > opt_units[b].quality;});
-        if (verbose_level > 0)
-        {
-          for (int ind : indices_to_sort)
-          {
-            opt_units[ind].print_current_state();
-          }
-          debugnl();
-        }
-      }
-      for (auto &unit : opt_units)
-      {
-        total_iters += unit.iterations;
-        if (unit.best_error < best_err)
-        {
-          best_err = unit.best_error;
-          best_params = unit.best_params;
-        }
-        if (verbose_level > 0)
-          unit.print_stat();
-      }
-
-      if (save_stat_path != "")
-      {
-        //save optimization staticstics to csv
-        CSVData csv = CSVData({"iteration","unit_id","loss"});
-        for (auto &unit : opt_units)
-        {
-          int i=0;
-          for (auto &val : unit.best_error_stat)
-          {
-            std::vector<float> row{(float)i, (float)unit.id, val};
-            csv.add_row(row);
-            i++;
-          }
-        }
-        CSVSaver saver;
-        saver.save_csv_in_file(csv, save_stat_path);
-      }
+      logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
+      return 1.0;
     }
     
-    std::vector<float> best_model = func.get(best_params);
+    std::vector<float> best_model = func.get(opt_result.best_params);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path);
     if (saved_initial_path != "")
@@ -826,16 +882,16 @@ namespace dopt
       std::vector<float> initial_model = func.get(init_params);
       mi.render_model_to_file(initial_model, saved_initial_path);
     }
-    debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", total_iters, saved_result_path.c_str());
-    debug("Best error: %f\n", best_err);
+    debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
+    debug("Best error: %f\n", opt_result.best_err);
     debug("Best params: [");
     for (int j = 0; j < x_n; j++)
     {
-      debug("%.3f, ", best_params[j]);
+      debug("%.3f, ", opt_result.best_params[j]);
     }
     debug("]\n");
     mi.finish();
 
-    return best_err;
+    return opt_result.best_err;
   }
 }
