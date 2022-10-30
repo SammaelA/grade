@@ -10,7 +10,7 @@ namespace dgen
   typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &)> generator_func;
   void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines = 100);
   void print_model(const std::vector<float> &res);
-  void dgen_test(std::vector<float> &model);
+  void dgen_test(std::vector<float> &params, std::vector<float> &model);
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
                           const std::vector<float> &params, std::vector<float> *jacobian = nullptr);
   bool check_stability(generator_func func, const std::vector<float> &params, int iterations);

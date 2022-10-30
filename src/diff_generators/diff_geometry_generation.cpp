@@ -717,12 +717,9 @@ namespace dgen
     return true;
   }
 
-  void dgen_test(std::vector<float> &model)
+  void dgen_test(std::vector<float> &params, std::vector<float> &model)
   {
-    std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                          1, 1, 
-                          0.08, 0.25, 0.5};//handle params
-    dgen_test_internal(model, create_cup, X0, X0);
+    dgen_test_internal(model, create_cup, params, params);
   }
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
                           const std::vector<float> &params, std::vector<float> *jacobian )
@@ -764,8 +761,11 @@ namespace dgen
   bool create_model_from_block(Block &bl, ComplexModel &mod)
   {
     Model *m = new Model();
+        std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
+                          1, 1, 
+                          0.08, 0.25, 0.5};//handle params
     std::vector<float> res;
-    dgen::dgen_test(res);
+    dgen::dgen_test(X0, res);
     visualizer::simple_mesh_to_model_332(res, m);
 
     mod.models.push_back(m);
