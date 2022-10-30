@@ -11,6 +11,6 @@
   y_scale{ values:p2 = 0.1, 1 init_bins_count:i = 5 desc:s = "Multiplier of y coordinate. Small value for dishes, large - for cups"}
   has_handle{ values:p2 = 0, 1 is_variant:b = true desc:s = "0 - no handle, 1 - has handle"}
   handle_radius{ values:p2 = 0.01, 0.1 desc:s = "handle radius"}
-  handle_upper_inner_point{ values:p2 = 0.0, 0.5 desc:s = "Upper of 2 points where handle is attached to the cup. It's y value minus radius"}
-  handle_distance_between_inner_points{ values:p2 = 0.0, 0.5 desc:s = "Handle size (y coord) minus 2*radius"}
+  handle_upper_inner_point{ values:p2 = 0.05, 0.5 desc:s = "Upper of 2 points where handle is attached to the cup. It's y value minus radius"}
+  handle_distance_between_inner_points{ values:p2 = 0.05, 0.5 desc:s = "Handle size (y coord) minus 2*radius"}
 }

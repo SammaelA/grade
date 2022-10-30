@@ -561,7 +561,7 @@ namespace dgen
       dfloat end_pos = params[handle_param_idx+1] + params[handle_param_idx+2] + params[handle_param_idx] + thick;
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
       spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
-      dfloat sin_p = sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick);
+      dfloat sin_p = smoothmin(sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick), 0.98, 8);
       spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, start_pos, end_pos, thick, 0, 1));
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
@@ -576,10 +576,11 @@ namespace dgen
     dfloat res = 0;
     for (int i = 0; i < params.size(); i++)
     {
-      res += smoothmax((params_min[i] + edge_size - params[i])/edge_size, 0.0f);
-      res += smoothmax((params[i] - (params_max[i] - edge_size))/edge_size, 0.0f);
+      res += smoothmax((params_min[i] + edge_size - params[i])/edge_size, 0.0f, 8);
+      res += smoothmax((params[i] - (params_max[i] - edge_size))/edge_size, 0.0f, 8);
     }
-    return smoothmax(smoothmax(res, 0), 0);
+    res = smoothmax(smoothmax(smoothmax(res, 0, 8), 0, 8), 0, 8);
+    return res;
   }
   dfloat parameters_cup_reg(const std::vector<dfloat> &params)
   {
@@ -587,9 +588,9 @@ namespace dgen
     dfloat res = 0;
     for (int i = 1; i < spline_offsets_cnt; i++)
     {
-      res += smoothmax(params[i-1] - params[i] - 0.01f, 0);
+      res += smoothmax(params[i-1] - params[i] - 0.01f, 0, 8);
     }
-    res = smoothmax(smoothmax(res, 0), 0);
+    res = smoothmax(smoothmax(smoothmax(res, 0, 8), 0, 8), 0, 8);
     return res;
   }
 
