@@ -1,6 +1,7 @@
 {
   //list of reference images
   count:i = 1
+  reference:s = "resources/textures/DishesData/plate_8.jpg"
   reference:s = "resources/textures/DishesData/plate_7.jpg"
   reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
@@ -21,7 +22,7 @@
   //reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
-  search_algorithm:s = "advanced_search"
+  search_algorithm:s = "memetic"
 
   simple_search 
   {
@@ -34,7 +35,12 @@
     base_iterations:i = 250
     gd_iterations_per_base_iteration:i = 1
   }
-  
+
+  memetic
+  {
+
+  }
+
   parameters_description:s = "dishes_gen_parameters_description.blk"
   scene_description:s = "diff_gen_scene_parameters_description.blk"
   synthetic_reference:b = false

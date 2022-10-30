@@ -315,6 +315,7 @@ namespace dopt
       func = &_func;
       mi = &_mi;
       params = init_params;
+      best_params = init_params;
       opt = new Adam2(0.015, params_mask);
       x_n = init_params.size();
       for (int i=0;i<8;i++)
@@ -636,6 +637,160 @@ namespace dopt
     }
   }
 
+  float get_quality_for_memetic(OptimizationUnitGD &unit)
+  {
+    float val_stat = 1 / (0.001 + unit.best_error);
+    float change_stat = 1;
+    if (unit.iterations >= 10)
+      change_stat = 1 - unit.best_error_stat[unit.best_error_stat.size() - 1 - 10] / (1e-9 + unit.best_error);
+    float decay_stat = MAX(0, 0.025 * (unit.iterations - unit.best_error_iter - 10));
+    return pow(val_stat, 2) * exp(change_stat) * exp(-decay_stat);
+  }
+
+  void optimizer_memetic(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
+                         std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
+                         std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                         std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                         OptimizationResult &opt_result)
+  {
+    int ga_iters = settings->get_int("genetic_algorithm_iterations", 10);
+    int gd_iters = settings->get_int("gradient_descent_iterations", 40);
+    int initial_population_size = settings->get_int("initial_population_size", 8);
+    float remove_chance = settings->get_double("remove_chance", 0.5);
+    float recombination_chance = settings->get_double("recombination_chance", 0.2);
+    float mutation_chance = settings->get_double("mutation_chance", 0.2);
+    float reinit_chance = settings->get_double("reinit_chance", 0.0);
+    float mutation_power = settings->get_double("mutation_power", 0.2);
+
+    int next_unit_id = 0;
+    int x_n = params_min.size();
+    std::vector<OptimizationUnitGD> population(initial_population_size);
+
+    auto init_random = [&](OptimizationUnitGD &unit)
+    {
+      std::vector<float> params(params_max.size());
+      for (int i=0; i<x_n;i++)
+      {
+        params[i] = params_min[i] + ((urand(0.25, 0.75)+urand(0.25, 0.75))/2)*(params_max[i] - params_min[i]);
+      }
+      unit.init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+      next_unit_id++;
+    };
+
+    auto mutate = [&](OptimizationUnitGD &unit, OptimizationUnitGD &u1)
+    {
+      std::vector<float> params(params_max.size());
+      for (int i=0; i<x_n;i++)
+      {
+        if (urand() < mutation_power)
+          params[i] = urand(params_min[i], params_max[i]);
+        else
+          params[i] = u1.best_params[i];
+      }
+      unit.init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+      next_unit_id++;
+    };
+
+    auto recombime = [&](OptimizationUnitGD &unit, OptimizationUnitGD &u1, OptimizationUnitGD &u2)
+    {
+      std::vector<float> params(params_max.size());
+      for (int i=0; i<x_n;i++)
+      {
+        if (urand() < 0.5)
+          params[i] = u1.best_params[i];
+        else
+          params[i] = u2.best_params[i];
+      }
+      unit.init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+      next_unit_id++;
+    };
+
+    //initialize population
+    for (int i=0;i<initial_population_size;i++)
+    {
+      init_random(population[i]);
+    }
+
+    //main loop of GA
+    for (int iter = 0; iter < ga_iters; iter++)
+    {
+      //improve current population with Gradient Descent
+      for (int unit_pos = 0; unit_pos < population.size(); unit_pos++)
+      {
+        auto &unit = population[unit_pos];
+        if (unit.id != -1)
+        {
+          int iters = gd_iters;
+          if (iter != 0)
+            iters = MAX(2,iters/(1+unit_pos));
+          for (int i=0;i<gd_iters;i++)
+            unit.iterate();
+        }
+      }
+
+      //sort current population by quality
+      std::vector<std::pair<int, float>> unit_indices(population.size());
+      for (int i=0;i<population.size();i++)
+      {
+        float quality = population[i].id >= 0 ? get_quality_for_memetic(population[i]) : -1;
+        unit_indices[i] = std::pair<int, float>(i, quality);
+      }
+      std::sort(unit_indices.begin(), unit_indices.end(), 
+                [&](const std::pair<int, float>& a, const std::pair<int, float>& b) -> bool{return a.second > b.second;});
+      
+      if (verbose_level > 0)
+      {
+        debug("iteration %d\n", iter);
+        for (int i=0;i<population.size();i++)
+        {
+          debug("[%d][%f][%f]\n", unit_indices[i].first, unit_indices[i].second, population[unit_indices[i].first].best_error);
+        }
+      }
+
+      //remove worst units and replace them with mutated, recombined or new random units
+      int remove_cnt = MIN(population.size() - 2, round(remove_chance * population.size()));
+      for (int i = 0; i < remove_cnt; i++)
+      {
+        //clear unit and mark it as invalid
+        auto &u = population[population.size() - 1 - i];
+        opt_result.total_iters += u.iterations;
+        u = OptimizationUnitGD();
+        u.id = -1;
+
+        float rnd = urand();
+        if (rnd < recombination_chance)
+        {
+          //choose two random units from existing ones and recombine them
+          auto &u1 = population[(int)urandi(0, population.size() - remove_cnt)];
+          auto &u2 = population[(int)urandi(0, population.size() - remove_cnt)];
+          recombime(u, u1, u2);
+        }
+        else if (rnd < recombination_chance + mutation_chance)
+        {
+          auto &u1 = population[(int)urandi(0, population.size() - remove_cnt)];
+          mutate(u, u1);
+        }
+        else if (rnd < recombination_chance + mutation_chance + reinit_chance)
+        {
+          init_random(u);
+        }
+      }
+      for (auto &unit : population)
+      {
+        if (unit.id >= 0)
+        {
+          if (iter == ga_iters - 1)
+            opt_result.total_iters += unit.iterations;
+          if (unit.best_error < opt_result.best_err)
+          {
+            opt_result.best_err = unit.best_error;
+            opt_result.best_params = unit.best_params;
+          }
+        }
+      }
+    }
+  }
+
   void test()
   {
     std::vector<float> reference_params{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
@@ -867,6 +1022,11 @@ namespace dopt
     {
       optimizer_advanced_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
                        have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
+    }
+    else if (search_algorithm == "memetic")
+    {
+      optimizer_memetic(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
+                        have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
     }
     else
     {
