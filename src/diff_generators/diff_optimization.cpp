@@ -476,7 +476,7 @@ namespace dopt
                                    1,
                                    1,
                                    0.05, 0.1, 0.1,
-                                   0, PI, 0, 0, 0, 1};
+                                   0, PI, 0, 0, 0, 0};
     std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
                                    1,
                                    1,
@@ -610,6 +610,31 @@ namespace dopt
       for (int i=0;i<x_n;i++)
       {
         init_params[i] = 0.5*(params_min[i] + params_max[i]);
+      }
+    }
+    else 
+    {
+      for (int i=0;i<x_n;i++)
+      {
+        if (init_params[i] < params_min[i] || init_params[i] > params_max[i])
+        {
+          logerr("Wrong initial value %f for parameter %d. In should be in [%f, %f] interval",
+                 init_params[i], i, params_min[i], params_max[i]);
+          init_params[i] = CLAMP(init_params[i], params_min[i], params_max[i]);
+        }
+      }
+    }
+
+    if (!reference_params.empty())
+    {
+      for (int i=0;i<x_n;i++)
+      {
+        if (reference_params[i] < params_min[i] || reference_params[i] > params_max[i])
+        {
+          logerr("Wrong reference value %f for parameter %d. In should be in [%f, %f] interval",
+                 reference_params[i], i, params_min[i], params_max[i]);
+          reference_params[i] = CLAMP(reference_params[i], params_min[i], params_max[i]);
+        }
       }
     }
 
