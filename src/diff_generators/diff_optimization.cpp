@@ -10,6 +10,7 @@
 #include "common_utils/blk.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/silhouette.h"
+#include "save_utils/csv.h"
 
 namespace dopt
 {
@@ -475,7 +476,7 @@ namespace dopt
                                    1,
                                    1,
                                    0.05, 0.1, 0.1,
-                                   0, PI, 0, 0, 0, 0};
+                                   0, PI, 0, 0, 0, 1};
     std::vector<float> params_mask{1, 1, 1, 1, 1, 1, 1, 1, 1,
                                    1,
                                    1,
@@ -516,6 +517,7 @@ namespace dopt
     int sel_image_size = settings_blk.get_int("selection_image_size", 196);
     bool simple_search = settings_blk.get_bool("simple_search_algorithm", true);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
+    std::string save_stat_path = settings_blk.get_string("save_stat_path", "");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
     std::string saved_initial_path = settings_blk.get_string("saved_initial_path", "");
     std::string reference_path = settings_blk.get_string("reference_path", "");
@@ -770,6 +772,24 @@ namespace dopt
         }
         if (verbose_level > 0)
           unit.print_stat();
+      }
+
+      if (save_stat_path != "")
+      {
+        //save optimization staticstics to csv
+        CSVData csv = CSVData({"iteration","unit_id","loss"});
+        for (auto &unit : opt_units)
+        {
+          int i=0;
+          for (auto &val : unit.best_error_stat)
+          {
+            std::vector<float> row{(float)i, (float)unit.id, val};
+            csv.add_row(row);
+            i++;
+          }
+        }
+        CSVSaver saver;
+        saver.save_csv_in_file(csv, save_stat_path);
       }
     }
     
