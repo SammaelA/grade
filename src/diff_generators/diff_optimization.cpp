@@ -475,7 +475,7 @@ namespace dopt
 
   void optimizer_simple_search(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
                        std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
-                       std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                       std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                        std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
                        OptimizationResult &opt_result)
   {
@@ -511,9 +511,49 @@ namespace dopt
     }
   }
 
+  std::vector<float> get_new_init_point(std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
+                                        std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                                        std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins,
+                                        int unit_id, bool fill_rest_with_random)
+  {
+    std::vector<unsigned short> descr(init_bins_count.size(), 0);
+    bool searching = true;
+    int tries = 0;
+    while (searching && tries < 1000)
+    {
+      for (int j = 0; j < init_bins_count.size(); j++)
+      {
+        int max_bins = init_bins_count[j];
+        int bin = urandi(0, max_bins);
+        descr[j] = bin;
+      }
+      tries++;
+      if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
+        searching = false;
+    }
+    opt_unit_by_init_value_bins.emplace(descr, unit_id);
+    std::vector<float> params = init_params;
+    if (fill_rest_with_random)
+    {
+      for (int i=0; i<params.size();i++)
+      {
+        params[i] = params_min[i] + ((urand(0.25, 0.75)+urand(0.25, 0.75))/2)*(params_max[i] - params_min[i]);
+      }
+    }
+    for (int j = 0; j < init_bins_count.size(); j++)
+    {
+      int pos = init_bins_positions[j];
+      float val_from = params_min[pos] + descr[j] * (params_max[pos] - params_min[pos]) / init_bins_count[j];
+      float val_to = params_min[pos] + (descr[j] + 1) * (params_max[pos] - params_min[pos]) / init_bins_count[j];
+      params[pos] = urand(val_from, val_to);
+    }
+
+    return params;
+  }
+
   void optimizer_advanced_search(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
                         std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
-                        std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                        std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                         std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
                         OptimizationResult &opt_result)
   {
@@ -523,43 +563,15 @@ namespace dopt
 
     std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
     std::vector<OptimizationUnitGD> opt_units(full_cnt);
-    std::vector<std::vector<unsigned short>> opt_unit_bins(full_cnt);
     std::vector<int> indices_to_sort(full_cnt);
     int next_unit_id = 0;
     for (int i = 0; i < full_cnt; i++)
     {
+      std::vector<float> params = get_new_init_point(init_params, params_min, params_max, init_bins_count, init_bins_positions, 
+                                                     opt_unit_by_init_value_bins, next_unit_id, false);
       indices_to_sort[i] = i;
-      std::vector<unsigned short> descr(have_init_bins_cnt, 0);
-      bool searching = true;
-      int tries = 0;
-      while (searching && tries < 1000)
-      {
-        for (int j = 0; j < have_init_bins_cnt; j++)
-        {
-          int max_bins = init_bins_count[j];
-          int bin = urandi(0, max_bins);
-          descr[j] = bin;
-        }
-        tries++;
-        if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
-          searching = false;
-      }
-
-      if (!searching)
-      {
-        opt_unit_by_init_value_bins.emplace(descr, next_unit_id);
-        std::vector<float> params = init_params;
-        for (int j = 0; j < have_init_bins_cnt; j++)
-        {
-          int pos = init_bins_positions[j];
-          float val_from = params_min[pos] + descr[j] * (params_max[pos] - params_min[pos]) / init_bins_count[j];
-          float val_to = params_min[pos] + (descr[j] + 1) * (params_max[pos] - params_min[pos]) / init_bins_count[j];
-          params[pos] = urand(val_from, val_to);
-        }
-        opt_unit_bins[i] = descr;
-        opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
-        next_unit_id++;
-      }
+      opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+      next_unit_id++;
     }
     for (int i = 0; i < base_iters; i++)
     {
@@ -649,7 +661,7 @@ namespace dopt
 
   void optimizer_memetic(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
                          std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
-                         std::vector<float> &params_mask, int verbose_level, std::string save_stat_path, int have_init_bins_cnt,
+                         std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                          std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
                          OptimizationResult &opt_result)
   {
@@ -665,14 +677,12 @@ namespace dopt
     int next_unit_id = 0;
     int x_n = params_min.size();
     std::vector<OptimizationUnitGD> population(initial_population_size);
+    std::map<std::vector<unsigned short>, int, UShortVecComparator> opt_unit_by_init_value_bins;
 
     auto init_random = [&](OptimizationUnitGD &unit)
     {
-      std::vector<float> params(params_max.size());
-      for (int i=0; i<x_n;i++)
-      {
-        params[i] = params_min[i] + ((urand(0.25, 0.75)+urand(0.25, 0.75))/2)*(params_max[i] - params_min[i]);
-      }
+      std::vector<float> params = get_new_init_point(init_params, params_min, params_max, init_bins_count, init_bins_positions, 
+                                                     opt_unit_by_init_value_bins, next_unit_id, false);
       unit.init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
       next_unit_id++;
     };
@@ -715,15 +725,20 @@ namespace dopt
     for (int iter = 0; iter < ga_iters; iter++)
     {
       //improve current population with Gradient Descent
+      float q_sum = 0;
+      for (int i = 0; i < population.size(); i++)
+        q_sum += population[i].id == -1 ? 0 : get_quality_for_memetic(population[i]);
+
       for (int unit_pos = 0; unit_pos < population.size(); unit_pos++)
       {
         auto &unit = population[unit_pos];
         if (unit.id != -1)
         {
-          int iters = gd_iters;
-          if (iter != 0)
-            iters = MAX(2,iters/(1+unit_pos));
-          for (int i=0;i<gd_iters;i++)
+          int iters = gd_iters * get_quality_for_memetic(unit)/q_sum;
+          logerr("iters %d",iters);
+          //if (iter != 0)
+          //  iters = MAX(2,iters/(1+unit_pos));
+          for (int i=0;i<iters;i++)
             unit.iterate();
         }
       }
@@ -838,7 +853,6 @@ namespace dopt
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
-    int have_init_bins_cnt = 0;
     size_t x_n = gen_params_cnt + scene_params_cnt;
 
     int verbose_level = settings_blk.get_int("verbose_level", 1);
@@ -922,7 +936,6 @@ namespace dopt
           {
             init_bins_count.push_back((unsigned short)bins_cnt);
             init_bins_positions.push_back(params_min.size()-1);
-            have_init_bins_cnt++;
           }
         }
       }
@@ -968,7 +981,7 @@ namespace dopt
     }
 
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d SP %d var\n", 
-          x_n, gen_params_cnt, scene_params_cnt, have_init_bins_cnt, variant_count.size());
+          x_n, gen_params_cnt, scene_params_cnt, init_bins_count.size(), variant_count.size());
 
     CppAD::ADFun<float> f_reg;
     {
@@ -1016,17 +1029,17 @@ namespace dopt
     if (search_algorithm == "simple_search")
     {
       optimizer_simple_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                      have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
+                              init_bins_count, init_bins_positions, opt_result);
     }
     else if (search_algorithm == "advanced_search")
     {
       optimizer_advanced_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                       have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
+                                init_bins_count, init_bins_positions, opt_result);
     }
     else if (search_algorithm == "memetic")
     {
       optimizer_memetic(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                        have_init_bins_cnt, init_bins_count, init_bins_positions, opt_result);
+                        init_bins_count, init_bins_positions, opt_result);
     }
     else
     {

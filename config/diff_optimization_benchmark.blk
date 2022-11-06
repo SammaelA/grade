@@ -1,25 +1,23 @@
 {
   //list of reference images
   count:i = 1
-  reference:s = "resources/textures/DishesData/plate_8.jpg"
-  reference:s = "resources/textures/DishesData/plate_7.jpg"
-  reference:s = "resources/textures/DishesData/cup_1.jpg"
+  //reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
   reference:s = "resources/textures/DishesData/cup_3.jpg"
-  //reference:s = "resources/textures/DishesData/cup_4.jpg"
+  reference:s = "resources/textures/DishesData/cup_4.jpg"
   reference:s = "resources/textures/DishesData/cup_5.jpg"
-  //reference:s = "resources/textures/DishesData/cup_6.jpg"
+  reference:s = "resources/textures/DishesData/cup_6.jpg"
 
-  //reference:s = "resources/textures/DishesData/plate_1.jpg"
+  reference:s = "resources/textures/DishesData/plate_1.jpg"
   reference:s = "resources/textures/DishesData/plate_2.jpg"
   reference:s = "resources/textures/DishesData/plate_3.jpg"
-  //reference:s = "resources/textures/DishesData/plate_4.jpg"
+  reference:s = "resources/textures/DishesData/plate_4.jpg"
   reference:s = "resources/textures/DishesData/plate_5.jpg"
   reference:s = "resources/textures/DishesData/plate_6.jpg"
   reference:s = "resources/textures/DishesData/plate_7.jpg"
   reference:s = "resources/textures/DishesData/plate_8.jpg"
   reference:s = "resources/textures/DishesData/plate_9.jpg"
-  //reference:s = "resources/textures/DishesData/plate_10.jpg"
+  reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
   search_algorithm:s = "memetic"
@@ -32,13 +30,20 @@
   advanced_search
   {
     start_points:i = 8
-    base_iterations:i = 250
+    base_iterations:i = 750
     gd_iterations_per_base_iteration:i = 1
   }
 
   memetic
   {
-
+    genetic_algorithm_iterations:i = 12
+    gradient_descent_iterations:i = 150
+    initial_population_size:i = 8
+    remove_chance:r = 0.4
+    recombination_chance:r = 0.0
+    mutation_chance:r = 0.0
+    reinit_chance:r = 0.0
+    mutation_power:r = 0.2
   }
 
   parameters_description:s = "dishes_gen_parameters_description.blk"
@@ -46,7 +51,7 @@
   synthetic_reference:b = false
   verbose_level:i = 1
   reference_image_size:i = 512
-  selection_image_size:i = 196
+  selection_image_size:i = 128
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
 }
