@@ -36,18 +36,19 @@
 
   memetic
   {
-    genetic_algorithm_iterations:i = 12
-    gradient_descent_iterations:i = 150
+    genetic_algorithm_iterations:i = 5
+    gradient_descent_iterations:i = 300
     initial_population_size:i = 8
-    remove_chance:r = 0.4
+    remove_chance:r = 0.33
     recombination_chance:r = 0.0
-    mutation_chance:r = 0.0
+    mutation_chance:r = 0.5
     reinit_chance:r = 0.0
     mutation_power:r = 0.2
   }
 
   parameters_description:s = "dishes_gen_parameters_description.blk"
   scene_description:s = "diff_gen_scene_parameters_description.blk"
+  presets_block:s = "dishes_gen_presets.blk"
   synthetic_reference:b = false
   verbose_level:i = 1
   reference_image_size:i = 512

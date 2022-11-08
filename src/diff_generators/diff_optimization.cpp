@@ -316,7 +316,7 @@ namespace dopt
       mi = &_mi;
       params = init_params;
       best_params = init_params;
-      opt = new Adam2(0.015, params_mask);
+      opt = new Adam2(0.05, params_mask);
       x_n = init_params.size();
       for (int i=0;i<8;i++)
         timers[i] = 0;
@@ -477,6 +477,7 @@ namespace dopt
                        std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
                        std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                        std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                       std::vector<std::vector<float>> parameter_presets,
                        OptimizationResult &opt_result)
   {
     int iterations = settings->get_int("iterations", 40);
@@ -531,6 +532,10 @@ namespace dopt
       if (opt_unit_by_init_value_bins.find(descr) == opt_unit_by_init_value_bins.end())
         searching = false;
     }
+    debug("%d descr [", (int)searching);
+    for (auto &d : descr)
+      debug("%d ", (int)d);
+    debug("]\n");
     opt_unit_by_init_value_bins.emplace(descr, unit_id);
     std::vector<float> params = init_params;
     if (fill_rest_with_random)
@@ -555,6 +560,7 @@ namespace dopt
                         std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
                         std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                         std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                        std::vector<std::vector<float>> parameter_presets,
                         OptimizationResult &opt_result)
   {
     int full_cnt = settings->get_int("start_points", 4);
@@ -567,7 +573,12 @@ namespace dopt
     int next_unit_id = 0;
     for (int i = 0; i < full_cnt; i++)
     {
-      std::vector<float> params = get_new_init_point(init_params, params_min, params_max, init_bins_count, init_bins_positions, 
+      std::vector<float> cur_init_params = init_params;
+      if (parameter_presets.size() > 0 && urand() > 0.5)
+      {
+        cur_init_params = parameter_presets[(int)urandi(0, parameter_presets.size())];
+      }
+      std::vector<float> params = get_new_init_point(cur_init_params, params_min, params_max, init_bins_count, init_bins_positions, 
                                                      opt_unit_by_init_value_bins, next_unit_id, false);
       indices_to_sort[i] = i;
       opt_units[i].init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
@@ -652,17 +663,15 @@ namespace dopt
   float get_quality_for_memetic(OptimizationUnitGD &unit)
   {
     float val_stat = 1 / (0.001 + unit.best_error);
-    float change_stat = 1;
-    if (unit.iterations >= 10)
-      change_stat = 1 - unit.best_error_stat[unit.best_error_stat.size() - 1 - 10] / (1e-9 + unit.best_error);
-    float decay_stat = MAX(0, 0.025 * (unit.iterations - unit.best_error_iter - 10));
-    return pow(val_stat, 2) * exp(change_stat) * exp(-decay_stat);
+    float decay_stat = MAX(0, (unit.iterations - unit.best_error_iter - 10) / 90.0f);
+    return pow(val_stat, 1.5) * exp(-decay_stat);
   }
 
   void optimizer_memetic(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
                          std::vector<float> &init_params, std::vector<float> &params_min, std::vector<float> &params_max,
                          std::vector<float> &params_mask, int verbose_level, std::string save_stat_path,
                          std::vector<unsigned short> init_bins_count, std::vector<unsigned short> init_bins_positions,
+                         std::vector<std::vector<float>> parameter_presets,
                          OptimizationResult &opt_result)
   {
     int ga_iters = settings->get_int("genetic_algorithm_iterations", 10);
@@ -690,6 +699,10 @@ namespace dopt
     auto mutate = [&](OptimizationUnitGD &unit, OptimizationUnitGD &u1)
     {
       std::vector<float> params(params_max.size());
+      params = u1.best_params;
+      int pos = (int)(urandi(0, params_max.size()));
+      params[pos] = params_min[pos] + ((urand(0.25, 0.75)+urand(0.25, 0.75))/2)*(params_max[pos] - params_min[pos]);
+      /*
       for (int i=0; i<x_n;i++)
       {
         if (urand() < mutation_power)
@@ -697,6 +710,7 @@ namespace dopt
         else
           params[i] = u1.best_params[i];
       }
+      */
       unit.init(next_unit_id, params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
       next_unit_id++;
     };
@@ -735,6 +749,8 @@ namespace dopt
         if (unit.id != -1)
         {
           int iters = gd_iters * get_quality_for_memetic(unit)/q_sum;
+          if (unit.iterations == 0)
+            iters = (float)gd_iters / population.size();
           logerr("iters %d",iters);
           //if (iter != 0)
           //  iters = MAX(2,iters/(1+unit_pos));
@@ -758,7 +774,8 @@ namespace dopt
         debug("iteration %d\n", iter);
         for (int i=0;i<population.size();i++)
         {
-          debug("[%d][%f][%f]\n", unit_indices[i].first, unit_indices[i].second, population[unit_indices[i].first].best_error);
+          debug("[%d][%f][%f] - %f\n", population[unit_indices[i].first].id, unit_indices[i].second, population[unit_indices[i].first].best_error,
+          population[unit_indices[i].first].params[10]);
         }
       }
 
@@ -842,15 +859,17 @@ namespace dopt
 
   float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
-    Block gen_params, scene_params;
+    Block gen_params, scene_params, presets_blk;
     std::vector<float> params_min, params_max;
     std::vector<unsigned short> init_bins_count;
     std::vector<unsigned short> init_bins_positions;
     std::vector<unsigned short> variant_count;
     std::vector<unsigned short> variant_positions;
+    std::vector<std::vector<float>> parameter_presets;
 
     load_block_from_file(settings_blk.get_string("parameters_description"), gen_params);
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
+    load_block_from_file(settings_blk.get_string("presets_block"), presets_blk);
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
     size_t x_n = gen_params_cnt + scene_params_cnt;
@@ -980,6 +999,74 @@ namespace dopt
       }
     }
 
+    {
+      //presets are manually created valid sets of generator parmeters, representing different types of objects,
+      //that generator can create. They do not include scene parameters
+      std::map<std::string, int> param_n_by_name;
+      for (int i=0;i<gen_params.size();i++)
+      {
+        Block *pb = gen_params.get_block(i);
+        if (pb)
+        {
+          param_n_by_name.emplace(gen_params.get_name(i), i);
+        }
+      }
+      for (int i=0;i<presets_blk.size();i++)
+      {
+        Block *preset_block = presets_blk.get_block(i);
+        if (preset_block)
+        {
+          std::vector<float> preset = init_params;
+          if (preset_block->has_tag("compact"))
+          {
+            std::vector<float> params;
+            preset_block->get_arr("params", params);
+            if (params.size() == gen_params_cnt)
+            {
+              for (int k=0;k<gen_params_cnt;k++)
+                preset[k] = params[k];
+            }
+            else
+            {
+              logerr("Error: compact preset %s has %d parameters, while the generator requests %d",
+                     presets_blk.get_name(i).c_str(), params.size(), gen_params_cnt);
+            }
+          }
+          else
+          {
+            for (int j=0;j<preset_block->size();j++)
+            {
+              auto it = param_n_by_name.find(preset_block->get_name(j));
+              if (it != param_n_by_name.end())
+              {
+                float val = 0;
+                if (preset_block->get_type(i) == Block::ValueType::DOUBLE)
+                  val = preset_block->get_double(i);
+                else if (preset_block->get_type(i) == Block::ValueType::INT)
+                  val = preset_block->get_int(i);
+                else if (preset_block->get_type(i) == Block::ValueType::BOOL)
+                  val = (int)(preset_block->get_bool(i));
+                else
+                  logerr("parameter %s of preset %s has unknown parameter type. It should be double, int or bool",
+                         preset_block->get_name(j).c_str(), presets_blk.get_name(i).c_str());
+                preset[it->second] = val;
+              }
+              else
+              {
+                logerr("Unknown parameter name %s in preset %s",
+                         preset_block->get_name(j).c_str(), presets_blk.get_name(i).c_str());
+              }
+            }
+          }
+          parameter_presets.push_back(preset);
+          debug("read preset %s \n", presets_blk.get_name(i).c_str());
+          for (int k=0;k<gen_params_cnt;k++)
+            debug("%f ", preset[k]);
+          debugnl();
+        }
+      }
+    }
+
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d SP %d var\n", 
           x_n, gen_params_cnt, scene_params_cnt, init_bins_count.size(), variant_count.size());
 
@@ -1029,17 +1116,17 @@ namespace dopt
     if (search_algorithm == "simple_search")
     {
       optimizer_simple_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                              init_bins_count, init_bins_positions, opt_result);
+                              init_bins_count, init_bins_positions, parameter_presets, opt_result);
     }
     else if (search_algorithm == "advanced_search")
     {
       optimizer_advanced_search(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                                init_bins_count, init_bins_positions, opt_result);
+                                init_bins_count, init_bins_positions, parameter_presets, opt_result);
     }
     else if (search_algorithm == "memetic")
     {
       optimizer_memetic(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
-                        init_bins_count, init_bins_positions, opt_result);
+                        init_bins_count, init_bins_positions, parameter_presets, opt_result);
     }
     else
     {
