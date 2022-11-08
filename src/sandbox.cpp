@@ -277,6 +277,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
   {
+    srand(time(NULL));
     std::string blk_name = std::string(argv[3]);
     Block b;
     load_block_from_file(blk_name, b);
