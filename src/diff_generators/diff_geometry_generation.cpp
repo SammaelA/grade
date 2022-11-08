@@ -546,6 +546,57 @@ namespace dgen
     }
   }
 
+  void spline_to_model_part_rotate_plus_shift_with_diff_rad(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat angle, int rotations, dvec3 shift, int idx, const std::vector<dfloat> &params)
+  {
+    dmat43 rot_mat = ident();
+    dfloat ba = beg_angle + 1e-6;
+    angle += 1e-6;
+    rot_mat = rotate(rot_mat, axis, ba);
+    int sp_sz = spline.size();
+    int prev_size = model.size();
+    model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
+    std::vector<dvec3> verts = spline;
+    std::vector<dvec3> prev_verts = spline;
+
+    dfloat full_len = 1e-9;
+    for (int i=1;i<sp_sz;i++)
+    {
+      full_len += len(sub(verts[i],verts[i-1]));
+      prev_verts[i - 1] = mulp(rot_mat, prev_verts[i - 1]);
+    }
+
+    prev_verts[sp_sz - 1] = mulp(rot_mat, prev_verts[sp_sz - 1]);
+    
+    for (int sector = 1; sector <= rotations; sector++)
+    {
+      rot_mat = rotate(rot_mat, axis, angle);
+      dvec3 vert;
+      dfloat coef = params[idx + sector] / params[idx];//now radius / first radius
+      for (int i=0;i<sp_sz;i++)
+      {
+        vert = {spline[i][0], spline[i][1] * coef, spline[i][2]};
+        verts[i] = mulp(rot_mat, vert);
+      }
+      dfloat prev_len = 0;
+      dfloat new_len = 0;
+      for (int i=1;i<sp_sz;i++)
+      {
+        new_len = prev_len + len(sub(verts[i],verts[i-1]));
+        dvec3 v1 = sub(prev_verts[i], verts[i]);
+        dvec3 v2 = sub(verts[i-1], verts[i]); 
+        dvec3 n = normalize(cross(v1, v2));
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        prev_len = new_len;
+      }
+      prev_verts = verts;
+    }
+  }
+
   void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
@@ -563,6 +614,28 @@ namespace dgen
       spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
       dfloat sin_p = smoothmin(sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick), 0.98, 8);
       spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, start_pos, end_pos, thick, 0, 1));
+    }
+    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+    dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
+    transform(vert, sc2);
+  }
+
+  void create_cup_2(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  {
+    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
+    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
+    transform(spline, sc);
+    if (params[10] > 0.5)
+    {
+      int handle_param_idx = 11;
+      std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);//thick
+      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
+      spline1 = spline_shifting(spline1, dvec3{0, params[handle_param_idx + 5], 0});//first radius
+      dvec3 center = {params[handle_param_idx + 1], params[handle_param_idx + 2], 0};//center coords
+      dfloat alpha = params[handle_param_idx + 3];//step angle
+      dfloat start = params[handle_param_idx + 4];//beg angle
+      spline_to_model_part_rotate_plus_shift_with_diff_rad(vert, spline1, dvec3{0, 0, 1}, start, alpha, 8, center, handle_param_idx + 5, params);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
