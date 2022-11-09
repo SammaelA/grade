@@ -277,7 +277,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
   {
-    srand(time(NULL));
+    //srand(time(NULL));
     std::string blk_name = std::string(argv[3]);
     Block b;
     load_block_from_file(blk_name, b);
@@ -323,7 +323,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     dgen::dgen_test(params, res);
     MitsubaInterface mi("scripts", "emb_test");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(res, "saves/test_result.png");
+    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
   }
   else
   {

@@ -335,7 +335,6 @@ namespace dopt
         debug("]\n");
       }
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    //float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       std::vector<float> jac = func->get_jac(params);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
       std::vector<float> res = func->get(params); 
@@ -434,7 +433,7 @@ namespace dopt
       debug("Input parameters count: %d\n", x_n);
       debug("Itarations: %d\n", iterations);
       debug("Best value: %.4f\n", best_error);
-      debug("Total time: %.3f s\n", total_time);
+      debug("Total time: %.3f s, %.1f ms per iteration\n", total_time, 1000*total_time/iterations);
       std::vector<std::string> markers = {
         "Model jacobian calculation", "Model calculation", "Send model to mitsuba", "Rendering", "Get result from mitsuba",
         "Final Gradient calculation", "Debug print", "Optimizaiton"
@@ -1090,7 +1089,7 @@ namespace dopt
     {
       std::vector<float> reference = func.get(reference_params);
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-      mi.render_model_to_file(reference, "saves/reference.png");
+      mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout());
       Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
       SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
       Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
@@ -1104,7 +1103,7 @@ namespace dopt
       engine::textureManager->save_png_directly(tex, "saves/reference.png");
     }
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, false);
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), false);
 
     OptimizationResult opt_result{init_params, 1000, 0};
 
@@ -1137,11 +1136,11 @@ namespace dopt
     
     std::vector<float> best_model = func.get(opt_result.best_params);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, saved_result_path);
+    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout());
     if (saved_initial_path != "")
     {
       std::vector<float> initial_model = func.get(init_params);
-      mi.render_model_to_file(initial_model, saved_initial_path);
+      mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout());
     }
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);

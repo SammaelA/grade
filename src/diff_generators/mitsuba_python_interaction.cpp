@@ -133,8 +133,10 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   Py_DECREF(rs);
 }
 
-void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, bool save_intermediate_images)
+void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
+                                         bool save_intermediate_images)
 {
+  opt_model_layout = opt_ml;
   std::string loss_function_name = "F_loss_mse";
   switch (loss_function)
   {
@@ -175,9 +177,23 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
   Py_DECREF(int_im);
 }
 
-void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
+void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)
 {
-  int vertex_count = model.size() / FLOAT_PER_VERTEX;
+  int vertex_count = model.size() / ml.f_per_vert;
+  assert(ml.offsets.size() - 1 <= buffers.size());
+  for (int i=0;i<ml.offsets.size() - 1;i++)
+  {
+    int offset = ml.offsets[i];
+    int size = ml.offsets[i + 1] - ml.offsets[i];
+    if (offset >= 0 && size > 0)
+    {
+      clear_buffer(i, 0.0f);
+      for (int j = 0; j < vertex_count; j++)
+        memcpy(buffers[i] + size*j, model.data() + ml.f_per_vert * j + offset, sizeof(float)*size);
+      set_array_to_ctx_internal(buffer_names[i], i, size * vertex_count);
+    }
+  }
+  /*
   clear_buffer(0, 0.0f);
   clear_buffer(1, 1.0f);
   clear_buffer(2, 0.0f);
@@ -198,14 +214,15 @@ void MitsubaInterface::model_to_ctx(const std::vector<float> &model)
   set_array_to_ctx_internal("vertex_positions", 0, 3 * vertex_count);
   set_array_to_ctx_internal("vertex_normals", 1, 3 * vertex_count);
   set_array_to_ctx_internal("vertex_texcoords", 2, 2 * vertex_count);
+  */
 }
 
-void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir)
+void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml)
 {
-  if (model_max_size < model.size()/FLOAT_PER_VERTEX)
-    set_model_max_size(model.size()/FLOAT_PER_VERTEX);
+  if (model_max_size < model.size()/ml.f_per_vert)
+    set_model_max_size(model.size()/ml.f_per_vert);
   
-  model_to_ctx(model);
+  model_to_ctx(model, ml);
 
   PyObject *func, *args, *ref_dir_arg, *func_ret;
 
@@ -224,13 +241,17 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
 float MitsubaInterface::render_and_compare(const std::vector<float> &model, double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  model_to_ctx(model);
+  model_to_ctx(model, opt_model_layout);
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float loss = render_and_compare_internal();
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-  get_array_from_ctx_internal("vertex_positions_grad", 0);
-  get_array_from_ctx_internal("vertex_normals_grad", 1);
-  get_array_from_ctx_internal("vertex_texcoords_grad", 2);
+  for (int i=0;i<opt_model_layout.offsets.size() - 1;i++)
+  {
+    int offset = opt_model_layout.offsets[i];
+    int size = opt_model_layout.offsets[i + 1] - opt_model_layout.offsets[i];
+    if (offset >= 0 && size > 0)
+      get_array_from_ctx_internal(buffer_names[i] + "_grad", i);
+  }
   std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
@@ -241,20 +262,22 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, doub
 void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
                                           std::vector<float> &final_grad)
 {
-  for (int i = 0; i < vertex_count; i++)
+  for (int off=0;off<opt_model_layout.offsets.size() - 1;off++)
   {
-    for (int j = 0; j < params_count; j++)
+    int offset = opt_model_layout.offsets[off];
+    int size = opt_model_layout.offsets[off + 1] - opt_model_layout.offsets[off];
+    if (offset >= 0 && size > 0)
     {
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i) * params_count + j] * buffers[0][3 * i];
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 1) * params_count + j] * buffers[0][3 * i + 1];
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 2) * params_count + j] * buffers[0][3 * i + 2];
-
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 3) * params_count + j] * buffers[1][3 * i];
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 4) * params_count + j] * buffers[1][3 * i + 1];
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 5) * params_count + j] * buffers[1][3 * i + 2];
-
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 6) * params_count + j] * buffers[2][2 * i];
-      final_grad[j] += jac[(FLOAT_PER_VERTEX * i + 7) * params_count + j] * buffers[2][2 * i + 1];
+      for (int i = 0; i < vertex_count; i++)
+      {
+        for (int j = 0; j < params_count; j++)
+        {
+          for (int k = 0; k < size; k++)
+          {
+            final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[off][size * i + k];
+          }
+        }
+      }
     }
   }
 }
@@ -268,7 +291,7 @@ void MitsubaInterface::set_model_max_size(int _model_max_size)
     {
       if (buffers[i])
         delete[] buffers[i];
-      buffers[i] = new float[3*model_max_size];
+      buffers[i] = new float[4*model_max_size];
     }
   }
 }
