@@ -345,12 +345,13 @@ namespace dopt
       std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
       mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
       std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
-      float reg_q = 0.1;
+      float reg_q = 0.33;
       if (params_regularizer)
       {
         std::vector<float> reg_res = params_regularizer->Forward(0, params);
         std::vector<float> reg_jac = params_regularizer->Jacobian(params);
         loss += reg_q*reg_res[0];
+        logerr("reg %f", reg_q*reg_res[0]);
         for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
           final_grad[i] += reg_q*reg_jac[i];
       }
