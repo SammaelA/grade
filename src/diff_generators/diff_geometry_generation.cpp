@@ -6,20 +6,22 @@
 #include "common_utils/interpolation.h"
 namespace dgen
 {
-  inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc)
+  inline void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc, bool only_pos)
   {
     int sz = n*FLOAT_PER_VERTEX;
     vert.resize(sz + FLOAT_PER_VERTEX);
     vert[sz+0] = pos[0];
     vert[sz+1] = pos[1];
     vert[sz+2] = pos[2];
+    if (!only_pos)
+    {
+      vert[sz+3] = norm[0];
+      vert[sz+4] = norm[1];
+      vert[sz+5] = norm[2]; 
 
-    vert[sz+3] = norm[0];
-    vert[sz+4] = norm[1];
-    vert[sz+5] = norm[2]; 
-
-    vert[sz+6] = tc[0];
-    vert[sz+7] = tc[1];
+      vert[sz+6] = tc[0];
+      vert[sz+7] = tc[1];
+    }
   }
 
   inline int verts(std::vector<dfloat> &vert)
@@ -452,7 +454,7 @@ namespace dgen
     return sp;
   }
 
-  void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations)
+  void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations, bool only_pos)
   {
     dmat43 rot_mat = ident();
     dfloat angle = (2*PI)/rotations;
@@ -483,19 +485,20 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
     }
   }
 
-  void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part, int rotations, dvec3 shift)
+  void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part,
+                                              int rotations, dvec3 shift, bool only_pos)
   {
     dmat43 rot_mat = ident();
     dmat43 first_rot_mat = ident();
@@ -534,19 +537,21 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
     }
   }
 
-  void spline_to_model_part_rotate_plus_shift_with_diff_rad(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat angle, int rotations, dvec3 shift, int idx, const std::vector<dfloat> &params)
+  void spline_to_model_part_rotate_plus_shift_with_diff_rad(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, 
+                                                            dfloat angle, int rotations, dvec3 shift, int idx, const std::vector<dfloat> &params, 
+                                                            bool only_pos)
   {
     dmat43 rot_mat = ident();
     dfloat ba = beg_angle + 1e-6;
@@ -585,19 +590,19 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
     }
   }
 
-  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, bool only_pos)
   {
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
@@ -613,16 +618,18 @@ namespace dgen
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
       spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
       dfloat sin_p = smoothmin(sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick), 0.98, 8);
-      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, shift_by_points(spline, start_pos, end_pos, thick, 0, 1));
+      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, 
+                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), only_pos);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16, only_pos);
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
     transform(vert, sc2);
   }
 
   void create_cup_2(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
   {
+    bool only_pos = false;
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
@@ -635,10 +642,10 @@ namespace dgen
       dvec3 center = {params[handle_param_idx + 1], params[handle_param_idx + 2], 0};//center coords
       dfloat alpha = params[handle_param_idx + 3];//step angle
       dfloat start = params[handle_param_idx + 4];//beg angle
-      spline_to_model_part_rotate_plus_shift_with_diff_rad(vert, spline1, dvec3{0, 0, 1}, start, alpha, 8, center, handle_param_idx + 5, params);
+      spline_to_model_part_rotate_plus_shift_with_diff_rad(vert, spline1, dvec3{0, 0, 1}, start, alpha, 8, center, handle_param_idx + 5, params, only_pos);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16, only_pos);
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
     transform(vert, sc2);
   }
@@ -811,7 +818,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y);
+    func(X, Y, false);
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 

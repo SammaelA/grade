@@ -242,18 +242,20 @@ namespace dopt
       model_creator_params_cnt = _model_creator_params_cnt;
       variant_params_positions = variant_positions;
     }
-    std::vector<float> get(const std::vector<float> &params)
+    std::vector<float> get(const std::vector<float> &params, dgen::ModelLayout ml = dgen::ModelLayout())
     {
-      return functions[find_or_add(params)]->Forward(0, params); 
+      return functions[find_or_add(params, ml)]->Forward(0, params); 
     }
-    std::vector<float> get_jac(const std::vector<float> &params)
+    std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelLayout ml = dgen::ModelLayout())
     {
-      return functions[find_or_add(params)]->Jacobian(params); 
+      return functions[find_or_add(params, ml)]->Jacobian(params); 
     }
   private:
-    int find_or_add(const std::vector<float> &params)
+    int find_or_add(const std::vector<float> &params, dgen::ModelLayout ml)
     {
+      bool only_positions_needed = (ml.pos == 0 && ml.end == 3);
       auto vs = get_variant_set(params);
+      vs.push_back((unsigned short)only_positions_needed);
       auto it = variant_set_to_function_pos.find(vs);
       if (it == variant_set_to_function_pos.end())
       {
@@ -266,7 +268,7 @@ namespace dopt
           X[i] = params[i];
         std::vector<dgen::dfloat> Y;
         CppAD::Independent(X);
-        model_creator(X, Y);
+        model_creator(X, Y, only_positions_needed);
         dgen::transform_by_scene_parameters(X, model_creator_params_cnt, Y);
         CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
         functions.push_back(f);
@@ -335,9 +337,9 @@ namespace dopt
         debug("]\n");
       }
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      std::vector<float> jac = func->get_jac(params);
+      std::vector<float> jac = func->get_jac(params, dgen::ModelLayout(0,3,3,3,8));
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-      std::vector<float> res = func->get(params); 
+      std::vector<float> res = func->get(params, dgen::ModelLayout(0,3,3,3,8)); 
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
       float loss = mi->render_and_compare(res, timers);

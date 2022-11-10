@@ -33,7 +33,8 @@ namespace dgen
     };
     int f_per_vert = 8;
   };
-  typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &)> generator_func;
+  typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &, bool)> generator_func;
+  void set_model_layout(const ModelLayout &ml);
   void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines = 100);
   void print_model(const std::vector<float> &res);
   void dgen_test(std::vector<float> &params, std::vector<float> &model);
@@ -46,7 +47,7 @@ namespace dgen
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model);
   
   //create model of a cup with given parameters (dishes procedural generator)
-  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &model);
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &model, bool only_pos);
   //returns 0 is each parameters is in [min+edge_size, max-edge_size] interval
   dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
                                float edge_size = 0.01);
