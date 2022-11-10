@@ -553,6 +553,7 @@ namespace dgen
                                                             dfloat angle, int rotations, dvec3 shift, int idx, const std::vector<dfloat> &params, 
                                                             bool only_pos)
   {
+    //make -j16 && ./main -sandbox -test_gen 4 4 4 4 4 4 4 4 4 1 1 0.066 0.5 0.5 0.8 0 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3
     dmat43 rot_mat = ident();
     dfloat ba = beg_angle + 1e-6;
     angle += 1e-6;
