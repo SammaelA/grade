@@ -14,6 +14,7 @@
 #include "diff_generators/diff_geometry_generation.h"
 #include "diff_generators/diff_optimization.h"
 #include "diff_generators/mitsuba_python_interaction.h"
+#include "graphics_utils/model_texture_creator.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -241,17 +242,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
 
-  if (argc >= 3 && (std::string(argv[2]) == "help" || 
-      std::string(argv[2]) == "-help" || std::string(argv[2]) == "-h"))
-  {
-    logerr("./main -sandbox -h -- print help");
-    logerr("./main -sandbox -opt -- optimization");
-    logerr("./main -sandbox -sil_test -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
-    logerr("./main -sandbox -check_stability -- checks stability of diff procedural generator (dgen::create_cup)");
-    logerr("./main -sandbox -opt_benchmark <blk> -- performs optimization with different references and settings (all set in blk)");
-    return;
-  }
-  else if ((argc >= 3 && std::string(argv[2]) == "-opt") || argc == 2)
+  if ((argc >= 3 && std::string(argv[2]) == "-opt") || argc == 2)
   {
     dopt::test();
     return;
@@ -325,6 +316,34 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
   }
+  else if (argc >=3 && std::string(argv[2]) == "-test_tex")
+  {
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    std::vector<float> res;
+    dgen::dgen_test(params, res);
+    Model *m = new Model();
+    visualizer::simple_mesh_to_model_332(res, m);
+    m->update();
+
+    MitsubaInterface mi("scripts", "emb_test");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
+    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());
+
+    engine::view->next_frame();
+    Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
+    Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
+    Texture res_tex = textureManager.create_texture(photo.get_W(), photo.get_H());
+    ModelTex mt;
+    mt.perform_getUV(res_tex, mask, *m, photo);
+    textureManager.save_png(res_tex, "reconstructed_tex");
+    engine::view->next_frame();
+  } 
   else
   {
     logerr("unknows sandbox command");
@@ -333,6 +352,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     logerr("./main -sandbox -sil_test <filename> -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");
     logerr("./main -sandbox -check_stability -- checks stability of diff procedural generator (dgen::create_cup)");
     logerr("./main -sandbox -opt_benchmark <blk> -- performs optimization with different references and settings (all set in blk)");
+    logerr("./main -sandbox -test_gen <param> creates model with giver parameters and renders it with mitsuba");
+    logerr("./main -sandbox -test_tex <param> tests texture reconstruction on a synthetic model");
     return;
   }
   return;

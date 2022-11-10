@@ -8,10 +8,10 @@ class ModelTex
 public:
   ModelTex();
   ~ModelTex();
-  void perform_getUV_inplace(Texture &t, Texture mask, Model m, Texture photo);
-  Texture perform_getUV(Texture &t, Texture mask, Model m, Texture photo);
+  void perform_getUV_inplace(Texture &t, Texture mask, Model &m, Texture photo);
+  Texture perform_getUV(Texture &t, Texture mask, Model &m, Texture photo);
 private:
-  void getTexbyUV(Texture &t, Texture mask, Model m, Texture photo);
+  void getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo);
   Texture tmp_tex;
   GLuint fbo;
   Shader UV;

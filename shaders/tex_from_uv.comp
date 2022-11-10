@@ -2,19 +2,17 @@
 
 layout( local_size_x = 1, local_size_y = 1) in;
 
-layout(rgba32f, binding = 5) readonly uniform image2D uv;
-
-layout(rgba32f, binding = 6) writeonly uniform image2D tex;
+layout(rgba8, binding = 2) writeonly uniform image2D tex;
 
 uniform sampler2D photo;
-
+uniform sampler2D uv;
+uniform vec2 tex_size;
 void main()
 {
-    vec2 coord = gl_GlobalInvocationID.xy;
-    if (texture(uv,coord).b == 0)
+    vec2 coord = gl_GlobalInvocationID.xy / tex_size;
+    if (texture(uv,coord).b > 0.1)
     {
-        return;
+      vec2 uv_coords = texture(uv,coord).rg;
+      imageStore(tex, ivec2(tex_size*uv_coords), texture(photo, coord));
     }
-    vec2 uv_coords = texture(uv,coord).rg;
-    tex[uv_coords.x][uv_coords.y] = texture(photo, coord);
 }

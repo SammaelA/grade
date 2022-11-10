@@ -103,7 +103,7 @@ def render_and_save_to_file(context, save_filename):
   mi.util.write_bitmap(save_filename, img_ref)
   mi.util.convert_to_bitmap(img_ref)
   context['img_ref'] = img_ref
-  time.sleep(5)
+  time.sleep(1)
 
 def F_loss_mse(img, img_ref):
     loss = dr.sum(dr.sqr(img - img_ref)) / len(img)

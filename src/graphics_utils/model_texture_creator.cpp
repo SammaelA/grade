@@ -2,6 +2,7 @@
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/graphics_utils.h"
+#include <glm/glm.hpp>
 #include <vector>
 
 ModelTex::ModelTex():
@@ -30,12 +31,12 @@ ModelTex::~ModelTex()
 {
   delete_framebuffer(fbo);
 }
-Texture ModelTex::perform_getUV(Texture &t, Texture mask, Model m, Texture photo)
+Texture ModelTex::perform_getUV(Texture &t, Texture mask, Model &m, Texture photo)
 {
   getTexbyUV(t, mask, m, photo);
   return t;
 }
-void ModelTex::getTexbyUV(Texture &t, Texture mask, Model m, Texture photo)
+void ModelTex::getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo)
 {
   //check texture type
   assert(t.type == GL_TEXTURE_2D);
@@ -50,33 +51,40 @@ void ModelTex::getTexbyUV(Texture &t, Texture mask, Model m, Texture photo)
   //bind FBO
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
+    float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    Texture depthTex = engine::textureManager->create_texture(tmp_tex.get_W(), tmp_tex.get_H(), GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
+    glBindTexture(GL_TEXTURE_2D, depthTex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColorDepth);
+
   //first pass from t to tmp_tex
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex.texture, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
-  
+  glViewport(0, 0, tmp_tex.get_W(), tmp_tex.get_H());
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glm::mat4 projection = glm::perspective(PI/2, 1.0f, 0.1f, 3000.0f);
+  glm::mat4 view = glm::lookAt(glm::vec3(0, 0.5, 1.5), glm::vec3(0, 0.5, 0), glm::vec3(0, 1, 0));
   UV.use();
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(mask.type, mask.texture);
   UV.uniform("mask", 0);
-  
+  UV.uniform("projection", projection);
+  UV.uniform("view", view);
   m.render();
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
   tex_get.use();
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(tmp_tex.type, tmp_tex.texture);
-  UV.uniform("uv", 1);
-
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(photo.type, photo.texture);
-  UV.uniform("photo", 1);
-
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(t.type, t.texture);
-  UV.uniform("tex", 2);
+  tex_get.uniform("tex_size", glm::vec2(t.get_W(), t.get_H()));
+  tex_get.texture("uv", tmp_tex);
+  tex_get.texture("photo", photo);
+  glBindImageTexture(2, t.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
   
   glDispatchCompute(tmp_tex.get_W(), tmp_tex.get_H(), 1);
 
