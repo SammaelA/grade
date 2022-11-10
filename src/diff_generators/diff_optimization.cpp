@@ -352,7 +352,6 @@ namespace dopt
         std::vector<float> reg_res = params_regularizer->Forward(0, params);
         std::vector<float> reg_jac = params_regularizer->Jacobian(params);
         loss += reg_q*reg_res[0];
-        logerr("reg %f", reg_q*reg_res[0]);
         for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
           final_grad[i] += reg_q*reg_jac[i];
       }
@@ -662,11 +661,11 @@ namespace dopt
     }
   }
 
-  float get_quality_for_memetic(OptimizationUnitGD &unit)
+  float get_quality_for_memetic(OptimizationUnitGD &unit, int ga_iter, float decay_q = 0.01, float iter_q = 0.2)
   {
     float val_stat = 1 / (0.001 + unit.best_error);
-    float decay_stat = MAX(0, (unit.iterations - unit.best_error_iter - 10) / 90.0f);
-    return pow(val_stat, 1.5) * exp(-decay_stat);
+    float decay_stat = MAX(0, decay_q*(unit.iterations - unit.best_error_iter));
+    return pow(val_stat, 1+iter_q*ga_iter) * exp(-decay_stat);
   }
 
   void optimizer_memetic(Block *settings, CppAD::ADFun<float> *f_reg, DiffFunctionEvaluator &func, MitsubaInterface &mi,
@@ -743,19 +742,16 @@ namespace dopt
       //improve current population with Gradient Descent
       float q_sum = 0;
       for (int i = 0; i < population.size(); i++)
-        q_sum += population[i].id == -1 ? 0 : get_quality_for_memetic(population[i]);
+        q_sum += population[i].id == -1 ? 0 : get_quality_for_memetic(population[i], iter);
 
       for (int unit_pos = 0; unit_pos < population.size(); unit_pos++)
       {
         auto &unit = population[unit_pos];
         if (unit.id != -1)
         {
-          int iters = gd_iters * get_quality_for_memetic(unit)/q_sum;
+          int iters = gd_iters * get_quality_for_memetic(unit, iter)/q_sum;
           if (unit.iterations == 0)
             iters = (float)gd_iters / population.size();
-          logerr("iters %d",iters);
-          //if (iter != 0)
-          //  iters = MAX(2,iters/(1+unit_pos));
           for (int i=0;i<iters;i++)
             unit.iterate();
         }
@@ -765,7 +761,7 @@ namespace dopt
       std::vector<std::pair<int, float>> unit_indices(population.size());
       for (int i=0;i<population.size();i++)
       {
-        float quality = population[i].id >= 0 ? get_quality_for_memetic(population[i]) : -1;
+        float quality = population[i].id >= 0 ? get_quality_for_memetic(population[i], iter) : -1;
         unit_indices[i] = std::pair<int, float>(i, quality);
       }
       std::sort(unit_indices.begin(), unit_indices.end(), 
@@ -776,11 +772,59 @@ namespace dopt
         debug("iteration %d\n", iter);
         for (int i=0;i<population.size();i++)
         {
-          debug("[%d][%f][%f] - %f\n", population[unit_indices[i].first].id, unit_indices[i].second, population[unit_indices[i].first].best_error,
-          population[unit_indices[i].first].params[10]);
+          auto &unit = population[unit_indices[i].first];
+          debug("[%d][%f][%f] - %f  ", unit.id, unit_indices[i].second, unit.best_error, unit.params[10]);
+          for (int j=0;j<init_bins_count.size();j++)
+          {
+            int pos = init_bins_positions[j];
+            int bin = init_bins_count[j]*(unit.params[pos] - params_min[pos])/(params_max[pos] - params_min[pos]);
+            debug("%d ", bin);
+          }
+          debugnl();
         }
       }
+      //if there are two or more units inside the same bin set, no need to save them both.
+      //they will probably find the same local mimimum (with gradient descent). That's 
+      //why bins are actually used. So we save only the best one
 
+      std::vector<std::vector<unsigned short>> unit_bins;
+      for (auto &unit : population)
+      {
+        std::vector<unsigned short> bins;
+        for (int j=0;j<init_bins_count.size();j++)
+        {
+          int pos = init_bins_positions[j];
+          int bin = init_bins_count[j]*(unit.params[pos] - params_min[pos])/(params_max[pos] - params_min[pos]);
+          bins.push_back(bin);
+        }
+        unit_bins.push_back(bins);
+      }
+      for (int i=0;i<population.size();i++)
+      {
+        for (int j=i+1;j<population.size();j++)
+        {
+          if (population[i].id >= 0 && population[j].id >= 0)
+          {
+            bool same_bins = true;
+            for (int b=0;b<init_bins_count.size();b++)
+            {
+              if (unit_bins[i][b] != unit_bins[j][b])
+              {
+                same_bins = false;
+                break;
+              }
+            }
+            if (same_bins && verbose_level)
+            {
+              debug("Units %d and %d have parameters in the same bins. Removing one of them\n", population[i].id, population[j].id);
+              if (population[i].best_error < population[j].best_error)
+                population[j].id = -1;
+              else
+                population[i].id = -1;
+            }
+          }
+        }
+      }
       //remove worst units and replace them with mutated, recombined or new random units
       int remove_cnt = MIN(population.size() - 2, round(remove_chance * population.size()));
       for (int i = 0; i < remove_cnt; i++)

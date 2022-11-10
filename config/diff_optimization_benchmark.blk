@@ -1,7 +1,7 @@
 {
   //list of reference images
-  count:i = 1
-  //reference:s = "resources/textures/DishesData/cup_1.jpg"
+  count:i = 100
+  reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
   reference:s = "resources/textures/DishesData/cup_3.jpg"
   reference:s = "resources/textures/DishesData/cup_4.jpg"
@@ -36,10 +36,10 @@
 
   memetic
   {
-    genetic_algorithm_iterations:i = 5
-    gradient_descent_iterations:i = 300
-    initial_population_size:i = 8
-    remove_chance:r = 0.33
+    genetic_algorithm_iterations:i = 10
+    gradient_descent_iterations:i = 320
+    initial_population_size:i = 16
+    remove_chance:r = 0.4
     recombination_chance:r = 0.0
     mutation_chance:r = 0.5
     reinit_chance:r = 0.0
