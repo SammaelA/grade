@@ -15,18 +15,20 @@ public:
   enum RenderStyle
   {
     SILHOUETTE,
-    MONOCHROME
+    MONOCHROME,
+    TEXTURED_CONST
   };
   struct RenderSettings
   {
     RenderSettings() = default;
-    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs) : 
-                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs) {};
+    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs, std::string _texture_name = "") : 
+                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs), texture_name(_texture_name) {};
     int image_w = 128;
     int image_h = 128;
     int samples_per_pixel = 16;
     MitsubaVariant mitsubaVar = MitsubaVariant::CUDA;
     RenderStyle renderStyle = RenderStyle::SILHOUETTE;
+    std::string texture_name = "white.png";
   };
   enum LossFunction
   {

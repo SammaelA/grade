@@ -7,7 +7,7 @@ import struct
 import time
 import numpy
 
-def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style):
+def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name):
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
   scene_dict['integrator'] = {
@@ -39,16 +39,34 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style):
               'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
           }
     }
-  elif (render_style == "monochrome"):
-    scene_dict['model'] = {
-            'type': 'obj',
-            'filename': base_path + 'meshes/sphere.obj',
-            'to_world': T.scale(0.67),
-            'bsdf': {
-                'type': 'diffuse',
-                'reflectance': { 'type': 'rgb', 'value': (0.9, 0.8, 0.3) },
-            },
-        }
+  else:
+    if (render_style == "monochrome"):
+      scene_dict['model'] = {
+              'type': 'obj',
+              'filename': base_path + 'meshes/sphere.obj',
+              'to_world': T.scale(0.67),
+              'bsdf': {
+                  'type': 'diffuse',
+                  'reflectance': { 'type': 'rgb', 'value': (0.9, 0.8, 0.3) },
+              },
+          }
+    elif (render_style == "textured_const"):
+      scene_dict['model'] = {
+              'type': 'obj',
+              'filename': base_path + 'meshes/sphere.obj',
+              'to_world': T.scale(0.67),
+              'bsdf': {
+                  'type': 'diffuse',
+                  'reflectance': {
+                    "type" : "bitmap",
+                    "filename" : base_path + "../textures/" + texture_name,
+                    "filter_type" : 'bilinear',
+                    "wrap_mode" : 'clamp'
+                  },
+              },
+          }
+    else:
+      print("Unknown render_style = ", render_style)
     scene_dict['light'] = {
             'type': 'obj',
             'filename': base_path + 'meshes/sphere.obj',
@@ -67,8 +85,6 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style):
               'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
           }
     }
-  else:
-    print("Unknown render_style = ", render_style)
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
   context = {

@@ -330,7 +330,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     m->update();
 
     MitsubaInterface mi("scripts", "emb_test");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "ref7.png"));
     mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
     mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());

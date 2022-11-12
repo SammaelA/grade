@@ -99,18 +99,22 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   case RenderStyle::MONOCHROME:
     render_style = "monochrome";
     break;
+  case RenderStyle::TEXTURED_CONST:
+    render_style = "textured_const";
+    break;
   default:
     render_style = "silhouette";
     break;
   }
-  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs;
+  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs, *tn;
   basePath = PyUnicode_FromString("resources/mitsuba_data/");
   iw_arg = PyLong_FromLong(render_settings.image_w);
   ih_arg = PyLong_FromLong(render_settings.image_h);
   spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
   mv = PyUnicode_FromString(mitsuba_var.c_str());
   rs = PyUnicode_FromString(render_style.c_str());
-  initArgs = PyTuple_Pack(6, basePath, iw_arg, ih_arg, spp_arg, mv, rs);
+  tn = PyUnicode_FromString(render_settings.texture_name.c_str());
+  initArgs = PyTuple_Pack(7, basePath, iw_arg, ih_arg, spp_arg, mv, rs, tn);
   
   initFunc = PyObject_GetAttrString(pModule, (char *)"init");
   if (!initFunc)
