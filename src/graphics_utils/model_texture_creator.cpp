@@ -7,7 +7,10 @@
 
 ModelTex::ModelTex():
 UV({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_Tex"}), 
-tex_get({"tex_from_uv.comp"},{})
+tex_get({"tex_from_uv.comp"},{}),
+photo_transform("copy.fs"),
+texture_postprocess("texture_postprocess.fs"),
+texture_mirror("texture_mirror.fs")
 {
   
 
@@ -31,15 +34,11 @@ ModelTex::~ModelTex()
 {
   delete_framebuffer(fbo);
 }
-Texture ModelTex::perform_getUV(Texture &t, Texture mask, Model &m, Texture photo)
-{
-  getTexbyUV(t, mask, m, photo);
-  return t;
-}
-void ModelTex::getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo)
+
+Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw)
 {
   //check texture type
-  assert(t.type == GL_TEXTURE_2D);
+  Texture t = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
 
   //if we don't have tmp texture or it has wrong size, we need to recreate it
   if (!tmp_tex.is_valid() || tmp_tex.type != t.type || 
@@ -47,26 +46,28 @@ void ModelTex::getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo)
   {
     tmp_tex = engine::textureManager->create_texture(t.get_W(), t.get_H());
   }
-
+  int w = t.get_W();
+  int h = t.get_H();
   //bind FBO
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    Texture depthTex = engine::textureManager->create_texture(tmp_tex.get_W(), tmp_tex.get_H(), GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
+    Texture photo_transformed = engine::textureManager->create_texture(w, h);
+    Texture UV_tex = engine::textureManager->create_texture(w, h, GL_RGB32F);
+    Texture depthTex = engine::textureManager->create_texture(w, h, GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
     glBindTexture(GL_TEXTURE_2D, depthTex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColorDepth);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-  //first pass from t to tmp_tex
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex.texture, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
-  glViewport(0, 0, tmp_tex.get_W(), tmp_tex.get_H());
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
+  glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = glm::perspective(PI/2, 1.0f, 0.1f, 3000.0f);
+  glm::mat4 projection = glm::perspective(PI/3, 1.0f, 0.1f, 3000.0f);
   glm::mat4 view = glm::lookAt(glm::vec3(0, 0.5, 1.5), glm::vec3(0, 0.5, 0), glm::vec3(0, 1, 0));
   UV.use();
 
@@ -78,17 +79,48 @@ void ModelTex::getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo)
   m.render();
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, photo_transformed.texture, 0);
+  glDisable(GL_DEPTH_TEST);
+  photo_transform.use();
+  photo_transform.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
+  photo_transform.get_shader().texture("tex", photo);
+  photo_transform.render();
+  
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
   tex_get.use();
-  tex_get.uniform("tex_size", glm::vec2(t.get_W(), t.get_H()));
-  tex_get.texture("uv", tmp_tex);
-  tex_get.texture("photo", photo);
+  tex_get.uniform("tex_size", glm::vec2(w, h));
+  tex_get.texture("uv", UV_tex);
+  tex_get.texture("photo", photo_transformed);
   glBindImageTexture(2, t.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
   
-  glDispatchCompute(tmp_tex.get_W(), tmp_tex.get_H(), 1);
+  glDispatchCompute(w, h, 1);
 
   glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+  texture_postprocess.use();
+  texture_postprocess.get_shader().texture("tex", t);
+  texture_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
+  texture_postprocess.get_shader().uniform("radius", overdraw);
+  texture_postprocess.get_shader().uniform("alpha_thr", 0.1);
+  texture_postprocess.render();
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+  texture_mirror.use();
+  texture_mirror.get_shader().texture("tex", tmp_tex);
+  texture_mirror.get_shader().uniform("tex_size", glm::vec2(w, h));
+  texture_mirror.get_shader().uniform("radius", 8);
+  texture_mirror.get_shader().uniform("base_color", glm::vec3(1,1,1));
+  texture_mirror.render();
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  return t;
 }

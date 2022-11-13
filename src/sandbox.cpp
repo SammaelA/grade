@@ -294,8 +294,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       b.set_string("reference_path", ref);
       std::vector<std::string> split_res;
       boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
-      std::string save_name = "saves/"+split_res.back()+"_result.png";
-      b.set_string("saved_result_path", save_name);
+      b.set_string("saved_result_path", "saves/"+split_res.back()+"_result.png");
+      b.set_string("saved_textured_path", "saves/"+split_res.back()+"_result_textured.png");
       av_loss += dopt::image_based_optimization(b, mi);
     }
     av_loss /= count;
@@ -330,7 +330,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     m->update();
 
     MitsubaInterface mi("scripts", "emb_test");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "ref7.png"));
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
     mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
     mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());
@@ -338,15 +338,17 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     engine::view->next_frame();
     Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
-    Texture res_tex = textureManager.create_texture(photo.get_W(), photo.get_H());
     ModelTex mt;
-    mt.perform_getUV(res_tex, mask, *m, photo);
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3);
     textureManager.save_png(res_tex, "reconstructed_tex");
     engine::view->next_frame();
+
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
   } 
   else
   {
-    logerr("unknows sandbox command");
+    logerr("unknown sandbox command");
     logerr("./main -sandbox -h -- print help");
     logerr("./main -sandbox -opt -- optimization");
     logerr("./main -sandbox -sil_test <filename> -- silhouette test of file in argv[3]. Save to saves/silhouette_test.png");

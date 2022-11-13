@@ -1,6 +1,7 @@
 {
   //list of reference images
-  count:i = 100
+  count:i = 1
+  reference:s = "resources/textures/DishesData/plate_9.jpg"
   reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
   reference:s = "resources/textures/DishesData/cup_3.jpg"
@@ -21,7 +22,6 @@
 
 
   search_algorithm:s = "memetic"
-
   simple_search 
   {
     iterations:i = 250
@@ -55,4 +55,6 @@
   selection_image_size:i = 128
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
+
+  texture_extraction:b = true
 }

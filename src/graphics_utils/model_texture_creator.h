@@ -8,12 +8,13 @@ class ModelTex
 public:
   ModelTex();
   ~ModelTex();
-  void perform_getUV_inplace(Texture &t, Texture mask, Model &m, Texture photo);
-  Texture perform_getUV(Texture &t, Texture mask, Model &m, Texture photo);
+  Texture getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw);
 private:
-  void getTexbyUV(Texture &t, Texture mask, Model &m, Texture photo);
   Texture tmp_tex;
   GLuint fbo;
   Shader UV;
   Shader tex_get;
+  PostFx texture_postprocess;
+  PostFx texture_mirror;
+  PostFx photo_transform;
 };

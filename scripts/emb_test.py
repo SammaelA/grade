@@ -72,9 +72,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'filename': base_path + 'meshes/sphere.obj',
             'emitter': {
                 'type': 'area',
-                'radiance': {'type': 'rgb', 'value': [1e3, 1e3, 1e3]}
+                'radiance': {'type': 'rgb', 'value': [100, 100, 100]}
             },
-            'to_world': T.translate([2.5, 2.5, 7.0]).scale(0.25)
+            'to_world': T.translate([0, 0.5, 10])
         }
     scene_dict['rectangle'] = {
           'type': 'obj',

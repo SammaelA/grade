@@ -11,6 +11,8 @@
 #include "tinyEngine/engine.h"
 #include "graphics_utils/silhouette.h"
 #include "save_utils/csv.h"
+#include "graphics_utils/model_texture_creator.h"
+#include "graphics_utils/modeling.h"
 
 namespace dopt
 {
@@ -924,9 +926,11 @@ namespace dopt
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     int sel_image_size = settings_blk.get_int("selection_image_size", 196);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
+    bool texture_extraction = settings_blk.get_bool("texture_extraction", false);
     std::string search_algorithm = settings_blk.get_string("search_algorithm", "simple_search");
     std::string save_stat_path = settings_blk.get_string("save_stat_path", "");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
+    std::string saved_textured_path = settings_blk.get_string("saved_textured_path", "saves/selected_textured.png");
     std::string saved_initial_path = settings_blk.get_string("saved_initial_path", "");
     std::string reference_path = settings_blk.get_string("reference_path", "");
 
@@ -1131,22 +1135,24 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(dgen::create_cup, gen_params_cnt, variant_positions);
 
+    Texture reference_tex, reference_mask;
+
     if (by_reference)
     {
       std::vector<float> reference = func.get(reference_params);
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
       mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout());
-      Texture t = engine::textureManager->load_unnamed_tex("saves/reference.png");
+      reference_tex = engine::textureManager->load_unnamed_tex("saves/reference.png");
       SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-      Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
-      engine::textureManager->save_png_directly(tex, "saves/reference.png");
+      reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
+      engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
     else
     {
-      Texture t = engine::textureManager->load_unnamed_tex(reference_path);
+      reference_tex = engine::textureManager->load_unnamed_tex(reference_path);
       SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-      Texture tex = se.get_silhouette(t, sel_image_size, sel_image_size);
-      engine::textureManager->save_png_directly(tex, "saves/reference.png");
+      reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
+      engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), false);
@@ -1187,6 +1193,18 @@ namespace dopt
     {
       std::vector<float> initial_model = func.get(init_params);
       mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout());
+    }
+    if (texture_extraction)
+    {
+      ModelTex mt;
+      Model *m = new Model();
+      visualizer::simple_mesh_to_model_332(best_model, m);
+      m->update();
+      Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex, 3);
+      engine::textureManager->save_png(res_tex, "reconstructed_tex");
+
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+      mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout());
     }
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);
