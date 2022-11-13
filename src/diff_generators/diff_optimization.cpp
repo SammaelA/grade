@@ -244,20 +244,20 @@ namespace dopt
       model_creator_params_cnt = _model_creator_params_cnt;
       variant_params_positions = variant_positions;
     }
-    std::vector<float> get(const std::vector<float> &params, dgen::ModelLayout ml = dgen::ModelLayout())
+    std::vector<float> get(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      return functions[find_or_add(params, ml)]->Forward(0, params); 
+      return functions[find_or_add(params, mq)]->Forward(0, params); 
     }
-    std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelLayout ml = dgen::ModelLayout())
+    std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      return functions[find_or_add(params, ml)]->Jacobian(params); 
+      return functions[find_or_add(params, mq)]->Jacobian(params); 
     }
   private:
-    int find_or_add(const std::vector<float> &params, dgen::ModelLayout ml)
+    int find_or_add(const std::vector<float> &params, dgen::ModelQuality mq)
     {
-      bool only_positions_needed = (ml.pos == 0 && ml.end == 3);
       auto vs = get_variant_set(params);
-      vs.push_back((unsigned short)only_positions_needed);
+      vs.push_back((unsigned short)mq.create_only_position);
+      vs.push_back((unsigned short)mq.quality_level);
       auto it = variant_set_to_function_pos.find(vs);
       if (it == variant_set_to_function_pos.end())
       {
@@ -270,7 +270,7 @@ namespace dopt
           X[i] = params[i];
         std::vector<dgen::dfloat> Y;
         CppAD::Independent(X);
-        model_creator(X, Y, only_positions_needed);
+        model_creator(X, Y, mq);
         dgen::transform_by_scene_parameters(X, model_creator_params_cnt, Y);
         CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
         functions.push_back(f);
@@ -339,9 +339,9 @@ namespace dopt
         debug("]\n");
       }
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      std::vector<float> jac = func->get_jac(params, dgen::ModelLayout(0,3,3,3,8));
+      std::vector<float> jac = func->get_jac(params, dgen::ModelQuality(true, 0));
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-      std::vector<float> res = func->get(params, dgen::ModelLayout(0,3,3,3,8)); 
+      std::vector<float> res = func->get(params, dgen::ModelQuality(true, 0)); 
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
       float loss = mi->render_and_compare(res, timers);
@@ -1186,7 +1186,7 @@ namespace dopt
       return 1.0;
     }
     
-    std::vector<float> best_model = func.get(opt_result.best_params);
+    std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout());
     if (saved_initial_path != "")

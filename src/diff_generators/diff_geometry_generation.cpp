@@ -603,12 +603,15 @@ namespace dgen
     }
   }
 
-  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, bool only_pos)
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
   {
+    int q_pow = (int)pow(2, (int)quality.quality_level);
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
+    if (q_pow > 1)
+      spline = spline_make_smoother(spline, q_pow, 1, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
-    //spline = spline_make_smoother(spline, 4, 1, -1, 1, 0);
+
     if (params[10] > 0.5)
     {
       int handle_param_idx = 11;
@@ -616,14 +619,14 @@ namespace dgen
       dfloat thick = smoothmin(params[handle_param_idx], 0.02, 8);
       dfloat start_pos = params[handle_param_idx+1] - params[handle_param_idx];
       dfloat end_pos = params[handle_param_idx+1] + params[handle_param_idx+2] + params[handle_param_idx] + thick;
-      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
+      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 4*q_pow);
       spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
       dfloat sin_p = smoothmin(sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick), 0.98, 8);
-      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 8, 
-                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), only_pos);
+      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 6*q_pow, 
+                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), quality.create_only_position);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16, only_pos);
+    spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 12*q_pow, quality.create_only_position);
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
     transform(vert, sc2);
   }
@@ -819,7 +822,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y, false);
+    func(X, Y, ModelQuality(false, 2));
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include "vectors.h"
 #include <functional>
+#include "common_utils/utility.h"
 struct ComplexModel;
 struct Block;
 namespace dgen
@@ -33,7 +34,21 @@ namespace dgen
     };
     int f_per_vert = 8;
   };
-  typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &, bool)> generator_func;
+
+  struct ModelQuality
+  {
+    bool create_only_position = false;
+    enum Level {LOW, MEDIUM, HIGH, ULTRA} quality_level = MEDIUM;
+    
+    ModelQuality(bool only_pos, int quality)
+    {
+      create_only_position = only_pos;
+      quality_level = (Level)CLAMP(quality,0,3);
+    }
+    ModelQuality() : ModelQuality(false, 1) {}
+  };
+
+  typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &, ModelQuality)> generator_func;
   void set_model_layout(const ModelLayout &ml);
   void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines = 100);
   void print_model(const std::vector<float> &res);
@@ -47,7 +62,7 @@ namespace dgen
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model);
   
   //create model of a cup with given parameters (dishes procedural generator)
-  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &model, bool only_pos);
+  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &model, ModelQuality quality);
   //returns 0 is each parameters is in [min+edge_size, max-edge_size] interval
   dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
                                float edge_size = 0.01);
