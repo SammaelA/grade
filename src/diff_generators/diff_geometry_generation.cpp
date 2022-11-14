@@ -568,19 +568,20 @@ namespace dgen
     for (int i=1;i<sp_sz;i++)
     {
       full_len += len(sub(verts[i],verts[i-1]));
+      prev_verts[i - 1] = add(prev_verts[i - 1], dvec3{0, params[idx], 0});
       prev_verts[i - 1] = mulp(rot_mat, prev_verts[i - 1]);
     }
 
+    prev_verts[sp_sz - 1] = add(prev_verts[sp_sz - 1], dvec3{0, params[idx], 0});
     prev_verts[sp_sz - 1] = mulp(rot_mat, prev_verts[sp_sz - 1]);
     
     for (int sector = 1; sector <= rotations; sector++)
     {
       rot_mat = rotate(rot_mat, axis, angle);
       dvec3 vert;
-      dfloat coef = params[idx + sector] / params[idx];//now radius / first radius
       for (int i=0;i<sp_sz;i++)
       {
-        vert = {spline[i][0], spline[i][1] * coef, spline[i][2]};
+        vert = {spline[i][0], spline[i][1] + params[idx + sector], spline[i][2]};
         verts[i] = mulp(rot_mat, vert);
       }
       dfloat prev_len = 0;
@@ -591,10 +592,10 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos);  
         add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
         add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations, prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos);  
         add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{((float)(sector))/rotations,  prev_len/full_len}, only_pos); 
         add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
         prev_len = new_len;
@@ -628,9 +629,8 @@ namespace dgen
     transform(vert, sc2);
   }
 
-  void create_cup_2(const std::vector<dfloat> &params, std::vector<dfloat> &vert)
+  void create_cup_2(const std::vector<dfloat> &params, std::vector<dfloat> &vert, bool only_pos)
   {
-    bool only_pos = false;
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
@@ -639,7 +639,6 @@ namespace dgen
       int handle_param_idx = 11;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);//thick
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
-      spline1 = spline_shifting(spline1, dvec3{0, params[handle_param_idx + 5], 0});//first radius
       dvec3 center = {params[handle_param_idx + 1], params[handle_param_idx + 2], 0};//center coords
       dfloat alpha = params[handle_param_idx + 3];//step angle
       dfloat start = params[handle_param_idx + 4];//beg angle
@@ -802,7 +801,7 @@ namespace dgen
 
   void dgen_test(std::vector<float> &params, std::vector<float> &model)
   {
-    dgen_test_internal(model, create_cup, params, params);
+    dgen_test_internal(model, create_cup_2, params, params);
   }
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
                           const std::vector<float> &params, std::vector<float> *jacobian )
@@ -846,7 +845,9 @@ namespace dgen
     Model *m = new Model();
         std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
                           1, 1, 
-                          0.08, 0.25, 0.5};//handle params
+                          //0.08, 0.25, 0.5};//handle params
+                          0.065, -0.35, 0.5, PI / 7.45, 0, 
+                          0.3, 0.43, 0.47, 0.37, 0.3, 0.25, 0.24, 0.26, 0.32};
     std::vector<float> res;
     dgen::dgen_test(X0, res);
     visualizer::simple_mesh_to_model_332(res, m);
