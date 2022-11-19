@@ -619,7 +619,7 @@ namespace dgen
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
 
-    if (params[10] > -0.5)
+    if (params[10] > 0.5)
     {
       int handle_param_idx = 11;
       int radiuses_cnt = 7;
