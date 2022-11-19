@@ -10,18 +10,13 @@
   curve_offset_8{ values:p2 = 0.1, 5 desc:s = "base spline offset at point 8"}
   y_scale{ values:p2 = 0.1, 1 init_bins_count:i = 5 desc:s = "Multiplier of y coordinate. Small value for dishes, large - for cups"}
   has_handle{ values:p2 = 0, 1 is_variant:b = true desc:s = "0 - no handle, 1 - has handle"}
-  handle_radius{ values:p2 = 0.01, 0.1 desc:s = "handle radius"}
-  handle_center_coord_x{ values:p2 = -5, 5 desc:s = "x coord"}
-  handle_center_coord_y{ values:p2 = 0, 1 desc:s = "y coord"}
-  step_angle{ values:p2 = 0, 6.3 desc:s = "angle between two points of handle relative to the center"}
-  start_angle{ values:p2 = 0, 6.3 desc:s = "angle between first point of handle and axis y relative to the center"}
-  radius_0{ values:p2 = 0.01, 5 desc:s = "distance between center and point 0"}
-  radius_1{ values:p2 = 0.01, 5 desc:s = "distance between center and point 1"}
-  radius_2{ values:p2 = 0.01, 5 desc:s = "distance between center and point 2"}
-  radius_3{ values:p2 = 0.01, 5 desc:s = "distance between center and point 3"}
-  radius_4{ values:p2 = 0.01, 5 desc:s = "distance between center and point 4"}
-  radius_5{ values:p2 = 0.01, 5 desc:s = "distance between center and point 5"}
-  radius_6{ values:p2 = 0.01, 5 desc:s = "distance between center and point 6"}
-  radius_7{ values:p2 = 0.01, 5 desc:s = "distance between center and point 7"}
-  radius_8{ values:p2 = 0.01, 5 desc:s = "distance between center and point 8"}
+  handle_thickness{ values:p2 = 0.01, 0.1 desc:s = "handle thickness"}
+  handle_center_y{ values:p2 = 0.2, 0.8 desc:s = "position of handle center on the cup"}
+  handle_radius_0{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 0"}
+  handle_radius_1{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 1"}
+  handle_radius_2{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 2"}
+  handle_radius_3{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 3"}
+  handle_radius_4{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 4"}
+  handle_radius_5{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 5"}
+  handle_radius_6{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 6"}
 }

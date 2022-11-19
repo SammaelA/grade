@@ -498,7 +498,7 @@ namespace dgen
   }
 
   void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part,
-                                              int rotations, dvec3 shift, bool only_pos)
+                                              int rotations, dvec3 shift, dvec3 radius_vec, std::vector<dfloat> &radiuses, bool only_pos)
   {
     dmat43 rot_mat = ident();
     dmat43 first_rot_mat = ident();
@@ -522,6 +522,8 @@ namespace dgen
 
     verts[sp_sz - 1] = mulp(first_rot_mat, verts[sp_sz - 1]);
     prev_verts[sp_sz - 1] = mulp(first_rot_mat, prev_verts[sp_sz - 1]);
+    radius_vec = mulv(first_rot_mat, radius_vec);
+    dvec3 prev_radius_vec = radius_vec;
 
     for (int sector = 1; sector <= rotations; sector++)
     {
@@ -529,23 +531,27 @@ namespace dgen
       {
         verts[i] = mulp(rot_mat, verts[i]);
       }
+      radius_vec = mulv(rot_mat, radius_vec);
       dfloat prev_len = 0;
       dfloat new_len = 0;
+      dfloat rv_mult = radiuses[sector];
+      dfloat prv_mult = radiuses[sector-1];
       for (int i=1;i<sp_sz;i++)
       {
         new_len = prev_len + len(sub(verts[i],verts[i-1]));
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), add(verts[i], shift), n, dvec2{0*((float)(sector))/rotations, 0*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(prev_verts[i], shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(verts[i-1], shift), n, dvec2{0*((float)(sector))/rotations, 0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(prev_verts[i-1], shift), n, dvec2{0*((float)(sector - 1))/rotations,  0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(verts[i-1], shift), n, dvec2{0*((float)(sector))/rotations,  0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(prev_verts[i], shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1),   add(add(verts[i],   mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations, 0*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations, 0*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations,  0*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations,  0*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
+      prev_radius_vec = radius_vec;
     }
   }
 
@@ -613,42 +619,42 @@ namespace dgen
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
 
-    if (params[10] > 0.5)
+    if (params[10] > -0.5)
     {
       int handle_param_idx = 11;
+      int radiuses_cnt = 7;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
       dfloat thick = smoothmin(params[handle_param_idx], 0.02, 8);
-      dfloat start_pos = params[handle_param_idx+1] - params[handle_param_idx];
-      dfloat end_pos = params[handle_param_idx+1] + params[handle_param_idx+2] + params[handle_param_idx] + thick;
+      int radius_samples = radiuses_cnt*q_pow - 1;
+      std::vector<dfloat> radiuses(radiuses_cnt,0);
+      for (int i=0;i<radiuses_cnt;i++)
+        radiuses[i] = params[handle_param_idx+2 + i] + params[handle_param_idx];
+      if (radius_samples != radiuses_cnt - 1)
+      {
+        int k = (radius_samples + 1)/radiuses_cnt;
+        std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false);
+        rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
+        radius_samples = rad_spline.size() - 1;
+        radiuses = std::vector<dfloat>(rad_spline.size());
+        for (int i=0;i<rad_spline.size();i++)
+          radiuses[i] = rad_spline[i][1];
+      }
+      dfloat center = params[handle_param_idx+1];
+      dfloat start_pos = center + radiuses[0];
+      dfloat end_pos = center - radiuses.back();
+
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 4*q_pow);
-      spline1 = spline_shifting(spline1, dvec3{0, rad_by_points(spline, start_pos, end_pos), 0});
-      dfloat sin_p = smoothmin(sin_by_points(spline, end_pos, (start_pos + end_pos) / 2.0, thick), 0.98, 8);
-      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, 6*q_pow, 
-                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), quality.create_only_position);
+      dfloat sin_p = smoothmin(sin_by_points(spline, start_pos, center, thick), 0.98, 8);
+      radiuses[0] = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, start_pos, 0), start_pos);
+      radiuses.back() = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, end_pos, 0), end_pos);
+      dvec3 radius_vec = dvec3{0, 1, 0};
+      spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
+                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), 
+                                             radius_vec, radiuses,
+                                             quality.create_only_position);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 12*q_pow, quality.create_only_position);
-    dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
-    transform(vert, sc2);
-  }
-
-  void create_cup_2(const std::vector<dfloat> &params, std::vector<dfloat> &vert, bool only_pos)
-  {
-    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
-    transform(spline, sc);
-    if (params[10] > 0.5)
-    {
-      int handle_param_idx = 11;
-      std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);//thick
-      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 8);
-      dvec3 center = {params[handle_param_idx + 1], params[handle_param_idx + 2], 0};//center coords
-      dfloat alpha = params[handle_param_idx + 3];//step angle
-      dfloat start = params[handle_param_idx + 4];//beg angle
-      spline_to_model_part_rotate_plus_shift_with_diff_rad(vert, spline1, dvec3{0, 0, 1}, start, alpha, 8, center, handle_param_idx + 5, params, only_pos);
-    }
-    spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
-    spline_to_model_rotate(vert, spline, dvec3{0,1,0},16, only_pos);
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
     transform(vert, sc2);
   }
@@ -804,7 +810,7 @@ namespace dgen
 
   void dgen_test(std::vector<float> &params, std::vector<float> &model)
   {
-    dgen_test_internal(model, create_cup_2, params, params);
+    dgen_test_internal(model, create_cup, params, params);
   }
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
                           const std::vector<float> &params, std::vector<float> *jacobian )
@@ -821,7 +827,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y, ModelQuality(false, 2));
+    func(X, Y, ModelQuality(false, 0));
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 
@@ -846,11 +852,12 @@ namespace dgen
   bool create_model_from_block(Block &bl, ComplexModel &mod)
   {
     Model *m = new Model();
-        std::vector<float> X0{4 - 1.45, 4 - 1.0, 4 - 0.65, 4 - 0.45, 4 - 0.25, 4 - 0.18, 4 - 0.1, 4 - 0.05, 4,//spline point offsets
-                          1, 1, 
-                          //0.08, 0.25, 0.5};//handle params
-                          0.065, -0.35, 0.5, PI / 7.45, 0, 
-                          0.3, 0.43, 0.47, 0.37, 0.3, 0.25, 0.24, 0.26, 0.32};
+    std::vector<float> X0{2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354,
+                          0.781,
+                          1,
+                          0.05,
+                          0.7,
+                          0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4};
     std::vector<float> res;
     dgen::dgen_test(X0, res);
     visualizer::simple_mesh_to_model_332(res, m);
