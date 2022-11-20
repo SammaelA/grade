@@ -1,4 +1,5 @@
 #include "python_interaction.h"
+#include "python_engine.h"
 #include "common_utils/utility.h"
 #include <vector>
 #include <regex>
@@ -7,7 +8,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
-bool python_started = false;
 std::vector<std::string> split(const std::string& input, const std::string& regex) 
 {
     // passing -1 as the submatch index parameter performs splitting
@@ -90,16 +90,12 @@ int PythonHelper::python_func_get_val(char *val)
 }
 void PythonHelper::init(std::string _scripts_dir)
 {
-    if (!python_started)
-    {
-        Py_Initialize();
-        python_started = true;
-    }
+    python_engine::init();
     scripts_dir = _scripts_dir;
 }
 void PythonHelper::finish()
 {
-    Py_Finalize();
+
 }
 void PythonHelper::run_script(std::string script_file_name)
 {
@@ -318,7 +314,7 @@ void show_errors()
 
 void PythonHelper::test()
 {
-    Py_Initialize();
+    python_engine::init();
     PyRun_SimpleString("import sys");
     PyRun_SimpleString("import os");
     PyRun_SimpleString("sys.path.append(\"scripts\")");
@@ -328,7 +324,7 @@ void PythonHelper::test()
     float *data_to_transport = nullptr;
     int data_floats = 0;
 
-    pName = PyUnicode_FromString((char*)"emb_test");
+    pName = PyUnicode_FromString((char*)"mitsuba_optimization_embedded");
     pModule = PyImport_Import(pName);
     if (!pModule)
       show_errors();

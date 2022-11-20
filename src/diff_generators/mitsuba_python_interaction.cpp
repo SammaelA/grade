@@ -1,3 +1,5 @@
+#include <Python.h>
+#include "common_utils/python_engine.h"
 #include "mitsuba_python_interaction.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/silhouette.h"
@@ -7,6 +9,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
+#define DEL(X) if (X) {Py_DECREF(X);}
 void MitsubaInterface::show_errors()
 {
   PyObject *pExcType, *pExcValue, *pExcTraceback;
@@ -51,8 +54,8 @@ void MitsubaInterface::finish()
 
 MitsubaInterface::~MitsubaInterface()
 {
-  Py_DECREF(mitsubaContext);
-  Py_DECREF(pModule);
+  DEL(mitsubaContext);
+  DEL(pModule);
   Py_Finalize();
 }
 
@@ -60,14 +63,14 @@ MitsubaInterface::MitsubaInterface(const std::string &scripts_dir, const std::st
 {
   //Interpreter initialization
   std::string append_path_str = std::string("sys.path.append(\"")+scripts_dir+"\")";
-  Py_Initialize();
+  python_engine::init();
   PyRun_SimpleString("import sys");
   PyRun_SimpleString("import os");
   PyRun_SimpleString(append_path_str.c_str());
   PyObject *pName;
   pName = PyUnicode_FromString(file_name.c_str());
   pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
+  DEL(pName);
   if (!pModule)
     show_errors();
 }
@@ -121,20 +124,20 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
     show_errors();
   
   if (mitsubaContext)
-    Py_DECREF(mitsubaContext);
+    DEL(mitsubaContext);
 
   mitsubaContext = PyObject_CallObject(initFunc, initArgs);
   if (!mitsubaContext)
     show_errors();
   
-  Py_DECREF(initFunc);
-  Py_DECREF(initArgs);
-  Py_DECREF(basePath);
-  Py_DECREF(iw_arg);
-  Py_DECREF(ih_arg);
-  Py_DECREF(spp_arg);
-  Py_DECREF(mv);
-  Py_DECREF(rs);
+  DEL(initFunc);
+  DEL(initArgs);
+  DEL(basePath);
+  DEL(iw_arg);
+  DEL(ih_arg);
+  DEL(spp_arg);
+  DEL(mv);
+  DEL(rs);
 }
 
 void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
@@ -173,12 +176,12 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
   set_model_max_size(model_max_size);
   iteration = 0;
 
-  Py_DECREF(func);
-  Py_DECREF(args);
-  Py_DECREF(ref_dir_arg);
-  Py_DECREF(func_ret);
-  Py_DECREF(loss_func);
-  Py_DECREF(int_im);
+  DEL(func);
+  DEL(args);
+  DEL(ref_dir_arg);
+  DEL(func_ret);
+  DEL(loss_func);
+  DEL(int_im);
 }
 
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)
@@ -236,10 +239,10 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
-  Py_DECREF(func);
-  Py_DECREF(args);
-  Py_DECREF(ref_dir_arg);
-  Py_DECREF(func_ret);
+  DEL(func);
+  DEL(args);
+  DEL(ref_dir_arg);
+  DEL(func_ret);
 }
 
 float MitsubaInterface::render_and_compare(const std::vector<float> &model, double *timers)
@@ -321,11 +324,11 @@ int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int b
   }
   char *data = PyBytes_AsString(params_bytes);
   memcpy(buffers[buffer_id], data, MIN(sz, model_max_size*sizeof(float)));
-  Py_DECREF(args);
-  Py_DECREF(func);
-  Py_DECREF(params);
-  Py_DECREF(params_bytes);
-  Py_DECREF(params_name);
+  DEL(args);
+  DEL(func);
+  DEL(params);
+  DEL(params_bytes);
+  DEL(params_name);
 
   return data_floats;
 }
@@ -340,12 +343,12 @@ void MitsubaInterface::set_array_to_ctx_internal(const std::string &name, int bu
   func = PyObject_GetAttrString(pModule, (char *)"set_params");
   params = PyObject_CallObject(func, args);
 
-  Py_DECREF(args);
-  Py_DECREF(func);
-  Py_DECREF(params);
-  Py_DECREF(params_n);
-  Py_DECREF(params_bytes);
-  Py_DECREF(params_name);
+  DEL(args);
+  DEL(func);
+  DEL(params);
+  DEL(params_n);
+  DEL(params_bytes);
+  DEL(params_name);
 }
 
 float MitsubaInterface::render_and_compare_internal()
@@ -363,10 +366,10 @@ float MitsubaInterface::render_and_compare_internal()
     show_errors();
   double result = PyFloat_AsDouble(pValue);
 
-  Py_DECREF(pValue);
-  Py_DECREF(pIndex);
-  Py_DECREF(pArgs);
-  Py_DECREF(pFunc);
+  DEL(pValue);
+  DEL(pIndex);
+  DEL(pArgs);
+  DEL(pFunc);
 
   return result;
 }

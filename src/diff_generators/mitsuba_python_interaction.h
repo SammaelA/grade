@@ -1,9 +1,11 @@
 #pragma once
-#include <Python.h>
 #include <string>
 #include <vector>
 #include <array>
 #include "diff_geometry_generation.h"
+
+struct _object;
+typedef _object PyObject;
 class MitsubaInterface
 {
 public:

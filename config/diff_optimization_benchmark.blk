@@ -1,6 +1,6 @@
 {
   //list of reference images
-  count:i = 100
+  count:i = 2
 
   reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"

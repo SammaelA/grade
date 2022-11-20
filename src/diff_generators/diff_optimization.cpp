@@ -901,7 +901,7 @@ namespace dopt
     opt_settings_block.add_int("iterations", 100);
     settings_blk.add_block("simple_search", &opt_settings_block);
 
-    MitsubaInterface mi("scripts", "emb_test");
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     image_based_optimization(settings_blk, mi);
   }
 

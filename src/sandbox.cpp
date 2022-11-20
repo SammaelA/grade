@@ -286,7 +286,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       return;
     }
     float av_loss = 0;
-    MitsubaInterface mi("scripts", "emb_test");
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     int count = MIN(b.get_int("count",1000), reference_images.size());
     for (int i=0;i<count;i++)
     {
@@ -312,7 +312,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     std::vector<float> res;
     dgen::dgen_test(params, res);
-    MitsubaInterface mi("scripts", "emb_test");
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
   }
@@ -329,7 +329,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     visualizer::simple_mesh_to_model_332(res, m);
     m->update();
 
-    MitsubaInterface mi("scripts", "emb_test");
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
     mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
