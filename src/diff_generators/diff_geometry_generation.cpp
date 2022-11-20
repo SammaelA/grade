@@ -827,7 +827,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y, ModelQuality(false, 0));
+    func(X, Y, ModelQuality(false, 3));
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 

@@ -663,7 +663,7 @@ namespace dopt
     }
   }
 
-  float get_quality_for_memetic(OptimizationUnitGD &unit, int ga_iter, float decay_q = 0.01, float iter_q = 0.2)
+  float get_quality_for_memetic(OptimizationUnitGD &unit, int ga_iter, float decay_q = 0.005, float iter_q = 0.2)
   {
     float val_stat = 1 / (0.001 + unit.best_error);
     float decay_stat = MAX(0, decay_q*(unit.iterations - unit.best_error_iter));
