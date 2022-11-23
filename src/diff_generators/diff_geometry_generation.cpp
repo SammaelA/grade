@@ -292,11 +292,11 @@ namespace dgen
     return dist(x_for_spline_y(in_spline, y1, 0), y1, x_for_spline_y(in_spline, y2, 0), y2) / 2.0;
   }
 
-  dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, dfloat thick, int x, int y)
+  dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat center_y, dfloat thick, int x, int y)
   {
     dvec3 shift{0, 0, 0};
-    shift[y] = (y1 + y2) / 2;
-    shift[x] = -(x_for_spline_y(in_spline, y1, 0) + x_for_spline_y(in_spline, y2, 0) - thick) / 2;
+    shift[y] = center_y;
+    shift[x] = -x_for_spline_y(in_spline, center_y, 0) + thick;
     return shift;
   }
 
@@ -539,15 +539,20 @@ namespace dgen
       for (int i=1;i<sp_sz;i++)
       {
         new_len = prev_len + len(sub(verts[i],verts[i-1]));
-        dvec3 v1 = sub(prev_verts[i], verts[i]);
-        dvec3 v2 = sub(verts[i-1], verts[i]); 
+        dvec3 p1 = add(add(verts[i],   mul(rv_mult, radius_vec)), shift);
+        dvec3 p2 = add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift);
+        dvec3 p3 = add(add(verts[i-1], mul(rv_mult, radius_vec)), shift);
+        dvec3 p4 = add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift);
+        dvec3 v1 = sub(p2, p1);
+        dvec3 v2 = sub(p3, p1); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1),   add(add(verts[i],   mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations, 0.75+0.25*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
+
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1),   p1, n, dvec2{((float)(sector))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, p2, n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, p3, n, dvec2{((float)(sector))/rotations, 0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, p4, n, dvec2{((float)(sector - 1))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, p3, n, dvec2{((float)(sector))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, p2, n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
@@ -649,7 +654,7 @@ namespace dgen
       radiuses.back() = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, end_pos, 0), end_pos);
       dvec3 radius_vec = dvec3{0, 1, 0};
       spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
-                                             shift_by_points(spline, start_pos, end_pos, thick, 0, 1), 
+                                             shift_by_points(spline, center, thick, 0, 1), 
                                              radius_vec, radiuses,
                                              quality.create_only_position);
     }
@@ -827,7 +832,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y, ModelQuality(false, 1));
+    func(X, Y, ModelQuality(false, 3));
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 
