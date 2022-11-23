@@ -7,7 +7,6 @@ in vec4 in_Tex;
 
 uniform mat4 projection;
 uniform mat4 view;
-uniform int inst_buf_offset;
 
 out vec3 ex_Tex;
 out vec2 ex_Pos;

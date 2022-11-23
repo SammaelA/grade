@@ -140,22 +140,20 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   DEL(rs);
 }
 
-void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                         bool save_intermediate_images)
+std::string get_loss_function_name(MitsubaInterface::LossFunction loss_function)
 {
-  opt_model_layout = opt_ml;
   std::string loss_function_name = "F_loss_mse";
   switch (loss_function)
   {
-  case LossFunction::LOSS_MSE :
+  case MitsubaInterface::LossFunction::LOSS_MSE :
     loss_function_name = "F_loss_mse";
     break;
 
-  case LossFunction::LOSS_MSE_SQRT :
+  case MitsubaInterface::LossFunction::LOSS_MSE_SQRT :
     loss_function_name = "F_loss_mse_sqrt";
     break;
   
-  case LossFunction::LOSS_MIXED :
+  case MitsubaInterface::LossFunction::LOSS_MIXED :
     loss_function_name = "F_loss_mixed";
     break;
 
@@ -163,9 +161,53 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
     loss_function_name = "F_loss_mse";
     break;
   }
+  return loss_function_name;
+}
+
+void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
+                                         RenderSettings render_settings, bool save_intermediate_images)
+{
+  init_scene_and_settings(render_settings);
+
+  opt_model_layout = opt_ml;
+  std::string loss_function_name = get_loss_function_name(loss_function);
+
   PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
 
   func = PyObject_GetAttrString(pModule, (char *)"init_optimization");
+  ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
+  loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
+  int_im = PyLong_FromLong((int)save_intermediate_images);
+  args = PyTuple_Pack(4, mitsubaContext, ref_dir_arg, loss_func, int_im);
+  func_ret = PyObject_CallObject(func, args);
+  show_errors();
+
+  set_model_max_size(model_max_size);
+  iteration = 0;
+
+  DEL(func);
+  DEL(args);
+  DEL(ref_dir_arg);
+  DEL(func_ret);
+  DEL(loss_func);
+  DEL(int_im);
+}
+
+void MitsubaInterface::init_optimization_with_tex(const std::string &reference_image_dir, const std::string &initial_texture_name,
+                                                  LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
+                                                  RenderSettings render_settings, bool save_intermediate_images)
+{
+  render_settings.renderStyle = RenderStyle::TEXTURED_CONST;
+  render_settings.texture_name = initial_texture_name;
+
+  init_scene_and_settings(render_settings);
+
+  opt_model_layout = opt_ml;
+  std::string loss_function_name = get_loss_function_name(loss_function);
+  
+  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
+
+  func = PyObject_GetAttrString(pModule, (char *)"init_optimization_with_tex");
   ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
   int_im = PyLong_FromLong((int)save_intermediate_images);
@@ -260,9 +302,12 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, doub
       get_array_from_ctx_internal(buffer_names[i] + "_grad", i);
   }
   std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
-  timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-  timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
-  timers[4] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
+  if (timers)
+  {
+    timers[2] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    timers[3] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+    timers[4] += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
+  }
   return loss;
 }
 

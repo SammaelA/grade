@@ -45,10 +45,14 @@ public:
   //basic mitsuba initialization, call before any other functions
   void init_scene_and_settings(RenderSettings render_settings);
 
-  //initialize optimization cycle, set model to compare with. Set loss function and render settings for optimization cycle
+  //initialize optimization cycle, set model to compare with. Set loss function and render settings for optimization cycle, includes init_scene_and_settings
   void init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                         bool save_intermediate_images);
+                         RenderSettings render_settings, bool save_intermediate_images = false);
 
+  //WIP. initialize optimization of texture. includes init_scene_and_settings in it
+  void init_optimization_with_tex(const std::string &reference_image_dir, const std::string &initial_texture_name,
+                                  LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
+                                  RenderSettings render_settings, bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
   void render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml);
   

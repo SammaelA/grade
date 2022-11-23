@@ -7,6 +7,86 @@ import struct
 import time
 import numpy
 
+def wood_material_principled(diffuse_tex_path: str, roughness_tex_path: str, specular=0.3):
+    my_bsdf = mi.load_dict({
+            'id': 'wood_material',
+            'type': 'principled',
+            'specular': specular,
+            'base_color': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            },
+            'roughness': {
+                'type': 'bitmap',
+                'filename': roughness_tex_path
+            }
+        })
+    return my_bsdf
+
+
+def metal_material_principled(diffuse_tex_path: str, roughness_tex_path: str, specular=0.85, metalness=0.85):
+    my_bsdf = mi.load_dict({
+            'id': 'metal_material',
+            'type': 'principled',
+            'specular': specular,
+            'base_color': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            },
+            'roughness': {
+                'type': 'bitmap',
+                'filename': roughness_tex_path
+            },
+            'metallic': metalness,
+            'spec_tint': 1.0
+        })
+    return my_bsdf
+
+
+def rough_conductor_cu(roughness_tex_path: str):
+    my_bsdf = mi.load_dict({
+            'id': 'metal_material',
+            'type': 'roughconductor',
+            'material': 'Cu',
+            'distribution': 'ggx',
+            'alpha':  {
+                'type': 'bitmap',
+                'filename': roughness_tex_path
+            },
+        })
+    return my_bsdf
+
+
+def porcelain_roughplastic(diffuse_tex_path: str, roughness=0.3):
+    my_bsdf = mi.load_dict({
+            'id': 'porcelain_material',
+            'type': 'roughplastic',
+            'distribution': 'ggx',
+            'int_ior': 1.504,
+            'diffuse_reflectance': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            },
+            'alpha': roughness
+            # 'alpha': {
+            #     'type': 'bitmap',
+            #     'filename': roughness_tex_path
+            # }
+        })
+    return my_bsdf
+
+
+def lambert(diffuse_tex_path: str):
+    my_bsdf = mi.load_dict({
+            'id': 'wood_material',
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            }
+        })
+    return my_bsdf
+
 def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name):
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
@@ -40,33 +120,34 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
           }
     }
   else:
+    bsdf = {
+        'type': 'diffuse',
+        'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+    }
     if (render_style == "monochrome"):
-      scene_dict['model'] = {
-              'type': 'obj',
-              'filename': base_path + 'meshes/sphere.obj',
-              'to_world': T.scale(0.67),
-              'bsdf': {
-                  'type': 'diffuse',
-                  'reflectance': { 'type': 'rgb', 'value': (0.9, 0.8, 0.3) },
-              },
-          }
+        bsdf = {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+        }
     elif (render_style == "textured_const"):
-      scene_dict['model'] = {
-              'type': 'obj',
-              'filename': base_path + 'meshes/sphere.obj',
-              'to_world': T.scale(0.67),
-              'bsdf': {
-                  'type': 'diffuse',
+      bsdf = {
+          'type': 'diffuse',
                   'reflectance': {
-                    "type" : "bitmap",
-                    "filename" : base_path + "../textures/" + texture_name,
-                    "filter_type" : 'bilinear',
-                    "wrap_mode" : 'clamp'
+                      "type": "bitmap",
+                      "filename": base_path + "../textures/" + texture_name,
+                      "filter_type": 'bilinear',
+                      "wrap_mode": 'clamp'
                   },
-              },
-          }
+      }
     else:
       print("Unknown render_style = ", render_style)
+
+    scene_dict['model'] = {
+        'type': 'obj',
+        'filename': base_path + 'meshes/sphere.obj',
+        'to_world': T.scale(0.67),
+        'bsdf': bsdf
+    }
     scene_dict['light'] = {
             'type': 'obj',
             'filename': base_path + 'meshes/sphere.obj',
@@ -101,6 +182,17 @@ def init_optimization(context, img_ref_dir, loss, save_intermediate_images):
   context['img_ref_dir'] = img_ref_dir
   context['loss_function'] = loss
   context['save_intermediate_images'] = int(save_intermediate_images)
+  context['status'] = 'optimization_no_tex'
+
+def init_optimization_with_tex(context, img_ref_dir, loss, save_intermediate_images):
+  context['img_ref_dir'] = img_ref_dir
+  context['loss_function'] = loss
+  context['save_intermediate_images'] = int(save_intermediate_images)
+  context['status'] = 'optimization_with_tex'
+
+  opt = mi.ad.Adam(lr=0.1)
+  opt['model.bsdf.reflectance.data'] = context['params']['model.bsdf.reflectance.data']
+  context['tex_optimizer'] = opt
 
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
@@ -139,7 +231,7 @@ def render(it, context):
       img.load()
     img = img.convert('RGB')
     img_raw = numpy.asarray(img)
-    img_raw = img_raw/255.0
+    img_raw = (img_raw/255.0) ** 2.2
     context['img_ref'] = mi.TensorXf(img_raw)
   scene = context['scene']
   params = context['params']
@@ -160,16 +252,27 @@ def render(it, context):
   dr.enable_grad(params['model.vertex_texcoords'])
   
   img = mi.render(scene, params, seed=it, spp=context['spp']) # image = F_render(scene)
-  img = img ** 0.5
   loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
   dr.backward(loss)
 
   context['vertex_positions_grad'] = dr.grad(params['model.vertex_positions'])
   context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
   context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
-
-  if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
-    mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
+  if (context['status'] == 'optimization_with_tex'):
+    opt = context['tex_optimizer']
+    opt.step()
+    for key in opt.keys():
+      if 'bsdf' in key:
+        opt[key] = dr.clamp(opt[key], 0.0, 1.0)
+      params[key] = opt[key]
+    params.update()
+    if context['save_intermediate_images'] > 0:
+      mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
+      mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
+  else:
+    if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
+      mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
   return loss[0]
 
 def get_params(context, key):
