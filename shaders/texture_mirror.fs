@@ -38,7 +38,7 @@ void main(void)
       }
     }
     if (e_dir == vec2(0,0))
-      fragColor = vec4(base_color, 1);
+      fragColor = vec4(base_color, 0);
     else
       fragColor = vec4(texelFetch(tex, tc+2*e_dir, 0).xyz, 1);
   }

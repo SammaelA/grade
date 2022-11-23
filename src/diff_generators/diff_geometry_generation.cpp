@@ -485,12 +485,12 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, 0.75*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, 0.75*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  0.75*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  0.75*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
@@ -542,12 +542,12 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1),   add(add(verts[i],   mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations, 0*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations, 0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations,  0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{0*((float)(sector))/rotations,  0*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{0*((float)(sector - 1))/rotations, 0*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1),   add(add(verts[i],   mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations, 0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, add(add(verts[i-1], mul(rv_mult, radius_vec)), shift), n, dvec2{((float)(sector))/rotations,  0.75+0.25*prev_len/full_len}, only_pos); 
+        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift), n, dvec2{((float)(sector - 1))/rotations, 0.75+0.25*new_len/full_len}, only_pos); 
         prev_len = new_len;
       }
       prev_verts = verts;
