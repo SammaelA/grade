@@ -8,7 +8,6 @@ out vec4 fragColor;
 uniform sampler2D tex;
 uniform int sym;
 uniform int is_x;
-uniform ivec2 tex_size;
 
 void main(void) 
 {

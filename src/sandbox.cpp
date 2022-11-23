@@ -345,7 +345,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
     mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
 
-    Texture comp = mt.symTexComplement(res_tex, 4, -1);
+    std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 4, -1}, {0, 0.75, 1, 1, 1, 1}};
+
+    Texture comp = mt.symTexComplement(res_tex, data);
     textureManager.save_png(comp, "complement_tex");
     engine::view->next_frame();
 

@@ -11,10 +11,10 @@ tex_get({"tex_from_uv.comp"},{}),
 photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 texture_mirror("texture_mirror.fs"),
-tex_com("tex_com.fs")
+tex_com("tex_com.fs"),
+cpy1("restrict_tex.fs"),
+cpy2("copy.fs")
 {
-  
-
   //create FBO and SSBO
   fbo = create_framebuffer();
 
@@ -125,12 +125,90 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   return t;
 }
 
-Texture ModelTex::symTexComplement(Texture tex, int x_sym, int y_sym)
+Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
 {
-  //check texture type
   Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
+  int W = tex.get_W();
+  int H = tex.get_H();
 
-  //if we don't have tmp texture or it has wrong size, we need to recreate it
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  for (auto it : texs_data)
+  {
+    double w = it.w1 - it.w0;
+    double h = it.h1 - it.h0;
+    if (w < 0 || h < 0) continue;
+    tmp_tex = engine::textureManager->create_texture(w * W, h * H);
+    Texture sm_tex = engine::textureManager->create_texture(w * W, h * H);
+
+    glBindTexture(GL_TEXTURE_2D, tex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
+    glViewport(0, 0, W * w, H * h);
+    cpy1.use();
+    cpy1.get_shader().uniform("x_sh", it.w0);
+    cpy1.get_shader().uniform("y_sh", it.h0);
+    cpy1.get_shader().uniform("x_sz", w);
+    cpy1.get_shader().uniform("y_sz", h);
+    cpy1.get_shader().texture("tex", tex);
+    cpy1.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glBindTexture(GL_TEXTURE_2D, sm_tex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    tex_com.get_shader().use();
+    tex_com.get_shader().uniform("sym", it.x_sym);
+    tex_com.get_shader().uniform("is_x", 1);
+    tex_com.get_shader().texture("tex", sm_tex);
+    tex_com.render();
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glBindTexture(GL_TEXTURE_2D, tmp_tex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    tex_com.get_shader().use();
+    tex_com.get_shader().uniform("sym", it.y_sym);
+    tex_com.get_shader().uniform("is_x", 0);
+    tex_com.get_shader().texture("tex", tmp_tex);
+    tex_com.render();
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+    glViewport(it.w0 * W, it.h0 * H, w * W, h * H);
+    cpy2.use();
+    cpy2.get_shader().texture("tex", sm_tex);
+    cpy2.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  return t;
+
+  //check texture type
+  /*Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
+
+  //if we don't have tmp texture or it has wrong size, wetex.get_W() need to recreate it
   if (!tmp_tex.is_valid() || tmp_tex.type != t.type || 
       tmp_tex.get_H() != t.get_H() || tmp_tex.get_W() != t.get_W())
   {
@@ -180,5 +258,5 @@ Texture ModelTex::symTexComplement(Texture tex, int x_sym, int y_sym)
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  return t;
+  return t;*/
 }
