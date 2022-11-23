@@ -1154,8 +1154,8 @@ namespace dopt
       reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
       engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), false);
+    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
+                         MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
 
     OptimizationResult opt_result{init_params, 1000, 0};
 

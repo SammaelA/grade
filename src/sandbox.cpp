@@ -346,6 +346,47 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
     mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
   } 
+  else if (argc >=3 && std::string(argv[2]) == "-test_tex_diff")
+  {
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    std::vector<float> res;
+    dgen::dgen_test(params, res);
+    Model *m = new Model();
+    visualizer::simple_mesh_to_model_332(res, m);
+    m->update();
+
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
+    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
+    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());
+
+    engine::view->next_frame();
+    Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
+    Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
+    ModelTex mt;
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3);
+    textureManager.save_png(res_tex, "reconstructed_tex");
+    engine::view->next_frame();
+
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
+
+    mi.init_optimization_with_tex("saves/tex_colored.png", "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE, 1 << 16, 
+                                  dgen::ModelLayout(0, 3, 6, 8, 8), 
+                                  MitsubaInterface::RenderSettings(512, 512, 64, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
+                                  true);
+
+    for (int i=0;i<50;i++)
+    {
+      float loss = mi.render_and_compare(res, nullptr);
+      logerr("%d loss = %f",i, loss);
+    }
+  } 
   else
   {
     logerr("unknown sandbox command");
@@ -356,6 +397,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     logerr("./main -sandbox -opt_benchmark <blk> -- performs optimization with different references and settings (all set in blk)");
     logerr("./main -sandbox -test_gen <param> creates model with giver parameters and renders it with mitsuba");
     logerr("./main -sandbox -test_tex <param> tests texture reconstruction on a synthetic model");
+    logerr("./main -sandbox -test_tex <param> tests texture reconstruction with mitsuba fine-tuning on a synthetic model");
     return;
   }
   return;
