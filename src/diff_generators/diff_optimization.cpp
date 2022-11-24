@@ -1,5 +1,5 @@
 #include "diff_optimization.h"
-#include "diff_geometry_generation.h"
+#include "differentiable_generators.h"
 #include "mitsuba_python_interaction.h"
 #include "common_utils/distribution.h"
 #include <cppad/cppad.hpp>
@@ -889,8 +889,7 @@ namespace dopt
                                    1, 1, 1,
                                    1, 1, 1, 1, 1, 1};
     Block settings_blk;
-    settings_blk.add_string("parameters_description", "dishes_gen_parameters_description.blk");
-    settings_blk.add_string("scene_description", "diff_gen_scene_parameters_description.blk");
+    settings_blk.add_string("procedural_generator", "dishes");
     settings_blk.add_bool("synthetic_reference", true);
     settings_blk.add_string("reference_path", "resources/textures/cup1.jpg");
     settings_blk.add_arr("reference_params", reference_params);
@@ -914,10 +913,10 @@ namespace dopt
     std::vector<unsigned short> variant_count;
     std::vector<unsigned short> variant_positions;
     std::vector<std::vector<float>> parameter_presets;
-
-    load_block_from_file(settings_blk.get_string("parameters_description"), gen_params);
+    dgen::GeneratorDescription generator = dgen::get_generator_by_name(settings_blk.get_string("procedural_generator"));
+    load_block_from_file(generator.parameters_description_blk_path, gen_params);
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
-    load_block_from_file(settings_blk.get_string("presets_block"), presets_blk);
+    load_block_from_file(generator.presets_blk_path, presets_blk);
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
     size_t x_n = gen_params_cnt + scene_params_cnt;
@@ -1128,12 +1127,12 @@ namespace dopt
       std::vector<dgen::dfloat> Y;
       CppAD::Independent(X);
       Y.resize(1);
-      Y[0] = dgen::parameters_limits_reg(X, params_min, params_max) + dgen::parameters_cup_reg(X);
+      Y[0] = dgen::parameters_limits_reg(X, params_min, params_max) + generator.params_regularizer(X);
       f_reg = CppAD::ADFun<float>(X, Y);
     }
 
     DiffFunctionEvaluator func;
-    func.init(dgen::create_cup, gen_params_cnt, variant_positions);
+    func.init(generator.generator, gen_params_cnt, variant_positions);
 
     Texture reference_tex, reference_mask;
 

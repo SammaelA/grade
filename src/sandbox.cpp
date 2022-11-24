@@ -263,7 +263,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                         0.4,// y_scale
                                         1, //has handle variant
                                         0.05, 0.35, 0.35};//handle params
-    dgen::check_stability(dgen::create_cup, reference_params, 4);
+    //dgen::check_stability(dgen::create_cup, reference_params, 4);
     return;
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
@@ -311,7 +311,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     std::vector<float> res;
-    dgen::dgen_test(params, res);
+    dgen::dgen_test("dishes", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
@@ -324,7 +324,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     std::vector<float> res;
-    dgen::dgen_test(params, res);
+    dgen::dgen_test("dishes", params, res);
     Model *m = new Model();
     visualizer::simple_mesh_to_model_332(res, m);
     m->update();
@@ -361,7 +361,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     std::vector<float> res;
-    dgen::dgen_test(params, res);
+    dgen::dgen_test("dishes", params, res);
     Model *m = new Model();
     visualizer::simple_mesh_to_model_332(res, m);
     m->update();

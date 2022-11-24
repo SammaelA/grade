@@ -46,9 +46,8 @@
     mutation_power:r = 0.2
   }
 
-  parameters_description:s = "dishes_gen_parameters_description.blk"
+  procedural_generator:s = "dishes"
   scene_description:s = "diff_gen_scene_parameters_description.blk"
-  presets_block:s = "dishes_gen_presets.blk"
   synthetic_reference:b = false
   verbose_level:i = 1
   reference_image_size:i = 512
