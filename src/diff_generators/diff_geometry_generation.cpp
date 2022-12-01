@@ -298,7 +298,7 @@ namespace dgen
     float eps = 1e-4;
     std::vector<float> model_ref;
     std::vector<float> jac_ref;
-    dgen_test_internal(model_ref, func, params, params, &jac_ref);
+    dgen_test_internal(model_ref, func, params, params, &jac_ref, false);
     int x_n = params.size();
     int y_n = model_ref.size();
     debug("Checking stability of differential procedural model\n");
@@ -317,7 +317,7 @@ namespace dgen
         bool model_created = false;
         try
         {
-          dgen_test_internal(model, func, par, params, &jac);
+          dgen_test_internal(model, func, par, params, &jac, false);
           model_created = true;
         }
         catch(const std::exception& e)
@@ -403,18 +403,18 @@ namespace dgen
         float rnd = urand(0,1);
         X0.push_back(rnd*params_min[j] + (1-rnd)*params_max[j]);
       }
-      dgen_test_internal(model, func, X0, X0);
+      dgen_test_internal(model, func, X0, X0, nullptr, false);
     }
     return true;
   }
 
-  void dgen_test(std::string generator_name, std::vector<float> &params, std::vector<float> &model)
+  void dgen_test(std::string generator_name, std::vector<float> &params, std::vector<float> &model, bool transform_by_scene)
   {
-    GeneratorDescription gd = get_generator_by_name("dishes");
-    dgen_test_internal(model, gd.generator, params, params);
+    GeneratorDescription gd = get_generator_by_name(generator_name);
+    dgen_test_internal(model, gd.generator, params, params, nullptr, transform_by_scene);
   }
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
-                          const std::vector<float> &params, std::vector<float> *jacobian )
+                          const std::vector<float> &params, std::vector<float> *jacobian, bool transform_by_scene)
   {
     assert(check_params.size() > 0);
     assert(check_params.size() == params.size());
@@ -429,6 +429,11 @@ namespace dgen
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
     func(X, Y, ModelQuality(false, 1));
+    if (transform_by_scene)
+    {
+      int offset = params.size() - 6;
+      dgen::transform_by_scene_parameters(X, offset, Y);
+    }
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y); // store operation sequence in f: X -> Y and stop recording
 

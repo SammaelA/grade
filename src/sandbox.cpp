@@ -316,6 +316,19 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
   }
+  else if (argc >=3 && std::string(argv[2]) == "-test_gen_with_camera")
+  {
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    std::vector<float> res;
+    dgen::dgen_test("dishes", params, res, true);
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
+  }
   else if (argc >=3 && std::string(argv[2]) == "-test_tex")
   {
     std::vector<float> params;
