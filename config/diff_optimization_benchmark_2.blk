@@ -1,0 +1,43 @@
+{
+  //list of reference images
+  count:i = 2
+
+  reference:s = "resources/textures/table_1.png"
+
+  search_algorithm:s = "memetic"
+  simple_search 
+  {
+    initial_preset:arr = {0.5, 1.2, 0.05, 0.8, 0.05, 0, 0.5, 1, 0, 0.2, -0.4, -0.5}
+    iterations:i = 100
+  }
+  
+  advanced_search
+  {
+    start_points:i = 8
+    base_iterations:i = 750
+    gd_iterations_per_base_iteration:i = 1
+  }
+
+  memetic
+  {
+    genetic_algorithm_iterations:i = 10
+    gradient_descent_iterations:i = 600
+    initial_population_size:i = 60
+    remove_chance:r = 0.75
+    recombination_chance:r = 0.0
+    mutation_chance:r = 0.5
+    reinit_chance:r = 0.0
+    mutation_power:r = 0.2
+  }
+
+  procedural_generator:s = "tables"
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+  synthetic_reference:b = false
+  verbose_level:i = 1
+  reference_image_size:i = 512
+  selection_image_size:i = 128
+  saved_initial_path:s = "saves/selected_initial.png"
+  save_stat_path:s = "opt_stat.csv"
+
+  texture_extraction:b = true
+}

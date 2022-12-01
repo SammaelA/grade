@@ -1,0 +1,8 @@
+{
+  countertop_w{ values:p2 = 1, 1.5 desc:s = "countertop_w"}
+  countertop_h{ values:p2 = 1, 1.5 desc:s = "countertop_h"}
+  countertop_thick{ values:p2 = 0.01, 0.25 desc:s = "countertop_thick"}
+  leg_h{ values:p2 = 0.1, 1.5 desc:s = "leg_h"}
+  leg_thick{ values:p2 = 0.01, 0.25 desc:s = "leg_thick"}
+  leg_offset{ values:p2 = 0.0, 0.2 desc:s = "leg_offset"}
+}
