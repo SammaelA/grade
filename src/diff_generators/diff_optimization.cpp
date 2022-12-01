@@ -484,8 +484,15 @@ namespace dopt
                        OptimizationResult &opt_result)
   {
     int iterations = settings->get_int("iterations", 40);
+    std::vector<float> initial_params;
+    settings->get_arr("initial_preset", initial_params);
     OptimizationUnitGD opt_unit;
     opt_unit.init(0, init_params, func, mi, params_min, params_max, f_reg, params_mask, verbose_level == 2);
+    if (initial_params.size() > 0)
+    {
+      assert(initial_params.size() == opt_unit.params.size());
+      opt_unit.params = initial_params;
+    }
     for (int j = 0; j < iterations; j++)
     {
       opt_unit.iterate();
@@ -754,6 +761,8 @@ namespace dopt
           int iters = gd_iters * get_quality_for_memetic(unit, iter)/q_sum;
           if (unit.iterations == 0)
             iters = (float)gd_iters / population.size();
+          if (gd_iters < 0)
+            iters = 1;
           for (int i=0;i<iters;i++)
             unit.iterate();
         }
@@ -801,28 +810,31 @@ namespace dopt
         }
         unit_bins.push_back(bins);
       }
-      for (int i=0;i<population.size();i++)
+      if (gd_iters > 0)
       {
-        for (int j=i+1;j<population.size();j++)
+        for (int i=0;i<population.size();i++)
         {
-          if (population[i].id >= 0 && population[j].id >= 0)
+          for (int j=i+1;j<population.size();j++)
           {
-            bool same_bins = true;
-            for (int b=0;b<init_bins_count.size();b++)
+            if (population[i].id >= 0 && population[j].id >= 0)
             {
-              if (unit_bins[i][b] != unit_bins[j][b])
+              bool same_bins = true;
+              for (int b=0;b<init_bins_count.size();b++)
               {
-                same_bins = false;
-                break;
+                if (unit_bins[i][b] != unit_bins[j][b])
+                {
+                  same_bins = false;
+                  break;
+                }
               }
-            }
-            if (same_bins && verbose_level)
-            {
-              debug("Units %d and %d have parameters in the same bins. Removing one of them\n", population[i].id, population[j].id);
-              if (population[i].best_error < population[j].best_error)
-                population[j].id = -1;
-              else
-                population[i].id = -1;
+              if (same_bins && verbose_level)
+              {
+                debug("Units %d and %d have parameters in the same bins. Removing one of them\n", population[i].id, population[j].id);
+                if (population[i].best_error < population[j].best_error)
+                  population[j].id = -1;
+                else
+                  population[i].id = -1;
+              }
             }
           }
         }
