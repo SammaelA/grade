@@ -15,6 +15,7 @@
 #include "diff_generators/diff_optimization.h"
 #include "diff_generators/mitsuba_python_interaction.h"
 #include "graphics_utils/model_texture_creator.h"
+#include "common_utils/optimization/optimization_benchmark.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -407,6 +408,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       logerr("%d loss = %f",i, loss);
     }
   } 
+  else if (argc >= 3 && std::string(argv[2]) == "-opt_test")
+  {
+    opt::optimization_benchmark();
+  }
   else
   {
     logerr("unknown sandbox command");
