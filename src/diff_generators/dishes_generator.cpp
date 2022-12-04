@@ -302,8 +302,8 @@ namespace dgen
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    if (q_pow > 1)
-      spline = spline_make_smoother(spline, q_pow, 1, -1, 1, 0);
+    //if (q_pow > 1)
+    //  spline = spline_make_smoother(spline, q_pow, 1, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
 
@@ -321,7 +321,7 @@ namespace dgen
       {
         int k = (radius_samples + 1)/radiuses_cnt;
         std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false);
-        rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
+        //rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
         radius_samples = rad_spline.size() - 1;
         radiuses = std::vector<dfloat>(rad_spline.size());
         for (int i=0;i<rad_spline.size();i++)

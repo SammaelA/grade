@@ -1,6 +1,6 @@
 {
   //list of reference images
-  count:i = 2
+  count:i = 1
 
   reference:s = "resources/textures/DishesData/cup_1.jpg"
   reference:s = "resources/textures/DishesData/cup_2.jpg"
@@ -21,10 +21,11 @@
   reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
-  search_algorithm:s = "memetic"
+  search_algorithm:s = "simple_search"
   simple_search 
   {
-    iterations:i = 250
+    iterations:i = 500
+    initial_preset:arr = {4.24, 4.25, 4.256, 4.296, 4.339, 4.293, 4.461, 4.436, 4.549, 0.955, 0.904, 0.028, 0.509, 0.211, 0.229, 0.254, 0.268, 0.326, 0.389, 0.326, -0.077, 2.718, -0.040, 0.087, 0.031, -0.160}
   }
   
   advanced_search
@@ -36,10 +37,10 @@
 
   memetic
   {
-    genetic_algorithm_iterations:i = 20
-    gradient_descent_iterations:i = 160
-    initial_population_size:i = 16
-    remove_chance:r = 0.2
+    genetic_algorithm_iterations:i = 10
+    gradient_descent_iterations:i = 300
+    initial_population_size:i = 24
+    remove_chance:r = 0.5
     recombination_chance:r = 0.0
     mutation_chance:r = 0.5
     reinit_chance:r = 0.0
@@ -54,6 +55,6 @@
   selection_image_size:i = 128
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
-
+  save_intermediate_images:b = true
   texture_extraction:b = true
 }

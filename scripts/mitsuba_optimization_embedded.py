@@ -273,6 +273,7 @@ def render(it, context):
   else:
     if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
       mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
+      mi.util.write_bitmap("saves/iter"+str(it)+"_diff.png", dr.sqr(img - img_ref))
   return loss[0]
 
 def get_params(context, key):

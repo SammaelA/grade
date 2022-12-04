@@ -289,7 +289,8 @@ namespace dgen
     dmat43 rot = rotate(ident(), dvec3{1,0,0}, params[offset]);
     rot = rotate(rot, dvec3{0,1,0}, params[offset+1]);
     rot = rotate(rot, dvec3{0,0,1}, params[offset+2]);
-    rot = translate(rot, dvec3{params[offset+3], params[offset+4], params[offset+5]});
+    dmat43 tr = translate(ident(), dvec3{params[offset+3], params[offset+4], params[offset+5]});
+    rot = mul(tr, rot);
     transform(model, rot);
   }
 

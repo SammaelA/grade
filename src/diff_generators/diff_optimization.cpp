@@ -1166,7 +1166,8 @@ namespace dopt
       engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
-                         MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
+                         MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                         settings_blk.get_bool("save_intermediate_images", false));
 
     OptimizationResult opt_result{init_params, 1000, 0};
 
