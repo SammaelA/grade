@@ -353,10 +353,10 @@ namespace dgen
     dfloat res = 0;
     for (int i = 1; i < spline_offsets_cnt; i++)
     {
-      res += 5*smoothmax(params[i-1] - params[i], 0, 8);
+      res += 5*d_max(params[i-1] - params[i], 0);
     }
-    res = smoothmax(res, 0, 8) + 25*smoothmax(params[spline_offsets_cnt - 1]/(params[0] + 0.001) - 2, 0, 8);
-    res = smoothmax(smoothmax(res, 0, 8), 0, 8);
+    res = res + 25*d_max(params[spline_offsets_cnt - 1]/(params[0] + 0.001) - 2, 0);
+    res = d_max(res, 0);
     return res;
   }
 };

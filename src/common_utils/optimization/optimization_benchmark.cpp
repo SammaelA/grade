@@ -47,12 +47,11 @@ namespace opt
         }
         return res;
       };
-    Optimizer *gd = new Adam();
+    Optimizer *gd = new DifferentialEvolutionOptimizer();
     std::vector<float> min_v = {-5, -5, -5, -5, -5};
     std::vector<float> max_v = {4, 4, 4, 4, 4};
     Block settings;
-    settings.set_int("iterations", 2500);
-    settings.set_double("learning_rate", 20);
+    settings.set_bool("verbose", true);
     gd->optimize(F_rastrigin, min_v, max_v, settings);
     gd->print_stat();
   }

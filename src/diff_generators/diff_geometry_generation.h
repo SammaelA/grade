@@ -24,4 +24,5 @@ namespace dgen
                                float edge_size = 0.01);
   dfloat default_parameters_reg(const std::vector<dfloat> &params);
   dfloat default_model_reg(const std::vector<dfloat> &params, const std::vector<dfloat> &model);
+  dfloat d_max(dfloat a, dfloat b);
 };

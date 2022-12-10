@@ -1193,10 +1193,12 @@ namespace dopt
       optimizer_memetic(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
                         init_bins_count, init_bins_positions, parameter_presets, opt_result);
     }
-    else if (search_algorithm == "adam")
+    else
     {
       opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
+        for (int i=0;i<params.size();i++)
+          params[i] = CLAMP(params[i], params_min[i], params_max[i]);
         bool verbose = verbose_level > 1;
         if (verbose)
         {
@@ -1215,6 +1217,7 @@ namespace dopt
         float reg_q = 0.33;
         std::vector<float> reg_res = f_reg.Forward(0, params);
         std::vector<float> reg_jac = f_reg.Jacobian(params);
+        //logerr("reg_res[0] = %f",reg_res[0]);
         loss += reg_q*MAX(0, reg_res[0]);
         for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
           final_grad[i] += reg_q*reg_jac[i];
@@ -1233,14 +1236,24 @@ namespace dopt
         return std::pair<float,std::vector<float>>(loss, final_grad);
       };
 
-      opt::Optimizer *opt = new opt::Adam();
+      opt::Optimizer *opt =nullptr;
+      if (search_algorithm == "adam")
+        opt = new opt::Adam();
+      else if (search_algorithm == "DE")
+        opt = new opt::DifferentialEvolutionOptimizer();
+      else if (search_algorithm == "grid_search_adam")
+      {
+        opt_settings->add_arr("init_bins_count", init_bins_count);
+        opt_settings->add_arr("init_bins_positions", init_bins_positions);
+        opt = new opt::GridSearchAdam();
+      }
+      else
+      {
+        logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
+        return 1.0;
+      }
       opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
       opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
-    }
-    else
-    {
-      logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
-      return 1.0;
     }
 
     std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));

@@ -91,12 +91,16 @@ namespace opt
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings) override;
-  private:
-    std::vector<float> V; 
-    std::vector<float> S; 
-    float alpha = 1;
-    float beta_1 = 1;
-    float beta_2 = 1;
-    float eps = 1;
   };
+  class DifferentialEvolutionOptimizer : public Optimizer
+  {
+  public:
+    virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings) override;
+  } ;
+
+  class GridSearchAdam : public Optimizer
+  {
+  public:
+    virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings) override;
+  } ;
 }

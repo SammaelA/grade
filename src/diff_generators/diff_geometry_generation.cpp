@@ -277,10 +277,9 @@ namespace dgen
     dfloat res = 0;
     for (int i = 0; i < params.size(); i++)
     {
-      res += smoothmax((params_min[i] + edge_size - params[i])/(params_max[i] - params_min[i]), 0.0f, 16);
-      res += smoothmax((params[i] - (params_max[i] - edge_size))/(params_max[i] - params_min[i]), 0.0f, 16);
+      res += d_max((params_min[i] + edge_size - params[i])/(params_max[i] - params_min[i]), 0.0f);
+      res += d_max((params[i] - (params_max[i] - edge_size))/(params_max[i] - params_min[i]), 0.0f);
     }
-    res = smoothmax(res, 0, 16);
     return res;
   }
 
@@ -474,5 +473,10 @@ namespace dgen
     mod.materials.push_back(Material(engine::textureManager->get("porcelain")));
     mod.update();
     return true;
+  }
+
+  dfloat d_max(dfloat a, dfloat b)
+  {
+    return CppAD::CondExpGt(a,b,a,b);
   }
 }
