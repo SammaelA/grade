@@ -12,11 +12,11 @@
   has_handle{ values:p2 = 0, 1 is_variant:b = true desc:s = "0 - no handle, 1 - has handle"}
   handle_thickness{ values:p2 = 0.01, 0.1 desc:s = "handle thickness"}
   handle_center_y{ values:p2 = 0.2, 0.8 desc:s = "position of handle center on the cup"}
-  handle_radius_0{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 0"}
-  handle_radius_1{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 1"}
-  handle_radius_2{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 2"}
-  handle_radius_3{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 3"}
-  handle_radius_4{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 4"}
-  handle_radius_5{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 5"}
-  handle_radius_6{ values:p2 = 0.01, 0.5 desc:s = "distance between center and point 6"}
+  handle_radius_0{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 0"}
+  handle_radius_1{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 1"}
+  handle_radius_2{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 2"}
+  handle_radius_3{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 3"}
+  handle_radius_4{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 4"}
+  handle_radius_5{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 5"}
+  handle_radius_6{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
 }

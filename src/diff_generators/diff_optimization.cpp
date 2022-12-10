@@ -13,6 +13,7 @@
 #include "save_utils/csv.h"
 #include "graphics_utils/model_texture_creator.h"
 #include "graphics_utils/modeling.h"
+#include "common_utils/optimization/optimization.h"
 
 namespace dopt
 {
@@ -1192,12 +1193,56 @@ namespace dopt
       optimizer_memetic(opt_settings, &f_reg, func, mi, init_params, params_min, params_max, params_mask, verbose_level, save_stat_path,
                         init_bins_count, init_bins_positions, parameter_presets, opt_result);
     }
+    else if (search_algorithm == "adam")
+    {
+      opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
+      {
+        bool verbose = verbose_level > 1;
+        if (verbose)
+        {
+          debug("params [");
+          for (int j=0;j<x_n;j++)
+          {
+            debug("%.3f, ", params[j]);
+          }
+          debug("]\n");
+        }
+        std::vector<float> jac = func.get_jac(params, dgen::ModelQuality(true, 0));
+        std::vector<float> res = func.get(params, dgen::ModelQuality(true, 0)); 
+        std::vector<float> final_grad = std::vector<float>(x_n, 0);
+        float loss = mi.render_and_compare(res);
+        mi.compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
+        float reg_q = 0.33;
+        std::vector<float> reg_res = f_reg.Forward(0, params);
+        std::vector<float> reg_jac = f_reg.Jacobian(params);
+        loss += reg_q*MAX(0, reg_res[0]);
+        for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
+          final_grad[i] += reg_q*reg_jac[i];
+
+        if (verbose)
+        {
+          debug("iter [%d] loss = %.3f\n", opt_result.total_iters, loss);
+          debug("grad {");
+          for (int j=0;j<x_n;j++)
+          {
+            debug("%.3f ", final_grad[j]);
+          }
+          debug("}\n");
+        }
+        opt_result.total_iters++;
+        return std::pair<float,std::vector<float>>(loss, final_grad);
+      };
+
+      opt::Optimizer *opt = new opt::Adam();
+      opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
+      opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
+    }
     else
     {
       logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
       return 1.0;
     }
-    
+
     std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout());

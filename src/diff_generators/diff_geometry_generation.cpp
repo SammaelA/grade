@@ -277,10 +277,10 @@ namespace dgen
     dfloat res = 0;
     for (int i = 0; i < params.size(); i++)
     {
-      res += smoothmax((params_min[i] + edge_size - params[i])/edge_size, 0.0f, 8);
-      res += smoothmax((params[i] - (params_max[i] - edge_size))/edge_size, 0.0f, 8);
+      res += smoothmax((params_min[i] + edge_size - params[i])/(params_max[i] - params_min[i]), 0.0f, 16);
+      res += smoothmax((params[i] - (params_max[i] - edge_size))/(params_max[i] - params_min[i]), 0.0f, 16);
     }
-    res = smoothmax(smoothmax(smoothmax(res, 0, 8), 0, 8), 0, 8);
+    res = smoothmax(res, 0, 16);
     return res;
   }
 
