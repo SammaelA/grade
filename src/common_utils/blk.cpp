@@ -636,6 +636,51 @@ bool Block::get_arr(int id, std::vector<int> &_values, bool replace)
     }
     return false;
 }
+bool Block::get_arr(int id, std::vector<unsigned> &_values, bool replace)
+{
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
+        (values[id].a->type == DOUBLE))
+    {
+        if (replace)
+            _values.clear();
+        for (Block::Value &v : values[id].a->values)
+        {
+            _values.push_back(v.d);
+        }
+        return true;
+    }
+    return false;
+}
+bool Block::get_arr(int id, std::vector<short> &_values, bool replace)
+{
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
+        (values[id].a->type == DOUBLE))
+    {
+        if (replace)
+            _values.clear();
+        for (Block::Value &v : values[id].a->values)
+        {
+            _values.push_back(v.d);
+        }
+        return true;
+    }
+    return false;
+}
+bool Block::get_arr(int id, std::vector<unsigned short> &_values, bool replace)
+{
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
+        (values[id].a->type == DOUBLE))
+    {
+        if (replace)
+            _values.clear();
+        for (Block::Value &v : values[id].a->values)
+        {
+            _values.push_back(v.d);
+        }
+        return true;
+    }
+    return false;
+}
 
 int Block::get_bool(const std::string name, bool base_val)
 {
@@ -698,6 +743,18 @@ bool Block::get_arr(const std::string name, std::vector<float> &_values, bool re
     return get_arr(get_id(name), _values, replace);
 }
 bool Block::get_arr(const std::string name, std::vector<int> &_values, bool replace)
+{
+    return get_arr(get_id(name), _values, replace);
+}
+bool Block::get_arr(const std::string name, std::vector<unsigned> &_values, bool replace)
+{
+    return get_arr(get_id(name), _values, replace);
+}
+bool Block::get_arr(const std::string name, std::vector<short> &_values, bool replace)
+{
+    return get_arr(get_id(name), _values, replace);
+}
+bool Block::get_arr(const std::string name, std::vector<unsigned short> &_values, bool replace)
 {
     return get_arr(get_id(name), _values, replace);
 }
@@ -1000,6 +1057,51 @@ void Block::add_arr(const std::string name, std::vector<int> &_values)
     }
     add_value(name, val);
 }
+void Block::add_arr(const std::string name, std::vector<unsigned> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (unsigned &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    add_value(name, val);
+}
+void Block::add_arr(const std::string name, std::vector<short> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (short &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    add_value(name, val);
+}
+void Block::add_arr(const std::string name, std::vector<unsigned short> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (unsigned short &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    add_value(name, val);
+}
 void Block::set_bool(const std::string name, bool base_val)
 {
     Block::Value val;
@@ -1129,6 +1231,51 @@ void Block::set_arr(const std::string name, std::vector<int> &_values)
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
     for (int &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    set_value(name, val);
+}
+void Block::set_arr(const std::string name, std::vector<unsigned> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (unsigned &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    set_value(name, val);
+}
+void Block::set_arr(const std::string name, std::vector<short> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (short &d : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::DOUBLE;
+        av.d = d;
+        val.a->values.push_back(av);
+    }
+    set_value(name, val);
+}
+void Block::set_arr(const std::string name, std::vector<unsigned short> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::DOUBLE;
+    for (unsigned short &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
