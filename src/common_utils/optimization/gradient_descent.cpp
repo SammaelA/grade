@@ -83,7 +83,7 @@ namespace opt
         float Sh = S[i] / (1 - pow(beta_2, iter+1)); 
         X[i] = CLAMP(X[i] - alpha*Vh/(sqrt(Sh) + eps), min_X[i], max_X[i]);
       }
-      if ((iter % 100 == 0) && verbose)
+      if ((iter % 25 == 0) && verbose)
         debug("Adam iter %d val = %.4f best_val = %.4f\n", iter, val, best_result);
     }
   }

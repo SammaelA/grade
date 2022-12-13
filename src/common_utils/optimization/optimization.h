@@ -108,4 +108,9 @@ namespace opt
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings) override;
   } ;
+  class MemeticClassic : public Optimizer
+  {
+  public:
+    virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings) override;
+  } ;
 }

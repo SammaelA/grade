@@ -344,6 +344,7 @@ namespace dgen
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 12*q_pow, quality.create_only_position);
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
+    sc2 = translate(sc2, dvec3{0, -0.5,0});
     transform(vert, sc2);
   }
 
@@ -355,7 +356,7 @@ namespace dgen
     {
       res += 5*d_max(params[i-1] - params[i], 0);
     }
-    res = res + 25*d_max(params[spline_offsets_cnt - 1]/(params[0] + 0.001) - 2, 0);
+    res = res + 5*d_max(params[spline_offsets_cnt - 1]/(params[0] + 0.001) - 3, 0);
     res = d_max(res, 0);
     return res;
   }

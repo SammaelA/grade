@@ -917,6 +917,17 @@ namespace dopt
     image_based_optimization(settings_blk, mi);
   }
 
+  float parameters_error(const std::vector<float> &params, const std::vector<float> &ref_params,
+                         const std::vector<float> &params_min, const std::vector<float> &params_max)
+  {
+    float err = 0;
+    for (int i=0;i<params.size();i++)
+    {
+      err += abs(params[i] - ref_params[i]) / (params_max[i] - params_min[i]);
+    }
+    return err/params.size();
+  }
+
   float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
     Block gen_params, scene_params, presets_blk;
@@ -1214,7 +1225,7 @@ namespace dopt
         std::vector<float> final_grad = std::vector<float>(x_n, 0);
         float loss = mi.render_and_compare(res);
         mi.compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
-        float reg_q = 0.33;
+        float reg_q = 0.05;
         std::vector<float> reg_res = f_reg.Forward(0, params);
         std::vector<float> reg_jac = f_reg.Jacobian(params);
         //logerr("reg_res[0] = %f",reg_res[0]);
@@ -1241,6 +1252,8 @@ namespace dopt
         opt = new opt::Adam();
       else if (search_algorithm == "DE")
         opt = new opt::DifferentialEvolutionOptimizer();
+      else if (search_algorithm == "memetic_classic")
+        opt = new opt::MemeticClassic();
       else if (search_algorithm == "grid_search_adam")
       {
         opt_settings->add_arr("init_bins_count", init_bins_count);
@@ -1252,6 +1265,28 @@ namespace dopt
         logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
         return 1.0;
       }
+  
+      srand(time(NULL));
+      /*
+      for (int j = 3; j < 50; j++)
+      {   
+        opt = new opt::Adam();
+        auto params = reference_params;
+        for (int i = reference_params.size() - 1; i >= 0; i--)
+        {
+          params[i] = CLAMP(urand(-0.05*j,0.05*j)*(params_max[i] - params_min[i]) + params[i], params_min[i], params_max[i]);
+        }
+          float res = F_silhouette(params).first;
+          float br = 0;
+          opt_settings->set_arr("initial_params", params);
+          opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
+          auto bp = opt->get_best_result(&br);
+          float q = 1 - parameters_error(bp, reference_params, params_min, params_max);
+          logerr("[%d][%d] %.5f -- %.5f quality = %.3f", j, j, res, br, q);
+        delete opt;
+      }
+      return 1;
+      */
       opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
       opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
     }
