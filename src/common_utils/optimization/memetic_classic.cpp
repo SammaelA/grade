@@ -8,13 +8,13 @@ namespace opt
   void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
   {
     float mutation_chance = settings.get_double("mutation_chance", 0.1);
-    float mutation_power = settings.get_double("mutation_power", 0.25);
-    int tournament_size = settings.get_int("tournament_size", 4);
-    int population_size = settings.get_int("population_size", 12);
-    int total_function_calls = settings.get_int("total_function_calls", 10000);
+    float mutation_power = settings.get_double("mutation_power", 0.3);
+    int tournament_size = settings.get_int("tournament_size", 8);
+    int population_size = settings.get_int("population_size", 32);
+    int total_function_calls = settings.get_int("total_function_calls", 32000);
     bool verbose = settings.get_bool("verbose") || settings.get_int("verbose") > 0;
-    int local_search_iterations = settings.get_int("local_search_iterations", 100);
-    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.05);
+    int local_search_iterations = settings.get_int("local_search_iterations", 50);
+    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.075);
     int budget = 0;
 
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
@@ -88,9 +88,29 @@ namespace opt
       return res;
     };
 
+    auto calc_diversity = [&](std::vector<std::vector<float>> &population) -> float
+    {
+      float diversity = 0;
+      int cnt = 0;
+      for (int i1=0;i1<population.size();i1++)
+      {
+        for (int i2=i1+1;i2<population.size();i2++)
+        {
+          float d = 0;
+          for (int j=0;j<min_X.size();j++)
+            d += SQR((population[i1][j] - population[i2][j])/(max_X[j] - min_X[j]));
+          diversity += sqrtf(d) / min_X.size();
+          cnt++;
+        }
+      }
+      diversity /= cnt;
+      return diversity;
+    };
+
     std::vector<std::vector<float>> population;
     std::vector<float> values;
     std::vector<float> qa_values;
+    std::vector<int> local_improvements;
     std::vector<int> indices;
 
     initialize_population(population);
@@ -101,11 +121,14 @@ namespace opt
       population[i] = res.second;
       values.push_back(res.first);
       qa_values.push_back(1e-3 / (res.first * res.first));
+      local_improvements.push_back(1);
       indices.push_back(i);
     }
+    float initial_diversity = calc_diversity(population);
 
     while (budget < total_function_calls)
     {
+      //crossover + mutation
       auto parents = choose_parents_tournament(population, values);
       std::vector<float> new_solution = one_dot_crossover(population[parents.first], population[parents.second]);
       new_solution = mutate(new_solution);
@@ -127,6 +150,7 @@ namespace opt
         logerr("replace with better child %.4f --> %.4f", values[worst_idx], res.first);
         values[worst_idx] = res.first;
         qa_values[worst_idx] = 1e-3 / (res.first * res.first);
+        local_improvements[worst_idx] = 1;
         population[worst_idx] = res.second;
       }
       else
@@ -134,6 +158,7 @@ namespace opt
         logerr("Child is the worst %.4f", res.first);
       } 
 
+      //further local improvement
       if (urand() < ((float)budget)/total_function_calls)
       {
         float qav_sum = 0;
@@ -154,11 +179,37 @@ namespace opt
           }
         }
         auto res = local_search(population[improve_idx]);
-        logerr("improving existing solution %.4f --> %.4f", values[improve_idx], res.first);
+        logerr("improving existing solution (%d times) %.4f --> %.4f", local_improvements[improve_idx], values[improve_idx], res.first);
         population[improve_idx] = res.second;
         values[improve_idx] = res.first;
-        qa_values[improve_idx] = 0.5 * 1e-3 / (res.first * res.first); //if we improve solution, there is unlikely that it will be further improved
+        local_improvements[improve_idx]++;
+        //if we improve solution, there is unlikely that it will be further improved
+        qa_values[improve_idx] = 1e-3 / (res.first * res.first * local_improvements[improve_idx]);
       }
+
+      //diversity calculation and population restart
+      float diversity = calc_diversity(population);
+      logerr("population diversity %.3f", diversity);
+      if (initial_diversity/(diversity + 1e-6) > 2.5)
+      {
+        //recreate population and place best solution in it
+        logerr("recreating population");
+        initialize_population(population);
+        population[0] = best_params;
+
+        for (int i=0; i<population.size(); i++)
+        {
+          auto res = local_search(population[i]);
+
+          population[i] = res.second;
+          values.push_back(res.first);
+          qa_values.push_back(1e-3 / (res.first * res.first));
+          local_improvements.push_back(1);
+          indices.push_back(i);
+        }
+        initial_diversity = calc_diversity(population);        
+      }
+      
     }
   }
 }
