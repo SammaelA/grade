@@ -7,14 +7,15 @@ namespace opt
 {
   void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
   {
-    float mutation_chance = settings.get_double("mutation_chance", 0.1);
+    float mutation_chance = settings.get_double("mutation_chance", 0.2);
     float mutation_power = settings.get_double("mutation_power", 0.3);
-    int tournament_size = settings.get_int("tournament_size", 8);
+    int tournament_size = settings.get_int("tournament_size", 16);
     int population_size = settings.get_int("population_size", 32);
-    int total_function_calls = settings.get_int("total_function_calls", 32000);
+    int total_function_calls = settings.get_int("total_function_calls", 4800);
     bool verbose = settings.get_bool("verbose") || settings.get_int("verbose") > 0;
-    int local_search_iterations = settings.get_int("local_search_iterations", 50);
-    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.075);
+    int local_search_iterations = settings.get_int("local_search_iterations", 76);
+    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.05);
+    float recreation_diversity_thr = settings.get_double("recreation_diversity_thr", 1.75);
     int budget = 0;
 
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
@@ -73,6 +74,7 @@ namespace opt
       adam_settings.add_arr("initial_params", start_params);
       adam_settings.add_double("learning_rate", local_search_learning_rate);
       adam_settings.add_int("iterations", local_search_iterations);
+      adam_settings.add_bool("verbose", false);
       opt->optimize(F, min_X, max_X, adam_settings);
       budget += local_search_iterations;
 
@@ -190,7 +192,7 @@ namespace opt
       //diversity calculation and population restart
       float diversity = calc_diversity(population);
       logerr("population diversity %.3f", diversity);
-      if (initial_diversity/(diversity + 1e-6) > 2.5)
+      if (initial_diversity/(diversity + 1e-6) > recreation_diversity_thr)
       {
         //recreate population and place best solution in it
         logerr("recreating population");

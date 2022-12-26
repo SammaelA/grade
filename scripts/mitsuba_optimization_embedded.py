@@ -91,7 +91,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
   scene_dict['integrator'] = {
-      'type': 'direct_reparam',
+    'type': 'direct_reparam',
+    'reparam_rays': 8,
+    'reparam_antithetic' : False
   }
   scene_dict['sensor'] = {
           'type': 'perspective',

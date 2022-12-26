@@ -1166,17 +1166,15 @@ namespace dopt
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
       mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout());
       reference_tex = engine::textureManager->load_unnamed_tex("saves/reference.png");
-      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-      reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
-      engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
     else
     {
       reference_tex = engine::textureManager->load_unnamed_tex(reference_path);
-      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-      reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
-      engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
     }
+    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+    reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
+    engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
+    
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
                          MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                          settings_blk.get_bool("save_intermediate_images", false));
@@ -1206,8 +1204,12 @@ namespace dopt
     }
     else
     {
+      int iters = 0;
+      double total_time_ms = 0;
+
       opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         for (int i=0;i<params.size();i++)
           params[i] = CLAMP(params[i], params_min[i], params_max[i]);
         bool verbose = verbose_level > 1;
@@ -1243,11 +1245,13 @@ namespace dopt
           }
           debug("}\n");
         }
-        opt_result.total_iters++;
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        total_time_ms += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        iters++;
         return std::pair<float,std::vector<float>>(loss, final_grad);
       };
 
-      opt::Optimizer *opt =nullptr;
+      opt::Optimizer *opt = nullptr;
       if (search_algorithm == "adam")
         opt = new opt::Adam();
       else if (search_algorithm == "DE")
@@ -1287,8 +1291,17 @@ namespace dopt
       }
       return 1;
       */
+      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
+      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+      double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
+      opt_result.total_iters = iters;
+      
+      debug("Optimization stat\n");
+      debug("%.1f s total \n", 1e-3 * opt_time_ms);
+      debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms/iters);
     }
 
     std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));
