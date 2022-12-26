@@ -176,7 +176,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'vertex_positions' : params['model.vertex_positions'],
     'vertex_normals' : params['model.vertex_normals'],
     'vertex_texcoords' : params['model.vertex_texcoords'],
-    'spp' : spp
+    'spp' : spp,
+    'camera' : mi.load_dict(scene_dict['sensor'])
   }
   return context
 
@@ -196,6 +197,26 @@ def init_optimization_with_tex(context, img_ref_dir, loss, save_intermediate_ima
   opt['model.bsdf.reflectance.data'] = context['params']['model.bsdf.reflectance.data']
   context['tex_optimizer'] = opt
 
+def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target_z, up_x, up_y, up_z,
+               fov, image_w, image_h):
+  camera_dict = {
+          'type': 'perspective',
+          'to_world': T.look_at(
+                          origin=(origin_x, origin_y, origin_z),
+                          target=(target_x, target_y, target_z),
+                          up=(up_x, up_y, up_z)
+                      ),
+          'fov': fov,
+          'film': {
+              'type': 'hdrfilm',
+              'width': image_w,
+              'height': image_h,
+              'rfilter': { 'type': 'gaussian' },
+              'sample_border': True
+          },
+    }
+  context['camera'] =  mi.load_dict(camera_dict)  
+
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
   params = context['params']
@@ -209,7 +230,7 @@ def render_and_save_to_file(context, save_filename):
   params['model.faces'] = list(range(vertex_count))
   params.update()
 
-  img_ref = mi.render(scene, params, seed=0, spp=context['spp'])
+  img_ref = mi.render(scene, params, sensor = context['camera'], seed=0, spp=context['spp'])
   mi.util.write_bitmap(save_filename, img_ref)
   mi.util.convert_to_bitmap(img_ref)
   context['img_ref'] = img_ref
@@ -253,7 +274,7 @@ def render(it, context):
   dr.enable_grad(params['model.vertex_normals'])
   dr.enable_grad(params['model.vertex_texcoords'])
   
-  img = mi.render(scene, params, seed=it, spp=context['spp']) # image = F_render(scene)
+  img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
   loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
   dr.backward(loss)
 

@@ -2,6 +2,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
+struct CameraSettings
+{
+  glm::vec3 origin, target, up;
+  float fov_rad = 3.14159265f / 3;
+  float z_near = 0.1f;
+  float z_far = 100.0f;
+};
+
 struct Camera
 {
     glm::vec3 pos = glm::vec3(0, 10, 10);

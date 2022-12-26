@@ -345,7 +345,7 @@ namespace dopt
       std::vector<float> res = func->get(params, dgen::ModelQuality(true, 0)); 
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
       std::vector<float> final_grad = std::vector<float>(x_n, 0);
-      float loss = mi->render_and_compare(res, timers);
+      float loss = 0;//mi->render_and_compare(res, timers);
       std::chrono::steady_clock::time_point t5 = std::chrono::steady_clock::now();
       mi->compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
       std::chrono::steady_clock::time_point t6 = std::chrono::steady_clock::now();
@@ -1159,12 +1159,17 @@ namespace dopt
     func.init(generator.generator, gen_params_cnt, variant_positions);
 
     Texture reference_tex, reference_mask;
+    
+    CameraSettings camera;
+    camera.origin = glm::vec3(0, 0.5, 1.5);
+    camera.target = glm::vec3(0, 0.5, 0);
+    camera.up = glm::vec3(0, 1, 0);
 
     if (by_reference)
     {
       std::vector<float> reference = func.get(reference_params);
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-      mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout());
+      mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera);
       reference_tex = engine::textureManager->load_unnamed_tex("saves/reference.png");
     }
     else
@@ -1174,7 +1179,7 @@ namespace dopt
     SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
     reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
     engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
-    
+
     mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
                          MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                          settings_blk.get_bool("save_intermediate_images", false));
@@ -1225,7 +1230,7 @@ namespace dopt
         std::vector<float> jac = func.get_jac(params, dgen::ModelQuality(true, 0));
         std::vector<float> res = func.get(params, dgen::ModelQuality(true, 0)); 
         std::vector<float> final_grad = std::vector<float>(x_n, 0);
-        float loss = mi.render_and_compare(res);
+        float loss = mi.render_and_compare(res, camera);
         mi.compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
         float reg_q = 0.05;
         std::vector<float> reg_res = f_reg.Forward(0, params);
@@ -1306,11 +1311,11 @@ namespace dopt
 
     std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout());
+    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(), camera);
     if (saved_initial_path != "")
     {
       std::vector<float> initial_model = func.get(init_params);
-      mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout());
+      mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera);
     }
     if (texture_extraction)
     {
@@ -1318,11 +1323,11 @@ namespace dopt
       Model *m = new Model();
       visualizer::simple_mesh_to_model_332(best_model, m);
       m->update();
-      Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex, 3);
+      Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex, 3, camera);
       engine::textureManager->save_png(res_tex, "reconstructed_tex");
 
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-      mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout());
+      mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout(), camera);
     }
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);

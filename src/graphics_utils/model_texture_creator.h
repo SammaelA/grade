@@ -1,6 +1,7 @@
 #pragma once
 #include "tinyEngine/texture.h"
 #include "tinyEngine/postfx.h"
+#include "tinyEngine/camera.h"
 #include <vector>
 
 class ModelTex
@@ -8,7 +9,7 @@ class ModelTex
 public:
   ModelTex();
   ~ModelTex();
-  Texture getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw);
+  Texture getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera);
   typedef struct tex_data
   {
     double w0; 

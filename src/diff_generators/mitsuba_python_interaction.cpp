@@ -242,36 +242,59 @@ void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen:
       set_array_to_ctx_internal(buffer_names[i], i, size * vertex_count);
     }
   }
-  /*
-  clear_buffer(0, 0.0f);
-  clear_buffer(1, 1.0f);
-  clear_buffer(2, 0.0f);
-  for (int i = 0; i < vertex_count; i++)
-  {
-    buffers[0][3 * i] = model[FLOAT_PER_VERTEX * i];
-    buffers[0][3 * i + 1] = model[FLOAT_PER_VERTEX * i + 1];
-    buffers[0][3 * i + 2] = model[FLOAT_PER_VERTEX * i + 2];
-
-    buffers[1][3 * i] = model[FLOAT_PER_VERTEX * i + 3];
-    buffers[1][3 * i + 1] = model[FLOAT_PER_VERTEX * i + 4];
-    buffers[1][3 * i + 2] = model[FLOAT_PER_VERTEX * i + 5];
-
-    buffers[2][2 * i] = model[FLOAT_PER_VERTEX * i + 6];
-    buffers[2][2 * i + 1] = model[FLOAT_PER_VERTEX * i + 7];
-  }
-
-  set_array_to_ctx_internal("vertex_positions", 0, 3 * vertex_count);
-  set_array_to_ctx_internal("vertex_normals", 1, 3 * vertex_count);
-  set_array_to_ctx_internal("vertex_texcoords", 2, 2 * vertex_count);
-  */
 }
 
-void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml)
+void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
+{
+  PyObject *func, *args, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12, *func_ret;
+
+  func = PyObject_GetAttrString(pModule, (char *)"set_camera");
+
+  p1 = PyFloat_FromDouble(camera.origin.x);
+  p2 = PyFloat_FromDouble(camera.origin.y);
+  p3 = PyFloat_FromDouble(camera.origin.z);
+
+  p4 = PyFloat_FromDouble(camera.target.x);
+  p5 = PyFloat_FromDouble(camera.target.y);
+  p6 = PyFloat_FromDouble(camera.target.z);
+
+  p7 = PyFloat_FromDouble(camera.up.x);
+  p8 = PyFloat_FromDouble(camera.up.y);
+  p9 = PyFloat_FromDouble(camera.up.z);
+
+  p10 = PyFloat_FromDouble(180 * camera.fov_rad / PI);
+  p11 = PyLong_FromLong(render_settings.image_w);
+  p12 = PyLong_FromLong(render_settings.image_h);
+
+  args = PyTuple_Pack(13, mitsubaContext, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
+  func_ret = PyObject_CallObject(func, args);
+  show_errors();
+
+  DEL(func);
+  DEL(args);
+  DEL(p1);
+  DEL(p2);
+  DEL(p3);
+  DEL(p4);
+  DEL(p5);
+  DEL(p6);
+  DEL(p7);
+  DEL(p8);
+  DEL(p9);
+  DEL(p10);
+  DEL(p11);
+  DEL(p12);
+  DEL(func_ret);
+}
+
+void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
+                                            const CameraSettings &camera)
 {
   if (model_max_size < model.size()/ml.f_per_vert)
     set_model_max_size(model.size()/ml.f_per_vert);
   
   model_to_ctx(model, ml);
+  camera_to_ctx(camera);
 
   PyObject *func, *args, *ref_dir_arg, *func_ret;
 
@@ -287,10 +310,11 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   DEL(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const std::vector<float> &model, double *timers)
+float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   model_to_ctx(model, opt_model_layout);
+  camera_to_ctx(camera);
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float loss = render_and_compare_internal();
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();

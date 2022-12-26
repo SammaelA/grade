@@ -243,6 +243,11 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
 
+  CameraSettings camera;
+  camera.origin = glm::vec3(0, 0.5, 1.5);
+  camera.target = glm::vec3(0, 0.5, 0);
+  camera.up = glm::vec3(0, 1, 0);
+
   if ((argc >= 3 && std::string(argv[2]) == "-opt") || argc == 2)
   {
     dopt::test();
@@ -315,7 +320,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     dgen::dgen_test("dishes", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout(), camera);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_with_camera")
   {
@@ -328,7 +333,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     dgen::dgen_test("dishes", params, res, true);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout(), camera);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_tex")
   {
@@ -345,19 +350,19 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
-    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout(), camera);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
-    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout(), camera);
 
     engine::view->next_frame();
     Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3);
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera);
     textureManager.save_png(res_tex, "reconstructed_tex");
 
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout(), camera);
 
     std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 4, -1}, {0, 0.75, 1, 1, 1, 1}};
 
@@ -382,20 +387,20 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
-    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_colored.png", dgen::ModelLayout(), camera);
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE));
-    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_sihouette.png", dgen::ModelLayout(), camera);
 
     engine::view->next_frame();
     Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3);
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera);
     textureManager.save_png(res_tex, "reconstructed_tex");
     engine::view->next_frame();
 
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout());
+    mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout(), camera);
 
     mi.init_optimization_with_tex("saves/tex_colored.png", "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE, 1 << 16, 
                                   dgen::ModelLayout(0, 3, 6, 8, 8), 
@@ -404,7 +409,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
     for (int i=0;i<50;i++)
     {
-      float loss = mi.render_and_compare(res, nullptr);
+      float loss = mi.render_and_compare(res, camera);
       logerr("%d loss = %f",i, loss);
     }
   } 

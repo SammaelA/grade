@@ -36,7 +36,7 @@ ModelTex::~ModelTex()
   delete_framebuffer(fbo);
 }
 
-Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw)
+Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera)
 {
   //check texture type
   Texture t = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
@@ -68,8 +68,8 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
   glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = glm::perspective(PI/3, 1.0f, 0.1f, 3000.0f);
-  glm::mat4 view = glm::lookAt(glm::vec3(0, 0.5, 1.5), glm::vec3(0, 0.5, 0), glm::vec3(0, 1, 0));
+  glm::mat4 projection = glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
+  glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
   UV.use();
 
   glActiveTexture(GL_TEXTURE0);

@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 #include "diff_geometry_generation.h"
-
+#include "tinyEngine/camera.h"
 struct _object;
 typedef _object PyObject;
 class MitsubaInterface
@@ -54,11 +54,12 @@ public:
                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
                                   RenderSettings render_settings, bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
-  void render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml);
+  void render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
+                            const CameraSettings &camera);
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
   //that are used by compute_final_grad
-  float render_and_compare(const std::vector<float> &model, double *timers = nullptr);
+  float render_and_compare(const std::vector<float> &model, const CameraSettings &camera, double *timers = nullptr);
 
   //generator_jak size is [FLOAT_PER_VERTEX*params_count*vertex_count], final_grad size is [params_count]
   void compute_final_grad(const std::vector<float> &generator_jac, int params_count, int vertex_count, std::vector<float> &final_grad);
@@ -71,6 +72,7 @@ public:
   void set_array_to_ctx_internal(const std::string &name, int buffer_id, int size);//sends size float from buffer to mitsuba context 
   float render_and_compare_internal();//returns loss function value
   void model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml);
+  void camera_to_ctx(const CameraSettings &camera);
   void clear_buffer(int buffer_id, float val = 0);
   int model_max_size = 0;
   int iteration = 0;
