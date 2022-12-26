@@ -16,6 +16,7 @@
 #include "diff_generators/mitsuba_python_interaction.h"
 #include "graphics_utils/model_texture_creator.h"
 #include "common_utils/optimization/optimization_benchmark.h"
+#include "diff_generators/depth_extract_compare.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -416,6 +417,43 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   else if (argc >= 3 && std::string(argv[2]) == "-opt_test")
   {
     opt::optimization_benchmark();
+  }
+  else if (argc >= 3 && std::string(argv[2]) == "-depth_test")
+  {
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    std::vector<float> res;
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    DepthLossCalculator dlc;
+    
+    dgen::dgen_test("dishes", params, res);
+    Model *m = new Model();
+    visualizer::simple_mesh_to_model_332(res, m);
+    m->update();
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
+    mi.render_model_to_file(res, "saves/depth_test_tex_colored_1.png", dgen::ModelLayout(), camera);
+    Texture d1 = dlc.get_depth(*m, camera, 256, 256);
+    textureManager.save_png(d1, "depth_test_depth_1");
+
+    params[0] += 1;
+    params[1] += 1;
+    res.clear();
+    dgen::dgen_test("dishes", params, res);
+    m = new Model();
+    visualizer::simple_mesh_to_model_332(res, m);
+    m->update();
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"));
+    mi.render_model_to_file(res, "saves/depth_test_tex_colored_2.png", dgen::ModelLayout(), camera);
+    Texture d2 = dlc.get_depth(*m, camera, 256, 256);
+    textureManager.save_png(d2, "depth_test_depth_2");
+  
+    float diff = dlc.get_loss(*m, d1, camera);
+    logerr("depth diff %f", diff);
+
+    engine::view->next_frame();
   }
   else
   {
