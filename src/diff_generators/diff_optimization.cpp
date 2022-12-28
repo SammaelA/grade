@@ -14,6 +14,7 @@
 #include "graphics_utils/model_texture_creator.h"
 #include "graphics_utils/modeling.h"
 #include "common_utils/optimization/optimization.h"
+#include "diff_generators/depth_extract_compare.h"
 
 namespace dopt
 {
@@ -1158,12 +1159,14 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(generator.generator, gen_params_cnt, variant_positions);
 
-    Texture reference_tex, reference_mask;
+    Texture reference_tex, reference_mask, reference_depth;
     
     CameraSettings camera;
     camera.origin = glm::vec3(0, 0.5, 1.5);
     camera.target = glm::vec3(0, 0.5, 0);
     camera.up = glm::vec3(0, 1, 0);
+
+    DepthLossCalculator dlc;
 
     if (by_reference)
     {
@@ -1171,6 +1174,12 @@ namespace dopt
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
       mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera);
       reference_tex = engine::textureManager->load_unnamed_tex("saves/reference.png");
+
+      Model *m = new Model();
+      visualizer::simple_mesh_to_model_332(reference, m);
+      m->update();
+      reference_depth = dlc.get_depth(*m, camera, 128, 128);
+      delete m;
     }
     else
     {
@@ -1256,6 +1265,18 @@ namespace dopt
         return std::pair<float,std::vector<float>>(loss, final_grad);
       };
 
+      opt::opt_func F_depth_reg = [&](std::vector<float> &params) -> float
+      {
+        std::vector<float> res = func.get(params, dgen::ModelQuality(true, 1)); 
+        Model *m = new Model();
+        visualizer::simple_mesh_to_model_332(res, m);
+        m->update();
+        float val = dlc.get_loss(*m, reference_depth, camera);
+        delete m;
+        //logerr("F_depth_reg %f", val);
+        return val;
+      };
+
       opt::Optimizer *opt = nullptr;
       if (search_algorithm == "adam")
         opt = new opt::Adam();
@@ -1297,7 +1318,7 @@ namespace dopt
       return 1;
       */
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      opt->optimize(F_silhouette, params_min, params_max, *opt_settings);
+      opt->optimize(F_silhouette, params_min, params_max, *opt_settings, F_depth_reg);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
       double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();

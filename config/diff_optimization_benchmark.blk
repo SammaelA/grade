@@ -23,11 +23,11 @@
   reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
-  search_algorithm:s = "adam"
+  search_algorithm:s = "memetic_classic"
 
   memetic_classic
   {
-    total_function_calls:i = 4800
+    total_function_calls:i = 6400
     population_size:i = 32
     tournament_size:i = 16
     mutation_chance:r = 0.2
@@ -35,6 +35,7 @@
     local_search_iterations:i = 75
     local_search_learning_rate:r = 0.05
     recreation_diversity_thr:r = 1.75
+    depth_reg_q:r = 0.01
   }
 
   DE
@@ -97,6 +98,6 @@
   selection_image_size:i = 256
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
-  save_intermediate_images:b = true
+  save_intermediate_images:b = false
   texture_extraction:b = true
 }

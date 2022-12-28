@@ -5,7 +5,8 @@
 
 namespace opt
 {
-  void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
+  void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
+                                opt_func_vector &F_reg)
   {
     float mutation_chance = settings.get_double("mutation_chance", 0.2);
     float mutation_power = settings.get_double("mutation_power", 0.3);
@@ -16,6 +17,7 @@ namespace opt
     int local_search_iterations = settings.get_int("local_search_iterations", 76);
     float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.05);
     float recreation_diversity_thr = settings.get_double("recreation_diversity_thr", 1.75);
+    float depth_reg_q = settings.get_double("depth_reg_q", 0);
     int budget = 0;
 
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
@@ -80,6 +82,12 @@ namespace opt
 
       std::pair<float, std::vector<float>> res;
       res.second = opt->get_best_result(&(res.first));
+      //add regualized part to the last result
+      if (depth_reg_q > 0)
+      {
+        std::vector<std::vector<float>> t{res.second};
+        res.first += depth_reg_q*F_reg(t)[0];
+      }
       if (res.first < best_result)
       {
         best_result = res.first;

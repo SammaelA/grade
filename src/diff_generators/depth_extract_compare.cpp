@@ -24,8 +24,8 @@ DepthLossCalculator::~DepthLossCalculator()
 
 Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, int w, int h)
 {
-  color = engine::textureManager->create_texture(w, h, GL_RGBA32F);
-  depth = engine::textureManager->create_texture(w, h, GL_DEPTH_COMPONENT32, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
+  Texture color = engine::textureManager->create_texture(w, h, GL_RGBA32F, 1, NULL, GL_RGBA, GL_FLOAT);
+  Texture depth = engine::textureManager->create_texture(w, h, GL_DEPTH_COMPONENT32, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
 
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth.texture, 0);
@@ -54,6 +54,7 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   depth_postprocess.render();
   
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   return color;
@@ -81,15 +82,21 @@ float DepthLossCalculator::get_loss(Model &m, Texture reference_depth, const Cam
   glBindTexture(d.type, 0);
 
   double diff = 0.0;
-  double sum = 0.0;
+  double sum = 1e-6;
   for (int i=0;i<4*d.get_W()*d.get_H();i+=4)
   {
-    if (data_1[i+3] > 0.5 && data_2[i+3] > 0.5)
+    if (data_1[i+3] > 0.5 || data_2[i+3] > 0.5)
     {
       diff += abs(data_1[i] - data_2[i]); //R channel where silhouettes overlap
       sum += 1;
+      //debug("%2d ", MIN((int)(1000*abs(data_1[i] - data_2[i])), 99));
     }
+    //else
+    //  debug("00 ");
+    //if ((i+4) % (4*d.get_W()) == 0)
+    //  debugnl();
   }
+  //debugnl();
   delete[] data_1;
   delete[] data_2;
 

@@ -12,7 +12,6 @@ public:
   Texture get_depth(Model &m, const CameraSettings &camera, int tex_size_x, int tex_size_y);
   float get_loss(Model &m, Texture reference_depth, const CameraSettings &camera);
 private:
-  Texture color, depth;
   GLuint fbo;
   Shader render_model;
   PostFx depth_postprocess;

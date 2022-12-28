@@ -15,7 +15,8 @@ namespace opt
       return sum;
   }
 
-  void CMA_ES::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
+  void CMA_ES::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
+                        opt_func_vector &F_reg)
   {
     cmaes_t evo; /* an CMA-ES type struct or "object" */
     double *arFunvals, *const*pop, *xfinal;

@@ -65,7 +65,8 @@ namespace opt
     return params;
   }
 
-  void GridSearchAdam::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
+  void GridSearchAdam::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
+                                opt_func_vector &F_reg)
   {
     std::vector<unsigned short> init_bins_count;
     std::vector<unsigned short> init_bins_positions;
