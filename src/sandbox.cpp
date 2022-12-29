@@ -249,12 +249,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   camera.target = glm::vec3(0, 0.5, 0);
   camera.up = glm::vec3(0, 1, 0);
 
-  if ((argc >= 3 && std::string(argv[2]) == "-opt") || argc == 2)
-  {
-    dopt::test();
-    return;
-  }
-  else if (argc >= 4 && std::string(argv[2]) == "-sil_test")
+  if (argc >= 4 && std::string(argv[2]) == "-sil_test")
   {
     Texture t = engine::textureManager->load_unnamed_tex(std::string(argv[3]));
     SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
@@ -275,7 +270,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
   {
-    //srand(time(NULL));
+    srand(time(NULL));
     std::string blk_name = std::string(argv[3]);
     Block b;
     load_block_from_file(blk_name, b);

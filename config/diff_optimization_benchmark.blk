@@ -27,15 +27,15 @@
 
   memetic_classic
   {
-    total_function_calls:i = 6400
-    population_size:i = 32
-    tournament_size:i = 16
-    mutation_chance:r = 0.2
-    mutation_power:r = 0.3
-    local_search_iterations:i = 75
-    local_search_learning_rate:r = 0.05
-    recreation_diversity_thr:r = 1.75
-    depth_reg_q:r = 0.01
+    total_function_calls:i = 4000
+    population_size:i = 16
+    tournament_size:i = 6
+    mutation_chance:r = 0.3
+    mutation_power:r = 0.2
+    local_search_iterations:i = 60
+    local_search_learning_rate:r = 0.06
+    recreation_diversity_thr:r = 1.5
+    depth_reg_q:r = 0.0
   }
 
   DE
@@ -63,30 +63,6 @@
     learning_rate:r = 0.03
     verbose:b = true
     initial_params:arr = {4.24, 4.25, 4.256, 4.296, 4.339, 4.293, 4.461, 4.436, 4.549, 0.955, 0.904, 0.028, 0.509, 0.211, 0.229, 0.254, 0.268, 0.326, 0.389, 0.326, 0.642, 0, 0.004, 0.002, 0.100, -0.250}
-  }
-  simple_search 
-  {
-    iterations:i = 500
-    initial_preset:arr = {4.24, 4.25, 4.256, 4.296, 4.339, 4.293, 4.461, 4.436, 4.549, 0.955, 0.904, 0.028, 0.509, 0.211, 0.229, 0.254, 0.268, 0.326, 0.389, 0.326, -0.077, 2.718, -0.040, 0.087, 0.031, -0.160}
-  }
-  
-  advanced_search
-  {
-    start_points:i = 8
-    base_iterations:i = 750
-    gd_iterations_per_base_iteration:i = 1
-  }
-
-  memetic
-  {
-    genetic_algorithm_iterations:i = 10
-    gradient_descent_iterations:i = 300
-    initial_population_size:i = 24
-    remove_chance:r = 0.5
-    recombination_chance:r = 0.0
-    mutation_chance:r = 0.5
-    reinit_chance:r = 0.0
-    mutation_power:r = 0.2
   }
 
   procedural_generator:s = "dishes"
