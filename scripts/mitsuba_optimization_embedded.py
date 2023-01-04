@@ -181,16 +181,22 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
   }
   return context
 
-def init_optimization(context, img_ref_dir, loss, save_intermediate_images):
-  context['img_ref_dir'] = img_ref_dir
+def init_optimization(context, img_ref_dir, loss, cameras_count, save_intermediate_images):
+  img_ref_dirs = img_ref_dir.split("#")
+  for i in range(cameras_count):
+    context['img_ref_dir_'+str(i)] = img_ref_dirs[i]
   context['loss_function'] = loss
   context['save_intermediate_images'] = int(save_intermediate_images)
+  context['cameras_count'] = int(cameras_count)
   context['status'] = 'optimization_no_tex'
 
-def init_optimization_with_tex(context, img_ref_dir, loss, save_intermediate_images):
-  context['img_ref_dir'] = img_ref_dir
+def init_optimization_with_tex(context, img_ref_dir, loss, cameras_count, save_intermediate_images):
+  img_ref_dirs = img_ref_dir.split("#")
+  for i in range(cameras_count):
+    context['img_ref_dir_'+str(i)] = img_ref_dirs[i]
   context['loss_function'] = loss
   context['save_intermediate_images'] = int(save_intermediate_images)
+  context['cameras_count'] = int(cameras_count)
   context['status'] = 'optimization_with_tex'
 
   opt = mi.ad.Adam(lr=0.1)
@@ -249,17 +255,21 @@ def F_loss_mixed(img, img_ref):
     return loss
 
 def render(it, context):
+
+  #load reference on the first iteration
   if (int(it) == 0):
-    with Image.open(context['img_ref_dir']) as img:
-      img.load()
-    img = img.convert('RGB')
-    img_raw = numpy.asarray(img)
-    img_raw = (img_raw/255.0) ** 2.2
-    context['img_ref'] = mi.TensorXf(img_raw)
+    for i in range(context['cameras_count']):
+      print(context['img_ref_dir_'+str(i)])
+      with Image.open(context['img_ref_dir_'+str(i)]) as img: ##TODO: proper link
+        img.load()
+      img = img.convert('RGB')
+      img_raw = numpy.asarray(img)
+      img_raw = (img_raw/255.0) ** 2.2
+      context['img_ref_'+str(i)] = mi.TensorXf(img_raw)
+  
+  #prepare model
   scene = context['scene']
   params = context['params']
-  img_ref = context['img_ref']
-
   params['model.vertex_positions'] = context['vertex_positions']
   params['model.vertex_normals'] = context['vertex_normals']
   params['model.vertex_texcoords'] = context['vertex_texcoords']
@@ -268,19 +278,51 @@ def render(it, context):
   params['model.face_count'] = int(vertex_count/3)
   if (len(params['model.faces']) != vertex_count):
     params['model.faces'] = list(range(vertex_count))
-  params.update()
+  t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
+  camera_params_grad = []
 
-  dr.enable_grad(params['model.vertex_positions'])
-  dr.enable_grad(params['model.vertex_normals'])
-  dr.enable_grad(params['model.vertex_texcoords'])
-  
-  img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
-  loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
-  dr.backward(loss)
+  #render scene from each camera
+  for camera_n in range(context['cameras_count']):
+    img_ref = context['img_ref_'+str(camera_n)]
 
-  context['vertex_positions_grad'] = dr.grad(params['model.vertex_positions'])
-  context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
-  context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
+    pos = mi.Point3f(context['camera_params'][6*camera_n + 0], context['camera_params'][6*camera_n + 1], context['camera_params'][6*camera_n + 2])
+    tq = 180/numpy.pi
+    angles = mi.Point3f(tq*context['camera_params'][6*camera_n + 3], tq*context['camera_params'][6*camera_n + 4], tq*context['camera_params'][6*camera_n + 5])
+    
+    dr.enable_grad(pos)
+    dr.enable_grad(angles)
+    dr.enable_grad(t1)
+    dr.enable_grad(params['model.vertex_normals'])
+    dr.enable_grad(params['model.vertex_texcoords'])
+    trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+    tr_positions = trafo @ t1
+    params['model.vertex_positions'] = dr.ravel(tr_positions)
+    params.update()
+
+    img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
+    loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
+    dr.backward(loss)
+
+    camera_params_grad.append(dr.grad(pos).x)
+    camera_params_grad.append(dr.grad(pos).y)
+    camera_params_grad.append(dr.grad(pos).z)
+    camera_params_grad.append(dr.grad(angles).x)
+    camera_params_grad.append(dr.grad(angles).y)
+    camera_params_grad.append(dr.grad(angles).z)
+    if (camera_n == 0):
+      vertex_positions_grad = dr.ravel(dr.grad(t1))
+    else:
+      vertex_positions_grad = vertex_positions_grad + dr.ravel(dr.grad(t1))
+    
+    if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
+      mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
+      mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
+
+  context['camera_params_grad'] = numpy.asarray(camera_params_grad)
+  context['vertex_positions_grad'] = vertex_positions_grad / float(context['cameras_count'])
+
+  #context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
+  #context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']
     opt.step()
@@ -293,10 +335,6 @@ def render(it, context):
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
       mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
-  else:
-    if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
-      mi.util.write_bitmap("saves/iter"+str(it)+".png", img)
-      mi.util.write_bitmap("saves/iter"+str(it)+"_diff.png", dr.sqr(img - img_ref))
   return loss[0]
 
 def get_params(context, key):

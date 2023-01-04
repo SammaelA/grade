@@ -398,14 +398,14 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
     mi.render_model_to_file(res, "saves/tex_reconstructed.png", dgen::ModelLayout(), camera);
 
-    mi.init_optimization_with_tex("saves/tex_colored.png", "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE, 1 << 16, 
+    mi.init_optimization_with_tex({"saves/tex_colored.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE, 1 << 16, 
                                   dgen::ModelLayout(0, 3, 6, 8, 8), 
                                   MitsubaInterface::RenderSettings(512, 512, 64, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
-                                  true);
+                                  1, true);
 
     for (int i=0;i<50;i++)
     {
-      float loss = mi.render_and_compare(res, camera);
+      float loss = mi.render_and_compare(res, camera, {});
       logerr("%d loss = %f",i, loss);
     }
   } 

@@ -45,10 +45,9 @@ namespace dopt
           delete f;
       }
     }
-    void init(dgen::generator_func _model_creator, int _model_creator_params_cnt, std::vector<unsigned short> &variant_positions)
+    void init(dgen::generator_func _model_creator, std::vector<unsigned short> &variant_positions)
     {
       model_creator = _model_creator;
-      model_creator_params_cnt = _model_creator_params_cnt;
       variant_params_positions = variant_positions;
     }
     std::vector<float> get(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
@@ -58,6 +57,26 @@ namespace dopt
     std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
       return functions[find_or_add(params, mq)]->Jacobian(params); 
+    }
+    std::vector<float> get_transformed(const std::vector<float> &params, const std::vector<float> &camera_params, 
+                                       dgen::ModelQuality mq = dgen::ModelQuality())
+    {
+      std::vector<float> f_model = functions[find_or_add(params, mq)]->Forward(0, params); 
+      std::vector<dgen::dfloat> model(f_model.size());
+      for (int i=0;i<f_model.size();i++)
+        model[i] = f_model[i];
+
+      dgen::dmat43 rot = dgen::rotate(dgen::ident(), dgen::dvec3{1,0,0}, camera_params[3]);
+      rot = dgen::rotate(rot, dgen::dvec3{0,1,0}, camera_params[4]);
+      rot = dgen::rotate(rot, dgen::dvec3{0,0,1}, camera_params[5]);
+      dgen::dmat43 tr = dgen::translate(dgen::ident(), dgen::dvec3{camera_params[0], camera_params[1], camera_params[2]});
+      rot = dgen::mul(tr, rot);
+      dgen::transform(model, rot);
+
+      for (int i=0;i<f_model.size();i++)
+        f_model[i] = CppAD::Value(model[i]);
+      
+      return f_model;
     }
   private:
     int find_or_add(const std::vector<float> &params, dgen::ModelQuality mq)
@@ -78,7 +97,6 @@ namespace dopt
         std::vector<dgen::dfloat> Y;
         CppAD::Independent(X);
         model_creator(X, Y, mq);
-        dgen::transform_by_scene_parameters(X, model_creator_params_cnt, Y);
         CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
         functions.push_back(f);
         output_sizes.push_back(Y.size());
@@ -99,7 +117,6 @@ namespace dopt
       }
       return vs;
     }
-    int model_creator_params_cnt = 0;
     dgen::generator_func model_creator;
     std::map<std::vector<unsigned short>, int, UShortVecComparator> variant_set_to_function_pos;
     std::vector<CppAD::ADFun<float> *> functions;
@@ -212,7 +229,6 @@ namespace dopt
     load_block_from_file(generator.presets_blk_path, presets_blk);
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
-    size_t x_n = gen_params_cnt + scene_params_cnt;
 
     int verbose_level = settings_blk.get_int("verbose_level", 1);
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
@@ -226,12 +242,16 @@ namespace dopt
     std::string saved_initial_path = settings_blk.get_string("saved_initial_path", "");
     std::string reference_path = settings_blk.get_string("reference_path", "");
 
-    settings_blk.get_arr("init_params", init_params);
-    if (init_params.size() != x_n && init_params.size() > 0)
+    auto get_gen_params = [&](const std::vector<float> &params) -> std::vector<float>
     {
-      logerr("DOpt Error: init_params has %d values, it should have %d", init_params.size(), x_n);
-      return 1.0;
-    }
+      std::vector<float> gp = std::vector<float>(params.begin(), params.begin() + gen_params_cnt);
+      return gp;
+    };
+    auto get_camera_params = [&](const std::vector<float> &params) -> std::vector<float>
+    {
+      std::vector<float> gp = std::vector<float>(params.begin() + gen_params_cnt, params.end());
+      return gp;
+    };
 
     auto process_blk = [&](Block &blk){
       for (int i=0;i<blk.size();i++)
@@ -248,6 +268,7 @@ namespace dopt
             logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i));
           params_min.push_back(min_max.x);
           params_max.push_back(min_max.y);
+          init_params.push_back(0.5*(min_max.x + min_max.y));
 
           int bins_cnt = pb->get_int("init_bins_count", 0);
           bool is_variant = pb->get_bool("is_variant", false);
@@ -281,35 +302,78 @@ namespace dopt
         }
       }
     };
-    process_blk(gen_params);
-    process_blk(scene_params);
-
-
-    if (init_params.empty())
-    {
-      init_params = std::vector<float>(x_n, 0);
-      for (int i=0;i<x_n;i++)
-      {
-        init_params[i] = 0.5*(params_min[i] + params_max[i]);
-      }
-    }
-    else 
-    {
-      for (int i=0;i<x_n;i++)
-      {
-        if (init_params[i] < params_min[i] || init_params[i] > params_max[i])
-        {
-          logerr("Wrong initial value %f for parameter %d. In should be in [%f, %f] interval",
-                 init_params[i], i, params_min[i], params_max[i]);
-          init_params[i] = CLAMP(init_params[i], params_min[i], params_max[i]);
-        }
-      }
-    }
-
-    load_presets_from_blk(presets_blk, gen_params, init_params, parameter_presets);
 
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d SP %d var\n", 
-          x_n, gen_params_cnt, scene_params_cnt, init_bins_count.size(), variant_count.size());
+          gen_params_cnt + scene_params_cnt, gen_params_cnt, scene_params_cnt, init_bins_count.size(), variant_count.size());
+
+    DiffFunctionEvaluator func;
+    func.init(generator.generator, variant_positions);
+
+    std::vector<Texture> reference_tex, reference_mask, reference_depth;
+    int cameras_count = 1;
+
+    CameraSettings camera;
+    camera.origin = glm::vec3(0, 0.5, 1.5);
+    camera.target = glm::vec3(0, 0.5, 0);
+    camera.up = glm::vec3(0, 1, 0);
+
+    DepthLossCalculator dlc;
+
+    if (by_reference)
+    {
+      std::vector<float> reference_params;
+
+      settings_blk.get_arr("reference_params", reference_params);
+      if (reference_params.size() != gen_params_cnt)
+      {
+        logerr("DOpt Error: reference_params has %d values, it should have %d", reference_params.size(), gen_params_cnt);
+        return 1.0;
+      }
+
+      Block *reference_cameras_blk = settings_blk.get_block("reference_cameras");
+      if (!reference_cameras_blk || reference_cameras_blk->size() == 0)
+      {
+        logerr("DOpt Error: reference_cameras block not found");
+        return 1.0;
+      }
+      cameras_count = reference_cameras_blk->size();
+      for (int i=0;i<reference_cameras_blk->size();i++)
+      {
+        std::vector<float> reference_camera_params;
+        reference_cameras_blk->get_arr(i, reference_camera_params);
+        std::vector<float> reference = func.get_transformed(reference_params, reference_camera_params);
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera);
+        reference_tex.push_back(engine::textureManager->load_unnamed_tex("saves/reference.png"));
+
+        Model *m = new Model();
+        visualizer::simple_mesh_to_model_332(reference, m);
+        m->update();
+        reference_depth.push_back(dlc.get_depth(*m, camera, 128, 128));
+        delete m;
+      }
+    }
+    else
+    {
+      cameras_count = 1;
+      reference_tex.push_back(engine::textureManager->load_unnamed_tex(reference_path));
+      reference_depth.push_back(engine::textureManager->create_texture(128, 128));//TODO: estimate depth
+    }
+
+    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+    std::vector<std::string> reference_images_dir;
+    for (int i=0;i<cameras_count;i++)
+    {
+      reference_mask.push_back(se.get_silhouette(reference_tex[i], sel_image_size, sel_image_size));
+      reference_images_dir.push_back("saves/reference_" + std::to_string(i) + ".png");
+      engine::textureManager->save_png_directly(reference_mask[i], reference_images_dir.back());
+    }
+
+    process_blk(gen_params);
+    for (int i=0;i<cameras_count;i++)
+      process_blk(scene_params);//we dublicate scene parameters for each camera (currently scene == camera only)
+
+    load_presets_from_blk(presets_blk, gen_params, init_params, parameter_presets);
 
     CppAD::ADFun<float> f_reg;
     {
@@ -323,60 +387,10 @@ namespace dopt
       f_reg = CppAD::ADFun<float>(X, Y);
     }
 
-    DiffFunctionEvaluator func;
-    func.init(generator.generator, gen_params_cnt, variant_positions);
 
-    Texture reference_tex, reference_mask, reference_depth;
-    
-    CameraSettings camera;
-    camera.origin = glm::vec3(0, 0.5, 1.5);
-    camera.target = glm::vec3(0, 0.5, 0);
-    camera.up = glm::vec3(0, 1, 0);
-
-    DepthLossCalculator dlc;
-
-    if (by_reference)
-    {
-      std::vector<float> reference_params;
-      settings_blk.get_arr("reference_params", reference_params);
-      if (reference_params.size() != x_n)
-      {
-        logerr("DOpt Error: reference_params has %d values, it should have %d", reference_params.size(), x_n);
-        return 1.0;
-      }
-
-      for (int i=0;i<x_n;i++)
-      {
-        if (reference_params[i] < params_min[i] || reference_params[i] > params_max[i])
-        {
-          logerr("Wrong reference value %f for parameter %d. In should be in [%f, %f] interval",
-                 reference_params[i], i, params_min[i], params_max[i]);
-          reference_params[i] = CLAMP(reference_params[i], params_min[i], params_max[i]);
-        }
-      }
-
-      std::vector<float> reference = func.get(reference_params);
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-      mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera);
-      reference_tex = engine::textureManager->load_unnamed_tex("saves/reference.png");
-
-      Model *m = new Model();
-      visualizer::simple_mesh_to_model_332(reference, m);
-      m->update();
-      reference_depth = dlc.get_depth(*m, camera, 128, 128);
-      delete m;
-    }
-    else
-    {
-      reference_tex = engine::textureManager->load_unnamed_tex(reference_path);
-    }
-    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-    reference_mask = se.get_silhouette(reference_tex, sel_image_size, sel_image_size);
-    engine::textureManager->save_png_directly(reference_mask, "saves/reference.png");
-
-    mi.init_optimization("saves/reference.png", MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
+    mi.init_optimization(reference_images_dir, MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
                          MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
-                         settings_blk.get_bool("save_intermediate_images", false));
+                         cameras_count, settings_blk.get_bool("save_intermediate_images", false));
 
     OptimizationResult opt_result{init_params, 1000, 0};
 
@@ -400,18 +414,19 @@ namespace dopt
         if (verbose)
         {
           debug("params [");
-          for (int j=0;j<x_n;j++)
+          for (int j=0;j<params.size();j++)
           {
             debug("%.3f, ", params[j]);
           }
           debug("]\n");
         }
-        std::vector<float> jac = func.get_jac(params, dgen::ModelQuality(true, 0));
-        std::vector<float> res = func.get(params, dgen::ModelQuality(true, 0)); 
-        std::vector<float> final_grad = std::vector<float>(x_n, 0);
-        float loss = mi.render_and_compare(res, camera);
-        mi.compute_final_grad(jac, x_n, res.size()/FLOAT_PER_VERTEX, final_grad);
-        float reg_q = 0.05;
+        std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(true, 0));
+        std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(true, 0)); 
+        std::vector<float> final_grad = std::vector<float>(params.size(), 0);
+
+        float loss = mi.render_and_compare(res, camera, get_camera_params(params));
+        mi.compute_final_grad(jac, gen_params_cnt, res.size()/FLOAT_PER_VERTEX, final_grad);
+        float reg_q = 0.00;
         std::vector<float> reg_res = f_reg.Forward(0, params);
         std::vector<float> reg_jac = f_reg.Jacobian(params);
         //logerr("reg_res[0] = %f",reg_res[0]);
@@ -423,7 +438,7 @@ namespace dopt
         {
           debug("iter [%d] loss = %.3f\n", opt_result.total_iters, loss);
           debug("grad {");
-          for (int j=0;j<x_n;j++)
+          for (int j=0;j<final_grad.size();j++)
           {
             debug("%.3f ", final_grad[j]);
           }
@@ -437,11 +452,15 @@ namespace dopt
 
       opt::opt_func F_depth_reg = [&](std::vector<float> &params) -> float
       {
-        std::vector<float> res = func.get(params, dgen::ModelQuality(true, 1)); 
+        std::vector<float> res = func.get_transformed(get_gen_params(params), get_camera_params(params), dgen::ModelQuality(true, 1)); 
         Model *m = new Model();
         visualizer::simple_mesh_to_model_332(res, m);
         m->update();
-        float val = dlc.get_loss(*m, reference_depth, camera);
+        if (reference_depth.size() > 1)
+        {
+          logerr("Warning: you are using F_depth_reg function with more than one camera estimation. It's useless");
+        }
+        float val = dlc.get_loss(*m, reference_depth[0], camera);
         delete m;
         return val;
       };
@@ -478,21 +497,24 @@ namespace dopt
       debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms/iters);
     }
 
-    std::vector<float> best_model = func.get(opt_result.best_params, dgen::ModelQuality(false, 3));
+    std::vector<float> best_model = func.get_transformed(get_gen_params(opt_result.best_params), get_camera_params(opt_result.best_params),
+                                                         dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(), camera);
     if (saved_initial_path != "")
     {
-      std::vector<float> initial_model = func.get(init_params);
+      std::vector<float> initial_model = func.get_transformed(get_gen_params(init_params), get_camera_params(init_params));
       mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera);
     }
     if (texture_extraction)
     {
+      //Texture estimation only by 1 camera by now
+
       ModelTex mt;
       Model *m = new Model();
       visualizer::simple_mesh_to_model_332(best_model, m);
       m->update();
-      Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex, 3, camera);
+      Texture res_tex = mt.getTexbyUV(reference_mask[0], *m, reference_tex[0], 3, camera);
       engine::textureManager->save_png(res_tex, "reconstructed_tex");
 
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
@@ -501,7 +523,7 @@ namespace dopt
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);
     debug("Best params: [");
-    for (int j = 0; j < x_n; j++)
+    for (int j = 0; j < opt_result.best_params.size(); j++)
     {
       debug("%.3f, ", opt_result.best_params[j]);
     }

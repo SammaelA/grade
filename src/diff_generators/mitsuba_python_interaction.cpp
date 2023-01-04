@@ -163,22 +163,43 @@ std::string get_loss_function_name(MitsubaInterface::LossFunction loss_function)
   }
   return loss_function_name;
 }
+void MitsubaInterface::init_optimization(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, int model_max_size, 
+                                         dgen::ModelLayout opt_ml,
+                                         RenderSettings render_settings, int cam_count, bool save_intermediate_images)
+{
+  init_optimization_internal("init_optimization", reference_image_dir, loss_function, model_max_size, opt_ml, 
+                             render_settings, cam_count, save_intermediate_images);
+}
 
-void MitsubaInterface::init_optimization(const std::string &reference_image_dir, LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                         RenderSettings render_settings, bool save_intermediate_images)
+void MitsubaInterface::init_optimization_internal(const std::string &function_name,
+                                                  const std::vector<std::string> &reference_images_dir, LossFunction loss_function, int model_max_size, 
+                                                  dgen::ModelLayout opt_ml, RenderSettings render_settings, 
+                                                  int cam_count, bool save_intermediate_images)
 {
   init_scene_and_settings(render_settings);
 
   opt_model_layout = opt_ml;
+  cameras_count = cam_count;
   std::string loss_function_name = get_loss_function_name(loss_function);
+  
+  //save all strings as "ref1.png#ref2.png#ref3.png"
+  std::string full_ref_string = "";
+  assert(reference_images_dir.size() >= cam_count);
+  for (int i=0;i<cam_count;i++)
+  {
+    full_ref_string += reference_images_dir[i];
+    if (i < cam_count - 1)
+     full_ref_string += "#"; 
+  }
 
-  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
+  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *c_cnt, *int_im;
 
-  func = PyObject_GetAttrString(pModule, (char *)"init_optimization");
-  ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
+  func = PyObject_GetAttrString(pModule, function_name.c_str());
+  ref_dir_arg = PyUnicode_FromString(full_ref_string.c_str());
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
   int_im = PyLong_FromLong((int)save_intermediate_images);
-  args = PyTuple_Pack(4, mitsubaContext, ref_dir_arg, loss_func, int_im);
+  c_cnt = PyLong_FromLong(cam_count);
+  args = PyTuple_Pack(5, mitsubaContext, ref_dir_arg, loss_func, c_cnt, int_im);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
@@ -190,40 +211,19 @@ void MitsubaInterface::init_optimization(const std::string &reference_image_dir,
   DEL(ref_dir_arg);
   DEL(func_ret);
   DEL(loss_func);
+  DEL(c_cnt);
   DEL(int_im);
 }
 
-void MitsubaInterface::init_optimization_with_tex(const std::string &reference_image_dir, const std::string &initial_texture_name,
+void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, const std::string &initial_texture_name,
                                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                                  RenderSettings render_settings, bool save_intermediate_images)
+                                                  RenderSettings render_settings, int cam_count, bool save_intermediate_images)
 {
   render_settings.renderStyle = RenderStyle::TEXTURED_CONST;
   render_settings.texture_name = initial_texture_name;
-
-  init_scene_and_settings(render_settings);
-
-  opt_model_layout = opt_ml;
-  std::string loss_function_name = get_loss_function_name(loss_function);
   
-  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *int_im;
-
-  func = PyObject_GetAttrString(pModule, (char *)"init_optimization_with_tex");
-  ref_dir_arg = PyUnicode_FromString(reference_image_dir.c_str());
-  loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
-  int_im = PyLong_FromLong((int)save_intermediate_images);
-  args = PyTuple_Pack(4, mitsubaContext, ref_dir_arg, loss_func, int_im);
-  func_ret = PyObject_CallObject(func, args);
-  show_errors();
-
-  set_model_max_size(model_max_size);
-  iteration = 0;
-
-  DEL(func);
-  DEL(args);
-  DEL(ref_dir_arg);
-  DEL(func_ret);
-  DEL(loss_func);
-  DEL(int_im);
+  init_optimization_internal("init_optimization_with_tex", reference_image_dir, loss_function, model_max_size, opt_ml, 
+                             render_settings, cam_count, save_intermediate_images);
 }
 
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)
@@ -242,6 +242,7 @@ void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen:
       set_array_to_ctx_internal(buffer_names[i], i, size * vertex_count);
     }
   }
+  show_errors();
 }
 
 void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
@@ -310,13 +311,26 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   DEL(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, double *timers)
+float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &camera_params,
+                                           double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   model_to_ctx(model, opt_model_layout);
   camera_to_ctx(camera);
+
+  //camera params contains 6*n floats: (pos.x, pos.y, pos.z, rot_x, rot_y, rot_z) for each camera
+  assert(camera_params.size() == 6 * cameras_count);
+  constexpr int cameras_buf_n = 3;
+
+  if (camera_params.empty())
+    std::fill_n(buffers[cameras_buf_n], 6*cameras_count, 0);
+  else
+    memcpy(buffers[3], camera_params.data(), sizeof(float)*6*cameras_count);
+  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, 6*cameras_count);
+  show_errors();
+
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  float loss = render_and_compare_internal();
+  float loss = render_and_compare_internal(cameras_count);
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
   for (int i=0;i<opt_model_layout.offsets.size() - 1;i++)
   {
@@ -325,6 +339,7 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
     if (offset >= 0 && size > 0)
       get_array_from_ctx_internal(buffer_names[i] + "_grad", i);
   }
+  get_array_from_ctx_internal(buffer_names[cameras_buf_n] + "_grad", cameras_buf_n);
   std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   if (timers)
   {
@@ -355,6 +370,9 @@ void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int par
         }
       }
     }
+
+    for (int i=params_count; i< final_grad.size(); i++)
+      final_grad[i] = buffers[3][i - params_count]; // gradient by camera params
   }
 }
 
@@ -420,7 +438,7 @@ void MitsubaInterface::set_array_to_ctx_internal(const std::string &name, int bu
   DEL(params_name);
 }
 
-float MitsubaInterface::render_and_compare_internal()
+float MitsubaInterface::render_and_compare_internal(int cameras_count)
 {
   PyObject *pFunc, *pIndex, *pArgs, *pValue;
 
