@@ -5,7 +5,7 @@
 #include <vector>
 
 SilhouetteExtractor::SilhouetteExtractor(float blur_sigma, float low_thr, float high_thr):
-gauss(1.0f),
+gauss(7.5f),
 canny(blur_sigma, low_thr, high_thr),
 fill_edges("fill_edges.fs"),
 fill_silhouette("fill_edges.fs"),

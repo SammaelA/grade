@@ -383,7 +383,7 @@ namespace dopt
       std::vector<dgen::dfloat> Y;
       CppAD::Independent(X);
       Y.resize(1);
-      Y[0] = dgen::parameters_limits_reg(X, params_min, params_max) + generator.params_regularizer(X);
+      Y[0] = generator.params_regularizer(X);
       f_reg = CppAD::ADFun<float>(X, Y);
     }
 
@@ -404,6 +404,9 @@ namespace dopt
     {
       int iters = 0;
       double total_time_ms = 0;
+
+      int cnt = 0;
+      std::vector<double> grad_stat;
 
       opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
@@ -426,7 +429,7 @@ namespace dopt
 
         float loss = mi.render_and_compare(res, camera, get_camera_params(params));
         mi.compute_final_grad(jac, gen_params_cnt, res.size()/FLOAT_PER_VERTEX, final_grad);
-        float reg_q = 0.00;
+        float reg_q = 0.01;
         std::vector<float> reg_res = f_reg.Forward(0, params);
         std::vector<float> reg_jac = f_reg.Jacobian(params);
         //logerr("reg_res[0] = %f",reg_res[0]);
@@ -447,6 +450,20 @@ namespace dopt
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         total_time_ms += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         iters++;
+        if (cnt == 0)
+        {
+          grad_stat = std::vector<double>(final_grad.size(), 0);
+        }
+        for (int j = 0; j < final_grad.size(); j++)
+          grad_stat[j] += abs(final_grad[j]);
+        cnt++;
+        if (cnt % 100 == 0)
+        {
+          debug("grad stat [");
+          for (int j = 0; j < final_grad.size(); j++)
+            debug("%.2f ", (float)(1000*grad_stat[j]/cnt));
+          debug("]\n");
+        }
         return std::pair<float,std::vector<float>>(loss, final_grad);
       };
 
@@ -483,7 +500,33 @@ namespace dopt
         logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
         return 1.0;
       }
-  
+      
+      for (float sz = 0.01; sz < 0.2; sz += 0.01)
+      {
+        for (int i=0; i<100; i++)
+        {
+
+        }
+      }
+      /*
+      for (int id = 0; id < params_max.size(); id++)
+      {
+        std::vector<float> ref_params = {3, 3.3, 3.33, 3.36, 3.4, 3.43, 3.45, 3.47, 3.5, 0.781, 1, 0.05, 0.7, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4,
+                                        0.1, 0, 0.004, 0.3, 0.0, -0.250};
+        
+        debug("data_param_%d = [", id);
+        for (int i=0;i<100;i++)
+        {
+          ref_params[id] = (i/100.0)*(params_max[id] - params_min[id]) + params_min[id];
+          auto res = F_silhouette(ref_params);
+          debug("%.4f", res.first);
+          if (i + 1 < 100)
+            debug(", ");
+        }
+        debug("]\n");
+      }
+      return 1;
+      */
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       opt->optimize(F_silhouette, params_min, params_max, *opt_settings, F_depth_reg);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

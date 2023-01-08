@@ -20,13 +20,58 @@ namespace opt
     float depth_reg_q = settings.get_double("depth_reg_q", 0);
     int budget = 0;
 
+
+    int last_mutation_id = -1;
+    std::array<int, 8> mutation_stat = {0,0,0,0,0,0,0,0}; //[10 9 2 16 7 8 0 1]
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
     {
+      last_mutation_id = -1;
       std::vector<float> res = base;
       for (int i=0; i<base.size(); i++)
       {
         if (urand() < mutation_chance)
           res[i] = CLAMP(base[i] + urand(-mutation_power, mutation_power)*(max_X[i] - min_X[i]), min_X[i], max_X[i]);
+      }
+      return res;
+    };
+
+    auto special_mutation = [&](const std::vector<float> &base) -> std::vector<float>
+    {
+      std::vector<float> res = base;
+      int mutation_type = urandi(0, 5);
+      last_mutation_id = mutation_type;
+      if (mutation_type == 0)
+      {
+        float mul = urand(0.75, 1.25);
+        for (int i=0; i<9; i++)
+          res[i] = mul * base[i];
+      }
+      else if (mutation_type == 1)
+      {
+        res[10] = urand(0, 1);
+      }
+      else if (mutation_type == 2)
+      {
+        int end = base.size();
+        float rnd = urand(0,1);
+        if (rnd < 0.25)
+          res[end - 1] += urand(-1, 1);
+        else if (rnd < 0.75)
+          res[end - 2] += urand(-1, 1);
+        else
+          res[end - 3] += urand(-1, 1);
+      }
+      else if (mutation_type == 3)
+      {
+        res[base.size() - 2] += urand(-3, 3);
+      }
+      else
+      {
+        for (int i=0; i<base.size(); i++)
+        {
+          if (urand() < mutation_chance)
+            res[i] = CLAMP(base[i] + urand(-mutation_power, mutation_power)*(max_X[i] - min_X[i]), min_X[i], max_X[i]);
+        }
       }
       return res;
     };
@@ -67,18 +112,55 @@ namespace opt
         for (int j=0;j<min_X.size();j++)
           population[i][j] = urand(min_X[j], max_X[j]);
       }
+
+      std::vector<std::vector<float>> presets_1 = {
+        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1, 0.05, 0.7, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4},
+        {1.879, 1.888, 2.867, 3.070, 3.333, 3.533, 3.746, 3.899, 3.92, 0.690, 0.261, 0.055, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275},
+        {5.5, 5.8, 6.1, 6.4, 6.7, 7, 7.3, 7.6, 7.9, 0.1, 0, 0.05, 0.7, 0.15, 0.25, 0.4, 0.35, 0.3, 0.25, 0.2},
+        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1, 0.05, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3}
+      };
+
+      std::vector<std::vector<float>> presets_2 = {
+        {0.1, 0.2, -0.2, 0.0, 0.0, 0.1},
+        {0.1, 0, 0.004, 0.3, 3.141, -0.250},
+        {0.1, 0, 0.004, 0.0, 0.0, 0.1},
+        {0.1, 0.2, -0.2, 0.05, 1, 0.0},
+        {0.0, 0.3, -0.3, 0.05, 0.5, 0.2},
+        {0.1, 0.2, -0.2, 0.1, 2, 0.3},
+        {0.0, 0.1, -0.25, 0.05, 1.5, 0.2},
+        {0.1, 0.2, -0.2, 0.2, 0.0, 0.03}
+      };
+
+      std::vector<std::vector<float>> all_presets;
+      for (auto &p1 : presets_1)
+      {
+        for (auto &p2 : presets_2)
+        {
+          all_presets.emplace_back();
+          for (auto &v1 : p1)
+            all_presets.back().push_back(v1);
+          for (auto &v2 : p2)
+            all_presets.back().push_back(v2);
+        }
+      }
+
+      for (int i=0;i<population_size - 4;i++)
+      {
+        population[i] = all_presets[(int)urandi(0, all_presets.size())];
+      }
     };
 
     auto local_search = [&](std::vector<float> start_params) -> std::pair<float, std::vector<float>>
     {
       Optimizer *opt = new Adam();
       Block adam_settings;
+      int iterations = urandi(5, 2*local_search_iterations);
       adam_settings.add_arr("initial_params", start_params);
       adam_settings.add_double("learning_rate", local_search_learning_rate);
-      adam_settings.add_int("iterations", local_search_iterations);
+      adam_settings.add_int("iterations", iterations);
       adam_settings.add_bool("verbose", false);
       opt->optimize(F, min_X, max_X, adam_settings);
-      budget += local_search_iterations;
+      budget += iterations;
 
       std::pair<float, std::vector<float>> res;
       res.second = opt->get_best_result(&(res.first));
@@ -138,12 +220,25 @@ namespace opt
 
     while (budget < total_function_calls)
     {
-      //crossover + mutation
-      auto parents = choose_parents_tournament(population, values);
-      std::vector<float> new_solution = one_dot_crossover(population[parents.first], population[parents.second]);
-      new_solution = mutate(new_solution);
-      auto res = local_search(new_solution);
-
+      std::pair<float, std::vector<float>> res;
+      if (urand() < 0.1)
+      {
+        //crossover + mutation
+        auto parents = choose_parents_tournament(population, values);
+        std::vector<float> new_solution = one_dot_crossover(population[parents.first], population[parents.second]);
+        new_solution = special_mutation(new_solution);
+        res = local_search(new_solution);
+      }
+      else
+      {
+        int id = urandi(0, population.size());
+        std::vector<std::vector<float>> new_solution = {population[id]};
+        new_solution[0] = special_mutation(new_solution[0]);
+        auto fres = F(new_solution);
+        res.first = fres[0].first;
+        res.second = new_solution[0];
+        logerr("mutated %f --> %f", values[id], res.first); 
+      }
       int worst_idx = -1;
       float worst_val = res.first;
       for (int i=0;i<population.size();i++)
@@ -162,6 +257,11 @@ namespace opt
         qa_values[worst_idx] = 1e-3 / (res.first * res.first);
         local_improvements[worst_idx] = 1;
         population[worst_idx] = res.second;
+
+        if (last_mutation_id >= 0)
+          mutation_stat[last_mutation_id]++;
+        logerr("mutation stat [%d %d %d %d %d %d %d %d]", mutation_stat[0], mutation_stat[1], mutation_stat[2], mutation_stat[3],
+                                                          mutation_stat[4], mutation_stat[5], mutation_stat[6], mutation_stat[7]);
       }
       else
       {
@@ -172,8 +272,13 @@ namespace opt
       if (urand() < ((float)budget)/total_function_calls)
       {
         float qav_sum = 0;
+        debug("qa_values [");
         for (float &v : qa_values)
+        {
+          debug("%f ", v);
           qav_sum += v;
+        }
+        debugnl();
         float rnd = urand(qav_sum);
         int improve_idx = 0;
         for (int i=0;i<population.size();i++)
@@ -206,7 +311,10 @@ namespace opt
         logerr("recreating population");
         initialize_population(population);
         population[0] = best_params;
-
+        values.clear();
+        qa_values.clear();
+        local_improvements.clear();
+        indices.clear();
         for (int i=0; i<population.size(); i++)
         {
           auto res = local_search(population[i]);
