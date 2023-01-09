@@ -205,44 +205,40 @@ namespace opt
     std::vector<int> local_improvements;
     std::vector<int> indices;
 
-    initialize_population(population);
-    for (int i=0; i<population.size(); i++)
-    {
-      auto res = local_search(population[i]);
-
-      population[i] = res.second;
-      values.push_back(res.first);
-      qa_values.push_back(1e-3 / (res.first * res.first));
-      local_improvements.push_back(1);
-      indices.push_back(i);
-    }
-    float initial_diversity = calc_diversity(population);
-
     Block backup;
-
-    if (load_block_from_file("backup.blk", backup))
+    if (load_block_from_file("backup.blk", backup) && backup.get_bool("continue"))
     {
-      bool cont = false;
-      backup.get_int("continue", cont);
-      if (cont)
+      budget = backup.get_int("budget");
+      int sz = 0;
+      sz = backup.get_int("pop_size");
+      population.resize(sz);
+      std::string num_pop = "AA_pop";
+      for (int i = 0; i < population.size(); ++i)
       {
-        backup.get_int("budget", budget);
-        int sz = 0;
-        backup.get_int("pop_size", sz);
-        population.resize(sz);
-        std::string num_pop = "AA_pop";
-        for (int i = 0; i < population.size(); ++i)
-        {
-          num_pop[0] = 'A' + i / 26;
-          num_pop[1] = 'A' + i % 26;
-          backup.get_arr(num_pop.c_str(), population[i]);
-        }
-        backup.get_arr("values", values);
-        backup.get_arr("qa_values", qa_values);
-        backup.get_arr("local_improvements", local_improvements);
-        backup.get_arr("indices", indices);
+        num_pop[0] = 'A' + i / 26;
+        num_pop[1] = 'A' + i % 26;
+        backup.get_arr(num_pop.c_str(), population[i]);
+      }
+      backup.get_arr("values", values);
+      backup.get_arr("qa_values", qa_values);
+      backup.get_arr("local_improvements", local_improvements);
+      backup.get_arr("indices", indices);
+    }
+    else
+    {
+      initialize_population(population);
+      for (int i = 0; i < population.size(); i++)
+      {
+        auto res = local_search(population[i]);
+
+        population[i] = res.second;
+        values.push_back(res.first);
+        qa_values.push_back(1e-3 / (res.first * res.first));
+        local_improvements.push_back(1);
+        indices.push_back(i);
       }
     }
+    float initial_diversity = calc_diversity(population);
 
     while (budget < total_function_calls)
     {
