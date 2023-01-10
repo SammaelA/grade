@@ -371,5 +371,6 @@ namespace opt
     backup.clear();
     backup.add_bool("continue", false);
     save_block_to_file("backup.blk", backup);
+    remove("config/backup.blk");
   }
 }
