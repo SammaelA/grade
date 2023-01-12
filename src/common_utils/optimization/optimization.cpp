@@ -60,10 +60,26 @@ namespace opt
       }
       e_sum /= samples;
       grad_sum /= samples;
+
+      int misdirections = 0;
+      int zero_grads_gt = 0;
+      int zero_grads_num = 0;
+
+      for (int k=0; k<samples; k++)
+      {
+        int s1 = grad_gt[k] > 1e-6 ? 1 : (grad_gt[k] < -1e-6 ? -1 : 0);
+        int s2 = grad_num[k] > 1e-6 ? 1 : (grad_num[k] < -1e-6 ? -1 : 0);
+        misdirections += (s1 != s2);
+        zero_grads_gt += abs(grad_gt[k]) < 1e-6;
+        zero_grads_num += abs(grad_num[k]) < 1e-6;
+      }
+
       debug("Param %d\n", i);
       debug("GT derivative Average: %.4f, Std dev: %.4f\n", get_average(grad_gt), get_dev(grad_gt));
       debug("Num derivative Average: %.4f, Std dev: %.4f\n", get_average(grad_num), get_dev(grad_num));
-      debug("Average: %.5f (%.2f%), Max: %.5f (%.2f%)\n", e_sum, 100*(e_sum/grad_sum), e_max, 100*(e_max/grad_sum));
+      debug("Average error: %.5f (%.2f%), Max: %.5f (%.2f%)\n", e_sum, 100*(e_sum/grad_sum), e_max, 100*(e_max/grad_sum));
+      debug("%d/%d wrong derivative signs\n", misdirections, samples);
+      debug("%d/%d and %d/%d zero derivatives\n", zero_grads_gt, samples, zero_grads_num, samples);
     }
   }
 }
