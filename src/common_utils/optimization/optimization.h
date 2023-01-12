@@ -11,6 +11,10 @@ namespace opt
   typedef std::function<std::pair<float,std::vector<float>>(std::vector<float> &)> opt_func_with_grad;
   typedef std::function<std::vector<float>(std::vector<std::vector<float>> &)> opt_func_vector;
   typedef std::function<std::vector<std::pair<float,std::vector<float>>>(std::vector<std::vector<float>> &)> opt_func_with_grad_vector;
+
+  void check_gradients(opt_func_with_grad &F, const std::vector<float> &min_X, const std::vector<float> &max_X,
+                       int samples = 100, float h = 0.001, bool show_detailed_info = false);
+
   class Optimizer
   {
   public:
