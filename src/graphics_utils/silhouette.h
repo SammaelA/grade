@@ -12,5 +12,5 @@ public:
 private:
   Canny canny;
   GaussFilter gauss;
-  PostFx fill_edges, detect_object, fill_silhouette, remove_holes, copy;
+  PostFx fill_edges, detect_object, fill_silhouette, remove_holes, copy, metric;
 };
