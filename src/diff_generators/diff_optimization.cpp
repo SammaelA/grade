@@ -306,11 +306,23 @@ namespace dopt
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d SP %d var\n", 
           gen_params_cnt + scene_params_cnt, gen_params_cnt, scene_params_cnt, init_bins_count.size(), variant_count.size());
 
+    int cameras_count = 1;
+    if (by_reference)
+    {
+      Block *reference_cameras_blk = settings_blk.get_block("reference_cameras");
+      if (reference_cameras_blk)
+        cameras_count = reference_cameras_blk->size();
+    }
+    process_blk(gen_params);
+    for (int i=0;i<cameras_count;i++)
+      process_blk(scene_params);//we dublicate scene parameters for each camera (currently scene == camera only)
+
+    load_presets_from_blk(presets_blk, gen_params, init_params, parameter_presets);
+
     DiffFunctionEvaluator func;
     func.init(generator.generator, variant_positions);
 
     std::vector<Texture> reference_tex, reference_mask, reference_depth;
-    int cameras_count = 1;
 
     CameraSettings camera;
     camera.origin = glm::vec3(0, 0.5, 1.5);
@@ -368,12 +380,6 @@ namespace dopt
       reference_images_dir.push_back("saves/reference_" + std::to_string(i) + ".png");
       engine::textureManager->save_png_directly(reference_mask[i], reference_images_dir.back());
     }
-
-    process_blk(gen_params);
-    for (int i=0;i<cameras_count;i++)
-      process_blk(scene_params);//we dublicate scene parameters for each camera (currently scene == camera only)
-
-    load_presets_from_blk(presets_blk, gen_params, init_params, parameter_presets);
 
     CppAD::ADFun<float> f_reg;
     {
@@ -501,32 +507,6 @@ namespace dopt
         return 1.0;
       }
       
-      for (float sz = 0.01; sz < 0.2; sz += 0.01)
-      {
-        for (int i=0; i<100; i++)
-        {
-
-        }
-      }
-      /*
-      for (int id = 0; id < params_max.size(); id++)
-      {
-        std::vector<float> ref_params = {3, 3.3, 3.33, 3.36, 3.4, 3.43, 3.45, 3.47, 3.5, 0.781, 1, 0.05, 0.7, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4,
-                                        0.1, 0, 0.004, 0.3, 0.0, -0.250};
-        
-        debug("data_param_%d = [", id);
-        for (int i=0;i<100;i++)
-        {
-          ref_params[id] = (i/100.0)*(params_max[id] - params_min[id]) + params_min[id];
-          auto res = F_silhouette(ref_params);
-          debug("%.4f", res.first);
-          if (i + 1 < 100)
-            debug(", ");
-        }
-        debug("]\n");
-      }
-      return 1;
-      */
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       opt->optimize(F_silhouette, params_min, params_max, *opt_settings, F_depth_reg);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
