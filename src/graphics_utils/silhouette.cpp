@@ -11,7 +11,8 @@ fill_edges("fill_edges.fs"),
 fill_silhouette("fill_edges.fs"),
 detect_object("detect_object.fs"),
 remove_holes("remove_holes.fs"),
-copy("copy.fs")
+copy("copy.fs"), 
+metric("metric.fs")
 {
 
 }
@@ -76,10 +77,29 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   engine::textureManager->save_png(canny_tex, "initial_mask");
   engine::textureManager->save_png(res, "res_tex");
 
-  Texture res_blurred = gauss.perform_gauss_blur(res);
+  Texture result = engine::textureManager->create_texture(res_w, res_h);
+
+  glBindTexture(GL_TEXTURE_2D, res.texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  float clr[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, clr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, result.texture, 0);
+  metric.use();
+  metric.get_shader().uniform("max_rad", 100.0);
+  metric.get_shader().uniform("size_x", (float)res_w);
+  metric.get_shader().uniform("size_y", (float)res_h);
+  metric.get_shader().texture("sil", res);
+  metric.render();
+  
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   delete_framebuffer(fbo);
   engine::view->next_frame();
 
-  return res_blurred;
+  return result;
 }
