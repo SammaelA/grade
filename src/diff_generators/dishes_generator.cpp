@@ -154,12 +154,49 @@ namespace dgen
     return spline;
   }
 
+  dfloat lagrange_3_dots(dfloat x, dfloat x1, dfloat y1, dfloat x2, dfloat y2, dfloat x3, dfloat y3)
+  {
+    dfloat y =  y1*((x - x2)/(x1 - x2))*((x - x3)/(x1 - x3)) +
+           y2*((x - x1)/(x2 - x1))*((x - x3)/(x2 - x3)) +
+           y3*((x - x1)/(x3 - x1))*((x - x2)/(x3 - x2));
+    //std::cerr<<x<<"--"<<y<<"--"<<x1<<"--"<<x2<<"--"<<x3<<"--"<<((x - x2)/(x1 - x2))*((x - x3)/(x1 - x2))<<"--"<<((x - x1)/(x2 - x1))*((x - x3)/(x2 - x3))<<"--"<<((x - x1)/(x3 - x1))*((x - x2)/(x3 - x2))<<"\n";
+    return y;
+  }
+
   std::vector<dvec3> spline_make_smoother(const std::vector<dvec3> &in_spline, int detail_q, int index_from, int index_to, int axis_x, int axis_y)
   {
     index_from = index_from < 0 ? 0 : index_from;
     index_to = index_to < 0 ? in_spline.size() : index_to;
     if (detail_q <= 1)
       return in_spline;
+    if (detail_q == 2 && (in_spline.size() == index_to))
+    {
+      std::vector<dvec3> sp = std::vector<dvec3>(index_from + 2*(index_to - index_from) - 1, dvec3{0,0,0});
+      for (int i = 0; i < index_from; i++)
+        sp[i] = in_spline[i];
+      for (int i = index_from; i < index_to; i++)
+        sp[index_from + 2*(i - index_from)] = in_spline[i];
+      for (int i = index_from+1; i < index_to-1; i++)
+      {
+        dfloat new_x1 = (in_spline[i-1][axis_x] + in_spline[i][axis_x])/2;
+        dfloat new_x2 = (in_spline[i][axis_x] + in_spline[i+1][axis_x])/2;
+        sp[index_from + 2*(i - index_from) - 1][axis_x] = new_x1;
+        sp[index_from + 2*(i - index_from) - 1][axis_y] +=0.5*lagrange_3_dots(new_x1, 
+                                                                              in_spline[i-1][axis_x], in_spline[i-1][axis_y],
+                                                                              in_spline[i  ][axis_x], in_spline[i  ][axis_y],
+                                                                              in_spline[i+1][axis_x], in_spline[i+1][axis_y]);
+        sp[index_from + 2*(i - index_from) + 1][axis_x] = new_x2;
+        sp[index_from + 2*(i - index_from) + 1][axis_y] +=0.5*lagrange_3_dots(new_x2, 
+                                                                              in_spline[i-1][axis_x], in_spline[i-1][axis_y],
+                                                                              in_spline[i  ][axis_x], in_spline[i  ][axis_y],
+                                                                              in_spline[i+1][axis_x], in_spline[i+1][axis_y]);
+      }
+      sp[index_from + 1][axis_y] *= 2;
+      sp[index_from + 2*(index_to-2 - index_from) + 1][axis_y] *= 2;
+      //for (int i = 0; i < sp.size(); i++)
+      //  std::cerr<<"["<<i<<"]"<<sp[i][0]<<" "<<sp[i][1]<<" "<<sp[i][2]<<"\n";
+      return sp;
+    }
     std::vector<dfloat> xs;
     std::vector<dfloat> ys;
     for (int i = index_from; i < index_to; i++)
@@ -302,8 +339,7 @@ namespace dgen
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    //if (q_pow > 1)
-    //  spline = spline_make_smoother(spline, q_pow, 1, -1, 1, 0);
+    spline = spline_make_smoother(spline, 2, 1, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
 
@@ -313,7 +349,7 @@ namespace dgen
       int radiuses_cnt = 7;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
       dfloat thick = smoothmin(params[handle_param_idx], 0.02, 8);
-      int radius_samples = radiuses_cnt*q_pow - 1;
+      int radius_samples = radiuses_cnt*2 - 1;
       std::vector<dfloat> radiuses(radiuses_cnt,0);
       for (int i=0;i<radiuses_cnt;i++)
         radiuses[i] = params[handle_param_idx+2 + i] + params[handle_param_idx];
@@ -321,7 +357,7 @@ namespace dgen
       {
         int k = (radius_samples + 1)/radiuses_cnt;
         std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false);
-        //rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
+        rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
         radius_samples = rad_spline.size() - 1;
         radiuses = std::vector<dfloat>(rad_spline.size());
         for (int i=0;i<rad_spline.size();i++)
