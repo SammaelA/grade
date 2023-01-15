@@ -107,7 +107,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
               'type': 'hdrfilm',
               'width': image_w,
               'height': image_h,
-              'rfilter': { 'type': 'gaussian' },
+              'rfilter': { 'type': 'box'},
               'sample_border': True
           },
       }
