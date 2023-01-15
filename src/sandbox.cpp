@@ -275,17 +275,24 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Block b;
     load_block_from_file(blk_name, b);
     std::vector<std::string> reference_images;
-    for (int i=0;i<b.size();i++)
+    if (argc == 4)
     {
-      if (b.get_name(i) == "reference")
+      for (int i=0;i<b.size();i++)
       {
-        reference_images.push_back(b.get_string(i));
+        if (b.get_name(i) == "reference")
+        {
+          reference_images.push_back(b.get_string(i));
+        }
+      }
+      if (reference_images.empty())
+      {
+        logerr("no reference images found in blk");
+        return;
       }
     }
-    if (reference_images.empty())
+    else
     {
-      logerr("no reference images found in blk");
-      return;
+      reference_images.push_back(argv[4]);
     }
     float av_loss = 0;
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
