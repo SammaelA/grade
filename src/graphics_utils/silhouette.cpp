@@ -89,6 +89,7 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   glBindTexture(GL_TEXTURE_2D, 0);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, result.texture, 0);
+  glViewport(0, 0, res_w, res_h);
   metric.use();
   metric.get_shader().uniform("max_rad", 32.0);
   metric.get_shader().uniform("size_x", (float)res_w);
