@@ -5,6 +5,14 @@
 
 namespace opt
 {
+  struct Solution
+  {
+    std::vector<float> params = {};
+    float value = 1000;
+    float qa_value = 1000;
+    int local_improvements = 0;
+  };
+
   void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
                                 opt_func_vector &F_reg)
   {
@@ -14,8 +22,10 @@ namespace opt
     int population_size = settings.get_int("population_size", 32);
     int total_function_calls = settings.get_int("total_function_calls", 4800);
     bool verbose = settings.get_bool("verbose") || settings.get_int("verbose") > 0;
-    int local_search_iterations = settings.get_int("local_search_iterations", 76);
-    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.05);
+    int local_search_iterations = settings.get_int("local_search_iterations", 50);
+    float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.01);
+    int start_search_iterations = settings.get_int("start_search_iterations", 25);
+    float start_search_learning_rate = settings.get_double("start_search_learning_rate", 0.05);
     float recreation_diversity_thr = settings.get_double("recreation_diversity_thr", 1.75);
     float depth_reg_q = settings.get_double("depth_reg_q", 0);
     int budget = 0;
@@ -93,36 +103,43 @@ namespace opt
       return res;
     };
 
-    auto choose_parents_tournament = [&](const std::vector<std::vector<float>> &population, const std::vector<float> &values) -> std::pair<int, int>
+    auto choose_parents_tournament = [&](std::vector<Solution> &solutions) -> std::pair<int, int>
     {
       std::vector<int> indexes = std::vector<int>(tournament_size, 0);
       for (int i=0;i<tournament_size;i++)
-        indexes[i] = urandi(0, population.size());
+        indexes[i] = urandi(0, solutions.size());
       std::sort(indexes.begin(), indexes.end(), [&](const int & a, const int & b) -> bool{    
-            return values[a] < values[b];});
+            return solutions[a].value < solutions[b].value;});
 
       return std::pair<int, int>(indexes[0], indexes[1]);
     };
 
-    auto initialize_population = [&](std::vector<std::vector<float>> &population)
+    auto initialize_population = [&](std::vector<Solution> &solutions)
     {
-      population = std::vector<std::vector<float>>(population_size, std::vector<float>(min_X.size(), 0));
+      solutions = std::vector<Solution>(population_size, {std::vector<float>(min_X.size(), 0), 1000, 1000, 0});
       for (int i=0;i<population_size;i++)
       {
         for (int j=0;j<min_X.size();j++)
-          population[i][j] = urand(min_X[j], max_X[j]);
+          solutions[i].params[j] = urand(min_X[j], max_X[j]);
       }
 
       std::vector<std::vector<float>> presets_1 = {
-        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1, 0.05, 0.7, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4},
-        {1.879, 1.888, 2.867, 3.070, 3.333, 3.533, 3.746, 3.899, 3.92, 0.690, 0.261, 0.055, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275, 0.275},
-        {5.5, 5.8, 6.1, 6.4, 6.7, 7, 7.3, 7.6, 7.9, 0.1, 0, 0.05, 0.7, 0.15, 0.25, 0.4, 0.35, 0.3, 0.25, 0.2},
-        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1, 0.05, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3},
-        {2    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 0.8, 1, 0.05, 0.4, 0.20, 0.20, 0.22, 0.24, 0.26, 0.28, 0.3},
-        {2    , 2.8  , 2.9  , 3.0  , 3.1  , 3.2  , 3.3  , 3.3  , 3.3  , 0.9, 1, 0.05, 0.6, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33}
+        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1},
+        {1.879, 1.888, 2.867, 3.070, 3.333, 3.533, 3.746, 3.899, 3.92 , 0.690, 0},
+        {5.5  , 5.8  , 6.1  , 6.4  , 6.7  , 7    , 7.3  , 7.6  , 7.9  , 0.1  , 0},
+        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1},
+        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 0.8  , 1}
       };
 
       std::vector<std::vector<float>> presets_2 = {
+        {0.05, 0.6, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
+        {0.05, 0.4, 0.20, 0.20, 0.22, 0.24, 0.26, 0.28, 0.3 },
+        {0.05, 0.5, 0.3 , 0.3 , 0.3 , 0.3 , 0.3 , 0.3 , 0.3 },
+        {0.05, 0.7, 0.15, 0.25, 0.4 , 0.35, 0.3 , 0.25, 0.2 },
+        {0.05, 0.7, 0.15, 0.2 , 0.25, 0.3 , 0.35, 0.4 , 0.4 },
+      };
+
+      std::vector<std::vector<float>> presets_3 = {
         {0.1, 0.2, -0.2, 0.0, 0.0, 0.1},
         {0.1, 0, 0.004, 0.3, 3.141, -0.250},
         {0.1, 0, 0.004, 0.0, 0.0, 0.1},
@@ -130,7 +147,11 @@ namespace opt
         {0.0, 0.3, -0.3, 0.05, 0.5, 0.2},
         {0.1, 0.2, -0.2, 0.1, 2, 0.3},
         {0.0, 0.1, -0.25, 0.05, 1.5, 0.2},
-        {0.1, 0.2, -0.2, 0.2, 0.0, 0.03}
+        {0.1, 0.2, -0.2, 0.2, 0.0, 0.03},
+        {-0.2, 0.60, 0.2, 0.3, 2.8, 0.0},
+        {-0.2, 0.60, 0.2, 0.4, 3.14, 0.0},
+        {-0.2, 0.5, 0.5, 0.4, 3.14, 0.0},
+        {-0.2, 0.60, 0.2, 0.3, 0, 0.0}
       };
 
       std::vector<std::vector<float>> all_presets;
@@ -138,27 +159,31 @@ namespace opt
       {
         for (auto &p2 : presets_2)
         {
-          all_presets.emplace_back();
-          for (auto &v1 : p1)
-            all_presets.back().push_back(v1);
-          for (auto &v2 : p2)
-            all_presets.back().push_back(v2);
+          for (auto &p3 : presets_3)
+          {
+            all_presets.emplace_back();
+            for (auto &v1 : p1)
+              all_presets.back().push_back(v1);
+            for (auto &v2 : p2)
+              all_presets.back().push_back(v2);
+            for (auto &v3 : p3)
+              all_presets.back().push_back(v3);
+          }
         }
       }
 
       for (int i=0; i<0.8*population_size; i++)
       {
-        population[i] = all_presets[(int)urandi(0, all_presets.size())];
+        solutions[i].params = all_presets[(int)urandi(0, all_presets.size())];
       }
     };
 
-    auto local_search = [&](std::vector<float> start_params) -> std::pair<float, std::vector<float>>
+    auto local_search = [&](std::vector<float> start_params, int iterations, float lr) -> std::pair<float, std::vector<float>>
     {
       Optimizer *opt = new Adam();
       Block adam_settings;
-      int iterations = urandi(5, 2*local_search_iterations);
       adam_settings.add_arr("initial_params", start_params);
-      adam_settings.add_double("learning_rate", local_search_learning_rate);
+      adam_settings.add_double("learning_rate", lr);
       adam_settings.add_int("iterations", iterations);
       adam_settings.add_bool("verbose", false);
       opt->optimize(F, min_X, max_X, adam_settings);
@@ -176,13 +201,13 @@ namespace opt
       {
         best_result = res.first;
         best_params = res.second;
-        logerr("%d new best %.4f", budget, best_result);
+        debug("%d new best %.4f\n", budget, best_result);
       }
       delete opt;
       return res;
     };
 
-    auto calc_diversity = [&](std::vector<std::vector<float>> &population) -> float
+    auto calc_diversity = [&](std::vector<Solution> &population) -> float
     {
       float diversity = 0;
       int cnt = 0;
@@ -192,7 +217,7 @@ namespace opt
         {
           float d = 0;
           for (int j=0;j<min_X.size();j++)
-            d += SQR((population[i1][j] - population[i2][j])/(max_X[j] - min_X[j]));
+            d += SQR((population[i1].params[j] - population[i2].params[j])/(max_X[j] - min_X[j]));
           diversity += sqrtf(d) / min_X.size();
           cnt++;
         }
@@ -201,172 +226,156 @@ namespace opt
       return diversity;
     };
 
-    std::vector<std::vector<float>> population;
-    std::vector<float> values;
-    std::vector<float> qa_values;
-    std::vector<int> local_improvements;
-    std::vector<int> indices;
+    auto load_solutions = [](Block &backup, std::vector<Solution> &solutions)
+    {
+      solutions.clear();
+      for (int i=0;i<backup.size();i++)
+      {
+        Block *s_block = backup.get_block(i);
+        if (s_block)
+        {
+          solutions.emplace_back();
+          s_block->get_arr("params", solutions.back().params);
+          solutions.back().value = s_block->get_double("value");
+          solutions.back().qa_value = s_block->get_double("qa_value");
+          solutions.back().local_improvements = s_block->get_int("local_improvements");
+        }
+      }
+    };
+
+    auto save_solutions = [](Block &backup, std::vector<Solution> &solutions)
+    {
+      for (int i=0;i<solutions.size();i++)
+      {
+        Block s_block;
+        s_block.set_arr("params", solutions[i].params);
+        s_block.set_double("value", solutions[i].value);
+        s_block.set_double("qa_value", solutions[i].qa_value);
+        s_block.set_int("local_improvements", solutions[i].local_improvements);
+
+        backup.add_block("solution_"+std::to_string(i), &s_block);
+      }
+    };
+    std::vector<Solution> solutions;
 
     Block backup;
     if (load_block_from_file("backup.blk", backup) && backup.get_bool("continue"))
     {
       budget = backup.get_int("budget");
-      int sz = 0;
-      sz = backup.get_int("pop_size");
-      population.resize(sz);
-      std::string num_pop = "AA_pop";
-      for (int i = 0; i < population.size(); ++i)
-      {
-        num_pop[0] = 'A' + i / 26;
-        num_pop[1] = 'A' + i % 26;
-        backup.get_arr(num_pop.c_str(), population[i]);
-      }
-      backup.get_arr("values", values);
-      backup.get_arr("qa_values", qa_values);
-      backup.get_arr("local_improvements", local_improvements);
-      backup.get_arr("indices", indices);
+      load_solutions(backup, solutions);
     }
     else
     {
-      initialize_population(population);
-      for (int i = 0; i < population.size(); i++)
+      initialize_population(solutions);
+      for (int i = 0; i < solutions.size(); i++)
       {
-        auto res = local_search(population[i]);
+        auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
 
-        population[i] = res.second;
-        values.push_back(res.first);
-        qa_values.push_back(1e-3 / (res.first * res.first));
-        local_improvements.push_back(1);
-        indices.push_back(i);
+        solutions[i].params = res.second;
+        solutions[i].value = res.first;
+        solutions[i].qa_value = 1e-3 / (res.first * res.first);
+        solutions[i].local_improvements = 1;
       }
     }
-    float initial_diversity = calc_diversity(population);
+    float initial_diversity = calc_diversity(solutions);
+    debug("initial diversity %.3f\n", initial_diversity);
 
     while (budget < total_function_calls)
     {
       backup.clear();
       backup.add_bool("continue", true);
       backup.add_int("budget", budget);
-      backup.add_int("pop_size", population.size());
-      std::string num_pop = "AA_pop";
-      for (int i = 0; i < population.size(); ++i)
-      {
-        num_pop[0] = 'A' + i / 26;
-        num_pop[1] = 'A' + i % 26;
-        backup.add_arr(num_pop.c_str(), population[i]);
-      }
-      backup.add_arr("values", values);
-      backup.add_arr("qa_values", qa_values);
-      backup.add_arr("local_improvements", local_improvements);
-      backup.add_arr("indices", indices);
+      save_solutions(backup, solutions);
       save_block_to_file("backup.blk", backup);
 
       std::pair<float, std::vector<float>> res;
-      if (urand() < 0.1)
+      if (urand() < 0.2*((float)budget)/total_function_calls)
       {
         //crossover + mutation
-        auto parents = choose_parents_tournament(population, values);
-        std::vector<float> new_solution = one_dot_crossover(population[parents.first], population[parents.second]);
+        auto parents = choose_parents_tournament(solutions);
+        std::vector<float> new_solution = one_dot_crossover(solutions[parents.first].params, solutions[parents.second].params);
         new_solution = special_mutation(new_solution);
-        res = local_search(new_solution);
+        res = local_search(new_solution, local_search_iterations, local_search_learning_rate);
       }
       else
       {
-        int id = urandi(0, population.size());
-        std::vector<std::vector<float>> new_solution = {population[id]};
+        int id = urandi(0, solutions.size());
+        std::vector<std::vector<float>> new_solution = {solutions[id].params};
         new_solution[0] = special_mutation(new_solution[0]);
         auto fres = F(new_solution);
         res.first = fres[0].first;
         res.second = new_solution[0];
-        logerr("mutated %f --> %f", values[id], res.first); 
       }
       int worst_idx = -1;
       float worst_val = res.first;
-      for (int i=0;i<population.size();i++)
+      for (int i=0;i<solutions.size();i++)
       {
-        if (values[i] > worst_val)
+        if (solutions[i].value > worst_val)
         {
-          worst_val = values[i];
+          worst_val = solutions[i].value;
           worst_idx = i;
 
         }
       }
       if (worst_idx >= 0)
       {
-        logerr("replace with better child %.4f --> %.4f", values[worst_idx], res.first);
-        values[worst_idx] = res.first;
-        qa_values[worst_idx] = 1e-3 / (res.first * res.first);
-        local_improvements[worst_idx] = 1;
-        population[worst_idx] = res.second;
-
+        solutions[worst_idx] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
         if (last_mutation_id >= 0)
           mutation_stat[last_mutation_id]++;
-        logerr("mutation stat [%d %d %d %d %d %d %d %d]", mutation_stat[0], mutation_stat[1], mutation_stat[2], mutation_stat[3],
-                                                          mutation_stat[4], mutation_stat[5], mutation_stat[6], mutation_stat[7]);
+        if (verbose)
+        {
+          debug("replace with better child %.4f --> %.4f\n", solutions[worst_idx].value, res.first);
+          debug("mutation stat [%d %d %d %d %d %d %d %d]\n", mutation_stat[0], mutation_stat[1], mutation_stat[2], mutation_stat[3],
+                                                            mutation_stat[4], mutation_stat[5], mutation_stat[6], mutation_stat[7]);
+        }
       }
-      else
-      {
-        logerr("Child is the worst %.4f", res.first);
-      } 
 
       //further local improvement
       if (urand() < ((float)budget)/total_function_calls)
       {
         float qav_sum = 0;
-        debug("qa_values [");
-        for (float &v : qa_values)
-        {
-          debug("%f ", v);
-          qav_sum += v;
-        }
-        debugnl();
+        for (auto &s : solutions)
+          qav_sum += s.qa_value;
+
         float rnd = urand(qav_sum);
         int improve_idx = 0;
-        for (int i=0;i<population.size();i++)
+        for (int i=0;i<solutions.size();i++)
         {
-          if (rnd < qa_values[i])
+          if (rnd < solutions[i].qa_value)
           {
             improve_idx = i;
             break;
           }
           else
           {
-            rnd -= qa_values[i];
+            rnd -= solutions[i].qa_value;
           }
         }
-        auto res = local_search(population[improve_idx]);
-        logerr("improving existing solution (%d times) %.4f --> %.4f", local_improvements[improve_idx], values[improve_idx], res.first);
-        population[improve_idx] = res.second;
-        values[improve_idx] = res.first;
-        local_improvements[improve_idx]++;
+        auto res = local_search(solutions[improve_idx].params, local_search_iterations, local_search_learning_rate);
+        logerr("improving existing solution (%d times) %.4f --> %.4f", solutions[improve_idx].local_improvements, solutions[improve_idx].value, res.first);
+        
+        solutions[improve_idx].params = res.second;
+        solutions[improve_idx].value = res.first;
+        solutions[improve_idx].local_improvements++;
         //if we improve solution, there is unlikely that it will be further improved
-        qa_values[improve_idx] = 1e-3 / (res.first * res.first * local_improvements[improve_idx]);
+        solutions[improve_idx].qa_value = 1e-3 / (res.first * res.first * solutions[improve_idx].local_improvements);
       }
 
       //diversity calculation and population restart
-      float diversity = calc_diversity(population);
-      logerr("population diversity %.3f", diversity);
+      float diversity = calc_diversity(solutions);
       if (initial_diversity/(diversity + 1e-6) > recreation_diversity_thr)
       {
         //recreate population and place best solution in it
-        logerr("recreating population");
-        initialize_population(population);
-        population[0] = best_params;
-        values.clear();
-        qa_values.clear();
-        local_improvements.clear();
-        indices.clear();
-        for (int i=0; i<population.size(); i++)
+        debug("recreating population, diversity = %.2f\n", diversity);
+        initialize_population(solutions);
+        solutions[0] = Solution{best_params, best_result, 1e-3f / (best_result * best_result), 1};
+        for (int i=0; i<solutions.size(); i++)
         {
-          auto res = local_search(population[i]);
-
-          population[i] = res.second;
-          values.push_back(res.first);
-          qa_values.push_back(1e-3 / (res.first * res.first));
-          local_improvements.push_back(1);
-          indices.push_back(i);
+          auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
+          solutions[i] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
         }
-        initial_diversity = calc_diversity(population);        
+        initial_diversity = calc_diversity(solutions);  
+        debug("initial diversity %.3f\n", initial_diversity);      
       }
       
     }
