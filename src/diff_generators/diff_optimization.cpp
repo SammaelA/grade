@@ -325,7 +325,10 @@ namespace dopt
     std::vector<Texture> reference_tex, reference_mask, reference_depth;
 
     CameraSettings camera;
-    camera.origin = glm::vec3(0, 0.5, 1.5);
+    float h1 = 1.5;
+    camera.fov_rad = 0.25;
+    float h2 = h1 * tan((PI/3)/2) / tan(camera.fov_rad/2);
+    camera.origin = glm::vec3(0, 0.5, h2);
     camera.target = glm::vec3(0, 0.5, 0);
     camera.up = glm::vec3(0, 1, 0);
 
@@ -394,7 +397,7 @@ namespace dopt
     }
 
 
-    mi.init_optimization(reference_images_dir, MitsubaInterface::LOSS_MIXED, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
+    mi.init_optimization(reference_images_dir, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
                          MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                          cameras_count, settings_blk.get_bool("save_intermediate_images", false));
 
@@ -463,7 +466,8 @@ namespace dopt
         for (int j = 0; j < final_grad.size(); j++)
           grad_stat[j] += abs(final_grad[j]);
         cnt++;
-        if (cnt % 100 == 0)
+
+        if (cnt % 100 == 0 && verbose)
         {
           debug("grad stat [");
           for (int j = 0; j < final_grad.size(); j++)
