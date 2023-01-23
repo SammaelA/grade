@@ -28,16 +28,16 @@
 
   memetic_classic
   {
-    total_function_calls:i = 10000
-    population_size:i = 10
-    tournament_size:i = 6
+    total_function_calls:i = 5000
+    population_size:i = 20
+    tournament_size:i = 12
     mutation_chance:r = 0.3
     mutation_power:r = 0.2
-    local_search_iterations:i = 50
+    local_search_iterations:i = 33
     local_search_learning_rate:r = 0.01
-    start_search_iterations:i = 33
+    start_search_iterations:i = 50
     start_search_learning_rate:r = 0.05
-    recreation_diversity_thr:r = 2
+    recreation_diversity_thr:r = 2.0
     depth_reg_q:r = 0.0
   }
 

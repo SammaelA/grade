@@ -30,59 +30,11 @@ namespace opt
     float depth_reg_q = settings.get_double("depth_reg_q", 0);
     int budget = 0;
 
-
-    int last_mutation_id = -1;
-    std::array<int, 8> mutation_stat = {0,0,0,0,0,0,0,0}; //[10 9 2 16 7 8 0 1]
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
     {
-      last_mutation_id = -1;
       std::vector<float> res = base;
-      for (int i=0; i<base.size(); i++)
-      {
-        if (urand() < mutation_chance)
-          res[i] = CLAMP(base[i] + urand(-mutation_power, mutation_power)*(max_X[i] - min_X[i]), min_X[i], max_X[i]);
-      }
-      return res;
-    };
-
-    auto special_mutation = [&](const std::vector<float> &base) -> std::vector<float>
-    {
-      std::vector<float> res = base;
-      int mutation_type = urandi(0, 5);
-      last_mutation_id = mutation_type;
-      if (mutation_type == 0)
-      {
-        float mul = urand(0.75, 1.25);
-        for (int i=0; i<9; i++)
-          res[i] = mul * base[i];
-      }
-      else if (mutation_type == 1)
-      {
-        res[10] = urand(0, 1);
-      }
-      else if (mutation_type == 2)
-      {
-        int end = base.size();
-        float rnd = urand(0,1);
-        if (rnd < 0.25)
-          res[end - 1] += urand(-1, 1);
-        else if (rnd < 0.75)
-          res[end - 2] += urand(-1, 1);
-        else
-          res[end - 3] += urand(-1, 1);
-      }
-      else if (mutation_type == 3)
-      {
-        res[base.size() - 2] += urand(-3, 3);
-      }
-      else
-      {
-        for (int i=0; i<base.size(); i++)
-        {
-          if (urand() < mutation_chance)
-            res[i] = CLAMP(base[i] + urand(-mutation_power, mutation_power)*(max_X[i] - min_X[i]), min_X[i], max_X[i]);
-        }
-      }
+      int id = urandi(0, base.size());
+      res[id] = urand(min_X[id], max_X[id]);
       return res;
     };
 
@@ -124,34 +76,33 @@ namespace opt
       }
 
       std::vector<std::vector<float>> presets_1 = {
-        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1},
+        {3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 0.75 , 1},
+        {3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 1    , 1},
+        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 0.75 , 1},
+        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 1    , 1},
         {1.879, 1.888, 2.867, 3.070, 3.333, 3.533, 3.746, 3.899, 3.92 , 0.690, 0},
-        {5.5  , 5.8  , 6.1  , 6.4  , 6.7  , 7    , 7.3  , 7.6  , 7.9  , 0.1  , 0},
-        {2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354, 0.781, 1},
-        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 0.8  , 1}
+        {5.5  , 5.8  , 6.1  , 6.4  , 6.7  , 7    , 7.3  , 7.6  , 7.9  , 0.1  , 0}
       };
 
       std::vector<std::vector<float>> presets_2 = {
+        {0.05, 0.5, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
         {0.05, 0.6, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
-        {0.05, 0.4, 0.20, 0.20, 0.22, 0.24, 0.26, 0.28, 0.3 },
-        {0.05, 0.5, 0.3 , 0.3 , 0.3 , 0.3 , 0.3 , 0.3 , 0.3 },
-        {0.05, 0.7, 0.15, 0.25, 0.4 , 0.35, 0.3 , 0.25, 0.2 },
-        {0.05, 0.7, 0.15, 0.2 , 0.25, 0.3 , 0.35, 0.4 , 0.4 },
+        {0.05, 0.4, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
+        {0.05, 0.5, 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 },
       };
 
       std::vector<std::vector<float>> presets_3 = {
-        {0.1, 0.2, -0.2, 0.0, 0.0, 0.1},
         {0.1, 0, 0.004, 0.3, 3.141, -0.250},
         {0.1, 0, 0.004, 0.0, 0.0, 0.1},
         {0.1, 0.2, -0.2, 0.05, 1, 0.0},
-        {0.0, 0.3, -0.3, 0.05, 0.5, 0.2},
         {0.1, 0.2, -0.2, 0.1, 2, 0.3},
-        {0.0, 0.1, -0.25, 0.05, 1.5, 0.2},
         {0.1, 0.2, -0.2, 0.2, 0.0, 0.03},
-        {-0.2, 0.60, 0.2, 0.3, 2.8, 0.0},
         {-0.2, 0.60, 0.2, 0.4, 3.14, 0.0},
         {-0.2, 0.5, 0.5, 0.4, 3.14, 0.0},
-        {-0.2, 0.60, 0.2, 0.3, 0, 0.0}
+        {-0.2, 0.60, 0.2, 0.3, 0, 0.0},
+        {-0.2, 0.60, 0.2, 0.4, 3.14, 0.0},
+        {0, 0.5, 0.5, 0.4, 0, 0.0},
+        {0, 0.60, 0.2, 0.3, 0, 0.0}
       };
 
       std::vector<std::vector<float>> all_presets;
@@ -172,7 +123,7 @@ namespace opt
         }
       }
 
-      for (int i=0; i<0.8*population_size; i++)
+      for (int i=0; i<population_size; i++)
       {
         solutions[i].params = all_presets[(int)urandi(0, all_presets.size())];
       }
@@ -201,7 +152,7 @@ namespace opt
       {
         best_result = res.first;
         best_params = res.second;
-        debug("%d new best %.4f\n", budget, best_result);
+        debug("%d new best[1] %.4f\n", budget, best_result);
       }
       delete opt;
       return res;
@@ -263,6 +214,15 @@ namespace opt
     {
       budget = backup.get_int("budget");
       load_solutions(backup, solutions);
+      for (auto &s : solutions)
+      {
+        if (s.value < best_result)
+        {
+          best_result = s.value;
+          best_params = s.params;
+          debug("%d new best[0] %.4f\n", budget, best_result);
+        }
+      }
     }
     else
     {
@@ -294,17 +254,24 @@ namespace opt
         //crossover + mutation
         auto parents = choose_parents_tournament(solutions);
         std::vector<float> new_solution = one_dot_crossover(solutions[parents.first].params, solutions[parents.second].params);
-        new_solution = special_mutation(new_solution);
+        new_solution = mutate(new_solution);
         res = local_search(new_solution, local_search_iterations, local_search_learning_rate);
       }
       else
       {
         int id = urandi(0, solutions.size());
         std::vector<std::vector<float>> new_solution = {solutions[id].params};
-        new_solution[0] = special_mutation(new_solution[0]);
+        new_solution[0] = mutate(new_solution[0]);
         auto fres = F(new_solution);
         res.first = fres[0].first;
         res.second = new_solution[0];
+        if (res.first < best_result)
+        {
+          best_result = res.first;
+          best_params = res.second;
+          debug("%d new best[2] %.4f\n", budget, best_result);
+        }
+        budget++;
       }
       int worst_idx = -1;
       float worst_val = res.first;
@@ -320,14 +287,6 @@ namespace opt
       if (worst_idx >= 0)
       {
         solutions[worst_idx] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
-        if (last_mutation_id >= 0)
-          mutation_stat[last_mutation_id]++;
-        if (verbose)
-        {
-          debug("replace with better child %.4f --> %.4f\n", solutions[worst_idx].value, res.first);
-          debug("mutation stat [%d %d %d %d %d %d %d %d]\n", mutation_stat[0], mutation_stat[1], mutation_stat[2], mutation_stat[3],
-                                                            mutation_stat[4], mutation_stat[5], mutation_stat[6], mutation_stat[7]);
-        }
       }
 
       //further local improvement
@@ -352,13 +311,22 @@ namespace opt
           }
         }
         auto res = local_search(solutions[improve_idx].params, local_search_iterations, local_search_learning_rate);
-        logerr("improving existing solution (%d times) %.4f --> %.4f", solutions[improve_idx].local_improvements, solutions[improve_idx].value, res.first);
-        
-        solutions[improve_idx].params = res.second;
-        solutions[improve_idx].value = res.first;
-        solutions[improve_idx].local_improvements++;
-        //if we improve solution, there is unlikely that it will be further improved
-        solutions[improve_idx].qa_value = 1e-3 / (res.first * res.first * solutions[improve_idx].local_improvements);
+        if (solutions[improve_idx].value > res.first)
+        {
+          logerr("improving existing solution (%d times) %.4f --> %.4f", solutions[improve_idx].local_improvements, solutions[improve_idx].value,
+                 res.first);
+          solutions[improve_idx].params = res.second;
+          solutions[improve_idx].value = res.first;
+          solutions[improve_idx].qa_value = 1e-3 / (res.first * res.first);
+          solutions[improve_idx].local_improvements = 1;
+        }
+        else
+        {
+          //if we improve solution, there is unlikely that it will be further improved
+          solutions[improve_idx].local_improvements++;
+          float base_qa = 1e-3 /(solutions[improve_idx].value * solutions[improve_idx].value);
+          solutions[improve_idx].qa_value = base_qa / solutions[improve_idx].local_improvements;
+        }
       }
 
       //diversity calculation and population restart
