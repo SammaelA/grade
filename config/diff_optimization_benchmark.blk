@@ -37,7 +37,7 @@
     local_search_learning_rate:r = 0.01
     start_search_iterations:i = 50
     start_search_learning_rate:r = 0.05
-    recreation_diversity_thr:r = 2.0
+    recreation_diversity_thr:r = 3.0
     depth_reg_q:r = 0.0
   }
 

@@ -2,6 +2,7 @@
 #include "common_utils/blk.h"
 #include "common_utils/distribution.h"
 #include <algorithm>
+#include <chrono>
 
 namespace opt
 {
@@ -14,7 +15,7 @@ namespace opt
   };
 
   void MemeticClassic::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                                opt_func_vector &F_reg)
+                                init_params_func &get_init_params)
   {
     float mutation_chance = settings.get_double("mutation_chance", 0.2);
     float mutation_power = settings.get_double("mutation_power", 0.3);
@@ -66,69 +67,6 @@ namespace opt
       return std::pair<int, int>(indexes[0], indexes[1]);
     };
 
-    auto initialize_population = [&](std::vector<Solution> &solutions)
-    {
-      solutions = std::vector<Solution>(population_size, {std::vector<float>(min_X.size(), 0), 1000, 1000, 0});
-      for (int i=0;i<population_size;i++)
-      {
-        for (int j=0;j<min_X.size();j++)
-          solutions[i].params[j] = urand(min_X[j], max_X[j]);
-      }
-
-      std::vector<std::vector<float>> presets_1 = {
-        {3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 0.75 , 1},
-        {3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 3    , 1    , 1},
-        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 0.75 , 1},
-        {4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 4    , 1    , 1},
-        {1.879, 1.888, 2.867, 3.070, 3.333, 3.533, 3.746, 3.899, 3.92 , 0.690, 0},
-        {5.5  , 5.8  , 6.1  , 6.4  , 6.7  , 7    , 7.3  , 7.6  , 7.9  , 0.1  , 0}
-      };
-
-      std::vector<std::vector<float>> presets_2 = {
-        {0.05, 0.5, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
-        {0.05, 0.6, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
-        {0.05, 0.4, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33},
-        {0.05, 0.5, 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 },
-      };
-
-      std::vector<std::vector<float>> presets_3 = {
-        {0.1, 0, 0.004, 0.3, 3.141, -0.250},
-        {0.1, 0, 0.004, 0.0, 0.0, 0.1},
-        {0.1, 0.2, -0.2, 0.05, 1, 0.0},
-        {0.1, 0.2, -0.2, 0.1, 2, 0.3},
-        {0.1, 0.2, -0.2, 0.2, 0.0, 0.03},
-        {-0.2, 0.60, 0.2, 0.4, 3.14, 0.0},
-        {-0.2, 0.5, 0.5, 0.4, 3.14, 0.0},
-        {-0.2, 0.60, 0.2, 0.3, 0, 0.0},
-        {-0.2, 0.60, 0.2, 0.4, 3.14, 0.0},
-        {0, 0.5, 0.5, 0.4, 0, 0.0},
-        {0, 0.60, 0.2, 0.3, 0, 0.0}
-      };
-
-      std::vector<std::vector<float>> all_presets;
-      for (auto &p1 : presets_1)
-      {
-        for (auto &p2 : presets_2)
-        {
-          for (auto &p3 : presets_3)
-          {
-            all_presets.emplace_back();
-            for (auto &v1 : p1)
-              all_presets.back().push_back(v1);
-            for (auto &v2 : p2)
-              all_presets.back().push_back(v2);
-            for (auto &v3 : p3)
-              all_presets.back().push_back(v3);
-          }
-        }
-      }
-
-      for (int i=0; i<population_size; i++)
-      {
-        solutions[i].params = all_presets[(int)urandi(0, all_presets.size())];
-      }
-    };
-
     auto local_search = [&](std::vector<float> start_params, int iterations, float lr) -> std::pair<float, std::vector<float>>
     {
       Optimizer *opt = new Adam();
@@ -142,20 +80,29 @@ namespace opt
 
       std::pair<float, std::vector<float>> res;
       res.second = opt->get_best_result(&(res.first));
-      //add regualized part to the last result
-      if (depth_reg_q > 0)
-      {
-        std::vector<std::vector<float>> t{res.second};
-        res.first += depth_reg_q*F_reg(t)[0];
-      }
-      if (res.first < best_result)
-      {
-        best_result = res.first;
-        best_params = res.second;
-        debug("%d new best[1] %.4f\n", budget, best_result);
-      }
+
       delete opt;
       return res;
+    };
+
+    auto initialize_population = [&](std::vector<Solution> &solutions, int st)
+    {
+      solutions = std::vector<Solution>(population_size, {std::vector<float>(min_X.size(), 0), 1000, 1000, 0});
+      for (int i=0;i<population_size;i++)
+        solutions[i].params = get_init_params();
+      
+        for (int i=st; i<solutions.size(); i++)
+        {
+          auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
+          solutions[i] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
+          if (res.first < best_result)
+          {
+            best_result = res.first;
+            best_params = res.second;
+            debug("%d new best %.4f\n", budget, res.first);
+          }
+        }
+      return;
     };
 
     auto calc_diversity = [&](std::vector<Solution> &population) -> float
@@ -208,10 +155,12 @@ namespace opt
       }
     };
     std::vector<Solution> solutions;
-
     Block backup;
+
+    debug("Memetic classic: starting optimization\n");
     if (load_block_from_file("backup.blk", backup) && backup.get_bool("continue"))
     {
+      debug("Continue from backup file\n");
       budget = backup.get_int("budget");
       load_solutions(backup, solutions);
       for (auto &s : solutions)
@@ -226,19 +175,18 @@ namespace opt
     }
     else
     {
-      initialize_population(solutions);
-      for (int i = 0; i < solutions.size(); i++)
-      {
-        auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
-
-        solutions[i].params = res.second;
-        solutions[i].value = res.first;
-        solutions[i].qa_value = 1e-3 / (res.first * res.first);
-        solutions[i].local_improvements = 1;
-      }
+      debug("Initializing population\n");
+      initialize_population(solutions, 0);
     }
     float initial_diversity = calc_diversity(solutions);
     debug("initial diversity %.3f\n", initial_diversity);
+
+    std::vector<float> chances = {0.85, 0.05, 0.05, 0.05};
+    std::vector<int> improvements = {0, 0, 0, 0};
+    std::vector<int> best_stat = {0, 0, 0, 0};
+    std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
+    int t_last_print = budget;
+    int t_first_print = budget;
 
     while (budget < total_function_calls)
     {
@@ -248,50 +196,35 @@ namespace opt
       save_solutions(backup, solutions);
       save_block_to_file("backup.blk", backup);
 
+      int improvement_idx = 0;
+      float rnd = urand();
       std::pair<float, std::vector<float>> res;
-      if (urand() < 0.2*((float)budget)/total_function_calls)
+
+      if (rnd < chances[0])
       {
-        //crossover + mutation
-        auto parents = choose_parents_tournament(solutions);
-        std::vector<float> new_solution = one_dot_crossover(solutions[parents.first].params, solutions[parents.second].params);
-        new_solution = mutate(new_solution);
-        res = local_search(new_solution, local_search_iterations, local_search_learning_rate);
-      }
-      else
-      {
+        //random mutation
+        improvement_idx = 0;
         int id = urandi(0, solutions.size());
         std::vector<std::vector<float>> new_solution = {solutions[id].params};
         new_solution[0] = mutate(new_solution[0]);
         auto fres = F(new_solution);
         res.first = fres[0].first;
         res.second = new_solution[0];
-        if (res.first < best_result)
-        {
-          best_result = res.first;
-          best_params = res.second;
-          debug("%d new best[2] %.4f\n", budget, best_result);
-        }
         budget++;
       }
-      int worst_idx = -1;
-      float worst_val = res.first;
-      for (int i=0;i<solutions.size();i++)
+      else if (rnd < chances[0] + chances[1])
       {
-        if (solutions[i].value > worst_val)
-        {
-          worst_val = solutions[i].value;
-          worst_idx = i;
-
-        }
+        //crossover + mutation + local search
+        improvement_idx = 1;
+        auto parents = choose_parents_tournament(solutions);
+        std::vector<float> new_solution = one_dot_crossover(solutions[parents.first].params, solutions[parents.second].params);
+        new_solution = mutate(new_solution);
+        res = local_search(new_solution, local_search_iterations, local_search_learning_rate);
       }
-      if (worst_idx >= 0)
+      else if (rnd < chances[0] + chances[1] + chances[2])
       {
-        solutions[worst_idx] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
-      }
-
-      //further local improvement
-      if (urand() < ((float)budget)/total_function_calls)
-      {
+        //local improvement
+        improvement_idx = 2;
         float qav_sum = 0;
         for (auto &s : solutions)
           qav_sum += s.qa_value;
@@ -310,42 +243,62 @@ namespace opt
             rnd -= solutions[i].qa_value;
           }
         }
-        auto res = local_search(solutions[improve_idx].params, local_search_iterations, local_search_learning_rate);
-        if (solutions[improve_idx].value > res.first)
+        res = local_search(solutions[improve_idx].params, local_search_iterations, local_search_learning_rate);
+      }
+      else
+      {
+        //new parameters set
+        improvement_idx = 3;
+        std::vector<float> new_params = get_init_params();
+        res = local_search(new_params, start_search_iterations, start_search_learning_rate);
+      }
+
+      int worst_idx = -1;
+      float worst_val = res.first;
+      for (int i=0;i<solutions.size();i++)
+      {
+        if (solutions[i].value > worst_val)
         {
-          logerr("improving existing solution (%d times) %.4f --> %.4f", solutions[improve_idx].local_improvements, solutions[improve_idx].value,
-                 res.first);
-          solutions[improve_idx].params = res.second;
-          solutions[improve_idx].value = res.first;
-          solutions[improve_idx].qa_value = 1e-3 / (res.first * res.first);
-          solutions[improve_idx].local_improvements = 1;
+          worst_val = solutions[i].value;
+          worst_idx = i;
+
         }
-        else
-        {
-          //if we improve solution, there is unlikely that it will be further improved
-          solutions[improve_idx].local_improvements++;
-          float base_qa = 1e-3 /(solutions[improve_idx].value * solutions[improve_idx].value);
-          solutions[improve_idx].qa_value = base_qa / solutions[improve_idx].local_improvements;
-        }
+      }
+      if (worst_idx >= 0)
+      {
+        solutions[worst_idx] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
+        improvements[improvement_idx]++;
+      }
+
+      if (res.first < best_result)
+      {
+        best_result = res.first;
+        best_params = res.second;
+        best_stat[improvement_idx]++;
+        debug("%d new best - %.4f [%d %d %d %d]\n", budget, best_result, best_stat[0], best_stat[1], best_stat[2], best_stat[3]);
       }
 
       //diversity calculation and population restart
       float diversity = calc_diversity(solutions);
-      if (initial_diversity/(diversity + 1e-6) > recreation_diversity_thr)
+      if ((initial_diversity/(diversity + 1e-6) > recreation_diversity_thr) && 
+          (budget + population_size*start_search_iterations < total_function_calls))
       {
         //recreate population and place best solution in it
         debug("recreating population, diversity = %.2f\n", diversity);
-        initialize_population(solutions);
+        initialize_population(solutions, 1);
         solutions[0] = Solution{best_params, best_result, 1e-3f / (best_result * best_result), 1};
-        for (int i=0; i<solutions.size(); i++)
-        {
-          auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
-          solutions[i] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
-        }
         initial_diversity = calc_diversity(solutions);  
         debug("initial diversity %.3f\n", initial_diversity);      
       }
       
+      if (budget - t_last_print > 500)
+      {
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        float ms_per_iter = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t_start).count()/(budget - t_first_print);
+        int s = 1e-3*ms_per_iter*(total_function_calls - budget);
+        debug("%d/%d best value %.4f ETA: %d:%d\n", budget, total_function_calls, best_result, s / 60, s % 60);
+        t_last_print = budget;
+      }
     }
     backup.clear();
     backup.add_bool("continue", false);

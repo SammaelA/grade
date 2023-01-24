@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include "common_utils/utility.h"
+#include "common_utils/distribution.h"
 struct Block;
 
 namespace opt
@@ -12,6 +13,8 @@ namespace opt
   typedef std::function<std::vector<float>(std::vector<std::vector<float>> &)> opt_func_vector;
   typedef std::function<std::vector<std::pair<float,std::vector<float>>>(std::vector<std::vector<float>> &)> opt_func_with_grad_vector;
 
+  typedef std::function<std::vector<float>()> init_params_func;
+
   void check_gradients(opt_func_with_grad &F, const std::vector<float> &min_X, const std::vector<float> &max_X,
                        int samples = 100, float h = 0.001, bool show_detailed_info = false);
 
@@ -19,7 +22,7 @@ namespace opt
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) = 0;
+                          init_params_func &get_init_params) = 0;
     virtual std::vector<float> get_best_result(float *val = nullptr)
     {
       if (val)
@@ -48,16 +51,18 @@ namespace opt
 
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
     {
-      opt_func_vector F_vec = [&](std::vector<std::vector<float>> &params) -> std::vector<float>
+      init_params_func default_init = [&min_X, &max_X]() -> std::vector<float>
       {
-        std::vector<float> res = std::vector<float>(params.size(), 0);
+        std::vector<float> res = std::vector<float>(min_X.size(), 0);
+        for (int i=0; i<max_X.size(); i++)
+          res[i] = urand(min_X[i], max_X[i]);
         return res;
       };
-      optimize(F, min_X, max_X, settings, F_vec);
+      optimize(F, min_X, max_X, settings, default_init);
     }
 
     virtual void optimize(opt_func_with_grad &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func &F_reg)
+                          init_params_func &get_init_params)
     {
       opt_func_with_grad_vector F_vec = [&](std::vector<std::vector<float>> &params) -> std::vector<std::pair<float,std::vector<float>>>
       {
@@ -66,14 +71,7 @@ namespace opt
           res.push_back(F(x));
         return res;
       };
-      opt_func_vector F_reg_vec = [&](std::vector<std::vector<float>> &params) -> std::vector<float>
-      {
-        std::vector<float> res;
-        for (auto &x : params)
-          res.push_back(F_reg(x));
-        return res;
-      };
-      optimize(F_vec, min_X, max_X, settings, F_reg_vec);
+      optimize(F_vec, min_X, max_X, settings, get_init_params);
     }
 
     virtual void optimize(opt_func &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings)
@@ -121,37 +119,37 @@ namespace opt
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   };
   class Adam : public Optimizer
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   };
   class DifferentialEvolutionOptimizer : public Optimizer
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   } ;
 
   class GridSearchAdam : public Optimizer
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   } ;
   class CMA_ES : public Optimizer
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   } ;
   class MemeticClassic : public Optimizer
   {
   public:
     virtual void optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                          opt_func_vector &F_reg) override;
+                          init_params_func &get_init_params) override;
   } ;
 }

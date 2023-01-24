@@ -16,7 +16,7 @@ namespace opt
   }
 
   void CMA_ES::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                        opt_func_vector &F_reg)
+                        init_params_func &get_init_params)
   {
     cmaes_t evo; /* an CMA-ES type struct or "object" */
     double *arFunvals, *const*pop, *xfinal;

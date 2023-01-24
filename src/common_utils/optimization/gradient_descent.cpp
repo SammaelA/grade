@@ -3,7 +3,7 @@
 namespace opt
 {
   void GradientDescent::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                                 opt_func_vector &F_reg)
+                                 init_params_func &get_init_params)
   {
     assert(min_X.size() > 0);
     assert(min_X.size() == max_X.size());
@@ -41,7 +41,7 @@ namespace opt
   }
 
   void Adam::optimize(opt_func_with_grad_vector &F, const std::vector<float> &min_X, const std::vector<float> &max_X, Block &settings,
-                      opt_func_vector &F_reg)
+                      init_params_func &get_init_params)
   {
     assert(min_X.size() > 0);
     assert(min_X.size() == max_X.size());

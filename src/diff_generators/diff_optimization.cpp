@@ -131,6 +131,8 @@ namespace dopt
     int total_iters;
   };
 
+  typedef std::vector<std::vector<std::vector<float>>> PresetsData;
+
   float parameters_error(const std::vector<float> &params, const std::vector<float> &ref_params,
                          const std::vector<float> &params_min, const std::vector<float> &params_max)
   {
@@ -143,73 +145,42 @@ namespace dopt
   }
 
   void load_presets_from_blk(Block &presets_blk, Block &gen_params, const std::vector<float> &init_params, 
-                             std::vector<std::vector<float>> &parameter_presets /*output*/)
+                             PresetsData &presets_data /*output*/)
   {
-    // presets are manually created valid sets of generator parmeters, representing different types of objects,
-    // that generator can create. They do not include scene parameters
-
-    int gen_params_cnt = gen_params.size();
-    std::map<std::string, int> param_n_by_name;
-    for (int i = 0; i < gen_params.size(); i++)
-    {
-      Block *pb = gen_params.get_block(i);
-      if (pb)
-      {
-        param_n_by_name.emplace(gen_params.get_name(i), i);
+    /*Presets are manually created valid sets of generator parmeters, representing different types of objects,
+      that generator can create. They do not include scene parameters
+      Presets blk has the following structure:
+      block_1 {
+        set_1_1:arr = {}
+        ...
+        set_1_n1:arr = {}
       }
-    }
+      ...
+      block_K {
+        set_k_1:arr = {}
+        ...
+        set_k_nk:arr = {}
+      }
+
+      every possible concatenation {set_1_i1, set_2_i2, ..., set_k_ik} of these arrays (one from each block)
+      is a valid preset that can be created by init_params_presets function from this data
+    */
+    presets_data.clear();
     for (int i = 0; i < presets_blk.size(); i++)
     {
-      Block *preset_block = presets_blk.get_block(i);
-      if (preset_block)
+      Block *b = presets_blk.get_block(i);
+      if (b)
       {
-        std::vector<float> preset = init_params;
-        if (preset_block->has_tag("compact"))
+        presets_data.emplace_back();
+        auto &block =  presets_data.back();
+        for (int j = 0; j < b->size(); j++)
         {
-          std::vector<float> params;
-          preset_block->get_arr("params", params);
-          if (params.size() == gen_params_cnt)
+          if (b->get_type(j) == Block::ValueType::ARRAY)
           {
-            for (int k = 0; k < gen_params_cnt; k++)
-              preset[k] = params[k];
-          }
-          else
-          {
-            logerr("Error: compact preset %s has %d parameters, while the generator requests %d",
-                   presets_blk.get_name(i).c_str(), params.size(), gen_params_cnt);
+            block.emplace_back();
+            b->get_arr(j, block.back());
           }
         }
-        else
-        {
-          for (int j = 0; j < preset_block->size(); j++)
-          {
-            auto it = param_n_by_name.find(preset_block->get_name(j));
-            if (it != param_n_by_name.end())
-            {
-              float val = 0;
-              if (preset_block->get_type(i) == Block::ValueType::DOUBLE)
-                val = preset_block->get_double(i);
-              else if (preset_block->get_type(i) == Block::ValueType::INT)
-                val = preset_block->get_int(i);
-              else if (preset_block->get_type(i) == Block::ValueType::BOOL)
-                val = (int)(preset_block->get_bool(i));
-              else
-                logerr("parameter %s of preset %s has unknown parameter type. It should be double, int or bool",
-                       preset_block->get_name(j).c_str(), presets_blk.get_name(i).c_str());
-              preset[it->second] = val;
-            }
-            else
-            {
-              logerr("Unknown parameter name %s in preset %s",
-                     preset_block->get_name(j).c_str(), presets_blk.get_name(i).c_str());
-            }
-          }
-        }
-        parameter_presets.push_back(preset);
-        debug("read preset %s \n", presets_blk.get_name(i).c_str());
-        for (int k = 0; k < gen_params_cnt; k++)
-          debug("%f ", preset[k]);
-        debugnl();
       }
     }
   }
@@ -222,7 +193,7 @@ namespace dopt
     std::vector<unsigned short> init_bins_positions;
     std::vector<unsigned short> variant_count;
     std::vector<unsigned short> variant_positions;
-    std::vector<std::vector<float>> parameter_presets;
+    PresetsData parameter_presets;
     dgen::GeneratorDescription generator = dgen::get_generator_by_name(settings_blk.get_string("procedural_generator"));
     load_block_from_file(generator.parameters_description_blk_path, gen_params);
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
@@ -477,19 +448,16 @@ namespace dopt
         return std::pair<float,std::vector<float>>(loss, final_grad);
       };
 
-      opt::opt_func F_depth_reg = [&](std::vector<float> &params) -> float
+      opt::init_params_func init_params_presets = [&parameter_presets]() -> std::vector<float>
       {
-        std::vector<float> res = func.get_transformed(get_gen_params(params), get_camera_params(params), dgen::ModelQuality(true, 1)); 
-        Model *m = new Model();
-        visualizer::simple_mesh_to_model_332(res, m);
-        m->update();
-        if (reference_depth.size() > 1)
+        std::vector<float> res;
+        for (const auto &block : parameter_presets)
         {
-          logerr("Warning: you are using F_depth_reg function with more than one camera estimation. It's useless");
+          int set_n = urandi(0, block.size());
+          for (float v : block[set_n])
+            res.push_back(v);
         }
-        float val = dlc.get_loss(*m, reference_depth[0], camera);
-        delete m;
-        return val;
+        return res;
       };
 
       opt::Optimizer *opt = nullptr;
@@ -512,7 +480,7 @@ namespace dopt
       }
       
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      opt->optimize(F_silhouette, params_min, params_max, *opt_settings, F_depth_reg);
+      opt->optimize(F_silhouette, params_min, params_max, *opt_settings, init_params_presets);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
       double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();

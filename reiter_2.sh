@@ -29,16 +29,6 @@ do
     fi
 done
 
-until ./main -sandbox -opt_benchmark diff_optimization_benchmark.blk resources/textures/DishesData/cup_4.jpg
-do
-    if test -f "config/backup.blk"
-    then
-        echo "FALL"
-    else
-        break
-    fi
-done
-
 until ./main -sandbox -opt_benchmark diff_optimization_benchmark.blk resources/textures/DishesData/cup_5.jpg
 do
     if test -f "config/backup.blk"
