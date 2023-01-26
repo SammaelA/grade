@@ -296,7 +296,7 @@ namespace opt
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         float ms_per_iter = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t_start).count()/(budget - t_first_print);
         int s = 1e-3*ms_per_iter*(total_function_calls - budget);
-        debug("%d/%d best value %.4f ETA: %d:%d\n", budget, total_function_calls, best_result, s / 60, s % 60);
+        debug("%d/%d best value %.4f ETA: %d:%2d\n", budget, total_function_calls, best_result, s / 60, s % 60);
         t_last_print = budget;
       }
     }

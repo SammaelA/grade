@@ -24,7 +24,7 @@
   reference:s = "resources/textures/DishesData/plate_10.jpg"
 
 
-  search_algorithm:s = "memetic_classic"
+  search_algorithm:s = "adam"
 
   memetic_classic
   {
@@ -62,11 +62,10 @@
 
   adam
   {
-    iterations:i = 500
+    iterations:i = 100
     learning_rate:r = 0.01
     verbose:b = true
-    initial_params:arr = {4, 4, 4, 4, 4, 4, 4, 4, 4, 0.955, 0.904, 0.028, 0.509, 0.211, 0.229, 0.254, 0.268, 0.326, 0.389, 0.326, 
-                          -0.2, 0.60, 0.2, 0.3, 2.8, 0.0}
+    initial_params:arr = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 0.178, 0.326, 0.435, 0.297, 0.212, 0.222, 0.384, 0.131, 0.543, 0.181, 0.088, -0.302, 0.017}
   }
 
   procedural_generator:s = "dishes"
