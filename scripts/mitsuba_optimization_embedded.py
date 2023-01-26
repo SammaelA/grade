@@ -88,6 +88,7 @@ def lambert(diffuse_tex_path: str):
     return my_bsdf
 
 def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name):
+  texture_name = base_path + "../textures/" + texture_name
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
   scene_dict['integrator'] = {
@@ -136,7 +137,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
           'type': 'diffuse',
                   'reflectance': {
                       "type": "bitmap",
-                      "filename": base_path + "../textures/" + texture_name,
+                      "filename": texture_name,
                       "filter_type": 'bilinear',
                       "wrap_mode": 'clamp'
                   },
@@ -180,7 +181,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'vertex_normals_grad' : params['model.vertex_normals'],
     'vertex_texcoords_grad' : params['model.vertex_texcoords'],
     'spp' : spp,
-    'camera' : mi.load_dict(scene_dict['sensor'])
+    'camera' : mi.load_dict(scene_dict['sensor']),
+    'texture_name' : texture_name
   }
   return context
 
@@ -202,7 +204,7 @@ def init_optimization_with_tex(context, img_ref_dir, loss, cameras_count, save_i
   context['cameras_count'] = int(cameras_count)
   context['status'] = 'optimization_with_tex'
 
-  opt = mi.ad.Adam(lr=0.1)
+  opt = mi.ad.Adam(lr=0.25)
   opt['model.bsdf.reflectance.data'] = context['params']['model.bsdf.reflectance.data']
   context['tex_optimizer'] = opt
 
@@ -338,6 +340,7 @@ def render(it, context):
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
       mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
+    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.reflectance.data']))
   return loss[0]
 
 def get_params(context, key):

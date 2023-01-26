@@ -12,15 +12,13 @@ namespace dgen
     vert[sz+0] = pos[0];
     vert[sz+1] = pos[1];
     vert[sz+2] = pos[2];
-    if (!only_pos)
-    {
+    //if (!only_pos)
+    //{
       vert[sz+3] = norm[0];
       vert[sz+4] = norm[1];
       vert[sz+5] = norm[2]; 
-
       vert[sz+6] = tc[0];
       vert[sz+7] = tc[1];
-    }
   }
 
   inline std::vector<float> get_triangle()

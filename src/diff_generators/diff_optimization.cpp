@@ -504,9 +504,9 @@ namespace dopt
     }
     if (texture_extraction)
     {
-      int tex_size = 700;
+      int tex_size = 256;
       //Texture estimation only by 1 camera by now
-      std::vector<float> best_model_small = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 1)); 
+      std::vector<float> best_model_small = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(true, 2)); 
       ModelTex mt;
       Model *m = new Model();
       visualizer::simple_mesh_to_model_332(best_model, m);
@@ -517,12 +517,12 @@ namespace dopt
       Texture reference_textured = ImageResizer::resize(reference_tex[0], tex_size, tex_size, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
       engine::textureManager->save_png(reference_textured, "reference_textured");
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(tex_size, tex_size, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-          mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
-                                  1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                  MitsubaInterface::RenderSettings(tex_size, tex_size, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                  1, true);
+        mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
+                                      1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
+                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                      1, true);
 
-    for (int i=0;i<50;i++)
+    for (int i=0;i<10;i++)
     {
       float loss = mi.render_and_compare(best_model_small, camera, get_camera_params(opt_result.best_params));
       logerr("%d loss = %f",i, loss);
