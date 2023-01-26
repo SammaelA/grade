@@ -83,5 +83,5 @@
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
   save_intermediate_images:b = false
-  texture_extraction:b = true
+  texture_extraction:b = false
 }

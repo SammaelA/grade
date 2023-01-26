@@ -176,6 +176,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'vertex_positions' : params['model.vertex_positions'],
     'vertex_normals' : params['model.vertex_normals'],
     'vertex_texcoords' : params['model.vertex_texcoords'],
+    'vertex_positions_grad' : params['model.vertex_positions'],
+    'vertex_normals_grad' : params['model.vertex_normals'],
+    'vertex_texcoords_grad' : params['model.vertex_texcoords'],
     'spp' : spp,
     'camera' : mi.load_dict(scene_dict['sensor'])
   }
