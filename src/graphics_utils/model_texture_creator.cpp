@@ -1,4 +1,5 @@
 #include "model_texture_creator.h"
+#include "gauss_blur_precise.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/graphics_utils.h"
@@ -11,7 +12,9 @@ tex_get({"tex_from_uv.comp"},{}),
 photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 texture_mirror("texture_mirror.fs"),
-tex_com("tex_com.fs"),
+tex_com("tex_com_2.fs"),
+texs_div("tex_div_tex.fs"),
+tex_to_mask("tex_to_mask.fs"),
 cpy1("restrict_tex.fs"),
 cpy2("copy.fs")
 {
@@ -181,6 +184,217 @@ Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
     cpy1.render();
     
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+//////
+
+    Texture t1 = engine::textureManager->create_texture(W * w, H * h);
+    Texture mask1 = engine::textureManager->create_texture(W * w, H * h);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mask1.texture, 0);
+    tex_to_mask.use();
+    tex_to_mask.get_shader().texture("tex", sm_tex);
+    tex_to_mask.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    GaussFilter gaussian(100);
+
+    Texture t2 = gaussian.perform_gauss_blur(sm_tex);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t1.texture, 0);
+    texs_div.use();
+    texs_div.get_shader().texture("tex1", sm_tex);
+    texs_div.get_shader().texture("tex2", t2);
+    texs_div.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    Texture mask2 = gaussian.perform_gauss_blur(mask1);
+
+    glBindTexture(GL_TEXTURE_2D, t1.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, t2.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, mask1.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, mask2.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    tex_com.get_shader().use();
+    tex_com.get_shader().uniform("x_sym", it.x_sym);
+    tex_com.get_shader().uniform("y_sym", it.y_sym);
+    tex_com.get_shader().texture("tex1", t1);
+    tex_com.get_shader().texture("tex2", t2);
+    tex_com.get_shader().texture("mask1", mask1);
+    tex_com.get_shader().texture("mask2", mask2);
+    tex_com.render();
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    /*glBindTexture(GL_TEXTURE_2D, sm_tex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    tex_com.get_shader().use();
+    tex_com.get_shader().uniform("x_sym", it.x_sym);
+    tex_com.get_shader().uniform("y_sym", it.y_sym);
+    tex_com.get_shader().texture("tex", sm_tex);
+    tex_com.render();
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);*/
+//////
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+    glViewport(it.w0 * W, it.h0 * H, w * W, h * H);
+    cpy2.use();
+    cpy2.get_shader().texture("tex", tmp_tex);
+    cpy2.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  return t;
+
+
+  /*Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
+  int W = tex.get_W();
+  int H = tex.get_H();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
+  glViewport(0, 0, W, H);
+  cpy2.use();
+  cpy2.get_shader().texture("tex", tex);
+  cpy2.render();
+  
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  for (auto it : texs_data)
+  {
+    double w = it.w1 - it.w0;
+    double h = it.h1 - it.h0;
+    if (w < 0 || h < 0) continue;
+    tmp_tex = engine::textureManager->create_texture(w * W, h * H);
+    Texture sm_tex = engine::textureManager->create_texture(w * W, h * H);
+
+    glBindTexture(GL_TEXTURE_2D, t.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (it.x_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    }
+    if (it.y_sym >= 0)
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    else
+    {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
+    glViewport(0, 0, W * w, H * h);
+    cpy1.use();
+    cpy1.get_shader().uniform("x_sh", it.w0);
+    cpy1.get_shader().uniform("y_sh", it.h0);
+    cpy1.get_shader().uniform("x_sz", w);
+    cpy1.get_shader().uniform("y_sz", h);
+    cpy1.get_shader().texture("tex", t);
+    cpy1.render();
+    
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     glBindTexture(GL_TEXTURE_2D, sm_tex.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -222,7 +436,7 @@ Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  return t;
+  return t;*/
 
   //check texture type
   /*Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());

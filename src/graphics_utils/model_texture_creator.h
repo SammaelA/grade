@@ -30,5 +30,7 @@ private:
   PostFx texture_postprocess;
   PostFx texture_mirror;
   PostFx tex_com;
+  PostFx texs_div;
+  PostFx tex_to_mask;
   PostFx photo_transform;
 };
