@@ -54,6 +54,8 @@ blur("gaussian_blur_precise.fs")
   kernel_buf = create_buffer();
 
   //bind FBO
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   
   //SSBO always has padding of 16 bytes, so we should use vec4 for every float
@@ -72,7 +74,7 @@ blur("gaussian_blur_precise.fs")
     print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
   
   //unbind FBO
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 }
 
 GaussFilter::~GaussFilter()
@@ -103,6 +105,8 @@ void GaussFilter::gauss_blur(Texture &t, Texture &to)
   }
 
   //bind FBO and SSBO
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, kernel_buf);
 
@@ -137,5 +141,5 @@ void GaussFilter::gauss_blur(Texture &t, Texture &to)
   blur.render();
 
   //unbind FBO
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 }
