@@ -163,10 +163,10 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     scene_dict['rectangle'] = {
           'type': 'obj',
           'filename': base_path + 'meshes/rectangle.obj',
-          'to_world': T.translate([0, 0, -10]).scale(25),
+          'to_world': T.translate([0, 0, -100]).scale(250),
           'emitter': {
               'type': 'area',
-              'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
+              'radiance': {'type': 'rgb', 'value': [3, 3, 3]}
           }
     }
   scene = mi.load_dict(scene_dict)
@@ -270,6 +270,15 @@ def render(it, context):
       img = img.convert('RGB')
       img_raw = numpy.asarray(img)
       img_raw = (img_raw/255.0) ** 2.2
+      if (context['status'] == 'optimization_with_tex'):
+        img_flatten = img_raw.flatten()
+        img_flatten_r = img_flatten[0::3]
+        img_flatten_g = img_flatten[1::3]
+        img_flatten_b = img_flatten[2::3]
+        img_flatten_s = img_flatten_r + img_flatten_g + img_flatten_b
+        img_flatten_s = numpy.repeat(img_flatten_s, 3)
+        img_flatten[img_flatten_s > 2.5] = 3
+        img_raw = numpy.reshape(img_flatten, img_raw.shape)
       context['img_ref_'+str(i)] = mi.TensorXf(img_raw)
   
   #prepare model

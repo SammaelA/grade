@@ -504,7 +504,7 @@ namespace dopt
     }
     if (texture_extraction)
     {
-      int tex_size = 256;
+      int tex_size = 2*256;
       //Texture estimation only by 1 camera by now
       std::vector<float> best_model_small = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(true, 2)); 
       ModelTex mt;
@@ -516,17 +516,47 @@ namespace dopt
 
       Texture reference_textured = ImageResizer::resize(reference_tex[0], tex_size, tex_size, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
       engine::textureManager->save_png(reference_textured, "reference_textured");
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(tex_size, tex_size, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(tex_size, tex_size, 256, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
         mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
                                       1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 256, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                       1, true);
 
-    for (int i=0;i<10;i++)
-    {
-      float loss = mi.render_and_compare(best_model_small, camera, get_camera_params(opt_result.best_params));
-      logerr("%d loss = %f",i, loss);
-    }
+    
+      opt::opt_func_with_grad F_textured = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
+      {
+        for (int i=0;i<params.size();i++)
+          params[i] = CLAMP(params[i], params_min[i], params_max[i]);
+        std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(true, 2));
+        std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(true, 2)); 
+        std::vector<float> final_grad = std::vector<float>(params.size(), 0);
+
+        float loss = mi.render_and_compare(res, camera, get_camera_params(params));
+        mi.compute_final_grad(jac, gen_params_cnt, res.size()/FLOAT_PER_VERTEX, final_grad);
+        float reg_q = 0.01;
+        std::vector<float> reg_res = f_reg.Forward(0, params);
+        std::vector<float> reg_jac = f_reg.Jacobian(params);
+        loss += reg_q*MAX(0, reg_res[0]);
+        for (int i=0;i<MIN(final_grad.size(), reg_jac.size());i++)
+          final_grad[i] += reg_q*reg_jac[i];
+
+        return std::pair<float,std::vector<float>>(loss, final_grad);
+      };
+
+      opt::init_params_func init_params_null = []() -> std::vector<float>
+      {
+        logerr("init_params_null should never be called!!!");
+        return std::vector<float>();
+      };
+    Block adam_settings;
+    adam_settings.add_arr("initial_params", opt_result.best_params);
+    adam_settings.add_double("learning_rate", 0.005);
+    adam_settings.add_int("iterations", 150);
+    adam_settings.add_bool("verbose", true);
+    opt::Optimizer *tex_opt = new opt::Adam();
+    tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
+    opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
+    delete tex_opt;
 
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
       mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout(), camera);

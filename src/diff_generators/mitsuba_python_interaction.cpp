@@ -353,7 +353,7 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
 void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
                                           std::vector<float> &final_grad)
 {
-  for (int off=0;off<opt_model_layout.offsets.size() - 1;off++)
+  for (int off=0;off<1/*TODO: fix me opt_model_layout.offsets.size() - 1*/;off++)
   {
     int offset = opt_model_layout.offsets[off];
     int size = opt_model_layout.offsets[off + 1] - opt_model_layout.offsets[off];
