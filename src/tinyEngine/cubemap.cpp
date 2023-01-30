@@ -37,6 +37,8 @@ Cubemap::Cubemap(int w, int h) : cube_model(),
 }
 void Cubemap::render(glm::mat4 &projection, glm::mat4 &view, Camera &camera)
 {
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, cubeFBO);
   glViewport(0, 0, width, height);
   glClearColor(0, 0, 0, 0);
@@ -52,7 +54,7 @@ void Cubemap::render(glm::mat4 &projection, glm::mat4 &view, Camera &camera)
   glDrawArrays(GL_TRIANGLES, 0, 36);
   glDepthMask(GL_TRUE);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 }
 Cubemap::~Cubemap()
 {

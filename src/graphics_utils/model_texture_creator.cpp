@@ -22,6 +22,8 @@ cpy2("copy.fs")
   fbo = create_framebuffer();
 
   //bind FBO
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -31,7 +33,7 @@ cpy2("copy.fs")
     print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
   
   //unbind FBO
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 }
 
 ModelTex::~ModelTex()
@@ -53,6 +55,8 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   int w = t.get_W();
   int h = t.get_H();
   //bind FBO
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -124,7 +128,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   glEnable(GL_DEPTH_TEST);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
   return t;
 }
 
@@ -134,6 +138,8 @@ Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
   int W = tex.get_W();
   int H = tex.get_H();
 
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glDisable(GL_DEPTH_TEST);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
@@ -308,6 +314,6 @@ Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
   }
   glEnable(GL_DEPTH_TEST);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
   return t;
 }

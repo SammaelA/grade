@@ -381,13 +381,15 @@ namespace boost
       if (Archive::is_loading::value)
       {
         atlas.fbo = create_framebuffer();
+        int prev_FBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, atlas.fbo);
         atlas.bind(0,0);
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
       }
     }
 

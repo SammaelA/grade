@@ -13,6 +13,8 @@ bool RenderTarget::create(int w, int h)
     glBindTexture(GL_TEXTURE_2D, tex.texture);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
+    int prev_FBO = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, frBuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.texture, 0);
 
@@ -28,7 +30,7 @@ bool RenderTarget::create(int w, int h)
     {
         debugl(10, "Render target created %d %d", width, height);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
     return true;
 }
 void RenderTarget::target()

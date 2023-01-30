@@ -25,6 +25,8 @@ Texture Canny::detect_edges(Texture &t)
   Texture res_tex = gauss.perform_gauss_blur(t);
   
   GLuint fbo = create_framebuffer();
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, grad_tex.texture, 0);
@@ -51,7 +53,7 @@ Texture Canny::detect_edges(Texture &t)
   hysteresis.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
   delete_framebuffer(fbo);
 
   return grad_tex;

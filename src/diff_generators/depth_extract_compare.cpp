@@ -10,11 +10,13 @@ render_model({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_
 depth_postprocess("depth_postprocess.fs")
 {
   fbo = create_framebuffer();
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 }
 
 DepthLossCalculator::~DepthLossCalculator()
@@ -27,6 +29,8 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   Texture color = engine::textureManager->create_texture(w, h, GL_RGBA32F, 1, NULL, GL_RGBA, GL_FLOAT);
   Texture depth = engine::textureManager->create_texture(w, h, GL_DEPTH_COMPONENT32, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
 
+  int prev_FBO = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth.texture, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color.texture, 0);
@@ -55,7 +59,7 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 
   return color;
 }

@@ -82,6 +82,8 @@
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+        int prev_FBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap.texture, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, VSMdepthTexTemp.texture, 0);
@@ -93,7 +95,7 @@
         {
             debugl(10,"Shadow map created %d %d",SHADOW_HEIGHT,SHADOW_WIDTH);
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);  
+        glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);  
     }
     ShadowMap::~ShadowMap() 
     {
@@ -104,6 +106,8 @@
     void ShadowMap::blur()
     {
         PostFx merge = PostFx("depth_merge.fs");
+        int prev_FBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glDisable(GL_DEPTH_TEST);
 
@@ -131,7 +135,7 @@
         postFx->render();
 
         glEnable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 
         //glDeleteTextures(1,&VSMdepthTexTemp);
         //glDeleteTextures(1,&srcDepthTex);

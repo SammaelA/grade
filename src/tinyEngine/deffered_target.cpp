@@ -49,6 +49,8 @@ bool DefferedTarget::create(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
+    int prev_FBO = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, frBuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex.texture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex.texture, 0);
@@ -67,7 +69,7 @@ bool DefferedTarget::create(int w, int h)
     {
         debugl(10, "Deferred target created %d %d", width, height);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
 void DefferedTarget::target()
