@@ -116,6 +116,8 @@ int cities_generator_main()
         {
             WaterPlate* water = landscape.GetWaterPlate();
 
+            int prev_FBO = 0;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
             glBindFramebuffer(GL_FRAMEBUFFER, water->FBO);
             BindTextureToFrame(water->bloomTexture, water->depthTexture);
             Renderer::GetInstance()->MyBufferClearSystem(0,0,0);
@@ -146,7 +148,7 @@ int cities_generator_main()
             );
             landscape.Render(RENDER_MODE::CLIPPING);
             
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
             landscape.Render(RENDER_MODE::DEFUALT);
             water->Render(RENDER_MODE::DEFUALT);
         }
@@ -547,7 +549,8 @@ void SunShadowsRenderSystem()
     std::vector<Entity*> modelEntities = std::move(Entity::AllEntitiesWithComponentsAndTags(
         1, 0, std::vector<unsigned>{ModelInfoComponent::GetCompId()}, std::vector<std::string>{}, true));
     
-
+    int prev_FBO = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
     for (int j = 0; j < sunLightEntities.size(); j++)
     {
         SunLightComponent* sunComp = sunLightEntities[j]->GetComponent<SunLightComponent>();
@@ -603,7 +606,7 @@ void SunShadowsRenderSystem()
             glBindVertexArray(0);
         }
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 
     // glCullFace(GL_BACK); 
     // glDisable(GL_CULL_FACE);

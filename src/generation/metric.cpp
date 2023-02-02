@@ -90,13 +90,15 @@ reference(_reference_image)
         fbo = create_framebuffer();
         Texture ref_resized = engine::textureManager->create_texture(w,h);
         PostFx copy = PostFx("copy.fs");
+        int prev_FBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ref_resized.texture, 0);
         copy.use();
         copy.get_shader().texture("tex",reference.texture);
         copy.render();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
         //reference_raw = safe_new<unsigned char>(4*w*h, "metric_reference_raw");
 
         glBindTexture(GL_TEXTURE_2D, ref_resized.texture);
