@@ -24,8 +24,8 @@ void main(void)
     if (y_sym == 0) return;
     for(float j = 0; j <= abs(y_sym); j += 1)
     {
-      norm1 += texture(mask1,ex_Tex + vec2(i / abs(x_sym), j / abs(y_sym))).a;
-      norm2 += texture(mask2,ex_Tex + vec2(i / abs(x_sym), j / abs(y_sym))).a;
+      norm1 += texture(mask1,ex_Tex + vec2(i / abs(x_sym), j / abs(y_sym))).r;
+      norm2 += texture(mask2,ex_Tex + vec2(i / abs(x_sym), j / abs(y_sym))).r;
     }
   }
   if (norm1 == 0) norm1 = 1;

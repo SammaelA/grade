@@ -9,7 +9,7 @@ class ModelTex
 public:
   ModelTex();
   ~ModelTex();
-  Texture getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera);
+  Texture getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera, Texture &res_mask);
   typedef struct tex_data
   {
     double w0; 
@@ -19,12 +19,13 @@ public:
     int x_sym; 
     int y_sym;
   } tex_data;
-  Texture symTexComplement(Texture tex, std::vector<tex_data> texs_data);
+  Texture symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data);
 private:
   Texture tmp_tex;
   GLuint fbo;
   Shader UV;
   Shader tex_get;
+  Shader mask_get;
   PostFx cpy1;
   PostFx cpy2;
   PostFx texture_postprocess;

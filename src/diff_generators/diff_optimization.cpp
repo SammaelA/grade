@@ -511,7 +511,8 @@ namespace dopt
       Model *m = new Model();
       visualizer::simple_mesh_to_model_332(best_model, m);
       m->update();
-      Texture res_tex = mt.getTexbyUV(reference_mask[0], *m, reference_tex[0], 2, camera);
+      Texture mask_tex;
+      Texture res_tex = mt.getTexbyUV(reference_mask[0], *m, reference_tex[0], 2, camera, mask_tex);
       engine::textureManager->save_png(res_tex, "reconstructed_tex");
 
       Texture reference_textured = ImageResizer::resize(reference_tex[0], tex_size, tex_size, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
@@ -560,7 +561,7 @@ namespace dopt
 
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/reconstructed_tex.png");
       std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
-      Texture comp = mt.symTexComplement(res_optimized, data);
+      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
       engine::textureManager->save_png(comp, "reconstructed_tex");
       sleep(1);
 

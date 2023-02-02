@@ -1,5 +1,6 @@
 #include "model_texture_creator.h"
 #include "gauss_blur_precise.h"
+#include "silhouette.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/graphics_utils.h"
@@ -9,6 +10,7 @@
 ModelTex::ModelTex():
 UV({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_Tex"}), 
 tex_get({"tex_from_uv.comp"},{}),
+mask_get({"mask_from_uv.comp"},{}),
 photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 texture_mirror("texture_mirror.fs"),
@@ -41,10 +43,11 @@ ModelTex::~ModelTex()
   delete_framebuffer(fbo);
 }
 
-Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera)
+Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera, Texture &res_mask)
 {
   //check texture type
   Texture t = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
+  res_mask = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
 
   //if we don't have tmp texture or it has wrong size, we need to recreate it
   if (!tmp_tex.is_valid() || tmp_tex.type != t.type || 
@@ -109,6 +112,15 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
 
   glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
+  mask_get.use();
+  mask_get.uniform("tex_size", glm::vec2(w, h));
+  mask_get.texture("uv", UV_tex);
+  glBindImageTexture(2, res_mask.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+  
+  glDispatchCompute(w, h, 1);
+
+  glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
+
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
   texture_postprocess.use();
   texture_postprocess.get_shader().texture("tex", t);
@@ -132,7 +144,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   return t;
 }
 
-Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
+Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data)
 {
   Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
   int W = tex.get_W();
@@ -194,13 +206,17 @@ Texture ModelTex::symTexComplement(Texture tex, std::vector<tex_data> texs_data)
 //////
 
     Texture t1 = engine::textureManager->create_texture(W * w, H * h);
+
     Texture mask1 = engine::textureManager->create_texture(W * w, H * h);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mask1.texture, 0);
-    tex_to_mask.use();
-    tex_to_mask.get_shader().texture("tex", sm_tex);
-    tex_to_mask.render();
-    
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glViewport(0, 0, W * w, H * h);
+    cpy1.use();
+    cpy1.get_shader().uniform("x_sh", it.w0);
+    cpy1.get_shader().uniform("y_sh", it.h0);
+    cpy1.get_shader().uniform("x_sz", w);
+    cpy1.get_shader().uniform("y_sz", h);
+    cpy1.get_shader().texture("tex", mask);
+    cpy1.render();
 
     GaussFilter gaussian(3);
 

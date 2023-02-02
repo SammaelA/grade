@@ -361,7 +361,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera);
+    Texture mask_tex;
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera, mask_tex);
     textureManager.save_png(res_tex, "reconstructed_tex");
 
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
@@ -369,7 +370,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
     std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 4, -1}, {0, 0.75, 1, 1, 1, 1}};
 
-    Texture comp = mt.symTexComplement(res_tex, data);
+    Texture comp = mt.symTexComplement(res_tex, mask_tex, data);
     textureManager.save_png(comp, "complement_tex");
     engine::view->next_frame();
 
@@ -398,7 +399,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Texture photo = textureManager.load_unnamed_tex("saves/tex_colored.png");
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera);
+    Texture mask_tex;
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera, mask_tex);
     textureManager.save_png(res_tex, "reconstructed_tex");
     engine::view->next_frame();
 
