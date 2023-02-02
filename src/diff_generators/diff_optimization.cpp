@@ -548,15 +548,21 @@ namespace dopt
         logerr("init_params_null should never be called!!!");
         return std::vector<float>();
       };
-    Block adam_settings;
-    adam_settings.add_arr("initial_params", opt_result.best_params);
-    adam_settings.add_double("learning_rate", 0.005);
-    adam_settings.add_int("iterations", 150);
-    adam_settings.add_bool("verbose", true);
-    opt::Optimizer *tex_opt = new opt::Adam();
-    tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
-    opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
-    delete tex_opt;
+      Block adam_settings;
+      adam_settings.add_arr("initial_params", opt_result.best_params);
+      adam_settings.add_double("learning_rate", 0.01);
+      adam_settings.add_int("iterations", 100);
+      adam_settings.add_bool("verbose", true);
+      opt::Optimizer *tex_opt = new opt::Adam();
+      tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
+      opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
+      delete tex_opt;
+
+      Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/reconstructed_tex.png");
+      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
+      Texture comp = mt.symTexComplement(res_optimized, data);
+      engine::textureManager->save_png(comp, "reconstructed_tex");
+      sleep(1);
 
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
       mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout(), camera);
