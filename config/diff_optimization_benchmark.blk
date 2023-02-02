@@ -62,10 +62,12 @@
 
   adam
   {
-    iterations:i = 100
-    learning_rate:r = 0.01
+    iterations:i = 400
+    learning_rate:r = 0.0075
     verbose:b = true
-    initial_params:arr = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 0.178, 0.326, 0.435, 0.297, 0.212, 0.222, 0.384, 0.131, 0.543, 0.181, 0.088, -0.302, 0.017}
+    initial_params:arr = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 
+                          0.178, 0.178, 0.326, 0.326, 0.326, 0.435, 0.435, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384, 
+                          0.131, 0.543, 0.181, 0.088, -0.302, 0.017}
   }
 
   procedural_generator:s = "dishes"
@@ -82,6 +84,6 @@
   selection_image_size:i = 200
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
-  save_intermediate_images:b = false
-  texture_extraction:b = false
+  save_intermediate_images:b = true
+  texture_extraction:b = true
 }

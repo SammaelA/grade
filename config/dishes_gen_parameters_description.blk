@@ -19,4 +19,17 @@
   handle_radius_4{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 4"}
   handle_radius_5{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 5"}
   handle_radius_6{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
+  handle_radius_7{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 1"}
+  handle_radius_8{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 2"}
+  handle_radius_9{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 3"}
+  handle_radius_10{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 4"}
+  handle_radius_11{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 5"}
+  handle_radius_12{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
+  handle_radius_13{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
+  handle_radius_14{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 1"}
+  handle_radius_15{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 2"}
+  handle_radius_16{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 3"}
+  handle_radius_17{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 4"}
+  handle_radius_18{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 5"}
+  handle_radius_19{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
 }
