@@ -246,6 +246,15 @@ namespace dgen
       full_len += len(sub(verts[i],verts[i-1]));
     }
 
+    std::vector<dvec3> positions;//size 4*(sp_sz-1)*rotations
+    positions.reserve(4*(sp_sz-1)*rotations);
+    std::vector<dvec3> normals;//size (sp_sz-1)*rotations
+    normals.reserve((sp_sz-1)*rotations);
+    std::vector<dvec2> tc;//size 4*(sp_sz-1)*rotations
+    tc.reserve(4*(sp_sz-1)*rotations);
+    std::vector<int> indices;//size (sp_sz-1)*rotations
+    indices.reserve((sp_sz-1)*rotations);
+
     for (int sector = 1; sector <= rotations; sector++)
     {
       for (int i=0;i<sp_sz;i++)
@@ -260,15 +269,51 @@ namespace dgen
         dvec3 v1 = sub(prev_verts[i], verts[i]);
         dvec3 v2 = sub(verts[i-1], verts[i]); 
         dvec3 n = normalize(cross(v1, v2));
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1), verts[i], n, dvec2{((float)(sector))/rotations, 0.75*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+1, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+2, verts[i-1], n, dvec2{((float)(sector))/rotations, 0.75*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+3, prev_verts[i-1], n, dvec2{((float)(sector - 1))/rotations,  0.75*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+4, verts[i-1], n, dvec2{((float)(sector))/rotations,  0.75*prev_len/full_len}, only_pos); 
-        add_vertex(model, prev_size + 6*((sp_sz-1)*(sector-1) + i - 1)+5, prev_verts[i], n, dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len}, only_pos); 
+
+        positions.push_back(verts[i]);
+        positions.push_back(prev_verts[i]);
+        positions.push_back(verts[i-1]);
+        positions.push_back(prev_verts[i-1]);
+
+        normals.push_back(n);
+
+        tc.push_back(dvec2{((float)(sector))/rotations, 0.75*new_len/full_len});
+        tc.push_back(dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len});
+        tc.push_back(dvec2{((float)(sector))/rotations, 0.75*prev_len/full_len});
+        tc.push_back(dvec2{((float)(sector - 1))/rotations,  0.75*prev_len/full_len});
+
+        indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1));
+        
         prev_len = new_len;
       }
       prev_verts = verts;
+    }
+
+    for (int i=0;i<(sp_sz-1)*rotations;i++)
+    {
+      int sp_n = i % (sp_sz-1) + 1;
+      int rot_n = i / (sp_sz-1) + 1;
+
+      dvec3 n = normals[i];
+      dvec3 n01 = (sp_n == sp_sz-1) ? n : normals[(rot_n-1)*(sp_sz-1) + sp_n];
+      dvec3 n_11 = (sp_n == sp_sz-1) ? n : normals[((rot_n-2 + rotations) % rotations)*(sp_sz-1) + sp_n];
+      dvec3 n11 = (sp_n == sp_sz-1) ? n : normals[(rot_n % rotations)*(sp_sz-1) + sp_n];
+      dvec3 n_10 = normals[((rot_n-2 + rotations) % rotations)*(sp_sz-1) + sp_n - 1];
+      dvec3 n10 = normals[(rot_n % rotations)*(sp_sz-1) + sp_n - 1];
+      dvec3 n0_1 = (sp_n == 1) ? n : normals[(rot_n-1)*(sp_sz-1) + sp_n - 2];
+      dvec3 n_1_1 = (sp_n == 1) ? n : normals[((rot_n-2 + rotations) % rotations)*(sp_sz-1) + sp_n - 2];
+      dvec3 n1_1 = (sp_n == 1) ? n : normals[(rot_n % rotations)*(sp_sz-1) + sp_n - 2];
+
+      dvec3 n0 = normalize(add(add(n, n01), add(n11, n10)));
+      dvec3 n1 = normalize(add(add(n, n01), add(n_11, n_10)));
+      dvec3 n2 = normalize(add(add(n, n10), add(n1_1, n0_1)));
+      dvec3 n3 = normalize(add(add(n, n0_1), add(n_1_1, n_10)));
+      add_vertex(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
+      add_vertex(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
+      add_vertex(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
     }
   }
 

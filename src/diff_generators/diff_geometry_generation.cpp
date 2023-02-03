@@ -457,12 +457,8 @@ namespace dgen
   {
     GeneratorDescription gd = get_generator_by_name("dishes");
     Model *m = new Model();
-    std::vector<float> X0{2.014, 3.424, 3.404, 3.291, 3.276, 3.284, 3.357, 3.383, 3.354,
-                          0.781,
-                          1,
-                          0.05,
-                          0.7,
-                          0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.4};
+    std::vector<float> X0{3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 
+                          0.178, 0.178, 0.326, 0.326, 0.326, 0.435, 0.435, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384};
     std::vector<float> res;
     dgen::dgen_test("dishes", X0, res);
     visualizer::simple_mesh_to_model_332(res, m);

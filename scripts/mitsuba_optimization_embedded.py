@@ -306,8 +306,7 @@ def render(it, context):
     dr.enable_grad(pos)
     dr.enable_grad(angles)
     dr.enable_grad(t1)
-    dr.enable_grad(params['model.vertex_normals'])
-    dr.enable_grad(params['model.vertex_texcoords'])
+
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
     params['model.vertex_positions'] = dr.ravel(tr_positions)
@@ -335,8 +334,6 @@ def render(it, context):
   context['camera_params_grad'] = numpy.asarray(camera_params_grad)
   context['vertex_positions_grad'] = vertex_positions_grad / float(context['cameras_count'])
 
-  #context['vertex_normals_grad'] = dr.grad(params['model.vertex_normals'])
-  #context['vertex_texcoords_grad'] = dr.grad(params['model.vertex_texcoords'])
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']
     opt.step()
@@ -348,8 +345,8 @@ def render(it, context):
     if context['save_intermediate_images'] > 0:
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
-      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
-    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.reflectance.data']))
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
+    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
   return loss[0]
 
 def get_params(context, key):
