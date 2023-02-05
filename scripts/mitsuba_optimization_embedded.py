@@ -158,7 +158,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
                 'type': 'area',
                 'radiance': {'type': 'rgb', 'value': [100, 100, 100]}
             },
-            'to_world': T.translate([0, 0.5, 10])
+            'to_world': T.translate([0,0,0])
         }
     scene_dict['rectangle'] = {
           'type': 'obj',
@@ -184,6 +184,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'camera' : mi.load_dict(scene_dict['sensor']),
     'texture_name' : texture_name
   }
+  if (render_style != "silhouette"):
+    t = dr.unravel(mi.Point3f, params['light.vertex_positions'])
+    context["light"] = dr.ravel(t)
   return context
 
 def init_optimization(context, img_ref_dir, loss, cameras_count, save_intermediate_images):
@@ -299,13 +302,35 @@ def render(it, context):
   for camera_n in range(context['cameras_count']):
     img_ref = context['img_ref_'+str(camera_n)]
 
-    pos = mi.Point3f(context['camera_params'][6*camera_n + 0], context['camera_params'][6*camera_n + 1], context['camera_params'][6*camera_n + 2])
+    params_n = 11
+    pos = mi.Point3f(context['camera_params'][params_n*camera_n + 0], 
+                     context['camera_params'][params_n*camera_n + 1], 
+                     context['camera_params'][params_n*camera_n + 2])
     tq = 180/numpy.pi
-    angles = mi.Point3f(tq*context['camera_params'][6*camera_n + 3], tq*context['camera_params'][6*camera_n + 4], tq*context['camera_params'][6*camera_n + 5])
+    angles = mi.Point3f(tq*context['camera_params'][params_n*camera_n + 3],
+                        tq*context['camera_params'][params_n*camera_n + 4],
+                        tq*context['camera_params'][params_n*camera_n + 5])
     
+    light_pos = mi.Point3f(context['camera_params'][params_n*camera_n + 6], 
+                           context['camera_params'][params_n*camera_n + 7], 
+                           context['camera_params'][params_n*camera_n + 8])
+    light_size = context['camera_params'][params_n*camera_n + 9]
+    light_intensity = context['camera_params'][params_n*camera_n + 10]
+
     dr.enable_grad(pos)
     dr.enable_grad(angles)
     dr.enable_grad(t1)
+
+    if (context['status'] == 'optimization_with_tex'):
+      dr.enable_grad(light_pos)
+      dr.enable_grad(light_size)
+      dr.enable_grad(light_intensity)
+
+      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(light_size)
+      t2 = dr.unravel(mi.Point3f, context["light"])
+      lights_positions = light_transform @ t2
+      params['light.vertex_positions'] = dr.ravel(lights_positions)
+      params['light.emitter.radiance.value'] = mi.Color3f(light_intensity, light_intensity, light_intensity)
 
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
@@ -322,6 +347,19 @@ def render(it, context):
     camera_params_grad.append(dr.grad(angles).x)
     camera_params_grad.append(dr.grad(angles).y)
     camera_params_grad.append(dr.grad(angles).z)
+    if (context['status'] == 'optimization_with_tex'):
+      camera_params_grad.append(dr.grad(light_pos).x)
+      camera_params_grad.append(dr.grad(light_pos).y)
+      camera_params_grad.append(dr.grad(light_pos).z)
+      camera_params_grad.append([dr.grad(light_size)])
+      camera_params_grad.append([dr.grad(light_intensity)])
+    else:
+      camera_params_grad.append([0])
+      camera_params_grad.append([0])
+      camera_params_grad.append([0])
+      camera_params_grad.append([0])
+      camera_params_grad.append([0])
+
     if (camera_n == 0):
       vertex_positions_grad = dr.ravel(dr.grad(t1))
     else:
