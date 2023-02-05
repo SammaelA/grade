@@ -345,8 +345,8 @@ def render(it, context):
     if context['save_intermediate_images'] > 0:
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
-      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
-    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
+    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.reflectance.data']))
   return loss[0]
 
 def get_params(context, key):
