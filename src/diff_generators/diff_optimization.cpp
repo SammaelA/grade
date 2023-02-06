@@ -285,9 +285,11 @@ namespace dopt
       if (reference_cameras_blk)
         cameras_count = reference_cameras_blk->size();
     }
+    if (cameras_count != 1)
+      logerr("ERROR: cameras_count != 1 is not supported properly.");
     process_blk(gen_params);
     for (int i=0;i<cameras_count;i++)
-      process_blk(scene_params);//we dublicate scene parameters for each camera (currently scene == camera only)
+      process_blk(scene_params);//we duplicate scene parameters for each camera (currently scene == camera only)
 
     load_presets_from_blk(presets_blk, gen_params, init_params, parameter_presets);
 
