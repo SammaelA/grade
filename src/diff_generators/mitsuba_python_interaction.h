@@ -55,11 +55,11 @@ public:
                                   RenderSettings render_settings, int cameras_count = 1, bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
   void render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
-                            const CameraSettings &camera);
+                            const CameraSettings &camera, const std::vector<float> &scene_params);
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
   //that are used by compute_final_grad
-  float render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &camera_params,
+  float render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &scene_params,
                            double *timers = nullptr);
 
   //generator_jak size is [FLOAT_PER_VERTEX*params_count*vertex_count], final_grad size is [params_count]

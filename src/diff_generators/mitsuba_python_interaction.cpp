@@ -289,13 +289,19 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
 }
 
 void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
-                                            const CameraSettings &camera)
+                                            const CameraSettings &camera, const std::vector<float> &scene_params)
 {
   if (model_max_size < model.size()/ml.f_per_vert)
     set_model_max_size(model.size()/ml.f_per_vert);
   
   model_to_ctx(model, ml);
   camera_to_ctx(camera);
+
+  constexpr int cameras_buf_n = 3;
+  assert(scene_params.size() > 0);
+  memcpy(buffers[cameras_buf_n], scene_params.data(), sizeof(float)*scene_params.size());
+  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, scene_params.size());
+  show_errors();
 
   PyObject *func, *args, *ref_dir_arg, *func_ret;
 
@@ -311,7 +317,7 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   DEL(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &camera_params,
+float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &scene_params,
                                            double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -319,15 +325,9 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
   camera_to_ctx(camera);
 
   constexpr int cameras_buf_n = 3;
-  constexpr int scene_params_cnt = 11;
-  //camera params contains 11*n floats: (pos.x, pos.y, pos.z, rot_x, rot_y, rot_z, light_params) for each camera
-  assert(camera_params.size() == scene_params_cnt * cameras_count);
-
-  if (camera_params.empty())
-    std::fill_n(buffers[cameras_buf_n], scene_params_cnt*cameras_count, 0);
-  else
-    memcpy(buffers[cameras_buf_n], camera_params.data(), sizeof(float)*scene_params_cnt*cameras_count);
-  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, scene_params_cnt*cameras_count);
+  assert(scene_params.size() > 0);
+  memcpy(buffers[cameras_buf_n], scene_params.data(), sizeof(float)*scene_params.size());
+  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, scene_params.size());
   show_errors();
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

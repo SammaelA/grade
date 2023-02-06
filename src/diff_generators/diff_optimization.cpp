@@ -206,7 +206,7 @@ namespace dopt
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     int sel_image_size = settings_blk.get_int("selection_image_size", 196);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
-    bool texture_extraction = settings_blk.get_bool("texture_extraction", false);
+    Block *textured_optimization = settings_blk.get_block("textured_optimization");
     std::string search_algorithm = settings_blk.get_string("search_algorithm", "simple_search");
     std::string save_stat_path = settings_blk.get_string("save_stat_path", "");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
@@ -330,9 +330,9 @@ namespace dopt
       {
         std::vector<float> reference_camera_params;
         reference_cameras_blk->get_arr(i, reference_camera_params);
-        std::vector<float> reference = func.get_transformed(reference_params, reference_camera_params);
+        std::vector<float> reference = func.get(reference_params);
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera);
+        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera, reference_camera_params);
         reference_tex.push_back(engine::textureManager->load_unnamed_tex("saves/reference.png"));
 
         Model *m = new Model();
@@ -495,18 +495,17 @@ namespace dopt
       debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms/iters);
     }
 
-    std::vector<float> best_model = func.get_transformed(get_gen_params(opt_result.best_params), get_camera_params(opt_result.best_params),
-                                                         dgen::ModelQuality(false, 3));
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(), camera);
+    std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 1024, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(), camera, get_camera_params(opt_result.best_params));
     if (saved_initial_path != "")
     {
-      std::vector<float> initial_model = func.get_transformed(get_gen_params(init_params), get_camera_params(init_params));
-      mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera);
+      std::vector<float> initial_model = func.get(get_gen_params(init_params));
+      mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera, get_camera_params(init_params));
     }
-    if (texture_extraction)
+    if (textured_optimization && textured_optimization->get_bool("active", false))
     {
-      int tex_size = 2*256;
+      int tex_size = 256;
       //Texture estimation only by 1 camera by now
       std::vector<float> best_model_small = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(true, 2)); 
       ModelTex mt;
@@ -519,10 +518,9 @@ namespace dopt
 
       Texture reference_textured = ImageResizer::resize(reference_tex[0], tex_size, tex_size, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
       engine::textureManager->save_png(reference_textured, "reference_textured");
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(tex_size, tex_size, 256, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-        mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
+      mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
                                       1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 256, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                       1, true);
 
     
@@ -553,22 +551,33 @@ namespace dopt
       };
       Block adam_settings;
       adam_settings.add_arr("initial_params", opt_result.best_params);
-      adam_settings.add_double("learning_rate", 0.01);
-      adam_settings.add_int("iterations", 100);
+      adam_settings.add_double("learning_rate", textured_optimization->get_double("learning_rate", 0.01));
+      adam_settings.add_int("iterations", textured_optimization->get_int("iterations", 100));
       adam_settings.add_bool("verbose", true);
       opt::Optimizer *tex_opt = new opt::Adam();
+      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
+      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
       opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
       delete tex_opt;
+
+      double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/reconstructed_tex.png");
       std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
       Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
-      engine::textureManager->save_png(comp, "reconstructed_tex");
+      engine::textureManager->save_png(comp, "res_tex");
       sleep(1);
 
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-      mi.render_model_to_file(best_model, saved_textured_path, dgen::ModelLayout(), camera);
+      std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 1024, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+      mi.render_model_to_file(best_model_textured, saved_textured_path, dgen::ModelLayout(), camera, get_camera_params(opt_result.best_params));
+    
+      std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+      double all_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t1).count();
+      debug("Optimization stat\n");
+      debug("%.1f s total \n", 1e-3 * all_time_ms);
+      debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms/textured_optimization->get_int("iterations", 100));
     }
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);

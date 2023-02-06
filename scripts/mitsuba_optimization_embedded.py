@@ -182,7 +182,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'vertex_texcoords_grad' : params['model.vertex_texcoords'],
     'spp' : spp,
     'camera' : mi.load_dict(scene_dict['sensor']),
-    'texture_name' : texture_name
+    'texture_name' : texture_name,
+    'render_style' : render_style
   }
   if (render_style != "silhouette"):
     t = dr.unravel(mi.Point3f, params['light.vertex_positions'])
@@ -242,6 +243,26 @@ def render_and_save_to_file(context, save_filename):
   params['model.vertex_count'] = vertex_count
   params['model.face_count'] = int(vertex_count/3)
   params['model.faces'] = list(range(vertex_count))
+  
+  pos, angles, light_pos, light_size, light_intensity = get_scene_params(context)
+
+
+  if (context["render_style"] != "silhouette"):
+      dr.enable_grad(light_pos)
+      dr.enable_grad(light_size)
+      dr.enable_grad(light_intensity)
+
+      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(light_size)
+      t2 = dr.unravel(mi.Point3f, context["light"])
+      lights_positions = light_transform @ t2
+      params['light.vertex_positions'] = dr.ravel(lights_positions)
+      params['light.emitter.radiance.value'] = mi.Color3f(light_intensity, light_intensity, light_intensity)
+
+  t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
+  trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+  tr_positions = trafo @ t1
+  params['model.vertex_positions'] = dr.ravel(tr_positions)
+  
   params.update()
 
   img_ref = mi.render(scene, params, sensor = context['camera'], seed=0, spp=context['spp'])
@@ -262,6 +283,23 @@ def F_loss_mixed(img, img_ref):
     loss = dr.sum(0.5*dr.sqr(img - img_ref) + 0.5*dr.abs(img - img_ref)) / len(img)
     return loss
 
+def get_scene_params(context):
+    params_n = 11
+    pos = mi.Point3f(context['camera_params'][0], 
+                     context['camera_params'][1], 
+                     context['camera_params'][2])
+    tq = 180/numpy.pi
+    angles = mi.Point3f(tq*context['camera_params'][3],
+                        tq*context['camera_params'][4],
+                        tq*context['camera_params'][5])
+    
+    light_pos = mi.Point3f(context['camera_params'][6], 
+                           context['camera_params'][7], 
+                           context['camera_params'][8])
+    light_size = context['camera_params'][9]
+    light_intensity = context['camera_params'][10]
+
+    return (pos, angles, light_pos, light_size, light_intensity)
 def render(it, context):
 
   #load reference on the first iteration
@@ -301,21 +339,7 @@ def render(it, context):
   #render scene from each camera
   for camera_n in range(context['cameras_count']):
     img_ref = context['img_ref_'+str(camera_n)]
-
-    params_n = 11
-    pos = mi.Point3f(context['camera_params'][params_n*camera_n + 0], 
-                     context['camera_params'][params_n*camera_n + 1], 
-                     context['camera_params'][params_n*camera_n + 2])
-    tq = 180/numpy.pi
-    angles = mi.Point3f(tq*context['camera_params'][params_n*camera_n + 3],
-                        tq*context['camera_params'][params_n*camera_n + 4],
-                        tq*context['camera_params'][params_n*camera_n + 5])
-    
-    light_pos = mi.Point3f(context['camera_params'][params_n*camera_n + 6], 
-                           context['camera_params'][params_n*camera_n + 7], 
-                           context['camera_params'][params_n*camera_n + 8])
-    light_size = context['camera_params'][params_n*camera_n + 9]
-    light_intensity = context['camera_params'][params_n*camera_n + 10]
+    pos, angles, light_pos, light_size, light_intensity = get_scene_params(context)
 
     dr.enable_grad(pos)
     dr.enable_grad(angles)
