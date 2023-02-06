@@ -74,10 +74,11 @@
   procedural_generator:s = "dishes"
   scene_description:s = "diff_gen_scene_parameters_description.blk"
   synthetic_reference:b = false
-  reference_params:arr = {3, 3.3, 3.33, 3.36, 3.4, 3.43, 3.45, 3.47, 3.5, 0.781, 1, 0.05, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3}
+  reference_params:arr = {3.078, 3.534, 3.847, 4.112, 4.312, 4.429, 4.560, 4.636, 4.638, 1.149, 1.000, 0.041, 0.548, 
+                          0.100, 0.368, 0.479, 0.328, 0.228, 0.241, 0.431, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384}
   reference_cameras
   {
-    camera:arr = {0.1, 0.2, -0.2, 0.2, 0.0, 0.03}
+    camera:arr = {0.1, 0.2, -0.2, 0.2, 0.0, 0.03, 0, 0.5, 10, 1, 100}
     //camera:arr = {0.1, 0, 0.004, 0.3, 3.141, -0.250}
   }
   verbose_level:i = 1
