@@ -296,7 +296,7 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(generator.generator, variant_positions);
 
-    std::vector<Texture> reference_tex, reference_mask, reference_depth;
+    std::vector<Texture> reference_tex, reference_depth;
 
     CameraSettings camera;
     float h1 = 1.5;
@@ -331,7 +331,8 @@ namespace dopt
         std::vector<float> reference_camera_params;
         reference_cameras_blk->get_arr(i, reference_camera_params);
         std::vector<float> reference = func.get(reference_params);
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 1024, MitsubaInterface::LLVM, 
+                                                                     MitsubaInterface::TEXTURED_CONST, "texture_not_found.png"));
         mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera, reference_camera_params);
         reference_tex.push_back(engine::textureManager->load_unnamed_tex("saves/reference.png"));
 
@@ -349,15 +350,6 @@ namespace dopt
       reference_depth.push_back(engine::textureManager->create_texture(128, 128));//TODO: estimate depth
     }
 
-    SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-    std::vector<std::string> reference_images_dir;
-    for (int i=0;i<cameras_count;i++)
-    {
-      reference_mask.push_back(se.get_silhouette(reference_tex[i], sel_image_size, sel_image_size));
-      reference_images_dir.push_back("saves/reference_" + std::to_string(i) + ".png");
-      engine::textureManager->save_png_directly(reference_mask[i], reference_images_dir.back());
-    }
-
     CppAD::ADFun<float> f_reg;
     {
       std::vector<dgen::dfloat> X(init_params.size());
@@ -369,11 +361,6 @@ namespace dopt
       Y[0] = generator.params_regularizer(X);
       f_reg = CppAD::ADFun<float>(X, Y);
     }
-
-
-    mi.init_optimization(reference_images_dir, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
-                         MitsubaInterface::RenderSettings(sel_image_size, sel_image_size, 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
-                         cameras_count, settings_blk.get_bool("save_intermediate_images", false));
 
     OptimizationResult opt_result{init_params, 1000, 0};
 
@@ -390,6 +377,7 @@ namespace dopt
 
       int cnt = 0;
       std::vector<double> grad_stat;
+      int model_quality = 0;
 
       opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
@@ -406,8 +394,8 @@ namespace dopt
           }
           debug("]\n");
         }
-        std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(true, 0));
-        std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(true, 0)); 
+        std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(true, model_quality));
+        std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(true, model_quality)); 
         std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
         float loss = mi.render_and_compare(res, camera, get_camera_params(params));
@@ -463,36 +451,70 @@ namespace dopt
         return res;
       };
 
-      opt::Optimizer *opt = nullptr;
-      if (search_algorithm == "adam")
-        opt = new opt::Adam();
-      else if (search_algorithm == "DE")
-        opt = new opt::DifferentialEvolutionOptimizer();
-      else if (search_algorithm == "memetic_classic")
-        opt = new opt::MemeticClassic();
-      else if (search_algorithm == "grid_search_adam")
-      {
-        opt_settings->add_arr("init_bins_count", init_bins_count);
-        opt_settings->add_arr("init_bins_positions", init_bins_positions);
-        opt = new opt::GridSearchAdam();
-      }
-      else
-      {
-        logerr("Unknown optimizer algorithm %s", search_algorithm.c_str());
-        return 1.0;
-      }
-      
-      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      opt->optimize(F_silhouette, params_min, params_max, *opt_settings, init_params_presets);
-      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+      constexpr int stages = 4;
+      std::array<std::string, stages> optimizers = {search_algorithm, "adam", "adam", "adam"};
+      std::array<int, stages> iterations = {0, 125, 100, 75};
+      std::array<float, stages> lrs = {0, 0.01, 0.0075, 0.004};
+      std::array<int, stages> model_qualities = {0, 1, 1, 1};
+      std::array<int, stages> image_sizes = {128, 256, 512, 1024};
 
-      double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-      opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
-      opt_result.total_iters = iters;
-      
-      debug("Optimization stat\n");
-      debug("%.1f s total \n", 1e-3 * opt_time_ms);
-      debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms/iters);
+      for (int stage = 0; stage < stages; stage++)
+      {
+        SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+        std::vector<std::string> reference_images_dir;
+        std::vector<Texture> reference_mask;
+        for (int i=0;i<cameras_count;i++)
+        {
+          reference_mask.push_back(se.get_silhouette(reference_tex[i], image_sizes[stage], image_sizes[stage]));
+          reference_images_dir.push_back("saves/reference_" + std::to_string(i) + ".png");
+          engine::textureManager->save_png_directly(reference_mask[i], reference_images_dir.back());
+        }
+
+        model_quality = model_qualities[stage];
+        mi.init_optimization(reference_images_dir, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8), 
+                            MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                            cameras_count, settings_blk.get_bool("save_intermediate_images", false));
+
+        opt::Optimizer *opt = nullptr;
+        if (optimizers[stage] == "adam")
+          opt = new opt::Adam();
+        else if (optimizers[stage] == "DE")
+          opt = new opt::DifferentialEvolutionOptimizer();
+        else if (optimizers[stage] == "memetic_classic")
+          opt = new opt::MemeticClassic();
+        else if (optimizers[stage] == "grid_search_adam")
+        {
+          opt_settings->add_arr("init_bins_count", init_bins_count);
+          opt_settings->add_arr("init_bins_positions", init_bins_positions);
+          opt = new opt::GridSearchAdam();
+        }
+        else
+        {
+          logerr("Unknown optimizer algorithm %s", optimizers[stage].c_str());
+          return 1.0;
+        }
+        
+        Block special_settings;
+        special_settings.add_arr("initial_params", opt_result.best_params);
+        special_settings.add_double("learning_rate", lrs[stage]);
+        special_settings.add_int("iterations", iterations[stage]);
+        special_settings.add_bool("verbose", true);
+        Block &optimizer_settings = (stage == 0) ? *opt_settings : special_settings;
+
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        opt->optimize(F_silhouette, params_min, params_max, optimizer_settings, init_params_presets);
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+        double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
+        opt_result.total_iters = iters;
+        
+        debug("Stage %d Optimization stat\n", stage);
+        debug("%.1f s total \n", 1e-3 * opt_time_ms);
+        debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms/iters);
+
+        delete opt;
+      }
     }
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
@@ -504,26 +526,19 @@ namespace dopt
       mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera, get_camera_params(init_params));
     }
     if (textured_optimization && textured_optimization->get_bool("active", false))
-    {
-      int tex_size = 256;
-      //Texture estimation only by 1 camera by now
-      std::vector<float> best_model_small = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(true, 2)); 
-      ModelTex mt;
-      Model *m = new Model();
-      visualizer::simple_mesh_to_model_332(best_model, m);
-      m->update();
+    { 
       Texture mask_tex;
-      Texture res_tex = mt.getTexbyUV(reference_mask[0], *m, reference_tex[0], 2, camera, mask_tex);
-      engine::textureManager->save_png(res_tex, "reconstructed_tex");
-
-      Texture reference_textured = ImageResizer::resize(reference_tex[0], tex_size, tex_size, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
-      engine::textureManager->save_png(reference_textured, "reference_textured");
-      mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
-                                      1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                      MitsubaInterface::RenderSettings(tex_size, tex_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                      1, true);
-
-    
+      ModelTex mt;
+      {
+        SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+        Texture reference_mask = se.get_silhouette(reference_tex[0], 256, 256);
+        Model *m = new Model();
+        visualizer::simple_mesh_to_model_332(best_model, m);
+        m->update();
+        Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex[0], 2, camera, mask_tex);
+        engine::textureManager->save_png(res_tex, "reconstructed_tex");
+      }
+      int cur_quality = 2;
       opt::opt_func_with_grad F_textured = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
         for (int i=0;i<params.size();i++)
@@ -549,20 +564,33 @@ namespace dopt
         logerr("init_params_null should never be called!!!");
         return std::vector<float>();
       };
-      Block adam_settings;
-      adam_settings.add_arr("initial_params", opt_result.best_params);
-      adam_settings.add_double("learning_rate", textured_optimization->get_double("learning_rate", 0.01));
-      adam_settings.add_int("iterations", textured_optimization->get_int("iterations", 100));
-      adam_settings.add_bool("verbose", true);
-      opt::Optimizer *tex_opt = new opt::Adam();
-      std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
-      std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-      opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
-      delete tex_opt;
 
-      double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+      constexpr int stages = 3;
+      std::array<int, stages> iterations = {100, 75, 50};
+      std::array<float, stages> lrs = {0.0, 0.001, 0.005};
+      std::array<int, stages> model_qualities = {1, 1, 2};
+      std::array<int, stages> image_sizes = {128, 256, 512};
+      std::array<int, stages> spps = {64, 256, 1024};
+      for (int stage=0;stage<stages;stage++)
+      {
+        cur_quality = model_qualities[stage];
+        Texture reference_textured = ImageResizer::resize(reference_tex[0], image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
+        engine::textureManager->save_png(reference_textured, "reference_textured");
+        mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
+                                        1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
+                                        MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                        1, true);
+        Block adam_settings;
+        adam_settings.add_arr("initial_params", opt_result.best_params);
+        adam_settings.add_double("learning_rate", lrs[stage]);
+        adam_settings.add_int("iterations", iterations[stage]);
+        adam_settings.add_bool("verbose", true);
+        opt::Optimizer *tex_opt = new opt::Adam();
+        tex_opt->optimize(F_textured, params_min, params_max, adam_settings, init_params_null);
+        opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
 
+        delete tex_opt;
+      }
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/reconstructed_tex.png");
       std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
       Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
@@ -574,10 +602,9 @@ namespace dopt
       mi.render_model_to_file(best_model_textured, saved_textured_path, dgen::ModelLayout(), camera, get_camera_params(opt_result.best_params));
     
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-      double all_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t3 - t1).count();
-      debug("Optimization stat\n");
-      debug("%.1f s total \n", 1e-3 * all_time_ms);
-      debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms/textured_optimization->get_int("iterations", 100));
+      //debug("Optimization stat\n");
+      //debug("%.1f s total \n", 1e-3 * all_time_ms);
+      //debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms/textured_optimization->get_int("iterations", 100));
     }
     debug("Model optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);
