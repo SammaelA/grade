@@ -25,13 +25,11 @@ private:
   GLuint fbo;
   Shader UV;
   Shader tex_get;
-  Shader mask_get;
   PostFx cpy1;
   PostFx cpy2;
   PostFx texture_postprocess;
   PostFx texture_mirror;
   PostFx tex_com;
   PostFx texs_div;
-  PostFx tex_to_mask;
   PostFx photo_transform;
 };

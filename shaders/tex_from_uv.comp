@@ -3,6 +3,7 @@
 layout( local_size_x = 1, local_size_y = 1) in;
 
 layout(rgba8, binding = 2) writeonly uniform image2D tex;
+layout(rgba8, binding = 3) writeonly uniform image2D mask;
 
 uniform sampler2D photo;
 uniform sampler2D uv;
@@ -10,9 +11,11 @@ uniform vec2 tex_size;
 void main()
 {
     vec2 coord = gl_GlobalInvocationID.xy / tex_size;
-    if (texture(uv,coord).b > 0.1)
+    float q = texture(uv,coord).b;
+    if (q > 0.1)
     {
       vec2 uv_coords = texture(uv,coord).rg;
       imageStore(tex, ivec2(tex_size*uv_coords), texture(photo, coord));
+      imageStore(mask, ivec2(tex_size*uv_coords), vec4(q, q, q, 1));
     }
 }

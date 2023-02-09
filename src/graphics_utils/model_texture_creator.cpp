@@ -10,13 +10,11 @@
 ModelTex::ModelTex():
 UV({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_Tex"}), 
 tex_get({"tex_from_uv.comp"},{}),
-mask_get({"mask_from_uv.comp"},{}),
 photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 texture_mirror("texture_mirror.fs"),
 tex_com("tex_com_2.fs"),
 texs_div("tex_div_tex.fs"),
-tex_to_mask("tex_to_mask.fs"),
 cpy1("restrict_tex.fs"),
 cpy2("copy.fs")
 {
@@ -107,15 +105,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   tex_get.texture("uv", UV_tex);
   tex_get.texture("photo", photo_transformed);
   glBindImageTexture(2, t.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-  
-  glDispatchCompute(w, h, 1);
-
-  glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
-
-  mask_get.use();
-  mask_get.uniform("tex_size", glm::vec2(w, h));
-  mask_get.texture("uv", UV_tex);
-  glBindImageTexture(2, res_mask.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+  glBindImageTexture(3, res_mask.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
   
   glDispatchCompute(w, h, 1);
 
