@@ -17,6 +17,7 @@
 #include "graphics_utils/model_texture_creator.h"
 #include "common_utils/optimization/optimization_benchmark.h"
 #include "diff_generators/depth_extract_compare.h"
+#include "graphics_utils/bilateral_filter.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -458,6 +459,29 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     float diff = dlc.get_loss(*m, d1, camera);
     logerr("depth diff %f", diff);
 
+    engine::view->next_frame();
+  }
+  else if (argc >= 3 && std::string(argv[2]) == "-test_denoising")
+  {
+    Texture t = textureManager.load_unnamed_tex("saves/noisy_tex.png");
+    #define TEST_DENOISE(SIGMA_D, SIGMA_R) \
+    {\
+      Texture res = BilateralFilter::perform(t, SIGMA_D, SIGMA_R);\
+      textureManager.save_png(res, "noisy_tex_denoised_"+std::to_string(SIGMA_D)+"_"+std::to_string(SIGMA_R));\
+    }
+    TEST_DENOISE(2, 0.4)
+    TEST_DENOISE(2, 0.5)
+    TEST_DENOISE(2, 0.6)
+    TEST_DENOISE(2, 0.7)
+
+    TEST_DENOISE(3, 0.4)
+    TEST_DENOISE(3, 0.5)
+    TEST_DENOISE(3, 0.6)
+    TEST_DENOISE(3, 0.7)
+
+    TEST_DENOISE(4, 0.3)
+    TEST_DENOISE(4, 0.5)
+    TEST_DENOISE(4, 0.7)
     engine::view->next_frame();
   }
   else
