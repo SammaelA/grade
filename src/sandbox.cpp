@@ -18,6 +18,7 @@
 #include "common_utils/optimization/optimization_benchmark.h"
 #include "diff_generators/depth_extract_compare.h"
 #include "graphics_utils/bilateral_filter.h"
+#include "graphics_utils/resize_image.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -246,11 +247,14 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   engine::textureManager = &textureManager;
 
   CameraSettings camera;
-  camera.origin = glm::vec3(0, 0.5, 1.5);
+  float h1 = 1.5;
+  camera.fov_rad = 0.25;
+  float h2 = h1 * tan((PI / 3) / 2) / tan(camera.fov_rad / 2);
+  camera.origin = glm::vec3(0, 0.5, h2);
   camera.target = glm::vec3(0, 0.5, 0);
   camera.up = glm::vec3(0, 1, 0);
 
-  std::vector<float> default_scene_params = {0.1, 0.2, -0.2, 0.2, 0.0, 0.03, 0, 0.5, 10, 1, 100};
+  std::vector<float> default_scene_params = {0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000};
   if (argc >= 4 && std::string(argv[2]) == "-sil_test")
   {
     Texture t = engine::textureManager->load_unnamed_tex(std::string(argv[3]));
@@ -347,10 +351,14 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     {
       params.push_back(std::stof(std::string(argv[i])));
     }
+    if (params.empty())
+      params = {3.099, 3.521, 3.993, 4.106, 4.332, 4.429, 4.658, 4.731, 4.752, 1.135, 1.000, 0.043, 0.616, 0.170, 0.233, 0.418, 0.359, 0.272, 0.269, 0.436, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384, 0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000};
     std::vector<float> res;
     dgen::dgen_test("dishes", params, res);
+    std::vector<float> res_transformed = res;
+    dgen::transform_by_scene_parameters(default_scene_params, res_transformed);
     Model *m = new Model();
-    visualizer::simple_mesh_to_model_332(res, m);
+    visualizer::simple_mesh_to_model_332(res_transformed, m);
     m->update();
 
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
@@ -364,7 +372,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
     Texture mask_tex;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera, mask_tex);
+    Texture reference_textured = ImageResizer::resize(photo, 512, 512, ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
+    Texture res_tex = mt.getTexbyUV(mask, *m, reference_textured, camera, mask_tex, 2, 2);
     textureManager.save_png(res_tex, "reconstructed_tex");
 
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
@@ -402,7 +411,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Texture mask = textureManager.load_unnamed_tex("saves/tex_sihouette.png");
     ModelTex mt;
     Texture mask_tex;
-    Texture res_tex = mt.getTexbyUV(mask, *m, photo, 3, camera, mask_tex);
+    Texture res_tex = mt.getTexbyUV(mask, *m, photo, camera, mask_tex);
     textureManager.save_png(res_tex, "reconstructed_tex");
     engine::view->next_frame();
 
@@ -482,6 +491,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     TEST_DENOISE(4, 0.3)
     TEST_DENOISE(4, 0.5)
     TEST_DENOISE(4, 0.7)
+    
+    //Texture res = BilateralFilter::perform(t, SIGMA_D, SIGMA_R);
     engine::view->next_frame();
   }
   else

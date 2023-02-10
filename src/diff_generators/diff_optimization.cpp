@@ -535,7 +535,7 @@ namespace dopt
         Model *m = new Model();
         visualizer::simple_mesh_to_model_332(best_model, m);
         m->update();
-        Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex[0], 2, camera, mask_tex);
+        Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex[0], camera, mask_tex, 2, 2);
         engine::textureManager->save_png(res_tex, "reconstructed_tex");
       }
       int cur_quality = 2;

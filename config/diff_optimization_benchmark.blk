@@ -62,7 +62,7 @@
 
   adam
   {
-    iterations:i = 250
+    iterations:i = 100
     learning_rate:r = 0.005
     verbose:b = true
     initial_params:arr = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 
@@ -73,7 +73,7 @@
 
   procedural_generator:s = "dishes"
   scene_description:s = "diff_gen_scene_parameters_description.blk"
-  synthetic_reference:b = true
+  synthetic_reference:b = false
   reference_params:arr = {3.078, 3.534, 3.847, 4.112, 4.312, 4.429, 4.560, 4.636, 4.638, 1.149, 1.000, 0.041, 0.548, 
                           0.100, 0.368, 0.479, 0.328, 0.228, 0.241, 0.431, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384}
   reference_cameras
@@ -82,7 +82,7 @@
     //camera:arr = {0.1, 0, 0.004, 0.3, 3.141, -0.250}
   }
   verbose_level:i = 1
-  reference_image_size:i = 1024
+  reference_image_size:i = 512
   selection_image_size:i = 256
   saved_initial_path:s = "saves/selected_initial.png"
   save_stat_path:s = "opt_stat.csv"
@@ -90,7 +90,7 @@
 
   textured_optimization
   {
-    active:b = true
+    active:b = false
     iterations:i = 100
     learning_rate:r = 0.005
     selection_image_size:i = 256

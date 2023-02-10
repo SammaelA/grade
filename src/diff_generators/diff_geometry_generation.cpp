@@ -291,6 +291,24 @@ namespace dgen
     transform(model, rot);
   }
 
+  void transform_by_scene_parameters(const std::vector<float> &scene_params, std::vector<float> &f_model)
+  {
+    assert(scene_params.size() >= 6);
+    std::vector<dgen::dfloat> model(f_model.size());
+    for (int i = 0; i < f_model.size(); i++)
+      model[i] = f_model[i];
+
+    dgen::dmat43 rot = dgen::rotate(dgen::ident(), dgen::dvec3{1, 0, 0}, scene_params[3]);
+    rot = dgen::rotate(rot, dgen::dvec3{0, 1, 0}, scene_params[4]);
+    rot = dgen::rotate(rot, dgen::dvec3{0, 0, 1}, scene_params[5]);
+    dgen::dmat43 tr = dgen::translate(dgen::ident(), dgen::dvec3{scene_params[0], scene_params[1], scene_params[2]});
+    rot = dgen::mul(tr, rot);
+    dgen::transform(model, rot);
+
+    for (int i = 0; i < f_model.size(); i++)
+      f_model[i] = CppAD::Value(model[i]);
+  }
+
   bool check_stability(generator_func func, const std::vector<float> &params, int iterations)
   {
     float eps = 1e-4;

@@ -12,7 +12,6 @@ UV({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 tex_get({"tex_from_uv.comp"},{}),
 photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
-texture_mirror("texture_mirror.fs"),
 tex_com("tex_com_2.fs"),
 texs_div("tex_div_tex.fs"),
 cpy1("restrict_tex.fs"),
@@ -41,18 +40,13 @@ ModelTex::~ModelTex()
   delete_framebuffer(fbo);
 }
 
-Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw, const CameraSettings &camera, Texture &res_mask)
+Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const CameraSettings &camera, Texture &res_mask,
+                             int res_od, int rec_od)
 {
   //check texture type
-  Texture t = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
-  res_mask = engine::textureManager->create_texture(overdraw*photo.get_W(), overdraw*photo.get_H());
+  Texture t = engine::textureManager->create_texture(res_od*rec_od*photo.get_W(), res_od*rec_od*photo.get_H());
+  res_mask = engine::textureManager->create_texture(res_od*rec_od*photo.get_W(), res_od*rec_od*photo.get_H());
 
-  //if we don't have tmp texture or it has wrong size, we need to recreate it
-  if (!tmp_tex.is_valid() || tmp_tex.type != t.type || 
-      tmp_tex.get_H() != t.get_H() || tmp_tex.get_W() != t.get_W())
-  {
-    tmp_tex = engine::textureManager->create_texture(t.get_W(), t.get_H());
-  }
   int w = t.get_W();
   int h = t.get_H();
   //bind FBO
@@ -78,11 +72,8 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glm::mat4 projection = glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
   glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
-  UV.use();
 
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(mask.type, mask.texture);
-  UV.uniform("mask", 0);
+  UV.use();
   UV.uniform("projection", projection);
   UV.uniform("view", view);
   m.render();
@@ -111,27 +102,32 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, int overdraw
 
   glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+  Texture tmp_tex1 = engine::textureManager->create_texture(w, h);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex1.texture, 0);
+  glViewport(0, 0, tmp_tex1.get_W(), tmp_tex1.get_H());
   texture_postprocess.use();
   texture_postprocess.get_shader().texture("tex", t);
   texture_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
-  texture_postprocess.get_shader().uniform("radius", overdraw);
+  texture_postprocess.get_shader().uniform("radius", rec_od + 1);
   texture_postprocess.get_shader().uniform("alpha_thr", 0.1);
   texture_postprocess.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
-  texture_mirror.use();
-  texture_mirror.get_shader().texture("tex", tmp_tex);
-  texture_mirror.get_shader().uniform("tex_size", glm::vec2(w, h));
-  texture_mirror.get_shader().uniform("radius", 8);
-  texture_mirror.get_shader().uniform("base_color", glm::vec3(1,1,1));
-  texture_mirror.render();
+  Texture tmp_tex2 = engine::textureManager->create_texture(res_od*photo.get_W(), res_od*photo.get_H());
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex2.texture, 0);
+  glViewport(0, 0, tmp_tex2.get_W(), tmp_tex2.get_H());
+  texture_postprocess.use();
+  texture_postprocess.get_shader().texture("tex", tmp_tex1);
+  texture_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
+  texture_postprocess.get_shader().uniform("radius", rec_od + 1);
+  texture_postprocess.get_shader().uniform("alpha_thr", 0.3);
+  texture_postprocess.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
+  
   glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
-  return t;
+
+  return tmp_tex2;
 }
 
 Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data)
@@ -158,7 +154,7 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     double w = it.w1 - it.w0;
     double h = it.h1 - it.h0;
     if (w < 0 || h < 0) continue;
-    tmp_tex = engine::textureManager->create_texture(w * W, h * H);
+    Texture tmp_tex = engine::textureManager->create_texture(w * W, h * H);
     Texture sm_tex = engine::textureManager->create_texture(w * W, h * H);
 
     glBindTexture(GL_TEXTURE_2D, t.texture);

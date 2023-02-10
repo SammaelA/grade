@@ -29,7 +29,7 @@ void main(void)
   if (self_val.a == 0)
   {
     col_sum /= a_sum;
-    if (a_sum < alpha_thr*(2*radius + 1)*(2*radius + 1))
+    if (a_cnt < alpha_thr*(2*radius + 1)*(2*radius + 1))
       fragColor = vec4(0,0,0,0);
     else
       fragColor = vec4(col_sum,a_sum);

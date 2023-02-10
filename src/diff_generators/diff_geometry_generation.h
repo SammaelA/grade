@@ -15,6 +15,7 @@ namespace dgen
   void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3);
   void transform(std::vector<dvec3> &verts, dmat43 mat);
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model);
+  void transform_by_scene_parameters(const std::vector<float> &scene_params, std::vector<float> &model);
   dfloat smoothmax(dfloat a, dfloat b, float alpha = 16);
   dfloat smoothmin(dfloat a, dfloat b, float alpha = 16);
   dfloat smoothclamp(dfloat a, dfloat from, dfloat to, float alpha = 16);
