@@ -19,6 +19,7 @@
 #include "diff_generators/depth_extract_compare.h"
 #include "graphics_utils/bilateral_filter.h"
 #include "graphics_utils/resize_image.h"
+#include "graphics_utils/unsharp_masking.h"
 #include <boost/algorithm/string.hpp>
 #include <thread>
 #include <chrono>
@@ -473,26 +474,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   else if (argc >= 3 && std::string(argv[2]) == "-test_denoising")
   {
     Texture t = textureManager.load_unnamed_tex("saves/noisy_tex.png");
-    #define TEST_DENOISE(SIGMA_D, SIGMA_R) \
-    {\
-      Texture res = BilateralFilter::perform(t, SIGMA_D, SIGMA_R);\
-      textureManager.save_png(res, "noisy_tex_denoised_"+std::to_string(SIGMA_D)+"_"+std::to_string(SIGMA_R));\
-    }
-    TEST_DENOISE(2, 0.4)
-    TEST_DENOISE(2, 0.5)
-    TEST_DENOISE(2, 0.6)
-    TEST_DENOISE(2, 0.7)
-
-    TEST_DENOISE(3, 0.4)
-    TEST_DENOISE(3, 0.5)
-    TEST_DENOISE(3, 0.6)
-    TEST_DENOISE(3, 0.7)
-
-    TEST_DENOISE(4, 0.3)
-    TEST_DENOISE(4, 0.5)
-    TEST_DENOISE(4, 0.7)
-    
-    //Texture res = BilateralFilter::perform(t, SIGMA_D, SIGMA_R);
+    Texture res = BilateralFilter::perform(t, 4, 0.5);
+    Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
+    textureManager.save_png(sharped, "noisy_tex_sharped");
     engine::view->next_frame();
   }
   else
