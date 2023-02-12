@@ -65,7 +65,9 @@ def porcelain_roughplastic(diffuse_tex_path: str, roughness=0.3):
             'int_ior': 1.504,
             'diffuse_reflectance': {
                 'type': 'bitmap',
-                'filename': diffuse_tex_path
+                'filename': diffuse_tex_path,
+                "filter_type": 'bilinear',
+                "wrap_mode": 'clamp'
             },
             'alpha': roughness
             # 'alpha': {
@@ -133,15 +135,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
         }
     elif (render_style == "textured_const"):
-      bsdf = {
-          'type': 'diffuse',
-                  'reflectance': {
-                      "type": "bitmap",
-                      "filename": texture_name,
-                      "filter_type": 'bilinear',
-                      "wrap_mode": 'clamp'
-                  },
-      }
+      bsdf = porcelain_roughplastic(texture_name, 0.1)
     else:
       print("Unknown render_style = ", render_style)
 
@@ -149,6 +143,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
         'type': 'obj',
         'filename': base_path + 'meshes/sphere.obj',
         'to_world': T.scale(0.67),
+        "face_normals": True,
         'bsdf': bsdf
     }
     scene_dict['light'] = {
@@ -160,15 +155,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             },
             'to_world': T.translate([0,0,0])
         }
-    scene_dict['rectangle'] = {
-          'type': 'obj',
-          'filename': base_path + 'meshes/rectangle.obj',
-          'to_world': T.translate([0, 0, -100]).scale(250),
-          'emitter': {
-              'type': 'area',
-              'radiance': {'type': 'rgb', 'value': [3, 3, 3]}
-          }
-    }
+
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
   context = {
@@ -209,7 +196,7 @@ def init_optimization_with_tex(context, img_ref_dir, loss, cameras_count, save_i
   context['status'] = 'optimization_with_tex'
 
   opt = mi.ad.Adam(lr=0.25)
-  opt['model.bsdf.reflectance.data'] = context['params']['model.bsdf.reflectance.data']
+  opt['model.bsdf.diffuse_reflectance.data'] = context['params']['model.bsdf.diffuse_reflectance.data']
   context['tex_optimizer'] = opt
 
 def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target_z, up_x, up_y, up_z,
@@ -237,8 +224,6 @@ def render_and_save_to_file(context, save_filename):
   params = context['params']
 
   params['model.vertex_positions'] = context['vertex_positions']
-  params['model.vertex_normals'] = context['vertex_normals']
-  params['model.vertex_texcoords'] = context['vertex_texcoords']
   vertex_count = int(len(params['model.vertex_positions'])/3)
   params['model.vertex_count'] = vertex_count
   params['model.face_count'] = int(vertex_count/3)
@@ -262,8 +247,15 @@ def render_and_save_to_file(context, save_filename):
   trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
   tr_positions = trafo @ t1
   params['model.vertex_positions'] = dr.ravel(tr_positions)
-  
+
   params.update()
+  t2_tensor = mi.Float(list(context['vertex_normals']))
+  t2 = dr.unravel(mi.Normal3f, t2_tensor)
+  trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+  tr_normals = trafo2 @ t2
+  context['vertex_normals'] = tuple(dr.ravel(tr_normals))
+  params['model.vertex_normals'] = context['vertex_normals']
+  params['model.vertex_texcoords'] = context['vertex_texcoords']
 
   img_ref = mi.render(scene, params, sensor = context['camera'], seed=0, spp=context['spp'])
   mi.util.write_bitmap(save_filename, img_ref)
@@ -326,8 +318,6 @@ def render(it, context):
   scene = context['scene']
   params = context['params']
   params['model.vertex_positions'] = context['vertex_positions']
-  params['model.vertex_normals'] = context['vertex_normals']
-  params['model.vertex_texcoords'] = context['vertex_texcoords']
   vertex_count = int(len(params['model.vertex_positions'])/3)
   params['model.vertex_count'] = vertex_count
   params['model.face_count'] = int(vertex_count/3)
@@ -360,6 +350,15 @@ def render(it, context):
     tr_positions = trafo @ t1
     params['model.vertex_positions'] = dr.ravel(tr_positions)
     params.update()
+
+    if (context['status'] == 'optimization_with_tex'):
+      t2_tensor = mi.Float(list(context['vertex_normals']))
+      t2 = dr.unravel(mi.Normal3f, t2_tensor)
+      trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+      tr_normals = trafo2 @ t2
+      context['vertex_normals'] = tuple(dr.ravel(tr_normals))
+      params['model.vertex_normals'] = context['vertex_normals']
+    params['model.vertex_texcoords'] = context['vertex_texcoords']
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
@@ -407,8 +406,8 @@ def render(it, context):
     if context['save_intermediate_images'] > 0:
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
-      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.reflectance.data']))
-    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.reflectance.data']))
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
+    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
   return loss[0]
 
 def get_params(context, key):

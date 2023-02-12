@@ -90,7 +90,7 @@
 
   textured_optimization
   {
-    active:b = false
+    active:b = true
     iterations:i = 100
     learning_rate:r = 0.005
     selection_image_size:i = 256

@@ -45,7 +45,7 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   detect_object.get_shader().texture("tex_edges", tmp_tex);
   detect_object.get_shader().texture("tex_color", t);
   detect_object.get_shader().uniform("tex_size",glm::vec2(w, h));
-  detect_object.get_shader().uniform("color_thr",0.1f);
+  detect_object.get_shader().uniform("color_thr",0.03f);
   detect_object.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 

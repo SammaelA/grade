@@ -63,20 +63,7 @@ namespace dopt
                                        dgen::ModelQuality mq = dgen::ModelQuality())
     {
       std::vector<float> f_model = functions[find_or_add(params, mq)]->Forward(0, params); 
-      std::vector<dgen::dfloat> model(f_model.size());
-      for (int i=0;i<f_model.size();i++)
-        model[i] = f_model[i];
-
-      dgen::dmat43 rot = dgen::rotate(dgen::ident(), dgen::dvec3{1,0,0}, camera_params[3]);
-      rot = dgen::rotate(rot, dgen::dvec3{0,1,0}, camera_params[4]);
-      rot = dgen::rotate(rot, dgen::dvec3{0,0,1}, camera_params[5]);
-      dgen::dmat43 tr = dgen::translate(dgen::ident(), dgen::dvec3{camera_params[0], camera_params[1], camera_params[2]});
-      rot = dgen::mul(tr, rot);
-      dgen::transform(model, rot);
-
-      for (int i=0;i<f_model.size();i++)
-        f_model[i] = CppAD::Value(model[i]);
-      
+      dgen::transform_by_scene_parameters(camera_params, f_model);  
       return f_model;
     }
   private:
@@ -330,10 +317,10 @@ namespace dopt
       {
         std::vector<float> reference_camera_params;
         reference_cameras_blk->get_arr(i, reference_camera_params);
-        std::vector<float> reference = func.get(reference_params);
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 1024, MitsubaInterface::LLVM, 
+        std::vector<float> reference = func.get(reference_params, dgen::ModelQuality(false, 3));
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, 
                                                                      MitsubaInterface::TEXTURED_CONST, "texture_not_found.png"));
-        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(), camera, reference_camera_params);
+        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, reference_camera_params);
         reference_tex.push_back(engine::textureManager->load_unnamed_tex("saves/reference.png"));
 
         Model *m = new Model();
@@ -453,12 +440,12 @@ namespace dopt
 
       constexpr int stages = 4;
       std::array<std::string, stages> optimizers = {search_algorithm, "adam", "adam", "adam"};
-      std::array<int, stages> iterations = {0, 125, 100, 75};
-      std::array<float, stages> lrs = {0, 0.01, 0.0075, 0.004};
+      std::array<int, stages> iterations = {0, 125, 100, 50};
+      std::array<float, stages> lrs = {0, 0.01, 0.0075, 0.0075};
       std::array<int, stages> model_qualities = {0, 1, 1, 1};
       std::array<int, stages> image_sizes = {128, 256, 512, 1024};
 
-      for (int stage = 0; stage < stages; stage++)
+      for (int stage = 0; stage < 4; stage++)
       {
         SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
         std::vector<std::string> reference_images_dir;
@@ -518,26 +505,34 @@ namespace dopt
     }
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 1024, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(), camera, get_camera_params(opt_result.best_params));
     if (saved_initial_path != "")
     {
       std::vector<float> initial_model = func.get(get_gen_params(init_params));
       mi.render_model_to_file(initial_model, saved_initial_path, dgen::ModelLayout(), camera, get_camera_params(init_params));
     }
+
+    Texture mask_tex;
+    ModelTex mt;
+    {
+      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
+      Texture reference_mask = se.get_silhouette(reference_tex[0], 256, 256);
+      Model *m = new Model();
+      std::vector<float> best_model_transformed = func.get_transformed(get_gen_params(opt_result.best_params),
+                                                                       get_camera_params(opt_result.best_params),
+                                                                       dgen::ModelQuality(false, 3));
+      visualizer::simple_mesh_to_model_332(best_model_transformed, m);
+      m->update();
+      float rt_sz = MAX(reference_tex[0].get_W(), reference_tex[0].get_H());
+
+      Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex[0], camera, mask_tex);
+      engine::textureManager->save_png(res_tex, "reconstructed_tex");
+      engine::textureManager->save_png(mask_tex, "reconstructed_mask");
+    }
+    
     if (textured_optimization && textured_optimization->get_bool("active", false))
     { 
-      Texture mask_tex;
-      ModelTex mt;
-      {
-        SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-        Texture reference_mask = se.get_silhouette(reference_tex[0], 256, 256);
-        Model *m = new Model();
-        visualizer::simple_mesh_to_model_332(best_model, m);
-        m->update();
-        Texture res_tex = mt.getTexbyUV(reference_mask, *m, reference_tex[0], camera, mask_tex, 2, 2);
-        engine::textureManager->save_png(res_tex, "reconstructed_tex");
-      }
       int cur_quality = 2;
       opt::opt_func_with_grad F_textured = [&](std::vector<float> &params) -> std::pair<float,std::vector<float>>
       {
@@ -567,14 +562,14 @@ namespace dopt
 
       constexpr int stages = 3;
       std::array<int, stages> iterations = {100, 75, 50};
-      std::array<float, stages> lrs = {0.0, 0.001, 0.005};
-      std::array<int, stages> model_qualities = {1, 1, 2};
+      std::array<float, stages> lrs = {0.0, 0.005, 0.005};
+      std::array<int, stages> model_qualities = {1, 2, 2};
       std::array<int, stages> image_sizes = {128, 256, 512};
-      std::array<int, stages> spps = {64, 256, 1024};
+      std::array<int, stages> spps = {64, 256, 512};
       for (int stage=0;stage<stages;stage++)
       {
         cur_quality = model_qualities[stage];
-        Texture reference_textured = ImageResizer::resize(reference_tex[0], image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(1,1,1,1));
+        Texture reference_textured = ImageResizer::resize(reference_tex[0], image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         engine::textureManager->save_png(reference_textured, "reference_textured");
         mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
                                         1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
@@ -598,7 +593,7 @@ namespace dopt
       sleep(1);
 
       std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 1024, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
       mi.render_model_to_file(best_model_textured, saved_textured_path, dgen::ModelLayout(), camera, get_camera_params(opt_result.best_params));
     
       std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
