@@ -12,6 +12,7 @@
 #include "graphics_utils/silhouette.h"
 #include "save_utils/csv.h"
 #include "graphics_utils/model_texture_creator.h"
+#include "graphics_utils/image_expand.h"
 #include "graphics_utils/modeling.h"
 #include "common_utils/optimization/optimization.h"
 #include "diff_generators/depth_extract_compare.h"
@@ -333,7 +334,8 @@ namespace dopt
     else
     {
       cameras_count = 1;
-      reference_tex.push_back(engine::textureManager->load_unnamed_tex(reference_path));
+      ImgExp exp = ImgExp();
+      reference_tex.push_back(exp.ImgExpanding(engine::textureManager->load_unnamed_tex(reference_path)));
       reference_depth.push_back(engine::textureManager->create_texture(128, 128));//TODO: estimate depth
     }
 
