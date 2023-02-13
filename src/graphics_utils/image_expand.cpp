@@ -36,7 +36,6 @@ ImgExp::~ImgExp()
 Texture ImgExp::ImgExpanding(Texture image)
 {
   //check texture type
-  logerr("%s", glGetString(GL_VERSION));
   Texture tmp = engine::textureManager->create_texture(image.get_W(), image.get_H());
 
   float w = image.get_W();
