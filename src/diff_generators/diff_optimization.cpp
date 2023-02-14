@@ -16,7 +16,9 @@
 #include "graphics_utils/modeling.h"
 #include "common_utils/optimization/optimization.h"
 #include "diff_generators/depth_extract_compare.h"
+#include "graphics_utils/bilateral_filter.h"
 #include "graphics_utils/resize_image.h"
+#include "graphics_utils/unsharp_masking.h"
 
 namespace dopt
 {
@@ -384,12 +386,12 @@ namespace dopt
 
     constexpr int stages = 4;
     std::array<std::string, stages> optimizers = {search_algorithm, "adam", "adam", "adam"};
-    std::array<int, stages> iterations = {0, 125, 100, 50};
-    std::array<float, stages> lrs = {0, 0.01, 0.0075, 0.0075};
-    std::array<int, stages> model_qualities = {0, 1, 1, 1};
+    std::array<int, stages> iterations = {0, 100, 100, 100};
+    std::array<float, stages> lrs = {0, 0.005, 0.005, 0.005};
+    std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 1024};
 
-    for (int stage = 0; stage < 2; stage++)
+    for (int stage = 0; stage < stages; stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -427,6 +429,7 @@ namespace dopt
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
 
+    engine::view->next_frame();
     Texture mask_tex;
     ModelTex mt;
     {
@@ -442,19 +445,20 @@ namespace dopt
       engine::textureManager->save_png(res_tex, "reconstructed_tex");
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }
-    
+
+    engine::view->next_frame();
     if (textured_optimization && textured_optimization->get_bool("active", false))
     { 
       iters = 0;
       total_time_ms = 0;
 
-      constexpr int stages = 3;
-      std::array<int, stages> iterations = {50, 50, 50};
-      std::array<float, stages> lrs = {0.0, 0.0, 0.0}; //learning rate for model shape optimization. Temporary disabled
-      std::array<int, stages> model_qualities = {1, 2, 2};
-      std::array<int, stages> image_sizes = {128, 256, 512};
-      std::array<int, stages> spps = {64, 256, 512};
-      for (int stage = 0; stage < 2; stage++)
+      constexpr int stages = 4;
+      std::array<int, stages> iterations = {50, 50, 50, 50};
+      std::array<float, stages> lrs = {0.0, 0.0, 0.0, 0.0}; //learning rate for model shape optimization. Temporary disabled
+      std::array<int, stages> model_qualities = {1, 1, 2, 2};
+      std::array<int, stages> image_sizes = {128, 256, 512, 1024};
+      std::array<int, stages> spps = {64, 128, 256, 256};
+      for (int stage = 0; stage < stages; stage++)
       {
         model_quality = model_qualities[stage];
         Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
@@ -487,13 +491,28 @@ namespace dopt
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/reconstructed_tex.png");
       std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
       Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
-      engine::textureManager->save_png(comp, "res_tex");
+
+      Texture res = BilateralFilter::perform(res_optimized, 4, 0.5);
+      Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
+
+      engine::textureManager->save_png(res_optimized, "reconstructed_tex_raw");
+      engine::textureManager->save_png(comp, "reconstructed_tex_complemented");
+      engine::textureManager->save_png(sharped, "reconstructed_tex_denoised");
       
       sleep(1);
 
       std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png"));
-      mi.render_model_to_file(best_model_textured, saved_textured_path, dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, 
+                                 "../../saves/reconstructed_tex_raw.png"));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+   
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
+                                 "../../saves/reconstructed_tex_complemented.png"));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
+                                 "../../saves/reconstructed_tex_denoised.png"));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
     }
 
     debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());

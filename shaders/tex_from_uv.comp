@@ -11,11 +11,13 @@ uniform vec2 tex_size;
 void main()
 {
     vec2 coord = gl_GlobalInvocationID.xy / tex_size;
-    float q = texture(uv,coord).b;
-    if (q > 0.1)
+    float q = texelFetch(uv, ivec2(tex_size*coord), 0).a;
+    if (q > 0)
     {
+      float importance = 1.0/max(0.01, texelFetch(uv, ivec2(tex_size*coord), 0).b*length(tex_size));
       vec2 uv_coords = texture(uv,coord).rg;
-      imageStore(tex, ivec2(tex_size*uv_coords), texture(photo, coord));
-      imageStore(mask, ivec2(tex_size*uv_coords), vec4(q, q, q, 1));
+      vec4 color = texture(photo, coord);
+      imageStore(tex, ivec2(tex_size*uv_coords), color);
+      imageStore(mask, ivec2(tex_size*uv_coords), importance*color.aaaa);
     }
 }

@@ -4,6 +4,7 @@
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/graphics_utils.h"
+#include "resize_image.h"
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -45,7 +46,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
 {
   //check texture type
   Texture t = engine::textureManager->create_texture(res_od*rec_od*photo.get_W(), res_od*rec_od*photo.get_H());
-  res_mask = engine::textureManager->create_texture(res_od*rec_od*photo.get_W(), res_od*rec_od*photo.get_H());
+  Texture tmp_mask = engine::textureManager->create_texture(res_od*rec_od*photo.get_W(), res_od*rec_od*photo.get_H());
 
   int w = t.get_W();
   int h = t.get_H();
@@ -96,7 +97,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   tex_get.texture("uv", UV_tex);
   tex_get.texture("photo", photo_transformed);
   glBindImageTexture(2, t.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-  glBindImageTexture(3, res_mask.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+  glBindImageTexture(3, tmp_mask.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
   
   glDispatchCompute(w, h, 1);
 
@@ -122,8 +123,19 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   texture_postprocess.get_shader().uniform("radius", rec_od + 1);
   texture_postprocess.get_shader().uniform("alpha_thr", 0.3);
   texture_postprocess.render();
+
+  res_mask = engine::textureManager->create_texture(res_od*photo.get_W(), res_od*photo.get_H());
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res_mask.texture, 0);
+  glViewport(0, 0, res_mask.get_W(), res_mask.get_H());
+  PostFx average("average_filter.fs");
+  average.use();
+  average.get_shader().texture("tex", tmp_mask);
+  average.get_shader().uniform("radius", rec_od + 1);
+  average.get_shader().uniform("tex_size", glm::vec2(tmp_mask.get_W(), tmp_mask.get_H()));
+  average.render();
+
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
-  
+
   glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
 

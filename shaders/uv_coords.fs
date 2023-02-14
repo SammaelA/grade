@@ -6,7 +6,7 @@ out vec4 fragUV;
 
 void main(void) 
 {
-  fragUV.b = 1;
+  fragUV.b = length(dFdx(ex_Tex.xy));
   fragUV.rg = ex_Tex.xy;
   fragUV.a = 1;
 }

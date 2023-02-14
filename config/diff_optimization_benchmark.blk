@@ -80,7 +80,7 @@
   reference_image_size:i = 512
   selection_image_size:i = 256
   save_stat_path:s = "opt_stat.csv"
-  save_intermediate_images:b = true
+  save_intermediate_images:b = false
 
   textured_optimization
   {
