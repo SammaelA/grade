@@ -4,21 +4,64 @@
 #include "graphics_utils/graphics_utils.h"
 #include <vector>
 
-SilhouetteExtractor::SilhouetteExtractor(float blur_sigma, float low_thr, float high_thr):
-gauss(7.5f),
-canny(blur_sigma, low_thr, high_thr),
+SilhouetteExtractor::SilhouetteExtractor(float _blur_sigma, float low_thr, float high_thr, float _color_thr):
+gauss(MAX(0.1, _blur_sigma)),
+canny(MAX(0.1, _blur_sigma), low_thr, high_thr),
 fill_edges("fill_edges.fs"),
 fill_silhouette("fill_edges.fs"),
 detect_object("detect_object.fs"),
 remove_holes("remove_holes.fs"),
 copy("copy.fs"), 
-metric("ref_image_preprocess_metric.fs")
+metric("ref_image_preprocess_metric.fs"),
+blur_sigma(_blur_sigma),
+color_thr(_color_thr)
 {
 
 }
+
+Texture SilhouetteExtractor::get_silhouette_simple(Texture &t, int res_w, int res_h)
+{
+  assert(t.type == GL_TEXTURE_2D);
+  float w = t.get_W();
+  float h = t.get_H();
+
+  GLuint fbo = create_framebuffer();
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  Texture tmp_tex = engine::textureManager->create_texture(res_w, res_h);
+  Texture res = engine::textureManager->create_texture(res_w, res_h);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+  glViewport(0, 0, res_w, res_h);
+  glClearColor(0, 0, 0, 1);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+  detect_object.use();
+  detect_object.get_shader().texture("tex_color", t);
+  detect_object.get_shader().uniform("tex_size",glm::vec2(w, h));
+  detect_object.get_shader().uniform("color_thr", color_thr);
+  detect_object.render();
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res.texture, 0);
+  remove_holes.use();
+  remove_holes.get_shader().texture("tex_mask", tmp_tex);
+  remove_holes.get_shader().uniform("tex_size",glm::vec2(res_w, res_h));
+  remove_holes.get_shader().uniform("search_radius", 8);
+  remove_holes.render();
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  if (blur_sigma > 0.1)
+    gauss.perform_gauss_blur_inplace(res);
+
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  delete_framebuffer(fbo);
+  engine::view->next_frame();
+
+  return res;
+}
+
 Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
 {
-  engine::textureManager->save_png(t, "initial_tex0");
   assert(t.type == GL_TEXTURE_2D);
   float w = t.get_W();
   float h = t.get_H();
@@ -42,10 +85,9 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, canny_tex.texture, 0);
   detect_object.use();
-  detect_object.get_shader().texture("tex_edges", tmp_tex);
   detect_object.get_shader().texture("tex_color", t);
   detect_object.get_shader().uniform("tex_size",glm::vec2(w, h));
-  detect_object.get_shader().uniform("color_thr",0.03f);
+  detect_object.get_shader().uniform("color_thr", color_thr);
   detect_object.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -71,11 +113,6 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   copy.get_shader().texture("tex",tmp_tex);
   copy.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-  engine::textureManager->save_png(tmp_tex, "fill_edges");
-  engine::textureManager->save_png(t, "initial_tex");
-  engine::textureManager->save_png(canny_tex, "initial_mask");
-  engine::textureManager->save_png(res, "res_tex");
 
   Texture result = engine::textureManager->create_texture(res_w, res_h);
 

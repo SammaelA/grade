@@ -310,10 +310,10 @@ namespace dopt
         reference_tex_raw = engine::textureManager->load_unnamed_tex(reference_path);
       }
 
-      ImgExp exp = ImgExp();
-      reference_tex = ImageResizer::resize(exp.ImgExpanding(reference_tex_raw), original_reference_size, original_reference_size, ImageResizer::CENTERED);
-      SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-      reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
+      reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size);
+      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+      reference_mask = se.get_silhouette_simple(reference_tex, original_reference_size, original_reference_size);
+      engine::textureManager->save_png(reference_mask, "ie_rsult2.png");
     }
 
     CppAD::ADFun<float> f_reg;
@@ -418,8 +418,7 @@ namespace dopt
       opt_result.total_iters = iters;
 
       debug("Stage %d Model optimization stat\n", stage);
-      debug("%.1f s total \n", 1e-3 * opt_time_ms);
-      debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms / iters);
+      debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
 
       delete opt;
     }
@@ -450,8 +449,8 @@ namespace dopt
       total_time_ms = 0;
 
       constexpr int stages = 3;
-      std::array<int, stages> iterations = {100, 75, 50};
-      std::array<float, stages> lrs = {0.0, 0.005, 0.005};
+      std::array<int, stages> iterations = {50, 50, 50};
+      std::array<float, stages> lrs = {0.0, 0.0, 0.0}; //learning rate for model shape optimization. Temporary disabled
       std::array<int, stages> model_qualities = {1, 2, 2};
       std::array<int, stages> image_sizes = {128, 256, 512};
       std::array<int, stages> spps = {64, 256, 512};
@@ -480,8 +479,7 @@ namespace dopt
         opt_result.total_iters = iters;
 
         debug("Stage %d Texture optimization stat\n", stage);
-        debug("%.1f s total \n", 1e-3 * opt_time_ms);
-        debug("%.1f s target function calc (%.1f ms/iter)\n", 1e-3 * total_time_ms, total_time_ms / iters);
+        debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
 
         delete tex_opt;
       }

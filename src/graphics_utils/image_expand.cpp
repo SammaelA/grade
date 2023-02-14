@@ -6,10 +6,12 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-ImgExp::ImgExp():
-get_borders({"take_mask_borders.comp"},{}),
-img_exp("restrict_tex.fs")
+Texture ImgExp::ImgExpanding(Texture image, int res_size)
 {
+  GLuint fbo;
+  Shader get_borders({"take_mask_borders.comp"},{});
+  PostFx img_exp("restrict_tex.fs");
+
   //create FBO and SSBO
   fbo = create_framebuffer();
 
@@ -23,30 +25,14 @@ img_exp("restrict_tex.fs")
   //check if FBO valid
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-  
-  //unbind FBO
-  glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
-}
-
-ImgExp::~ImgExp()
-{
-  delete_framebuffer(fbo);
-}
-
-Texture ImgExp::ImgExpanding(Texture image)
-{
-  //check texture type
-  Texture tmp = engine::textureManager->create_texture(image.get_W(), image.get_H());
 
   float w = image.get_W();
   float h = image.get_H();
-  //bind FBO
-  int prev_FBO = 0;
-  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-  SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
-  Texture mask = se.get_silhouette(image, MAX(w, h), MAX(w, h));
+  SilhouetteExtractor se = SilhouetteExtractor(MAX(1, MIN(w, h)/256.0), 0, 0, 0.25);
+  Texture mask = se.get_silhouette_simple(image, w, h);
+  engine::textureManager->save_png(mask, "ie_mask");
+  engine::textureManager->save_png(image, "ie_image");
 
     float borderColorDepth[] = {0.0f, 0.0f, 0.0f, 0.0f};
     glBindTexture(GL_TEXTURE_2D, mask.texture);
@@ -65,7 +51,7 @@ Texture ImgExp::ImgExpanding(Texture image)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-  get_borders.uniform("size", glm::vec2(MAX(w, h), MAX(w, h)));
+  get_borders.uniform("size", glm::vec2(w, h));
   get_borders.texture("mask", mask);
   
   glDispatchCompute(1, 1, 1);
@@ -76,34 +62,37 @@ Texture ImgExp::ImgExpanding(Texture image)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
   glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 16, arr);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  glDeleteBuffers(1, &ssbo);
 
-  float W = (arr[1] - arr[0]) / w;
-  float H = (arr[3] - arr[2]) / h;
-  float P = MAX(W, H);
-  //std::cout << arr[0] << " " << arr[1] << " " << arr[2] << " " << arr[3] << " | " << W << " " << H << " " << P << " | ";
-  W = ((arr[1] + arr[0] + w - MAX(w, h)) / w - P) / 2;
-  H = ((arr[2] + arr[3] + h - MAX(w, h)) / h - P) / 2;
-  //std::cout << W << " " << H;
+  logerr("buff %d %d %d %d\n", arr[0], arr[1], arr[2], arr[3]);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-  glBindTexture(GL_TEXTURE_2D, image.texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  PostFx copy("copy.fs");
+  Texture tmp_tex = engine::textureManager->create_texture(res_size, res_size);
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp.texture, 0);
-    glViewport(0, 0, w, h);
-    img_exp.use();
-    img_exp.get_shader().uniform("x_sh", W);
-    img_exp.get_shader().uniform("y_sh", H);
-    img_exp.get_shader().uniform("x_sz", P);
-    img_exp.get_shader().uniform("y_sz", P);
-    img_exp.get_shader().texture("tex", image);
-    img_exp.render();
+  float real_w = (arr[1] - arr[0]);
+  float real_h = (arr[3] - arr[2]);
+  glm::vec4 tex_transform(arr[0]/(float)w, arr[2]/(float)h, real_w/w, real_h/h);
 
+  float border = 0.05;
+  float sz_x = real_w > real_h ? 1 : real_w/real_h;
+  float sz_y = real_w > real_h ? real_h/real_w : 1;
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
+  glViewport(0, 0, tmp_tex.get_W(), tmp_tex.get_H());
+  glClearColor(0, 0, 0, 1);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glViewport((0.5*(1 - sz_x) + border)*tmp_tex.get_W(), (0.5*(1-sz_y) + border)*tmp_tex.get_H(), 
+             (sz_x - 2*border)*tmp_tex.get_W(), (sz_y - 2*border)*tmp_tex.get_H());
+
+  img_exp.use();
+  img_exp.get_shader().texture("tex", image);
+  img_exp.get_shader().texture("mask", mask);
+  img_exp.get_shader().uniform("tex_transform", tex_transform);
+  img_exp.render();
+
+  delete_framebuffer(fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
-
-  return tmp;
+  engine::textureManager->save_png(tmp_tex, "ie_rsult");
+  return tmp_tex;
 }
