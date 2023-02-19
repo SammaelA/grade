@@ -80,6 +80,7 @@
                           1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, }
   reference_scene:arr = {0.136, 0.545, 0.112, 0.091, -0.395, 0.019, 0, 0.5, 10, 1, 100}
   
+  regularization_alpha:r = 0.02
   reference_image_size:i = 512
   selection_image_size:i = 256
   save_stat_path:s = "opt_stat.csv"

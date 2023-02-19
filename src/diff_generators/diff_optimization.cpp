@@ -259,12 +259,12 @@ namespace dopt
     std::string saved_textured_path = settings_blk.get_string("saved_textured_path", "saves/selected_textured.png");
     std::string reference_path = settings_blk.get_string("reference_path", "");
 
-    auto get_gen_params = [&](const std::vector<float> &params) -> std::vector<float>
+    auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
       std::vector<float> gp = std::vector<float>(params.begin(), params.begin() + gen_params_cnt);
       return gp;
     };
-    auto get_camera_params = [&](const std::vector<float> &params) -> std::vector<float>
+    auto get_camera_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
       std::vector<float> gp = std::vector<float>(params.begin() + gen_params_cnt, params.end());
       return gp;
@@ -342,8 +342,9 @@ namespace dopt
     int iters = 0;
     double total_time_ms = 0;
     int model_quality = 0;
+    float regularization_alpha = settings_blk.get_double("regularization_alpha", 0.01);
 
-    opt::opt_func_with_grad F_silhouette = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
+    opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
     {
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
@@ -358,12 +359,11 @@ namespace dopt
 
       mi.compute_final_grad(jac, gen_params_cnt, res.size() / FLOAT_PER_VERTEX, final_grad);
 
-      float reg_q = 0.01;
       std::vector<float> reg_res = f_reg.Forward(0, params);
       std::vector<float> reg_jac = f_reg.Jacobian(params);
-      loss += reg_q * MAX(0, reg_res[0]);
+      loss += regularization_alpha * MAX(0, reg_res[0]);
       for (int i = 0; i < MIN(final_grad.size(), reg_jac.size()); i++)
-        final_grad[i] += reg_q * reg_jac[i];
+        final_grad[i] += regularization_alpha * reg_jac[i];
 
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
       total_time_ms += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -412,7 +412,7 @@ namespace dopt
       Block &optimizer_settings = (stage == 0) ? *opt_settings : special_settings;
 
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      opt->optimize(F_silhouette, params_min, params_max, optimizer_settings, init_params_presets);
+      opt->optimize(F_to_optimize, params_min, params_max, optimizer_settings, init_params_presets);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
       double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -476,7 +476,7 @@ namespace dopt
         opt::Optimizer *tex_opt = new opt::Adam();
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        tex_opt->optimize(F_silhouette, params_min, params_max, adam_settings, init_params_presets);
+        tex_opt->optimize(F_to_optimize, params_min, params_max, adam_settings, init_params_presets);
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
         double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
