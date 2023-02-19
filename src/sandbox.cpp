@@ -255,7 +255,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   camera.target = glm::vec3(0, 0.5, 0);
   camera.up = glm::vec3(0, 1, 0);
 
-  std::vector<float> default_scene_params = {0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000};
+  std::vector<float> default_scene_params = {0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.1};
   if (argc >= 4 && std::string(argv[2]) == "-sil_test")
   {
     Texture t = textureManager.load_unnamed_tex(std::string(argv[3]));
