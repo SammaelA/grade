@@ -400,7 +400,7 @@ namespace dgen
       std::vector<dfloat> thickness(radiuses_cnt,0);
       for (int i=0;i<radiuses_cnt;i++)
       {
-        radiuses[i] = params[handle_param_idx+2 + i] + params[handle_param_idx] * params[handle_param_idx+2+radiuses_cnt + i];
+        radiuses[i] = params[handle_param_idx+2 + i];
         thickness[i] = params[handle_param_idx+2+radiuses_cnt + i];
       }
       if (radius_samples != radiuses_cnt*2 - 1)
@@ -442,6 +442,15 @@ namespace dgen
       res += 5*d_max(params[i-1] - params[i], 0);
     }
     res = res + 5*d_max(params[spline_offsets_cnt - 1]/(params[0] + 0.001) - 3, 0);
+
+    int handle_param_idx = 11;
+    if (params[handle_param_idx - 1] > 0.5)
+    {
+      int radiuses_cnt = 20;
+      for (int i=1;i<radiuses_cnt;i++)
+        res += 10*d_max(abs(params[handle_param_idx + 2 + i] - params[handle_param_idx + 2 + i - 1]) - 0.1, 0);
+    }
+
     res = d_max(res, 0);
     return res;
   }
