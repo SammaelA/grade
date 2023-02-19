@@ -63,6 +63,13 @@ namespace opt
         X.push_back(0.5*(min_X[i] + max_X[i]));
     }
     assert(X.size() == min_X.size());
+
+    std::vector<float> grad_mult;//this additional array can be used as mask to prevent changing some of parameters 
+    settings.get_arr("derivatives_mult", grad_mult);
+    if (grad_mult.empty())
+      grad_mult = std::vector<float>(N, 1);//default value - change all parameters
+    assert(grad_mult.size() == min_X.size());
+
     std::vector<float> V = std::vector<float>(X.size(), 0); 
     std::vector<float> S = std::vector<float>(X.size(), 0);
 
@@ -79,9 +86,10 @@ namespace opt
       }
       for (int i=0;i<X.size();i++)
       {
-        V[i] = beta_1 * V[i] + (1-beta_1)*x_grad[i];
+        float g = grad_mult[i]*x_grad[i];
+        V[i] = beta_1 * V[i] + (1-beta_1)*g;
         float Vh = V[i] / (1 - pow(beta_1, iter+1)); 
-        S[i] = beta_2 * S[i] + (1-beta_2)*x_grad[i]*x_grad[i];
+        S[i] = beta_2 * S[i] + (1-beta_2)*g*g;
         float Sh = S[i] / (1 - pow(beta_2, iter+1)); 
         X[i] = CLAMP(X[i] - alpha*Vh/(sqrt(Sh) + eps), min_X[i], max_X[i]);
       }

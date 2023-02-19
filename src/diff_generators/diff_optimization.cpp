@@ -175,7 +175,7 @@ namespace dopt
     }
   }
 
-  void process_parameters_blk(Block &blk, std::vector<float> &params_min, std::vector<float> &params_max,
+  void process_parameters_blk(Block &blk, std::vector<float> &params_min, std::vector<float> &params_max, std::vector<std::string> &params_names,
                               std::vector<unsigned short> &variant_count, std::vector<unsigned short> &variant_positions)
   {
     /*
@@ -201,6 +201,7 @@ namespace dopt
           logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i));
         params_min.push_back(min_max.x);
         params_max.push_back(min_max.y);
+        params_names.push_back(blk.get_name(i));
 
         bool is_variant = pb->get_bool("is_variant", false);
         if (is_variant)
@@ -235,10 +236,37 @@ namespace dopt
     }
   }
 
+  std::vector<float> get_params_mask(const std::vector<std::string> &all_names, const std::vector<std::string> &active_names)
+  {
+    std::vector<float> mask(all_names.size(), 0);
+
+    for (const std::string &name : active_names)
+    {
+      for (int i=0;i<all_names.size();i++)
+      {
+        if (name == all_names[i])
+        {
+          mask[i] = 1;
+          break;
+        }
+      }
+    }
+
+    return mask;
+  }
+
+  void inverse_mask(std::vector<float> &mask)
+  {
+    //expect mask to contain only 0/1 values
+    for (float &v : mask)
+      v = 1 - v;
+  }
+
   float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
     Block gen_params, scene_params, presets_blk;
     std::vector<float> params_min, params_max;
+    std::vector<std::string> params_names;
     std::vector<unsigned short> variant_count, variant_positions;
 
     PresetsData parameter_presets;
@@ -270,8 +298,8 @@ namespace dopt
       return gp;
     };
 
-    process_parameters_blk(gen_params, params_min, params_max, variant_count, variant_positions);
-    process_parameters_blk(scene_params, params_min, params_max, variant_count, variant_positions);
+    process_parameters_blk(gen_params, params_min, params_max, params_names, variant_count, variant_positions);
+    process_parameters_blk(scene_params, params_min, params_max, params_names, variant_count, variant_positions);
     load_presets_from_blk(presets_blk, gen_params, parameter_presets);
 
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d variant variables \n", 
@@ -391,7 +419,7 @@ namespace dopt
     std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 1024};
 
-    for (int stage = 0; stage < stages; stage++)
+    for (int stage = 0; stage < 1; stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -430,7 +458,6 @@ namespace dopt
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
 
-    engine::view->next_frame();
     Texture mask_tex;
     ModelTex mt;
     {
@@ -447,15 +474,29 @@ namespace dopt
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }
 
-    engine::view->next_frame();
     if (textured_optimization && textured_optimization->get_bool("active", false))
     { 
       iters = 0;
       total_time_ms = 0;
 
+      //parameters related to light and materals cannot be optimized on silhouette stage
+      //we should optimize them now along with texture
+      //however, we don't want to change model shape on this stage as it may lead
+      //to some "overgrowth" of model hidden with the black texture
+      //That's why mask is used here
+      std::vector<float> texture_only_parameters_mask = get_params_mask(params_names,
+                                                                        {
+                                                                          "light_translation_x",
+                                                                          "light_translation_y",
+                                                                          "light_translation_z",
+                                                                          "light_size",
+                                                                          "light_intensity",
+                                                                          "roughness"
+                                                                        });
+
       constexpr int stages = 4;
       std::array<int, stages> iterations = {50, 50, 50, 50};
-      std::array<float, stages> lrs = {0.0, 0.0, 0.0, 0.0}; //learning rate for model shape optimization. Temporary disabled
+      std::array<float, stages> lrs = {0.01, 0.01, 0.005, 0.005};
       std::array<int, stages> model_qualities = {1, 1, 2, 2};
       std::array<int, stages> image_sizes = {128, 256, 512, 1024};
       std::array<int, stages> spps = {64, 128, 256, 256};
@@ -470,6 +511,7 @@ namespace dopt
                                         1, true);
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
+        adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
         adam_settings.add_double("learning_rate", lrs[stage]);
         adam_settings.add_int("iterations", iterations[stage]);
         adam_settings.add_bool("verbose", true);
