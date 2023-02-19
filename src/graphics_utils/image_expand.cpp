@@ -36,7 +36,6 @@ ImgExp::~ImgExp()
 Texture ImgExp::ImgExpanding(Texture image)
 {
   //check texture type
-  logerr("%s", glGetString(GL_VERSION));
   Texture tmp = engine::textureManager->create_texture(image.get_W(), image.get_H());
 
   float w = image.get_W();
@@ -81,10 +80,8 @@ Texture ImgExp::ImgExpanding(Texture image)
   float W = (arr[1] - arr[0]) / w;
   float H = (arr[3] - arr[2]) / h;
   float P = MAX(W, H);
-  //std::cout << arr[0] << " " << arr[1] << " " << arr[2] << " " << arr[3] << " | " << W << " " << H << " " << P << " | ";
   W = ((arr[1] + arr[0] + w - MAX(w, h)) / w - P) / 2;
   H = ((arr[2] + arr[3] + h - MAX(w, h)) / h - P) / 2;
-  //std::cout << W << " " << H;
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   glBindTexture(GL_TEXTURE_2D, image.texture);

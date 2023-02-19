@@ -318,7 +318,7 @@ namespace dgen
   }
 
   void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part,
-                                              int rotations, dvec3 shift, dvec3 radius_vec, std::vector<dfloat> &radiuses, bool only_pos)
+                                              int rotations, dvec3 shift, dvec3 radius_vec, std::vector<dfloat> &radiuses, std::vector<dfloat> &thickness, bool only_pos)
   {
     dmat43 rot_mat = ident();
     dmat43 first_rot_mat = ident();
@@ -356,13 +356,15 @@ namespace dgen
       dfloat new_len = 0;
       dfloat rv_mult = radiuses[sector];
       dfloat prv_mult = radiuses[sector-1];
+      dfloat thick_mult = thickness[sector];
+      dfloat pthick_mult = thickness[sector-1];
       for (int i=1;i<sp_sz;i++)
       {
-        new_len = prev_len + len(sub(verts[i],verts[i-1]));
-        dvec3 p1 = add(add(verts[i],   mul(rv_mult, radius_vec)), shift);
-        dvec3 p2 = add(add(prev_verts[i],   mul(prv_mult, prev_radius_vec)), shift);
-        dvec3 p3 = add(add(verts[i-1], mul(rv_mult, radius_vec)), shift);
-        dvec3 p4 = add(add(prev_verts[i-1], mul(prv_mult, prev_radius_vec)), shift);
+        new_len = prev_len + len(sub(verts[i],verts[i-1])) * thick_mult;
+        dvec3 p1 = add(add(mul(thick_mult, verts[i]),   mul(rv_mult, radius_vec)), shift);
+        dvec3 p2 = add(add(mul(pthick_mult, prev_verts[i]),   mul(prv_mult, prev_radius_vec)), shift);
+        dvec3 p3 = add(add(mul(thick_mult, verts[i-1]), mul(rv_mult, radius_vec)), shift);
+        dvec3 p4 = add(add(mul(pthick_mult, prev_verts[i-1]), mul(prv_mult, prev_radius_vec)), shift);
         dvec3 v1 = sub(p2, p1);
         dvec3 v2 = sub(p3, p1); 
         dvec3 n = normalize(cross(v1, v2));
@@ -387,18 +389,21 @@ namespace dgen
     spline = spline_make_smoother(spline, 2, 1, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
-
     if (params[10] > 0.5)
     {
       int handle_param_idx = 11;
-      int radiuses_cnt = 7;
+      int radiuses_cnt = 20;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
       dfloat thick = smoothmin(params[handle_param_idx], 0.02, 8);
-      int radius_samples = radiuses_cnt*2 - 1;
+      int radius_samples = radiuses_cnt - 1;
       std::vector<dfloat> radiuses(radiuses_cnt,0);
+      std::vector<dfloat> thickness(radiuses_cnt,0);
       for (int i=0;i<radiuses_cnt;i++)
-        radiuses[i] = params[handle_param_idx+2 + i] + params[handle_param_idx];
-      if (radius_samples != radiuses_cnt - 1)
+      {
+        radiuses[i] = params[handle_param_idx+2 + i] + params[handle_param_idx] * params[handle_param_idx+2+radiuses_cnt + i];
+        thickness[i] = params[handle_param_idx+2+radiuses_cnt + i];
+      }
+      if (radius_samples != radiuses_cnt*2 - 1)
       {
         int k = (radius_samples + 1)/radiuses_cnt;
         std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false);
@@ -411,7 +416,6 @@ namespace dgen
       dfloat center = params[handle_param_idx+1];
       dfloat start_pos = center + radiuses[0];
       dfloat end_pos = center - radiuses.back();
-
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 4*q_pow);
       dfloat sin_p = smoothmin(sin_by_points(spline, start_pos, center, thick), 0.98, 8);
       radiuses[0] = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, start_pos, 0), start_pos);
@@ -419,7 +423,7 @@ namespace dgen
       dvec3 radius_vec = dvec3{0, 1, 0};
       spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
                                              shift_by_points(spline, center, thick, 0, 1), 
-                                             radius_vec, radiuses,
+                                             radius_vec, radiuses, thickness,
                                              quality.create_only_position);
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
