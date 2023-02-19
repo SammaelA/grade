@@ -25,8 +25,7 @@ private:
   GLuint fbo;
   Shader UV;
   Shader tex_get;
-  PostFx cpy1;
-  PostFx cpy2;
+  PostFx copy;
   PostFx texture_postprocess;
   PostFx tex_com;
   PostFx texs_div;

@@ -258,7 +258,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   std::vector<float> default_scene_params = {0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000};
   if (argc >= 4 && std::string(argv[2]) == "-sil_test")
   {
-    Texture t = engine::textureManager->load_unnamed_tex(std::string(argv[3]));
+    Texture t = textureManager.load_unnamed_tex(std::string(argv[3]));
     SilhouetteExtractor se = SilhouetteExtractor(1.0f, 0.075, 0.225);
     Texture tex = se.get_silhouette(t, 256, 256);
     textureManager.save_png(tex, "silhouette_test");
@@ -473,10 +473,19 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 3 && std::string(argv[2]) == "-test_denoising")
   {
-    Texture t = textureManager.load_unnamed_tex("saves/noisy_tex.png");
-    Texture res = BilateralFilter::perform(t, 4, 0.5);
-    Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
-    textureManager.save_png(sharped, "noisy_tex_sharped");
+      Texture res_optimized = textureManager.load_unnamed_tex("saves/reconstructed_tex_raw.png");
+      Texture mask_tex = textureManager.load_unnamed_tex("saves/reconstructed_mask.png");
+      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.375, 3, 1}, {0, 0.375, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 10}};
+    engine::view->next_frame();
+      ModelTex mt;
+      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
+
+      Texture res = BilateralFilter::perform(comp, 4, 0.5);
+      Texture sharped = UnsharpMasking::perform(res, 1, 0.2);
+
+      textureManager.save_png(res_optimized, "reconstructed_tex_raw_1");
+      textureManager.save_png(sharped, "reconstructed_tex_complemented_1");
+      textureManager.save_png(sharped, "reconstructed_tex_denoised_1");
     engine::view->next_frame();
   }
   else
@@ -657,11 +666,11 @@ void sandbox_main(int argc, char **argv, Scene *scene)
      float time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
      logerr("took %.3f seconds, %.1f ms/tree", time/1000, time/(cnt*cnt));
      delete ref_voxels;
-     engine::textureManager->save_png(scene.grove.impostors[1].atlas.tex(0), "original_atlas");
+     textureManager.save_png(scene.grove.impostors[1].atlas.tex(0), "original_atlas");
 
-     Texture tex1 = engine::textureManager->load_unnamed_tex(image::base_img_path + "24_A_mono.png");
-     Texture tex2 = engine::textureManager->load_unnamed_tex(image::base_img_path + "24_B_mono.png");
-     //Texture tex3 = engine::textureManager->create_unnamed(tex1.get_W(), tex1.get_H());
+     Texture tex1 = textureManager.load_unnamed_tex(image::base_img_path + "24_A_mono.png");
+     Texture tex2 = textureManager.load_unnamed_tex(image::base_img_path + "24_B_mono.png");
+     //Texture tex3 = textureManager.create_unnamed(tex1.get_W(), tex1.get_H());
      TextureAtlas tmp_atlas = TextureAtlas(2*tex1.get_W(), 2*tex1.get_H(), 1);
      tmp_atlas.set_grid(2*tex1.get_W(), 2*tex1.get_H());
      int id = tmp_atlas.add_tex();
@@ -671,7 +680,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
      pixel_dist.get_shader().texture("tex1", tex1);
      pixel_dist.get_shader().texture("tex2", tex2);
      pixel_dist.render();
-     engine::textureManager->save_png(tmp_atlas.tex(0), "cmp");
+     textureManager.save_png(tmp_atlas.tex(0), "cmp");
  */
   /*
      LightVoxelsCube test = LightVoxelsCube(glm::vec3(0,0,0), glm::vec3(200,200,200),1.0f,1.0f,1,2);

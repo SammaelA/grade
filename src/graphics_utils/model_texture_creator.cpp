@@ -15,8 +15,7 @@ photo_transform("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 tex_com("tex_com_2.fs"),
 texs_div("tex_div_tex.fs"),
-cpy1("restrict_tex.fs"),
-cpy2("copy.fs")
+copy("copy.fs")
 {
   //create FBO and SSBO
   fbo = create_framebuffer();
@@ -155,9 +154,9 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
   glViewport(0, 0, W, H);
-  cpy2.use();
-  cpy2.get_shader().texture("tex", tex);
-  cpy2.render();
+  copy.use();
+  copy.get_shader().texture("tex", tex);
+  copy.render();
   
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -192,13 +191,10 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
     glViewport(0, 0, W * w, H * h);
-    cpy1.use();
-    cpy1.get_shader().uniform("x_sh", it.w0);
-    cpy1.get_shader().uniform("y_sh", it.h0);
-    cpy1.get_shader().uniform("x_sz", w);
-    cpy1.get_shader().uniform("y_sz", h);
-    cpy1.get_shader().texture("tex", t);
-    cpy1.render();
+    copy.use();
+    copy.get_shader().uniform("tex_transform", glm::vec4(it.w0, it.h0, w, h));
+    copy.get_shader().texture("tex", t);
+    copy.render();
     
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 //////
@@ -208,13 +204,10 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     Texture mask1 = engine::textureManager->create_texture(W * w, H * h);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mask1.texture, 0);
     glViewport(0, 0, W * w, H * h);
-    cpy1.use();
-    cpy1.get_shader().uniform("x_sh", it.w0);
-    cpy1.get_shader().uniform("y_sh", it.h0);
-    cpy1.get_shader().uniform("x_sz", w);
-    cpy1.get_shader().uniform("y_sz", h);
-    cpy1.get_shader().texture("tex", mask);
-    cpy1.render();
+    copy.use();
+    copy.get_shader().uniform("tex_transform", glm::vec4(it.w0, it.h0, w, h));
+    copy.get_shader().texture("tex", mask);
+    copy.render();
 
     GaussFilter gaussian(3);
 
@@ -321,9 +314,9 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
     glViewport(it.w0 * W, it.h0 * H, w * W, h * H);
-    cpy2.use();
-    cpy2.get_shader().texture("tex", tmp_tex);
-    cpy2.render();
+    copy.use();
+    copy.get_shader().texture("tex", tmp_tex);
+    copy.render();
     
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
   }
