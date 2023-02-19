@@ -421,6 +421,7 @@ namespace dopt
 
       debug("Stage %d Model optimization stat\n", stage);
       debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
+      iters = 0;
 
       delete opt;
     }
@@ -484,6 +485,7 @@ namespace dopt
 
         debug("Stage %d Texture optimization stat\n", stage);
         debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
+        iters = 0;
 
         delete tex_opt;
       }

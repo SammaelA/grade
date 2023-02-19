@@ -64,7 +64,6 @@ Texture ImgExp::ImgExpanding(Texture image, int res_size)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   glDeleteBuffers(1, &ssbo);
 
-  logerr("buff %d %d %d %d\n", arr[0], arr[1], arr[2], arr[3]);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   PostFx copy("copy.fs");
