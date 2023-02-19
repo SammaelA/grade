@@ -32,4 +32,24 @@
   handle_radius_17{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 4"}
   handle_radius_18{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 5"}
   handle_radius_19{ values:p2 = 0.1, 0.5 desc:s = "distance between center and point 6"}
+  handle_thickness_coeff_0{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 0"}
+  handle_thickness_coeff_1{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 1"}
+  handle_thickness_coeff_2{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 2"}
+  handle_thickness_coeff_3{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 3"}
+  handle_thickness_coeff_4{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 4"}
+  handle_thickness_coeff_5{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 5"}
+  handle_thickness_coeff_6{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 6"}
+  handle_thickness_coeff_7{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 1"}
+  handle_thickness_coeff_8{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 2"}
+  handle_thickness_coeff_9{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 3"}
+  handle_thickness_coeff_10{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 4"}
+  handle_thickness_coeff_11{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 5"}
+  handle_thickness_coeff_12{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 6"}
+  handle_thickness_coeff_13{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 6"}
+  handle_thickness_coeff_14{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 1"}
+  handle_thickness_coeff_15{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 2"}
+  handle_thickness_coeff_16{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 3"}
+  handle_thickness_coeff_17{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 4"}
+  handle_thickness_coeff_18{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 5"}
+  handle_thickness_coeff_19{ values:p2 = 0.1, 2 desc:s = "handle thickness at point 6"}
 }
