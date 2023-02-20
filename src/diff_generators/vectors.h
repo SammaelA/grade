@@ -317,6 +317,7 @@ namespace dgen
     res.z *= a;
     return res;
   }
+
   template <typename T>
   T length(const g_vec3<T> &v)
   {
@@ -335,6 +336,20 @@ namespace dgen
     T l = length(v);
     if (l > 1e-9)
       return v / l;
+    else
+      return g_vec3<T>(0,0,0);
+  }
+
+  template <typename T>
+  g_vec3<T> cross(const g_vec3<T> &a, const g_vec3<T> &b)
+  {
+    g_vec3<T> res;
+
+    res[0] = a[1] * b[2] - a[2] * b[1];
+    res[1] = a[2] * b[0] - a[0] * b[2];
+    res[2] = a[0] * b[1] - a[1] * b[0];
+
+    return res;
   }
 
 template <typename T>
@@ -503,44 +518,40 @@ template <typename T>
     res.w *= a;
     return res;
   }
+    
+  template <typename T>
+  T length(const g_vec4<T> &v)
+  {
+    return CppAD::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+  }
+
+  template <typename T>
+  T dot(const g_vec4<T> &v1, const g_vec4<T> &v2)
+  {
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
+  }
+
+  template <typename T>
+  g_vec4<T> normalize(const g_vec4<T> &v)
+  {
+    T l = length(v);
+    if (l > 1e-9)
+      return v / l;
+    else
+      return g_vec4<T>(0,0,0,0);
+  }
+
+  template <typename T>
+  g_vec4<T> get_dvec4(const g_vec3<T> &xyz, T w)
+  {
+    return g_vec4<T>(xyz.x, xyz.y, xyz.z, w);
+  }
 
   typedef CppAD::AD<float> dfloat;
   typedef g_vec2<dfloat> dvec2;
   typedef g_vec3<dfloat> dvec3;
   typedef g_vec4<dfloat> dvec4;
   typedef std::array<dfloat, 12> dmat43;//4 vec3 
-
-  //vec2
-  dvec2 add(const dvec2 &a, const dvec2 &b);
-  dvec2 sub(const dvec2 &a, const dvec2 &b);
-  dvec2 mul(const dvec2 &a, const dvec2 &b);
-  dvec2 div(const dvec2 &a, const dvec2 &b);
-  dvec2 mul(dfloat a, const dvec2 &b);
-  dfloat dot(const dvec2 &a, const dvec2 &b);
-  dvec2 normalize(const dvec2 &v);
-  dfloat len(const dvec2 &v);
-
-  //vec3
-  dvec3 add(const dvec3 &a, const dvec3 &b);
-  dvec3 sub(const dvec3 &a, const dvec3 &b);
-  dvec3 mul(const dvec3 &a, const dvec3 &b);
-  dvec3 div(const dvec3 &a, const dvec3 &b);
-  dvec3 mul(dfloat a, const dvec3 &b);
-  dfloat dot(const dvec3 &a, const dvec3 &b);
-  dvec3 normalize(const dvec3 &v);
-  dfloat len(const dvec3 &v);
-  dvec3 cross(const dvec3 &a, const dvec3 &b);
-
-  //vec4
-  dvec4 add(const dvec4 &a, const dvec4 &b);
-  dvec4 sub(const dvec4 &a, const dvec4 &b);
-  dvec4 mul(const dvec4 &a, const dvec4 &b);
-  dvec4 div(const dvec4 &a, const dvec4 &b);
-  dvec4 mul(dfloat a, const dvec4 &b);
-  dfloat dot(const dvec4 &a, const dvec4 &b);
-  dvec4 normalize(const dvec4 &v);
-  dfloat len(const dvec4 &v);
-  dvec4 get_dvec4(const dvec3 &xyz, dfloat w);
 
   //matrices
   dmat43 get_mat43(float *data);
@@ -560,6 +571,4 @@ template <typename T>
   dmat43 transpose3x3(const dmat43 &b);
   dmat43 transposedInverse3x3(const dmat43 &m);
   dmat43 inverse3x4(const dmat43 &m);
-  
-
 }

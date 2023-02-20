@@ -96,19 +96,6 @@ namespace dgen
     return spline;
   }
 
-  std::vector<dvec3> spline_shifting(const std::vector<dvec3> &in_spline, dvec3 shift)
-  {
-    std::vector<dvec3> spline;
-    spline.reserve(in_spline.size());
-    for (int i = 0; i < in_spline.size(); ++i)
-    {
-      
-      dvec3 vec = add(in_spline[i], shift);
-      spline.push_back(vec);
-    }
-    return spline;
-  }
-
   std::vector<dvec3> spline_to_closed_curve_thickness(const std::vector<dvec3> &in_spline, dfloat thickness, int axis_x, int axis_y)
   {
     std::vector<dvec3> spline = in_spline;
@@ -117,23 +104,23 @@ namespace dgen
     x[axis_x] = 1;
     dvec3 y = dvec3{0,0,0};
     y[axis_y] = -1;
-    offset_dirs.push_back(add(in_spline[0],mul(thickness,x)));
+    offset_dirs.push_back(in_spline[0] + thickness*x);
 
-    dvec3 l0 = sub(in_spline[1], in_spline[0]);
+    dvec3 l0 = in_spline[1] - in_spline[0];
     dvec3 d_prev = dvec3{0,0,0};
     d_prev[axis_x] = l0[axis_y];
     d_prev[axis_y] = -l0[axis_x];
     for (int i=1;i<in_spline.size()-1;i++)
     {
-      dvec3 l = sub(in_spline[i+1], in_spline[i]);
+      dvec3 l = in_spline[i+1] - in_spline[i];
       dvec3 d = dvec3{0,0,0};
       d[axis_x] = l[axis_y];
       d[axis_y] = -l[axis_x];
-      offset_dirs.push_back(add(in_spline[i],mul(thickness,normalize(add(d_prev, d))))); //pos + thickness*dir
+      offset_dirs.push_back(in_spline[i] + thickness*normalize(d_prev + d)); //pos + thickness*dir
       d_prev = d;
     }
 
-    offset_dirs.push_back(add(in_spline[in_spline.size()-1],mul(thickness,y)));
+    offset_dirs.push_back(in_spline[in_spline.size()-1] + thickness*y);
     for (int i=in_spline.size()-1; i>=0; i--)
     {
       spline.push_back(offset_dirs[i]);
@@ -243,7 +230,7 @@ namespace dgen
     dfloat full_len = 1e-9;
     for (int i=1;i<sp_sz;i++)
     {
-      full_len += len(sub(verts[i],verts[i-1]));
+      full_len += length(verts[i]-verts[i-1]);
     }
 
     std::vector<dvec3> positions;//size 4*(sp_sz-1)*rotations
@@ -265,9 +252,9 @@ namespace dgen
       dfloat new_len = 0;
       for (int i=1;i<sp_sz;i++)
       {
-        new_len = prev_len + len(sub(verts[i],verts[i-1]));
-        dvec3 v1 = sub(prev_verts[i-1], verts[i]);
-        dvec3 v2 = sub(verts[i-1], prev_verts[i]); 
+        new_len = prev_len + length(verts[i] - verts[i-1]);
+        dvec3 v1 = prev_verts[i-1] - verts[i];
+        dvec3 v2 = verts[i-1] - prev_verts[i]; 
         dvec3 n = normalize(cross(v1, v2));
 
         positions.push_back(verts[i]);
@@ -304,10 +291,10 @@ namespace dgen
       dvec3 n_1_1 = (sp_n == 1) ? n : normals[((rot_n-2 + rotations) % rotations)*(sp_sz-1) + sp_n - 2];
       dvec3 n1_1 = (sp_n == 1) ? n : normals[(rot_n % rotations)*(sp_sz-1) + sp_n - 2];
 
-      dvec3 n0 = normalize(add(add(n, n01), add(n11, n10)));
-      dvec3 n1 = normalize(add(add(n, n01), add(n_11, n_10)));
-      dvec3 n2 = normalize(add(add(n, n10), add(n1_1, n0_1)));
-      dvec3 n3 = normalize(add(add(n, n0_1), add(n_1_1, n_10)));
+      dvec3 n0 = normalize(n + n01 + n11 + n10);
+      dvec3 n1 = normalize(n + n01 + n_11 + n_10);
+      dvec3 n2 = normalize(n + n10 + n1_1 + n0_1);
+      dvec3 n3 = normalize(n + n0_1 + n_1_1 + n_10);
       add_vertex(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
       add_vertex(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
       add_vertex(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
@@ -335,7 +322,7 @@ namespace dgen
     dfloat full_len = 1e-9;
     for (int i=1;i<sp_sz;i++)
     {
-      full_len += len(sub(verts[i],verts[i-1]));
+      full_len += length(verts[i] - verts[i-1]);
       verts[i - 1] = mulp(first_rot_mat, verts[i - 1]);
       prev_verts[i - 1] = mulp(first_rot_mat, prev_verts[i - 1]);
     }
@@ -369,13 +356,13 @@ namespace dgen
       dfloat pthick_mult = thickness[sector-1];
       for (int i=1;i<sp_sz;i++)
       {
-        new_len = prev_len + len(sub(verts[i],verts[i-1])) * thick_mult;
-        dvec3 p1 = add(add(mul(thick_mult, verts[i]),   mul(rv_mult, radius_vec)), shift);
-        dvec3 p2 = add(add(mul(pthick_mult, prev_verts[i]),   mul(prv_mult, prev_radius_vec)), shift);
-        dvec3 p3 = add(add(mul(thick_mult, verts[i-1]), mul(rv_mult, radius_vec)), shift);
-        dvec3 p4 = add(add(mul(pthick_mult, prev_verts[i-1]), mul(prv_mult, prev_radius_vec)), shift);
-        dvec3 v1 = sub(p2, p1);
-        dvec3 v2 = sub(p3, p1); 
+        new_len = prev_len + length(verts[i]-verts[i-1]) * thick_mult;
+        dvec3 p1 = thick_mult*verts[i] + rv_mult*radius_vec + shift;
+        dvec3 p2 = pthick_mult*prev_verts[i] + prv_mult*prev_radius_vec + shift;
+        dvec3 p3 = thick_mult*verts[i-1] + rv_mult*radius_vec + shift;
+        dvec3 p4 = pthick_mult*prev_verts[i-1] + prv_mult*prev_radius_vec + shift;
+        dvec3 v1 = p2 - p1;
+        dvec3 v2 = p3 - p1; 
         dvec3 n = normalize(cross(v1, v2));
 
         positions.push_back(p1);
@@ -413,10 +400,10 @@ namespace dgen
       dvec3 n_1_1 = (sp_n == 1) ? n : normals[((rot_n-2 + rotations) % rotations)*(sp_sz-1) + sp_n - 2];
       dvec3 n1_1 = (sp_n == 1) ? n : normals[(rot_n % rotations)*(sp_sz-1) + sp_n - 2];
 
-      dvec3 n0 = normalize(add(add(n, n01), add(n11, n10)));
-      dvec3 n1 = normalize(add(add(n, n01), add(n_11, n_10)));
-      dvec3 n2 = normalize(add(add(n, n10), add(n1_1, n0_1)));
-      dvec3 n3 = normalize(add(add(n, n0_1), add(n_1_1, n_10)));
+      dvec3 n0 = normalize(n + n01 + n11 + n10);
+      dvec3 n1 = normalize(n + n01 + n_11 + n_10);
+      dvec3 n2 = normalize(n + n10 + n1_1 + n0_1);
+      dvec3 n3 = normalize(n + n0_1 + n_1_1 + n_10);
       add_vertex(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
       add_vertex(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
       add_vertex(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
