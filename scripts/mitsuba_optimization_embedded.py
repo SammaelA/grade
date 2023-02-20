@@ -158,7 +158,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
-  print(params)
+
   context = {
     'scene' : scene,
     'params' : params, 
