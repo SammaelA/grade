@@ -3,6 +3,8 @@
 #include "common_utils/distribution.h"
 #include <algorithm>
 #include <chrono>
+#include <unordered_map>
+#include <bits/stdc++.h>
 
 namespace opt
 {
@@ -151,14 +153,34 @@ namespace opt
         s_block.set_double("qa_value", solutions[i].qa_value);
         s_block.set_int("local_improvements", solutions[i].local_improvements);
 
-        backup.add_block("solution_"+std::to_string(i), &s_block);
+        backup.set_block("solution_"+std::to_string(i), &s_block);
       }
+    };
+
+    auto block_hash = [](Block &b) -> uint64_t
+    {
+      std::hash<std::string> hash_string;
+      std::string bs;
+      save_block_to_string(bs, b);
+      return hash_string(bs);
     };
     std::vector<Solution> solutions;
     Block backup;
 
     debug("Memetic classic: starting optimization\n");
-    if (load_block_from_file("backup.blk", backup) && backup.get_bool("continue"))
+    bool has_backup = load_block_from_file("backup.blk", backup) && backup.get_bool("continue");
+    bool relevant_backup = false;
+    if (has_backup)
+    {
+      relevant_backup = min_X.size() == backup.get_int("parameters_count") &&
+                        block_hash(settings) == backup.get_uint64("settings_block_hash");
+      if (!relevant_backup)
+      {
+        backup.clear();
+        save_block_to_file("backup.blk", backup);
+      }
+    }
+    if (relevant_backup)
     {
       debug("Continue from backup file\n");
       budget = backup.get_int("budget");
@@ -177,6 +199,10 @@ namespace opt
     {
       debug("Initializing population\n");
       initialize_population(solutions, 0);
+
+      backup.set_bool("continue", true);
+      backup.set_int("parameters_count", min_X.size());
+      backup.set_uint64("settings_block_hash", block_hash(settings));
     }
     float initial_diversity = calc_diversity(solutions);
     debug("initial diversity %.3f\n", initial_diversity);
@@ -190,9 +216,7 @@ namespace opt
 
     while (budget < total_function_calls)
     {
-      backup.clear();
-      backup.add_bool("continue", true);
-      backup.add_int("budget", budget);
+      backup.set_int("budget", budget);
       save_solutions(backup, solutions);
       save_block_to_file("backup.blk", backup);
 
