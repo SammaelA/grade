@@ -416,8 +416,8 @@ namespace dopt
     std::array<std::string, stages> optimizers = {search_algorithm, "adam", "adam", "adam"};
     std::array<int, stages> iterations = {0, 100, 100, 100};
     std::array<float, stages> lrs = {0, 0.005, 0.005, 0.005};
-    std::array<int, stages> model_qualities = {0, 0, 1, 1};
-    std::array<int, stages> image_sizes = {128, 256, 512, 1024};
+    std::array<int, stages> model_qualities = {0, 0, 1, 2};
+    std::array<int, stages> image_sizes = {128, 256, 512, 512};
 
     for (int stage = 0; stage < stages; stage++)
     {
@@ -455,6 +455,12 @@ namespace dopt
       iters = 0;
 
       delete opt;
+      debug("Best params: [");
+      for (int j = 0; j < opt_result.best_params.size(); j++)
+      {
+        debug("%.3f, ", opt_result.best_params[j]);
+      }
+      debug("]\n");
     }
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
@@ -501,8 +507,8 @@ namespace dopt
       std::array<int, stages> iterations = {50, 50, 50, 50};
       std::array<float, stages> lrs = {0.01, 0.01, 0.005, 0.005};
       std::array<int, stages> model_qualities = {1, 1, 2, 2};
-      std::array<int, stages> image_sizes = {128, 256, 512, 1024};
-      std::array<int, stages> spps = {64, 128, 256, 256};
+      std::array<int, stages> image_sizes = {128, 256, 512, 512};
+      std::array<int, stages> spps = {64, 128, 256, 512};
       for (int stage = 0; stage < stages; stage++)
       {
         model_quality = model_qualities[stage];
