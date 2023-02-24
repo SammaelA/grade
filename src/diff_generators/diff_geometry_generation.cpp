@@ -496,4 +496,9 @@ namespace dgen
   {
     return CppAD::CondExpGt(a,b,a,b);
   }
+
+  dfloat d_min(dfloat a, dfloat b)
+  {
+    return CppAD::CondExpLt(a,b,a,b);
+  }
 }

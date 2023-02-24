@@ -43,16 +43,29 @@ namespace dgen
     return (x_for_spline_y(in_spline, y1, 0) - x_for_spline_y(in_spline, y2, 0) + thick / 2.0) / (2.0 * rad_by_points(in_spline, y1, y2));
   }
 
-  std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y, bool from_zero)
+  std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y, bool from_zero, int detail_q)
   {
     //if you have n params and axis_x = 0, axis_y = 2 then it will create n points (vec3) with formula point[i] = (i/(n-1), 0, params[i])
     std::vector<dvec3> spline;
     spline.reserve((params.size() + from_zero));
     if (from_zero)
     {
+      dfloat smooth_y = d_min(0.5, 0.9*params[0]);
+      dfloat smooth_x = 0.05;
+      //center of cup bottom
       dvec3 vec{0,0,0};
-      vec[axis_x] = -1e-4;
+      vec[axis_x] = -smooth_x -1e-4;
       spline.push_back(vec);
+
+      //smoothness on the bottom/side transition
+      int steps = 2 + 2*detail_q;
+      for (int i=0;i<steps;i++)
+      {
+        dvec3 vec{0,0,0};
+        vec[axis_x] = -smooth_x*cos((PI*i)/(2*steps));
+        vec[axis_y] = params[0] - smooth_y*(1 - sin((PI*i)/(2*steps)));
+        spline.push_back(vec);
+      }
     }
     for (int i=0;i<idx;i++)
     {
@@ -119,8 +132,22 @@ namespace dgen
       offset_dirs.push_back(in_spline[i] + thickness*normalize(d_prev + d)); //pos + thickness*dir
       d_prev = d;
     }
-
     offset_dirs.push_back(in_spline[in_spline.size()-1] + thickness*y);
+
+    //smooth transition on top
+    dfloat d = spline.back()[axis_y] - offset_dirs.back()[axis_y];
+    {
+      dvec3 v = spline.back();
+      v[axis_x] += 0.25*d;
+      v[axis_y] -= 0.25*d;
+      spline.push_back(v);
+    }
+    {
+      dvec3 v = spline.back();
+      v[axis_x] += 0.25*d;
+      v[axis_y] -= 0.75*d;
+      spline.push_back(v);
+    }
     for (int i=in_spline.size()-1; i>=0; i--)
     {
       spline.push_back(offset_dirs[i]);
@@ -416,8 +443,9 @@ namespace dgen
   void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
-    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true);
-    spline = spline_make_smoother(spline, 2, 1, -1, 1, 0);
+    std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true, q_pow);
+    if (q_pow > 0)
+      spline = spline_make_smoother(spline, 2, 1, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
     if (params[10] > 0.5)
@@ -437,7 +465,7 @@ namespace dgen
       if (radius_samples != radiuses_cnt*2 - 1)
       {
         int k = (radius_samples + 1)/radiuses_cnt;
-        std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false);
+        std::vector<dvec3> rad_spline = create_spline(radiuses, radiuses_cnt, 0, 1, false, 1);
         rad_spline = spline_make_smoother(rad_spline, k, 0, -1, 0, 1);
         radius_samples = rad_spline.size() - 1;
         radiuses = std::vector<dfloat>(rad_spline.size());
@@ -447,7 +475,7 @@ namespace dgen
       dfloat center = params[handle_param_idx+1];
       dfloat start_pos = center + radiuses[0];
       dfloat end_pos = center - radiuses.back();
-      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 4*q_pow);
+      spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 6*q_pow);
       dfloat sin_p = smoothmin(sin_by_points(spline, start_pos, center, thick), 0.98, 8);
       radiuses[0] = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, start_pos, 0), start_pos);
       radiuses.back() = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, end_pos, 0), end_pos);

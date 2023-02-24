@@ -386,12 +386,11 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     textureManager.save_png(comp, "complement_tex");
     engine::view->next_frame();
 
-    logerr("sssss");
     std::vector<float> res_detailed;
     dgen::dgen_test("dishes", params, res_detailed, false, dgen::ModelQuality(false, 2));
-    std::vector<float> no_transform_scene_params = {0,0,0,0,0,0, 100, 500, 100, 100, 100, 0.001};
-    mi.render_multicam_demo(MitsubaInterface::RenderSettings(1024, 1024, 4096, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"),
-                            res_detailed, "saves/multicam_tex.png", dgen::ModelLayout(), no_transform_scene_params, camera, 4, 2);
+    std::vector<float> no_transform_scene_params = {0,0,0,0,0,0, 100, 1000, 100, 100, 100, 0.01};
+    mi.render_multicam_demo(MitsubaInterface::RenderSettings(512, 512, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"),
+                            res_detailed, "saves/multicam_tex.png", dgen::ModelLayout(), no_transform_scene_params, camera, 3, 2);
     engine::view->next_frame();
   } 
   else if (argc >=3 && std::string(argv[2]) == "-test_tex_diff")

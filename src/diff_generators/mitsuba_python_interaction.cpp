@@ -508,8 +508,6 @@ void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,
         cur_cam.target = center;
         cur_cam.origin = center + pos;
         cur_cam.up = up;
-        logerr("cmaera %f %f %f -- %f %f %f -- %f %f %f", center.x, center.y, center.z,
-        cur_cam.origin.x, cur_cam.origin.y, cur_cam.origin.z, up.x, up.y, up.z);
 
         render_model_to_file(model, image_dir, ml, cur_cam, scene_params);
         Texture raw = engine::textureManager->load_unnamed_tex(image_dir, 1);

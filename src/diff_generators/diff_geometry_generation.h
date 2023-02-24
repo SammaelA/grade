@@ -28,4 +28,5 @@ namespace dgen
   dfloat default_parameters_reg(const std::vector<dfloat> &params);
   dfloat default_model_reg(const std::vector<dfloat> &params, const std::vector<dfloat> &model);
   dfloat d_max(dfloat a, dfloat b);
+  dfloat d_min(dfloat a, dfloat b);
 };
