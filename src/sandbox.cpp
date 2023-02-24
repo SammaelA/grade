@@ -355,7 +355,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     if (params.empty())
       params = {3.099, 3.521, 3.993, 4.106, 4.332, 4.429, 4.658, 4.731, 4.752, 1.135, 1.000, 0.043, 0.616, 0.170, 0.233, 0.418, 0.359, 0.272, 0.269, 0.436, 0.435, 0.297, 0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384, 0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000};
     std::vector<float> res;
-    dgen::dgen_test("dishes", params, res);
+    dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 1));
     std::vector<float> res_transformed = res;
     dgen::transform_by_scene_parameters(default_scene_params, res_transformed);
     Model *m = new Model();
@@ -386,7 +386,13 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     textureManager.save_png(comp, "complement_tex");
     engine::view->next_frame();
 
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST, "../../saves/complement_tex.png"));
+    logerr("sssss");
+    std::vector<float> res_detailed;
+    dgen::dgen_test("dishes", params, res_detailed, false, dgen::ModelQuality(false, 2));
+    std::vector<float> no_transform_scene_params = {0,0,0,0,0,0, 100, 500, 100, 100, 100, 0.001};
+    mi.render_multicam_demo(MitsubaInterface::RenderSettings(1024, 1024, 4096, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"),
+                            res_detailed, "saves/multicam_tex.png", dgen::ModelLayout(), no_transform_scene_params, camera, 4, 2);
+    engine::view->next_frame();
   } 
   else if (argc >=3 && std::string(argv[2]) == "-test_tex_diff")
   {

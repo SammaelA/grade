@@ -18,7 +18,9 @@ public:
   {
     SILHOUETTE,
     MONOCHROME,
-    TEXTURED_CONST
+    TEXTURED_CONST,
+    MONOCHROME_DEMO,
+    TEXTURED_DEMO
   };
   struct RenderSettings
   {
@@ -61,6 +63,13 @@ public:
   //that are used by compute_final_grad
   float render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &scene_params,
                            double *timers = nullptr);
+
+  //render model from different angles, merge them into one image and save it to file, for debug purposes
+  //scene_params SHOULD NOT rotate or translate the model
+  void render_multicam_demo(RenderSettings render_settings,const std::vector<float> &model,
+                            const std::string &image_dir, const dgen::ModelLayout &ml,
+                            const std::vector<float> &scene_params, const CameraSettings &camera,
+                            int rotations_x = 4, int rotations_y = 1);
 
   //generator_jak size is [FLOAT_PER_VERTEX*params_count*vertex_count], final_grad size is [params_count]
   void compute_final_grad(const std::vector<float> &generator_jac, int params_count, int vertex_count, std::vector<float> &final_grad);

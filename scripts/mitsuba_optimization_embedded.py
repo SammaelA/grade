@@ -93,11 +93,17 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
   texture_name = base_path + "../textures/" + texture_name
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
-  scene_dict['integrator'] = {
-    'type': 'direct_reparam',
-    'reparam_rays': 8,
-    'reparam_antithetic' : False
-  }
+  if (render_style == "monochrome_demo" or render_style == "textured_demo"):
+    scene_dict['integrator'] = {
+      'type': 'path',
+      'max_depth': 8
+    }
+  else:
+    scene_dict['integrator'] = {
+      'type': 'direct_reparam',
+      'reparam_rays': 16,
+      'reparam_antithetic' : False
+    }
   scene_dict['sensor'] = {
           'type': 'perspective',
           'to_world': T.look_at(
@@ -136,6 +142,17 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
         }
     elif (render_style == "textured_const"):
       bsdf = porcelain_roughplastic(texture_name, 0.1)
+    elif (render_style == "monochrome_demo"):
+        bsdf = {
+            'id': 'porcelain_material',
+            'type': 'roughplastic',
+            'distribution': 'ggx',
+            'int_ior': 1.504,
+            'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+            'alpha': 0.001
+        }
+    elif (render_style == "textured_demo"):
+      bsdf = porcelain_roughplastic(texture_name, 0.001)
     else:
       print("Unknown render_style = ", render_style)
 
@@ -155,6 +172,15 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             },
             'to_world': T.translate([0,0,0])
         }
+    if (render_style == "monochrome_demo" or render_style == "textured_demo"):
+      scene_dict['ambient_light'] = \
+      {
+        'type': 'constant',
+        'radiance': {
+            'type': 'rgb',
+            'value': 0.2,
+        }
+      }
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
@@ -171,7 +197,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'spp' : spp,
     'camera' : mi.load_dict(scene_dict['sensor']),
     'texture_name' : texture_name,
-    'render_style' : render_style
+    'render_style' : render_style,
+    'image_w' : image_w,
+    'image_h' : image_h
   }
   if (render_style != "silhouette"):
     t = dr.unravel(mi.Point3f, params['light.vertex_positions'])
@@ -257,10 +285,22 @@ def render_and_save_to_file(context, save_filename):
   params['model.vertex_normals'] = context['vertex_normals']
   params['model.vertex_texcoords'] = context['vertex_texcoords']
 
-  img_ref = mi.render(scene, params, sensor = context['camera'], seed=0, spp=context['spp'])
+  max_samples = int(1024*1024*512 / (context['image_w']*context['image_h']))
+
+  total_spp = context['spp']
+  first = True
+  while (total_spp > 0):
+    spp = min(total_spp, max_samples)
+    total_spp -= spp
+    img = (float(spp)/context['spp']) * mi.render(scene, params, sensor = context['camera'], seed=0, spp=spp)
+    if (first):
+      img_ref = img
+      first = False
+    else:
+      img_ref = img_ref + img
+      
   mi.util.write_bitmap(save_filename, img_ref)
-  mi.util.convert_to_bitmap(img_ref)
-  context['img_ref'] = img_ref
+
   time.sleep(1)
 
 def F_loss_mse(img, img_ref):

@@ -8,6 +8,7 @@
 #include "common_utils/utility.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
+#include "tinyEngine/engine.h"
 
 #define DEL(X) if (X) {Py_DECREF(X);}
 void MitsubaInterface::show_errors()
@@ -104,6 +105,12 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
     break;
   case RenderStyle::TEXTURED_CONST:
     render_style = "textured_const";
+    break;
+  case RenderStyle::TEXTURED_DEMO:
+    render_style = "textured_demo";
+    break;
+  case RenderStyle::MONOCHROME_DEMO:
+    render_style = "monochrome_demo";
     break;
   default:
     render_style = "silhouette";
@@ -465,4 +472,78 @@ float MitsubaInterface::render_and_compare_internal(int cameras_count)
 void MitsubaInterface::clear_buffer(int buffer_id, float val)
 {
   std::fill_n(buffers[buffer_id], model_max_size, val);
+}
+
+void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,const std::vector<float> &model,
+                                            const std::string &image_dir, const dgen::ModelLayout &ml,
+                                            const std::vector<float> &scene_params, const CameraSettings &camera,
+                                            int rotations_x, int rotations_y)
+{
+  //find center of model to adjust cameras
+  glm::vec3 center = glm::vec3(0,0,0);
+  for (int i=0;i<model.size();i+=ml.f_per_vert)
+  {
+    center += glm::vec3(model[i + ml.pos], model[i + ml.pos + 1], model[i + ml.pos + 2]);
+  }
+  center = center/(float)(model.size()/ml.f_per_vert);
+  float dist = glm::length(center - camera.origin);
+
+  Texture composite_tex = engine::textureManager->create_texture(rotations_x*rs.image_w, 2*rotations_y*rs.image_h);
+  PostFx copy("copy.fs");
+  int fbo = create_framebuffer();
+
+  auto render_to_tex = [&](glm::ivec2 offset)
+  {
+    for (int i=0;i<rotations_x;i++)
+    {
+      for (int j=0;j<rotations_y;j++)
+      {
+        float phi = (2*PI*i)/rotations_x;
+        float psi = (2*PI*j)/(rotations_y + 1);//no need for top view
+
+        glm::vec3 pos = dist*glm::vec3(cos(psi)*cos(phi), sin(psi), cos(psi)*sin(phi));
+        glm::vec3 right = glm::cross(pos, glm::vec3(0,1,0));
+        glm::vec3 up = glm::normalize(glm::cross(right, pos));
+        CameraSettings cur_cam = camera;
+        cur_cam.target = center;
+        cur_cam.origin = center + pos;
+        cur_cam.up = up;
+        logerr("cmaera %f %f %f -- %f %f %f -- %f %f %f", center.x, center.y, center.z,
+        cur_cam.origin.x, cur_cam.origin.y, cur_cam.origin.z, up.x, up.y, up.z);
+
+        render_model_to_file(model, image_dir, ml, cur_cam, scene_params);
+        Texture raw = engine::textureManager->load_unnamed_tex(image_dir, 1);
+        engine::view->next_frame();
+        
+        int prev_FBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, composite_tex.texture, 0);
+        glViewport(offset.x + i*rs.image_w, offset.y + j*rs.image_h, rs.image_w, rs.image_h);
+        copy.use();
+        copy.get_shader().texture("tex", raw);
+        copy.render();
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
+      }
+    }
+  };
+
+  //Render with constant texture
+  RenderSettings setting_monochrome(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::MONOCHROME_DEMO);
+  init_scene_and_settings(setting_monochrome);
+  render_to_tex(glm::ivec2(0,0));
+
+  RenderSettings setting_textured(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::TEXTURED_DEMO,
+                                  rs.texture_name);
+  init_scene_and_settings(setting_textured);
+  render_to_tex(glm::ivec2(0,rotations_y*rs.image_h));
+
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  engine::textureManager->save_png_directly(composite_tex, image_dir);
+
+  delete_framebuffer(fbo);
 }

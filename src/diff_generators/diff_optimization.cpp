@@ -419,7 +419,7 @@ namespace dopt
     std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 1024};
 
-    for (int stage = 0; stage < 1; stage++)
+    for (int stage = 0; stage < stages; stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -456,7 +456,6 @@ namespace dopt
 
       delete opt;
     }
-    return 1;
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));

@@ -6,9 +6,11 @@ namespace dgen
 {
   void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines = 100);
   void print_model(const std::vector<float> &res);
-  void dgen_test(std::string generator_name, std::vector<float> &params, std::vector<float> &model, bool transform_by_scene = false);
+  void dgen_test(std::string generator_name, std::vector<float> &params, std::vector<float> &model, bool transform_by_scene = false,
+                 ModelQuality mq = ModelQuality(false, 1));
   void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
-                          const std::vector<float> &params, std::vector<float> *jacobian, bool transform_by_scene);
+                          const std::vector<float> &params, std::vector<float> *jacobian, bool transform_by_scene,
+                          ModelQuality mq);
   bool check_stability(generator_func func, const std::vector<float> &params, int iterations);
   bool check_robustness(generator_func func, const std::vector<float> &params_min, const std::vector<float> &params_max, int iterations);
   bool create_model_from_block(Block &bl, ComplexModel &mod);
