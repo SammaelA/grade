@@ -7,17 +7,32 @@ namespace dgen
 {
   dfloat triangle_func(dfloat y, int n, int i)
   {
-    return smoothmax(1 - abs(n * y - i), 0);
+    return d_max(1 - abs(n * y - i), 0);
   }
 
-  dfloat x_for_spline_y(const std::vector<dvec3> &in_spline, dfloat y, int axis_x)
+  dfloat x_for_spline_y(const std::vector<dvec3> &in_spline, dfloat y, int start_id)
   {
     dfloat sum = 0;
-    for (int i = 0; i < in_spline.size(); ++i)
+    if (y < in_spline[0][1])
+      return in_spline[0][0];
+    if (y > in_spline.back()[1])
+      return in_spline.back()[0];
+
+    for (int i = start_id + 1; i < in_spline.size(); ++i)
     {
-      sum += in_spline[i][axis_x] * triangle_func(y, in_spline.size() - 1, i);
+      if (y >= in_spline[i-1][1] && y <= in_spline[i][1])
+      {
+        dfloat d = in_spline[i][1] - in_spline[i-1][1];
+        dfloat d1 = ((y - in_spline[i-1][1])/d);
+        //std::cerr<<i<<")"<<in_spline[i][0]<<" "<<in_spline[i][1]<<" "<<y<<" "<<start_id<<" "<<sum<<"\n";
+        return (1-d1)*in_spline[i-1][0] + d1*in_spline[i][0];
+      }
+      //sum += in_spline[i][0] * triangle_func(y, in_spline.size() - 1, i);
+      //std::cerr<<in_spline[i][0]<<" "<<in_spline[i][1]<<" "<<y<<" "<<start_id<<" "<<sum<<"\n";
     }
-    return sum;
+    return in_spline.back()[0];
+    //std::cerr<<"\n";
+    //return sum;
   }
 
   dfloat dist(dfloat x1, dfloat y1, dfloat x2, dfloat y2)
@@ -25,9 +40,9 @@ namespace dgen
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
   }
 
-  dfloat rad_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2)
+  dfloat rad_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, int start_id)
   {
-    return dist(x_for_spline_y(in_spline, y1, 0), y1, x_for_spline_y(in_spline, y2, 0), y2) / 2.0;
+    return dist(x_for_spline_y(in_spline, y1, start_id), y1, x_for_spline_y(in_spline, y2, start_id), y2) / 2.0;
   }
 
   dvec3 shift_by_points(const std::vector<dvec3> &in_spline, dfloat center_y, dfloat thick, int x, int y)
@@ -38,9 +53,9 @@ namespace dgen
     return shift;
   }
 
-  dfloat sin_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, dfloat thick)
+  dfloat sin_by_points(const std::vector<dvec3> &in_spline, dfloat y1, dfloat y2, dfloat thick, int start_id)
   {
-    return (x_for_spline_y(in_spline, y1, 0) - x_for_spline_y(in_spline, y2, 0) + thick / 2.0) / (2.0 * rad_by_points(in_spline, y1, y2));
+    return (x_for_spline_y(in_spline, y1, start_id) - x_for_spline_y(in_spline, y2, start_id) + thick / 2.0) / (2.0 * rad_by_points(in_spline, y1, y2, start_id));
   }
 
   std::vector<dvec3> create_spline(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y, bool from_zero, int detail_q)
@@ -443,9 +458,10 @@ namespace dgen
   void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
+    int spline_real_start = 1;
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true, q_pow);
     if (q_pow > 0)
-      spline = spline_make_smoother(spline, 2, 1, -1, 1, 0);
+      spline = spline_make_smoother(spline, 2, spline_real_start, -1, 1, 0);
     dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
     if (params[10] > 0.5)
@@ -453,7 +469,7 @@ namespace dgen
       int handle_param_idx = 11;
       int radiuses_cnt = 20;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
-      dfloat thick = smoothmin(params[handle_param_idx], 0.02, 8);
+      dfloat thick = 0;//d_min(params[handle_param_idx], 0.02);
       int radius_samples = radiuses_cnt - 1;
       std::vector<dfloat> radiuses(radiuses_cnt,0);
       std::vector<dfloat> thickness(radiuses_cnt,0);
@@ -476,9 +492,9 @@ namespace dgen
       dfloat start_pos = center + radiuses[0];
       dfloat end_pos = center - radiuses.back();
       spline1 = spline_rotation(spline1, dvec3{1, 0, 0}, 6*q_pow);
-      dfloat sin_p = smoothmin(sin_by_points(spline, start_pos, center, thick), 0.98, 8);
-      radiuses[0] = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, start_pos, 0), start_pos);
-      radiuses.back() = dist(x_for_spline_y(spline, center, 0), center, x_for_spline_y(spline, end_pos, 0), end_pos);
+      dfloat sin_p = d_min(sin_by_points(spline, start_pos, center, thick, spline_real_start), 0.98);
+      radiuses[0] = dist(x_for_spline_y(spline, center, spline_real_start), center, x_for_spline_y(spline, start_pos, spline_real_start), start_pos);
+      radiuses.back() = dist(x_for_spline_y(spline, center, spline_real_start), center, x_for_spline_y(spline, end_pos, spline_real_start), end_pos);
       dvec3 radius_vec = dvec3{0, 1, 0};
       spline_to_model_part_rotate_plus_shift(vert, spline1, dvec3{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
                                              shift_by_points(spline, center, thick, 0, 1), 
