@@ -98,6 +98,12 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       'type': 'path',
       'max_depth': 8
     }
+  elif (render_style == "silhouette"):
+    scene_dict['integrator'] = {
+      'type': 'emission_reparam',
+      'reparam_rays': 8,
+      'reparam_antithetic' : False
+    }
   else:
     scene_dict['integrator'] = {
       'type': 'direct_reparam',
