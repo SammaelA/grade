@@ -447,12 +447,16 @@ namespace dopt
       opt_result.best_params = opt->get_best_result(&(opt_result.best_err));
       opt_result.total_iters = iters;
 
+      float psnr = -opt_result.best_err;
+      float mse = 1/pow(10, psnr/10);
       debug("Stage %d Model optimization stat\n", stage);
+      debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
       debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
       iters = 0;
 
       delete opt;
     }
+    return 1;
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
@@ -525,7 +529,10 @@ namespace dopt
         opt_result.best_params = tex_opt->get_best_result(&(opt_result.best_err));
         opt_result.total_iters = iters;
 
+        float psnr = -opt_result.best_err;
+        float mse = 1/pow(10, psnr/10);
         debug("Stage %d Texture optimization stat\n", stage);
+        debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
         debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
         iters = 0;
 

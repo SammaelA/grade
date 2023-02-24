@@ -362,7 +362,8 @@ def render(it, context):
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
-    dr.backward(loss)
+    loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
+    dr.backward(loss_PSNR)
 
     camera_params_grad.append(dr.grad(pos).x)
     camera_params_grad.append(dr.grad(pos).y)
@@ -410,7 +411,7 @@ def render(it, context):
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
       mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
     mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
-  return loss[0]
+  return loss_PSNR[0]
 
 def get_params(context, key):
   lst = list(context[key])
