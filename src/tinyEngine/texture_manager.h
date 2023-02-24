@@ -22,7 +22,7 @@ public:
     ~TextureManager();
     TextureManager(std::string base_path, Block &textures_used);
     bool load_tex_to_catalog(std::string name, std::string path);
-    Texture load_unnamed_tex(std::string path);
+    Texture load_unnamed_tex(std::string path, int mip_levels = 9);
     void set_textures_tag(int tag);
     void clear_unnamed_with_tag(int tag);
     void delete_tex(Texture &t);

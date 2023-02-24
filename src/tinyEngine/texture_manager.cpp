@@ -152,15 +152,15 @@ Texture TextureManager::load_tex(std::string name, std::string path)
     }
 }
 
-Texture TextureManager::load_unnamed_tex(std::string path)
+Texture TextureManager::load_unnamed_tex(std::string path, int mip_levels)
 {
     try
     {
         auto ptr = image::load(path);
         if (!ptr)
             return empty();
-        Texture t = create_texture(ptr->w, ptr->h, GL_RGBA8, 9, ptr->pixels, GL_RGBA, GL_UNSIGNED_BYTE, path);
-        mipmap(t, ptr->w, ptr->h, 9);
+        Texture t = create_texture(ptr->w, ptr->h, GL_RGBA8, mip_levels, ptr->pixels, GL_RGBA, GL_UNSIGNED_BYTE, path);
+        mipmap(t, ptr->w, ptr->h, mip_levels);
         SDL_FreeSurface(ptr);
         unnamed_textures.emplace(t.texture, t);
         return t;
