@@ -170,16 +170,16 @@ std::string get_loss_function_name(MitsubaInterface::LossFunction loss_function)
   }
   return loss_function_name;
 }
-void MitsubaInterface::init_optimization(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, int model_max_size, 
+void MitsubaInterface::init_optimization(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, int _model_max_size, 
                                          dgen::ModelLayout opt_ml,
                                          RenderSettings render_settings, int cam_count, bool save_intermediate_images)
 {
-  init_optimization_internal("init_optimization", reference_image_dir, loss_function, model_max_size, opt_ml, 
+  init_optimization_internal("init_optimization", reference_image_dir, loss_function, _model_max_size, opt_ml, 
                              render_settings, cam_count, save_intermediate_images);
 }
 
 void MitsubaInterface::init_optimization_internal(const std::string &function_name,
-                                                  const std::vector<std::string> &reference_images_dir, LossFunction loss_function, int model_max_size, 
+                                                  const std::vector<std::string> &reference_images_dir, LossFunction loss_function, int _model_max_size, 
                                                   dgen::ModelLayout opt_ml, RenderSettings render_settings, 
                                                   int cam_count, bool save_intermediate_images)
 {
@@ -210,7 +210,7 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
-  set_model_max_size(model_max_size);
+  set_model_max_size(_model_max_size);
   iteration = 0;
 
   DEL(func);
@@ -236,6 +236,8 @@ void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string>
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)
 {
   int vertex_count = model.size() / ml.f_per_vert;
+  if (model_max_size < vertex_count)
+    set_model_max_size(vertex_count);
   assert(ml.offsets.size() - 1 <= buffers.size());
   for (int i=0;i<ml.offsets.size() - 1;i++)
   {
@@ -297,10 +299,7 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
 
 void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
                                             const CameraSettings &camera, const std::vector<float> &scene_params)
-{
-  if (model_max_size < model.size()/ml.f_per_vert)
-    set_model_max_size(model.size()/ml.f_per_vert);
-  
+{  
   model_to_ctx(model, ml);
   camera_to_ctx(camera);
 
@@ -413,9 +412,9 @@ int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int b
 
   int sz = PyBytes_Size(params_bytes);
   int data_floats = sz / sizeof(float);
-  if (data_floats > model_max_size)
+  if (data_floats > 4*model_max_size)
   {
-    logerr("Python array %s contains %d float, while buffer size is %d. Some data will be ignored", name.c_str(), data_floats, model_max_size);
+    logerr("Python array %s contains %d float, while buffer size is %d. Some data will be ignored", name.c_str(), data_floats, 4*model_max_size);
   }
   char *data = PyBytes_AsString(params_bytes);
   memcpy(buffers[buffer_id], data, MIN(sz, model_max_size*sizeof(float)));

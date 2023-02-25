@@ -395,6 +395,13 @@ def render(it, context):
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
     params['model.vertex_positions'] = dr.ravel(tr_positions)
+    
+    #we still should have proper size of normals and tc arrays
+    if (len(params['model.vertex_positions']) != len(params['model.vertex_normals'])):
+      params['model.vertex_normals'] = tuple([1] * len(params['model.vertex_positions']))
+    if (2*len(params['model.vertex_positions']) != 3*len(params['model.vertex_texcoords'])):
+      params['model.vertex_texcoords'] = tuple([1] * int(2*len(params['model.vertex_positions'])/3)) 
+
     params.update()
 
     if (context['status'] == 'optimization_with_tex'):
@@ -404,7 +411,7 @@ def render(it, context):
       tr_normals = trafo2 @ t2
       context['vertex_normals'] = tuple(dr.ravel(tr_normals))
       params['model.vertex_normals'] = context['vertex_normals']
-    params['model.vertex_texcoords'] = context['vertex_texcoords']
+      params['model.vertex_texcoords'] = context['vertex_texcoords']
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
