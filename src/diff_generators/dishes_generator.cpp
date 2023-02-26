@@ -469,7 +469,7 @@ namespace dgen
       int handle_param_idx = 11;
       int radiuses_cnt = 20;
       std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
-      dfloat thick = 0;//d_min(params[handle_param_idx], 0.02);
+      dfloat thick = 0.02;
       int radius_samples = radiuses_cnt - 1;
       std::vector<dfloat> radiuses(radiuses_cnt,0);
       std::vector<dfloat> thickness(radiuses_cnt,0);
