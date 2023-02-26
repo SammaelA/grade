@@ -371,6 +371,7 @@ namespace dopt
     double total_time_ms = 0;
     int model_quality = 0;
     float regularization_alpha = settings_blk.get_double("regularization_alpha", 0.01);
+    bool only_pos = true;
 
     opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
     {
@@ -379,8 +380,8 @@ namespace dopt
       for (int i = 0; i < params.size(); i++)
         params[i] = CLAMP(params[i], params_min[i], params_max[i]);
 
-      std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(true, model_quality));
-      std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(true, model_quality));
+      std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
+      std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
       float loss = mi.render_and_compare(res, camera, get_camera_params(params));
@@ -426,6 +427,7 @@ namespace dopt
       engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
 
       model_quality = model_qualities[stage];
+      only_pos = true;
       mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8),
                            MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                            1, settings_blk.get_bool("save_intermediate_images", false));
@@ -452,15 +454,15 @@ namespace dopt
       debug("Stage %d Model optimization stat\n", stage);
       debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
       debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
-      iters = 0;
-
-      delete opt;
       debug("Best params: [");
       for (int j = 0; j < opt_result.best_params.size(); j++)
       {
         debug("%.3f, ", opt_result.best_params[j]);
       }
       debug("]\n");
+
+      iters = 0;
+      delete opt;
     }
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
@@ -503,18 +505,19 @@ namespace dopt
                                                                         });
 
       constexpr int stages = 4;
-      std::array<int, stages> iterations = {50, 50, 50, 50};
+      std::array<int, stages> iterations = {60, 45, 30, 30};
       std::array<float, stages> lrs = {0.01, 0.01, 0.005, 0.005};
-      std::array<int, stages> model_qualities = {0, 0, 1, 1};
+      std::array<int, stages> model_qualities = {1, 1, 1, 1};
       std::array<int, stages> image_sizes = {128, 256, 512, 512};
       std::array<int, stages> spps = {64, 128, 256, 512};
       for (int stage = 0; stage < stages; stage++)
       {
         model_quality = model_qualities[stage];
+        only_pos = false;
         Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         engine::textureManager->save_png(reference_textured, "reference_textured");
         mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
-                                        1 << 18, dgen::ModelLayout(0, 3, 6, 8, 8), 
+                                        1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
                                         MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                         1, true);
         Block adam_settings;
@@ -538,8 +541,14 @@ namespace dopt
         debug("Stage %d Texture optimization stat\n", stage);
         debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
         debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
-        iters = 0;
+        debug("Best params: [");
+        for (int j = 0; j < opt_result.best_params.size(); j++)
+        {
+          debug("%.3f, ", opt_result.best_params[j]);
+        }
+        debug("]\n");
 
+        iters = 0;
         delete tex_opt;
       }
 

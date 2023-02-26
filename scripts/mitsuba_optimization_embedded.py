@@ -356,8 +356,13 @@ def render(it, context):
         img_flatten_b = img_flatten[2::3]
         img_flatten_s = img_flatten_r + img_flatten_g + img_flatten_b
         img_flatten_s = numpy.repeat(img_flatten_s, 3)
-        img_flatten[img_flatten_s > 2.5] = 3
-        img_raw = numpy.reshape(img_flatten, img_raw.shape)
+        img_flatten[img_flatten_s > 1e-4] = 1
+        img_flatten[img_flatten_s <= 1e-4] = 0
+        img_mask = numpy.reshape(img_flatten, img_raw.shape)
+      else:
+        img_flatten = img_raw.flatten()
+        img_mask = numpy.reshape(numpy.ones(img_flatten.shape, img_flatten.dtype), img_raw.shape)
+      context['img_ref_mask_'+str(i)] = mi.TensorXf(img_mask)
       context['img_ref_'+str(i)] = mi.TensorXf(img_raw)
   
   #prepare model
@@ -375,6 +380,8 @@ def render(it, context):
   #render scene from each camera
   for camera_n in range(context['cameras_count']):
     img_ref = context['img_ref_'+str(camera_n)]
+    img_ref_mask = context['img_ref_mask_'+str(camera_n)]
+
     pos, angles, light_pos, ls_li_r = get_scene_params(context)
 
     dr.enable_grad(pos)
@@ -415,6 +422,8 @@ def render(it, context):
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
     img = dr.minimum(dr.maximum(img, 0), 1)
+    if (context['status'] == 'optimization_with_tex'):
+      img = img_ref_mask * img
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
     loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
     dr.backward(loss_PSNR)
