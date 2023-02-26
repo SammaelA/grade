@@ -414,6 +414,7 @@ def render(it, context):
       params['model.vertex_texcoords'] = context['vertex_texcoords']
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
+    img = dr.minimum(dr.maximum(img, 0), 1)
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
     loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
     dr.backward(loss_PSNR)
