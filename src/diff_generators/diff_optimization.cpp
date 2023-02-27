@@ -506,10 +506,10 @@ namespace dopt
 
       constexpr int stages = 4;
       std::array<int, stages> iterations = {60, 45, 30, 30};
-      std::array<float, stages> lrs = {0.01, 0.01, 0.005, 0.005};
-      std::array<int, stages> model_qualities = {1, 1, 1, 1};
+      std::array<float, stages> lrs = {0.01, 0.01, 0.01, 0.01};
+      std::array<int, stages> model_qualities = {0, 0, 0, 1};
       std::array<int, stages> image_sizes = {128, 256, 512, 512};
-      std::array<int, stages> spps = {64, 128, 256, 512};
+      std::array<int, stages> spps = {256, 256, 256, 512};
       for (int stage = 0; stage < stages; stage++)
       {
         model_quality = model_qualities[stage];

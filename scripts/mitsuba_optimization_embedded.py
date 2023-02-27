@@ -187,6 +187,12 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'value': 0.2,
         }
       }
+    else:
+      scene_dict['ambient_light'] = {
+        'type': 'envmap',
+        'filename': base_path + 'textures/white.png',
+        'scale' : 0.2,
+      }
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
@@ -458,8 +464,8 @@ def render(it, context):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
-  context['camera_params_grad'] = numpy.asarray(camera_params_grad)
-  context['vertex_positions_grad'] = vertex_positions_grad / float(context['cameras_count'])
+  context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad))
+  context['vertex_positions_grad'] = numpy.nan_to_num(vertex_positions_grad / float(context['cameras_count']))
 
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']
