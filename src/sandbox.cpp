@@ -24,6 +24,14 @@
 #include <thread>
 #include <chrono>
 #include <time.h>
+#include <csignal>
+
+void defaultSignalHandler(int signum)
+{
+  logerr("Interrupt signal received. Closing the program");
+  exit(signum);  
+}
+
 struct BS_Grid
 {
   std::vector<std::pair<int, int>> bins;
@@ -246,6 +254,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   Block textures_list;
   TextureManager textureManager = TextureManager("./resources/textures/", textures_list);
   engine::textureManager = &textureManager;
+  signal(SIGINT, defaultSignalHandler);  
+  signal(SIGTSTP, defaultSignalHandler); 
 
   CameraSettings camera;
   float h1 = 1.5;
