@@ -1,6 +1,7 @@
 #include "differentiable_generators.h"
 #include "diff_geometry_generation.h"
 #include "dishes_generator.h"
+#include "building_generator.h"
 #include "tables_generator.h"
 #include <cppad/cppad.hpp>
 #include <map>
@@ -36,6 +37,18 @@ namespace dgen
         gen.model_regularizer = default_model_reg;
         gen.parameters_description_blk_path = "tables_gen_parameters_description.blk";
         gen.presets_blk_path = "tables_gen_presets.blk";
+        generators.emplace(name, gen);
+        debug("generator description %s loaded\n", name.c_str());
+      }
+      {
+        GeneratorDescription gen;
+        std::string name = "buildings";
+        gen.name = name;
+        gen.generator = create_building;
+        gen.params_regularizer = default_parameters_reg;
+        gen.model_regularizer = default_model_reg;
+        gen.parameters_description_blk_path = "buildings_gen_parameters_description.blk";
+        gen.presets_blk_path = "buildings_gen_presets.blk";
         generators.emplace(name, gen);
         debug("generator description %s loaded\n", name.c_str());
       }
