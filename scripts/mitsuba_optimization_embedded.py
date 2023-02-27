@@ -147,7 +147,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
         }
     elif (render_style == "textured_const"):
-      bsdf = porcelain_roughplastic(texture_name, 0.1)
+      bsdf = porcelain_roughplastic(texture_name, 0.001)
     elif (render_style == "monochrome_demo"):
         bsdf = {
             'id': 'porcelain_material',
@@ -270,18 +270,18 @@ def render_and_save_to_file(context, save_filename):
   params['model.face_count'] = int(vertex_count/3)
   params['model.faces'] = list(range(vertex_count))
   
-  pos, angles, light_pos, ls_li_r = get_scene_params(context)
+  pos, angles, light_pos, ls_li_ali = get_scene_params(context)
 
 
   if (context["render_style"] != "silhouette"):
-      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_r.x)
+      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_ali.x)
       t2 = dr.unravel(mi.Point3f, context["light"])
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
-      params['light.emitter.radiance.value'] = mi.Color3f(ls_li_r.y, ls_li_r.y, ls_li_r.y)
+      params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
 
   if (context["render_style"] == "textured_const"):
-      params['model.bsdf.alpha'] = ls_li_r.z
+      params['ambient_light.scale'] = ls_li_ali.z
 
   t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
   trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
@@ -339,11 +339,11 @@ def get_scene_params(context):
     light_pos = mi.Point3f(context['camera_params'][6], 
                            context['camera_params'][7], 
                            context['camera_params'][8])
-    ls_li_r   = mi.Point3f(context['camera_params'][9], #light_size, light_intensity, roughness
+    ls_li_ali   = mi.Point3f(context['camera_params'][9], #light_size, light_intensity, ambient_light_intensity
                            context['camera_params'][10], 
                            context['camera_params'][11])
 
-    return (pos, angles, light_pos, ls_li_r)
+    return (pos, angles, light_pos, ls_li_ali)
 def render(it, context):
 
   #load reference on the first iteration
@@ -388,7 +388,7 @@ def render(it, context):
     img_ref = context['img_ref_'+str(camera_n)]
     img_ref_mask = context['img_ref_mask_'+str(camera_n)]
 
-    pos, angles, light_pos, ls_li_r = get_scene_params(context)
+    pos, angles, light_pos, ls_li_ali = get_scene_params(context)
 
     dr.enable_grad(pos)
     dr.enable_grad(angles)
@@ -396,14 +396,14 @@ def render(it, context):
 
     if (context['status'] == 'optimization_with_tex'):
       dr.enable_grad(light_pos)
-      dr.enable_grad(ls_li_r)
+      dr.enable_grad(ls_li_ali)
 
-      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_r.x)
+      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_ali.x)
       t2 = dr.unravel(mi.Point3f, context["light"])
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
-      params['light.emitter.radiance.value'] = mi.Color3f(ls_li_r.y, ls_li_r.y, ls_li_r.y)
-      params['model.bsdf.alpha'] = ls_li_r.z
+      params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
+      params['ambient_light.scale'] = ls_li_ali.z
 
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
@@ -444,9 +444,9 @@ def render(it, context):
       camera_params_grad.append(dr.grad(light_pos).x)
       camera_params_grad.append(dr.grad(light_pos).y)
       camera_params_grad.append(dr.grad(light_pos).z)
-      camera_params_grad.append(dr.grad(ls_li_r).x)
-      camera_params_grad.append(dr.grad(ls_li_r).y)
-      camera_params_grad.append(dr.grad(ls_li_r).z)
+      camera_params_grad.append(dr.grad(ls_li_ali).x)
+      camera_params_grad.append(dr.grad(ls_li_ali).y)
+      camera_params_grad.append(dr.grad(ls_li_ali).z)
     else:
       camera_params_grad.append([0])
       camera_params_grad.append([0])

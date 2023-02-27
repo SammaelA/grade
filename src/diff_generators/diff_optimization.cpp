@@ -501,7 +501,8 @@ namespace dopt
                                                                           "light_translation_y",
                                                                           "light_translation_z",
                                                                           "light_size",
-                                                                          "light_intensity"
+                                                                          "light_intensity",
+                                                                          "ambient_light_intensity"
                                                                         });
 
       constexpr int stages = 4;

@@ -10,5 +10,5 @@
   light_translation_z{values:p2 = 9.9, 10.1 desc:s = "light translation z"}
   light_size{values:p2 = 0.9, 1.1 desc:s = "light size(radius)"}
   light_intensity{values:p2 = 99, 101 desc:s = "light intensity"}
-  roughness{values:p2 = 0.0001, 0.75 desc:s = "roughness"}
+  ambient_light_intensity{values:p2 = 0, 1 desc:s = "ambient light intensity"}
 }
