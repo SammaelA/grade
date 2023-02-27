@@ -175,12 +175,12 @@ void MitsubaInterface::init_optimization(const std::vector<std::string> &referen
                                          RenderSettings render_settings, int cam_count, bool save_intermediate_images)
 {
   init_optimization_internal("init_optimization", reference_image_dir, loss_function, _model_max_size, opt_ml, 
-                             render_settings, cam_count, save_intermediate_images);
+                             render_settings, 0, cam_count, save_intermediate_images);
 }
 
 void MitsubaInterface::init_optimization_internal(const std::string &function_name,
                                                   const std::vector<std::string> &reference_images_dir, LossFunction loss_function, int _model_max_size, 
-                                                  dgen::ModelLayout opt_ml, RenderSettings render_settings, 
+                                                  dgen::ModelLayout opt_ml, RenderSettings render_settings, float texture_rec_learing_rate,
                                                   int cam_count, bool save_intermediate_images)
 {
   init_scene_and_settings(render_settings);
@@ -199,14 +199,15 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
      full_ref_string += "#"; 
   }
 
-  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *c_cnt, *int_im;
+  PyObject *func, *args, *ref_dir_arg, *func_ret, *loss_func, *lr, *c_cnt, *int_im;
 
   func = PyObject_GetAttrString(pModule, function_name.c_str());
   ref_dir_arg = PyUnicode_FromString(full_ref_string.c_str());
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
+  lr = PyFloat_FromDouble(texture_rec_learing_rate);
   int_im = PyLong_FromLong((int)save_intermediate_images);
   c_cnt = PyLong_FromLong(cam_count);
-  args = PyTuple_Pack(5, mitsubaContext, ref_dir_arg, loss_func, c_cnt, int_im);
+  args = PyTuple_Pack(6, mitsubaContext, ref_dir_arg, loss_func, lr, c_cnt, int_im);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
@@ -218,19 +219,21 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   DEL(ref_dir_arg);
   DEL(func_ret);
   DEL(loss_func);
+  DEL(lr);
   DEL(c_cnt);
   DEL(int_im);
 }
 
 void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, const std::string &initial_texture_name,
                                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                                  RenderSettings render_settings, int cam_count, bool save_intermediate_images)
+                                                  RenderSettings render_settings, float texture_rec_learing_rate, int cam_count,
+                                                  bool save_intermediate_images)
 {
   render_settings.renderStyle = RenderStyle::TEXTURED_CONST;
   render_settings.texture_name = initial_texture_name;
   
   init_optimization_internal("init_optimization_with_tex", reference_image_dir, loss_function, model_max_size, opt_ml, 
-                             render_settings, cam_count, save_intermediate_images);
+                             render_settings, texture_rec_learing_rate, cam_count, save_intermediate_images);
 }
 
 void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)

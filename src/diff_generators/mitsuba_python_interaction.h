@@ -54,7 +54,8 @@ public:
   //WIP. initialize optimization of texture. includes init_scene_and_settings in it
   void init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, const std::string &initial_texture_name,
                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                  RenderSettings render_settings, int cameras_count = 1, bool save_intermediate_images = false);
+                                  RenderSettings render_settings, float texture_rec_learing_rate = 0.25,
+                                  int cameras_count = 1, bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
   void render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
                             const CameraSettings &camera, const std::vector<float> &scene_params);
@@ -80,7 +81,8 @@ public:
   void set_model_max_size(int model_max_size);
   void init_optimization_internal(const std::string &function_name, const std::vector<std::string> &reference_image_dir,
                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                  RenderSettings render_settings, int cameras_count, bool save_intermediate_images);
+                                  RenderSettings render_settings, float texture_rec_learing_rate, int cameras_count,
+                                  bool save_intermediate_images);
   int get_array_from_ctx_internal(const std::string &name, int buffer_id);//returns loaded array size (in floats)
   void set_array_to_ctx_internal(const std::string &name, int buffer_id, int size);//sends size float from buffer to mitsuba context 
   float render_and_compare_internal(int cameras_count);//returns loss function value

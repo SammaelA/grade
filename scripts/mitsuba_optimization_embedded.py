@@ -218,7 +218,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     context["light"] = dr.ravel(t)
   return context
 
-def init_optimization(context, img_ref_dir, loss, cameras_count, save_intermediate_images):
+def init_optimization(context, img_ref_dir, loss, learning_rate, cameras_count, save_intermediate_images):
   img_ref_dirs = img_ref_dir.split("#")
   for i in range(cameras_count):
     context['img_ref_dir_'+str(i)] = img_ref_dirs[i]
@@ -227,7 +227,7 @@ def init_optimization(context, img_ref_dir, loss, cameras_count, save_intermedia
   context['cameras_count'] = int(cameras_count)
   context['status'] = 'optimization_no_tex'
 
-def init_optimization_with_tex(context, img_ref_dir, loss, cameras_count, save_intermediate_images):
+def init_optimization_with_tex(context, img_ref_dir, loss, learning_rate, cameras_count, save_intermediate_images):
   img_ref_dirs = img_ref_dir.split("#")
   for i in range(cameras_count):
     context['img_ref_dir_'+str(i)] = img_ref_dirs[i]
@@ -236,7 +236,7 @@ def init_optimization_with_tex(context, img_ref_dir, loss, cameras_count, save_i
   context['cameras_count'] = int(cameras_count)
   context['status'] = 'optimization_with_tex'
 
-  opt = mi.ad.Adam(lr=0.25)
+  opt = mi.ad.Adam(lr=learning_rate)
   opt['model.bsdf.diffuse_reflectance.data'] = context['params']['model.bsdf.diffuse_reflectance.data']
   context['tex_optimizer'] = opt
 

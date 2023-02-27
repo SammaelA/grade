@@ -420,7 +420,7 @@ namespace dopt
     std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 512};
 
-    for (int stage = 0; stage < stages; stage++)
+    for (int stage = 0; stage < 1; stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -505,8 +505,9 @@ namespace dopt
                                                                         });
 
       constexpr int stages = 4;
-      std::array<int, stages> iterations = {60, 45, 30, 30};
+      std::array<int, stages> iterations = {50, 50, 40, 40};
       std::array<float, stages> lrs = {0.01, 0.01, 0.01, 0.01};
+      std::array<float, stages> texture_lrs = {0.15, 0.2, 0.2, 0.25};
       std::array<int, stages> model_qualities = {0, 0, 0, 1};
       std::array<int, stages> image_sizes = {128, 256, 512, 512};
       std::array<int, stages> spps = {256, 256, 256, 512};
@@ -519,7 +520,7 @@ namespace dopt
         mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
                                         1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
                                         MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                        1, true);
+                                        texture_lrs[stage], 1, true);
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
         adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);

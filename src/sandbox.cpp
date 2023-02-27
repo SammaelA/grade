@@ -427,7 +427,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_optimization_with_tex({"saves/tex_colored.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE, 1 << 16, 
                                   dgen::ModelLayout(0, 3, 6, 8, 8), 
                                   MitsubaInterface::RenderSettings(512, 512, 64, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
-                                  1, true);
+                                  0.25, 1, true);
 
     for (int i=0;i<50;i++)
     {
