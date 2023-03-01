@@ -487,8 +487,8 @@ namespace dopt
 
     if (textured_optimization && textured_optimization->get_bool("active", false))
     { 
-      iters = 0;
-      total_time_ms = 0;
+      std::vector<std::string> all_materials = mi.get_all_available_materials();
+      std::string material = all_materials[0];
 
       //parameters related to light and materals cannot be optimized on silhouette stage
       //we should optimize them now along with texture
@@ -518,9 +518,10 @@ namespace dopt
         only_pos = false;
         Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         engine::textureManager->save_png(reference_textured, "reference_textured");
-        mi.init_optimization_with_tex({"saves/reference_textured.png"}, "../../saves/reconstructed_tex.png", MitsubaInterface::LossFunction::LOSS_MSE,
+        mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
                                         1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                        MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                        MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, 
+                                        MitsubaInterface::TEXTURED_CONST, "../../saves/reconstructed_tex.png", material),
                                         texture_lrs[stage], 1, true);
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
@@ -551,6 +552,7 @@ namespace dopt
         debug("]\n");
 
         iters = 0;
+        total_time_ms = 0;
         delete tex_opt;
       }
 
@@ -569,15 +571,15 @@ namespace dopt
 
       std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, 
-                                 "../../saves/reconstructed_tex_raw.png"));
+                                 "../../saves/reconstructed_tex_raw.png", material));
       mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
    
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
-                                 "../../saves/reconstructed_tex_complemented.png"));
+                                 "../../saves/reconstructed_tex_complemented.png", material));
       mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
 
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
-                                 "../../saves/reconstructed_tex_denoised.png"));
+                                 "../../saves/reconstructed_tex_denoised.png", material));
       mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
     }
 

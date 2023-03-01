@@ -89,7 +89,22 @@ def lambert(diffuse_tex_path: str):
         })
     return my_bsdf
 
-def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name):
+def get_material_by_name(texture_name, material_name):
+  if (material_name == "very smooth porcelain"):
+    return porcelain_roughplastic(texture_name, 0)
+  elif (material_name == "smooth porcelain"):
+    return porcelain_roughplastic(texture_name, 0.001)
+  elif (material_name == "porcelain"):
+    return porcelain_roughplastic(texture_name, 0.01)
+  elif (material_name == "ceramics"):
+    return porcelain_roughplastic(texture_name, 0.1)
+  elif (material_name == "rough ceramics"):
+    return porcelain_roughplastic(texture_name, 0.3)
+  else:
+    print("unknown material name ", material_name)
+    return porcelain_roughplastic(texture_name, 0)
+
+def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name, material_name):
   texture_name = base_path + "../textures/" + texture_name
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
@@ -146,8 +161,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'type': 'diffuse',
             'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
         }
-    elif (render_style == "textured_const"):
-      bsdf = porcelain_roughplastic(texture_name, 0.001)
+    elif (render_style == "textured_const" or render_style == "textured_demo"):
+      bsdf = get_material_by_name(texture_name, material_name)
     elif (render_style == "monochrome_demo"):
         bsdf = {
             'id': 'porcelain_material',
@@ -157,8 +172,6 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
             'alpha': 0.001
         }
-    elif (render_style == "textured_demo"):
-      bsdf = porcelain_roughplastic(texture_name, 0.001)
     else:
       print("Unknown render_style = ", render_style)
 

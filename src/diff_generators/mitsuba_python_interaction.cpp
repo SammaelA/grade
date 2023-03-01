@@ -116,7 +116,7 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
     render_style = "silhouette";
     break;
   }
-  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs, *tn;
+  PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs, *tn, *mn;
   basePath = PyUnicode_FromString("resources/mitsuba_data/");
   iw_arg = PyLong_FromLong(render_settings.image_w);
   ih_arg = PyLong_FromLong(render_settings.image_h);
@@ -124,7 +124,8 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   mv = PyUnicode_FromString(mitsuba_var.c_str());
   rs = PyUnicode_FromString(render_style.c_str());
   tn = PyUnicode_FromString(render_settings.texture_name.c_str());
-  initArgs = PyTuple_Pack(7, basePath, iw_arg, ih_arg, spp_arg, mv, rs, tn);
+  mn = PyUnicode_FromString(render_settings.material_name.c_str());
+  initArgs = PyTuple_Pack(8, basePath, iw_arg, ih_arg, spp_arg, mv, rs, tn, mn);
   
   initFunc = PyObject_GetAttrString(pModule, (char *)"init");
   if (!initFunc)
@@ -145,6 +146,8 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   DEL(spp_arg);
   DEL(mv);
   DEL(rs);
+  DEL(tn);
+  DEL(mn);
 }
 
 std::string get_loss_function_name(MitsubaInterface::LossFunction loss_function)
@@ -224,14 +227,12 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   DEL(int_im);
 }
 
-void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, const std::string &initial_texture_name,
+void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir,
                                                   LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
                                                   RenderSettings render_settings, float texture_rec_learing_rate, int cam_count,
                                                   bool save_intermediate_images)
 {
   render_settings.renderStyle = RenderStyle::TEXTURED_CONST;
-  render_settings.texture_name = initial_texture_name;
-  
   init_optimization_internal("init_optimization_with_tex", reference_image_dir, loss_function, model_max_size, opt_ml, 
                              render_settings, texture_rec_learing_rate, cam_count, save_intermediate_images);
 }
@@ -546,4 +547,16 @@ void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,
   engine::textureManager->save_png_directly(composite_tex, image_dir);
 
   delete_framebuffer(fbo);
+}
+
+std::vector<std::string> MitsubaInterface::get_all_available_materials()
+{
+  return 
+  {
+    "very smooth porcelain",
+    "smooth porcelain",
+    "porcelain",
+    "ceramics",
+    "rough ceramics"
+  };
 }

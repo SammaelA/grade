@@ -25,14 +25,17 @@ public:
   struct RenderSettings
   {
     RenderSettings() = default;
-    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs, std::string _texture_name = "") : 
-                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs), texture_name(_texture_name) {};
+    RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs, std::string _texture_name = "",
+                   std::string _material_name = "ceramics") : 
+                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs),
+                   texture_name(_texture_name), material_name(_material_name) {};
     int image_w = 128;
     int image_h = 128;
     int samples_per_pixel = 16;
     MitsubaVariant mitsubaVar = MitsubaVariant::CUDA;
     RenderStyle renderStyle = RenderStyle::SILHOUETTE;
     std::string texture_name = "white.png";
+    std::string material_name = "ceramics";
   };
   enum LossFunction
   {
@@ -52,8 +55,8 @@ public:
                          RenderSettings render_settings, int cameras_count = 1, bool save_intermediate_images = false);
 
   //WIP. initialize optimization of texture. includes init_scene_and_settings in it
-  void init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, const std::string &initial_texture_name,
-                                  LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
+  void init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, 
+                                  int model_max_size, dgen::ModelLayout opt_ml,
                                   RenderSettings render_settings, float texture_rec_learing_rate = 0.25,
                                   int cameras_count = 1, bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
@@ -76,6 +79,8 @@ public:
   void compute_final_grad(const std::vector<float> &generator_jac, int params_count, int vertex_count, std::vector<float> &final_grad);
 
   void finish();
+
+  std::vector<std::string> get_all_available_materials();
 //private:
   void show_errors();
   void set_model_max_size(int model_max_size);
