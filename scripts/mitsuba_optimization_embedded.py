@@ -191,21 +191,16 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             },
             'to_world': T.translate([0,0,0])
         }
-    if (render_style == "monochrome_demo" or render_style == "textured_demo"):
-      scene_dict['ambient_light'] = \
-      {
-        'type': 'constant',
-        'radiance': {
-            'type': 'rgb',
-            'value': 0.2,
-        }
+
+    scene_dict['ambient_light'] = \
+    {
+      'type': 'constant',
+      'radiance': {
+          'type': 'rgb',
+          'value': 0.2,
       }
-    else:
-      scene_dict['ambient_light'] = {
-        'type': 'envmap',
-        'filename': base_path + 'textures/white.png',
-        'scale' : 0.2,
-      }
+    }
+
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
@@ -294,7 +289,7 @@ def render_and_save_to_file(context, save_filename):
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
 
   if (context["render_style"] == "textured_const"):
-      params['ambient_light.scale'] = ls_li_ali.z
+      params['ambient_light.radiance.value'] = ls_li_ali.z
 
   t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
   trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
@@ -416,7 +411,7 @@ def render(it, context):
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
-      params['ambient_light.scale'] = ls_li_ali.z
+      params['ambient_light.radiance.value'] = ls_li_ali.z
 
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
@@ -477,8 +472,8 @@ def render(it, context):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
-  context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad))
-  context['vertex_positions_grad'] = numpy.nan_to_num(vertex_positions_grad / float(context['cameras_count']))
+  context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad, nan=0, posinf=0, neginf=0))
+  context['vertex_positions_grad'] = numpy.nan_to_num(vertex_positions_grad, nan=0, posinf=0, neginf=0) / float(context['cameras_count'])
 
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']

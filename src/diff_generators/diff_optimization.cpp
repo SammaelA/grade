@@ -420,7 +420,7 @@ namespace dopt
     std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 512};
 
-    for (int stage = 0; stage < 1; stage++)
+    for (int stage = 0; stage < stages; stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -438,7 +438,7 @@ namespace dopt
       special_settings.add_arr("initial_params", opt_result.best_params);
       special_settings.add_double("learning_rate", lrs[stage]);
       special_settings.add_int("iterations", iterations[stage]);
-      special_settings.add_bool("verbose", true);
+      special_settings.add_bool("verbose", false);
       Block &optimizer_settings = (stage == 0) ? *opt_settings : special_settings;
 
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
