@@ -342,6 +342,26 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
     mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout(), camera, default_scene_params);
   }
+  else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings")
+  {
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    if (params.empty())
+      params = {3, 3, 3, 3, 80,  3, 3, 3, 3, 25,   3, 3, 3, 3, 10,   1};
+    std::vector<float> res;
+    dgen::dgen_test("buildings", params, res);
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
+    mi.render_model_to_file(res, "saves/test_result.png", dgen::ModelLayout(), camera, default_scene_params);
+    
+    std::vector<float> no_transform_scene_params = {0,0,0,0,0,0, 100, 1000, 100, 100, 100, 0.01};
+    mi.render_multicam_demo(MitsubaInterface::RenderSettings(512, 512, 32, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, "porcelain_01.png"),
+                            res, "saves/multicam_tex.png", dgen::ModelLayout(), no_transform_scene_params, camera, 3, 2);
+    engine::view->next_frame();
+  }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_with_camera")
   {
     std::vector<float> params;

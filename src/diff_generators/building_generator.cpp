@@ -153,5 +153,7 @@ namespace dgen
     std::vector<dfloat> spline_y = create_wall_spline(params, 5);
     std::vector<dfloat> spline_z = create_wall_spline(params, 10);
     splines_to_building(vert, spline_x, spline_y, spline_z, params[15], quality.create_only_position);
+    dmat43 sc2 = translate(scale(ident(), dvec3{0.02, 0.02, 0.02}), dvec3{-0.5 * params[4], 0, 0});
+    transform(vert, sc2);
   }
 };
