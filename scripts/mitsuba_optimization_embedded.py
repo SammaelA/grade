@@ -296,6 +296,12 @@ def render_and_save_to_file(context, save_filename):
   tr_positions = trafo @ t1
   params['model.vertex_positions'] = dr.ravel(tr_positions)
 
+  #we still should have proper size of normals and tc arrays
+  if (len(params['model.vertex_positions']) != len(params['model.vertex_normals'])):
+    params['model.vertex_normals'] = tuple([1] * len(params['model.vertex_positions']))
+  if (2*len(params['model.vertex_positions']) != 3*len(params['model.vertex_texcoords'])):
+    params['model.vertex_texcoords'] = tuple([1] * int(2*len(params['model.vertex_positions'])/3)) 
+  
   params.update()
   t2_tensor = mi.Float(list(context['vertex_normals']))
   t2 = dr.unravel(mi.Normal3f, t2_tensor)
