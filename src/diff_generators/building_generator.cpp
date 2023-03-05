@@ -114,14 +114,15 @@ namespace dgen
             tex_2 += dvec2{-u, v};
             tex_3 += dvec2{-u, -v};
           }
-          
-
-          add_vertex(model, num++, pos_0 + depth, norm_z, tex_0, only_pos); 
-          add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
-          add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
-          add_vertex(model, num++, pos_3 + depth, norm_z, tex_3, only_pos); 
-          add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
-          add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
+          else
+          {
+            add_vertex(model, num++, pos_0 + depth, norm_z, tex_0, only_pos); 
+            add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
+            add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
+            add_vertex(model, num++, pos_3 + depth, norm_z, tex_3, only_pos); 
+            add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
+            add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
+          }
         }
       }
     }
