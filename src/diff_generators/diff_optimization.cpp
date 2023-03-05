@@ -278,13 +278,9 @@ namespace dopt
     int scene_params_cnt = scene_params.size();
 
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
-    int sel_image_size = settings_blk.get_int("selection_image_size", 196);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
-    Block *textured_optimization = settings_blk.get_block("textured_optimization");
     std::string search_algorithm = settings_blk.get_string("search_algorithm", "simple_search");
-    std::string save_stat_path = settings_blk.get_string("save_stat_path", "");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
-    std::string saved_textured_path = settings_blk.get_string("saved_textured_path", "saves/selected_textured.png");
     std::string reference_path = settings_blk.get_string("reference_path", "");
 
     auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
@@ -312,7 +308,7 @@ namespace dopt
 
     Texture reference_tex;
     Texture reference_mask;
-    const int original_reference_size = 1024;
+    const int original_reference_size = settings_blk.get_int("original_reference_size", 1024);
 
     {
       Texture reference_tex_raw;
@@ -420,7 +416,7 @@ namespace dopt
     std::array<int, stages> model_qualities = {0, 0, 1, 1};
     std::array<int, stages> image_sizes = {128, 256, 512, 512};
 
-    for (int stage = 0; stage < stages; stage++)
+    for (int stage = 0; stage < MIN(stages, settings_blk.get_int("silhouette_optimization_stages", stages)); stage++)
     {
       std::string reference_image_dir = "saves/reference.png";
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
@@ -485,7 +481,7 @@ namespace dopt
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }
 
-    if (textured_optimization && textured_optimization->get_bool("active", false))
+    if (settings_blk.get_int("texture_optimization_stages", 0) > 0)
     { 
       //parameters related to light and materals cannot be optimized on silhouette stage
       //we should optimize them now along with texture
@@ -503,80 +499,101 @@ namespace dopt
                                                                         });
 
       constexpr int stages = 4;
-      std::array<int, stages> iterations = {20, 50, 40, 40};
+      std::array<int, stages> iterations = {20, 75, 75, 40};
       std::array<float, stages> lrs = {0.02, 0.01, 0.01, 0.01};
-      std::array<float, stages> texture_lrs = {0.25, 0.2, 0.2, 0.25};
+      std::array<float, stages> texture_lrs = {0.25, 0.2, 0.3, 0.3};
       std::array<int, stages> model_qualities = {0, 0, 0, 1};
-      std::array<int, stages> image_sizes = {128, 256, 512, 512};
-      std::array<int, stages> spps = {256, 256, 256, 512};
+      std::array<int, stages> image_sizes = {128, 128, 256, 512};
+      std::array<int, stages> spps = {256, 256, 512, 1024};
 
       //choose material from the list of available ones
       std::vector<std::string> all_materials = mi.get_all_available_materials();
       std::string best_material = all_materials[0];
       std::string best_tex_name = "reconstructed_tex";
-      std::vector<float> init_params = opt_result.best_params;
-      std::vector<float> best_params = init_params;
-      float best_val = 1e9;
-      
-      int mat_n = 0;
-      for (auto &material : all_materials)
+
+      //skip this stage if material is set manually in settings
+      if (settings_blk.get_string("model_material") != "")
       {
-        int stage = 0;
-        model_quality = model_qualities[stage];
-        only_pos = false;
-        Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
-        engine::textureManager->save_png(reference_textured, "reference_textured");
-        std::string mat_ns = material;
-        mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
-        std::string tex_name = "reconstructed_tex_" + mat_ns; 
-        engine::textureManager->save_png(reconstructed_tex, tex_name);
-
-        mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
-                                        1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                        MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, 
-                                        MitsubaInterface::TEXTURED_CONST, "../../saves/" + tex_name + ".png", material),
-                                        texture_lrs[stage], 1, settings_blk.get_bool("save_intermediate_images", false));
-        Block adam_settings;
-        adam_settings.add_arr("initial_params", init_params);
-        adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-        adam_settings.add_double("learning_rate", lrs[stage]);
-        adam_settings.add_int("iterations", iterations[stage]);
-        adam_settings.add_bool("verbose", false);
-        opt::Optimizer *tex_opt = new opt::Adam();
-
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        tex_opt->optimize(F_to_optimize, params_min, params_max, adam_settings, init_params_presets);
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-        double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-        float err = 1e9;
-        init_params = tex_opt->get_best_result(&err);
-
-        if (err < best_val)
+        std::string mat_from_settings = settings_blk.get_string("model_material");
+        bool valid = false;
+        for (auto &material : all_materials)
         {
-          best_val = err;
-          opt_result.best_err = err;
-          opt_result.best_params = init_params;
-          best_material = material;
-          best_tex_name = tex_name;
+          if (material == mat_from_settings)
+          {
+            valid = true;
+            break;
+          }
         }
+        if (valid)
+          best_material = mat_from_settings;
+        else
+          logerr("Material \"%s\" from settings does not exist!", mat_from_settings.c_str());
+        logerr("Taken material \"%s\" from settings.", best_material.c_str());
+      }
+      else
+      {
+        std::vector<float> init_params = opt_result.best_params;
+        float best_val = 1e9;
+      
+        int mat_n = 0;
+        for (auto &material : all_materials)
+        {
+          int stage = 0;
+          model_quality = model_qualities[stage];
+          only_pos = false;
+          Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          engine::textureManager->save_png(reference_textured, "reference_textured");
+          std::string mat_ns = material;
+          mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
+          std::string tex_name = "reconstructed_tex_" + mat_ns; 
+          engine::textureManager->save_png(reconstructed_tex, tex_name);
 
-        float psnr = -err;
-        float mse = 1/pow(10, psnr/10);
-        debug("Stage %d/%d Material selection stat\n", mat_n + 1, all_materials.size());
-        debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
-        debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
+          mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
+                                          1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
+                                          MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, 
+                                          MitsubaInterface::TEXTURED_CONST, "../../saves/" + tex_name + ".png", material),
+                                          texture_lrs[stage], 1, settings_blk.get_bool("save_intermediate_images", false));
+          Block adam_settings;
+          adam_settings.add_arr("initial_params", init_params);
+          adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
+          adam_settings.add_double("learning_rate", lrs[stage]);
+          adam_settings.add_int("iterations", iterations[stage]);
+          adam_settings.add_bool("verbose", false);
+          opt::Optimizer *tex_opt = new opt::Adam();
 
-        iters = 0;
-        total_time_ms = 0;
-        mat_n++;
-        delete tex_opt;
+          std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+          tex_opt->optimize(F_to_optimize, params_min, params_max, adam_settings, init_params_presets);
+          std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+          double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+          float err = 1e9;
+          init_params = tex_opt->get_best_result(&err);
+
+          if (err < best_val)
+          {
+            best_val = err;
+            opt_result.best_err = err;
+            opt_result.best_params = init_params;
+            best_material = material;
+            best_tex_name = tex_name;
+          }
+
+          float psnr = -err;
+          float mse = 1/pow(10, psnr/10);
+          debug("Stage %d/%d Material selection stat\n", mat_n + 1, all_materials.size());
+          debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
+          debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
+
+          iters = 0;
+          total_time_ms = 0;
+          mat_n++;
+          delete tex_opt;
+        }
+        debug("Material \"%s\" selected, PSNR = %.2f\n", best_material.c_str(), -opt_result.best_err);
       }
 
-      debug("Material \"%s\" selected, PSNR = %.2f\n", best_material.c_str(), -opt_result.best_err);
-
       //when material is chosen, fine-tune the texture and scene parameters
-      for (int stage = 1; stage < stages; stage++)
+      for (int stage = 1; stage < MIN(stages, settings_blk.get_int("texture_optimization_stages", stages)+1); stage++)
       {
         model_quality = model_qualities[stage];
         only_pos = false;
