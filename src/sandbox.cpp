@@ -350,7 +350,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     if (params.empty())
-      params = {3, 3, 3, 3, 80,  3, 3, 3, 3, 25,   3, 3, 3, 3, 10,   1};
+      params = {3, 3, 3, 3, 80,  3, 3, 3, 3, 25,   3, 3, 3, 3, 10,   1, 20};
     std::vector<float> res;
     dgen::dgen_test("buildings", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");

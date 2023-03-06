@@ -15,4 +15,5 @@
   window_size_z{ values:p2 = 0.1, 20 desc:s = "window size at z axis"}
   building_max_length_z{ values:p2 = 0.1, 200 desc:s = "building max length at z axis"}
   window_depth{ values:p2 = 0.1, 10 desc:s = "window depth size"}
+  model_scale{ values:p2 = 1, 250 desc:s = "model_scale"}
 }
