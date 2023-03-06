@@ -46,7 +46,7 @@ Texture SilhouetteExtractor::get_silhouette_simple(Texture &t, int res_w, int re
   remove_holes.use();
   remove_holes.get_shader().texture("tex_mask", tmp_tex);
   remove_holes.get_shader().uniform("tex_size",glm::vec2(res_w, res_h));
-  remove_holes.get_shader().uniform("search_radius", 8);
+  remove_holes.get_shader().uniform("search_radius", 4);
   remove_holes.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
