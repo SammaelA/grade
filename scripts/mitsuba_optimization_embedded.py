@@ -431,7 +431,7 @@ def render(it, context):
 
     params.update()
 
-    if (context['status'] == 'optimization_with_tex'):
+    if (context['status'] == 'optimization_with_tex' or True):
       t2_tensor = mi.Float(list(context['vertex_normals']))
       t2 = dr.unravel(mi.Normal3f, t2_tensor)
       trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)

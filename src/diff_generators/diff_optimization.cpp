@@ -394,6 +394,12 @@ namespace dopt
       total_time_ms += 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       iters++;
 
+      /*debug("grad [");
+      for (int i = 0; i < final_grad.size(); i++)
+      {
+        debug("%.4f ", final_grad[i]);
+      }
+      debug("]\n");*/
       return std::pair<float, std::vector<float>>(loss, final_grad);
     };
 
@@ -423,8 +429,8 @@ namespace dopt
       engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
 
       model_quality = model_qualities[stage];
-      only_pos = true;
-      mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 3, 3, 8),
+      only_pos = false;
+      mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 6, 6, 8),
                            MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                            1, settings_blk.get_bool("save_intermediate_images", false));
 

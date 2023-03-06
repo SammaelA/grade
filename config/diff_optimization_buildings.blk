@@ -1,0 +1,53 @@
+{
+  memetic_classic
+  {
+    total_function_calls:i = 5000
+    population_size:i = 20
+    tournament_size:i = 12
+    mutation_chance:r = 0.3
+    mutation_power:r = 0.2
+    local_search_iterations:i = 33
+    local_search_learning_rate:r = 0.01
+    start_search_iterations:i = 50
+    start_search_learning_rate:r = 0.05
+    recreation_diversity_thr:r = 3.0
+    depth_reg_q:r = 0.0
+  }
+
+  adam
+  {
+    iterations:i = 100
+    learning_rate:r = 0.005
+    verbose:b = true
+    initial_params:arr = {3, 3, 3, 3, 10,  3, 3, 3, 3, 5,   3, 3, 3, 3, 5,   1, 70,
+                          0.0, 0.2, 0.5, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.1}
+  }
+  
+  //which procedural generator is used to create models. Currently only "dishes" is available
+  procedural_generator:s = "buildings"
+
+  //a .blk file describing parameters for scene, such as camera position, light etc.
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+
+
+  //if synthetic_reference is true, reference image will be ignored. Instead of it, a model with reference_params
+  //will be created, rendered and saved to file. This new file will be used as reference for texture_optimization
+  //reference_params contains model paramters and reference_scene contains scene parameters
+  synthetic_reference:b = true
+  reference_params:arr = {3, 3, 3, 3, 10,  3, 3, 3, 3, 5,   3, 3, 3, 3, 5,   1, 50}
+  reference_scene:arr = {0.12, 0.07, 0.5, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.1}
+  reference_image_size:i = 512
+
+  //search algorithm for the first stage of optimization. Available options:
+  //memetic_classic - default option that will work for a long time, but find the model without any 
+  //                  manually given clues
+  //adam - fast optimizer that requires setting initial_params (both model and scene params concatenated)
+  //       relatively close to optimal ones 
+  search_algorithm:s = "adam"
+  regularization_alpha:r = 0.02
+  original_reference_size:i = 2048
+  model_material:s = "" //leave empty to autoselect material (will take a few minutes)
+  silhouette_optimization_stages:i = 4 //must be >0, silhouette stage cannot be skipped
+  texture_optimization_stages:i = 4 //set to 0 to skip texture optimization
+  save_intermediate_images:b = true
+}
