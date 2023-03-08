@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-Texture ImgExp::ImgExpanding(Texture image, int res_size)
+Texture ImgExp::ImgExpanding(Texture image, int res_size, float color_thr, float blur_sigma)
 {
   GLuint fbo;
   Shader get_borders({"take_mask_borders.comp"},{});
@@ -29,7 +29,7 @@ Texture ImgExp::ImgExpanding(Texture image, int res_size)
   float w = image.get_W();
   float h = image.get_H();
 
-  SilhouetteExtractor se = SilhouetteExtractor(MAX(1, MIN(w, h)/256.0), 0, 0, 0.25);
+  SilhouetteExtractor se = SilhouetteExtractor(blur_sigma >=0 ? blur_sigma : MAX(1, MIN(w, h)/256.0), 0, 0, color_thr);
   Texture mask = se.get_silhouette_simple(image, w, h);
   engine::textureManager->save_png(mask, "ie_mask");
   engine::textureManager->save_png(image, "ie_image");

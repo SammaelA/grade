@@ -5,5 +5,5 @@
 
 struct ImgExp
 {
-  static Texture ImgExpanding(Texture image, int res_size);//returns prepocessed silhouette and reference texture
+  static Texture ImgExpanding(Texture image, int res_size, float color_thr = 0.25, float blur_sigma = -1);//returns prepocessed silhouette and reference texture
 };

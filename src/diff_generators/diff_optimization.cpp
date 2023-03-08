@@ -279,7 +279,6 @@ namespace dopt
 
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
-    std::string search_algorithm = settings_blk.get_string("search_algorithm", "simple_search");
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
     std::string reference_path = settings_blk.get_string("reference_path", "");
 
@@ -336,7 +335,7 @@ namespace dopt
         reference_tex_raw = engine::textureManager->load_unnamed_tex(reference_path);
       }
 
-      reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size);
+      reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.25, by_reference ? 0 : -1);
       SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
       reference_mask = se.get_silhouette_simple(reference_tex, original_reference_size, original_reference_size);
       engine::textureManager->save_png(reference_mask, "ie_rsult2.png");
@@ -355,13 +354,6 @@ namespace dopt
     }
 
     OptimizationResult opt_result{params_max, 1000, 0};
-
-    Block *opt_settings = settings_blk.get_block(search_algorithm);
-    if (!opt_settings)
-    {
-      logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
-      return 1.0;
-    }
 
     int iters = 0;
     double total_time_ms = 0;
@@ -415,32 +407,49 @@ namespace dopt
       return res;
     };
 
-    constexpr int stages = 4;
-    std::array<std::string, stages> optimizers = {search_algorithm, "adam", "adam", "adam"};
-    std::array<int, stages> iterations = {0, 100, 100, 100};
-    std::array<float, stages> lrs = {0, 0.005, 0.005, 0.005};
-    std::array<int, stages> model_qualities = {0, 0, 1, 1};
-    std::array<int, stages> image_sizes = {128, 256, 512, 512};
-
-    for (int stage = 0; stage < MIN(stages, settings_blk.get_int("silhouette_optimization_stages", stages)); stage++)
+    Block *silhouette_optimization_settings = settings_blk.get_block("silhouette_optimization_settings");
+    if (!silhouette_optimization_settings)
     {
+      logerr("Block \"silhouette_optimization_settings\" is required for optimization, but not found");
+      return 1;
+    }
+
+    for (int stage = 0; stage < silhouette_optimization_settings->get_int("optimization_stages", 1); stage++)
+    {
+      Block *stage_blk = silhouette_optimization_settings->get_block("stage_"+std::to_string(stage));
+      if (!stage_blk)
+      {
+        logerr("Block \"stage_%d\" is required for optimization, but not found", stage);
+        return 1;
+      }
       std::string reference_image_dir = "saves/reference.png";
-      Texture reference_mask_resized = ImageResizer::resize(reference_mask, image_sizes[stage], image_sizes[stage], ImageResizer::Type::STRETCH);
+      int im_sz = stage_blk->get_int("render_image_size", 128);
+      Texture reference_mask_resized = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::STRETCH);
+      GaussFilter gauss(1.0f);
+      gauss.perform_gauss_blur_inplace(reference_mask_resized);
       engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
 
-      model_quality = model_qualities[stage];
+      model_quality = stage_blk->get_int("model_quality", 0);
       only_pos = false;
       mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 6, 6, 8),
-                           MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], 1, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                           MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                            1, settings_blk.get_bool("save_intermediate_images", false));
 
-      opt::Optimizer *opt = get_optimizer(optimizers[stage]);
+      std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
+      opt::Optimizer *opt = get_optimizer(search_algorithm);
+
+      Block *opt_settings = settings_blk.get_block(search_algorithm);
+      if (!opt_settings)
+      {
+        logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
+        return 1.0;
+      }
 
       Block special_settings;
       special_settings.add_arr("initial_params", opt_result.best_params);
-      special_settings.add_double("learning_rate", lrs[stage]);
-      special_settings.add_int("iterations", iterations[stage]);
-      special_settings.add_bool("verbose", false);
+      special_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
+      special_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
+      special_settings.add_bool("verbose", true);
       Block &optimizer_settings = (stage == 0) ? *opt_settings : special_settings;
 
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -487,7 +496,13 @@ namespace dopt
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }
 
-    if (settings_blk.get_int("texture_optimization_stages", 0) > 0)
+    Block *texture_optimization_settings = settings_blk.get_block("texture_optimization_settings");
+    if (!texture_optimization_settings)
+    {
+      logerr("Block \"texture_optimization_settings\" is required for optimization, but not found");
+      return 1;
+    }
+    if (texture_optimization_settings->get_int("optimization_stages", 0) > 0)
     { 
       //parameters related to light and materals cannot be optimized on silhouette stage
       //we should optimize them now along with texture
@@ -503,14 +518,6 @@ namespace dopt
                                                                           "light_intensity",
                                                                           "ambient_light_intensity"
                                                                         });
-
-      constexpr int stages = 4;
-      std::array<int, stages> iterations = {20, 75, 75, 40};
-      std::array<float, stages> lrs = {0.02, 0.01, 0.01, 0.01};
-      std::array<float, stages> texture_lrs = {0.25, 0.2, 0.3, 0.3};
-      std::array<int, stages> model_qualities = {0, 0, 0, 1};
-      std::array<int, stages> image_sizes = {128, 128, 256, 512};
-      std::array<int, stages> spps = {256, 256, 512, 1024};
 
       //choose material from the list of available ones
       std::vector<std::string> all_materials = mi.get_all_available_materials();
@@ -544,10 +551,17 @@ namespace dopt
         int mat_n = 0;
         for (auto &material : all_materials)
         {
-          int stage = 0;
-          model_quality = model_qualities[stage];
+          Block *stage_blk = texture_optimization_settings->get_block("stage_material_selection");
+          if (!stage_blk)
+          {
+            logerr("Block \"stage_material_selection\" is required for optimization, but not found");
+            return 1;
+          }
+          int im_sz = stage_blk->get_int("render_image_size", 128);
+
+          model_quality = stage_blk->get_int("model_quality", 0);
           only_pos = false;
-          Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
           engine::textureManager->save_png(reference_textured, "reference_textured");
           std::string mat_ns = material;
           mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
@@ -556,14 +570,14 @@ namespace dopt
 
           mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
                                           1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                          MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, 
+                                          MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
                                           MitsubaInterface::TEXTURED_CONST, "../../saves/" + tex_name + ".png", material),
-                                          texture_lrs[stage], 1, settings_blk.get_bool("save_intermediate_images", false));
+                                          stage_blk->get_double("texture_opt_lr", 0.25), 1, settings_blk.get_bool("save_intermediate_images", false));
           Block adam_settings;
           adam_settings.add_arr("initial_params", init_params);
           adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-          adam_settings.add_double("learning_rate", lrs[stage]);
-          adam_settings.add_int("iterations", iterations[stage]);
+          adam_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
+          adam_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
           adam_settings.add_bool("verbose", false);
           opt::Optimizer *tex_opt = new opt::Adam();
 
@@ -599,22 +613,30 @@ namespace dopt
       }
 
       //when material is chosen, fine-tune the texture and scene parameters
-      for (int stage = 1; stage < MIN(stages, settings_blk.get_int("texture_optimization_stages", stages)+1); stage++)
+      for (int stage = 0; stage < texture_optimization_settings->get_int("optimization_stages", 0); stage++)
       {
-        model_quality = model_qualities[stage];
+        Block *stage_blk = texture_optimization_settings->get_block("stage_"+std::to_string(stage));
+        if (!stage_blk)
+        {
+          logerr("Block \"stage_%d\" is required for optimization, but not found", stage);
+          return 1;
+        }
+        int im_sz = stage_blk->get_int("render_image_size", 128);
+
+        model_quality = stage_blk->get_int("model_quality", 0);
         only_pos = false;
-        Texture reference_textured = ImageResizer::resize(reference_tex, image_sizes[stage], image_sizes[stage], ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+        Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         engine::textureManager->save_png(reference_textured, "reference_textured");
         mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
                                         1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
-                                        MitsubaInterface::RenderSettings(image_sizes[stage], image_sizes[stage], spps[stage], MitsubaInterface::CUDA, 
+                                        MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
                                         MitsubaInterface::TEXTURED_CONST, "../../saves/" + best_tex_name + ".png", best_material),
-                                        texture_lrs[stage], 1, true);
+                                        stage_blk->get_double("texture_opt_lr", 0.25), 1, true);
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
         adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-        adam_settings.add_double("learning_rate", lrs[stage]);
-        adam_settings.add_int("iterations", iterations[stage]);
+          adam_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
+          adam_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
         adam_settings.add_bool("verbose", true);
         opt::Optimizer *tex_opt = new opt::Adam();
 
