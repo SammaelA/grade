@@ -1,7 +1,7 @@
 {
   memetic_classic
   {
-    total_function_calls:i = 5000
+    total_function_calls:i = 8000
     population_size:i = 20
     tournament_size:i = 12
     mutation_chance:r = 0.3
@@ -9,8 +9,8 @@
     local_search_iterations:i = 33
     local_search_learning_rate:r = 0.01
     start_search_iterations:i = 50
-    start_search_learning_rate:r = 0.05
-    recreation_diversity_thr:r = 3.0
+    start_search_learning_rate:r = 0.02
+    recreation_diversity_thr:r = 1.5
     depth_reg_q:r = 0.0
   }
 
@@ -19,8 +19,8 @@
     iterations:i = 250
     learning_rate:r = 0.01
     verbose:b = true
-    initial_params:arr = {3, 3, 3, 3, 15,  3, 3, 3, 3, 5,   3, 3, 3, 3, 5,   1, 40,
-                          0.12, 0.07, 0.5, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0}
+    initial_params:arr = {3, 3, 3, 3, 30,  3, 3, 3, 3, 20,   3, 3, 3, 3, 10,   1, 32,
+                          -0.15, 0.071, 0.5, 0.0, 0.5, 0.15, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0}
   }
   
   //which procedural generator is used to create models. Currently only "dishes" is available
@@ -34,14 +34,14 @@
   //will be created, rendered and saved to file. This new file will be used as reference for texture_optimization
   //reference_params contains model paramters and reference_scene contains scene parameters
   synthetic_reference:b = true
-  reference_params:arr = {3, 3, 3, 3, 10,  3, 3, 3, 3, 5,   3, 3, 3, 3, 5,   1, 50}
-  reference_scene:arr = {0.12, 0.07, 0.5, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0}
-  reference_image_size:i = 512
+  reference_params:arr = {3, 3, 3, 3, 30,  3, 3, 3, 3, 20,   3, 3, 3, 3, 10,   1, 30}
+  reference_scene:arr = {-0.2, 0.07, 0.5, 0, 0.5, 0, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0}
+  reference_image_size:i = 2048
 
   regularization_alpha:r = 0.02
   original_reference_size:i = 2048
   model_material:s = "" //leave empty to autoselect material (will take a few minutes)
-  save_intermediate_images:b = true
+  save_intermediate_images:b = false
 
   silhouette_optimization_settings
   {
@@ -49,21 +49,21 @@
 
     stage_0
     {
-      optimizer:s = "adam"
+      optimizer:s = "memetic_classic"
       iterations:i = 0 //not used in 0 block
       lr:r = 0 //not used in 0 block
-      model_quality:i = 0
+      model_quality:i = 1
       render_image_size:i = 256
-      spp:i = 32
+      spp:i = 4
     }
     stage_1
     {
       optimizer:s = "adam"
-      iterations:i = 100
-      lr:r = 0.01
-      model_quality:i = 0
+      iterations:i = 250
+      lr:r = 0.005
+      model_quality:i = 1
       render_image_size:i = 512
-      spp:i = 64
+      spp:i = 16
     }
   }
 
