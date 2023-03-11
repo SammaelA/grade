@@ -287,8 +287,6 @@ def render_and_save_to_file(context, save_filename):
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
-
-  if (context["render_style"] == "textured_const"):
       params['ambient_light.radiance.value'] = ls_li_ali.z
 
   t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
