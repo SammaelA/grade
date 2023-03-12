@@ -325,8 +325,8 @@ namespace dopt
         std::vector<float> reference_scene_params;
         settings_blk.get_arr("reference_scene", reference_scene_params);
         std::vector<float> reference = func.get(reference_params, dgen::ModelQuality(false, 3));
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM,
-                                                                    MitsubaInterface::TEXTURED_CONST, "texture_not_found.png"));
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA,
+                                                                    MitsubaInterface::TEXTURED_DEMO, "texture_not_found.png"));
         mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, reference_scene_params);
         reference_tex_raw = engine::textureManager->load_unnamed_tex("saves/reference.png");
       }
@@ -335,10 +335,14 @@ namespace dopt
         reference_tex_raw = engine::textureManager->load_unnamed_tex(reference_path);
       }
 
-      reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.25, by_reference ? 0 : -1);
-      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+      if (by_reference)
+        reference_tex = reference_tex_raw;
+      else
+        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.25, by_reference ? 0 : -1);
+      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.1);
       reference_mask = se.get_silhouette_simple(reference_tex, original_reference_size, original_reference_size);
-      engine::textureManager->save_png(reference_mask, "ie_rsult2.png");
+      engine::textureManager->save_png(reference_tex, "ie_rsult");
+      engine::textureManager->save_png(reference_mask, "ie_rsult2");
     }
 
     CppAD::ADFun<float> f_reg;
@@ -425,8 +429,6 @@ namespace dopt
       std::string reference_image_dir = "saves/reference.png";
       int im_sz = stage_blk->get_int("render_image_size", 128);
       Texture reference_mask_resized = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::STRETCH);
-      GaussFilter gauss(1.0f);
-      gauss.perform_gauss_blur_inplace(reference_mask_resized);
       engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
 
       model_quality = stage_blk->get_int("model_quality", 0);

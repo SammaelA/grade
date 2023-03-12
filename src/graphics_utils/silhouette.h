@@ -14,5 +14,5 @@ private:
   float blur_sigma, color_thr;
   Canny canny;
   GaussFilter gauss;
-  PostFx fill_edges, detect_object, fill_silhouette, remove_holes, copy, metric;
+  PostFx fill_edges, detect_object, fill_silhouette, blur_mask_edges, copy, metric;
 };

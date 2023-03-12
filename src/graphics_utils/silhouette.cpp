@@ -10,7 +10,7 @@ canny(MAX(0.1, _blur_sigma), low_thr, high_thr),
 fill_edges("fill_edges.fs"),
 fill_silhouette("fill_edges.fs"),
 detect_object("detect_object.fs"),
-remove_holes("remove_holes.fs"),
+blur_mask_edges("blur_mask_edges.fs"),
 copy("copy.fs"), 
 metric("ref_image_preprocess_metric.fs"),
 blur_sigma(_blur_sigma),
@@ -43,11 +43,11 @@ Texture SilhouetteExtractor::get_silhouette_simple(Texture &t, int res_w, int re
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res.texture, 0);
-  remove_holes.use();
-  remove_holes.get_shader().texture("tex_mask", tmp_tex);
-  remove_holes.get_shader().uniform("tex_size",glm::vec2(res_w, res_h));
-  remove_holes.get_shader().uniform("search_radius", 4);
-  remove_holes.render();
+  blur_mask_edges.use();
+  blur_mask_edges.get_shader().texture("tex_mask", tmp_tex);
+  blur_mask_edges.get_shader().uniform("tex_size",glm::vec2(res_w, res_h));
+  blur_mask_edges.get_shader().uniform("search_radius", -2);
+  blur_mask_edges.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   if (blur_sigma > 0.1)
@@ -92,11 +92,11 @@ Texture SilhouetteExtractor::get_silhouette(Texture &t, int res_w, int res_h)
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex.texture, 0);
-  remove_holes.use();
-  remove_holes.get_shader().texture("tex_mask", canny_tex);
-  remove_holes.get_shader().uniform("tex_size",glm::vec2(w, h));
-  remove_holes.get_shader().uniform("search_radius", 3);
-  remove_holes.render();
+  blur_mask_edges.use();
+  blur_mask_edges.get_shader().texture("tex_mask", canny_tex);
+  blur_mask_edges.get_shader().uniform("tex_size",glm::vec2(w, h));
+  blur_mask_edges.get_shader().uniform("search_radius", 3);
+  blur_mask_edges.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   Texture res = engine::textureManager->create_texture(res_w, res_h);
