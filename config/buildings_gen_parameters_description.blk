@@ -1,19 +1,20 @@
 {
-  left_offset_x{ values:p2 = 0.1, 20 desc:s = "distance between left wall and first window at x axis"}
-  distance_between_windows_x{ values:p2 = 0.1, 20 desc:s = "distance between windows at x axis"}
-  right_offset_x{ values:p2 = 0.1, 20 desc:s = "distance between right wall and last window at x axis"}
-  window_size_x{ values:p2 = 0.1, 20 desc:s = "window size at x axis"}
-  building_max_length_x{ values:p2 = 0.1, 200 desc:s = "building max length at x axis"}
-  left_offset_y{ values:p2 = 0.1, 20 desc:s = "distance between left wall and first window at y axis"}
-  distance_between_windows_y{ values:p2 = 0.1, 20 desc:s = "distance between windows at y axis"}
-  right_offset_y{ values:p2 = 0.1, 20 desc:s = "distance between right wall and last window at y axis"}
-  window_size_y{ values:p2 = 0.1, 20 desc:s = "window size at y axis"}
-  building_max_length_y{ values:p2 = 0.1, 200 desc:s = "building max length at y axis"}
-  left_offset_z{ values:p2 = 0.1, 20 desc:s = "distance between left wall and first window at z axis"}
-  distance_between_windows_z{ values:p2 = 0.1, 20 desc:s = "distance between windows at z axis"}
-  right_offset_z{ values:p2 = 0.1, 20 desc:s = "distance between right wall and last window at z axis"}
-  window_size_z{ values:p2 = 0.1, 20 desc:s = "window size at z axis"}
-  building_max_length_z{ values:p2 = 0.1, 200 desc:s = "building max length at z axis"}
+  left_offset_x{ values:p2 = 1, 5 desc:s = "distance between left wall and first window at x axis"}
+  distance_between_windows_x{ values:p2 = 1, 5 desc:s = "distance between windows at x axis"}
+  right_offset_x{ values:p2 = 1, 5 desc:s = "distance between right wall and last window at x axis"}
+  window_size_x{ values:p2 = 1, 5 desc:s = "window size at x axis"}
+  windows_count{ values:p2 = 1, 10 desc:s = "windows_count" is_variant:b = true}
+  left_offset_y{ values:p2 = 1, 5 desc:s = "distance between left wall and first window at y axis"}
+  distance_between_windows_y{ values:p2 = 1, 5 desc:s = "distance between windows at y axis"}
+  right_offset_y{ values:p2 = 1, 5 desc:s = "distance between right wall and last window at y axis"}
+  window_size_y{ values:p2 = 1, 5 desc:s = "window size at y axis"}
+  floors_count{ values:p2 = 1, 10 desc:s = "floors_count" is_variant:b = true}
+  left_offset_z{ values:p2 = 1, 5 desc:s = "distance between left wall and first window at z axis"}
+  distance_between_windows_z{ values:p2 = 1, 5 desc:s = "distance between windows at z axis"}
+  right_offset_z{ values:p2 = 1, 5 desc:s = "distance between right wall and last window at z axis"}
+  window_size_z{ values:p2 = 1, 5 desc:s = "window size at z axis"}
+  side_windows_count{ values:p2 = 0, 4 desc:s = "side_windows_count" is_variant:b = true}
   window_depth{ values:p2 = 0.1, 10 desc:s = "window depth size"}
-  model_scale{ values:p2 = 1, 250 desc:s = "model_scale"}
+  model_scale_y{ values:p2 = 0.1, 1 desc:s = "model_scale_y"}
+  model_scale_z{ values:p2 = 0.1, 1 desc:s = "model_scale_z"}
 }

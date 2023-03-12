@@ -20,6 +20,26 @@ namespace dgen
     return spline;
   }
 
+  std::vector<dfloat> create_wall_spline(dfloat left_offset, dfloat window_gap, dfloat right_offset, dfloat window_size, 
+                                         dfloat window_count)
+  {
+    //std::cerr<<"w count "<<window_count<<"\n";
+    std::vector<dfloat> spline;
+    spline.push_back(0);
+    spline.push_back(left_offset);
+    if (window_count > 0)
+    {
+      spline.push_back(spline[spline.size() - 1] + window_size);
+      for (dfloat i = 0; i < window_count - 1; i += 1)
+      {
+        spline.push_back(spline[spline.size() - 1] + window_size);
+        spline.push_back(spline[spline.size() - 1] + window_size);
+      }
+    }
+    spline.push_back(spline[spline.size() - 1] + right_offset);
+    return spline;
+  }
+
   void get_walls_from_splines(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
                               dfloat length_z, dfloat window_depth, int x, int y, int z, float tex_v_shift, 
                               bool low_quality, bool only_pos)
@@ -73,7 +93,7 @@ namespace dgen
             tex_3[0] += 0.5;
             norm_z[z] = 1;
           }
-          if (i % 2 == 0 && j % 2 == 0)
+          if (i % 2 == 0 && j % 2 == 0 && i != sp_x.size() - 1 && j != sp_y.size() - 1)
           {
             depth[z] = window_depth;
             if (k)
@@ -199,15 +219,18 @@ namespace dgen
       BQ_COUNT
     };
     BuildingQuality bq = (BuildingQuality)CLAMP(quality.quality_level, 0, BQ_COUNT-1);
-    std::vector<dfloat> spline_x = create_wall_spline(params, 0);
-    std::vector<dfloat> spline_y = create_wall_spline(params, 5);
-    std::vector<dfloat> spline_z = create_wall_spline(params, 10);
+    std::vector<dfloat> spline_x = create_wall_spline(params[0], params[1], params[2], params[3], params[4]);
+    std::vector<dfloat> spline_y = create_wall_spline(params[5], params[6], params[7], params[8], params[9]);
+    std::vector<dfloat> spline_z = create_wall_spline(params[10], params[11], params[12], params[13], params[14]);
     if (bq == BQ_BOXES)
       splines_to_box(vert, spline_x, spline_y, spline_z, quality.create_only_position);
     else
       splines_to_building(vert, spline_x, spline_y, spline_z, params[15], bq == BQ_FACADES, quality.create_only_position);
-    dfloat scale_mul = params[16]/1000.0;
-    dmat43 sc2 = translate(scale(ident(), dvec3{scale_mul, scale_mul, scale_mul}), dvec3{-0.5 * params[4], 0, 0});
+
+    dfloat total_size_x = params[0] + params[4]*(params[1] + params[3]) + params[2];
+    dfloat total_size_y = params[5] + params[9]*(params[6] + params[8]) + params[7];
+    dfloat total_size_z = params[10] + params[14]*(params[11] + params[13]) + params[12];
+    dmat43 sc2 = scale(translate(ident(), dvec3{-0.5, 0, 0}), dvec3{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
     transform(vert, sc2);
   }
 };
