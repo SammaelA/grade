@@ -78,10 +78,10 @@ namespace dopt
       auto it = variant_set_to_function_pos.find(vs);
       if (it == variant_set_to_function_pos.end())
       {
-        debug("added new function {");
-        for (auto &v : vs)
-          debug("%d ", (int)v);
-        debug("}\n");
+        //debug("added new function {");
+        //for (auto &v : vs)
+        //  debug("%d ", (int)v);
+        //debug("}\n");
         std::vector<dgen::dfloat> X(params.size());
         for (int i=0;i<params.size();i++)
           X[i] = params[i];
