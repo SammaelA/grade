@@ -31,13 +31,22 @@ namespace opt
     float start_search_learning_rate = settings.get_double("start_search_learning_rate", 0.05);
     float recreation_diversity_thr = settings.get_double("recreation_diversity_thr", 1.75);
     float depth_reg_q = settings.get_double("depth_reg_q", 0);
+    int min_iter_between_recreations = settings.get_int("min_iter_between_recreations", 250);
     int budget = 0;
+
+    Normal normal_gen = Normal(0, mutation_power);
 
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
     {
       std::vector<float> res = base;
-      int id = urandi(0, base.size());
-      res[id] = urand(min_X[id], max_X[id]);
+      for (int i=0;i<MAX(1, mutation_chance * res.size());i++)
+      {
+        int id = urandi(0, base.size());
+        float t = max_X[id] + 1;
+        while (t >= max_X[id] || t <= min_X[id])
+          t = CLAMP(res[id] + normal_gen.get()*(max_X[id] - min_X[id]), min_X[id], max_X[id]);
+        res[id] = t;
+      }
       return res;
     };
 
@@ -207,9 +216,13 @@ namespace opt
     float initial_diversity = calc_diversity(solutions);
     debug("initial diversity %.3f\n", initial_diversity);
 
-    std::vector<float> chances = {0.85, 0.05, 0.05, 0.05};
+    std::vector<float> chances = {0.9, 0.7, 0.03, 0.00};
     std::vector<int> improvements = {0, 0, 0, 0};
     std::vector<int> best_stat = {0, 0, 0, 0};
+
+    std::vector<float> best_value_history;
+    int iterations_from_population_init = 0;
+
     std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     int t_last_print = budget;
     int t_first_print = budget;
@@ -302,25 +315,35 @@ namespace opt
         debug("%d new best - %.4f [%d %d %d %d]\n", budget, best_result, best_stat[0], best_stat[1], best_stat[2], best_stat[3]);
       }
 
-      //diversity calculation and population restart
       float diversity = calc_diversity(solutions);
-      if ((initial_diversity/(diversity + 1e-6) > recreation_diversity_thr) && 
-          (budget + population_size*start_search_iterations < total_function_calls))
+      best_value_history.push_back(best_result);
+      iterations_from_population_init++;
+
+      bool diversity_dropped = initial_diversity/(diversity + 1e-6) > recreation_diversity_thr;
+      bool quality_stall = best_value_history.size() > min_iter_between_recreations && 
+                           best_value_history.back() - best_value_history[best_value_history.size() - min_iter_between_recreations] < 0.01;
+      bool enough_budget_to_recreate = budget + population_size*start_search_iterations < total_function_calls;
+      bool no_recent_recreation = iterations_from_population_init >= min_iter_between_recreations;
+      //diversity calculation and population restart
+      if ((diversity_dropped || quality_stall) &&
+          enough_budget_to_recreate &&
+          no_recent_recreation)
       {
         //recreate population and place best solution in it
         debug("recreating population, diversity = %.2f\n", diversity);
+        iterations_from_population_init = 0;
         initialize_population(solutions, 1);
         solutions[0] = Solution{best_params, best_result, 1e-3f / (best_result * best_result), 1};
         initial_diversity = calc_diversity(solutions);  
         debug("initial diversity %.3f\n", initial_diversity);      
       }
       
-      if (budget - t_last_print > 500)
+      if (budget - t_last_print > 100)
       {
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         float ms_per_iter = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t_start).count()/(budget - t_first_print);
         int s = 1e-3*ms_per_iter*(total_function_calls - budget);
-        debug("%d/%d best value %.4f ETA: %d:%2d\n", budget, total_function_calls, best_result, s / 60, s % 60);
+        debug("%d/%d best value %.4f diversity %.4f ETA: %d:%2d\n", budget, total_function_calls, best_result, diversity, s / 60, s % 60);
         t_last_print = budget;
       }
     }
