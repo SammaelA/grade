@@ -51,6 +51,9 @@ void MitsubaInterface::finish()
       buffers[i] = nullptr;
     }
   }
+  buffers.clear();
+  buffer_names.clear();
+  model_max_size = 0;
 }
 
 MitsubaInterface::~MitsubaInterface()
@@ -78,6 +81,23 @@ MitsubaInterface::MitsubaInterface(const std::string &scripts_dir, const std::st
 
 void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
 {
+  finish();
+
+  int mesh_parts_count = 1;
+  for (int part_id = 0; part_id < mesh_parts_count; part_id++)
+  {
+    buffer_names.push_back("vertex_positions_"+std::to_string(part_id));
+    buffers.push_back(nullptr);
+
+    buffer_names.push_back("vertex_normals_"+std::to_string(part_id));
+    buffers.push_back(nullptr);
+
+    buffer_names.push_back("vertex_texcoords_"+std::to_string(part_id));
+    buffers.push_back(nullptr);
+  }
+  buffer_names.push_back("camera_params");
+  buffers.push_back(nullptr);
+
   render_settings = _render_settings;
   //mitsuba context initialization
   std::string mitsuba_var = "";
@@ -237,22 +257,23 @@ void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string>
                              render_settings, texture_rec_learing_rate, cam_count, save_intermediate_images);
 }
 
-void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml)
+void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml, int start_buffer_offset)
 {
   int vertex_count = model.size() / ml.f_per_vert;
   if (model_max_size < vertex_count)
     set_model_max_size(vertex_count);
-  assert(ml.offsets.size() - 1 <= buffers.size());
+  assert(start_buffer_offset + ml.offsets.size() - 1 <= buffers.size());
   for (int i=0;i<ml.offsets.size() - 1;i++)
   {
     int offset = ml.offsets[i];
     int size = ml.offsets[i + 1] - ml.offsets[i];
     if (offset >= 0 && size > 0)
     {
-      clear_buffer(i, 0.0f);
+      int b_id = start_buffer_offset + i;
+      clear_buffer(b_id, 0.0f);
       for (int j = 0; j < vertex_count; j++)
-        memcpy(buffers[i] + size*j, model.data() + ml.f_per_vert * j + offset, sizeof(float)*size);
-      set_array_to_ctx_internal(buffer_names[i], i, size * vertex_count);
+        memcpy(buffers[b_id] + size*j, model.data() + ml.f_per_vert * j + offset, sizeof(float)*size);
+      set_array_to_ctx_internal(buffer_names[b_id], b_id, size * vertex_count);
     }
   }
   show_errors();
@@ -304,13 +325,13 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
 void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
                                             const CameraSettings &camera, const std::vector<float> &scene_params)
 {  
-  model_to_ctx(model, ml);
+  model_to_ctx(model, ml, 0);
   camera_to_ctx(camera);
 
-  constexpr int cameras_buf_n = 3;
+  int cameras_buf_id = get_camera_buffer_id();
   assert(scene_params.size() > 0);
-  memcpy(buffers[cameras_buf_n], scene_params.data(), sizeof(float)*scene_params.size());
-  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, scene_params.size());
+  memcpy(buffers[cameras_buf_id], scene_params.data(), sizeof(float)*scene_params.size());
+  set_array_to_ctx_internal(buffer_names[cameras_buf_id], cameras_buf_id, scene_params.size());
   show_errors();
 
   PyObject *func, *args, *ref_dir_arg, *func_ret;
@@ -331,13 +352,13 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
                                            double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  model_to_ctx(model, opt_model_layout);
+  model_to_ctx(model, opt_model_layout, 0);
   camera_to_ctx(camera);
 
-  constexpr int cameras_buf_n = 3;
+  int cameras_buf_id = get_camera_buffer_id();
   assert(scene_params.size() > 0);
-  memcpy(buffers[cameras_buf_n], scene_params.data(), sizeof(float)*scene_params.size());
-  set_array_to_ctx_internal(buffer_names[cameras_buf_n], cameras_buf_n, scene_params.size());
+  memcpy(buffers[cameras_buf_id], scene_params.data(), sizeof(float)*scene_params.size());
+  set_array_to_ctx_internal(buffer_names[cameras_buf_id], cameras_buf_id, scene_params.size());
   show_errors();
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -345,7 +366,7 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
   //get derivatives by vertex positions and scene parameters
   get_array_from_ctx_internal(buffer_names[0] + "_grad", 0);
-  get_array_from_ctx_internal(buffer_names[cameras_buf_n] + "_grad", cameras_buf_n);
+  get_array_from_ctx_internal(buffer_names[cameras_buf_id] + "_grad", cameras_buf_id);
   std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   if (timers)
   {
@@ -359,25 +380,29 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
 void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
                                           std::vector<float> &final_grad)
 {
-  // offsets[0] offset always represent positions. We do not calculate derivatice by other channels (normals, tc)
-  int offset = opt_model_layout.offsets[0];
-  int size = opt_model_layout.offsets[1] - opt_model_layout.offsets[0];
-  if (offset >= 0 && size > 0)
+  int mesh_parts_count = 1;
+  for (int part_id = 0; part_id < mesh_parts_count; part_id++)
   {
-    for (int i = 0; i < vertex_count; i++)
+    // offsets[0] offset always represent positions. We do not calculate derivatice by other channels (normals, tc)
+    int offset = opt_model_layout.offsets[0];
+    int size = opt_model_layout.offsets[1] - opt_model_layout.offsets[0];
+    if (offset >= 0 && size > 0)
     {
-      for (int j = 0; j < params_count; j++)
+      for (int i = 0; i < vertex_count; i++)
       {
-        for (int k = 0; k < size; k++)
+        for (int j = 0; j < params_count; j++)
         {
-          final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[0][size * i + k];
+          for (int k = 0; k < size; k++)
+          {
+            final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[3*part_id][size * i + k];
+          }
         }
       }
     }
   }
 
   for (int i = params_count; i < final_grad.size(); i++)
-    final_grad[i] = buffers[3][i - params_count]; // gradient by camera params
+    final_grad[i] = buffers[get_camera_buffer_id()][i - params_count]; // gradient by camera params
 }
 
 void MitsubaInterface::set_model_max_size(int _model_max_size)
@@ -396,6 +421,7 @@ void MitsubaInterface::set_model_max_size(int _model_max_size)
 
 int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int buffer_id)
 {
+  //logerr("get context from array id = %d, name = %s", buffer_id, name.c_str());
   PyObject *func, *args, *params, *params_bytes, *params_name;
   params_name = PyUnicode_FromString(name.c_str());
   args = PyTuple_Pack(2, mitsubaContext, params_name);

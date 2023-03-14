@@ -104,8 +104,16 @@ def get_material_by_name(texture_name, material_name):
     print("unknown material name ", material_name)
     return porcelain_roughplastic(texture_name, 0)
 
-def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_name, material_name):
-  texture_name = base_path + "../textures/" + texture_name
+def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, texture_names_packed, material_names_packed):
+  texture_names = texture_names_packed.split("|")
+  material_names = material_names_packed.split("|")
+  if (len(texture_names) != len(material_names)):
+    print("Error: len(texture_names) != len(material_names) ", len(texture_names), " != ", len(material_names))
+  model_parts = min(len(texture_names), len(material_names))
+  print("init to render composite mehs with", model_parts, "parts")
+  for i in range(len(texture_names)):
+    texture_names[i] = base_path + "../textures/" + texture_names[i]
+  
   mi.set_variant(mitsuba_variant)
   scene_dict = {'type': 'scene'}
   if (render_style == "monochrome_demo" or render_style == "textured_demo"):
@@ -125,6 +133,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       'reparam_rays': 16,
       'reparam_antithetic' : False
     }
+  #default camera
   scene_dict['sensor'] = {
           'type': 'perspective',
           'to_world': T.look_at(
@@ -141,47 +150,9 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
               'sample_border': True
           },
       }
-  if (render_style == "silhouette"):
-    scene_dict['model'] = {
-          'type': 'obj',
-          'filename': base_path + 'meshes/slab.obj',
-          'to_world': T.scale(0.67),
-          'emitter': {
-              'type': 'area',
-              'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
-          }
-    }
-  else:
-    bsdf = {
-        'type': 'diffuse',
-        'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-    }
-    if (render_style == "monochrome"):
-        bsdf = {
-            'type': 'diffuse',
-            'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-        }
-    elif (render_style == "textured_const" or render_style == "textured_demo"):
-      bsdf = get_material_by_name(texture_name, material_name)
-    elif (render_style == "monochrome_demo"):
-        bsdf = {
-            'id': 'porcelain_material',
-            'type': 'roughplastic',
-            'distribution': 'ggx',
-            'int_ior': 1.504,
-            'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-            'alpha': 0.001
-        }
-    else:
-      print("Unknown render_style = ", render_style)
-
-    scene_dict['model'] = {
-        'type': 'obj',
-        'filename': base_path + 'meshes/slab.obj',
-        'to_world': T.scale(0.67),
-        "face_normals": True,
-        'bsdf': bsdf
-    }
+  
+  #light and ambient light
+  if (render_style != "silhouette"):
     scene_dict['light'] = {
             'type': 'obj',
             'filename': base_path + 'meshes/sphere.obj',
@@ -201,6 +172,50 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       }
     }
 
+  #model (one model for each part of composite mesh)
+  for i in range(model_parts):
+    model_name = 'model_'+str(i)
+    if (render_style == "silhouette"):
+      scene_dict[model_name] = {
+            'type': 'obj',
+            'filename': base_path + 'meshes/slab.obj',
+            'to_world': T.scale(0.67),
+            'emitter': {
+                'type': 'area',
+                'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
+            }
+      }
+    else:
+      bsdf = {
+          'type': 'diffuse',
+          'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+      }
+      if (render_style == "monochrome"):
+          bsdf = {
+              'type': 'diffuse',
+              'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+          }
+      elif (render_style == "textured_const" or render_style == "textured_demo"):
+        bsdf = get_material_by_name(texture_names[i], material_names[i])
+      elif (render_style == "monochrome_demo"):
+          bsdf = {
+              'id': 'porcelain_material',
+              'type': 'roughplastic',
+              'distribution': 'ggx',
+              'int_ior': 1.504,
+              'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
+              'alpha': 0.001
+          }
+      else:
+        print("Unknown render_style = ", render_style)
+
+      scene_dict[model_name] = {
+          'type': 'obj',
+          'filename': base_path + 'meshes/slab.obj',
+          'to_world': T.scale(0.67),
+          "face_normals": True,
+          'bsdf': bsdf
+      }
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
@@ -208,17 +223,21 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
   context = {
     'scene' : scene,
     'params' : params, 
-    'vertex_positions' : params['model.vertex_positions'],
-    'vertex_normals' : params['model.vertex_normals'],
-    'vertex_texcoords' : params['model.vertex_texcoords'],
-    'vertex_positions_grad' : params['model.vertex_positions'],
     'spp' : spp,
     'camera' : mi.load_dict(scene_dict['sensor']),
-    'texture_name' : texture_name,
+    'texture_names' : texture_names,
     'render_style' : render_style,
     'image_w' : image_w,
-    'image_h' : image_h
+    'image_h' : image_h,
+    'model_parts' : model_parts
   }
+
+  for i in range(model_parts):
+    context['vertex_positions_'+str(i)] = params['model_'+str(i)+'.vertex_positions'],
+    context['vertex_normals_'+str(i)] = params['model_'+str(i)+'.vertex_normals'],
+    context['vertex_texcoords_'+str(i)] = tuple(),
+    context['vertex_positions_'+str(i)+'_grad'] = tuple(),
+
   if (render_style != "silhouette"):
     t = dr.unravel(mi.Point3f, params['light.vertex_positions'])
     context["light"] = dr.ravel(t)
@@ -243,8 +262,45 @@ def init_optimization_with_tex(context, img_ref_dir, loss, learning_rate, camera
   context['status'] = 'optimization_with_tex'
 
   opt = mi.ad.Adam(lr=learning_rate)
-  opt['model.bsdf.diffuse_reflectance.data'] = context['params']['model.bsdf.diffuse_reflectance.data']
+  for i in range(context['model_parts']):
+    opt['model_'+str(i)+'.bsdf.diffuse_reflectance.data'] = context['params']['model_'+str(i)+'.bsdf.diffuse_reflectance.data']
   context['tex_optimizer'] = opt
+
+def prepare_model(params, context):
+  for i in range(context['model_parts']):
+    params['model_'+str(i)+'.vertex_positions'] = context['vertex_positions_'+str(i)]
+    vertex_count = int(len(params['model_'+str(i)+'.vertex_positions'])/3)
+    params['model_'+str(i)+'.vertex_count'] = vertex_count
+    params['model_'+str(i)+'.face_count'] = int(vertex_count/3)
+    if (len(params['model_'+str(i)+'.faces']) != vertex_count):
+      params['model_'+str(i)+'.faces'] = list(range(vertex_count))
+
+def transform_model(params, context, pos, angles):
+  for i in range(context['model_parts']):
+    t1 = dr.unravel(mi.Point3f, params['model_'+str(i)+'.vertex_positions'])
+    trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+    tr_positions = trafo @ t1
+    params['model_'+str(i)+'.vertex_positions'] = dr.ravel(tr_positions)
+
+def fix_missing_normals_and_tc(params, context):
+  for i in range(context['model_parts']):
+    #we still should have proper size of normals and tc arrays
+    if (len(params['model_'+str(i)+'.vertex_positions']) != len(params['model_'+str(i)+'.vertex_normals'])):
+      params['model_'+str(i)+'.vertex_normals'] = tuple([1] * len(params['model_'+str(i)+'.vertex_positions']))
+    if (2*len(params['model_'+str(i)+'.vertex_positions']) != 3*len(params['model_'+str(i)+'.vertex_texcoords'])):
+      params['model_'+str(i)+'.vertex_texcoords'] = tuple([1] * int(2*len(params['model_'+str(i)+'.vertex_positions'])/3))
+
+def transform_model_normals(params, context, pos, angles):
+  #we have to update normals after params.update(), because params.update() discards normals and recalculates them
+  for i in range(context['model_parts']):
+    t2_tensor = mi.Float(list(context['vertex_normals_'+str(i)]))
+    t2 = dr.unravel(mi.Normal3f, t2_tensor)
+    trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+    tr_normals = trafo2 @ t2
+    context['vertex_normals_'+str(i)] = tuple(dr.ravel(tr_normals))
+    params['model_'+str(i)+'.vertex_normals'] = context['vertex_normals_'+str(i)]
+    if (context["render_style"] != "silhouette"):
+      params['model_'+str(i)+'.vertex_texcoords'] = context['vertex_texcoords_'+str(i)]
 
 def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target_z, up_x, up_y, up_z,
                fov, image_w, image_h):
@@ -269,15 +325,12 @@ def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
   params = context['params']
-
-  params['model.vertex_positions'] = context['vertex_positions']
-  vertex_count = int(len(params['model.vertex_positions'])/3)
-  params['model.vertex_count'] = vertex_count
-  params['model.face_count'] = int(vertex_count/3)
-  params['model.faces'] = list(range(vertex_count))
-  
   pos, angles, light_pos, ls_li_ali = get_scene_params(context)
 
+  #update data for all parts of composite mesh
+  prepare_model(params, context)
+  transform_model(params, context, pos, angles)
+  fix_missing_normals_and_tc(params, context)
 
   if (context["render_style"] != "silhouette"):
       light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_ali.x)
@@ -285,30 +338,13 @@ def render_and_save_to_file(context, save_filename):
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
-      params['ambient_light.radiance.value'] = ls_li_ali.z
-
-  t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
-  trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
-  tr_positions = trafo @ t1
-  params['model.vertex_positions'] = dr.ravel(tr_positions)
-
-  #we still should have proper size of normals and tc arrays
-  if (len(params['model.vertex_positions']) != len(params['model.vertex_normals'])):
-    params['model.vertex_normals'] = tuple([1] * len(params['model.vertex_positions']))
-  if (2*len(params['model.vertex_positions']) != 3*len(params['model.vertex_texcoords'])):
-    params['model.vertex_texcoords'] = tuple([1] * int(2*len(params['model.vertex_positions'])/3)) 
+      params['ambient_light.radiance.value'] = ls_li_ali.z 
   
   params.update()
-  t2_tensor = mi.Float(list(context['vertex_normals']))
-  t2 = dr.unravel(mi.Normal3f, t2_tensor)
-  trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
-  tr_normals = trafo2 @ t2
-  context['vertex_normals'] = tuple(dr.ravel(tr_normals))
-  params['model.vertex_normals'] = context['vertex_normals']
-  params['model.vertex_texcoords'] = context['vertex_texcoords']
+
+  transform_model_normals(params, context, pos, angles)
 
   max_samples = int(1024*1024*512 / (context['image_w']*context['image_h']))
-
   total_spp = context['spp']
   first = True
   while (total_spp > 0):
@@ -322,7 +358,6 @@ def render_and_save_to_file(context, save_filename):
       img_ref = img_ref + img
       
   mi.util.write_bitmap(save_filename, img_ref)
-
   time.sleep(1)
 
 def F_loss_mse(img, img_ref):
@@ -359,7 +394,7 @@ def render(it, context):
   #load reference on the first iteration
   if (int(it) == 0):
     for i in range(context['cameras_count']):
-      print(context['img_ref_dir_'+str(i)])
+      print("reference",context['img_ref_dir_'+str(i)])
       with Image.open(context['img_ref_dir_'+str(i)]) as img: ##TODO: proper link
         img.load()
       img = img.convert('RGB')
@@ -384,14 +419,6 @@ def render(it, context):
   #prepare model
   scene = context['scene']
   params = context['params']
-  params['model.vertex_positions'] = context['vertex_positions']
-  vertex_count = int(len(params['model.vertex_positions'])/3)
-  params['model.vertex_count'] = vertex_count
-  params['model.face_count'] = int(vertex_count/3)
-  if (len(params['model.faces']) != vertex_count):
-    params['model.faces'] = list(range(vertex_count))
-  t1 = dr.unravel(mi.Point3f, params['model.vertex_positions'])
-  camera_params_grad = []
 
   #render scene from each camera
   for camera_n in range(context['cameras_count']):
@@ -402,7 +429,6 @@ def render(it, context):
 
     dr.enable_grad(pos)
     dr.enable_grad(angles)
-    dr.enable_grad(t1)
 
     if (context['status'] == 'optimization_with_tex'):
       dr.enable_grad(light_pos)
@@ -415,26 +441,19 @@ def render(it, context):
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
       params['ambient_light.radiance.value'] = ls_li_ali.z
 
+
+    prepare_model(params, context)
+    t1 = dr.unravel(mi.Point3f, params['model_'+str(0)+'.vertex_positions'])
+    dr.enable_grad(t1)
     trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
     tr_positions = trafo @ t1
-    params['model.vertex_positions'] = dr.ravel(tr_positions)
+    params['model_'+str(0)+'.vertex_positions'] = dr.ravel(tr_positions)
     
-    #we still should have proper size of normals and tc arrays
-    if (len(params['model.vertex_positions']) != len(params['model.vertex_normals'])):
-      params['model.vertex_normals'] = tuple([1] * len(params['model.vertex_positions']))
-    if (2*len(params['model.vertex_positions']) != 3*len(params['model.vertex_texcoords'])):
-      params['model.vertex_texcoords'] = tuple([1] * int(2*len(params['model.vertex_positions'])/3)) 
+    fix_missing_normals_and_tc(params, context)
 
     params.update()
 
-    if (context['status'] == 'optimization_with_tex' or True):
-      t2_tensor = mi.Float(list(context['vertex_normals']))
-      t2 = dr.unravel(mi.Normal3f, t2_tensor)
-      trafo2 = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
-      tr_normals = trafo2 @ t2
-      context['vertex_normals'] = tuple(dr.ravel(tr_normals))
-      params['model.vertex_normals'] = context['vertex_normals']
-      params['model.vertex_texcoords'] = context['vertex_texcoords']
+    transform_model_normals(params, context, pos, angles)
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
     img = dr.minimum(dr.maximum(img, 0), 1)
@@ -444,6 +463,7 @@ def render(it, context):
     loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
     dr.backward(loss_PSNR)
 
+    camera_params_grad = []
     camera_params_grad.append(dr.grad(pos).x)
     camera_params_grad.append(dr.grad(pos).y)
     camera_params_grad.append(dr.grad(pos).z)
@@ -475,7 +495,8 @@ def render(it, context):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
   context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad, nan=0, posinf=0, neginf=0))
-  context['vertex_positions_grad'] = numpy.nan_to_num(vertex_positions_grad, nan=0, posinf=0, neginf=0) / float(context['cameras_count'])
+  context['vertex_positions_'+str(0)+'_grad'] = numpy.nan_to_num(vertex_positions_grad, nan=0, posinf=0, neginf=0) / float(context['cameras_count'])
+  #print("set camera params ", context['camera_params_grad'])
 
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']
@@ -488,8 +509,8 @@ def render(it, context):
     if context['save_intermediate_images'] > 0:
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
-      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
-    mi.util.write_bitmap(context['texture_name'], mi.Bitmap(opt['model.bsdf.diffuse_reflectance.data']))
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model_'+str(0)+'.bsdf.diffuse_reflectance.data']))
+    mi.util.write_bitmap(context['texture_names'][0], mi.Bitmap(opt['model_'+str(0)+'.bsdf.diffuse_reflectance.data']))
   return loss_PSNR[0]
 
 def get_params(context, key):

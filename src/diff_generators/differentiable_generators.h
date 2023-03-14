@@ -47,9 +47,9 @@ namespace dgen
     ModelQuality() : ModelQuality(false, 1) {}
   };
 
-  typedef std::function<void(std::vector<dfloat> &, std::vector<dfloat> &, ModelQuality)> generator_func;
-  typedef std::function<dfloat(const std::vector<dfloat> &)> params_regularizer_func;
-  typedef std::function<dfloat(const std::vector<dfloat> &, const std::vector<dfloat> &)> model_regularizer_func;
+  typedef std::function<void(const std::vector<dfloat> &params, std::vector<dfloat> &out_model, ModelQuality)> generator_func;
+  typedef std::function<dfloat(const std::vector<dfloat> &params)> params_regularizer_func;
+  typedef std::function<dfloat(const std::vector<dfloat> &params, const std::vector<dfloat> &model)> model_regularizer_func;
 
   struct GeneratorDescription
   {

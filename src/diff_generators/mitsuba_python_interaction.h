@@ -91,14 +91,18 @@ public:
   int get_array_from_ctx_internal(const std::string &name, int buffer_id);//returns loaded array size (in floats)
   void set_array_to_ctx_internal(const std::string &name, int buffer_id, int size);//sends size float from buffer to mitsuba context 
   float render_and_compare_internal(int cameras_count);//returns loss function value
-  void model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml);
+  void model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml, int start_buffer_offset);
   void camera_to_ctx(const CameraSettings &camera);
   void clear_buffer(int buffer_id, float val = 0);
+  int get_camera_buffer_id()
+  {
+    return buffers.size() - 1;
+  }
   int model_max_size = 0;
   int iteration = 0;
   int cameras_count = 1;
-  std::array<float *, 4> buffers = {nullptr, nullptr, nullptr, nullptr};
-  std::array<std::string, 4> buffer_names = {"vertex_positions", "vertex_normals", "vertex_texcoords", "camera_params"};
+  std::vector<float *> buffers;
+  std::vector<std::string> buffer_names;
   PyObject *pModule = nullptr, *mitsubaContext = nullptr;
   RenderSettings render_settings;
   dgen::ModelLayout opt_model_layout;
