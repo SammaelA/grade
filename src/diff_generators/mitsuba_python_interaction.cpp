@@ -343,13 +343,8 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   float loss = render_and_compare_internal(cameras_count);
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
-  for (int i=0;i<opt_model_layout.offsets.size() - 1;i++)
-  {
-    int offset = opt_model_layout.offsets[i];
-    int size = opt_model_layout.offsets[i + 1] - opt_model_layout.offsets[i];
-    if (offset >= 0 && size > 0)
-      get_array_from_ctx_internal(buffer_names[i] + "_grad", i);
-  }
+  //get derivatives by vertex positions and scene parameters
+  get_array_from_ctx_internal(buffer_names[0] + "_grad", 0);
   get_array_from_ctx_internal(buffer_names[cameras_buf_n] + "_grad", cameras_buf_n);
   std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   if (timers)
@@ -364,27 +359,25 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
 void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
                                           std::vector<float> &final_grad)
 {
-  for (int off=0;off<1/*TODO: fix me opt_model_layout.offsets.size() - 1*/;off++)
+  // offsets[0] offset always represent positions. We do not calculate derivatice by other channels (normals, tc)
+  int offset = opt_model_layout.offsets[0];
+  int size = opt_model_layout.offsets[1] - opt_model_layout.offsets[0];
+  if (offset >= 0 && size > 0)
   {
-    int offset = opt_model_layout.offsets[off];
-    int size = opt_model_layout.offsets[off + 1] - opt_model_layout.offsets[off];
-    if (offset >= 0 && size > 0)
+    for (int i = 0; i < vertex_count; i++)
     {
-      for (int i = 0; i < vertex_count; i++)
+      for (int j = 0; j < params_count; j++)
       {
-        for (int j = 0; j < params_count; j++)
+        for (int k = 0; k < size; k++)
         {
-          for (int k = 0; k < size; k++)
-          {
-            final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[off][size * i + k];
-          }
+          final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[0][size * i + k];
         }
       }
     }
-
-    for (int i=params_count; i< final_grad.size(); i++)
-      final_grad[i] = buffers[3][i - params_count]; // gradient by camera params
   }
+
+  for (int i = params_count; i < final_grad.size(); i++)
+    final_grad[i] = buffers[3][i - params_count]; // gradient by camera params
 }
 
 void MitsubaInterface::set_model_max_size(int _model_max_size)
