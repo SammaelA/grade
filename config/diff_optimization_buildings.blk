@@ -35,7 +35,7 @@
   //will be created, rendered and saved to file. This new file will be used as reference for texture_optimization
   //reference_params contains model paramters and reference_scene contains scene parameters
   synthetic_reference:b = true
-  reference_params:arr = {3, 3, 3, 3, 6,  3, 3, 3, 3, 2,   3, 3, 3, 3, 0,   1, 0.5, 0.33}
+  reference_params:arr = {3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   1, 0.5, 0.33}
   reference_scene:arr = {-0.2, 0.07, 0.5, 0, 0.5, 0, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0}
   reference_image_size:i = 1024
 
@@ -46,11 +46,11 @@
 
   silhouette_optimization_settings
   {
-    optimization_stages:i = 2
+    optimization_stages:i = 1
 
     stage_0
     {
-      optimizer:s = "memetic_classic"
+      optimizer:s = "adam"
       iterations:i = 0 //not used in 0 block
       lr:r = 0 //not used in 0 block
       model_quality:i = 1
@@ -70,6 +70,28 @@
 
   texture_optimization_settings
   {
-    optimization_stages:i = 0
+    optimization_stages:i = 1
+
+    stage_material_selection
+    {
+      optimizer:s = "adam"
+      iterations:i = 20
+      lr:r = 0.02
+      texture_lr:r = 0.25
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 256     
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      iterations:i = 75
+      lr:r = 0.01
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 256     
+    }
   }
 }
