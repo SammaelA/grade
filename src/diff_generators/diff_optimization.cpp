@@ -262,18 +262,47 @@ namespace dopt
       v = 1 - v;
   }
 
+  MitsubaInterface::ModelInfo get_default_model_info_from_blk(Block &gen_mesh_parts)
+  {
+    MitsubaInterface::ModelInfo model_info;
+    model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
+
+    for (int i=0;i<gen_mesh_parts.size();i++)
+    {
+      if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+        model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                    "white.png", 
+                                    MitsubaInterface::get_default_material()});
+    }
+    return model_info;
+  }
+
   float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
-    Block gen_params, scene_params, presets_blk;
+    Block gen_description, scene_params, presets_blk;
     std::vector<float> params_min, params_max;
     std::vector<std::string> params_names;
     std::vector<unsigned short> variant_count, variant_positions;
 
     PresetsData parameter_presets;
     dgen::GeneratorDescription generator = dgen::get_generator_by_name(settings_blk.get_string("procedural_generator"));
-    load_block_from_file(generator.parameters_description_blk_path, gen_params);
+    load_block_from_file(generator.generator_description_blk_path, gen_description);
     load_block_from_file(settings_blk.get_string("scene_description"), scene_params);
     load_block_from_file(generator.presets_blk_path, presets_blk);
+    Block *_gen_params_p = gen_description.get_block("generator_parameters");
+    if (!_gen_params_p)
+    {
+      logerr("ERROR: file %s do not have \"generator_parameters\" block", generator.generator_description_blk_path.c_str());
+      return 1;
+    }
+    Block *_gen_mesh_parts_p = gen_description.get_block("mesh_parts");
+    if (!_gen_params_p)
+    {
+      logerr("ERROR: file %s do not have \"mesh_parts\" block", generator.generator_description_blk_path.c_str());
+      return 1;
+    }
+    Block &gen_params = *_gen_params_p;
+    Block &gen_mesh_parts = *_gen_mesh_parts_p;
     int gen_params_cnt = gen_params.size();
     int scene_params_cnt = scene_params.size();
 
@@ -305,6 +334,9 @@ namespace dopt
 
     CameraSettings camera = CameraSettings::get_default_mitsuba_preset();
 
+    //there is no info about materials or textures, only the number of composite parts
+    MitsubaInterface::ModelInfo default_model_info = get_default_model_info_from_blk(gen_mesh_parts);
+
     Texture reference_tex;
     Texture reference_mask;
     const int original_reference_size = settings_blk.get_int("original_reference_size", 1024);
@@ -325,9 +357,14 @@ namespace dopt
         std::vector<float> reference_scene_params;
         settings_blk.get_arr("reference_scene", reference_scene_params);
         std::vector<float> reference = func.get(reference_params, dgen::ModelQuality(false, 3));
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA,
-                                                                    MitsubaInterface::TEXTURED_DEMO, "texture_not_found.png"));
-        mi.render_model_to_file(reference, "saves/reference.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, reference_scene_params);
+
+        MitsubaInterface::ModelInfo ref_mi = default_model_info;
+        for (auto &p : ref_mi.parts)
+          p.texture_name = "texture_not_found.png";
+
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
+                                   ref_mi);
+        mi.render_model_to_file(reference, "saves/reference.png", camera, reference_scene_params);
         reference_tex_raw = engine::textureManager->load_unnamed_tex("saves/reference.png");
       }
       else
@@ -433,9 +470,10 @@ namespace dopt
 
       model_quality = stage_blk->get_int("model_quality", 0);
       only_pos = false;
-      mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE, 1 << 16, dgen::ModelLayout(0, 3, 6, 6, 8),
+      mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE,
                            MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
-                           1, settings_blk.get_bool("save_intermediate_images", false));
+                           default_model_info,
+                           settings_blk.get_bool("save_intermediate_images", false));
 
       std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
       opt::Optimizer *opt = get_optimizer(search_algorithm);
@@ -479,8 +517,9 @@ namespace dopt
     }
 
     std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME));
-    mi.render_model_to_file(best_model, saved_result_path, dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME),
+                               default_model_info);
+    mi.render_model_to_file(best_model, saved_result_path, camera, get_camera_params(opt_result.best_params));
 
     Texture mask_tex, reconstructed_tex;
     ModelTex mt;
@@ -570,11 +609,16 @@ namespace dopt
           std::string tex_name = "reconstructed_tex_" + mat_ns; 
           engine::textureManager->save_png(reconstructed_tex, tex_name);
 
+          //TODO: select different textures and different materials for model parts
+          MitsubaInterface::ModelInfo textured_model_info = default_model_info;
+          textured_model_info.parts[0].material_name = material;
+          textured_model_info.parts[0].texture_name = "../../saves/" + tex_name + ".png";
+
           mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
-                                          1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
                                           MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
-                                          MitsubaInterface::TEXTURED_CONST, "../../saves/" + tex_name + ".png", material),
-                                          stage_blk->get_double("texture_opt_lr", 0.25), 1, settings_blk.get_bool("save_intermediate_images", false));
+                                          MitsubaInterface::TEXTURED_CONST),
+                                          textured_model_info,
+                                          stage_blk->get_double("texture_opt_lr", 0.25), settings_blk.get_bool("save_intermediate_images", false));
           Block adam_settings;
           adam_settings.add_arr("initial_params", init_params);
           adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
@@ -612,6 +656,7 @@ namespace dopt
           delete tex_opt;
         }
         debug("Material \"%s\" selected, PSNR = %.2f\n", best_material.c_str(), -opt_result.best_err);
+        sleep(3);
       }
 
       //when material is chosen, fine-tune the texture and scene parameters
@@ -629,11 +674,16 @@ namespace dopt
         only_pos = false;
         Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         engine::textureManager->save_png(reference_textured, "reference_textured");
-        mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
-                                        1 << 16, dgen::ModelLayout(0, 3, 6, 8, 8), 
+
+        //TODO: select different textures and different materials for model parts
+        MitsubaInterface::ModelInfo textured_model_info = default_model_info;
+        textured_model_info.parts[0].material_name = best_material;
+        textured_model_info.parts[0].texture_name = "../../saves/" + best_tex_name + ".png";
+        mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE, 
                                         MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
-                                        MitsubaInterface::TEXTURED_CONST, "../../saves/" + best_tex_name + ".png", best_material),
-                                        stage_blk->get_double("texture_opt_lr", 0.25), 1, true);
+                                        MitsubaInterface::TEXTURED_CONST),
+                                        textured_model_info,
+                                        stage_blk->get_double("texture_opt_lr", 0.25), true);
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
         adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
@@ -681,17 +731,23 @@ namespace dopt
       sleep(1);
 
       std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST, 
-                                 "../../saves/reconstructed_tex_raw.png", best_material));
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
-   
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
-                                 "../../saves/reconstructed_tex_complemented.png", best_material));
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+      MitsubaInterface::ModelInfo textured_model_info = default_model_info;
+      textured_model_info.parts[0].material_name = best_material;
+      
+      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_raw.png";
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                 textured_model_info);
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", camera, get_camera_params(opt_result.best_params));
 
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST,
-                                 "../../saves/reconstructed_tex_denoised.png", best_material));
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", dgen::ModelLayout(0, 3, 6, 8, 8), camera, get_camera_params(opt_result.best_params));
+      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_complemented.png";
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                 textured_model_info);
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", camera, get_camera_params(opt_result.best_params));
+
+      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_denoised.png";
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                 textured_model_info);
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", camera, get_camera_params(opt_result.best_params));
     }
 
     debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());

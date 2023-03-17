@@ -22,7 +22,7 @@ namespace dgen
         gen.generator = create_cup;
         gen.params_regularizer = parameters_cup_reg;
         gen.model_regularizer = default_model_reg;
-        gen.parameters_description_blk_path = "dishes_gen_parameters_description.blk";
+        gen.generator_description_blk_path = "dishes_gen_parameters_description.blk";
         gen.presets_blk_path = "dishes_gen_presets.blk";
         generators.emplace(name, gen);
         debug("generator description %s loaded\n", name.c_str());
@@ -34,7 +34,7 @@ namespace dgen
         gen.generator = create_building;
         gen.params_regularizer = default_parameters_reg;
         gen.model_regularizer = default_model_reg;
-        gen.parameters_description_blk_path = "buildings_gen_parameters_description.blk";
+        gen.generator_description_blk_path = "buildings_gen_parameters_description.blk";
         gen.presets_blk_path = "buildings_gen_presets.blk";
         generators.emplace(name, gen);
         debug("generator description %s loaded\n", name.c_str());

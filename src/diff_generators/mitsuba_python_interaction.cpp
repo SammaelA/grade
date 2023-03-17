@@ -79,11 +79,13 @@ MitsubaInterface::MitsubaInterface(const std::string &scripts_dir, const std::st
     show_errors();
 }
 
-void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
+void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings, ModelInfo _model_info)
 {
   finish();
+  render_settings = _render_settings;
+  model_info = _model_info;
 
-  int mesh_parts_count = 1;
+  int mesh_parts_count = model_info.parts.size();
   for (int part_id = 0; part_id < mesh_parts_count; part_id++)
   {
     buffer_names.push_back("vertex_positions_"+std::to_string(part_id));
@@ -136,6 +138,20 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
     render_style = "silhouette";
     break;
   }
+
+  std::string texture_names = "";
+  std::string material_names = "";
+  for (int i=0;i<model_info.parts.size();i++)
+  {
+    if (i != 0)
+    {
+      texture_names +="|";
+      material_names +="|";
+    }
+    texture_names += model_info.parts[i].texture_name;
+    material_names += model_info.parts[i].material_name;
+  }
+
   PyObject *initFunc, *initArgs, *basePath, *iw_arg, *ih_arg, *spp_arg, *mv, *rs, *tn, *mn;
   basePath = PyUnicode_FromString("resources/mitsuba_data/");
   iw_arg = PyLong_FromLong(render_settings.image_w);
@@ -143,8 +159,8 @@ void MitsubaInterface::init_scene_and_settings(RenderSettings _render_settings)
   spp_arg = PyLong_FromLong(render_settings.samples_per_pixel);
   mv = PyUnicode_FromString(mitsuba_var.c_str());
   rs = PyUnicode_FromString(render_style.c_str());
-  tn = PyUnicode_FromString(render_settings.texture_name.c_str());
-  mn = PyUnicode_FromString(render_settings.material_name.c_str());
+  tn = PyUnicode_FromString(texture_names.c_str());
+  mn = PyUnicode_FromString(material_names.c_str());
   initArgs = PyTuple_Pack(8, basePath, iw_arg, ih_arg, spp_arg, mv, rs, tn, mn);
   
   initFunc = PyObject_GetAttrString(pModule, (char *)"init");
@@ -193,32 +209,29 @@ std::string get_loss_function_name(MitsubaInterface::LossFunction loss_function)
   }
   return loss_function_name;
 }
-void MitsubaInterface::init_optimization(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, int _model_max_size, 
-                                         dgen::ModelLayout opt_ml,
-                                         RenderSettings render_settings, int cam_count, bool save_intermediate_images)
+void MitsubaInterface::init_optimization(const std::vector<std::string> &reference_image_dir, LossFunction loss_function,
+                                         RenderSettings render_settings, ModelInfo model_info,
+                                         bool save_intermediate_images)
 {
-  init_optimization_internal("init_optimization", reference_image_dir, loss_function, _model_max_size, opt_ml, 
-                             render_settings, 0, cam_count, save_intermediate_images);
+  init_optimization_internal("init_optimization", reference_image_dir, loss_function, render_settings, model_info,
+                             0, save_intermediate_images);
 }
 
-void MitsubaInterface::init_optimization_internal(const std::string &function_name,
-                                                  const std::vector<std::string> &reference_images_dir, LossFunction loss_function, int _model_max_size, 
-                                                  dgen::ModelLayout opt_ml, RenderSettings render_settings, float texture_rec_learing_rate,
-                                                  int cam_count, bool save_intermediate_images)
+void MitsubaInterface::init_optimization_internal(const std::string &function_name, const std::vector<std::string> &reference_images_dir,
+                                                  LossFunction loss_function, RenderSettings render_settings, ModelInfo model_info,
+                                                  float texture_rec_learing_rate, bool save_intermediate_images)
 {
-  init_scene_and_settings(render_settings);
+  init_scene_and_settings(render_settings, model_info);
 
-  opt_model_layout = opt_ml;
-  cameras_count = cam_count;
   std::string loss_function_name = get_loss_function_name(loss_function);
   
   //save all strings as "ref1.png#ref2.png#ref3.png"
   std::string full_ref_string = "";
-  assert(reference_images_dir.size() >= cam_count);
-  for (int i=0;i<cam_count;i++)
+  assert(reference_images_dir.size() >= render_settings.cameras_count);
+  for (int i=0;i<render_settings.cameras_count;i++)
   {
     full_ref_string += reference_images_dir[i];
-    if (i < cam_count - 1)
+    if (i < render_settings.cameras_count - 1)
      full_ref_string += "#"; 
   }
 
@@ -229,12 +242,11 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
   lr = PyFloat_FromDouble(texture_rec_learing_rate);
   int_im = PyLong_FromLong((int)save_intermediate_images);
-  c_cnt = PyLong_FromLong(cam_count);
+  c_cnt = PyLong_FromLong(render_settings.cameras_count);
   args = PyTuple_Pack(6, mitsubaContext, ref_dir_arg, loss_func, lr, c_cnt, int_im);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
-  set_model_max_size(_model_max_size);
   iteration = 0;
 
   DEL(func);
@@ -247,18 +259,19 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   DEL(int_im);
 }
 
-void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir,
-                                                  LossFunction loss_function, int model_max_size, dgen::ModelLayout opt_ml,
-                                                  RenderSettings render_settings, float texture_rec_learing_rate, int cam_count,
+void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string> &reference_image_dir, LossFunction loss_function, 
+                                                  RenderSettings render_settings, ModelInfo model_info, 
+                                                  float texture_rec_learing_rate,
                                                   bool save_intermediate_images)
 {
   render_settings.renderStyle = RenderStyle::TEXTURED_CONST;
-  init_optimization_internal("init_optimization_with_tex", reference_image_dir, loss_function, model_max_size, opt_ml, 
-                             render_settings, texture_rec_learing_rate, cam_count, save_intermediate_images);
+  init_optimization_internal("init_optimization_with_tex", reference_image_dir, loss_function, render_settings,
+                             model_info, texture_rec_learing_rate, save_intermediate_images);
 }
 
-void MitsubaInterface::model_to_ctx(const std::vector<float> &model, const dgen::ModelLayout &ml, int start_buffer_offset)
+void MitsubaInterface::model_to_ctx(const std::vector<float> &model, int start_buffer_offset)
 {
+  auto &ml = model_info.layout;
   int vertex_count = model.size() / ml.f_per_vert;
   if (model_max_size < vertex_count)
     set_model_max_size(vertex_count);
@@ -322,10 +335,10 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
   DEL(func_ret);
 }
 
-void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir, const dgen::ModelLayout &ml,
+void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir,
                                             const CameraSettings &camera, const std::vector<float> &scene_params)
 {  
-  model_to_ctx(model, ml, 0);
+  model_to_ctx(model, 0);
   camera_to_ctx(camera);
 
   int cameras_buf_id = get_camera_buffer_id();
@@ -352,7 +365,7 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
                                            double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  model_to_ctx(model, opt_model_layout, 0);
+  model_to_ctx(model, 0);
   camera_to_ctx(camera);
 
   int cameras_buf_id = get_camera_buffer_id();
@@ -362,7 +375,7 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
   show_errors();
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  float loss = render_and_compare_internal(cameras_count);
+  float loss = render_and_compare_internal();
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
   //get derivatives by vertex positions and scene parameters
   get_array_from_ctx_internal(buffer_names[0] + "_grad", 0);
@@ -380,12 +393,13 @@ float MitsubaInterface::render_and_compare(const std::vector<float> &model, cons
 void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
                                           std::vector<float> &final_grad)
 {
-  int mesh_parts_count = 1;
+  auto &ml = model_info.layout;
+  int mesh_parts_count = model_info.parts.size();
   for (int part_id = 0; part_id < mesh_parts_count; part_id++)
   {
-    // offsets[0] offset always represent positions. We do not calculate derivatice by other channels (normals, tc)
-    int offset = opt_model_layout.offsets[0];
-    int size = opt_model_layout.offsets[1] - opt_model_layout.offsets[0];
+    // offsets[0] offset always represent positions. We do not calculate derivatives by other channels (normals, tc)
+    int offset = ml.offsets[0];
+    int size = ml.offsets[1] - ml.offsets[0];
     if (offset >= 0 && size > 0)
     {
       for (int i = 0; i < vertex_count; i++)
@@ -394,7 +408,7 @@ void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int par
         {
           for (int k = 0; k < size; k++)
           {
-            final_grad[j] += jac[(opt_model_layout.f_per_vert * i + offset + k) * params_count + j] * buffers[3*part_id][size * i + k];
+            final_grad[j] += jac[(ml.f_per_vert * i + offset + k) * params_count + j] * buffers[3*part_id][size * i + k];
           }
         }
       }
@@ -421,7 +435,6 @@ void MitsubaInterface::set_model_max_size(int _model_max_size)
 
 int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int buffer_id)
 {
-  //logerr("get context from array id = %d, name = %s", buffer_id, name.c_str());
   PyObject *func, *args, *params, *params_bytes, *params_name;
   params_name = PyUnicode_FromString(name.c_str());
   args = PyTuple_Pack(2, mitsubaContext, params_name);
@@ -440,7 +453,7 @@ int MitsubaInterface::get_array_from_ctx_internal(const std::string &name, int b
     logerr("Python array %s contains %d float, while buffer size is %d. Some data will be ignored", name.c_str(), data_floats, 4*model_max_size);
   }
   char *data = PyBytes_AsString(params_bytes);
-  memcpy(buffers[buffer_id], data, MIN(sz, model_max_size*sizeof(float)));
+  memcpy(buffers[buffer_id], data, MIN(sz, 4*model_max_size*sizeof(float)));
   DEL(args);
   DEL(func);
   DEL(params);
@@ -468,7 +481,7 @@ void MitsubaInterface::set_array_to_ctx_internal(const std::string &name, int bu
   DEL(params_name);
 }
 
-float MitsubaInterface::render_and_compare_internal(int cameras_count)
+float MitsubaInterface::render_and_compare_internal()
 {
   PyObject *pFunc, *pIndex, *pArgs, *pValue;
 
@@ -496,11 +509,14 @@ void MitsubaInterface::clear_buffer(int buffer_id, float val)
   std::fill_n(buffers[buffer_id], model_max_size, val);
 }
 
-void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,const std::vector<float> &model,
-                                            const std::string &image_dir, const dgen::ModelLayout &ml,
+void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, ModelInfo model_info, 
+                                            const std::vector<float> &model, const std::string &image_dir,
                                             const std::vector<float> &scene_params, const CameraSettings &camera,
                                             int rotations_x, int rotations_y)
 {
+  auto &ml = model_info.layout;
+  auto &rs = render_settings;
+
   //find center of model to adjust cameras
   glm::vec3 center = glm::vec3(0,0,0);
   for (int i=0;i<model.size();i+=ml.f_per_vert)
@@ -531,7 +547,7 @@ void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,
         cur_cam.origin = center + pos;
         cur_cam.up = up;
 
-        render_model_to_file(model, image_dir, ml, cur_cam, scene_params);
+        render_model_to_file(model, image_dir, cur_cam, scene_params);
         Texture raw = engine::textureManager->load_unnamed_tex(image_dir, 1);
         engine::view->next_frame();
         
@@ -553,12 +569,11 @@ void MitsubaInterface::render_multicam_demo(MitsubaInterface::RenderSettings rs,
 
   //Render with constant texture
   RenderSettings setting_monochrome(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::MONOCHROME_DEMO);
-  init_scene_and_settings(setting_monochrome);
+  init_scene_and_settings(setting_monochrome, model_info);
   render_to_tex(glm::ivec2(0,0));
 
-  RenderSettings setting_textured(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::TEXTURED_DEMO,
-                                  rs.texture_name);
-  init_scene_and_settings(setting_textured);
+  RenderSettings setting_textured(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::TEXTURED_DEMO);
+  init_scene_and_settings(setting_textured, model_info);
   render_to_tex(glm::ivec2(0,rotations_y*rs.image_h));
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -578,4 +593,9 @@ std::vector<std::string> MitsubaInterface::get_all_available_materials()
     "ceramics",
     "rough ceramics"
   };
+}
+
+std::string MitsubaInterface::get_default_material()
+{
+  return "ceramics";
 }

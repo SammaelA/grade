@@ -57,7 +57,7 @@ namespace dgen
     generator_func generator;
     params_regularizer_func params_regularizer;
     model_regularizer_func model_regularizer;
-    std::string parameters_description_blk_path;
+    std::string generator_description_blk_path;
     std::string presets_blk_path;
   };
   GeneratorDescription get_generator_by_name(std::string name);

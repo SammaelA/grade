@@ -1,4 +1,10 @@
 {
+  mesh_parts
+  {
+    part:s = "main_part"
+  }
+  generator_parameters
+  {
   curve_offset_0{ values:p2 = 0.1, 8 desc:s = "base spline offset at point 0"}
   curve_offset_1{ values:p2 = 0.1, 8 desc:s = "base spline offset at point 1"}
   curve_offset_2{ values:p2 = 0.1, 8 desc:s = "base spline offset at point 2"}
@@ -52,4 +58,5 @@
   handle_thickness_coeff_17{ values:p2 = 0.5, 2 desc:s = "handle thickness at point 4"}
   handle_thickness_coeff_18{ values:p2 = 0.5, 2 desc:s = "handle thickness at point 5"}
   handle_thickness_coeff_19{ values:p2 = 0.5, 2 desc:s = "handle thickness at point 6"}
+  }
 }

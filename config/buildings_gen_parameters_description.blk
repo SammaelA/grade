@@ -1,4 +1,10 @@
 {
+  mesh_parts
+  {
+    part:s = "main_part"
+  }
+  generator_parameters
+  {
   left_offset_x{ values:p2 = 1, 5 desc:s = "distance between left wall and first window at x axis"}
   distance_between_windows_x{ values:p2 = 1, 5 desc:s = "distance between windows at x axis"}
   right_offset_x{ values:p2 = 1, 5 desc:s = "distance between right wall and last window at x axis"}
@@ -17,4 +23,5 @@
   window_depth{ values:p2 = 0.1, 10 desc:s = "window depth size"}
   model_scale_y{ values:p2 = 0.1, 1 desc:s = "model_scale_y"}
   model_scale_z{ values:p2 = 0.1, 1 desc:s = "model_scale_z"}
+  }
 }
