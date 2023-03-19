@@ -455,7 +455,7 @@ namespace dgen
     }
   }
 
-  void create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
+  PartOffsets create_cup(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
     int spline_real_start = 1;
@@ -506,6 +506,8 @@ namespace dgen
     dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
     sc2 = translate(sc2, dvec3{0, -0.5,0});
     transform(vert, sc2);
+
+    return dgen::simple_mesh();
   }
 
   dfloat parameters_cup_reg(const std::vector<dfloat> &params)

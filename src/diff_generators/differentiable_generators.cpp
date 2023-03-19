@@ -53,4 +53,9 @@ namespace dgen
     else
       return it->second;
   }
+
+  PartOffsets simple_mesh()
+  {
+    return {{"main_part", 0}};
+  }
 };

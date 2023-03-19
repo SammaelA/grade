@@ -135,7 +135,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 
                 0.137, 0.18, 0.25, 0.35, 0.409, 0.439, 0.465, 0.450, 0.413, 0.358, 0.315, 0.287, 0.264, 0.250, 0.244, 0.241, 0.247, 0.256, 0.240, 0.330, 
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<float> res;
+    dgen::DFModel res;
     dgen::dgen_test("dishes", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 2048, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_DEMO),
@@ -158,6 +158,40 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                     MitsubaInterface::get_default_material()});
     }
 
+    model_info.get_part("main_part")->texture_name = "noise.png";
+    //model_info.get_part("windows")->material_name = "imperfect glass";
+
+    std::vector<float> params;
+    for (int i=3;i<argc;i++)
+    {
+      params.push_back(std::stof(std::string(argv[i])));
+    }
+    if (params.empty())
+      params = {3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.05, 0.5, 0.33};
+    dgen::DFModel res;
+    dgen::dgen_test("buildings", params, res);
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1500, 1500, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_DEMO),
+                               model_info);
+    std::vector<float> scene_params = {-0.2, 0.07, 0.5, 0, 0.5, 0, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0};
+    mi.render_model_to_file(res, "saves/test_result.png", camera, scene_params);
+  }
+  else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
+  {
+    Block gen_info;
+    load_block_from_file(dgen::get_generator_by_name("buildings").generator_description_blk_path, gen_info);
+    Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+    MitsubaInterface::ModelInfo model_info;
+    model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
+
+    for (int i=0;i<gen_mesh_parts.size();i++)
+    {
+      if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+        model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                    "white.png", 
+                                    MitsubaInterface::get_default_material()});
+    }
+
     std::vector<float> params;
     for (int i=3;i<argc;i++)
     {
@@ -165,7 +199,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
     if (params.empty())
       params = {3, 3, 3, 3, 80,  3, 3, 3, 3, 25,   3, 3, 3, 3, 10,   1, 20};
-    std::vector<float> res;
+    dgen::DFModel res;
     dgen::dgen_test("buildings", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME),

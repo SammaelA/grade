@@ -312,11 +312,11 @@ namespace dgen
   bool check_stability(generator_func func, const std::vector<float> &params, int iterations)
   {
     float eps = 1e-4;
-    std::vector<float> model_ref;
+    dgen::DFModel model_ref;
     std::vector<float> jac_ref;
     dgen_test_internal(model_ref, func, params, params, &jac_ref, false, ModelQuality(false, 1));
     int x_n = params.size();
-    int y_n = model_ref.size();
+    int y_n = model_ref.first.size();
     debug("Checking stability of differential procedural model\n");
     debug("Model has %d params and %d vertices\n", x_n, y_n/FLOAT_PER_VERTEX);
 
@@ -328,7 +328,7 @@ namespace dgen
       {
         std::vector<float> par = params;
         par[param_n] *= urand(0.5, 2);
-        std::vector<float> model;
+        dgen::DFModel model;
         std::vector<float> jac;
         bool model_created = false;
         try
@@ -344,17 +344,17 @@ namespace dgen
         {
           debug("Test %d failed. Generator crashed", i);
         }
-        else if (model.size() != model_ref.size())
+        else if (model.first.size() != model_ref.first.size())
         {
-          debug("Test %d failed. Model has wrong number of vertices (%d)\n", i, model.size()/FLOAT_PER_VERTEX);
+          debug("Test %d failed. Model has wrong number of vertices (%d)\n", i, model.first.size()/FLOAT_PER_VERTEX);
           failed_tests++;
         }
         else
         {
           int diff_mod = 0;
-          for (int j=0;j<model.size();j++)
+          for (int j=0;j<model.first.size();j++)
           {
-            if (abs(model[j] - model_ref[j])/(abs(model[j] + model_ref[j]) + eps) > eps)
+            if (abs(model.first[j] - model_ref.first[j])/(abs(model.first[j] + model_ref.first[j]) + eps) > eps)
               diff_mod++;
           }
           int diff_jac = 0;
@@ -413,7 +413,7 @@ namespace dgen
     for (int i=0;i<iterations;i++)
     {
       std::vector<float> X0;
-      std::vector<float> model;
+      dgen::DFModel model;
       for (int j=0;j<params_min.size();j++)
       {
         float rnd = urand(0,1);
@@ -424,19 +424,19 @@ namespace dgen
     return true;
   }
 
-  void dgen_test(std::string generator_name, std::vector<float> &params, std::vector<float> &model, bool transform_by_scene,
+  void dgen_test(std::string generator_name, std::vector<float> &params, dgen::DFModel &model, bool transform_by_scene,
                  ModelQuality mq)
   {
     GeneratorDescription gd = get_generator_by_name(generator_name);
     dgen_test_internal(model, gd.generator, params, params, nullptr, transform_by_scene, mq);
   }
-  void dgen_test_internal(std::vector<float> &model, generator_func func, const std::vector<float> &check_params, 
+  void dgen_test_internal(dgen::DFModel &model, generator_func func, const std::vector<float> &check_params, 
                           const std::vector<float> &params, std::vector<float> *jacobian, bool transform_by_scene,
-                           ModelQuality mq)
+                          ModelQuality mq)
   {
     assert(check_params.size() > 0);
     assert(check_params.size() == params.size());
-    assert(model.empty());
+    assert(model.first.empty());
 
     size_t x_n = check_params.size();
     std::vector<dfloat> X(x_n);
@@ -446,7 +446,7 @@ namespace dgen
 
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
-    func(X, Y, mq);
+    auto po = func(X, Y, mq);
     if (transform_by_scene)
     {
       int offset = params.size() - 6;
@@ -468,23 +468,21 @@ namespace dgen
     //print_model(res);
     //print_jackobian(jac, x_n, y_n);
 
-    model = res;
+    model = {res, po};
     if (jacobian)
       *jacobian = jac;
   }
 
   bool create_model_from_block(Block &bl, ComplexModel &mod)
   {
-    GeneratorDescription gd = get_generator_by_name("dishes");
+    GeneratorDescription gd = get_generator_by_name("buildings");
     Model *m = new Model();
-    std::vector<float> X0{3.415, 3.707, 3.972, 4.170, 4.328, 4.396, 4.465, 4.465, 4.467, 1.125, 1.000,
-                          0.046, 0.564, 0.149, 0.165, 0.249, 0.265, 0.298, 0.347, 0.427, 0.435, 0.297,
-                          0.297, 0.297, 0.212, 0.212, 0.212, 0.222, 0.222, 0.222, 0.384, 0.384, 0.384};
-    std::vector<float> res;
-    dgen::dgen_test("dishes", X0, res);
+    std::vector<float> X0{3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   1, 0.5, 0.33};
+    dgen::DFModel res;
+    dgen::dgen_test("buildings", X0, res);
     std::vector<float> scene_parameters{0, 1, 0, 0, 0, 0, 0.000, 0.500, 10.000, 1.000, 100.000};
-    dgen::transform_by_scene_parameters(scene_parameters, res);
-    visualizer::simple_mesh_to_model_332(res, m);
+    dgen::transform_by_scene_parameters(scene_parameters, res.first);
+    visualizer::simple_mesh_to_model_332(res.first, m);
 
     mod.models.push_back(m);
     mod.materials.push_back(Material(engine::textureManager->get("porcelain")));

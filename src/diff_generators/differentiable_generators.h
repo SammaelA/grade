@@ -47,7 +47,16 @@ namespace dgen
     ModelQuality() : ModelQuality(false, 1) {}
   };
 
-  typedef std::function<void(const std::vector<dfloat> &params, std::vector<dfloat> &out_model, ModelQuality)> generator_func;
+  //composite model is made from several parts
+  //this structure is needed to determine what parts
+  //the model has and offsets in model data for each part.
+  typedef std::vector<std::pair<std::string, int>> PartOffsets;
+
+  PartOffsets simple_mesh();
+  
+  typedef std::pair<std::vector<float>, PartOffsets> DFModel;
+
+  typedef std::function<PartOffsets(const std::vector<dfloat> &params, std::vector<dfloat> &out_model, ModelQuality)> generator_func;
   typedef std::function<dfloat(const std::vector<dfloat> &params)> params_regularizer_func;
   typedef std::function<dfloat(const std::vector<dfloat> &params, const std::vector<dfloat> &model)> model_regularizer_func;
 

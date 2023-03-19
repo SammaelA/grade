@@ -50,6 +50,18 @@ public:
     dgen::ModelLayout layout;
     std::vector<PartInfo> parts;
 
+    ModelInfo() = default;
+
+    PartInfo *get_part(const std::string &name)
+    {
+      for (auto &p : parts)
+      {
+        if (p.name == name)
+          return &p;
+      }
+      return nullptr;
+    }
+
     static ModelInfo simple_mesh(std::string texture_name, std::string material_name)
     {
       ModelInfo mi;
@@ -83,18 +95,18 @@ public:
                                   float texture_rec_learing_rate = 0.25,
                                   bool save_intermediate_images = false);
   //render model and save image to file, for debug purposes
-  void render_model_to_file(const std::vector<float> &model, const std::string &image_dir,
+  void render_model_to_file(const dgen::DFModel &model, const std::string &image_dir,
                             const CameraSettings &camera, const std::vector<float> &scene_params);
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
   //that are used by compute_final_grad
-  float render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &scene_params,
+  float render_and_compare(const dgen::DFModel &model, const CameraSettings &camera, const std::vector<float> &scene_params,
                            double *timers = nullptr);
 
   //render model from different angles, merge them into one image and save it to file, for debug purposes
   //scene_params SHOULD NOT rotate or translate the model
   void render_multicam_demo(RenderSettings render_settings, ModelInfo model_info, 
-                            const std::vector<float> &model, const std::string &image_dir,
+                            const dgen::DFModel &model, const std::string &image_dir,
                             const std::vector<float> &scene_params, const CameraSettings &camera,
                             int rotations_x = 4, int rotations_y = 1);
 
@@ -114,7 +126,7 @@ public:
   int get_array_from_ctx_internal(const std::string &name, int buffer_id);//returns loaded array size (in floats)
   void set_array_to_ctx_internal(const std::string &name, int buffer_id, int size);//sends size float from buffer to mitsuba context 
   float render_and_compare_internal();//returns loss function value
-  void model_to_ctx(const std::vector<float> &model, int start_buffer_offset);
+  void model_to_ctx(const dgen::DFModel &model);
   void camera_to_ctx(const CameraSettings &camera);
   void clear_buffer(int buffer_id, float val = 0);
   int get_camera_buffer_id()

@@ -2,6 +2,7 @@
   mesh_parts
   {
     part:s = "main_part"
+    part:s = "windows"
   }
   generator_parameters
   {

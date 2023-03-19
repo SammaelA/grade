@@ -40,7 +40,8 @@ namespace dgen
     return spline;
   }
 
-  void get_walls_from_splines(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+  void get_walls_from_splines(std::vector<dfloat> &model, std::vector<dfloat> &windows,
+                              const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
                               dfloat length_z, dfloat window_depth, int x, int y, int z, float tex_v_shift, 
                               bool low_quality, bool only_pos)
   {
@@ -137,6 +138,15 @@ namespace dgen
             tex_1 += dvec2{u, -v};
             tex_2 += dvec2{-u, v};
             tex_3 += dvec2{-u, -v};
+            
+            //window
+            int wn = windows.size()/FLOAT_PER_VERTEX;
+            add_vertex(windows, wn++, pos_0 + depth, norm_z, tex_0, only_pos); 
+            add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
+            add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+            add_vertex(windows, wn++, pos_3 + depth, norm_z, tex_3, only_pos); 
+            add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+            add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
           }
           else
           {
@@ -176,11 +186,12 @@ namespace dgen
     add_vertex(model, num++, dvec3{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, dvec3{0, 1, 0}, dvec2{0.5, 1}, only_pos);
   }
 
-  void splines_to_building(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+  void splines_to_building(std::vector<dfloat> &model, std::vector<dfloat> &windows,
+                           const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
                            const std::vector<dfloat> &sp_z, dfloat window_depth, bool low_quality, bool only_pos)
   {
-    get_walls_from_splines(model, sp_x, sp_y, sp_z[sp_z.size() - 1], window_depth, 0, 1, 2, 0, low_quality, only_pos);
-    get_walls_from_splines(model, sp_z, sp_y, sp_x[sp_x.size() - 1], window_depth, 2, 1, 0, 0.35, low_quality, only_pos);
+    get_walls_from_splines(model, windows, sp_x, sp_y, sp_z[sp_z.size() - 1], window_depth, 0, 1, 2, 0, low_quality, only_pos);
+    get_walls_from_splines(model, windows, sp_z, sp_y, sp_x[sp_x.size() - 1], window_depth, 2, 1, 0, 0.35, low_quality, only_pos);
     
     create_floor_simple(model, sp_x, sp_y, sp_z, only_pos);
     create_roof_simple(model, sp_x, sp_y, sp_z, only_pos);
@@ -209,7 +220,7 @@ namespace dgen
     create_roof_simple(model, sp_x, sp_y, sp_z, only_pos);
   }
 
-  void create_building(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
+  PartOffsets create_building(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
   {
     enum BuildingQuality
     {
@@ -222,15 +233,31 @@ namespace dgen
     std::vector<dfloat> spline_x = create_wall_spline(params[0], params[1], params[2], params[3], params[4]);
     std::vector<dfloat> spline_y = create_wall_spline(params[5], params[6], params[7], params[8], params[9]);
     std::vector<dfloat> spline_z = create_wall_spline(params[10], params[11], params[12], params[13], params[14]);
+
+    std::vector<dfloat> windows_mesh;
+    
     if (bq == BQ_BOXES)
       splines_to_box(vert, spline_x, spline_y, spline_z, quality.create_only_position);
     else
-      splines_to_building(vert, spline_x, spline_y, spline_z, params[15], bq == BQ_FACADES, quality.create_only_position);
+      splines_to_building(vert, windows_mesh, spline_x, spline_y, spline_z, params[15], bq == BQ_FACADES, quality.create_only_position);
+
+    int windows_offset = vert.size();
+    if (bq != BQ_BOXES)
+    {
+      vert.reserve(vert.size() + windows_mesh.size());
+      for (auto &v : windows_mesh)
+        vert.push_back(v);
+    }
 
     dfloat total_size_x = params[0] + params[4]*(params[1] + params[3]) + params[2];
     dfloat total_size_y = params[5] + params[9]*(params[6] + params[8]) + params[7];
     dfloat total_size_z = params[10] + params[14]*(params[11] + params[13]) + params[12];
     dmat43 sc2 = scale(translate(ident(), dvec3{-0.5, 0, 0}), dvec3{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
     transform(vert, sc2);
+
+    return {
+            {"main_part", 0},
+            {"windows", windows_offset}
+           };
   }
 };

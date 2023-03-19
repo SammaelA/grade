@@ -269,27 +269,54 @@ void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string>
                              model_info, texture_rec_learing_rate, save_intermediate_images);
 }
 
-void MitsubaInterface::model_to_ctx(const std::vector<float> &model, int start_buffer_offset)
+void MitsubaInterface::model_to_ctx(const dgen::DFModel &model)
 {
-  auto &ml = model_info.layout;
-  int vertex_count = model.size() / ml.f_per_vert;
-  if (model_max_size < vertex_count)
-    set_model_max_size(vertex_count);
-  assert(start_buffer_offset + ml.offsets.size() - 1 <= buffers.size());
-  for (int i=0;i<ml.offsets.size() - 1;i++)
+  int start_buffer_offset = 0;
+  dgen::PartOffsets off = model.second;
+  off.push_back({"", model.first.size()});//to make offset calculations simplier
+
+  for (auto &part : model_info.parts)
   {
-    int offset = ml.offsets[i];
-    int size = ml.offsets[i + 1] - ml.offsets[i];
-    if (offset >= 0 && size > 0)
+    int part_size = 0;
+    const float *part_data = nullptr;
+    for (int i=0;i<off.size()-1;i++)
     {
-      int b_id = start_buffer_offset + i;
-      clear_buffer(b_id, 0.0f);
-      for (int j = 0; j < vertex_count; j++)
-        memcpy(buffers[b_id] + size*j, model.data() + ml.f_per_vert * j + offset, sizeof(float)*size);
-      set_array_to_ctx_internal(buffer_names[b_id], b_id, size * vertex_count);
+      if (off[i].first == part.name)
+      {
+        part_data = model.first.data() + off[i].second;
+        part_size = off[i+1].second - off[i].second;
+      }
     }
+
+    if (part_data == nullptr || part_size <= 0)
+    {
+      //This part does not exist in model (it's OK) or corrupted
+      //TODO: print placeholder model here instead of logerr
+      logerr("part %s does not exist in given model", part.name.c_str());
+      return;
+    }
+
+    auto &ml = model_info.layout;
+    int vertex_count = part_size / ml.f_per_vert;
+    if (model_max_size < vertex_count)
+      set_model_max_size(vertex_count);
+    assert(start_buffer_offset + ml.offsets.size() - 1 <= buffers.size());
+    for (int i=0;i<ml.offsets.size() - 1;i++)
+    {
+      int offset = ml.offsets[i];
+      int size = ml.offsets[i + 1] - ml.offsets[i];
+      if (offset >= 0 && size > 0)
+      {
+        int b_id = start_buffer_offset + i;
+        clear_buffer(b_id, 0.0f);
+        for (int j = 0; j < vertex_count; j++)
+          memcpy(buffers[b_id] + size*j, part_data + ml.f_per_vert * j + offset, sizeof(float)*size);
+        set_array_to_ctx_internal(buffer_names[b_id], b_id, size * vertex_count);
+      }
+    }
+    show_errors();
+    start_buffer_offset += 3;
   }
-  show_errors();
 }
 
 void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
@@ -335,10 +362,10 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
   DEL(func_ret);
 }
 
-void MitsubaInterface::render_model_to_file(const std::vector<float> &model, const std::string &image_dir,
+void MitsubaInterface::render_model_to_file(const dgen::DFModel &model, const std::string &image_dir,
                                             const CameraSettings &camera, const std::vector<float> &scene_params)
 {  
-  model_to_ctx(model, 0);
+  model_to_ctx(model);
   camera_to_ctx(camera);
 
   int cameras_buf_id = get_camera_buffer_id();
@@ -361,11 +388,11 @@ void MitsubaInterface::render_model_to_file(const std::vector<float> &model, con
   DEL(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const std::vector<float> &model, const CameraSettings &camera, const std::vector<float> &scene_params,
+float MitsubaInterface::render_and_compare(const dgen::DFModel &model, const CameraSettings &camera, const std::vector<float> &scene_params,
                                            double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  model_to_ctx(model, 0);
+  model_to_ctx(model);
   camera_to_ctx(camera);
 
   int cameras_buf_id = get_camera_buffer_id();
@@ -510,7 +537,7 @@ void MitsubaInterface::clear_buffer(int buffer_id, float val)
 }
 
 void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, ModelInfo model_info, 
-                                            const std::vector<float> &model, const std::string &image_dir,
+                                            const dgen::DFModel &model, const std::string &image_dir,
                                             const std::vector<float> &scene_params, const CameraSettings &camera,
                                             int rotations_x, int rotations_y)
 {
@@ -519,11 +546,11 @@ void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, Mode
 
   //find center of model to adjust cameras
   glm::vec3 center = glm::vec3(0,0,0);
-  for (int i=0;i<model.size();i+=ml.f_per_vert)
+  for (int i=0;i<model.first.size();i+=ml.f_per_vert)
   {
-    center += glm::vec3(model[i + ml.pos], model[i + ml.pos + 1], model[i + ml.pos + 2]);
+    center += glm::vec3(model.first[i + ml.pos], model.first[i + ml.pos + 1], model.first[i + ml.pos + 2]);
   }
-  center = center/(float)(model.size()/ml.f_per_vert);
+  center = center/(float)(model.first.size()/ml.f_per_vert);
   float dist = glm::length(center - camera.origin);
 
   Texture composite_tex = engine::textureManager->create_texture(rotations_x*rs.image_w, 2*rotations_y*rs.image_h);

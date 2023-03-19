@@ -43,10 +43,10 @@ namespace dopt
   public:
     ~DiffFunctionEvaluator()
     {
-      for (auto f : functions)
+      for (auto f : func_variants)
       {
-        if (f)
-          delete f;
+        if (f.func)
+          delete f.func;
       }
     }
     void init(dgen::generator_func _model_creator, std::vector<unsigned short> &variant_positions)
@@ -54,22 +54,52 @@ namespace dopt
       model_creator = _model_creator;
       variant_params_positions = variant_positions;
     }
-    std::vector<float> get(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
+    inline dgen::DFModel get(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      return functions[find_or_add(params, mq)]->Forward(0, params); 
+      auto &FV = func_variants[find_or_add(params, mq)];
+      std::vector<float> res = FV.func->Forward(0, params); 
+      if (FV.model_size != res.size())
+      {
+        logerr("Model size(%d floats) is different from what is expected from function variant (%d floats)",
+               res.size(), FV.model_size);
+        logerr("This leads to incorrect work of autodiff. You should put \"is_variant:b = true\" in description of ANY generator parameter,\
+                that can change the total size of model");
+      }
+      return {res, FV.part_offsets};
     }
-    std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
+    inline std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      return functions[find_or_add(params, mq)]->Jacobian(params); 
+      return func_variants[find_or_add(params, mq)].func->Jacobian(params); 
     }
-    std::vector<float> get_transformed(const std::vector<float> &params, const std::vector<float> &camera_params, 
+    inline dgen::DFModel get_transformed(const std::vector<float> &params, const std::vector<float> &camera_params, 
                                        dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      std::vector<float> f_model = functions[find_or_add(params, mq)]->Forward(0, params); 
+      auto &FV = func_variants[find_or_add(params, mq)];
+      std::vector<float> f_model = FV.func->Forward(0, params); 
       dgen::transform_by_scene_parameters(camera_params, f_model);  
-      return f_model;
+      return {f_model, FV.part_offsets};
     }
   private:
+    struct FunctionVariant
+    {
+      CppAD::ADFun<float> *func;
+      dgen::ModelQuality model_quality;
+      int model_size;
+      dgen::PartOffsets part_offsets; 
+    };
+
+    void print_FV_debug(const FunctionVariant &fv, const std::vector<unsigned short> &vs)
+    {
+      debug("Created new Function variant {");
+      for (auto &v : vs)
+        debug("%d ", (int)v);
+      debug("}\n");
+      debug("Expected size %d, part offsets {", fv.model_size);
+      for (auto &p : fv.part_offsets)
+        debug("%s : %d ", p.first, p.second);
+      debug("}\n");
+    }
+
     int find_or_add(const std::vector<float> &params, dgen::ModelQuality mq)
     {
       auto vs = get_variant_set(params);
@@ -78,21 +108,18 @@ namespace dopt
       auto it = variant_set_to_function_pos.find(vs);
       if (it == variant_set_to_function_pos.end())
       {
-        //debug("added new function {");
-        //for (auto &v : vs)
-        //  debug("%d ", (int)v);
-        //debug("}\n");
         std::vector<dgen::dfloat> X(params.size());
         for (int i=0;i<params.size();i++)
           X[i] = params[i];
         std::vector<dgen::dfloat> Y;
         CppAD::Independent(X);
-        model_creator(X, Y, mq);
+        auto po = model_creator(X, Y, mq);
         CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
-        functions.push_back(f);
-        output_sizes.push_back(Y.size());
-        int f_pos = functions.size()-1;
+        func_variants.push_back(FunctionVariant{f, mq, (int)Y.size(), po});
+        int f_pos = func_variants.size()-1;
         variant_set_to_function_pos.emplace(vs, f_pos);
+
+        //print_FV_debug(func_variants.back(), vs);
 
         return f_pos;
       }
@@ -110,8 +137,7 @@ namespace dopt
     }
     dgen::generator_func model_creator;
     std::map<std::vector<unsigned short>, int, UShortVecComparator> variant_set_to_function_pos;
-    std::vector<CppAD::ADFun<float> *> functions;
-    std::vector<int> output_sizes;//same size as functions vector
+    std::vector<FunctionVariant> func_variants;
     std::vector<unsigned short> variant_params_positions;
   };
 
@@ -356,7 +382,7 @@ namespace dopt
         }
         std::vector<float> reference_scene_params;
         settings_blk.get_arr("reference_scene", reference_scene_params);
-        std::vector<float> reference = func.get(reference_params, dgen::ModelQuality(false, 3));
+        dgen::DFModel reference = func.get(reference_params, dgen::ModelQuality(false, 3));
 
         MitsubaInterface::ModelInfo ref_mi = default_model_info;
         for (auto &p : ref_mi.parts)
@@ -410,12 +436,12 @@ namespace dopt
         params[i] = CLAMP(params[i], params_min[i], params_max[i]);
 
       std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
-      std::vector<float> res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
+      dgen::DFModel res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
       float loss = mi.render_and_compare(res, camera, get_camera_params(params));
 
-      mi.compute_final_grad(jac, gen_params_cnt, res.size() / FLOAT_PER_VERTEX, final_grad);
+      mi.compute_final_grad(jac, gen_params_cnt, res.first.size() / FLOAT_PER_VERTEX, final_grad);
 
       std::vector<float> reg_res = f_reg.Forward(0, params);
       std::vector<float> reg_jac = f_reg.Jacobian(params);
@@ -516,7 +542,7 @@ namespace dopt
       delete opt;
     }
 
-    std::vector<float> best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+    dgen::DFModel best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME),
                                default_model_info);
     mi.render_model_to_file(best_model, saved_result_path, camera, get_camera_params(opt_result.best_params));
@@ -525,10 +551,10 @@ namespace dopt
     ModelTex mt;
     {
       Model *m = new Model();
-      std::vector<float> best_model_transformed = func.get_transformed(get_gen_params(opt_result.best_params),
-                                                                       get_camera_params(opt_result.best_params),
-                                                                       dgen::ModelQuality(false, 3));
-      visualizer::simple_mesh_to_model_332(best_model_transformed, m);
+      dgen::DFModel best_model_transformed = func.get_transformed(get_gen_params(opt_result.best_params),
+                                                            get_camera_params(opt_result.best_params),
+                                                            dgen::ModelQuality(false, 3));
+      visualizer::simple_mesh_to_model_332(best_model_transformed.first, m);
       m->update();
       float rt_sz = MAX(reference_tex.get_W(), reference_tex.get_H());
 
@@ -730,7 +756,7 @@ namespace dopt
       
       sleep(1);
 
-      std::vector<float> best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+      dgen::DFModel best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
       MitsubaInterface::ModelInfo textured_model_info = default_model_info;
       textured_model_info.parts[0].material_name = best_material;
       
