@@ -97,6 +97,16 @@ def glass():
   })
   return my_bsdf, "specular_reflectance"
 
+def roughdielectric(roughness):
+  my_bsdf = mi.load_dict({
+        'type': 'roughdielectric',
+        'int_ior': 1.504,
+        'alpha': roughness,
+        'ext_ior': 1.0
+  })
+  return my_bsdf, "specular_reflectance"
+
+
 def get_material_by_name(texture_name, material_name):
   if (material_name == "very smooth porcelain"):
     return porcelain_roughplastic(texture_name, 0)
@@ -108,6 +118,12 @@ def get_material_by_name(texture_name, material_name):
     return porcelain_roughplastic(texture_name, 0.1)
   elif (material_name == "rough ceramics"):
     return porcelain_roughplastic(texture_name, 0.3)
+  elif (material_name == "glass"):
+    return glass()
+  elif (material_name == "imperfect glass"):
+    return roughdielectric(0.05)
+  elif (material_name == "frosted glass"):
+    return roughdielectric(0.25)
   else:
     print("unknown material name ", material_name)
     return porcelain_roughplastic(texture_name, 0)

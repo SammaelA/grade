@@ -591,7 +591,10 @@ std::vector<std::string> MitsubaInterface::get_all_available_materials()
     "smooth porcelain",
     "porcelain",
     "ceramics",
-    "rough ceramics"
+    "rough ceramics",
+    "glass",
+    "imperfect glass",
+    "frosted glass"
   };
 }
 
