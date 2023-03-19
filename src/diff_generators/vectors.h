@@ -134,6 +134,10 @@ namespace dgen
     {
       return !(*this == rhs);
     }
+    g_vec2<T> operator-()
+    {
+      return g_vec2<T>(-x, -y);
+    }
   };
 
   template <typename T>
@@ -305,6 +309,10 @@ namespace dgen
     inline bool operator!=(const g_vec3<T> &rhs) const
     {
       return !(*this == rhs);
+    }
+    g_vec3<T> operator-()
+    {
+      return g_vec3<T>(-x, -y, -z);
     }
   };
 
@@ -505,6 +513,10 @@ template <typename T>
     inline bool operator!=(const g_vec4<T> &rhs) const
     {
       return !(*this == rhs);
+    }
+    g_vec4<T> operator-()
+    {
+      return g_vec4<T>(-x, -y, -z, -w);
     }
   };
 

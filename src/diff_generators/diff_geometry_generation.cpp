@@ -477,9 +477,9 @@ namespace dgen
   {
     GeneratorDescription gd = get_generator_by_name("buildings");
     Model *m = new Model();
-    std::vector<float> X0{3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   1, 0.5, 0.33};
+    std::vector<float> X0{3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.1, 0.5, 0.33};
     dgen::DFModel res;
-    dgen::dgen_test("buildings", X0, res);
+    dgen::dgen_test("buildings", X0, res, false, dgen::ModelQuality(false, 2));
     std::vector<float> scene_parameters{0, 1, 0, 0, 0, 0, 0.000, 0.500, 10.000, 1.000, 100.000};
     dgen::transform_by_scene_parameters(scene_parameters, res.first);
     visualizer::simple_mesh_to_model_332(res.first, m);

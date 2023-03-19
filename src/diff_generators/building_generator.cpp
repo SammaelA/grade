@@ -94,18 +94,21 @@ namespace dgen
             tex_3[0] += 0.5;
             norm_z[z] = 1;
           }
+
+          depth[z] = window_depth;
+          if (k)
+          {
+            depth[z] = -window_depth;
+          }
+
           if (i % 2 == 0 && j % 2 == 0 && i != sp_x.size() - 1 && j != sp_y.size() - 1)
           {
-            depth[z] = window_depth;
-            if (k)
-            {
-              depth[z] = -window_depth;
-            }
             dfloat u = 0.2 * 0.5 * (sp_x[i] - sp_x[i - 1]) / sp_x[sp_x.size() - 1];
             dfloat v = 0.2 * 0.5 * (sp_y[j] - sp_y[j - 1]) / sp_y[sp_y.size() - 1];
             
             if (!low_quality)
             {
+              //alcove
               add_vertex(model, num++, pos_0, norm_x, tex_0 + dvec2{0, v}, only_pos); 
               add_vertex(model, num++, pos_1, norm_x, tex_1 - dvec2{0, v}, only_pos); 
               add_vertex(model, num++, pos_0 + depth, norm_x, tex_0 + dvec2{u, v}, only_pos); 
@@ -133,29 +136,44 @@ namespace dgen
               add_vertex(model, num++, pos_3 + depth, dvec3{0, 0, 0} - norm_y, tex_3 + dvec2{-u, -v}, only_pos); 
               add_vertex(model, num++, pos_1 + depth, dvec3{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
               add_vertex(model, num++, pos_3, dvec3{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos);
+
+
+
+              //window
+              int wn = windows.size()/FLOAT_PER_VERTEX;
+              add_vertex(windows, wn++, pos_0 + depth, norm_z, tex_0, only_pos); 
+              add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
+              add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+              add_vertex(windows, wn++, pos_3 + depth, norm_z, tex_3, only_pos); 
+              add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+              add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
             }
             tex_0 += dvec2{u, v};
             tex_1 += dvec2{u, -v};
             tex_2 += dvec2{-u, v};
             tex_3 += dvec2{-u, -v};
             
-            //window
-            int wn = windows.size()/FLOAT_PER_VERTEX;
-            add_vertex(windows, wn++, pos_0 + depth, norm_z, tex_0, only_pos); 
-            add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
-            add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
-            add_vertex(windows, wn++, pos_3 + depth, norm_z, tex_3, only_pos); 
-            add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
-            add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
           }
           else
           {
-            add_vertex(model, num++, pos_0 + depth, norm_z, tex_0, only_pos); 
-            add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
-            add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
-            add_vertex(model, num++, pos_3 + depth, norm_z, tex_3, only_pos); 
-            add_vertex(model, num++, pos_2 + depth, norm_z, tex_2, only_pos); 
-            add_vertex(model, num++, pos_1 + depth, norm_z, tex_1, only_pos); 
+            //facade segment
+            add_vertex(model, num++, pos_0, norm_z, tex_0, only_pos); 
+            add_vertex(model, num++, pos_1, norm_z, tex_1, only_pos); 
+            add_vertex(model, num++, pos_2, norm_z, tex_2, only_pos); 
+            add_vertex(model, num++, pos_3, norm_z, tex_3, only_pos); 
+            add_vertex(model, num++, pos_2, norm_z, tex_2, only_pos); 
+            add_vertex(model, num++, pos_1, norm_z, tex_1, only_pos); 
+
+            //inner side of the wall
+            if (!low_quality)
+            {
+              add_vertex(model, num++, pos_0 + depth, -norm_z, tex_0, only_pos); 
+              add_vertex(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
+              add_vertex(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
+              add_vertex(model, num++, pos_3 + depth, -norm_z, tex_3, only_pos); 
+              add_vertex(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
+              add_vertex(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
+            }
           }
         }
       }
@@ -226,7 +244,7 @@ namespace dgen
     {
       BQ_BOXES,
       BQ_FACADES,
-      //BQ_FULL,
+      BQ_FULL,
       BQ_COUNT
     };
     BuildingQuality bq = (BuildingQuality)CLAMP(quality.quality_level, 0, BQ_COUNT-1);

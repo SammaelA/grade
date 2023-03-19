@@ -159,7 +159,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     }
 
     model_info.get_part("main_part")->texture_name = "noise.png";
-    //model_info.get_part("windows")->material_name = "imperfect glass";
+    model_info.get_part("windows")->material_name = "glass";
 
     std::vector<float> params;
     for (int i=3;i<argc;i++)
@@ -169,7 +169,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     if (params.empty())
       params = {3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.05, 0.5, 0.33};
     dgen::DFModel res;
-    dgen::dgen_test("buildings", params, res);
+    dgen::dgen_test("buildings", params, res, false, dgen::ModelQuality(false, 2));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1500, 1500, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
