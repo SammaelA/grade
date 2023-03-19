@@ -33,7 +33,7 @@ void MitsubaInterface::show_errors()
   }
   if (pExcTraceback != NULL)
   {
-    PyObject *pRepr = PyObject_Repr(pExcValue);
+    PyObject *pRepr = PyObject_Repr(pExcTraceback);
     logerr("An error occurred:");
     logerr("- EXC traceback: %s", PyUnicode_AsUTF8(pRepr));
     Py_DecRef(pRepr);
@@ -271,6 +271,7 @@ void MitsubaInterface::init_optimization_with_tex(const std::vector<std::string>
 
 void MitsubaInterface::model_to_ctx(const dgen::DFModel &model)
 {
+  active_parts.clear();
   int start_buffer_offset = 0;
   dgen::PartOffsets off = model.second;
   off.push_back({"", model.first.size()});//to make offset calculations simplier
@@ -288,12 +289,21 @@ void MitsubaInterface::model_to_ctx(const dgen::DFModel &model)
       }
     }
 
+    float placeholder_triangle[] = 
+    {
+      0,0,0, 0,0,1, 0,0,
+      0.001,0,0, 0,0,1, 0,1,
+      0,0.001,0, 0,0,1, 1,0
+    };
     if (part_data == nullptr || part_size <= 0)
     {
       //This part does not exist in model (it's OK) or corrupted
-      //TODO: print placeholder model here instead of logerr
-      logerr("part %s does not exist in given model", part.name.c_str());
-      return;
+      part_data = placeholder_triangle;
+      part_size = sizeof(placeholder_triangle)/sizeof(float);
+    }
+    else
+    {
+      active_parts.push_back(start_buffer_offset/3);
     }
 
     auto &ml = model_info.layout;
@@ -421,8 +431,7 @@ void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int par
                                           std::vector<float> &final_grad)
 {
   auto &ml = model_info.layout;
-  int mesh_parts_count = model_info.parts.size();
-  for (int part_id = 0; part_id < mesh_parts_count; part_id++)
+  for (int part_id : active_parts)
   {
     // offsets[0] offset always represent positions. We do not calculate derivatives by other channels (normals, tc)
     int offset = ml.offsets[0];

@@ -137,6 +137,7 @@ public:
   int iteration = 0;
   std::vector<float *> buffers;
   std::vector<std::string> buffer_names;
+  std::vector<int> active_parts;
   PyObject *pModule = nullptr, *mitsubaContext = nullptr;
   RenderSettings render_settings;
   ModelInfo model_info;

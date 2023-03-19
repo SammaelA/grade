@@ -382,7 +382,7 @@ namespace dopt
         }
         std::vector<float> reference_scene_params;
         settings_blk.get_arr("reference_scene", reference_scene_params);
-        dgen::DFModel reference = func.get(reference_params, dgen::ModelQuality(false, 3));
+        dgen::DFModel reference = func.get(reference_params, dgen::ModelQuality(false, 1));
 
         MitsubaInterface::ModelInfo ref_mi = default_model_info;
         for (auto &p : ref_mi.parts)
