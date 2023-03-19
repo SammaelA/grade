@@ -75,7 +75,7 @@ def porcelain_roughplastic(diffuse_tex_path: str, roughness=0.3):
             #     'filename': roughness_tex_path
             # }
         })
-    return my_bsdf
+    return my_bsdf, "diffuse_reflectance"
 
 
 def lambert(diffuse_tex_path: str):
@@ -87,7 +87,15 @@ def lambert(diffuse_tex_path: str):
                 'filename': diffuse_tex_path
             }
         })
-    return my_bsdf
+    return my_bsdf, "reflectance"
+
+def glass():
+  my_bsdf = mi.load_dict({
+        'type': 'dielectric',
+        'int_ior': 1.504,
+        'ext_ior': 1.0
+  })
+  return my_bsdf, "specular_reflectance"
 
 def get_material_by_name(texture_name, material_name):
   if (material_name == "very smooth porcelain"):
@@ -110,7 +118,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
   if (len(texture_names) != len(material_names)):
     print("Error: len(texture_names) != len(material_names) ", len(texture_names), " != ", len(material_names))
   model_parts = min(len(texture_names), len(material_names))
-  print("init to render composite mehs with", model_parts, "parts")
+  print("init to render composite mesh with", model_parts, "parts")
   for i in range(len(texture_names)):
     texture_names[i] = base_path + "../textures/" + texture_names[i]
   
@@ -172,6 +180,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       }
     }
 
+  #different materials have different names for their textures (e.g. "reflectance", "diffuse_reflectance" etc.)
+  material_tex_names = []
   #model (one model for each part of composite mesh)
   for i in range(model_parts):
     model_name = 'model_'+str(i)
@@ -185,27 +195,28 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
                 'radiance': {'type': 'rgb', 'value': [1, 1, 1]}
             }
       }
+      material_tex_names.append("NO MATERIAL")
     else:
-      bsdf = {
+      bsdf, material_tex_name = {
           'type': 'diffuse',
           'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-      }
+      }, "reflectance"
       if (render_style == "monochrome"):
-          bsdf = {
+          bsdf, material_tex_name = {
               'type': 'diffuse',
               'reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-          }
+          }, "reflectance"
       elif (render_style == "textured_const" or render_style == "textured_demo"):
-        bsdf = get_material_by_name(texture_names[i], material_names[i])
+        bsdf, material_tex_name = get_material_by_name(texture_names[i], material_names[i])
       elif (render_style == "monochrome_demo"):
-          bsdf = {
+          bsdf, material_tex_name = {
               'id': 'porcelain_material',
               'type': 'roughplastic',
               'distribution': 'ggx',
               'int_ior': 1.504,
               'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
               'alpha': 0.001
-          }
+          }, 'diffuse_reflectance'
       else:
         print("Unknown render_style = ", render_style)
 
@@ -216,6 +227,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
           "face_normals": True,
           'bsdf': bsdf
       }
+      material_tex_names.append(material_tex_name)
 
   scene = mi.load_dict(scene_dict)
   params = mi.traverse(scene)
@@ -237,6 +249,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     context['vertex_normals_'+str(i)] = params['model_'+str(i)+'.vertex_normals'],
     context['vertex_texcoords_'+str(i)] = tuple(),
     context['vertex_positions_'+str(i)+'_grad'] = tuple(),
+    context['material_tex_name_'+str(i)] = material_tex_names[i]
 
   if (render_style != "silhouette"):
     t = dr.unravel(mi.Point3f, params['light.vertex_positions'])
@@ -263,7 +276,9 @@ def init_optimization_with_tex(context, img_ref_dir, loss, learning_rate, camera
 
   opt = mi.ad.Adam(lr=learning_rate)
   for i in range(context['model_parts']):
-    opt['model_'+str(i)+'.bsdf.diffuse_reflectance.data'] = context['params']['model_'+str(i)+'.bsdf.diffuse_reflectance.data']
+    tex_name = context['material_tex_name_'+str(i)]
+    p_name = 'model_'+str(i)+'.bsdf.'+tex_name+'.data'
+    opt[p_name] = context['params'][p_name]
   context['tex_optimizer'] = opt
 
 def prepare_model(params, context):
@@ -501,16 +516,21 @@ def render(it, context):
   if (context['status'] == 'optimization_with_tex'):
     opt = context['tex_optimizer']
     opt.step()
+
     for key in opt.keys():
       if 'bsdf' in key:
         opt[key] = dr.clamp(opt[key], 0.0, 1.0)
       params[key] = opt[key]
     params.update()
+
+    tex_name = context['material_tex_name_'+str(0)]
+    p_name = 'model_'+str(0)+'.bsdf.'+tex_name+'.data'
+
     if context['save_intermediate_images'] > 0:
       mi.util.write_bitmap("saves/res_opt_iter"+str(it)+".png", img)
       mi.util.write_bitmap("saves/res_ref_opt_iter"+str(it)+".png", img_ref)
-      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt['model_'+str(0)+'.bsdf.diffuse_reflectance.data']))
-    mi.util.write_bitmap(context['texture_names'][0], mi.Bitmap(opt['model_'+str(0)+'.bsdf.diffuse_reflectance.data']))
+      mi.util.write_bitmap("saves/tex_opt_iter"+str(it)+".png", mi.Bitmap(opt[p_name]))
+    mi.util.write_bitmap(context['texture_names'][0], mi.Bitmap(opt[p_name]))
   return loss_PSNR[0]
 
 def get_params(context, key):
