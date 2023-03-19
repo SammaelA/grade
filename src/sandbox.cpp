@@ -131,10 +131,14 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     {
       params.push_back(std::stof(std::string(argv[i])));
     }
+    if (params.empty())
+      params = {3.108, 3.521, 3.890, 4.132, 4.354, 4.457, 4.624, 4.696, 4.745, 1.139, 1.000, 0.041, 0.558, 
+                0.137, 0.18, 0.25, 0.35, 0.409, 0.439, 0.465, 0.450, 0.413, 0.358, 0.315, 0.287, 0.264, 0.250, 0.244, 0.241, 0.247, 0.256, 0.240, 0.330, 
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     std::vector<float> res;
     dgen::dgen_test("dishes", params, res);
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 256, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(512, 512, 2048, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
     mi.render_model_to_file(res, "saves/test_result.png", camera, default_scene_params);
   }
