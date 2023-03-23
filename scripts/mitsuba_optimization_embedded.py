@@ -92,17 +92,17 @@ def lambert(diffuse_tex_path: str):
 def glass():
   my_bsdf = mi.load_dict({
         'type': 'dielectric',
-        'int_ior': 1.504,
-        'ext_ior': 1.0
+        'int_ior': 'bk7',
+        'ext_ior': 'air',
   })
   return my_bsdf, "specular_reflectance"
 
 def roughdielectric(roughness):
   my_bsdf = mi.load_dict({
         'type': 'roughdielectric',
-        'int_ior': 1.504,
+        'int_ior': 'bk7',
+        'ext_ior': 'air',
         'alpha': roughness,
-        'ext_ior': 1.0
   })
   return my_bsdf, "specular_reflectance"
 
@@ -187,14 +187,49 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'to_world': T.translate([0,0,0])
         }
 
-    scene_dict['ambient_light'] = \
-    {
-      'type': 'constant',
-      'radiance': {
-          'type': 'rgb',
-          'value': 0.2,
+    if (render_style == "monochrome_demo" or render_style == "textured_demo"):
+      '''
+      scene_dict['light2'] = {
+              'type': 'obj',
+              'filename': base_path + 'meshes/sphere.obj',
+              'emitter': {
+                  'type': 'area',
+                  'radiance': {'type': 'rgb', 'value': [20, 15, 0]}
+              },
+              'to_world': T.translate([0,0.5,2.6]).scale(0.05)
+          }
+      
+      scene_dict['light3'] = {
+              'type': 'obj',
+              'filename': base_path + 'meshes/sphere.obj',
+              'emitter': {
+                  'type': 'area',
+                  'radiance': {'type': 'rgb', 'value': [0, 0, 20]}
+              },
+              'to_world': T.translate([-0.25,0.35,2.2]).scale(0.02)
+          }
+      '''
+      scene_dict['ambient_light'] = \
+      {
+        'type': 'envmap',
+        'filename': base_path + 'textures/scythian_tombs_2_1k.exr'
       }
-    }
+      scene_dict['ground'] = {
+            'type': 'obj',
+            'filename': base_path + 'meshes/slab.obj',
+            'to_world': T.translate([0,-0.32,0]).scale(5).rotate([1, 0, 0], 90),
+            'bsdf' : porcelain_roughplastic(base_path + 'textures/white.png', 0.3)[0]
+      }
+
+    if (render_style == "textured_const"):
+      scene_dict['ambient_light'] = \
+      {
+        'type': 'constant',
+        'radiance': {
+            'type': 'rgb',
+            'value': 0.2,
+        }
+      }
 
   #different materials have different names for their textures (e.g. "reflectance", "diffuse_reflectance" etc.)
   material_tex_names = []
@@ -369,6 +404,8 @@ def render_and_save_to_file(context, save_filename):
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
+
+  if (context["render_style"] == "textured_const"):
       params['ambient_light.radiance.value'] = ls_li_ali.z 
   
   params.update()

@@ -158,7 +158,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                     MitsubaInterface::get_default_material()});
     }
 
-    model_info.get_part("main_part")->texture_name = "noise.png";
+    model_info.get_part("main_part")->texture_name = "concrete.png";
     model_info.get_part("windows")->material_name = "glass";
 
     std::vector<float> params;
@@ -167,13 +167,13 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     if (params.empty())
-      params = {3, 3, 3, 3, 6,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.05, 0.5, 0.33};
+      params = {3, 3, 3, 3, 8,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.2, 0.75, 0.5};
     dgen::DFModel res;
     dgen::dgen_test("buildings", params, res, false, dgen::ModelQuality(false, 2));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1500, 1500, 256, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_DEMO),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
-    std::vector<float> scene_params = {-0.2, 0.07, 0.5, 0, 0.5, 0, 0.000, 0.500, 10.000, 1.000, 100.000, 0.0};
+    std::vector<float> scene_params = {-0.2, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
     mi.render_model_to_file(res, "saves/test_result.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
