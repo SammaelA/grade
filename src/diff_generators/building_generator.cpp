@@ -270,7 +270,7 @@ namespace dgen
     dfloat total_size_x = params[0] + params[4]*(params[1] + params[3]) + params[2];
     dfloat total_size_y = params[5] + params[9]*(params[6] + params[8]) + params[7];
     dfloat total_size_z = params[10] + params[14]*(params[11] + params[13]) + params[12];
-    dmat43 sc2 = scale(translate(ident(), dvec3{-0.5, 0, 0}), dvec3{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
+    dmat43 sc2 = scale(translate(ident<dfloat>(), dvec3{-0.5, 0, 0}), dvec3{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
     transform(vert, sc2);
 
     return {

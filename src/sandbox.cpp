@@ -1,4 +1,5 @@
 #include "sandbox.h"
+#include <boost/algorithm/string.hpp>
 #include "generation/scene_generation.h"
 #include "generation/grove_packer.h"
 #include "generation/metainfo_manager.h"
@@ -21,7 +22,7 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
-#include <boost/algorithm/string.hpp>
+#include <cppad/cppad.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
@@ -99,7 +100,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     {
       std::string &ref = reference_images[i];
       b.set_string("reference_path", ref);
-      std::vector<std::string> split_res;
+      std::vector<std::string> split_res ={""};
       boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
       b.set_string("saved_result_path", "saves/"+split_res.back()+"_result.png");
       b.set_string("saved_textured_path", "saves/"+split_res.back()+"_result_textured.png");

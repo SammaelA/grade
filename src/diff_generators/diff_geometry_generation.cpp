@@ -196,8 +196,8 @@ namespace dgen
     add_model(tri_model, get_cube_expl());
 
     dvec3 axis{0,1,0};
-    dmat43 mat = ident();
-    mat = rotate(mat, axis, PI/4);
+    dmat43 mat = ident<dfloat>();
+    mat = rotate<dfloat>(mat, axis, PI/4);
     mat = translate(mat, shift_v);
     mat = scale(mat, scale_v);
     transform(tri_model, mat);
@@ -283,10 +283,10 @@ namespace dgen
 
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model)
   {
-    dmat43 rot = rotate(ident(), dvec3{1,0,0}, params[offset]);
+    dmat43 rot = rotate(ident<dfloat>(), dvec3{1,0,0}, params[offset]);
     rot = rotate(rot, dvec3{0,1,0}, params[offset+1]);
     rot = rotate(rot, dvec3{0,0,1}, params[offset+2]);
-    dmat43 tr = translate(ident(), dvec3{params[offset+3], params[offset+4], params[offset+5]});
+    dmat43 tr = translate(ident<dfloat>(), dvec3{params[offset+3], params[offset+4], params[offset+5]});
     rot = mul(tr, rot);
     transform(model, rot);
   }
@@ -298,10 +298,10 @@ namespace dgen
     for (int i = 0; i < f_model.size(); i++)
       model[i] = f_model[i];
 
-    dgen::dmat43 rot = dgen::rotate(dgen::ident(), dgen::dvec3{1, 0, 0}, scene_params[3]);
-    rot = dgen::rotate(rot, dgen::dvec3{0, 1, 0}, scene_params[4]);
-    rot = dgen::rotate(rot, dgen::dvec3{0, 0, 1}, scene_params[5]);
-    dgen::dmat43 tr = dgen::translate(dgen::ident(), dgen::dvec3{scene_params[0], scene_params[1], scene_params[2]});
+    dgen::dmat43 rot = dgen::rotate<dfloat>(dgen::ident<dfloat>(), dgen::dvec3{1, 0, 0}, scene_params[3]);
+    rot = dgen::rotate<dfloat>(rot, dgen::dvec3{0, 1, 0}, scene_params[4]);
+    rot = dgen::rotate<dfloat>(rot, dgen::dvec3{0, 0, 1}, scene_params[5]);
+    dgen::dmat43 tr = dgen::translate(dgen::ident<dfloat>(), dgen::dvec3{scene_params[0], scene_params[1], scene_params[2]});
     rot = dgen::mul(tr, rot);
     dgen::transform(model, rot);
 

@@ -108,7 +108,7 @@ namespace dgen
   {
     std::vector<dvec3> spline;
     spline.reserve(in_spline.size() * rotations);
-    dmat43 rot_mat = ident();
+    dmat43 rot_mat = ident<dfloat>();
     dfloat angle = (2 * PI) / rotations;
     rot_mat = rotate(rot_mat, axis, angle);
     for (int i = 0; i < in_spline.size(); ++i)
@@ -260,7 +260,7 @@ namespace dgen
 
   void spline_to_model_rotate(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, int rotations, bool only_pos)
   {
-    dmat43 rot_mat = ident();
+    dmat43 rot_mat = ident<dfloat>();
     dfloat angle = (2*PI)/rotations;
     rot_mat = rotate(rot_mat, axis, angle);
     int sp_sz = spline.size();
@@ -349,8 +349,8 @@ namespace dgen
   void spline_to_model_part_rotate_plus_shift(std::vector<dfloat> &model, const std::vector<dvec3> &spline, dvec3 axis, dfloat beg_angle, dfloat part,
                                               int rotations, dvec3 shift, dvec3 radius_vec, std::vector<dfloat> &radiuses, std::vector<dfloat> &thickness, bool only_pos)
   {
-    dmat43 rot_mat = ident();
-    dmat43 first_rot_mat = ident();
+    dmat43 rot_mat = ident<dfloat>();
+    dmat43 first_rot_mat = ident<dfloat>();
     dfloat angle = 2*part*PI/(rotations);
     rot_mat = rotate(rot_mat, axis, angle);
     dfloat ba = beg_angle + 1e-6;
@@ -462,7 +462,7 @@ namespace dgen
     std::vector<dvec3> spline = create_spline(params, 9, 1, 0, true, q_pow);
     if (q_pow > 0)
       spline = spline_make_smoother(spline, 2, spline_real_start, -1, 1, 0);
-    dmat43 sc = scale(ident(), dvec3{0.09,0.9,0.09});
+    dmat43 sc = scale(ident<dfloat>(), dvec3{0.09,0.9,0.09});
     transform(spline, sc);
     if (params[10] > 0.5)
     {
@@ -503,7 +503,7 @@ namespace dgen
     }
     spline = spline_to_closed_curve_thickness(spline, 0.025, 1, 0);
     spline_to_model_rotate(vert, spline, dvec3{0,1,0}, 12*q_pow, quality.create_only_position);
-    dmat43 sc2 = scale(ident(), dvec3{1,params[9],1});
+    dmat43 sc2 = scale(ident<dfloat>(), dvec3{1,params[9],1});
     sc2 = translate(sc2, dvec3{0, -0.5,0});
     transform(vert, sc2);
 
