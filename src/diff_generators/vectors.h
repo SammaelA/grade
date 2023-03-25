@@ -811,21 +811,21 @@ template <typename T>
   template <typename T>
   g_mat43<T> transposedInverse3x3(const g_mat43<T> &m)
   {
-    #define A(i,j) m[3*i + j] 
+    #define MAT(i,j) m[3*i + j] 
     g_mat43<T> result;
-    T determinant =+A(0,0)*(A(1,1)*A(2,2)-A(2,1)*A(1,2))
-                        -A(0,1)*(A(1,0)*A(2,2)-A(1,2)*A(2,0))
-                        +A(0,2)*(A(1,0)*A(2,1)-A(1,1)*A(2,0));
+    T determinant =+MAT(0,0)*(MAT(1,1)*MAT(2,2)-MAT(2,1)*MAT(1,2))
+                        -MAT(0,1)*(MAT(1,0)*MAT(2,2)-MAT(1,2)*MAT(2,0))
+                        +MAT(0,2)*(MAT(1,0)*MAT(2,1)-MAT(1,1)*MAT(2,0));
     T invdet = 1/(determinant+1e-19);
-    result[0] =  (A(1,1)*A(2,2)-A(2,1)*A(1,2))*invdet;
-    result[3] = -(A(0,1)*A(2,2)-A(0,2)*A(2,1))*invdet;
-    result[6] =  (A(0,1)*A(1,2)-A(0,2)*A(1,1))*invdet;
-    result[1] = -(A(1,0)*A(2,2)-A(1,2)*A(2,0))*invdet;
-    result[4] =  (A(0,0)*A(2,2)-A(0,2)*A(2,0))*invdet;
-    result[7] = -(A(0,0)*A(1,2)-A(1,0)*A(0,2))*invdet;
-    result[2] =  (A(1,0)*A(2,1)-A(2,0)*A(1,1))*invdet;
-    result[5] = -(A(0,0)*A(2,1)-A(2,0)*A(0,1))*invdet;
-    result[8] =  (A(0,0)*A(1,1)-A(1,0)*A(0,1))*invdet;
+    result[0] =  (MAT(1,1)*MAT(2,2)-MAT(2,1)*MAT(1,2))*invdet;
+    result[3] = -(MAT(0,1)*MAT(2,2)-MAT(0,2)*MAT(2,1))*invdet;
+    result[6] =  (MAT(0,1)*MAT(1,2)-MAT(0,2)*MAT(1,1))*invdet;
+    result[1] = -(MAT(1,0)*MAT(2,2)-MAT(1,2)*MAT(2,0))*invdet;
+    result[4] =  (MAT(0,0)*MAT(2,2)-MAT(0,2)*MAT(2,0))*invdet;
+    result[7] = -(MAT(0,0)*MAT(1,2)-MAT(1,0)*MAT(0,2))*invdet;
+    result[2] =  (MAT(1,0)*MAT(2,1)-MAT(2,0)*MAT(1,1))*invdet;
+    result[5] = -(MAT(0,0)*MAT(2,1)-MAT(2,0)*MAT(0,1))*invdet;
+    result[8] =  (MAT(0,0)*MAT(1,1)-MAT(1,0)*MAT(0,1))*invdet;
     result[9] =  m[9];
     result[10] = m[10];
     result[11] = m[11];
@@ -836,21 +836,21 @@ template <typename T>
   template <typename T>
   g_mat43<T> inverse3x4(const g_mat43<T> &m)
   {
-    #define A(i,j) m[3*i + j] 
+    #define MAT(i,j) m[3*i + j] 
     g_mat43<T> result;
-    T determinant =+A(0,0)*(A(1,1)*A(2,2)-A(2,1)*A(1,2))
-                        -A(0,1)*(A(1,0)*A(2,2)-A(1,2)*A(2,0))
-                        +A(0,2)*(A(1,0)*A(2,1)-A(1,1)*A(2,0));
+    T determinant =+MAT(0,0)*(MAT(1,1)*MAT(2,2)-MAT(2,1)*MAT(1,2))
+                        -MAT(0,1)*(MAT(1,0)*MAT(2,2)-MAT(1,2)*MAT(2,0))
+                        +MAT(0,2)*(MAT(1,0)*MAT(2,1)-MAT(1,1)*MAT(2,0));
     T invdet = 1/(determinant+1e-19);
-    result[0] =  (A(1,1)*A(2,2)-A(2,1)*A(1,2))*invdet;
-    result[1] = -(A(0,1)*A(2,2)-A(0,2)*A(2,1))*invdet;
-    result[2] =  (A(0,1)*A(1,2)-A(0,2)*A(1,1))*invdet;
-    result[3] = -(A(1,0)*A(2,2)-A(1,2)*A(2,0))*invdet;
-    result[4] =  (A(0,0)*A(2,2)-A(0,2)*A(2,0))*invdet;
-    result[5] = -(A(0,0)*A(1,2)-A(1,0)*A(0,2))*invdet;
-    result[6] =  (A(1,0)*A(2,1)-A(2,0)*A(1,1))*invdet;
-    result[7] = -(A(0,0)*A(2,1)-A(2,0)*A(0,1))*invdet;
-    result[8] =  (A(0,0)*A(1,1)-A(1,0)*A(0,1))*invdet;
+    result[0] =  (MAT(1,1)*MAT(2,2)-MAT(2,1)*MAT(1,2))*invdet;
+    result[1] = -(MAT(0,1)*MAT(2,2)-MAT(0,2)*MAT(2,1))*invdet;
+    result[2] =  (MAT(0,1)*MAT(1,2)-MAT(0,2)*MAT(1,1))*invdet;
+    result[3] = -(MAT(1,0)*MAT(2,2)-MAT(1,2)*MAT(2,0))*invdet;
+    result[4] =  (MAT(0,0)*MAT(2,2)-MAT(0,2)*MAT(2,0))*invdet;
+    result[5] = -(MAT(0,0)*MAT(1,2)-MAT(1,0)*MAT(0,2))*invdet;
+    result[6] =  (MAT(1,0)*MAT(2,1)-MAT(2,0)*MAT(1,1))*invdet;
+    result[7] = -(MAT(0,0)*MAT(2,1)-MAT(2,0)*MAT(0,1))*invdet;
+    result[8] =  (MAT(0,0)*MAT(1,1)-MAT(1,0)*MAT(0,1))*invdet;
     g_vec3<T> inv_tr;
     g_vec3<T> tr{m[9],m[10],m[11]};
     inv_tr = mulv(result, tr);
