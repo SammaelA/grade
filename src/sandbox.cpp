@@ -52,7 +52,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   float h1 = 1.5;
   camera.fov_rad = 0.25;
   float h2 = h1 * tan((PI / 3) / 2) / tan(camera.fov_rad / 2);
-  camera.origin = glm::vec3(0, 0.5, h2);
+  camera.origin = glm::vec3(0, 1.0, h2);
   camera.target = glm::vec3(0, 0.5, 0);
   camera.up = glm::vec3(0, 1, 0);
 
@@ -146,7 +146,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings")
   {
     Block gen_info;
-    load_block_from_file(dgen::get_generator_by_name("buildings").generator_description_blk_path, gen_info);
+    load_block_from_file(dgen::get_generator_by_name("buildings_2").generator_description_blk_path, gen_info);
     Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
     MitsubaInterface::ModelInfo model_info;
     model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
@@ -159,8 +159,11 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                     MitsubaInterface::get_default_material()});
     }
 
-    model_info.get_part("main_part")->texture_name = "concrete.png";
+    model_info.get_part("main_part")->texture_name = "concrete2.png";
+    model_info.get_part("interior")->texture_name = "concrete.png";
     model_info.get_part("windows")->material_name = "glass";
+    model_info.get_part("wooden_parts")->texture_name = "wood6.png";
+    model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
 
     std::vector<float> params;
     for (int i=3;i<argc;i++)
@@ -170,7 +173,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     if (params.empty())
       params = {3, 3, 3, 3, 8,  3, 3, 3, 3, 3,   3, 3, 3, 3, 0,   0.2, 0.75, 0.5};
     dgen::DFModel res;
-    dgen::dgen_test("buildings", params, res, false, dgen::ModelQuality(false, 2));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 2));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                                model_info);

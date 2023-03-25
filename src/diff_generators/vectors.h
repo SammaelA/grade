@@ -134,7 +134,7 @@ namespace dgen
     {
       return !(*this == rhs);
     }
-    g_vec2<T> operator-()
+    g_vec2<T> operator-() const
     {
       return g_vec2<T>(-x, -y);
     }
@@ -310,7 +310,7 @@ namespace dgen
     {
       return !(*this == rhs);
     }
-    g_vec3<T> operator-()
+    g_vec3<T> operator-() const
     {
       return g_vec3<T>(-x, -y, -z);
     }
@@ -514,7 +514,7 @@ template <typename T>
     {
       return !(*this == rhs);
     }
-    g_vec4<T> operator-()
+    g_vec4<T> operator-() const
     {
       return g_vec4<T>(-x, -y, -z, -w);
     }

@@ -1,0 +1,13 @@
+{
+  mesh_parts
+  {
+    part:s = "main_part"
+    part:s = "windows"
+    part:s = "interior"
+    part:s = "wooden_parts"
+    part:s = "metal_parts"
+  }
+  generator_parameters
+  {
+  }
+}
