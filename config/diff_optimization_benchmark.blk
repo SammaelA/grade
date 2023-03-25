@@ -93,7 +93,7 @@
 
   silhouette_optimization_settings
   {
-    optimization_stages:i = 1
+    optimization_stages:i = 3
 
     stage_0
     {
