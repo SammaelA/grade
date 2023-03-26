@@ -89,20 +89,28 @@ def lambert(diffuse_tex_path: str):
         })
     return my_bsdf, "reflectance"
 
-def glass():
+def glass(diffuse_tex_path: str):
   my_bsdf = mi.load_dict({
         'type': 'dielectric',
         'int_ior': 'bk7',
         'ext_ior': 'air',
+        'specular_reflectance': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            }
   })
   return my_bsdf, "specular_reflectance"
 
-def roughdielectric(roughness):
+def roughdielectric(diffuse_tex_path: str, roughness):
   my_bsdf = mi.load_dict({
         'type': 'roughdielectric',
         'int_ior': 'bk7',
         'ext_ior': 'air',
         'alpha': roughness,
+        'specular_reflectance': {
+                'type': 'bitmap',
+                'filename': diffuse_tex_path
+            }
   })
   return my_bsdf, "specular_reflectance"
 
@@ -119,11 +127,11 @@ def get_material_by_name(texture_name, material_name):
   elif (material_name == "rough ceramics"):
     return porcelain_roughplastic(texture_name, 0.3)
   elif (material_name == "glass"):
-    return glass()
+    return glass(texture_name)
   elif (material_name == "imperfect glass"):
-    return roughdielectric(0.05)
+    return roughdielectric(texture_name, 0.05)
   elif (material_name == "frosted glass"):
-    return roughdielectric(0.25)
+    return roughdielectric(texture_name, 0.25)
   else:
     print("unknown material name ", material_name)
     return porcelain_roughplastic(texture_name, 0)

@@ -634,6 +634,7 @@ namespace dopt
           mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
           std::string tex_name = "reconstructed_tex_" + mat_ns; 
           engine::textureManager->save_png(reconstructed_tex, tex_name);
+          sleep(5);
 
           //TODO: select different textures and different materials for model parts
           MitsubaInterface::ModelInfo textured_model_info = default_model_info;
