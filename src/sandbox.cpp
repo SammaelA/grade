@@ -159,11 +159,12 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                     MitsubaInterface::get_default_material()});
     }
 
-    model_info.get_part("main_part")->texture_name = "concrete2.png";
+    model_info.get_part("main_part")->texture_name = "wall2.png";
     model_info.get_part("interior")->texture_name = "concrete.png";
     model_info.get_part("windows")->material_name = "glass";
     model_info.get_part("wooden_parts")->texture_name = "wood6.png";
     model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
+    model_info.get_part("roof")->texture_name = "roof1.png";
 
     std::vector<float> params;
     for (int i=3;i<argc;i++)
@@ -177,7 +178,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
-    std::vector<float> scene_params = {-0.2, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
+    std::vector<float> scene_params = {-0.2, 0.07, -5, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
     mi.render_model_to_file(res, "saves/test_result.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")

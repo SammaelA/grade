@@ -6,6 +6,7 @@
     part:s = "interior"
     part:s = "wooden_parts"
     part:s = "metal_parts"
+    part:s = "roof"
   }
   generator_parameters
   {
