@@ -589,8 +589,6 @@ namespace dgen
     {
       I_ENTRANCES_COUNT,
       I_FLOORS_COUNT,
-      F_BASE_SCALE,
-      F_X_START_OFFSET,
       F_WALL_THICKNESS,
       F_BOTTOM_OFFSET_Q,
       F_TOP_OFFSET_Q,
@@ -659,6 +657,7 @@ namespace dgen
     std::vector<real> woodenM;
     std::vector<real> metalM;
     std::vector<real> roofM;
+    std::vector<real> doorM;
 
     //functions to create sections. They are called with the same arguments and use too many of them,
     //so they use input generator parameters directly
@@ -690,16 +689,14 @@ namespace dgen
         if (code >= count_t)
           code -= count_t;
         count_t /= 2;
-        std::cerr<<"sc "<<code<<" "<<count_t<<" "<<(tmp_res.back() >= 1)<<"\n";
       }
 
       std::vector<real> res;
       for (int i=0;i<tmp_res.size();i+=2)
       {
         res.push_back(2*tmp_res[i] + tmp_res[i+1]);
-        std::cerr<<res.back()<<"\n";
       }
-      std::cerr<<"\n";
+
       return res;
     };
 
@@ -720,7 +717,7 @@ namespace dgen
       return sz;
     };
 
-    auto make_section = [&](bool left_end, bool right_end, vec3 start_point, real walls_dist,
+    auto make_section = [&](bool left_end, bool right_end, vec3 start_point, real walls_dist, real height,
                             real section_code, real stripes_count, real wall_stripe_size,
                             bool is_side, vec3 vec_x, vec3 vec_z) -> vec3
     {
@@ -735,10 +732,10 @@ namespace dgen
           //wall stripe
           make_stripe_wall(wallM, intM, true,
                            params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                           Quad(start_point, wall_stripe_size*vec_x, vec3(0, params[F_BASE_SCALE], 0), vec_z));
+                           Quad(start_point, wall_stripe_size*vec_x, vec3(0, height, 0), vec_z));
           make_stripe_wall(wallM, intM, true,
                            params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                           Quad(start_point - walls_dist*vec_z, wall_stripe_size*vec_x, vec3(0, params[F_BASE_SCALE], 0), -vec_z));
+                           Quad(start_point - walls_dist*vec_z, wall_stripe_size*vec_x, vec3(0, height, 0), -vec_z));
           stripe_size = wall_stripe_size;
         }
         else if (stripe_type < 1.5)
@@ -750,14 +747,14 @@ namespace dgen
                   params[F_WINDOW_OUTER_FRAME_WIDTH], params[F_WINDOW_INNER_FRAME_WIDTH], params[F_WINDOW_GLASS_DEPTH],
                   params[F_BASE_WINDOW_WIDTH_Q], params[F_BASE_WINDOW_HEIGHT_Q],
                   params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                  Quad(start_point, params[F_BASE_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, params[F_BASE_SCALE], 0), vec_z));
+                  Quad(start_point, params[F_BASE_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, height, 0), vec_z));
           make_stripe_windows(windowsM, wallM, woodenM, intM,
                   WindowQuality::WQ_HIGH, params[I_BASE_WINDOW_HOR_SPLITS], params[I_BASE_WINDOW_VERT_SPLITS], 
                   params_to_window_split_type(params[I_BASE_WINDOW_SPLIT_TYPE]), params[F_BASE_WINDOW_SPLIT_H],
                   params[F_WINDOW_OUTER_FRAME_WIDTH], params[F_WINDOW_INNER_FRAME_WIDTH], params[F_WINDOW_GLASS_DEPTH],
                   params[F_BASE_WINDOW_WIDTH_Q], params[F_BASE_WINDOW_HEIGHT_Q],
                   params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                  Quad(start_point - walls_dist*vec_z, params[F_BASE_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, params[F_BASE_SCALE], 0), -vec_z));
+                  Quad(start_point - walls_dist*vec_z, params[F_BASE_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, height, 0), -vec_z));
           stripe_size = params[F_BASE_WINDOW_STRIPE_SIZE];
         }
         else if (stripe_type < 2.5)
@@ -770,7 +767,7 @@ namespace dgen
                   params[F_BALCONY_WINDOW_WIDTH_Q], params[F_BALCONY_WINDOW_HEIGHT_Q],
                   params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                   params[F_BALCONY_HEIGHT_Q], params[F_BALCONY_DEPTH_Q], params[F_BALCONY_BARS_THICKNESS], params[F_BALCONY_BARS_DISTANCE], params[I_BALCONY_START_FLOOR],
-                  Quad(start_point, params[F_BALCONY_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, params[F_BASE_SCALE], 0), vec_z));
+                  Quad(start_point, params[F_BALCONY_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, height, 0), vec_z));
         make_stripe_balcony(windowsM, wallM, woodenM, intM, metalM,
                   WindowQuality::WQ_HIGH, params[I_BALCONY_WINDOW_HOR_SPLITS], params[I_BALCONY_WINDOW_VERT_SPLITS], 
                   params_to_window_split_type(params[I_BALCONY_WINDOW_SPLIT_TYPE]), params[F_BALCONY_WINDOW_SPLIT_H],
@@ -778,7 +775,7 @@ namespace dgen
                   params[F_BALCONY_WINDOW_WIDTH_Q], params[F_BALCONY_WINDOW_HEIGHT_Q],
                   params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                   params[F_BALCONY_HEIGHT_Q], params[F_BALCONY_DEPTH_Q], params[F_BALCONY_BARS_THICKNESS], params[F_BALCONY_BARS_DISTANCE], params[I_BALCONY_START_FLOOR],
-                  Quad(start_point - walls_dist*vec_z, params[F_BALCONY_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, params[F_BASE_SCALE], 0), -vec_z));
+                  Quad(start_point - walls_dist*vec_z, params[F_BALCONY_WINDOW_STRIPE_SIZE]*vec_x, vec3(0, height, 0), -vec_z));
         stripe_size = params[F_BALCONY_WINDOW_STRIPE_SIZE];
         }
         else
@@ -790,11 +787,11 @@ namespace dgen
         if (!is_side)
         {
           make_insides(intM, walls_dist, !(left_end && (i == 0)), params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                      Quad(start_point, vec3(stripe_size,0,0), vec3(0, params[F_BASE_SCALE], 0), vec3(0, 0, 1)));
+                      Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1)));
 
           make_roof_segment(wallM, roofM, params[F_ROOF_BASE_H], PI/(3 + params[F_ROOF_SLOPE]), 
                             left_end && (i == 0), (right_end) && (i == stripe_types.size()-1), 
-                            Quad(start_point + vec3(0, params[F_BASE_SCALE], params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
+                            Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
                                 vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
         }
         start_point += vec_x*stripe_size;
@@ -802,7 +799,7 @@ namespace dgen
       return start_point;
     };
 
-    auto make_entrance_section = [&](vec3 start_point, real walls_dist) -> vec3
+    auto make_entrance_section = [&](vec3 start_point, real walls_dist, real height) -> vec3
     {
       make_stripe_entrance(windowsM, wallM, woodenM, intM, metalM, 
                           WindowQuality::WQ_HIGH, params[I_ENTRANCE_WINDOW_HOR_SPLITS], params[I_ENTRANCE_WINDOW_VERT_SPLITS], 
@@ -812,22 +809,22 @@ namespace dgen
                           params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                           params[F_DOOR_OFFSET_Q], params[F_DOOR_WIDTH_Q], params[F_DOOR_HEIGHT_Q],
                           params[F_DOOR_DEPTH_Q], params[F_STAIRS_HEIGHT], params[F_STAIRS_LENGTH],
-                          Quad(start_point, vec3(params[F_ENTRANCE_WINDOW_STRIPE_SIZE],0,0), vec3(0, params[F_BASE_SCALE], 0), vec3(0, 0, 1)));
+                          Quad(start_point, vec3(params[F_ENTRANCE_WINDOW_STRIPE_SIZE],0,0), vec3(0, height, 0), vec3(0, 0, 1)));
       make_stripe_windows(windowsM, wallM, woodenM, intM,
                           WindowQuality::WQ_HIGH, params[I_ENTRANCE_WINDOW_HOR_SPLITS], params[I_ENTRANCE_WINDOW_VERT_SPLITS], 
                           params_to_window_split_type(params[I_ENTRANCE_WINDOW_SPLIT_TYPE]), params[F_ENTRANCE_WINDOW_SPLIT_H],
                           params[F_WINDOW_OUTER_FRAME_WIDTH], params[F_WINDOW_INNER_FRAME_WIDTH], params[F_WINDOW_GLASS_DEPTH],
                           params[F_ENTRANCE_WINDOW_WIDTH_Q], params[F_ENTRANCE_WINDOW_HEIGHT_Q],
                           params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                          Quad(start_point - vec3(0,0,walls_dist), vec3(params[F_ENTRANCE_WINDOW_STRIPE_SIZE],0,0), vec3(0, params[F_BASE_SCALE], 0), vec3(0, 0, -1)));
+                          Quad(start_point - vec3(0,0,walls_dist), vec3(params[F_ENTRANCE_WINDOW_STRIPE_SIZE],0,0), vec3(0, height, 0), vec3(0, 0, -1)));
       real stripe_size = params[F_ENTRANCE_WINDOW_STRIPE_SIZE];
 
 
       make_insides(intM, walls_dist, true, params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
-                   Quad(start_point, vec3(stripe_size,0,0), vec3(0, params[F_BASE_SCALE], 0), vec3(0, 0, 1))); 
+                   Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1))); 
       make_roof_segment(wallM, roofM, params[F_ROOF_BASE_H], PI/(3 + params[F_ROOF_SLOPE]), 
                         false, false, 
-                        Quad(start_point + vec3(0, params[F_BASE_SCALE], params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
+                        Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
                              vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
 
       start_point.x += stripe_size;
@@ -836,45 +833,42 @@ namespace dgen
 
     params.resize(_PARAMS_COUNT);
     params[I_ENTRANCES_COUNT] = 2;
-    params[I_FLOORS_COUNT] = 5;
-    params[F_BASE_SCALE] = 1.2;
-    params[F_X_START_OFFSET] = -0.8;
+    params[I_FLOORS_COUNT] = 2;
     params[F_WALL_THICKNESS] = 0.05;
     params[F_BOTTOM_OFFSET_Q] = 0.6;
     params[F_TOP_OFFSET_Q] = 0.2;
 
-    params[I_ES_STRIPES] = 3;
+    params[I_ES_STRIPES] = 2;
     params[I_ES_CODE] = 5;
-    params[F_ES_WALL_STRIPE_SIZE] = 0.2;
+    params[F_ES_WALL_STRIPE_SIZE] = 1;
 
-    params[I_MS_STRIPES] = 5;
-    params[I_MS_CODE] = 1 + 4*2 + 16*1 + 64*2 + 256*1;
-    params[F_MS_WALL_STRIPE_SIZE] = 0.2;
+    params[I_MS_STRIPES] = 4;
+    params[I_MS_CODE] = 1 + 4*1 + 16*1 + 64*1;
+    params[F_MS_WALL_STRIPE_SIZE] = 1;
 
-    params[I_SS_STRIPES] = 4;
-    params[I_SS_CODE] = 20;
-    params[F_SS_WALL_STRIPE_SIZE] = 0.15;
+    params[I_SS_STRIPES] = 3;
+    params[I_SS_CODE] = 21;
+    params[F_SS_WALL_STRIPE_SIZE] = 0.6;
 
-    params[F_WINDOW_OUTER_FRAME_WIDTH] = 0.1;
-    params[F_WINDOW_INNER_FRAME_WIDTH] = 0.07;
+    params[F_WINDOW_OUTER_FRAME_WIDTH] = 0.07;
+    params[F_WINDOW_INNER_FRAME_WIDTH] = 0.04;
     params[F_WINDOW_GLASS_DEPTH] = 0.1;
     
-    params[F_BASE_WINDOW_STRIPE_SIZE] = 0.2;
-    params[I_BASE_WINDOW_HOR_SPLITS] = 1;
+    params[F_BASE_WINDOW_STRIPE_SIZE] = 1;
+    params[I_BASE_WINDOW_HOR_SPLITS] = 3;
     params[I_BASE_WINDOW_VERT_SPLITS] = 2;
-    params[I_BASE_WINDOW_SPLIT_TYPE] = 0;
+    params[I_BASE_WINDOW_SPLIT_TYPE] = 2;
     params[F_BASE_WINDOW_SPLIT_H] = 0.6;
-    params[F_BASE_WINDOW_WIDTH_Q] = 0.7;
-    params[F_BASE_WINDOW_HEIGHT_Q] = 0.7;
+    params[F_BASE_WINDOW_WIDTH_Q] = 0.6;
+    params[F_BASE_WINDOW_HEIGHT_Q] = 0.8;
 
-    params[F_BALCONY_WINDOW_STRIPE_SIZE] = 0.2;
+    params[F_BALCONY_WINDOW_STRIPE_SIZE] = 1;
     params[I_BALCONY_WINDOW_HOR_SPLITS] = 1;
     params[I_BALCONY_WINDOW_VERT_SPLITS] = 3;
     params[I_BALCONY_WINDOW_SPLIT_TYPE] = 0;
     params[F_BALCONY_WINDOW_SPLIT_H] = 0.6;
     params[F_BALCONY_WINDOW_WIDTH_Q] = 0.7;
     params[F_BALCONY_WINDOW_HEIGHT_Q] = 0.7;
-    params[F_BALCONY_WINDOW_STRIPE_SIZE] = 0.3;
     params[F_BALCONY_HEIGHT_Q] = 0.4;
     params[F_BALCONY_DEPTH_Q] = 0.5;
     params[F_BALCONY_BARS_THICKNESS] = 0.015;
@@ -886,14 +880,14 @@ namespace dgen
     params[F_ROOF_OVERSIZE] = 0.03;
 
 
-    params[F_ENTRANCE_WINDOW_STRIPE_SIZE] = 0.2;
-    params[I_ENTRANCE_WINDOW_HOR_SPLITS] = 1;
-    params[I_ENTRANCE_WINDOW_VERT_SPLITS] = 1;
+    params[F_ENTRANCE_WINDOW_STRIPE_SIZE] =1;
+    params[I_ENTRANCE_WINDOW_HOR_SPLITS] = 3;
+    params[I_ENTRANCE_WINDOW_VERT_SPLITS] = 2;
     params[I_ENTRANCE_WINDOW_SPLIT_TYPE] = 2;
     params[F_ENTRANCE_WINDOW_SPLIT_H] = 0.6;
-    params[F_ENTRANCE_WINDOW_WIDTH_Q] = 0.5;
-    params[F_ENTRANCE_WINDOW_HEIGHT_Q] = 0.5;
-    params[F_DOOR_OFFSET_Q] = 0.6;
+    params[F_ENTRANCE_WINDOW_WIDTH_Q] = 0.6;
+    params[F_ENTRANCE_WINDOW_HEIGHT_Q] = 0.8;
+    params[F_DOOR_OFFSET_Q] = 0.4;
     params[F_DOOR_WIDTH_Q] = 0.6;
     params[F_DOOR_HEIGHT_Q] = 1;
     params[F_DOOR_DEPTH_Q] = 0.15;
@@ -901,35 +895,38 @@ namespace dgen
     params[F_STAIRS_LENGTH] = 0.15;
     
     real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
-
-    real start_x = params[F_X_START_OFFSET];
+    real height = (params[I_FLOORS_COUNT] + params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q]);
+    real start_x = 0;
     vec3 start_point = vec3(start_x,0,0);
-    start_point = make_section(true, false, start_point, size_w, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
+    start_point = make_section(true, false, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
                                false, vec3(1,0,0), vec3(0,0,1));
     for (int i=0;i<params[I_ENTRANCES_COUNT] - 1;i++)
     {
-      start_point = make_entrance_section(start_point, size_w);
-      start_point = make_section(false, false, start_point, size_w, params[I_MS_CODE], params[I_MS_STRIPES], params[F_MS_WALL_STRIPE_SIZE],
+      start_point = make_entrance_section(start_point, size_w, height);
+      start_point = make_section(false, false, start_point, size_w, height, params[I_MS_CODE], params[I_MS_STRIPES], params[F_MS_WALL_STRIPE_SIZE],
                                  false, vec3(1,0,0), vec3(0,0,1));
     }
-    start_point = make_entrance_section(start_point, size_w);
-    start_point = make_section(false, true, start_point, size_w, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
+    start_point = make_entrance_section(start_point, size_w, height);
+    start_point = make_section(false, true, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
                                false, vec3(1,0,0), vec3(0,0,1));
 
     real size_l = start_point.x - start_x;
-    make_section(false, false, vec3(start_x,0,-size_w), size_l, params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE],
+    make_section(false, false, vec3(start_x,0,-size_w), size_l, height, params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE],
                                true, vec3(0,0,1), vec3(-1,0,0));
 
-    std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM};
-    
+    std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM, &doorM};
+    std::vector<std::string> names = {"main_part", "windows", "interior", "wooden_parts", "metal_parts", "roof", "door"};
     int sz = 0;
     for (int i=0;i<models.size(); i++)
       sz += models[i]->size();
     model.resize(sz);
 
     int k = 0;
+    PartOffsets po;
     for (int i=0;i<models.size(); i++)
     {
+      if (!(models[i]->empty()))
+        po.push_back({names[i], k});
       for (real &v : *(models[i]))
       {
         model[k] = v;
@@ -937,13 +934,11 @@ namespace dgen
       }
     }
 
-    return {
-        {"main_part", 0},
-        {"windows", wallM.size()},
-        {"interior", windowsM.size() + wallM.size()},
-        {"wooden_parts", windowsM.size() + wallM.size() + intM.size()},
-        {"metal_parts", windowsM.size() + wallM.size() + intM.size() + woodenM.size()},
-        {"roof", windowsM.size() + wallM.size() + intM.size() + woodenM.size() + metalM.size()}};
+    real t = height > size_l ? 1/height : 1/size_l;
+    dmat43 sc2 = scale(ident<dfloat>(), dvec3{t, t, t});
+    transform(model, sc2);
+
+    return po;
   }
     
   PartOffsets create_building_2(const std::vector<dfloat> &params, std::vector<dfloat> &model, ModelQuality quality)
