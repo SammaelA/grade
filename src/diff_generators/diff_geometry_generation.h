@@ -14,8 +14,6 @@ namespace dgen
   bool check_stability(generator_func func, const std::vector<float> &params, int iterations);
   bool check_robustness(generator_func func, const std::vector<float> &params_min, const std::vector<float> &params_max, int iterations);
   bool create_model_from_block(Block &bl, ComplexModel &mod);
-  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3);
-  void transform(std::vector<dvec3> &verts, dmat43 mat);
   void transform_by_scene_parameters(std::vector<dgen::dfloat> &params, int offset, std::vector<dgen::dfloat> &model);
   void transform_by_scene_parameters(const std::vector<float> &scene_params, std::vector<float> &model);
   dfloat smoothmax(dfloat a, dfloat b, float alpha = 16);
@@ -29,4 +27,43 @@ namespace dgen
   dfloat default_model_reg(const std::vector<dfloat> &params, const std::vector<dfloat> &model);
   dfloat d_max(dfloat a, dfloat b);
   dfloat d_min(dfloat a, dfloat b);
+
+  template <typename T>
+  void transform(std::vector<T> &vert, g_mat43<T> mat, int floats_per_vertex = FLOAT_PER_VERTEX, int pos_start = 0, int norm_start = 3)
+  {
+    g_mat43<T> norm_mat = transposedInverse3x3(mat);
+
+    if (norm_start >= 0)
+    {
+      for (int i=0;i<vert.size()/floats_per_vertex;i++)
+      {
+        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
+        mulv(norm_mat, vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
+
+        T a = vert[norm_start+floats_per_vertex*i];
+        T b = vert[norm_start+floats_per_vertex*i+1];
+        T c = vert[norm_start+floats_per_vertex*i+2];
+        T len = sqrt(a*a + b*b + c*c) + 1e-18;
+        vert[norm_start+floats_per_vertex*i] = a/len;
+        vert[norm_start+floats_per_vertex*i+1] = b/len;
+        vert[norm_start+floats_per_vertex*i+2] = c/len;
+      }
+    }
+    else
+    {
+      for (int i=0;i<vert.size()/floats_per_vertex;i++)
+      {
+        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
+      }
+    }
+  }
+
+  template <typename T>
+  void transform(std::vector<g_vec3<T>> &verts, g_mat43<T> mat)
+  {
+    for (auto &vert : verts)
+    {
+      vert = mulp(mat, vert); 
+    }
+  }
 };

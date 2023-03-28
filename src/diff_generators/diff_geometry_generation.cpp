@@ -151,43 +151,6 @@ namespace dgen
     }
   }
 
-  void transform(std::vector<dfloat> &vert, dmat43 mat, int floats_per_vertex, int pos_start, int norm_start)
-  {
-    dmat43 norm_mat = transposedInverse3x3(mat);
-
-    if (norm_start >= 0)
-    {
-      for (int i=0;i<vert.size()/floats_per_vertex;i++)
-      {
-        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
-        mulv(norm_mat, vert[norm_start+floats_per_vertex*i], vert[norm_start+floats_per_vertex*i+1], vert[norm_start+floats_per_vertex*i+2]);
-
-        dfloat a = vert[norm_start+floats_per_vertex*i];
-        dfloat b = vert[norm_start+floats_per_vertex*i+1];
-        dfloat c = vert[norm_start+floats_per_vertex*i+2];
-        dfloat len = CppAD::sqrt(a*a + b*b + c*c) + 1e-18;
-        vert[norm_start+floats_per_vertex*i] = a/len;
-        vert[norm_start+floats_per_vertex*i+1] = b/len;
-        vert[norm_start+floats_per_vertex*i+2] = c/len;
-      }
-    }
-    else
-    {
-      for (int i=0;i<vert.size()/floats_per_vertex;i++)
-      {
-        mulp(mat, vert[pos_start+floats_per_vertex*i], vert[pos_start+floats_per_vertex*i+1], vert[pos_start+floats_per_vertex*i+2]);
-      }
-    }
-  }
-
-  void transform(std::vector<dvec3> &verts, dmat43 mat)
-  {
-    for (auto &vert : verts)
-    {
-      vert = mulp(mat, vert); 
-    }
-  }
-
   void test_model(std::vector<dfloat> &vert, std::vector<dfloat> &params)
   {
     dvec3 shift_v{params[0], params[1], params[2]};
