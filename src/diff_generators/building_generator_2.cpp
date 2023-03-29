@@ -11,9 +11,8 @@ namespace dgen
   #define mat43 g_mat43<real>
 
   template <typename real>
-  PartOffsets create_building_2t(const std::vector<real> &__params, std::vector<real> &model, ModelQuality quality)
+  PartOffsets create_building_2t(const std::vector<real> &params, std::vector<real> &model, ModelQuality quality)
   {
-    std::vector<real> params;
     struct Quad
     {
       Quad() = default;
@@ -860,69 +859,12 @@ namespace dgen
       return start_point;
     };
 
-    params.resize(_PARAMS_COUNT);
-    params[I_ENTRANCES_COUNT] = 2;
-    params[I_FLOORS_COUNT] = 2;
-    params[F_WALL_THICKNESS] = 0.05;
-    params[F_BOTTOM_OFFSET_Q] = 0.6;
-    params[F_TOP_OFFSET_Q] = 0.2;
+    for (int i=0;i<params.size();i++)
+    {
+      std::cerr<<params[i]<<", ";
+    }
+    std::cerr<<"\n";
 
-    params[I_ES_STRIPES] = 2;
-    params[I_ES_CODE] = 5;
-    params[F_ES_WALL_STRIPE_SIZE] = 1;
-
-    params[I_MS_STRIPES] = 4;
-    params[I_MS_CODE] = 1 + 4*2 + 16*1 + 64*2 + 256*1;
-    params[F_MS_WALL_STRIPE_SIZE] = 1;
-
-    params[I_SS_STRIPES] = 3;
-    params[I_SS_CODE] = 21;
-    params[F_SS_WALL_STRIPE_SIZE] = 0.6;
-
-    params[F_WINDOW_OUTER_FRAME_WIDTH] = 0.07;
-    params[F_WINDOW_INNER_FRAME_WIDTH] = 0.04;
-    params[F_WINDOW_GLASS_DEPTH] = 0.1;
-    
-    params[F_BASE_WINDOW_STRIPE_SIZE] = 1;
-    params[I_BASE_WINDOW_HOR_SPLITS] = 3;
-    params[I_BASE_WINDOW_VERT_SPLITS] = 2;
-    params[I_BASE_WINDOW_SPLIT_TYPE] = 2;
-    params[F_BASE_WINDOW_SPLIT_H] = 0.6;
-    params[F_BASE_WINDOW_WIDTH_Q] = 0.6;
-    params[F_BASE_WINDOW_HEIGHT_Q] = 0.8;
-
-    params[F_BALCONY_WINDOW_STRIPE_SIZE] = 1;
-    params[I_BALCONY_WINDOW_HOR_SPLITS] = 1;
-    params[I_BALCONY_WINDOW_VERT_SPLITS] = 3;
-    params[I_BALCONY_WINDOW_SPLIT_TYPE] = 0;
-    params[F_BALCONY_WINDOW_SPLIT_H] = 0.6;
-    params[F_BALCONY_WINDOW_WIDTH_Q] = 0.7;
-    params[F_BALCONY_WINDOW_HEIGHT_Q] = 0.7;
-    params[F_BALCONY_HEIGHT_Q] = 0.4;
-    params[F_BALCONY_DEPTH_Q] = 0.5;
-    params[F_BALCONY_BARS_THICKNESS] = 0.015;
-    params[F_BALCONY_BARS_DISTANCE] = 0.05;
-    params[I_BALCONY_START_FLOOR] = 1;
-
-    params[F_ROOF_BASE_H] = 0.04;
-    params[F_ROOF_SLOPE] = 15;
-    params[F_ROOF_OVERSIZE] = 0.03;
-
-
-    params[F_ENTRANCE_WINDOW_STRIPE_SIZE] =1;
-    params[I_ENTRANCE_WINDOW_HOR_SPLITS] = 3;
-    params[I_ENTRANCE_WINDOW_VERT_SPLITS] = 2;
-    params[I_ENTRANCE_WINDOW_SPLIT_TYPE] = 2;
-    params[F_ENTRANCE_WINDOW_SPLIT_H] = 0.6;
-    params[F_ENTRANCE_WINDOW_WIDTH_Q] = 0.6;
-    params[F_ENTRANCE_WINDOW_HEIGHT_Q] = 0.8;
-    params[F_DOOR_OFFSET_Q] = 0.4;
-    params[F_DOOR_WIDTH_Q] = 0.6;
-    params[F_DOOR_HEIGHT_Q] = 1;
-    params[F_DOOR_DEPTH_Q] = 0.15;
-    params[F_STAIRS_HEIGHT] = 0.1;
-    params[F_STAIRS_LENGTH] = 0.15;
-    
     WindowQuality wq = quality.quality_level >= ModelQuality::HIGH ? WQ_HIGH : WQ_LOW;
     BalconyQuality bq = quality.quality_level >= ModelQuality::HIGH ? BQ_HIGH : (quality.quality_level >= ModelQuality::MEDIUM ? BQ_LOW : BQ_NONE);
 
