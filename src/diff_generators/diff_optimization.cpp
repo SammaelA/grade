@@ -218,13 +218,13 @@ namespace dopt
       Block *pb = blk.get_block(i);
       if (!pb && pb->size() > 0)
       {
-        logerr("invalid parameter description\"%s\". It should be non-empty block", blk.get_name(i));
+        logerr("invalid parameter description\"%s\". It should be non-empty block", blk.get_name(i).c_str());
       }
       else
       {
         glm::vec2 min_max = pb->get_vec2("values", glm::vec2(1e9, -1e9));
         if (min_max.x > min_max.y)
-          logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i));
+          logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i).c_str());
         params_min.push_back(min_max.x);
         params_max.push_back(min_max.y);
         params_names.push_back(blk.get_name(i));
@@ -388,7 +388,7 @@ namespace dopt
         for (auto &p : ref_mi.parts)
           p.texture_name = "texture_not_found.png";
 
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                    ref_mi);
         mi.render_model_to_file(reference, "saves/reference.png", camera, reference_scene_params);
         reference_tex_raw = engine::textureManager->load_unnamed_tex("saves/reference.png");
@@ -434,7 +434,16 @@ namespace dopt
 
       for (int i = 0; i < params.size(); i++)
         params[i] = CLAMP(params[i], params_min[i], params_max[i]);
-
+/*
+      debug("params {");
+      for (int i = 0; i < params.size(); i++)
+      {
+        debug("%.3f", params[i]);
+        if (i != params.size()-1)
+          debug(", ");
+      }
+      debug("}\n");
+*/
       std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       dgen::DFModel res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);

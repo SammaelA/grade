@@ -39,6 +39,8 @@ namespace dgen
 
     auto add_vertex = [&](std::vector<real> &M, const vec3 &pos, const vec3 &n, const vec2 &tc)
     {
+      real t = pos.x + pos.y + pos.z + n.x + n.y + n.z + tc.x + tc.y;
+      assert(t==t);
       //we are rely heavily on reserve() on vectors and assume, that most push_back()
       //functions will not lead to increasing vector size and reallocation
 
@@ -117,6 +119,7 @@ namespace dgen
 
     enum WindowQuality
     {
+      WQ_NONE, //no window
       WQ_LOW, //only glass quad
       WQ_HIGH //glass quad + alcove + frame
     };
@@ -147,7 +150,7 @@ namespace dgen
       {
         make_quad(M_glass, q);
       }
-      else
+      else if (wq == WindowQuality::WQ_HIGH)
       {
         Quad deepened_q = q;
         deepened_q.p1 -= glass_deep_q*wall_thick*q.n;
@@ -248,7 +251,7 @@ namespace dgen
       real w = 0.5f * (1 - window_width_q) * length(q.v2) / length(q.v1);
       real h = 0.5f * (1 - window_height_q);
 
-      bool int_wall = (wq == WindowQuality::WQ_HIGH);
+      bool int_wall = (wq >= WindowQuality::WQ_LOW);
 
       make_panel(M_wall, M_int, int_wall, wall_thick, Quad(q.p1, vec2(0, 0), w * q.v1, vec2(w, 0), q.v2, vec2(0, 1), q.n));
       make_panel(M_wall, M_int, int_wall, wall_thick, Quad(q.p1 + (1 - w) * q.v1, vec2(1-w, 0), w * q.v1, vec2(w, 0), q.v2, vec2(0, 1), q.n));
@@ -269,7 +272,7 @@ namespace dgen
                                  real thick, real bottom_offset_q, real top_offset_q, real floors_count,
                                  const Quad &q)
     {
-      bool has_interior = (wq == WindowQuality::WQ_HIGH);
+      bool has_interior = (wq >= WindowQuality::WQ_LOW);
       real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
       Quad q_part = q;
 
@@ -330,7 +333,7 @@ namespace dgen
                                     real stairs_h_q, real stairs_w_q,
                                     const Quad &q)
     {
-      bool has_interior = (wq == WindowQuality::WQ_HIGH);
+      bool has_interior = (wq >= WindowQuality::WQ_LOW);
       real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
       Quad q_part = q;
 
@@ -494,7 +497,7 @@ namespace dgen
                                     real bars_thick, real bars_distance, real balcony_start_floor,
                                     const Quad &q)
     {
-      bool has_interior = (wq == WindowQuality::WQ_HIGH);
+      bool has_interior = (wq >= WindowQuality::WQ_LOW);
       real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
       Quad q_part = q;
 
@@ -749,10 +752,10 @@ namespace dgen
         if (stripe_type < 0.5)
         {
           //wall stripe
-          make_stripe_wall(wallM, intM, window_quality >= WindowQuality::WQ_HIGH,
+          make_stripe_wall(wallM, intM, window_quality >= WindowQuality::WQ_LOW,
                            params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                            Quad(start_point, wall_stripe_size*vec_x, vec3(0, height, 0), vec_z));
-          make_stripe_wall(wallM, intM, window_quality >= WindowQuality::WQ_HIGH,
+          make_stripe_wall(wallM, intM, window_quality >= WindowQuality::WQ_LOW,
                            params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                            Quad(start_point - walls_dist*vec_z, wall_stripe_size*vec_x, vec3(0, height, 0), -vec_z));
           stripe_size = wall_stripe_size;
@@ -809,7 +812,7 @@ namespace dgen
 
         if (!is_side)
         {
-          if (window_quality >= WindowQuality::WQ_HIGH)
+          if (window_quality >= WindowQuality::WQ_LOW)
           {
             make_insides(intM, walls_dist, !(left_end && (i == 0)), params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                         Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1)));
@@ -845,7 +848,7 @@ namespace dgen
                           Quad(start_point - vec3(0,0,walls_dist), vec3(params[F_ENTRANCE_WINDOW_STRIPE_SIZE],0,0), vec3(0, height, 0), vec3(0, 0, -1)));
       real stripe_size = params[F_ENTRANCE_WINDOW_STRIPE_SIZE];
 
-      if (window_quality >= WindowQuality::WQ_HIGH)
+      if (window_quality >= WindowQuality::WQ_LOW)
       {
         make_insides(intM, walls_dist, true, params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                     Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1))); 
@@ -865,7 +868,7 @@ namespace dgen
     }
     std::cerr<<"\n";
 
-    WindowQuality wq = quality.quality_level >= ModelQuality::HIGH ? WQ_HIGH : WQ_LOW;
+    WindowQuality  wq = quality.quality_level >= ModelQuality::HIGH ? WQ_HIGH : (quality.quality_level >= ModelQuality::MEDIUM ? WQ_LOW : WQ_NONE);
     BalconyQuality bq = quality.quality_level >= ModelQuality::HIGH ? BQ_HIGH : (quality.quality_level >= ModelQuality::MEDIUM ? BQ_LOW : BQ_NONE);
 
     real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
@@ -913,7 +916,10 @@ namespace dgen
     dmat43 sc2 = scale(ident<dfloat>(), dvec3{t, t, t});
     transform(model, sc2);
 
-    return po;
+    if (quality.quality_level == ModelQuality::LOW)
+      return {{"main_part", 0}};
+    else
+      return po;
   }
     
   PartOffsets create_building_2(const std::vector<dfloat> &params, std::vector<dfloat> &model, ModelQuality quality)
