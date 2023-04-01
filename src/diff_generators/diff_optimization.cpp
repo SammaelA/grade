@@ -643,7 +643,6 @@ namespace dopt
           mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
           std::string tex_name = "reconstructed_tex_" + mat_ns; 
           engine::textureManager->save_png(reconstructed_tex, tex_name);
-          sleep(5);
 
           //TODO: select different textures and different materials for model parts
           MitsubaInterface::ModelInfo textured_model_info = default_model_info;
@@ -739,6 +738,7 @@ namespace dopt
         float psnr = -opt_result.best_err;
         float mse = 1/pow(10, psnr/10);
         debug("Stage %d Texture optimization stat\n", stage);
+        sleep(5);
         debug("Error: PSNR = %.2f, MSE = %.5f\n", psnr, mse);
         debug("%.1f s total (%.1f ms/iter)\n", 1e-3 * opt_time_ms, opt_time_ms / iters);
         debug("Best params: [");
