@@ -12,6 +12,8 @@ out vec4 fragColor;
 #define ADD 0
 #define MUL 1
 #define DIV 2
+#define MIN 3
+#define MAX 4
 
 void main(void) 
 {
@@ -21,6 +23,10 @@ void main(void)
     fragColor = a*c1 + b*c2;
   else if (op == MUL)
     fragColor = a*b*c1*c2;
-  else 
+  else if (op == DIV)
     fragColor = a*b*c1/max(c2, vec4(1.0/255, 1.0/255, 1.0/255, 1.0/255));
+  else if (op == MIN)
+    fragColor = min(a*c1, b*c2);
+  else
+    fragColor = max(a*c1, b*c2);
 }

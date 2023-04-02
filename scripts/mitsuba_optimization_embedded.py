@@ -477,15 +477,12 @@ def render(it, context):
       img_raw = numpy.asarray(img)
       img_raw = (img_raw/255.0) ** 2.2
       if (context['status'] == 'optimization_with_tex'):
-        img_flatten = img_raw.flatten()
-        img_flatten_r = img_flatten[0::3]
-        img_flatten_g = img_flatten[1::3]
-        img_flatten_b = img_flatten[2::3]
-        img_flatten_s = img_flatten_r + img_flatten_g + img_flatten_b
-        img_flatten_s = numpy.repeat(img_flatten_s, 3)
-        img_flatten[img_flatten_s > 1e-4] = 1
-        img_flatten[img_flatten_s <= 1e-4] = 0
-        img_mask = numpy.reshape(img_flatten, img_raw.shape)
+        ref_mask = context['img_ref_dir_'+str(i)][:-4] + "_mask" + ".png"
+        with Image.open(ref_mask) as img_mask_raw:
+          img_mask_raw.load()
+        img_mask_raw = img_mask_raw.convert('RGB')
+        img_mask = numpy.asarray(img_mask_raw)
+        img_mask = (img_mask/255.0) ** 2.2
       else:
         img_flatten = img_raw.flatten()
         img_mask = numpy.reshape(numpy.ones(img_flatten.shape, img_flatten.dtype), img_raw.shape)
@@ -532,7 +529,7 @@ def render(it, context):
     transform_model_normals(params, context, pos, angles)
 
     img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
-    img = dr.minimum(dr.maximum(img, 0), 1)
+    #img = dr.minimum(dr.maximum(img, 0), 1)
     if (context['status'] == 'optimization_with_tex'):
       img = img_ref_mask * img
     loss = context['loss_function'](img, img_ref) # loss = F_loss(image)

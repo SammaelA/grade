@@ -19,6 +19,7 @@
 #include "graphics_utils/bilateral_filter.h"
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
+#include "graphics_utils/image_arithmetic.h"
 
 namespace dopt
 {
@@ -638,7 +639,20 @@ namespace dopt
           model_quality = stage_blk->get_int("model_quality", 0);
           only_pos = false;
           Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
-          engine::textureManager->save_png(reference_textured, "reference_textured");
+
+          dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
+          mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                                    default_model_info);
+          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", camera, get_camera_params(opt_result.best_params));
+          Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
+          Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
+          ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
+          engine::textureManager->save_png(mask_min, "reference_textured_mask");
+
+          Texture reference_textured_masked = engine::textureManager->create_texture(im_sz, im_sz);
+          ImageArithmetics::mul(reference_textured_masked, reference_textured, mask_min, 1);
+          engine::textureManager->save_png(reference_textured_masked, "reference_textured");
           std::string mat_ns = material;
           mat_ns.erase(std::remove_if(mat_ns.begin(), mat_ns.end(), isspace), mat_ns.end());
           std::string tex_name = "reconstructed_tex_" + mat_ns; 
@@ -708,7 +722,21 @@ namespace dopt
         model_quality = stage_blk->get_int("model_quality", 0);
         only_pos = false;
         Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
-        engine::textureManager->save_png(reference_textured, "reference_textured");
+
+        dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                                   default_model_info);
+        mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", camera, get_camera_params(opt_result.best_params));
+        Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
+        Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+        Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
+        ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
+        engine::textureManager->save_png(mask_min, "reference_textured_mask");
+
+        Texture reference_textured_masked = engine::textureManager->create_texture(im_sz, im_sz);
+        ImageArithmetics::mul(reference_textured_masked, reference_textured, mask_min, 1);
+        engine::textureManager->save_png(reference_textured_masked, "reference_textured");
+
 
         //TODO: select different textures and different materials for model parts
         MitsubaInterface::ModelInfo textured_model_info = default_model_info;
@@ -722,8 +750,8 @@ namespace dopt
         Block adam_settings;
         adam_settings.add_arr("initial_params", opt_result.best_params);
         adam_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-          adam_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
-          adam_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
+        adam_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
+        adam_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
         adam_settings.add_bool("verbose", true);
         opt::Optimizer *tex_opt = new opt::Adam();
 

@@ -4,6 +4,8 @@
 #define ADD 0
 #define MUL 1
 #define DIV 2
+#define MINOP 3
+#define MAXOP 4
 
 void image_op(Texture &I, Texture &I_1, Texture &I_2, float a, float b, int op)
 {
@@ -48,4 +50,14 @@ void ImageArithmetics::mul(Texture &I, Texture &I_1, Texture &I_2, float a)
 void ImageArithmetics::div(Texture &I, Texture &I_1, Texture &I_2, float a)
 {
   return image_op(I, I_1, I_2, a, 1, DIV);
+}
+
+void ImageArithmetics::minimum(Texture &I, Texture &I_1, Texture &I_2, float a, float b)
+{
+  return image_op(I, I_1, I_2, a, b, MINOP);
+}
+
+void ImageArithmetics::maximum(Texture &I, Texture &I_1, Texture &I_2, float a, float b)
+{
+  return image_op(I, I_1, I_2, a, b, MAXOP);
 }
