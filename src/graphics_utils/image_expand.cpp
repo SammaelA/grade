@@ -30,7 +30,7 @@ Texture ImgExp::ImgExpanding(Texture image, int res_size, float color_thr, float
   float h = image.get_H();
 
   SilhouetteExtractor se = SilhouetteExtractor(blur_sigma >=0 ? blur_sigma : MAX(1, MIN(w, h)/256.0), 0, 0, color_thr);
-  Texture mask = se.get_silhouette_simple(image, w, h);
+  Texture mask = se.get_silhouette(image, w, h);
   engine::textureManager->save_png(mask, "ie_mask");
   engine::textureManager->save_png(image, "ie_image");
 

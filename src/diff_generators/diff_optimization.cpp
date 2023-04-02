@@ -401,9 +401,9 @@ namespace dopt
       if (by_reference)
         reference_tex = reference_tex_raw;
       else
-        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.25, by_reference ? 0 : -1);
-      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.1);
-      reference_mask = se.get_silhouette_simple(reference_tex, original_reference_size, original_reference_size);
+        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.05, by_reference ? 0 : -1);
+      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+      reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
       engine::textureManager->save_png(reference_tex, "ie_rsult");
       engine::textureManager->save_png(reference_mask, "ie_rsult2");
     }
