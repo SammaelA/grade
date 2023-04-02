@@ -213,7 +213,9 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
 
     Texture t2 = gaussian.perform_gauss_blur(sm_tex);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t1.texture, 0);
+    Texture tmp_div = engine::textureManager->create_texture(W * w, H * h, GL_RGBA16F);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_div.texture, 0);
     texs_div.use();
     texs_div.get_shader().texture("tex1", sm_tex);
     texs_div.get_shader().texture("tex2", t2);
@@ -223,7 +225,7 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
 
     Texture mask2 = gaussian.perform_gauss_blur(mask1);
 
-    glBindTexture(GL_TEXTURE_2D, t1.texture);
+    glBindTexture(GL_TEXTURE_2D, tmp_div.texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     if (it.x_sym >= 0)
@@ -306,7 +308,7 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     tex_com.get_shader().use();
     tex_com.get_shader().uniform("x_sym", it.x_sym);
     tex_com.get_shader().uniform("y_sym", it.y_sym);
-    tex_com.get_shader().texture("tex1", t1);
+    tex_com.get_shader().texture("tex1", tmp_div);
     tex_com.get_shader().texture("tex2", t2);
     tex_com.get_shader().texture("mask1", mask1);
     tex_com.get_shader().texture("mask2", mask2);
