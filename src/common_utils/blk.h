@@ -174,6 +174,7 @@ struct Block
     bool get_arr(int id, std::vector<unsigned> &values, bool replace = false);
     bool get_arr(int id, std::vector<short> &values, bool replace = false);
     bool get_arr(int id, std::vector<unsigned short> &values, bool replace = false);
+    bool get_arr(int id, std::vector<std::string> &values, bool replace = false);
 
     int get_bool(const std::string name, bool base_val = false);
     int get_int(const std::string name, int base_val = 0);
@@ -194,6 +195,7 @@ struct Block
     bool get_arr(const std::string name, std::vector<unsigned> &values, bool replace = false);
     bool get_arr(const std::string name, std::vector<short> &values, bool replace = false);
     bool get_arr(const std::string name, std::vector<unsigned short> &values, bool replace = false);
+    bool get_arr(const std::string name, std::vector<std::string> &values, bool replace = false);
 
     void add_bool(const std::string name, bool base_val = false);
     void add_int(const std::string name, int base_val = 0);
@@ -214,6 +216,7 @@ struct Block
     void add_arr(const std::string name, std::vector<unsigned> &values);
     void add_arr(const std::string name, std::vector<short> &values);
     void add_arr(const std::string name, std::vector<unsigned short> &values);
+    void add_arr(const std::string name, std::vector<std::string> &values);
 
     void set_bool(const std::string name, bool base_val = false);
     void set_int(const std::string name, int base_val = 0);
@@ -234,6 +237,7 @@ struct Block
     void set_arr(const std::string name, std::vector<unsigned> &values);
     void set_arr(const std::string name, std::vector<short> &values);
     void set_arr(const std::string name, std::vector<unsigned short> &values);
+    void set_arr(const std::string name, std::vector<std::string> &values);
 
     void add_value(const std::string &name, const Value &value);
     void set_value(const std::string &name, const Value &value);

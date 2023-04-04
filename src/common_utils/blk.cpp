@@ -416,9 +416,12 @@ bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
 {
     std::string token = next_token(data, cur_pos);
     //{ <value>, <value>, ... <value>}
+    // <value> := "string" or <double>
+    //all values should have the same type
     if (token == "{")
     {
         bool ok = true;
+        Block::ValueType array_type = Block::ValueType::DOUBLE;
         while (ok)
         {
             Block::Value val;
@@ -428,15 +431,35 @@ bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
                 a.type = Block::ValueType::DOUBLE;
                 return true;
             }
-            val.type = Block::ValueType::DOUBLE;
-            val.d = std::stod(tok);
+            if (tok.empty())
+              logerr("line %d empty token in array", cur_line);
+            else if (tok == "\"")
+            {
+              tok = next_token(data, cur_pos);
+
+              val.type = Block::ValueType::STRING;
+              val.s = new std::string(tok);
+
+              tok = next_token(data, cur_pos);
+              if (tok == "\"'")
+                logerr("line %d unexpected end of string in array", cur_line);
+            }
+            else
+            {
+              val.type = Block::ValueType::DOUBLE;
+              val.d = std::stod(tok);
+            }
+            if (a.values.empty())
+              array_type = val.type;
+            else if (array_type != val.type)
+              logerr("line %d array has values of diffrent types", cur_line);
             a.values.push_back(val);
 
             tok = next_token(data, cur_pos);
             ok = ok && (tok == ",");
             if (tok == "}")
             {
-                a.type = Block::ValueType::DOUBLE;
+                a.type = array_type;
                 return true;
             }
         }
@@ -681,6 +704,24 @@ bool Block::get_arr(int id, std::vector<unsigned short> &_values, bool replace)
     }
     return false;
 }
+bool Block::get_arr(int id, std::vector<std::string> &_values, bool replace)
+{
+    if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
+        (values[id].a->type == STRING))
+    {
+        if (replace)
+            _values.clear();
+        for (Block::Value &v : values[id].a->values)
+        {
+            if (v.s)
+                _values.push_back(*(v.s));
+            else
+                _values.push_back("");
+        }
+        return true;
+    }
+    return false;
+}
 
 int Block::get_bool(const std::string name, bool base_val)
 {
@@ -758,6 +799,10 @@ bool Block::get_arr(const std::string name, std::vector<unsigned short> &_values
 {
     return get_arr(get_id(name), _values, replace);
 }
+bool Block::get_arr(const std::string name, std::vector<std::string> &_values, bool replace)
+{
+    return get_arr(get_id(name), _values, replace); 
+}
 
 void save_value(std::string &str, Block::Value &v);
 void save_block(std::string &str, Block &b)
@@ -779,6 +824,18 @@ void save_arr(std::string &str, Block::DataArray &a)
         for (int i = 0; i < a.values.size(); i++)
         {
             str += std::to_string(a.values[i].d);
+            if (i < a.values.size() - 1)
+                str += ", ";
+        }
+    }
+    else if (a.type == Block::ValueType::STRING)
+    {
+        for (int i = 0; i < a.values.size(); i++)
+        {
+            if (a.values[i].s)
+              str += "\""+*(a.values[i].s)+"\"";
+            else 
+              str += "\"\"";
             if (i < a.values.size() - 1)
                 str += ", ";
         }
@@ -1102,6 +1159,22 @@ void Block::add_arr(const std::string name, std::vector<unsigned short> &_values
     }
     add_value(name, val);
 }
+void Block::add_arr(const std::string name, std::vector<std::string> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::STRING;
+    for (std::string &str : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::STRING;
+        av.s = new std::string(str);
+        val.a->values.push_back(av);
+    }
+    add_value(name, val);
+}
+
 void Block::set_bool(const std::string name, bool base_val)
 {
     Block::Value val;
@@ -1280,6 +1353,21 @@ void Block::set_arr(const std::string name, std::vector<unsigned short> &_values
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
         av.d = d;
+        val.a->values.push_back(av);
+    }
+    set_value(name, val);
+}
+void Block::set_arr(const std::string name, std::vector<std::string> &_values)
+{
+    Block::Value val;
+    val.type = Block::ValueType::ARRAY;
+    val.a = new Block::DataArray();
+    val.a->type = Block::ValueType::STRING;
+    for (std::string &str : _values)
+    {
+        Block::Value av;
+        av.type = Block::ValueType::STRING;
+        av.s = new std::string(str);
         val.a->values.push_back(av);
     }
     set_value(name, val);
