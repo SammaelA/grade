@@ -359,8 +359,6 @@ namespace dopt
     DiffFunctionEvaluator func;
     func.init(generator.generator, variant_positions);
 
-    CameraSettings camera = CameraSettings::get_default_mitsuba_preset();
-
     //there is no info about materials or textures, only the number of composite parts
     MitsubaInterface::ModelInfo default_model_info = get_default_model_info_from_blk(gen_mesh_parts);
 
@@ -391,7 +389,8 @@ namespace dopt
 
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                    ref_mi);
-        mi.render_model_to_file(reference, "saves/reference.png", camera, reference_scene_params);
+        mi.render_model_to_file(reference, "saves/reference.png",
+                                MitsubaInterface::get_camera_from_scene_params(reference_scene_params), reference_scene_params);
         reference_tex_raw = engine::textureManager->load_unnamed_tex("saves/reference.png");
       }
       else
@@ -449,7 +448,8 @@ namespace dopt
       dgen::DFModel res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
-      float loss = mi.render_and_compare(res, camera, get_camera_params(params));
+      float loss = mi.render_and_compare(res, MitsubaInterface::get_camera_from_scene_params(get_camera_params(params)), 
+                                         get_camera_params(params));
 
       mi.compute_final_grad(jac, gen_params_cnt, res.first.size() / FLOAT_PER_VERTEX, final_grad);
 
@@ -555,7 +555,9 @@ namespace dopt
     dgen::DFModel best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
                                default_model_info);
-    mi.render_model_to_file(best_model, saved_result_path, camera, get_camera_params(opt_result.best_params));
+    mi.render_model_to_file(best_model, saved_result_path,
+                            MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                            get_camera_params(opt_result.best_params));
 
     Texture mask_tex, reconstructed_tex;
     ModelTex mt;
@@ -568,7 +570,9 @@ namespace dopt
       m->update();
       float rt_sz = MAX(reference_tex.get_W(), reference_tex.get_H());
 
-      reconstructed_tex = mt.getTexbyUV(reference_mask, *m, reference_tex, camera, mask_tex);
+      reconstructed_tex = mt.getTexbyUV(reference_mask, *m, reference_tex,
+                                        MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                                        mask_tex);
       engine::textureManager->save_png(reconstructed_tex, "reconstructed_tex");
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }
@@ -643,7 +647,7 @@ namespace dopt
           dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
           mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                                     default_model_info);
-          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", camera, get_camera_params(opt_result.best_params));
+          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
           Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
           Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
           Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
@@ -726,7 +730,7 @@ namespace dopt
         dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                                    default_model_info);
-        mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", camera, get_camera_params(opt_result.best_params));
+        mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
         Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
         Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
@@ -801,17 +805,17 @@ namespace dopt
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_raw.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", camera, get_camera_params(opt_result.best_params));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
 
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_complemented.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", camera, get_camera_params(opt_result.best_params));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
 
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_denoised.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", camera, get_camera_params(opt_result.best_params));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
     }
 
     debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());

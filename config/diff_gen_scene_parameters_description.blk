@@ -11,4 +11,5 @@
   light_size{values:p2 = 1, 250 desc:s = "light size(radius)"}
   light_intensity{values:p2 = 1, 100 desc:s = "light intensity"}
   ambient_light_intensity{values:p2 = 0, 1 desc:s = "ambient light intensity"}
+  camera_fov{values:p2 = 0.05, 0.5 desc:s = "camera field of view in radians. This parameter is non-differentiable and used only in c++ code"}
 }

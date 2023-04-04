@@ -555,6 +555,7 @@ def render(it, context):
       camera_params_grad.append(dr.grad(ls_li_ali).x)
       camera_params_grad.append(dr.grad(ls_li_ali).y)
       camera_params_grad.append(dr.grad(ls_li_ali).z)
+      camera_params_grad.append([0])  #camera_fov grad is 0
     else:
       camera_params_grad.append([0])
       camera_params_grad.append([0])
@@ -562,6 +563,7 @@ def render(it, context):
       camera_params_grad.append([0])
       camera_params_grad.append([0])
       camera_params_grad.append([0])  
+      camera_params_grad.append([0])
 
     if (camera_n == 0):
       vertex_positions_grad = dr.ravel(dr.grad(t1))

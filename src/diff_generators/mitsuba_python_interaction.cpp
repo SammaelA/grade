@@ -638,3 +638,17 @@ std::string MitsubaInterface::get_default_material()
 {
   return "ceramics";
 }
+
+CameraSettings MitsubaInterface::get_camera_from_scene_params(const std::vector<float> &scene_params)
+{
+  float fov_rad = scene_params.back();
+
+  CameraSettings camera;
+  float h1 = 1.5;
+  camera.fov_rad = fov_rad;
+  float h2 = h1 * tan((3.14159265f / 3) / 2) / tan(camera.fov_rad / 2);
+  camera.origin = glm::vec3(0, 0.5, h2);
+  camera.target = glm::vec3(0, 0.5, 0);
+  camera.up = glm::vec3(0, 1, 0);
+  return camera;
+}

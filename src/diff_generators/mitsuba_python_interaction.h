@@ -117,6 +117,7 @@ public:
 
   static std::vector<std::string> get_all_available_materials();
   static std::string get_default_material();
+  static CameraSettings get_camera_from_scene_params(const std::vector<float> &scene_params);
 //private:
   void show_errors();
   void set_model_max_size(int model_max_size);

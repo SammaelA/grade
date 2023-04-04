@@ -55,4 +55,9 @@
   {
     set:arr = {0.1}
   }
+
+  camera_fov
+  {
+    set:arr = {0.25}
+  }
 }
