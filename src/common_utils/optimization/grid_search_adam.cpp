@@ -70,9 +70,42 @@ namespace opt
   {
     std::vector<unsigned short> init_bins_count;
     std::vector<unsigned short> init_bins_positions;
+    std::vector<std::vector<float>> init_bins_values;
+    std::vector<std::string> params_names;
 
-    settings.get_arr("init_bins_count", init_bins_count);
-    settings.get_arr("init_bins_positions", init_bins_positions);
+    settings.get_arr("params_names", params_names);
+    Block *grid = settings.get_block("grid");
+    if (!grid)
+      logerr("GridSearchAdam: \"grid\" block not found");
+    for (int i=0;i<grid->size();i++)
+    {
+      Block *axis = grid->get_block(i);
+      if (axis)
+      {
+        int param_id = -1;
+        for (int j=0;j<params_names.size();j++)
+        {
+          if (params_names[j] == grid->get_name(i))
+          {
+            param_id = j;
+            break;
+          }
+        }
+        if (param_id == -1)
+          logerr("GridSearchAdam: grid has unknown parameter \"%s\"", grid->get_name(i).c_str());
+        else
+        {
+          std::vector<float> values;
+          axis->get_arr("values", values);
+          if (values.size() > 0)
+          {
+            init_bins_positions.push_back(param_id);
+            init_bins_count.push_back(values.size());
+            init_bins_values.push_back(values);
+          }
+        }
+      }
+    }
 
     assert(min_X.size() > 0);
     assert(min_X.size() == max_X.size());
@@ -82,6 +115,11 @@ namespace opt
     int local_search_iterations = settings.get_int("local_search_iterations", 100);
     float local_search_learning_rate = settings.get_double("local_search_learning_rate", 0.25);
     int start_points_count = settings.get_int("start_points_count", 50);
+    float grid_params_gradient_mult = settings.get_double("grid_params_gradient_mult", 1);
+
+    std::vector<float> derivatives_mult(min_X.size(), 1);
+    for (auto &i : init_bins_positions)
+      derivatives_mult[i] = grid_params_gradient_mult;
 
     int N = min_X.size();
 
@@ -107,7 +145,7 @@ namespace opt
     {
       debug("GridSearchAdam: start_points_count (%d) is enough to test all combinations (%lu)\n",start_points_count, combinations);
 
-      std::vector<unsigned short> combination = std::vector<unsigned short>(combinations, 0);
+      std::vector<unsigned short> combination = std::vector<unsigned short>(init_bins_count.size(), 0);
       for (int i=0;i<combinations;i++)
       {
         start_points_bins.push_back(combination);
@@ -159,22 +197,33 @@ namespace opt
     int b = 0;
     for (auto &bins : start_points_bins)
     {
-      debug("bin [");
+      debug("bin %d[", bins.size());
       for (auto &d : bins)
         debug("%d ", (int)d);
       debug("]\n");
 
-      std::vector<float> start_params = std::vector<float>(N, 0);
-      for (int i=0; i<start_params.size();i++)
+      std::vector<float> start_params;
+      settings.get_arr("initial_params", start_params);
+      if (start_params.empty())
       {
-        start_params[i] = min_X[i] + ((urand(0, 1)+urand(0,1))/2)*(max_X[i] - min_X[i]);
+        logerr("GSA: No initial params. Random values will be picked");
+        start_params = std::vector<float>(N, 0);
+        for (int i=0; i<start_params.size();i++)
+        {
+          start_params[i] = min_X[i] + ((urand(0, 1)+urand(0,1))/2)*(max_X[i] - min_X[i]);
+        }
       }
       for (int j = 0; j < init_bins_count.size(); j++)
       {
         int pos = init_bins_positions[j];
-        float val_from = min_X[pos] + bins[j] * (max_X[pos] - min_X[pos]) / init_bins_count[j];
-        float val_to = min_X[pos] + (bins[j] + 1) * (max_X[pos] - min_X[pos]) / init_bins_count[j];
-        start_params[pos] = urand(val_from, val_to);
+        if (init_bins_values[j].size() > 0)
+          start_params[pos] = init_bins_values[j][bins[j]];
+        else
+        {
+          float val_from = min_X[pos] + bins[j] * (max_X[pos] - min_X[pos]) / init_bins_count[j];
+          float val_to = min_X[pos] + (bins[j] + 1) * (max_X[pos] - min_X[pos]) / init_bins_count[j];
+          start_params[pos] = urand(val_from, val_to);
+        }
       }
 
       Optimizer *opt = new Adam();
@@ -182,6 +231,8 @@ namespace opt
       adam_settings.add_arr("initial_params", start_params);
       adam_settings.add_double("learning_rate", local_search_learning_rate);
       adam_settings.add_int("iterations", local_search_iterations);
+      adam_settings.add_bool("verbose", verbose);
+      adam_settings.add_arr("derivatives_mult", derivatives_mult);
       opt->optimize(F, min_X, max_X, adam_settings);
       
       std::vector<float> local_best_params;
