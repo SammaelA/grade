@@ -25,8 +25,8 @@
 
   memetic_classic
   {
-    total_function_calls:i = 4000
-    population_size:i = 30
+    total_function_calls:i = 6000
+    population_size:i = 20
     tournament_size:i = 12
     mutation_chance:r = 0.3
     mutation_power:r = 0.2
@@ -36,6 +36,7 @@
     start_search_learning_rate:r = 0.05
     recreation_diversity_thr:r = 3.0
     depth_reg_q:r = 0.0
+    min_iter_between_recreations:i = 100
   }
 
   DE
@@ -59,11 +60,11 @@
 
   adam
   {
-    iterations:i = 100
-    learning_rate:r = 0.005
+    iterations:i = 150
+    learning_rate:r = 0.01
     verbose:b = false
-    initial_params:arr = {3.271, 3.623, 3.896, 4.114, 4.286, 4.408, 4.497, 4.570, 4.591, 1.060, 1.000, 0.053, 0.542, 0.152, 0.224, 0.326, 0.395, 0.442, 0.469, 0.474, 0.450, 0.411, 0.369, 0.330, 0.299, 0.279, 0.265, 0.259, 0.261, 0.273, 0.297, 0.336, 0.407, 2.000, 2.000, 1.008, 0.740, 0.618, 0.643, 0.640, 0.659, 0.655, 0.654, 0.637, 0.579, 0.520, 0.500, 0.500, 0.500, 0.597, 0.732, 1.275, 1.232, 0.187, 0.585, 1.370, 0.102, -0.292, 0.017, 
-                          100.000, 250.000, 100.000, 100.000, 50, 0.25}
+    initial_params:arr = {3.318, 3.634, 3.873, 4.091, 4.220, 4.309, 4.356, 4.4, 4.4, 1.0, 0.987, 0.041, 0.477, 0.223, 0.225, 0.277, 0.296, 0.310, 0.317, 0.310, 0.302, 0.296, 0.289, 0.287, 0.286, 0.291, 0.295, 0.306, 0.317, 0.326, 0.345, 0.364, 0.375, 1.991, 1.990, 1.209, 1.221, 1.190, 1.201, 1.153, 1.131, 1.088, 1.048, 0.998, 0.952, 0.899, 0.853, 0.826, 0.842, 0.831, 0.930, 1.098, 1.690, 
+                          -0.149, 0.573, 1.774, 0.3, 2.945, 0.012, 510.403, 6.013, 26.971, 1.000, 56.560, 0.9}
   }
   
   //which procedural generator is used to create models. Currently only "dishes" is available
@@ -83,8 +84,8 @@
   reference_scene:arr = {0.136, 0.545, 0.112, 0.091, -0.395, 0.019, 0, 0.5, 10, 1, 150, 0.1}
   reference_image_size:i = 512
 
-  regularization_alpha:r = 0.02
-  original_reference_size:i = 2048
+  regularization_alpha:r = 1
+  original_reference_size:i = 1024
   model_material:s = "" //leave empty to autoselect material (will take a few minutes)
   save_intermediate_images:b = false
 

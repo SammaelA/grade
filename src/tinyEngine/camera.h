@@ -9,11 +9,11 @@ struct CameraSettings
   float z_near = 0.1f;
   float z_far = 100.0f;
 
-  static CameraSettings get_default_mitsuba_preset()
+  static CameraSettings get_default_mitsuba_preset(float fov_rad = 0.25)
   {
     CameraSettings camera;
     float h1 = 1.5;
-    camera.fov_rad = 0.25;
+    camera.fov_rad = fov_rad;
     float h2 = h1 * tan((3.14159265f/3)/2) / tan(camera.fov_rad/2);
     camera.origin = glm::vec3(0, 0.5, h2);
     camera.target = glm::vec3(0, 0.5, 0);

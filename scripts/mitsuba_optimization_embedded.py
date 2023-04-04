@@ -300,7 +300,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
     'render_style' : render_style,
     'image_w' : image_w,
     'image_h' : image_h,
-    'model_parts' : model_parts
+    'model_parts' : model_parts,
+    'camera_fov' : 0.25
   }
 
   for i in range(model_parts):
@@ -395,6 +396,7 @@ def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target
           },
     }
   context['camera'] =  mi.load_dict(camera_dict)  
+  context['camera_fov'] = numpy.pi*fov/180
 
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
@@ -463,6 +465,9 @@ def get_scene_params(context):
     ls_li_ali   = mi.Point3f(context['camera_params'][9], #light_size, light_intensity, ambient_light_intensity
                            context['camera_params'][10], 
                            context['camera_params'][11])
+
+    #0.25 is a default fov and all presets are adjusted to it
+    pos.z *= numpy.tan(0.5*0.25) / numpy.tan(0.5*context['camera_fov'])
 
     return (pos, angles, light_pos, ls_li_ali)
 def render(it, context):

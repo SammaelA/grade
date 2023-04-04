@@ -553,7 +553,7 @@ namespace dopt
     }
 
     dgen::DFModel best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::MONOCHROME),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
                                default_model_info);
     mi.render_model_to_file(best_model, saved_result_path, camera, get_camera_params(opt_result.best_params));
 
