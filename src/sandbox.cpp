@@ -22,6 +22,7 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
+#include "graphics_utils/voxelization/voxelization.h"
 #include <cppad/cppad.hpp>
 #include <thread>
 #include <chrono>
@@ -236,6 +237,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       textureManager.save_png(sharped, "reconstructed_tex_complemented_1");
       textureManager.save_png(sharped, "reconstructed_tex_denoised_1");
     engine::view->next_frame();
+  }
+  else if (std::string(argv[2]) == "-voxelization_test")
+  {
+    voxelization::software_render_test_3d();
   }
   else
   {
