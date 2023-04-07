@@ -15,7 +15,8 @@ public:
     std::array<VoxelType, 8> values;
   };
   VoxelArray() = default;
-  VoxelArray(glm::vec3 _p0, glm::vec3 _p1, glm::ivec3 _vox_count, VoxelType _default_value)
+  VoxelArray(glm::vec3 _p0, glm::vec3 _p1, glm::ivec3 _vox_count, VoxelType _default_value,
+             VoxelType *external_data = nullptr)
   {
     p0 = _p0;
     p1 = _p1;
@@ -28,11 +29,21 @@ public:
     sz = p1 - p0;
     voxel_size = glm::vec3(sz.x / vox_count.x, sz.y / vox_count.y, sz.z / vox_count.z);
     total_vox_count = vox_count.x * vox_count.y * vox_count.z;
-    data = new VoxelType[total_vox_count];
+
+    if (external_data)
+    {
+      data = external_data;
+      has_external_data = true;
+    }
+    else
+    {
+      data = new VoxelType[total_vox_count];
+      has_external_data = false;
+    }
   }
   ~VoxelArray()
   {
-    if (data)
+    if (data && !has_external_data)
       delete data;
   }
 
@@ -108,6 +119,15 @@ public:
     }
   }
 
+  unsigned get_total_vox_count() 
+  {
+    return total_vox_count;
+  }
+  void set_direct(unsigned id, const VoxelType &value)
+  {
+    data[id] = value;
+  }
+
 private:
   inline glm::ivec3 pos_to_v(glm::vec3 pos)
   {
@@ -141,4 +161,5 @@ private:
   glm::ivec3 vox_count;     // size of array in voxels i.e. (64,64,64)
   glm::vec3 voxel_size;     // size of each voxel
   unsigned total_vox_count; // number of all voxels in array
+  bool has_external_data = false;
 };

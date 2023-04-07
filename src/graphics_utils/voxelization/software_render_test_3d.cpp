@@ -4,6 +4,10 @@
 #include "third_party/stb_image.h"
 #include "voxel_array.h"
 #include "common_utils/distribution.h"
+#include <cppad/cppad.hpp>
+#include "diff_generators/vectors.h"
+#include "common_utils/optimization/optimization.h"
+#include "common_utils/blk.h"
 #include <cstdio>
 #include <string>
 
@@ -12,6 +16,10 @@ using glm::mat4;
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
+
+using dgen::dfloat;
+using dgen::dvec4;
+using dgen::dvec3;
 
 namespace voxelization
 {
@@ -107,7 +115,60 @@ namespace voxelization
     delete[] data;
   }
 
-  void render_3d_scene(VoxelArray<vec4> &voxel_array, CameraSettings &camera,
+
+  void render_reference_image(CameraSettings &camera, Image &out_image,
+                              float image_w, float image_h)
+  {
+    mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+    mat4 view_proj = projection * view;
+    mat4 view_proj_inv = glm::inverse(view_proj);
+
+    float max_distance = camera.z_far;
+    float max_steps = 512;
+
+    for (int i=0;i<image_w;i++)
+    {
+      for (int j=0;j<image_h;j++)
+      {
+        vec3 full_color(0,0,0);
+        float full_a = 0;
+        for (int sample = 0; sample < 1; sample++)
+        {
+          vec4 t_pos = vec4(2*(i+0.5)/image_w - 1, 2*(j+0.5)/image_h - 1, 1, 1);
+          vec4 p1 = view_proj_inv * t_pos;
+          vec3 ray = glm::normalize(vec3(p1.x/p1.w, p1.y/p1.w, p1.z/p1.w));
+
+          vec3 color(0,0,0);
+          float a = 1;
+          float dist = (max_distance/max_steps);
+          vec3 step = dist*ray;
+          for (float k=0;k<max_steps;k++)
+          {
+            vec3 p = camera.origin + k*step;
+            float density = 0;
+            vec3 c = vec3(0,0,0);
+            if (abs(p.x - 0) < 3 && abs(p.y - 0) < 3 && abs(p.z - 0) < 3)
+            {
+              //printf("[%d %d]\n", i, j);
+              density = 1;
+              c = vec3(0,1,0);
+            }
+            float a_i = expf(-density*dist);
+            color += a*(1-a_i)*c;
+            a *= a_i;
+            if (a < 1e-4)
+              break;
+          }
+          full_color += color;
+          full_a += a;
+        }
+        out_image.set_pixel(i,j,full_color);
+      }
+    }
+  }
+
+  void render_3d_scene(VoxelArray<vec4> &voxel_array, const CameraSettings &camera,
                        Image &out_image,
                        float image_w, float image_h, float max_distance, int max_steps,
                        int spp)
@@ -152,7 +213,143 @@ namespace voxelization
       }
     }
   }
-  void software_render_test_3d()
+
+  void diff_render_3d_naive(vec3 p0, vec3 p1, glm::ivec3 voxel_array_size,
+                            const std::vector<CameraSettings> &cameras,
+                            const std::vector<Image> &reference_images,
+                            float image_w, float image_h, float max_distance, int max_steps,
+                            int spp)
+  {
+
+    size_t x_n = 4 * voxel_array_size.x * voxel_array_size.y * voxel_array_size.z;
+    std::vector<dfloat> X(x_n, 0);
+    std::vector<dfloat> Y;
+
+    // declare independent variables and start recording operation sequence
+    CppAD::Independent(X);
+
+    std::vector<dvec4> voxel_data(x_n/4, dvec4(0,0,0,0));
+
+    VoxelArray<dvec4> voxel_array(p0, p1, voxel_array_size, dvec4(0,0,0,0), voxel_data.data());
+    for (int i=0;i<x_n/4;i++)
+      voxel_array.set_direct(i, dvec4(X[4*i], X[4*i+1], X[4*i+2], X[4*i+3]));
+
+    Y.push_back(0);
+
+    int ref_cnt = min(cameras.size(), reference_images.size());
+
+    for (int ref_n = 0; ref_n < ref_cnt; ref_n++)
+    {
+      auto &camera = cameras[ref_n];
+      auto &reference = reference_images[ref_n];
+
+      mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+      mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+      mat4 view_proj = projection * view;
+      mat4 view_proj_inv = glm::inverse(view_proj);
+
+      for (int i=0;i<image_w;i++)
+      {
+        for (int j=0;j<image_h;j++)
+        {
+          dvec3 full_color(0,0,0);
+          dfloat full_a = 0;
+          for (int sample = 0; sample < spp; sample++)
+          {
+            vec4 t_pos = vec4(2*(i+0.5)/image_w - 1, 2*(j+0.5)/image_h - 1, 1, 1);
+            vec4 p1 = view_proj_inv * t_pos;
+            vec3 ray = glm::normalize(vec3(p1.x/p1.w, p1.y/p1.w, p1.z/p1.w));
+
+            dvec3 color(0,0,0);
+            dfloat a = 1;
+            float dist = (max_distance/max_steps);
+            vec3 step = dist*ray;
+            for (float k=0;k<max_steps;k++)
+            {
+              vec3 p = camera.origin + k*step;
+              dvec4 voxel = voxel_array.get(p);
+              dfloat density = voxel.w;
+              dvec3 c = dvec3(voxel.x, voxel.y, voxel.z);
+              dfloat a_i = exp(-density*dist);
+              color += a*(1-a_i)*c;
+              a *= a_i;
+              if (a < 1e-4)
+                break;
+            }
+            full_color += color;
+            full_a += a;
+          }
+          vec3 ref_c = reference.texelFetch(i, j);
+          dvec3 color_diff = full_color/spp - dvec3(ref_c.x, ref_c.y, ref_c.z);
+          Y[0] += (color_diff.x*color_diff.x + color_diff.y*color_diff.y + color_diff.z*color_diff.z)/(image_w*image_h);
+        }
+      }
+    }
+    size_t y_n = Y.size();
+    CppAD::ADFun<float> f(X, Y);
+
+    VoxelArray<vec4> res_voxel_array(p0, p1, voxel_array_size, vec4(0,0,0,0));
+    Image res_image(image_w, image_h);
+
+    opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
+    {
+      {
+        for (int i=0;i<x_n/4;i++)
+          res_voxel_array.set_direct(i, vec4(params[4*i], params[4*i+1], params[4*i+2], params[4*i+3]));
+        render_3d_scene(res_voxel_array, cameras[0], res_image, image_w, image_h, max_distance, max_steps, spp);
+        save_image(res_image, "saves/3d_render/res_image.png");
+      }
+      return {f.Forward(0, params)[0], f.Jacobian(params)};
+    };
+
+    std::vector<float> X0(x_n, 0);
+    std::vector<float> params_min(x_n, 0);
+    std::vector<float> params_max(x_n, 1);
+    for (int i=0;i<x_n;i++)
+      X0[i] = urand();
+
+    Block optimizer_settings;
+    optimizer_settings.add_arr("initial_params", X0);
+    optimizer_settings.add_double("learning_rate", 0.01);
+    optimizer_settings.add_int("iterations", 250);
+    optimizer_settings.add_bool("verbose", true);
+    opt::Optimizer *optimizer = new opt::Adam();
+
+    optimizer->optimize(F_to_optimize, params_min, params_max, optimizer_settings);
+
+    delete optimizer;
+  }
+
+  void render_reference_1()
+  {
+    int n = 0;
+    CameraSettings camera;
+    camera.target = vec3(0, 0, 0);
+    camera.up = vec3(0, 1, 0);
+
+    float image_w = 512;
+    float image_h = 512;
+
+    Image test_image(image_w, image_h);
+
+    int psi_cnt = 8;
+    int phi_cnt = 8;
+    float dist = 25;
+
+    for (int psi = 1; psi < psi_cnt; psi++)
+    {
+      for (int phi = 0; phi < phi_cnt; phi++)
+      {
+        float phi_f = 2*M_PI*phi/(float)phi_cnt;
+        float psi_f = M_PI*psi/(float)psi_cnt - 0.5*M_PI;
+        camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
+        render_reference_image(camera, test_image, image_w, image_h);
+        save_image(test_image, "saves/3d_render/reference_image_"+std::to_string(psi)+"_"+std::to_string(phi)+".png");
+      }
+    }
+  }
+
+  void render_test_3d()
   {
     VoxelArray<vec4> voxel_array(glm::vec3(-15,-15,-15), glm::vec3(15,15,15), glm::ivec3(64,64,64), vec4(0,0,0,0));
     voxel_array.set_circle(vec3(0,0,0), 5, vec4(1,0,0,0.5));
@@ -185,5 +382,30 @@ namespace voxelization
       //save_image(test_image, "saves/3d_render/test_image_"+std::to_string(n)+".png");
       n++;
     }
+  }
+
+  void diff_render_naive_test()
+  {
+    CameraSettings camera;
+    camera.target = vec3(0, 0, 0);
+    camera.up = vec3(0, 1, 0);
+    camera.origin = vec3(0,0,25);
+
+    float image_w = 256;
+    float image_h = 256;
+
+    Image test_image(image_w, image_h);
+
+    render_reference_image(camera, test_image, image_w, image_h);
+
+    save_image(test_image, "saves/3d_render/reference_image.png");
+
+    diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), glm::ivec3(10,10,10), {camera}, {test_image},
+                         image_w, image_h, 100, 256, 1);
+  }
+
+  void software_render_test_3d()
+  {
+    diff_render_naive_test();
   }
 };
