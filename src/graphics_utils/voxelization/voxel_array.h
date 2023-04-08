@@ -65,10 +65,13 @@ public:
     int x = voxel.x;
     int y = voxel.y;
     int z = voxel.z;
-// logerr("pos voxel pos to voxel %f %f %f %d %d %d %d %d %d",pos.x, pos.y, pos.z, x,y,z, vox_x, vox_y, vox_z);
-#define C(i, j, k) data[v_to_i(x + i, y + j, z + k)]
-    if (in_array(voxel) && in_array(voxel + glm::ivec3(1, 1, 1)))
+
+    bool in_1 = in_array(voxel);
+    bool in_2 = in_array(voxel + glm::ivec3(1,1,1));
+
+    if (in_1 && in_2)
     {
+      #define C(i, j, k) data[v_to_i(x + i, y + j, z + k)]
       VoxelType c00 = C(0, 0, 0) * (1 - dp.x) + C(1, 0, 0) * dp.x;
       VoxelType c01 = C(0, 0, 1) * (1 - dp.x) + C(1, 0, 1) * dp.x;
       VoxelType c10 = C(0, 1, 0) * (1 - dp.x) + C(1, 1, 0) * dp.x;
@@ -81,9 +84,20 @@ public:
 
       return c;
     }
-    else if (in_array(voxel))
+    else if (in_1 || in_2)
     {
-      return C(0, 0, 0);
+      #define C2(i, j, k) data[v_to_i_safe(x + i, y + j, z + k)]
+      VoxelType c00 = C2(0, 0, 0) * (1 - dp.x) + C2(1, 0, 0) * dp.x;
+      VoxelType c01 = C2(0, 0, 1) * (1 - dp.x) + C2(1, 0, 1) * dp.x;
+      VoxelType c10 = C2(0, 1, 0) * (1 - dp.x) + C2(1, 1, 0) * dp.x;
+      VoxelType c11 = C2(0, 1, 1) * (1 - dp.x) + C2(1, 1, 1) * dp.x;
+
+      VoxelType c0 = c00 * (1 - dp.y) + c10 * dp.y;
+      VoxelType c1 = c01 * (1 - dp.y) + c11 * dp.y;
+
+      VoxelType c = c0 * (1 - dp.z) + c1 * dp.z;
+
+      return c;
     }
     else
     {
@@ -175,6 +189,12 @@ private:
   inline unsigned v_to_i(unsigned vx, unsigned vy, unsigned vz)
   {
     return vz * vox_count.x * vox_count.y + vy * vox_count.x + vx;
+  }
+  inline unsigned v_to_i_safe(unsigned vx, unsigned vy, unsigned vz)
+  {
+    return voxelization::clamp(vz, 0, vox_count.z - 1) * vox_count.x * vox_count.y + 
+           voxelization::clamp(vy, 0, vox_count.y - 1) * vox_count.x + 
+           voxelization::clamp(vx, 0, vox_count.x - 1);
   }
 
   VoxelType *data = nullptr;

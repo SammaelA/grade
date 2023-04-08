@@ -8,6 +8,14 @@
 #include "diff_generators/vectors.h"
 #include "common_utils/optimization/optimization.h"
 #include "common_utils/blk.h"
+#include "tinyEngine/resources.h"
+#include "tinyEngine/engine.h"
+#include "graphics_utils/graphics_utils.h"
+#include "graphics_utils/modeling.h"
+#include "tinyEngine/shader.h"
+#include "tinyEngine/model.h"
+#include "diff_generators/diff_geometry_generation.h"
+#include "diff_generators/differentiable_generators.h"
 #include <cstdio>
 #include <string>
 #include <chrono>
@@ -131,6 +139,67 @@ namespace voxelization
     delete[] data;
   }
 
+  void render_reference_image_cup(CameraSettings &camera, float image_w, float image_h, 
+                                  std::string save_path)
+  {
+
+    dgen::GeneratorDescription gd = dgen::get_generator_by_name("dishes");
+    Model *m = new Model();
+    std::vector<float> cup_params{3.318, 3.634, 3.873, 4.091, 4.220, 4.309, 4.356, 4.4, 4.4, 1.0, 0.987, 0.041, 0.477, 0.223, 0.225, 0.277, 0.296, 0.310, 0.317, 0.310, 0.302, 0.296, 0.289, 0.287, 0.286, 0.291, 0.295, 0.306, 0.317, 0.326, 0.345, 0.364, 0.375, 1.991, 1.990, 1.209, 1.221, 1.190, 1.201, 1.153, 1.131, 1.088, 1.048, 0.998, 0.952, 0.899, 0.853, 0.826, 0.842, 0.831, 0.930, 1.098, 1.690}; 
+    std::vector<float> scene_params{0, 0, 0, 0, 0, 0, 510.403, 6.013, 26.971, 1.000, 56.560, 0.9, 0.125};
+    dgen::DFModel res;
+    dgen::dgen_test("dishes", cup_params, res, false, dgen::ModelQuality(false, 2));
+    dgen::transform_by_scene_parameters(scene_params, res.first);
+    visualizer::simple_mesh_to_model_332(res.first, m);
+    m->update();
+
+    Shader UV({"uv_coords.vs", "simple_render_diffuse.fs"}, {"in_Position", "in_Normal", "in_Tex"});
+    GLuint fbo = create_framebuffer();
+    Texture t = engine::textureManager->create_texture(image_w, image_h);
+    Texture porcelain = engine::textureManager->load_unnamed_tex("resources/textures/porcelain.jpg", 1);
+
+    int w = t.get_W();
+    int h = t.get_H();
+    //bind FBO
+    int prev_FBO = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    float borderColorDepth[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    Texture photo_transformed = engine::textureManager->create_texture(w, h);
+    Texture UV_tex = engine::textureManager->create_texture(w, h, GL_RGB32F);
+    Texture depthTex = engine::textureManager->create_texture(w, h, GL_DEPTH_COMPONENT16, 1, NULL, GL_DEPTH_COMPONENT, GL_FLOAT);
+    glBindTexture(GL_TEXTURE_2D, depthTex.texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColorDepth);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex.texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
+    glViewport(0, 0, w, h);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glm::mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    glm::mat4 view = glm::lookAt(0.1f*camera.origin, camera.target, -camera.up); //to save to file without inversion
+
+    UV.use();
+    UV.uniform("projection", projection);
+    UV.uniform("view", view);
+    UV.texture("tex", porcelain);
+    m->render();
+
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+
+    engine::textureManager->save_png_directly(UV_tex, save_path);
+    engine::view->next_frame();
+
+    delete_framebuffer(fbo);
+    delete m;
+  }
 
   void render_reference_image(CameraSettings &camera, Image &out_image,
                               float image_w, float image_h)
@@ -443,7 +512,7 @@ namespace voxelization
                          image_w, image_h, 100, 256, 1, 250, filename);
   }
 
-  void diff_render_naive_test_2(std::string filename, glm::ivec3 voxel_size)
+  void diff_render_naive_test_2(std::string filename, glm::ivec3 voxel_size, int image_size)
   {
     std::vector<CameraSettings> cameras;
     std::vector<Image> images;
@@ -452,8 +521,8 @@ namespace voxelization
     int phi_cnt = 6;
     float dist = 25;
 
-    float image_w = 128;
-    float image_h = 128;
+    float image_w = image_size;
+    float image_h = image_size;
 
     for (int psi = 1; psi < psi_cnt; psi++)
     {
@@ -475,7 +544,23 @@ namespace voxelization
     }
 
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, cameras, images,
-                         image_w, image_h, 35, 256, 1, 200, filename);
+                         image_w, image_h, 35, 256, 1, 300, filename);
+  }
+
+  void diff_render_naive_test_3(std::string filename, glm::ivec3 voxel_size)
+  {
+    CameraSettings camera;
+    camera.target = vec3(0, 0, 0);
+    camera.up = vec3(0, 1, 0);
+    camera.origin = vec3(0,0,17);
+
+    Image test_image("saves/3d_render/cup_test.png");
+
+    float image_w = test_image.w;
+    float image_h = test_image.h;
+
+    diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, {camera}, {test_image},
+                         image_w, image_h, 100, 256, 1, 250, filename);
   }
 
   void render_saved_voxel_array(std::string filename, glm::ivec3 vox_size, int image_size)
@@ -504,7 +589,14 @@ namespace voxelization
 
   void software_render_test_3d()
   {
-    diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32));
-    render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
+    //CameraSettings camera;
+    //camera.target = vec3(0, 0, 0);
+    //camera.up = vec3(0, 1, 0);
+    //camera.origin = vec3(0,0,25);
+    //render_reference_image_cup(camera, 256, 256, "saves/3d_render/cup_test.png");
+    //diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 128);
+    //render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
+    //diff_render_naive_test_3("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32));
+    render_saved_voxel_array("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 256);
   }
 };
