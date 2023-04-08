@@ -2,6 +2,8 @@
 #include <glm/glm.hpp>
 #include "voxelization.h"
 #include <array>
+#include <fstream>
+#include <vector>
 
 template <typename VoxelType>
 class VoxelArray
@@ -126,6 +128,26 @@ public:
   void set_direct(unsigned id, const VoxelType &value)
   {
     data[id] = value;
+  }
+
+  bool write_to_binary_file(std::string file_name)
+  {
+    std::ofstream fs(file_name, std::ios::out | std::ios::binary); 
+    fs.write((const char *)data, total_vox_count*sizeof(VoxelType));
+    fs.close();
+    return !fs.fail();
+  }
+  bool read_from_binary_file(std::string file_name)
+  {
+    std::ifstream input(file_name, std::ios::binary);
+    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input), {});
+    if (total_vox_count*sizeof(VoxelType) == buffer.size())
+    {
+      memcpy(data, buffer.data(), buffer.size());
+      return true;
+    }
+    else
+      return false;
   }
 
 private:
