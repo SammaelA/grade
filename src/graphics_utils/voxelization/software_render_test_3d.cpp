@@ -239,7 +239,8 @@ namespace voxelization
   {
 
     size_t x_n = 4 * voxel_array_size.x * voxel_array_size.y * voxel_array_size.z;
-    std::vector<dfloat> X(x_n, 0);
+    size_t params_cnt = x_n + 2;
+    std::vector<dfloat> X(params_cnt, 0);
     std::vector<dfloat> Y;
 
     // declare independent variables and start recording operation sequence
@@ -273,7 +274,9 @@ namespace voxelization
           dfloat full_a = 0;
           for (int sample = 0; sample < spp; sample++)
           {
-            vec4 t_pos = vec4(2*(i+0.5)/image_w - 1, 2*(j+0.5)/image_h - 1, 1, 1);
+            float dx = CppAD::Value(CppAD::Var2Par(X[x_n]));
+            float dy = CppAD::Value(CppAD::Var2Par(X[x_n+1]));
+            vec4 t_pos = vec4(2*(i+dx)/image_w - 1, 2*(j+dy)/image_h - 1, 1, 1);
             vec4 p1 = view_proj_inv * t_pos;
             vec3 ray = glm::normalize(vec3(p1.x/p1.w, p1.y/p1.w, p1.z/p1.w));
 
@@ -320,13 +323,15 @@ namespace voxelization
         save_image(res_image, "saves/3d_render/res_image.png");
       }
       it++;
+      params[params.size() - 1] = urand();
+      params[params.size() - 2] = urand();
       return {f.Forward(0, params)[0], f.Jacobian(params)};
     };
 
-    std::vector<float> X0(x_n, 0);
-    std::vector<float> params_min(x_n, 0);
-    std::vector<float> params_max(x_n, 1);
-    for (int i=0;i<x_n;i++)
+    std::vector<float> X0(params_cnt, 0);
+    std::vector<float> params_min(params_cnt, 0);
+    std::vector<float> params_max(params_cnt, 1);
+    for (int i=0;i<params_cnt;i++)
       X0[i] = urand();
 
     Block optimizer_settings;
@@ -490,7 +495,7 @@ namespace voxelization
     for (float t=0;t<=1;t+=0.02)
     {
       camera.origin = vec3(25*sin(2*M_PI*t), 0, 25*cos(2*M_PI*t));
-      render_3d_scene(voxel_array, camera, test_image, image_w, image_h, 35, 256, 1);
+      render_3d_scene(voxel_array, camera, test_image, image_w, image_h, 35, 256, 8);
       save_image(test_image, "saves/3d_render/test_image.png");
       save_image(test_image, "saves/3d_render/test_image_"+std::to_string(n)+".png");
       n++;
