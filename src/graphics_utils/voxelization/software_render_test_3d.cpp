@@ -156,7 +156,7 @@ namespace voxelization
     Shader UV({"uv_coords.vs", "simple_render_diffuse.fs"}, {"in_Position", "in_Normal", "in_Tex"});
     GLuint fbo = create_framebuffer();
     Texture t = engine::textureManager->create_texture(image_w, image_h);
-    Texture porcelain = engine::textureManager->load_unnamed_tex("resources/textures/porcelain.jpg", 1);
+    Texture porcelain = engine::textureManager->load_unnamed_tex("resources/textures/porcelain_2.png", 1);
 
     int w = t.get_W();
     int h = t.get_H();
@@ -182,7 +182,7 @@ namespace voxelization
     glViewport(0, 0, w, h);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glm::mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-    glm::mat4 view = glm::lookAt(0.1f*camera.origin, camera.target, -camera.up); //to save to file without inversion
+    glm::mat4 view = glm::lookAt(0.15f*camera.origin, camera.target, -camera.up); //to save to file without inversion
 
     UV.use();
     UV.uniform("projection", projection);
@@ -418,10 +418,11 @@ namespace voxelization
           res_voxel_array.set_direct(i, vec4(params[4*i], params[4*i+1], params[4*i+2], params[4*i+3]));
         render_3d_scene(res_voxel_array, cameras[0], res_image, image_w, image_h, max_distance, max_steps, spp);
         save_image(res_image, "saves/3d_render/res_image.png");
+        save_image(res_image, "saves/3d_render/res_image_"+std::to_string(it)+".png");
       }
       it++;
-      params[params.size() - 1] = urand();
-      params[params.size() - 2] = urand();
+      params[x_n] = urand();
+      params[x_n+1] = urand();
       return {f.Forward(0, params)[0], f.Jacobian(params)};
     };
 
@@ -591,6 +592,40 @@ namespace voxelization
                          image_w, image_h, 100, 256, 1, 250, filename);
   }
 
+  void diff_render_naive_test_4(std::string filename, glm::ivec3 voxel_size, int image_size)
+  {
+    std::vector<CameraSettings> cameras;
+    std::vector<Image> images;
+
+    int psi_cnt = 2;
+    int phi_cnt = 8;
+    float dist = 17;
+
+    float image_w = image_size;
+    float image_h = image_size;
+
+    for (int psi = 0; psi < psi_cnt; psi++)
+    {
+      for (int phi = 0; phi < phi_cnt; phi++)
+      {
+        CameraSettings camera;
+        camera.target = vec3(0, 0, 0);
+        camera.up = vec3(0, 1, 0);
+        float phi_f = 2*M_PI*phi/(float)phi_cnt + M_PI*psi/(float)psi_cnt;
+        float psi_f = 0.5*M_PI*psi/(float)psi_cnt;
+        camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
+
+        render_reference_image_cup(camera, image_w, image_h, "saves/3d_render/cup_test.png");
+        images.emplace_back("saves/3d_render/cup_test.png");
+        cameras.push_back(camera);
+        save_image(images.back(), "saves/3d_render/reference_image_"+std::to_string(psi)+"_"+std::to_string(phi)+".png");
+      }
+    }
+
+    diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, cameras, images,
+                         image_w, image_h, 25, 100, 1, 100, filename);
+  }
+
   void render_saved_voxel_array(std::string filename, glm::ivec3 vox_size, int image_size)
   {
     VoxelArray<vec4> voxel_array(vec3(-5,-5,-5), vec3(5,5,5), vox_size, vec4(0));
@@ -624,7 +659,8 @@ namespace voxelization
     //render_reference_image_cup(camera, 256, 256, "saves/3d_render/cup_test.png");
     diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 100);
     render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
-    //diff_render_naive_test_3("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32));
+    
+    //diff_render_naive_test_4("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 128);
     //render_saved_voxel_array("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 256);
   }
 };
