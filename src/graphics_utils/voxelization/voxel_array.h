@@ -57,6 +57,12 @@ public:
     else
       return default_value;
   };
+
+  inline VoxelType get_direct(glm::ivec3 voxel)
+  {
+    return data[v_to_i(voxel)];
+  };
+
   VoxelType get_trilinear(glm::vec3 pos)
   {
     glm::vec3 fv = (pos - p0) / voxel_size - glm::vec3(0.5);

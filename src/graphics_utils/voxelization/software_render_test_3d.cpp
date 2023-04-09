@@ -323,8 +323,8 @@ namespace voxelization
 
     Y.push_back(0);
 
+    //MSE
     int ref_cnt = min(cameras.size(), reference_images.size());
-
     for (int ref_n = 0; ref_n < ref_cnt; ref_n++)
     {
       auto &camera = cameras[ref_n];
@@ -374,6 +374,34 @@ namespace voxelization
         }
       }
     }
+
+    //regularization
+    dfloat q = 0.001;
+    for (int i=0;i<voxel_array_size.x;i++)
+    {
+      for (int j=0;j<voxel_array_size.y;j++)
+      {
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(i,j,0)).w;
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(i,j,voxel_array_size.z - 1)).w;
+      }
+    }
+    for (int i=0;i<voxel_array_size.y;i++)
+    {
+      for (int j=0;j<voxel_array_size.z;j++)
+      {
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(0,i,j)).w;
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(voxel_array_size.x - 1,i,j)).w;
+      }
+    }
+    for (int i=0;i<voxel_array_size.x;i++)
+    {
+      for (int j=0;j<voxel_array_size.z;j++)
+      {
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(i,0,j)).w;
+        Y[0] += q*voxel_array.get_direct(glm::ivec3(i,voxel_array_size.y - 1,j)).w;
+      }
+    }
+
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y);
 
@@ -405,7 +433,7 @@ namespace voxelization
 
     Block optimizer_settings;
     optimizer_settings.add_arr("initial_params", X0);
-    optimizer_settings.add_double("learning_rate", 0.01);
+    optimizer_settings.add_double("learning_rate", 0.1);
     optimizer_settings.add_int("iterations", iterations);
     optimizer_settings.add_bool("verbose", true);
     opt::Optimizer *optimizer = new opt::Adam();
@@ -518,7 +546,7 @@ namespace voxelization
     std::vector<Image> images;
 
     int psi_cnt = 2;
-    int phi_cnt = 6;
+    int phi_cnt = 13;
     float dist = 25;
 
     float image_w = image_size;
@@ -544,7 +572,7 @@ namespace voxelization
     }
 
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, cameras, images,
-                         image_w, image_h, 35, 256, 1, 300, filename);
+                         image_w, image_h, 35, 256, 1, 100, filename);
   }
 
   void diff_render_naive_test_3(std::string filename, glm::ivec3 voxel_size)
@@ -594,9 +622,9 @@ namespace voxelization
     //camera.up = vec3(0, 1, 0);
     //camera.origin = vec3(0,0,25);
     //render_reference_image_cup(camera, 256, 256, "saves/3d_render/cup_test.png");
-    //diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 128);
-    //render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
+    diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 100);
+    render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
     //diff_render_naive_test_3("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32));
-    render_saved_voxel_array("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 256);
+    //render_saved_voxel_array("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 256);
   }
 };
