@@ -140,23 +140,12 @@ namespace voxelization
   }
 
   void render_reference_image_cup(CameraSettings &camera, float image_w, float image_h, 
-                                  std::string save_path)
+                                  std::string save_path, Model *m)
   {
-
-    dgen::GeneratorDescription gd = dgen::get_generator_by_name("dishes");
-    Model *m = new Model();
-    std::vector<float> cup_params{3.318, 3.634, 3.873, 4.091, 4.220, 4.309, 4.356, 4.4, 4.4, 1.0, 0.987, 0.041, 0.477, 0.223, 0.225, 0.277, 0.296, 0.310, 0.317, 0.310, 0.302, 0.296, 0.289, 0.287, 0.286, 0.291, 0.295, 0.306, 0.317, 0.326, 0.345, 0.364, 0.375, 1.991, 1.990, 1.209, 1.221, 1.190, 1.201, 1.153, 1.131, 1.088, 1.048, 0.998, 0.952, 0.899, 0.853, 0.826, 0.842, 0.831, 0.930, 1.098, 1.690}; 
-    std::vector<float> scene_params{0, 0, 0, 0, 0, 0, 510.403, 6.013, 26.971, 1.000, 56.560, 0.9, 0.125};
-    dgen::DFModel res;
-    dgen::dgen_test("dishes", cup_params, res, false, dgen::ModelQuality(false, 2));
-    dgen::transform_by_scene_parameters(scene_params, res.first);
-    visualizer::simple_mesh_to_model_332(res.first, m);
-    m->update();
-
     Shader UV({"uv_coords.vs", "simple_render_diffuse.fs"}, {"in_Position", "in_Normal", "in_Tex"});
     GLuint fbo = create_framebuffer();
     Texture t = engine::textureManager->create_texture(image_w, image_h);
-    Texture porcelain = engine::textureManager->load_unnamed_tex("resources/textures/porcelain_2.png", 1);
+    Texture porcelain = engine::textureManager->load_unnamed_tex("resources/textures/white.png", 1);
 
     int w = t.get_W();
     int h = t.get_H();
@@ -198,7 +187,6 @@ namespace voxelization
     engine::view->next_frame();
 
     delete_framebuffer(fbo);
-    delete m;
   }
 
   void render_reference_image(CameraSettings &camera, Image &out_image,
@@ -304,14 +292,19 @@ namespace voxelization
                             const std::vector<CameraSettings> &cameras,
                             const std::vector<Image> &reference_images,
                             float image_w, float image_h, float max_distance, int max_steps,
-                            int spp, int iterations, std::string filename)
+                            int spp, int iterations, float lr, std::string filename)
   {
 
     size_t x_n = 4 * voxel_array_size.x * voxel_array_size.y * voxel_array_size.z;
     size_t params_cnt = x_n + 2;
+    VoxelArray<vec4> res_voxel_array(p0, p1, voxel_array_size, vec4(0,0,0,0));
+    Image res_image(image_w, image_h);
+    std::vector<float> last_params;
+    int it = 0;
+    opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
+    {
     std::vector<dfloat> X(params_cnt, 0);
     std::vector<dfloat> Y;
-
     // declare independent variables and start recording operation sequence
     CppAD::Independent(X);
 
@@ -325,8 +318,10 @@ namespace voxelization
 
     //MSE
     int ref_cnt = min(cameras.size(), reference_images.size());
-    for (int ref_n = 0; ref_n < ref_cnt; ref_n++)
+    ref_cnt = 8;
+    for (int y = 0; y < ref_cnt; y++)
     {
+      int ref_n = urandi(0, cameras.size());
       auto &camera = cameras[ref_n];
       auto &reference = reference_images[ref_n];
 
@@ -405,13 +400,6 @@ namespace voxelization
     size_t y_n = Y.size();
     CppAD::ADFun<float> f(X, Y);
 
-    VoxelArray<vec4> res_voxel_array(p0, p1, voxel_array_size, vec4(0,0,0,0));
-    Image res_image(image_w, image_h);
-
-    int it = 0;
-
-    opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
-    {
       if (it % 10 == 0)
       {
         for (int i=0;i<x_n/4;i++)
@@ -420,6 +408,8 @@ namespace voxelization
         save_image(res_image, "saves/3d_render/res_image.png");
         save_image(res_image, "saves/3d_render/res_image_"+std::to_string(it)+".png");
       }
+      if (it == iterations - 1)
+        last_params = params;
       it++;
       params[x_n] = urand();
       params[x_n+1] = urand();
@@ -428,13 +418,25 @@ namespace voxelization
 
     std::vector<float> X0(params_cnt, 0);
     std::vector<float> params_min(params_cnt, 0);
-    std::vector<float> params_max(params_cnt, 1);
+    std::vector<float> params_max(params_cnt, 10);
     for (int i=0;i<params_cnt;i++)
       X0[i] = urand();
 
+/*
+    VoxelArray<vec4> voxel_array(vec3(-5,-5,-5), vec3(5,5,5), voxel_array_size, vec4(0));
+    voxel_array.read_from_binary_file(filename);
+    for (int i=0;i<x_n/4;i++)
+    {
+      vec4 r = voxel_array.get_direct(i);
+      X0[4*i] = r.x;
+      X0[4*i+1] = r.y;
+      X0[4*i+2] = r.z;
+      X0[4*i+3] = r.w;
+    }
+*/
     Block optimizer_settings;
     optimizer_settings.add_arr("initial_params", X0);
-    optimizer_settings.add_double("learning_rate", 0.1);
+    optimizer_settings.add_double("learning_rate", lr);
     optimizer_settings.add_int("iterations", iterations);
     optimizer_settings.add_bool("verbose", true);
     opt::Optimizer *optimizer = new opt::Adam();
@@ -538,7 +540,7 @@ namespace voxelization
     save_image(test_image, "saves/3d_render/reference_image.png");
 
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, {camera}, {test_image},
-                         image_w, image_h, 100, 256, 1, 250, filename);
+                         image_w, image_h, 100, 256, 1, 250, 0.1, filename);
   }
 
   void diff_render_naive_test_2(std::string filename, glm::ivec3 voxel_size, int image_size)
@@ -546,8 +548,8 @@ namespace voxelization
     std::vector<CameraSettings> cameras;
     std::vector<Image> images;
 
-    int psi_cnt = 2;
-    int phi_cnt = 13;
+    int psi_cnt = 4;
+    int phi_cnt = 16;
     float dist = 25;
 
     float image_w = image_size;
@@ -573,7 +575,7 @@ namespace voxelization
     }
 
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, cameras, images,
-                         image_w, image_h, 35, 256, 1, 100, filename);
+                         image_w, image_h, 35, 256, 1, 250, 0.05, filename);
   }
 
   void diff_render_naive_test_3(std::string filename, glm::ivec3 voxel_size)
@@ -589,16 +591,26 @@ namespace voxelization
     float image_h = test_image.h;
 
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, {camera}, {test_image},
-                         image_w, image_h, 100, 256, 1, 250, filename);
+                         image_w, image_h, 100, 256, 1, 250, 0.1, filename);
   }
 
   void diff_render_naive_test_4(std::string filename, glm::ivec3 voxel_size, int image_size)
   {
+    dgen::GeneratorDescription gd = dgen::get_generator_by_name("dishes");
+    Model *m = new Model();
+    std::vector<float> cup_params{3.318, 3.634, 3.873, 4.091, 4.220, 4.309, 4.356, 4.4, 4.4, 1.0, 0.987, 0.041, 0.477, 0.223, 0.225, 0.277, 0.296, 0.310, 0.317, 0.310, 0.302, 0.296, 0.289, 0.287, 0.286, 0.291, 0.295, 0.306, 0.317, 0.326, 0.345, 0.364, 0.375, 1.991, 1.990, 1.209, 1.221, 1.190, 1.201, 1.153, 1.131, 1.088, 1.048, 0.998, 0.952, 0.899, 0.853, 0.826, 0.842, 0.831, 0.930, 1.098, 1.690}; 
+    std::vector<float> scene_params{0, 0, 0, 0, 0, 0, 510.403, 6.013, 26.971, 1.000, 56.560, 0.9, 0.125};
+    dgen::DFModel res;
+    dgen::dgen_test("dishes", cup_params, res, false, dgen::ModelQuality(false, 1));
+    dgen::transform_by_scene_parameters(scene_params, res.first);
+    visualizer::simple_mesh_to_model_332(res.first, m);
+    m->update();
+
     std::vector<CameraSettings> cameras;
     std::vector<Image> images;
 
     int psi_cnt = 2;
-    int phi_cnt = 8;
+    int phi_cnt = 16;
     float dist = 17;
 
     float image_w = image_size;
@@ -611,22 +623,24 @@ namespace voxelization
         CameraSettings camera;
         camera.target = vec3(0, 0, 0);
         camera.up = vec3(0, 1, 0);
-        float phi_f = 2*M_PI*phi/(float)phi_cnt + M_PI*psi/(float)psi_cnt;
+        float phi_f = 2*M_PI*phi/(float)phi_cnt;
         float psi_f = 0.5*M_PI*psi/(float)psi_cnt;
         camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
 
-        render_reference_image_cup(camera, image_w, image_h, "saves/3d_render/cup_test.png");
+        render_reference_image_cup(camera, image_w, image_h, "saves/3d_render/cup_test.png", m);
         images.emplace_back("saves/3d_render/cup_test.png");
         cameras.push_back(camera);
         save_image(images.back(), "saves/3d_render/reference_image_"+std::to_string(psi)+"_"+std::to_string(phi)+".png");
       }
     }
 
+    delete m;
+
     diff_render_3d_naive(vec3(-5,-5,-5), vec3(5,5,5), voxel_size, cameras, images,
-                         image_w, image_h, 25, 100, 1, 100, filename);
+                         image_w, image_h, 25, 100, 1, 100, 0.1, filename);
   }
 
-  void render_saved_voxel_array(std::string filename, glm::ivec3 vox_size, int image_size)
+  void render_saved_voxel_array(std::string filename, glm::ivec3 vox_size, int image_size, float dist)
   {
     VoxelArray<vec4> voxel_array(vec3(-5,-5,-5), vec3(5,5,5), vox_size, vec4(0));
     voxel_array.read_from_binary_file(filename);
@@ -642,8 +656,8 @@ namespace voxelization
     
     for (float t=0;t<=1;t+=0.02)
     {
-      camera.origin = vec3(25*sin(2*M_PI*t), 0, 25*cos(2*M_PI*t));
-      render_3d_scene(voxel_array, camera, test_image, image_w, image_h, 35, 256, 8);
+      camera.origin = vec3(dist*sin(2*M_PI*t), 0, dist*cos(2*M_PI*t));
+      render_3d_scene(voxel_array, camera, test_image, image_w, image_h, 25, 100, 4);
       save_image(test_image, "saves/3d_render/test_image.png");
       save_image(test_image, "saves/3d_render/test_image_"+std::to_string(n)+".png");
       n++;
@@ -657,10 +671,10 @@ namespace voxelization
     //camera.up = vec3(0, 1, 0);
     //camera.origin = vec3(0,0,25);
     //render_reference_image_cup(camera, 256, 256, "saves/3d_render/cup_test.png");
-    diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 100);
-    render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
+    //diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 150);
+    //render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
     
-    //diff_render_naive_test_4("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 128);
-    //render_saved_voxel_array("saves/3d_render/cup_array_32.bin", glm::ivec3(32,32,32), 256);
+    diff_render_naive_test_4("saves/3d_render/cup_array_128.bin", glm::ivec3(128,128,128), 128);
+    render_saved_voxel_array("saves/3d_render/cup_array_128.bin", glm::ivec3(128,128,128), 128, 15);
   }
 };

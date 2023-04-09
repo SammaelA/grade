@@ -62,6 +62,11 @@ public:
   {
     return data[v_to_i(voxel)];
   };
+  inline VoxelType get_direct(unsigned id)
+  {
+    return data[id];
+  };
+
 
   VoxelType get_trilinear(glm::vec3 pos)
   {
