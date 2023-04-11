@@ -337,6 +337,7 @@ namespace dopt
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
     std::string reference_path = settings_blk.get_string("reference_path", "");
+    std::string reference_mask_path = settings_blk.get_string("reference_mask_path", "");
 
     auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
@@ -399,11 +400,29 @@ namespace dopt
       }
 
       if (by_reference)
+      {
         reference_tex = reference_tex_raw;
+        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+        reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
+      }
+      else if (reference_mask_path != "")
+      {
+        Texture reference_mask_raw = engine::textureManager->load_unnamed_tex(reference_mask_path);
+        Texture reference_tex_raw_masked = engine::textureManager->create_texture(reference_mask_raw.get_W(),reference_mask_raw.get_H());
+        ImageArithmetics::mul(reference_tex_raw_masked, reference_mask_raw, reference_tex_raw, 1);
+
+        reference_tex = ImgExp::ImgExpanding(reference_tex_raw_masked, original_reference_size, 0.05, -1);
+
+        Texture reference_mask_tex = ImgExp::ImgExpanding(reference_mask_raw, original_reference_size, 0.01, 0);
+        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+        reference_mask = se.get_silhouette(reference_mask_tex, original_reference_size, original_reference_size);
+      }
       else
-        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, by_reference ? 0.01 : 0.05, by_reference ? 0 : -1);
-      SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
-      reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
+      {
+        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, 0.05, -1);
+        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
+        reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
+      }
       engine::textureManager->save_png(reference_tex, "ie_rsult");
       engine::textureManager->save_png(reference_mask, "ie_rsult2");
     }

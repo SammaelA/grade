@@ -75,6 +75,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     Block b;
     load_block_from_file(blk_name, b);
     std::vector<std::string> reference_images;
+    std::vector<std::string> reference_masks;
     if (argc == 4)
     {
       for (int i=0;i<b.size();i++)
@@ -82,6 +83,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         if (b.get_name(i) == "reference")
         {
           reference_images.push_back(b.get_string(i));
+          reference_masks.push_back("");
         }
       }
       if (reference_images.empty())
@@ -90,9 +92,15 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         return;
       }
     }
-    else
+    else if (argc == 5)
     {
       reference_images.push_back(argv[4]);
+      reference_masks.push_back("");
+    }
+    else if (argc == 6)
+    {
+      reference_images.push_back(argv[4]);
+      reference_masks.push_back(argv[5]);
     }
     float av_loss = 0;
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
@@ -100,11 +108,12 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     for (int i=0;i<count;i++)
     {
       std::string &ref = reference_images[i];
-      b.set_string("reference_path", ref);
       std::vector<std::string> split_res ={""};
       boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
       b.set_string("saved_result_path", "saves/"+split_res.back()+"_result.png");
       b.set_string("saved_textured_path", "saves/"+split_res.back()+"_result_textured.png");
+      b.set_string("reference_path", ref);
+      b.set_string("reference_mask_path", reference_masks[i]);
       av_loss += dopt::image_based_optimization(b, mi);
     }
     av_loss /= count;
