@@ -532,24 +532,20 @@ namespace dopt
 
       std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
       opt::Optimizer *opt = get_optimizer(search_algorithm);
-
-      Block *opt_settings = settings_blk.get_block(search_algorithm);
+      Block *opt_settings = stage_blk->get_block("optimizer_settings");
       if (!opt_settings)
       {
         logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
         return 1.0;
       }
-
-      Block special_settings;
-      special_settings.add_arr("initial_params", opt_result.best_params);
-      special_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
-      special_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
-      special_settings.add_bool("verbose", true);
-      Block &optimizer_settings = (stage == 0) ? *opt_settings : special_settings;
-      optimizer_settings.add_arr("params_names", params_names);
+      if (stage != 0)
+      {
+        opt_settings->add_arr("initial_params", opt_result.best_params);
+        opt_settings->add_arr("params_names", params_names);
+      }
 
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-      opt->optimize(F_to_optimize, params_min, params_max, optimizer_settings, init_params_presets);
+      opt->optimize(F_to_optimize, params_min, params_max, *opt_settings, init_params_presets);
       std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
       double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -692,17 +688,20 @@ namespace dopt
                                           MitsubaInterface::TEXTURED_CONST),
                                           textured_model_info,
                                           stage_blk->get_double("texture_opt_lr", 0.25), settings_blk.get_bool("save_intermediate_images", false));
-          Block optimizer_settings;
-          optimizer_settings.add_arr("initial_params", init_params);
-          optimizer_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-          optimizer_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
-          optimizer_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
-          optimizer_settings.add_bool("verbose", false);
-          optimizer_settings.add_arr("params_names", params_names);
-          opt::Optimizer *tex_opt = new opt::Adam();
+          std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
+          opt::Optimizer *tex_opt = get_optimizer(search_algorithm);
+          Block *opt_settings = stage_blk->get_block("optimizer_settings");
+          if (!opt_settings)
+          {
+            logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
+            return 1.0;
+          }
+          opt_settings->add_arr("initial_params", opt_result.best_params);
+          opt_settings->add_arr("params_names", params_names);
+          opt_settings->add_arr("derivatives_mult", texture_only_parameters_mask);
 
           std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-          tex_opt->optimize(F_to_optimize, params_min, params_max, optimizer_settings, init_params_presets);
+          tex_opt->optimize(F_to_optimize, params_min, params_max, *opt_settings, init_params_presets);
           std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
           double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -772,17 +771,21 @@ namespace dopt
                                         MitsubaInterface::TEXTURED_CONST),
                                         textured_model_info,
                                         stage_blk->get_double("texture_opt_lr", 0.25), true);
-        Block optimizer_settings;
-        optimizer_settings.add_arr("initial_params", opt_result.best_params);
-        optimizer_settings.add_arr("derivatives_mult", texture_only_parameters_mask);
-        optimizer_settings.add_double("learning_rate", stage_blk->get_double("lr", 0.01));
-        optimizer_settings.add_int("iterations", stage_blk->get_int("iterations", 100));
-        optimizer_settings.add_bool("verbose", true);
-        optimizer_settings.add_arr("params_names", params_names);
-        opt::Optimizer *tex_opt = new opt::Adam();
+        
+        std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
+        opt::Optimizer *tex_opt = get_optimizer(search_algorithm);
+        Block *opt_settings = stage_blk->get_block("optimizer_settings");
+        if (!opt_settings)
+        {
+          logerr("Optimizer algorithm %s does not have settings block", search_algorithm.c_str());
+          return 1.0;
+        }
+        opt_settings->add_arr("initial_params", opt_result.best_params);
+        opt_settings->add_arr("params_names", params_names);
+        opt_settings->add_arr("derivatives_mult", texture_only_parameters_mask);
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        tex_opt->optimize(F_to_optimize, params_min, params_max, optimizer_settings, init_params_presets);
+        tex_opt->optimize(F_to_optimize, params_min, params_max, *opt_settings, init_params_presets);
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
         double opt_time_ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
