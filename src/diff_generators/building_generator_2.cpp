@@ -668,6 +668,9 @@ namespace dgen
       F_STAIRS_HEIGHT,
       F_STAIRS_LENGTH,
 
+      F_BUILDING_HEIGHT,
+      F_BUILDING_WIDTH,
+
       _PARAMS_COUNT
     };
 
@@ -868,29 +871,45 @@ namespace dgen
     }
     std::cerr<<"\n";
 
-    WindowQuality  wq = quality.quality_level >= ModelQuality::HIGH ? WQ_HIGH : (quality.quality_level >= ModelQuality::MEDIUM ? WQ_LOW : WQ_NONE);
-    BalconyQuality bq = quality.quality_level >= ModelQuality::HIGH ? BQ_HIGH : (quality.quality_level >= ModelQuality::MEDIUM ? BQ_LOW : BQ_NONE);
+    vec3 original_sizes(0,0,0);
 
-    real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
-    real height = (params[I_FLOORS_COUNT] + params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q]);
-    real start_x = 0;
-    vec3 start_point = vec3(start_x,0,0);
-    start_point = make_section(true, false, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
-                               false, vec3(1,0,0), vec3(0,0,1), wq, bq);
-    for (int i=0;i<params[I_ENTRANCES_COUNT] - 1;i++)
+    if (quality.quality_level == ModelQuality::LOW)
     {
-      start_point = make_entrance_section(start_point, size_w, height, wq);
-      start_point = make_section(false, false, start_point, size_w, height, params[I_MS_CODE], params[I_MS_STRIPES], params[F_MS_WALL_STRIPE_SIZE],
-                                 false, vec3(1,0,0), vec3(0,0,1), wq, bq);
+      make_quad(wallM, Quad(vec3(0,0,-1), vec3(1,0,0), vec3(0,1,0), vec3(0,0,-1)));
+      make_quad(wallM, Quad(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0), vec3(0,0,1)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,1,0), vec3(0,0,1), vec3(-1,0,0)));
+      make_quad(wallM, Quad(vec3(1,0,-1), vec3(0,0,1), vec3(0,1,0), vec3(1,0,0)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,0,1), vec3(1,0,0), vec3(0,-1,0)));
+      make_quad(wallM, Quad(vec3(0,1,-1), vec3(1,0,0), vec3(0,0,1), vec3(0,1,0)));
+      original_sizes = vec3(1, 1, 1);
     }
-    start_point = make_entrance_section(start_point, size_w, height, wq);
-    start_point = make_section(false, true, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
-                               false, vec3(1,0,0), vec3(0,0,1), wq, bq);
+    else
+    {
+      WindowQuality  wq = quality.quality_level >= ModelQuality::ULTRA ? WQ_HIGH : (quality.quality_level >= ModelQuality::HIGH ? WQ_LOW : WQ_NONE);
+      BalconyQuality bq = quality.quality_level >= ModelQuality::ULTRA ? BQ_HIGH : (quality.quality_level >= ModelQuality::HIGH ? BQ_LOW : BQ_NONE);
 
-    real size_l = start_point.x - start_x;
-    make_section(false, false, vec3(start_x,0,-size_w), size_l, height, params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE],
-                               true, vec3(0,0,1), vec3(-1,0,0), wq, bq);
+      real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
+      real height = (params[I_FLOORS_COUNT] + params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q]);
+      real start_x = 0;
+      vec3 start_point = vec3(start_x,0,0);
+      start_point = make_section(true, false, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
+                                false, vec3(1,0,0), vec3(0,0,1), wq, bq);
+      for (int i=0;i<params[I_ENTRANCES_COUNT] - 1;i++)
+      {
+        start_point = make_entrance_section(start_point, size_w, height, wq);
+        start_point = make_section(false, false, start_point, size_w, height, params[I_MS_CODE], params[I_MS_STRIPES], params[F_MS_WALL_STRIPE_SIZE],
+                                  false, vec3(1,0,0), vec3(0,0,1), wq, bq);
+      }
+      start_point = make_entrance_section(start_point, size_w, height, wq);
+      start_point = make_section(false, true, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],
+                                false, vec3(1,0,0), vec3(0,0,1), wq, bq);
 
+      real size_l = start_point.x - start_x;
+      make_section(false, false, vec3(start_x,0,-size_w), size_l, height, params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE],
+                                true, vec3(0,0,1), vec3(-1,0,0), wq, bq);
+
+      original_sizes = dvec3(size_l, height, size_w);
+    }
     std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM, &doorM};
     std::vector<std::string> names = {"main_part", "windows", "interior", "wooden_parts", "metal_parts", "roof", "door"};
     int sz = 0;
@@ -912,11 +931,10 @@ namespace dgen
       }
     }
 
-    real t = height > size_l ? 1/height : 1/size_l;
-    dmat43 sc2 = scale(ident<dfloat>(), dvec3{t, t, t});
+    dmat43 sc2 = scale(ident<dfloat>(), dvec3(1.0f, params[F_BUILDING_HEIGHT], params[F_BUILDING_WIDTH])/original_sizes);
     transform(model, sc2);
 
-    if (quality.quality_level == ModelQuality::LOW)
+    if (quality.quality_level <= ModelQuality::MEDIUM)
       return {{"main_part", 0}};
     else
       return po;

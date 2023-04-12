@@ -70,5 +70,8 @@
     F_DOOR_DEPTH_Q{ values:p2 = 0, 1 }
     F_STAIRS_HEIGHT{ values:p2 = 0.05, 0.15 }
     F_STAIRS_LENGTH{ values:p2 = 0.05, 0.2 }
+
+    F_BUILDING_HEIGHT{ values:p2 = 0.1, 5 }
+    F_BUILDING_WIDTH{ values:p2 = 0.2, 0.4}
   }
 }

@@ -88,6 +88,11 @@
     set:arr = {0.1, 0.15}
   }
 
+  building_size //F_BUILDING_HEIGHT, F_BUILDING_WIDTH
+  {
+    set::arr = {0.25, 0.25}
+  }
+
   camera_positions
   {
     set:arr = {-0.2, 0.07, 0.5, 0, 0.5, 0}
