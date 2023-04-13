@@ -763,9 +763,9 @@ namespace dgen
                            Quad(start_point - walls_dist*vec_z, wall_stripe_size*vec_x, vec3(0, height, 0), -vec_z));
           stripe_size = wall_stripe_size;
         }
-        else if (stripe_type < 1.5)
+        else if (stripe_type < 1.5 || stripe_type >= 2.5)
         {
-          //windows stripe
+          //windows stripe double coding for more chances to be here on optimization
           make_stripe_windows(windowsM, wallM, woodenM, intM,
                   window_quality, params[I_BASE_WINDOW_HOR_SPLITS], params[I_BASE_WINDOW_VERT_SPLITS], 
                   params_to_window_split_type(params[I_BASE_WINDOW_SPLIT_TYPE]), params[F_BASE_WINDOW_SPLIT_H],
@@ -810,6 +810,7 @@ namespace dgen
         else
         {
           //we shouldn't be here
+          std::cerr<<"INVALID section code "<<section_code<<" "<<stripe_type<<"\n";
           assert(false);
         }
 
