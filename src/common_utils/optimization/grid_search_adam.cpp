@@ -117,9 +117,12 @@ namespace opt
     int start_points_count = settings.get_int("start_points_count", 50);
     float grid_params_gradient_mult = settings.get_double("grid_params_gradient_mult", 1);
 
-    std::vector<float> derivatives_mult(min_X.size(), 1);
+    std::vector<float> derivatives_mult;
+    settings.get_arr("derivatives_mult", derivatives_mult);
+    if (derivatives_mult.size()!=min_X.size())
+      derivatives_mult = std::vector<float>(min_X.size(), 1);
     for (auto &i : init_bins_positions)
-      derivatives_mult[i] = grid_params_gradient_mult;
+      derivatives_mult[i] *= grid_params_gradient_mult;
 
     int N = min_X.size();
 
@@ -130,6 +133,8 @@ namespace opt
       Block adam_settings;
       adam_settings.add_double("learning_rate", local_search_learning_rate);
       adam_settings.add_int("iterations", local_search_iterations*start_points_count);
+      adam_settings.add_bool("verbose", verbose);
+      adam_settings.add_arr("derivatives_mult", derivatives_mult);
       opt->optimize(F, min_X, max_X, adam_settings);
       best_params = opt->get_best_result(&best_result);
 

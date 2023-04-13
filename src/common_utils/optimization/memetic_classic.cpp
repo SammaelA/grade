@@ -32,9 +32,40 @@ namespace opt
     float recreation_diversity_thr = settings.get_double("recreation_diversity_thr", 1.75);
     float depth_reg_q = settings.get_double("depth_reg_q", 0);
     int min_iter_between_recreations = settings.get_int("min_iter_between_recreations", 250);
-    int budget = 0;
+    
+    //sometimes we want to fix specific parameters during memetic optimization
+    //Main reason for it is for multi-stage optimization when we want to preserve
+    //values, already optimized on previous stage
+    //To fix the parameters we need their values, that's why initial_params appear here
 
+    std::vector<float> derivatives_mult;
+    settings.get_arr("derivatives_mult", derivatives_mult);
+    if (derivatives_mult.size()!=min_X.size())
+      derivatives_mult = std::vector<float>(min_X.size(), 1);
+    std::vector<float> initial_params;
+    settings.get_arr("initial_params", initial_params);
+    if (initial_params.empty())
+    {
+      initial_params = std::vector<float>(min_X.size(), 0);
+      for (int i = 0; i < initial_params.size(); i++)
+      {
+        initial_params[i] = min_X[i] + ((urand(0, 1) + urand(0, 1)) / 2) * (max_X[i] - min_X[i]);
+      }
+    }
+
+    int budget = 0;
     Normal normal_gen = Normal(0, mutation_power);
+
+    auto initialize = [&]() -> std::vector<float>
+    {
+      std::vector<float> p = get_init_params();
+      for (int n=0;n<min_X.size();n++)
+      {
+        if (derivatives_mult[n] <= 0)
+          p[n] = initial_params[n];
+      }
+      return p;
+    };
 
     auto mutate = [&](const std::vector<float> &base) -> std::vector<float>
     {
@@ -42,10 +73,13 @@ namespace opt
       for (int i=0;i<MAX(1, mutation_chance * res.size());i++)
       {
         int id = urandi(0, base.size());
-        float t = max_X[id] + 1;
-        while (t >= max_X[id] || t <= min_X[id])
-          t = CLAMP(res[id] + normal_gen.get()*(max_X[id] - min_X[id]), min_X[id], max_X[id]);
-        res[id] = t;
+        if (derivatives_mult[id] > 0)
+        {
+          float t = max_X[id] + 1;
+          while (t >= max_X[id] || t <= min_X[id])
+            t = CLAMP(res[id] + normal_gen.get()*(max_X[id] - min_X[id]), min_X[id], max_X[id]);
+          res[id] = t;
+        }
       }
       return res;
     };
@@ -86,6 +120,7 @@ namespace opt
       adam_settings.add_double("learning_rate", lr);
       adam_settings.add_int("iterations", iterations);
       adam_settings.add_bool("verbose", false);
+      adam_settings.add_arr("derivatives_mult", derivatives_mult);
       opt->optimize(F, min_X, max_X, adam_settings);
       budget += iterations;
 
@@ -100,7 +135,7 @@ namespace opt
     {
       solutions = std::vector<Solution>(population_size, {std::vector<float>(min_X.size(), 0), 1000, 1000, 0});
       for (int i=0;i<population_size;i++)
-        solutions[i].params = get_init_params();
+        solutions[i].params = initialize();
       
         for (int i=st; i<solutions.size(); i++)
         {
@@ -286,7 +321,7 @@ namespace opt
       {
         //new parameters set
         improvement_idx = 3;
-        std::vector<float> new_params = get_init_params();
+        std::vector<float> new_params = initialize();
         res = local_search(new_params, start_search_iterations, start_search_learning_rate);
       }
 

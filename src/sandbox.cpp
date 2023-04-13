@@ -201,9 +201,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         0.6, 0.25};
 
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 1));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
                                model_info);
     std::vector<float> scene_params = {-0.4, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
     mi.render_model_to_file(res, "saves/test_result2.png", camera, scene_params);

@@ -289,6 +289,33 @@ namespace dopt
       v = 1 - v;
   }
 
+  std::vector<float> get_active_parameters_mask(Block &stage_blk, const std::vector<std::string> &all_names)
+  {
+    std::vector<std::string> pos_list, neg_list;
+    stage_blk.get_arr("optimize_parameters", pos_list);
+    stage_blk.get_arr("do_not_optimize_parameters", neg_list);
+    if (pos_list.empty() && neg_list.empty())
+    {
+      return std::vector<float>(all_names.size(), 1);
+    }
+    else if (!pos_list.empty() && !neg_list.empty())
+    {
+      logerr("Error: only \"optimize_parameters\" or \"do_not_optimize_parameters\" list should be set, not both!");
+      return std::vector<float>(all_names.size(), 1);
+    }
+    else if (!pos_list.empty())
+    {
+      std::vector<float> res = get_params_mask(all_names, pos_list);
+      return res;
+    }
+    else //if (!neg_list.empty())
+    {
+      std::vector<float> res = get_params_mask(all_names, neg_list);
+      inverse_mask(res);
+      return res;
+    }
+  }
+
   MitsubaInterface::ModelInfo get_default_model_info_from_blk(Block &gen_mesh_parts)
   {
     MitsubaInterface::ModelInfo model_info;
@@ -531,6 +558,7 @@ namespace dopt
                            settings_blk.get_bool("save_intermediate_images", false));
 
       std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
+      std::vector<float> parameters_mask = get_active_parameters_mask(*stage_blk, params_names);
       opt::Optimizer *opt = get_optimizer(search_algorithm);
       Block *opt_settings = stage_blk->get_block("optimizer_settings");
       if (!opt_settings)
@@ -539,10 +567,9 @@ namespace dopt
         return 1.0;
       }
       if (stage != 0)
-      {
         opt_settings->add_arr("initial_params", opt_result.best_params);
-        opt_settings->add_arr("params_names", params_names);
-      }
+      opt_settings->add_arr("params_names", params_names);
+      opt_settings->add_arr("derivatives_mult", parameters_mask);
 
       std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       opt->optimize(F_to_optimize, params_min, params_max, *opt_settings, init_params_presets);
