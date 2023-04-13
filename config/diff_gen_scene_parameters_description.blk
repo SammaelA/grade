@@ -4,7 +4,7 @@
   translation_z{values:p2 =  -1, 3 desc:s = "object translation z"}
   rotate_x{values:p2 = -0.1, 1.57 desc:s = "object rotation angle around (1,0,0) axis"}
   rotate_y{values:p2 = -4, 4 init_bins_count:i = 12 desc:s = "object rotation angle around (0,1,0) axis"}
-  rotate_z{values:p2 = -0.5, 0.5 desc:s = "object rotation angle around (0,0,1) axis"}
+  rotate_z{values:p2 = -0.1, 0.1 desc:s = "object rotation angle around (0,0,1) axis"}
   light_translation_x{values:p2 = -1000, 1000 desc:s = "light translation x"}
   light_translation_y{values:p2 = 0, 1000 desc:s = "light translation y"}
   light_translation_z{values:p2 = -1000, 1000 desc:s = "light translation z"}
