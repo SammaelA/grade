@@ -50,14 +50,16 @@ namespace dopt
           delete f.func;
       }
     }
-    void init(dgen::generator_func _model_creator, std::vector<unsigned short> &variant_positions)
+    void init(int capacity, dgen::generator_func _model_creator, std::vector<unsigned short> &variant_positions)
     {
       model_creator = _model_creator;
       variant_params_positions = variant_positions;
+      max_function_variants = capacity;
+      func_variants.resize(capacity);
     }
     inline dgen::DFModel get(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      auto &FV = func_variants[find_or_add(params, mq)];
+      auto &FV = find_or_add(params, mq);
       std::vector<float> res = FV.func->Forward(0, params); 
       if (FV.model_size != res.size())
       {
@@ -70,12 +72,12 @@ namespace dopt
     }
     inline std::vector<float> get_jac(const std::vector<float> &params, dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      return func_variants[find_or_add(params, mq)].func->Jacobian(params); 
+      return find_or_add(params, mq).func->Jacobian(params); 
     }
     inline dgen::DFModel get_transformed(const std::vector<float> &params, const std::vector<float> &camera_params, 
                                        dgen::ModelQuality mq = dgen::ModelQuality())
     {
-      auto &FV = func_variants[find_or_add(params, mq)];
+      auto &FV = find_or_add(params, mq);
       std::vector<float> f_model = FV.func->Forward(0, params); 
       dgen::transform_by_scene_parameters(camera_params, f_model);  
       return {f_model, FV.part_offsets};
@@ -83,10 +85,11 @@ namespace dopt
   private:
     struct FunctionVariant
     {
-      CppAD::ADFun<float> *func;
+      CppAD::ADFun<float> *func = nullptr;
       dgen::ModelQuality model_quality;
-      int model_size;
+      int model_size = 0;
       dgen::PartOffsets part_offsets; 
+      int last_accessed = 0;
     };
 
     void print_FV_debug(const FunctionVariant &fv, const std::vector<unsigned short> &vs)
@@ -97,18 +100,43 @@ namespace dopt
       debug("}\n");
       debug("Expected size %d, part offsets {", fv.model_size);
       for (auto &p : fv.part_offsets)
-        debug("%s : %d ", p.first, p.second);
+        debug("%s : %d ", p.first.c_str(), p.second);
       debug("}\n");
     }
 
-    int find_or_add(const std::vector<float> &params, dgen::ModelQuality mq)
+    FunctionVariant &find_or_add(const std::vector<float> &params, dgen::ModelQuality mq)
     {
+      timestamp++;
+
       auto vs = get_variant_set(params);
       vs.push_back((unsigned short)mq.create_only_position);
       vs.push_back((unsigned short)mq.quality_level);
       auto it = variant_set_to_function_pos.find(vs);
       if (it == variant_set_to_function_pos.end())
       {
+        //we need to create new function variant
+        int func_pos = -1; 
+        if (variant_set_to_function_pos.size() >= max_function_variants)
+        {
+          //find element with the smallest last_access and replace it with the new one
+          int min_time = timestamp;
+          int min_pos = 0;
+          for (int i=0;i<func_variants.size();i++)
+          {
+            if (func_variants[i].last_accessed < min_time)
+            {
+              min_time = func_variants[i].last_accessed;
+              min_pos = i;
+            }
+          }
+          logerr("replacing variant %d, accessed %d (now %d)", min_pos, min_time, timestamp);
+          func_pos = min_pos;
+        }
+        else
+        {
+          func_pos = next_free_function_pos;
+          next_free_function_pos++;
+        }
         std::vector<dgen::dfloat> X(params.size());
         for (int i=0;i<params.size();i++)
           X[i] = params[i];
@@ -116,15 +144,21 @@ namespace dopt
         CppAD::Independent(X);
         auto po = model_creator(X, Y, mq);
         CppAD::ADFun<float> *f = new CppAD::ADFun<float>(X, Y); 
-        func_variants.push_back(FunctionVariant{f, mq, (int)Y.size(), po});
-        int f_pos = func_variants.size()-1;
-        variant_set_to_function_pos.emplace(vs, f_pos);
 
-        //print_FV_debug(func_variants.back(), vs);
+        if (func_variants[func_pos].func)
+          delete func_variants[func_pos].func;
+        func_variants[func_pos] = FunctionVariant{f, mq, (int)Y.size(), po, timestamp};
+        variant_set_to_function_pos.emplace(vs, func_pos);
 
-        return f_pos;
+        //print_FV_debug(func_variants[func_pos], vs);
+
+        return func_variants[func_pos];
       }
-      return it->second;
+      else
+      {
+        func_variants[it->second].last_accessed = timestamp;
+        return func_variants[it->second];
+      }
     }
 
     std::vector<unsigned short> get_variant_set(const std::vector<float> &params)
@@ -140,6 +174,9 @@ namespace dopt
     std::map<std::vector<unsigned short>, int, UShortVecComparator> variant_set_to_function_pos;
     std::vector<FunctionVariant> func_variants;
     std::vector<unsigned short> variant_params_positions;
+    int timestamp = 0;
+    int max_function_variants = 32;
+    int next_free_function_pos = 0;
   };
 
   struct OptimizationResult
@@ -385,7 +422,7 @@ namespace dopt
           gen_params_cnt + scene_params_cnt, gen_params_cnt, scene_params_cnt, variant_count.size());
 
     DiffFunctionEvaluator func;
-    func.init(generator.generator, variant_positions);
+    func.init(256, generator.generator, variant_positions);
 
     //there is no info about materials or textures, only the number of composite parts
     MitsubaInterface::ModelInfo default_model_info = get_default_model_info_from_blk(gen_mesh_parts);
