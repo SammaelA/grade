@@ -182,15 +182,31 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     if (params.empty())
-      params = {2, 2, 0.05, 0.6, 0.2, 2, 5, 1, 5, 409, 1, 3, 21, 0.6, 0.07, 0.04, 0.1, 0.04, 15, 0.03, 3, 2, 2, 0.6, 0.6, 0.8, 1, 1, 3, 0, 0.6, 0.7, 0.7, 1, 0.4, 0.5, 0.015, 0.05, 1, 3, 2, 2, 0.6, 0.6, 0.8, 1, 0.4, 0.6, 1, 0.15, 0.1, 0.15,
-                0.25, 0.25};
+      params = {
+        2, 
+        5, 
+        0.05, 
+        0.6, 0.2, 
+        2, 5, 1, 
+        5, 409, 1, 
+        3, 21, 0.6, 
+        0.07, 0.04, 0.1, 
+        0.04, 15, 0.03, 
+        3, 2, 2, 0.6, 0.6, 0.8, 1, 
+        1, 3, 0, 0.6, 0.7, 0.7, 1, 
+        0.4, 0.5, 0.015, 0.05, 1, 
+        3, 2, 2, 0.6, 0.6, 0.8, 1, 
+        0.4, 0.6, 1, 0.15, 
+        0.1, 0.15,
+        0.6, 0.25};
+
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                model_info);
     std::vector<float> scene_params = {-0.4, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
-    mi.render_model_to_file(res, "saves/test_result.png", camera, scene_params);
+    mi.render_model_to_file(res, "saves/test_result2.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {

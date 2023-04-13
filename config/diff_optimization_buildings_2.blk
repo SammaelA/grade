@@ -35,7 +35,7 @@
   //if synthetic_reference is true, reference image will be ignored. Instead of it, a model with reference_params
   //will be created, rendered and saved to file. This new file will be used as reference for texture_optimization
   //reference_params contains model paramters and reference_scene contains scene parameters
-  synthetic_reference:b = true
+  synthetic_reference:b = false
   reference_params:arr = {2, 2, 0.05, 0.6, 0.2, 2, 5, 1, 5, 409, 1, 3, 21, 0.6, 0.07, 0.04, 0.1, 0.04, 15, 0.03, 3, 2, 2, 0.6, 0.6, 0.8, 1, 1, 3, 0, 0.6, 0.7, 0.7, 1, 0.4, 0.5, 0.015, 0.05, 1, 3, 2, 2, 0.6, 0.6, 0.8, 1, 0.4, 0.6, 1, 0.15, 0.1, 0.15}
   reference_scene:arr = {-0.4, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1}
   reference_image_size:i = 1024
@@ -47,25 +47,66 @@
 
   silhouette_optimization_settings
   {
-    optimization_stages:i = 1
+    optimization_stages:i = 2
 
     stage_0
     {
-      optimizer:s = "adam"
-      iterations:i = 0 //not used in 0 block
-      lr:r = 0 //not used in 0 block
+      optimizer:s = "grid_search_adam"
       model_quality:i = 0
-      render_image_size:i = 200
+      render_image_size:i = 128
       spp:i = 4
+      optimizer_settings
+      {
+        start_points_count:i = 10
+        local_search_iterations:i = 100
+        local_search_learning_rate:r = 0.02
+        grid_params_gradient_mult:r = 0.1
+        verbose:b = true
+        initial_params:arr = {2, 5, 0.05, 0.6, 0.2, 2, 5, 1, 5, 409, 1, 3, 21, 0.6, 0.07, 0.04, 0.1, 0.04, 15, 0.03, 3, 2, 2, 0.6, 0.6, 0.8, 1, 1, 3, 0, 0.6, 0.7, 0.7, 1, 0.4, 0.5, 0.015, 0.05, 1, 3, 2, 2, 0.6, 0.6, 0.8, 1, 0.4, 0.6, 1, 0.15, 0.1, 0.15, 0.6, 0.25,
+                              -0.15, 0.071, 0.5, 0.0, 0.5, 0.0, 510.403, 6.013, 26.971, 1.000, 56.560, 0.9, 0.125}
+        grid
+        {
+          rotate_y
+          {
+            values:arr = {0.0, 0.1, 0.2}
+          }
+          F_BUILDING_HEIGHT
+          {
+            values:arr = {0.2, 0.4, 0.6}
+          }
+          F_BUILDING_WIDTH
+          {
+            values:arr = {0.2, 0.4}
+          }
+        }
+      }
     }
+
     stage_1
     {
-      optimizer:s = "adam"
-      iterations:i = 250
-      lr:r = 0.005
-      model_quality:i = 1
+      optimizer:s = "grid_search_adam"
+      model_quality:i = 0
       render_image_size:i = 256
-      spp:i = 16
+      spp:i = 4
+      optimizer_settings
+      {
+        start_points_count:i = 10
+        local_search_iterations:i = 100
+        local_search_learning_rate:r = 0.02
+        grid_params_gradient_mult:r = 0.1
+        verbose:b = true
+        grid
+        {
+          camera_fov
+          {
+            values:arr = {0.1, 0.15, 0.25}
+          }
+          rotate_x
+          {
+            values:arr = {0.2, 0.25, 0.3}
+          }
+        }
+      }
     }
   }
 

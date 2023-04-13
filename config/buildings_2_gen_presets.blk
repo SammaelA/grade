@@ -90,7 +90,7 @@
 
   building_size //F_BUILDING_HEIGHT, F_BUILDING_WIDTH
   {
-    set::arr = {0.25, 0.25}
+    set:arr = {0.25, 0.25}
   }
 
   camera_positions
