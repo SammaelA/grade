@@ -119,7 +119,7 @@ namespace opt
       adam_settings.add_arr("initial_params", start_params);
       adam_settings.add_double("learning_rate", lr);
       adam_settings.add_int("iterations", iterations);
-      adam_settings.add_bool("verbose", false);
+      adam_settings.add_bool("verbose", verbose);
       adam_settings.add_arr("derivatives_mult", derivatives_mult);
       opt->optimize(F, min_X, max_X, adam_settings);
       budget += iterations;
