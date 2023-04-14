@@ -732,10 +732,16 @@ namespace dgen
         real stripe_type = stripe_types[i];
         if (stripe_type < 0.5)
           sz += wall_stripe_size;
-        else if (stripe_type < 1.5)
+        else if (stripe_type < 1.5 || stripe_type >= 2.5)
           sz += params[F_BASE_WINDOW_STRIPE_SIZE];
         else if (stripe_type < 2.5)
           sz += params[F_BALCONY_WINDOW_STRIPE_SIZE];
+        else
+        {
+          //we shouldn't be here
+          std::cerr<<"INVALID section code "<<section_code<<" "<<stripe_type<<"\n";
+          assert(false);
+        }
       }
       return sz;
     };
