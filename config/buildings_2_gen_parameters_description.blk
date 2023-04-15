@@ -32,9 +32,9 @@
     F_WINDOW_INNER_FRAME_WIDTH{ values:p2 = 0.03, 0.1 }
     F_WINDOW_GLASS_DEPTH{ values:p2 = 0.0, 0.1 }
 
-    F_ROOF_BASE_H{ values:p2 = 0.005, 0.1 }
-    F_ROOF_SLOPE{ values:p2 = 2, 100 }
-    F_ROOF_OVERSIZE{ values:p2 = 0, 0.1 }
+    F_ROOF_BASE_HEIGHT_Q{ values:p2 = 0.001, 0.02 }
+    F_ROOF_HEIGHT_Q{ values:p2 = 0.001, 0.3 }
+    F_ROOF_OVERSIZE{ values:p2 = 0, 0.05 }
 
     I_BASE_WINDOW_HOR_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_BASE_WINDOW_VERT_SPLITS{ values:p2 = 1, 3 is_variant:b = true}

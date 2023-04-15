@@ -1,7 +1,6 @@
 {
   entrances_count //I_ENTRANCES_COUNT
   {
-    set:arr = {1}
     set:arr = {2}
     set:arr = {3}
     set:arr = {4}
@@ -10,8 +9,6 @@
   floors_count //I_FLOORS_COUNT
   {
     set:arr = {2}
-    set:arr = {3}
-    set:arr = {4}
     set:arr = {5}
   }
 
@@ -46,9 +43,9 @@
     set:arr = {0.1, 0.07, 0.04}
   }
 
-  roof //F_ROOF_BASE_H, F_ROOF_SLOPE, F_ROOF_OVERSIZE
+  roof //F_ROOF_BASE_HEIGHT_Q, F_ROOF_HEIGHT_Q, F_ROOF_OVERSIZE
   {
-    set:arr = {0.04, 15, 0.03}
+    set:arr = {0.01, 0.1, 0}
   }
 
   base_window

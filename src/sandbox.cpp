@@ -191,7 +191,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         5, 409, 1, 
         3, 21, 0.6, 
         0.07, 0.04, 0.1, 
-        0.04, 15, 0.03, 
+        0.01, 0.1, 0.0, 
         3, 2, 2, 0.6, 0.6, 0.8, 1, 
         1, 3, 0, 0.6, 0.7, 0.7, 1, 
         0.4, 0.5, 0.015, 0.05, 1, 
@@ -205,8 +205,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
                                model_info);
-    std::vector<float> scene_params = {-0.4, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
-    mi.render_model_to_file(res, "saves/test_result2.png", camera, scene_params);
+    std::vector<float> scene_params = {-0.4, 0.07, 1, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
+    mi.render_model_to_file(res, "saves/test_result3_mask.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {

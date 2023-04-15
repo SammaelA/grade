@@ -548,7 +548,7 @@ namespace dgen
     };
 
     auto make_roof_segment = [&](std::vector<real> &M_wall, std::vector<real> &M_roof, 
-                                 real roof_base_h, real roof_angle_rad, 
+                                 real roof_base_h, real roof_h, 
                                  bool left_side, bool right_side,
                                  const Quad &q)
     {
@@ -557,7 +557,7 @@ namespace dgen
       make_box(M_wall, length(q.v2), Quad(q.p1, q.v1, roof_base_h*q.n, -q.v2));
 
       real l1 = 0.5f*length(q.v2);
-      real h1 = l1*tan(roof_angle_rad);
+      real h1 = roof_h;
       vec3 v1 = ((real)0.5f)*q.v2 + h1*q.n;
       make_quad(M_roof, Quad(q.p1 + roof_base_h*q.n, q.v1, v1, cross(q.v1, v1)));
       v1 = ((real)-0.5f)*q.v2 + h1*q.n;
@@ -566,14 +566,14 @@ namespace dgen
       if (left_side)
       {
         add_vertex(M_wall, q.p1 + roof_base_h*q.n, -q.v1, vec2(0,0));
-        add_vertex(M_wall, q.p1 + (roof_base_h)*q.n + q.v2 + v1, -q.v1, vec2(0, tan(roof_angle_rad)));
+        add_vertex(M_wall, q.p1 + (roof_base_h)*q.n + q.v2 + v1, -q.v1, vec2(0, h1/l1));
         add_vertex(M_wall, q.p1 + roof_base_h*q.n + q.v2, -q.v1, vec2(1,0));
       }
 
       if (right_side)
       {
         add_vertex(M_wall, q.p1 + q.v1 + roof_base_h*q.n, q.v1, vec2(0,0));
-        add_vertex(M_wall, q.p1 + q.v1 + (roof_base_h)*q.n + q.v2 + v1, q.v1, vec2(0, tan(roof_angle_rad)));
+        add_vertex(M_wall, q.p1 + q.v1 + (roof_base_h)*q.n + q.v2 + v1, q.v1, vec2(0, h1/l1));
         add_vertex(M_wall, q.p1 + q.v1 + roof_base_h*q.n + q.v2, q.v1, vec2(1,0));
       }
     };
@@ -629,8 +629,8 @@ namespace dgen
       F_WINDOW_INNER_FRAME_WIDTH,
       F_WINDOW_GLASS_DEPTH,
 
-      F_ROOF_BASE_H,
-      F_ROOF_SLOPE,
+      F_ROOF_BASE_HEIGHT_Q,
+      F_ROOF_HEIGHT_Q,
       F_ROOF_OVERSIZE,
 
       I_BASE_WINDOW_HOR_SPLITS,
@@ -827,7 +827,7 @@ namespace dgen
             make_insides(intM, walls_dist, !(left_end && (i == 0)), params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                         Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1)));
           }
-          make_roof_segment(wallM, roofM, params[F_ROOF_BASE_H], PI/(3 + params[F_ROOF_SLOPE]), 
+          make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
                             left_end && (i == 0), (right_end) && (i == stripe_types.size()-1), 
                             Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
                                 vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
@@ -863,7 +863,7 @@ namespace dgen
         make_insides(intM, walls_dist, true, params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                     Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1))); 
       }
-      make_roof_segment(wallM, roofM, params[F_ROOF_BASE_H], PI/(3 + params[F_ROOF_SLOPE]), 
+      make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
                         false, false, 
                         Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
                              vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
@@ -888,6 +888,11 @@ namespace dgen
       make_quad(wallM, Quad(vec3(1,0,-1), vec3(0,0,1), vec3(0,1,0), vec3(1,0,0)));
       make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,0,1), vec3(1,0,0), vec3(0,-1,0)));
       make_quad(wallM, Quad(vec3(0,1,-1), vec3(1,0,0), vec3(0,0,1), vec3(0,1,0)));
+
+      make_roof_segment(wallM, wallM, params[F_ROOF_BASE_HEIGHT_Q], params[F_ROOF_HEIGHT_Q],
+                        true, true,
+                        Quad(vec3(0, 1, 0), vec3(1,0,0),vec3(0,0,-1),vec3(0,1,0)));
+
       original_sizes = vec3(1, 1, 1);
     }
     else
@@ -928,7 +933,7 @@ namespace dgen
     PartOffsets po;
     for (int i=0;i<models.size(); i++)
     {
-      debug("%s: %d vertices\n", names[i].c_str(), models[i]->size());
+      debug("%s: %d vertices\n", names[i].c_str(), models[i]->size() / 8);
       if (!(models[i]->empty()))
         po.push_back({names[i], k});
       for (real &v : *(models[i]))
