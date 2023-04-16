@@ -400,8 +400,12 @@ namespace dopt
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
-    std::string reference_path = settings_blk.get_string("reference_path", "");
-    std::string reference_mask_path = settings_blk.get_string("reference_mask_path", "");
+    Block *references_blk = settings_blk.get_block("references");
+    if (!references_blk)
+    {
+      logerr("ERROR: references block not set");
+      return 1;
+    }
 
     auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
@@ -427,12 +431,11 @@ namespace dopt
     //there is no info about materials or textures, only the number of composite parts
     MitsubaInterface::ModelInfo default_model_info = get_default_model_info_from_blk(gen_mesh_parts);
 
-    Texture reference_tex;
-    Texture reference_mask;
     const int original_reference_size = settings_blk.get_int("original_reference_size", 1024);
+    std::map<std::string, Texture> references;
 
     {
-      Texture reference_tex_raw;
+      Texture reference_tex_raw, reference_mask;
       if (by_reference)
       {
         //create synthetic reference by rendering model with given parameters with mitsuba
@@ -460,35 +463,38 @@ namespace dopt
       }
       else
       {
-        reference_tex_raw = engine::textureManager->load_unnamed_tex(reference_path);
+        reference_tex_raw = engine::textureManager->load_unnamed_tex(references_blk->get_string("textured"));
       }
 
-      if (by_reference)
+      if (references_blk->get_string("mask") == "" || by_reference)
       {
-        reference_tex = reference_tex_raw;
-        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
-        reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
-      }
-      else if (reference_mask_path != "")
-      {
-        Texture reference_mask_raw = engine::textureManager->load_unnamed_tex(reference_mask_path);
-        Texture reference_tex_raw_masked = engine::textureManager->create_texture(reference_mask_raw.get_W(),reference_mask_raw.get_H());
-        ImageArithmetics::mul(reference_tex_raw_masked, reference_mask_raw, reference_tex_raw, 1);
-
-        reference_tex = ImgExp::ImgExpanding(reference_tex_raw_masked, original_reference_size, 0.05, -1);
-
-        Texture reference_mask_tex = ImgExp::ImgExpanding(reference_mask_raw, original_reference_size, 0.01, 0);
-        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
-        reference_mask = se.get_silhouette(reference_mask_tex, original_reference_size, original_reference_size);
+        SilhouetteExtractor se = SilhouetteExtractor(MIN(reference_tex_raw.get_W(), reference_tex_raw.get_H())/256.0, 0, 0, 0.05);
+        reference_mask = se.get_silhouette(reference_tex_raw, reference_tex_raw.get_W(), reference_tex_raw.get_H());
+        
       }
       else
       {
-        reference_tex = ImgExp::ImgExpanding(reference_tex_raw, original_reference_size, 0.05, -1);
-        SilhouetteExtractor se = SilhouetteExtractor(0, 0.075, 0.225, 0.01);
-        reference_mask = se.get_silhouette(reference_tex, original_reference_size, original_reference_size);
+        reference_mask = engine::textureManager->load_unnamed_tex(references_blk->get_string("mask"));
       }
-      engine::textureManager->save_png(reference_tex, "ie_rsult");
-      engine::textureManager->save_png(reference_mask, "ie_rsult2");
+      
+      Texture reference_tex_masked = engine::textureManager->create_texture(reference_mask.get_W(),reference_mask.get_H());
+      ImageArithmetics::mul(reference_tex_masked, reference_mask, reference_tex_raw, 1);
+      
+      references.emplace("textured", ImageResizer::resize(reference_tex_masked, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
+      references.emplace("mask", ImageResizer::resize(reference_mask, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
+      for (int i=0;i<references_blk->size();i++)
+      {
+        std::string tex_name = references_blk->get_name(i);
+        if (references_blk->get_type(i) == Block::ValueType::STRING && tex_name != "textured" && tex_name != "mask")
+        {
+          Texture t = engine::textureManager->load_unnamed_tex(references_blk->get_string(i));
+          t = ImageResizer::resize(t, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED);
+          references.emplace(tex_name, t);
+        }
+      }
+
+      for (auto &p : references)
+        engine::textureManager->save_png(p.second, "ie_rsult_"+p.first);
     }
 
     CppAD::ADFun<float> f_reg;
@@ -584,7 +590,8 @@ namespace dopt
       }
       std::string reference_image_dir = "saves/reference.png";
       int im_sz = stage_blk->get_int("render_image_size", 128);
-      Texture reference_mask_resized = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::STRETCH);
+      std::string reference_texture_name = stage_blk->get_string("reference_texture_name", "mask");
+      Texture reference_mask_resized = ImageResizer::resize(references[reference_texture_name], im_sz, im_sz, ImageResizer::Type::STRETCH);
       engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
 
       model_quality = stage_blk->get_int("model_quality", 0);
@@ -648,9 +655,8 @@ namespace dopt
                                                             dgen::ModelQuality(false, 3));
       visualizer::simple_mesh_to_model_332(best_model_transformed.first, m);
       m->update();
-      float rt_sz = MAX(reference_tex.get_W(), reference_tex.get_H());
 
-      reconstructed_tex = mt.getTexbyUV(reference_mask, *m, reference_tex,
+      reconstructed_tex = mt.getTexbyUV(references["mask"], *m, references["textured"],
                                         MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
                                         mask_tex);
       engine::textureManager->save_png(reconstructed_tex, "reconstructed_tex");
@@ -722,14 +728,14 @@ namespace dopt
 
           model_quality = stage_blk->get_int("model_quality", 0);
           only_pos = false;
-          Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture reference_textured = ImageResizer::resize(references["textured"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
 
           dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
           mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                                     default_model_info);
           mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
           Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-          Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_reference = ImageResizer::resize(references["mask"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
           Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
           ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
           engine::textureManager->save_png(mask_min, "reference_textured_mask");
@@ -809,14 +815,14 @@ namespace dopt
 
         model_quality = stage_blk->get_int("model_quality", 0);
         only_pos = false;
-        Texture reference_textured = ImageResizer::resize(reference_tex, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+        Texture reference_textured = ImageResizer::resize(references["textured"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
 
         dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                                    default_model_info);
         mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
         Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-        Texture mask_reference = ImageResizer::resize(reference_mask, im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+        Texture mask_reference = ImageResizer::resize(references["mask"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
         Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
         ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
         engine::textureManager->save_png(mask_min, "reference_textured_mask");

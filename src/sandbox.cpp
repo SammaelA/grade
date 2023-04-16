@@ -112,14 +112,32 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       boost::algorithm::split(split_res, ref, boost::is_any_of("/"));
       b.set_string("saved_result_path", "saves/"+split_res.back()+"_result.png");
       b.set_string("saved_textured_path", "saves/"+split_res.back()+"_result_textured.png");
-      b.set_string("reference_path", ref);
-      b.set_string("reference_mask_path", reference_masks[i]);
+
+      Block ref_block;
+      ref_block.set_string("textured", ref);
+      ref_block.set_string("mask", reference_masks[i]);
+      b.add_block("references", &ref_block);
       av_loss += dopt::image_based_optimization(b, mi);
     }
     av_loss /= count;
     debug("Benchmak finished. %d images tested\n", count);
     debug("Average loss: %.4f\n", av_loss);
     return;
+  }
+  else if (argc >= 4 && std::string(argv[2]) == "-opt")
+  {
+    std::vector<std::string> arg_names = {"program", "-sandbox", "-opt", "blk_name", "textured", "mask", "mask_1", "mask_2", "mask_3", "mask_4"};
+    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
+    std::string blk_name = std::string(argv[3]);
+    Block b;
+    Block ref_block;
+    load_block_from_file(blk_name, b);
+    for (int i = 4; i< MIN(arg_names.size(), argc); i++)
+    {
+      ref_block.set_string(arg_names[i], argv[i]);
+    }
+    b.add_block("references", &ref_block);
+    dopt::image_based_optimization(b, mi);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen")
   {
@@ -201,12 +219,12 @@ void sandbox_main(int argc, char **argv, Scene *scene)
         0.6, 0.25};
 
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 1));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 2));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
                                model_info);
     std::vector<float> scene_params = {-0.4, 0.07, 1, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
-    mi.render_model_to_file(res, "saves/test_result3_mask.png", camera, scene_params);
+    mi.render_model_to_file(res, "saves/test_result4_mask.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {
