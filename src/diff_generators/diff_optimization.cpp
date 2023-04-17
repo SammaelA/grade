@@ -640,8 +640,33 @@ namespace dopt
     }
 
     dgen::DFModel best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+    MitsubaInterface::ModelInfo no_tex_model_info = default_model_info;
+    if (generator.name == "buildings_2")
+    {
+      Block gen_info;
+      load_block_from_file(generator.generator_description_blk_path, gen_info);
+      Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+      MitsubaInterface::ModelInfo model_info;
+      model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
+
+      for (int i=0;i<gen_mesh_parts.size();i++)
+      {
+        if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+          model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                      "white.png", 
+                                      MitsubaInterface::get_default_material()});
+      }
+
+      model_info.get_part("main_part")->texture_name = "wall2.png";
+      model_info.get_part("interior")->texture_name = "concrete.png";
+      model_info.get_part("windows")->material_name = "glass";
+      model_info.get_part("wooden_parts")->texture_name = "wood6.png";
+      model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
+      model_info.get_part("roof")->texture_name = "roof1.png";
+      no_tex_model_info = model_info;
+    }
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
-                               default_model_info);
+                               no_tex_model_info);
     mi.render_model_to_file(best_model, saved_result_path,
                             MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
                             get_camera_params(opt_result.best_params));
