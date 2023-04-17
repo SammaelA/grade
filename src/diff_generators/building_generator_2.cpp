@@ -219,7 +219,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count;i++)
+      for (int i=0;i<floors_count-0.5;i++)
       {
         make_panel(M_ext, M_int, has_interior, thick, q_part);
         q_part.p1 += y_mul*q.v2;
@@ -294,7 +294,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count;i++)
+      for (int i=0;i<floors_count-0.5;i++)
       {
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
                           window_width_q, window_height_q, q_part);
@@ -422,7 +422,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=1;i<floors_count;i++)
+      for (int i=1;i<floors_count-0.5;i++)
       {
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
                             window_width_q, window_height_q, q_part);
@@ -519,7 +519,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count;i++)
+      for (int i=0;i<floors_count-0.5;i++)
       {
         //make window
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
@@ -548,34 +548,48 @@ namespace dgen
     };
 
     auto make_roof_segment = [&](std::vector<real> &M_wall, std::vector<real> &M_roof, 
-                                 real roof_base_h, real roof_h, 
-                                 bool left_side, bool right_side,
+                                 real roof_base_h, real roof_h, real roof_side_slope, 
                                  const Quad &q)
     {
       Quad q_rp = q;
       q_rp.p1 += roof_base_h*q.n;
       make_box(M_wall, length(q.v2), Quad(q.p1, q.v1, roof_base_h*q.n, -q.v2));
 
-      real l1 = 0.5f*length(q.v2);
-      real h1 = roof_h;
-      vec3 v1 = ((real)0.5f)*q.v2 + h1*q.n;
-      make_quad(M_roof, Quad(q.p1 + roof_base_h*q.n, q.v1, v1, cross(q.v1, v1)));
-      v1 = ((real)-0.5f)*q.v2 + h1*q.n;
-      make_quad(M_roof, Quad(q.p1 + roof_base_h*q.n + q.v2, q.v1, v1, -cross(q.v1, v1)));
+      real f05 = 0.5;
+      vec3 p1 = q.p1 + roof_base_h*q.n;
+      vec3 p2 = q.p1 + roof_base_h*q.n + q.v2;
+      vec3 p3 = q.p1 + (roof_base_h+roof_h)*q.n + f05*q.v2 + roof_side_slope*q.v1;
+      vec3 p4 = q.p1 + (roof_base_h+roof_h)*q.n + f05*q.v2 + (1-roof_side_slope)*q.v1;
+      vec3 p5 = q.p1 + roof_base_h*q.n + q.v1;
+      vec3 p6 = q.p1 + roof_base_h*q.n + q.v2 + q.v1;
 
-      if (left_side)
-      {
-        add_vertex(M_wall, q.p1 + roof_base_h*q.n, -q.v1, vec2(0,0));
-        add_vertex(M_wall, q.p1 + (roof_base_h)*q.n + q.v2 + v1, -q.v1, vec2(0, h1/l1));
-        add_vertex(M_wall, q.p1 + roof_base_h*q.n + q.v2, -q.v1, vec2(1,0));
-      }
+      vec3 n123 = cross(p3 - p1, p2 - p1);
+      add_vertex(M_roof, p1, n123, vec2(0,0));
+      add_vertex(M_roof, p3, n123, vec2(1,0));
+      add_vertex(M_roof, p2, n123, vec2(0,1));
 
-      if (right_side)
-      {
-        add_vertex(M_wall, q.p1 + q.v1 + roof_base_h*q.n, q.v1, vec2(0,0));
-        add_vertex(M_wall, q.p1 + q.v1 + (roof_base_h)*q.n + q.v2 + v1, q.v1, vec2(0, h1/l1));
-        add_vertex(M_wall, q.p1 + q.v1 + roof_base_h*q.n + q.v2, q.v1, vec2(1,0));
-      }
+      vec3 n153 = cross(p5 - p1, p3 - p1);
+      add_vertex(M_roof, p1, n153, vec2(0,0));
+      add_vertex(M_roof, p5, n153, vec2(1,0));
+      add_vertex(M_roof, p3, n153, vec2(0,1));
+
+      add_vertex(M_roof, p5, n153, vec2(0,0));
+      add_vertex(M_roof, p4, n153, vec2(1,0));
+      add_vertex(M_roof, p3, n153, vec2(0,1));
+
+      vec3 n564 = cross(p6 - p5, p4 - p5);
+      add_vertex(M_roof, p5, n564, vec2(0,0));
+      add_vertex(M_roof, p6, n564, vec2(1,0));
+      add_vertex(M_roof, p4, n564, vec2(0,1));
+
+      vec3 n624 = cross(p2 - p6, p4 - p6);
+      add_vertex(M_roof, p6, n624, vec2(0,0));
+      add_vertex(M_roof, p2, n624, vec2(1,0));
+      add_vertex(M_roof, p4, n624, vec2(0,1));
+      
+      add_vertex(M_roof, p4, n624, vec2(0,0));
+      add_vertex(M_roof, p2, n624, vec2(1,0));
+      add_vertex(M_roof, p3, n624, vec2(0,1));
     };
 
     auto make_insides = [&](std::vector<real> &M_int, real depth, bool left_wall,
@@ -631,7 +645,9 @@ namespace dgen
 
       F_ROOF_BASE_HEIGHT_Q,
       F_ROOF_HEIGHT_Q,
-      F_ROOF_OVERSIZE,
+      F_ROOF_OVERSIZE_Z,
+      F_ROOF_OVERSIZE_X, 
+      F_ROOF_SIDE_SLOPE_SIZE,
 
       I_BASE_WINDOW_HOR_SPLITS,
       I_BASE_WINDOW_VERT_SPLITS,
@@ -827,10 +843,10 @@ namespace dgen
             make_insides(intM, walls_dist, !(left_end && (i == 0)), params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                         Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1)));
           }
-          make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
+          /*make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
                             left_end && (i == 0), (right_end) && (i == stripe_types.size()-1), 
-                            Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
-                                vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
+                            Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE_Z]), vec3(stripe_size,0,0), 
+                                vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE_Z]), vec3(0,1,0)));*/
         }
         start_point += vec_x*stripe_size;
       }
@@ -863,10 +879,10 @@ namespace dgen
         make_insides(intM, walls_dist, true, params[F_WALL_THICKNESS], params[F_BOTTOM_OFFSET_Q], params[F_TOP_OFFSET_Q], params[I_FLOORS_COUNT],
                     Quad(start_point, vec3(stripe_size,0,0), vec3(0, height, 0), vec3(0, 0, 1))); 
       }
-      make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
+      /*make_roof_segment(wallM, roofM, height*params[F_ROOF_BASE_HEIGHT_Q], height*params[F_ROOF_HEIGHT_Q], 
                         false, false, 
-                        Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE]), vec3(stripe_size,0,0), 
-                             vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE]), vec3(0,1,0)));
+                        Quad(start_point + vec3(0, height, params[F_ROOF_OVERSIZE_Z]), vec3(stripe_size,0,0), 
+                             vec3(0,0,-walls_dist - 2*params[F_ROOF_OVERSIZE_Z]), vec3(0,1,0)));*/
 
       start_point.x += stripe_size;
       return start_point;
@@ -889,9 +905,9 @@ namespace dgen
       make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,0,1), vec3(1,0,0), vec3(0,-1,0)));
       make_quad(wallM, Quad(vec3(0,1,-1), vec3(1,0,0), vec3(0,0,1), vec3(0,1,0)));
 
-      make_roof_segment(wallM, wallM, params[F_ROOF_BASE_HEIGHT_Q], params[F_ROOF_HEIGHT_Q],
-                        true, true,
-                        Quad(vec3(0, 1, 0), vec3(1,0,0),vec3(0,0,-1),vec3(0,1,0)));
+      //make_roof_segment(wallM, wallM, params[F_ROOF_BASE_HEIGHT_Q], params[F_ROOF_HEIGHT_Q],
+      //                  true, true,
+      //                  Quad(vec3(0, 1, 0), vec3(1,0,0),vec3(0,0,-1),vec3(0,1,0)));
 
       original_sizes = vec3(1, 1, 1);
     }
@@ -922,6 +938,13 @@ namespace dgen
 
       original_sizes = dvec3(size_l, height, size_w);
     }
+
+    make_roof_segment(wallM, roofM, original_sizes.y*params[F_ROOF_BASE_HEIGHT_Q], original_sizes.y*params[F_ROOF_HEIGHT_Q],
+                      params[F_ROOF_SIDE_SLOPE_SIZE],
+                      Quad(vec3(-original_sizes.z*params[F_ROOF_OVERSIZE_X], original_sizes.y, original_sizes.z*params[F_ROOF_OVERSIZE_Z]), 
+                           vec3(original_sizes.x*(1+2*params[F_ROOF_OVERSIZE_X]),0,0), 
+                           vec3(0,0,-1.0f*original_sizes.z*(1+2*params[F_ROOF_OVERSIZE_Z])), vec3(0,1,0)));
+
     std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM, &doorM};
     std::vector<std::string> names = {"main_part", "windows", "interior", "wooden_parts", "metal_parts", "roof", "door"};
     int sz = 0;

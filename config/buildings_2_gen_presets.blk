@@ -36,7 +36,7 @@
   {
     set:arr = {5, 409, 1} // W B W B W
     set:arr = {6, 1625, 1} //W B W W B W
-    set::arr = {4, 170, 1} //B B B B
+    set:arr = {4, 170, 1} //B B B B
   }
 
   side_section //I_SS_STRIPES, I_SS_CODE, F_SS_WALL_STRIPE_SIZE
@@ -52,10 +52,10 @@
     set:arr = {0.08, 0.08, 0.1}
   }
 
-  roof //F_ROOF_BASE_HEIGHT_Q, F_ROOF_HEIGHT_Q, F_ROOF_OVERSIZE
+  roof //F_ROOF_BASE_HEIGHT_Q, F_ROOF_HEIGHT_Q, F_ROOF_OVERSIZE_Z, F_ROOF_OVERSIZE_X, F_ROOF_SIDE_SLOPE_SIZE
   {
-    set:arr = {0.01, 0.1, 0}
-    set:arr = {0.01, 0.01, 0.0}
+    set:arr = {0.01, 0.1, 0, 0, 0}
+    set:arr = {0.01, 0.01, 0, 0, 0}
   }
 
   base_window

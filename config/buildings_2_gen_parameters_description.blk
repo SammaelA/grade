@@ -34,7 +34,9 @@
 
     F_ROOF_BASE_HEIGHT_Q{ values:p2 = 0.001, 0.02 }
     F_ROOF_HEIGHT_Q{ values:p2 = 0.001, 0.3 }
-    F_ROOF_OVERSIZE{ values:p2 = 0, 0.05 }
+    F_ROOF_OVERSIZE_Z{ values:p2 = 0, 0.1 }
+    F_ROOF_OVERSIZE_X{ values:p2 = 0, 0.1 } 
+    F_ROOF_SIDE_SLOPE_SIZE{ values:p2 = 0, 0.45 }
 
     I_BASE_WINDOW_HOR_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_BASE_WINDOW_VERT_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
