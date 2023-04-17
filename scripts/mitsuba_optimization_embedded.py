@@ -225,7 +225,7 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       scene_dict['ground'] = {
             'type': 'obj',
             'filename': base_path + 'meshes/slab.obj',
-            'to_world': T.translate([0,-0.78,0]).scale(10).rotate([1, 0, 0], 90),
+            'to_world': T.translate([0,-0.8,0]).scale(10).rotate([1, 0, 0], 90),
             'bsdf' : porcelain_roughplastic(base_path + 'textures/terrain5.png', 0.5)[0]
       }
 
