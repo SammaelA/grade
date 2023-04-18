@@ -18,22 +18,22 @@
 
     I_ES_STRIPES{ values:p2 = 1, 5 is_variant:b = true}
     I_ES_CODE{ values:p2 = 0, 1024 is_variant:b = true}
-    F_ES_WALL_STRIPE_SIZE{ values:p2 = 0.5, 1.5 }
+    F_ES_WALL_STRIPE_SIZE{ values:p2 = 0.1, 2 }
 
     I_MS_STRIPES{ values:p2 = 1, 6 is_variant:b = true}
     I_MS_CODE{ values:p2 = 0, 4096 is_variant:b = true}
-    F_MS_WALL_STRIPE_SIZE{ values:p2 = 0.5, 1.5 }
+    F_MS_WALL_STRIPE_SIZE{ values:p2 = 0.1, 2 }
 
     I_SS_STRIPES{ values:p2 = 1, 4 is_variant:b = true}
     I_SS_CODE{ values:p2 = 1, 256 is_variant:b = true}
-    F_SS_WALL_STRIPE_SIZE{ values:p2 = 0.5, 1.5 }
+    F_SS_WALL_STRIPE_SIZE{ values:p2 = 0.1, 2 }
 
     F_WINDOW_OUTER_FRAME_WIDTH{ values:p2 = 0.03, 0.1 }
     F_WINDOW_INNER_FRAME_WIDTH{ values:p2 = 0.03, 0.1 }
     F_WINDOW_GLASS_DEPTH{ values:p2 = 0.0, 0.1 }
 
     F_ROOF_BASE_HEIGHT_Q{ values:p2 = 0.001, 0.02 }
-    F_ROOF_HEIGHT_Q{ values:p2 = 0.001, 0.3 }
+    F_ROOF_HEIGHT_Q{ values:p2 = 0.001, 0.5 }
     F_ROOF_OVERSIZE_Z{ values:p2 = 0, 0.1 }
     F_ROOF_OVERSIZE_X{ values:p2 = 0, 0.1 } 
     F_ROOF_SIDE_SLOPE_SIZE{ values:p2 = 0, 0.45 }
@@ -42,19 +42,19 @@
     I_BASE_WINDOW_VERT_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_BASE_WINDOW_SPLIT_TYPE{ values:p2 = 0, 3 is_variant:b = true}
     F_BASE_WINDOW_SPLIT_H{ values:p2 = 0, 1 }
-    F_BASE_WINDOW_WIDTH_Q{ values:p2 =  0.005, 1.5 }
-    F_BASE_WINDOW_HEIGHT_Q{ values:p2 =  0.005, 1 }
-    F_BASE_WINDOW_STRIPE_SIZE{ values:p2 = 0.7, 1.5 }
+    F_BASE_WINDOW_WIDTH_Q{ values:p2 =  0.4, 0.95 }
+    F_BASE_WINDOW_HEIGHT_Q{ values:p2 =  0.6, 0.95 }
+    F_BASE_WINDOW_STRIPE_SIZE{ values:p2 = 0.5, 3 }
 
     I_BALCONY_WINDOW_HOR_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_BALCONY_WINDOW_VERT_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_BALCONY_WINDOW_SPLIT_TYPE{ values:p2 = 0, 3 is_variant:b = true}
     F_BALCONY_WINDOW_SPLIT_H{ values:p2 = 0, 1 }
-    F_BALCONY_WINDOW_WIDTH_Q{ values:p2 =  0.005, 1.5 }
-    F_BALCONY_WINDOW_HEIGHT_Q{ values:p2 =  0.005, 1 }
-    F_BALCONY_WINDOW_STRIPE_SIZE{ values:p2 = 0.7, 1.5 }
+    F_BALCONY_WINDOW_WIDTH_Q{ values:p2 =  0.4, 0.95 }
+    F_BALCONY_WINDOW_HEIGHT_Q{ values:p2 =  0.6, 0.95 }
+    F_BALCONY_WINDOW_STRIPE_SIZE{ values:p2 = 0.5, 3 }
     F_BALCONY_HEIGHT_Q{ values:p2 = 0.3, 0.5 }
-    F_BALCONY_DEPTH_Q{ values:p2 =  0.005, 1 }
+    F_BALCONY_DEPTH_Q{ values:p2 =  0.4, 1 }
     F_BALCONY_BARS_THICKNESS{ values:p2 = 0.01, 0.02 }
     F_BALCONY_BARS_DISTANCE{ values:p2 = 0.03, 0.075 }
     I_BALCONY_START_FLOOR{ values:p2 = 0, 2 is_variant:b = true}
@@ -63,12 +63,12 @@
     I_ENTRANCE_WINDOW_VERT_SPLITS{ values:p2 = 1, 3 is_variant:b = true}
     I_ENTRANCE_WINDOW_SPLIT_TYPE{ values:p2 = 0, 3 is_variant:b = true}
     F_ENTRANCE_WINDOW_SPLIT_H{ values:p2 = 0, 1 }
-    F_ENTRANCE_WINDOW_WIDTH_Q{ values:p2 =  0.005, 1.5 }
-    F_ENTRANCE_WINDOW_HEIGHT_Q{ values:p2 =  0.005, 1 }
-    F_ENTRANCE_WINDOW_STRIPE_SIZE{ values:p2 = 0.7, 1.5 }
-    F_DOOR_OFFSET_Q{ values:p2 =  0.005, 1 }
+    F_ENTRANCE_WINDOW_WIDTH_Q{ values:p2 =  0.4, 0.95 }
+    F_ENTRANCE_WINDOW_HEIGHT_Q{ values:p2 =  0.6, 0.95 }
+    F_ENTRANCE_WINDOW_STRIPE_SIZE{ values:p2 = 0.5, 3 }
+    F_DOOR_OFFSET_Q{ values:p2 =  0.01, 0.99 }
     F_DOOR_WIDTH_Q{ values:p2 = 0.4, 0.9 }
-    F_DOOR_HEIGHT_Q{ values:p2 = 0.7, 1.2 }
+    F_DOOR_HEIGHT_Q{ values:p2 = 0.7, 1 }
     F_DOOR_DEPTH_Q{ values:p2 = 0, 1 }
     F_STAIRS_HEIGHT{ values:p2 = 0.05, 0.15 }
     F_STAIRS_LENGTH{ values:p2 = 0.05, 0.2 }

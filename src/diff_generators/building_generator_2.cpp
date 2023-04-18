@@ -248,7 +248,7 @@ namespace dgen
                                  real window_width_q, real window_height_q,
                                  const Quad &q)
     {
-      real w = 0.5f * (1 - window_width_q) * length(q.v2) / length(q.v1);
+      real w = 0.5f * (1 - window_width_q);
       real h = 0.5f * (1 - window_height_q);
 
       bool int_wall = (wq >= WindowQuality::WQ_LOW);
@@ -333,6 +333,8 @@ namespace dgen
                                     real stairs_h_q, real stairs_w_q,
                                     const Quad &q)
     {
+      door_offset_q *= bottom_offset_q;
+
       bool has_interior = (wq >= WindowQuality::WQ_LOW);
       real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
       Quad q_part = q;
@@ -341,8 +343,11 @@ namespace dgen
       
       real w_off = 0.5f * (1 - door_width_q * length(y_mul*q.v2) / length(q.v1));
       real door_wq = door_width_q * length(y_mul*q.v2) / length(q.v1);
-      Quad q_door(q.p1 + door_offset_q*y_mul*q.v2 + w_off*q.v1 - door_deep_q*thick*q.n, door_wq * q.v1, door_height_q*y_mul*q.v2,q.n);
-      make_door(M_door, 0.2*thick, q_door);
+      if (wq >= WindowQuality::WQ_LOW)
+      {
+        Quad q_door(q.p1 + door_offset_q*y_mul*q.v2 + w_off*q.v1 - door_deep_q*thick*q.n, door_wq * q.v1, door_height_q*y_mul*q.v2,q.n);
+        make_door(M_door, 0.2*thick, q_door);
+      }
       
       //doorway
       {
@@ -890,9 +895,9 @@ namespace dgen
 
     for (int i=0;i<params.size();i++)
     {
-      std::cerr<<params[i]<<", ";
+      //std::cerr<<params[i]<<", ";
     }
-    std::cerr<<"\n";
+    //std::cerr<<"\n";
 
     vec3 original_sizes(0,0,0);
 
@@ -956,7 +961,7 @@ namespace dgen
     PartOffsets po;
     for (int i=0;i<models.size(); i++)
     {
-      debug("%s: %d vertices\n", names[i].c_str(), models[i]->size() / 8);
+      //debug("%s: %d vertices\n", names[i].c_str(), models[i]->size() / 8);
       if (!(models[i]->empty()))
         po.push_back({names[i], k});
       for (real &v : *(models[i]))

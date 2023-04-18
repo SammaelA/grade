@@ -51,9 +51,9 @@ void sandbox_main(int argc, char **argv, Scene *scene)
 
   CameraSettings camera;
   float h1 = 1.5;
-  camera.fov_rad = 0.25;
+  camera.fov_rad = 0.5;
   float h2 = h1 * tan((PI / 3) / 2) / tan(camera.fov_rad / 2);
-  camera.origin = glm::vec3(0, 1.0, h2);
+  camera.origin = glm::vec3(0, 0.5, h2);
   camera.target = glm::vec3(0, 0.5, 0);
   camera.up = glm::vec3(0, 1, 0);
 

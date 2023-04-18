@@ -148,39 +148,80 @@
       }
     }
 
-    stage_0
+    stage_20
     {
       optimizer:s = "memetic_classic"
       model_quality:i = 1
-      render_image_size:i = 256
+      render_image_size:i = 200
       spp:i = 4
       reference_texture_name:s = "mask_1"
       do_not_optimize_parameters:arr = {"F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
                                         "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
                                         "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
                                         "translation_x", "translation_y", "translation_z",
-                                        "rotate_x", "rotate_y", "rotate_z", "camera_fov"}
+                                        "rotate_x", "rotate_y", "rotate_z", "camera_fov",
+                                        "I_ES_STRIPES", "I_ES_CODE", "I_MS_STRIPES", "I_MS_CODE","I_MS_STRIPES", "I_MS_CODE"
+                                        }
 
       optimizer_settings
       { 
         verbose:b = true
-        total_function_calls:i = 2000
-        population_size:i = 25
+        total_function_calls:i = 6000
+        population_size:i = 32
         tournament_size:i = 16
         mutation_chance:r = 0.3
         mutation_power:r = 0.2
         local_search_iterations:i = 33
         local_search_learning_rate:r = 0.02
         start_search_iterations:i = 50
-        start_search_learning_rate:r = 0.04
+        start_search_learning_rate:r = 0.03
         recreation_diversity_thr:r = 3.0
         depth_reg_q:r = 0.0
-        min_iter_between_recreations:i = 150
+        min_iter_between_recreations:i = 100
         //initial_params:arr = {2.000, 5.000, 0.050, 0.600, 0.200, 2.000, 5.000, 1.000, 5.000, 409.000, 1.000, 3.000, 21.000, 0.600, 0.070, 0.040, 0.100, 0.016, 0.098, 0.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.700, 1.000, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 0.400, 0.600, 1.000, 0.150, 0.100, 0.150, 0.590, 0.239, -0.391, 0.006, 1.038, 0.074, 0.529, -0.004, 510.403, 6.013, 26.971, 1.000, 56.560, 0.900, 0.250}
         //initial_params:arr =   {2.000, 5.000, 0.050, 0.600, 0.200, 2.000, 5.000, 1.000, 5.000, 409.000, 1.000, 3.000, 21.000, 0.600, 0.070, 0.040, 0.100, 0.001, 0.001, 0.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.700, 1.000, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 0.400, 0.600, 1.000, 0.150, 0.100, 0.150, 0.290, 0.400, 0.445, 0.334, 3.021, -0.100, 2.373, 0.061, 510.403, 6.013, 26.971, 1.000, 56.560, 0.900, 0.400}
-        initial_params:arr = {2.000, 2.000, 0.050, 0.200, 0.100, 2.000, 6.000, 1.000, 4.000, 170.000, 1.000, 2.000, 5.000, 1.000, 0.080, 0.080, 0.100, 0.001, 0.300, 0.000, 0.000, 0.241, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 
+        initial_params:arr = {2.000, 2.000, 0.050, 0.200, 0.100, 3.000, 6.000, 1.000, 5, 650, 1.000, 2.000, 5.000, 1.000, 0.080, 0.080, 0.100, 0.001, 0.300, 0.000, 0.000, 0.241, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 
                               0.251, 0.200, 
                               0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.650}
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      model_quality:i = 1
+      render_image_size:i = 333
+      spp:i = 10
+      reference_texture_name:s = "mask_1"
+      do_not_optimize_parameters:arr = {"F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
+                                        "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
+                                        "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
+                                        "translation_x", "translation_y", "translation_z",
+                                        "rotate_x", "rotate_y", "rotate_z", "camera_fov",
+                                        "I_ES_STRIPES", "I_ES_CODE", "I_MS_STRIPES", "I_MS_CODE","I_MS_STRIPES", "I_MS_CODE"
+                                        }
+      optimizer_settings
+      {
+        iterations:i = 1
+        learning_rate:r = 0.03
+        verbose:b = true
+        initial_params:arr =   {1.029, 
+              1.926, 
+              0.040, 
+              0.100, 0.300, 
+              3, 6, 1, 
+              5, 650, 0.5, 
+              2.000, 103.292, 0.749, 
+              0.080, 0.080, 0.095, 
+              0.001, 0.300, 0.000, 0.000, 0.241, 
+              2.797, 1.443, 2.000, 0.790, 0.400, 0.400, 3.8, 
+              1.761, 3.000, 0.000, 0.581, 0.667, 0.4, 1.6,
+              0.400, 0.500, 0.018, 0.045, 1.000, 
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.400, 3.2, 
+              0.550, 0.900, 0.906, 0.150, 
+              0.116, 0.150, 
+              0.251, 0.200, 
+              0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 0.500, 10.000, 64.286, 100.000, 0.908, 0.650}
       }
     }
   }
