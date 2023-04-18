@@ -228,6 +228,12 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
             'to_world': T.translate([0,-0.8,0]).scale(10).rotate([1, 0, 0], 90),
             'bsdf' : porcelain_roughplastic(base_path + 'textures/terrain5.png', 0.5)[0]
       }
+      #scene_dict['h'] = {
+      #      'type': 'obj',
+      #      'filename': base_path + 'meshes/building/house.obj',
+      #      'to_world': T.translate([0,0,0]).scale(0.07).rotate([0, 1, 0], 30),
+      #      'bsdf' : porcelain_roughplastic(base_path + 'meshes/building/tex.png', 0.5)[0]
+      #}
 
     if (render_style == "textured_const"):
       scene_dict['ambient_light'] = \
