@@ -198,7 +198,7 @@ namespace dgen
                                 real top_offset_q, real floors_count,
                                 const Quad &q)
     {
-      real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
+      real y_mul = 1/length(q.v2);
       Quad q_part = q;
 
       //bottom part
@@ -273,7 +273,7 @@ namespace dgen
                                  const Quad &q)
     {
       bool has_interior = (wq >= WindowQuality::WQ_LOW);
-      real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
+      real y_mul = 1/length(q.v2);
       Quad q_part = q;
 
       //bottom part
@@ -336,7 +336,7 @@ namespace dgen
       door_offset_q *= bottom_offset_q;
 
       bool has_interior = (wq >= WindowQuality::WQ_LOW);
-      real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
+      real y_mul = 1/length(q.v2);
       Quad q_part = q;
 
       //door
@@ -503,7 +503,7 @@ namespace dgen
                                     const Quad &q)
     {
       bool has_interior = (wq >= WindowQuality::WQ_LOW);
-      real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
+      real y_mul = 1/length(q.v2);
       Quad q_part = q;
 
       //bottom part
@@ -605,7 +605,7 @@ namespace dgen
       vec3 th = 0.1*thick*normalize(q.v2);
       vec3 p1 = q.p1 + 0.1*thick*normalize(q.v1);
       vec3 v1 = q.v1 - 0.1*thick*normalize(q.v1);
-      real y_mul = 1/(floors_count + bottom_offset_q + top_offset_q);
+      real y_mul = 1/length(q.v2);
       make_box(M_int, depth - 2*thick, Quad(p1 - q.n*thick, v1, th, q.n));
       p1 += y_mul*bottom_offset_q*q.v2;
 
@@ -922,7 +922,9 @@ namespace dgen
       BalconyQuality bq = quality.quality_level >= ModelQuality::ULTRA ? BQ_HIGH : (quality.quality_level >= ModelQuality::HIGH ? BQ_LOW : BQ_NONE);
 
       real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
-      real height = (params[I_FLOORS_COUNT] + params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q]);
+      real height = params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q];
+      for (int i=0;i<params[I_FLOORS_COUNT]-0.5;i++)
+        height = height + 1;
       real start_x = 0;
       vec3 start_point = vec3(start_x,0,0);
       start_point = make_section(true, false, start_point, size_w, height, params[I_ES_CODE], params[I_ES_STRIPES], params[F_ES_WALL_STRIPE_SIZE],

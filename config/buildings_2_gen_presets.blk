@@ -1,7 +1,8 @@
 {
   entrances_count //I_ENTRANCES_COUNT
   {
-    set:arr = {2}
+    set:arr = {1}
+    //set:arr = {2}
     //set:arr = {3}
     //set:arr = {4}
   }
@@ -29,7 +30,8 @@
   end_section //I_ES_STRIPES, I_ES_CODE, F_ES_WALL_STRIPE_SIZE
   {
     //set:arr = {2, 5, 1} // W W
-    set:arr = {3, 6, 1} // _ W B
+    //set:arr = {3, 6, 1} // _ W B
+    set:arr = {3, 5, 1} // _ W W
   }
 
   middle_section //I_MS_STRIPES, I_MS_CODE, F_MS_WALL_STRIPE_SIZE
@@ -43,7 +45,8 @@
   {
     //set:arr = {3, 21, 1} // W W W
     //set:arr = {4, 20, 1} // _ W W _
-    set:arr = {2, 5, 1} // W W
+    //set:arr = {2, 5, 1} // W W
+    set:arr = {5, 341, 1} // W W W W W
   }
 
   window_frame //F_WINDOW_OUTER_FRAME_WIDTH, F_WINDOW_INNER_FRAME_WIDTH, F_WINDOW_GLASS_DEPTH
