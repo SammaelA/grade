@@ -200,31 +200,31 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       params.push_back(std::stof(std::string(argv[i])));
     }
     if (params.empty())
-      params = {
-        2, 
-        5, 
-        0.05, 
-        0.6, 0.2, 
-        2, 5, 1, 
-        5, 409, 1, 
-        3, 21, 0.6, 
-        0.07, 0.04, 0.1, 
-        0.01, 0.1, 0.0, 
-        3, 2, 2, 0.6, 0.6, 0.8, 1, 
-        1, 3, 0, 0.6, 0.7, 0.7, 1, 
-        0.4, 0.5, 0.015, 0.05, 1, 
-        3, 2, 2, 0.6, 0.6, 0.8, 1, 
-        0.4, 0.6, 1, 0.15, 
-        0.1, 0.15,
-        0.6, 0.25};
-
+      params = {1.029, 
+              1.926, 
+              0.040, 
+              0.100, 0.300, 
+              3, 6, 1, 
+              5, 650, 0.5, 
+              2.000, 103.292, 0.749, 
+              0.080, 0.080, 0.095, 
+              0.001, 0.300, 0.000, 0.000, 0.241, 
+              2.797, 1.443, 2.000, 0.790, 0.400, 0.400, 3.8, 
+              1.761, 3.000, 0.000, 0.581, 0.667, 0.4, 1.6,
+              0.400, 0.500, 0.018, 0.045, 1.000, 
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.400, 3.2, 
+              0.550, 0.900, 0.906, 0.150, 
+              0.116, 0.150, 
+              0.251, 0.200, 
+              0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 0.500, 10.000, 64.286, 100.000, 0.908, 0.650};
+    params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 2));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 50, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
-    std::vector<float> scene_params = {-0.4, 0.07, 1, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1};
-    mi.render_model_to_file(res, "saves/test_result4_mask.png", camera, scene_params);
+    std::vector<float> scene_params = {-0.160, 0.05, 0.954, 0.00, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
+    mi.render_model_to_file(res, "saves/building_5.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {
