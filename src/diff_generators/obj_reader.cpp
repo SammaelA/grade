@@ -211,7 +211,7 @@ namespace dgen
               finalVerts.push_back(0);
               finalVerts.push_back(0);
             }
-            if(data[2] != "")
+            if(data.size() > 2 && data[2] != "")
             {
               int val = (int)atoi(data[2].c_str());
               finalVerts.push_back(verts[(val - 1) * 2]);
