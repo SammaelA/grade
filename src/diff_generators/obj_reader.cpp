@@ -10,7 +10,7 @@ namespace dgen
     std::vector<std::string> res;
     std::string str = aStr.substr(0, aStr.find(aDelim));
 
-    while(str.size() < aStr.size())
+    while (str.size() < aStr.size())
     {
       res.push_back(str);
       aStr = aStr.substr(aStr.find(aDelim) + 1);
@@ -22,18 +22,16 @@ namespace dgen
     return res;
   }
 
-  std::vector<float> objToTxt(const std::string aInFilename, bool aVerbose)
+  std::vector<float> obj2Vec(const std::string aInFilename, bool aVerbose)
   {
-    if(aVerbose) std::cout << "Loading OBJ file <" 
-                << aInFilename << ">" << std::endl;
+    if (aVerbose) { std::cout << "Loading OBJ file <" << aInFilename << ">" << std::endl; }
 
     // Open file
     std::ifstream objFile(aInFilename.c_str());
 
-    if(objFile.fail())
+    if (objFile.fail())
     {
-      std::cout << "Error: could not open file <" 
-          << aInFilename << ">" << std::endl;
+      std::cout << "Error: could not open file <" << aInFilename << ">" << std::endl;
       exit(1);
     }
 
@@ -45,16 +43,15 @@ namespace dgen
     std::vector<float> finalVerts;
 
     std::string line;
-    int hashIndex = 0;
 
-    if(aVerbose) std::cout << "Extracting values from file" << std::endl;
+    if (aVerbose) std::cout << "Extracting values from file" << std::endl;
 
     // Visit each line of the obj file
-    while(getline(objFile, line))
+    while (std::getline(objFile, line))
     {
       // Extract vertex
       // Line starts with v[space]...
-      if(line[0] == 'v' && line[1] == ' ')
+      if (line[0] == 'v' && line[1] == ' ')
       {
         std::string lineVals = line.substr(2);
         float val;
@@ -63,8 +60,8 @@ namespace dgen
         val = (float)atof(val0.c_str());
         verts.push_back(val);
 
-        std::string val1 = lineVals.substr(val0.length() + 1, 
-                            lineVals.find(' '));
+        std::string val1 = lineVals.substr(val0.length() + 1,
+          lineVals.find(' '));
         val = (float)atof(val1.c_str());
         verts.push_back(val);
 
@@ -76,7 +73,7 @@ namespace dgen
 
       // Extract textures
       // Line starts with vt[space]...
-      else if(line[0] == 'v' && line[1] == 't' && line[2] == ' ')
+      else if (line[0] == 'v' && line[1] == 't' && line[2] == ' ')
       {
         std::string lineVals = line.substr(3);
         float val;
@@ -85,8 +82,8 @@ namespace dgen
         val = (float)atof(val0.c_str());
         textures.push_back(val);
 
-        std::string val1 = lineVals.substr(val0.length() + 1, 
-                            lineVals.find(' '));
+        std::string val1 = lineVals.substr(val0.length() + 1,
+          lineVals.find(' '));
         val = (float)atof(val1.c_str());
         textures.push_back(val);
       }
@@ -94,7 +91,7 @@ namespace dgen
 
       // Extract normals
       // Line starts with vn[space]...
-      else if(line[0] == 'v' && line[1] == 'n' && line[2] == ' ')
+      else if (line[0] == 'v' && line[1] == 'n' && line[2] == ' ')
       {
         std::string lineVals = line.substr(3);
         float val;
@@ -103,8 +100,8 @@ namespace dgen
         val = (float)atof(val0.c_str());
         norms.push_back(val);
 
-        std::string val1 = lineVals.substr(val0.length() + 1, 
-                            lineVals.find(' '));
+        std::string val1 = lineVals.substr(val0.length() + 1,
+          lineVals.find(' '));
         val = (float)atof(val1.c_str());
         norms.push_back(val);
 
@@ -114,12 +111,12 @@ namespace dgen
       }
 
 
-    //
-    // 2. Hash faces
-    //
-      // Extract faces
-      // Line starts with f[space]...
-      else if(line[0] == 'f' && line[1] == ' ')
+      //
+      // 2. Hash faces
+      //
+        // Extract faces
+        // Line starts with f[space]...
+      else if (line[0] == 'f' && line[1] == ' ')
       {
         std::string lineVals = line.substr(2);
 
@@ -143,8 +140,8 @@ namespace dgen
           finalVerts.push_back(0);
           finalVerts.push_back(0);
 
-          std::string val1 = lineVals.substr(val0.length() + 1, 
-                              lineVals.find(' '));
+          std::string val1 = lineVals.substr(val0.length() + 1,
+            lineVals.find(' '));
           val = (int)atoi(val1.c_str());
           finalVerts.push_back(verts[(val - 1) * 3]);
           finalVerts.push_back(verts[(val - 1) * 3 + 1]);
@@ -170,22 +167,22 @@ namespace dgen
         {
           // Get first group of values
           std::string g[3];
-          std::string g[0] = val0.substr(0, val0.find(' '));
-          
+          g[0] = val0.substr(0, val0.find(' '));
+
           // Get second group of values
-          std::string g[1] = lineVals.substr(line.find(' ') + 1);
+          g[1] = lineVals.substr(line.find(' ') + 1);
           g[1] = g[1].substr(g[1].find(' ') + 1);
           g[1] = g[1].substr(0, g[1].find(' '));
 
-          std::string g[2] = line.substr(line.find_last_of(' ') + 1);
+          g[2] = line.substr(line.find_last_of(' ') + 1);
 
-          if(aVerbose)
+          if (aVerbose)
             std::cout << "Face: (" << g[0] << ") (" << g[1] << ") (" << g[2] << ")" << std::endl;
-          
+
           for (int k = 0; k < 3; ++k)
           {
             std::vector<std::string> data = explode(g[k], '/');
-            if(data[0] != "")
+            if (data[0] != "")
             {
               int val = (int)atoi(data[0].c_str());
               finalVerts.push_back(verts[(val - 1) * 3]);
@@ -198,7 +195,7 @@ namespace dgen
               finalVerts.push_back(0);
               finalVerts.push_back(0);
             }
-            if(data[1] != "")
+            if (data[1] != "")
             {
               int val = (int)atoi(data[1].c_str());
               finalVerts.push_back(verts[(val - 1) * 3]);
@@ -211,7 +208,7 @@ namespace dgen
               finalVerts.push_back(0);
               finalVerts.push_back(0);
             }
-            if(data.size() > 2 && data[2] != "")
+            if (data.size() > 2 && data[2] != "")
             {
               int val = (int)atoi(data[2].c_str());
               finalVerts.push_back(verts[(val - 1) * 2]);
@@ -223,21 +220,21 @@ namespace dgen
               finalVerts.push_back(0);
             }
           }
-          
+
         }
       }
     } /* end getline(file, line) */
 
-    if(aVerbose) std::cout  << "Finished extracting values from file" << std::endl
-              << "Quick count check:" << std::endl
-              << "\tVerts = " << verts.size() << std::endl
-              << "\tNorms = " << norms.size() << std::endl
-              << "\tTexts = " << textures.size() << std::endl
-              << "\tFaces = " << faces.size() << std::endl;
-    
+    if (aVerbose) std::cout << "Finished extracting values from file" << std::endl
+      << "Quick count check:" << std::endl
+      << "\tVerts = " << verts.size() << std::endl
+      << "\tNorms = " << norms.size() << std::endl
+      << "\tTexts = " << textures.size() << std::endl
+      << "\tFaces = " << finalVerts.size() << std::endl;
+
     objFile.close();
 
-    if(aVerbose) std::cout << "Preparing to build faces" << std::endl;
+    if (aVerbose) std::cout << "Preparing to build faces" << std::endl;
 
     return finalVerts;
     
