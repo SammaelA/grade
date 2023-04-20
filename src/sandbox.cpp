@@ -23,6 +23,7 @@
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
 #include "graphics_utils/voxelization/voxelization.h"
+#include "diff_generators/compare_utils.h"
 #include <cppad/cppad.hpp>
 #include <thread>
 #include <chrono>
@@ -282,9 +283,22 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       textureManager.save_png(sharped, "reconstructed_tex_denoised_1");
     engine::view->next_frame();
   }
-  else if (std::string(argv[2]) == "-voxelization_test")
+  else if (argc >= 3 && std::string(argv[2]) == "-voxelization_test")
   {
     voxelization::software_render_test_3d();
+  }
+  else if (argc >= 3 && std::string(argv[2]) == "-compare")
+  {
+    //Differentiable-SDF-renderer project
+    //To create this images 
+    //python3.8 render_turntable.py building_2 --optconfig diffuse-6
+    //Put constant emitter to building_2.xml <default name="emitter_scene" value="emitters/constant.xml"/>
+    compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-6/warp/turntable",
+                                  "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-6/warp/reference/turntable",
+                                  64);
+    compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-12/warp/turntable",
+                                  "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-12/warp/reference/turntable",
+                                  64);
   }
   else
   {
