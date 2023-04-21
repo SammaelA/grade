@@ -28,12 +28,13 @@ namespace dgen
     for (int i = 0; i < model.size() / FLOAT_PER_VERTEX; ++i)
     {
       glm::vec4 p = glm::vec4(model[i*FLOAT_PER_VERTEX], model[i*FLOAT_PER_VERTEX+1], model[i*FLOAT_PER_VERTEX+2], 1);
-      glm::vec4 n = glm::vec4(model[i*FLOAT_PER_VERTEX+3], model[i*FLOAT_PER_VERTEX+4], model[i*FLOAT_PER_VERTEX+5], 0);
+      glm::vec4 n4 = glm::vec4(model[i*FLOAT_PER_VERTEX+3], model[i*FLOAT_PER_VERTEX+4], model[i*FLOAT_PER_VERTEX+5], 0);
 
       glm::mat4 n_mat = glm::transpose(glm::inverse(transform_mat));
 
       p = transform_mat*p;
-      n = n_mat*n;
+      n4 = n_mat*n4;
+      glm::vec3 n = glm::normalize(glm::vec3(n4.x, n4.y, n4.z));
 
       model[i*FLOAT_PER_VERTEX] = p.x;
       model[i*FLOAT_PER_VERTEX+1] = p.y;

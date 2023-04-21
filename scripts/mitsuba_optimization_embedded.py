@@ -219,15 +219,19 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
       '''
       scene_dict['ambient_light'] = \
       {
-        'type': 'envmap',
-        'filename': base_path + 'textures/scythian_tombs_2_1k.exr'
+        'type': 'constant'
       }
-      scene_dict['ground'] = {
-            'type': 'obj',
-            'filename': base_path + 'meshes/slab.obj',
-            'to_world': T.translate([0,-0.8,0]).scale(10).rotate([1, 0, 0], 90),
-            'bsdf' : porcelain_roughplastic(base_path + 'textures/terrain5.png', 0.5)[0]
-      }
+      #scene_dict['ambient_light'] = \
+      #{
+      #  'type': 'envmap',
+      #  'filename': base_path + 'textures/scythian_tombs_2_1k.exr'
+      #}
+      #scene_dict['ground'] = {
+      #      'type': 'obj',
+      #      'filename': base_path + 'meshes/slab.obj',
+      #      'to_world': T.translate([0,-0.8,0]).scale(10).rotate([1, 0, 0], 90),
+      #      'bsdf' : porcelain_roughplastic(base_path + 'textures/terrain5.png', 0.5)[0]
+      #}
       #scene_dict['h'] = {
       #      'type': 'obj',
       #      'filename': base_path + 'meshes/building/house.obj',
@@ -440,7 +444,8 @@ def render_and_save_to_file(context, save_filename):
       first = False
     else:
       img_ref = img_ref + img
-      
+    
+  print(save_filename)
   mi.util.write_bitmap(save_filename, img_ref)
   time.sleep(1)
 
