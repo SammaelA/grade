@@ -1,0 +1,1216 @@
+generator description dishes loaded
+generator description buildings loaded
+generator description buildings_2 loaded
+Starting image-based optimization. Target function has 66 parameters (53 for generator, 13 for scene). 1 variant variables 
+init to render composite mesh with 1 parts
+Memetic classic: starting optimization
+unable to load file backup.blk
+Initializing population
+reference saves/reference.png
+Adam iter 0 val = -4.0052 best_val = -4.0052
+Adam iter 5 val = -6.5641 best_val = -6.5641
+Adam iter 10 val = -6.3379 best_val = -7.3750
+Adam iter 15 val = -7.9027 best_val = -7.9027
+Adam iter 20 val = -8.3845 best_val = -8.3845
+25 new best -8.9510
+Adam iter 0 val = -7.2225 best_val = -7.2225
+Adam iter 5 val = -9.1135 best_val = -9.1135
+Adam iter 10 val = -10.3316 best_val = -10.4283
+Adam iter 15 val = -11.6441 best_val = -11.6441
+Adam iter 20 val = -12.1060 best_val = -12.1060
+50 new best -12.3601
+Adam iter 0 val = 10.1497 best_val = 10.1497
+Adam iter 5 val = 5.0612 best_val = 5.0612
+Adam iter 10 val = 0.3525 best_val = 0.3525
+Adam iter 15 val = -3.6500 best_val = -3.6500
+Adam iter 20 val = -5.6387 best_val = -5.6387
+Adam iter 0 val = -4.2946 best_val = -4.2946
+Adam iter 5 val = -6.6053 best_val = -6.6053
+Adam iter 10 val = -8.9248 best_val = -8.9248
+Adam iter 15 val = -9.7407 best_val = -9.7407
+Adam iter 20 val = -10.8868 best_val = -10.8868
+Adam iter 0 val = -6.9207 best_val = -6.9207
+Adam iter 5 val = -9.4250 best_val = -9.4250
+Adam iter 10 val = -10.1901 best_val = -10.1901
+Adam iter 15 val = -10.4745 best_val = -10.4745
+Adam iter 20 val = -11.0084 best_val = -11.0084
+Adam iter 0 val = -7.2191 best_val = -7.2191
+Adam iter 5 val = -8.8894 best_val = -8.8894
+Adam iter 10 val = -10.1408 best_val = -10.1408
+Adam iter 15 val = -12.0496 best_val = -12.0496
+Adam iter 20 val = -12.0499 best_val = -12.1468
+Adam iter 0 val = -4.7261 best_val = -4.7261
+Adam iter 5 val = -7.6070 best_val = -7.6070
+Adam iter 10 val = -9.8998 best_val = -9.8998
+Adam iter 15 val = -10.8162 best_val = -10.8162
+Adam iter 20 val = -10.8941 best_val = -11.0666
+Adam iter 0 val = -8.9384 best_val = -8.9384
+Adam iter 5 val = -9.7306 best_val = -9.7306
+Adam iter 10 val = -10.9649 best_val = -10.9649
+Adam iter 15 val = -11.5243 best_val = -11.6210
+Adam iter 20 val = -12.3117 best_val = -12.3117
+200 new best -12.7619
+Adam iter 0 val = -4.1843 best_val = -4.1843
+Adam iter 5 val = -6.4019 best_val = -6.4019
+Adam iter 10 val = -9.0811 best_val = -9.8167
+Adam iter 15 val = -10.5397 best_val = -11.0852
+Adam iter 20 val = -11.7223 best_val = -11.7853
+Adam iter 0 val = 10.0146 best_val = 10.0146
+Adam iter 5 val = 2.6717 best_val = 2.6717
+Adam iter 10 val = -2.1313 best_val = -2.1313
+Adam iter 15 val = -7.4234 best_val = -7.4234
+Adam iter 20 val = -11.0222 best_val = -11.0222
+Adam iter 0 val = -4.0375 best_val = -4.0375
+Adam iter 5 val = -5.9100 best_val = -6.1687
+Adam iter 10 val = -7.2591 best_val = -7.3482
+Adam iter 15 val = -9.0470 best_val = -9.0470
+Adam iter 20 val = -11.1626 best_val = -11.4334
+Adam iter 0 val = -4.0457 best_val = -4.0457
+Adam iter 5 val = -5.5899 best_val = -5.9936
+Adam iter 10 val = -6.6493 best_val = -6.6493
+Adam iter 15 val = -8.2714 best_val = -8.2714
+Adam iter 20 val = -8.8773 best_val = -9.1349
+Adam iter 0 val = -6.4632 best_val = -6.4632
+Adam iter 5 val = -7.5007 best_val = -7.5007
+Adam iter 10 val = -10.4705 best_val = -10.4705
+Adam iter 15 val = -10.9614 best_val = -11.1910
+Adam iter 20 val = -11.5198 best_val = -11.5831
+Adam iter 0 val = -6.9485 best_val = -6.9485
+Adam iter 5 val = -8.1265 best_val = -8.6410
+Adam iter 10 val = -9.0158 best_val = -9.1539
+Adam iter 15 val = -9.3660 best_val = -9.8060
+Adam iter 20 val = -9.9116 best_val = -10.1909
+Adam iter 0 val = -6.5329 best_val = -6.5329
+Adam iter 5 val = -7.3616 best_val = -7.3616
+Adam iter 10 val = -9.8767 best_val = -9.8767
+Adam iter 15 val = -11.3755 best_val = -11.3755
+Adam iter 20 val = -11.5242 best_val = -11.5242
+Adam iter 0 val = -4.2590 best_val = -4.2590
+Adam iter 5 val = -7.3699 best_val = -7.3699
+Adam iter 10 val = -8.8406 best_val = -8.8406
+Adam iter 15 val = -10.0397 best_val = -10.0718
+Adam iter 20 val = -10.9850 best_val = -11.0902
+Adam iter 0 val = 19.3037 best_val = 19.3037
+Adam iter 5 val = 11.9161 best_val = 11.9161
+Adam iter 10 val = 7.9132 best_val = 7.9132
+Adam iter 15 val = 4.5843 best_val = 4.5843
+Adam iter 20 val = 2.6298 best_val = 2.6298
+Adam iter 0 val = 19.2551 best_val = 19.2551
+Adam iter 5 val = 11.9691 best_val = 11.9691
+Adam iter 10 val = 7.8345 best_val = 7.8345
+Adam iter 15 val = 4.4436 best_val = 4.4436
+Adam iter 20 val = 2.3293 best_val = 2.3293
+Adam iter 0 val = -6.5463 best_val = -6.5463
+Adam iter 5 val = -6.3263 best_val = -6.9783
+Adam iter 10 val = -10.2196 best_val = -10.2196
+Adam iter 15 val = -10.6269 best_val = -10.6269
+Adam iter 20 val = -11.1574 best_val = -11.2177
+Adam iter 0 val = -4.4042 best_val = -4.4042
+Adam iter 5 val = -7.1868 best_val = -7.1868
+Adam iter 10 val = -8.8367 best_val = -8.8367
+Adam iter 15 val = -10.0754 best_val = -10.3105
+Adam iter 20 val = -11.5374 best_val = -11.5374
+Adam iter 0 val = 16.9467 best_val = 16.9467
+Adam iter 5 val = 11.0257 best_val = 11.0257
+Adam iter 10 val = 5.9959 best_val = 5.9959
+Adam iter 15 val = 3.1887 best_val = 3.1887
+Adam iter 20 val = 1.2145 best_val = 1.2145
+Adam iter 0 val = 18.2364 best_val = 18.2364
+Adam iter 5 val = 11.6926 best_val = 11.6926
+Adam iter 10 val = 7.3466 best_val = 7.3466
+Adam iter 15 val = 3.9848 best_val = 3.9848
+Adam iter 20 val = 1.6518 best_val = 1.6518
+Adam iter 0 val = -4.3020 best_val = -4.3020
+Adam iter 5 val = -5.4693 best_val = -5.7776
+Adam iter 10 val = -7.1193 best_val = -7.1193
+Adam iter 15 val = -8.3591 best_val = -8.3591
+Adam iter 20 val = -8.8812 best_val = -8.8812
+Adam iter 0 val = 17.1214 best_val = 17.1214
+Adam iter 5 val = 11.5547 best_val = 11.5547
+Adam iter 10 val = 6.8518 best_val = 6.8518
+Adam iter 15 val = 4.0565 best_val = 4.0565
+Adam iter 20 val = 1.5994 best_val = 1.5994
+Adam iter 0 val = 19.2564 best_val = 19.2564
+Adam iter 5 val = 11.9751 best_val = 11.9751
+Adam iter 10 val = 7.8466 best_val = 7.8466
+Adam iter 15 val = 4.4785 best_val = 4.4785
+Adam iter 20 val = 2.3967 best_val = 2.3967
+Adam iter 0 val = -4.1065 best_val = -4.1065
+Adam iter 5 val = -5.9060 best_val = -5.9060
+Adam iter 10 val = -7.0780 best_val = -7.3505
+Adam iter 15 val = -7.8348 best_val = -7.8348
+Adam iter 20 val = -8.7041 best_val = -8.7041
+Adam iter 0 val = 10.1445 best_val = 10.1445
+Adam iter 5 val = 4.9669 best_val = 4.9669
+Adam iter 10 val = 0.3594 best_val = 0.3594
+Adam iter 15 val = -3.7702 best_val = -3.7702
+Adam iter 20 val = -5.7120 best_val = -5.7120
+Adam iter 0 val = -5.4849 best_val = -5.4849
+Adam iter 5 val = -6.3570 best_val = -6.3570
+Adam iter 10 val = -9.0313 best_val = -9.0313
+Adam iter 15 val = -10.1042 best_val = -10.1042
+Adam iter 20 val = -11.2240 best_val = -11.2240
+Adam iter 0 val = 17.5611 best_val = 17.5611
+Adam iter 5 val = 12.4201 best_val = 12.4201
+Adam iter 10 val = 7.9372 best_val = 7.9372
+Adam iter 15 val = 5.3630 best_val = 5.3630
+Adam iter 20 val = 3.4903 best_val = 3.4903
+Adam iter 0 val = -4.3417 best_val = -4.3417
+Adam iter 5 val = -5.8282 best_val = -5.8282
+Adam iter 10 val = -8.2431 best_val = -8.2431
+Adam iter 15 val = -9.1873 best_val = -9.3379
+Adam iter 20 val = -10.2796 best_val = -10.2796
+Adam iter 0 val = -6.1033 best_val = -6.1033
+Adam iter 5 val = -6.8853 best_val = -6.8853
+Adam iter 10 val = -8.0773 best_val = -8.0773
+Adam iter 15 val = -9.8378 best_val = -9.8378
+Adam iter 20 val = -10.7980 best_val = -10.7980
+Adam iter 0 val = -5.5079 best_val = -5.5079
+Adam iter 5 val = -9.0242 best_val = -9.0242
+Adam iter 10 val = -9.4661 best_val = -9.4661
+Adam iter 15 val = -10.5015 best_val = -10.7691
+Adam iter 20 val = -11.7208 best_val = -11.7208
+initial diversity 0.033
+Adam iter 0 val = 25.4083 best_val = 25.4083
+Adam iter 5 val = 20.9419 best_val = 20.9419
+Adam iter 10 val = 18.0543 best_val = 18.0543
+Adam iter 15 val = 15.8045 best_val = 15.8045
+Adam iter 20 val = 13.9876 best_val = 13.9876
+Adam iter 25 val = 12.4430 best_val = 12.4430
+Adam iter 30 val = 11.3477 best_val = 11.3477
+Adam iter 35 val = 10.1402 best_val = 10.1402
+Adam iter 40 val = 9.1743 best_val = 9.1743
+Adam iter 45 val = 8.0140 best_val = 8.0140
+Adam iter 0 val = 22.8469 best_val = 22.8469
+Adam iter 5 val = 17.3828 best_val = 17.3828
+Adam iter 10 val = 14.0923 best_val = 14.0923
+Adam iter 15 val = 12.0745 best_val = 12.0745
+Adam iter 20 val = 10.8253 best_val = 10.8253
+Adam iter 25 val = 10.3003 best_val = 10.3003
+Adam iter 30 val = 9.6446 best_val = 9.6446
+Adam iter 35 val = 8.8124 best_val = 8.8124
+Adam iter 40 val = 7.9835 best_val = 7.9835
+Adam iter 45 val = 7.0700 best_val = 7.0700
+913/4800 best value -12.7619 diversity 0.0333 ETA: 20:59
+Adam iter 0 val = -4.5185 best_val = -4.5185
+Adam iter 5 val = -7.5823 best_val = -7.5823
+Adam iter 10 val = -9.8056 best_val = -9.8056
+Adam iter 15 val = -11.3098 best_val = -11.3098
+Adam iter 20 val = -11.4771 best_val = -11.4771
+Adam iter 25 val = -11.6372 best_val = -11.6444
+Adam iter 30 val = -11.9342 best_val = -11.9342
+Adam iter 35 val = -12.0512 best_val = -12.0626
+Adam iter 40 val = -12.3196 best_val = -12.3196
+Adam iter 45 val = -12.5479 best_val = -12.5479
+Adam iter 0 val = -3.6314 best_val = -3.6314
+Adam iter 5 val = -5.3272 best_val = -5.3272
+Adam iter 10 val = -6.3183 best_val = -6.3183
+Adam iter 15 val = -7.2818 best_val = -7.2818
+Adam iter 20 val = -8.1086 best_val = -8.1086
+Adam iter 25 val = -9.2740 best_val = -9.2740
+Adam iter 30 val = -10.0640 best_val = -10.0640
+Adam iter 35 val = -10.7644 best_val = -10.7644
+Adam iter 40 val = -11.3235 best_val = -11.3235
+Adam iter 45 val = -11.5393 best_val = -11.5534
+1033/4800 best value -12.7619 diversity 0.0343 ETA: 20:20
+Adam iter 0 val = 82.7086 best_val = 82.7086
+Adam iter 5 val = 58.5048 best_val = 58.5048
+Adam iter 10 val = 44.3501 best_val = 44.3501
+Adam iter 15 val = 34.6825 best_val = 34.6825
+Adam iter 20 val = 27.7785 best_val = 27.7785
+Adam iter 25 val = 22.6575 best_val = 22.6575
+Adam iter 30 val = 18.6859 best_val = 18.6859
+Adam iter 35 val = 15.5844 best_val = 15.5844
+Adam iter 40 val = 12.8832 best_val = 12.8832
+Adam iter 45 val = 10.6245 best_val = 10.6245
+Adam iter 0 val = -3.2699 best_val = -3.2699
+Adam iter 5 val = -4.0787 best_val = -4.0787
+Adam iter 10 val = -4.0787 best_val = -4.0787
+Adam iter 15 val = -4.0787 best_val = -4.0787
+Adam iter 20 val = -4.0787 best_val = -4.0787
+Adam iter 25 val = -4.0787 best_val = -4.0787
+Adam iter 30 val = -4.0787 best_val = -4.0787
+Adam iter 35 val = -4.0787 best_val = -4.0787
+Adam iter 40 val = -4.0787 best_val = -4.0787
+Adam iter 45 val = -4.0787 best_val = -4.0787
+1166/4800 best value -12.7619 diversity 0.0328 ETA: 20:28
+Adam iter 0 val = 5.0265 best_val = 5.0265
+Adam iter 5 val = 3.4800 best_val = 3.4800
+Adam iter 10 val = 2.2565 best_val = 2.2565
+Adam iter 15 val = 1.0106 best_val = 1.0106
+Adam iter 20 val = -0.2285 best_val = -0.2285
+Adam iter 25 val = -1.4107 best_val = -1.4107
+Adam iter 30 val = -2.2645 best_val = -2.2645
+Adam iter 35 val = -3.1167 best_val = -3.1167
+Adam iter 40 val = -3.6847 best_val = -3.6847
+Adam iter 45 val = -4.5758 best_val = -4.5758
+Adam iter 0 val = -4.1858 best_val = -4.1858
+Adam iter 5 val = -6.5438 best_val = -6.5438
+Adam iter 10 val = -7.1983 best_val = -7.1983
+Adam iter 15 val = -7.7077 best_val = -7.7077
+Adam iter 20 val = -8.1636 best_val = -8.1636
+Adam iter 25 val = -8.6552 best_val = -8.6552
+Adam iter 30 val = -9.1438 best_val = -9.1438
+Adam iter 35 val = -9.4983 best_val = -9.4983
+Adam iter 40 val = -9.5262 best_val = -9.5262
+Adam iter 45 val = -9.5067 best_val = -9.5376
+1281/4800 best value -12.7619 diversity 0.0340 ETA: 20:21
+Adam iter 0 val = 13.0629 best_val = 13.0629
+Adam iter 5 val = 8.4357 best_val = 8.4357
+Adam iter 10 val = 6.7246 best_val = 6.7246
+Adam iter 15 val = 6.2994 best_val = 6.2994
+Adam iter 20 val = 5.9495 best_val = 5.9495
+Adam iter 25 val = 5.4590 best_val = 5.4590
+Adam iter 30 val = 4.9294 best_val = 4.9294
+Adam iter 35 val = 4.3946 best_val = 4.3946
+Adam iter 40 val = 3.9955 best_val = 3.9955
+Adam iter 45 val = 3.5647 best_val = 3.5647
+Adam iter 0 val = -2.3893 best_val = -2.3893
+Adam iter 5 val = -5.6382 best_val = -5.6382
+Adam iter 10 val = -6.7184 best_val = -6.7184
+Adam iter 15 val = -8.3891 best_val = -8.3891
+Adam iter 20 val = -10.2298 best_val = -10.2298
+Adam iter 25 val = -10.9002 best_val = -10.9981
+Adam iter 30 val = -10.8204 best_val = -10.9981
+Adam iter 35 val = -11.0461 best_val = -11.0461
+Adam iter 40 val = -11.2672 best_val = -11.2672
+Adam iter 45 val = -11.2216 best_val = -11.2983
+1397/4800 best value -12.7619 diversity 0.0340 ETA: 20:11
+Adam iter 0 val = 16.2382 best_val = 16.2382
+Adam iter 5 val = 11.7936 best_val = 11.7936
+Adam iter 10 val = 10.7912 best_val = 10.7912
+Adam iter 15 val = 9.7686 best_val = 9.7686
+Adam iter 20 val = 8.7568 best_val = 8.7568
+Adam iter 25 val = 7.7297 best_val = 7.7297
+Adam iter 30 val = 6.7376 best_val = 6.7376
+Adam iter 35 val = 5.8244 best_val = 5.8244
+Adam iter 40 val = 4.8935 best_val = 4.8935
+Adam iter 45 val = 3.9817 best_val = 3.9817
+Adam iter 0 val = -0.6871 best_val = -0.6871
+Adam iter 5 val = -3.5248 best_val = -3.5248
+Adam iter 10 val = -4.3996 best_val = -4.3996
+Adam iter 15 val = -5.0669 best_val = -5.0669
+Adam iter 20 val = -6.0572 best_val = -6.0572
+Adam iter 25 val = -6.8179 best_val = -6.8179
+Adam iter 30 val = -7.6231 best_val = -7.6231
+Adam iter 35 val = -8.1102 best_val = -8.1102
+Adam iter 40 val = -8.6969 best_val = -8.6969
+Adam iter 45 val = -9.3366 best_val = -9.3366
+1534/4800 best value -12.7619 diversity 0.0342 ETA: 19:35
+Adam iter 0 val = -2.5044 best_val = -2.5044
+Adam iter 5 val = -5.3529 best_val = -5.3529
+Adam iter 10 val = -5.7989 best_val = -5.7989
+Adam iter 15 val = -6.3475 best_val = -6.3475
+Adam iter 20 val = -6.7973 best_val = -6.7973
+Adam iter 25 val = -7.3165 best_val = -7.3165
+Adam iter 30 val = -7.7627 best_val = -7.7627
+Adam iter 35 val = -8.1385 best_val = -8.1385
+Adam iter 40 val = -8.6127 best_val = -8.6127
+Adam iter 45 val = -9.0740 best_val = -9.0740
+Adam iter 0 val = -1.6654 best_val = -1.6654
+Adam iter 5 val = -6.3442 best_val = -6.3442
+Adam iter 10 val = -8.3334 best_val = -8.3334
+Adam iter 15 val = -9.3371 best_val = -9.3371
+Adam iter 20 val = -10.3469 best_val = -10.3469
+Adam iter 25 val = -11.2090 best_val = -11.2090
+Adam iter 30 val = -11.6482 best_val = -11.6482
+Adam iter 35 val = -12.1581 best_val = -12.1581
+Adam iter 40 val = -12.2866 best_val = -12.2866
+Adam iter 45 val = -12.3538 best_val = -12.3538
+1645/4800 best value -12.7619 diversity 0.0340 ETA: 19:30
+Adam iter 0 val = -2.4913 best_val = -2.4913
+Adam iter 5 val = -4.3676 best_val = -4.3676
+Adam iter 10 val = -5.8220 best_val = -5.8220
+Adam iter 15 val = -7.3113 best_val = -7.3113
+Adam iter 20 val = -8.2471 best_val = -8.2471
+Adam iter 25 val = -8.8553 best_val = -8.8553
+Adam iter 30 val = -9.5095 best_val = -9.5095
+Adam iter 35 val = -10.0722 best_val = -10.0722
+Adam iter 40 val = -10.6939 best_val = -10.6939
+Adam iter 45 val = -11.3364 best_val = -11.3364
+Adam iter 0 val = -4.9279 best_val = -4.9279
+Adam iter 5 val = -7.1609 best_val = -7.1609
+Adam iter 10 val = -7.7490 best_val = -7.7490
+Adam iter 15 val = -8.1676 best_val = -8.1676
+Adam iter 20 val = -9.0964 best_val = -9.0964
+Adam iter 25 val = -10.1290 best_val = -10.1290
+Adam iter 30 val = -10.9116 best_val = -10.9116
+Adam iter 35 val = -11.4567 best_val = -11.4567
+Adam iter 40 val = -11.4615 best_val = -11.5345
+Adam iter 45 val = -11.5255 best_val = -11.5345
+1765/4800 best value -12.7619 diversity 0.0322 ETA: 18:49
+Adam iter 0 val = 15.4917 best_val = 15.4917
+Adam iter 5 val = 13.9325 best_val = 13.9325
+Adam iter 10 val = 12.7607 best_val = 12.7607
+Adam iter 15 val = 11.4586 best_val = 11.4586
+Adam iter 20 val = 10.0183 best_val = 10.0183
+Adam iter 25 val = 8.8319 best_val = 8.8319
+Adam iter 30 val = 7.7628 best_val = 7.7628
+Adam iter 35 val = 7.0661 best_val = 7.0661
+Adam iter 40 val = 6.6898 best_val = 6.6898
+Adam iter 45 val = 5.9485 best_val = 5.9485
+Adam iter 0 val = -4.7035 best_val = -4.7035
+Adam iter 5 val = -6.0852 best_val = -6.0852
+Adam iter 10 val = -7.3083 best_val = -7.3083
+Adam iter 15 val = -8.6274 best_val = -8.6274
+Adam iter 20 val = -9.6100 best_val = -9.6100
+Adam iter 25 val = -10.3246 best_val = -10.3246
+Adam iter 30 val = -10.7026 best_val = -10.7026
+Adam iter 35 val = -10.8690 best_val = -10.8690
+Adam iter 40 val = -11.0280 best_val = -11.0280
+Adam iter 45 val = -11.4120 best_val = -11.4120
+1877/4800 best value -12.7619 diversity 0.0321 ETA: 18:13
+Adam iter 0 val = -0.2098 best_val = -0.2098
+Adam iter 5 val = -2.7153 best_val = -2.7153
+Adam iter 10 val = -4.1177 best_val = -4.1177
+Adam iter 15 val = -5.2343 best_val = -5.2343
+Adam iter 20 val = -6.2454 best_val = -6.2454
+Adam iter 25 val = -7.4576 best_val = -7.4576
+Adam iter 30 val = -9.0959 best_val = -9.0959
+Adam iter 35 val = -11.3351 best_val = -11.3351
+Adam iter 40 val = -12.0544 best_val = -12.4215
+Adam iter 45 val = -12.6358 best_val = -12.6358
+1930 new best - -12.9552 [0 1 0 0]
+Adam iter 0 val = 14.3207 best_val = 14.3207
+Adam iter 5 val = 10.4264 best_val = 10.4264
+Adam iter 10 val = 9.0243 best_val = 9.0243
+Adam iter 15 val = 8.2561 best_val = 8.2561
+Adam iter 20 val = 7.7036 best_val = 7.7036
+Adam iter 25 val = 7.2054 best_val = 7.2054
+Adam iter 30 val = 6.6086 best_val = 6.6086
+Adam iter 35 val = 6.0513 best_val = 6.0513
+Adam iter 40 val = 5.5930 best_val = 5.5930
+Adam iter 45 val = 5.0180 best_val = 5.0180
+1996/4800 best value -12.9552 diversity 0.0324 ETA: 17:14
+Adam iter 0 val = -2.7785 best_val = -2.7785
+Adam iter 5 val = -6.4609 best_val = -6.4609
+Adam iter 10 val = -7.6463 best_val = -7.6463
+Adam iter 15 val = -8.3919 best_val = -8.3919
+Adam iter 20 val = -9.1759 best_val = -9.1759
+Adam iter 25 val = -9.9559 best_val = -9.9559
+Adam iter 30 val = -10.5251 best_val = -10.5251
+Adam iter 35 val = -11.0679 best_val = -11.0679
+Adam iter 40 val = -11.5533 best_val = -11.5533
+Adam iter 45 val = -12.0238 best_val = -12.0238
+recreating population, diversity = 0.03
+Adam iter 0 val = 19.2570 best_val = 19.2570
+Adam iter 5 val = 11.9632 best_val = 11.9632
+Adam iter 10 val = 7.9482 best_val = 7.9482
+Adam iter 15 val = 4.5884 best_val = 4.5884
+Adam iter 20 val = 2.4415 best_val = 2.4415
+Adam iter 0 val = 17.3569 best_val = 17.3569
+Adam iter 5 val = 12.1570 best_val = 12.1570
+Adam iter 10 val = 7.7006 best_val = 7.7006
+Adam iter 15 val = 5.1325 best_val = 5.1325
+Adam iter 20 val = 3.2993 best_val = 3.2993
+Adam iter 0 val = 17.3503 best_val = 17.3503
+Adam iter 5 val = 12.2104 best_val = 12.2104
+Adam iter 10 val = 8.1075 best_val = 8.1075
+Adam iter 15 val = 5.1000 best_val = 5.1000
+Adam iter 20 val = 3.5770 best_val = 3.5770
+Adam iter 0 val = 10.3075 best_val = 10.3075
+Adam iter 5 val = 2.4742 best_val = 2.4742
+Adam iter 10 val = -2.5572 best_val = -2.5572
+Adam iter 15 val = -7.4065 best_val = -7.4065
+Adam iter 20 val = -10.2574 best_val = -10.2574
+Adam iter 0 val = 17.3478 best_val = 17.3478
+Adam iter 5 val = 12.1558 best_val = 12.1558
+Adam iter 10 val = 8.1543 best_val = 8.1543
+Adam iter 15 val = 4.9909 best_val = 4.9909
+Adam iter 20 val = 3.2494 best_val = 3.2494
+Adam iter 0 val = -9.4570 best_val = -9.4570
+Adam iter 5 val = -10.8846 best_val = -10.8846
+Adam iter 10 val = -11.4529 best_val = -11.4529
+Adam iter 15 val = -12.3665 best_val = -12.3665
+Adam iter 20 val = -12.9401 best_val = -12.9401
+2230 new best -13.2993
+Adam iter 0 val = -6.4495 best_val = -6.4495
+Adam iter 5 val = -6.5394 best_val = -6.7120
+Adam iter 10 val = -8.8997 best_val = -8.8997
+Adam iter 15 val = -9.9666 best_val = -9.9666
+Adam iter 20 val = -11.2960 best_val = -11.3116
+Adam iter 0 val = -6.9621 best_val = -6.9621
+Adam iter 5 val = -8.7710 best_val = -8.7710
+Adam iter 10 val = -8.9811 best_val = -8.9811
+Adam iter 15 val = -9.7280 best_val = -9.7280
+Adam iter 20 val = -10.0911 best_val = -10.0911
+Adam iter 0 val = -7.4899 best_val = -7.4899
+Adam iter 5 val = -8.7646 best_val = -8.7646
+Adam iter 10 val = -10.5673 best_val = -10.5673
+Adam iter 15 val = -10.5213 best_val = -10.6149
+Adam iter 20 val = -10.7383 best_val = -10.7383
+Adam iter 0 val = -6.4438 best_val = -6.4438
+Adam iter 5 val = -7.7629 best_val = -7.7629
+Adam iter 10 val = -9.0983 best_val = -9.0983
+Adam iter 15 val = -10.5502 best_val = -10.5502
+Adam iter 20 val = -10.6516 best_val = -10.6601
+Adam iter 0 val = -5.2918 best_val = -5.2918
+Adam iter 5 val = -10.0826 best_val = -10.0826
+Adam iter 10 val = -11.2056 best_val = -11.2056
+Adam iter 15 val = -12.3432 best_val = -12.4722
+Adam iter 20 val = -12.5449 best_val = -12.9102
+2355 new best -13.3857
+Adam iter 0 val = -7.2216 best_val = -7.2216
+Adam iter 5 val = -9.2845 best_val = -9.2845
+Adam iter 10 val = -10.8788 best_val = -10.8788
+Adam iter 15 val = -11.6968 best_val = -11.6968
+Adam iter 20 val = -11.7019 best_val = -11.8689
+Adam iter 0 val = 18.7578 best_val = 18.7578
+Adam iter 5 val = 11.8702 best_val = 11.8702
+Adam iter 10 val = 7.5487 best_val = 7.5487
+Adam iter 15 val = 4.1886 best_val = 4.1886
+Adam iter 20 val = 1.9862 best_val = 1.9862
+Adam iter 0 val = -4.2588 best_val = -4.2588
+Adam iter 5 val = -7.1719 best_val = -7.1719
+Adam iter 10 val = -8.7773 best_val = -8.7773
+Adam iter 15 val = -9.6670 best_val = -10.0885
+Adam iter 20 val = -10.8140 best_val = -11.0214
+Adam iter 0 val = -6.9734 best_val = -6.9734
+Adam iter 5 val = -8.6432 best_val = -8.6432
+Adam iter 10 val = -8.8270 best_val = -8.9310
+Adam iter 15 val = -9.4815 best_val = -9.4815
+Adam iter 20 val = -9.8370 best_val = -9.8370
+Adam iter 0 val = -5.3877 best_val = -5.3877
+Adam iter 5 val = -4.7886 best_val = -5.3877
+Adam iter 10 val = -6.9496 best_val = -6.9496
+Adam iter 15 val = -8.2040 best_val = -8.2040
+Adam iter 20 val = -10.4918 best_val = -10.4918
+Adam iter 0 val = 13.1824 best_val = 13.1824
+Adam iter 5 val = 5.2095 best_val = 5.2095
+Adam iter 10 val = 0.2477 best_val = 0.2477
+Adam iter 15 val = -4.8400 best_val = -4.8400
+Adam iter 20 val = -7.7099 best_val = -7.7099
+Adam iter 0 val = 10.8460 best_val = 10.8460
+Adam iter 5 val = 3.1836 best_val = 3.1836
+Adam iter 10 val = -1.5466 best_val = -1.5466
+Adam iter 15 val = -7.2130 best_val = -7.2130
+Adam iter 20 val = -9.9660 best_val = -9.9660
+Adam iter 0 val = -4.5326 best_val = -4.5326
+Adam iter 5 val = -6.8737 best_val = -6.8737
+Adam iter 10 val = -6.9505 best_val = -7.2517
+Adam iter 15 val = -8.7072 best_val = -8.7072
+Adam iter 20 val = -9.8445 best_val = -9.9641
+Adam iter 0 val = -6.8230 best_val = -6.8230
+Adam iter 5 val = -9.0485 best_val = -9.0485
+Adam iter 10 val = -10.1690 best_val = -10.1690
+Adam iter 15 val = -11.8587 best_val = -11.8587
+Adam iter 20 val = -13.3235 best_val = -13.3235
+2580 new best -14.2366
+Adam iter 0 val = -8.0213 best_val = -8.0213
+Adam iter 5 val = -8.3990 best_val = -8.3990
+Adam iter 10 val = -10.2555 best_val = -10.2555
+Adam iter 15 val = -11.3364 best_val = -11.3364
+Adam iter 20 val = -11.5533 best_val = -11.5841
+Adam iter 0 val = -6.0970 best_val = -6.0970
+Adam iter 5 val = -8.8338 best_val = -8.8338
+Adam iter 10 val = -9.5764 best_val = -9.5764
+Adam iter 15 val = -9.9829 best_val = -9.9829
+Adam iter 20 val = -10.9250 best_val = -10.9250
+Adam iter 0 val = -5.3086 best_val = -5.3086
+Adam iter 5 val = -8.0277 best_val = -8.0277
+Adam iter 10 val = -9.3056 best_val = -10.0540
+Adam iter 15 val = -10.8435 best_val = -10.8435
+Adam iter 20 val = -11.8876 best_val = -11.8876
+Adam iter 0 val = -6.9046 best_val = -6.9046
+Adam iter 5 val = -8.5623 best_val = -8.5623
+Adam iter 10 val = -9.6054 best_val = -9.6054
+Adam iter 15 val = -10.2778 best_val = -10.2778
+Adam iter 20 val = -10.5200 best_val = -10.5584
+Adam iter 0 val = 19.1909 best_val = 19.1909
+Adam iter 5 val = 12.0346 best_val = 12.0346
+Adam iter 10 val = 7.9539 best_val = 7.9539
+Adam iter 15 val = 4.5171 best_val = 4.5171
+Adam iter 20 val = 2.4506 best_val = 2.4506
+Adam iter 0 val = -6.9478 best_val = -6.9478
+Adam iter 5 val = -7.5435 best_val = -7.8662
+Adam iter 10 val = -9.2916 best_val = -9.2916
+Adam iter 15 val = -10.8680 best_val = -10.8680
+Adam iter 20 val = -11.4140 best_val = -11.4140
+Adam iter 0 val = 18.7473 best_val = 18.7473
+Adam iter 5 val = 11.8537 best_val = 11.8537
+Adam iter 10 val = 7.4573 best_val = 7.4573
+Adam iter 15 val = 4.1258 best_val = 4.1258
+Adam iter 20 val = 1.8743 best_val = 1.8743
+Adam iter 0 val = -6.6067 best_val = -6.6067
+Adam iter 5 val = -6.9292 best_val = -6.9292
+Adam iter 10 val = -9.0494 best_val = -9.0494
+Adam iter 15 val = -11.1726 best_val = -11.1726
+Adam iter 20 val = -10.8452 best_val = -11.4566
+Adam iter 0 val = -6.5255 best_val = -6.5255
+Adam iter 5 val = -6.6085 best_val = -6.6085
+Adam iter 10 val = -9.8528 best_val = -9.9532
+Adam iter 15 val = -11.0926 best_val = -11.0926
+Adam iter 20 val = -11.7241 best_val = -11.7241
+Adam iter 0 val = 16.9993 best_val = 16.9993
+Adam iter 5 val = 11.2458 best_val = 11.2458
+Adam iter 10 val = 6.3689 best_val = 6.3689
+Adam iter 15 val = 3.5145 best_val = 3.5145
+Adam iter 20 val = 1.4559 best_val = 1.4559
+Adam iter 0 val = -6.4232 best_val = -6.4232
+Adam iter 5 val = -7.4624 best_val = -7.4734
+Adam iter 10 val = -9.0690 best_val = -9.0690
+Adam iter 15 val = -10.3739 best_val = -10.3739
+Adam iter 20 val = -10.3171 best_val = -10.5470
+initial diversity 0.034
+2855/4800 best value -14.2366 diversity 0.0325 ETA: 11:53
+Adam iter 0 val = 1.2052 best_val = 1.2052
+Adam iter 5 val = -3.2165 best_val = -3.2165
+Adam iter 10 val = -4.5622 best_val = -4.5622
+Adam iter 15 val = -5.5489 best_val = -5.5489
+Adam iter 20 val = -6.2391 best_val = -6.2391
+Adam iter 25 val = -6.9534 best_val = -6.9534
+Adam iter 30 val = -7.8243 best_val = -7.8243
+Adam iter 35 val = -8.3933 best_val = -8.3933
+Adam iter 40 val = -8.9050 best_val = -8.9050
+Adam iter 45 val = -9.4832 best_val = -9.4832
+Adam iter 0 val = -1.2288 best_val = -1.2288
+Adam iter 5 val = -3.5206 best_val = -3.5206
+Adam iter 10 val = -3.8598 best_val = -3.8598
+Adam iter 15 val = -4.0655 best_val = -4.0655
+Adam iter 20 val = -4.0787 best_val = -4.0787
+Adam iter 25 val = -4.0787 best_val = -4.0787
+Adam iter 30 val = -4.0787 best_val = -4.0787
+Adam iter 35 val = -4.0787 best_val = -4.0787
+Adam iter 40 val = -4.0787 best_val = -4.0787
+Adam iter 45 val = -4.0787 best_val = -4.0787
+2997/4800 best value -14.2366 diversity 0.0355 ETA: 11: 7
+Adam iter 0 val = -7.2028 best_val = -7.2028
+Adam iter 5 val = -10.4379 best_val = -10.4379
+Adam iter 10 val = -11.9560 best_val = -11.9560
+Adam iter 15 val = -12.8554 best_val = -12.8681
+Adam iter 20 val = -14.1754 best_val = -14.1754
+Adam iter 25 val = -15.2760 best_val = -15.2760
+Adam iter 30 val = -16.3378 best_val = -16.3378
+Adam iter 35 val = -17.3986 best_val = -17.3986
+Adam iter 40 val = -18.2764 best_val = -18.2913
+Adam iter 45 val = -19.4674 best_val = -19.4796
+3056 new best - -20.3481 [0 2 0 0]
+Adam iter 0 val = -4.4855 best_val = -4.4855
+Adam iter 5 val = -6.3530 best_val = -6.3530
+Adam iter 10 val = -7.7391 best_val = -7.7391
+Adam iter 15 val = -9.2541 best_val = -9.2541
+Adam iter 20 val = -10.7011 best_val = -10.7011
+Adam iter 25 val = -12.4828 best_val = -12.4828
+Adam iter 30 val = -13.7068 best_val = -14.0349
+Adam iter 35 val = -14.3185 best_val = -14.3185
+Adam iter 40 val = -15.3135 best_val = -15.3135
+Adam iter 45 val = -15.7364 best_val = -15.7967
+3127/4800 best value -20.3481 diversity 0.0357 ETA: 10:25
+Adam iter 0 val = 1.2198 best_val = 1.2198
+Adam iter 5 val = -3.4596 best_val = -3.4596
+Adam iter 10 val = -4.7925 best_val = -4.7925
+Adam iter 15 val = -6.4566 best_val = -6.4566
+Adam iter 20 val = -7.3490 best_val = -7.3490
+Adam iter 25 val = -8.1605 best_val = -8.1605
+Adam iter 30 val = -9.1150 best_val = -9.1150
+Adam iter 35 val = -10.1667 best_val = -10.1667
+Adam iter 40 val = -11.0316 best_val = -11.0316
+Adam iter 45 val = -11.8950 best_val = -11.8950
+Adam iter 0 val = 7.7553 best_val = 7.7553
+Adam iter 5 val = 4.4600 best_val = 4.4600
+Adam iter 10 val = 2.6452 best_val = 2.6452
+Adam iter 15 val = 1.5496 best_val = 1.5496
+Adam iter 20 val = 0.2915 best_val = 0.2915
+Adam iter 25 val = -0.9669 best_val = -0.9669
+Adam iter 30 val = -2.1289 best_val = -2.1289
+Adam iter 35 val = -3.3388 best_val = -3.3388
+Adam iter 40 val = -4.3554 best_val = -4.3554
+Adam iter 45 val = -5.0531 best_val = -5.0531
+3232/4800 best value -20.3481 diversity 0.0357 ETA: 9:51
+Adam iter 0 val = 26.0985 best_val = 26.0985
+Adam iter 5 val = 23.9779 best_val = 23.9779
+Adam iter 10 val = 22.1211 best_val = 22.1211
+Adam iter 15 val = 20.2564 best_val = 20.2564
+Adam iter 20 val = 18.3476 best_val = 18.3476
+Adam iter 25 val = 16.6310 best_val = 16.6310
+Adam iter 30 val = 14.9266 best_val = 14.9266
+Adam iter 35 val = 13.0145 best_val = 13.0145
+Adam iter 40 val = 11.0698 best_val = 11.0698
+Adam iter 45 val = 8.9135 best_val = 8.9135
+Adam iter 0 val = -9.8026 best_val = -9.8026
+Adam iter 5 val = -14.2469 best_val = -14.2469
+Adam iter 10 val = -14.7901 best_val = -15.0745
+Adam iter 15 val = -15.6306 best_val = -15.6306
+Adam iter 20 val = -16.6096 best_val = -16.6096
+Adam iter 25 val = -17.5620 best_val = -17.5620
+Adam iter 30 val = -18.4889 best_val = -18.6148
+Adam iter 35 val = -19.5941 best_val = -19.5941
+Adam iter 40 val = -20.6138 best_val = -20.6138
+Adam iter 45 val = -21.1690 best_val = -21.2775
+3332 new best - -22.2486 [0 3 0 0]
+3333/4800 best value -22.2486 diversity 0.0352 ETA: 9:17
+Adam iter 0 val = 14.4289 best_val = 14.4289
+Adam iter 5 val = 11.5552 best_val = 11.5552
+Adam iter 10 val = 10.7939 best_val = 10.7939
+Adam iter 15 val = 10.1322 best_val = 10.1322
+Adam iter 20 val = 9.5159 best_val = 9.5159
+Adam iter 25 val = 8.9835 best_val = 8.9835
+Adam iter 30 val = 8.4742 best_val = 8.4742
+Adam iter 35 val = 8.0686 best_val = 8.0686
+Adam iter 40 val = 7.6938 best_val = 7.6938
+Adam iter 45 val = 7.2711 best_val = 7.2711
+Adam iter 0 val = -1.5957 best_val = -1.5957
+Adam iter 5 val = -3.2176 best_val = -3.2176
+Adam iter 10 val = -3.8575 best_val = -3.8575
+Adam iter 15 val = -4.0787 best_val = -4.0787
+Adam iter 20 val = -4.0787 best_val = -4.0787
+Adam iter 25 val = -4.0787 best_val = -4.0787
+Adam iter 30 val = -4.0787 best_val = -4.0787
+Adam iter 35 val = -4.0787 best_val = -4.0787
+Adam iter 40 val = -4.0787 best_val = -4.0787
+Adam iter 45 val = -4.0787 best_val = -4.0787
+3441/4800 best value -22.2486 diversity 0.0352 ETA: 8:39
+Adam iter 0 val = -0.3996 best_val = -0.3996
+Adam iter 5 val = -2.1251 best_val = -2.1251
+Adam iter 10 val = -4.1245 best_val = -4.1245
+Adam iter 15 val = -6.2310 best_val = -6.2310
+Adam iter 20 val = -6.8580 best_val = -6.8580
+Adam iter 25 val = -7.4507 best_val = -7.4507
+Adam iter 30 val = -8.2389 best_val = -8.2389
+Adam iter 35 val = -8.9755 best_val = -8.9755
+Adam iter 40 val = -9.5905 best_val = -9.5905
+Adam iter 45 val = -9.7907 best_val = -9.7907
+Adam iter 0 val = 8.6089 best_val = 8.6089
+Adam iter 5 val = 7.2657 best_val = 7.2657
+Adam iter 10 val = 5.7585 best_val = 5.7585
+Adam iter 15 val = 4.3177 best_val = 4.3177
+Adam iter 20 val = 3.7060 best_val = 3.6491
+Adam iter 25 val = 3.0702 best_val = 3.0702
+Adam iter 30 val = 2.5097 best_val = 2.5097
+Adam iter 35 val = 1.8415 best_val = 1.8415
+Adam iter 40 val = 1.2449 best_val = 1.2449
+Adam iter 45 val = 0.9078 best_val = 0.9078
+3583/4800 best value -22.2486 diversity 0.0352 ETA: 7:44
+Adam iter 0 val = -1.5379 best_val = -1.5379
+Adam iter 5 val = -2.9013 best_val = -2.9013
+Adam iter 10 val = -4.1007 best_val = -4.1007
+Adam iter 15 val = -5.9298 best_val = -5.9298
+Adam iter 20 val = -7.1172 best_val = -7.1172
+Adam iter 25 val = -8.0537 best_val = -8.0537
+Adam iter 30 val = -8.5318 best_val = -8.5318
+Adam iter 35 val = -9.0014 best_val = -9.0014
+Adam iter 40 val = -9.6318 best_val = -9.6318
+Adam iter 45 val = -10.3057 best_val = -10.3057
+Adam iter 0 val = 31.7485 best_val = 31.7485
+Adam iter 5 val = 26.7502 best_val = 26.7502
+Adam iter 10 val = 22.8920 best_val = 22.8920
+Adam iter 15 val = 19.7524 best_val = 19.7524
+Adam iter 20 val = 17.1557 best_val = 17.1557
+Adam iter 25 val = 14.9474 best_val = 14.9474
+Adam iter 30 val = 13.0541 best_val = 13.0541
+Adam iter 35 val = 11.4117 best_val = 11.4117
+Adam iter 40 val = 9.9735 best_val = 9.9735
+Adam iter 45 val = 8.7032 best_val = 8.7032
+3702/4800 best value -22.2486 diversity 0.0346 ETA: 7: 1
+Adam iter 0 val = -3.4348 best_val = -3.4348
+Adam iter 5 val = -9.8481 best_val = -9.8481
+Adam iter 10 val = -10.3960 best_val = -10.3960
+Adam iter 15 val = -11.6660 best_val = -11.6660
+Adam iter 20 val = -12.3471 best_val = -12.3471
+Adam iter 25 val = -12.9393 best_val = -12.9393
+Adam iter 30 val = -13.5721 best_val = -13.5721
+Adam iter 35 val = -13.9355 best_val = -13.9773
+Adam iter 40 val = -14.2243 best_val = -14.2454
+Adam iter 45 val = -14.3688 best_val = -14.3688
+Adam iter 0 val = 0.0457 best_val = 0.0457
+Adam iter 5 val = -3.3219 best_val = -3.3219
+Adam iter 10 val = -4.0674 best_val = -4.0674
+Adam iter 15 val = -4.0661 best_val = -4.0787
+Adam iter 20 val = -4.0787 best_val = -4.0787
+Adam iter 25 val = -4.0787 best_val = -4.0787
+Adam iter 30 val = -4.0787 best_val = -4.0787
+Adam iter 35 val = -4.0787 best_val = -4.0787
+Adam iter 40 val = -4.0787 best_val = -4.0787
+Adam iter 45 val = -4.0787 best_val = -4.0787
+3806/4800 best value -22.2486 diversity 0.0349 ETA: 6:23
+Adam iter 0 val = 2.7916 best_val = 2.7916
+Adam iter 5 val = -1.7532 best_val = -1.7532
+Adam iter 10 val = -3.2230 best_val = -3.2230
+Adam iter 15 val = -3.6746 best_val = -3.6746
+Adam iter 20 val = -4.8434 best_val = -4.8434
+Adam iter 25 val = -5.7250 best_val = -5.7250
+Adam iter 30 val = -6.6137 best_val = -6.6137
+Adam iter 35 val = -7.5603 best_val = -7.5603
+Adam iter 40 val = -8.0255 best_val = -8.0255
+Adam iter 45 val = -8.7490 best_val = -8.7490
+Adam iter 0 val = -2.7066 best_val = -2.7066
+Adam iter 5 val = -4.1735 best_val = -4.1735
+Adam iter 10 val = -4.6963 best_val = -4.6963
+Adam iter 15 val = -5.1232 best_val = -5.1232
+Adam iter 20 val = -5.6256 best_val = -5.6256
+Adam iter 25 val = -5.9974 best_val = -5.9974
+Adam iter 30 val = -6.5181 best_val = -6.5181
+Adam iter 35 val = -6.9870 best_val = -6.9870
+Adam iter 40 val = -7.4145 best_val = -7.4145
+Adam iter 45 val = -7.8612 best_val = -7.8612
+3914/4800 best value -22.2486 diversity 0.0349 ETA: 5:43
+Adam iter 0 val = 3.0754 best_val = 3.0754
+Adam iter 5 val = -0.5241 best_val = -0.5241
+Adam iter 10 val = -2.1416 best_val = -2.1416
+Adam iter 15 val = -3.2942 best_val = -3.2942
+Adam iter 20 val = -4.5046 best_val = -4.5046
+Adam iter 25 val = -5.7451 best_val = -5.7451
+Adam iter 30 val = -6.8648 best_val = -6.8648
+Adam iter 35 val = -8.1516 best_val = -8.1516
+Adam iter 40 val = -9.4182 best_val = -9.4182
+Adam iter 45 val = -10.5603 best_val = -10.5603
+Adam iter 0 val = -10.0403 best_val = -10.0403
+Adam iter 5 val = -12.0293 best_val = -12.0293
+Adam iter 10 val = -12.4470 best_val = -12.4470
+Adam iter 15 val = -13.2191 best_val = -13.2191
+Adam iter 20 val = -13.5208 best_val = -13.5208
+Adam iter 25 val = -13.8665 best_val = -13.8665
+Adam iter 30 val = -13.9067 best_val = -13.9744
+Adam iter 35 val = -14.2321 best_val = -14.2321
+Adam iter 40 val = -14.2957 best_val = -14.2957
+Adam iter 45 val = -14.3819 best_val = -14.4278
+4016/4800 best value -22.2486 diversity 0.0346 ETA: 5: 5
+Adam iter 0 val = -8.5378 best_val = -8.5378
+Adam iter 5 val = -13.4959 best_val = -13.4959
+Adam iter 10 val = -15.9660 best_val = -15.9660
+Adam iter 15 val = -17.0970 best_val = -17.0970
+Adam iter 20 val = -18.4261 best_val = -18.4261
+Adam iter 25 val = -19.3244 best_val = -19.3244
+Adam iter 30 val = -19.5748 best_val = -19.5748
+Adam iter 35 val = -20.3872 best_val = -20.3872
+Adam iter 40 val = -20.7442 best_val = -20.9109
+Adam iter 45 val = -21.7866 best_val = -21.7866
+Adam iter 0 val = 9.9560 best_val = 9.9560
+Adam iter 5 val = 4.2688 best_val = 4.2688
+Adam iter 10 val = 3.5524 best_val = 3.5318
+Adam iter 15 val = 1.3414 best_val = 1.3414
+Adam iter 20 val = 0.5760 best_val = 0.3972
+Adam iter 25 val = -0.0697 best_val = -0.0697
+Adam iter 30 val = -0.7100 best_val = -0.7976
+Adam iter 35 val = -1.4711 best_val = -1.4711
+Adam iter 40 val = -1.5922 best_val = -1.6999
+Adam iter 45 val = -1.8603 best_val = -1.8731
+4120/4800 best value -22.2486 diversity 0.0344 ETA: 4:25
+Adam iter 0 val = 8.5305 best_val = 8.5305
+Adam iter 5 val = 5.7498 best_val = 5.7498
+Adam iter 10 val = 3.9551 best_val = 3.9551
+Adam iter 15 val = 2.7277 best_val = 2.7277
+Adam iter 20 val = 1.9149 best_val = 1.9149
+Adam iter 25 val = 1.1007 best_val = 1.1007
+Adam iter 30 val = 0.5858 best_val = 0.5858
+Adam iter 35 val = -0.1518 best_val = -0.1518
+Adam iter 40 val = -0.7918 best_val = -0.7918
+Adam iter 45 val = -1.4930 best_val = -1.4930
+Adam iter 0 val = 12.0990 best_val = 12.0990
+Adam iter 5 val = 7.0930 best_val = 7.0930
+Adam iter 10 val = 5.5681 best_val = 5.5681
+Adam iter 15 val = 3.9064 best_val = 3.9064
+Adam iter 20 val = 2.3051 best_val = 2.3051
+Adam iter 25 val = 1.2804 best_val = 1.2804
+Adam iter 30 val = 0.1670 best_val = 0.1670
+Adam iter 35 val = -0.6689 best_val = -0.6689
+Adam iter 40 val = -1.4118 best_val = -1.4118
+Adam iter 45 val = -2.0484 best_val = -2.0484
+4233/4800 best value -22.2486 diversity 0.0344 ETA: 3:42
+Adam iter 0 val = 25.0709 best_val = 25.0709
+Adam iter 5 val = 20.3196 best_val = 20.3196
+Adam iter 10 val = 17.6589 best_val = 17.6589
+Adam iter 15 val = 16.0156 best_val = 16.0156
+Adam iter 20 val = 14.3006 best_val = 14.3006
+Adam iter 25 val = 12.4528 best_val = 12.4528
+Adam iter 30 val = 10.6577 best_val = 10.6577
+Adam iter 35 val = 9.3535 best_val = 9.3535
+Adam iter 40 val = 7.8387 best_val = 7.8387
+Adam iter 45 val = 6.2165 best_val = 6.2165
+Adam iter 0 val = 17.0442 best_val = 17.0442
+Adam iter 5 val = 12.7887 best_val = 12.7887
+Adam iter 10 val = 11.5537 best_val = 11.5537
+Adam iter 15 val = 10.4299 best_val = 10.4299
+Adam iter 20 val = 9.5096 best_val = 9.5096
+Adam iter 25 val = 8.6230 best_val = 8.6230
+Adam iter 30 val = 7.7006 best_val = 7.7006
+Adam iter 35 val = 6.7183 best_val = 6.7183
+Adam iter 40 val = 6.0861 best_val = 6.0861
+Adam iter 45 val = 5.1307 best_val = 5.1307
+4343/4800 best value -22.2486 diversity 0.0344 ETA: 3: 0
+Adam iter 0 val = -7.5930 best_val = -7.5930
+Adam iter 5 val = -13.1863 best_val = -13.1863
+Adam iter 10 val = -13.9848 best_val = -13.9848
+Adam iter 15 val = -14.7066 best_val = -14.7066
+Adam iter 20 val = -16.1876 best_val = -16.1876
+Adam iter 25 val = -17.8585 best_val = -17.8585
+Adam iter 30 val = -20.0091 best_val = -20.0091
+Adam iter 35 val = -20.2453 best_val = -20.2453
+Adam iter 40 val = -21.3636 best_val = -21.5616
+Adam iter 45 val = -21.9168 best_val = -22.0406
+4404 new best - -23.3690 [0 4 0 0]
+Adam iter 0 val = -10.5880 best_val = -10.5880
+Adam iter 5 val = -14.5074 best_val = -14.5074
+Adam iter 10 val = -15.8663 best_val = -15.8663
+Adam iter 15 val = -17.4157 best_val = -17.4157
+Adam iter 20 val = -19.3115 best_val = -19.3115
+Adam iter 25 val = -20.7132 best_val = -20.7132
+Adam iter 30 val = -21.3181 best_val = -21.3640
+Adam iter 35 val = -22.5776 best_val = -22.5776
+Adam iter 40 val = -22.9627 best_val = -23.0210
+Adam iter 45 val = -23.7739 best_val = -23.7739
+4454 new best - -23.9272 [0 5 0 0]
+4454/4800 best value -23.9272 diversity 0.0330 ETA: 2:17
+Adam iter 0 val = 6.8508 best_val = 6.8508
+Adam iter 5 val = 1.4445 best_val = 1.4445
+Adam iter 10 val = -1.8152 best_val = -1.8152
+Adam iter 15 val = -4.3843 best_val = -4.3843
+Adam iter 20 val = -6.3180 best_val = -6.3180
+Adam iter 25 val = -8.2782 best_val = -8.2782
+Adam iter 30 val = -9.9929 best_val = -9.9929
+Adam iter 35 val = -11.5708 best_val = -11.5708
+Adam iter 40 val = -12.7810 best_val = -12.7810
+Adam iter 45 val = -14.0754 best_val = -14.0754
+Adam iter 0 val = 5.6783 best_val = 5.6783
+Adam iter 5 val = 1.2438 best_val = 1.2438
+Adam iter 10 val = -0.3935 best_val = -0.3935
+Adam iter 15 val = -2.3243 best_val = -2.3243
+Adam iter 20 val = -3.6523 best_val = -3.6523
+Adam iter 25 val = -5.1728 best_val = -5.1728
+Adam iter 30 val = -6.2944 best_val = -6.2944
+Adam iter 35 val = -7.6121 best_val = -7.6121
+Adam iter 40 val = -8.8199 best_val = -8.8199
+Adam iter 45 val = -9.8658 best_val = -9.8658
+4565/4800 best value -23.9272 diversity 0.0329 ETA: 1:33
+Adam iter 0 val = -8.4138 best_val = -8.4138
+Adam iter 5 val = -10.6813 best_val = -10.6813
+Adam iter 10 val = -11.9983 best_val = -11.9983
+Adam iter 15 val = -12.9241 best_val = -12.9241
+Adam iter 20 val = -13.7303 best_val = -13.7303
+Adam iter 25 val = -14.3768 best_val = -14.3768
+Adam iter 30 val = -15.2243 best_val = -15.2243
+Adam iter 35 val = -16.1321 best_val = -16.1321
+Adam iter 40 val = -16.9405 best_val = -16.9405
+Adam iter 45 val = -17.7130 best_val = -17.7130
+Adam iter 0 val = -15.7641 best_val = -15.7641
+Adam iter 5 val = -20.4019 best_val = -20.4019
+Adam iter 10 val = -22.3242 best_val = -22.3242
+Adam iter 15 val = -22.7899 best_val = -22.7899
+Adam iter 20 val = -23.0174 best_val = -23.3385
+Adam iter 25 val = -23.6691 best_val = -23.6691
+Adam iter 30 val = -23.4680 best_val = -23.6691
+Adam iter 35 val = -23.3232 best_val = -23.6691
+Adam iter 40 val = -24.0600 best_val = -24.1404
+Adam iter 45 val = -23.8655 best_val = -24.4491
+4681 new best - -24.4491 [0 6 0 0]
+4681/4800 best value -24.4491 diversity 0.0324 ETA: 0:47
+Adam iter 0 val = 12.4206 best_val = 12.4206
+Adam iter 5 val = 9.7168 best_val = 9.7168
+Adam iter 10 val = 7.9300 best_val = 7.9300
+Adam iter 15 val = 6.2950 best_val = 6.2950
+Adam iter 20 val = 4.7275 best_val = 4.7275
+Adam iter 25 val = 3.4553 best_val = 3.4553
+Adam iter 30 val = 2.1090 best_val = 2.1090
+Adam iter 35 val = 0.8816 best_val = 0.8816
+Adam iter 40 val = -0.2325 best_val = -0.2325
+Adam iter 45 val = -1.6034 best_val = -1.6034
+Adam iter 0 val = -5.2536 best_val = -5.2536
+Adam iter 5 val = -7.2583 best_val = -7.2583
+Adam iter 10 val = -7.8449 best_val = -7.8449
+Adam iter 15 val = -8.4999 best_val = -8.4999
+Adam iter 20 val = -9.2333 best_val = -9.2333
+Adam iter 25 val = -10.2688 best_val = -10.2688
+Adam iter 30 val = -10.7553 best_val = -10.7553
+Adam iter 35 val = -11.2533 best_val = -11.2533
+Adam iter 40 val = -11.5945 best_val = -11.5945
+Adam iter 45 val = -11.8898 best_val = -11.8898
+4793/4800 best value -24.4491 diversity 0.0323 ETA: 0: 2
+Stage 0 Model optimization stat
+Error: PSNR = 24.45, MSE = 0.00359
+1896.8 s total (395.2 ms/iter)
+Best params: [2.842, 3.442, 3.854, 4.316, 4.542, 4.799, 4.931, 5.039, 5.045, 0.777, 0.806, 0.044, 0.486, 0.232, 0.253, 0.271, 0.305, 0.350, 0.376, 0.406, 0.414, 0.405, 0.395, 0.390, 0.382, 0.370, 0.368, 0.375, 0.370, 0.378, 0.371, 0.374, 0.397, 1.903, 2.000, 1.427, 1.160, 1.256, 1.270, 1.049, 1.004, 0.962, 0.972, 1.005, 0.990, 0.971, 0.909, 0.829, 0.832, 0.814, 1.070, 1.156, 1.290, -0.120, 0.559, 1.715, 0.213, 3.537, -0.022, -651.844, 0.500, 163.873, 89.502, 100.000, 0.445, 0.441, ]
+init to render composite mesh with 1 parts
+reference saves/reference.png
+Adam iter 0 val = -23.5352 best_val = -23.5352
+Adam iter 5 val = -22.9826 best_val = -23.5352
+Adam iter 10 val = -22.6129 best_val = -23.5352
+Adam iter 15 val = -23.0314 best_val = -23.5352
+Adam iter 20 val = -23.8116 best_val = -23.8116
+Adam iter 25 val = -23.7352 best_val = -24.0354
+Adam iter 30 val = -23.8033 best_val = -24.0354
+Adam iter 35 val = -23.8338 best_val = -24.0354
+Adam iter 40 val = -23.8555 best_val = -24.0497
+Adam iter 45 val = -23.7892 best_val = -24.0497
+Adam iter 50 val = -23.7812 best_val = -24.0497
+Adam iter 55 val = -23.8318 best_val = -24.0497
+Adam iter 60 val = -23.7567 best_val = -24.0510
+Adam iter 65 val = -23.9271 best_val = -24.0510
+Adam iter 70 val = -23.7754 best_val = -24.0510
+Adam iter 75 val = -23.6392 best_val = -24.0510
+Adam iter 80 val = -23.8659 best_val = -24.0510
+Adam iter 85 val = -23.7170 best_val = -24.0510
+Adam iter 90 val = -23.6802 best_val = -24.0510
+Adam iter 95 val = -23.8452 best_val = -24.0544
+Stage 1 Model optimization stat
+Error: PSNR = 24.05, MSE = 0.00393
+45.6 s total (455.7 ms/iter)
+Best params: [2.800, 3.420, 3.862, 4.299, 4.540, 4.797, 4.940, 5.034, 5.038, 0.785, 0.806, 0.046, 0.490, 0.191, 0.240, 0.271, 0.306, 0.340, 0.369, 0.399, 0.402, 0.394, 0.385, 0.373, 0.362, 0.356, 0.356, 0.358, 0.362, 0.368, 0.370, 0.352, 0.404, 2.000, 1.988, 1.258, 1.127, 1.250, 1.201, 1.032, 0.967, 0.951, 0.960, 0.987, 0.983, 0.956, 0.903, 0.818, 0.795, 0.827, 0.937, 1.444, 1.170, -0.121, 0.561, 1.702, 0.197, 3.507, -0.025, -651.844, 0.500, 163.873, 89.502, 100.000, 0.445, 0.441, ]
+init to render composite mesh with 1 parts
+reference saves/reference.png
+Adam iter 0 val = -22.0502 best_val = -22.0502
+Adam iter 5 val = -21.5694 best_val = -22.0502
+Adam iter 10 val = -22.4242 best_val = -22.4242
+Adam iter 15 val = -22.5076 best_val = -22.6434
+Adam iter 20 val = -22.5325 best_val = -22.6602
+Adam iter 25 val = -22.4785 best_val = -22.6602
+Adam iter 30 val = -22.3685 best_val = -22.6602
+Adam iter 35 val = -22.2809 best_val = -22.6602
+Adam iter 40 val = -22.3008 best_val = -22.6602
+Adam iter 45 val = -22.2774 best_val = -22.6602
+Adam iter 50 val = -22.1093 best_val = -22.6602
+Adam iter 55 val = -21.8855 best_val = -22.6602
+Adam iter 60 val = -21.7331 best_val = -22.6602
+Adam iter 65 val = -21.7587 best_val = -22.6602
+Adam iter 70 val = -21.8493 best_val = -22.6602
+Adam iter 75 val = -21.8345 best_val = -22.6602
+Adam iter 80 val = -21.9216 best_val = -22.6602
+Adam iter 85 val = -21.9266 best_val = -22.6602
+Adam iter 90 val = -21.9315 best_val = -22.6602
+Adam iter 95 val = -21.9346 best_val = -22.6602
+Stage 2 Model optimization stat
+Error: PSNR = 22.66, MSE = 0.00542
+92.1 s total (921.4 ms/iter)
+Best params: [2.792, 3.435, 3.860, 4.296, 4.552, 4.793, 4.938, 5.031, 5.034, 0.786, 0.806, 0.043, 0.492, 0.192, 0.248, 0.274, 0.308, 0.341, 0.372, 0.394, 0.401, 0.397, 0.386, 0.371, 0.364, 0.357, 0.353, 0.355, 0.358, 0.363, 0.368, 0.349, 0.392, 2.000, 2.000, 1.261, 1.167, 1.304, 1.248, 1.035, 0.928, 0.913, 0.927, 0.964, 0.949, 0.920, 0.863, 0.775, 0.754, 0.789, 0.930, 1.461, 1.153, -0.120, 0.562, 1.701, 0.187, 3.510, -0.022, -651.844, 0.500, 163.873, 89.502, 100.000, 0.445, 0.441, ]
+init to render composite mesh with 1 parts
+GridSearchAdam: start_points_count (10) is enough to test all combinations (9)
+bin 2[0 0 ]
+reference saves/reference.png
+Adam iter 0 val = -13.6716 best_val = -13.6716
+Adam iter 5 val = -18.9775 best_val = -19.0677
+Adam iter 10 val = -22.1619 best_val = -22.1619
+Adam iter 15 val = -22.7896 best_val = -22.9169
+Adam iter 20 val = -24.2062 best_val = -24.4356
+Adam iter 25 val = -25.1306 best_val = -25.1306
+Adam iter 30 val = -25.6700 best_val = -25.6700
+Adam iter 35 val = -25.5052 best_val = -25.7870
+Adam iter 40 val = -26.1122 best_val = -26.1122
+Adam iter 45 val = -25.7390 best_val = -26.1122
+Adam iter 50 val = -25.6371 best_val = -26.1122
+Adam iter 55 val = -25.7622 best_val = -26.1122
+Adam iter 60 val = -25.5897 best_val = -26.1122
+Adam iter 65 val = -25.9443 best_val = -26.1122
+Adam iter 70 val = -25.9188 best_val = -26.1122
+Adam iter 75 val = -25.8451 best_val = -26.1122
+Adam iter 80 val = -25.8935 best_val = -26.1122
+Adam iter 85 val = -25.7975 best_val = -26.1437
+Adam iter 90 val = -25.9042 best_val = -26.1437
+Adam iter 95 val = -25.5683 best_val = -26.1437
+GSA: local search 0. Value: -26.1437, best: -26.1437
+bin 2[1 0 ]
+Adam iter 0 val = -14.4314 best_val = -14.4314
+Adam iter 5 val = -19.0031 best_val = -19.6411
+Adam iter 10 val = -22.4497 best_val = -22.4497
+Adam iter 15 val = -23.9218 best_val = -23.9218
+Adam iter 20 val = -24.6425 best_val = -24.8275
+Adam iter 25 val = -24.6946 best_val = -25.0861
+Adam iter 30 val = -24.7390 best_val = -25.0861
+Adam iter 35 val = -25.4872 best_val = -25.4872
+Adam iter 40 val = -25.4948 best_val = -25.4948
+Adam iter 45 val = -25.4253 best_val = -25.4948
+Adam iter 50 val = -25.4164 best_val = -25.4948
+Adam iter 55 val = -25.3494 best_val = -25.6134
+Adam iter 60 val = -25.5767 best_val = -25.6805
+Adam iter 65 val = -25.6618 best_val = -25.7075
+Adam iter 70 val = -25.7950 best_val = -25.7950
+Adam iter 75 val = -25.7716 best_val = -25.7950
+Adam iter 80 val = -25.5840 best_val = -25.8168
+Adam iter 85 val = -25.5734 best_val = -25.8168
+Adam iter 90 val = -25.6694 best_val = -25.8168
+Adam iter 95 val = -25.6592 best_val = -25.8168
+GSA: local search 1. Value: -25.8445, best: -26.1437
+bin 2[2 0 ]
+Adam iter 0 val = -16.5207 best_val = -16.5207
+Adam iter 5 val = -19.5363 best_val = -20.6175
+Adam iter 10 val = -22.5563 best_val = -22.7069
+Adam iter 15 val = -24.6413 best_val = -24.6413
+Adam iter 20 val = -24.8680 best_val = -24.8680
+Adam iter 25 val = -24.7681 best_val = -25.2116
+Adam iter 30 val = -25.0193 best_val = -25.2116
+Adam iter 35 val = -25.4801 best_val = -25.4801
+Adam iter 40 val = -25.5674 best_val = -25.5674
+Adam iter 45 val = -25.7263 best_val = -25.7263
+Adam iter 50 val = -25.5983 best_val = -25.7854
+Adam iter 55 val = -25.3677 best_val = -25.7854
+Adam iter 60 val = -25.6964 best_val = -25.7854
+Adam iter 65 val = -26.0181 best_val = -26.0181
+Adam iter 70 val = -25.4451 best_val = -26.0641
+Adam iter 75 val = -25.8947 best_val = -26.0641
+Adam iter 80 val = -25.7158 best_val = -26.0641
+Adam iter 85 val = -25.8606 best_val = -26.0641
+Adam iter 90 val = -25.6372 best_val = -26.0821
+Adam iter 95 val = -25.6816 best_val = -26.0821
+GSA: local search 2. Value: -26.0821, best: -26.1437
+bin 2[0 1 ]
+Adam iter 0 val = -13.2870 best_val = -13.2870
+Adam iter 5 val = -18.7795 best_val = -19.2481
+Adam iter 10 val = -21.2127 best_val = -21.2127
+Adam iter 15 val = -22.8439 best_val = -22.8439
+Adam iter 20 val = -24.3023 best_val = -24.3023
+Adam iter 25 val = -24.7567 best_val = -24.7567
+Adam iter 30 val = -24.2582 best_val = -24.7567
+Adam iter 35 val = -25.4523 best_val = -25.6450
+Adam iter 40 val = -24.7621 best_val = -25.6450
+Adam iter 45 val = -25.1230 best_val = -25.6450
+Adam iter 50 val = -25.2378 best_val = -25.6661
+Adam iter 55 val = -25.6728 best_val = -25.6728
+Adam iter 60 val = -25.5030 best_val = -25.6728
+Adam iter 65 val = -25.6936 best_val = -25.9053
+Adam iter 70 val = -25.8798 best_val = -26.0448
+Adam iter 75 val = -25.9363 best_val = -26.0968
+Adam iter 80 val = -25.7269 best_val = -26.0968
+Adam iter 85 val = -26.0696 best_val = -26.0968
+Adam iter 90 val = -25.9664 best_val = -26.0968
+Adam iter 95 val = -26.0030 best_val = -26.1254
+GSA: local search 3. Value: -26.1254, best: -26.1437
+bin 2[1 1 ]
+Adam iter 0 val = -13.9361 best_val = -13.9361
+Adam iter 5 val = -19.0567 best_val = -19.5508
+Adam iter 10 val = -21.5249 best_val = -21.9924
+Adam iter 15 val = -23.2834 best_val = -23.3570
+Adam iter 20 val = -24.4996 best_val = -24.5601
+Adam iter 25 val = -24.4888 best_val = -25.2680
+Adam iter 30 val = -25.2563 best_val = -25.2680
+Adam iter 35 val = -25.3233 best_val = -25.6678
+Adam iter 40 val = -25.6738 best_val = -25.6808
+Adam iter 45 val = -25.6281 best_val = -25.6987
+Adam iter 50 val = -25.1744 best_val = -25.6987
+Adam iter 55 val = -25.4322 best_val = -25.6987
+Adam iter 60 val = -25.5991 best_val = -25.6987
+Adam iter 65 val = -25.3001 best_val = -25.6987
+Adam iter 70 val = -25.6594 best_val = -25.6987
+Adam iter 75 val = -25.6439 best_val = -25.6987
+Adam iter 80 val = -25.8819 best_val = -25.8819
+Adam iter 85 val = -25.2207 best_val = -25.8819
+Adam iter 90 val = -25.5936 best_val = -25.8819
+Adam iter 95 val = -25.6358 best_val = -25.8819
+GSA: local search 4. Value: -25.8819, best: -26.1437
+bin 2[2 1 ]
+Adam iter 0 val = -15.3845 best_val = -15.3845
+Adam iter 5 val = -18.4291 best_val = -21.3270
+Adam iter 10 val = -22.0402 best_val = -22.0402
+Adam iter 15 val = -23.0248 best_val = -23.5219
+Adam iter 20 val = -23.7754 best_val = -24.2471
+Adam iter 25 val = -24.6253 best_val = -24.8138
+Adam iter 30 val = -24.7840 best_val = -24.8426
+Adam iter 35 val = -24.7013 best_val = -25.1007
+Adam iter 40 val = -25.2881 best_val = -25.2881
+Adam iter 45 val = -25.5493 best_val = -25.5493
+Adam iter 50 val = -25.5201 best_val = -25.6248
+Adam iter 55 val = -25.5126 best_val = -25.6248
+Adam iter 60 val = -25.4582 best_val = -25.6248
+Adam iter 65 val = -25.4201 best_val = -25.6248
+Adam iter 70 val = -25.5281 best_val = -25.6875
+Adam iter 75 val = -25.6646 best_val = -25.6875
+Adam iter 80 val = -25.5513 best_val = -25.8445
+Adam iter 85 val = -25.6038 best_val = -25.8445
+Adam iter 90 val = -25.6838 best_val = -25.8445
+Adam iter 95 val = -25.8602 best_val = -25.8602
+GSA: local search 5. Value: -25.9262, best: -26.1437
+bin 2[0 2 ]
+Adam iter 0 val = -12.7174 best_val = -12.7174
+Adam iter 5 val = -19.3644 best_val = -19.3644
+Adam iter 10 val = -20.5929 best_val = -20.5929
+Adam iter 15 val = -22.4680 best_val = -22.4680
+Adam iter 20 val = -23.8912 best_val = -23.8912
+Adam iter 25 val = -24.1923 best_val = -24.9911
+Adam iter 30 val = -24.1725 best_val = -24.9911
+Adam iter 35 val = -24.4934 best_val = -25.3609
+Adam iter 40 val = -25.0593 best_val = -25.4433
+Adam iter 45 val = -25.3965 best_val = -25.6831
+Adam iter 50 val = -25.4154 best_val = -26.0094
+Adam iter 55 val = -25.3226 best_val = -26.0094
+Adam iter 60 val = -25.5445 best_val = -26.0094
+Adam iter 65 val = -25.8028 best_val = -26.0094
+Adam iter 70 val = -25.9114 best_val = -26.1204
+Adam iter 75 val = -25.8506 best_val = -26.1320
+Adam iter 80 val = -26.1189 best_val = -26.1320
+Adam iter 85 val = -25.9624 best_val = -26.1320
+Adam iter 90 val = -25.8223 best_val = -26.1320
+Adam iter 95 val = -25.9190 best_val = -26.1320
+GSA: local search 6. Value: -26.1320, best: -26.1437
+bin 2[1 2 ]
+Adam iter 0 val = -13.1341 best_val = -13.1341
+Adam iter 5 val = -19.4223 best_val = -19.4223
+Adam iter 10 val = -21.1129 best_val = -21.1129
+Adam iter 15 val = -22.4728 best_val = -22.6786
+Adam iter 20 val = -24.2524 best_val = -24.2524
+Adam iter 25 val = -24.8604 best_val = -24.8604
+Adam iter 30 val = -24.6877 best_val = -24.8604
+Adam iter 35 val = -25.1643 best_val = -25.1643
+Adam iter 40 val = -25.5068 best_val = -25.5068
+Adam iter 45 val = -25.4513 best_val = -25.7079
+Adam iter 50 val = -25.4507 best_val = -25.7079
+Adam iter 55 val = -24.8545 best_val = -25.7079
+Adam iter 60 val = -25.2921 best_val = -25.7079
+Adam iter 65 val = -25.5577 best_val = -25.7079
+Adam iter 70 val = -25.3227 best_val = -25.7093
+Adam iter 75 val = -25.5637 best_val = -25.7093
+Adam iter 80 val = -25.4338 best_val = -25.7395
+Adam iter 85 val = -25.3610 best_val = -25.7395
+Adam iter 90 val = -25.7857 best_val = -25.7857
+Adam iter 95 val = -25.2872 best_val = -25.7857
+GSA: local search 7. Value: -25.7857, best: -26.1437
+bin 2[2 2 ]
+Adam iter 0 val = -14.0409 best_val = -14.0409
+Adam iter 5 val = -20.4811 best_val = -20.5125
+Adam iter 10 val = -22.0635 best_val = -22.3858
+Adam iter 15 val = -23.8024 best_val = -24.0309
+Adam iter 20 val = -24.3118 best_val = -24.7916
+Adam iter 25 val = -24.6891 best_val = -24.7916
+Adam iter 30 val = -24.8431 best_val = -24.8451
+Adam iter 35 val = -25.4754 best_val = -25.4754
+Adam iter 40 val = -25.1677 best_val = -25.4754
+Adam iter 45 val = -25.6248 best_val = -25.7725
+Adam iter 50 val = -25.7564 best_val = -25.7725
+Adam iter 55 val = -25.8364 best_val = -25.8579
+Adam iter 60 val = -26.0338 best_val = -26.0338
+Adam iter 65 val = -25.9680 best_val = -26.0539
+Adam iter 70 val = -25.8998 best_val = -26.0539
+Adam iter 75 val = -25.8505 best_val = -26.1676
+Adam iter 80 val = -25.6213 best_val = -26.1676
+Adam iter 85 val = -25.9533 best_val = -26.1676
+Adam iter 90 val = -25.7448 best_val = -26.2493
+Adam iter 95 val = -25.9855 best_val = -26.2493
+GSA: local search 8. Value: -26.2493, best: -26.2493
+Stage 3 Model optimization stat
+Error: PSNR = 26.25, MSE = 0.00237
+450.4 s total (500.4 ms/iter)
+Best params: [2.612, 3.326, 3.785, 4.281, 4.543, 4.838, 5.002, 5.164, 5.170, 0.789, 0.806, 0.040, 0.514, 0.253, 0.244, 0.277, 0.301, 0.323, 0.340, 0.346, 0.339, 0.329, 0.318, 0.308, 0.302, 0.300, 0.301, 0.306, 0.313, 0.325, 0.340, 0.338, 0.371, 2.000, 1.597, 1.121, 1.268, 1.276, 1.123, 0.992, 0.984, 1.013, 1.028, 1.050, 1.044, 1.009, 0.956, 0.872, 0.826, 0.842, 0.897, 1.329, 1.132, -0.120, 0.550, 1.724, 0.165, 3.422, -0.018, -651.844, 0.500, 163.873, 89.502, 100.000, 0.445, 0.250, ]
+init to render composite mesh with 1 parts
+saves/cup_12.jpg_result.png
+Taken material "ceramics" from settings.
+init to render composite mesh with 1 parts
+saves/ie_rsult3.png
+init to render composite mesh with 1 parts
+reference saves/reference_textured.png
+Stage 0 Texture optimization stat
+Error: PSNR = 36.53, MSE = 0.00022
+81.2 s total (1082.4 ms/iter)
+Best params: [2.612, 3.326, 3.785, 4.281, 4.543, 4.838, 5.002, 5.164, 5.170, 0.789, 0.806, 0.040, 0.514, 0.253, 0.244, 0.277, 0.301, 0.323, 0.340, 0.346, 0.339, 0.329, 0.318, 0.308, 0.302, 0.300, 0.301, 0.306, 0.313, 0.325, 0.340, 0.338, 0.371, 2.000, 1.597, 1.121, 1.268, 1.276, 1.123, 0.992, 0.984, 1.013, 1.028, 1.050, 1.044, 1.009, 0.956, 0.872, 0.826, 0.842, 0.897, 1.329, 1.132, -0.120, 0.550, 1.724, 0.165, 3.422, -0.018, -666.964, 62.183, 184.510, 69.973, 78.874, 0.499, 0.250, ]
+init to render composite mesh with 1 parts
+saves/ie_rsult3.png
+init to render composite mesh with 1 parts
+reference saves/reference_textured.png
+Stage 1 Texture optimization stat
+Error: PSNR = 36.55, MSE = 0.00022
+345.0 s total (4599.3 ms/iter)
+Best params: [2.612, 3.326, 3.785, 4.281, 4.543, 4.838, 5.002, 5.164, 5.170, 0.789, 0.806, 0.040, 0.514, 0.253, 0.244, 0.277, 0.301, 0.323, 0.340, 0.346, 0.339, 0.329, 0.318, 0.308, 0.302, 0.300, 0.301, 0.306, 0.313, 0.325, 0.340, 0.338, 0.371, 2.000, 1.597, 1.121, 1.268, 1.276, 1.123, 0.992, 0.984, 1.013, 1.028, 1.050, 1.044, 1.009, 0.956, 0.872, 0.826, 0.842, 0.897, 1.329, 1.132, -0.120, 0.550, 1.724, 0.165, 3.422, -0.018, -670.051, 72.946, 185.633, 66.194, 74.936, 0.511, 0.250, ]
+init to render composite mesh with 1 parts
+saves/ie_rsult3.png
+init to render composite mesh with 1 parts
+reference saves/reference_textured.png
+Stage 2 Texture optimization stat
+Error: PSNR = 37.43, MSE = 0.00018
+659.1 s total (16478.0 ms/iter)
+Best params: [2.612, 3.326, 3.785, 4.281, 4.543, 4.838, 5.002, 5.164, 5.170, 0.789, 0.806, 0.040, 0.514, 0.253, 0.244, 0.277, 0.301, 0.323, 0.340, 0.346, 0.339, 0.329, 0.318, 0.308, 0.302, 0.300, 0.301, 0.306, 0.313, 0.325, 0.340, 0.338, 0.371, 2.000, 1.597, 1.121, 1.268, 1.276, 1.123, 0.992, 0.984, 1.013, 1.028, 1.050, 1.044, 1.009, 0.956, 0.872, 0.826, 0.842, 0.897, 1.329, 1.132, -0.120, 0.550, 1.724, 0.165, 3.422, -0.018, -670.246, 78.478, 188.423, 65.362, 74.016, 0.426, 0.250, ]
+init to render composite mesh with 1 parts
+saves/selected_textured_raw.png
+init to render composite mesh with 1 parts
+saves/selected_textured_complemented.png
+init to render composite mesh with 1 parts
+saves/selected_textured_denoised.png
+Optimization finished. 40 iterations total. Best result saved to "saves/cup_12.jpg_result.png"
+Best error: -37.434761
+Best params: [2.612, 3.326, 3.785, 4.281, 4.543, 4.838, 5.002, 5.164, 5.170, 0.789, 0.806, 0.040, 0.514, 0.253, 0.244, 0.277, 0.301, 0.323, 0.340, 0.346, 0.339, 0.329, 0.318, 0.308, 0.302, 0.300, 0.301, 0.306, 0.313, 0.325, 0.340, 0.338, 0.371, 2.000, 1.597, 1.121, 1.268, 1.276, 1.123, 0.992, 0.984, 1.013, 1.028, 1.050, 1.044, 1.009, 0.956, 0.872, 0.826, 0.842, 0.897, 1.329, 1.132, -0.120, 0.550, 1.724, 0.165, 3.422, -0.018, -670.246, 78.478, 188.423, 65.362, 74.016, 0.426, 0.250, ]
+Benchmak finished. 1 images tested
+Average loss: -37.4348
