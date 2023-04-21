@@ -29,6 +29,8 @@
 #include <chrono>
 #include <time.h>
 #include <csignal>
+#include "diff_generators/obj_utils.h"
+#include "diff_generators/simple_model_utils.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -289,6 +291,15 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 3 && std::string(argv[2]) == "-compare")
   {
+    auto model = dgen::load_obj("/home/sammael/grade/resources/mitsuba_data/meshes/building/house.obj");
+    auto bbox = dgen::get_bbox(model);
+    logerr("model bbox 1 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+    dgen::normalize_model(model);
+    //for (int i=0;i<model.size();i++)
+    //  logerr("%d %f",i, model[i]);
+    bbox = dgen::get_bbox(model);
+    logerr("model bbox 2 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+    dgen::save_obj("/home/sammael/grade/resources/mitsuba_data/meshes/building/house_norm.obj", model);
     //Differentiable-SDF-renderer project
     //To create this images 
     //python3.8 render_turntable.py building_2 --optconfig diffuse-6

@@ -1,10 +1,57 @@
-#pragma once
 #include <vector>
 #include "vectors.h"
 #include <string>
+#include "obj_utils.h"
+#include <fstream>
+#include "diff_geometry_generation.h"
 
 namespace dgen
 {
+  std::vector<float> obj2Vec(const std::string aInFilename, bool aVerbose);
+  std::vector<float> load_obj(const std::string &filename)
+  {
+    return obj2Vec(filename, false);
+  }
+
+  void save_obj(const std::string &filename, const std::vector<float> &model)
+  {
+    std::string header = "#obj file create by DiffGen obj loader\n";
+    std::string o_data = "o MainModel\n";
+    std::string v_data;
+    std::string tc_data;
+    std::string n_data;
+    std::string s_data = "s off\n";
+    std::string f_data;
+
+    for (int i = 0; i < model.size() / FLOAT_PER_VERTEX; ++i)
+    {
+      v_data += "v " + std::to_string(model[i*FLOAT_PER_VERTEX]) + " " 
+                     + std::to_string(model[i*FLOAT_PER_VERTEX+1]) + " " 
+                     + std::to_string(model[i*FLOAT_PER_VERTEX+2]) + "\n"; 
+      n_data += "vn " + std::to_string(model[i*FLOAT_PER_VERTEX+3]) + " " 
+                      + std::to_string(model[i*FLOAT_PER_VERTEX+4]) + " " 
+                      + std::to_string(model[i*FLOAT_PER_VERTEX+5]) + "\n"; 
+      tc_data += "vt " + std::to_string(model[i*FLOAT_PER_VERTEX+6]) + " " 
+                       + std::to_string(model[i*FLOAT_PER_VERTEX+7]) + "\n";
+    }
+    for (int i = 0; i < model.size() / (3*FLOAT_PER_VERTEX); ++i)
+    {
+      f_data += "f " + std::to_string(3*i+1)+"/"+std::to_string(3*i+1)+"/"+std::to_string(3*i+1) + " " +
+                       std::to_string(3*i+2)+"/"+std::to_string(3*i+2)+"/"+std::to_string(3*i+2) + " " +
+                       std::to_string(3*i+3)+"/"+std::to_string(3*i+3)+"/"+std::to_string(3*i+3) + "\n";
+    }
+
+    std::ofstream out(filename);
+    out << header;
+    out << o_data;
+    out << v_data;
+    out << tc_data;
+    out << n_data;
+    out << s_data;
+    out << f_data;
+    out.close();
+  }
+
   std::vector<std::string> explode(std::string aStr, char aDelim)
   {
     std::vector<std::string> res;
@@ -195,12 +242,12 @@ namespace dgen
               finalVerts.push_back(0);
               finalVerts.push_back(0);
             }
-            if (data[1] != "")
+            if (data.size() > 2 && data[2] != "")
             {
-              int val = (int)atoi(data[1].c_str());
-              finalVerts.push_back(verts[(val - 1) * 3]);
-              finalVerts.push_back(verts[(val - 1) * 3 + 1]);
-              finalVerts.push_back(verts[(val - 1) * 3 + 2]);
+              int val = (int)atoi(data[2].c_str());
+              finalVerts.push_back(norms[(val - 1) * 3]);
+              finalVerts.push_back(norms[(val - 1) * 3 + 1]);
+              finalVerts.push_back(norms[(val - 1) * 3 + 2]);
             }
             else
             {
@@ -208,11 +255,11 @@ namespace dgen
               finalVerts.push_back(0);
               finalVerts.push_back(0);
             }
-            if (data.size() > 2 && data[2] != "")
+            if (data[1] != "")
             {
-              int val = (int)atoi(data[2].c_str());
-              finalVerts.push_back(verts[(val - 1) * 2]);
-              finalVerts.push_back(verts[(val - 1) * 2 + 1]);
+              int val = (int)atoi(data[1].c_str());
+              finalVerts.push_back(textures[(val - 1) * 2]);
+              finalVerts.push_back(textures[(val - 1) * 2 + 1]);
             }
             else
             {
