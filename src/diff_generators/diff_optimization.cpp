@@ -906,11 +906,12 @@ namespace dopt
       }
 
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/" + best_tex_name + ".png");
-      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 1}};
-      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
 
-      Texture res = BilateralFilter::perform(res_optimized, 4, 0.5);
+      Texture res = BilateralFilter::perform(res_optimized, 2.5, 0.33);
       Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
+
+      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
+      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
 
       engine::textureManager->save_png(res_optimized, "reconstructed_tex_raw");
       engine::textureManager->save_png(comp, "reconstructed_tex_complemented");
