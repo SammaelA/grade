@@ -772,7 +772,7 @@ namespace voxelization
     //render_saved_voxel_array("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 256, 25);
   }
 
-  /*oid render_test_3d(VoxelArray <glm::vec4> v)
+  /*void render_test_3d(VoxelArray <glm::vec4> v)
   {
     //CameraSettings camera;
     //camera.target = vec3(0, 0, 0);
@@ -791,5 +791,5 @@ namespace voxelization
     const CameraSettings cam = {glm::vec3{-3, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0}};
     render_3d_scene(v, cam, im, 512, 512, 10, 50, 1);
     save_image(im, "im.png");
-  }
-};*/
+  }*/
+};
