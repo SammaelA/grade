@@ -191,7 +191,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
                                     MitsubaInterface::get_default_material()});
     }
 
-    model_info.get_part("main_part")->texture_name = "wall3.png";
+    model_info.get_part("main_part")->texture_name = "wall1.png";
     model_info.get_part("interior")->texture_name = "concrete.png";
     model_info.get_part("windows")->material_name = "glass";
     model_info.get_part("wooden_parts")->texture_name = "wood6.png";
@@ -221,14 +221,16 @@ void sandbox_main(int argc, char **argv, Scene *scene)
               0.116, 0.150, 
               0.251, 0.200, 
               0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 0.500, 10.000, 64.286, 100.000, 0.908, 0.650};
-    params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
+    params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 6.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 
+              0.4, 1,
+              -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 2));
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                                model_info);
     std::vector<float> scene_params = {-0.160, 0.05, 0.954, 0.00, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
-    mi.render_model_to_file(res, "saves/building_5.png", camera, scene_params);
+    mi.render_model_to_file(res, "saves/building_6.png", camera, scene_params);
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {

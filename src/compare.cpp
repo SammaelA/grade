@@ -34,9 +34,12 @@
 #include "diff_generators/iou3d.h"
 
 void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
-                       int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera)
+                       int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera,
+                       MitsubaInterface::ModelInfo *m_info = nullptr)
 {
   MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
+  if (m_info)
+    model_info = *m_info;
   mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, spp, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                              model_info);
   for (int i = 0; i < rotations; i++)
@@ -188,17 +191,33 @@ void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
     Block gen_info;
     load_block_from_file(dgen::get_generator_by_name("buildings_2").generator_description_blk_path, gen_info);
     Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+    MitsubaInterface::ModelInfo model_info;
+    model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
 
+    for (int i=0;i<gen_mesh_parts.size();i++)
+    {
+      if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+        model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                    "white.png", 
+                                    MitsubaInterface::get_default_material()});
+    }
+
+    model_info.get_part("main_part")->texture_name = "wall3.png";
+    model_info.get_part("interior")->texture_name = "concrete.png";
+    model_info.get_part("windows")->material_name = "glass";
+    model_info.get_part("wooden_parts")->texture_name = "wood6.png";
+    model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
+    model_info.get_part("roof")->texture_name = "roof1.png";
     std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
     dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     auto res_bbox = dgen::get_bbox(res.first);
     dgen::normalize_model(res.first);
     render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
-                      "prezentations/spring_23_medialab/test_building_2/mygen_turntable", 256, 64, 64, 3, 0, camera);
-    render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
-                      "prezentations/spring_23_medialab/test_building_2/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
+                      "prezentations/spring_23_medialab/test_building_2/mygen_turntable", 256, 64, 64, 3, 0, camera, &model_info);
+    //render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
+    //                  "prezentations/spring_23_medialab/test_building_2/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
 }
   /*
     Block gen_info;
@@ -401,10 +420,11 @@ void compare_sandbox(int argc, char **argv)
   //compare_and_print("test_building_2", "building_2");
   //compare_and_print("cup_model_4", "cup_4");
   //compare_and_print("cup_model_1", "cup_1");
+  building_2_render_mygen_turntable(mi, camera);
   //calc_NGP_3D_IoU(mi, camera, "cup_model_4"); 
   //calc_NGP_3D_IoU(mi, camera, "cup_model_1"); 
   //calc_NGP_3D_IoU(mi, camera, "test_building_2"); 
-  cup_1_iou();
+  //cup_1_iou();
   //cup_4_iou();
   //building_2_iou();
   //test_3diou_1();
@@ -416,17 +436,15 @@ void compare_sandbox(int argc, char **argv)
 cup_model_4 NGP IoU 0.121806 0.202790 0.269309
 cup_model_1 NGP IoU 0.299897 0.308010 0.456000
 test_building_2 NGP IoU 0.134880 0.179714 0.153565
-test_building_2 DiffProcGen
-
 Cup 1 IoU 0.272983
 Cup 4 IoU 0.422604
 Cup 4 IoU 0.487518
+test_building_2 DiffProcGen
 
 Turntable Loss for 64 images
 Textured PSNR = 18.67
 With silhouette PSNR = 15.67
 Silhouette IoU = 0.8856
-
 
 test_building_2 Zero1to3
 
@@ -434,6 +452,27 @@ Turntable Loss for 9 images
 Textured PSNR = 16.15
 With silhouette PSNR = 12.70
 Silhouette IoU = 0.6264
+
+test_building_2 Instant-NGP 4
+
+Turntable Loss for 16 images
+Textured PSNR = 13.94
+With silhouette PSNR = 12.72
+Silhouette IoU = 0.7982
+
+test_building_2 Instant-NGP 16
+
+Turntable Loss for 16 images
+Textured PSNR = 21.27
+With silhouette PSNR = 19.94
+Silhouette IoU = 0.9396
+
+test_building_2 Instant-NGP 64
+
+Turntable Loss for 16 images
+Textured PSNR = 23.43
+With silhouette PSNR = 19.14
+Silhouette IoU = 0.9713
 
 test_building_2 DiffSDF 1
 
@@ -463,7 +502,6 @@ Textured PSNR = 25.19
 With silhouette PSNR = 20.20
 Silhouette IoU = 0.9790
 
-
 cup_model_4 DiffProcGen
 
 Turntable Loss for 64 images
@@ -471,13 +509,33 @@ Textured PSNR = 22.60
 With silhouette PSNR = 16.62
 Silhouette IoU = 0.9669
 
-
 cup_model_4 Zero1to3
 
 Turntable Loss for 9 images
 Textured PSNR = 13.87
 With silhouette PSNR = 10.31
 Silhouette IoU = 0.3332
+
+cup_model_4 Instant-NGP 4
+
+Turntable Loss for 16 images
+Textured PSNR = 9.88
+With silhouette PSNR = 11.94
+Silhouette IoU = 0.5611
+
+cup_model_4 Instant-NGP 16
+
+Turntable Loss for 16 images
+Textured PSNR = 16.69
+With silhouette PSNR = 14.18
+Silhouette IoU = 0.8779
+
+cup_model_4 Instant-NGP 64
+
+Turntable Loss for 16 images
+Textured PSNR = 27.38
+With silhouette PSNR = 21.60
+Silhouette IoU = 0.9910
 
 cup_model_4 DiffSDF 1
 
@@ -507,7 +565,6 @@ Textured PSNR = 28.57
 With silhouette PSNR = 23.54
 Silhouette IoU = 0.6692
 
-
 cup_model_1 DiffProcGen
 
 Turntable Loss for 64 images
@@ -515,13 +572,33 @@ Textured PSNR = 24.67
 With silhouette PSNR = 23.56
 Silhouette IoU = 0.9404
 
-
 cup_model_1 Zero1to3
 
 Turntable Loss for 9 images
 Textured PSNR = 13.70
 With silhouette PSNR = 15.62
 Silhouette IoU = 0.2251
+
+cup_model_1 Instant-NGP 4
+
+Turntable Loss for 16 images
+Textured PSNR = 15.02
+With silhouette PSNR = 13.08
+Silhouette IoU = 0.7993
+
+cup_model_1 Instant-NGP 16
+
+Turntable Loss for 16 images
+Textured PSNR = 18.04
+With silhouette PSNR = 19.26
+Silhouette IoU = 0.8577
+
+cup_model_1 Instant-NGP 64
+
+Turntable Loss for 16 images
+Textured PSNR = 20.34
+With silhouette PSNR = 23.31
+Silhouette IoU = 0.9053
 
 cup_model_1 DiffSDF 1
 
@@ -550,4 +627,5 @@ Turntable Loss for 64 images
 Textured PSNR = 28.67
 With silhouette PSNR = 26.27
 Silhouette IoU = 0.9911
+(base) sammael@sammael-520:~/grade$ 
 */
