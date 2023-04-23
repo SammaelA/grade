@@ -540,7 +540,7 @@ namespace voxelization
     }
   }
 
-  void render_test_3d()
+  void render_test_3d_2()
   {
     VoxelArray<vec4> voxel_array(glm::vec3(-15,-15,-15), glm::vec3(15,15,15), glm::ivec3(64,64,64), vec4(0,0,0,0));
     voxel_array.set_circle(vec3(0,0,0), 5, vec4(1,0,0,0.5));
@@ -560,7 +560,7 @@ namespace voxelization
     camera.target = vec3(0, 0, 0);
     camera.up = vec3(0, 1, 0);
 
-    float image_w = 512;
+    float image_w = 2048;
     float image_h = 512;
 
     Image test_image(image_w, image_h);
@@ -772,7 +772,7 @@ namespace voxelization
     //render_saved_voxel_array("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 256, 25);
   }
 
-  /*void render_test_3d(VoxelArray <glm::vec4> v)
+  void render_test_3d(VoxelArray <glm::vec4> voxel_array)
   {
     //CameraSettings camera;
     //camera.target = vec3(0, 0, 0);
@@ -788,8 +788,15 @@ namespace voxelization
     //diff_render_naive_test_5("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 100);
     //render_saved_voxel_array("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 256, 25);
     Image im(512, 512);
-    const CameraSettings cam = {glm::vec3{-3, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0}};
-    render_3d_scene(v, cam, im, 512, 512, 10, 50, 1);
-    save_image(im, "im.png");
-  }*/
+    CameraSettings camera = {glm::vec3{-3, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0}};
+    float dist = 2.5;
+    int n = 0;
+    for (float t=0;t<=1;t+=0.1)
+    {
+      camera.origin = vec3(dist*sin(2*M_PI*t), 0, dist*cos(2*M_PI*t));
+      render_3d_scene(voxel_array, camera, im, 512, 512, 25, 256, 4);
+      save_image(im, "saves/3d_render/test_image_"+std::to_string(n)+".png");
+      n++;
+    }
+  }
 };

@@ -1,6 +1,8 @@
 #include "iou3d.h"
 #include <cstdlib>
 #include <ctime>
+#include "graphics_utils/voxelization/voxel_array.h"
+#include "common_utils/distribution.h"
 
 bool check_tr_line(double x1, double y1, double z1,
   double x2, double y2, double z2,
@@ -81,23 +83,25 @@ double iou3d(const std::vector<float> &model1, const std::vector<float> &model2,
 {
   double intersect = 0, interconnect = 0;
   double result = 0;
-  /*int X = (x_e - x_s) / step + 1;
+  int X = (x_e - x_s) / step + 1;
   int Y = (y_e - y_s) / step + 1;
   int Z = (z_e - z_s) / step + 1;
   glm::vec4 *arr = new glm::vec4[X * Y * Z];
-  int a = 0;*/
+  int a = 0;
   for (double x = x_s; x <= x_e; x += step)
   {
-    //int b = 0;
+    int b = 0;
     for (double y = y_s; y <= y_e; y += step)
     {
-      //int c = 0;
+      int c = 0;
       for (double z = z_s; z <= z_e; z += step)
       {
         int num1 = 0, num2 = 0;
-        double x_vec = rand() % 2 + 0.5;
-        double y_vec = rand() % 2 + 0.5;
-        double z_vec = rand() % 2 + 0.5;
+        double phi = urand(0, 2*PI);
+        double psi = urand(-PI/2, PI/2);
+        double x_vec = cos(phi)*cos(psi);
+        double y_vec = sin(psi);
+        double z_vec = sin(phi)*cos(psi);
         for (int i = 0; i < model1.size(); i += 3 * FLOAT_PER_VERTEX)
         {
           if (check_tr_line(model1[i], model1[i + 1], model1[i + 2], 
@@ -123,30 +127,31 @@ double iou3d(const std::vector<float> &model1, const std::vector<float> &model2,
         if (prod1 && prod2)
         {
           intersect += 1;
-          //arr[X * Y * c + X * b + a] = glm::vec4{1, 0, 0, 0.5};
-        }/* else if (prod1 || prod2)
+          arr[X * Y * c + X * b + a] = glm::vec4{1, 0, 0, 0.5};
+        } else if (prod1 || prod2)
         {
-          arr[X * Y * c + X * b + a] = glm::vec4{0, 1, 1, 0.5};
+          arr[X * Y * c + X * b + a] = glm::vec4{0, 0, 1, 0.5};
         }
         else
         {
           arr[X * Y * c + X * b + a] = glm::vec4{0, 0, 0, 0};
-        }*/
+        }
+        //arr[X * Y * c + X * b + a] = glm::vec4{prod2, 0, 0, prod2 ? 1 : 0};
         if (prod1 || prod2)
         {
           interconnect += 1;
         }
-        //++c;
+        ++c;
       }
-      //++b;
+      ++b;
     }
-    //++a;
+    ++a;
   }
-  /*glm::vec3 p0 = {x_s, y_s, z_s};
+  glm::vec3 p0 = {x_s, y_s, z_s};
   glm::vec3 p1 = {x_e, y_e, z_e};
   glm::ivec3 vox_count = {X, Y, Z};
   VoxelArray <glm::vec4> vox(p0, p1, vox_count, {0, 0, 0, 0}, arr);
-  voxelization::render_test_3d(vox);*/
+  voxelization::render_test_3d(vox);
   if (interconnect == 0)
   {
     return 0;

@@ -217,7 +217,7 @@ private:
   bool has_external_data = false;
 };
 
-/*namespace voxelization
+namespace voxelization
 {
   void render_test_3d(VoxelArray <glm::vec4> v);
-}*/
+}

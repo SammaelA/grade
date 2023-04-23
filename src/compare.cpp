@@ -258,9 +258,9 @@ void test_3diou_1()
     logerr("IoU %f", iou);
 }
 
-void test_3diou_2()
+void cup_1_iou()
 {
-    std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.074, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
+    std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.2, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
     dgen::DFModel res;
     dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
     dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
@@ -269,9 +269,45 @@ void test_3diou_2()
     auto model = dgen::load_obj("prezentations/spring_23_medialab/cup_model_1/cup_1.obj");
     dgen::normalize_model(model);
 
-    float iou = iou3d(model, res.first, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0/32);
-    logerr("IoU %f", iou);
+    float iou = iou3d(model, res.first, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0/64);
+    logerr("Cup 1 IoU %f", iou);
 }
+
+void cup_4_iou()
+{
+    std::vector<float> params = {2.681, 3.268, 3.711, 3.896, 4.045, 4.068, 4.218, 4.540, 4.965, 0.906, 1.000, 0.043, 0.519, 0.101, 0.141, 0.183, 0.257, 0.283, 0.280, 0.274, 0.263, 0.252, 0.240, 0.223, 0.200, 0.171, 0.162, 0.155, 0.157, 0.166, 0.179, 0.207, 0.291, 1.091, 0.578, 1.950, 0.871, 0.805, 0.640, 0.674, 0.688, 0.720, 0.783, 0.810, 0.791, 0.582, 0.700, 0.620, 0.500, 0.552, 0.783, 1.271, 1.629, 0.082, 0.572, 0.402, 0.162, -0.090, 0.003, 0.590, 12.159, 666.696, 1.000, 79.108, 0.200, 0.250};
+    dgen::DFModel res;
+    dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
+    dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+    dgen::normalize_model(res.first);
+
+    auto model = dgen::load_obj("prezentations/spring_23_medialab/cup_model_4/cup_4.obj");
+    dgen::normalize_model(model);
+
+    float iou = iou3d(model, res.first, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0/32);
+    logerr("Cup 4 IoU %f", iou);
+}
+
+void building_2_iou()
+{
+    Block gen_info;
+    load_block_from_file(dgen::get_generator_by_name("buildings_2").generator_description_blk_path, gen_info);
+    Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+
+    std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
+    dgen::DFModel res;
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
+    dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    auto res_bbox = dgen::get_bbox(res.first);
+    dgen::normalize_model(res.first);
+
+    auto model = dgen::load_obj("prezentations/spring_23_medialab/test_building_2/original/original.obj");
+    dgen::normalize_model(model);
+
+    float iou = iou3d(model, res.first, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0/32);
+    logerr("Building 2 IoU %f", iou);
+}
+
 
 void render_NGP_turntable(MitsubaInterface &mi, CameraSettings &camera, std::string mygen_name)
 {
@@ -315,6 +351,39 @@ void render_NGP_turntable(MitsubaInterface &mi, CameraSettings &camera, std::str
                       "prezentations/spring_23_medialab/" + mygen_name + "/NGP_turntable_ref", 1024, 64, 16, 3, 0, camera);
 }
 
+void calc_NGP_3D_IoU(MitsubaInterface &mi, CameraSettings &camera, std::string mygen_name)
+{
+    auto model4 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t4_simple.obj");
+    auto model16 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t16_simple.obj");
+    auto model64 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t64_simple.obj");
+    // dgen::shift(model, glm::vec3(0,0,0.5));
+    auto bbox = dgen::get_bbox(model4);
+    auto ref_model = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/ref.obj");
+    dgen::transform(ref_model, glm::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
+    auto ref_bbox = dgen::get_bbox(ref_model);
+    logerr("model bbox 4 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+    logerr("ref   bbox 4 (%f %f %f)(%f %f %f)", ref_bbox.min_pos.x, ref_bbox.min_pos.y, ref_bbox.min_pos.z,
+           ref_bbox.max_pos.x, ref_bbox.max_pos.y, ref_bbox.max_pos.z);
+
+    glm::vec3 sizes = ref_bbox.max_pos - ref_bbox.min_pos;
+    float max_size = MAX(sizes.x, MAX(sizes.y, sizes.z));
+    max_size = MAX(1e-6, max_size);
+    dgen::shift(ref_model, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(ref_model, glm::vec3(1 / max_size));
+    dgen::shift(model4, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model4, glm::vec3(1 / max_size));
+    dgen::shift(model16, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model16, glm::vec3(1 / max_size));
+    dgen::shift(model64, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model64, glm::vec3(1 / max_size));
+
+    float iou1 = iou3d(ref_model, model4, -1, -1, -1, 1, 1, 1, 1.0/16);
+    float iou2 = iou3d(ref_model, model16, -1, -1, -1, 1, 1, 1, 1.0/16);
+    float iou3 = iou3d(ref_model, model64, -1, -1, -1, 1, 1, 1, 1.0/16);
+
+    logerr("%s NGP IoU %f %f %f", mygen_name.c_str(), iou1, iou2, iou3);
+}
+
 void compare_sandbox(int argc, char **argv)
 {
   MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
@@ -331,14 +400,27 @@ void compare_sandbox(int argc, char **argv)
 
   //compare_and_print("test_building_2", "building_2");
   //compare_and_print("cup_model_4", "cup_4");
-  compare_and_print("cup_model_1", "cup_1");
+  //compare_and_print("cup_model_1", "cup_1");
+  //calc_NGP_3D_IoU(mi, camera, "cup_model_4"); 
+  //calc_NGP_3D_IoU(mi, camera, "cup_model_1"); 
+  //calc_NGP_3D_IoU(mi, camera, "test_building_2"); 
+  cup_1_iou();
+  //cup_4_iou();
+  //building_2_iou();
   //test_3diou_1();
   //test_3diou_2(); 
   //render_NGP_turntable(mi, camera, "cup_model_4"); 
   //render_NGP_turntable(mi, camera, "test_building_2");
 }
 /*
+cup_model_4 NGP IoU 0.121806 0.202790 0.269309
+cup_model_1 NGP IoU 0.299897 0.308010 0.456000
+test_building_2 NGP IoU 0.134880 0.179714 0.153565
 test_building_2 DiffProcGen
+
+Cup 1 IoU 0.272983
+Cup 4 IoU 0.422604
+Cup 4 IoU 0.487518
 
 Turntable Loss for 64 images
 Textured PSNR = 18.67
