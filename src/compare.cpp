@@ -79,10 +79,26 @@ void render_random_cameras(MitsubaInterface &mi, const dgen::DFModel &model, con
 
 void compare_and_print(std::string mygen_name, std::string diff_sdf_name)
 {
-  logerr("\n\n%s DiffProcGen\n", mygen_name.c_str());
+  logerr("\n%s DiffProcGen\n", mygen_name.c_str());
   compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/reference_turntable",
                                 "prezentations/spring_23_medialab/" + mygen_name + "/mygen_turntable",
                                 64);
+  logerr("\n%s Zero1to3\n", mygen_name.c_str());
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/reference_turntable_9",
+                                "prezentations/spring_23_medialab/" + mygen_name + "/zero1to3_turntable_9",
+                                9);
+  logerr("\n%s Instant-NGP 4\n", mygen_name.c_str());
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/NGP4_turntable",
+                                "prezentations/spring_23_medialab/" + mygen_name + "/NGP_turntable_ref",
+                                16);
+  logerr("\n%s Instant-NGP 16\n", mygen_name.c_str());
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/NGP16_turntable",
+                                "prezentations/spring_23_medialab/" + mygen_name + "/NGP_turntable_ref",
+                                16);
+  logerr("\n%s Instant-NGP 64\n", mygen_name.c_str());
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/NGP64_turntable",
+                                "prezentations/spring_23_medialab/" + mygen_name + "/NGP_turntable_ref",
+                                16);
   logerr("\n%s DiffSDF 1\n", mygen_name.c_str());
   compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/" + diff_sdf_name + "/diffuse-1/warp/turntable",
                                 "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/" + diff_sdf_name + "/diffuse-1/warp/reference/turntable",
@@ -112,7 +128,7 @@ void cup_1_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
   render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
                     "prezentations/spring_23_medialab/cup_model_1/reference_turntable", 1024, 64, 64, 3, 0, camera);
   render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
-                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 1024, 64, 9, 3, 0, camera);
+                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 
 void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -129,7 +145,7 @@ void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
       render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_1/reconstructed_tex_complemented.png",
                         "prezentations/spring_23_medialab/cup_model_1/mygen_turntable", 1024, 64, 64, 3, 0, camera);
       render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_1/reconstructed_tex_complemented.png",
-                        "prezentations/spring_23_medialab/cup_model_1/mygen_turntable_9", 1024, 64, 9, 3, 0, camera);
+                        "prezentations/spring_23_medialab/cup_model_1/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 
 void cup_4_render_reference_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -143,7 +159,7 @@ void cup_4_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
                         "prezentations/spring_23_medialab/cup_model_4/reference_turntable", 1024, 64, 64, 3, 0, camera);
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
-                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9", 1024, 64, 9, 3, 0, camera);
+                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 
 void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -160,7 +176,7 @@ void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
       render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_4/reconstructed_tex_complemented.png",
                         "prezentations/spring_23_medialab/cup_model_4/mygen_turntable", 1024, 64, 64, 3, 0, camera);
       render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_4/reconstructed_tex_complemented.png",
-                        "prezentations/spring_23_medialab/cup_model_4/mygen_turntable_9", 1024, 64, 9, 3, 0, camera);
+                        "prezentations/spring_23_medialab/cup_model_4/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 
 void building_2_render_reference_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -257,6 +273,48 @@ void test_3diou_2()
     logerr("IoU %f", iou);
 }
 
+void render_NGP_turntable(MitsubaInterface &mi, CameraSettings &camera, std::string mygen_name)
+{
+    auto model4 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t4_simple.obj");
+    auto model16 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t16_simple.obj");
+    auto model64 = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/t64_simple.obj");
+    // dgen::shift(model, glm::vec3(0,0,0.5));
+    auto bbox = dgen::get_bbox(model4);
+    auto ref_model = dgen::load_obj("prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/ref.obj");
+    dgen::transform(ref_model, glm::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
+    auto ref_bbox = dgen::get_bbox(ref_model);
+    logerr("model bbox 4 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+    logerr("ref   bbox 4 (%f %f %f)(%f %f %f)", ref_bbox.min_pos.x, ref_bbox.min_pos.y, ref_bbox.min_pos.z,
+           ref_bbox.max_pos.x, ref_bbox.max_pos.y, ref_bbox.max_pos.z);
+
+    glm::vec3 sizes = ref_bbox.max_pos - ref_bbox.min_pos;
+    float max_size = MAX(sizes.x, MAX(sizes.y, sizes.z));
+    max_size = MAX(1e-6, max_size);
+    dgen::shift(ref_model, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(ref_model, glm::vec3(1 / max_size));
+    dgen::shift(model4, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model4, glm::vec3(1 / max_size));
+    dgen::shift(model16, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model16, glm::vec3(1 / max_size));
+    dgen::shift(model64, -0.5f * (ref_bbox.max_pos + ref_bbox.min_pos));
+    dgen::scale(model64, glm::vec3(1 / max_size));
+    // dgen::normalize_model(model);
+    // bbox = dgen::get_bbox(model);
+
+    dgen::DFModel df_model4 = {model4, dgen::PartOffsets{{"main_part", 0}}};
+    render_normalized(mi, df_model4, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                      "prezentations/spring_23_medialab/" + mygen_name + "/NGP4_turntable", 1024, 64, 16, 3, 0, camera);
+    dgen::DFModel df_model16 = {model16, dgen::PartOffsets{{"main_part", 0}}};
+    render_normalized(mi, df_model16, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                      "prezentations/spring_23_medialab/" + mygen_name + "/NGP16_turntable", 1024, 64, 16, 3, 0, camera);
+    dgen::DFModel df_model64 = {model64, dgen::PartOffsets{{"main_part", 0}}};
+    render_normalized(mi, df_model64, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                      "prezentations/spring_23_medialab/" + mygen_name + "/NGP64_turntable", 1024, 64, 16, 3, 0, camera);
+    dgen::DFModel ref_df_model = {ref_model, dgen::PartOffsets{{"main_part", 0}}};
+    render_normalized(mi, ref_df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                      "prezentations/spring_23_medialab/" + mygen_name + "/NGP_turntable_ref", 1024, 64, 16, 3, 0, camera);
+}
+
 void compare_sandbox(int argc, char **argv)
 {
   MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
@@ -273,7 +331,141 @@ void compare_sandbox(int argc, char **argv)
 
   //compare_and_print("test_building_2", "building_2");
   //compare_and_print("cup_model_4", "cup_4");
-  //compare_and_print("cup_model_1", "cup_1");
-  test_3diou_1();
-  test_3diou_2();
+  compare_and_print("cup_model_1", "cup_1");
+  //test_3diou_1();
+  //test_3diou_2(); 
+  //render_NGP_turntable(mi, camera, "cup_model_4"); 
+  //render_NGP_turntable(mi, camera, "test_building_2");
 }
+/*
+test_building_2 DiffProcGen
+
+Turntable Loss for 64 images
+Textured PSNR = 18.67
+With silhouette PSNR = 15.67
+Silhouette IoU = 0.8856
+
+
+test_building_2 Zero1to3
+
+Turntable Loss for 9 images
+Textured PSNR = 16.15
+With silhouette PSNR = 12.70
+Silhouette IoU = 0.6264
+
+test_building_2 DiffSDF 1
+
+Turntable Loss for 64 images
+Textured PSNR = 11.86
+With silhouette PSNR = 13.66
+Silhouette IoU = 0.3215
+
+test_building_2 DiffSDF 2
+
+Turntable Loss for 64 images
+Textured PSNR = 14.86
+With silhouette PSNR = 13.93
+Silhouette IoU = 0.7275
+
+test_building_2 DiffSDF 6
+
+Turntable Loss for 64 images
+Textured PSNR = 23.05
+With silhouette PSNR = 18.36
+Silhouette IoU = 0.9666
+
+test_building_2 DiffSDF 12
+
+Turntable Loss for 64 images
+Textured PSNR = 25.19
+With silhouette PSNR = 20.20
+Silhouette IoU = 0.9790
+
+
+cup_model_4 DiffProcGen
+
+Turntable Loss for 64 images
+Textured PSNR = 22.60
+With silhouette PSNR = 16.62
+Silhouette IoU = 0.9669
+
+
+cup_model_4 Zero1to3
+
+Turntable Loss for 9 images
+Textured PSNR = 13.87
+With silhouette PSNR = 10.31
+Silhouette IoU = 0.3332
+
+cup_model_4 DiffSDF 1
+
+Turntable Loss for 64 images
+Textured PSNR = 19.62
+With silhouette PSNR = 14.37
+Silhouette IoU = 0.3888
+
+cup_model_4 DiffSDF 2
+
+Turntable Loss for 64 images
+Textured PSNR = 18.45
+With silhouette PSNR = 13.90
+Silhouette IoU = 0.4226
+
+cup_model_4 DiffSDF 6
+
+Turntable Loss for 64 images
+Textured PSNR = 21.84
+With silhouette PSNR = 17.15
+Silhouette IoU = 0.5018
+
+cup_model_4 DiffSDF 12
+
+Turntable Loss for 64 images
+Textured PSNR = 28.57
+With silhouette PSNR = 23.54
+Silhouette IoU = 0.6692
+
+
+cup_model_1 DiffProcGen
+
+Turntable Loss for 64 images
+Textured PSNR = 24.67
+With silhouette PSNR = 23.56
+Silhouette IoU = 0.9404
+
+
+cup_model_1 Zero1to3
+
+Turntable Loss for 9 images
+Textured PSNR = 13.70
+With silhouette PSNR = 15.62
+Silhouette IoU = 0.2251
+
+cup_model_1 DiffSDF 1
+
+Turntable Loss for 64 images
+Textured PSNR = 9.10
+With silhouette PSNR = 16.40
+Silhouette IoU = 0.5430
+
+cup_model_1 DiffSDF 2
+
+Turntable Loss for 64 images
+Textured PSNR = 12.57
+With silhouette PSNR = 16.99
+Silhouette IoU = 0.7866
+
+cup_model_1 DiffSDF 6
+
+Turntable Loss for 64 images
+Textured PSNR = 24.96
+With silhouette PSNR = 23.80
+Silhouette IoU = 0.9845
+
+cup_model_1 DiffSDF 12
+
+Turntable Loss for 64 images
+Textured PSNR = 28.67
+With silhouette PSNR = 26.27
+Silhouette IoU = 0.9911
+*/
