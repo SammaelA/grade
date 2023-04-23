@@ -368,6 +368,7 @@ namespace dgen
       verts[i - 1] = mulp(first_rot_mat, verts[i - 1]);
       prev_verts[i - 1] = mulp(first_rot_mat, prev_verts[i - 1]);
     }
+    int off = (verts.size() - 2) * 6;
 
     verts[sp_sz - 1] = mulp(first_rot_mat, verts[sp_sz - 1]);
     prev_verts[sp_sz - 1] = mulp(first_rot_mat, prev_verts[sp_sz - 1]);
@@ -382,6 +383,21 @@ namespace dgen
     tc.reserve(4*(sp_sz-1)*rotations);
     std::vector<int> indices;//size (sp_sz-1)*rotations
     indices.reserve((sp_sz-1)*rotations);
+
+    dvec3 vec0 = thickness[0]*verts[0] + radiuses[0]*radius_vec+shift;
+    dvec3 norm = vec0;
+    for (int i = 2; i < verts.size(); ++i)
+    {
+      dvec3 vec1 = thickness[0]*verts[i-1] + radiuses[0]*radius_vec+shift;
+      if (i == 2)
+      {
+        norm = normalize(cross(vec0, vec1));
+      }
+      dvec3 vec2 = thickness[0]*verts[i] + radiuses[0]*radius_vec+shift;
+      add_vertex(model, prev_size+0+(i-2)*3, vec0, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3, vec1, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3, vec2, norm, {0, 0}, only_pos); 
+    }
 
     for (int sector = 1; sector <= rotations; sector++)
     {
@@ -419,12 +435,27 @@ namespace dgen
         tc.push_back(dvec2{((float)(sector))/rotations,  0.75 + 0.25*prev_len/full_len});
         tc.push_back(dvec2{((float)(sector - 1))/rotations,   0.75 + 0.25*prev_len/full_len});
 
-        indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1));
+        indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1) + off);
 
         prev_len = new_len;
       }
       prev_verts = verts;
       prev_radius_vec = radius_vec;
+    }
+
+    vec0 = thickness[rotations]*verts[0] + radiuses[rotations]*radius_vec+shift;
+    norm = vec0;
+    for (int i = 2; i < verts.size(); ++i)
+    {
+      dvec3 vec1 = thickness[rotations]*verts[i-1] + radiuses[rotations]*radius_vec+shift;
+      if (i == 2)
+      {
+        norm = normalize(cross(vec0, vec1));
+      }
+      dvec3 vec2 = thickness[rotations]*verts[i] + radiuses[rotations]*radius_vec+shift;
+      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2, norm, {0, 0}, only_pos); 
     }
 
     for (int i=0;i<(sp_sz-1)*rotations;i++)

@@ -771,4 +771,25 @@ namespace voxelization
     //diff_render_naive_test_5("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 100);
     //render_saved_voxel_array("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 256, 25);
   }
+
+  /*void render_test_3d(VoxelArray <glm::vec4> v)
+  {
+    //CameraSettings camera;
+    //camera.target = vec3(0, 0, 0);
+    //camera.up = vec3(0, 1, 0);
+    //camera.origin = vec3(0,0,25);
+    //render_reference_image_cup(camera, 256, 256, "saves/3d_render/cup_test.png");
+    //diff_render_naive_test_2("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 150);
+    //render_saved_voxel_array("saves/3d_render/res_array_32.bin", glm::ivec3(32,32,32), 256);
+    
+    //diff_render_naive_test_4("saves/3d_render/cup_array_128_2.bin", glm::ivec3(128,128,128), 256);
+    //render_saved_voxel_array("saves/3d_render/cup_array_128_2.bin", glm::ivec3(128,128,128), 256, 17, 0.5);
+
+    //diff_render_naive_test_5("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 100);
+    //render_saved_voxel_array("saves/3d_render/circle_array_32.bin", glm::ivec3(32,32,32), 256, 25);
+    Image im(512, 512);
+    const CameraSettings cam = {glm::vec3{-3, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0}};
+    render_3d_scene(v, cam, im, 512, 512, 10, 50, 1);
+    save_image(im, "im.png");
+  }*/
 };
