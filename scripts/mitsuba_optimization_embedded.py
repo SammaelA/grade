@@ -527,8 +527,10 @@ def render(it, context):
       t2 = dr.unravel(mi.Point3f, context["light"])
       lights_positions = light_transform @ t2
       params['light.vertex_positions'] = dr.ravel(lights_positions)
-      params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
-      params['ambient_light.radiance.value'] = ls_li_ali.z
+      #params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
+      #params['ambient_light.radiance.value'] = ls_li_ali.z
+      params['light.emitter.radiance.value'] = mi.Color3f(0, 0, 0)
+      params['ambient_light.radiance.value'] = 1
 
 
     prepare_model(params, context)

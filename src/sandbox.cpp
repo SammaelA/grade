@@ -31,32 +31,12 @@
 #include <csignal>
 #include "diff_generators/obj_utils.h"
 #include "diff_generators/simple_model_utils.h"
+#include "compare.h"
 
 void defaultSignalHandler(int signum)
 {
   logerr("Interrupt signal received. Closing the program");
   exit(signum);  
-}
-
-void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
-                       int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera)
-{
-  MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
-  mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, spp, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
-                             model_info);
-  for (int i=0;i<rotations;i++)
-  {
-    float phi = (2*PI*i)/rotations;
-    camera.target = glm::vec3(0,0,0);
-    camera.up = glm::vec3(0,1,0);
-    camera.origin = glm::vec3(camera_dist*sin(phi), camera_y, camera_dist*cos(phi));
-
-    char path[1024];
-    sprintf(path, "%s/frame-%04d.png", folder_name.c_str(), i);
-    logerr("ss %s", path);
-    std::vector<float> no_transform_scene_params = {0,0,0,0,0,0, 100, 1000, 100, 100, 100, 0.01, camera.fov_rad}; 
-    mi.render_model_to_file(model, path, camera, no_transform_scene_params);
-  }
 }
 
 void sandbox_main(int argc, char **argv, Scene *scene)
@@ -293,7 +273,8 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   {
       Texture res_optimized = textureManager.load_unnamed_tex("saves/reconstructed_tex_raw.png");
       Texture mask_tex = textureManager.load_unnamed_tex("saves/reconstructed_mask.png");
-      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.375, 3, 1}, {0, 0.375, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 10}};
+      //std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.375, 3, 1}, {0, 0.375, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 10}};
+      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
     engine::view->next_frame();
       ModelTex mt;
       Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
@@ -312,59 +293,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 3 && std::string(argv[2]) == "-compare")
   {
-    auto model = dgen::load_obj("/home/sammael/grade/resources/mitsuba_data/meshes/building/house.obj");
-    auto bbox = dgen::get_bbox(model);
-    logerr("model bbox 1 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
-    dgen::normalize_model(model);
-    //for (int i=0;i<model.size();i++)
-    //  logerr("%d %f",i, model[i]);
-    bbox = dgen::get_bbox(model);
-    logerr("model bbox 2 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
-    dgen::save_obj("/home/sammael/grade/resources/mitsuba_data/meshes/building/house_norm.obj", model);
-    //Differentiable-SDF-renderer project
-    //To create this images 
-    //python3.8 render_turntable.py building_2 --optconfig diffuse-6
-    //Put constant emitter to building_2.xml <default name="emitter_scene" value="emitters/constant.xml"/>
-
-    MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part",0}}};
-
-    Block gen_info;
-    load_block_from_file(dgen::get_generator_by_name("buildings_2").generator_description_blk_path, gen_info);
-    Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
-
-    std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
-    dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
-    dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
-    
-    auto res_bbox = dgen::get_bbox(res.first);
-    logerr("model bbox 3 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
-    dgen::normalize_model(res.first);
-    //for (int i=0;i<model.size();i++)
-    //  logerr("%d %f",i, model[i]);
-    res_bbox = dgen::get_bbox(res.first);
-    glm::vec3 sz1 = bbox.max_pos - bbox.min_pos;
-    glm::vec3 sz2 = res_bbox.max_pos - res_bbox.min_pos;
-    dgen::scale(res.first, sz1/sz2);
-    logerr("model bbox 4 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
-
-
-    //render_normalized(mi, df_model, "../mitsuba_data/meshes/building/tex2.png",
-    //                  "saves/building_2/reference", 256, 256, 64, 3, 0, camera);
-    render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
-                      "saves/building_2/result", 256, 4, 64, 3, 0, camera);
-
-    compare_utils::turntable_loss("/home/sammael/grade/saves/building_2/reference",
-                                  "/home/sammael/grade/saves/building_2/result",
-                                  64);
-
-    compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-6/warp/turntable",
-                                  "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-6/warp/reference/turntable",
-                                  64);
-    compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-12/warp/turntable",
-                                  "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/building_2/diffuse-12/warp/reference/turntable",
-                                  64);
+    compare_sandbox(argc, argv);
   }
   else
   {

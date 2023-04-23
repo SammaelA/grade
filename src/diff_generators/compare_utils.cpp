@@ -28,6 +28,8 @@ namespace compare_utils
 
     float psnr = 10*(log(1.0/mse)/log(10.0));
     //printf("psnr %f\n", psnr);
+    stbi_image_free(t1);
+    stbi_image_free(t2);
     return psnr;
   }
 
@@ -50,8 +52,9 @@ namespace compare_utils
     double cnt = 0;
     for (int i=0;i<w1*h1*c1;i+=c1)
     {
-      if (!(t1[i] == r0 && t1[i+1] == g0 && t1[i+2] == b0) || 
-          !(t2[i] == r0 && t2[i+1] == g0 && t2[i+2] == b0))
+      bool in_1 = !(t1[i] == r0 && t1[i+1] == g0 && t1[i+2] == b0);
+      bool in_2 = !(t2[i] == r0 && t2[i+1] == g0 && t2[i+2] == b0);
+      if (in_1 && in_2)
       {
         mse += CU_MSE(t1[i], t2[i]) + CU_MSE(t1[i+1], t2[i+1]) + CU_MSE(t1[i+2], t2[i+2]);
         cnt += 3;
@@ -61,6 +64,8 @@ namespace compare_utils
 
     float psnr = 10*(log(1.0/mse)/log(10.0));
     //printf("psnr %f\n", psnr);
+    stbi_image_free(t1);
+    stbi_image_free(t2);
     return psnr;
   }
   float loss_silhouette_iou(const std::string &img1, const std::string &img2, glm::vec3 background_color)
@@ -89,6 +94,8 @@ namespace compare_utils
     }
 
     //printf("IoU %f\n", i_cnt/u_cnt);
+    stbi_image_free(t1);
+    stbi_image_free(t2);
     return i_cnt/u_cnt;
   }
 
