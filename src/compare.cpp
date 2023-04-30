@@ -35,6 +35,7 @@
 
 void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
                        int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera,
+                       Block *camera_presets = nullptr,
                        MitsubaInterface::ModelInfo *m_info = nullptr)
 {
   MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
@@ -48,6 +49,9 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
     camera.target = glm::vec3(0, 0, 0);
     camera.up = glm::vec3(0, 1, 0);
     camera.origin = glm::vec3(camera_dist * sin(phi), camera_y, camera_dist * cos(phi));
+    Block camera_blk;
+    dgen::save_camera_settings(camera, camera_blk);
+    camera_presets->add_block("camera", &camera_blk);
 
     char path[1024];
     sprintf(path, "%s/frame-%04d.png", folder_name.c_str(), i);
@@ -192,10 +196,13 @@ void building_2_render_reference_turntable(MitsubaInterface &mi, CameraSettings 
       logerr("model bbox 2 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
 
       dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part",0}}};
+      Block cameras_64, cameras_9;
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/test_building_2/original/tex_inv.png",
-                        "prezentations/spring_23_medialab/test_building_2/reference_turntable", 1024, 64, 64, 3, 0, camera);
+                        "prezentations/spring_23_medialab/test_building_2/reference_turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
+      save_block_to_file("../prezentations/spring_23_medialab/test_building_2/reference_turntable/cameras.blk", cameras_64);
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/test_building_2/original/tex_inv.png",
-                        "prezentations/spring_23_medialab/test_building_2/reference_turntable_9", 256, 64, 9, 3, 0, camera);
+                        "prezentations/spring_23_medialab/test_building_2/reference_turntable_9", 256, 64, 9, 3, 0, camera, &cameras_9);
+      save_block_to_file("../prezentations/spring_23_medialab/test_building_2/reference_turntable_9/cameras.blk", cameras_9);
 }
 void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
 {
@@ -226,7 +233,7 @@ void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
     auto res_bbox = dgen::get_bbox(res.first);
     dgen::normalize_model(res.first);
     render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
-                      "prezentations/spring_23_medialab/test_building_2/mygen_turntable", 256, 64, 64, 3, 0, camera, &model_info);
+                      "prezentations/spring_23_medialab/test_building_2/mygen_turntable", 256, 64, 64, 3, 0, camera, nullptr, &model_info);
     //render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
     //                  "prezentations/spring_23_medialab/test_building_2/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
 }

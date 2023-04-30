@@ -4,6 +4,7 @@
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/gtx/transform.hpp>
 #include "simple_model_utils.h"
+#include "common_utils/blk.h"
 
 namespace dgen
 {
@@ -82,5 +83,29 @@ namespace dgen
     max_size = MAX(1e-6, max_size);
     shift(model, -0.5f*(bbox.max_pos + bbox.min_pos));
     scale(model, glm::vec3(1/max_size));
+  }
+
+  void save_camera_settings(const CameraSettings &camera, Block &blk)
+  {
+    blk.set_vec3("camera.origin", camera.origin);
+    blk.set_vec3("camera.target", camera.target);
+    blk.set_vec3("camera.up", camera.up);
+    blk.set_double("camera.z_near", camera.z_near);
+    blk.set_double("camera.z_far", camera.z_far);
+    blk.set_double("camera.fov_rad", camera.fov_rad);
+  }
+
+  CameraSettings load_camera_settings(Block &blk)
+  {
+    CameraSettings camera;
+    
+    camera.origin = blk.get_vec3("camera.origin", camera.origin);
+    camera.target = blk.get_vec3("camera.target", camera.target);
+    camera.up = blk.get_vec3("camera.up", camera.up);
+    camera.z_near = blk.get_double("camera.z_near", camera.z_near);
+    camera.z_far = blk.get_double("camera.z_far", camera.z_far);
+    camera.fov_rad = blk.get_double("camera.fov_rad", camera.fov_rad);
+
+    return camera;
   }
 }
