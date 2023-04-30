@@ -184,7 +184,18 @@ void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
 
 void building_2_render_reference_turntable(MitsubaInterface &mi, CameraSettings &camera)
 {
+      auto model = dgen::load_obj("prezentations/spring_23_medialab/test_building_2/original/original.obj");
+      auto bbox = dgen::get_bbox(model);
+      logerr("model bbox 1 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+      dgen::normalize_model(model);
+      bbox = dgen::get_bbox(model);
+      logerr("model bbox 2 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
 
+      dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part",0}}};
+      render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/test_building_2/original/tex_inv.png",
+                        "prezentations/spring_23_medialab/test_building_2/reference_turntable", 1024, 64, 64, 3, 0, camera);
+      render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/test_building_2/original/tex_inv.png",
+                        "prezentations/spring_23_medialab/test_building_2/reference_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
 {
@@ -407,20 +418,16 @@ void compare_sandbox(int argc, char **argv)
 {
   MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
 
-  CameraSettings camera;
-  float h1 = 1.5;
-  camera.fov_rad = 0.5;
-  float h2 = h1 * tan((PI / 3) / 2) / tan(camera.fov_rad / 2);
-  camera.origin = glm::vec3(0, 0.5, h2);
-  camera.target = glm::vec3(0, 0.5, 0);
-  camera.up = glm::vec3(0, 1, 0);
+  float fov_rad = 0.5;
+  CameraSettings camera = MitsubaInterface::get_camera_from_scene_params({fov_rad});
 
   //building_2_render_mygen_turntable(mi, camera);
 
   //compare_and_print("test_building_2", "building_2");
   //compare_and_print("cup_model_4", "cup_4");
   //compare_and_print("cup_model_1", "cup_1");
-  building_2_render_mygen_turntable(mi, camera);
+  //building_2_render_mygen_turntable(mi, camera);
+  building_2_render_reference_turntable(mi, camera);
   //calc_NGP_3D_IoU(mi, camera, "cup_model_4"); 
   //calc_NGP_3D_IoU(mi, camera, "cup_model_1"); 
   //calc_NGP_3D_IoU(mi, camera, "test_building_2"); 
