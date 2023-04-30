@@ -426,7 +426,9 @@ def render_and_save_to_file(context, save_filename):
       params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
 
   if (context["render_style"] == "textured_const"):
-      params['ambient_light.radiance.value'] = ls_li_ali.z 
+      #params['ambient_light.radiance.value'] = ls_li_ali.z 
+      params['light.emitter.radiance.value'] = mi.Color3f(0, 0, 0)
+      params['ambient_light.radiance.value'] = 1
   
   params.update()
 
