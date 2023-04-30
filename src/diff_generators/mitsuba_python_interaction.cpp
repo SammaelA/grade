@@ -227,11 +227,10 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   
   //save all strings as "ref1.png#ref2.png#ref3.png"
   std::string full_ref_string = "";
-  assert(reference_images_dir.size() >= render_settings.cameras_count);
-  for (int i=0;i<render_settings.cameras_count;i++)
+  for (int i=0;i<reference_images_dir.size();i++)
   {
     full_ref_string += reference_images_dir[i];
-    if (i < render_settings.cameras_count - 1)
+    if (i < reference_images_dir.size() - 1)
      full_ref_string += "#"; 
   }
 
@@ -242,7 +241,7 @@ void MitsubaInterface::init_optimization_internal(const std::string &function_na
   loss_func = PyObject_GetAttrString(pModule, loss_function_name.c_str());
   lr = PyFloat_FromDouble(texture_rec_learing_rate);
   int_im = PyLong_FromLong((int)save_intermediate_images);
-  c_cnt = PyLong_FromLong(render_settings.cameras_count);
+  c_cnt = PyLong_FromLong(reference_images_dir.size());
   args = PyTuple_Pack(6, mitsubaContext, ref_dir_arg, loss_func, lr, c_cnt, int_im);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
@@ -329,11 +328,13 @@ void MitsubaInterface::model_to_ctx(const dgen::DFModel &model)
   }
 }
 
-void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
+void MitsubaInterface::camera_to_ctx(const CameraSettings &camera, std::string camera_name)
 {
-  PyObject *func, *args, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12, *func_ret;
+  PyObject *func, *args, *p_name, *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12, *func_ret;
 
   func = PyObject_GetAttrString(pModule, (char *)"set_camera");
+
+  p_name = PyUnicode_FromString(camera_name.c_str());
 
   p1 = PyFloat_FromDouble(camera.origin.x);
   p2 = PyFloat_FromDouble(camera.origin.y);
@@ -351,12 +352,13 @@ void MitsubaInterface::camera_to_ctx(const CameraSettings &camera)
   p11 = PyLong_FromLong(render_settings.image_w);
   p12 = PyLong_FromLong(render_settings.image_h);
 
-  args = PyTuple_Pack(13, mitsubaContext, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
+  args = PyTuple_Pack(14, mitsubaContext, p_name, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
   func_ret = PyObject_CallObject(func, args);
   show_errors();
 
   DEL(func);
   DEL(args);
+  DEL(p_name);
   DEL(p1);
   DEL(p2);
   DEL(p3);
@@ -376,7 +378,7 @@ void MitsubaInterface::render_model_to_file(const dgen::DFModel &model, const st
                                             const CameraSettings &camera, const std::vector<float> &scene_params)
 {  
   model_to_ctx(model);
-  camera_to_ctx(camera);
+  camera_to_ctx(camera, "camera");
 
   int cameras_buf_id = get_camera_buffer_id();
   assert(scene_params.size() > 0);
@@ -398,12 +400,13 @@ void MitsubaInterface::render_model_to_file(const dgen::DFModel &model, const st
   DEL(func_ret);
 }
 
-float MitsubaInterface::render_and_compare(const dgen::DFModel &model, const CameraSettings &camera, const std::vector<float> &scene_params,
+float MitsubaInterface::render_and_compare(const dgen::DFModel &model, const std::vector<CameraSettings> &cameras, const std::vector<float> &scene_params,
                                            double *timers)
 {
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   model_to_ctx(model);
-  camera_to_ctx(camera);
+  for (int i=0;i<cameras.size();i++)
+    camera_to_ctx(cameras[i], "camera_"+std::to_string(i));
 
   int cameras_buf_id = get_camera_buffer_id();
   assert(scene_params.size() > 0);
@@ -452,7 +455,7 @@ void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int par
   }
 
   for (int i = params_count; i < final_grad.size(); i++)
-    final_grad[i] = buffers[get_camera_buffer_id()][i - params_count]; // gradient by camera params
+    final_grad[i] += buffers[get_camera_buffer_id()][i - params_count]; // gradient by camera params
 }
 
 void MitsubaInterface::set_model_max_size(int _model_max_size)

@@ -387,7 +387,7 @@ def transform_model_normals(params, context, pos, angles):
     if (context["render_style"] != "silhouette"):
       params['model_'+str(i)+'.vertex_texcoords'] = context['vertex_texcoords_'+str(i)]
 
-def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target_z, up_x, up_y, up_z,
+def set_camera(context, name, origin_x, origin_y, origin_z, target_x, target_y, target_z, up_x, up_y, up_z,
                fov, image_w, image_h):
   camera_dict = {
           'type': 'perspective',
@@ -405,13 +405,13 @@ def set_camera(context, origin_x, origin_y, origin_z, target_x, target_y, target
               'sample_border': True
           },
     }
-  context['camera'] =  mi.load_dict(camera_dict)  
-  context['camera_fov'] = numpy.pi*fov/180
+  context[name] =  mi.load_dict(camera_dict)  
+  context[name+'_fov'] = numpy.pi*fov/180
 
 def render_and_save_to_file(context, save_filename):
   scene = context['scene']
   params = context['params']
-  pos, angles, light_pos, ls_li_ali = get_scene_params(context)
+  pos, angles, light_pos, ls_li_ali = get_scene_params(context, context['camera_fov'])
 
   #update data for all parts of composite mesh
   prepare_model(params, context)
@@ -463,7 +463,7 @@ def F_loss_mixed(img, img_ref):
     loss = dr.sum(0.5*dr.sqr(img - img_ref) + 0.5*dr.abs(img - img_ref)) / len(img)
     return loss
 
-def get_scene_params(context):
+def get_scene_params(context, camera_fov):
     pos = mi.Point3f(context['camera_params'][0], 
                      context['camera_params'][1], 
                      context['camera_params'][2])
@@ -480,7 +480,7 @@ def get_scene_params(context):
                            context['camera_params'][11])
 
     #0.25 is a default fov and all presets are adjusted to it
-    pos.z *= numpy.tan(0.5*0.25) / numpy.tan(0.5*context['camera_fov'])
+    pos.z *= numpy.tan(0.5*0.25) / numpy.tan(0.5*camera_fov)
 
     return (pos, angles, light_pos, ls_li_ali)
 def render(it, context):
@@ -511,85 +511,87 @@ def render(it, context):
   scene = context['scene']
   params = context['params']
 
+  pos, angles, light_pos, ls_li_ali = get_scene_params(
+      context, context['camera_0_fov'])
+
+  dr.enable_grad(pos)
+  dr.enable_grad(angles)
+
+  if (context['status'] == 'optimization_with_tex'):
+    dr.enable_grad(light_pos)
+    dr.enable_grad(ls_li_ali)
+
+    light_transform = mi.Transform4f.translate(
+          [light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_ali.x)
+    t2 = dr.unravel(mi.Point3f, context["light"])
+    lights_positions = light_transform @ t2
+    params['light.vertex_positions'] = dr.ravel(lights_positions)
+    #params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
+    #params['ambient_light.radiance.value'] = ls_li_ali.z
+    params['light.emitter.radiance.value'] = mi.Color3f(0, 0, 0)
+    params['ambient_light.radiance.value'] = 1
+
+  prepare_model(params, context)
+  t1 = dr.unravel(mi.Point3f, params['model_'+str(0)+'.vertex_positions'])
+  #print("----\n CAMERA\n ----")
+  #print(context['vertex_positions_0'])
+  #print(params['model_0.vertex_positions'])
+  #print(t1)
+  dr.enable_grad(t1)
+  trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate(
+        [1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
+  tr_positions = trafo @ t1
+  params['model_'+str(0)+'.vertex_positions'] = dr.ravel(tr_positions)
+
+  fix_missing_normals_and_tc(params, context)
+
+  params.update()
+
+  transform_model_normals(params, context, pos, angles)
+  loss = 0
   #render scene from each camera
   for camera_n in range(context['cameras_count']):
     img_ref = context['img_ref_'+str(camera_n)]
     img_ref_mask = context['img_ref_mask_'+str(camera_n)]
-
-    pos, angles, light_pos, ls_li_ali = get_scene_params(context)
-
-    dr.enable_grad(pos)
-    dr.enable_grad(angles)
-
-    if (context['status'] == 'optimization_with_tex'):
-      dr.enable_grad(light_pos)
-      dr.enable_grad(ls_li_ali)
-
-      light_transform = mi.Transform4f.translate([light_pos.x, light_pos.y, light_pos.z]).scale(ls_li_ali.x)
-      t2 = dr.unravel(mi.Point3f, context["light"])
-      lights_positions = light_transform @ t2
-      params['light.vertex_positions'] = dr.ravel(lights_positions)
-      #params['light.emitter.radiance.value'] = mi.Color3f(ls_li_ali.y, ls_li_ali.y, ls_li_ali.y)
-      #params['ambient_light.radiance.value'] = ls_li_ali.z
-      params['light.emitter.radiance.value'] = mi.Color3f(0, 0, 0)
-      params['ambient_light.radiance.value'] = 1
-
-
-    prepare_model(params, context)
-    t1 = dr.unravel(mi.Point3f, params['model_'+str(0)+'.vertex_positions'])
-    dr.enable_grad(t1)
-    trafo = mi.Transform4f.translate([pos.x, pos.y, pos.z]).rotate([1, 0, 0], angles.x).rotate([0, 1, 0], angles.y).rotate([0, 0, 1], angles.z)
-    tr_positions = trafo @ t1
-    params['model_'+str(0)+'.vertex_positions'] = dr.ravel(tr_positions)
-    
-    fix_missing_normals_and_tc(params, context)
-
-    params.update()
-
-    transform_model_normals(params, context, pos, angles)
-
-    img = mi.render(scene, params, sensor = context['camera'], seed=it, spp=context['spp']) # image = F_render(scene)
+    img = mi.render(scene, params, sensor = context['camera_'+str(camera_n)], seed=it, spp=context['spp']) # image = F_render(scene)
     #img = dr.minimum(dr.maximum(img, 0), 1)
     if (context['status'] == 'optimization_with_tex'):
       img = img_ref_mask * img
-    loss = context['loss_function'](img, img_ref) # loss = F_loss(image)
-    loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
-    dr.backward(loss_PSNR)
-
-    camera_params_grad = []
-    camera_params_grad.append(dr.grad(pos).x)
-    camera_params_grad.append(dr.grad(pos).y)
-    camera_params_grad.append(dr.grad(pos).z)
-    camera_params_grad.append(dr.grad(angles).x)
-    camera_params_grad.append(dr.grad(angles).y)
-    camera_params_grad.append(dr.grad(angles).z)
-    if (context['status'] == 'optimization_with_tex'):
-      camera_params_grad.append(dr.grad(light_pos).x)
-      camera_params_grad.append(dr.grad(light_pos).y)
-      camera_params_grad.append(dr.grad(light_pos).z)
-      camera_params_grad.append(dr.grad(ls_li_ali).x)
-      camera_params_grad.append(dr.grad(ls_li_ali).y)
-      camera_params_grad.append(dr.grad(ls_li_ali).z)
-      camera_params_grad.append([0])  #camera_fov grad is 0
-    else:
-      camera_params_grad.append([0])
-      camera_params_grad.append([0])
-      camera_params_grad.append([0])
-      camera_params_grad.append([0])
-      camera_params_grad.append([0])
-      camera_params_grad.append([0])  
-      camera_params_grad.append([0])
-
-    if (camera_n == 0):
-      vertex_positions_grad = dr.ravel(dr.grad(t1))
-    else:
-      vertex_positions_grad = vertex_positions_grad + dr.ravel(dr.grad(t1))
+    loss += context['loss_function'](img, img_ref) # loss = F_loss(image)
     
     if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
-  context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad, nan=0, posinf=0, neginf=0))
+  loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
+  dr.backward(loss_PSNR)
+
+  camera_params_grad = []
+  camera_params_grad.append(dr.grad(pos).x)
+  camera_params_grad.append(dr.grad(pos).y)
+  camera_params_grad.append(dr.grad(pos).z)
+  camera_params_grad.append(dr.grad(angles).x)
+  camera_params_grad.append(dr.grad(angles).y)
+  camera_params_grad.append(dr.grad(angles).z)
+  if (context['status'] == 'optimization_with_tex'):
+    camera_params_grad.append(dr.grad(light_pos).x)
+    camera_params_grad.append(dr.grad(light_pos).y)
+    camera_params_grad.append(dr.grad(light_pos).z)
+    camera_params_grad.append(dr.grad(ls_li_ali).x)
+    camera_params_grad.append(dr.grad(ls_li_ali).y)
+    camera_params_grad.append(dr.grad(ls_li_ali).z)
+    camera_params_grad.append([0])  #camera_fov grad is 0
+  else:
+    camera_params_grad.append([0])
+    camera_params_grad.append([0])
+    camera_params_grad.append([0])
+    camera_params_grad.append([0])
+    camera_params_grad.append([0])
+    camera_params_grad.append([0])  
+    camera_params_grad.append([0])
+  #print("CPG", camera_params_grad)
+  vertex_positions_grad = dr.ravel(dr.grad(t1))
+  context['camera_params_grad'] = numpy.asarray(numpy.nan_to_num(camera_params_grad, nan=0, posinf=0, neginf=0) / float(context['cameras_count']))
   context['vertex_positions_'+str(0)+'_grad'] = numpy.nan_to_num(vertex_positions_grad, nan=0, posinf=0, neginf=0) / float(context['cameras_count'])
   #print("set camera params ", context['camera_params_grad'])
 

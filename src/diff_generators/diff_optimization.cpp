@@ -20,6 +20,7 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/image_arithmetic.h"
+#include "simple_model_utils.h"
 
 namespace dopt
 {
@@ -400,12 +401,6 @@ namespace dopt
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
     std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
-    Block *references_blk = settings_blk.get_block("references");
-    if (!references_blk)
-    {
-      logerr("ERROR: references block not set");
-      return 1;
-    }
 
     auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
@@ -434,7 +429,37 @@ namespace dopt
     const int original_reference_size = settings_blk.get_int("original_reference_size", 1024);
     std::map<std::string, Texture> references;
 
+    //if we have more than one camera, their positions must me described in either direct in
+    //"cameras" block in settings blk file or indirect with "cameras_dir" string
+    Block *cameras_blk = settings_blk.get_block("cameras");
+    int cameras_count = cameras_blk ? cameras_blk->size() : 1;
+    std::vector<CameraSettings> fixed_cameras;
+    bool has_fixed_cameras = (cameras_blk != nullptr);
+    if (has_fixed_cameras)
     {
+      for (int i=0;i<cameras_count;i++)
+      {
+        Block *camera_blk = cameras_blk->get_block(i);
+        if (camera_blk)
+          fixed_cameras.push_back(dgen::load_camera_settings(*camera_blk));
+        else
+        {
+          logerr("cameras_blk camera block %d corrupted!", i);
+          fixed_cameras.push_back(CameraSettings());
+        }
+      }
+    }
+    else
+      fixed_cameras.push_back(CameraSettings());
+
+    for (int i=0;i<cameras_count;i++)
+    {
+      Block *references_blk = has_fixed_cameras ? cameras_blk->get_block(i) : settings_blk.get_block("references");
+      if (!references_blk)
+      {
+        logerr("ERROR: camera %d references block not set", i);
+        return 1;
+      }
       Texture reference_tex_raw, reference_mask;
       if (by_reference)
       {
@@ -457,8 +482,8 @@ namespace dopt
 
         mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                    ref_mi);
-        mi.render_model_to_file(reference, "saves/reference.png",
-                                MitsubaInterface::get_camera_from_scene_params(reference_scene_params), reference_scene_params);
+        CameraSettings cam = has_fixed_cameras ? fixed_cameras[i] : MitsubaInterface::get_camera_from_scene_params(reference_scene_params);
+        mi.render_model_to_file(reference, "saves/reference.png", cam, reference_scene_params);
         reference_tex_raw = engine::textureManager->load_unnamed_tex("saves/reference.png");
       }
       else
@@ -480,8 +505,8 @@ namespace dopt
       Texture reference_tex_masked = engine::textureManager->create_texture(reference_mask.get_W(),reference_mask.get_H());
       ImageArithmetics::mul(reference_tex_masked, reference_mask, reference_tex_raw, 1);
       
-      references.emplace("textured", ImageResizer::resize(reference_tex_masked, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
-      references.emplace("mask", ImageResizer::resize(reference_mask, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
+      references.emplace("textured_"+std::to_string(i), ImageResizer::resize(reference_tex_masked, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
+      references.emplace("mask_"+std::to_string(i), ImageResizer::resize(reference_mask, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
       for (int i=0;i<references_blk->size();i++)
       {
         std::string tex_name = references_blk->get_name(i);
@@ -489,7 +514,7 @@ namespace dopt
         {
           Texture t = engine::textureManager->load_unnamed_tex(references_blk->get_string(i));
           t = ImageResizer::resize(t, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED);
-          references.emplace(tex_name, t);
+          references.emplace(tex_name+"_"+std::to_string(i), t);
         }
       }
 
@@ -537,8 +562,9 @@ namespace dopt
       dgen::DFModel res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
-      float loss = mi.render_and_compare(res, MitsubaInterface::get_camera_from_scene_params(get_camera_params(params)), 
-                                         get_camera_params(params));
+      std::vector<CameraSettings> cameras = has_fixed_cameras ? fixed_cameras : 
+                                            std::vector<CameraSettings>{MitsubaInterface::get_camera_from_scene_params(get_camera_params(params))};
+      float loss = mi.render_and_compare(res, cameras, get_camera_params(params));
 
       mi.compute_final_grad(jac, gen_params_cnt, res.first.size() / FLOAT_PER_VERTEX, final_grad);
 
@@ -588,15 +614,21 @@ namespace dopt
         logerr("Block \"stage_%d\" is required for optimization, but not found", stage);
         return 1;
       }
-      std::string reference_image_dir = "saves/reference.png";
       int im_sz = stage_blk->get_int("render_image_size", 128);
-      std::string reference_texture_name = stage_blk->get_string("reference_texture_name", "mask");
-      Texture reference_mask_resized = ImageResizer::resize(references[reference_texture_name], im_sz, im_sz, ImageResizer::Type::STRETCH);
-      engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
+      std::vector<std::string> reference_image_dirs;
+      for (int i=0;i<cameras_count;i++)
+      {
+        std::string reference_image_dir = "saves/reference_"+std::to_string(i)+".png";
+        std::string reference_texture_name = stage_blk->get_string("reference_texture_name", "mask");
+        reference_texture_name += "_"+std::to_string(i);
+        Texture reference_mask_resized = ImageResizer::resize(references[reference_texture_name], im_sz, im_sz, ImageResizer::Type::STRETCH);
+        engine::textureManager->save_png_directly(reference_mask_resized, reference_image_dir);
+        reference_image_dirs.push_back(reference_image_dir);
+      }
 
       model_quality = stage_blk->get_int("model_quality", 0);
       only_pos = false;
-      mi.init_optimization({reference_image_dir}, MitsubaInterface::LOSS_MSE,
+      mi.init_optimization(reference_image_dirs, MitsubaInterface::LOSS_MSE,
                            MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                            default_model_info,
                            settings_blk.get_bool("save_intermediate_images", false));
@@ -668,7 +700,7 @@ namespace dopt
     mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
                                no_tex_model_info);
     mi.render_model_to_file(best_model, saved_result_path,
-                            MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                            has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
                             get_camera_params(opt_result.best_params));
 
     Texture mask_tex, reconstructed_tex;
@@ -681,8 +713,9 @@ namespace dopt
       visualizer::simple_mesh_to_model_332(best_model_transformed.first, m);
       m->update();
 
-      reconstructed_tex = mt.getTexbyUV(references["mask"], *m, references["textured"],
-                                        MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+      //we use one (zero) camera to make initial texture
+      reconstructed_tex = mt.getTexbyUV(references["mask_0"], *m, references["textured_0"],
+                                        has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
                                         mask_tex);
       engine::textureManager->save_png(reconstructed_tex, "reconstructed_tex");
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
@@ -753,14 +786,17 @@ namespace dopt
 
           model_quality = stage_blk->get_int("model_quality", 0);
           only_pos = false;
-          Texture reference_textured = ImageResizer::resize(references["textured"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          //use only one camera to select material to make it faster
+          Texture reference_textured = ImageResizer::resize(references["textured_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
 
           dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
           mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                                     default_model_info);
-          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
+          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", 
+                                  has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                                  get_camera_params(opt_result.best_params));
           Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-          Texture mask_reference = ImageResizer::resize(references["mask"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_reference = ImageResizer::resize(references["mask_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
           Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
           ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
           engine::textureManager->save_png(mask_min, "reference_textured_mask");
@@ -840,32 +876,40 @@ namespace dopt
 
         model_quality = stage_blk->get_int("model_quality", 0);
         only_pos = false;
-        Texture reference_textured = ImageResizer::resize(references["textured"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+        std::vector<std::string> reference_textured_names;
+        for (int i=0;i<cameras_count;i++)
+        {
+          std::string reference_textured_name = "reference_textured_"+std::to_string(i);
+          Texture reference_textured = ImageResizer::resize(references["textured_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
 
-        dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
-        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
-                                   default_model_info);
-        mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
-        Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-        Texture mask_reference = ImageResizer::resize(references["mask"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
-        Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
-        ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
-        engine::textureManager->save_png(mask_min, "reference_textured_mask");
+          dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
+          mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                                    default_model_info);
+          mi.render_model_to_file(cur_model, "saves/ie_rsult3.png", 
+                                  has_fixed_cameras ? fixed_cameras[i] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
+                                  get_camera_params(opt_result.best_params));
+          Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
+          Texture mask_reference = ImageResizer::resize(references["mask_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
+          ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
+          engine::textureManager->save_png(mask_min, reference_textured_name+"_mask");
 
-        Texture reference_textured_masked = engine::textureManager->create_texture(im_sz, im_sz);
-        ImageArithmetics::mul(reference_textured_masked, reference_textured, mask_min, 1);
-        engine::textureManager->save_png(reference_textured_masked, "reference_textured");
+          Texture reference_textured_masked = engine::textureManager->create_texture(im_sz, im_sz);
+          ImageArithmetics::mul(reference_textured_masked, reference_textured, mask_min, 1);
+          engine::textureManager->save_png(reference_textured_masked, reference_textured_name);
+          reference_textured_names.push_back("saves/"+reference_textured_name+".png");
+        }
 
 
         //TODO: select different textures and different materials for model parts
         MitsubaInterface::ModelInfo textured_model_info = default_model_info;
         textured_model_info.parts[0].material_name = best_material;
         textured_model_info.parts[0].texture_name = "../../saves/" + best_tex_name + ".png";
-        mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE, 
-                                        MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
+        mi.init_optimization_with_tex(reference_textured_names, MitsubaInterface::LossFunction::LOSS_MSE, 
+                                      MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
                                         MitsubaInterface::TEXTURED_CONST),
-                                        textured_model_info,
-                                        stage_blk->get_double("texture_opt_lr", 0.25), true);
+                                      textured_model_info,
+                                      stage_blk->get_double("texture_opt_lr", 0.25), true);
         
         std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
         opt::Optimizer *tex_opt = get_optimizer(search_algorithm);
@@ -930,19 +974,23 @@ namespace dopt
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_raw.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", 
+                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
+                              get_camera_params(opt_result.best_params));
 
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_complemented.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
-
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", 
+                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
+                              get_camera_params(opt_result.best_params));
       textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_denoised.png";
       mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
                                  textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), get_camera_params(opt_result.best_params));
+      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", 
+                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
+                              get_camera_params(opt_result.best_params));
     }
-
     debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
     debug("Best error: %f\n", opt_result.best_err);
     debug("Best params: [");

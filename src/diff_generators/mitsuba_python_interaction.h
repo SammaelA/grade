@@ -26,14 +26,12 @@ public:
   {
     RenderSettings() = default;
     RenderSettings(int iw, int ih, int spp, MitsubaVariant mv, RenderStyle rs, int _cameras_count = 1) : 
-                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs),
-                   cameras_count(_cameras_count) {};
+                   image_w(iw), image_h(ih), samples_per_pixel(spp), mitsubaVar(mv), renderStyle(rs) {};
     int image_w = 128;
     int image_h = 128;
     int samples_per_pixel = 16;
     MitsubaVariant mitsubaVar = MitsubaVariant::CUDA;
     RenderStyle renderStyle = RenderStyle::SILHOUETTE;
-    int cameras_count = 1;
   };
   struct ModelInfo
   {
@@ -100,7 +98,7 @@ public:
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
   //that are used by compute_final_grad
-  float render_and_compare(const dgen::DFModel &model, const CameraSettings &camera, const std::vector<float> &scene_params,
+  float render_and_compare(const dgen::DFModel &model, const std::vector<CameraSettings> &cameras, const std::vector<float> &scene_params,
                            double *timers = nullptr);
 
   //render model from different angles, merge them into one image and save it to file, for debug purposes
@@ -128,7 +126,7 @@ public:
   void set_array_to_ctx_internal(const std::string &name, int buffer_id, int size);//sends size float from buffer to mitsuba context 
   float render_and_compare_internal();//returns loss function value
   void model_to_ctx(const dgen::DFModel &model);
-  void camera_to_ctx(const CameraSettings &camera);
+  void camera_to_ctx(const CameraSettings &camera, std::string camera_name);
   void clear_buffer(int buffer_id, float val = 0);
   int get_camera_buffer_id()
   {
