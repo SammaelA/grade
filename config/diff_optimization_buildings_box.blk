@@ -1,0 +1,188 @@
+{
+  procedural_generator:s = "buildings_2"
+
+  //a .blk file describing parameters for scene, such as camera position, light etc.
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+
+  synthetic_reference:b = false
+  reference_image_size:i = 1024
+
+  regularization_alpha:r = 0.02
+  original_reference_size:i = 1024
+  model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
+  save_intermediate_images:b = true
+
+  silhouette_optimization_settings
+  {
+    optimization_stages:i = 1
+
+    stage_10
+    {
+      optimizer:s = "grid_search_adam"
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 4
+      optimizer_settings
+      {
+        start_points_count:i = 32
+        local_search_iterations:i = 100
+        local_search_learning_rate:r = 0.01
+        grid_params_gradient_mult:r = 1
+        verbose:b = true
+        initial_params:arr = {2, 
+                              2, 
+                              0.05, 
+                              0.2, 0.1, 
+                              2, 6, 1, 
+                              4, 170, 1, 
+                              2, 5, 1, 
+                              0.08, 0.08, 0.1, 
+                              0.01, 0.4, 0.1, 0.05, 0.25,
+                              1, 2, 1, 0.6, 0.6, 0.6, 1, 
+                              1, 3, 0, 0.6, 0.7, 0.6, 1.25, 
+                              0.4, 0.5, 0.015, 0.05, 1, 
+                              3, 1, 2, 0.6, 0.6, 0.6, 1, 
+                              0.1, 0.6, 1, 0.15, 
+                              0.1, 0.15,
+                              0.25, 0.2,
+                              0.5, 0.35, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1, 0.4}
+        grid
+        {
+          translation_x
+          {
+            values:arr = {-0.2, -0.3, 0.5}
+          }
+          translation_y
+          {
+            values:arr = {0, 0.25, 0.5, 0.75}
+          }
+          translation_z
+          {
+            values:arr = {1, 2, 3, 4}
+          }
+          rotate_y
+          {
+            values:arr = {0.3, 0.4, 0.5, 0.6, 2.9, 3.1, 3.3}
+          }
+          F_BUILDING_HEIGHT
+          {
+            values:arr = {0.2, 0.4, 0.6}
+          }
+          F_BUILDING_WIDTH
+          {
+            values:arr = {0.2, 0.4, 0.75}
+          }
+        }
+      }
+    }
+
+    stage_11
+    {
+      optimizer:s = "grid_search_adam"
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 4
+      optimizer_settings
+      {
+        start_points_count:i = 10
+        local_search_iterations:i = 100
+        local_search_learning_rate:r = 0.005
+        grid_params_gradient_mult:r = 0.1
+        verbose:b = true
+        initial_params:arr = {2.000, 2.000, 0.050, 0.200, 0.100, 2.000, 6.000, 1.000, 5, 650, 1, 5, 341, 1, 0.080, 0.080, 0.100, 0.008, 0.411, 0.000, 0.00, 0.317, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 0.415, 1.000, -0.160, -0.049, 0.956, 0.074, 0.524, 0.007, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.300}
+        grid
+        {
+          camera_fov
+          {
+            values:arr = {0.1, 0.2, 0.3, 0.4, 0.5, 0.65, 0.85}
+          }
+          translation_y
+          {
+            values:arr = {-0.2, -0.15, -0.1, 0}
+          }
+        }
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      model_quality:i = 0
+      render_image_size:i = 512
+      spp:i = 16
+      optimizer_settings
+      {
+        iterations:i = 100
+        learning_rate:r = 0.01
+        verbose:b = true
+        initial_params:arr = {2.000, 2.000, 0.050, 0.200, 0.100, 2.000, 6.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.010, 0.409, 0.000, 0.023, 0.316, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 0.415, 1.000, 
+                              -0.160, -0.049, 0.956, 0.072, 0.522, 0.007, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.300}
+      }
+    }
+  }
+
+  texture_optimization_settings
+  {
+    optimization_stages:i = 1
+
+    stage_material_selection
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.25
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 16     
+      optimizer_settings
+      {
+        iterations:i = 25
+        learning_rate:r = 0.02
+        verbose:b = true
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 1024
+      spp:i = 128
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
+    }
+
+    stage_1
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 64  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
+    }
+
+    stage_2
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 512
+      spp:i = 128  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
+    }
+  }
+}

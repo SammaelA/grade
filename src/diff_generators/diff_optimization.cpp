@@ -919,7 +919,11 @@ namespace dopt
       
       sleep(1);
 
-      dgen::DFModel best_model_textured = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
+      auto model_quality = dgen::ModelQuality(false, 3);
+      if (generator.name == "buildings_2")
+        model_quality = dgen::ModelQuality(false, 0);
+
+      dgen::DFModel best_model_textured = func.get(get_gen_params(opt_result.best_params), model_quality);
       MitsubaInterface::ModelInfo textured_model_info = default_model_info;
       textured_model_info.parts[0].material_name = best_material;
       
