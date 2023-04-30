@@ -568,33 +568,40 @@ namespace dgen
       vec3 p5 = q.p1 + roof_base_h*q.n + q.v1;
       vec3 p6 = q.p1 + roof_base_h*q.n + q.v2 + q.v1;
 
+      vec2 tc1 = q.tc;
+      vec2 tc2 = q.tc + q.tc_v2;
+      vec2 tc3 = q.tc + f05*q.tc_v2 + roof_side_slope*q.tc_v1;
+      vec2 tc4 = q.tc + f05*q.tc_v2 + (1-roof_side_slope)*q.tc_v1;
+      vec2 tc5 = q.tc + q.tc_v1;
+      vec2 tc6 = q.tc + q.tc_v1 + q.tc_v2;
+
       vec3 n123 = cross(p3 - p1, p2 - p1);
-      add_vertex(M_roof, p1, n123, vec2(0,0));
-      add_vertex(M_roof, p3, n123, vec2(1,0));
-      add_vertex(M_roof, p2, n123, vec2(0,1));
+      add_vertex(M_roof, p1, n123, tc1);
+      add_vertex(M_roof, p3, n123, tc3);
+      add_vertex(M_roof, p2, n123, tc2);
 
       vec3 n153 = cross(p5 - p1, p3 - p1);
-      add_vertex(M_roof, p1, n153, vec2(0,0));
-      add_vertex(M_roof, p5, n153, vec2(1,0));
-      add_vertex(M_roof, p3, n153, vec2(0,1));
+      add_vertex(M_roof, p1, n153, tc1);
+      add_vertex(M_roof, p5, n153, tc5);
+      add_vertex(M_roof, p3, n153, tc3);
 
-      add_vertex(M_roof, p5, n153, vec2(0,0));
-      add_vertex(M_roof, p4, n153, vec2(1,0));
-      add_vertex(M_roof, p3, n153, vec2(0,1));
+      add_vertex(M_roof, p5, n153, tc5);
+      add_vertex(M_roof, p4, n153, tc4);
+      add_vertex(M_roof, p3, n153, tc3);
 
       vec3 n564 = cross(p6 - p5, p4 - p5);
-      add_vertex(M_roof, p5, n564, vec2(0,0));
-      add_vertex(M_roof, p6, n564, vec2(1,0));
-      add_vertex(M_roof, p4, n564, vec2(0,1));
+      add_vertex(M_roof, p5, n564, tc5);
+      add_vertex(M_roof, p6, n564, tc6);
+      add_vertex(M_roof, p4, n564, tc4);
 
       vec3 n624 = cross(p2 - p6, p4 - p6);
-      add_vertex(M_roof, p6, n624, vec2(0,0));
-      add_vertex(M_roof, p2, n624, vec2(1,0));
-      add_vertex(M_roof, p4, n624, vec2(0,1));
+      add_vertex(M_roof, p6, n624, tc6);
+      add_vertex(M_roof, p2, n624, tc2);
+      add_vertex(M_roof, p4, n624, tc4);
       
-      add_vertex(M_roof, p4, n624, vec2(0,0));
-      add_vertex(M_roof, p2, n624, vec2(1,0));
-      add_vertex(M_roof, p3, n624, vec2(0,1));
+      add_vertex(M_roof, p4, n624, tc4);
+      add_vertex(M_roof, p2, n624, tc2);
+      add_vertex(M_roof, p3, n624, tc3);
     };
 
     auto make_insides = [&](std::vector<real> &M_int, real depth, bool left_wall,
@@ -903,12 +910,11 @@ namespace dgen
 
     if (quality.quality_level == ModelQuality::LOW)
     {
-      make_quad(wallM, Quad(vec3(0,0,-1), vec3(1,0,0), vec3(0,1,0), vec3(0,0,-1)));
-      make_quad(wallM, Quad(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0), vec3(0,0,1)));
-      make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,1,0), vec3(0,0,1), vec3(-1,0,0)));
-      make_quad(wallM, Quad(vec3(1,0,-1), vec3(0,0,1), vec3(0,1,0), vec3(1,0,0)));
-      make_quad(wallM, Quad(vec3(0,0,-1), vec3(0,0,1), vec3(1,0,0), vec3(0,-1,0)));
-      make_quad(wallM, Quad(vec3(0,1,-1), vec3(1,0,0), vec3(0,0,1), vec3(0,1,0)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0), vec3(1,0,0), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(0,0,-1)));
+      make_quad(wallM, Quad(vec3(0,0, 0), vec2(0,0), vec3(0,1,0), vec2(0.5, 0), vec3(1,0,0), vec2(0, 0.5), vec3(0,0,1)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0.5), vec3(0,1,0), vec2(0.5, 0), vec3(0,0,1), vec2(0, 0.5), vec3(-1,0,0)));
+      make_quad(wallM, Quad(vec3(1,0,-1), vec2(0,0.5), vec3(0,0,1), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(1,0,0)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0.5,0), vec3(0,0,1), vec2(0.5, 0), vec3(1,0,0), vec2(0, 0.5), vec3(0,-1,0)));
 
       //make_roof_segment(wallM, wallM, params[F_ROOF_BASE_HEIGHT_Q], params[F_ROOF_HEIGHT_Q],
       //                  true, true,
@@ -949,8 +955,12 @@ namespace dgen
     make_roof_segment(wallM, roofM, original_sizes.y*params[F_ROOF_BASE_HEIGHT_Q], original_sizes.y*params[F_ROOF_HEIGHT_Q],
                       params[F_ROOF_SIDE_SLOPE_SIZE],
                       Quad(vec3(-original_sizes.z*params[F_ROOF_OVERSIZE_X], original_sizes.y, original_sizes.z*params[F_ROOF_OVERSIZE_Z]), 
+                           vec2(0.5,0.5),
                            vec3(original_sizes.x*(1+2*params[F_ROOF_OVERSIZE_X]),0,0), 
-                           vec3(0,0,-1.0f*original_sizes.z*(1+2*params[F_ROOF_OVERSIZE_Z])), vec3(0,1,0)));
+                           vec2(0.5, 0),
+                           vec3(0,0,-1.0f*original_sizes.z*(1+2*params[F_ROOF_OVERSIZE_Z])), 
+                           vec2(0, 0.5),
+                           vec3(0,1,0)));
 
     std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM, &doorM};
     std::vector<std::string> names = {"main_part", "windows", "interior", "wooden_parts", "metal_parts", "roof", "door"};
