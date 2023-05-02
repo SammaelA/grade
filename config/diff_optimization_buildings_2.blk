@@ -155,7 +155,7 @@
       render_image_size:i = 200
       spp:i = 4
       reference_texture_name:s = "mask_1"
-      do_not_optimize_parameters:arr = {"F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
+      do_not_optimize_parameters:arr = {"F_BUILDING_LENGTH", "F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
                                         "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
                                         "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
                                         "translation_x", "translation_y", "translation_z",
@@ -193,7 +193,7 @@
       render_image_size:i = 333
       spp:i = 10
       reference_texture_name:s = "mask_1"
-      do_not_optimize_parameters:arr = {"F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
+      do_not_optimize_parameters:arr = {"F_BUILDING_LENGTH", "F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
                                         "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
                                         "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
                                         "translation_x", "translation_y", "translation_z",

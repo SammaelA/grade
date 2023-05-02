@@ -696,6 +696,7 @@ namespace dgen
       F_STAIRS_HEIGHT,
       F_STAIRS_LENGTH,
 
+      F_BUILDING_LENGTH,
       F_BUILDING_HEIGHT,
       F_BUILDING_WIDTH,
 
@@ -982,8 +983,7 @@ namespace dgen
         k++;
       }
     }
-
-    dmat43 sc2 = scale(ident<dfloat>(), dvec3(1.0f, params[F_BUILDING_HEIGHT], params[F_BUILDING_WIDTH])/original_sizes);
+    dmat43 sc2 = scale(ident<dfloat>(), dvec3(params[F_BUILDING_LENGTH], params[F_BUILDING_HEIGHT], params[F_BUILDING_WIDTH])/original_sizes);
     transform(model, sc2);
 
     if (quality.quality_level <= ModelQuality::MEDIUM)
