@@ -1,0 +1,228 @@
+{
+  //which procedural generator is used to create models. Currently only "dishes" is available
+  procedural_generator:s = "dishes"
+
+  //a .blk file describing parameters for scene, such as camera position, light etc.
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+  synthetic_reference:b = false
+  reference_image_size:i = 512
+
+  regularization_alpha:r = 1
+  original_reference_size:i = 1024
+  model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
+  save_intermediate_images:b = true
+
+  cameras
+  {
+  camera {
+  camera.origin:p3 = 0.000000, 0.000000, 3.000000
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0000.png"
+  }
+  camera {
+  camera.origin:p3 = 1.928363, 0.000000, 2.298133
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0001.png"
+  }
+  camera {
+  camera.origin:p3 = 2.954423, 0.000000, 0.520944
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0002.png"
+  }
+  camera {
+  camera.origin:p3 = 2.598076, 0.000000, -1.500000
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0003.png"
+  }
+  camera {
+  camera.origin:p3 = 1.026060, 0.000000, -2.819078
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0004.png"
+  }
+  camera {
+  camera.origin:p3 = -1.026061, 0.000000, -2.819078
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0005.png"
+  }
+  camera {
+  camera.origin:p3 = -2.598076, 0.000000, -1.500000
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0006.png"
+  }
+  camera {
+  camera.origin:p3 = -2.954423, 0.000000, 0.520946
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0007.png"
+  }
+  camera {
+  camera.origin:p3 = -1.928362, 0.000000, 2.298134
+  camera.target:p3 = 0.000000, 0.000000, 0.000000
+  camera.up:p3 = 0.000000, 1.000000, 0.000000
+  camera.z_near:r = 0.100000
+  camera.z_far:r = 100.000000
+  camera.fov_rad:r = 0.500000
+  textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0008.png"
+  }
+  }
+
+  silhouette_optimization_settings
+  {
+    optimization_stages:i = 3
+
+    stage_0
+    {
+      optimizer:s = "grid_search_adam"
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 1
+      optimizer_settings
+      {
+        start_points_count:i = 5
+        local_search_iterations:i = 150
+        local_search_learning_rate:r = 0.02
+        grid_params_gradient_mult:r = 0.1
+        verbose:b = true
+          initial_params:arr = {3.384, 3.657, 3.912, 4.125, 4.274, 4.392, 4.466, 4.487, 4.489, 1.072, 1.000, 0.05, 0.4, 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2, 1.985, 1.840, 1.176, 0.853, 0.795, 0.772, 0.767, 0.790, 0.808, 0.812, 0.794, 0.791, 0.767, 0.782, 0.773, 0.771, 0.819, 0.837, 1.033, 1.456,  
+                                0,0,0, 0,3.141,0,  0.0,0.500, 662.898,   1.000, 79.108, 0.200, 0.250}
+        //cup_6
+        //initial_params:arr = {3.384, 3.657, 3.912, 4.125, 4.274, 4.392, 4.466, 4.487, 4.489, 1.072, 1.000, 0.060, 0.491, 0.204, 0.243, 0.314, 0.378, 0.416, 0.429, 0.424, 0.411, 0.395, 0.381, 0.364, 0.352, 0.342, 0.335, 0.329, 0.330, 0.332, 0.343, 0.351, 0.354, 1.985, 1.840, 1.176, 0.853, 0.795, 0.772, 0.767, 0.790, 0.808, 0.812, 0.794, 0.791, 0.767, 0.782, 0.773, 0.771, 0.819, 0.837, 1.033, 1.456,  0.168, 0.569, 1.048, 0.003, -0.338, -0.012, 000.000,   0.500, 662.898,   1.000, 79.108, 0.200, 0.250}
+        //cup 14 
+        //initial_params:arr = {2.550, 3.300, 3.699, 4.049, 4.245, 4.444, 4.594, 4.742, 4.853, 0.967, 0.662, 0.053, 0.439, 0.237, 0.184, 0.185, 0.214, 0.253, 0.283, 0.312, 0.336, 0.343, 0.337, 0.319, 0.293, 0.263, 0.234, 0.205, 0.176, 0.174, 0.173, 0.168, 0.155, 0.743, 1.266, 1.393, 1.360, 1.147, 1.062, 0.784, 0.836, 0.949, 1.019, 1.058, 1.127, 1.118, 1.116, 1.112, 1.228, 0.988, 0.772, 0.634, 0.807,  0.126, 0.523, 1.821, 0.444, -0.288,  0.025, 000.000,   0.500, 490.099,   1.000, 96.099, 0.546, 0.250}
+        //cup 5
+        //initial_params:arr = {3.318, 3.634, 3.873, 4.091, 4.220, 4.309, 4.356, 4.400, 4.400, 1.000, 0.987, 0.041, 0.477, 0.223, 0.225, 0.277, 0.296, 0.310, 0.317, 0.310, 0.302, 0.296, 0.289, 0.287, 0.286, 0.291, 0.295, 0.306, 0.317, 0.326, 0.345, 0.364, 0.375, 1.991, 1.990, 1.209, 1.221, 1.190, 1.201, 1.153, 1.131, 1.088, 1.048, 0.998, 0.952, 0.899, 0.853, 0.826, 0.842, 0.831, 0.930, 1.098, 1.690, -0.149, 0.573, 1.774, 0.359,  2.945,  0.012, 510.403,   6.013,  26.971,   1.000, 56.560, 0.9  , 0.125}
+        //cup 3
+        //initial_params:arr = {3.271, 3.623, 3.896, 4.114, 4.286, 4.408, 4.497, 4.570, 4.591, 1.060, 1.000, 0.053, 0.542, 0.152, 0.224, 0.326, 0.395, 0.442, 0.469, 0.474, 0.450, 0.411, 0.369, 0.330, 0.299, 0.279, 0.265, 0.259, 0.261, 0.273, 0.297, 0.336, 0.407, 2.000, 2.000, 1.008, 0.740, 0.618, 0.643, 0.640, 0.659, 0.655, 0.654, 0.637, 0.579, 0.520, 0.500, 0.500, 0.500, 0.597, 0.732, 1.275, 1.232,  0.187, 0.585, 1.370, 0.102, -0.292,  0.017, 100.000, 250.000, 100.000, 100.000, 50    , 0.250, 0.125}
+        grid
+        {
+          handle_center_y
+          {
+            values:arr = {0.55, 0.6, 0.65}
+          }
+          //rotate_y
+          //{
+          //  values:arr = {0, 3.14}
+          //}
+        }
+      }
+    }
+    stage_1
+    {
+      optimizer:s = "adam"
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 1
+      optimizer_settings
+      {
+        iterations:i = 100
+        learning_rate:r = 0.005
+        verbose:b = true
+      }
+    }
+    stage_2
+    {
+      optimizer:s = "adam"
+      model_quality:i = 1
+      render_image_size:i = 512
+      spp:i = 1
+      optimizer_settings
+      {
+        iterations:i = 100
+        learning_rate:r = 0.005
+        verbose:b = true
+      }
+    }
+  }
+
+  texture_optimization_settings
+  {
+    optimization_stages:i = 3
+
+    stage_material_selection
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.25
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 256     
+      optimizer_settings
+      {
+        iterations:i = 20
+        learning_rate:r = 1
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.4
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 256  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 1
+      }   
+    }
+
+    stage_1
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.3
+      model_quality:i = 1
+      render_image_size:i = 256
+      spp:i = 512     
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.5
+      } 
+    }
+
+    stage_2
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.3
+      model_quality:i = 1
+      render_image_size:i = 512
+      spp:i = 512   
+      optimizer_settings
+      {
+        iterations:i = 40
+        learning_rate:r = 0.25
+      }   
+    }
+  }
+}

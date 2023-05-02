@@ -49,15 +49,17 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
     camera.target = glm::vec3(0, 0, 0);
     camera.up = glm::vec3(0, 1, 0);
     camera.origin = glm::vec3(camera_dist * sin(phi), camera_y, camera_dist * cos(phi));
-    Block camera_blk;
-    dgen::save_camera_settings(camera, camera_blk);
-    camera_presets->add_block("camera", &camera_blk);
 
     char path[1024];
     sprintf(path, "%s/frame-%04d.png", folder_name.c_str(), i);
     logerr("ss %s", path);
     std::vector<float> no_transform_scene_params = {0, 0, 0, 0, 0, 0, 100, 1000, 100, 100, 100, 0.01, camera.fov_rad};
     mi.render_model_to_file(model, path, camera, no_transform_scene_params);
+    
+    Block camera_blk;
+    dgen::save_camera_settings(camera, camera_blk);
+    camera_blk.set_string("textured", std::string(path));
+    camera_presets->add_block("camera", &camera_blk);
   }
 }
 
@@ -131,11 +133,14 @@ void cup_1_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
   dgen::normalize_model(model);
   bbox = dgen::get_bbox(model);
 
+  Block cameras_64, cameras_9;
   dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part", 0}}};
   render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
-                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable", 1024, 64, 64, 3, 0, camera);
+                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
+  save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable/cameras.blk", cameras_64);
   render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
-                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 256, 64, 9, 3, 0, camera);
+                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 256, 64, 9, 3, 0, camera, &cameras_9);
+  save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/cameras.blk", cameras_9);
 }
 
 void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -162,11 +167,14 @@ void cup_4_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
       dgen::normalize_model(model);
       bbox = dgen::get_bbox(model);
 
+      Block cameras_64, cameras_9;
       dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part",0}}};
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
-                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable", 1024, 64, 64, 3, 0, camera);
+                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
+      save_block_to_file("../prezentations/spring_23_medialab/cup_model_4/reference_turntable/cameras.blk", cameras_64);
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
-                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9", 256, 64, 9, 3, 0, camera);
+                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9", 256, 64, 9, 3, 0, camera, &cameras_9);
+      save_block_to_file("../prezentations/spring_23_medialab/cup_model_4/reference_turntable_9/cameras.blk", cameras_9);
 }
 
 void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -434,7 +442,9 @@ void compare_sandbox(int argc, char **argv)
   //compare_and_print("cup_model_4", "cup_4");
   //compare_and_print("cup_model_1", "cup_1");
   //building_2_render_mygen_turntable(mi, camera);
-  building_2_render_reference_turntable(mi, camera);
+  //building_2_render_reference_turntable(mi, camera);
+  cup_4_render_reference_turntable(mi, camera);
+  cup_1_render_reference_turntable(mi, camera);
   //calc_NGP_3D_IoU(mi, camera, "cup_model_4"); 
   //calc_NGP_3D_IoU(mi, camera, "cup_model_1"); 
   //calc_NGP_3D_IoU(mi, camera, "test_building_2"); 
