@@ -563,6 +563,7 @@ def render(it, context):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
+  loss /= float(context['cameras_count'])
   loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
   dr.backward(loss_PSNR)
 
