@@ -132,6 +132,8 @@ def get_material_by_name(texture_name, material_name):
     return roughdielectric(texture_name, 0.05)
   elif (material_name == "frosted glass"):
     return roughdielectric(texture_name, 0.25)
+  elif (material_name == "lambert"):
+    return lambert(texture_name)
   else:
     print("unknown material name ", material_name)
     return porcelain_roughplastic(texture_name, 0)

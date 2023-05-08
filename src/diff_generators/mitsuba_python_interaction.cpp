@@ -633,7 +633,8 @@ std::vector<std::string> MitsubaInterface::get_all_available_materials()
     "rough ceramics",
     "glass",
     "imperfect glass",
-    "frosted glass"
+    "frosted glass",
+    "lambert"
   };
 }
 
