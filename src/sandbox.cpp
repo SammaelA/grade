@@ -275,11 +275,12 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   {
       Texture res_optimized = textureManager.load_unnamed_tex("saves/reconstructed_tex_raw.png");
       Texture mask_tex = textureManager.load_unnamed_tex("saves/reconstructed_mask.png");
+      Texture new_mask;
       //std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.375, 3, 1}, {0, 0.375, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 10}};
       std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
     engine::view->next_frame();
       ModelTex mt;
-      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
+      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data, &new_mask);
 
       Texture res = BilateralFilter::perform(comp, 4, 0.5);
       Texture sharped = UnsharpMasking::perform(res, 1, 0.2);
@@ -287,6 +288,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       textureManager.save_png(res_optimized, "reconstructed_tex_raw_1");
       textureManager.save_png(sharped, "reconstructed_tex_complemented_1");
       textureManager.save_png(sharped, "reconstructed_tex_denoised_1");
+      textureManager.save_png(new_mask, "reconstructed_mask_complemented");
     engine::view->next_frame();
   }
   else if (argc >= 3 && std::string(argv[2]) == "-voxelization_test")

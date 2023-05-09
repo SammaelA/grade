@@ -712,11 +712,22 @@ namespace dopt
                                                             dgen::ModelQuality(false, 3));
       visualizer::simple_mesh_to_model_332(best_model_transformed.first, m);
       m->update();
-
-      //we use one (zero) camera to make initial texture
-      reconstructed_tex = mt.getTexbyUV(references["mask_0"], *m, references["textured_0"],
-                                        has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
-                                        mask_tex);
+      for (int cam_id=0;cam_id<cameras_count;cam_id++)
+      {
+        //we use one (zero) camera to make initial texture and make mask as a maximum of all masks
+        Texture mask_tex_cam, reconstructed_tex_cam, mask_tex_new;
+        reconstructed_tex_cam = mt.getTexbyUV(references["mask_"+std::to_string(cam_id)], *m, references["textured_"+std::to_string(cam_id)],
+                                          has_fixed_cameras ? fixed_cameras[cam_id] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                                          mask_tex_cam);
+        if (cam_id == 0)
+        {
+          reconstructed_tex = reconstructed_tex_cam;
+          mask_tex = engine::textureManager->create_texture(reconstructed_tex.get_W(), reconstructed_tex.get_H());
+        }
+        mask_tex_new = engine::textureManager->create_texture(mask_tex.get_W(), mask_tex.get_H());
+        ImageArithmetics::maximum(mask_tex_new, mask_tex, mask_tex_cam, 1, 1);
+        mask_tex = mask_tex_new;
+      }
       engine::textureManager->save_png(reconstructed_tex, "reconstructed_tex");
       engine::textureManager->save_png(mask_tex, "reconstructed_mask");
     }

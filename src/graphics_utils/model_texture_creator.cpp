@@ -126,10 +126,10 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   res_mask = engine::textureManager->create_texture(res_od*photo.get_W(), res_od*photo.get_H());
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res_mask.texture, 0);
   glViewport(0, 0, res_mask.get_W(), res_mask.get_H());
-  PostFx average("average_filter.fs");
+  PostFx average("max_filter.fs");
   average.use();
   average.get_shader().texture("tex", tmp_mask);
-  average.get_shader().uniform("radius", rec_od + 1);
+  average.get_shader().uniform("radius", rec_od);
   average.get_shader().uniform("tex_size", glm::vec2(tmp_mask.get_W(), tmp_mask.get_H()));
   average.render();
 
@@ -141,9 +141,11 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   return tmp_tex2;
 }
 
-Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data)
+Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data, Texture *out_mask_complemented)
 {
   Texture t = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
+  if (out_mask_complemented)
+    *out_mask_complemented = engine::textureManager->create_texture(tex.get_W(), tex.get_H());
   int W = tex.get_W();
   int H = tex.get_H();
 
@@ -314,6 +316,24 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     tex_com.get_shader().texture("mask2", mask2);
     tex_com.render();
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    
+    if (out_mask_complemented)
+    {
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      tex_com.get_shader().use();
+      tex_com.get_shader().uniform("x_sym", it.x_sym);
+      tex_com.get_shader().uniform("y_sym", it.y_sym);
+      tex_com.get_shader().texture("tex1", mask1);
+      tex_com.get_shader().texture("tex2", mask1);
+      tex_com.get_shader().texture("mask1", mask1);
+      tex_com.get_shader().texture("mask2", mask1);
+      tex_com.render();
+      glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    }
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.texture, 0);
     glViewport(it.w0 * W, it.h0 * H, w * W, h * H);
     copy.use();
@@ -321,6 +341,17 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     copy.render();
     
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    if (out_mask_complemented)
+    {
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, out_mask_complemented->texture, 0);
+      glViewport(it.w0 * W, it.h0 * H, w * W, h * H);
+      copy.use();
+      copy.get_shader().texture("tex", sm_tex);
+      copy.render();
+      
+      glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    }
   }
   glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);

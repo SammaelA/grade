@@ -20,7 +20,7 @@ public:
     int x_sym; 
     int y_sym;
   } tex_data;
-  Texture symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data);
+  Texture symTexComplement(Texture tex, Texture mask, std::vector<tex_data> texs_data, Texture *out_mask_complemented = nullptr);
 private:
   GLuint fbo;
   Shader UV;
