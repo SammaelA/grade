@@ -99,9 +99,9 @@
 
   silhouette_optimization_settings
   {
-    optimization_stages:i = 3
+    optimization_stages:i = 1
 
-    stage_0
+    stage_10
     {
       optimizer:s = "grid_search_adam"
       model_quality:i = 0
@@ -137,44 +137,45 @@
         }
       }
     }
-    stage_1
+    stage_11
     {
       optimizer:s = "adam"
       model_quality:i = 0
       render_image_size:i = 256
-      spp:i = 1
+      spp:i = 4
       optimizer_settings
       {
-        iterations:i = 100
+        iterations:i = 75
         learning_rate:r = 0.005
         verbose:b = true
       }
     }
-    stage_2
+    stage_0
     {
       optimizer:s = "adam"
       model_quality:i = 1
       render_image_size:i = 512
-      spp:i = 1
+      spp:i = 16
       optimizer_settings
       {
-        iterations:i = 100
+        iterations:i = 1
         learning_rate:r = 0.005
         verbose:b = true
+        initial_params:arr = {3.329, 3.515, 3.716, 3.740, 3.814, 3.858, 3.917, 3.961, 4.006, 0.654, 1.000, 0.059, 0.547, 0.258, 0.262, 0.302, 0.317, 0.318, 0.308, 0.294, 0.281, 0.268, 0.259, 0.252, 0.249, 0.249, 0.250, 0.253, 0.257, 0.264, 0.256, 0.264, 0.328, 1.543, 1.370, 1.123, 0.990, 0.943, 0.956, 0.947, 0.961, 0.952, 0.951, 0.936, 0.928, 0.939, 0.938, 0.971, 0.940, 0.998, 1.261, 1.720, 1.974, -0.138, 0.042, 0.020, -0.000, 3.119, 0.001, -8.915, 6.377, 662.680, 1.000, 79.108, 0.200, 0.250}
       }
     }
   }
 
   texture_optimization_settings
   {
-    optimization_stages:i = 3
+    optimization_stages:i = 1
 
     stage_material_selection
     {
       optimizer:s = "adam"
       texture_lr:r = 0.25
       model_quality:i = 0
-      render_image_size:i = 128
+      render_image_size:i = 256
       spp:i = 256     
       optimizer_settings
       {
@@ -186,35 +187,37 @@
     stage_0
     {
       optimizer:s = "adam"
-      texture_lr:r = 0.4
+      texture_lr:r = 0.1
       model_quality:i = 0
       render_image_size:i = 128
-      spp:i = 256  
+      spp:i = 128  
       optimizer_settings
       {
         iterations:i = 75
         learning_rate:r = 1
+        verbose:b = true
       }   
     }
 
     stage_1
     {
       optimizer:s = "adam"
-      texture_lr:r = 0.3
+      texture_lr:r = 0.05
       model_quality:i = 1
       render_image_size:i = 256
-      spp:i = 512     
+      spp:i = 256     
       optimizer_settings
       {
         iterations:i = 75
         learning_rate:r = 0.5
+        verbose:b = true
       } 
     }
 
     stage_2
     {
       optimizer:s = "adam"
-      texture_lr:r = 0.3
+      texture_lr:r = 0.01
       model_quality:i = 1
       render_image_size:i = 512
       spp:i = 512   
@@ -222,6 +225,7 @@
       {
         iterations:i = 40
         learning_rate:r = 0.25
+        verbose:b = true
       }   
     }
   }

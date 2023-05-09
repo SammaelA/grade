@@ -21,6 +21,7 @@
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/image_arithmetic.h"
 #include "simple_model_utils.h"
+#include <opencv2/opencv.hpp>
 
 namespace dopt
 {
@@ -964,14 +965,35 @@ namespace dopt
 
       Texture res = BilateralFilter::perform(res_optimized, 2.5, 0.33);
       Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
-
-      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
-      Texture comp = mt.symTexComplement(res_optimized, mask_tex, data);
+      Texture comp, mask_complemented;
+      if (cameras_count == 1)
+      {
+        std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
+        comp = mt.symTexComplement(res_optimized, mask_tex, data, &mask_complemented);
+      }
+      else
+      {
+        comp = res_optimized;
+        mask_complemented = mask_tex;
+      }
 
       engine::textureManager->save_png(res_optimized, "reconstructed_tex_raw");
       engine::textureManager->save_png(comp, "reconstructed_tex_complemented");
+      engine::textureManager->save_png(mask_complemented, "reconstructed_mask_complemented");
       engine::textureManager->save_png(sharped, "reconstructed_tex_denoised");
       
+      sleep(1);
+      {
+        cv::Mat image, mask, image_inpainted;
+        image = cv::imread("saves/reconstructed_tex_raw.png");
+        mask = cv::imread("saves/reconstructed_mask_complemented.png", cv::ImreadModes::IMREAD_GRAYSCALE);
+        for (int i=0;i<mask.size().height;i++)
+          for (int j=0;j<mask.size().width;j++)
+            mask.at<unsigned char>(i, j) = mask.at<unsigned char>(i, j) > 250 ? 0 : 1;
+
+        cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
+        cv::imwrite("saves/reconstructed_tex_complemented.png", image_inpainted);
+      }
       sleep(1);
 
       auto model_quality = dgen::ModelQuality(false, 3);

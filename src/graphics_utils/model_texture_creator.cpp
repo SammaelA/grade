@@ -123,16 +123,27 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   texture_postprocess.get_shader().uniform("alpha_thr", 0.3);
   texture_postprocess.render();
 
+  Texture tmp_mask_2 = engine::textureManager->create_texture(res_od*photo.get_W(), res_od*photo.get_H());
   res_mask = engine::textureManager->create_texture(res_od*photo.get_W(), res_od*photo.get_H());
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_mask_2.texture, 0);
+  glViewport(0, 0, res_mask.get_W(), res_mask.get_H());
+  PostFx max_filter("max_filter.fs");
+  max_filter.use();
+  max_filter.get_shader().texture("tex", tmp_mask);
+  max_filter.get_shader().uniform("radius", rec_od);
+  max_filter.get_shader().uniform("tex_size", glm::vec2(tmp_mask.get_W(), tmp_mask.get_H()));
+  max_filter.render();
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res_mask.texture, 0);
   glViewport(0, 0, res_mask.get_W(), res_mask.get_H());
-  PostFx average("max_filter.fs");
-  average.use();
-  average.get_shader().texture("tex", tmp_mask);
-  average.get_shader().uniform("radius", rec_od);
-  average.get_shader().uniform("tex_size", glm::vec2(tmp_mask.get_W(), tmp_mask.get_H()));
-  average.render();
-
+  PostFx min_filter("min_filter.fs");
+  min_filter.use();
+  min_filter.get_shader().texture("tex", tmp_mask_2);
+  min_filter.get_shader().uniform("radius", 4);
+  min_filter.get_shader().uniform("tex_size", glm::vec2(tmp_mask_2.get_W(), tmp_mask_2.get_H()));
+  min_filter.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   glEnable(GL_DEPTH_TEST);

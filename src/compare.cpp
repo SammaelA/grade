@@ -59,7 +59,8 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
     Block camera_blk;
     dgen::save_camera_settings(camera, camera_blk);
     camera_blk.set_string("textured", std::string(path));
-    camera_presets->add_block("camera", &camera_blk);
+    if (camera_presets)
+      camera_presets->add_block("camera", &camera_blk);
   }
 }
 
@@ -158,6 +159,23 @@ void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
                         "prezentations/spring_23_medialab/cup_model_1/mygen_turntable", 1024, 64, 64, 3, 0, camera);
       render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_1/reconstructed_tex_complemented.png",
                         "prezentations/spring_23_medialab/cup_model_1/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
+}
+
+void cup_1_multicam_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
+{
+      std::vector<float> params = {3.329, 3.515, 3.716, 3.740, 3.814, 3.858, 3.917, 3.961, 4.006, 0.654, 1.000, 0.059, 0.547, 0.258, 0.262, 0.302, 0.317, 0.318, 0.308, 0.294, 0.281, 0.268, 0.259, 0.252, 0.249, 0.249, 0.250, 0.253, 0.257, 0.264, 0.256, 0.264, 0.328, 1.543, 1.370, 1.123, 0.990, 0.943, 0.956, 0.947, 0.961, 0.952, 0.951, 0.936, 0.928, 0.939, 0.938, 0.971, 0.940, 0.998, 1.261, 1.720, 1.974, -0.138, 0.042, 0.020, -0.000, 3.119, 0.001, -9.294, 6.318, 662.677, 1.000, 79.108, 0.200, 0.250};
+      dgen::DFModel res;
+      dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
+      dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+      
+      auto bbox = dgen::get_bbox(res.first);
+      dgen::normalize_model(res.first);
+      bbox = dgen::get_bbox(res.first);
+
+      render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_1_multicam/reconstructed_tex_complemented.png",
+                        "prezentations/spring_23_medialab/cup_model_1_multicam/mygen_turntable", 1024, 64, 64, 3, 0, camera);
+      render_normalized(mi, res, "../../prezentations/spring_23_medialab/cup_model_1_multicam/reconstructed_tex_complemented.png",
+                        "prezentations/spring_23_medialab/cup_model_1_multicam/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
 }
 
 void cup_4_render_reference_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -436,6 +454,7 @@ void compare_sandbox(int argc, char **argv)
   float fov_rad = 0.5;
   CameraSettings camera = MitsubaInterface::get_camera_from_scene_params({fov_rad});
 
+  cup_1_multicam_render_mygen_turntable(mi, camera);
   //building_2_render_mygen_turntable(mi, camera);
 
   //compare_and_print("test_building_2", "building_2");
@@ -443,8 +462,8 @@ void compare_sandbox(int argc, char **argv)
   //compare_and_print("cup_model_1", "cup_1");
   //building_2_render_mygen_turntable(mi, camera);
   //building_2_render_reference_turntable(mi, camera);
-  cup_4_render_reference_turntable(mi, camera);
-  cup_1_render_reference_turntable(mi, camera);
+  //cup_4_render_reference_turntable(mi, camera);
+  //cup_1_render_reference_turntable(mi, camera);
   //calc_NGP_3D_IoU(mi, camera, "cup_model_4"); 
   //calc_NGP_3D_IoU(mi, camera, "cup_model_1"); 
   //calc_NGP_3D_IoU(mi, camera, "test_building_2"); 
