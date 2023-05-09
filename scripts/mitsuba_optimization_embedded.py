@@ -560,14 +560,28 @@ def render(it, context):
     if (context['status'] == 'optimization_with_tex'):
       img = img_ref_mask * img
     loss += context['loss_function'](img, img_ref) # loss = F_loss(image)
-    
+
     if (context['save_intermediate_images'] > 0 and int(it) % 10 == 0):
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+".png", img)
       mi.util.write_bitmap("saves/iter"+str(it)+"_cam_"+str(camera_n)+"_diff.png", dr.sqr(img - img_ref))
 
   loss /= float(context['cameras_count'])
+
+  #texture regularization
+  if (context['status'] == 'optimization_with_tex'):
+    reg_q = 0.01
+    opt = context['tex_optimizer']
+    for key in opt.keys():
+      if 'bsdf' in key:
+        #reg_loss = dr.sum(dr.sqr(opt[key][1:-1,1:-1] - opt[key][2:  ,0:-2]) + dr.sqr(opt[key][1:-1,1:-1] - opt[key][2:  ,2:  ]) +\
+        #                  dr.sqr(opt[key][1:-1,1:-1] - opt[key][0:-2,2:  ]) + dr.sqr(opt[key][1:-1,1:-1] - opt[key][0:-2,0:-2]))
+        reg_loss = dr.sum(dr.abs(opt[key][1:-1,2:  ] - opt[key][1:-1,0:-2]) + dr.abs(opt[key][1:-1,0:-2] - opt[key][1:-1,2:  ]))# +\
+                          #dr.sqr(opt[key][2:  ,2:  ] - opt[key][0:-2,0:-2]) + dr.sqr(opt[key][2:  ,0:-2] - opt[key][0:-2,2:  ]))
+    loss += reg_q*(1.0/len(opt[key]))*reg_loss
+  
+  dr.backward(loss)
   loss_PSNR = -10*(dr.log(1/loss)/dr.log(10)) #minus is because the pipeline tries to _minimize_ function
-  dr.backward(loss_PSNR)
+  #dr.backward(loss_PSNR)
 
   camera_params_grad = []
   camera_params_grad.append(dr.grad(pos).x)
