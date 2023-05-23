@@ -22,6 +22,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0000.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0000.png"
   }
   camera {
   camera.origin:p3 = 1.928363, 0.000000, 2.298133
@@ -31,6 +32,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0001.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0001.png"
   }
   camera {
   camera.origin:p3 = 2.954423, 0.000000, 0.520944
@@ -40,6 +42,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0002.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0002.png"
   }
   camera {
   camera.origin:p3 = 2.598076, 0.000000, -1.500000
@@ -49,6 +52,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0003.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0003.png"
   }
   camera {
   camera.origin:p3 = 1.026060, 0.000000, -2.819078
@@ -58,6 +62,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0004.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0004.png"
   }
   camera {
   camera.origin:p3 = -1.026061, 0.000000, -2.819078
@@ -67,6 +72,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0005.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0005.png"
   }
   camera {
   camera.origin:p3 = -2.598076, 0.000000, -1.500000
@@ -76,6 +82,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0006.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0006.png"
   }
   camera {
   camera.origin:p3 = -2.954423, 0.000000, 0.520946
@@ -85,6 +92,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0007.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0007.png"
   }
   camera {
   camera.origin:p3 = -1.928362, 0.000000, 2.298134
@@ -94,6 +102,7 @@
   camera.z_far:r = 100.000000
   camera.fov_rad:r = 0.500000
   textured:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/frame-0008.png"
+  mask:s = "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/mask-0008.png"
   }
   }
 
@@ -158,8 +167,8 @@
       spp:i = 16
       optimizer_settings
       {
-        iterations:i = 1
-        learning_rate:r = 0.005
+        iterations:i = 75
+        learning_rate:r = 0.01
         verbose:b = true
         initial_params:arr = {3.329, 3.515, 3.716, 3.740, 3.814, 3.858, 3.917, 3.961, 4.006, 0.654, 1.000, 0.059, 0.547, 0.258, 0.262, 0.302, 0.317, 0.318, 0.308, 0.294, 0.281, 0.268, 0.259, 0.252, 0.249, 0.249, 0.250, 0.253, 0.257, 0.264, 0.256, 0.264, 0.328, 1.543, 1.370, 1.123, 0.990, 0.943, 0.956, 0.947, 0.961, 0.952, 0.951, 0.936, 0.928, 0.939, 0.938, 0.971, 0.940, 0.998, 1.261, 1.720, 1.974, -0.138, 0.042, 0.020, -0.000, 3.119, 0.001, -8.915, 6.377, 662.680, 1.000, 79.108, 0.200, 0.250}
       }
@@ -168,7 +177,7 @@
 
   texture_optimization_settings
   {
-    optimization_stages:i = 1
+    optimization_stages:i = 2
 
     stage_material_selection
     {

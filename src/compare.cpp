@@ -41,6 +41,29 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
   MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
   if (m_info)
     model_info = *m_info;
+  
+  mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, 32, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
+                             model_info);
+  for (int i = 0; i < rotations; i++)
+  {
+    float phi = (2 * PI * i) / rotations;
+    camera.target = glm::vec3(0, 0, 0);
+    camera.up = glm::vec3(0, 1, 0);
+    camera.origin = glm::vec3(camera_dist * sin(phi), camera_y, camera_dist * cos(phi));
+
+    char path[1024];
+    sprintf(path, "%s/mask-%04d.png", folder_name.c_str(), i);
+    logerr("ss %s", path);
+    std::vector<float> no_transform_scene_params = {0, 0, 0, 0, 0, 0, 100, 1000, 100, 100, 100, 0.01, camera.fov_rad};
+    mi.render_model_to_file(model, path, camera, no_transform_scene_params);
+    
+    Block camera_blk;
+    dgen::save_camera_settings(camera, camera_blk);
+    camera_blk.set_string("textured", std::string(path));
+    if (camera_presets)
+      camera_presets->add_block("camera", &camera_blk);
+  }
+  
   mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, spp, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
                              model_info);
   for (int i = 0; i < rotations; i++)
@@ -136,11 +159,11 @@ void cup_1_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
 
   Block cameras_64, cameras_9;
   dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part", 0}}};
+  //render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+  //                  "prezentations/spring_23_medialab/cup_model_1/reference_turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
+  //save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable/cameras.blk", cameras_64);
   render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
-                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
-  save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable/cameras.blk", cameras_64);
-  render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
-                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 256, 64, 9, 3, 0, camera, &cameras_9);
+                    "prezentations/spring_23_medialab/cup_model_1/reference_turntable_9", 1024, 256, 9, 3, 0, camera, &cameras_9);
   save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/cameras.blk", cameras_9);
 }
 
@@ -455,6 +478,10 @@ void compare_sandbox(int argc, char **argv)
   CameraSettings camera = MitsubaInterface::get_camera_from_scene_params({fov_rad});
 
   cup_1_multicam_render_mygen_turntable(mi, camera);
+  std::string mygen_name = "cup_model_1_multicam";
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/reference_turntable",
+                               "prezentations/spring_23_medialab/" + mygen_name + "/mygen_turntable",
+                                64);
   //building_2_render_mygen_turntable(mi, camera);
 
   //compare_and_print("test_building_2", "building_2");
