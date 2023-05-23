@@ -370,6 +370,53 @@ namespace dopt
     return model_info;
   }
 
+  void save_opt_results(std::string save_dir, std::string prefix, DiffFunctionEvaluator &func, MitsubaInterface &mi,
+                        MitsubaInterface::ModelInfo &default_model_info, dgen::GeneratorDescription &generator,
+                        const CameraSettings &camera, int ref_image_size, std::vector<float> gen_params, 
+                        std::vector<float> scene_params, bool save_turntable = false)
+  {
+    dgen::DFModel best_model = func.get(gen_params, dgen::ModelQuality(false, 3));
+    MitsubaInterface::ModelInfo no_tex_model_info = default_model_info;
+    if (generator.name == "buildings_2")
+    {
+      Block gen_info;
+      load_block_from_file(generator.generator_description_blk_path, gen_info);
+      Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+      MitsubaInterface::ModelInfo model_info;
+      model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
+
+      for (int i=0;i<gen_mesh_parts.size();i++)
+      {
+        if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+          model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                      "white.png", 
+                                      MitsubaInterface::get_default_material()});
+      }
+
+      model_info.get_part("main_part")->texture_name = "wall2.png";
+      model_info.get_part("interior")->texture_name = "concrete.png";
+      model_info.get_part("windows")->material_name = "glass";
+      model_info.get_part("wooden_parts")->texture_name = "wood6.png";
+      model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
+      model_info.get_part("roof")->texture_name = "roof1.png";
+      no_tex_model_info = model_info;
+    }
+    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
+                               no_tex_model_info);
+    mi.render_model_to_file(best_model, save_dir+prefix+"_result.png",
+                            camera, scene_params);
+    
+    Block params_blk;
+    std::vector<float> full_params = gen_params;
+    for (auto &p : scene_params)
+      full_params.push_back(p);
+
+    params_blk.add_arr("params", full_params);
+    params_blk.add_arr("scene_params", scene_params);
+    params_blk.add_arr("gen_params", gen_params);
+    save_block_to_file("../"+save_dir+prefix+"_params.blk", params_blk);
+  }
+
   float image_based_optimization(Block &settings_blk, MitsubaInterface &mi)
   {
     Block gen_description, scene_params, presets_blk;
@@ -401,7 +448,6 @@ namespace dopt
 
     int ref_image_size = settings_blk.get_int("reference_image_size", 512);
     bool by_reference = settings_blk.get_bool("synthetic_reference", true);
-    std::string saved_result_path = settings_blk.get_string("saved_result_path", "saves/selected_final.png");
 
     auto get_gen_params = [&gen_params_cnt](const std::vector<float> &params) -> std::vector<float>
     {
@@ -417,6 +463,13 @@ namespace dopt
     process_parameters_blk(gen_params, params_min, params_max, params_names, variant_count, variant_positions);
     process_parameters_blk(scene_params, params_min, params_max, params_names, variant_count, variant_positions);
     load_presets_from_blk(presets_blk, gen_params, parameter_presets);
+
+    bool save_results = true;
+    bool save_progress = true;
+    std::string save_dir = "./saves/"+settings_blk.get_string("save_folder", "opt_result")+"/";
+    bool active_dir = prepare_directory(save_dir);
+    save_results = active_dir;
+    save_progress = active_dir;
 
     debug("Starting image-based optimization. Target function has %d parameters (%d for generator, %d for scene). %d variant variables \n", 
           gen_params_cnt + scene_params_cnt, gen_params_cnt, scene_params_cnt, variant_count.size());
@@ -518,9 +571,15 @@ namespace dopt
           references.emplace(tex_name+"_"+std::to_string(i), t);
         }
       }
-
-      for (auto &p : references)
-        engine::textureManager->save_png(p.second, "ie_rsult_"+p.first);
+      if (save_results)
+      {
+        std::string ref_dir = save_dir + "references/";
+        if (prepare_directory(ref_dir))
+        {
+          for (auto &p : references)
+            engine::textureManager->save_png_directly(p.second, ref_dir+"reference_"+p.first+".png");
+        }
+      }
     }
 
     CppAD::ADFun<float> f_reg;
@@ -670,39 +729,14 @@ namespace dopt
 
       iters = 0;
       delete opt;
+
+      save_opt_results(save_dir, "silhouette_"+std::to_string(stage), func, mi, default_model_info, generator,
+                       has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                       512, 
+                       get_gen_params(opt_result.best_params), 
+                       get_camera_params(opt_result.best_params), 
+                       false);
     }
-
-    dgen::DFModel best_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, 3));
-    MitsubaInterface::ModelInfo no_tex_model_info = default_model_info;
-    if (generator.name == "buildings_2")
-    {
-      Block gen_info;
-      load_block_from_file(generator.generator_description_blk_path, gen_info);
-      Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
-      MitsubaInterface::ModelInfo model_info;
-      model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
-
-      for (int i=0;i<gen_mesh_parts.size();i++)
-      {
-        if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
-          model_info.parts.push_back({gen_mesh_parts.get_string(i), 
-                                      "white.png", 
-                                      MitsubaInterface::get_default_material()});
-      }
-
-      model_info.get_part("main_part")->texture_name = "wall2.png";
-      model_info.get_part("interior")->texture_name = "concrete.png";
-      model_info.get_part("windows")->material_name = "glass";
-      model_info.get_part("wooden_parts")->texture_name = "wood6.png";
-      model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
-      model_info.get_part("roof")->texture_name = "roof1.png";
-      no_tex_model_info = model_info;
-    }
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(ref_image_size, ref_image_size, 512, MitsubaInterface::LLVM, MitsubaInterface::TEXTURED_CONST),
-                               no_tex_model_info);
-    mi.render_model_to_file(best_model, saved_result_path,
-                            has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
-                            get_camera_params(opt_result.best_params));
 
     Texture mask_tex, reconstructed_tex;
     ModelTex mt;
@@ -729,8 +763,12 @@ namespace dopt
         ImageArithmetics::maximum(mask_tex_new, mask_tex, mask_tex_cam, 1, 1);
         mask_tex = mask_tex_new;
       }
-      engine::textureManager->save_png(reconstructed_tex, "reconstructed_tex");
-      engine::textureManager->save_png(mask_tex, "reconstructed_mask");
+
+      if (save_results)
+      {
+        engine::textureManager->save_png_directly(reconstructed_tex, save_dir+"reconstructed_tex.png");
+        engine::textureManager->save_png_directly(mask_tex, save_dir+"reconstructed_mask.png");
+      }
     }
 
     Block *texture_optimization_settings = settings_blk.get_block("texture_optimization_settings");
@@ -964,7 +1002,6 @@ namespace dopt
       Texture res_optimized = engine::textureManager->load_unnamed_tex("saves/" + best_tex_name + ".png");
 
       Texture res = BilateralFilter::perform(res_optimized, 2.5, 0.33);
-      Texture sharped = UnsharpMasking::perform(res, 3, 0.5);
       Texture comp, mask_complemented;
       if (cameras_count == 1)
       {
@@ -980,12 +1017,18 @@ namespace dopt
       engine::textureManager->save_png(res_optimized, "reconstructed_tex_raw");
       engine::textureManager->save_png(comp, "reconstructed_tex_complemented");
       engine::textureManager->save_png(mask_complemented, "reconstructed_mask_complemented");
-      engine::textureManager->save_png(sharped, "reconstructed_tex_denoised");
+
+      if (save_results)
+      {
+        engine::textureManager->save_png_directly(res_optimized, save_dir+"reconstructed_tex_raw.png");
+        engine::textureManager->save_png_directly(comp, save_dir+"reconstructed_tex_complemented.png");
+        engine::textureManager->save_png_directly(mask_complemented, save_dir+"reconstructed_mask_complemented.png");       
+      }
       
       sleep(1);
       {
         cv::Mat image, mask, image_inpainted;
-        image = cv::imread("saves/reconstructed_tex_raw.png");
+        image = cv::imread("saves/reconstructed_tex_complemented.png");
         mask = cv::imread("saves/reconstructed_mask_complemented.png", cv::ImreadModes::IMREAD_GRAYSCALE);
         for (int i=0;i<mask.size().height;i++)
           for (int j=0;j<mask.size().width;j++)
@@ -993,6 +1036,8 @@ namespace dopt
 
         cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
         cv::imwrite("saves/reconstructed_tex_complemented.png", image_inpainted);
+        if (save_results)
+          engine::textureManager->save_png_directly(comp, save_dir+save_dir+"reconstructed_tex_complemented.png");
       }
       sleep(1);
 
@@ -1024,7 +1069,7 @@ namespace dopt
                               has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
                               get_camera_params(opt_result.best_params));
     }
-    debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, saved_result_path.c_str());
+    debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, save_dir.c_str());
     debug("Best error: %f\n", opt_result.best_err);
     debug("Best params: [");
     for (int j = 0; j < opt_result.best_params.size(); j++)

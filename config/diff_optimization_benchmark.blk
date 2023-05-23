@@ -101,6 +101,7 @@
   original_reference_size:i = 1024
   model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
   save_intermediate_images:b = true
+  save_folder:s = "cup_model_4"
 
   silhouette_optimization_settings
   {
