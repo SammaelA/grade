@@ -204,34 +204,76 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     {
       params.push_back(std::stof(std::string(argv[i])));
     }
+
+    std::vector<float> params_1={
+              1.029, //I_ENTRANCES_COUNT
+              1.926, //I_FLOORS_COUNT
+              0.040, //F_WALL_THICKNESS
+              0.100, 0.300, //F_BOTTOM_OFFSET_Q, F_TOP_OFFSET_Q
+              3, 6, 1, // END section
+              5, 650, 0.5, // MIDDLE section
+              4, 20, 0.75, // SIDE section
+              0.080, 0.080, 0.095, //window frame
+              0.001, 0.300, 0.000, 0.000, 0.241, //roof
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.4, 3.0, //base window
+              1.761, 3.000, 0.000, 0.581, 0.667, 0.4, 2.25, //balcony window
+              0.400, 0.900, 0.018, 0.045, 1.000, //balcony
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.4, 3.0, //entrance window
+              0.550, 1.33, 0.67, 0.150, //door
+              0.116, 0.150, //stairs
+              1, 0.33, 0.5, //total size
+            };
+    
+    std::vector<float> params_2={
+              1, //I_ENTRANCES_COUNT
+              9, //I_FLOORS_COUNT
+              0.040, //F_WALL_THICKNESS
+              0.100, 0.300, //F_BOTTOM_OFFSET_Q, F_TOP_OFFSET_Q
+              5, 2+4+16+64, 0.33, // END section
+              5, 650, 0.5, // MIDDLE section
+              5, 8 + 64*2, 1.5, // SIDE section
+              0.080, 0.080, 0.095, //window frame
+              0.001, 0.001, 0.000, 0.000, 0.241, //roof
+              1.000, 2.000, 2.000, 0.600, 0.400, 0.6, 3.0, //base window
+              1.000, 3.000, 0.000, 0.581, 0.667, 0.6, 2.25, //balcony window
+              0.400, 0.900, 0.018, 0.045, 2.000, //balcony
+              1.000, 2.000, 2.000, 0.600, 0.400, 0.6, 3.0, //entrance window
+              0.550, 1.33, 0.67, 0.150, //door
+              0.116, 0.150, //stairs
+              0.75, 0.75*1.2, 0.75*0.5, //total size
+            };
+    std::vector<float> params_3={
+              3, //I_ENTRANCES_COUNT
+              5, //I_FLOORS_COUNT
+              0.040, //F_WALL_THICKNESS
+              0.300, 0.150, //F_BOTTOM_OFFSET_Q, F_TOP_OFFSET_Q
+              2, 1 + 8, 0.33, // END section
+              6, 1 + 2*4 + 16 + 64 + 2*256 + 1024, 0.5, // MIDDLE section
+              5, 4 + 64, 3.0, // SIDE section
+              0.080, 0.080, 0.095, //window frame
+              0.001, 0.200, 0.000, 0.000, 0.241, //roof
+              1.000, 2.000, 2.000, 0.600, 0.5, 0.6, 3.0, //base window
+              1.000, 3.000, 0.000, 0.581, 0.4, 0.6, 4.5, //balcony window
+              0.400, 0.900, 0.018, 0.045, 1.000, //balcony
+              1.000, 2.000, 2.000, 0.600, 0.4, 0.4, 3.0, //entrance window
+              0.550, 1.5, 0.85, 0.150, //door
+              0.116, 0.150, //stairs
+              1.2, 0.4, 0.4, //total size
+            };
     if (params.empty())
-      params = {1.029, 
-              1.926, 
-              0.040, 
-              0.100, 0.300, 
-              3, 6, 1, 
-              5, 650, 0.5, 
-              2.000, 103.292, 0.749, 
-              0.080, 0.080, 0.095, 
-              0.001, 0.300, 0.000, 0.000, 0.241, 
-              2.797, 1.443, 2.000, 0.790, 0.400, 0.400, 3.8, 
-              1.761, 3.000, 0.000, 0.581, 0.667, 0.4, 1.6,
-              0.400, 0.500, 0.018, 0.045, 1.000, 
-              2.719, 2.000, 2.000, 0.600, 0.400, 0.400, 3.2, 
-              0.550, 0.900, 0.906, 0.150, 
-              0.116, 0.150, 
-              0.251, 0.200, 
-              0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 0.500, 10.000, 64.286, 100.000, 0.908, 0.650};
-    params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 6.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 
-              0.4, 1,
-              -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
-    dgen::DFModel res;
-    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 2));
+      params = params_3;
+    std::vector<std::vector<float>> pps = {params_1, params_2, params_3};
     MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
-    mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 1024, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
-                               model_info);
-    std::vector<float> scene_params = {-0.160, 0.05, 0.954, 0.00, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
-    mi.render_model_to_file(res, "saves/building_6.png", camera, scene_params);
+    for (int i=0;i<pps.size();i++)
+    {
+      params = pps[i];
+      dgen::DFModel res;
+      dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
+      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 8000, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
+                                model_info);
+      std::vector<float> scene_params = {-0.160, 0.05, 0.954, 0.00, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
+      mi.render_model_to_file(res, "saves/building_test_"+std::to_string(i)+".png", camera, scene_params);
+    }
   }
   else if (argc >=3 && std::string(argv[2]) == "-test_gen_buildings_multi")
   {
