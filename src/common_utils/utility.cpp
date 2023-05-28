@@ -227,7 +227,7 @@ void ProgressBar::iter(long n)
     }
 }
 
-bool prepare_directory(std::string &save_path)
+bool prepare_directory(const std::string &save_path)
 {
   bool status = true;
   try

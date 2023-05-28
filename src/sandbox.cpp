@@ -316,39 +316,40 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   }
   else if (argc >= 3 && std::string(argv[2]) == "-test_denoising")
   {
-      Texture res_optimized = textureManager.load_unnamed_tex("saves/reconstructed_tex_raw.png");
-      Texture mask_tex = textureManager.load_unnamed_tex("saves/reconstructed_mask.png");
+      Texture res_optimized = textureManager.load_unnamed_tex("saves/cup_14/reconstructed_tex_raw.png");
+      Texture mask_tex = textureManager.load_unnamed_tex("saves/cup_14/reconstructed_mask.png");
       Texture new_mask;
       //std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.375, 3, 1}, {0, 0.375, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 10}};
-      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
+      std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 4}};
     engine::view->next_frame();
       ModelTex mt;
       Texture comp = mt.symTexComplement(res_optimized, mask_tex, data, &new_mask);
 
+      textureManager.save_png(comp, "cup_14/reconstructed_tex_complemented_1");
+      textureManager.save_png(new_mask, "cup_14/reconstructed_mask_complemented_1");
+
+      sleep(3);
+
       Texture res = BilateralFilter::perform(comp, 4, 0.5);
       Texture sharped = UnsharpMasking::perform(res, 1, 0.2);
       cv::Mat image, mask, image_inpainted;
-      image = cv::imread("saves/reconstructed_tex_raw.png");
-      mask = cv::imread("saves/reconstructed_mask.png", cv::ImreadModes::IMREAD_GRAYSCALE);
+      image = cv::imread("saves/cup_14/reconstructed_tex_complemented_1.png");
+      mask = cv::imread("saves/cup_14/reconstructed_mask_complemented_1.png", cv::ImreadModes::IMREAD_GRAYSCALE);
       for (int i=0;i<mask.size().height;i++)
       {
         for (int j=0;j<mask.size().width;j++)
         {
           //debug("%d %d %d\n",i,j,mask.at<unsigned char>(i, j));
-          mask.at<unsigned char>(i, j) = mask.at<unsigned char>(i, j) > 250 ? 0 : 1;
+          mask.at<unsigned char>(i, j) = mask.at<unsigned char>(i, j) > 5 ? 0 : 1;
         }        
       }
       cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
-      cv::imwrite("saves/reconstructed_tex_raw_3.png", image_inpainted);
+      cv::imwrite("saves/cup_14/reconstructed_tex_raw_3.png", image_inpainted);
       //image.at(0,0)
 
       //cv::imshow("Display Image", image);
       //cv::waitKey(0);
 
-      textureManager.save_png(res_optimized, "reconstructed_tex_raw_1");
-      textureManager.save_png(sharped, "reconstructed_tex_complemented_1");
-      textureManager.save_png(sharped, "reconstructed_tex_denoised_1");
-      textureManager.save_png(new_mask, "reconstructed_mask_complemented");
     engine::view->next_frame();
   }
   else if (argc >= 3 && std::string(argv[2]) == "-voxelization_test")

@@ -162,6 +162,6 @@ public:
   int get_frame_n() { return frame; }
 };
 
-bool prepare_directory(std::string &save_path);
+bool prepare_directory(const std::string &save_path);
 float smoothstep3(float x);
 float smoothstep5(float x);

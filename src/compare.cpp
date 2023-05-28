@@ -36,12 +36,15 @@
 void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
                        int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera,
                        Block *camera_presets = nullptr,
-                       MitsubaInterface::ModelInfo *m_info = nullptr)
+                       MitsubaInterface::ModelInfo *m_info = nullptr,
+                       MitsubaInterface::RenderStyle render_style = MitsubaInterface::TEXTURED_DEMO)
 {
   MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
   if (m_info)
     model_info = *m_info;
   
+  if (render_style == MitsubaInterface::TEXTURED_DEMO)
+  {
   mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, 32, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
                              model_info);
   for (int i = 0; i < rotations; i++)
@@ -53,7 +56,7 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
 
     char path[1024];
     sprintf(path, "%s/mask-%04d.png", folder_name.c_str(), i);
-    logerr("ss %s", path);
+    //logerr("ss %s", path);
     std::vector<float> no_transform_scene_params = {0, 0, 0, 0, 0, 0, 100, 1000, 100, 100, 100, 0.01, camera.fov_rad};
     mi.render_model_to_file(model, path, camera, no_transform_scene_params);
     
@@ -63,8 +66,9 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
     if (camera_presets)
       camera_presets->add_block("camera", &camera_blk);
   }
+  }
   
-  mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, spp, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_DEMO),
+  mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, spp, MitsubaInterface::CUDA, render_style),
                              model_info);
   for (int i = 0; i < rotations; i++)
   {
@@ -75,7 +79,7 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
 
     char path[1024];
     sprintf(path, "%s/frame-%04d.png", folder_name.c_str(), i);
-    logerr("ss %s", path);
+    //logerr("ss %s", path);
     std::vector<float> no_transform_scene_params = {0, 0, 0, 0, 0, 0, 100, 1000, 100, 100, 100, 0.01, camera.fov_rad};
     mi.render_model_to_file(model, path, camera, no_transform_scene_params);
     
@@ -85,6 +89,36 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
     if (camera_presets)
       camera_presets->add_block("camera", &camera_blk);
   }
+}
+
+void render_mygen_cup(MitsubaInterface &mi, CameraSettings &camera, std::vector<float> params,
+                      std::string texture_path, std::string save_dir)
+{
+  dgen::DFModel res;
+  dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
+  dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+
+  auto bbox = dgen::get_bbox(res.first);
+  dgen::normalize_model(res.first);
+  bbox = dgen::get_bbox(res.first);
+
+  bool ok = prepare_directory(save_dir+"mygen_turntable") && prepare_directory(save_dir+"mygen_turntable_9") && 
+            prepare_directory(save_dir+"monochrome_turntable") && prepare_directory(save_dir+"monochrome_turntable_9");
+  if (!ok)
+  {
+    logerr("unable to save turntables!");
+    return;
+  }
+
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"mygen_turntable", 1024, 64, 64, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO);
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"mygen_turntable_9", 256, 64, 9, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO);
+  
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"monochrome_turntable", 1024, 64, 64, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO);
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"monochrome_turntable_9", 256, 64, 9, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO);
 }
 
 void render_random_cameras(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,

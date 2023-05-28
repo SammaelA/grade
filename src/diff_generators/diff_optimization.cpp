@@ -22,6 +22,7 @@
 #include "graphics_utils/image_arithmetic.h"
 #include "simple_model_utils.h"
 #include <opencv2/opencv.hpp>
+#include "compare.h"
 
 namespace dopt
 {
@@ -730,12 +731,15 @@ namespace dopt
       iters = 0;
       delete opt;
 
-      save_opt_results(save_dir, "silhouette_"+std::to_string(stage), func, mi, default_model_info, generator,
-                       has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
-                       512, 
-                       get_gen_params(opt_result.best_params), 
-                       get_camera_params(opt_result.best_params), 
-                       false);
+      if (save_progress)
+      {
+        save_opt_results(save_dir, "silhouette_"+std::to_string(stage), func, mi, default_model_info, generator,
+                        has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
+                        512, 
+                        get_gen_params(opt_result.best_params), 
+                        get_camera_params(opt_result.best_params), 
+                        false);
+      }
     }
 
     Texture mask_tex, reconstructed_tex;
@@ -1005,7 +1009,7 @@ namespace dopt
       Texture comp, mask_complemented;
       if (cameras_count == 1)
       {
-        std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, -1}, {0, 0.75, 1, 1, 1, 4}};
+        std::vector<ModelTex::tex_data> data = {{0, 0, 1, 0.75, 3, 1}, {0, 0.75, 1, 1, 1, 4}};
         comp = mt.symTexComplement(res_optimized, mask_tex, data, &mask_complemented);
       }
       else
@@ -1023,51 +1027,45 @@ namespace dopt
         engine::textureManager->save_png_directly(res_optimized, save_dir+"reconstructed_tex_raw.png");
         engine::textureManager->save_png_directly(comp, save_dir+"reconstructed_tex_complemented.png");
         engine::textureManager->save_png_directly(mask_complemented, save_dir+"reconstructed_mask_complemented.png");       
-      }
-      
-      sleep(1);
-      {
+
         cv::Mat image, mask, image_inpainted;
-        image = cv::imread("saves/reconstructed_tex_complemented.png");
-        mask = cv::imread("saves/reconstructed_mask_complemented.png", cv::ImreadModes::IMREAD_GRAYSCALE);
+        image = cv::imread(save_dir+"reconstructed_tex_complemented.png");
+        mask = cv::imread(save_dir+"reconstructed_mask_complemented.png", cv::ImreadModes::IMREAD_GRAYSCALE);
         for (int i=0;i<mask.size().height;i++)
           for (int j=0;j<mask.size().width;j++)
-            mask.at<unsigned char>(i, j) = mask.at<unsigned char>(i, j) > 250 ? 0 : 1;
+            mask.at<unsigned char>(i, j) = mask.at<unsigned char>(i, j) > 128 ? 0 : 1;
 
         cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
-        cv::imwrite("saves/reconstructed_tex_complemented.png", image_inpainted);
-        if (save_results)
-          engine::textureManager->save_png_directly(comp, save_dir+save_dir+"reconstructed_tex_complemented.png");
+        cv::imwrite(save_dir+"reconstructed_tex_complemented.png", image_inpainted);
+
+        sleep(1);
+
+        auto model_quality = dgen::ModelQuality(false, 3);
+        if (generator.name == "buildings_2")
+          model_quality = dgen::ModelQuality(false, 0);
+
+        dgen::DFModel best_model_textured = func.get(get_gen_params(opt_result.best_params), model_quality);
+        MitsubaInterface::ModelInfo textured_model_info = default_model_info;
+        textured_model_info.parts[0].material_name = best_material;
+        CameraSettings demo_cam = has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params));
+        
+        textured_model_info.parts[0].texture_name = "../../"+save_dir+"reconstructed_tex_raw.png";
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                  textured_model_info);
+        mi.render_model_to_file(best_model_textured, save_dir+"selected_textured_raw.png", demo_cam, get_camera_params(opt_result.best_params));
+
+        textured_model_info.parts[0].texture_name = "../../"+save_dir+"reconstructed_tex_complemented.png";
+        mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                                  textured_model_info);
+        mi.render_model_to_file(best_model_textured, save_dir+"selected_textured_complemented.png", demo_cam, get_camera_params(opt_result.best_params));
+
+        if (save_progress)
+        {
+          float fov_rad = 0.5;
+          CameraSettings turntable_cam = MitsubaInterface::get_camera_from_scene_params({fov_rad});
+          render_mygen_cup(mi, turntable_cam, get_gen_params(opt_result.best_params), save_dir+"reconstructed_tex_complemented.png", save_dir);
+        }
       }
-      sleep(1);
-
-      auto model_quality = dgen::ModelQuality(false, 3);
-      if (generator.name == "buildings_2")
-        model_quality = dgen::ModelQuality(false, 0);
-
-      dgen::DFModel best_model_textured = func.get(get_gen_params(opt_result.best_params), model_quality);
-      MitsubaInterface::ModelInfo textured_model_info = default_model_info;
-      textured_model_info.parts[0].material_name = best_material;
-      
-      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_raw.png";
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                 textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_raw.png", 
-                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
-                              get_camera_params(opt_result.best_params));
-
-      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_complemented.png";
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                 textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_complemented.png", 
-                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
-                              get_camera_params(opt_result.best_params));
-      textured_model_info.parts[0].texture_name = "../../saves/reconstructed_tex_denoised.png";
-      mi.init_scene_and_settings(MitsubaInterface::RenderSettings(1024, 1024, 512, MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
-                                 textured_model_info);
-      mi.render_model_to_file(best_model_textured, "saves/selected_textured_denoised.png", 
-                              has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
-                              get_camera_params(opt_result.best_params));
     }
     debug("Optimization finished. %d iterations total. Best result saved to \"%s\"\n", opt_result.total_iters, save_dir.c_str());
     debug("Best error: %f\n", opt_result.best_err);
