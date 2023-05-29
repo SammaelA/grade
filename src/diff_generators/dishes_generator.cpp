@@ -94,12 +94,12 @@ namespace dgen
     return spline;
   }
 
-  std::vector<dvec3> create_spline_for_handle(const std::vector<dfloat> &params, int idx, int axis_x, int axis_y)
+  std::vector<dvec3> create_spline_for_handle(int axis_x, int axis_y)
   {
     std::vector<dvec3> spline;
     spline.reserve(1);
     dvec3 vec{0, 0, 0};
-    vec[axis_y] = params[idx];
+    vec[axis_y] = 1;
     spline.push_back(vec);
     return spline;
   }
@@ -360,6 +360,7 @@ namespace dgen
     model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
     std::vector<dvec3> verts = spline;
     std::vector<dvec3> prev_verts = spline;
+    std::vector<dvec3> radius_vectors(rotations+1, radius_vec);
 
     dfloat full_len = 1e-9;
     for (int i=1;i<sp_sz;i++)
@@ -374,6 +375,12 @@ namespace dgen
     prev_verts[sp_sz - 1] = mulp(first_rot_mat, prev_verts[sp_sz - 1]);
     radius_vec = mulv(first_rot_mat, radius_vec);
     dvec3 prev_radius_vec = radius_vec;
+
+    radius_vectors[0] = radius_vec;
+    for (int i=1;i<=rotations;i++)
+      radius_vectors[i] = mulv(rot_mat, radius_vectors[i-1]);
+    for (int i=0;i<=rotations;i++)
+      radius_vectors[i] *= radiuses[i];
 
     std::vector<dvec3> positions;//size 4*(sp_sz-1)*rotations
     positions.reserve(4*(sp_sz-1)*rotations);
@@ -399,11 +406,29 @@ namespace dgen
       add_vertex(model, prev_size+2+(i-2)*3, vec2, norm, {0, 0}, only_pos); 
     }
 
-    for (int sector = 1; sector <= rotations; sector++)
     {
+      dvec3 r_next = radius_vectors[1];
+      dvec3 v1 = normalize(cross(r_next - radius_vectors[0], axis));
+      dvec3 v2 = axis;
+      dfloat phi = (2*PI)/(sp_sz-1);
       for (int i=0;i<sp_sz;i++)
       {
-        verts[i] = mulp(rot_mat, verts[i]);
+        prev_verts[i] = v1*cos(i*phi) + v2*sin(i*phi);
+      }      
+    }
+
+    for (int sector = 1; sector <= rotations; sector++)
+    {
+      dvec3 r_next = (sector == rotations) ? radius_vectors[rotations] : radius_vectors[sector+1];
+      dvec3 v1 = normalize(cross(r_next - radius_vectors[sector-1], axis));
+      //std::cerr<<"a "<<radius_vectors[sector-1].x<<" "<<radius_vectors[sector-1].y<<" "<<radius_vectors[sector-1].z<<"\n";
+      //std::cerr<<"b "<<v1.x<<" "<<v1.y<<" "<<v1.z<<"\n";
+      dvec3 v2 = axis;
+      dfloat phi = (2*PI)/(sp_sz-1);
+      for (int i=0;i<sp_sz;i++)
+      {
+        verts[i] = v1*cos(i*phi) + v2*sin(i*phi);
+        //std::cerr<<"verts[i]"<<verts[i].x<<" "<<verts[i].y<<" "<<verts[i].z<<"\n";
       }
       radius_vec = mulv(rot_mat, radius_vec);
       dfloat prev_len = 0;
@@ -422,6 +447,11 @@ namespace dgen
         dvec3 v1 = p2 - p1;
         dvec3 v2 = p3 - p1; 
         dvec3 n = normalize(cross(v1, v2));
+        //std::cerr<<"v1[i]"<<p1.x<<" "<<p1.y<<" "<<p1.z<<"\n";
+        //std::cerr<<"v2[i]"<<p3.x<<" "<<p3.y<<" "<<p3.z<<"\n";
+        //std::cerr<<"n[i]"<<n.x<<" "<<n.y<<" "<<n.z<<"\n";
+
+        dfloat d = dot(n, thick_mult*verts[i]);
 
         positions.push_back(p1);
         positions.push_back(p2);
@@ -430,10 +460,10 @@ namespace dgen
 
         normals.push_back(n);
 
-        tc.push_back(dvec2{((float)(sector))/rotations, 0.75 + 0.25*new_len/full_len});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations,  0.75 + 0.25*new_len/full_len});
-        tc.push_back(dvec2{((float)(sector))/rotations,  0.75 + 0.25*prev_len/full_len});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations,   0.75 + 0.25*prev_len/full_len});
+        tc.push_back(dvec2{((float)(sector))/rotations, 0.75 + 0.25*i/sp_sz});
+        tc.push_back(dvec2{((float)(sector - 1))/rotations,  0.75 + 0.25*i/sp_sz});
+        tc.push_back(dvec2{((float)(sector))/rotations,  0.75 + 0.25*(i-1)/sp_sz});
+        tc.push_back(dvec2{((float)(sector - 1))/rotations,   0.75 + 0.25*(i-1)/sp_sz});
 
         indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1) + off);
 
@@ -499,7 +529,7 @@ namespace dgen
     {
       int handle_param_idx = 11;
       int radiuses_cnt = 20;
-      std::vector<dvec3> spline1 = create_spline_for_handle(params, handle_param_idx, 0, 1);
+      std::vector<dvec3> spline1 = create_spline_for_handle(0, 1);
       dfloat thick = 0.02;
       int radius_samples = radiuses_cnt - 1;
       std::vector<dfloat> radiuses(radiuses_cnt,0);
@@ -507,7 +537,7 @@ namespace dgen
       for (int i=0;i<radiuses_cnt;i++)
       {
         radiuses[i] = params[handle_param_idx+2 + i];
-        thickness[i] = params[handle_param_idx+2+radiuses_cnt + i];
+        thickness[i] = params[handle_param_idx]*params[handle_param_idx+2+radiuses_cnt + i];
       }
       if (radius_samples != radiuses_cnt*2 - 1)
       {
@@ -557,8 +587,11 @@ namespace dgen
     if (params[handle_param_idx - 1] > 0.5)
     {
       int radiuses_cnt = 20;
-      for (int i=1;i<radiuses_cnt;i++)
+      for (int i=2;i<radiuses_cnt-1;i++)
+      {
         res += 10*d_max(abs(params[handle_param_idx + 2 + i] - params[handle_param_idx + 2 + i - 1]) - 0.1, 0);
+        res += 10*d_max(abs(params[handle_param_idx+radiuses_cnt + 2 + i] - params[handle_param_idx+radiuses_cnt + 2 + i - 1]) - 0.5, 0);
+      }
     }
 
     res = d_max(res, 0);
