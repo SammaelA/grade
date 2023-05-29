@@ -773,6 +773,7 @@ namespace dopt
         engine::textureManager->save_png_directly(reconstructed_tex, save_dir+"reconstructed_tex.png");
         engine::textureManager->save_png_directly(mask_tex, save_dir+"reconstructed_mask.png");
       }
+      engine::textureManager->save_png_directly(reconstructed_tex, "saves/reconstructed_tex.png");
     }
 
     Block *texture_optimization_settings = settings_blk.get_block("texture_optimization_settings");
