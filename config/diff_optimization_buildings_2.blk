@@ -1,31 +1,4 @@
 {
-  memetic_classic
-  {
-    total_function_calls:i = 5000
-    population_size:i = 24
-    tournament_size:i = 12
-    mutation_chance:r = 0.3
-    mutation_power:r = 0.2
-    local_search_iterations:i = 33
-    local_search_learning_rate:r = 0.01
-    start_search_iterations:i = 50
-    start_search_learning_rate:r = 0.01
-    recreation_diversity_thr:r = 2
-    depth_reg_q:r = 0.0
-    min_iter_between_recreations:i = 150
-  }
-
-  adam
-  {
-    iterations:i = 250
-    learning_rate:r = 0.01
-    verbose:b = true
-    initial_params:arr = {2, 2, 0.05, 0.6, 0.2, 2, 5, 1, 5, 409, 1, 3, 21, 0.6, 0.07, 0.04, 0.1, 0.04, 15, 0.03, 
-                          3, 2, 2, 0.6, 0.6, 0.8, 1, 1, 3, 0, 0.6, 0.7, 0.7, 1, 0.4, 0.5, 0.015, 0.05, 1, 3, 2, 
-                          2, 0.6, 0.6, 0.8, 1, 0.4, 0.6, 1, 0.15, 0.1, 0.15,
-                          -0.4, 0.07, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1}
-  }
-  
   procedural_generator:s = "buildings_2"
 
   //a .blk file describing parameters for scene, such as camera position, light etc.
@@ -42,12 +15,28 @@
 
   regularization_alpha:r = 0.02
   original_reference_size:i = 1024
-  model_material:s = "" //leave empty to autoselect material (will take a few minutes)
-  save_intermediate_images:b = false
+  model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
+  save_intermediate_images:b = true
+
+  cameras
+  {
+  camera {
+    camera.origin:p3 = 0.000000, 0.000000, 3.000000
+    camera.target:p3 = 0.000000, 0.000000, 0.000000
+    camera.up:p3 = 0.000000, 1.000000, 0.000000
+    camera.z_near:r = 0.100000
+    camera.z_far:r = 100.000000
+    camera.fov_rad:r = 0.500000
+    textured:s = "resources/textures/building_7.png"
+    mask:s = "resources/textures/building_7_mask.png"
+    wmask:s = "resources/textures/building_7_wmask.png"
+  }
+  }
+  save_folder:s = "building_7_res"
 
   silhouette_optimization_settings
   {
-    optimization_stages:i = 3
+    optimization_stages:i = 2
 
     stage_10
     {
@@ -62,23 +51,25 @@
         local_search_learning_rate:r = 0.01
         grid_params_gradient_mult:r = 1
         verbose:b = true
-        initial_params:arr = {2, 
-                              2, 
-                              0.05, 
-                              0.2, 0.1, 
-                              2, 6, 1, 
-                              4, 170, 1, 
-                              2, 5, 1, 
-                              0.08, 0.08, 0.1, 
-                              0.01, 0.4, 0.1, 0.05, 0.25,
-                              1, 2, 1, 0.6, 0.6, 0.6, 1, 
-                              1, 3, 0, 0.6, 0.7, 0.6, 1.25, 
-                              0.4, 0.5, 0.015, 0.05, 1, 
-                              3, 1, 2, 0.6, 0.6, 0.6, 1, 
-                              0.1, 0.6, 1, 0.15, 
-                              0.1, 0.15,
-                              0.25, 0.2,
-                              0.5, 0.35, 2, 0, 0.5, 0, 0.000, 10.500, 10.000, 1.000, 00.000, 0.1, 0.4}
+        do_not_optimize_parameters:arr = {"rotate_x", "rotate_z"}
+        initial_params:arr =   {              
+                              2,
+                              3,
+                              0.040,
+                              0.300, 0.150,
+                              2, 2, 0.33,
+                              4, 150, 0.5,
+                              6, 340, 3.0,
+                              0.080, 0.080, 0.095,
+                              0.001, 0.200, 0.000, 0.000, 0.241,
+                              1.000, 2.000, 2.000, 0.600, 0.5, 0.6, 3.0,
+                              1.000, 3.000, 0.000, 0.581, 0.4, 0.6, 4.5,
+                              0.400, 0.900, 0.018, 0.045, 1.000,
+                              1.000, 2.000, 2.000, 0.600, 0.4, 0.4, 3.0,
+                              0.550, 1.5, 0.85, 0.150,
+                              0.116, 0.150,
+                              1.2, 0.4, 0.4, 
+                              -0.285, -0.378, 1.221, 0, 3.5, 0, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.400}
         grid
         {
           translation_x
@@ -92,10 +83,6 @@
           translation_z
           {
             values:arr = {1, 2, 3, 4}
-          }
-          rotate_y
-          {
-            values:arr = {0.3, 0.4, 0.5, 0.6, 2.9, 3.1, 3.3}
           }
           F_BUILDING_HEIGHT
           {
@@ -122,6 +109,7 @@
         local_search_learning_rate:r = 0.01
         grid_params_gradient_mult:r = 0.1
         verbose:b = true
+        
         grid
         {
           camera_fov
@@ -132,7 +120,7 @@
       }
     }
 
-    stage_0
+    stage_12
     {
       optimizer:s = "adam"
       model_quality:i = 0
@@ -140,21 +128,19 @@
       spp:i = 32
       optimizer_settings
       {
-        iterations:i = 50
+        iterations:i = 250
         learning_rate:r = 0.001
-        verbose:b = true
-        initial_params:arr =   {2.000, 2.000, 0.050, 0.200, 0.100, 2.000, 6.000, 1.000, 5, 650, 1, 5, 341, 1, 0.080, 0.080, 0.100, 0.008, 0.411, 0.000, 0.023, 0.317, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 0.415, 1.000, -0.160, -0.049, 0.956, 0.074, 0.524, 0.007, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.300}
-      
+        verbose:b = true      
       }
     }
 
-    stage_1
+    stage_12
     {
       optimizer:s = "memetic_classic"
       model_quality:i = 1
       render_image_size:i = 200
       spp:i = 4
-      reference_texture_name:s = "mask_1"
+      reference_texture_name:s = "wmask"
       do_not_optimize_parameters:arr = {"F_BUILDING_LENGTH", "F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
                                         "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
                                         "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
@@ -178,21 +164,33 @@
         recreation_diversity_thr:r = 3.0
         depth_reg_q:r = 0.0
         min_iter_between_recreations:i = 100
-        //initial_params:arr = {2.000, 5.000, 0.050, 0.600, 0.200, 2.000, 5.000, 1.000, 5.000, 409.000, 1.000, 3.000, 21.000, 0.600, 0.070, 0.040, 0.100, 0.016, 0.098, 0.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.700, 1.000, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 0.400, 0.600, 1.000, 0.150, 0.100, 0.150, 0.590, 0.239, -0.391, 0.006, 1.038, 0.074, 0.529, -0.004, 510.403, 6.013, 26.971, 1.000, 56.560, 0.900, 0.250}
-        //initial_params:arr =   {2.000, 5.000, 0.050, 0.600, 0.200, 2.000, 5.000, 1.000, 5.000, 409.000, 1.000, 3.000, 21.000, 0.600, 0.070, 0.040, 0.100, 0.001, 0.001, 0.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.700, 1.000, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 2.000, 2.000, 0.600, 0.600, 0.800, 1.000, 0.400, 0.600, 1.000, 0.150, 0.100, 0.150, 0.290, 0.400, 0.445, 0.334, 3.021, -0.100, 2.373, 0.061, 510.403, 6.013, 26.971, 1.000, 56.560, 0.900, 0.400}
-        //initial_params:arr = {2.000, 2.000, 0.050, 0.200, 0.100, 3.000, 6.000, 1.000, 5, 650, 1.000, 2.000, 5.000, 1.000, 0.080, 0.080, 0.100, 0.001, 0.300, 0.000, 0.000, 0.241, 1.000, 2.000, 1.000, 0.600, 0.600, 0.600, 1.000, 1.000, 3.000, 0.000, 0.600, 0.700, 0.600, 1.250, 0.400, 0.500, 0.015, 0.050, 1.000, 3.000, 1.000, 2.000, 0.600, 0.600, 0.600, 1.000, 0.100, 0.600, 1.000, 0.150, 0.100, 0.150, 
-        //                      0.251, 0.200, 
-        //                      0.482, 0.353, 2.745, 0.053, 2.831, -0.004, 0.000, 10.500, 10.000, 1.000, 1.000, 0.100, 0.650}
       }
     }
 
-    stage_2
+    stage_0
+    {
+      optimizer:s = "adam"
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 32
+      optimizer_settings
+      {
+        initial_params:arr = {2.000, 3.000, 0.040, 0.026, 0.005, 2.000, 2.000, 0.100, 4.000, 150.000, 0.500, 5.000, 340.000, 0.100, 0.080, 0.080, 0.095, 0.001, 0.303, 0.000, 0.036, 0.000, 1.000, 2.000, 2.000, 0.600, 0.950, 0.950, 3.000, 1.000, 3.000, 0.000, 0.581, 0.950, 0.950, 3.000, 0.400, 0.900, 0.018, 0.045, 1.000, 1.000, 2.000, 2.000, 0.600, 0.950, 0.950, 1.232, 0.990, 0.900, 0.998, 0.150, 0.050, 0.200, 
+                              0.8, 0.314, 0.394, 
+                              -0.3, -0.164, 1.0, 0.0, 0.4, 0.0,    0.152, 10.534, 9.888, 1.104, 1.000, 0.100, 0.500}
+      
+        iterations:i = 150
+        learning_rate:r = 0.005
+        verbose:b = true
+      }
+    }
+    stage_1
     {
       optimizer:s = "adam"
       model_quality:i = 1
       render_image_size:i = 333
       spp:i = 10
-      reference_texture_name:s = "mask_1"
+      reference_texture_name:s = "wmask"
       do_not_optimize_parameters:arr = {"F_BUILDING_LENGTH", "F_BUILDING_HEIGHT", "F_BUILDING_WIDTH",
                                         "F_ROOF_BASE_HEIGHT_Q", "F_ROOF_HEIGHT_Q",
                                         "F_ROOF_OVERSIZE_Z", "F_ROOF_OVERSIZE_X", "F_ROOF_SIDE_SLOPE_SIZE",
@@ -203,33 +201,72 @@
         iterations:i = 100
         learning_rate:r = 0.03
         verbose:b = true
+      }
     }
   }
 
   texture_optimization_settings
   {
-    optimization_stages:i = 0
+    optimization_stages:i = 1
 
     stage_material_selection
     {
       optimizer:s = "adam"
-      iterations:i = 20
-      lr:r = 0.02
       texture_lr:r = 0.25
       model_quality:i = 0
       render_image_size:i = 128
-      spp:i = 256     
+      spp:i = 16     
+      optimizer_settings
+      {
+        iterations:i = 25
+        learning_rate:r = 0.02
+        verbose:b = true
+      }
     }
 
     stage_0
     {
       optimizer:s = "adam"
-      iterations:i = 75
-      lr:r = 0.01
       texture_lr:r = 0.2
       model_quality:i = 0
-      render_image_size:i = 128
-      spp:i = 256     
+      render_image_size:i = 1024
+      spp:i = 128
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
+    }
+
+    stage_1
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 64  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
+    }
+
+    stage_2
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.2
+      model_quality:i = 0
+      render_image_size:i = 512
+      spp:i = 128  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 0.01
+        verbose:b = true
+      }   
     }
   }
 }
