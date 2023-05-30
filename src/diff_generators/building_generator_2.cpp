@@ -912,8 +912,8 @@ namespace dgen
     if (quality.quality_level == ModelQuality::LOW)
     {
       make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0), vec3(1,0,0), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(0,0,-1)));
-      make_quad(wallM, Quad(vec3(0,0, 0), vec2(0,0), vec3(0,1,0), vec2(0.5, 0), vec3(1,0,0), vec2(0, 0.5), vec3(0,0,1)));
-      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0.5), vec3(0,1,0), vec2(0.5, 0), vec3(0,0,1), vec2(0, 0.5), vec3(-1,0,0)));
+      make_quad(wallM, Quad(vec3(0,0, 0), vec2(0,0), vec3(0,1,0), vec2(0, 0.5), vec3(1,0,0), vec2(0.5, 0), vec3(0,0,1)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0.5), vec3(0,1,0), vec2(0, 0.5), vec3(0,0,1), vec2(0.5, 0), vec3(-1,0,0)));
       make_quad(wallM, Quad(vec3(1,0,-1), vec2(0,0.5), vec3(0,0,1), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(1,0,0)));
       make_quad(wallM, Quad(vec3(0,0,-1), vec2(0.5,0), vec3(0,0,1), vec2(0.5, 0), vec3(1,0,0), vec2(0, 0.5), vec3(0,-1,0)));
 
