@@ -562,6 +562,7 @@ namespace dopt
       
       references.emplace("textured_"+std::to_string(i), ImageResizer::resize(reference_tex_masked, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
       references.emplace("mask_"+std::to_string(i), ImageResizer::resize(reference_mask, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED));
+      int optional_tex_cnt = 0;
       for (int i=0;i<references_blk->size();i++)
       {
         std::string tex_name = references_blk->get_name(i);
@@ -569,7 +570,8 @@ namespace dopt
         {
           Texture t = engine::textureManager->load_unnamed_tex(references_blk->get_string(i));
           t = ImageResizer::resize(t, original_reference_size, original_reference_size, ImageResizer::Type::CENTERED);
-          references.emplace(tex_name+"_"+std::to_string(i), t);
+          references.emplace(tex_name+"_"+std::to_string(optional_tex_cnt), t);
+          optional_tex_cnt++;
         }
       }
       if (save_results)
