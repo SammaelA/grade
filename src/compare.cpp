@@ -201,6 +201,26 @@ void cup_1_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
   save_block_to_file("../prezentations/spring_23_medialab/cup_model_1/reference_turntable_9/cameras.blk", cameras_9);
 }
 
+void cup_1_render_img2mesh_turntable(MitsubaInterface &mi, CameraSettings &camera)
+{
+  auto model = dgen::load_obj("saves/cup1_img2mesh/model.obj");
+  dgen::set_face_normals(model);
+  auto bbox = dgen::get_bbox(model);logerr("model bbox 1 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+      
+  dgen::normalize_model(model);
+  bbox = dgen::get_bbox(model);logerr("model bbox 1 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
+      
+
+  Block cameras_64, cameras_9;
+  dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part", 0}}};
+  render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                    "saves/cup1_img2mesh/turntable", 1024, 64, 64, 3, 0, camera, &cameras_64);
+  save_block_to_file("../saves/cup1_img2mesh/turntable/cameras.blk", cameras_64);
+  render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_1/tex_inv.png",
+                    "saves/cup1_img2mesh/turntable_9", 1024, 256, 9, 3, 0, camera, &cameras_9);
+  save_block_to_file("../saves/cup1_img2mesh/turntable_9/cameras.blk", cameras_9);
+}
+
 void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
 {
       std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.074, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
@@ -250,6 +270,20 @@ void cup_4_render_reference_turntable(MitsubaInterface &mi, CameraSettings &came
       render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
                         "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9", 256, 64, 9, 3, 0, camera, &cameras_9);
       save_block_to_file("../prezentations/spring_23_medialab/cup_model_4/reference_turntable_9/cameras.blk", cameras_9);
+}
+
+void cup_4_render_reference_turntable_2(MitsubaInterface &mi, CameraSettings &camera)
+{
+      auto model = dgen::load_obj("prezentations/spring_23_medialab/cup_model_4/cup_4.obj");
+      auto bbox = dgen::get_bbox(model);
+      dgen::normalize_model(model);
+      bbox = dgen::get_bbox(model);
+
+      Block cameras_64, cameras_9;
+      dgen::DFModel df_model = {model, dgen::PartOffsets{{"main_part",0}}};
+      render_normalized(mi, df_model, "../../prezentations/spring_23_medialab/cup_model_4/cup_4_tex_inv.png",
+                        "prezentations/spring_23_medialab/cup_model_4/reference_turntable_9_1024", 1024, 64, 9, 3, 0, camera, &cameras_9);
+      save_block_to_file("../prezentations/spring_23_medialab/cup_model_4/reference_turntable_9_1024/cameras.blk", cameras_9);
 }
 
 void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
@@ -319,6 +353,47 @@ void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
                       "prezentations/spring_23_medialab/test_building_2/mygen_turntable", 256, 64, 64, 3, 0, camera, nullptr, &model_info);
     //render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
     //                  "prezentations/spring_23_medialab/test_building_2/mygen_turntable_9", 256, 64, 9, 3, 0, camera);
+}
+void building_6_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
+{
+    Block gen_info;
+    load_block_from_file(dgen::get_generator_by_name("buildings_2").generator_description_blk_path, gen_info);
+    Block &gen_mesh_parts = *gen_info.get_block("mesh_parts");
+    MitsubaInterface::ModelInfo model_info;
+    model_info.layout = dgen::ModelLayout(0, 3, 6, 8, 8);//default layout with pos, normals and tc
+
+    for (int i=0;i<gen_mesh_parts.size();i++)
+    {
+      if (gen_mesh_parts.get_type(i) == Block::ValueType::STRING)
+        model_info.parts.push_back({gen_mesh_parts.get_string(i), 
+                                    "white.png", 
+                                    MitsubaInterface::get_default_material()});
+    }
+
+    model_info.get_part("main_part")->texture_name = "wall2.png";
+    model_info.get_part("interior")->texture_name = "concrete.png";
+    model_info.get_part("windows")->material_name = "glass";
+    model_info.get_part("wooden_parts")->texture_name = "wood6.png";
+    model_info.get_part("metal_parts")->texture_name = "rusty_metal.png";
+    model_info.get_part("roof")->texture_name = "roof1.png";
+    std::vector<float> params = {2.000000, 4.000000, 0.040000, 0.375206, 0.336109, 2.000000, 9.000000, 0.330000, 6.000000, 1625.000000, 0.500000, 5.000000, 68.000000, 2.000000, 0.080000, 0.080000, 0.095000, 0.008677, 0.179252, 0.000000, 0.003194, 0.178314, 1.000000, 2.000000, 2.000000, 0.600000, 0.519676, 0.600000, 1.824628, 1.000000, 3.000000, 0.000000, 0.581000, 0.574231, 0.600000, 2.903548, 0.400000, 0.900000, 0.018000, 0.045000, 1.000000, 1.000000, 2.000000, 2.000000, 0.600000, 0.400000, 0.600000, 2.767931, 0.569821, 0.400000, 0.887747, 0.150000, 0.116000, 0.150000, 0.954397, 0.379385, 0.207553, 0.415835, -0.392796, 0.708893, -0.100000, 3.509702, 0.011455, 0.000000, 10.500000, 10.000000, 1.000000, 1.000000, 0.100000, 0.500000};
+    dgen::DFModel res, res_det;
+    dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
+    dgen::dgen_test("buildings_2", params, res_det, false, dgen::ModelQuality(false, 3));
+    dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    dgen::normalize_model(res.first);
+
+    dgen::transform(res_det.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    dgen::normalize_model(res_det.first);
+    render_normalized(mi, res_det, "../../saves/building_6_res/reconstructed_tex_raw.png",
+                      "saves/building_6_res/monochrome_turntable", 1024, 256, 64, 3, 0, camera, nullptr, &model_info);
+    render_normalized(mi, res_det, "../../saves/building_6_res/reconstructed_tex_raw.png",
+                      "saves/building_6_res/monochrome_turntable_9", 1024, 256, 9, 3, 0, camera, nullptr, &model_info);
+
+    render_normalized(mi, res, "../../saves/building_6_res/reconstructed_tex_raw.png",
+                      "saves/building_6_res/mygen_turntable", 1024, 256, 64, 3, 0, camera);
+    render_normalized(mi, res, "../../saves/building_6_res/reconstructed_tex_raw.png",
+                      "saves/building_6_res/mygen_turntable_9", 1024, 256, 9, 3, 0, camera);
 }
   /*
     Block gen_info;
@@ -504,18 +579,63 @@ void calc_NGP_3D_IoU(MitsubaInterface &mi, CameraSettings &camera, std::string m
     logerr("%s NGP IoU %f %f %f", mygen_name.c_str(), iou1, iou2, iou3);
 }
 
+void compare_all_for_paper()
+{
+  logerr("mygen");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_1/reference_turntable",
+                                "saves/cup_model_1/mygen_turntable",
+                                64);
+  logerr("image2mesh");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_1/reference_turntable",
+                                "saves/cup1_img2mesh/turntable",
+                                64);
+  logerr("instant ngp");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_1/NGP64_turntable",
+                                "prezentations/spring_23_medialab/cup_model_1/NGP_turntable_ref",
+                                16);
+  logerr("diff SDF 1");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/cup_1/diffuse-1/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/cup_1/diffuse-1/warp/reference/turntable",
+                                64);
+  logerr("diff SDF 6");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/cup_1/diffuse-6/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/cup_1/diffuse-6/warp/reference/turntable",
+                                64);
+
+  logerr("cup_4 1 view");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_4/reference_turntable",
+                                "saves/cup_model_4/mygen_turntable",
+                                64);
+  logerr("cup_4 2 view");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_4/reference_turntable",
+                                "saves/cup_4_2cameras/mygen_turntable",
+                                64);
+  logerr("cup_4 4 view");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_4/reference_turntable",
+                                "saves/cup_4_4cameras/mygen_turntable",
+                                64);
+  logerr("cup_4 8 view");
+  compare_utils::turntable_loss("prezentations/spring_23_medialab/cup_model_4/reference_turntable",
+                                "saves/cup_4_8cameras/mygen_turntable",
+                                64);
+}
+
 void compare_sandbox(int argc, char **argv)
 {
   MitsubaInterface mi("scripts", "mitsuba_optimization_embedded");
 
   float fov_rad = 0.5;
   CameraSettings camera = MitsubaInterface::get_camera_from_scene_params({fov_rad});
-
-  cup_1_multicam_render_mygen_turntable(mi, camera);
-  std::string mygen_name = "cup_model_1_multicam";
-  compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/reference_turntable",
-                               "prezentations/spring_23_medialab/" + mygen_name + "/mygen_turntable",
-                                64);
+  
+  compare_all_for_paper();
+  //cup_4_render_reference_turntable_2(mi, camera);
+  //cup_1_render_img2mesh_turntable(mi, camera);
+  //building_6_render_mygen_turntable(mi, camera);
+  //cup_1_multicam_render_mygen_turntable(mi, camera);
+  //std::string mygen_name = "cup_model_1_multicam";
+  //compare_utils::turntable_loss("prezentations/spring_23_medialab/" + mygen_name + "/reference_turntable",
+  //                             "prezentations/spring_23_medialab/" + mygen_name + "/mygen_turntable",
+  //                              64);
   //building_2_render_mygen_turntable(mi, camera);
 
   //compare_and_print("test_building_2", "building_2");
