@@ -23,6 +23,7 @@ CMakeCache.txt
 /build/*
 /CMakeFiles/*
 /saves/*
+/output/*
 /saved_scenes/*
 # Node artifact files
 node_modules/

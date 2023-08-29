@@ -4,7 +4,7 @@
 #ifdef WIN32
   #include "vfloat4_x64.h"
 #else
-  #include "vfloat4_gcc.h"
+  #include "vfloat4_x64.h"
 #endif 
 
 // This is just and example. 

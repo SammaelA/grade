@@ -56,7 +56,7 @@ void Clusterizer2::prepare(Block &settings)
         clusteringHelper = new ImpostorHashClusteringHelper2();
     else
     {
-        logerr("given unknown clustering helper name %s",c_helper_name);
+        logerr("given unknown clustering helper name %s",c_helper_name.c_str());
         clusteringHelper = new ImpostorClusteringHelper();
     }
     if (c_base_name == "hierarcial")
@@ -73,7 +73,7 @@ void Clusterizer2::prepare(Block &settings)
         clusteringBase = new KmeansClusteringBase();
     else
     {
-        logerr("given unknown clustering base name %s",c_base_name);
+        logerr("given unknown clustering base name %s",c_base_name.c_str());
         clusteringBase = new HierarcialClusteringBase();
     }
 }

@@ -33,6 +33,7 @@
 #include "diff_generators/simple_model_utils.h"
 #include "compare.h"
 #include <opencv2/opencv.hpp>
+#include "diff_generators/custom_diff_render.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -380,6 +381,10 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     render_mygen_cup_demo(mi, camera, params, "saves/cup_model_4/reconstructed_tex_complemented.png","saves/cup_model_4/");
   }
   } 
+  else if (argc >= 3 && std::string(argv[2]) == "-custom_dr_test")
+  {
+    custom_diff_render_main(argc, argv);
+  }
   else
   {
     logerr("unknown sandbox command");

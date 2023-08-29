@@ -2,6 +2,51 @@ cmake_minimum_required(VERSION 3.7)
 
 project(main)
 
+#cmake CMakeLists.txt -Wno-dev -DUSE_CUSTOM_DIFF_RENDER=OFF -DCLANG_VERSION=9
+
+option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
+
+set(RT_EMBREE_LIBS "")
+set(OMP_LIBS "")
+set(DR_SOURCE_RT )
+set(DR_SOURCE )
+if(USE_CUSTOM_DIFF_RENDER)
+  set(CLANG_VERSION "9" CACHE STRING "clang and LLVM version to use")
+  set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}")
+  set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
+  find_package(OpenMP REQUIRED)
+  set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
+  set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
+
+  include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
+
+  add_definitions(-DUSE_EMBREE)
+  add_definitions(-DUSE_CUSTOM_DIFF_RENDER)
+  include_directories(${DR_SRC}/external)
+  include_directories(${DR_SRC}/external/embree/include)
+
+  find_package(Threads REQUIRED)
+  link_directories(${DR_SRC}/external/embree/lib)
+  set(RT_EMBREE_LIBS embree3 tbb)
+
+  set(DR_SOURCE_RT
+  "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
+  "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
+  "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
+
+  set(OMP_LIBS "")
+  if(OpenMP_CXX_FOUND)
+    add_definitions(-DUSE_OMP)
+    include_directories(${AUX_OMP_INC})
+    link_directories(${AUX_OMP_LIB})
+    set(OMP_LIBS OpenMP::OpenMP_CXX)
+  endif()
+
+  file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
+
+  include_directories("${DR_SRC}/mitsuba_src/stub")
+endif()
+
 find_package(SDL2 REQUIRED)
 find_library(SDL2_IMAGE_LIBRARY SDL2_image)
 message(SDL2_IMAGE_LIBRARY=${SDL2_IMAGE_LIBRARY})
@@ -50,7 +95,7 @@ set(CMAKE_USE_WIN32_THREADS_INIT 0)
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-set(CMAKE_CXX_FLAGS "-g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result")
+set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter -Wshadow")
 set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 file(GLOB IMGUI_SRC src/imgui/*.cpp)
@@ -58,7 +103,9 @@ include_directories("dependencies/pyclustering/ccore/include" "dependencies/SDL2
                     "/usr/include/python3.8" "dependencies/python" "src" "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
 file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
-add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC})
+add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC} 
+                    ${DR_SOURCE}
+                    ${DR_SOURCE_RT})
 target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
                         ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} ${PY_CLUSERING_LIBRARY} 
                         boost_serialization boost_system boost_filesystem
@@ -74,5 +121,13 @@ target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBR
                         stdc++fs
                         OpenCL
                         libnoise
-                        ${OpenCV_LIBS})
+                        ${OpenCV_LIBS}
+                        ${OMP_LIBS} 
+                        ${RT_EMBREE_LIBS})
 
+if(USE_CUSTOM_DIFF_RENDER)
+  set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
+  message(${ENZYME_FLAGS})
+  target_compile_options(main PUBLIC ${ENZYME_FLAGS})
+else()
+endif()

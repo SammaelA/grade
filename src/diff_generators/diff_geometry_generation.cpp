@@ -164,12 +164,6 @@ namespace dgen
     mat = translate(mat, shift_v);
     mat = scale(mat, scale_v);
     transform(tri_model, mat);
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<3;j++)
-        debug("%.3f ", mat[3*i+j]);
-      debugnl();
-    }
     add_model(vert, tri_model);
   }
 

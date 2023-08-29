@@ -277,7 +277,7 @@ namespace dopt
           int imax = round(min_max.y);
           if (abs((float)imin - min_max.x) > 1e-3 || abs((float)imax - min_max.y) > 1e-3)
           {
-            logerr("invalid parameter description\"%s\". Variant parameter should have integer min max values", blk.get_name(i));
+            logerr("invalid parameter description\"%s\". Variant parameter should have integer min max values", blk.get_name(i).c_str());
           }
           variant_count.push_back(imax - imin + 1);
           variant_positions.push_back(params_min.size() - 1);
