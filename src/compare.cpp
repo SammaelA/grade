@@ -37,22 +37,28 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
                        int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera,
                        Block *camera_presets = nullptr,
                        MitsubaInterface::ModelInfo *m_info = nullptr,
-                       MitsubaInterface::RenderStyle render_style = MitsubaInterface::TEXTURED_DEMO)
+                       MitsubaInterface::RenderStyle render_style = MitsubaInterface::TEXTURED_DEMO,
+                       float y_rot = 0, bool render_mask = true)
 {
   MitsubaInterface::ModelInfo model_info = MitsubaInterface::ModelInfo::simple_mesh(texture_name, mi.get_default_material());
   if (m_info)
     model_info = *m_info;
   
-  if (render_style == MitsubaInterface::TEXTURED_DEMO)
+  if (render_style == MitsubaInterface::TEXTURED_DEMO && render_mask) 
   {
   mi.init_scene_and_settings(MitsubaInterface::RenderSettings(image_size, image_size, 32, MitsubaInterface::CUDA, MitsubaInterface::SILHOUETTE),
                              model_info);
   for (int i = 0; i < rotations; i++)
   {
     float phi = (2 * PI * i) / rotations;
+    float psi;
+    if (i <= rotations/2)
+      psi = ((PI * i) / rotations)*y_rot;
+    else
+      psi = (PI - (PI * i) / rotations)*y_rot;
     camera.target = glm::vec3(0, 0, 0);
     camera.up = glm::vec3(0, 1, 0);
-    camera.origin = glm::vec3(camera_dist * sin(phi), camera_y, camera_dist * cos(phi));
+    camera.origin = glm::vec3(camera_dist * sin(phi) * cos(psi), camera_y + camera_dist * sin(psi), camera_dist * cos(phi) * cos(psi));
 
     char path[1024];
     sprintf(path, "%s/mask-%04d.png", folder_name.c_str(), i);
@@ -73,9 +79,14 @@ void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const s
   for (int i = 0; i < rotations; i++)
   {
     float phi = (2 * PI * i) / rotations;
+    float psi;
+    if (i < rotations/2)
+      psi = ((PI * i) / rotations)*y_rot;
+    else
+      psi = (PI - (PI * i) / rotations)*y_rot;
     camera.target = glm::vec3(0, 0, 0);
     camera.up = glm::vec3(0, 1, 0);
-    camera.origin = glm::vec3(camera_dist * sin(phi), camera_y, camera_dist * cos(phi));
+    camera.origin = glm::vec3(camera_dist * sin(phi) * cos(psi), camera_y + camera_dist * sin(psi), camera_dist * cos(phi) * cos(psi));
 
     char path[1024];
     sprintf(path, "%s/frame-%04d.png", folder_name.c_str(), i);
@@ -119,6 +130,30 @@ void render_mygen_cup(MitsubaInterface &mi, CameraSettings &camera, std::vector<
                     save_dir+"monochrome_turntable", 1024, 64, 64, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO);
   render_normalized(mi, res, "../../"+texture_path,
                     save_dir+"monochrome_turntable_9", 256, 64, 9, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO);
+}
+
+void render_mygen_cup_demo(MitsubaInterface &mi, CameraSettings &camera, std::vector<float> params,
+                           std::string texture_path, std::string save_dir)
+{
+  dgen::DFModel res;
+  dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
+  dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+
+  auto bbox = dgen::get_bbox(res.first);
+  dgen::normalize_model(res.first);
+  bbox = dgen::get_bbox(res.first);
+
+  bool ok = prepare_directory(save_dir+"demo_textured") && prepare_directory(save_dir+"demo_monochrome");
+  if (!ok)
+  {
+    logerr("unable to save turntables!");
+    return;
+  }
+                      
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"demo_textured", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.8, false);
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
 }
 
 void render_random_cameras(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,

@@ -285,8 +285,8 @@ def init(base_path, image_w, image_h, spp, mitsuba_variant, render_style, textur
               'type': 'roughplastic',
               'distribution': 'ggx',
               'int_ior': 1.504,
-              'diffuse_reflectance': {'type': 'rgb', 'value': (0.9, 0.8, 0.3)},
-              'alpha': 0.001
+              'diffuse_reflectance': {'type': 'rgb', 'value': (0.93, 0.93, 0.93)},
+              'alpha': 0.3
           }, 'diffuse_reflectance'
       else:
         print("Unknown render_style = ", render_style)
