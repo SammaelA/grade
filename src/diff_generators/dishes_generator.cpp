@@ -401,9 +401,13 @@ namespace dgen
         norm = normalize(cross(vec0, vec1));
       }
       dvec3 vec2 = thickness[0]*verts[i] + radiuses[0]*radius_vec+shift;
-      add_vertex(model, prev_size+0+(i-2)*3, vec0, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3, vec1, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3, vec2, norm, {0, 0}, only_pos); 
+      dfloat m = 0.001f;
+      add_vertex(model, prev_size+0+(i-2)*3, vec0, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3, vec1, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3, vec2, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
     }
 
     {
@@ -482,10 +486,14 @@ namespace dgen
       {
         norm = normalize(cross(vec0, vec1));
       }
+      dfloat m = 0.001f;
       dvec3 vec2 = thickness[rotations]*verts[i] + radiuses[rotations]*radius_vec+shift;
-      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2, -norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
     }
 
     for (int i=0;i<(sp_sz-1)*rotations;i++)
