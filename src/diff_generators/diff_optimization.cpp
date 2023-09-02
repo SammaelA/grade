@@ -24,6 +24,7 @@
 #include <opencv2/opencv.hpp>
 #include "compare.h"
 #include "diff_render.h"
+#include "custom_diff_render.h"
 
 namespace dopt
 {
@@ -714,7 +715,11 @@ namespace dopt
       model_quality = stage_blk->get_int("model_quality", 0);
       only_pos = false;
       if (diff_render) delete diff_render; 
+      #ifdef USE_CUSTOM_DIFF_RENDER
+      diff_render = create_custom_diff_render();
+      #else
       diff_render = new DiffRenderMitsubaDefault(mi, MitsubaInterface::LOSS_MSE, default_model_info, 0);
+      #endif
       diff_render->init_optimization(reference_image_dirs, 
                    MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
                    settings_blk.get_bool("save_intermediate_images", false));
