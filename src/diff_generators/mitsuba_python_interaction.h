@@ -97,7 +97,7 @@ public:
                             const CameraSettings &camera, const std::vector<float> &scene_params);
   
   //renders model amd compare it with reference set by init_optimization function. Returns loss function value. Saves gradients
-  //that are used by compute_final_grad
+  //that can be obtained lated with get_vertex_grad() and get_camera_params_grad() respectively
   float render_and_compare(const dgen::DFModel &model, const std::vector<CameraSettings> &cameras, const std::vector<float> &scene_params,
                            double *timers = nullptr);
 
@@ -108,8 +108,16 @@ public:
                             const std::vector<float> &scene_params, const CameraSettings &camera,
                             int rotations_x = 4, int rotations_y = 1);
 
-  //generator_jak size is [FLOAT_PER_VERTEX*params_count*vertex_count], final_grad size is [params_count]
-  void compute_final_grad(const std::vector<float> &generator_jac, int params_count, int vertex_count, std::vector<float> &final_grad);
+  const float *get_vertex_grad() const
+  {
+    int part_id = 0;
+    assert(active_parts.size() == 1 && active_parts[0] == 0);
+    return buffers[3*part_id];
+  }
+  const float *get_camera_params_grad() const
+  {
+    return buffers[get_camera_buffer_id()];
+  } 
 
   void finish();
 
@@ -128,7 +136,7 @@ public:
   void model_to_ctx(const dgen::DFModel &model);
   void camera_to_ctx(const CameraSettings &camera, std::string camera_name);
   void clear_buffer(int buffer_id, float val = 0);
-  int get_camera_buffer_id()
+  int get_camera_buffer_id() const
   {
     return buffers.size() - 1;
   }

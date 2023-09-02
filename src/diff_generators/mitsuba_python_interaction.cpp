@@ -430,34 +430,6 @@ float MitsubaInterface::render_and_compare(const dgen::DFModel &model, const std
   return loss;
 }
 
-void MitsubaInterface::compute_final_grad(const std::vector<float> &jac, int params_count, int vertex_count, 
-                                          std::vector<float> &final_grad)
-{
-  auto &ml = model_info.layout;
-  for (int part_id : active_parts)
-  {
-    // offsets[0] offset always represent positions. We do not calculate derivatives by other channels (normals, tc)
-    int offset = ml.offsets[0];
-    int size = ml.offsets[1] - ml.offsets[0];
-    if (offset >= 0 && size > 0)
-    {
-      for (int i = 0; i < vertex_count; i++)
-      {
-        for (int j = 0; j < params_count; j++)
-        {
-          for (int k = 0; k < size; k++)
-          {
-            final_grad[j] += jac[(ml.f_per_vert * i + offset + k) * params_count + j] * buffers[3*part_id][size * i + k];
-          }
-        }
-      }
-    }
-  }
-
-  for (int i = params_count; i < final_grad.size(); i++)
-    final_grad[i] += buffers[get_camera_buffer_id()][i - params_count]; // gradient by camera params
-}
-
 void MitsubaInterface::set_model_max_size(int _model_max_size)
 {
   model_max_size = _model_max_size;

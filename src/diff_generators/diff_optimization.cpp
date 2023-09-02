@@ -623,13 +623,33 @@ namespace dopt
 */
       std::vector<float> jac = func.get_jac(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
       dgen::DFModel res = func.get(get_gen_params(params), dgen::ModelQuality(only_pos, model_quality));
-      std::vector<float> final_grad = std::vector<float>(params.size(), 0);
 
       std::vector<CameraSettings> cameras = has_fixed_cameras ? fixed_cameras : 
                                             std::vector<CameraSettings>{MitsubaInterface::get_camera_from_scene_params(get_camera_params(params))};
       float loss = mi.render_and_compare(res, cameras, get_camera_params(params));
 
-      mi.compute_final_grad(jac, gen_params_cnt, res.first.size() / FLOAT_PER_VERTEX, final_grad);
+      const float *pos_grad = mi.get_vertex_grad();
+      const float *camera_grad = mi.get_camera_params_grad();
+      int vertex_cnt = res.first.size() / FLOAT_PER_VERTEX;
+      std::vector<float> final_grad = std::vector<float>(params.size(), 0);
+      
+      int pos_offset = default_model_info.layout.offsets[0];
+      int pos_size = default_model_info.layout.offsets[1] - default_model_info.layout.offsets[0];
+      assert(pos_size == 3);
+
+      for (int i = 0; i < vertex_cnt; i++)
+      {
+        for (int j = 0; j < gen_params_cnt; j++)
+        {
+          for (int k = 0; k < pos_size; k++)
+          {
+            final_grad[j] += jac[(FLOAT_PER_VERTEX * i + pos_offset + k) * gen_params_cnt + j] * pos_grad[pos_size * i + k];
+          }
+        }
+      }
+
+      for (int i = gen_params_cnt; i < final_grad.size(); i++)
+        final_grad[i] += camera_grad[i - gen_params_cnt]; // gradient by camera params
 
       std::vector<float> reg_res = f_reg.Forward(0, params);
       std::vector<float> reg_jac = f_reg.Jacobian(params);
