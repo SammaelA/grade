@@ -23,6 +23,7 @@
 #include "simple_model_utils.h"
 #include <opencv2/opencv.hpp>
 #include "compare.h"
+#include "diff_render.h"
 
 namespace dopt
 {
@@ -604,6 +605,7 @@ namespace dopt
     int model_quality = 0;
     float regularization_alpha = settings_blk.get_double("regularization_alpha", 0.01);
     bool only_pos = true;
+    IDiffRender *diff_render = nullptr;
 
     opt::opt_func_with_grad F_to_optimize = [&](std::vector<float> &params) -> std::pair<float, std::vector<float>>
     {
@@ -626,10 +628,10 @@ namespace dopt
 
       std::vector<CameraSettings> cameras = has_fixed_cameras ? fixed_cameras : 
                                             std::vector<CameraSettings>{MitsubaInterface::get_camera_from_scene_params(get_camera_params(params))};
-      float loss = mi.render_and_compare(res, cameras, get_camera_params(params));
+      float loss = diff_render->render_and_compare(res, cameras, get_camera_params(params));
 
-      const float *pos_grad = mi.get_vertex_grad();
-      const float *camera_grad = mi.get_camera_params_grad();
+      const float *pos_grad = diff_render->get_vertex_grad();
+      const float *camera_grad = diff_render->get_scene_params_grad();
       int vertex_cnt = res.first.size() / FLOAT_PER_VERTEX;
       std::vector<float> final_grad = std::vector<float>(params.size(), 0);
       
@@ -711,10 +713,11 @@ namespace dopt
 
       model_quality = stage_blk->get_int("model_quality", 0);
       only_pos = false;
-      mi.init_optimization(reference_image_dirs, MitsubaInterface::LOSS_MSE,
-                           MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
-                           default_model_info,
-                           settings_blk.get_bool("save_intermediate_images", false));
+      if (diff_render) delete diff_render; 
+      diff_render = new DiffRenderMitsubaDefault(mi, MitsubaInterface::LOSS_MSE, default_model_info, 0);
+      diff_render->init_optimization(reference_image_dirs, 
+                   MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 1), MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
+                   settings_blk.get_bool("save_intermediate_images", false));
 
       std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
       std::vector<float> parameters_mask = get_active_parameters_mask(*stage_blk, params_names);
@@ -891,11 +894,12 @@ namespace dopt
           textured_model_info.parts[0].material_name = material;
           textured_model_info.parts[0].texture_name = "../../saves/" + tex_name + ".png";
 
-          mi.init_optimization_with_tex({"saves/reference_textured.png"}, MitsubaInterface::LossFunction::LOSS_MSE,
-                                          MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
-                                          MitsubaInterface::TEXTURED_CONST),
-                                          textured_model_info,
-                                          stage_blk->get_double("texture_opt_lr", 0.25), settings_blk.get_bool("save_intermediate_images", false));
+          if (diff_render) delete diff_render; 
+          diff_render = new DiffRenderMitsubaDefault(mi, MitsubaInterface::LOSS_MSE, textured_model_info, stage_blk->get_double("texture_opt_lr", 0.25));
+          diff_render->init_optimization({"saves/reference_textured.png"}, 
+                      MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                      settings_blk.get_bool("save_intermediate_images", false));
+
           std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
           opt::Optimizer *tex_opt = get_optimizer(search_algorithm);
           Block *opt_settings = stage_blk->get_block("optimizer_settings");
@@ -982,11 +986,12 @@ namespace dopt
         MitsubaInterface::ModelInfo textured_model_info = default_model_info;
         textured_model_info.parts[0].material_name = best_material;
         textured_model_info.parts[0].texture_name = "../../saves/" + best_tex_name + ".png";
-        mi.init_optimization_with_tex(reference_textured_names, MitsubaInterface::LossFunction::LOSS_MSE, 
-                                      MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, 
-                                        MitsubaInterface::TEXTURED_CONST),
-                                      textured_model_info,
-                                      stage_blk->get_double("texture_opt_lr", 0.25), true);
+        
+        if (diff_render) delete diff_render; 
+        diff_render = new DiffRenderMitsubaDefault(mi, MitsubaInterface::LOSS_MSE, textured_model_info, stage_blk->get_double("texture_opt_lr", 0.25));
+        diff_render->init_optimization(reference_textured_names, 
+                      MitsubaInterface::RenderSettings(im_sz, im_sz, stage_blk->get_int("spp", 128), MitsubaInterface::CUDA, MitsubaInterface::TEXTURED_CONST),
+                      settings_blk.get_bool("save_intermediate_images", false));
         
         std::string search_algorithm = stage_blk->get_string("optimizer", "adam"); 
         opt::Optimizer *tex_opt = get_optimizer(search_algorithm);
