@@ -1,0 +1,69 @@
+{
+  //which procedural generator is used to create models. Currently only "dishes" is available
+  procedural_generator:s = "dishes"
+
+  //a .blk file describing parameters for scene, such as camera position, light etc.
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+  synthetic_reference:b = false
+  reference_image_size:i = 512
+
+  regularization_alpha:r = 1
+  original_reference_size:i = 1024
+  model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
+  save_intermediate_images:b = true
+  save_folder:s = "cup_3_tests3"
+
+
+  silhouette_optimization_settings
+  {
+    optimization_stages:i = 1
+    stage_0
+    {
+      optimizer:s = "adam"
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 1
+      optimizer_settings
+      {
+        iterations:i = 250
+        learning_rate:r = 0.01
+        verbose:b = true
+        initial_params:arr = { 3.082072, 3.146642, 3.850472, 4.152475, 4.192972, 4.399781, 4.455011, 4.467184, 4.763268, 1.038858, 1.000000, 0.025000, 0.646102, 0.114464, 0.335810, 0.321554, 0.324708, 0.368751, 0.351436, 0.268663, 0.257547, 0.341103, 0.310236, 0.264957, 0.287104, 0.274572, 0.284287, 0.285163, 0.351188, 0.378254, 0.362683, 0.282992, 0.500000, 0.546057, 1.192526, 1.152983, 1.051511, 0.961181, 0.598342, 0.500000, 0.500000, 0.621054, 0.508631, 0.559964, 0.625528, 0.583533, 0.609078, 0.923046, 0.578841, 0.815746, 0.841771, 0.914729, 0.533301, 0.133065, 0.545766, 0.452110, 0.016933, 0.167030, 0.023111, 100.000000, 250.000000, 100.000000, 100.000000, 50.000000, 0.250000, 0.125000}
+      }
+    }
+  }
+
+  texture_optimization_settings
+  {
+    optimization_stages:i = 1
+
+    stage_material_selection
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.25
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 256     
+      optimizer_settings
+      {
+        iterations:i = 20
+        learning_rate:r = 1
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.1
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 128  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 1
+        verbose:b = true
+      }   
+    }
+  }
+}
