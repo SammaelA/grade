@@ -303,7 +303,7 @@ namespace dgen
     float_type angle = (2*PI)/rotations;
     rot_mat = rotate(rot_mat, axis, angle);
     int sp_sz = spline.size();
-    int prev_size = model.size();
+    int prev_size = model.size()/FLOAT_PER_VERTEX;
     model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
     std::vector<g_vec3<float_type>> verts = spline;
     std::vector<g_vec3<float_type>> prev_verts = spline;
@@ -397,7 +397,7 @@ namespace dgen
     float_type ba = beg_angle + 1e-6;
     first_rot_mat = rotate(first_rot_mat, axis, ba);
     int sp_sz = spline.size();
-    int prev_size = model.size();
+    int prev_size = model.size()/FLOAT_PER_VERTEX;
     model.reserve(prev_size + FLOAT_PER_VERTEX*3*2*(sp_sz-1));
     std::vector<g_vec3<float_type>> verts = spline;
     std::vector<g_vec3<float_type>> prev_verts = spline;
