@@ -20,7 +20,8 @@ namespace dgen
         GeneratorDescription gen;
         std::string name = "dishes";
         gen.name = name;
-        gen.generator = create_cup;
+        gen.generator = create_cup<dfloat>;
+        gen.gen_not_diff = create_cup<float>;
         gen.params_regularizer = parameters_cup_reg;
         gen.model_regularizer = default_model_reg;
         gen.generator_description_blk_path = "dishes_gen_parameters_description.blk";
@@ -32,7 +33,8 @@ namespace dgen
         GeneratorDescription gen;
         std::string name = "buildings";
         gen.name = name;
-        gen.generator = create_building;
+        gen.generator = create_building<dfloat>;
+        gen.gen_not_diff = create_building<float>;
         gen.params_regularizer = default_parameters_reg;
         gen.model_regularizer = default_model_reg;
         gen.generator_description_blk_path = "buildings_gen_parameters_description.blk";

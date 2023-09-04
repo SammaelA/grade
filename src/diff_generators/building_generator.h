@@ -4,5 +4,6 @@
 namespace dgen
 {
   //create model of a building with given parameters (buildings procedural generator)
-  PartOffsets create_building(const std::vector<dfloat> &params, std::vector<dfloat> &model, ModelQuality quality);
+  template<typename float_type>
+  extern PartOffsets create_building(const std::vector<float_type> &params, std::vector<float_type> &model, ModelQuality quality);
 }

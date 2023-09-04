@@ -5,13 +5,14 @@
 
 namespace dgen
 {
-  std::vector<dfloat> create_wall_spline(const std::vector<dfloat> &params, int idx)
+  template<typename float_type>
+  std::vector<float_type> create_wall_spline(const std::vector<float_type> &params, int idx)
   {
-    std::vector<dfloat> spline;
+    std::vector<float_type> spline;
     spline.push_back(0);
     spline.push_back(params[idx]);
     spline.push_back(spline[spline.size() - 1] + params[idx + 3]);
-    for (dfloat len = params[idx] + params[idx + 2] + params[idx + 3]; len <= params[idx + 4]; len += params[idx + 3] + params[idx + 1])
+    for (float_type len = params[idx] + params[idx + 2] + params[idx + 3]; len <= params[idx + 4]; len += params[idx + 3] + params[idx + 1])
     {
       spline.push_back(spline[spline.size() - 1] + params[idx + 1]);
       spline.push_back(spline[spline.size() - 1] + params[idx + 3]);
@@ -19,18 +20,20 @@ namespace dgen
     spline.push_back(spline[spline.size() - 1] + params[idx + 2]);
     return spline;
   }
+  template std::vector<dfloat> create_wall_spline<dfloat>(const std::vector<dfloat> &params, int idx);
 
-  std::vector<dfloat> create_wall_spline(dfloat left_offset, dfloat window_gap, dfloat right_offset, dfloat window_size, 
-                                         dfloat window_count)
+  template<typename float_type>
+  std::vector<float_type> create_wall_spline(float_type left_offset, float_type window_gap, float_type right_offset, float_type window_size, 
+                                         float_type window_count)
   {
     //std::cerr<<"w count "<<window_count<<"\n";
-    std::vector<dfloat> spline;
+    std::vector<float_type> spline;
     spline.push_back(0);
     spline.push_back(left_offset);
     if (window_count > 0)
     {
       spline.push_back(spline[spline.size() - 1] + window_size);
-      for (dfloat i = 0; i < window_count - 1; i += 1)
+      for (float_type i = 0; i < window_count - 1; i += 1)
       {
         spline.push_back(spline[spline.size() - 1] + window_size);
         spline.push_back(spline[spline.size() - 1] + window_size);
@@ -39,15 +42,18 @@ namespace dgen
     spline.push_back(spline[spline.size() - 1] + right_offset);
     return spline;
   }
+  template std::vector<dfloat> create_wall_spline<dfloat>(dfloat left_offset, dfloat window_gap, dfloat right_offset, dfloat window_size, 
+                                         dfloat window_count);
 
-  void get_walls_from_splines(std::vector<dfloat> &model, std::vector<dfloat> &windows,
-                              const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
-                              dfloat length_z, dfloat window_depth, int x, int y, int z, float tex_v_shift, 
+  template<typename float_type>
+  void get_walls_from_splines(std::vector<float_type> &model, std::vector<float_type> &windows,
+                              const std::vector<float_type> &sp_x, const std::vector<float_type> &sp_y, 
+                              float_type length_z, float_type window_depth, int x, int y, int z, float tex_v_shift, 
                               bool low_quality, bool only_pos)
   {
     int num = model.size()/FLOAT_PER_VERTEX;
-    dvec3 norm_x = {0, 0, 0};
-    dvec3 norm_y = {0, 0, 0};
+    g_vec3<float_type> norm_x = {0, 0, 0};
+    g_vec3<float_type> norm_y = {0, 0, 0};
     norm_x[x] = 1;
     norm_y[y] = 1;
     for (int i = 1; i < sp_x.size(); ++i)
@@ -56,19 +62,19 @@ namespace dgen
       {
         for (int k = 0; k <= 1; ++k)
         {
-          dvec3 depth = {0, 0, 0};
+          g_vec3<float_type> depth = {0, 0, 0};
 
-          dvec3 pos_0 = {0, 0, 0};
-          dvec3 pos_1 = {0, 0, 0};
-          dvec3 pos_2 = {0, 0, 0};
-          dvec3 pos_3 = {0, 0, 0};
+          g_vec3<float_type> pos_0 = {0, 0, 0};
+          g_vec3<float_type> pos_1 = {0, 0, 0};
+          g_vec3<float_type> pos_2 = {0, 0, 0};
+          g_vec3<float_type> pos_3 = {0, 0, 0};
 
           dvec2 tex_0 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
           dvec2 tex_1 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
           dvec2 tex_2 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
           dvec2 tex_3 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
 
-          dvec3 norm_z = {0, 0, 0};
+          g_vec3<float_type> norm_z = {0, 0, 0};
           pos_0[x] = sp_x[i - 1];
           pos_0[y] = sp_y[j - 1];
 
@@ -103,8 +109,8 @@ namespace dgen
 
           if (i % 2 == 0 && j % 2 == 0 && i != sp_x.size() - 1 && j != sp_y.size() - 1)
           {
-            dfloat u = 0.2 * 0.5 * (sp_x[i] - sp_x[i - 1]) / sp_x[sp_x.size() - 1];
-            dfloat v = 0.2 * 0.5 * (sp_y[j] - sp_y[j - 1]) / sp_y[sp_y.size() - 1];
+            float_type u = 0.2 * 0.5 * (sp_x[i] - sp_x[i - 1]) / sp_x[sp_x.size() - 1];
+            float_type v = 0.2 * 0.5 * (sp_y[j] - sp_y[j - 1]) / sp_y[sp_y.size() - 1];
             
             if (!low_quality)
             {
@@ -116,12 +122,12 @@ namespace dgen
               add_vertex(model, num++, pos_0 + depth, norm_x, tex_0 + dvec2{u, v}, only_pos); 
               add_vertex(model, num++, pos_1, norm_x, tex_1 - dvec2{0, v}, only_pos); 
 
-              add_vertex(model, num++, pos_2, dvec3{0, 0, 0} - norm_x, tex_2 + dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_3, dvec3{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, dvec3{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
-              add_vertex(model, num++, pos_3 + depth, dvec3{0, 0, 0} - norm_x, tex_3 + dvec2{-u, -v}, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, dvec3{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
-              add_vertex(model, num++, pos_3, dvec3{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos);
+              add_vertex(model, num++, pos_2, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{0, v}, only_pos); 
+              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos); 
+              add_vertex(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
+              add_vertex(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 + dvec2{-u, -v}, only_pos); 
+              add_vertex(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
+              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos);
 
               add_vertex(model, num++, pos_0, norm_y, tex_0 + dvec2{u, 0}, only_pos); 
               add_vertex(model, num++, pos_2, norm_y, tex_2 - dvec2{u, 0}, only_pos); 
@@ -130,12 +136,12 @@ namespace dgen
               add_vertex(model, num++, pos_0 + depth, norm_y, tex_0 + dvec2{u, v}, only_pos); 
               add_vertex(model, num++, pos_2, norm_y, tex_2 - dvec2{u, 0}, only_pos); 
 
-              add_vertex(model, num++, pos_1, dvec3{0, 0, 0} - norm_y, tex_1 + dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_3, dvec3{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, dvec3{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
-              add_vertex(model, num++, pos_3 + depth, dvec3{0, 0, 0} - norm_y, tex_3 + dvec2{-u, -v}, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, dvec3{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
-              add_vertex(model, num++, pos_3, dvec3{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos);
+              add_vertex(model, num++, pos_1, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, 0}, only_pos); 
+              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos); 
+              add_vertex(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
+              add_vertex(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 + dvec2{-u, -v}, only_pos); 
+              add_vertex(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
+              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos);
 
 
 
@@ -179,34 +185,45 @@ namespace dgen
       }
     }
   }
+  template void get_walls_from_splines<dfloat>(std::vector<dfloat> &model, std::vector<dfloat> &windows,
+                              const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+                              dfloat length_z, dfloat window_depth, int x, int y, int z, float tex_v_shift, 
+                              bool low_quality, bool only_pos);
 
-  inline void create_floor_simple(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
-                                  const std::vector<dfloat> &sp_z, bool only_pos)
+  template<typename float_type>
+  inline void create_floor_simple(std::vector<float_type> &model, const std::vector<float_type> &sp_x, const std::vector<float_type> &sp_y, 
+                                  const std::vector<float_type> &sp_z, bool only_pos)
   {
     int num = model.size()/FLOAT_PER_VERTEX;
-    add_vertex(model, num++, dvec3{0, 0, 0}, dvec3{0, -1, 0}, dvec2{0, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{0, 0, sp_z[sp_z.size() - 1]}, dvec3{0, -1, 0}, dvec2{0, 1}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], 0, 0}, dvec3{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], 0, sp_z[sp_z.size() - 1]}, dvec3{0, -1, 0}, dvec2{0.5, 1}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], 0, 0}, dvec3{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{0, 0, sp_z[sp_z.size() - 1]}, dvec3{0, -1, 0}, dvec2{0, 1}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{0, 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 1}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 1}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 1}, only_pos); 
   }
+  template void create_floor_simple<dfloat>(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+                                  const std::vector<dfloat> &sp_z, bool only_pos);
 
-  inline void create_roof_simple(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
-                                 const std::vector<dfloat> &sp_z, bool only_pos)
+  template<typename float_type>
+  inline void create_roof_simple(std::vector<float_type> &model, const std::vector<float_type> &sp_x, const std::vector<float_type> &sp_y, 
+                                 const std::vector<float_type> &sp_z, bool only_pos)
   {
     int num = model.size()/FLOAT_PER_VERTEX;
-    add_vertex(model, num++, dvec3{0, sp_y[sp_y.size() - 1], 0}, dvec3{0, 1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, dvec3{0, 1, 0}, dvec2{0.5, 1}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, dvec3{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, dvec3{0, 1, 0}, dvec2{1, 1}, only_pos); 
-    add_vertex(model, num++, dvec3{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, dvec3{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
-    add_vertex(model, num++, dvec3{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, dvec3{0, 1, 0}, dvec2{0.5, 1}, only_pos);
+    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 1}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 1}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
+    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 1}, only_pos);
   }
+  template void create_roof_simple<dfloat>(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+                                 const std::vector<dfloat> &sp_z, bool only_pos);
 
-  void splines_to_building(std::vector<dfloat> &model, std::vector<dfloat> &windows,
-                           const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
-                           const std::vector<dfloat> &sp_z, dfloat window_depth, bool low_quality, bool only_pos)
+  template<typename float_type>
+  void splines_to_building(std::vector<float_type> &model, std::vector<float_type> &windows,
+                           const std::vector<float_type> &sp_x, const std::vector<float_type> &sp_y, 
+                           const std::vector<float_type> &sp_z, float_type window_depth, bool low_quality, bool only_pos)
   {
     get_walls_from_splines(model, windows, sp_x, sp_y, sp_z[sp_z.size() - 1], window_depth, 0, 1, 2, 0, low_quality, only_pos);
     get_walls_from_splines(model, windows, sp_z, sp_y, sp_x[sp_x.size() - 1], window_depth, 2, 1, 0, 0.35, low_quality, only_pos);
@@ -214,11 +231,15 @@ namespace dgen
     create_floor_simple(model, sp_x, sp_y, sp_z, only_pos);
     create_roof_simple(model, sp_x, sp_y, sp_z, only_pos);
   }
+  template void splines_to_building<dfloat>(std::vector<dfloat> &model, std::vector<dfloat> &windows,
+                           const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+                           const std::vector<dfloat> &sp_z, dfloat window_depth, bool low_quality, bool only_pos);
 
-  void splines_to_box(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
-                           const std::vector<dfloat> &sp_z, bool only_pos)
+  template<typename float_type>
+  void splines_to_box(std::vector<float_type> &model, const std::vector<float_type> &sp_x, const std::vector<float_type> &sp_y, 
+                           const std::vector<float_type> &sp_z, bool only_pos)
   {
-    auto add_quad = [&only_pos, &model](const dvec3 &p, const dvec3 &v1, const dvec3 &v2, const dvec3 &n)
+    auto add_quad = [&only_pos, &model](const g_vec3<float_type> &p, const g_vec3<float_type> &v1, const g_vec3<float_type> &v2, const g_vec3<float_type> &n)
     {
       int num = model.size()/FLOAT_PER_VERTEX;
       add_vertex(model, num++, p          , n, dvec2(0,0), only_pos); 
@@ -229,16 +250,19 @@ namespace dgen
       add_vertex(model, num++, p + v1     , n, dvec2(0,0), only_pos); 
     };
 
-    add_quad(dvec3(0,0,0), dvec3(sp_x.back(), 0, 0), dvec3(0, sp_y.back(), 0), dvec3(0,0,-1));
-    add_quad(dvec3(0,0,sp_z.back()), dvec3(0, sp_y.back(), 0), dvec3(sp_x.back(), 0, 0), dvec3(0,0,1));
+    add_quad(g_vec3<float_type>(0,0,0), g_vec3<float_type>(sp_x.back(), 0, 0), g_vec3<float_type>(0, sp_y.back(), 0), g_vec3<float_type>(0,0,-1));
+    add_quad(g_vec3<float_type>(0,0,sp_z.back()), g_vec3<float_type>(0, sp_y.back(), 0), g_vec3<float_type>(sp_x.back(), 0, 0), g_vec3<float_type>(0,0,1));
 
-    add_quad(dvec3(0,0,0), dvec3(0, sp_y.back(), 0), dvec3(0, 0, sp_z.back()), dvec3(-1,0,0));
-    add_quad(dvec3(sp_x.back(),0,0), dvec3(0, 0, sp_z.back()), dvec3(0, sp_y.back(), 0), dvec3(1,0,0));
+    add_quad(g_vec3<float_type>(0,0,0), g_vec3<float_type>(0, sp_y.back(), 0), g_vec3<float_type>(0, 0, sp_z.back()), g_vec3<float_type>(-1,0,0));
+    add_quad(g_vec3<float_type>(sp_x.back(),0,0), g_vec3<float_type>(0, 0, sp_z.back()), g_vec3<float_type>(0, sp_y.back(), 0), g_vec3<float_type>(1,0,0));
     create_floor_simple(model, sp_x, sp_y, sp_z, only_pos);
     create_roof_simple(model, sp_x, sp_y, sp_z, only_pos);
   }
+  template void splines_to_box<dfloat>(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
+                           const std::vector<dfloat> &sp_z, bool only_pos);
 
-  PartOffsets create_building(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality)
+  template<typename float_type>
+  PartOffsets create_building(const std::vector<float_type> &params, std::vector<float_type> &vert, ModelQuality quality)
   {
     enum BuildingQuality
     {
@@ -248,11 +272,11 @@ namespace dgen
       BQ_COUNT
     };
     BuildingQuality bq = (BuildingQuality)CLAMP(quality.quality_level, 0, BQ_COUNT-1);
-    std::vector<dfloat> spline_x = create_wall_spline(params[0], params[1], params[2], params[3], params[4]);
-    std::vector<dfloat> spline_y = create_wall_spline(params[5], params[6], params[7], params[8], params[9]);
-    std::vector<dfloat> spline_z = create_wall_spline(params[10], params[11], params[12], params[13], params[14]);
+    std::vector<float_type> spline_x = create_wall_spline(params[0], params[1], params[2], params[3], params[4]);
+    std::vector<float_type> spline_y = create_wall_spline(params[5], params[6], params[7], params[8], params[9]);
+    std::vector<float_type> spline_z = create_wall_spline(params[10], params[11], params[12], params[13], params[14]);
 
-    std::vector<dfloat> windows_mesh;
+    std::vector<float_type> windows_mesh;
     
     if (bq == BQ_BOXES)
       splines_to_box(vert, spline_x, spline_y, spline_z, quality.create_only_position);
@@ -267,10 +291,10 @@ namespace dgen
         vert.push_back(v);
     }
 
-    dfloat total_size_x = params[0] + params[4]*(params[1] + params[3]) + params[2];
-    dfloat total_size_y = params[5] + params[9]*(params[6] + params[8]) + params[7];
-    dfloat total_size_z = params[10] + params[14]*(params[11] + params[13]) + params[12];
-    dmat43 sc2 = scale(translate(ident<dfloat>(), dvec3{-0.5, 0, 0}), dvec3{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
+    float_type total_size_x = params[0] + params[4]*(params[1] + params[3]) + params[2];
+    float_type total_size_y = params[5] + params[9]*(params[6] + params[8]) + params[7];
+    float_type total_size_z = params[10] + params[14]*(params[11] + params[13]) + params[12];
+    g_mat43<float_type> sc2 = scale(translate(ident<float_type>(), g_vec3<float_type>{-0.5, 0, 0}), g_vec3<float_type>{1.0/total_size_x, params[16]/total_size_y, params[17]/total_size_z});
     transform(vert, sc2);
 
     return {
@@ -278,4 +302,5 @@ namespace dgen
             {"windows", windows_offset}
            };
   }
+  template PartOffsets create_building<dfloat>(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality);
 };

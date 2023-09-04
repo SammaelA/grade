@@ -5,7 +5,8 @@
 #include "tinyEngine/engine.h"
 namespace dgen
 {
-  void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc, bool only_pos)
+  template<typename float_type>
+  void add_vertex(std::vector<float_type> &vert, int n, const g_vec3<float_type> &pos, const g_vec3<float_type> &norm, const g_vec2<float_type> &tc, bool only_pos)
   {
     int sz = n*FLOAT_PER_VERTEX;
     vert.resize(sz + FLOAT_PER_VERTEX);

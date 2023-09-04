@@ -64,6 +64,7 @@ namespace dgen
   {
     std::string name;
     generator_func generator;
+    std::function<PartOffsets(const std::vector<float> &params, std::vector<float> &out_model, ModelQuality)> gen_not_diff;
     params_regularizer_func params_regularizer;
     model_regularizer_func model_regularizer;
     std::string generator_description_blk_path;
