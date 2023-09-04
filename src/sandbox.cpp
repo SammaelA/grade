@@ -385,6 +385,40 @@ void sandbox_main(int argc, char **argv, Scene *scene)
   {
     custom_diff_render_main(argc, argv);
   }
+  else if (argc >= 3 && std::string(argv[2]) == "-gen_speed_test")
+  {
+    std::vector<float> params= { 2.570910, 3.137245, 3.620980, 3.839418, 3.986258, 4.011204, 4.175158, 4.447914, 4.974115, 0.877659, 1.000000, 0.038587, 0.540804, 0.125436, 0.124536, 0.181563, 0.251281, 0.272474, 0.265751, 0.257977, 0.245959, 0.236239, 0.226524, 0.209909, 0.188561, 0.164212, 0.156327, 0.151654, 0.154345, 0.168712, 0.177358, 0.245398, 0.285499, 1.189853, 0.772701, 2.000000, 0.937228, 0.841195, 0.678243, 0.707087, 0.721113, 0.757411, 0.823388, 0.855507, 0.825744, 0.607640, 0.755903, 0.644293, 0.546674, 0.611383, 0.962574, 1.176030, 2.000000, 0.080979, 0.557171, 0.474539, 0.005622, 0.239807, 0.000160, 0.000000, 0.500000, 662.898010, 1.000000, 79.108002, 0.200000, 0.500000 };
+    
+    for (int quality=0;quality<3;quality++)
+    {
+      auto t1 = std::chrono::steady_clock::now();
+      dgen::DFModel res_diff;
+      dgen::dgen_test("dishes", params, res_diff, false, dgen::ModelQuality(false, quality));
+      
+      auto t2 = std::chrono::steady_clock::now();
+
+      dgen::DFModel res_nd;
+      dgen::GeneratorDescription gd = dgen::get_generator_by_name("dishes");
+      res_nd.second = gd.gen_not_diff(params, res_nd.first, dgen::ModelQuality(false, quality));
+      auto t3 = std::chrono::steady_clock::now();
+
+      float diff = 0;
+      int dt1 = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+      int dt2 = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+      logerr("created model quality=%d size = %d", quality, res_diff.first.size());
+      logerr("differentiable function took %d us", dt1);
+      logerr("non-differentiable function took %d us", dt2);
+      assert(res_diff.first.size() == res_nd.first.size());
+      for (int i=0;i<res_diff.first.size(); i++)
+      {
+        float d = abs(res_diff.first[i] - res_nd.first[i]);
+        if (d > 1e-4)
+          logerr("%d diff = %f",i, d);
+        diff += d;
+      }
+      logerr("models average diff %f", diff/res_diff.first.size());
+    }
+  }
   else
   {
     logerr("unknown sandbox command");

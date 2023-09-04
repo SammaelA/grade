@@ -5,23 +5,6 @@
 #include "tinyEngine/engine.h"
 namespace dgen
 {
-  template<typename float_type>
-  void add_vertex(std::vector<float_type> &vert, int n, const g_vec3<float_type> &pos, const g_vec3<float_type> &norm, const g_vec2<float_type> &tc, bool only_pos)
-  {
-    int sz = n*FLOAT_PER_VERTEX;
-    vert.resize(sz + FLOAT_PER_VERTEX);
-    vert[sz+0] = pos[0];
-    vert[sz+1] = pos[1];
-    vert[sz+2] = pos[2];
-    //if (!only_pos)
-    //{
-      vert[sz+3] = norm[0];
-      vert[sz+4] = norm[1];
-      vert[sz+5] = norm[2]; 
-      vert[sz+6] = tc[0];
-      vert[sz+7] = tc[1];
-  }
-
   inline std::vector<float> get_triangle()
   {
     std::vector<float> res = {

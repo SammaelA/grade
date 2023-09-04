@@ -69,10 +69,10 @@ namespace dgen
           g_vec3<float_type> pos_2 = {0, 0, 0};
           g_vec3<float_type> pos_3 = {0, 0, 0};
 
-          dvec2 tex_0 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
-          dvec2 tex_1 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
-          dvec2 tex_2 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
-          dvec2 tex_3 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
+          g_vec2<float_type> tex_0 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
+          g_vec2<float_type> tex_1 = {0.5 * sp_x[i - 1] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
+          g_vec2<float_type> tex_2 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j - 1] / sp_y[sp_y.size() - 1]};
+          g_vec2<float_type> tex_3 = {0.5 * sp_x[i] / sp_x[sp_x.size() - 1], tex_v_shift + 0.35 * sp_y[j] / sp_y[sp_y.size() - 1]};
 
           g_vec3<float_type> norm_z = {0, 0, 0};
           pos_0[x] = sp_x[i - 1];
@@ -115,70 +115,70 @@ namespace dgen
             if (!low_quality)
             {
               //alcove
-              add_vertex(model, num++, pos_0, norm_x, tex_0 + dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_1, norm_x, tex_1 - dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_0 + depth, norm_x, tex_0 + dvec2{u, v}, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, norm_x, tex_1 + dvec2{u, -v}, only_pos); 
-              add_vertex(model, num++, pos_0 + depth, norm_x, tex_0 + dvec2{u, v}, only_pos); 
-              add_vertex(model, num++, pos_1, norm_x, tex_1 - dvec2{0, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0, norm_x, tex_0 + g_vec2<float_type>{0, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1, norm_x, tex_1 - g_vec2<float_type>{0, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0 + depth, norm_x, tex_0 + g_vec2<float_type>{u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1 + depth, norm_x, tex_1 + g_vec2<float_type>{u, -v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0 + depth, norm_x, tex_0 + g_vec2<float_type>{u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1, norm_x, tex_1 - g_vec2<float_type>{0, v}, only_pos); 
 
-              add_vertex(model, num++, pos_2, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
-              add_vertex(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 + dvec2{-u, -v}, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + dvec2{-u, v}, only_pos); 
-              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - dvec2{0, v}, only_pos);
+              add_vertex<float_type>(model, num++, pos_2, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + g_vec2<float_type>{0, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - g_vec2<float_type>{0, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + g_vec2<float_type>{-u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 + g_vec2<float_type>{-u, -v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2 + depth, g_vec3<float_type>{0, 0, 0} - norm_x, tex_2 + g_vec2<float_type>{-u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_x, tex_3 - g_vec2<float_type>{0, v}, only_pos);
 
-              add_vertex(model, num++, pos_0, norm_y, tex_0 + dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_2, norm_y, tex_2 - dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_0 + depth, norm_y, tex_0 + dvec2{u, v}, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, norm_y, tex_2 + dvec2{-u, v}, only_pos); 
-              add_vertex(model, num++, pos_0 + depth, norm_y, tex_0 + dvec2{u, v}, only_pos); 
-              add_vertex(model, num++, pos_2, norm_y, tex_2 - dvec2{u, 0}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0, norm_y, tex_0 + g_vec2<float_type>{u, 0}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2, norm_y, tex_2 - g_vec2<float_type>{u, 0}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0 + depth, norm_y, tex_0 + g_vec2<float_type>{u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2 + depth, norm_y, tex_2 + g_vec2<float_type>{-u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0 + depth, norm_y, tex_0 + g_vec2<float_type>{u, v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2, norm_y, tex_2 - g_vec2<float_type>{u, 0}, only_pos); 
 
-              add_vertex(model, num++, pos_1, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
-              add_vertex(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 + dvec2{-u, -v}, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + dvec2{u, -v}, only_pos); 
-              add_vertex(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - dvec2{u, 0}, only_pos);
+              add_vertex<float_type>(model, num++, pos_1, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + g_vec2<float_type>{u, 0}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - g_vec2<float_type>{u, 0}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + g_vec2<float_type>{u, -v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 + g_vec2<float_type>{-u, -v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1 + depth, g_vec3<float_type>{0, 0, 0} - norm_y, tex_1 + g_vec2<float_type>{u, -v}, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3, g_vec3<float_type>{0, 0, 0} - norm_y, tex_3 - g_vec2<float_type>{u, 0}, only_pos);
 
 
 
               //window
               int wn = windows.size()/FLOAT_PER_VERTEX;
-              add_vertex(windows, wn++, pos_0 + depth, norm_z, tex_0, only_pos); 
-              add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
-              add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
-              add_vertex(windows, wn++, pos_3 + depth, norm_z, tex_3, only_pos); 
-              add_vertex(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
-              add_vertex(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_0 + depth, norm_z, tex_0, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_3 + depth, norm_z, tex_3, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_2 + depth, norm_z, tex_2, only_pos); 
+              add_vertex<float_type>(windows, wn++, pos_1 + depth, norm_z, tex_1, only_pos); 
             }
-            tex_0 += dvec2{u, v};
-            tex_1 += dvec2{u, -v};
-            tex_2 += dvec2{-u, v};
-            tex_3 += dvec2{-u, -v};
+            tex_0 += g_vec2<float_type>{u, v};
+            tex_1 += g_vec2<float_type>{u, -v};
+            tex_2 += g_vec2<float_type>{-u, v};
+            tex_3 += g_vec2<float_type>{-u, -v};
             
           }
           else
           {
             //facade segment
-            add_vertex(model, num++, pos_0, norm_z, tex_0, only_pos); 
-            add_vertex(model, num++, pos_1, norm_z, tex_1, only_pos); 
-            add_vertex(model, num++, pos_2, norm_z, tex_2, only_pos); 
-            add_vertex(model, num++, pos_3, norm_z, tex_3, only_pos); 
-            add_vertex(model, num++, pos_2, norm_z, tex_2, only_pos); 
-            add_vertex(model, num++, pos_1, norm_z, tex_1, only_pos); 
+            add_vertex<float_type>(model, num++, pos_0, norm_z, tex_0, only_pos); 
+            add_vertex<float_type>(model, num++, pos_1, norm_z, tex_1, only_pos); 
+            add_vertex<float_type>(model, num++, pos_2, norm_z, tex_2, only_pos); 
+            add_vertex<float_type>(model, num++, pos_3, norm_z, tex_3, only_pos); 
+            add_vertex<float_type>(model, num++, pos_2, norm_z, tex_2, only_pos); 
+            add_vertex<float_type>(model, num++, pos_1, norm_z, tex_1, only_pos); 
 
             //inner side of the wall
             if (!low_quality)
             {
-              add_vertex(model, num++, pos_0 + depth, -norm_z, tex_0, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
-              add_vertex(model, num++, pos_3 + depth, -norm_z, tex_3, only_pos); 
-              add_vertex(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
-              add_vertex(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
+              add_vertex<float_type>(model, num++, pos_0 + depth, -norm_z, tex_0, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
+              add_vertex<float_type>(model, num++, pos_3 + depth, -norm_z, tex_3, only_pos); 
+              add_vertex<float_type>(model, num++, pos_2 + depth, -norm_z, tex_2, only_pos); 
+              add_vertex<float_type>(model, num++, pos_1 + depth, -norm_z, tex_1, only_pos); 
             }
           }
         }
@@ -195,12 +195,12 @@ namespace dgen
                                   const std::vector<float_type> &sp_z, bool only_pos)
   {
     int num = model.size()/FLOAT_PER_VERTEX;
-    add_vertex(model, num++, g_vec3<float_type>{0, 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 1}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 1}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, dvec2{0, 1}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, 0, 0}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0, 1}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0.5, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0.5, 1}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], 0, 0}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0.5, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, 0, sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, -1, 0}, g_vec2<float_type>{0, 1}, only_pos); 
   }
   template void create_floor_simple<dfloat>(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
                                   const std::vector<dfloat> &sp_z, bool only_pos);
@@ -210,12 +210,12 @@ namespace dgen
                                  const std::vector<float_type> &sp_z, bool only_pos)
   {
     int num = model.size()/FLOAT_PER_VERTEX;
-    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 1}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 1}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, dvec2{1, 0.7}, only_pos); 
-    add_vertex(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, dvec2{0.5, 1}, only_pos);
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{0.5, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{0.5, 1}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{1, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{1, 1}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{sp_x[sp_x.size() - 1], sp_y[sp_y.size() - 1], 0}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{1, 0.7}, only_pos); 
+    add_vertex<float_type>(model, num++, g_vec3<float_type>{0, sp_y[sp_y.size() - 1], sp_z[sp_z.size() - 1]}, g_vec3<float_type>{0, 1, 0}, g_vec2<float_type>{0.5, 1}, only_pos);
   }
   template void create_roof_simple<dfloat>(std::vector<dfloat> &model, const std::vector<dfloat> &sp_x, const std::vector<dfloat> &sp_y, 
                                  const std::vector<dfloat> &sp_z, bool only_pos);
@@ -242,12 +242,12 @@ namespace dgen
     auto add_quad = [&only_pos, &model](const g_vec3<float_type> &p, const g_vec3<float_type> &v1, const g_vec3<float_type> &v2, const g_vec3<float_type> &n)
     {
       int num = model.size()/FLOAT_PER_VERTEX;
-      add_vertex(model, num++, p          , n, dvec2(0,0), only_pos); 
-      add_vertex(model, num++, p + v1     , n, dvec2(0,0), only_pos); 
-      add_vertex(model, num++, p + v2     , n, dvec2(0,0), only_pos); 
-      add_vertex(model, num++, p + v1 + v2, n, dvec2(0,0), only_pos); 
-      add_vertex(model, num++, p + v2     , n, dvec2(0,0), only_pos); 
-      add_vertex(model, num++, p + v1     , n, dvec2(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p          , n, g_vec2<float_type>(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p + v1     , n, g_vec2<float_type>(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p + v2     , n, g_vec2<float_type>(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p + v1 + v2, n, g_vec2<float_type>(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p + v2     , n, g_vec2<float_type>(0,0), only_pos); 
+      add_vertex<float_type>(model, num++, p + v1     , n, g_vec2<float_type>(0,0), only_pos); 
     };
 
     add_quad(g_vec3<float_type>(0,0,0), g_vec3<float_type>(sp_x.back(), 0, 0), g_vec3<float_type>(0, sp_y.back(), 0), g_vec3<float_type>(0,0,-1));
@@ -303,4 +303,5 @@ namespace dgen
            };
   }
   template PartOffsets create_building<dfloat>(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality);
+  template PartOffsets create_building<float>(const std::vector<float> &params, std::vector<float> &vert, ModelQuality quality);
 };

@@ -19,7 +19,22 @@ namespace dgen
   dfloat smoothmax(dfloat a, dfloat b, float alpha = 16);
   dfloat smoothmin(dfloat a, dfloat b, float alpha = 16);
   dfloat smoothclamp(dfloat a, dfloat from, dfloat to, float alpha = 16);
-  void add_vertex(std::vector<dfloat> &vert, int n, const dvec3 &pos, const dvec3 &norm, const dvec2 &tc, bool only_pos);
+  template<typename float_type>
+  void add_vertex(std::vector<float_type> &vert, int n, const g_vec3<float_type> &pos, const g_vec3<float_type> &norm, const g_vec2<float_type> &tc, bool only_pos)
+  {
+    int sz = n*FLOAT_PER_VERTEX;
+    vert.resize(sz + FLOAT_PER_VERTEX);
+    vert[sz+0] = pos[0];
+    vert[sz+1] = pos[1];
+    vert[sz+2] = pos[2];
+    //if (!only_pos)
+    //{
+      vert[sz+3] = norm[0];
+      vert[sz+4] = norm[1];
+      vert[sz+5] = norm[2]; 
+      vert[sz+6] = tc[0];
+      vert[sz+7] = tc[1];
+  }
   //returns 0 is each parameters is in [min+edge_size, max-edge_size] interval
   dfloat parameters_limits_reg(const std::vector<dfloat> &params, const std::vector<float> &params_min, const std::vector<float> &params_max,
                                float edge_size = 0.01);

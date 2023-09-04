@@ -8,7 +8,7 @@ namespace dgen
   template<typename float_type>
   float_type triangle_func(float_type y, int n, int i)
   {
-    if (typeid(float_type) == typeid(dfloat))
+    if constexpr (std::is_same<float_type, dfloat>::value)
     {
       return d_max(1 - abs(n * y - i), 0);
     }
@@ -83,7 +83,7 @@ namespace dgen
     if (from_zero)
     {
       float_type smooth_y;
-      if (typeid(float_type) == typeid(dfloat))
+      if constexpr (std::is_same<float_type, dfloat>::value)
       {
         smooth_y = d_min(0.5, 0.9*params[0]);
       }
@@ -318,7 +318,7 @@ namespace dgen
     positions.reserve(4*(sp_sz-1)*rotations);
     std::vector<g_vec3<float_type>> normals;//size (sp_sz-1)*rotations
     normals.reserve((sp_sz-1)*rotations);
-    std::vector<dvec2> tc;//size 4*(sp_sz-1)*rotations
+    std::vector<g_vec2<float_type>> tc;//size 4*(sp_sz-1)*rotations
     tc.reserve(4*(sp_sz-1)*rotations);
     std::vector<int> indices;//size (sp_sz-1)*rotations
     indices.reserve((sp_sz-1)*rotations);
@@ -345,10 +345,10 @@ namespace dgen
 
         normals.push_back(n);
 
-        tc.push_back(dvec2{((float)(sector))/rotations, 0.75*new_len/full_len});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations, 0.75*new_len/full_len});
-        tc.push_back(dvec2{((float)(sector))/rotations, 0.75*prev_len/full_len});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations,  0.75*prev_len/full_len});
+        tc.push_back(g_vec2<float_type>{((float)(sector))/rotations, 0.75*new_len/full_len});
+        tc.push_back(g_vec2<float_type>{((float)(sector - 1))/rotations, 0.75*new_len/full_len});
+        tc.push_back(g_vec2<float_type>{((float)(sector))/rotations, 0.75*prev_len/full_len});
+        tc.push_back(g_vec2<float_type>{((float)(sector - 1))/rotations,  0.75*prev_len/full_len});
 
         indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1));
         
@@ -376,12 +376,12 @@ namespace dgen
       g_vec3<float_type> n1 = normalize(n + n01 + n_11 + n_10);
       g_vec3<float_type> n2 = normalize(n + n10 + n1_1 + n0_1);
       g_vec3<float_type> n3 = normalize(n + n0_1 + n_1_1 + n_10);
-      add_vertex(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
-      add_vertex(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
-      add_vertex(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
-      add_vertex(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
-      add_vertex(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
-      add_vertex(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex<float_type>(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
+      add_vertex<float_type>(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex<float_type>(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex<float_type>(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
+      add_vertex<float_type>(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex<float_type>(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
     }
   }
   template void spline_to_model_rotate<dfloat>(std::vector<dfloat> &model, const std::vector<g_vec3<dfloat>> &spline, g_vec3<dfloat> axis, int rotations, bool only_pos);
@@ -427,7 +427,7 @@ namespace dgen
     positions.reserve(4*(sp_sz-1)*rotations);
     std::vector<g_vec3<float_type>> normals;//size (sp_sz-1)*rotations
     normals.reserve((sp_sz-1)*rotations);
-    std::vector<dvec2> tc;//size 4*(sp_sz-1)*rotations
+    std::vector<g_vec2<float_type>> tc;//size 4*(sp_sz-1)*rotations
     tc.reserve(4*(sp_sz-1)*rotations);
     std::vector<int> indices;//size (sp_sz-1)*rotations
     indices.reserve((sp_sz-1)*rotations);
@@ -443,12 +443,12 @@ namespace dgen
       }
       g_vec3<float_type> vec2 = thickness[0]*verts[i] + radiuses[0]*radius_vec+shift;
       float_type m = 0.001f;
-      add_vertex(model, prev_size+0+(i-2)*3, vec0, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3, vec1, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3, vec2, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
+      add_vertex<float_type>(model, prev_size+0+(i-2)*3, vec0, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+1+(i-2)*3, vec1, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3, vec2, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
     }
 
     {
@@ -505,10 +505,10 @@ namespace dgen
 
         normals.push_back(n);
 
-        tc.push_back(dvec2{((float)(sector))/rotations, 0.75 + 0.25*i/sp_sz});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations,  0.75 + 0.25*i/sp_sz});
-        tc.push_back(dvec2{((float)(sector))/rotations,  0.75 + 0.25*(i-1)/sp_sz});
-        tc.push_back(dvec2{((float)(sector - 1))/rotations,   0.75 + 0.25*(i-1)/sp_sz});
+        tc.push_back(g_vec2<float_type>{((float)(sector))/rotations, 0.75 + 0.25*i/sp_sz});
+        tc.push_back(g_vec2<float_type>{((float)(sector - 1))/rotations,  0.75 + 0.25*i/sp_sz});
+        tc.push_back(g_vec2<float_type>{((float)(sector))/rotations,  0.75 + 0.25*(i-1)/sp_sz});
+        tc.push_back(g_vec2<float_type>{((float)(sector - 1))/rotations,   0.75 + 0.25*(i-1)/sp_sz});
 
         indices.push_back(prev_size + 6*((sp_sz-1)*(sector-1) + i - 1) + off);
 
@@ -529,12 +529,12 @@ namespace dgen
       }
       float_type m = 0.001f;
       g_vec3<float_type> vec2 = thickness[rotations]*verts[i] + radiuses[rotations]*radius_vec+shift;
-      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2, -norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
+      add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2, -norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
     }
 
     for (int i=0;i<(sp_sz-1)*rotations;i++)
@@ -556,12 +556,12 @@ namespace dgen
       g_vec3<float_type> n1 = normalize(n + n01 + n_11 + n_10);
       g_vec3<float_type> n2 = normalize(n + n10 + n1_1 + n0_1);
       g_vec3<float_type> n3 = normalize(n + n0_1 + n_1_1 + n_10);
-      add_vertex(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
-      add_vertex(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
-      add_vertex(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
-      add_vertex(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
-      add_vertex(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
-      add_vertex(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex<float_type>(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
+      add_vertex<float_type>(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex<float_type>(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex<float_type>(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
+      add_vertex<float_type>(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
+      add_vertex<float_type>(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
     }
   }
   template void spline_to_model_part_rotate_plus_shift<dfloat>(std::vector<dfloat> &model, const std::vector<g_vec3<dfloat>> &spline, g_vec3<dfloat> axis, dfloat beg_angle, dfloat part,
@@ -606,7 +606,7 @@ namespace dgen
       float_type end_pos = center - radiuses.back();
       spline1 = spline_rotation(spline1, g_vec3<float_type>{1, 0, 0}, 6*q_pow);
       float_type sin_p;
-      if (typeid(float_type) == typeid(dfloat))
+      if constexpr (std::is_same<float_type, dfloat>::value)
       {
         sin_p = d_min(sin_by_points(spline, start_pos, center, thick, spline_real_start), 0.98);
       }
@@ -631,6 +631,7 @@ namespace dgen
     return dgen::simple_mesh();
   }
   template PartOffsets create_cup<dfloat>(const std::vector<dfloat> &params, std::vector<dfloat> &vert, ModelQuality quality);
+  template PartOffsets create_cup<float>(const std::vector<float> &params, std::vector<float> &vert, ModelQuality quality);
 
   dfloat parameters_cup_reg(const std::vector<dfloat> &params)
   {
