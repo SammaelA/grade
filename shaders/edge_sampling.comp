@@ -1,0 +1,78 @@
+#version 430
+#define THREADS 16
+layout( local_size_x = THREADS, local_size_y = THREADS) in;
+
+uniform int total_samples;
+uniform int triangles_cnt;
+
+uniform sampler2D tex_diff_edges;//(0.5*(1 + img - target_img)) but only for silhouette edges
+uniform vec2 tex_size;
+
+struct EdgeGPU
+{
+  vec3 p0;
+  float local_pdf;
+  vec3 p1;
+  float _pad;
+};
+
+layout(std430, binding = 2) readonly buffer edges_buf
+{
+  EdgeGPU edges[];
+};
+
+
+layout(std430, binding = 3) readonly buffer pdf_buf
+{
+  float pdfs[];
+};
+
+layout(std430, binding = 4) buffer grad_buf
+{
+  float grad[];
+};
+
+float Random(vec2 st) 
+{
+  return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);
+}
+
+void main()
+{
+  int id = int(gl_LocalInvocationID.y*THREADS + gl_LocalInvocationID.x);
+  float prev_pdf = id == 0 ? 0.0f : pdfs[id-1];
+  float rel_pdf = (pdfs[id] - prev_pdf)/max(1e-6, pdfs[THREADS*THREADS-1]);
+  int samples = int(0.5 + total_samples*rel_pdf);
+
+  int edges_start = 3*(id*triangles_cnt/(THREADS*THREADS));
+  int edges_end = 3*((id+1)*triangles_cnt/(THREADS*THREADS));  
+  float local_pdf = edges[edges_end-1].local_pdf;
+  for (int i=0;i<samples;i++)
+  {
+    float rnd_e = Random(vec2(0.13*id, 0.17*i));
+    float t = Random(vec2(0.19*i, 0.23*id));
+    int vn = 0;
+    for (int j = edges_start; j < edges_end; j++)
+    {
+      if (edges[j].local_pdf >= rnd_e)
+      {
+        //we put edges with fixed layout (v0,v1)(v1,v2)(v0,v2)
+        vec2 p = t*edges[j].p0.xy + (1-t)*edges[j].p1.xy;
+        int pid0,pid1;
+        if (vn == 2)
+        {
+          pid0 = j-2;
+          pid1 = j;
+        }
+        else
+        {
+          pid0 = j;
+          pid1 = j+1;
+        }
+
+        break;
+      }
+      vn = (vn+1)%3;
+    }
+  }
+}

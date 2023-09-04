@@ -1,0 +1,27 @@
+#version 430
+#define THREADS 16
+layout( local_size_x = THREADS, local_size_y = THREADS) in;
+
+uniform sampler2D tex_diff;//(img - target_img)
+uniform vec2 tex_size;
+
+layout(std430, binding = 1) writeonly buffer results_buf
+{
+    float results[];
+};
+
+void main()
+{
+  ivec2 pc_start = ivec2(tex_size.x*gl_LocalInvocationID.x/THREADS, tex_size.y*gl_LocalInvocationID.y/THREADS);
+  ivec2 pc_end = ivec2(tex_size.x*(gl_LocalInvocationID.x+1)/THREADS, tex_size.y*(gl_LocalInvocationID.y+1)/THREADS);
+
+  float res = 0;
+  for (int i=pc_start.x;i<pc_end.x;i++)
+    for (int j=pc_start.y;j<pc_end.y;j++)
+    {
+      float d = texelFetch(tex_diff, ivec2(i,j), 0).x;
+      res += d*d;
+    }
+
+  results[gl_LocalInvocationID.y*THREADS + gl_LocalInvocationID.x] = res/(tex_size.x*tex_size.y);
+}

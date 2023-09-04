@@ -1,0 +1,62 @@
+#version 430
+#define THREADS 16
+layout( local_size_x = THREADS, local_size_y = THREADS) in;
+
+uniform int triangles_cnt;
+uniform mat4 viewProj;
+uniform bool accumulation_pass;
+struct EdgeGPU
+{
+  vec3 p0;
+  float local_pdf;
+  vec3 p1;
+  float _pad;
+};
+
+layout(std430, binding = 2) buffer edges_buf
+{
+  EdgeGPU edges[];
+};
+
+
+layout(std430, binding = 3) buffer pdf_buf
+{
+  float pdfs[];
+};
+
+void main()
+{
+  int id = int(gl_LocalInvocationID.y*THREADS + gl_LocalInvocationID.x);
+  if (accumulation_pass)
+  {
+    if (id == 0)
+    {
+      float global_pdf = 0;
+      for (int i=0;i<THREADS*THREADS;i++)
+      {
+        global_pdf += pdfs[id];
+        pdfs[id] = global_pdf;
+      }
+    }
+  }
+  else
+  {
+    float local_pdf = 0.0;
+    int edges_start = 3*(id*triangles_cnt/(THREADS*THREADS));
+    int edges_end = 3*((id+1)*triangles_cnt/(THREADS*THREADS));  
+    for (int i = edges_start; i < edges_end; i++)
+    {
+      vec2 pp0 = (viewProj * vec4(edges[i].p0, 1.0f)).xy;
+      pp0 = vec2(0.5f + 0.5f*pp0.x, 0.5f + 0.5f*pp0.y);
+        
+      vec2 pp1 = (viewProj * vec4(edges[i].p1, 1.0f)).xy;
+      pp1 = vec2(0.5f + 0.5f*pp1.x, 0.5f + 0.5f*pp1.y);
+
+      local_pdf += length(vec2(pp0 - pp1));
+      edges[i].p0 = vec3(pp0.x, pp0.y, 1);
+      edges[i].p1 = vec3(pp1.x, pp1.y, 1);
+      edges[i].local_pdf = local_pdf;
+    }
+    pdfs[id] = local_pdf;
+  }
+}
