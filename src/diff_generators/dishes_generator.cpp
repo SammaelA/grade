@@ -387,7 +387,53 @@ namespace dgen
   template void spline_to_model_rotate<dfloat>(std::vector<dfloat> &model, const std::vector<g_vec3<dfloat>> &spline, g_vec3<dfloat> axis, int rotations, bool only_pos);
 
   template<typename float_type>
-  void spline_to_model_part_rotate_plus_shift(std::vector<float_type> &model, const std::vector<g_vec3<float_type>> &spline, g_vec3<float_type> axis, float_type beg_angle, float_type part,
+  int step_by_spline(const std::vector<g_vec3<float_type>> &spline, g_vec3<float_type> vec)
+  {
+    int step = 0;
+    for (step = 0; step < spline.size() / 2; ++step)
+    {
+      if (vec.y < spline[step].y)
+      {
+        break;
+      }
+    }
+    return step;
+  }
+
+  template<typename float_type>
+  int back_step_by_spline(const std::vector<g_vec3<float_type>> &spline, g_vec3<float_type> vec)
+  {
+    int step = spline.size() - 1;
+    for (step = spline.size() - 1; step >= spline.size() / 2; --step)
+    {
+      if (vec.y < spline[step].y)
+      {
+        break;
+      }
+    }
+    return step;
+  }
+
+  template<typename float_type>
+  float_type get_x_by_spline_with_thick(const std::vector<g_vec3<float_type>> &spline, g_vec3<float_type> vec)
+  {
+    int step = step_by_spline(spline, vec);
+    int step2 = back_step_by_spline(spline, vec);
+    if (step != 0 && step < spline.size() / 2 && step2 != spline.size() - 1 && step2 >= spline.size() / 2)
+    {
+      float_type y1 = (spline[step].y - vec.y) / (spline[step].y - spline[step - 1].y);
+      float_type y2 = (vec.y - spline[step - 1].y) / (spline[step].y - spline[step - 1].y);
+      float_type x1 = y1 * spline[step - 1].y + y2 * spline[step].y;
+      y1 = (spline[step2].y - vec.y) / (spline[step2].y - spline[step2 + 1].y);
+      y2 = (vec.y - spline[step2 + 1].y) / (spline[step2].y - spline[step2 + 1].y);
+      float_type x2 = y1 * spline[step2 + 1].y + y2 * spline[step2].y;
+      return (x1 + x2) / 2;
+    }
+    return vec.x;
+  }
+
+  template<typename float_type>
+  void spline_to_model_part_rotate_plus_shift(std::vector<float_type> &model, const std::vector<g_vec3<float_type>> &spline, const std::vector<g_vec3<float_type>> &cup, g_vec3<float_type> axis, float_type beg_angle, float_type part,
                                               int rotations, g_vec3<float_type> shift, g_vec3<float_type> radius_vec, std::vector<float_type> &radiuses, std::vector<float_type> &thickness, bool only_pos)
   {
     g_mat43<float_type> rot_mat = ident<float_type>();
@@ -402,6 +448,11 @@ namespace dgen
     std::vector<g_vec3<float_type>> verts = spline;
     std::vector<g_vec3<float_type>> prev_verts = spline;
     std::vector<g_vec3<float_type>> radius_vectors(rotations+1, radius_vec);
+    std::vector<g_vec3<float_type>> spline_with_thick = cup;
+    if constexpr (!std::is_same<float_type, dfloat>::value)
+    {
+      spline_with_thick = spline_to_closed_curve_thickness<float_type>(cup, 0.025, 1, 0);
+    }
 
     float_type full_len = 1e-9;
     for (int i=1;i<sp_sz;i++)
@@ -434,21 +485,33 @@ namespace dgen
 
     g_vec3<float_type> vec0 = thickness[0]*verts[0] + radiuses[0]*radius_vec+shift;
     g_vec3<float_type> norm = vec0;
+    if constexpr (!std::is_same<float_type, dfloat>::value)
+    {
+      vec0.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+    }
     for (int i = 2; i < verts.size(); ++i)
     {
       g_vec3<float_type> vec1 = thickness[0]*verts[i-1] + radiuses[0]*radius_vec+shift;
+      if constexpr (!std::is_same<float_type, dfloat>::value)
+      {
+        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+      }
       if (i == 2)
       {
         norm = normalize(cross(vec0, vec1));
       }
       g_vec3<float_type> vec2 = thickness[0]*verts[i] + radiuses[0]*radius_vec+shift;
+      if constexpr (!std::is_same<float_type, dfloat>::value)
+      {
+        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+      }
       float_type m = 0.001f;
       add_vertex<float_type>(model, prev_size+0+(i-2)*3, vec0, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+1+(i-2)*3, vec1, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+2+(i-2)*3, vec2, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);//заглушка
     }
 
     {
@@ -489,6 +552,19 @@ namespace dgen
         g_vec3<float_type> p2 = pthick_mult*prev_verts[i] + prv_mult*prev_radius_vec + shift;
         g_vec3<float_type> p3 = thick_mult*verts[i-1] + rv_mult*radius_vec + shift;
         g_vec3<float_type> p4 = pthick_mult*prev_verts[i-1] + prv_mult*prev_radius_vec + shift;
+        if constexpr (!std::is_same<float_type, dfloat>::value)
+        {
+          if (sector == 1)
+          {
+            p2.x = get_x_by_spline_with_thick(spline_with_thick, p2);
+            p4.x = get_x_by_spline_with_thick(spline_with_thick, p4);
+          }
+          else if (sector == rotations)
+          {
+            p1.x = get_x_by_spline_with_thick(spline_with_thick, p1);
+            p3.x = get_x_by_spline_with_thick(spline_with_thick, p3);
+          }
+        }
         g_vec3<float_type> v1 = p2 - p1;
         g_vec3<float_type> v2 = p3 - p1; 
         g_vec3<float_type> n = normalize(cross(v1, v2));
@@ -520,21 +596,33 @@ namespace dgen
 
     vec0 = thickness[rotations]*verts[0] + radiuses[rotations]*radius_vec+shift;
     norm = vec0;
+    if constexpr (!std::is_same<float_type, dfloat>::value)
+    {
+      vec0.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+    }
     for (int i = 2; i < verts.size(); ++i)
     {
       g_vec3<float_type> vec1 = thickness[rotations]*verts[i-1] + radiuses[rotations]*radius_vec+shift;
+      if constexpr (!std::is_same<float_type, dfloat>::value)
+      {
+        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+      }
       if (i == 2)
       {
         norm = normalize(cross(vec0, vec1));
       }
       float_type m = 0.001f;
       g_vec3<float_type> vec2 = thickness[rotations]*verts[i] + radiuses[rotations]*radius_vec+shift;
+      if constexpr (!std::is_same<float_type, dfloat>::value)
+      {
+        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+      }
       add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0 + m*norm, norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1 + m*norm, norm, {0, 0}, only_pos); 
-      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);
+      add_vertex<float_type>(model, prev_size+2+(i-2)*3 + off/2, vec2 + m*norm, norm, {0, 0}, only_pos);//заглушка 2
     }
 
     for (int i=0;i<(sp_sz-1)*rotations;i++)
@@ -561,10 +649,10 @@ namespace dgen
       add_vertex<float_type>(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
       add_vertex<float_type>(model, indices[i]+3, positions[4*i+3], n3, tc[4*i+3], only_pos); 
       add_vertex<float_type>(model, indices[i]+4, positions[4*i+2], n2, tc[4*i+2], only_pos); 
-      add_vertex<float_type>(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); 
+      add_vertex<float_type>(model, indices[i]+5, positions[4*i+1], n1, tc[4*i+1], only_pos); //
     }
   }
-  template void spline_to_model_part_rotate_plus_shift<dfloat>(std::vector<dfloat> &model, const std::vector<g_vec3<dfloat>> &spline, g_vec3<dfloat> axis, dfloat beg_angle, dfloat part,
+  template void spline_to_model_part_rotate_plus_shift<dfloat>(std::vector<dfloat> &model, const std::vector<g_vec3<dfloat>> &spline, const std::vector<g_vec3<dfloat>> &cup, g_vec3<dfloat> axis, dfloat beg_angle, dfloat part,
                                               int rotations, g_vec3<dfloat> shift, g_vec3<dfloat> radius_vec, std::vector<dfloat> &radiuses, std::vector<dfloat> &thickness, bool only_pos);
 
   template<typename float_type>
@@ -617,7 +705,7 @@ namespace dgen
       radiuses[0] = dist(x_for_spline_y(spline, center, spline_real_start), center, x_for_spline_y(spline, start_pos, spline_real_start), start_pos);
       radiuses.back() = dist(x_for_spline_y(spline, center, spline_real_start), center, x_for_spline_y(spline, end_pos, spline_real_start), end_pos);
       g_vec3<float_type> radius_vec = g_vec3<float_type>{0, 1, 0};
-      spline_to_model_part_rotate_plus_shift<float_type>(vert, spline1, g_vec3<float_type>{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
+      spline_to_model_part_rotate_plus_shift<float_type>(vert, spline1, spline, g_vec3<float_type>{0, 0, 1}, asin(sin_p), 0.5, radius_samples, 
                                              shift_by_points(spline, center, thick, 0, 1), 
                                              radius_vec, radiuses, thickness,
                                              quality.create_only_position);
@@ -647,8 +735,20 @@ namespace dgen
     if (params[handle_param_idx - 1] > 0.5)
     {
       int radiuses_cnt = 20;
+      if (params[handle_param_idx + 2] <= params[handle_param_idx+radiuses_cnt + 2])
+      {
+        res += 5;
+      }
+      if (params[handle_param_idx + 3] <= params[handle_param_idx+radiuses_cnt + 3])
+      {
+        res += 5;
+      }
       for (int i=2;i<radiuses_cnt-1;i++)
       {
+        if (params[handle_param_idx + 2 + i] <= params[handle_param_idx+radiuses_cnt + 2 + i])
+        {
+          res += 5;
+        }
         res += 10*d_max(abs(params[handle_param_idx + 2 + i] - params[handle_param_idx + 2 + i - 1]) - 0.1, 0);
         res += 10*d_max(abs(params[handle_param_idx+radiuses_cnt + 2 + i] - params[handle_param_idx+radiuses_cnt + 2 + i - 1]) - 0.5, 0);
       }
