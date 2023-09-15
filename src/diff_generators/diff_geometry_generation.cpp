@@ -365,6 +365,20 @@ namespace dgen
     return true;
   }
 
+  void not_diff_gen_test(std::string generator_name, std::vector<float> &params, dgen::DFModel &model, bool transform_by_scene,
+                 ModelQuality mq)
+  {
+    GeneratorDescription gd = get_generator_by_name(generator_name);
+    assert(model.first.empty());
+    size_t x_n = params.size();
+    std::vector<float> X(x_n);
+    std::vector<float> Y;
+    for (int i=0;i<x_n;i++)
+      X[i] = params[i];
+    auto po = gd.gen_not_diff(X, Y, mq);
+    model = {Y, po};
+  }
+
   void dgen_test(std::string generator_name, std::vector<float> &params, dgen::DFModel &model, bool transform_by_scene,
                  ModelQuality mq)
   {

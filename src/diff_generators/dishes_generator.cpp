@@ -423,11 +423,11 @@ namespace dgen
     {
       float_type y1 = (spline[step].y - vec.y) / (spline[step].y - spline[step - 1].y);
       float_type y2 = (vec.y - spline[step - 1].y) / (spline[step].y - spline[step - 1].y);
-      float_type x1 = y1 * spline[step - 1].y + y2 * spline[step].y;
+      float_type x1 = y1 * spline[step - 1].x + y2 * spline[step].x;
       y1 = (spline[step2].y - vec.y) / (spline[step2].y - spline[step2 + 1].y);
       y2 = (vec.y - spline[step2 + 1].y) / (spline[step2].y - spline[step2 + 1].y);
-      float_type x2 = y1 * spline[step2 + 1].y + y2 * spline[step2].y;
-      return (x1 + x2) / 2;
+      float_type x2 = y1 * spline[step2 + 1].x + y2 * spline[step2].x;
+      return -(x1 + x2) / 2;
     }
     return vec.x;
   }
@@ -494,7 +494,7 @@ namespace dgen
       g_vec3<float_type> vec1 = thickness[0]*verts[i-1] + radiuses[0]*radius_vec+shift;
       if constexpr (!std::is_same<float_type, dfloat>::value)
       {
-        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec1);
       }
       if (i == 2)
       {
@@ -503,7 +503,7 @@ namespace dgen
       g_vec3<float_type> vec2 = thickness[0]*verts[i] + radiuses[0]*radius_vec+shift;
       if constexpr (!std::is_same<float_type, dfloat>::value)
       {
-        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec2);
       }
       float_type m = 0.001f;
       add_vertex<float_type>(model, prev_size+0+(i-2)*3, vec0, -norm, {0, 0}, only_pos); 
@@ -605,7 +605,7 @@ namespace dgen
       g_vec3<float_type> vec1 = thickness[rotations]*verts[i-1] + radiuses[rotations]*radius_vec+shift;
       if constexpr (!std::is_same<float_type, dfloat>::value)
       {
-        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+        vec1.x = get_x_by_spline_with_thick(spline_with_thick, vec1);
       }
       if (i == 2)
       {
@@ -615,7 +615,7 @@ namespace dgen
       g_vec3<float_type> vec2 = thickness[rotations]*verts[i] + radiuses[rotations]*radius_vec+shift;
       if constexpr (!std::is_same<float_type, dfloat>::value)
       {
-        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec0);
+        vec2.x = get_x_by_spline_with_thick(spline_with_thick, vec2);
       }
       add_vertex<float_type>(model, prev_size+0+(i-2)*3 + off/2, vec0, -norm, {0, 0}, only_pos); 
       add_vertex<float_type>(model, prev_size+1+(i-2)*3 + off/2, vec1, -norm, {0, 0}, only_pos); 

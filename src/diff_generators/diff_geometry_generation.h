@@ -6,6 +6,8 @@ namespace dgen
 {
   void print_jackobian(const std::vector<float> &jac, int x_n, int y_n, int lines = 100);
   void print_model(const std::vector<float> &res);
+  void not_diff_gen_test(std::string generator_name, std::vector<float> &params, dgen::DFModel &model, bool transform_by_scene = false,
+                 ModelQuality mq = ModelQuality(false, 1));
   void dgen_test(std::string generator_name, std::vector<float> &params, dgen::DFModel &model, bool transform_by_scene = false,
                  ModelQuality mq = ModelQuality(false, 1));
   void dgen_test_internal(dgen::DFModel &model, generator_func func, const std::vector<float> &check_params, 

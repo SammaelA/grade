@@ -156,6 +156,30 @@ void render_mygen_cup_demo(MitsubaInterface &mi, CameraSettings &camera, std::ve
                     save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
 }
 
+void render_mygen_cup_not_diff(MitsubaInterface &mi, CameraSettings &camera, std::vector<float> params,
+                           std::string texture_path, std::string save_dir)
+{
+  dgen::DFModel res;
+  dgen::not_diff_gen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
+  dgen::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+
+  auto bbox = dgen::get_bbox(res.first);
+  dgen::normalize_model(res.first);
+  bbox = dgen::get_bbox(res.first);
+
+  bool ok = prepare_directory(save_dir+"demo_textured") && prepare_directory(save_dir+"demo_monochrome");
+  if (!ok)
+  {
+    logerr("unable to save turntables!");
+    return;
+  }
+                      
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"demo_textured", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.8, false);
+  render_normalized(mi, res, "../../"+texture_path,
+                    save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
+}
+
 void render_random_cameras(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
                            int image_size, int spp, int images, float camera_dist, float camera_y, CameraSettings camera,
                            float phi_min, float phi_max, float psi_min, float psi_max, float jitter)
