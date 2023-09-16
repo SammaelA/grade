@@ -644,6 +644,32 @@ namespace dgen
       g_vec3<float_type> n1 = normalize(n + n01 + n_11 + n_10);
       g_vec3<float_type> n2 = normalize(n + n10 + n1_1 + n0_1);
       g_vec3<float_type> n3 = normalize(n + n0_1 + n_1_1 + n_10);
+
+      if constexpr (std::is_same<float_type, float>::value)
+      {
+        bool wrong_norm = false;
+        std::vector<g_vec3<float>> norms = {n,n0_1,n_1_1,n_10,n01,n11, n10, n_11, n1_1};
+        for (int i0=0;i0<8;i0++)
+        {
+          for (int j=0;j<8;j++)
+          {
+            if (i0 != j)
+            {
+              float d = dot(norms[i0], norms[j]);
+              if (d < 0)
+                wrong_norm = true;
+            }
+          }
+        }
+        if (wrong_norm)
+        {
+          n0 = n;
+          n1 = n;
+          n2 = n;
+          n3 = n;
+        }
+      }
+
       add_vertex<float_type>(model, indices[i]+0, positions[4*i+0], n0, tc[4*i+0], only_pos); 
       add_vertex<float_type>(model, indices[i]+1, positions[4*i+1], n1, tc[4*i+1], only_pos); 
       add_vertex<float_type>(model, indices[i]+2, positions[4*i+2], n2, tc[4*i+2], only_pos); 
