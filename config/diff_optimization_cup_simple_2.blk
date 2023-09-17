@@ -1,0 +1,69 @@
+{
+  //which procedural generator is used to create models. Currently only "dishes" is available
+  procedural_generator:s = "dishes"
+
+  //a .blk file describing parameters for scene, such as camera position, light etc.
+  scene_description:s = "diff_gen_scene_parameters_description.blk"
+  synthetic_reference:b = false
+  reference_image_size:i = 512
+
+  regularization_alpha:r = 1
+  original_reference_size:i = 1024
+  model_material:s = "ceramics" //leave empty to autoselect material (will take a few minutes)
+  save_intermediate_images:b = true
+  save_folder:s = "cup_3_tests3"
+
+
+  silhouette_optimization_settings
+  {
+    optimization_stages:i = 1
+    stage_0
+    {
+      optimizer:s = "adam"
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 1
+      optimizer_settings
+      {
+        iterations:i = 250
+        learning_rate:r = 0.01
+        verbose:b = true
+        initial_params:arr = { 3.608, 3.809, 3.892, 4.019, 4.151, 4.157, 4.234, 4.280, 4.361, 0.687, 1.000, 0.058, 0.544, 0.154, 0.299, 0.281, 0.314, 0.318, 0.311, 0.310, 0.301, 0.287, 0.282, 0.274, 0.266, 0.263, 0.257, 0.264, 0.251, 0.263, 0.235, 0.257, 0.246, 0.746, 1.214, 1.213, 0.975, 1.093, 0.924, 0.926, 0.862, 0.860, 0.908, 0.901, 0.938, 0.867, 0.979, 1.019, 0.980, 1.240, 1.545, 1.998, 2.000, -0.144, 0.538, 0.534, -0.025, 2.674, 0.006, 6.646, 0.000, 662.992, 1.000, 79.108, 0.200, 0.500}
+      }
+    }
+  }
+
+  texture_optimization_settings
+  {
+    optimization_stages:i = 1
+
+    stage_material_selection
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.25
+      model_quality:i = 0
+      render_image_size:i = 256
+      spp:i = 256     
+      optimizer_settings
+      {
+        iterations:i = 20
+        learning_rate:r = 1
+      }
+    }
+
+    stage_0
+    {
+      optimizer:s = "adam"
+      texture_lr:r = 0.1
+      model_quality:i = 0
+      render_image_size:i = 128
+      spp:i = 128  
+      optimizer_settings
+      {
+        iterations:i = 75
+        learning_rate:r = 1
+        verbose:b = true
+      }   
+    }
+  }
+}
