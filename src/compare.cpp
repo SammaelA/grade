@@ -175,9 +175,9 @@ void render_mygen_cup_not_diff(MitsubaInterface &mi, CameraSettings &camera, std
   }
                       
   render_normalized(mi, res, "../../"+texture_path,
-                    save_dir+"demo_textured", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.8, false);
-  render_normalized(mi, res, "../../"+texture_path,
-                    save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
+                    save_dir+"demo_textured", 512, 256, 8, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.8, false);
+  //render_normalized(mi, res, "../../"+texture_path,
+  //                  save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
 }
 
 void render_random_cameras(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
