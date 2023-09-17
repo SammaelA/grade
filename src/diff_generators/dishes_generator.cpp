@@ -476,7 +476,7 @@ namespace dgen
           continue;
         }
         float_type y = (eq2.z * eq1.x - eq2.x * eq1.z) / (eq1.y * eq2.x - eq1.x * eq2.y);
-        if (!(y < spline[i - 1].y || y > spline[i].y))
+        if (!(y < spline[i - 1].y || y > spline[i].y) && vec.y - y  < 0.3 && y - vec.y < 0.3)
         {
           if (eq2.x != 0)
           {
@@ -505,7 +505,7 @@ namespace dgen
           continue;
         }
         float_type y = (eq2.z * eq1.x - eq2.x * eq1.z) / (eq1.y * eq2.x - eq1.x * eq2.y);
-        if (!(y < spline[i + 1].y || y > spline[i].y))
+        if (!(y < spline[i + 1].y || y > spline[i].y) && vec.y - y  < 0.3 && y - vec.y < 0.3)
         {
           if (eq2.x != 0)
           {
