@@ -1,7 +1,6 @@
 #include "depth_extract_compare.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/graphics_utils.h"
 #include <glm/glm.hpp>
 #include <vector>
 

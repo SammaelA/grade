@@ -1,5 +1,4 @@
 #include "gpu_diff_render.h"
-#include "graphics_utils/graphics_utils.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/modeling.h"
 #include "cities_generator/global.h"

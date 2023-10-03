@@ -1,6 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "cubemap.h"
-#include "tinyEngine/engine.h"
+#include "engine.h"
 #include "image.h"
 
 Cubemap::Cubemap(int w, int h) : cube_model(),

@@ -12,3 +12,5 @@ void delete_vertex_array(unsigned int id);
 
 unsigned int create_query();
 void delete_query(unsigned int id);
+
+void print_FB_status(GLuint status);

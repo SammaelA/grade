@@ -4,7 +4,7 @@
 #include "third_party/imgui/imgui_impl_sdl.h"
 #include "third_party/imgui/imgui_impl_opengl3.h"
 
-#include "tinyEngine/resources.h"                                //Rendering Dependencies
+#include "resources.h"                                //Rendering Dependencies
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>

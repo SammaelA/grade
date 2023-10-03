@@ -8,8 +8,8 @@
 #include "../third_party/imgui/imgui.h"                    //Interface Dependencies
 #include "../third_party/imgui/imgui_impl_sdl.h"
 #include "../third_party/imgui/imgui_impl_opengl3.h"
-#include "tinyEngine/resources.h"    
-#include "tinyEngine/audio.h"
+#include "resources.h"    
+#include "audio.h"
 
 class View
 {

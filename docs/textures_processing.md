@@ -80,7 +80,6 @@ graphics_utils для проверки созданного FBO
 #include "gauss_blur_precise.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/graphics_utils.h"
 #include <vector>
 ```
 

@@ -10,7 +10,6 @@
 #include "common_utils/blk.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/graphics_utils.h"
 #include "graphics_utils/modeling.h"
 #include "tinyEngine/shader.h"
 #include "tinyEngine/model.h"

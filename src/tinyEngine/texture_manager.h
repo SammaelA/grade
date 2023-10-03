@@ -1,6 +1,6 @@
 #pragma once
 #include <map>
-#include "../tinyEngine/texture.h"
+#include "texture.h"
 #include <string>
 
 struct Block;

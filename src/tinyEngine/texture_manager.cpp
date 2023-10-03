@@ -1,7 +1,7 @@
-#include "tinyEngine/engine.h"
-#include "tinyEngine/image.h"
-#include "tinyEngine/shader.h"
-#include "tinyEngine/model.h"
+#include "engine.h"
+#include "image.h"
+#include "shader.h"
+#include "model.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
 #include "common_utils/blk.h"

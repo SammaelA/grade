@@ -1,5 +1,5 @@
 #pragma once 
-#include "tinyEngine/resources.h"
+#include "resources.h"
 #include <SDL2/SDL.h>
 #include <functional>
 #include "common_utils/utility.h"

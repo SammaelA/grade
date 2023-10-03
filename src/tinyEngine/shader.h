@@ -1,5 +1,5 @@
 #pragma once
-#include "tinyEngine/resources.h"
+#include "resources.h"
 #include <string>
 #include <initializer_list>
 #include <unordered_map>

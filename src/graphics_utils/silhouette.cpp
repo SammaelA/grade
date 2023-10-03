@@ -1,7 +1,6 @@
 #include "silhouette.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/graphics_utils.h"
 #include <vector>
 
 SilhouetteExtractor::SilhouetteExtractor(float _blur_sigma, float low_thr, float high_thr, float _color_thr):

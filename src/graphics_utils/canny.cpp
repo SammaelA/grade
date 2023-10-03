@@ -1,7 +1,6 @@
 #include "canny.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/graphics_utils.h"
 #include <vector>
 
 Canny::Canny(float blur_sigma, float _low_thr, float _high_thr):
