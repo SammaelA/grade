@@ -7,9 +7,7 @@
 #include "impostor_metric.h"
 #include "clustering.h"
 #include "clustering_debug_utils.h"
-#include "pyclustering.h"
 #include "GPU_impostor_metric.h"
-#include "deep_hashing.h"
 #include "experimental_hashing.h"
 #include "kmeans_custom.h"
 
@@ -50,8 +48,6 @@ void Clusterizer2::prepare(Block &settings)
         clusteringHelper = new DDTImpostorDCTHashClusteringHelper();
     else if (c_helper_name == "imp_dct_hash_simple")
         clusteringHelper = new SimpleImpostorDCTHashClusteringHelper();
-    else if (c_helper_name == "imp_deep_hash_ddt")
-        clusteringHelper = new DDTDeepHashBasedClusteringHelper();
     else if (c_helper_name == "imp_hash_experimental")
         clusteringHelper = new ImpostorHashClusteringHelper2();
     else
@@ -61,14 +57,6 @@ void Clusterizer2::prepare(Block &settings)
     }
     if (c_base_name == "hierarcial")
         clusteringBase = new HierarcialClusteringBase();
-    else if (c_base_name == "py_kmeans")
-        clusteringBase = new KmeansPyClusteringBase();
-    else if (c_base_name == "py_xmeans")
-        clusteringBase = new XmeansPyClusteringBase();
-    else if (c_base_name == "dbscan")
-        clusteringBase = new DBscanPyClusteringBase();
-    else if (c_base_name == "optics")
-        clusteringBase = new OpticsPyClusteringBase();
     else if (c_base_name == "kmeans")
         clusteringBase = new KmeansClusteringBase();
     else

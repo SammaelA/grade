@@ -57,9 +57,6 @@ message(SDL2_TTF_LIBRARY=${SDL2_TTF_LIBRARY})
 find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
 message(SDL2_MIXER_LIBRARY=${SDL2_MIXER_LIBRARY})
 
-find_library(PY_CLUSERING_LIBRARY libpyclustering.so dependencies/pyclustering/ccore)
-message(PY_CLUSERING_LIBRARY=${PY_CLUSERING_LIBRARY})
-
 find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
 message(HYDRA_LIB1=${HYDRA_LIB1})
 
@@ -99,7 +96,7 @@ set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -W
 set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 file(GLOB IMGUI_SRC src/imgui/*.cpp)
-include_directories("dependencies/pyclustering/ccore/include" "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
+include_directories("dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
                     "/usr/include/python3.8" "dependencies/python" "src" "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
 file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
@@ -107,7 +104,7 @@ add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC}
                     ${DR_SOURCE}
                     ${DR_SOURCE_RT})
 target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
-                        ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} ${PY_CLUSERING_LIBRARY} 
+                        ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
                         boost_serialization boost_system boost_filesystem
                         /usr/lib/x86_64-linux-gnu/libpython3.8.so
                         ${HYDRA_LIB1}
