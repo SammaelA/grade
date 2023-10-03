@@ -1,7 +1,6 @@
 #include "world_renderer.h"
 #define GLEW_EXPERIMENTAL
 #include "common_utils/body.h"
-#include "cities_generator/global.h"
 #include "tree_utils/tree_modeling.h"
 #include "tinyEngine/engine.h"
 
@@ -241,7 +240,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   projection[3][1] += jitter.y * render_settings.RT_overscale;
 
   // SHADOW PASS //
-  checkForGlErrors("render pre shadow", true);
+  checkGLErrors("render pre shadow", true);
   if (regenerate_shadows && render_settings.shadow_quality != RenderSettings::NONE)
   {
     regenerate_shadows = false;
@@ -293,7 +292,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     shadowMap.finish_trans_pass();
     shadowMap.blur();
   }
-  checkForGlErrors("render shadow", true);
+  checkGLErrors("render shadow", true);
 
   // FILL GBUFFER //
 
@@ -325,7 +324,7 @@ void WorldRenderer::render(float dt, Camera &camera)
                               debug_tex);
     }
   }
-  checkForGlErrors("render terrain", true);
+  checkGLErrors("render terrain", true);
   if (render_mode == ALL_RENDER_MODE || render_mode == MODELS_ONLY_RENDER_MODE)
   {
     if (!models.empty())
@@ -352,7 +351,7 @@ void WorldRenderer::render(float dt, Camera &camera)
         }
       }
     }
-    checkForGlErrors("render models", true);
+    checkGLErrors("render models", true);
     if (grassRenderer2)
     {
       grassRenderer2->render(projection, camera.camera(), shadowMap.get_transform(), 0,
@@ -363,14 +362,14 @@ void WorldRenderer::render(float dt, Camera &camera)
       grassRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                                 camera.pos, *heightmapTex, light);
     }
-    checkForGlErrors("render grass", true);
+    checkGLErrors("render grass", true);
     if (render_mode != 2 && groveRenderer)
     {
       groveRenderer->render(groveRenderer->get_max_LOD(), projection, camera.camera(), camera,
                                  glm::vec2(engine::view->WIDTH, engine::view->HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0);
     }
-    checkForGlErrors("render trees", true);
+    checkGLErrors("render trees", true);
   }
   debugShader->use();
   debugShader->uniform("projection", projection);
@@ -385,10 +384,10 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (debug_models[i].m)
       debug_models[i].m->render();
   }
-  checkForGlErrors("render debug", true);
+  checkGLErrors("render debug", true);
 
   cubemap->render(projection, camera.camera(), camera);
-  checkForGlErrors("render cubemap", true);
+  checkGLErrors("render cubemap", true);
 
   // READBACK FROM GBUFFER //
   if (readback_required && renderReadback)
@@ -399,7 +398,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     RRD.cursor_world_pos_type = wp;
     RRD.cursor_on_geometry = wp.w > 0;
   }
-  checkForGlErrors("render readback", true);
+  checkGLErrors("render readback", true);
 
   // RESOLVE //
 
@@ -430,7 +429,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   taa->get_shader().texture("prevTarget",targets[(current_target + 1) % 2].get_tex());
   taa->get_shader().uniform("weight",0.95f);
   taa->render();
-  checkForGlErrors("render resolve", true);
+  checkGLErrors("render resolve", true);
   
   current_target = (current_target + 1) % 2;
   projection = projectionNoJitter;

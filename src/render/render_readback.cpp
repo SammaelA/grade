@@ -1,5 +1,4 @@
 #include "render_readback.h"
-#include "cities_generator/global.h"
 #include "tinyEngine/engine.h"
 
 RenderReadback::RenderReadback():

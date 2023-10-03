@@ -3,7 +3,6 @@
 #include "tinyEngine/postfx.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/modeling.h"
-#include "cities_generator/global.h"
 #include <glm/glm.hpp>
 #include <chrono>
 

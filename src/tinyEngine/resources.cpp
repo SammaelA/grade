@@ -83,3 +83,16 @@ void print_FB_status(GLuint status)
   else
     debugl(9, "GL_FRAMEBUFFER_INCOMPLETE %#010x\n", status);
 }
+
+void checkGLErrors(const std::string &text, bool clean)
+{
+  bool noErrorsFlag = true;
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR)
+  {
+    debug("ERROR:", text.c_str(), err);
+    noErrorsFlag = false;
+  }
+  if (!noErrorsFlag && !clean)
+    throw std::exception{};
+}
