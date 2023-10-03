@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 #include "common_utils/blk.h"
-#include "graphics_utils/billboard_cloud.h"
+#include "tree_utils/billboard_cloud.h"
 
 glm::vec3 canonical_bbox();
 bool get_dedicated_bbox(Branch *branch, BBox &bbox);

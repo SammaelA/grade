@@ -16,7 +16,7 @@
 #include "HydraAPI/hydra_api/LiteMath.h"
 
 #include "core/scene.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "tinyEngine/engine.h"
 
 namespace hlm = LiteMath;

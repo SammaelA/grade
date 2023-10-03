@@ -1,7 +1,7 @@
 #include "texture_atlas.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../tinyEngine/model.h"
+#include "tinyEngine/model.h"
 #include "tinyEngine/engine.h"
 //long TextureAtlas::count = 0;
 int atlases_count = 0;

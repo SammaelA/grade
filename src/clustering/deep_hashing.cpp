@@ -1,6 +1,6 @@
 #include "deep_hashing.h"
 #include "impostor_similarity_params.h"
-#include "graphics_utils/impostor.h"
+#include "tree_utils/impostor.h"
 #include "tinyEngine/engine.h"
 #include <boost/filesystem.hpp>
 #include <iostream>

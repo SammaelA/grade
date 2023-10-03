@@ -1,5 +1,5 @@
 #pragma once
-#include "graphics_utils/impostor.h"
+#include "tree_utils/impostor.h"
 #include "grove_renderer.h"
 
 class ImpostorRenderer

@@ -1,5 +1,5 @@
 #pragma once
-#include "graphics_utils/billboard_cloud.h"
+#include "tree_utils/billboard_cloud.h"
 #include "grove_renderer.h"
 
 struct BillboardCloudRenderer : Countable

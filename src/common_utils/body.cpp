@@ -1,4 +1,4 @@
-#include "core/body.h"
+#include "common_utils/body.h"
 #include "common_utils/utility.h"
 Body::Body(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c)
 {

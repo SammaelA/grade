@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <list>
-#include "core/body.h"
+#include "common_utils/body.h"
 #include "graphics_utils/terrain.h"
 #include "common_utils/distribution.h"
 #include "tinyEngine/model.h"

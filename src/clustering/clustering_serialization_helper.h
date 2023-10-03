@@ -1,6 +1,6 @@
 #pragma once
 #include "core/tree.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "graphics_utils/volumetric_occlusion.h"
 #include <vector>
 #include <map>

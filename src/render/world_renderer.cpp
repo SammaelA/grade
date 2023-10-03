@@ -1,8 +1,8 @@
 #include "world_renderer.h"
 #define GLEW_EXPERIMENTAL
-#include "core/body.h"
+#include "common_utils/body.h"
 #include "cities_generator/global.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "tinyEngine/engine.h"
 
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}

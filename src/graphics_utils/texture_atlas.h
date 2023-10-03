@@ -2,8 +2,8 @@
 #include "tinyEngine/resources.h"
 #include <glm/glm.hpp>
 #include <vector>
-#include "../tinyEngine/texture.h"
-#include "../tinyEngine/shader.h"
+#include "tinyEngine/texture.h"
+#include "tinyEngine/shader.h"
 #include "common_utils/bit_vector.h"
 class TextureAtlas;
 enum Channel

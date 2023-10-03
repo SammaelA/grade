@@ -1,7 +1,7 @@
 #include "grass_renderer.h"
 #include "tinyEngine/engine.h"
 #include "tinyEngine/camera.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 
 GrassRenderer::GrassRenderer():
  grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),

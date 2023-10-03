@@ -3,7 +3,7 @@
 #include "cmd_buffers.h"
 #include "common_utils/utility.h"
 #include "generation/metainfo_manager.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "third_party/icons.h"
 #include "hydra_utils/hydra_scene_exporter.h"
 #include <map>

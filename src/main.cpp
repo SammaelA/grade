@@ -1,7 +1,7 @@
 #include "cities_generator/cities_gen_main.h"
 #include "cmd_buffers.h"
 #include "app.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "generation/scene_generation.h"
 #include "cmd_executors.h"
 #include "gui.h"

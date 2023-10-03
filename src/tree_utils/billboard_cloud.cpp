@@ -1,11 +1,11 @@
-#include "graphics_utils/billboard_cloud.h"
+#include "tree_utils/billboard_cloud.h"
 #include <algorithm>
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 #include "core/tree.h"
 #include "tinyEngine/shader.h"
 #include "common_utils/utility.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "tinyEngine/engine.h"
 #include "common_utils/distribution.h"
 

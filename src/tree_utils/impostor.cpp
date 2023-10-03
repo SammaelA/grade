@@ -1,4 +1,4 @@
-#include "graphics_utils/impostor.h"
+#include "tree_utils/impostor.h"
 #include "tinyEngine/engine.h"
 #include "generation/generation_task.h"
 

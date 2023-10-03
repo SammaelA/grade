@@ -1,6 +1,6 @@
 #include "core/tree.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/billboard_cloud.h"
+#include "tree_utils/billboard_cloud.h"
 #include "common_utils/interpolation.h"
 std::atomic<int> br_h_cnt(0);
 void Branch::norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)

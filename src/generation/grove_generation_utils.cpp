@@ -2,7 +2,7 @@
 #include "generation_task.h"
 #include "common_utils/distribution.h"
 #include "core/tree.h"
-#include "core/body.h"
+#include "common_utils/body.h"
 
 void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
 {

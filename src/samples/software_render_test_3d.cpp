@@ -10,7 +10,7 @@
 #include "common_utils/blk.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 #include "tinyEngine/shader.h"
 #include "tinyEngine/model.h"
 #include "diff_generators/diff_geometry_generation.h"

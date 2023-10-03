@@ -1,6 +1,6 @@
 #include "GPU_impostor_metric.h"
 #include "dist_data_table.h"
-#include "graphics_utils/billboard_cloud.h"
+#include "tree_utils/billboard_cloud.h"
 #include "tinyEngine/engine.h"
 #include "tinyEngine/engine.h"
 

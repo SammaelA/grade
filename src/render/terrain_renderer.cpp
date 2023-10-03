@@ -1,6 +1,6 @@
 #include "terrain_renderer.h"
 #include "tinyEngine/engine.h"
-#include "graphics_utils/modeling.h"
+#include "tree_utils/tree_modeling.h"
 
 TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step):
         terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
