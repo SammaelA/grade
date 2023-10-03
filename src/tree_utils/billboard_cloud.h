@@ -3,7 +3,7 @@
 #include "tinyEngine/shader.h"
 #include "tinyEngine/model.h"
 #include "core/tree.h"
-#include "clustering/clustering.h"
+#include "core/clustering_data.h"
 #include "core/billboard_cloud_data.h"
 #include <list>
 #include <vector>

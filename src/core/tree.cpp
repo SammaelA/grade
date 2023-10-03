@@ -1,4 +1,5 @@
 #include "core/tree.h"
+#include "core/grove.h"
 #include "tinyEngine/engine.h"
 #include "tree_utils/billboard_cloud.h"
 #include "common_utils/interpolation.h"
