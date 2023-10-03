@@ -22,7 +22,6 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
-#include "graphics_utils/voxelization/voxelization.h"
 #include "diff_generators/compare_utils.h"
 #include <cppad/cppad.hpp>
 #include <thread>
@@ -352,10 +351,6 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       //cv::waitKey(0);
 
     engine::view->next_frame();
-  }
-  else if (argc >= 3 && std::string(argv[2]) == "-voxelization_test")
-  {
-    voxelization::software_render_test_3d();
   }
   else if (argc >= 3 && std::string(argv[2]) == "-compare")
   {

@@ -1,8 +1,8 @@
-#include "voxelization.h"
+#include "graphics_utils/voxelization/voxelization.h"
 #include "tinyEngine/camera.h"
 #include "third_party/stb_image_write.h"
 #include "third_party/stb_image.h"
-#include "voxel_array.h"
+#include "graphics_utils/voxelization/voxel_array.h"
 #include "common_utils/distribution.h"
 #include <cppad/cppad.hpp>
 #include "diff_generators/vectors.h"
