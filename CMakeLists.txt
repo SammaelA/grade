@@ -95,11 +95,13 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter -Wshadow")
 set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
-file(GLOB IMGUI_SRC src/imgui/*.cpp)
-include_directories("dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
-                    "/usr/include/python3.8" "dependencies/python" "src" "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
-file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
-file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
+
+include_directories("src" "common_src" "third_party"
+                    "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
+                    "/usr/include/python3.8" "dependencies/python" 
+                    "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "src/*.cpp")
+file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.c" "common_src/*.c" "src/*.c")
 add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC} 
                     ${DR_SOURCE}
                     ${DR_SOURCE_RT})

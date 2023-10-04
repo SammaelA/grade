@@ -1,7 +1,7 @@
 #pragma once
 #include <list>
 #include <vector>
-#include "../tinyEngine/model.h"
+#include "tinyEngine/model.h"
 #include "graphics_utils/texture_atlas.h"
 #include <glm/glm.hpp>
 #include "common_utils/bbox.h"

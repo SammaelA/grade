@@ -4,7 +4,7 @@
 #include <string>
 #include <atomic>
 #include "common_utils/utility.h"
-#include "../tinyEngine/texture.h"
+#include "tinyEngine/texture.h"
 #include "common_utils/parameter.h"
 #include "save_utils/serialization.h"
 

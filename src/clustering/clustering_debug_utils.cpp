@@ -1,5 +1,5 @@
 #include "clustering_debug_utils.h"
-#include "../tinyEngine/postfx.h"
+#include "tinyEngine/postfx.h"
 #include "tinyEngine/engine.h"
 #include "generation/grove_packer.h"
 #include <boost/filesystem.hpp>

@@ -5,9 +5,9 @@
 #include "SDL2/SDL.h"
 #include <functional>
 #include <glm/glm.hpp>
-#include "../third_party/imgui/imgui.h"                    //Interface Dependencies
-#include "../third_party/imgui/imgui_impl_sdl.h"
-#include "../third_party/imgui/imgui_impl_opengl3.h"
+#include "third_party/imgui/imgui.h"                    //Interface Dependencies
+#include "third_party/imgui/imgui_impl_sdl.h"
+#include "third_party/imgui/imgui_impl_opengl3.h"
 #include "resources.h"    
 #include "audio.h"
 
