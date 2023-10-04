@@ -1,37 +1,29 @@
-#include "sandbox.h"
 #include <boost/algorithm/string.hpp>
-#include "generation/scene_generation.h"
-#include "generation/grove_packer.h"
-#include "generation/metainfo_manager.h"
 #include "tinyEngine/engine.h"
 #include "tinyEngine/image.h"
-#include "parameter_selection/impostor_similarity.h"
-#include "parameter_selection/genetic_algorithm.h"
-#include "tree_generators/GE_generator.h"
-#include "parameter_selection/parameter_selection.h"
-#include "tree_generators/all_generators.h"
-#include "tree_generators/weber_penn_generator.h"
-#include "parameter_selection/neural_selection.h"
-#include "diff_generators/diff_geometry_generation.h"
-#include "diff_generators/diff_optimization.h"
-#include "diff_generators/mitsuba_python_interaction.h"
+#include "diff_geometry_generation.h"
+#include "diff_optimization.h"
+#include "mitsuba_python_interaction.h"
 #include "graphics_utils/model_texture_creator.h"
 #include "common_utils/optimization/optimization_benchmark.h"
-#include "diff_generators/depth_extract_compare.h"
+#include "depth_extract_compare.h"
 #include "graphics_utils/bilateral_filter.h"
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
 #include "graphics_utils/voxelization/voxelization.h"
-#include "diff_generators/compare_utils.h"
+#include "compare_utils.h"
 #include <cppad/cppad.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
 #include <csignal>
-#include "diff_generators/obj_utils.h"
-#include "diff_generators/simple_model_utils.h"
-#include "diff_generators/iou3d.h"
+#include "obj_utils.h"
+#include "simple_model_utils.h"
+#include "iou3d.h"
+#include "common_utils/blk.h"
+#include "common_utils/distribution.h"
+
 
 void render_normalized(MitsubaInterface &mi, const dgen::DFModel &model, const std::string &texture_name, const std::string &folder_name,
                        int image_size, int spp, int rotations, float camera_dist, float camera_y, CameraSettings camera,

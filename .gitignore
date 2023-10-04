@@ -17,6 +17,7 @@ CMakeCache.txt
 .*
 
 /main
+/dr
 /profile
 /Makefile
 /.vscode/*

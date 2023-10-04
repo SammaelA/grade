@@ -96,16 +96,21 @@ set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -W
 set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 
-include_directories("src" "common_src" "third_party"
-                    "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
-                    "/usr/include/python3.8" "dependencies/python" 
-                    "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "src/*.cpp")
 file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.c" "common_src/*.c" "src/*.c")
-add_executable(main ${SOURCES} ${C_SOURCES} ${IMGUI_SRC} 
-                    ${DR_SOURCE}
-                    ${DR_SOURCE_RT})
-target_link_libraries(main ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
+add_executable(main 
+               ${SOURCES} ${C_SOURCES} ${IMGUI_SRC} 
+               ${DR_SOURCE} ${DR_SOURCE_RT})
+
+target_include_directories(main PUBLIC
+                           "src" "common_src" "third_party"
+                           "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
+                           "/usr/include/python3.8" "dependencies/python" 
+                           "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+
+target_link_libraries(main 
+                      ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
                         ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
                         boost_serialization boost_system boost_filesystem
                         /usr/lib/x86_64-linux-gnu/libpython3.8.so
@@ -128,5 +133,45 @@ if(USE_CUSTOM_DIFF_RENDER)
   set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
   message(${ENZYME_FLAGS})
   target_compile_options(main PUBLIC ${ENZYME_FLAGS})
+else()
+endif()
+
+
+file(GLOB_RECURSE DR_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "diff_reconstruction/*.cpp")
+file(GLOB_RECURSE DR_C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.c" "common_src/*.c"   "diff_reconstruction/*.c")
+add_executable(dr 
+               ${DR_SOURCES} ${DR_C_SOURCES} ${IMGUI_SRC} 
+               ${DR_SOURCE} ${DR_SOURCE_RT})
+
+target_include_directories(dr PUBLIC
+                           "diff_reconstruction" "common_src" "third_party"
+                           "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
+                           "/usr/include/python3.8" "dependencies/python" 
+                           "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+
+target_link_libraries(dr 
+                      ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
+                        ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
+                        boost_serialization boost_system boost_filesystem
+                        /usr/lib/x86_64-linux-gnu/libpython3.8.so
+                        ${HYDRA_LIB1}
+                        ${HYDRA_LIB2}
+                        ${HYDRA_LIB3}
+                        ${HYDRA_LIB4}
+                        freeimage
+                        glfw
+                        dl
+                        rt
+                        stdc++fs
+                        OpenCL
+                        libnoise
+                        ${OpenCV_LIBS}
+                        ${OMP_LIBS} 
+                        ${RT_EMBREE_LIBS})
+
+if(USE_CUSTOM_DIFF_RENDER)
+  set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
+  message(${ENZYME_FLAGS})
+  target_compile_options(dr PUBLIC ${ENZYME_FLAGS})
 else()
 endif()

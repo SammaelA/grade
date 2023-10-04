@@ -7,7 +7,6 @@
 #include "gui.h"
 #include "generation/metainfo_manager.h"
 #include "input_handler.h"
-#include "sandbox.h"
 
 MetainfoManager *metainfoManager = nullptr;
 CommandBuffer<InputCommands> *inputCmdBuffer = nullptr;
@@ -16,11 +15,6 @@ CommandBuffer<RenderCommands> *renderCmdBuffer = nullptr;
 
 int main(int argc, char *argv[])
 {
-    if (argc >= 2 && std::string(argv[1]) == "-sandbox")
-    {
-      sandbox_main(argc, argv, nullptr);
-      return 0;
-    }
     AppContext appContext;
     View view;
     view.lineWidth = 1.0f;

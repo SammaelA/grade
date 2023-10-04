@@ -1,38 +1,38 @@
-#include "sandbox.h"
 #include <boost/algorithm/string.hpp>
-#include "generation/scene_generation.h"
-#include "generation/grove_packer.h"
-#include "generation/metainfo_manager.h"
+//#include "generation/scene_generation.h"
+//#include "generation/grove_packer.h"
+//#include "generation/metainfo_manager.h"
 #include "tinyEngine/engine.h"
 #include "tinyEngine/image.h"
-#include "parameter_selection/impostor_similarity.h"
-#include "parameter_selection/genetic_algorithm.h"
-#include "tree_generators/GE_generator.h"
-#include "parameter_selection/parameter_selection.h"
-#include "tree_generators/all_generators.h"
-#include "tree_generators/weber_penn_generator.h"
-#include "parameter_selection/neural_selection.h"
-#include "diff_generators/diff_geometry_generation.h"
-#include "diff_generators/diff_optimization.h"
-#include "diff_generators/mitsuba_python_interaction.h"
+//#include "parameter_selection/impostor_similarity.h"
+//#include "parameter_selection/genetic_algorithm.h"
+//#include "tree_generators/GE_generator.h"
+//#include "parameter_selection/parameter_selection.h"
+//#include "tree_generators/all_generators.h"
+//#include "tree_generators/weber_penn_generator.h"
+//#include "parameter_selection/neural_selection.h"
+#include "diff_geometry_generation.h"
+#include "diff_optimization.h"
+#include "mitsuba_python_interaction.h"
 #include "graphics_utils/model_texture_creator.h"
 #include "common_utils/optimization/optimization_benchmark.h"
-#include "diff_generators/depth_extract_compare.h"
+#include "depth_extract_compare.h"
 #include "graphics_utils/bilateral_filter.h"
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
-#include "diff_generators/compare_utils.h"
+#include "compare_utils.h"
 #include <cppad/cppad.hpp>
 #include <thread>
 #include <chrono>
 #include <time.h>
 #include <csignal>
-#include "diff_generators/obj_utils.h"
-#include "diff_generators/simple_model_utils.h"
+#include "obj_utils.h"
+#include "simple_model_utils.h"
 #include "compare.h"
 #include <opencv2/opencv.hpp>
-#include "diff_generators/custom_diff_render.h"
+#include "custom_diff_render.h"
+#include "common_utils/blk.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -40,7 +40,7 @@ void defaultSignalHandler(int signum)
   exit(signum);  
 }
 
-void sandbox_main(int argc, char **argv, Scene *scene)
+int main(int argc, char **argv)
 {
   // we don't init engine in sandbox, so need to init textures manager
   View view;
@@ -71,7 +71,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     textureManager.save_png(tex, "silhouette_test");
     engine::view->next_frame();
     logerr("Silhouette test completed. Saved to saves/silhouette_test.png");
-    return;
+    return 0;
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt_benchmark")
   {
@@ -94,7 +94,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
       if (reference_images.empty())
       {
         logerr("no reference images found in blk");
-        return;
+        return 0;
       }
     }
     else if (argc == 5)
@@ -127,7 +127,7 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     av_loss /= count;
     debug("Benchmak finished. %d images tested\n", count);
     debug("Average loss: %.4f\n", av_loss);
-    return;
+    return 0;
   }
   else if (argc >= 4 && std::string(argv[2]) == "-opt")
   {
@@ -445,6 +445,6 @@ void sandbox_main(int argc, char **argv, Scene *scene)
     logerr("./main -sandbox -test_gen <param> creates model with giver parameters and renders it with mitsuba");
     logerr("./main -sandbox -test_tex <param> tests texture reconstruction on a synthetic model");
     logerr("./main -sandbox -test_tex <param> tests texture reconstruction with mitsuba fine-tuning on a synthetic model");
-    return;
+    return 0;
   }
 }
