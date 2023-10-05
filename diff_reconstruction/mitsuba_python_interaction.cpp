@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "common_utils/python_engine.h"
+#include "python_engine.h"
 #include "mitsuba_python_interaction.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/silhouette.h"

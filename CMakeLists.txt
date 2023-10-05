@@ -73,12 +73,10 @@ if (TREE_PROJECT)
   add_executable(main ${COMMON_SRC} ${TP_SRC} ${IMGUI_SRC})
   set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm -lnoise")
   target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} "src" 
-                            "/usr/include/python3.8" "dependencies/python" 
                             "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
 
   target_link_libraries(main 
                         "${COMMON_LIBRARIES}"
-                        /usr/lib/x86_64-linux-gnu/libpython3.8.so
                         glfw
                         libnoise
                         ${CMAKE_DL_LIBS}
