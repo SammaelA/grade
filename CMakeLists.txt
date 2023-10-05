@@ -11,6 +11,7 @@ project(main)
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
 option(TREE_PROJECT "Build Tree Project" OFF)
 option(DIFF_RECONSTRUCTION "Build project for differentiable reconstruction" OFF)
+option(CITIES_GENERATOR "Build project for cities generator" OFF)
 option(DEBUG "debug mode" OFF)
 
 #set the compiler and version of C++ standart
@@ -68,21 +69,17 @@ if (TREE_PROJECT)
   message(HYDRA_LIB3=${HYDRA_LIB3})
   find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
   message(HYDRA_LIB4=${HYDRA_LIB4})
-  add_library(libnoise SHARED IMPORTED)
-  set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
-
   
   file(GLOB_RECURSE TP_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
   
   add_executable(main ${COMMON_SRC} ${TP_SRC} ${IMGUI_SRC})
-  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm -lnoise")
+  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm")
   target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} "src" 
                             "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
 
   target_link_libraries(main 
                         "${COMMON_LIBRARIES}"
                         glfw
-                        libnoise
                         ${CMAKE_DL_LIBS}
                         freeimage
                         rt
@@ -93,6 +90,22 @@ if (TREE_PROJECT)
                           ${HYDRA_LIB3}
                           ${HYDRA_LIB4}
                           dl)
+endif()
+
+if (CITIES_GENERATOR)
+
+add_library(libnoise SHARED IMPORTED)
+set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
+
+file(GLOB_RECURSE CG_SRC RELATIVE ${CMAKE_SOURCE_DIR} "cities_generator/*.c" "cities_generator/*.cpp")
+add_executable(cg ${COMMON_SRC} ${CG_SRC} ${IMGUI_SRC})
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm -lnoise")
+target_include_directories(cg PUBLIC ${COMMON_INCLUDE_DIRS} "cities_generator")
+
+target_link_libraries(cg 
+                      "${COMMON_LIBRARIES}"
+                      glfw
+                      libnoise)
 endif()
 
 if (DIFF_RECONSTRUCTION)
