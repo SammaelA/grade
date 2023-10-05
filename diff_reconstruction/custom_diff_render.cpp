@@ -363,12 +363,12 @@ public:
     int t_all = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t0).count();
     int t_real = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
     int t_render = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-    logerr("Custom diff. render took = %.1f (%.1f + %.1f + %.1f) ms", 1e-3*t_all, 1e-3*t_render, 1e-3*t_real, 1e-3*(t_all - t_real - t_render));
+    //logerr("Custom diff. render took = %.1f (%.1f + %.1f + %.1f) ms", 1e-3*t_all, 1e-3*t_render, 1e-3*t_real, 1e-3*(t_all - t_real - t_render));
 
     iteration++;
     static float average_ms = 0.0;
     average_ms += 1e-3*t_all;
-    logerr("average val %f", average_ms/(iteration));
+    //logerr("average val %f", average_ms/(iteration));
 
     return 10*log10(MAX(1e-9f,total_res/cameras.size()));
   }
