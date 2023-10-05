@@ -2,176 +2,158 @@ cmake_minimum_required(VERSION 3.7)
 
 project(main)
 
-#cmake CMakeLists.txt -Wno-dev -DUSE_CUSTOM_DIFF_RENDER=OFF -DCLANG_VERSION=9
+#some examples how to use this file
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON
+#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF
+#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DCLANG_VERSION=9
 
+#a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
+option(TREE_PROJECT "Build Tree Project" OFF)
+option(DIFF_RECONSTRUCTION "Build project for differentiable reconstruction" OFF)
 
-set(RT_EMBREE_LIBS "")
-set(OMP_LIBS "")
-set(DR_SOURCE_RT )
-set(DR_SOURCE )
-if(USE_CUSTOM_DIFF_RENDER)
+#set the compiler and version of C++ standart
+set(CMAKE_CXX_STANDARD 17)
+if(USE_CUSTOM_DIFF_RENDER AND DIFF_RECONSTRUCTION)
   set(CLANG_VERSION "9" CACHE STRING "clang and LLVM version to use")
   set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}")
-  set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
-  find_package(OpenMP REQUIRED)
-  set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
-  set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
-
-  include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
-
-  add_definitions(-DUSE_EMBREE)
-  add_definitions(-DUSE_CUSTOM_DIFF_RENDER)
-  include_directories(${DR_SRC}/external)
-  include_directories(${DR_SRC}/external/embree/include)
-
-  find_package(Threads REQUIRED)
-  link_directories(${DR_SRC}/external/embree/lib)
-  set(RT_EMBREE_LIBS embree3 tbb)
-
-  set(DR_SOURCE_RT
-  "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
-  "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
-  "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
-
-  set(OMP_LIBS "")
-  if(OpenMP_CXX_FOUND)
-    add_definitions(-DUSE_OMP)
-    include_directories(${AUX_OMP_INC})
-    link_directories(${AUX_OMP_LIB})
-    set(OMP_LIBS OpenMP::OpenMP_CXX)
-  endif()
-
-  file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
-
-  include_directories("${DR_SRC}/mitsuba_src/stub")
+else()
+set(CMAKE_CXX_COMPILER)
 endif()
 
+#common dependencies for all projects
 find_package(SDL2 REQUIRED)
 find_library(SDL2_IMAGE_LIBRARY SDL2_image)
 message(SDL2_IMAGE_LIBRARY=${SDL2_IMAGE_LIBRARY})
-
 find_library(SDL2_TTF_LIBRARY SDL2_ttf)
 message(SDL2_TTF_LIBRARY=${SDL2_TTF_LIBRARY})
-
 find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
 message(SDL2_MIXER_LIBRARY=${SDL2_MIXER_LIBRARY})
-
-find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
-message(HYDRA_LIB1=${HYDRA_LIB1})
-
-find_library(HYDRA_LIB2 libhydra_api.a dependencies/Hydra/HydraAPI/bin)
-message(HYDRA_LIB2=${HYDRA_LIB2})
-
-find_library(HYDRA_LIB3 libies_parser.a dependencies/Hydra/HydraAPI/bin)
-message(HYDRA_LIB3=${HYDRA_LIB3})
-
-find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
-message(HYDRA_LIB4=${HYDRA_LIB4})
-
 find_package(Boost REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(PythonLibs REQUIRED)
-find_package(OpenCV REQUIRED PATHS dependencies/opencv/build)
-message(PythonLibs=${PYTHON_LIBRARIES})
-
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
-
 message(opgllib = ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS})
 message(include =  ${OPENGL_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 
-add_library(libnoise SHARED IMPORTED)
-set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
-
-set(CMAKE_CXX_STANDARD 17)
-
+#common compiler settings
 set(CMAKE_THREAD_LIBS_INIT "-lpthread") 
 set(CMAKE_HAVE_THREADS_LIBRARY 1)
 set(CMAKE_USE_WIN32_THREADS_INIT 0) 
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-
 set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter -Wshadow")
-set(TINYLINK "-lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem -lm")
-set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${TINYLINK}")
 
+#prepare common lists of options to use it when building targets
+set(COMMON_LINKER_FLAGS "-lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")
+file(GLOB_RECURSE COMMON_SRC RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "third_party/*.c" "common_src/*.c")
+set(COMMON_INCLUDE_DIRS "common_src", "third_party", "dependencies/SDL2", "dependencies/glm-0.9.9-a2")
+set(COMMON_LIBRARIES ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}
+                     ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
+                     boost_serialization boost_system boost_filesystem)
 
-file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "src/*.cpp")
-file(GLOB_RECURSE C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.c" "common_src/*.c" "src/*.c")
-add_executable(main 
-               ${SOURCES} ${C_SOURCES} ${IMGUI_SRC} 
-               ${DR_SOURCE} ${DR_SOURCE_RT})
+#target Tree Project. It is mostly abandoned as of 2023                    
+if (TREE_PROJECT)
 
-target_include_directories(main PUBLIC
-                           "src" "common_src" "third_party"
-                           "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
-                           "/usr/include/python3.8" "dependencies/python" 
-                           "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+  #project-specific libraries
+  find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
+  message(HYDRA_LIB1=${HYDRA_LIB1})
+  find_library(HYDRA_LIB2 libhydra_api.a dependencies/Hydra/HydraAPI/bin)
+  message(HYDRA_LIB2=${HYDRA_LIB2})
+  find_library(HYDRA_LIB3 libies_parser.a dependencies/Hydra/HydraAPI/bin)
+  message(HYDRA_LIB3=${HYDRA_LIB3})
+  find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
+  message(HYDRA_LIB4=${HYDRA_LIB4})
+  add_library(libnoise SHARED IMPORTED)
+  set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
 
-target_link_libraries(main 
-                      ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
-                        ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
-                        boost_serialization boost_system boost_filesystem
+  
+  file(GLOB_RECURSE TP_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
+  
+  add_executable(main ${COMMON_SRC} ${TP_SRC} ${IMGUI_SRC})
+  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm -lnoise")
+  target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} "src" 
+                            "/usr/include/python3.8" "dependencies/python" 
+                            "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+
+  target_link_libraries(main 
+                        "${COMMON_LIBRARIES}"
                         /usr/lib/x86_64-linux-gnu/libpython3.8.so
-                        ${HYDRA_LIB1}
-                        ${HYDRA_LIB2}
-                        ${HYDRA_LIB3}
-                        ${HYDRA_LIB4}
-                        freeimage
                         glfw
-                        dl
+                        libnoise
+                        ${CMAKE_DL_LIBS}
+                        freeimage
                         rt
                         stdc++fs
                         OpenCL
-                        libnoise
-                        ${OpenCV_LIBS}
-                        ${OMP_LIBS} 
-                        ${RT_EMBREE_LIBS})
-
-if(USE_CUSTOM_DIFF_RENDER)
-  set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
-  message(${ENZYME_FLAGS})
-  target_compile_options(main PUBLIC ${ENZYME_FLAGS})
-else()
+                          ${HYDRA_LIB1}
+                          ${HYDRA_LIB2}
+                          ${HYDRA_LIB3}
+                          ${HYDRA_LIB4}
+                          dl)
 endif()
 
+if (DIFF_RECONSTRUCTION)
 
-file(GLOB_RECURSE DR_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "diff_reconstruction/*.cpp")
-file(GLOB_RECURSE DR_C_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.c" "common_src/*.c"   "diff_reconstruction/*.c")
-add_executable(dr 
-               ${DR_SOURCES} ${DR_C_SOURCES} ${IMGUI_SRC} 
-               ${DR_SOURCE} ${DR_SOURCE_RT})
+  find_package(OpenCV REQUIRED PATHS dependencies/opencv/build)
 
-target_include_directories(dr PUBLIC
-                           "diff_reconstruction" "common_src" "third_party"
-                           "dependencies/SDL2" "dependencies/glm-0.9.9-a2" 
-                           "/usr/include/python3.8" "dependencies/python" 
-                           "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+  set(RT_EMBREE_LIBS "")
+  set(OMP_LIBS "")
+  set(DR_SOURCE_RT )
+  set(DR_SOURCE )
+  if(USE_CUSTOM_DIFF_RENDER)
+    set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
+    find_package(OpenMP REQUIRED)
+    set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
+    set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
 
-target_link_libraries(dr 
-                      ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}  ${CMAKE_DL_LIBS} 
-                        ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
-                        boost_serialization boost_system boost_filesystem
-                        /usr/lib/x86_64-linux-gnu/libpython3.8.so
-                        ${HYDRA_LIB1}
-                        ${HYDRA_LIB2}
-                        ${HYDRA_LIB3}
-                        ${HYDRA_LIB4}
-                        freeimage
-                        glfw
-                        dl
-                        rt
-                        stdc++fs
-                        OpenCL
-                        libnoise
-                        ${OpenCV_LIBS}
-                        ${OMP_LIBS} 
-                        ${RT_EMBREE_LIBS})
+    include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
 
-if(USE_CUSTOM_DIFF_RENDER)
-  set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
-  message(${ENZYME_FLAGS})
-  target_compile_options(dr PUBLIC ${ENZYME_FLAGS})
-else()
+    add_definitions(-DUSE_EMBREE)
+    add_definitions(-DUSE_CUSTOM_DIFF_RENDER)
+    include_directories(${DR_SRC}/external)
+    include_directories(${DR_SRC}/external/embree/include)
+
+    find_package(Threads REQUIRED)
+    link_directories(${DR_SRC}/external/embree/lib)
+    set(RT_EMBREE_LIBS embree3 tbb)
+
+    set(DR_SOURCE_RT
+    "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
+    "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
+    "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
+
+    set(OMP_LIBS "")
+    if(OpenMP_CXX_FOUND)
+      add_definitions(-DUSE_OMP)
+      include_directories(${AUX_OMP_INC})
+      link_directories(${AUX_OMP_LIB})
+      set(OMP_LIBS OpenMP::OpenMP_CXX)
+    endif()
+
+    file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
+
+    include_directories("${DR_SRC}/mitsuba_src/stub")
+  endif()
+
+  file(GLOB_RECURSE DRec_SRC RELATIVE ${CMAKE_SOURCE_DIR} "diff_reconstruction/*.c" "diff_reconstruction/*.cpp")
+  add_executable(dr ${DRec_SRC} ${COMMON_SRC} ${IMGUI_SRC} ${DR_SOURCE} ${DR_SOURCE_RT})
+  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS}")
+  target_include_directories(dr PUBLIC ${COMMON_INCLUDE_DIRS} "diff_reconstruction" 
+                            "/usr/include/python3.8" "dependencies/python" 
+                            ${OpenCV_INCLUDE_DIRS})
+
+  target_link_libraries(dr 
+                         "${COMMON_LIBRARIES}"
+                          /usr/lib/x86_64-linux-gnu/libpython3.8.so
+                          ${OpenCV_LIBS}
+                          ${OMP_LIBS} 
+                          ${RT_EMBREE_LIBS})
+
+  if(USE_CUSTOM_DIFF_RENDER)
+    set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
+    message(${ENZYME_FLAGS})
+    target_compile_options(dr PUBLIC ${ENZYME_FLAGS})
+  else()
+  endif()
 endif()
