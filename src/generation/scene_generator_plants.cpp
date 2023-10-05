@@ -516,7 +516,7 @@ namespace scene_gen
     ctx.grass_generator.pack_all_grass(ctx.scene.grass, *(ctx.scene.heightmap));
     for (auto &id : cell_ids)
     {
-      ctx.cells[id].status == Cell::CellStatus::FINISHED_ALL;
+      ctx.cells[id].status = Cell::CellStatus::FINISHED_ALL;
       ctx.cells[id].grass_patches.clear();
     }
     ctx.grass_patches.clear();
@@ -632,7 +632,7 @@ namespace scene_gen
     ctx.packer.prepare_grove_atlas(ctx.scene.grove, 512, 512, true, true, true);
     for (auto &id : cell_ids)
     {
-      ctx.cells[id].status == Cell::CellStatus::FINISHED_PLANTS;
+      ctx.cells[id].status = Cell::CellStatus::FINISHED_PLANTS;
     }
   }
 

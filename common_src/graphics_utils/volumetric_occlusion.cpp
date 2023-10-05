@@ -310,6 +310,8 @@ inline float LightVoxelsCube::voxel_occlusion(glm::ivec3 voxel)
 {
     if (in_voxel_cube(voxel))
         return voxels[v_to_i(voxel)];
+    else
+        return 0;
 }
 glm::ivec3 LightVoxelsCube::pos_to_voxel(glm::vec3 pos)
 {

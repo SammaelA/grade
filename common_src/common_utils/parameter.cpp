@@ -115,7 +115,7 @@ void ParameterList::to_simple_list(std::vector<float> &list, bool normalized, bo
                 int pos = 0;
                 for (int i=0;i<p.second.possible_values.size();i++)
                 {
-                    if (p.second.possible_values[i] = p.second.val)
+                    if (p.second.possible_values[i] == p.second.val)
                     {
                         pos = i;
                         break;

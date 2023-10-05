@@ -14,7 +14,7 @@ public:
         delete base;
     }
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
-                                                                  ClusteringContext *ctx) 
+                                                                  ClusteringContext *ctx) override
     {
         IntermediateClusteringDataDDT *data = new IntermediateClusteringDataDDT();
         data->ddt.create(branches.size());

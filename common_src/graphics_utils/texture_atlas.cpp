@@ -408,7 +408,7 @@ unsigned char TextureAtlasRawData::get_pixel_uc(int ww, int hh, Channel chan, in
 }
 unsigned char TextureAtlasRawData::get_pixel_uc_safe(int ww, int hh, Channel chan, int tex_id)
 {
-    if (!valid || !raw_data || ww < 0 || w >= w || hh < 0 || hh >=h || tex_id < 0 || tex_id >=slices)
+    if (!valid || !raw_data || ww < 0 || ww >= w || hh < 0 || hh >=h || tex_id < 0 || tex_id >=slices)
         return 0;
     else 
         return get_pixel_uc(ww,hh,chan,tex_id);

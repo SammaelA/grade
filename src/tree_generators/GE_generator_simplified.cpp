@@ -25,7 +25,7 @@ bool GETreeGeneratorSimplified::iterate(LightVoxelsCube &voxels)
 
             //logerr("iteration %d max growth %d", iteration, max_growth);
             if (iteration >= params.max_iterations || max_growth <= 0)
-                t.status == TreeStatus::GROWN;
+                t.status = TreeStatus::GROWN;
             else
             {
                 std::vector<GrowPoint> growth_points;

@@ -3,14 +3,15 @@ cmake_minimum_required(VERSION 3.7)
 project(main)
 
 #some examples how to use this file
-#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON
-#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF
-#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DCLANG_VERSION=9
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF
+#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF -DDEBUG=OFF
+#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DDEBUG=OFF -DCLANG_VERSION=9
 
 #a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
 option(TREE_PROJECT "Build Tree Project" OFF)
 option(DIFF_RECONSTRUCTION "Build project for differentiable reconstruction" OFF)
+option(DEBUG "debug mode" OFF)
 
 #set the compiler and version of C++ standart
 set(CMAKE_CXX_STANDARD 17)
@@ -42,7 +43,10 @@ set(CMAKE_HAVE_THREADS_LIBRARY 1)
 set(CMAKE_USE_WIN32_THREADS_INIT 0) 
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter -Wshadow")
+set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter")
+if (DEBUG)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wshadow")
+endif()
 
 #prepare common lists of options to use it when building targets
 set(COMMON_LINKER_FLAGS "-lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")

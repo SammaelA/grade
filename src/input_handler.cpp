@@ -160,7 +160,7 @@ void InputHandler::handle_input(Event &event)
         {
           auto it = ctx.cells.find(cell_id);
           if (it == ctx.cells.end())
-            ctx.cells.emplace(cell_id, AppContext::CellUiInfo()).first;
+            ctx.cells.emplace(cell_id, AppContext::CellUiInfo());
           ctx.active_cell_id = cell_id;
         }
       }

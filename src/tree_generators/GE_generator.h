@@ -17,7 +17,7 @@ public:
     virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual void set_seed(int _seed) override {gen = std::mt19937{_seed}; seed = _seed;}
-    virtual bool use_voxels_for_generation() {return true;}
+    virtual bool use_voxels_for_generation() override {return true;}
 protected:
     static std::atomic<int> ids, t_ids;
     static GETreeParameters defaultParameters;

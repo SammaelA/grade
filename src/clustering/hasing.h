@@ -21,10 +21,10 @@ class HashBasedClusteringHelper : public ClusteringHelper
 {
 public:
     virtual BranchClusteringData *convert_branch(Block &settings, Branch *base, ClusteringContext *ctx, 
-                                                 BaseBranchClusteringData &data) = 0;
+                                                 BaseBranchClusteringData &data) override = 0;
     virtual void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) override;
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
-                                                                  ClusteringContext *ctx) = 0;
+                                                                  ClusteringContext *ctx) override = 0;
 protected:
     BranchClusteringData *convert_branch_impostor(Block &settings, Branch *base, ClusteringContext *ctx, 
                                                   BaseBranchClusteringData &data);

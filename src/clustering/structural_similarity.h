@@ -9,7 +9,7 @@ public:
                                                  BaseBranchClusteringData &data) override;
     virtual void clear_branch_data(BranchClusteringData *base, ClusteringContext *ctx) override;
     virtual IntermediateClusteringData *prepare_intermediate_data(Block &settings, std::vector<BranchClusteringData *> branches,
-                                                                  ClusteringContext *ctx) = 0;
+                                                                  ClusteringContext *ctx) override = 0;
 };
 class GPUSSClusteringHelper : public StructuralSimilarityClusteringHelper
 {

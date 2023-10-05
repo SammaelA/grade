@@ -170,7 +170,7 @@ inline float AS_branch_min_dist(float part_min_dist, float error)
     if (nc == -1)
         return 0;
     else
-        AS_branch_min_dist(part_min_dist, nc);
+        return AS_branch_min_dist(part_min_dist, nc);
 }
 
 bool dedicated_bbox(Branch *branch, BBox &bbox)

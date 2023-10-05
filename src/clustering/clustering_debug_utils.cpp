@@ -217,7 +217,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
 
     engine::textureManager->save_png_raw(data, tex_w, tex_h, 4, file_name);
     engine::textureManager->delete_tex(res);
-    delete data;
+    delete[] data;
 
     if (ctx->self_impostors_raw_atlas)
     {

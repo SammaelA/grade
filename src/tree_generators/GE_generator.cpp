@@ -28,7 +28,7 @@ bool GETreeGenerator::iterate(LightVoxelsCube &voxels)
 
             //logerr("iteration %d max growth %d", iteration, max_growth);
             if (iteration >= params.max_iterations || max_growth <= 0)
-                t.status == TreeStatus::GROWN;
+                t.status = TreeStatus::GROWN;
             else
             {
                 std::vector<GrowPoint> growth_points;
@@ -678,7 +678,7 @@ void GETreeGenerator::grow_nodes(Tree &t, const GETreeParameters &params,
                 t.joints_total++;
                 if (t.joints_total > joints_limit)
                 {
-                    t.status == TreeStatus::GROWN;
+                    t.status = TreeStatus::GROWN;
                     return;
                 }
                 //float b = params.b_min + (params.b_max - params.b_min) *
@@ -772,9 +772,9 @@ void GETreeGenerator::remove_branches(Tree &t, Branch &b, const GETreeParameters
 
     if (b.level >= params.remove_min_level && (total_joints > 10) && b.can_be_removed &&
        (self_rand() < remove_chance ||
-        total_joints > 50 && (float)b.joints.size()/total_joints > 0.33 ||
+        (total_joints > 50 && (float)b.joints.size()/total_joints > 0.33) ||
         dead_b_count/b.joints.size() > 0.75 ||
-        b.joints.size() > 0.5*params.max_joints_in_branch && ch_b_count < 2))
+        (b.joints.size() > 0.5*params.max_joints_in_branch && ch_b_count < 2)))
     {
         //remove branch
         //logerr("remove branch %d %f",total_joints, total_light);

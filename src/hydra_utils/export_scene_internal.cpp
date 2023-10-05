@@ -568,7 +568,7 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
       logerr("added %d grass instances", inst_counts[i]);
     }
     
-    delete matrices;
+    delete[] matrices;
     hrLightInstance(scnRef, sky, mind.L());
     auto mres = hlm::mul(hlm::rotate4x4Z(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
