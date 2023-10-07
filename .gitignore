@@ -38,11 +38,6 @@ dist/
 /hydra_scenes/*
 callgrind.*
 /logs/*
-/prezentations/spring_23_medialab/cup_model_4/*
-/prezentations/spring_23_medialab/cup_model_1/*
-/prezentations/spring_23_medialab/test_building_2/*
-/prezentations/spring_23_medialab/cup_model_1_multicam/*
-/prezentations/CGVC_2023/*
 profile.txt
 *.npy
 # Compiled Java class files

@@ -23,8 +23,8 @@
       camera.z_far:r = 100.000000
       camera.fov_rad:r = 0.500000
 
-      textured:s = "prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0000.png"
-      mask:s     = "prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0000_mask.png"
+      textured:s = "../grade_resources/prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0000.png"
+      mask:s     = "../grade_resources/prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0000_mask.png"
     }
     camera 
     {
@@ -35,8 +35,8 @@
       camera.z_far:r = 100.000000
       camera.fov_rad:r = 0.500000
 
-      textured:s = "prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0008.png"
-      mask:s     = "prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0008_mask.png"
+      textured:s = "../grade_resources/prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0008.png"
+      mask:s     = "../grade_resources/prezentations/spring_23_medialab/test_building_2/reference_turntable/frame-0008_mask.png"
     }
   }
 
