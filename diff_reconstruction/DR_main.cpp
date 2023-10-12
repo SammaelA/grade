@@ -21,6 +21,7 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/silhouette.h"
+#include "graphics_utils/modeling.h"
 #include "compare_utils.h"
 #include <cppad/cppad.hpp>
 #include <thread>
@@ -33,6 +34,7 @@
 #include <opencv2/opencv.hpp>
 #include "custom_diff_render.h"
 #include "common_utils/blk.h"
+#include "graphics_utils/render_wireframe.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -432,6 +434,40 @@ int main(int argc, char **argv)
         diff += d;
       }
       logerr("models average diff %f", diff/res_diff.first.size());
+    }
+  }
+  else if (argc >= 3 && std::string(argv[2]) == "-render_wireframe")
+  {
+    std::vector<float> scene_params = {-0.146707, 0.536269, 0.473139, -0.027028, 2.750088, 0.000484, 0.000000, 0.500000, 662.898010, 1.000000, 79.108002, 0.200000, 0.500000};
+    std::vector<float> gen_params = {3.550591, 3.715814, 3.966238, 3.986568, 4.030954, 4.094914, 4.168126, 4.194885, 4.369867, 0.693920, 1.000000, 0.060869, 0.553867, 0.186609, 0.234847, 0.269397, 0.298828, 0.312449, 0.313711, 0.308487, 0.301948, 0.291360, 0.284970, 0.277301, 0.272561, 0.268144, 0.266445, 0.264405, 0.265336, 0.266025, 0.232359, 0.270066, 0.216850, 0.979304, 1.631409, 1.174466, 1.133552, 0.936276, 0.888447, 0.843601, 0.829158, 0.820061, 0.823618, 0.833987, 0.848319, 0.869524, 0.905610, 0.935543, 0.955388, 1.066534, 1.718385, 1.941411, 1.970230};
+    Model *m = new Model();
+    dgen::DFModel res;
+    dgen::not_diff_gen_test("dishes", gen_params, res, false, dgen::ModelQuality(false, 2));
+    dgen::transform_by_scene_parameters(scene_params, res.first);
+    visualizer::simple_mesh_to_model_332(res.first, m);
+    m->update();
+
+    WireframeRenderer wr;
+    Texture res_tex = wr.render(*m, MitsubaInterface::get_camera_from_scene_params(scene_params), 2048, 2048);
+    textureManager.save_png(res_tex, "aa_wireframe_test");
+  
+    delete m;
+    
+    {
+      auto model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/cup_model_1/NGP_meshes/t64_simple.obj");
+      dgen::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
+      auto bbox = dgen::get_bbox(model);
+      dgen::normalize_model(model);
+      Model *m2 = new Model();
+      visualizer::simple_mesh_to_model_332(model, m2);
+      m2->update();
+      CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
+      rc.origin.y = 0;
+      rc.target.y = 0;
+      Texture res_tex_2 = wr.render(*m, rc, 2048, 2048);
+      textureManager.save_png(res_tex_2, "aa_wireframe_tes_3");
+
+      delete m2;
     }
   }
   else
