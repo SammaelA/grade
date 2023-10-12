@@ -725,7 +725,7 @@ namespace dgen
   {
     int q_pow = (int)pow(2, (int)quality.quality_level);
     int spline_real_start = 1;
-    std::vector<g_vec3<float_type>> spline = create_spline(params, 9, 1, 0, true, q_pow);
+    std::vector<g_vec3<float_type>> spline = create_spline(params, 9, 1, 0, true, 0);
     if (q_pow > 0)
       spline = spline_make_smoother(spline, 2, spline_real_start, -1, 1, 0);
     g_mat43<float_type> sc = scale(ident<float_type>(), g_vec3<float_type>{0.09,0.9,0.09});
