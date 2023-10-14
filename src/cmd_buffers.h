@@ -49,14 +49,10 @@ public:
         cmd_log.add_block("cmd_"+std::to_string(commands.front().id), &(commands.front().args));
         commands.pop();
         current_command_id++;
+        save_block_to_file(std::string("../logs/") + typeid(T).name() + std::string("_log.blk"), cmd_log);
     }
     CommandBuffer() = default;
-    ~CommandBuffer()
-    {
-        
-        T t;
-        save_block_to_file(std::string("../logs/") + typeid(t).name() + std::string("_log.blk"), cmd_log);
-    }
+    ~CommandBuffer()= default;
 private:
     std::queue<Command> commands;
     Block cmd_log;
