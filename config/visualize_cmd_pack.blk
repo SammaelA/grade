@@ -1,0 +1,23 @@
+{
+cmd_0 {
+cmd_code:i = 22
+}
+cmd_1 {
+cmd_code:i = 3
+}
+cmd_2 {
+cmd_code:i = 0
+}
+cmd_3 {
+cmd_code:i = 15
+}
+cmd_4 {
+cmd_code:i = 23
+tree_type_name:s = "ref10.png_selected_params_8"
+save_filename:s = "selection/result_1_"
+image_count:i = 16
+}
+cmd_5 {
+cmd_code:i = 12
+}
+}

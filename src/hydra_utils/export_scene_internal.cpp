@@ -608,7 +608,7 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
 
     initGLIfNeeded(DEMO_WIDTH,DEMO_HEIGHT, "load 'obj.' file demo");
     glViewport(0,0,DEMO_WIDTH,DEMO_HEIGHT);
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    std::this_thread::sleep_for(std::chrono::milliseconds(750));
     
     std::wstring demo_dir = dir + std::wstring(L"/demo.png");
     std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");

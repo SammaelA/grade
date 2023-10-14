@@ -1226,7 +1226,7 @@ void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std:
     {
       Block camera_blk;
       camera_blk.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
-      camera_blk.add_vec3("camera_pos", glm::vec3(distance*cos(2*PI*i/image_count), 50, distance*sin(2*PI*i/image_count)));
+      camera_blk.add_vec3("camera_pos", glm::vec3(distance*cos(2*PI*i/((float)image_count)), 50, distance*sin(2*PI*i/((float)image_count))));
       camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
       cameras.add_block("camera", &camera_blk);
     }
