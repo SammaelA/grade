@@ -1,14 +1,10 @@
 {
-    width:s = "FROM_IMAGE"
-    height:s = "FROM_IMAGE"
-    //branches_density:r = 3
-    joints_cnt:i = 15000
-    leaves_density:r = 5
-    reference_image
-    {
-        image:s = "ref8.png"
-        //wood_color:p3 = 0.0, 0.0, 0.0
-        //leaves_color:p3 = 0, 0.5, 0
-        background_color:p3 = 1, 1, 1
-    }
+width:s = "FROM_IMAGE"
+height:s = "FROM_IMAGE"
+joints_cnt:i = 7500
+leaves_density:r = 5.000000
+reference_image {
+image:s = "ref10.png"
+background_color:p3 = 0.000000, 0.000000, 0.000000
+}
 }

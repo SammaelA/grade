@@ -13,8 +13,8 @@ cmd_code:i = 15
 }
 cmd_4 {
 cmd_code:i = 23
-tree_type_name:s = "ref10.png_selected_params_8"
-save_filename:s = "selection/result_1_"
+tree_type_name:s = "selection_25000"
+save_filename:s = "selection/result_25k_"
 image_count:i = 16
 }
 cmd_5 {
