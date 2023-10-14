@@ -15,6 +15,7 @@
 #include <thread>
 
 bool debug_stat = false;
+void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name);
 
 glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 {
@@ -1302,6 +1303,65 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             hydra::export_scene("param_selection_scene", scene, export_settings);
         }
     }
+    else
+    {
+      for (auto &type : res.best_candidates)
+      {
+        std::string gen_name = selection_settings.get_string("generator_name", "unknown_gen");
+        std::string file_name = "selection/" + gen_name + "/" + "result_";
+        visualize_tree(type, file_name);
+      }
+    }
 
     return res;
+}
+
+void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name)
+{
+  Scene scene;
+  scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+  scene.heightmap->fill_const(0);
+  // create preapred tree
+  {
+    LightVoxelsCube *res_voxels = new LightVoxelsCube(glm::vec3(0, 50, 0), glm::vec3(50, 50, 50), 0.625f);
+    Tree tree;
+    AbstractTreeGenerator *gen = get_generator(tree_type.generator_name);
+    glm::vec3 pos = glm::vec3(0, 0, 0);
+    res_voxels->fill(0);
+    res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
+
+    gen->plant_tree(pos, &tree_type);
+    while (gen->iterate(*res_voxels))
+    {
+    }
+    gen->finalize_generation(&tree, *res_voxels);
+    {
+      GrovePacker packer;
+      packer.init(Block(), {tree_type});
+      auto igp = ImpostorBaker::ImpostorGenerationParams();
+      igp.slices_n = 1;
+      igp.normals_needed = false;
+      igp.quality = 512;
+      packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
+                                scene.grove, &tree, 1, false);
+    }
+    delete res_voxels;
+  }
+  int tex_w = 512;
+  int tex_h = 512;
+  int start_imp = 1;
+  auto &imp = scene.grove.impostors[1];
+  int id = imp.impostors.front().slices[0].id;
+  PostFx copy = PostFx("copy_arr2.fs");
+
+  // hydra scene
+  {
+    Block export_settings;
+    export_settings.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
+    export_settings.add_vec3("camera_pos", glm::vec3(150, 75, 150));
+    export_settings.add_bool("need_terrain", true);
+    export_settings.add_bool("white_terrain", true);
+    export_settings.add_string("demo_copy_dir", "saves/" + file_name + "_res");
+    hydra::export_scene("param_selection_scene", scene, export_settings);
+  }
 }
