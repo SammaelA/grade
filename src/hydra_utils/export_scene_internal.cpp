@@ -574,49 +574,48 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
     hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);
-  
-  hrFlush(scnRef, renderRef, camRef);
-  
-  //////////////////////////////////////////////////////// opengl
-  std::vector<int32_t> image(DEMO_WIDTH*DEMO_HEIGHT);
-  initGLIfNeeded(DEMO_WIDTH,DEMO_HEIGHT, "load 'obj.' file demo");
-  glViewport(0,0,DEMO_WIDTH,DEMO_HEIGHT);
-  //////////////////////////////////////////////////////// opengl
-  
-  while (true)
+
+  Block *cameras = export_settings.get_block("cameras");
+  int cnt = cameras ? cameras->size() : 1;
+  for (int i=0;i<cnt;i++)
   {
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    
-    HRRenderUpdateInfo info = hrRenderHaveUpdate(renderRef);
-    
-    if (info.haveUpdateFB)
+    if (cameras && cameras->get_type(i) == Block::ValueType::BLOCK)
     {
-      auto pres = std::cout.precision(2);
-      std::cout << "rendering progress = " << info.progress << "% \r"; std::cout.flush();
-      std::cout.precision(pres);
-      
-      hrRenderGetFrameBufferLDR1i(renderRef, DEMO_WIDTH, DEMO_HEIGHT, &image[0]);
-  
-      //////////////////////////////////////////////////////// opengl
-      glDisable(GL_TEXTURE_2D);
-      glDrawPixels(DEMO_WIDTH, DEMO_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
-      
-      glfwSwapBuffers(g_window);
-      glfwPollEvents();
-      //////////////////////////////////////////////////////// opengl
+      Block *cam = cameras->get_block(i);
+      camera_pos = cam->get_vec3("camera_pos", camera_pos);
+      camera_look_at = cam->get_vec3("camera_look_at", camera_look_at);
+      camera_up = cam->get_vec3("camera_up", camera_up);
     }
+
+    hrCameraOpen(camRef, HR_OPEN_EXISTING);
+    {
+      xml_node camNode = hrCameraParamNode(camRef);
+      
+      std::wstring camera_up_s = std::to_wstring(camera_up.x)+L" "+std::to_wstring(camera_up.y)+L" "+std::to_wstring(camera_up.z);
+      camNode.child(L"up").text().set(camera_up_s.c_str());
+      
+      std::wstring camera_pos_s = std::to_wstring(camera_pos.x)+L" "+std::to_wstring(camera_pos.y)+L" "+std::to_wstring(camera_pos.z);
+      camNode.child(L"position").text().set(camera_pos_s.c_str());
+      
+      std::wstring camera_look_at_s = std::to_wstring(camera_look_at.x)+L" "+std::to_wstring(camera_look_at.y)+L" "+std::to_wstring(camera_look_at.z);
+      camNode.child(L"look_at").text().set(camera_look_at_s.c_str());
+
+      VERIFY_XML(camNode);
+    }
+    hrCameraClose(camRef);
+
+    hrFlush(scnRef, renderRef, camRef);
+
+    initGLIfNeeded(DEMO_WIDTH,DEMO_HEIGHT, "load 'obj.' file demo");
+    glViewport(0,0,DEMO_WIDTH,DEMO_HEIGHT);
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     
-    if (info.finalUpdate)
-      break;
+    std::wstring demo_dir = dir + std::wstring(L"/demo.png");
+    std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
+    if (demo_copy_dir != "")
+      demo_dir = L"../../../../"+std::wstring(demo_copy_dir.begin(), demo_copy_dir.end())+ std::to_wstring(i)+std::wstring(L".png"); 
+    hrRenderSaveFrameBufferLDR(renderRef, demo_dir.c_str());
   }
-  
-  std::wstring demo_dir = dir + std::wstring(L"/demo.png");
-  std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
-  if (demo_copy_dir != "")
-  {
-    demo_dir = L"../../../../"+std::wstring(demo_copy_dir.begin(), demo_copy_dir.end())+ std::wstring(L".png"); 
-  }
-  hrRenderSaveFrameBufferLDR(renderRef, demo_dir.c_str());
   return true;
 }
 
