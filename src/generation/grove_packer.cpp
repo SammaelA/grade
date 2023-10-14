@@ -374,12 +374,6 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
         packingLayers[i].clusters.clear();
         debugl(6, "level cleared %d\n", i);
     }
-    debug("After:");
-    for (int i=0;i<packingLayers.size();i++)
-    {
-      debug("[%d]", packingLayers[i].clusters.size());
-    }
-    debugnl();
     int total_cl_cnt = 0;
   int br_cl_cnt = 0;
   std::vector<ClusterPackingLayer *> cpls;
