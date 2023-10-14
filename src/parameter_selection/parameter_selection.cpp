@@ -270,7 +270,7 @@ void print_ref_tree_image_info(TreeImageInfo &info)
     debug(" cr_st %.3f l_sh %.3f b_sh %.3f\n", info.crown_start_level, info.crown_leaves_share, info.crown_branches_share);
 }
 
-void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene,
+void ParameterSelector::parameter_selection_internal(Block &selection_settings, Results &results,
                                                      ReferenceTree &ref_tree, TreeTypeData *ref_type, bool save_result_image)
 {
     debug("starting parameter selection for reference");
@@ -519,56 +519,13 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         best_pars = {std::pair<float, ParameterList>(0, bestParList)};
         AbstractTreeGenerator::set_joints_limit(1000000);
     }
-    // create preapred tree
+
+    auto type = tmp_types[0];
+    tmp_types.clear();
+    for (int i = 0; i < best_pars.size(); i++)
     {
-        LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
-        Tree *trees = new Tree[best_pars.size()];
-        auto type = tmp_types[0];
-        tmp_types.clear();
-        for (int i = 0; i < best_pars.size(); i++)
-        {
-            tmp_types.emplace_back(type);
-        }
-
-        for (int i = 0; i < best_pars.size(); i++)
-        {
-            AbstractTreeGenerator *gen = get_generator(type.generator_name);
-            glm::vec3 pos = glm::vec3(200 * (1 + i / 5), 0, 200 * (i % 5));
-            res_voxels->fill(0);
-            res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
-
-            tmp_types[i].get_params()->read_parameter_list(best_pars[i].second);
-            gen->plant_tree(pos, &(tmp_types[i]));
-            while (gen->iterate(*res_voxels))
-            {
-            }
-            gen->finalize_generation(trees + i, *res_voxels);
-        }
-
-      {
-        GrovePacker packer;
-        packer.init(Block(), tmp_types);
-        auto igp = ImpostorBaker::ImpostorGenerationParams();
-        if (save_result_image)
-        {
-            igp.slices_n = 1;
-            // igp.need_top_view = false;
-            igp.normals_needed = false;
-            igp.quality = 512;
-        }
-        packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
-                                  scene.grove, trees, best_pars.size(), false);
-      }
-        int i = 0;
-        for (auto &imp : scene.grove.impostors[1].impostors)
-        {
-            TreeCompareInfo info;
-            ImpostorSimilarityCalc::get_tree_compare_info(imp, trees[i], info);
-            print_ref_tree_info(info);
-            i++;
-        }
-        delete[] trees;
-        delete res_voxels;
+        tmp_types.emplace_back(type);
+        tmp_types[i].get_params()->read_parameter_list(best_pars[i].second);
     }
 
     AbstractTreeGenerator::set_joints_limit(1000000);
@@ -986,11 +943,9 @@ void get_reference_info(Block &reference_info, ReferenceTree &ref_tree, TreeComp
     }
 }
 
-ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings,
-                                                                  Scene *demo_scene)
+ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings)
 {
-    Scene inner_scene;
-    Scene &scene = demo_scene ? *demo_scene : inner_scene;
+    Scene scene;
     scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
     scene.heightmap->fill_const(0);
     float imp_size = selection_settings.get_int("impostor_size", 128);
@@ -1207,7 +1162,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
     bool save_result_image = selection_settings.get_bool("save_result_image", false);
     Results res;
-    parameter_selection_internal(selection_settings, res, scene, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd,
+    parameter_selection_internal(selection_settings, res, ref_tree, reference_images_cnt > 0 ? nullptr : &reference_ttd,
                                  save_result_image);
 
     std::string type_name = selection_settings.get_string("save_best_result", "");
@@ -1224,6 +1179,49 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     
     if (save_result_image)
     {
+          // create preapred tree
+    {
+        LightVoxelsCube *res_voxels = gen_voxels_for_selection(ref_tree);
+        Tree *trees = new Tree[res.best_candidates.size()];
+        for (int i = 0; i < res.best_candidates.size(); i++)
+        {
+            AbstractTreeGenerator *gen = get_generator(res.best_candidates[i].generator_name);
+            glm::vec3 pos = glm::vec3(200 * (1 + i / 5), 0, 200 * (i % 5));
+            res_voxels->fill(0);
+            res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
+
+            gen->plant_tree(pos, &(res.best_candidates[i]));
+            while (gen->iterate(*res_voxels))
+            {
+            }
+            gen->finalize_generation(trees + i, *res_voxels);
+        }
+
+      {
+        GrovePacker packer;
+        packer.init(Block(), res.best_candidates);
+        auto igp = ImpostorBaker::ImpostorGenerationParams();
+        if (save_result_image)
+        {
+            igp.slices_n = 1;
+            // igp.need_top_view = false;
+            igp.normals_needed = false;
+            igp.quality = 512;
+        }
+        packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
+                                  scene.grove, trees, res.best_candidates.size(), false);
+      }
+        int i = 0;
+        for (auto &imp : scene.grove.impostors[1].impostors)
+        {
+            TreeCompareInfo info;
+            ImpostorSimilarityCalc::get_tree_compare_info(imp, trees[i], info);
+            print_ref_tree_info(info);
+            i++;
+        }
+        delete[] trees;
+        delete res_voxels;
+    }
         int tex_w = 512;
         int tex_h = 512;
         int start_imp = 1;

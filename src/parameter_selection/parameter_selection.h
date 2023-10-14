@@ -12,8 +12,8 @@ public:
         std::vector<TreeTypeData> best_candidates;
         float best_res = 0;
     }; 
-    Results parameter_selection(Block &reference_info, Block &selection_settings, Scene *demo_scene = nullptr);
+    Results parameter_selection(Block &reference_info, Block &selection_settings);
 private:
-    void parameter_selection_internal(Block &selection_settings, Results &results, Scene &scene, ReferenceTree &ref_tree,
+    void parameter_selection_internal(Block &selection_settings, Results &results, ReferenceTree &ref_tree,
                                       TreeTypeData *ref_type = nullptr, bool save_result_image = false);
 };

@@ -419,7 +419,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       if (set_bl && ref_bl)
       {
         ParameterSelector sel;
-        auto result = sel.parameter_selection(*ref_bl, *set_bl, nullptr);
+        auto result = sel.parameter_selection(*ref_bl, *set_bl);
 
         int i = 0;
         for (auto &res : result.best_candidates)
