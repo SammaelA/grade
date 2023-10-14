@@ -536,6 +536,18 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       }
     }
       break;
+    case GC_VISUALIZE_TREE_HYDRA:
+    {
+      //default name for best selected tree
+      std::string tree_type_name = cmd.args.get_string("tree_type_name", "__tmp_0");
+      TreeTypeData tree_type = metainfoManager->get_tree_type(tree_type_name);
+      ParameterSelector::visualize_tree(tree_type, 
+                                        cmd.args.get_string("save_filename", "selection/result"),
+                                        cmd.args.get_int("image_count", 1),
+                                        cmd.args.get_double("distance", 150),
+                                        cmd.args.get_ivec2("image_size", {512, 512}));
+    }
+      break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;

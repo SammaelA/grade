@@ -208,10 +208,15 @@ void InputCmdExecutor::execute(int max_cmd_count)
       b.add_block("settings", set_info_p);
       b.add_block("reference", ref_info_p);
       genCmdBuffer->push(GC_TREE_GEN_PARAMETER_SELECTION, b);
-      int types_cnt = set_info_p->get_int("best_results_count",1);
-      bool show_res = set_info_p->get_bool("show_results",true);
-      if (show_res)
+
+      if (set_info_p->get_bool("save_result_image"))
       {
+        Block dummy;
+        inputCmdBuffer->push(IC_VISUALIZE_TREE_HYDRA, dummy);
+      }
+      if (set_info_p->get_bool("show_results",true))
+      {
+        int types_cnt = set_info_p->get_int("best_results_count",1);
         for (int i=0;i<types_cnt;i++)
         {
           std::string type_name = "__tmp_"+std::to_string(i);
@@ -289,6 +294,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
       break;
     case IC_INIT_RENDER:
       renderCmdBuffer->push(RC_INIT_RENDER, cmd.args);
+      break;
+    case IC_VISUALIZE_TREE_HYDRA:
+      genCmdBuffer->push(GC_VISUALIZE_TREE_HYDRA, cmd.args);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

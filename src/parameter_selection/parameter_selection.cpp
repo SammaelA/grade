@@ -1178,7 +1178,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
       metainfoManager->save_all();
     }
     
-    if (save_result_image)
+    if (save_result_image && false)
     {
           // create preapred tree
     {
@@ -1303,20 +1303,12 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             hydra::export_scene("param_selection_scene", scene, export_settings);
         }
     }
-    else
-    {
-      for (auto &type : res.best_candidates)
-      {
-        std::string gen_name = selection_settings.get_string("generator_name", "unknown_gen");
-        std::string file_name = "selection/" + gen_name + "/" + "result_";
-        visualize_tree(type, file_name);
-      }
-    }
 
     return res;
 }
 
-void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name)
+void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
+                                       int image_count, float distance, glm::ivec2 image_size)
 {
   Scene scene;
   scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
@@ -1356,12 +1348,22 @@ void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name)
 
   // hydra scene
   {
+    Block cameras;
+    for (int i=0;i<image_count; i++)
+    {
+      Block camera_blk;
+      camera_blk.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
+      camera_blk.add_vec3("camera_pos", glm::vec3(distance*cos(2*PI*i/image_count), 50, distance*sin(2*PI*i/image_count)));
+      camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
+      cameras.add_block("camera", &camera_blk);
+    }
     Block export_settings;
-    export_settings.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
-    export_settings.add_vec3("camera_pos", glm::vec3(150, 75, 150));
+    export_settings.add_block("cameras", &cameras);
+    export_settings.add_int("image_width", image_size.x);
+    export_settings.add_int("image_height", image_size.y);
     export_settings.add_bool("need_terrain", true);
     export_settings.add_bool("white_terrain", true);
-    export_settings.add_string("demo_copy_dir", "saves/" + file_name + "_res");
+    export_settings.add_string("demo_copy_dir", "saves/" + file_name);
     hydra::export_scene("param_selection_scene", scene, export_settings);
   }
 }
