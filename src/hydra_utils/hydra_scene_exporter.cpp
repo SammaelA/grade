@@ -7,6 +7,10 @@ using pugi::xml_node;
 #include <iostream>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 void demo_02_load_obj();
 namespace h_inter
 {
@@ -61,67 +65,88 @@ namespace hydra
 {
   bool export_internal1(std::string directory, Scene &scene, Block &export_settings)
   {
-    hrInfoCallback(&h_inter::InfoCallBack);
-
-    hrErrorCallerPlace(L"main");  // for debug needs only
-
-    atexit(&h_inter::destroy);                           // if application will terminated you have to call hrSceneLibraryClose to free all connections with hydra.exe
-  #if defined WIN32
-    SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
-    wchar_t NPath[512];
-    GetCurrentDirectoryW(512, NPath);
-  #ifdef NEED_DIR_CHANGE
-    SetCurrentDirectoryW(L"../../main");
-  #endif
-    std::wcout << L"[main]: curr_dir = " << NPath << std::endl;
-  #else
-    std::string workingDir = "dependencies/Hydra/HydraAPI/main";
-    if(chdir(workingDir.c_str()) != 0)
-      std::cout << "chdir failed: " << workingDir.c_str() << std::endl;
-
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) != nullptr)
-      std::cout << "[main]: curr_dir = " << cwd <<std::endl;
+    pid_t pid = fork();
+    if (pid == -1)
+    {
+      //something REALLY bad happened
+      perror("fork");
+      exit(1);
+    }
+    else if (pid > 0)
+    {
+      //wait for child process and return if it exited normally
+      int rv = -2;
+      wait(&rv);
+      int status = WEXITSTATUS(rv);
+      logerr("hydra finished with status %d", status);
+      return status == 0;
+    }
     else
-      std::cout << "getcwd() error" <<std::endl;
-    
     {
-      struct sigaction sigIntHandler;
-      sigIntHandler.sa_handler = h_inter::sig_handler;
-      sigemptyset(&sigIntHandler.sa_mask);
-      sigIntHandler.sa_flags = SA_RESETHAND;
-      sigaction(SIGINT,  &sigIntHandler, NULL);
-      sigaction(SIGSTOP, &sigIntHandler, NULL);
-      sigaction(SIGABRT, &sigIntHandler, NULL);
-      sigaction(SIGILL,  &sigIntHandler, NULL);
-      sigaction(SIGTERM, &sigIntHandler, NULL);
-      sigaction(SIGSEGV, &sigIntHandler, NULL);
-      sigaction(SIGFPE,  &sigIntHandler, NULL);
-    }
-  #endif
-    
-    std::cout << "sizeof(size_t) = " << sizeof(size_t) <<std::endl;
-    
-    try
-    {
-      export_internal2(directory, scene, export_settings);
-    }
-    catch (std::runtime_error& e)
-    {
-      std::cout << "std::runtime_error: " << e.what() << std::endl;
-    }
-    catch (std::exception &e)
-    {
-      std::cout << "unknown exception" << e.what() << std::endl;
-    }
+      //child process. Does hydra stuff and dies
 
-    hrErrorCallerPlace(L"main"); // for debug needs only
+      hrInfoCallback(&h_inter::InfoCallBack);
 
-    hrSceneLibraryClose();
-    
-    glfwTerminate();
-    
-    return 0;
+      hrErrorCallerPlace(L"main");  // for debug needs only
+
+      atexit(&h_inter::destroy);
+    #if defined WIN32
+      SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
+      wchar_t NPath[512];
+      GetCurrentDirectoryW(512, NPath);
+    #ifdef NEED_DIR_CHANGE
+      SetCurrentDirectoryW(L"../../main");
+    #endif
+      std::wcout << L"[main]: curr_dir = " << NPath << std::endl;
+    #else
+      std::string workingDir = "dependencies/Hydra/HydraAPI/main";
+      if(chdir(workingDir.c_str()) != 0)
+        std::cout << "chdir failed: " << workingDir.c_str() << std::endl;
+
+      char cwd[1024];
+      if (getcwd(cwd, sizeof(cwd)) != nullptr)
+        std::cout << "[main]: curr_dir = " << cwd <<std::endl;
+      else
+        std::cout << "getcwd() error" <<std::endl;
+      
+      {
+        struct sigaction sigIntHandler;
+        sigIntHandler.sa_handler = h_inter::sig_handler;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = SA_RESETHAND;
+        sigaction(SIGINT,  &sigIntHandler, NULL);
+        sigaction(SIGSTOP, &sigIntHandler, NULL);
+        sigaction(SIGABRT, &sigIntHandler, NULL);
+        sigaction(SIGILL,  &sigIntHandler, NULL);
+        sigaction(SIGTERM, &sigIntHandler, NULL);
+        sigaction(SIGSEGV, &sigIntHandler, NULL);
+        sigaction(SIGFPE,  &sigIntHandler, NULL);
+      }
+    #endif
+      
+      std::cout << "sizeof(size_t) = " << sizeof(size_t) <<std::endl;
+      
+      try
+      {
+        export_internal2(directory, scene, export_settings);
+      }
+      catch (std::runtime_error& e)
+      {
+        std::cout << "std::runtime_error: " << e.what() << std::endl;
+      }
+      catch (std::exception &e)
+      {
+        std::cout << "unknown exception" << e.what() << std::endl;
+      }
+
+      hrErrorCallerPlace(L"main"); // for debug needs only
+
+      hrSceneLibraryClose();
+      
+      glfwTerminate();
+      
+      exit(0);
+    }
   }
 
   bool export_scene(std::string directory, Scene &scene, Block &export_settings)
