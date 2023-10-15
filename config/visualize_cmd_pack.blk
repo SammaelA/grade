@@ -15,7 +15,9 @@ cmd_4 {
 cmd_code:i = 23
 tree_type_name:s = "selection_75000"
 save_filename:s = "selection/result_75k_"
-image_count:i = 16
+image_count:i = 4
+rays_per_pixel:i = 512
+image_size:i2 = 1024, 1024
 }
 cmd_5 {
 cmd_code:i = 12

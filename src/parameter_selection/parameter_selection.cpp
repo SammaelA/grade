@@ -1181,7 +1181,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 }
 
 void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
-                                       int image_count, float distance, glm::ivec2 image_size)
+                                       int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel)
 {
   Scene scene;
   scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
@@ -1234,6 +1234,7 @@ void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std:
     export_settings.add_block("cameras", &cameras);
     export_settings.add_int("image_width", image_size.x);
     export_settings.add_int("image_height", image_size.y);
+    export_settings.add_int("rays_per_pixel", rays_per_pixel);
     export_settings.add_bool("need_terrain", true);
     export_settings.add_bool("white_terrain", true);
     export_settings.add_string("demo_copy_dir", "saves/" + file_name);
