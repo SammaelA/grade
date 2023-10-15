@@ -1,7 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/vsgl3.dir/clHelper.cpp.o"
-  "libvsgl3.pdb"
+  "CMakeFiles/vsgl3.dir/clHelper.cpp.o.d"
   "libvsgl3.a"
+  "libvsgl3.pdb"
 )
 
 # Per-language clean rules from dependency scanning.
