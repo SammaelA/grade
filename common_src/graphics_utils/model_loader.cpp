@@ -271,4 +271,42 @@ bool create_model_from_block(Block &bl, ComplexModel &mod)
 
   return true;
 }
+
+void save_model_to_obj(const Model *m, const std::string &filename)
+{
+  std::string header = "#obj file created by custom obj loader\n";
+  std::string o_data = "o MainModel\n";
+  std::string v_data;
+  std::string tc_data;
+  std::string n_data;
+  std::string s_data = "s off\n";
+  std::string f_data;
+
+  int sz = m->positions.size()/3;
+  assert(m->normals.size()/3 == sz);
+  assert(m->colors.size()/4 == sz);
+
+  for (int i = 0; i < sz; ++i)
+  {
+    v_data += "v " + std::to_string(m->positions[3*i]) + " " + std::to_string(m->positions[3*i+1]) + " " + std::to_string(m->positions[3*i+2]) + "\n";
+    n_data += "vn " + std::to_string(m->normals[3*i]) + " " + std::to_string(m->normals[3*i+1]) + " " + std::to_string(m->normals[3*i+2]) + "\n";
+    tc_data += "vt " + std::to_string(m->colors[4*i]) + " " + std::to_string(m->colors[4*i+1]) + "\n";
+  }
+  for (int i = 0; i < m->indices.size() / 3; ++i)
+  {
+    f_data += "f " + std::to_string(m->indices[3*i]+1) + "/" + std::to_string(m->indices[3*i]+1) + "/" + std::to_string(m->indices[3*i]+1) + " " +
+              std::to_string(m->indices[3*i+1]+1) + "/" + std::to_string(m->indices[3*i+1]+1) + "/" + std::to_string(m->indices[3*i+1]+1) + " " +
+              std::to_string(m->indices[3*i+2]+1) + "/" + std::to_string(m->indices[3*i+2]+1) + "/" + std::to_string(m->indices[3*i+2]+1) + "\n";
+  }
+
+  std::ofstream out(filename);
+  out << header;
+  out << o_data;
+  out << v_data;
+  out << tc_data;
+  out << n_data;
+  out << s_data;
+  out << f_data;
+  out.close();
+}
 }

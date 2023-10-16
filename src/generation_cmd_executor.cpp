@@ -549,6 +549,13 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
                                         cmd.args.get_int("rays_per_pixel", 64));
     }
       break;
+    case GC_SAVE_TREE_TO_OBJ:
+    {
+      std::string tree_type_name = cmd.args.get_string("tree_type_name", "");
+      TreeTypeData tree_type = metainfoManager->get_tree_type(tree_type_name);
+      ParameterSelector::save_tree_to_obj(tree_type, cmd.args.get_string("save_filename", "saves/selection/result.obj"));
+    }
+      break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
