@@ -611,10 +611,36 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
 
     hrFlush(scnRef, renderRef, camRef);
 
+    std::vector<int32_t> image(DEMO_WIDTH*DEMO_HEIGHT);
     initGLIfNeeded(DEMO_WIDTH,DEMO_HEIGHT, "load 'obj.' file demo");
     glViewport(0,0,DEMO_WIDTH,DEMO_HEIGHT);
     std::this_thread::sleep_for(std::chrono::milliseconds(750));
+    while (true)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
+    HRRenderUpdateInfo info = hrRenderHaveUpdate(renderRef);
+    
+    if (info.haveUpdateFB)
+    {
+      auto pres = std::cout.precision(2);
+      std::cout << "rendering progress = " << info.progress << "% \r"; std::cout.flush();
+      std::cout.precision(pres);
+      
+      hrRenderGetFrameBufferLDR1i(renderRef, DEMO_WIDTH, DEMO_HEIGHT, &image[0]);
+  
+      //////////////////////////////////////////////////////// opengl
+      glDisable(GL_TEXTURE_2D);
+      glDrawPixels(DEMO_WIDTH, DEMO_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+      
+      glfwSwapBuffers(g_window);
+      glfwPollEvents();
+      //////////////////////////////////////////////////////// opengl
+    }
+    
+    if (info.finalUpdate)
+      break;
+  }
     std::wstring demo_dir = dir + std::wstring(L"/demo.png");
     std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
     if (demo_copy_dir != "")
