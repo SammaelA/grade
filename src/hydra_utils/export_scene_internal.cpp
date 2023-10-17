@@ -499,18 +499,23 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
   {
     pugi::xml_node node = hrRenderParamNode(renderRef);
     
-    node.append_child(L"width").text()  = DEMO_WIDTH;
-    node.append_child(L"height").text() = DEMO_HEIGHT;
+    node.force_child(L"width").text()  = DEMO_WIDTH;
+    node.force_child(L"height").text() = DEMO_HEIGHT;
     
-    node.append_child(L"method_primary").text()   = L"pathtracing";
-    node.append_child(L"method_secondary").text() = L"pathtracing";
-    node.append_child(L"method_tertiary").text()  = L"pathtracing";
-    node.append_child(L"method_caustic").text()   = L"pathtracing";
+    node.force_child(L"method_primary").text()   = L"pathtracing";
+    node.force_child(L"method_secondary").text() = L"pathtracing";
+    node.force_child(L"method_tertiary").text()  = L"pathtracing";
+    node.force_child(L"method_caustic").text()   = L"pathtracing";
+    node.append_child(L"shadows").text() = L"1";
     
-    node.append_child(L"trace_depth").text()      = 4;
-    node.append_child(L"diff_trace_depth").text() = 3;
-    node.append_child(L"maxRaysPerPixel").text()  = export_settings.get_int("max_rays_per_pixel", 64);
-    node.append_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
+    node.force_child(L"trace_depth").text()      = 8;
+    node.force_child(L"diff_trace_depth").text() = 4;
+    node.force_child(L"pt_error").text() = L"1";
+    node.force_child(L"minRaysPerPixel").text()  = std::to_wstring(export_settings.get_int("rays_per_pixel", 64)).c_str();
+    node.force_child(L"maxRaysPerPixel").text()  = std::to_wstring(export_settings.get_int("rays_per_pixel", 64)).c_str();
+    node.force_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
+  
+    VERIFY_XML(node);
   }
   hrRenderClose(renderRef);
   
@@ -606,10 +611,36 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
 
     hrFlush(scnRef, renderRef, camRef);
 
+    std::vector<int32_t> image(DEMO_WIDTH*DEMO_HEIGHT);
     initGLIfNeeded(DEMO_WIDTH,DEMO_HEIGHT, "load 'obj.' file demo");
     glViewport(0,0,DEMO_WIDTH,DEMO_HEIGHT);
     std::this_thread::sleep_for(std::chrono::milliseconds(750));
+    while (true)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
+    HRRenderUpdateInfo info = hrRenderHaveUpdate(renderRef);
+    
+    if (info.haveUpdateFB)
+    {
+      auto pres = std::cout.precision(2);
+      std::cout << "rendering progress = " << info.progress << "% \r"; std::cout.flush();
+      std::cout.precision(pres);
+      
+      hrRenderGetFrameBufferLDR1i(renderRef, DEMO_WIDTH, DEMO_HEIGHT, &image[0]);
+  
+      //////////////////////////////////////////////////////// opengl
+      glDisable(GL_TEXTURE_2D);
+      glDrawPixels(DEMO_WIDTH, DEMO_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+      
+      glfwSwapBuffers(g_window);
+      glfwPollEvents();
+      //////////////////////////////////////////////////////// opengl
+    }
+    
+    if (info.finalUpdate)
+      break;
+  }
     std::wstring demo_dir = dir + std::wstring(L"/demo.png");
     std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
     if (demo_copy_dir != "")
@@ -624,7 +655,7 @@ void get_default_settings(Block &b)
   b.set_vec3("camera_pos", glm::vec3(0,200,200));
   b.set_vec3("camera_look_at",glm::vec3(0,0,0));
   b.set_vec3("camera_up", glm::vec3(0,1,0));
-  b.set_int("max_rays_per_pixel", 64);
+  b.set_int("rays_per_pixel", 64);
   b.set_int("image_width", 512);
   b.set_int("image_height", 512);
   b.set_string("demo_copy_dir","");

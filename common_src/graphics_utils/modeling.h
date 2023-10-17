@@ -34,6 +34,7 @@ namespace model_loader
   Model *create_debug_box_model();
   Model *create_simple_grass_model();
   Model *load_model_from_obj(std::string name, Texture &tex);
+  void save_model_to_obj(const Model *m, const std::string &filename);
   
   extern std::string base_path;
   extern Block obj_models_blk;

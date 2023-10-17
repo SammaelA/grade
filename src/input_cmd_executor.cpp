@@ -298,6 +298,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_VISUALIZE_TREE_HYDRA:
       genCmdBuffer->push(GC_VISUALIZE_TREE_HYDRA, cmd.args);
       break;
+    case IC_SAVE_TREE_TO_OBJ:
+      genCmdBuffer->push(GC_SAVE_TREE_TO_OBJ, cmd.args);
+      break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;

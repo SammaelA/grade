@@ -1180,63 +1180,74 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
     return res;
 }
 
-void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
-                                       int image_count, float distance, glm::ivec2 image_size)
+void ParameterSelector::create_single_tree_scene(const TreeTypeData &tree_type, Scene &scene)
 {
-  Scene scene;
   scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
   scene.heightmap->fill_const(0);
-  // create preapred tree
-  {
-    LightVoxelsCube *res_voxels = new LightVoxelsCube(glm::vec3(0, 50, 0), glm::vec3(50, 50, 50), 0.625f);
-    Tree tree;
-    AbstractTreeGenerator *gen = get_generator(tree_type.generator_name);
-    glm::vec3 pos = glm::vec3(0, 0, 0);
-    res_voxels->fill(0);
-    res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
+  LightVoxelsCube *res_voxels = new LightVoxelsCube(glm::vec3(0, 50, 0), glm::vec3(50, 50, 50), 0.625f);
+  Tree tree;
+  AbstractTreeGenerator *gen = get_generator(tree_type.generator_name);
+  glm::vec3 pos = glm::vec3(0, 0, 0);
+  res_voxels->fill(0);
+  res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
 
-    gen->plant_tree(pos, &tree_type);
-    while (gen->iterate(*res_voxels))
-    {
-    }
-    gen->finalize_generation(&tree, *res_voxels);
-    {
-      GrovePacker packer;
-      packer.init(Block(), {tree_type});
-      auto igp = ImpostorBaker::ImpostorGenerationParams();
-      igp.slices_n = 1;
-      igp.normals_needed = false;
-      igp.quality = 512;
-      packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
-                                scene.grove, &tree, 1, false);
-    }
-    delete res_voxels;
-  }
-  int tex_w = 512;
-  int tex_h = 512;
-  int start_imp = 1;
-  auto &imp = scene.grove.impostors[1];
-  int id = imp.impostors.front().slices[0].id;
-  PostFx copy = PostFx("copy_arr2.fs");
-
-  // hydra scene
+  gen->plant_tree(pos, &tree_type);
+  while (gen->iterate(*res_voxels))
   {
-    Block cameras;
-    for (int i=0;i<image_count; i++)
-    {
-      Block camera_blk;
-      camera_blk.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
-      camera_blk.add_vec3("camera_pos", glm::vec3(distance*cos(2*PI*i/((float)image_count)), 50, distance*sin(2*PI*i/((float)image_count))));
-      camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
-      cameras.add_block("camera", &camera_blk);
-    }
-    Block export_settings;
-    export_settings.add_block("cameras", &cameras);
-    export_settings.add_int("image_width", image_size.x);
-    export_settings.add_int("image_height", image_size.y);
-    export_settings.add_bool("need_terrain", true);
-    export_settings.add_bool("white_terrain", true);
-    export_settings.add_string("demo_copy_dir", "saves/" + file_name);
-    hydra::export_scene("param_selection_scene", scene, export_settings);
   }
+  gen->finalize_generation(&tree, *res_voxels);
+  {
+    GrovePacker packer;
+    packer.init(Block(), {tree_type});
+    auto igp = ImpostorBaker::ImpostorGenerationParams();
+    igp.slices_n = 1;
+    igp.normals_needed = false;
+    igp.quality = 512;
+    packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
+                              scene.grove, &tree, 1, false);
+  }
+  delete res_voxels;
+}
+
+void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
+                                       int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel)
+{
+  Scene scene;
+  create_single_tree_scene(tree_type, scene);
+
+  Block cameras;
+  for (int i = 0; i < image_count; i++)
+  {
+    Block camera_blk;
+    camera_blk.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
+    camera_blk.add_vec3("camera_pos", glm::vec3(distance * cos(2 * PI * i / ((float)image_count)), 50, distance * sin(2 * PI * i / ((float)image_count))));
+    camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
+    cameras.add_block("camera", &camera_blk);
+  }
+  Block export_settings;
+  export_settings.add_block("cameras", &cameras);
+  export_settings.add_int("image_width", image_size.x);
+  export_settings.add_int("image_height", image_size.y);
+  export_settings.add_int("rays_per_pixel", rays_per_pixel);
+  export_settings.add_bool("need_terrain", true);
+  export_settings.add_bool("white_terrain", true);
+  export_settings.add_string("demo_copy_dir", "saves/" + file_name);
+  hydra::export_scene("param_selection_scene", scene, export_settings);
+}
+
+void ParameterSelector::save_tree_to_obj(const TreeTypeData &tree_type, const std::string &file_name)
+{
+  Scene scene;
+  create_single_tree_scene(tree_type, scene);
+  Model mesh;
+  for (auto &pbv : scene.grove.instancedCatalogue.branches)
+  {
+    for (auto &pb : pbv)
+    {
+      visualizer::packed_branch_to_model(pb, &mesh, false, MAX(1, 3-pb.level));
+      visualizer::packed_branch_to_model(pb, &mesh, true, MAX(1, 3-pb.level));
+    }
+  }
+
+  model_loader::save_model_to_obj(&mesh, file_name);
 }

@@ -1,7 +1,8 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/mikktspace.dir/mikktspace.c.o"
-  "../../bin/libmikktspace.pdb"
   "../../bin/libmikktspace.a"
+  "../../bin/libmikktspace.pdb"
+  "CMakeFiles/mikktspace.dir/mikktspace.c.o"
+  "CMakeFiles/mikktspace.dir/mikktspace.c.o.d"
 )
 
 # Per-language clean rules from dependency scanning.

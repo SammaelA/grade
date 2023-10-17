@@ -51,7 +51,7 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS})
 add_subdirectory(pybind11)
 pybind11_add_module(hydra_api_python HydraPy.cpp) #
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1 -march=native")
 
 target_include_directories (hydra_api_python PUBLIC .. ${OPENGL_INCLUDE_DIR})
 

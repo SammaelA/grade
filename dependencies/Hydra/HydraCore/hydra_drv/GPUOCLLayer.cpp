@@ -1303,7 +1303,7 @@ void GPUOCLLayer::EndTracingPass()
     {
       const float halfIfIBPT = (m_vars.m_flags & HRT_3WAY_MIS_WEIGHTS) ? 0.5f : 1.0f;
       auto precOld = std::cout.precision(2);
-      std::cout << "spp =\t" << int(m_spp) << "\tspeed = " << passScale*halfIfIBPT * float(m_rays.MEGABLOCKSIZE) / (1e6f*time) << " M(samples)/s         \r";
+      std::cout << "spusp =\t" << int(m_spp) << "\tspeed = " << passScale*halfIfIBPT * float(m_rays.MEGABLOCKSIZE) / (1e6f*time) << " M(samples)/s         \r";
       std::cout.precision(precOld);
       std::cout.flush();
     }
