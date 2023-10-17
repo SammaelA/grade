@@ -290,7 +290,7 @@ void save_model_to_obj(const Model *m, const std::string &filename)
   {
     v_data += "v " + std::to_string(m->positions[3*i]) + " " + std::to_string(m->positions[3*i+1]) + " " + std::to_string(m->positions[3*i+2]) + "\n";
     n_data += "vn " + std::to_string(m->normals[3*i]) + " " + std::to_string(m->normals[3*i+1]) + " " + std::to_string(m->normals[3*i+2]) + "\n";
-    tc_data += "vt " + std::to_string(m->colors[4*i]) + " " + std::to_string(m->colors[4*i+1]) + "\n";
+    tc_data += "vt " + std::to_string(m->colors[4*i]) + " " + std::to_string((glm::fract(m->colors[4*i+1]) + m->colors[4*i+2])/m->colors[4*i+3]) + "\n";
   }
   for (int i = 0; i < m->indices.size() / 3; ++i)
   {

@@ -15,7 +15,6 @@
 #include <thread>
 
 bool debug_stat = false;
-void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name);
 
 glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 {
@@ -582,7 +581,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             {
                 int pos = 4 * ((h - y - 1) * w + x);
                 glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
-                if (length(color - background_color) > 0.05)
+                if (length(color - background_color) > 0.01)
                 {
                     min_max.back().x = x;
                     break;
@@ -594,7 +593,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 {
                     int pos = 4 * ((h - y - 1) * w + x);
                     glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
-                    if (length(color - background_color) > 0.05)
+                    if (length(color - background_color) > 0.01)
                     {
                         min_max.back().y = x;
                         break;
@@ -607,7 +606,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
             }
             // logerr("[%d %d]", min_max.back().x, min_max.back().y);
         }
-        // logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
+        logerr("borders [%d %d] - [%d %d]",min_x,min_y,max_x,max_y);
         float sym_line = -1;
         for (auto &v : min_max)
         {
@@ -1107,7 +1106,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 ref_transform.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
                 ref_transform.get_shader().texture("tex", ref_raw);
                 ref_transform.get_shader().uniform("wood_color",
-                                                   ref_image_blk->get_vec3("wood_color", glm::vec3(0.2, 0.2, 0.2)));
+                                                   ref_image_blk->get_vec3("wood_color", glm::vec3(1, 0, 0)));
                 ref_transform.get_shader().uniform("leaves_color",
                                                    ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
                 ref_transform.get_shader().uniform("background_color",
@@ -1206,11 +1205,16 @@ void ParameterSelector::create_single_tree_scene(const TreeTypeData &tree_type, 
     packer.add_trees_to_grove(GrovePackingParams(GenerationTask::IMPOSTORS | GenerationTask::MODELS, igp),
                               scene.grove, &tree, 1, false);
   }
+  TreeCompareInfo info;
+  ImpostorSimilarityCalc::get_tree_compare_info(scene.grove.impostors[1].impostors.back(), tree, info);
+  print_ref_tree_info(info);
+                
   delete res_voxels;
 }
 
 void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
-                                       int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel)
+                                       int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel,
+                                       bool render_terrain)
 {
   Scene scene;
   create_single_tree_scene(tree_type, scene);
@@ -1229,7 +1233,7 @@ void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std:
   export_settings.add_int("image_width", image_size.x);
   export_settings.add_int("image_height", image_size.y);
   export_settings.add_int("rays_per_pixel", rays_per_pixel);
-  export_settings.add_bool("need_terrain", true);
+  export_settings.add_bool("need_terrain", render_terrain);
   export_settings.add_bool("white_terrain", true);
   export_settings.add_string("demo_copy_dir", "saves/" + file_name);
   hydra::export_scene("param_selection_scene", scene, export_settings);
@@ -1244,8 +1248,8 @@ void ParameterSelector::save_tree_to_obj(const TreeTypeData &tree_type, const st
   {
     for (auto &pb : pbv)
     {
-      visualizer::packed_branch_to_model(pb, &mesh, false, MAX(1, 3-pb.level));
-      visualizer::packed_branch_to_model(pb, &mesh, true, MAX(1, 3-pb.level));
+      visualizer::packed_branch_to_model(pb, &mesh, false, MAX(1, 3-pb.level), glm::vec2(0, 2));
+      visualizer::packed_branch_to_model(pb, &mesh, true, MAX(1, 3-pb.level), glm::vec2(2, 2));
     }
   }
 

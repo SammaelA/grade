@@ -546,7 +546,8 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
                                         cmd.args.get_int("image_count", 1),
                                         cmd.args.get_double("distance", 150),
                                         cmd.args.get_ivec2("image_size", {512, 512}),
-                                        cmd.args.get_int("rays_per_pixel", 64));
+                                        cmd.args.get_int("rays_per_pixel", 64),
+                                        cmd.args.get_bool("render_terrain", true));
     }
       break;
     case GC_SAVE_TREE_TO_OBJ:

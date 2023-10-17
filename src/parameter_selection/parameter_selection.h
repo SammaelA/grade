@@ -14,7 +14,8 @@ public:
     }; 
     Results parameter_selection(Block &reference_info, Block &selection_settings);
     static void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
-                               int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel);
+                               int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel,
+                               bool render_terrain);
     static void create_single_tree_scene(const TreeTypeData &tree_type, Scene &outScene);
     static void save_tree_to_obj(const TreeTypeData &tree_type, const std::string &file_name);
 private:
