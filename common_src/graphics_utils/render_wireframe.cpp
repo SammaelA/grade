@@ -12,7 +12,7 @@ WireframeRenderer::~WireframeRenderer()
   delete_framebuffer(fbo);
 }
 
-Texture WireframeRenderer::render(Model &m, const CameraSettings &camera, int w, int h)
+Texture WireframeRenderer::render(Model &m, const glm::mat4 &viewProj, int w, int h)
 {
   int prev_FBO = 0;
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
@@ -35,11 +35,8 @@ Texture WireframeRenderer::render(Model &m, const CameraSettings &camera, int w,
   glClearColor(1,1,1,1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glm::mat4 projection = glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
-  glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
   wireframe_shader.use();
-  wireframe_shader.uniform("projection", projection);
-  wireframe_shader.uniform("view", view);
+  wireframe_shader.uniform("viewProj", viewProj);
 
   wireframe_shader.uniform("wireframe_color", glm::vec3(1,1,1));
   m.render();

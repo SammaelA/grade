@@ -448,13 +448,17 @@ int main(int argc, char **argv)
     m->update();
 
     WireframeRenderer wr;
-    Texture res_tex = wr.render(*m, MitsubaInterface::get_camera_from_scene_params(scene_params), 2048, 2048);
+    CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
+    glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+    glm::mat4 view = glm::lookAt(rc.origin, rc.target, rc.up);
+    glm::mat4 viewProj = projection * view;
+    Texture res_tex = wr.render(*m, viewProj, 2048, 2048);
     textureManager.save_png(res_tex, "aa_wireframe_test");
-  
+
     delete m;
     
     {
-      auto model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/cup_model_1/NGP_meshes/t64_simple.obj");
+      auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
       dgen::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
       auto bbox = dgen::get_bbox(model);
       dgen::normalize_model(model);
@@ -464,8 +468,12 @@ int main(int argc, char **argv)
       CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
       rc.origin.y = 0;
       rc.target.y = 0;
-      Texture res_tex_2 = wr.render(*m, rc, 2048, 2048);
-      textureManager.save_png(res_tex_2, "aa_wireframe_tes_3");
+      glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      glm::mat4 view = glm::lookAt(rc.origin, rc.target, rc.up);
+      glm::mat4 viewProj = projection * view;
+      Texture res_tex_2 = wr.render(*m, viewProj, 2048, 2048);
+      textureManager.save_png(res_tex_2, "result_quaking_aspen_wireframe");
+      //dgen::save_obj("saves/selection/reference_medium_oak_simplified_norm.obj", model);
 
       delete m2;
     }
