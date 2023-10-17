@@ -643,8 +643,11 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
   }
     std::wstring demo_dir = dir + std::wstring(L"/demo.png");
     std::string demo_copy_dir = export_settings.get_string("demo_copy_dir","");
+    char path[1024];
+    sprintf(path, "%s_%04d.png", demo_copy_dir.c_str(), i);
+    demo_copy_dir = std::string(path);
     if (demo_copy_dir != "")
-      demo_dir = L"../../../../"+std::wstring(demo_copy_dir.begin(), demo_copy_dir.end())+ std::to_wstring(i)+std::wstring(L".png"); 
+      demo_dir = L"../../../../"+std::wstring(demo_copy_dir.begin(), demo_copy_dir.end()); 
     hrRenderSaveFrameBufferLDR(renderRef, demo_dir.c_str());
   }
   return true;
