@@ -75,6 +75,27 @@ void transform_model_to_standart_form(Model *m)
     }
 }
 
+void normalize_model(Model *m)
+{
+    glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
+    glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+    for (int i=0;i<m->positions.size();i+=3)
+    {
+        min_pos = min(min_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        max_pos = max(max_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+    }
+
+    glm::vec3 size = max_pos - min_pos;
+    glm::vec3 center = 0.5f*(max_pos + min_pos);
+    float sz = (MAX(size.x, MAX(size.y,size.z)));
+    for (int i=0;i<m->positions.size();i+=3)
+    {
+        m->positions[i] = (m->positions[i] - center.x)/sz;
+        m->positions[i+1] = (m->positions[i+1] - center.y)/sz;
+        m->positions[i+2] = (m->positions[i+2] - center.z)/sz;
+    }
+}
+
 void load_default_blk()
 {
     
