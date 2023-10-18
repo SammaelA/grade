@@ -468,13 +468,14 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
   glm::vec3 camera_pos = export_settings.get_vec3("camera_pos",glm::vec3(0,200,200));
   glm::vec3 camera_look_at = export_settings.get_vec3("camera_look_at",glm::vec3(0,0,0));
   glm::vec3 camera_up = export_settings.get_vec3("camera_up", glm::vec3(0,1,0));
+  float camera_fov = export_settings.get_double("camera_fov", PI/2);
   HRCameraRef camRef = hrCameraCreate(L"my camera");
   
   hrCameraOpen(camRef, HR_WRITE_DISCARD);
   {
     xml_node camNode = hrCameraParamNode(camRef);
     
-    camNode.append_child(L"fov").text().set(L"90");
+    camNode.append_child(L"fov").text().set(std::to_wstring(180.0*camera_fov/PI).c_str());
     camNode.append_child(L"nearClipPlane").text().set(L"0.01");
     camNode.append_child(L"farClipPlane").text().set(L"1000.0");
     
@@ -590,11 +591,14 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
       camera_pos = cam->get_vec3("camera_pos", camera_pos);
       camera_look_at = cam->get_vec3("camera_look_at", camera_look_at);
       camera_up = cam->get_vec3("camera_up", camera_up);
+      camera_fov = cam->get_double("camera_fov", PI/2);
     }
 
     hrCameraOpen(camRef, HR_OPEN_EXISTING);
     {
       xml_node camNode = hrCameraParamNode(camRef);
+
+      camNode.child(L"fov").text().set(std::to_wstring(180.0*camera_fov/PI).c_str());
       
       std::wstring camera_up_s = std::to_wstring(camera_up.x)+L" "+std::to_wstring(camera_up.y)+L" "+std::to_wstring(camera_up.z);
       camNode.child(L"up").text().set(camera_up_s.c_str());
