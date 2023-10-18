@@ -5,6 +5,7 @@
 #include "generation/grove_packer.h"
 #include "parameter_selection/parameter_selection.h"
 #include "save_utils/serialization.h"
+#include "hydra_utils/hydra_scene_exporter.h"
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
 
@@ -541,13 +542,11 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       //default name for best selected tree
       std::string tree_type_name = cmd.args.get_string("tree_type_name", "__tmp_0");
       TreeTypeData tree_type = metainfoManager->get_tree_type(tree_type_name);
-      ParameterSelector::visualize_tree(tree_type, 
-                                        cmd.args.get_string("save_filename", "selection/result"),
-                                        cmd.args.get_int("image_count", 1),
-                                        cmd.args.get_double("distance", 150),
-                                        cmd.args.get_ivec2("image_size", {512, 512}),
-                                        cmd.args.get_int("rays_per_pixel", 64),
-                                        cmd.args.get_bool("render_terrain", true));
+      Scene scene;
+      ParameterSelector::create_single_tree_scene(tree_type, scene);
+      Block export_settings;
+      ParameterSelector::prepare_hydra_export_settings_block(cmd.args, export_settings);
+      hydra::export_scene("visualize_tree_scene", scene, export_settings);
     }
       break;
     case GC_SAVE_TREE_TO_OBJ:
@@ -555,6 +554,27 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       std::string tree_type_name = cmd.args.get_string("tree_type_name", "");
       TreeTypeData tree_type = metainfoManager->get_tree_type(tree_type_name);
       ParameterSelector::save_tree_to_obj(tree_type, cmd.args.get_string("save_filename", "saves/selection/result.obj"));
+    }
+      break;
+    case GC_VISUALIZE_OBJ_HYDRA:
+    {
+      std::string obj_filename = cmd.args.get_string("obj_filename");
+      std::string tex_filename = cmd.args.get_string("tex_filename");
+      Texture t = engine::textureManager->load_unnamed_tex(tex_filename,1);
+      Model *m = model_loader::load_model_from_obj_directly(obj_filename);
+      model_loader::normalize_model(m);
+      ComplexModel cm;
+      cm.models = {m};
+      cm.materials = {Material(t)};
+      Scene scene;
+      scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+      scene.heightmap->fill_const(0);
+      scene.instanced_models.emplace_back();
+      scene.instanced_models[0].instances = {glm::mat4(1.0f)};
+      scene.instanced_models[0].model = cm;
+      Block export_settings;
+      ParameterSelector::prepare_hydra_export_settings_block(cmd.args, export_settings);
+      hydra::export_scene("visualize_obj_scene", scene, export_settings);
     }
       break;
     default:

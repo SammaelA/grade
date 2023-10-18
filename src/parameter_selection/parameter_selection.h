@@ -16,6 +16,7 @@ public:
     static void visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
                                int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel,
                                bool render_terrain);
+    static void prepare_hydra_export_settings_block(Block &in_settings, Block &out_hydra_export_settings);
     static void create_single_tree_scene(const TreeTypeData &tree_type, Scene &outScene);
     static void save_tree_to_obj(const TreeTypeData &tree_type, const std::string &file_name);
 private:
