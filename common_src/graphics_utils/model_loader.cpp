@@ -82,33 +82,10 @@ void load_default_blk()
     obj_models_blk_loaded = true;
 }
 
-Model *load_model_from_obj(std::string name, Texture &tex)
+Model *load_model_from_obj_directly(std::string obj_filename)
 {
-    if (!obj_models_blk_loaded)
-    {
-        load_default_blk();
-    }
-
-    Block *obj = obj_models_blk.get_block(name);
-    if (!obj)
-    {
-        logerr("cannot find model %s. It is not mentioned in models.blk file", name.c_str());
-        return nullptr;
-    }
-    std::string folder_name = obj->get_string("folder_name", name);
-    std::string obj_filename = base_path + "/" + folder_name + "/" + obj->get_string("obj", "");
-    std::string obj_color_tex = base_path + "/" + folder_name + "/" + obj->get_string("color", "");
-
-    bool success = engine::textureManager->load_tex_to_catalog(name + "_tex", obj_color_tex);
-    if (!success)
-    {
-        logerr("texture manager cannot load file %s", obj_color_tex.c_str());
-        return nullptr;
-    }
-    tex = engine::textureManager->get(name + "_tex");
-
     objl::Loader loader;
-    success = loader.LoadFile(obj_filename);
+    bool success = loader.LoadFile(obj_filename);
     if (!success)
     {
         logerr("obj loader cannot load file %s", obj_filename.c_str());
@@ -142,6 +119,35 @@ Model *load_model_from_obj(std::string name, Texture &tex)
         }
         start_index += mesh.Vertices.size();
     }
+    return m;
+}
+
+Model *load_model_from_obj(std::string name, Texture &tex)
+{
+    if (!obj_models_blk_loaded)
+    {
+        load_default_blk();
+    }
+
+    Block *obj = obj_models_blk.get_block(name);
+    if (!obj)
+    {
+        logerr("cannot find model %s. It is not mentioned in models.blk file", name.c_str());
+        return nullptr;
+    }
+    std::string folder_name = obj->get_string("folder_name", name);
+    std::string obj_filename = base_path + "/" + folder_name + "/" + obj->get_string("obj", "");
+    std::string obj_color_tex = base_path + "/" + folder_name + "/" + obj->get_string("color", "");
+
+    bool success = engine::textureManager->load_tex_to_catalog(name + "_tex", obj_color_tex);
+    if (!success)
+    {
+        logerr("texture manager cannot load file %s", obj_color_tex.c_str());
+        return nullptr;
+    }
+    tex = engine::textureManager->get(name + "_tex");
+
+    Model *m = load_model_from_obj_directly(obj_filename);
     transform_model_to_standart_form(m);
     return m;
 }
