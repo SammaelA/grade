@@ -87,8 +87,8 @@ namespace compare_utils
     double u_cnt = 0;
     for (int i=0;i<w1*h1*c1;i+=c1)
     {
-      bool in_1 = !(t1[i] == r0 && t1[i+1] == g0 && t1[i+2] == b0);
-      bool in_2 = !(t2[i] == r0 && t2[i+1] == g0 && t2[i+2] == b0);
+      bool in_1 = !(abs(t1[i] - r0) < 5 && abs(t1[i+1] - g0) < 5 && abs(t1[i+2] - b0) < 5);
+      bool in_2 = !(abs(t2[i] - r0) < 5 && abs(t2[i+1] - g0) < 5 && abs(t2[i+2] - b0) < 5);
       i_cnt += in_1 && in_2;
       u_cnt += in_1 || in_2;
     }

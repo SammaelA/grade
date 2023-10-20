@@ -678,7 +678,44 @@ void compare_sandbox(int argc, char **argv)
   float fov_rad = 0.5;
   CameraSettings camera = MitsubaInterface::get_camera_from_scene_params({fov_rad});
   
-  compare_all_for_paper();
+  //compare_all_for_paper();
+  
+  logerr("mygen tree");
+  compare_utils::turntable_loss("saves/tree_1/reference",
+                                "saves/tree_1/mygen",
+                                64);
+  logerr("diff SDF 2");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-2/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-2/warp/reference/turntable",
+                                64);
+  logerr("diff SDF 6");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-6/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-6/warp/reference/turntable",
+                                64);
+
+  logerr("diff SDF 12");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-12/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_1/diffuse-12/warp/reference/turntable",
+                                64);
+
+  logerr("mygen tree 2");
+  compare_utils::turntable_loss("saves/tree_2/reference",
+                                "saves/tree_2/mygen",
+                                64);
+  logerr("diff SDF 2");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-2/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-2/warp/reference/turntable",
+                                64);
+  logerr("diff SDF 6");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-6/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-6/warp/reference/turntable",
+                                64);
+
+  logerr("diff SDF 12");
+  compare_utils::turntable_loss("/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-12/warp/turntable",
+                                "/home/sammael/references_grade/differentiable-sdf-rendering/outputs/tree_2/diffuse-12/warp/reference/turntable",
+                                64);
+
   //cup_4_render_reference_turntable_2(mi, camera);
   //cup_1_render_img2mesh_turntable(mi, camera);
   //building_6_render_mygen_turntable(mi, camera);

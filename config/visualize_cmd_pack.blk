@@ -12,16 +12,62 @@ cmd_3 {
 cmd_code:i = 15
 }
 cmd_4 {
-cmd_code:i = 24
-tree_type_name:s = "selection_75000"
+//cmd_code:i = 24
+tree_type_name:s = "medium_oak_simplified_res"
 }
 cmd_4 {
 cmd_code:i = 23
-tree_type_name:s = "selection_75000"
-save_filename:s = "selection/result_75k_"
-image_count:i = 4
+tree_type_name:s = "medium_oak_simplified"
+save_filename:s = "tree_1/reference/frame"
+image_count:i = 64
 rays_per_pixel:i = 512
 image_size:i2 = 1024, 1024
+distance:r = 110
+render_terrain:b = false
+}
+cmd_4 {
+cmd_code:i = 23
+tree_type_name:s = "medium_oak_simplified_res"
+save_filename:s = "tree_1/mygen/frame"
+image_count:i = 64
+rays_per_pixel:i = 512
+image_size:i2 = 1024, 1024
+distance:r = 110
+render_terrain:b = false
+}
+cmd_4 {
+cmd_code:i = 23
+tree_type_name:s = "quaking_aspen"
+save_filename:s = "tree_2/reference/frame"
+image_count:i = 64
+rays_per_pixel:i = 512
+image_size:i2 = 1024, 1024
+distance:r = 110
+render_terrain:b = false
+}
+cmd_4 {
+cmd_code:i = 23
+tree_type_name:s = "quaking_aspen_res"
+save_filename:s = "tree_2/mygen/frame"
+image_count:i = 64
+rays_per_pixel:i = 512
+image_size:i2 = 1024, 1024
+distance:r = 110
+render_terrain:b = false
+}
+
+
+cmd_4 {
+  //cmd_code:i = 25
+  save_filename:s = "selection/pixel2mesh/building"
+  obj_filename:s = "../grade_resources/prezentations/spring_23_medialab/test_building_2/NGP_meshes/t64_simple.obj"
+  tex_filename:s = "resources/textures/grey.png"
+  image_count:i = 16
+  rays_per_pixel:i = 512
+  image_size:i2 = 1024, 1024
+  distance:r = 2
+  height:r = 0.5
+  render_terrain:b = false
 }
 cmd_5 {
 cmd_code:i = 12
