@@ -247,7 +247,7 @@ void RenderCmdExecutor::execute(int max_cmd_count)
           break;
         }
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-        float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        float ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         logerr("%s took %.3f ms", ToString(cmd.type), ms);
         renderCmdBuffer->pop();
         cmd_left--;

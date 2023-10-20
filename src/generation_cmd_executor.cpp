@@ -115,7 +115,7 @@ namespace scene_gen
       ctx.scene.heightmap->random_generate(base, mn, mx);
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    float ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     debug("created heightmap. Took %.2f ms\n", ms);
   }
 
@@ -583,7 +583,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     }
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    float ms = 1e-4 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    float ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     logerr("%s took %.3f ms", ToString(cmd.type), ms);
     genCmdBuffer->pop();
     cmd_left--;
