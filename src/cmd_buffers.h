@@ -46,6 +46,7 @@ public:
     void pop()
     {
         commands.front().args.set_int("cmd_code", (int)commands.front().type);
+        commands.front().args.set_string("cmd_name", ToString(commands.front().type));
         cmd_log.add_block("cmd_"+std::to_string(commands.front().id), &(commands.front().args));
         commands.pop();
         current_command_id++;

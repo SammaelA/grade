@@ -9,7 +9,7 @@
 
 #define BUF_SIZE 4096
 char _console_buf[BUF_SIZE];
-bool add_command_block(Block &b)
+bool GUI::add_command_block(Block &b)
 {
   int cmd_code = b.get_int("cmd_code", -1);
   if (cmd_code >= 0 && cmd_code < InputCommands::IC_COMMANDS_COUNT)
@@ -17,6 +17,16 @@ bool add_command_block(Block &b)
     // single command
     inputCmdBuffer->push((InputCommands)cmd_code, b);
     return true;
+  }
+  else
+  {
+    std::string cmd_name = b.get_string("cmd_name", "");
+    auto it = command_names.find(cmd_name);
+    if (it != command_names.end())
+    {
+      inputCmdBuffer->push(it->second, b);
+      return true;
+    }
   }
   return false;
 }

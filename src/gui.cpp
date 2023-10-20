@@ -186,6 +186,11 @@ GUI::GUI(AppContext &app_ctx, const SceneGenerationContext &gen_ctx) : appCtx(ap
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
   io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges);
+
+  for (int i=0;i<InputCommands::IC_COMMANDS_COUNT;i++)
+  {
+    command_names.emplace(ToString((InputCommands)i), (InputCommands)i);
+  }
 };
 
 void GUI::render_parameter_selection_menu()
