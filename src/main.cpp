@@ -46,11 +46,8 @@ int main(int argc, char *argv[])
       std::string str(argv[1]);
       gui.read_commands_from_string(str);
     }
-
     while(!appContext.event.quit)
     {     
-      appContext.event.active = std::unordered_map<SDL_Keycode, bool>();
-      appContext.event.click = std::unordered_map<Uint8, bool>();
       view.audio.process();
       appContext.event.input();
       inputHandler.handle_input(appContext.event);

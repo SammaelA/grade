@@ -13,9 +13,6 @@ struct Scroll
 
 class Event
 {
-private:
-  SDL_Event in;
-
 public:
   Event(){};
   void input(); // Take inputs and add them to stack

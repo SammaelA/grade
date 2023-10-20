@@ -2,8 +2,9 @@
 #include "common_utils/utility.h"
 void Event::input()
 {
-  if (SDL_PollEvent(&in) == 0)
-    return;
+  SDL_Event in;
+  while (SDL_PollEvent(&in))
+  {
   ImGui_ImplSDL2_ProcessEvent(&in);
 
   switch (in.type)
@@ -45,5 +46,6 @@ void Event::input()
     break;
   default:
     break;
+  }
   }
 }
