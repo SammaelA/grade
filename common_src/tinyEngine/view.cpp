@@ -21,6 +21,20 @@
 
 View *engine::view = nullptr;
 
+void View::hide_window()
+{
+  if (!window_hidden)
+    SDL_HideWindow(gWindow);
+  window_hidden = true;
+}
+
+void View::show_window()
+{
+  if (window_hidden)
+    SDL_ShowWindow(gWindow);
+  window_hidden = false;
+}
+
 bool View::init(std::string _name, int W, int H)
 {
   glewInit();

@@ -20,6 +20,8 @@ class View
     void next_frame();
     void handle_input();
     unsigned int get_antialiasing();
+    void hide_window();
+    void show_window();
 
     bool enabled = false;
     unsigned int WIDTH, HEIGHT;
@@ -32,4 +34,5 @@ class View
     bool vsync = true;
     bool ccw = true;
     float lineWidth = 1.0f;
+    bool window_hidden = false;
 };

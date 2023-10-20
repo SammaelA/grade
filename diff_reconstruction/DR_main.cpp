@@ -48,6 +48,7 @@ int main(int argc, char **argv)
   View view;
   view.lineWidth = 1.0f;
   view.init("Sandbox", 256, 256);
+  view.hide_window();
   engine::view = &view;
 
   Block textures_list;
@@ -456,7 +457,7 @@ int main(int argc, char **argv)
     textureManager.save_png(res_tex, "aa_wireframe_test");
 
     delete m;
-    
+
     {
       auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
       dgen::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
