@@ -1,5 +1,4 @@
 #include <vector>
-#include "vectors.h"
 #include <string>
 #include "obj_utils.h"
 #include <fstream>

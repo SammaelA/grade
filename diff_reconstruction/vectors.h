@@ -1,15 +1,22 @@
 #pragma once
 #include <vector>
 #include <array>
-#include <cppad/cppad.hpp>
+#include <cmath>
 
-namespace CppAD
-{
-  template <class Base>
-  class AD;
-}
 namespace dgen
 {
+  //a set of functions should be defined for T to use g_vec2/3/4<T> 
+  //these functions are sqrt, sin, cos
+  //here are required definitions for float and double
+
+  inline float sqrt(float x) { return ::sqrtf(x); }
+  inline float sin(float x)  { return ::sinf(x);  }
+  inline float cos(float x)  { return ::cosf(x);  }
+
+  inline double sqrt(double x) { return ::sqrt(x); }
+  inline double sin(double x)  { return ::sin(x);  }
+  inline double cos(double x)  { return ::cos(x);  }
+
   template <typename T>
   struct g_vec2
   {
@@ -152,7 +159,7 @@ namespace dgen
   template <typename T>
   T length(const g_vec2<T> &v)
   {
-    return CppAD::sqrt(v.x * v.x + v.y * v.y);
+    return sqrt(v.x * v.x + v.y * v.y);
   }
 
   template <typename T>
@@ -329,7 +336,7 @@ namespace dgen
   template <typename T>
   T length(const g_vec3<T> &v)
   {
-    return CppAD::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
   }
 
   template <typename T>
@@ -534,7 +541,7 @@ template <typename T>
   template <typename T>
   T length(const g_vec4<T> &v)
   {
-    return CppAD::sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
   }
 
   template <typename T>
@@ -710,8 +717,8 @@ template <typename T>
   {
     g_mat43<T> mat;
     g_vec3<T> u = normalize(axis);
-    T sn = CppAD::sin(angle);
-    T cs = CppAD::cos(angle);
+    T sn = sin(angle);
+    T cs = cos(angle);
 
     mat[0] = cs + u[0] * u[0] * (1 - cs);
     mat[1] = u[0] * u[1] * (1 - cs) + u[2] * sn;
@@ -860,10 +867,4 @@ template <typename T>
 
     return result;
   }
-  
-  typedef CppAD::AD<float> dfloat;
-  typedef g_vec2<dfloat> dvec2;
-  typedef g_vec3<dfloat> dvec3;
-  typedef g_vec4<dfloat> dvec4;
-  typedef g_mat43<dfloat> dmat43;//4 vec3 
 }

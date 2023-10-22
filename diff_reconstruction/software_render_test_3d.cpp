@@ -4,8 +4,7 @@
 #include "third_party/stb_image.h"
 #include "graphics_utils/voxelization/voxel_array.h"
 #include "common_utils/distribution.h"
-#include <cppad/cppad.hpp>
-#include "vectors.h"
+#include "cpp_ad_vectors.h"
 #include "common_utils/optimization/optimization.h"
 #include "common_utils/blk.h"
 #include "tinyEngine/resources.h"
