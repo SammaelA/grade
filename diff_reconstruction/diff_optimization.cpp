@@ -28,21 +28,7 @@
 
 namespace dopt
 {
-  class UShortVecComparator
-  {
-  public:
-    bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2) const
-    {
-      for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
-      {
-        if (v1[i] < v2[i])
-          return true;
-        else if (v1[i] > v2[i])
-          return false;
-      }
-      return false;
-    }
-  };
+  typedef std::vector<std::vector<std::vector<float>>> PresetsData;
 
   class DiffFunctionEvaluator
   {
@@ -88,6 +74,21 @@ namespace dopt
       return {f_model, FV.part_offsets};
     }
   private:
+    class UShortVecComparator
+    {
+    public:
+      bool operator()(const std::vector<unsigned short> &v1, const std::vector<unsigned short> &v2) const
+      {
+        for (int i = 0; i < MIN(v1.size(), v2.size()); i++)
+        {
+          if (v1[i] < v2[i])
+            return true;
+          else if (v1[i] > v2[i])
+            return false;
+        }
+        return false;
+      }
+    };
     struct FunctionVariant
     {
       CppAD::ADFun<float> *func = nullptr;
@@ -184,27 +185,7 @@ namespace dopt
     int next_free_function_pos = 0;
   };
 
-  struct OptimizationResult
-  {
-    std::vector<float> best_params;
-    float best_err;
-    int total_iters;
-  };
-
-  typedef std::vector<std::vector<std::vector<float>>> PresetsData;
-
-  float parameters_error(const std::vector<float> &params, const std::vector<float> &ref_params,
-                         const std::vector<float> &params_min, const std::vector<float> &params_max)
-  {
-    float err = 0;
-    for (int i=0;i<params.size();i++)
-    {
-      err += abs(params[i] - ref_params[i]) / (params_max[i] - params_min[i]);
-    }
-    return err/params.size();
-  }
-
-  void load_presets_from_blk(Block &presets_blk, Block &gen_params, PresetsData &presets_data /*output*/)
+  void load_presets_from_blk(Block &presets_blk, PresetsData &presets_data /*output*/)
   {
     /*Presets are manually created valid sets of generator parmeters, representing different types of objects,
       that generator can create. They do not include scene parameters
@@ -465,7 +446,7 @@ namespace dopt
 
     process_parameters_blk(gen_params, params_min, params_max, params_names, variant_count, variant_positions);
     process_parameters_blk(scene_params, params_min, params_max, params_names, variant_count, variant_positions);
-    load_presets_from_blk(presets_blk, gen_params, parameter_presets);
+    load_presets_from_blk(presets_blk, parameter_presets);
 
     bool save_results = true;
     bool save_progress = true;
