@@ -346,13 +346,25 @@ namespace dgen
   }
 
   template <typename T>
-  g_vec3<T> normalize(const g_vec3<T> &v)
+  g_vec3<T> normalize_with_default(const g_vec3<T> &v, const g_vec3<T> &def_val)
   {
     T l = length(v);
     if (l > 1e-9)
       return v / l;
     else
-      return g_vec3<T>(0,0,0);
+      return def_val;
+  }
+
+  template <typename T>
+  g_vec3<T> normalize(const g_vec3<T> &v)
+  {
+    return normalize_with_default(v, g_vec3<T>(0,0,0));
+  }
+
+  template <typename T>
+  g_vec3<T> normalize_unsafe(const g_vec3<T> &v)
+  {
+    return v / length(v);
   }
 
   template <typename T>
