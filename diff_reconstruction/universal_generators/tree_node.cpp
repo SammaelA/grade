@@ -3,21 +3,7 @@
 
 u_g::vec3 norm(u_g::vec3 v1, u_g::vec3 v2)//right and up -> at screen
 {
-  u_g::vec3 n = {v1.y * v2.z - v1.z * v1.y, 
-                 v1.z * v2.x - v1.x * v1.z, 
-                 v1.x * v2.y - v1.y * v1.x};
-  my_float len = sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
-  if (len == 0) 
-  {
-    n.x = 1;
-  }
-  else
-  {
-    n.x /= len;
-    n.y /= len;
-    n.z /= len;
-  }
-  return ;
+  return dgen::normalize_with_default(dgen::cross(v1, v2), u_g::vec3(1,0,0));
 }
 
 void add_rect(u_g::vec3 point, u_g::vec3 v1, u_g::vec3 v2, SimpleMeshData &mesh)
