@@ -151,33 +151,115 @@ void HrMesh_from_mesh(HRMeshRef &hr_mesh, Mesh &mesh, int mat_id = 0)
   hrMeshClose(hr_mesh);
 }
 
-bool export_internal2(std::string directory, Scene &scene, Block &export_settings)
+HRMaterialRef create_land_material(const std::wstring &land_texture_dir)
 {
-  const int DEMO_WIDTH  = export_settings.get_int("image_width", 512);
-  const int DEMO_HEIGHT = export_settings.get_int("image_height", 512);
-  bool need_terrain = export_settings.get_bool("need_terrain",true);
-  bool white_terrain = export_settings.get_bool("white_terrain", false);
-  hrErrorCallerPlace(L"demo_02_load_obj");
-  std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
-  hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
-  std::wstring permanent_tex_dir = L"../../../../resources/textures/";
-  std::string base_dir = "../../../../";
-  std::wstring base_dir_w = L"../../../../";
-  std::wstring temp_tex_dir = L"../../../../saves/";
-  std::wstring g;
-  g = temp_tex_dir + L"wood_atlas.png";
-  HRTextureNodeRef texWood = hrTexture2DCreateFromFile(g.c_str());
-  g = temp_tex_dir + L"leaves_atlas.png";
-  HRTextureNodeRef texLeaf = hrTexture2DCreateFromFile(g.c_str());
-  g = temp_tex_dir + L"grass_atlas.png";
-  HRTextureNodeRef texGrass = hrTexture2DCreateFromFile(g.c_str());
-  g = temp_tex_dir + L"leaves_atlas_alpha.png";
-  HRTextureNodeRef texLeafOpacity = hrTexture2DCreateFromFile(g.c_str());
-  g = temp_tex_dir + L"grass_atlas_alpha.png";
-  HRTextureNodeRef texGrassOpacity = hrTexture2DCreateFromFile(g.c_str());
-  HRTextureNodeRef texTerrain = hrTexture2DCreateFromFile(L"data/textures/terrain4.jpg");
-  HRTextureNodeRef texTerrainWhite = hrTexture2DCreateFromFile(L"data/textures/white.bmp");
+  HRTextureNodeRef land_texture = hrTexture2DCreateFromFile(land_texture_dir.c_str());
+  HRMaterialRef mat_land = hrMaterialCreate(L"land_material");
+  hrMaterialOpen(mat_land, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_land);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
 
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1 1 1");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNode = hrTextureBind(land_texture, color);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_land);
+  return mat_land;
+}
+
+HRMaterialRef create_wood_material(const std::wstring &wood_texture_dir)
+{
+  HRTextureNodeRef wood_texture = hrTexture2DCreateFromFile(wood_texture_dir.c_str());
+  HRMaterialRef mat_wood = hrMaterialCreate(L"mat_wood");
+  hrMaterialOpen(mat_wood, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_wood);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
+    auto texNode = hrTextureBind(wood_texture, color);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_wood);
+  return mat_wood;
+}
+
+HRMaterialRef create_leaves_material(const std::wstring &leaves_texture_dir, const std::wstring &leaves_texture_opacity_dir)
+{
+  HRTextureNodeRef leaves_texture = hrTexture2DCreateFromFile(leaves_texture_dir.c_str());
+  HRTextureNodeRef leaves_texture_opacity = hrTexture2DCreateFromFile(leaves_texture_opacity_dir.c_str());
+  HRMaterialRef mat_leaf = hrMaterialCreate(L"mat_leaf");
+  hrMaterialOpen(mat_leaf, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_leaf);
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNode = hrTextureBind(leaves_texture, color);
+
+    auto opacity = matNode.append_child(L"opacity");
+    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
+    auto texNodeOp = hrTextureBind(leaves_texture_opacity, opacity);
+   
+    auto transl = matNode.append_child(L"translucency");
+    auto colorTrans = transl.append_child(L"color");
+    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+
+    auto texNodeTrans = hrTextureBind(leaves_texture, transl);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_leaf);
+  return mat_leaf;
+}
+
+HRMaterialRef create_grass_material(const std::wstring &grass_texture_dir, const std::wstring &grass_texture_opacity_dir)
+{
+  HRTextureNodeRef grass_texture = hrTexture2DCreateFromFile(grass_texture_dir.c_str());
+  HRTextureNodeRef grass_texture_opacity = hrTexture2DCreateFromFile(grass_texture_opacity_dir.c_str());
+  HRMaterialRef mat_grass = hrMaterialCreate(L"mat_grass");
+  hrMaterialOpen(mat_grass, HR_WRITE_DISCARD);
+  {
+    auto matNode = hrMaterialParamNode(mat_grass);
+
+    auto opacity = matNode.append_child(L"opacity");
+    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
+    auto texNodeOp = hrTextureBind(grass_texture_opacity, opacity);
+    
+    auto diff = matNode.append_child(L"diffuse");
+    diff.append_attribute(L"brdf_type").set_value(L"lambert");
+    auto color = diff.append_child(L"color");
+    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNode = hrTextureBind(grass_texture, diff);
+
+    auto transl = matNode.append_child(L"translucency");
+    auto colorTrans = transl.append_child(L"color");
+    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
+    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
+    auto texNodeTrans = hrTextureBind(grass_texture, transl);
+
+    VERIFY_XML(matNode);
+  }
+  hrMaterialClose(mat_grass);
+  return mat_grass;
+}
+
+HRTextureNodeRef create_skybox(bool white_skybox)
+{
   HRTextureNodeRef cube_white[6] = {
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
       hrTexture2DCreateFromFile(L"data/textures/white.bmp"),
@@ -199,105 +281,30 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
     };
 
   HRTextureNodeRef texEnv = HRUtils::Cube2SphereLDR(cube);
+  return white_skybox ? texEnvWhite : texEnv;
+}
 
-  HRMaterialRef mat_land = hrMaterialCreate(L"land_material");
-  hrMaterialOpen(mat_land, HR_WRITE_DISCARD);
-  {
-    auto matNode = hrMaterialParamNode(mat_land);
-    auto diff = matNode.append_child(L"diffuse");
-    diff.append_attribute(L"brdf_type").set_value(L"lambert");
-
-    auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1 1 1");
-    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNode = hrTextureBind(white_terrain ? texTerrainWhite : texTerrain, color);
-
-    VERIFY_XML(matNode);
-  }
-  hrMaterialClose(mat_land);
-
-  HRMaterialRef mat_wood = hrMaterialCreate(L"mat_wood");
-  hrMaterialOpen(mat_wood, HR_WRITE_DISCARD);
-  {
-    auto matNode = hrMaterialParamNode(mat_wood);
-    auto diff = matNode.append_child(L"diffuse");
-    diff.append_attribute(L"brdf_type").set_value(L"lambert");
-
-    auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    color.append_attribute(L"tex_apply_mode").set_value(L"replace");
-    auto texNode = hrTextureBind(texWood, color);
-
-    VERIFY_XML(matNode);
-  }
-  hrMaterialClose(mat_wood);
-
-  HRMaterialRef mat_leaf = hrMaterialCreate(L"mat_leaf");
-  hrMaterialOpen(mat_leaf, HR_WRITE_DISCARD);
-  {
-    auto matNode = hrMaterialParamNode(mat_leaf);
-  auto diff = matNode.append_child(L"diffuse");
-    diff.append_attribute(L"brdf_type").set_value(L"lambert");
-
-    auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNode = hrTextureBind(texLeaf, color);
-
-    auto opacity = matNode.append_child(L"opacity");
-    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
-    auto texNodeOp = hrTextureBind(texLeafOpacity, opacity);
-   
-    auto transl = matNode.append_child(L"translucency");
-    auto colorTrans = transl.append_child(L"color");
-    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-
-    auto texNodeTrans = hrTextureBind(texLeaf, transl);
-
-    VERIFY_XML(matNode);
-  }
-  hrMaterialClose(mat_leaf);
-
-  HRMaterialRef mat_grass = hrMaterialCreate(L"mat_grass");
-  hrMaterialOpen(mat_grass, HR_WRITE_DISCARD);
-  {
-    auto matNode = hrMaterialParamNode(mat_grass);
-
-    auto opacity = matNode.append_child(L"opacity");
-    opacity.append_child(L"skip_shadow").append_attribute(L"val").set_value(0);
-    auto texNodeOp = hrTextureBind(texGrassOpacity, opacity);
-    
-    auto diff = matNode.append_child(L"diffuse");
-    diff.append_attribute(L"brdf_type").set_value(L"lambert");
-    auto color = diff.append_child(L"color");
-    color.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    color.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNode = hrTextureBind(texGrass, diff);
-
-    auto transl = matNode.append_child(L"translucency");
-    auto colorTrans = transl.append_child(L"color");
-    colorTrans.append_attribute(L"val").set_value(L"1.0 1.0 1.0");
-    colorTrans.append_attribute(L"tex_apply_mode").set_value(L"multiply");
-    auto texNodeTrans = hrTextureBind(texGrass, transl);
-
-    VERIFY_XML(matNode);
-  }
-  hrMaterialClose(mat_grass);
-
-  HRMeshRef terrainMeshRef = hrMeshCreate(L"terrain");
+HRMeshRef create_terrain_model(Heightmap *hmap, HRMaterialRef mat_land)
+{
+  HRMeshRef terrainModel = hrMeshCreate(L"terrain");
+  if (hmap)
   {
     Model model;
-    visualizer::heightmap_to_model(*(scene.heightmap), &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
-    HrMesh_from_mesh(terrainMeshRef, model, mat_land.id);
+    visualizer::heightmap_to_model(*hmap, &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
+    HrMesh_from_mesh(terrainModel, model, mat_land.id);
   }
+  return terrainModel;
+}
 
-  std::vector<HRMeshRef> instancedModels;
+void create_instanced_models(/*const*/ std::vector<Scene::InstancedModel> &instanced_models,
+                             const std::wstring base_dir_w,
+                             /*out*/   std::vector<HRMeshRef> &instancedModels,
+                             /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+{
   std::vector<HRMaterialRef> instancedModelsMaterials;
   std::vector<HRTextureNodeRef> instancedModelsTextures;
-  std::vector<std::vector<glm::mat4> *> instancedModelsTransforms;
 
-  for (auto &im : scene.instanced_models)
+  for (auto &im : instanced_models)
   {
     for (int i=0;i<im.model.models.size();i++)
     {
@@ -327,99 +334,74 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
       }
       hrMaterialClose(mat);
 
-      instancedModelsTransforms.push_back(&(im.instances));
+      instancedModelsTransforms.push_back(im.instances);
       std::wstring model_name = L"model_" + name;
       instancedModels.push_back(hrMeshCreate(model_name.c_str()));
       HrMesh_from_mesh(instancedModels.back(), *(im.model.models[i]), mat.id);
     }
   }
+}
 
-  std::vector<HRMeshRef> branches;
-  std::vector<InstanceDataArrays *> IDAs;
-
-  for (auto &pb : scene.grove.instancedBranches)
-  {
-    Mesh m;
-    packed_branch_to_mesh(m,&(scene.grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
-    std::wstring name = L"branch" + std::to_wstring(branches.size());
-    IDAs.push_back(&(pb.IDA));
-    branches.push_back(hrMeshCreate(name.c_str()));
-    HrMesh_from_mesh(branches.back(), m);
-  }
-
-    std::vector<Model *> grass_models;
-    std::vector<HRMeshRef> grasses;
-
-    std::vector<int> inst_offsets;
-    std::vector<int> inst_counts;
-
+void create_grass_models(/*const*/ GrassPacked &grass,
+                         const std::string base_dir,
+                         HRMaterialRef mat_grass,
+                         /*out*/   std::vector<HRMeshRef> &instancedModels,
+                         /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+{
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
     Texture null = engine::textureManager->empty();
     std::string prev_base_dir = model_loader::base_path;
     model_loader::base_path = base_dir + prev_base_dir;
     int total_instances = 0;
     int type_n = 0;
-    for (auto &p : scene.grass.grass_instances)
+    for (auto &p : grass.grass_instances)
     {
-        tex_transform = scene.grass.grass_textures.tc_transform(p.first);
-        grass_models.push_back(model_loader::create_model_by_name(scene.grass.used_grass_types[type_n].model_name,null));
-        for (int i=0;i<grass_models.back()->colors.size();i+=4)
+        tex_transform = grass.grass_textures.tc_transform(p.first);
+        Model *grass_model = model_loader::create_model_by_name(grass.used_grass_types[type_n].model_name,null);
+        for (int i=0;i<grass_model->colors.size();i+=4)
         {
-            grass_models.back()->colors[i] = tex_transform.x*(grass_models.back()->colors[i] + tex_transform.z);
-            grass_models.back()->colors[i + 1] = 1 - tex_transform.y*(grass_models.back()->colors[i + 1] + tex_transform.w);
+            grass_model->colors[i] = tex_transform.x*(grass_model->colors[i] + tex_transform.z);
+            grass_model->colors[i + 1] = 1 - tex_transform.y*(grass_model->colors[i + 1] + tex_transform.w);
         }
-        grass_models.back()->update();
-        inst_offsets.push_back(total_instances);
-        inst_counts.push_back(p.second.size());
-        total_instances += p.second.size();
+        grass_model->update();
+        std::wstring name = L"grass" + std::to_wstring(type_n);
+        instancedModels.push_back(hrMeshCreate(name.c_str()));
+        HrMesh_from_mesh(instancedModels.back(), *grass_model, mat_grass.id);
+
+        instancedModelsTransforms.push_back(std::vector<glm::mat4>(p.second.size(), glm::mat4(1.0f)));
+        for (int j = 0; j<p.second.size(); j++)
+        {
+          auto &in = p.second[j];
+          instancedModelsTransforms.back()[j] = glm::scale(
+                                            glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
+                                                        in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
+        }
         type_n++;
     }
     model_loader::base_path = prev_base_dir;
+}
 
-    glm::mat4 *matrices = new glm::mat4[total_instances];
-    int i=0;
-    for (auto &p : scene.grass.grass_instances)
-    {
-        for (auto &in : p.second)
-        {
-            matrices[i] = glm::scale(
-                          glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
-                                      in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
-            i++;
-        }
-    }
-    
-    for (auto *model : grass_models)
-    {
-      std::wstring name = L"grass" + std::to_wstring(grasses.size());
-      grasses.push_back(hrMeshCreate(name.c_str()));
-      HrMesh_from_mesh(grasses.back(), *model, mat_grass.id);
-      delete model;
-    }
-
-  HRLightRef rectLight = hrLightCreate(L"my_area_light");
-  hrLightOpen(rectLight, HR_WRITE_DISCARD);
+void create_trees_models(/*const*/ GrovePacked &grove,                       
+                         HRMaterialRef mat_wood,
+                         HRMaterialRef mat_leaf,
+                         /*out*/   std::vector<HRMeshRef> &instancedModels,
+                         /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+{
+  int i = 0;
+  for (auto &pb : grove.instancedBranches)
   {
-    pugi::xml_node lightNode = hrLightParamNode(rectLight);
-
-    lightNode.attribute(L"type").set_value(L"area");
-    lightNode.attribute(L"shape").set_value(L"rect");
-    lightNode.attribute(L"distribution").set_value(L"diffuse");
-
-    pugi::xml_node sizeNode = lightNode.append_child(L"size");
-
-    sizeNode.append_attribute(L"half_length") = 1.0f;
-    sizeNode.append_attribute(L"half_width")  = 1.0f;
-
-    pugi::xml_node intensityNode = lightNode.append_child(L"intensity");
-
-    intensityNode.append_child(L"color").append_attribute(L"val")      = L"1 1 1";
-    intensityNode.append_child(L"multiplier").append_attribute(L"val") = 1.5f;
-
-    VERIFY_XML(lightNode);
+    Mesh m;
+    packed_branch_to_mesh(m,&(grove), pb, 1000, true, mat_wood.id, mat_leaf.id);
+    std::wstring name = L"branch" + std::to_wstring(i);
+    instancedModelsTransforms.push_back(pb.IDA.transforms);
+    instancedModels.push_back(hrMeshCreate(name.c_str()));
+    HrMesh_from_mesh(instancedModels.back(), m);
+    i++;
   }
-  hrLightClose(rectLight);
+}
 
+HRLightRef get_direct_light()
+{
   HRLightRef directLight = hrLightCreate(L"my_direct_light");
   hrLightOpen(directLight, HR_WRITE_DISCARD);
   {
@@ -439,7 +421,12 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
     intensityNode.append_child(L"multiplier").append_attribute(L"val") = 5.0f * PI;
   }
   hrLightClose(directLight);
+  return directLight;
+}
 
+HRLightRef get_sky_light(bool white_skybox)
+{
+  HRTextureNodeRef texSkybox = create_skybox(white_skybox);
   HRLightRef sky = hrLightCreate(L"sky");
   hrLightOpen(sky, HR_WRITE_DISCARD);
   {
@@ -450,21 +437,87 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
     intensityNode.append_child(L"color").append_attribute(L"val").set_value(L"1 1 1");
     intensityNode.append_child(L"multiplier").append_attribute(L"val").set_value(L"1");
 
-	  auto texNode = hrTextureBind(white_terrain ? texEnvWhite : texEnv, intensityNode.child(L"color"));
+	  auto texNode = hrTextureBind(texSkybox, intensityNode.child(L"color"));
     //texNode.append_attribute(L"input_gamma").set_value(1.0f);
     //texNode.append_attribute(L"input_alpha").set_value(L"rgb");
 
 	  VERIFY_XML(lightNode);
   }
   hrLightClose(sky);
+  return sky;
+}
+
+HRRenderRef get_hydra_render(int w, int h, int spp)
+{
+  HRRenderRef renderRef = hrRenderCreate(L"HydraModern"); // "HydraModern" is our main renderer name
+  hrRenderEnableDevice(renderRef, 0, true);
   
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  hrRenderOpen(renderRef, HR_WRITE_DISCARD);
+  {
+    pugi::xml_node node = hrRenderParamNode(renderRef);
+    
+    node.force_child(L"width").text()  = w;
+    node.force_child(L"height").text() = h;
+    
+    node.force_child(L"method_primary").text()   = L"pathtracing";
+    node.force_child(L"method_secondary").text() = L"pathtracing";
+    node.force_child(L"method_tertiary").text()  = L"pathtracing";
+    node.force_child(L"method_caustic").text()   = L"pathtracing";
+    node.append_child(L"shadows").text() = L"1";
+    
+    node.force_child(L"trace_depth").text()      = 8;
+    node.force_child(L"diff_trace_depth").text() = 4;
+    node.force_child(L"pt_error").text() = L"1";
+    node.force_child(L"minRaysPerPixel").text()  = std::to_wstring(spp).c_str();
+    node.force_child(L"maxRaysPerPixel").text()  = std::to_wstring(spp).c_str();
+    node.force_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
   
+    VERIFY_XML(node);
+  }
+  hrRenderClose(renderRef);
+  return renderRef;
+}
+
+bool export_internal(std::string directory, Scene &scene, Block &export_settings)
+{
+  //default directories relative to place when hydra is executed
+  const std::wstring dir = L"../../../../hydra_scenes/" + std::wstring(directory.begin(), directory.end());
+  const std::wstring permanent_tex_dir = L"../../../../resources/textures/";
+  const std::string base_dir = "../../../../";
+  const std::wstring base_dir_w = L"../../../../";
+  const std::wstring temp_tex_dir = L"../../../../saves/";
+
+  //base parameters from settings
+  const int DEMO_WIDTH  = export_settings.get_int("image_width", 512);
+  const int DEMO_HEIGHT = export_settings.get_int("image_height", 512);
+  const bool need_terrain = scene.heightmap && export_settings.get_bool("need_terrain",true);
+  const bool white_terrain = export_settings.get_bool("white_terrain", false);
+
+  //start hydra
+  hrErrorCallerPlace(L"hydra_export_internal");
+  hrSceneLibraryOpen(dir.c_str(), HR_WRITE_DISCARD);
+
+  //create common materials
+  HRMaterialRef mat_land = create_land_material(white_terrain ? L"data/textures/white.bmp" : L"data/textures/terrain4.jpg");
+  HRMaterialRef mat_wood = create_wood_material(temp_tex_dir + L"wood_atlas.png");
+  HRMaterialRef mat_leaf = create_leaves_material(temp_tex_dir + L"leaves_atlas.png", temp_tex_dir + L"leaves_atlas_alpha.png");
+  HRMaterialRef mat_grass = create_grass_material(temp_tex_dir + L"grass_atlas.png",  temp_tex_dir + L"grass_atlas_alpha.png");
+
+  //create light sources
+  HRLightRef directLight = get_direct_light();
+  HRLightRef skyLight = get_sky_light(white_terrain);
+
+  //make hydra mesh for terrain
+  HRMeshRef terrainModel = create_terrain_model(scene.heightmap, mat_land);
+
+  //make hydra meshes and matrices for models in scene
+  std::vector<HRMeshRef> instancedModels;
+  std::vector<std::vector<glm::mat4>> instancedModelsTransforms;
+  create_instanced_models(scene.instanced_models, base_dir_w, instancedModels, instancedModelsTransforms);
+  create_trees_models(scene.grove, mat_wood, mat_leaf, instancedModels, instancedModelsTransforms);
+  create_grass_models(scene.grass, base_dir, mat_grass, instancedModels, instancedModelsTransforms);
+
   // camera
-  //
   glm::vec3 camera_pos = export_settings.get_vec3("camera_pos",glm::vec3(0,200,200));
   glm::vec3 camera_look_at = export_settings.get_vec3("camera_look_at",glm::vec3(0,0,0));
   glm::vec3 camera_up = export_settings.get_vec3("camera_up", glm::vec3(0,1,0));
@@ -491,93 +544,31 @@ bool export_internal2(std::string directory, Scene &scene, Block &export_setting
   }
   hrCameraClose(camRef);
   
-  // set up render settings
-  //
-  HRRenderRef renderRef = hrRenderCreate(L"HydraModern"); // "HydraModern" is our main renderer name
-  hrRenderEnableDevice(renderRef, 0, true);
-  
-  hrRenderOpen(renderRef, HR_WRITE_DISCARD);
-  {
-    pugi::xml_node node = hrRenderParamNode(renderRef);
-    
-    node.force_child(L"width").text()  = DEMO_WIDTH;
-    node.force_child(L"height").text() = DEMO_HEIGHT;
-    
-    node.force_child(L"method_primary").text()   = L"pathtracing";
-    node.force_child(L"method_secondary").text() = L"pathtracing";
-    node.force_child(L"method_tertiary").text()  = L"pathtracing";
-    node.force_child(L"method_caustic").text()   = L"pathtracing";
-    node.append_child(L"shadows").text() = L"1";
-    
-    node.force_child(L"trace_depth").text()      = 8;
-    node.force_child(L"diff_trace_depth").text() = 4;
-    node.force_child(L"pt_error").text() = L"1";
-    node.force_child(L"minRaysPerPixel").text()  = std::to_wstring(export_settings.get_int("rays_per_pixel", 64)).c_str();
-    node.force_child(L"maxRaysPerPixel").text()  = std::to_wstring(export_settings.get_int("rays_per_pixel", 64)).c_str();
-    node.force_child(L"qmc_variant").text()      = (HYDRA_QMC_DOF_FLAG | HYDRA_QMC_MTL_FLAG | HYDRA_QMC_LGT_FLAG); // enable all of them, results to '7'
-  
-    VERIFY_XML(node);
-  }
-  hrRenderClose(renderRef);
+  HRRenderRef renderRef = get_hydra_render(DEMO_WIDTH, DEMO_HEIGHT, export_settings.get_int("rays_per_pixel", 64));
   
   // create scene
-  //
   HRSceneInstRef scnRef = hrSceneCreate(L"my scene");
-  
-  const float DEG_TO_RAD = float(3.14159265358979323846f) / 180.0f;
-  
   hrSceneOpen(scnRef, HR_WRITE_DISCARD);
   {
     auto mind = hlm::scale4x4(hlm::float3(1,1,1));
     if (need_terrain)
-    {
-      hrMeshInstance(scnRef, terrainMeshRef, mind.L());
-    }
+      hrMeshInstance(scnRef, terrainModel, mind.L());
+    hrLightInstance(scnRef, skyLight, mind.L());
+    auto mres = hlm::mul(hlm::rotate4x4Z(M_PI/6), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
+    hrLightInstance(scnRef, directLight, mres.L());
+
     for (int i=0; i< instancedModels.size();i++)
     {
-      for (auto &mat : *(instancedModelsTransforms[i]))
+      for (auto &mat : instancedModelsTransforms[i])
       {
         const float mat_vals2[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
-                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
-                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
-                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
+                                     mat[0][1],mat[1][1],mat[2][1],mat[3][1],
+                                     mat[0][2],mat[1][2],mat[2][2],mat[3][2],
+                                     mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
         auto m = hlm::float4x4(mat_vals2);
         hrMeshInstance(scnRef, instancedModels[i], m.L());
       }
     }
-    for (int i=0;i<branches.size();i++)
-    {
-      for (auto &mat : IDAs[i]->transforms)
-      {
-        const float mat_vals2[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
-                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
-                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
-                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
-        auto m = hlm::float4x4(mat_vals2);
-        hrMeshInstance(scnRef, branches[i], m.L());
-      }
-    }
-    
-    for (int i=0;i<inst_counts.size();i++)
-    {
-      for (int in = inst_offsets[i];in < inst_offsets[i] + inst_counts[i];in++)
-      {
-        auto &mat = matrices[in];
-        const float mat_vals[16] = {mat[0][0],mat[1][0],mat[2][0],mat[3][0],
-                                    mat[0][1],mat[1][1],mat[2][1],mat[3][1],
-                                    mat[0][2],mat[1][2],mat[2][2],mat[3][2],
-                                    mat[0][3],mat[1][3],mat[2][3],mat[3][3]};
-        auto m = hlm::float4x4(mat_vals);
-        hrMeshInstance(scnRef, grasses[i], m.L());
-        //break;
-      }
-      logerr("added %d grass instances", inst_counts[i]);
-    }
-    
-    delete[] matrices;
-    hrLightInstance(scnRef, sky, mind.L());
-    auto mres = hlm::mul(hlm::rotate4x4Z(30.0f * DEG_TO_RAD), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
-    hrLightInstance(scnRef, directLight, mres.L());
   }
   hrSceneClose(scnRef);
 
@@ -665,7 +656,7 @@ void get_default_settings(Block &b)
   b.set_int("rays_per_pixel", 64);
   b.set_int("image_width", 512);
   b.set_int("image_height", 512);
-  b.set_string("demo_copy_dir","");
+  b.set_string("demo_copy_dir","saves/result_hydra");
   b.set_bool("need_terrain",true);
   b.set_bool("white_terrain", false);
 }

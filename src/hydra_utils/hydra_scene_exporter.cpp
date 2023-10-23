@@ -11,7 +11,6 @@ using pugi::xml_node;
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-void demo_02_load_obj();
 namespace h_inter
 {
     void InfoCallBack(const wchar_t* message, const wchar_t* callerPlace, HR_SEVERITY_LEVEL a_level)
@@ -63,18 +62,18 @@ void sig_handler(int signo)
 
 namespace hydra
 {
-  bool export_internal1(std::string directory, Scene &scene, Block &export_settings)
+  bool export_scene(std::string directory, Scene &scene, Block &export_settings)
   {
     pid_t pid = fork();
     if (pid == -1)
     {
-      //something REALLY bad happened
+      // something REALLY bad happened
       perror("fork");
       exit(1);
     }
     else if (pid > 0)
     {
-      //wait for child process and return if it exited normally
+      // wait for child process and return if it exited normally
       int rv = -2;
       wait(&rv);
       int status = WEXITSTATUS(rv);
@@ -83,54 +82,54 @@ namespace hydra
     }
     else
     {
-      //child process. Does hydra stuff and dies
+      // child process. Does hydra stuff and dies
 
       hrInfoCallback(&h_inter::InfoCallBack);
 
-      hrErrorCallerPlace(L"main");  // for debug needs only
+      hrErrorCallerPlace(L"main"); // for debug needs only
 
       atexit(&h_inter::destroy);
-    #if defined WIN32
-      SetConsoleCtrlHandler(&HandlerExit, TRUE);  // if some one kill console :)
+#if defined WIN32
+      SetConsoleCtrlHandler(&HandlerExit, TRUE); // if some one kill console :)
       wchar_t NPath[512];
       GetCurrentDirectoryW(512, NPath);
-    #ifdef NEED_DIR_CHANGE
+#ifdef NEED_DIR_CHANGE
       SetCurrentDirectoryW(L"../../main");
-    #endif
+#endif
       std::wcout << L"[main]: curr_dir = " << NPath << std::endl;
-    #else
+#else
       std::string workingDir = "dependencies/Hydra/HydraAPI/main";
-      if(chdir(workingDir.c_str()) != 0)
+      if (chdir(workingDir.c_str()) != 0)
         std::cout << "chdir failed: " << workingDir.c_str() << std::endl;
 
       char cwd[1024];
       if (getcwd(cwd, sizeof(cwd)) != nullptr)
-        std::cout << "[main]: curr_dir = " << cwd <<std::endl;
+        std::cout << "[main]: curr_dir = " << cwd << std::endl;
       else
-        std::cout << "getcwd() error" <<std::endl;
-      
+        std::cout << "getcwd() error" << std::endl;
+
       {
         struct sigaction sigIntHandler;
         sigIntHandler.sa_handler = h_inter::sig_handler;
         sigemptyset(&sigIntHandler.sa_mask);
         sigIntHandler.sa_flags = SA_RESETHAND;
-        sigaction(SIGINT,  &sigIntHandler, NULL);
+        sigaction(SIGINT, &sigIntHandler, NULL);
         sigaction(SIGSTOP, &sigIntHandler, NULL);
         sigaction(SIGABRT, &sigIntHandler, NULL);
-        sigaction(SIGILL,  &sigIntHandler, NULL);
+        sigaction(SIGILL, &sigIntHandler, NULL);
         sigaction(SIGTERM, &sigIntHandler, NULL);
         sigaction(SIGSEGV, &sigIntHandler, NULL);
-        sigaction(SIGFPE,  &sigIntHandler, NULL);
+        sigaction(SIGFPE, &sigIntHandler, NULL);
       }
-    #endif
-      
-      std::cout << "sizeof(size_t) = " << sizeof(size_t) <<std::endl;
-      
+#endif
+
+      std::cout << "sizeof(size_t) = " << sizeof(size_t) << std::endl;
+
       try
       {
-        export_internal2(directory, scene, export_settings);
+        export_internal(directory, scene, export_settings);
       }
-      catch (std::runtime_error& e)
+      catch (std::runtime_error &e)
       {
         std::cout << "std::runtime_error: " << e.what() << std::endl;
       }
@@ -142,18 +141,12 @@ namespace hydra
       hrErrorCallerPlace(L"main"); // for debug needs only
 
       hrSceneLibraryClose();
-      
+
       glfwTerminate();
-      
+
       exit(0);
     }
+    debug("Scene successfully exported to hydra_scene/%s\n", directory.c_str());
+    return true;
   }
-
-  bool export_scene(std::string directory, Scene &scene, Block &export_settings)
-  {
-      export_internal1(directory, scene, export_settings);
-      debug("Scene successfully exported to hydra_scene/%s\n", directory.c_str());
-      return true;
-  }
-  
 }

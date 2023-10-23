@@ -271,7 +271,6 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_EXPORT_SCENE_TO_HYDRA:
     {
       hydra::export_scene("hydra_scene", (Scene &)genCtx.scene, cmd.args);
-      exit(0);
     }
       break;
     case IC_SAVE_SCENE:
