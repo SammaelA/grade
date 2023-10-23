@@ -1,20 +1,23 @@
 #include "tree_node.h"
-template <class Model>
-class Tree
+
+namespace u_g
 {
-  GenNode<Model> *root;
-public:
-  Model generate(const Params &p)
+  class Tree
   {
-    Params param = p;
-    return root->apply(param);
-  }
-  void read_blk(/*blk file*/)
-  {
+    GenNode *root;
+  public:
+    SimpleMeshData generate(const Params &p)
+    {
+      Params param = p;
+      return root->apply(param);
+    }
+    void read_blk(/*blk file*/)
+    {
 
-  }
-  void write_blk(/*blk file*/)
-  {
+    }
+    void write_blk(/*blk file*/)
+    {
 
-  }
-};
+    }
+  };
+}

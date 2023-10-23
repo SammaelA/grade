@@ -1,51 +1,53 @@
 #include <list>
 
 typedef float my_float;
-
-class Params
+namespace u_g
 {
-  std::list<my_float> data;
-public:
-  Params() {}
-  Params(const Params &&p)
+  class Params
   {
-    for (auto i : p.data)
+    std::list<my_float> data;
+  public:
+    Params() {}
+    Params(const Params &p)
     {
-      data.push_back(i);
+      for (auto i : p.data)
+      {
+        data.push_back(i);
+      }
     }
-  }
 
-  void add(my_float item)
-  {
-    data.push_back(item);
-  }
-  
-  my_float get()
-  {
-    my_float res = 0;
-    if (data.end() != data.begin())
+    void add(my_float item)
     {
-      res = *data.end();
-      data.pop_back();
+      data.push_back(item);
     }
-    return res;
-  }
-
-  my_float read()
-  {
-    my_float res = 0;
-    if (data.end() != data.begin())
+    
+    my_float get()
     {
-      res = *data.end();
+      my_float res = 0;
+      if (data.end() != data.begin())
+      {
+        res = *data.end();
+        data.pop_back();
+      }
+      return res;
     }
-    return res;
-  }
-  void read_blk(/*blk file*/)
-  {
 
-  }
-  void write_blk(/*blk file*/)
-  {
+    my_float read()
+    {
+      my_float res = 0;
+      if (data.end() != data.begin())
+      {
+        res = *data.end();
+      }
+      return res;
+    }
+    void read_blk(/*blk file*/)
+    {
 
-  }
-};
+    }
+    void write_blk(/*blk file*/)
+    {
+
+    }
+  };
+}

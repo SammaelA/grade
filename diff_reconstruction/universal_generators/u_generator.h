@@ -1,6 +1,8 @@
 #include "gen_tree.h"
-
-class UniversalGen
+namespace u_g
 {
+  class UniversalGen
+  {
 
-};
+  };
+}
