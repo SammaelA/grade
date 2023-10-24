@@ -1,6 +1,6 @@
 #include <cmath>
 #include "tree_node.h"
-#include "../vectors.h"
+#include "common_utils/template_vectors.h"
 namespace u_g
 {
   u_g::vec3 norm(u_g::vec3 v1, u_g::vec3 v2)//right and up -> at screen
@@ -17,11 +17,11 @@ namespace u_g
   {
     vec3 ax = norm(axis);
     my_float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
-    vec3 a = {c + (1 - c) * x * x, (1 - c) * x * y - s * z, (1 - c) * x * z + s * y};
-    vec3 b = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
-    vec3 c = {(1 - c) * x * z + s * y, (1 - c) * x * y - s * z, c + (1 - c) * z * z};
+    vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y - s * z, (1 - c) * x * z + s * y};
+    vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
+    vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * x * y - s * z, c + (1 - c) * z * z};
     vec3 t = {0, 0, 0};
-    return get_mat43(a, b, c, t);
+    return get_mat43(e1, e2, e3, t);
   }
 
   void add_rect(u_g::vec3 point, u_g::vec3 v1, u_g::vec3 v2, SimpleMeshData &mesh)

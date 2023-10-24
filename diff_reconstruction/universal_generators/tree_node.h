@@ -4,6 +4,7 @@ namespace u_g
 {
   void add_rect(u_g::vec3 point, u_g::vec3 v1, u_g::vec3 v2, SimpleMeshData &mesh);
   void add_tri(u_g::vec3 point, u_g::vec3 v1, u_g::vec3 v2, SimpleMeshData &mesh);
+  mat43 get_any_rot_mat(u_g::vec3 axis, my_float angle);
 
   class GenNode
   {
