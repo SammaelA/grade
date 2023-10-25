@@ -35,6 +35,7 @@
 #include "custom_diff_render.h"
 #include "common_utils/blk.h"
 #include "graphics_utils/render_wireframe.h"
+#include "enzyme_test.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -478,6 +479,10 @@ int main(int argc, char **argv)
 
       delete m2;
     }
+  }
+  else if (argc >= 3 && std::string(argv[2]) == "-test_enzyme")
+  {
+    test_enzyme_cppAD();
   }
   else
   {
