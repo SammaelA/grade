@@ -99,8 +99,13 @@ namespace u_g
 
   class MoveNode : protected OneChildNode
   {
+    static constexpr int MOVE_X = 0;
+    static constexpr int MOVE_Y = 1;
+    static constexpr int MOVE_Z = 2;
+
     SimpleMeshData apply(Params &p) override
     {
+      //my_float move_x = p.diff_params[MOVE_X];
       my_float move_x = p.get();
       my_float move_y = p.get();
       my_float move_z = p.get();
