@@ -1,6 +1,7 @@
 #include "enzyme_test.h"
 #include "diff_geometry_generation.h"
 #include <cppad/cppad.hpp>
+#include <third_party/span.h>
 using dgen::dfloat;
 
 #ifdef USE_CUSTOM_DIFF_RENDER
