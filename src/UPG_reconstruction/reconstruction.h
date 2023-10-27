@@ -93,22 +93,22 @@ namespace upg
           switch (p.type)
           {
           case ParameterType::UNKNOWN :
-            debug("\t\tu  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name);
+            debug("\t\tu  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::DIFFERENTIABLE :
-            debug("\t\td  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name);
+            debug("\t\td  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::MUTABLE_BOOL :
-            debug("\t\tmb : in {true, false}   %s\n", p.name);
+            debug("\t\tmb : in {true, false}   %s\n", p.name.c_str());
             break;
           case ParameterType::MUTABLE_FLOAT :
-            debug("\t\tmf : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name);
+            debug("\t\tmf : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::MUTABLE_INT :
-            debug("\t\tmi : in [%8d, %8d)   %s\n", (int)p.min_val, (int)p.max_val, p.name);
+            debug("\t\tmi : in [%8d, %8d)   %s\n", (int)p.min_val, (int)p.max_val, p.name.c_str());
             break;
           case ParameterType::CONST :
-            debug("\t\tc : %8.4f   %s\n", p.value, p.name);
+            debug("\t\tc : %8.4f   %s\n", p.value, p.name.c_str());
             break;
           default:
             break;

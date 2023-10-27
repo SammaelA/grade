@@ -1,4 +1,3 @@
-#pragma once
 #include "preprocessing.h"
 #include "tinyEngine/engine.h"
 

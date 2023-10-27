@@ -461,9 +461,9 @@ int main(int argc, char **argv)
 
     {
       auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
-      dgen::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
-      auto bbox = dgen::get_bbox(model);
-      dgen::normalize_model(model);
+      visualizer::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
+      auto bbox = visualizer::get_bbox(model);
+      visualizer::normalize_model(model);
       Model *m2 = new Model();
       visualizer::simple_mesh_to_model_332(model, m2);
       m2->update();
