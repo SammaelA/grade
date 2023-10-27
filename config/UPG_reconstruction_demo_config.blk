@@ -1,0 +1,22 @@
+{
+    input {
+        view_1 {
+            camera.origin:p3 = 0.000000, 0.000000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 0.500000
+            camera.fixed:b = true
+            
+            image:s = "resources/textures/building_7.png"
+            mask:s = "resources/textures/building_7_mask.png"
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        
+    }
+}
