@@ -19,7 +19,7 @@
 #include <time.h>
 #include <csignal>
 #include "obj_utils.h"
-#include "simple_model_utils.h"
+#include "graphics_utils/simple_model_utils.h"
 #include "iou3d.h"
 #include "common_utils/blk.h"
 #include "common_utils/distribution.h"

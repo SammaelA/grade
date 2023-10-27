@@ -20,7 +20,7 @@
 #include "graphics_utils/resize_image.h"
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/image_arithmetic.h"
-#include "simple_model_utils.h"
+#include "graphics_utils/simple_model_utils.h"
 #include <opencv2/opencv.hpp>
 #include "compare.h"
 #include "diff_render.h"
@@ -479,7 +479,7 @@ namespace dopt
       {
         Block *camera_blk = cameras_blk->get_block(i);
         if (camera_blk)
-          fixed_cameras.push_back(dgen::load_camera_settings(*camera_blk));
+          fixed_cameras.push_back(visualizer::load_camera_settings(*camera_blk));
         else
         {
           logerr("cameras_blk camera block %d corrupted!", i);

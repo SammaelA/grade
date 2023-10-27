@@ -29,7 +29,7 @@
 #include <time.h>
 #include <csignal>
 #include "obj_utils.h"
-#include "simple_model_utils.h"
+#include "graphics_utils/simple_model_utils.h"
 #include "compare.h"
 #include <opencv2/opencv.hpp>
 #include "custom_diff_render.h"

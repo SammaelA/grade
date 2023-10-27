@@ -2,9 +2,10 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "common_utils/bbox.h"
+#include "common_utils/blk.h"
 #include "tinyEngine/camera.h"
 
-namespace dgen
+namespace visualizer
 {
   void shift(std::vector<float> &model, glm::vec3 shift);
   void scale(std::vector<float> &model, glm::vec3 scale);
@@ -15,5 +16,5 @@ namespace dgen
   void normalize_model(std::vector<float> &model);
 
   void save_camera_settings(const CameraSettings &camera, Block &blk);
-  CameraSettings load_camera_settings(Block &blk);
+  CameraSettings load_camera_settings(const Block &blk);
 };

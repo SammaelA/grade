@@ -1,13 +1,15 @@
 #include <vector>
 #include <string>
-#include "diff_geometry_generation.h"
+//#include "diff_geometry_generation.h"
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include <glm/gtx/transform.hpp>
 #include "simple_model_utils.h"
 #include "common_utils/blk.h"
 
-namespace dgen
+namespace visualizer
 {
+  static constexpr int FLOAT_PER_VERTEX = 8;
+
   void shift(std::vector<float> &model, glm::vec3 sh)
   {
     for (int i = 0; i < model.size() / FLOAT_PER_VERTEX; ++i)
@@ -95,7 +97,7 @@ namespace dgen
     blk.set_double("camera.fov_rad", camera.fov_rad);
   }
 
-  CameraSettings load_camera_settings(Block &blk)
+  CameraSettings load_camera_settings(const Block &blk)
   {
     CameraSettings camera;
     
