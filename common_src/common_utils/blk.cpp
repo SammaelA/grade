@@ -535,16 +535,16 @@ bool load_block_from_file(std::string path, Block &b)
     return true;  
 }
 
-int Block::size()
+int Block::size() const
 {
     return names.size();
 }
 
-int Block::get_id(const std::string &name)
+int Block::get_id(const std::string &name) const
 {
     return get_next_id(name, 0);
 }
-int Block::get_next_id(const std::string &name, int pos)
+int Block::get_next_id(const std::string &name, int pos) const
 {
     for (int i = pos; i < names.size(); i++)
     {
@@ -553,68 +553,68 @@ int Block::get_next_id(const std::string &name, int pos)
     }
     return -1;
 }
-Block::ValueType Block::get_type(int id)
+Block::ValueType Block::get_type(int id) const
 {
     return (id >= 0 && id < size()) ? values[id].type : Block::ValueType::EMPTY;
 }
-Block::ValueType Block::get_type(const std::string &name)
+Block::ValueType Block::get_type(const std::string &name) const
 {
     return get_type(get_id(name));
 }
 
-int Block::get_bool(int id, bool base_val)
+int Block::get_bool(int id, bool base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::BOOL) ? values[id].b : base_val;
 }
-int Block::get_int(int id, int base_val)
+int Block::get_int(int id, int base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::INT) ? values[id].i : base_val;
 }
-uint64_t Block::get_uint64(int id, uint64_t base_val)
+uint64_t Block::get_uint64(int id, uint64_t base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::UINT64) ? values[id].u : base_val;
 }
-double Block::get_double(int id, double base_val)
+double Block::get_double(int id, double base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::DOUBLE) ? values[id].d : base_val;
 }
-glm::vec2 Block::get_vec2(int id, glm::vec2 base_val)
+glm::vec2 Block::get_vec2(int id, glm::vec2 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC2) ? values[id].v2 : base_val;
 }
-glm::vec3 Block::get_vec3(int id, glm::vec3 base_val)
+glm::vec3 Block::get_vec3(int id, glm::vec3 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC3) ? values[id].v3 : base_val;
 }
-glm::vec4 Block::get_vec4(int id, glm::vec4 base_val)
+glm::vec4 Block::get_vec4(int id, glm::vec4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC4) ? values[id].v4 : base_val;
 }
-glm::ivec2 Block::get_ivec2(int id, glm::ivec2 base_val)
+glm::ivec2 Block::get_ivec2(int id, glm::ivec2 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC2) ? values[id].iv2 : base_val;
 }
-glm::ivec3 Block::get_ivec3(int id, glm::ivec3 base_val)
+glm::ivec3 Block::get_ivec3(int id, glm::ivec3 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC3) ? values[id].iv3 : base_val;
 }
-glm::ivec4 Block::get_ivec4(int id, glm::ivec4 base_val)
+glm::ivec4 Block::get_ivec4(int id, glm::ivec4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC4) ? values[id].iv4 : base_val;
 }
-glm::mat4 Block::get_mat4(int id, glm::mat4 base_val)
+glm::mat4 Block::get_mat4(int id, glm::mat4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::MAT4) ? values[id].m4 : base_val;
 }
-std::string Block::get_string(int id, std::string base_val)
+std::string Block::get_string(int id, std::string base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::STRING && values[id].s) ? *(values[id].s) : base_val;
 }
-Block *Block::get_block(int id)
+Block *Block::get_block(int id) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::BLOCK) ? values[id].bl : nullptr;
 }
-bool Block::get_arr(int id, std::vector<double> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<double> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -629,7 +629,7 @@ bool Block::get_arr(int id, std::vector<double> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<float> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<float> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -644,7 +644,7 @@ bool Block::get_arr(int id, std::vector<float> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<int> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<int> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -659,7 +659,7 @@ bool Block::get_arr(int id, std::vector<int> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<unsigned> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<unsigned> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -674,7 +674,7 @@ bool Block::get_arr(int id, std::vector<unsigned> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<short> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<short> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -689,7 +689,7 @@ bool Block::get_arr(int id, std::vector<short> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<unsigned short> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<unsigned short> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == DOUBLE))
@@ -704,7 +704,7 @@ bool Block::get_arr(int id, std::vector<unsigned short> &_values, bool replace)
     }
     return false;
 }
-bool Block::get_arr(int id, std::vector<std::string> &_values, bool replace)
+bool Block::get_arr(int id, std::vector<std::string> &_values, bool replace) const
 {
     if (id >= 0 && id < size() && values[id].type == Block::ValueType::ARRAY && values[id].a &&
         (values[id].a->type == STRING))
@@ -723,83 +723,83 @@ bool Block::get_arr(int id, std::vector<std::string> &_values, bool replace)
     return false;
 }
 
-int Block::get_bool(const std::string name, bool base_val)
+int Block::get_bool(const std::string name, bool base_val) const
 {
     return get_bool(get_id(name), base_val);
 }
-int Block::get_int(const std::string name, int base_val)
+int Block::get_int(const std::string name, int base_val) const
 {
     return get_int(get_id(name), base_val);
 }
-uint64_t Block::get_uint64(const std::string name, uint64_t base_val)
+uint64_t Block::get_uint64(const std::string name, uint64_t base_val) const
 {
     return get_uint64(get_id(name), base_val);
 }
-double Block::get_double(const std::string name, double base_val)
+double Block::get_double(const std::string name, double base_val) const
 {
     return get_double(get_id(name), base_val);
 }
-glm::vec2 Block::get_vec2(const std::string name, glm::vec2 base_val)
+glm::vec2 Block::get_vec2(const std::string name, glm::vec2 base_val) const
 {
     return get_vec2(get_id(name), base_val);
 }
-glm::vec3 Block::get_vec3(const std::string name, glm::vec3 base_val)
+glm::vec3 Block::get_vec3(const std::string name, glm::vec3 base_val) const
 {
     return get_vec3(get_id(name), base_val);
 }
-glm::vec4 Block::get_vec4(const std::string name, glm::vec4 base_val)
+glm::vec4 Block::get_vec4(const std::string name, glm::vec4 base_val) const
 {
     return get_vec4(get_id(name), base_val);
 }
-glm::ivec2 Block::get_ivec2(const std::string name, glm::ivec2 base_val)
+glm::ivec2 Block::get_ivec2(const std::string name, glm::ivec2 base_val) const
 {
     return get_ivec2(get_id(name), base_val);
 }
-glm::ivec3 Block::get_ivec3(const std::string name, glm::ivec3 base_val)
+glm::ivec3 Block::get_ivec3(const std::string name, glm::ivec3 base_val) const
 {
     return get_ivec3(get_id(name), base_val);
 }
-glm::ivec4 Block::get_ivec4(const std::string name, glm::ivec4 base_val)
+glm::ivec4 Block::get_ivec4(const std::string name, glm::ivec4 base_val) const
 {
     return get_ivec4(get_id(name), base_val);
 }
-glm::mat4 Block::get_mat4(const std::string name, glm::mat4 base_val)
+glm::mat4 Block::get_mat4(const std::string name, glm::mat4 base_val) const
 {
     return get_mat4(get_id(name), base_val);
 }
-std::string Block::get_string(const std::string name, std::string base_val)
+std::string Block::get_string(const std::string name, std::string base_val) const
 {
     return get_string(get_id(name), base_val);
 }
-Block *Block::get_block(std::string name)
+Block *Block::get_block(std::string name) const
 {
     return get_block(get_id(name));
 }
-bool Block::get_arr(const std::string name, std::vector<double> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<double> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<float> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<float> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<int> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<int> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<unsigned> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<unsigned> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<short> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<short> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<unsigned short> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<unsigned short> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace);
 }
-bool Block::get_arr(const std::string name, std::vector<std::string> &_values, bool replace)
+bool Block::get_arr(const std::string name, std::vector<std::string> &_values, bool replace) const
 {
     return get_arr(get_id(name), _values, replace); 
 }
@@ -970,7 +970,7 @@ void Block::clear()
     values.clear();
     names.clear();
 }
-bool Block::has_tag(const std::string &name)
+bool Block::has_tag(const std::string &name) const
 {
     int id = get_id(name);
     return id >= 0 && (get_type(id) == Block::ValueType::EMPTY);
@@ -1372,7 +1372,7 @@ void Block::set_arr(const std::string name, std::vector<std::string> &_values)
     }
     set_value(name, val);
 }
-std::string Block::get_name(int id)
+std::string Block::get_name(int id) const
 {
     return (id >= 0 && id < names.size()) ? names[id] : "";
 }
