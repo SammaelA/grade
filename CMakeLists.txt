@@ -50,7 +50,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wshadow")
 endif()
 
 #prepare common lists of options to use it when building targets
-set(COMMON_LINKER_FLAGS "-lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")
+set(COMMON_LINKER_FLAGS "-lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")
 file(GLOB_RECURSE COMMON_SRC RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "third_party/*.c" "common_src/*.c")
 set(COMMON_INCLUDE_DIRS "common_src", "third_party", "dependencies/SDL2", "dependencies/glm-0.9.9-a2")
 set(COMMON_LIBRARIES ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}
@@ -72,8 +72,8 @@ if (TREE_PROJECT)
   
   file(GLOB_RECURSE TP_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
   
-  add_executable(main ${COMMON_SRC} ${TP_SRC} ${IMGUI_SRC})
-  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm")
+  add_executable(main ${COMMON_SRC} ${TP_SRC})
+  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS}")
   target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} "src" 
                             "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
 
@@ -98,8 +98,8 @@ add_library(libnoise SHARED IMPORTED)
 set_target_properties(libnoise PROPERTIES IMPORTED_LOCATION "/usr/lib/libnoise.so")
 
 file(GLOB_RECURSE CG_SRC RELATIVE ${CMAKE_SOURCE_DIR} "cities_generator/*.c" "cities_generator/*.cpp")
-add_executable(cg ${COMMON_SRC} ${CG_SRC} ${IMGUI_SRC})
-set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lm -lnoise")
+add_executable(cg ${COMMON_SRC} ${CG_SRC})
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} -lX11 -lnoise")
 target_include_directories(cg PUBLIC ${COMMON_INCLUDE_DIRS} "cities_generator")
 
 target_link_libraries(cg 
@@ -152,7 +152,7 @@ if (DIFF_RECONSTRUCTION)
   endif()
 
   file(GLOB_RECURSE DRec_SRC RELATIVE ${CMAKE_SOURCE_DIR} "diff_reconstruction/*.c" "diff_reconstruction/*.cpp")
-  add_executable(dr ${DRec_SRC} ${COMMON_SRC} ${IMGUI_SRC} ${DR_SOURCE} ${DR_SOURCE_RT})
+  add_executable(dr ${DRec_SRC} ${COMMON_SRC} ${DR_SOURCE} ${DR_SOURCE_RT})
   set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS}")
   target_include_directories(dr PUBLIC ${COMMON_INCLUDE_DIRS} "diff_reconstruction" 
                             "/usr/include/python3.8" "dependencies/python" 
