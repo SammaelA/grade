@@ -37,5 +37,7 @@ namespace upg
         {
             rv.mask = engine::textureManager->load_unnamed_tex(mask_dir, 1);           
         }
+
+        return rv;
     }
 }
