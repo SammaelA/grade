@@ -16,7 +16,7 @@ namespace upg
   {
     struct Param
     {
-      float value; //if type is CONST, value is valid
+      float value; //if type is CONST, value is valid, otherwise not.
       float min_val;
       float max_val;
       ParameterType type;

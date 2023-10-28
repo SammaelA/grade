@@ -3,6 +3,7 @@
 #include "common_utils/blk.h"
 #include "common_utils/utility.h"
 #include "third_party/span.h"
+#include "tinyEngine/model.h"
 #include <unordered_map>
 
 namespace upg
@@ -23,4 +24,5 @@ namespace upg
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk);
+  bool create_model_from_block(Block &bl, ComplexModel &mod);
 };

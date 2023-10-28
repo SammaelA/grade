@@ -175,8 +175,13 @@ namespace scene_gen
 
     if (new_model)
     {
+      bool procedural_model = b.get_bool("procedural_model");
       ctx.scene.instanced_models.emplace_back();
-      model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().model);
+      if (procedural_model)
+        upg::create_model_from_block(b, ctx.scene.instanced_models.back().model);
+      else
+        model_loader::create_model_from_block(b, ctx.scene.instanced_models.back().model);
+      ctx.scene.instanced_models.back().model.update();
       ctx.scene.instanced_models.back().name = name;
       pos = 0;
     }

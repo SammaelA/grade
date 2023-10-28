@@ -7,6 +7,7 @@ cmd {
   cmd_name:s = "IC_UPG_RECONSTRUCTION"
   settings_path:s = "UPG_reconstruction_demo_config.blk"
 }
+cmd {cmd_code:i=1 procedural_model:b = true name:s = "upg_test" on_terrain:b = true transform:m4 = 125,0,0,-100,  0,125,0,-34,  0,0,125,100,  0,0,0,1}
 //cmd {cmd_code:i=14}
 //cmd {
 //  cmd_code:i = 7
