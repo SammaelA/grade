@@ -9,12 +9,17 @@ namespace upg
 {
   struct UPGStructure
   {
-
+    std::vector<uint16_t> s;
+  };
+  struct UPGParametersRaw
+  {
+    std::vector<float> p;
   };
   struct UPGReconstructionResult
   {
     float quality = 0;
     UPGStructure structure;
+    UPGParametersRaw parameters;
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk);

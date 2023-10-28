@@ -3,5 +3,5 @@
 
 namespace upg
 {
-    ReferenceView preprocess_get_reference_view(const Block &view_blk);
+  ReferenceView preprocess_get_reference_view(const Block &view_blk);
 }

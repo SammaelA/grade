@@ -32,9 +32,9 @@ namespace upg
   ParametersDescription get_cameras_parameter_description(const Block &cameras_blk)
   {
     ParametersDescription pd;
-    static constexpr unsigned camera_block_id = 1<<16;
-    assert(cameras_blk.size()>=1);
-    for (int i=0; i<cameras_blk.size(); i++)
+    static constexpr unsigned camera_block_id = 1 << 16;
+    assert(cameras_blk.size() >= 1);
+    for (int i = 0; i < cameras_blk.size(); i++)
     {
       Block *cam_blk = cameras_blk.get_block(i);
       if (!cam_blk)
@@ -49,7 +49,7 @@ namespace upg
         for (auto &p : pv)
           p.type = ParameterType::CONST;
       }
-      pd.add_parameters(camera_block_id + (unsigned)i, "camera_"+std::to_string(i), pv);
+      pd.add_parameters(camera_block_id + (unsigned)i, "camera_" + std::to_string(i), pv);
     }
     return pd;
   }
@@ -57,7 +57,7 @@ namespace upg
   std::vector<ReferenceView> get_reference(const Block &input_blk)
   {
     std::vector<ReferenceView> reference;
-    for (int i=0; i<input_blk.size(); i++)
+    for (int i = 0; i < input_blk.size(); i++)
     {
       Block *cam_blk = input_blk.get_block(i);
       if (!cam_blk)
