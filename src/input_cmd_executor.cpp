@@ -303,6 +303,19 @@ void InputCmdExecutor::execute(int max_cmd_count)
     case IC_VISUALIZE_OBJ_HYDRA:
       genCmdBuffer->push(GC_VISUALIZE_OBJ_HYDRA, cmd.args);
       break;
+    case IC_UPG_RECONSTRUCTION:
+    {
+      std::string settings_path = cmd.args.get_string("settings_path");
+      if (settings_path != "")
+      {
+        Block settings;
+        load_block_from_file(settings_path, settings);
+        genCmdBuffer->push(GC_UPG_RECONSTRUCTION, settings);
+      }
+      else
+        genCmdBuffer->push(GC_UPG_RECONSTRUCTION, cmd.args);
+    }
+      break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;

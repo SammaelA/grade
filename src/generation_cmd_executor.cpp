@@ -6,6 +6,7 @@
 #include "parameter_selection/parameter_selection.h"
 #include "save_utils/serialization.h"
 #include "hydra_utils/hydra_scene_exporter.h"
+#include "UPG_reconstruction/reconstruction.h"
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
 
@@ -575,6 +576,11 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       Block export_settings;
       ParameterSelector::prepare_hydra_export_settings_block(cmd.args, export_settings);
       hydra::export_scene("visualize_obj_scene", scene, export_settings);
+    }
+      break;
+    case GC_UPG_RECONSTRUCTION:
+    {
+      auto res = upg::reconstruct(cmd.args);
     }
       break;
     default:
