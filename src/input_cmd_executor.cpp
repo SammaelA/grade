@@ -1,7 +1,7 @@
 #include "cmd_executors.h"
 #include "common_utils/utility.h"
 #include "generation/scene_generator_helper.h"
-#include "hydra_utils/hydra_scene_exporter.h"
+#include "hydra/hydra_scene_exporter.h"
 #include "app.h"
 #include <chrono>
 #include <set>

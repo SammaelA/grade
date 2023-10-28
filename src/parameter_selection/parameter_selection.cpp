@@ -8,7 +8,7 @@
 #include "tree_generators/GE_generator.h"
 #include "generation/metainfo_manager.h"
 #include "tree_generators/all_generators.h"
-#include "hydra_utils/hydra_scene_exporter.h"
+#include "hydra/hydra_scene_exporter.h"
 #include "parameter_selection_utils.h"
 #include "simulated_annealing.h"
 #include "function_stat.h"

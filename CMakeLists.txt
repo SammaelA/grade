@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.7)
 project(main)
 
 #some examples how to use this file
-#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF -DMODULE_HYDRA=ON
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF -DDEBUG=OFF
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DDEBUG=OFF -DCLANG_VERSION=9
 
@@ -13,6 +13,9 @@ option(TREE_PROJECT "Build Tree Project" OFF)
 option(DIFF_RECONSTRUCTION "Build project for differentiable reconstruction" OFF)
 option(CITIES_GENERATOR "Build project for cities generator" OFF)
 option(DEBUG "debug mode" OFF)
+
+#list of available modules
+option(MODULE_HYDRA "include Hydra module in project" OFF)
 
 #set the compiler and version of C++ standart
 set(CMAKE_CXX_STANDARD 17)
@@ -57,10 +60,14 @@ set(COMMON_LIBRARIES ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} $
                      ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
                      boost_serialization boost_system boost_filesystem)
 
-#target Tree Project. It is mostly abandoned as of 2023                    
-if (TREE_PROJECT)
 
-  #project-specific libraries
+#Modules. If module is on, we include its source files, otherwise include stub file
+set(MODULES_LINKER_FLAGS "")
+set(MODULES_SRC "")
+set(MODULES_INCLUDE_DIRS "modules")
+set(MODULES_LIBRARIES "")
+
+if (MODULE_HYDRA)
   find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
   message(HYDRA_LIB1=${HYDRA_LIB1})
   find_library(HYDRA_LIB2 libhydra_api.a dependencies/Hydra/HydraAPI/bin)
@@ -69,27 +76,25 @@ if (TREE_PROJECT)
   message(HYDRA_LIB3=${HYDRA_LIB3})
   find_library(HYDRA_LIB4 libmikktspace.a dependencies/Hydra/HydraAPI/bin)
   message(HYDRA_LIB4=${HYDRA_LIB4})
-  
-  file(GLOB_RECURSE TP_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
-  
-  add_executable(main ${COMMON_SRC} ${TP_SRC})
-  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS}")
-  target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} "src" 
-                            "dependencies/Hydra" ${OpenCV_INCLUDE_DIRS})
+
+  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} glfw freeimage rt stdc++fs OpenCL ${HYDRA_LIB1} ${HYDRA_LIB2} ${HYDRA_LIB3} ${HYDRA_LIB4} dl)
+  set(MODULES_INCLUDE_DIRS ${MODULES_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} "dependencies/Hydra")
+  set(MODULES_SRC ${MODULES_SRC} modules/hydra/hydra_scene_exporter.cpp modules/hydra/export_scene_internal.cpp modules/hydra/init_gl.cpp)
+else()
+  set(MODULES_SRC ${MODULES_SRC} modules/hydra/stub/stub.cpp)
+endif()
+
+#target Tree Project. It is mostly abandoned as of 2023                    
+if (TREE_PROJECT)
+  file(GLOB_RECURSE TP_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")  
+  add_executable(main ${COMMON_SRC} ${MODULES_SRC} ${TP_SRC})
+  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} ${MODULES_LINKER_FLAGS}")
+  target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} ${MODULES_INCLUDE_DIRS} "src")
 
   target_link_libraries(main 
                         "${COMMON_LIBRARIES}"
-                        glfw
-                        ${CMAKE_DL_LIBS}
-                        freeimage
-                        rt
-                        stdc++fs
-                        OpenCL
-                          ${HYDRA_LIB1}
-                          ${HYDRA_LIB2}
-                          ${HYDRA_LIB3}
-                          ${HYDRA_LIB4}
-                          dl)
+                        "${CMAKE_DL_LIBS}"
+                        "${MODULES_LIBRARIES}")
 endif()
 
 if (CITIES_GENERATOR)

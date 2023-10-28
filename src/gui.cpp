@@ -5,7 +5,7 @@
 #include "generation/metainfo_manager.h"
 #include "tree_utils/tree_modeling.h"
 #include "third_party/icons.h"
-#include "hydra_utils/hydra_scene_exporter.h"
+#include "hydra/hydra_scene_exporter.h"
 #include <map>
 
 char __input_buf[4096];

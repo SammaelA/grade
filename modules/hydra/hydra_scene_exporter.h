@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 struct Scene;
-struct TreeTypeData;
 struct Block;
 namespace hydra 
 {

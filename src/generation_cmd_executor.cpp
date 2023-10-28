@@ -5,7 +5,7 @@
 #include "generation/grove_packer.h"
 #include "parameter_selection/parameter_selection.h"
 #include "save_utils/serialization.h"
-#include "hydra_utils/hydra_scene_exporter.h"
+#include "hydra/hydra_scene_exporter.h"
 #include "UPG_reconstruction/reconstruction.h"
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
