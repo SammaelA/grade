@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.7)
 project(main)
 
 #some examples how to use this file
-#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF -DMODULE_HYDRA=ON
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF -DMODULE_HYDRA=ON -DMODULE_DR=ON
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF -DDEBUG=OFF
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DDEBUG=OFF -DCLANG_VERSION=9
 
@@ -16,6 +16,7 @@ option(DEBUG "debug mode" OFF)
 
 #list of available modules
 option(MODULE_HYDRA "include Hydra module in project" OFF)
+option(MODULE_DR "include Custom differentiable render in project" OFF)
 
 #set the compiler and version of C++ standart
 set(CMAKE_CXX_STANDARD 17)
@@ -66,6 +67,7 @@ set(MODULES_LINKER_FLAGS "")
 set(MODULES_SRC "")
 set(MODULES_INCLUDE_DIRS "modules")
 set(MODULES_LIBRARIES "")
+set(MODULES_COMPILE_FLAGS "")
 
 if (MODULE_HYDRA)
   find_library(HYDRA_LIB1 libcorto.a dependencies/Hydra/HydraAPI/bin)
@@ -83,6 +85,47 @@ if (MODULE_HYDRA)
 else()
   set(MODULES_SRC ${MODULES_SRC} modules/hydra/stub/stub.cpp)
 endif()
+if (MODULE_DR)
+  set(CLANG_VERSION "9" CACHE STRING "clang and LLVM version to use")
+  set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}")
+
+  set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
+  find_package(OpenMP REQUIRED)
+  set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
+  set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
+
+  include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
+
+  add_definitions(-DUSE_EMBREE)
+  add_definitions(-DUSE_CUSTOM_DIFF_RENDER)
+  include_directories(${DR_SRC}/external)
+  include_directories(${DR_SRC}/external/embree/include)
+
+  find_package(Threads REQUIRED)
+  link_directories(${DR_SRC}/external/embree/lib)
+  set(RT_EMBREE_LIBS embree3 tbb)
+
+  set(DR_SOURCE_RT
+    "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
+    "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
+    "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
+
+  set(OMP_LIBS "")
+  if(OpenMP_CXX_FOUND)
+    add_definitions(-DUSE_OMP)
+    include_directories(${AUX_OMP_INC})
+    link_directories(${AUX_OMP_LIB})
+    set(OMP_LIBS OpenMP::OpenMP_CXX)
+  endif()
+
+  file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
+  set(MODULES_SRC ${MODULES_SRC} ${DR_SOURCE} ${DR_SOURCE_RT} modules/custom_diff_render/halfgpu_diff_render.cpp)
+  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${OMP_LIBS} ${RT_EMBREE_LIBS})
+  set(MODULES_COMPILE_FLAGS ${MODULES_COMPILE_FLAGS} "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
+  message(${MODULES_COMPILE_FLAGS})
+else()
+set(MODULES_SRC ${MODULES_SRC} modules/custom_diff_render/diff_render_stub.cpp)
+endif()
 
 #target Tree Project. It is mostly abandoned as of 2023                    
 if (TREE_PROJECT)
@@ -90,11 +133,11 @@ if (TREE_PROJECT)
   add_executable(main ${COMMON_SRC} ${MODULES_SRC} ${TP_SRC})
   set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS} ${MODULES_LINKER_FLAGS}")
   target_include_directories(main PUBLIC ${COMMON_INCLUDE_DIRS} ${MODULES_INCLUDE_DIRS} "src")
-
   target_link_libraries(main 
                         "${COMMON_LIBRARIES}"
                         "${CMAKE_DL_LIBS}"
                         "${MODULES_LIBRARIES}")
+  target_compile_options(main PUBLIC ${MODULES_COMPILE_FLAGS})
 endif()
 
 if (CITIES_GENERATOR)
