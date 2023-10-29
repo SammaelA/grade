@@ -66,20 +66,22 @@ namespace upg
                                   synt_reference->get_int("tex_w", 1024),
                                   synt_reference->get_int("tex_h", 1024));
     }
-
-    std::string mask_dir = view_blk.get_string("mask", "");
-    std::string image_dir = view_blk.get_string("image", "");
-
-    if (mask_dir == "")
-    {
-      if (image_dir == "")
-        logerr("preprocessing: each view block must have mask or image path");
-      Texture image = engine::textureManager->load_unnamed_tex(image_dir, 1);
-      rv.mask = get_mask(image);
-    }
     else
     {
-      rv.mask = engine::textureManager->load_unnamed_tex(mask_dir, 1);
+      std::string mask_dir = view_blk.get_string("mask", "");
+      std::string image_dir = view_blk.get_string("image", "");
+
+      if (mask_dir == "")
+      {
+        if (image_dir == "")
+          logerr("preprocessing: each view block must have mask or image path");
+        Texture image = engine::textureManager->load_unnamed_tex(image_dir, 1);
+        rv.mask = get_mask(image);
+      }
+      else
+      {
+        rv.mask = engine::textureManager->load_unnamed_tex(mask_dir, 1);
+      }
     }
 
     return rv;
