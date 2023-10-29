@@ -2,6 +2,7 @@
 #include "reconstruction.h"
 #include "tinyEngine/texture.h"
 #include "generation_impl.h"
+#include "tinyEngine/camera.h"
 
 namespace upg
 {
@@ -9,6 +10,8 @@ namespace upg
   //depth information
   struct ReferenceView
   {
+    CameraSettings camera;
+    bool fixed_camera = true;
     Texture mask;
   };
 }
