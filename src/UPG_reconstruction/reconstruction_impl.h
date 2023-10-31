@@ -13,5 +13,6 @@ namespace upg
     CameraSettings camera;
     bool fixed_camera = true;
     Texture mask;
+    Texture resized_mask;
   };
 }

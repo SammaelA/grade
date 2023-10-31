@@ -10,8 +10,8 @@
             camera.fixed:b = true
 
             synthetic_reference {
-              tex_w:i = 1000
-              tex_h:i = 1000
+              tex_w:i = 128
+              tex_h:i = 128
             } 
 
             //image:s = "resources/textures/building_7.png"
@@ -22,6 +22,8 @@
 
     }
     optimization {
-        
+        iterations:i = 250
+        verbose:b = true
+        save_intermediate_images:b = true
     }
 }

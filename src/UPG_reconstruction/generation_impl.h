@@ -29,13 +29,17 @@ namespace upg
     };
     void add_parameters(unsigned node_id, const std::string &node_name, const std::vector<Param> &params)
     {
+      total_params_count += params.size();
       block_params[node_id] = {params, node_name};
-      prepared = false;
     }
     void remove_parameters(unsigned node_id)
     {
-      block_params.erase(node_id);
-      prepared = false;
+      auto it = block_params.find(node_id);
+      if (it != block_params.end())
+      {
+        total_params_count -= it->second.p.size();
+        block_params.erase(node_id);
+      }
     }
     void add(const ParametersDescription &desc)
     {
@@ -46,9 +50,9 @@ namespace upg
         else
           logerr("ParameterDescription: trying to merge with description that has the same parameters block %d", p.first);
       }
-      prepared = false;
+      total_params_count += desc.total_params_count;
     }
-    void print_info()
+    void print_info() const
     {
       int total_params = 0;
       int diff_params = 0;
@@ -81,19 +85,19 @@ namespace upg
           switch (p.type)
           {
           case ParameterType::UNKNOWN :
-            debug("    u  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
+            debug("    u : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::DIFFERENTIABLE :
-            debug("    d  : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
+            debug("    d : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::MUTABLE_BOOL :
-            debug("    mb : in {true, false}   %s\n", p.name.c_str());
+            debug("   mb : in {true, false}   %s\n", p.name.c_str());
             break;
           case ParameterType::MUTABLE_FLOAT :
-            debug("    mf : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
+            debug("   mf : in [%8.4f, %8.4f)   %s\n", p.min_val, p.max_val, p.name.c_str());
             break;
           case ParameterType::MUTABLE_INT :
-            debug("    mi : in [%8d, %8d)   %s\n", (int)p.min_val, (int)p.max_val, p.name.c_str());
+            debug("   mi : in [%8d, %8d)   %s\n", (int)p.min_val, (int)p.max_val, p.name.c_str());
             break;
           case ParameterType::CONST :
             debug("    c : %8.4f   %s\n", p.value, p.name.c_str());
@@ -105,9 +109,17 @@ namespace upg
       }
       debug("=============================\n");
     }
+    const std::map<unsigned, ParamBlock> &get_block_params() const
+    {
+      return block_params;
+    }
+    int get_total_params_count() const
+    {
+      return total_params_count;
+    }
   private:
-    bool prepared = false;
-    std::unordered_map<unsigned, ParamBlock> block_params;
+    int total_params_count = 0;
+    std::map<unsigned, ParamBlock> block_params;
   };
   
   struct UPGNodeInputParameters
@@ -117,7 +129,7 @@ namespace upg
   };
   struct UPGInputParameters
   {
-    std::unordered_map<unsigned, UPGNodeInputParameters> nodes; //node parameters by id
+    std::map<unsigned, UPGNodeInputParameters> nodes; //node parameters by id
   };
 
     //model that is produced by universal generator
@@ -138,7 +150,8 @@ namespace upg
   //to be represented as sprase or block matrix
   struct UniversalGenJacobian
   {
-
+    int x_n, y_n;
+    std::vector<float> jacobian;
   };
 
   //Generator with fixed structure.
@@ -147,11 +160,33 @@ namespace upg
   class UniversalGenInstance
   {
   public:
-    UniversalGenInstance(const UPGStructure &structure);
-    UniversalGenMesh generate(std::span<const float> parameters);
-    UniversalGenJacobian generate_jacobian(std::span<const float> parameters);//maybe it will create mesh too?
-    const ParametersDescription desc;
-    const UPGInputParameters inputParams;
+    UniversalGenInstance(const UPGStructure &structure)
+    {
+      std::vector<ParametersDescription::Param> params;
+      for (int i=0;i<9;i++)
+        params.push_back({0, -1.0f, 1.0f, ParameterType::DIFFERENTIABLE, "p_"+std::to_string(i)});
+      desc.add_parameters(0, "test", params);
+    }
+    UniversalGenMesh generate(std::span<const float> parameters)
+    {
+      UniversalGenMesh mesh;
+      for (int i=0;i<9;i++)
+        mesh.pos.push_back(parameters[i]);
+      return mesh;
+    }
+    UniversalGenJacobian generate_jacobian(std::span<const float> parameters)//maybe it will create mesh too?
+    {
+      UniversalGenJacobian jac;
+      jac.x_n = 9;
+      jac.y_n = 9;
+      jac.jacobian = std::vector<float>(9*9, 0);
+      for (int i=0;i<jac.y_n;i++)
+        jac.jacobian[i*jac.x_n + i] = 1; 
+      
+      return jac;
+    }
+    ParametersDescription desc;
+    UPGInputParameters inputParams;
 
     //spans from inputParams points to this container
     //put raw parameters list here to generate
