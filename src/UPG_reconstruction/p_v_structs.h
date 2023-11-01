@@ -1,6 +1,6 @@
 #pragma once
-#include "common_utils/template_vectors.h"
-namespace u_g
+#include "../../common_src/common_utils/template_vectors.h"
+namespace upg
 {
   typedef float my_float;
 

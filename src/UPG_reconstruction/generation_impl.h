@@ -1,5 +1,6 @@
 #pragma once
 #include "reconstruction.h"
+#include "gen_tree.h"
 
 namespace upg
 {
@@ -123,14 +124,31 @@ namespace upg
     //model that is produced by universal generator
   //it's should be optimal to use for reconstruction
   //
-  struct UniversalGenMesh
+  /*struct UniversalGenMesh
   {
     //triangle mesh pos.size()%9 == 0
     //norm and tc can be empty
     std::vector<float> pos; //vec3
     std::vector<float> norm; //vec3
     std::vector<float> tc; //vec2
-  };
+    void add_tri_data(upg::vec3 point, upg::vec3 n, upg::vec2 tex)
+    {
+      pos.push_back(point.x);
+      pos.push_back(point.y);
+      pos.push_back(point.z);
+      norm.push_back(n.x);
+      norm.push_back(n.y);
+      norm.push_back(n.z);
+      tc.push_back(tex.x);
+      tc.push_back(tex.y);
+    }
+    void add_point_data(upg::vec3 point)
+    {
+      pos.push_back(point.x);
+      pos.push_back(point.y);
+      pos.push_back(point.z);
+    }
+  };*/
 
   //Structure that represents jacobian dpos/dP
   //where P is parameters list for specific
@@ -146,8 +164,12 @@ namespace upg
   //should be passed to generate() function
   class UniversalGenInstance
   {
+    Tree generator;
   public:
-    UniversalGenInstance(const UPGStructure &structure);
+    UniversalGenInstance(const UPGStructure &structure)
+    {
+      generator.create(structure);
+    }
     UniversalGenMesh generate(std::span<const float> parameters);
     UniversalGenJacobian generate_jacobian(std::span<const float> parameters);//maybe it will create mesh too?
     const ParametersDescription desc;
