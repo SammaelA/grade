@@ -242,6 +242,12 @@ void RenderCmdExecutor::execute(int max_cmd_count)
         case RC_FINISH:
           appCtx.event.quit = true;
           break;
+        case RC_HIDE_WINDOW:
+          engine::view->hide_window();
+          break;
+        case RC_SHOW_WINDOW:
+          engine::view->show_window();
+          break;
         default:
           logerr("RenderCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
           break;

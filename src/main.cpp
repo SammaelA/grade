@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
     View view;
     view.lineWidth = 1.0f;
     view.init("Procedural Tree", appContext.window_width, appContext.windows_height);
+    view.hide_window();
     engine::view = &view;
 
     model_loader::load_default_blk();

@@ -292,6 +292,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       }
       break;
     case IC_INIT_RENDER:
+      renderCmdBuffer->push(RC_SHOW_WINDOW, cmd.args);
       renderCmdBuffer->push(RC_INIT_RENDER, cmd.args);
       break;
     case IC_VISUALIZE_TREE_HYDRA:
@@ -315,6 +316,12 @@ void InputCmdExecutor::execute(int max_cmd_count)
       else
         genCmdBuffer->push(GC_UPG_RECONSTRUCTION, cmd.args);
     }
+      break;
+    case IC_HIDE_WINDOW:
+      renderCmdBuffer->push(RC_HIDE_WINDOW, cmd.args);
+      break;
+    case IC_SHOW_WINDOW:
+      renderCmdBuffer->push(RC_SHOW_WINDOW, cmd.args);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
