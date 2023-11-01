@@ -29,6 +29,9 @@ public:
       print_FB_status(glCheckFramebufferStatus(GL_FRAMEBUFFER));
     
     results_buf = create_buffer();
+    vao = create_vertex_array();
+    glBindVertexArray(vao);
+    vbo = create_buffer();
 
     glBindFramebuffer(GL_FRAMEBUFFER, prev_FBO);
   }
@@ -37,26 +40,26 @@ public:
   {
     delete_framebuffer(fbo);
     delete_buffer(results_buf);
+    glDisableVertexAttribArray(vao);
+    delete_vertex_array(vao);
+    delete_buffer(vbo);
   }
 
-  virtual void init_optimization(const std::vector<std::string> &reference_image_dir, 
+  virtual void init_optimization(const std::vector<Texture> &reference_images, 
                                  Settings render_settings, 
                                  bool save_intermediate_images = false) override
   {
     diff_render::DiffRenderSettings settings{diff_render::SHADING_MODEL::SILHOUETTE, render_settings.samples_per_pixel};
     _dr = diff_render::MakeDifferentialRenderer(settings);
 
-    for (auto &ref : reference_image_dir)
-    {
-      reference_images.push_back(LiteImage::LoadImage<diff_render::float3>(ref.c_str()));
-      adjoints.push_back(diff_render::Img(reference_images[0].width(), reference_images[0].height()));
-    }
+    for (auto &ref : reference_images)
+      adjoints.push_back(diff_render::Img(reference_images[0].get_W(), reference_images[0].get_H()));
     
     save_images = save_intermediate_images;
     if (save_images)
     {
-      for (auto &ref : reference_image_dir)
-        out_images.push_back(diff_render::Img(reference_images[0].width(), reference_images[0].height()));
+      for (auto &ref : reference_images)
+        out_images.push_back(diff_render::Img(reference_images[0].get_W(), reference_images[0].get_H()));
     }
 
  
@@ -64,18 +67,13 @@ public:
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-  assert(reference_image_dir.size() >= 1);
+  assert(reference_images.size() >= 1);
 
   tex_w = render_settings.image_w;
   tex_h = render_settings.image_h;
   save_images = save_intermediate_images;
   int edge_samples = tex_w*tex_h;
-
-  for (auto &dir : reference_image_dir)
-  {
-    reference_textures.push_back(engine::textureManager->load_unnamed_tex(dir, 1));
-    assert(reference_textures.back().get_W() == tex_w && reference_textures.back().get_H() == tex_h);
-  }
+  reference_textures = reference_images;
 
   tex1 = engine::textureManager->create_texture(tex_w, tex_h, GL_R8);
   tex2 = engine::textureManager->create_texture(tex_w, tex_h, GL_RGB16F);
@@ -88,17 +86,13 @@ public:
                                               const std::vector<CameraSettings> &cameras) override
   {
     auto t0 = std::chrono::steady_clock::now();
-
     assert(cameras.size() == reference_textures.size());
     assert(positions.size()%9 == 0);
-    Model m;
-    m.positions = positions;
-    m.normals = std::vector<float>(positions.size(),1);
-    m.colors = std::vector<float>(4*(positions.size()/3),0);
-    m.indices = std::vector<unsigned>(positions.size(),0);
-    for (int i=0;i<positions.size();i++)
-      m.indices[i] = i;
-    m.update();
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(float), positions.data(), GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     int prev_FBO = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
@@ -120,7 +114,7 @@ public:
       glm::mat4 viewProj = y_swap * projection * view;
       render_silhouette.use();
       render_silhouette.uniform("viewProj", viewProj);
-      m.render();
+      glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 
       //create diff_loss texture (0.5*(1 + img - target_img))
       glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
@@ -203,8 +197,8 @@ public:
 
     //convert cameras to diff_render::CamInfo
     std::vector<diff_render::CamInfo> dr_cameras;
-    int cam_w = reference_images[0].width();
-    int cam_h = reference_images[0].height();
+    int cam_w = tex_w;
+    int cam_h = tex_h;
     for (auto &cam : cameras)
       dr_cameras.push_back(diff_render::CamInfo({cam.origin.x, cam.origin.y, cam.origin.z},
                                                 {cam.target.x, cam.target.y, cam.target.z},
@@ -212,7 +206,7 @@ public:
                                                 cam_w, cam_h, cam.fov_rad, cam.z_near, cam.z_far));
 
     //render to get gradients
-    assert(dr_cameras.size() == reference_images.size());
+    assert(dr_cameras.size() == reference_textures.size());
     auto t2 = std::chrono::steady_clock::now();    
     _dr->commit(scene);
     scene_grad.clear();
@@ -232,12 +226,12 @@ public:
     int t_all = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t0).count();
     int t_real = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
     int t_render = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-    logerr("Custom diff. render took = %.1f (%.1f + %.1f + %.1f) ms", 1e-3*t_all, 1e-3*t_render, 1e-3*t_real, 1e-3*(t_all - t_real - t_render));
+    //logerr("Custom diff. render took = %.1f (%.1f + %.1f + %.1f) ms", 1e-3*t_all, 1e-3*t_render, 1e-3*t_real, 1e-3*(t_all - t_real - t_render));
 
     iteration++;
     static float average_ms = 0.0;
     average_ms += 1e-3*t_all;
-    logerr("average val %f", average_ms/(iteration));
+    //logerr("average val %f", average_ms/(iteration));
 
     return total_res/cameras.size();
   }
@@ -250,7 +244,6 @@ public:
 
 private:
   std::shared_ptr<diff_render::IDiffRender> _dr;
-  std::vector<diff_render::Img> reference_images;
   std::vector<diff_render::Img> adjoints;
   std::vector<diff_render::Img> out_images;
   mutable diff_render::DScene scene_grad;
@@ -258,7 +251,7 @@ private:
   bool save_images = false;
   int iteration = 0;
 
-  GLuint fbo, results_buf;
+  GLuint fbo, results_buf, vao, vbo;
   Shader render_silhouette, diff_loss_sum;
   PostFx diff_loss;
   int tex_w = 0, tex_h = 0;

@@ -3,6 +3,7 @@
 #include <string>
 #include "tinyEngine/camera.h"
 
+struct Texture;
 class IDiffRender
 {
 public:
@@ -20,7 +21,7 @@ public:
 
   IDiffRender() = default;
   virtual ~IDiffRender() = default;
-  virtual void init_optimization(const std::vector<std::string> &reference_image_dir, 
+  virtual void init_optimization(const std::vector<Texture> &reference_images, 
                                  Settings render_settings, 
                                  bool save_intermediate_images = false) = 0;
 

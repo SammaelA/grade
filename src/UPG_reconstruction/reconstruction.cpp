@@ -5,6 +5,7 @@
 #include "graphics_utils/simple_model_utils.h"
 #include "tinyEngine/engine.h"
 #include "custom_diff_render/custom_diff_render.h"
+#include "simple_render_and_compare.h"
 #include <memory>
 #include <unistd.h>
 
@@ -112,23 +113,24 @@ namespace upg
       render_h = settings.get_int("render_h", 128);
       cameras_pd = get_cameras_parameter_description(reference);
       diff_render.reset(get_halfgpu_custom_diff_render());
+      simple_render.reset(new NonDiffRender());
       
       //get diff_render settings
       IDiffRender::Settings diff_render_settings;
       diff_render_settings.image_w = render_w;
       diff_render_settings.image_h = render_h;
 
-      std::vector<std::string> reference_paths;
+      std::vector<Texture> references;
       for (int i=0; i<reference.size(); i++)
       {
         reference[i].resized_mask = resize_mask(reference[i].mask, render_w, render_h);
-        std::string reference_path = "saves/reference_"+std::to_string(i)+".png";
-        reference_paths.push_back(reference_path);
-        engine::textureManager->save_png_directly(reference[i].mask, reference_path);
+        references.push_back(reference[i].resized_mask);
       }
       sleep(1); //to be sure that png save is finished
 
-      diff_render->init_optimization(reference_paths, diff_render_settings, 
+      diff_render->init_optimization(references, diff_render_settings, 
+                                     settings.get_bool("save_intermediate_images", false));
+      simple_render->init_optimization(references, diff_render_settings, 
                                      settings.get_bool("save_intermediate_images", false));
     }
   protected:
@@ -192,6 +194,7 @@ namespace upg
 
     int render_w, render_h;
     std::unique_ptr<IDiffRender> diff_render;
+    std::unique_ptr<IDiffRender> simple_render;
     ParametersDescription cameras_pd;
   };
 
