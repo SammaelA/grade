@@ -22,10 +22,10 @@ public:
   Texture &operator=(const Texture &t);
   bool is_valid() const {return texture != INVALID_ID && W > 1 && H > 1 && layers > 0;}
   bool is_array() const {return is_valid() && layers>1;}
-  int get_W() { return W; }
-  int get_H() { return H; }
-  int get_layers() { return layers; }
-  int get_mip_levels() { return mip_levels; }
+  int get_W() const { return W; }
+  int get_H() const { return H; }
+  int get_layers() const { return layers; }
+  int get_mip_levels() const { return mip_levels; }
 protected:
   Texture(GLuint _texture, GLenum _type, int _W, int _H, int _layers, int _tag, int _mip_levels, 
           GLenum _format, std::string _origin = "");
