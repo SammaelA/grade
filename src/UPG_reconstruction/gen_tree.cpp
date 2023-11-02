@@ -4,7 +4,7 @@ namespace upg
 {
   GenNode * Tree::node_by_number(uint16_t num, unsigned id)
   {
-    GenNode *node;
+    GenNode *node = NULL;
     switch(num)
     {
       case 2:
@@ -30,6 +30,7 @@ namespace upg
         break;
 
     }
+    return node;
   }
 
   void Tree::create(const UPGStructure &structure)

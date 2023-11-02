@@ -131,23 +131,6 @@ namespace upg
     std::vector<float> pos; //vec3
     std::vector<float> norm; //vec3
     std::vector<float> tc; //vec2
-    void add_tri_data(upg::vec3 point, upg::vec3 n, upg::vec2 tex)
-    {
-      pos.push_back(point.x);
-      pos.push_back(point.y);
-      pos.push_back(point.z);
-      norm.push_back(n.x);
-      norm.push_back(n.y);
-      norm.push_back(n.z);
-      tc.push_back(tex.x);
-      tc.push_back(tex.y);
-    }
-    void add_point_data(upg::vec3 point)
-    {
-      pos.push_back(point.x);
-      pos.push_back(point.y);
-      pos.push_back(point.z);
-    }
   };*/
 
   //Structure that represents jacobian dpos/dP

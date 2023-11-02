@@ -1,4 +1,5 @@
-#include "generation_impl.h"
+#pragma once
+#include "reconstruction.h"
 #include "models.h"
 namespace upg
 {
@@ -79,13 +80,13 @@ namespace upg
   class SpinNode : public PrimitiveNode
   {
   public:
-    FigureNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "Spin"; }
+    SpinNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "Spin"; }
     UniversalGenMesh apply() override
     {
       my_float data[N];
       for (int i = 0; i < N; ++i)
       {
-        data[i] = p.get();
+        data[i] = p[i];
       }
       UniversalGenMesh mesh;
       //creating spin mesh
