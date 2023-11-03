@@ -63,6 +63,13 @@ namespace upg
       }
       ++i;
     } while (nodes.size() > 0);
+
+    int offset = 0;
+    for (auto &nptr : all_nodes)
+    {
+      nptr->set_param_span(std::span<my_float>(all_params.data() + offset, nptr->param_cnt()));
+      offset += nptr->param_cnt();
+    }
   }
 
   UniversalGenJacobian UniversalGenInstance::generate_jacobian(std::span<const float> parameters) // maybe it will create mesh too?
