@@ -1,7 +1,7 @@
 #pragma once
 #include "reconstruction.h"
-#include "gen_tree.h"
-
+#include "tree_node.h"
+#include <memory>
 namespace upg
 {
   enum class ParameterType
@@ -160,16 +160,9 @@ namespace upg
   //should be passed to generate() function
   class UniversalGenInstance
   {
-    Tree generator;
   public:
-    UniversalGenInstance(const UPGStructure &structure)
-    {
-      generator.create(structure);
-      std::vector<ParametersDescription::Param> params;
-      for (int i=0;i<9;i++)
-        params.push_back({0, -1.0f, 1.0f, ParameterType::DIFFERENTIABLE, "p_"+std::to_string(i)});
-      desc.add_parameters(0, "test", params);
-    }
+    UniversalGenInstance(const UPGStructure &structure);
+    //~UniversalGenInstance();
     UniversalGenMesh generate(std::span<const float> parameters);
     //It was used for testing
     //{
@@ -178,17 +171,7 @@ namespace upg
     //    mesh.pos.push_back(parameters[i]);
     //  return mesh;
     //}
-    UniversalGenJacobian generate_jacobian(std::span<const float> parameters)//maybe it will create mesh too?
-    {
-      UniversalGenJacobian jac;
-      jac.x_n = 9;
-      jac.y_n = 9;
-      jac.jacobian = std::vector<float>(9*9, 0);
-      for (int i=0;i<jac.y_n;i++)
-        jac.jacobian[i*jac.x_n + i] = 1; 
-      
-      return jac;
-    }
+    UniversalGenJacobian generate_jacobian(std::span<const float> parameters);
     ParametersDescription desc;
     UPGInputParameters inputParams;
 
@@ -196,6 +179,11 @@ namespace upg
     //put raw parameters list here to generate
     //DO NOT change size of this vector
     std::vector<float> paramsContainer;
+  private:
+    std::vector<std::unique_ptr<GenNode>> all_nodes;
+    GenNode *root;
+    std::vector<my_float> all_params;
+    void tree_del();
   };
 
   //Interface for Universal generator in general
