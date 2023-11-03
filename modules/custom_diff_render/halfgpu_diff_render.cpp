@@ -243,7 +243,7 @@ public:
   }
 
 private:
-  std::shared_ptr<diff_render::IDiffRender> _dr;
+  std::unique_ptr<diff_render::IDiffRender> _dr;
   std::vector<diff_render::Img> adjoints;
   std::vector<diff_render::Img> out_images;
   mutable diff_render::DScene scene_grad;
