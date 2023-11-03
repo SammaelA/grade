@@ -2,37 +2,6 @@
 
 namespace upg
 {
-  GenNode * Tree::node_by_number(uint16_t num, unsigned id)
-  {
-    GenNode *node = NULL;
-    switch(num)
-    {
-      case 2:
-        node = new ScaleNode(id);
-        break;
-      case 3:
-        node = new MoveNode(id);
-        break;
-      case 4:
-        node = new RotateNode(id);
-        break;
-      case 5:
-        node = new AndNode(id);
-        break;
-      case 6:
-        node = new OrNode(id);
-        break;
-      case 7:
-        node = new SubtrNode(id);
-        break;
-      default:
-        node = new FigureNode(id);
-        break;
-
-    }
-    return node;
-  }
-
   void Tree::create(const UPGStructure &structure)
   {
     all_params.clear();
@@ -46,7 +15,7 @@ namespace upg
       {
         n = structure.s[i];
       }
-      GenNode *node = node_by_number(n, i);
+      GenNode *node = node_by_node_type_id(n, i);
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       

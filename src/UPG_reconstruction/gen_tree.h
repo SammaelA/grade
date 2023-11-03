@@ -5,12 +5,6 @@ namespace upg
 {
   class Tree
   {
-    GenNode *root;
-    std::vector<my_float> all_params;
-
-    GenNode *node_by_number(uint16_t num, unsigned id);
-    void tree_del();
-
   public:
     UniversalGenMesh generate()
     {
@@ -22,5 +16,9 @@ namespace upg
     {
       tree_del();
     }
+  private:
+    GenNode *root;
+    std::vector<my_float> all_params;
+    void tree_del();
   };
 }
