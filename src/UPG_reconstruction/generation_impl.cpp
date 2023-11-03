@@ -35,6 +35,7 @@ namespace upg
       }
       GenNode *node = node_by_node_type_id(n, i);
       all_nodes.push_back(std::unique_ptr<GenNode>(node));
+      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block());
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       
@@ -61,11 +62,6 @@ namespace upg
       }
       ++i;
     } while (nodes.size() > 0);
-    // generator.create(structure);
-    std::vector<ParametersDescription::Param> params;
-    for (int i = 0; i < 9; i++)
-      params.push_back({0, -1.0f, 1.0f, ParameterType::DIFFERENTIABLE, "p_" + std::to_string(i)});
-    desc.add_parameters(0, "test", params);
   }
 
   UniversalGenJacobian UniversalGenInstance::generate_jacobian(std::span<const float> parameters) // maybe it will create mesh too?

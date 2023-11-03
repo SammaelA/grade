@@ -64,6 +64,29 @@ namespace upg
     }
   };
 
+  class FreeTriangleNode : public PrimitiveNode
+  {
+  public:
+    FreeTriangleNode(unsigned id) : PrimitiveNode(id) { node_num = 0; name = "FreeTriangle"; }
+    UniversalGenMesh apply() override
+    {
+      UniversalGenMesh mesh;
+      for (int i=0;i<9;i++)
+        mesh.pos.push_back(p[i]);
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      for (int i = 0; i < 9; i++)
+        params.push_back({0, -1.0f, 1.0f, ParameterType::DIFFERENTIABLE, "p_" + std::to_string(i)});
+      return params;
+    }
+    unsigned param_cnt() override
+    {
+      return 9;
+    }
+  };
   class FigureNode : public PrimitiveNode
   {
   public:
@@ -369,6 +392,9 @@ namespace upg
     GenNode *node = NULL;
     switch(num)
     {
+      case 1: 
+        node = new FreeTriangleNode(id);
+        break;
       case 2:
         node = new ScaleNode(id);
         break;

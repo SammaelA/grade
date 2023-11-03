@@ -16,9 +16,9 @@ namespace upg
     {
       return ID;
     }
-    uint16_t get_node_num()
+    std::string get_node_name()
     {
-      return node_num;
+      return name;
     }
     void set_param_span(std::span<my_float> s)
     {
@@ -26,9 +26,14 @@ namespace upg
     }
     virtual UniversalGenMesh apply() = 0;
     virtual bool add_child(GenNode *node) = 0;// returns the availability of free space
-    inline virtual unsigned param_cnt() = 0;
-    inline virtual unsigned child_cnt() = 0;
+    virtual unsigned param_cnt() = 0;
+    virtual unsigned child_cnt() = 0;
     virtual std::vector<GenNode *> childs() = 0;
+    virtual std::vector<ParametersDescription::Param> get_parameters_block()
+    {
+      logerr("AAAAA");
+      return {};
+    }
   };
   GenNode *node_by_node_type_id(uint16_t num, unsigned id);
 }

@@ -128,8 +128,10 @@ namespace upg
       }
       sleep(1); //to be sure that png save is finished
 
+      if (diff_render)
       diff_render->init_optimization(references, diff_render_settings, 
                                      settings.get_bool("save_intermediate_images", false));
+      if (simple_render)
       simple_render->init_optimization(references, diff_render_settings, 
                                      settings.get_bool("save_intermediate_images", false));
     }
@@ -287,6 +289,7 @@ namespace upg
     std::vector<ReferenceView> reference = get_reference(*input_blk);
     UPGReconstructionResult start_params;
     start_params.parameters.p = {0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81};
+    start_params.structure.s = {1};
 
     std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*opt_blk, reference, start_params));
     auto opt_res = optimizer->optimize();
