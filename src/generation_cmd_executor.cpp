@@ -6,7 +6,7 @@
 #include "parameter_selection/parameter_selection.h"
 #include "save_utils/serialization.h"
 #include "hydra/hydra_scene_exporter.h"
-#include "UPG_reconstruction/reconstruction.h"
+#include "UPG_reconstruction/upg.h"
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
 

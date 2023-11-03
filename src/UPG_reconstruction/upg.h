@@ -5,7 +5,6 @@
 #include "third_party/span.h"
 #include "tinyEngine/model.h"
 #include <map>
-#include "generation.h"
 
 namespace upg
 {
@@ -25,4 +24,7 @@ namespace upg
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk);
+  bool create_model_from_block(const Block &bl, ComplexModel &out_mod);
+  bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
+                    ComplexModel &out_mod);
 };

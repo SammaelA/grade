@@ -1,10 +1,17 @@
 #pragma once
 #include <vector>
 #include <map>
-#include "p_v_structs.h"
 #include "common_utils/utility.h"
+#include "common_utils/template_vectors.h"
 namespace upg
 {
+  typedef float my_float;
+
+  typedef dgen::g_vec2<my_float> vec2;
+  typedef dgen::g_vec3<my_float> vec3;
+  typedef dgen::g_vec4<my_float> vec4;
+  typedef dgen::g_mat43<my_float> mat43;
+
   struct UniversalGenMesh
   {
     //triangle mesh pos.size()%9 == 0
@@ -135,4 +142,5 @@ namespace upg
     int total_params_count = 0;
     std::map<unsigned, ParamBlock> block_params;
   };
+  
 }

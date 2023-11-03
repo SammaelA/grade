@@ -1,6 +1,6 @@
 #pragma once
-#include "reconstruction.h"
-#include "models.h"
+#include "upg.h"
+#include "generation_common.h"
 namespace upg
 {
   class GenNode

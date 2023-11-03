@@ -1,7 +1,7 @@
 #pragma once
-#include "reconstruction.h"
+#include "upg.h"
 #include "tinyEngine/texture.h"
-#include "generation_impl.h"
+#include "generation.h"
 #include "tinyEngine/camera.h"
 
 namespace upg

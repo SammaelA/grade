@@ -1,54 +1,79 @@
 #include "generation.h"
-#include "reconstruction_impl.h"
 #include "tinyEngine/engine.h"
 
 namespace upg
 {
-
-  void mesh_to_complex_model(const UniversalGenMesh &mesh, ComplexModel &mod)
+  UniversalGenMesh UniversalGenInstance::generate(std::span<const float> parameters)
   {
-    assert(mesh.pos.size()%9 == 0);
-    assert(mesh.pos.size()/3 == mesh.norm.size()/3);
-    assert(mesh.pos.size()/3 == mesh.tc.size()/2);
-
-    mod.models.push_back(new Model());
-    Model *m = mod.models.back();
-    m->positions = mesh.pos;
-    m->normals = mesh.norm;
-    int sz = mesh.pos.size()/3;//number of vertices
-    m->colors.resize(4*sz);
-    for (int i=0;i<sz;i++)
+    for (int i = 0; i < all_params.size(); ++i)
     {
-      m->colors[4*i]   = mesh.tc[2*i];
-      m->colors[4*i+1] = mesh.tc[2*i+1];
-      m->colors[4*i+2] = 0;
-      m->colors[4*i+3] = 1;
+      if (i < parameters.size())
+      {
+        all_params[i] = parameters[i];
+      }
+      else
+      {
+        all_params[i] = 0;
+      }
     }
-
-    m->indices.resize(3*sz);
-    for (int i=0;i<sz;i++)
-      m->indices[i] = i;
-
-    //Some generic texture. You can choose another one (see resources.blk for available options)
-    mod.materials.push_back(Material(engine::textureManager->get("porcelain")));
+    return root->apply();
+    // generator.take_params(parameters);
+    // return generator.generate();
   }
 
-  bool create_model_from_block(Block &bl, ComplexModel &mod)
+  UniversalGenInstance::UniversalGenInstance(const UPGStructure &structure)
   {
-    UPGStructure structure;
-    UPGParametersRaw params;
-    bl.get_arr("structure", structure.s);
-    bl.get_arr("params", params.p);
+        all_params.clear();
+    std::vector<GenNode *> nodes;
+    std::vector<std::pair<GenNode *, unsigned>> param_startings;
+    int i = 0;
+    do
+    {
+      unsigned n = 0;
+      if (i < structure.s.size())
+      {
+        n = structure.s[i];
+      }
+      GenNode *node = node_by_node_type_id(n, i);
+      all_nodes.push_back(std::unique_ptr<GenNode>(node));
+      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block());
+      param_startings.push_back({node, all_params.size()});
+      all_params.resize(all_params.size() + node->param_cnt());
+      
+      if (i == 0)
+      {
+        root = node;
+        if (node->child_cnt() > 0)
+        {
+          nodes.push_back(node);
+        }
+      }
+      else
+      {
+        GenNode *last = nodes[nodes.size() - 1];
+        
+        if (!last->add_child(node))
+        {
+          nodes.pop_back();
+        }
+        if (node->child_cnt() > 0)
+        {
+          nodes.push_back(node);
+        }
+      }
+      ++i;
+    } while (nodes.size() > 0);
+  }
 
-    //create mesh here
-    //UniversalGenInstance gen(structure);
-    //auto mesh = gen.generate(params.p);
-    UniversalGenMesh mesh;
-    mesh.pos = {0,0,0, -1,0,0, 0,1,-1};
-    mesh.norm = {0,1/sqrtf(2),1/sqrtf(2), 0,1/sqrtf(2),1/sqrtf(2), 0,1/sqrtf(2),1/sqrtf(2)};
-    mesh.tc = {0,0, 1,0, 0,1};
-    mesh_to_complex_model(mesh, mod);
+  UniversalGenJacobian UniversalGenInstance::generate_jacobian(std::span<const float> parameters) // maybe it will create mesh too?
+  {
+    UniversalGenJacobian jac;
+    jac.x_n = 9;
+    jac.y_n = 9;
+    jac.jacobian = std::vector<float>(9 * 9, 0);
+    for (int i = 0; i < jac.y_n; i++)
+      jac.jacobian[i * jac.x_n + i] = 1;
 
-    return true;
+    return jac;
   }
 }
