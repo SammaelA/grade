@@ -514,7 +514,6 @@ bool load_block_from_string(std::string &str, Block &b)
     }
     else
     {
-        logerr("global block should start with {");
         return false;
     }  
     return true;  

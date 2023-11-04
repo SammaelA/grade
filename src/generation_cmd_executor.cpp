@@ -276,8 +276,6 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
   {
     auto &cmd = genCmdBuffer->front();
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    if (genCtx.inited || cmd.type == GC_INIT_SCENE)
-    {
     switch (cmd.type)
     {
     case GC_GEN_HMAP:
@@ -596,10 +594,12 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       logerr("=============================");
     }
       break;
+    case GC_UPG_TESTS:
+      upg::perform_tests();
+      break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));
       break;
-    }
     }
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     float ms = 1e-3 * std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();

@@ -186,10 +186,13 @@ void InputCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case IC_EXIT:
-      genCmdBuffer->push(GC_CLEAR_SCENE);
-      genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
-      renderCmdBuffer->push(RC_UPDATE_HMAP);
-      renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+      if (genCtx.inited)
+      {
+        genCmdBuffer->push(GC_CLEAR_SCENE);
+        genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
+        renderCmdBuffer->push(RC_UPDATE_HMAP);
+        renderCmdBuffer->push(RC_UPDATE_OBJECTS);
+      }
       renderCmdBuffer->push(RC_FINISH);
       return;
     case IC_TREE_GEN_PARAMETER_SELECTION:
@@ -322,6 +325,9 @@ void InputCmdExecutor::execute(int max_cmd_count)
       break;
     case IC_SHOW_WINDOW:
       renderCmdBuffer->push(RC_SHOW_WINDOW, cmd.args);
+      break;
+    case IC_UPG_TESTS:
+      genCmdBuffer->push(GC_UPG_TESTS);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

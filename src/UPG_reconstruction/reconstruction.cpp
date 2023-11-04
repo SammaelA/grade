@@ -197,7 +197,6 @@ namespace upg
 
       pd.add(cameras_pd);
       pd.add(gen.desc);
-      pd.print_info();
     }
     virtual std::vector<UPGReconstructionResult> optimize() override
     {
@@ -265,8 +264,8 @@ namespace upg
 
     std::vector<ReferenceView> reference = get_reference(*input_blk);
     UPGReconstructionResult start_params;
-    start_params.parameters.p = {0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81};
-    start_params.structure.s = {1};
+    opt_blk->get_arr("start_parameters", start_params.parameters.p);
+    opt_blk->get_arr("start_structure", start_params.structure.s);
 
     std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*opt_blk, reference, start_params));
     auto opt_res = optimizer->optimize();

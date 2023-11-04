@@ -27,4 +27,6 @@ namespace upg
   bool create_model_from_block(const Block &bl, ComplexModel &out_mod);
   bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
                     ComplexModel &out_mod);
+
+  void perform_tests();
 };

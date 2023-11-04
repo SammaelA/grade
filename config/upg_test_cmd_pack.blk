@@ -1,8 +1,4 @@
 {
-  cmd {cmd_name:s = "IC_INIT_SCENE"}
-  cmd {
-    cmd_name:s = "IC_UPG_RECONSTRUCTION"
-    settings_path:s = "UPG_reconstruction_demo_config.blk"
-  }
+  cmd {cmd_name:s = "IC_UPG_TESTS"}
   cmd {cmd_name:s = "IC_EXIT"}
 }
