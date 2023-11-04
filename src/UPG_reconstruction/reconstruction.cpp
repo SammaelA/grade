@@ -1,6 +1,5 @@
 #include "upg.h"
 #include "preprocessing.h"
-#include "reconstruction_impl.h"
 #include "preprocessing.h"
 #include "graphics_utils/simple_model_utils.h"
 #include "tinyEngine/engine.h"
@@ -85,11 +84,11 @@ namespace upg
   public:
     virtual ~UPGOptimizer() = default;
     virtual std::vector<UPGReconstructionResult> optimize() = 0;
-    UPGOptimizer(const Block &settings, std::vector<ReferenceView> &reference)
+    UPGOptimizer(const Block &settings, ReconstructionReference &reference)
     {
       render_w = settings.get_int("render_w", 128);
       render_h = settings.get_int("render_h", 128);
-      cameras_pd = get_cameras_parameter_description(reference);
+      cameras_pd = get_cameras_parameter_description(reference.images);
       diff_render.reset(get_halfgpu_custom_diff_render());
       simple_render.reset(new NonDiffRender());
       
@@ -99,10 +98,10 @@ namespace upg
       diff_render_settings.image_h = render_h;
 
       std::vector<Texture> references;
-      for (int i=0; i<reference.size(); i++)
+      for (int i=0; i<reference.images.size(); i++)
       {
-        reference[i].resized_mask = resize_mask(reference[i].mask, render_w, render_h, true);
-        references.push_back(reference[i].resized_mask);
+        reference.images[i].resized_mask = resize_mask(reference.images[i].mask, render_w, render_h, true);
+        references.push_back(reference.images[i].resized_mask);
       }
 
       if (diff_render)
@@ -180,7 +179,7 @@ namespace upg
   class UPGOptimizerAdam : public UPGOptimizer
   {
   public:
-    UPGOptimizerAdam(const Block &settings, std::vector<ReferenceView> &reference, const UPGReconstructionResult &start_params) :
+    UPGOptimizerAdam(const Block &settings, ReconstructionReference &reference, const UPGReconstructionResult &start_params) :
     UPGOptimizer(settings, reference),
     gen(start_params.structure)
     {
@@ -252,7 +251,7 @@ namespace upg
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk)
   {
-    //we store settings in separate block for each stage of the algorithm
+    //load settings from given blk
     Block *input_blk = blk.get_block("input");
     Block *gen_blk = blk.get_block("generator");
     Block *opt_blk = blk.get_block("optimization");
@@ -262,13 +261,32 @@ namespace upg
       return {};
     }
 
-    std::vector<ReferenceView> reference = get_reference(*input_blk);
+    //get ReconstructionReference - all info about the object that we want to reconstruct
+    ReconstructionReference reference = get_reference(*input_blk);
     UPGReconstructionResult start_params;
     opt_blk->get_arr("start_parameters", start_params.parameters.p);
     opt_blk->get_arr("start_structure", start_params.structure.s);
 
+    //create optimizer and use it to find a set of best UPG parameters
     std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*opt_blk, reference, start_params));
     auto opt_res = optimizer->optimize();
+    
+    //TODO: compare results with reference and calculate reconstruction quality
+    //Also calculate another quality metric if we have synthetic reference
+
+    //print results of the reconstruction
+    if (opt_blk->get_bool("verbose"))
+    {
+      debug("UPG Reconstruction finished\n");
+      for (int i=0;i<opt_res.size();i++)
+      {
+        debug("=============================\n");
+        debug("Optimization result %d\n",i);
+        debug("Quality %.5f\n", opt_res[i].quality);
+      }
+      debug("=============================\n");
+    }
+    
     return opt_res;
   }
 }

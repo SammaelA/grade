@@ -584,14 +584,6 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     case GC_UPG_RECONSTRUCTION:
     {
       auto res = upg::reconstruct(cmd.args);
-      logerr("UPG Reconstruction finished");
-      for (int i=0;i<res.size();i++)
-      {
-        logerr("=============================");
-        logerr("Optimization result %d",i);
-        logerr("Quality %.5f", res[i].quality);
-      }
-      logerr("=============================");
     }
       break;
     case GC_UPG_TESTS:

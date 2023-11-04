@@ -72,38 +72,36 @@ namespace upg
     return rv;
   }
 
-  ReferenceView preprocess_get_reference_view_synthetic(const Block &synthetic_reference_blk, const Block &view_blk)
+  ReferenceView preprocess_get_reference_view_synthetic(const ComplexModel &model, const Block &model_reference_blk, const Block &view_blk)
   {
     ReferenceView rv;
     rv.camera = visualizer::load_camera_settings(view_blk);
     rv.fixed_camera = view_blk.get_bool("camera.fixed", true);
-
-    // our reference is a set of procedural generator's parameters
-    // we should create model from these parameters and render it
-    // with given camera (it contains in view_blk)
-    ComplexModel model;
-    create_model_from_block(synthetic_reference_blk, model);
-    model.update();
     rv.mask = render_silhouette(model, rv.camera, 
-                                synthetic_reference_blk.get_int("tex_w", 1024),
-                                synthetic_reference_blk.get_int("tex_h", 1024));
+                                model_reference_blk.get_int("tex_w", 1024),
+                                model_reference_blk.get_int("tex_h", 1024));
 
     return rv;
   }
 
-  std::vector<ReferenceView> get_reference(const Block &input_blk)
+  ReconstructionReference get_reference(const Block &input_blk)
   {
-    std::vector<ReferenceView> reference;
+    ReconstructionReference reference;
     Block *synthetic_reference = input_blk.get_block("synthetic_reference");
+    if (synthetic_reference)
+    {
+      create_model_from_block(*synthetic_reference, reference.model);
+      reference.model.update();
+    }
     for (int i = 0; i < input_blk.size(); i++)
     {
       Block *view_blk = input_blk.get_block(std::string("view_")+std::to_string(i));
       if (view_blk)
       {
         if (synthetic_reference)
-          reference.push_back(preprocess_get_reference_view_synthetic(*synthetic_reference, *view_blk));
+          reference.images.push_back(preprocess_get_reference_view_synthetic(reference.model, *synthetic_reference, *view_blk));
         else
-          reference.push_back(preprocess_get_reference_view(*view_blk));
+          reference.images.push_back(preprocess_get_reference_view(*view_blk));
       }
     }
 
