@@ -12,6 +12,7 @@ namespace upg
     std::span<const float> p;
   public:
     GenNode(unsigned id) { ID = id; }
+    virtual ~GenNode() = default;
     unsigned get_ID()
     {
       return ID;
