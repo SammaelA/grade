@@ -1,8 +1,8 @@
 {
     input {
         synthetic_reference {
-            tex_w:i = 128
-            tex_h:i = 128
+            //tex_w:i = 128
+            //tex_h:i = 128
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
@@ -23,6 +23,8 @@
 
     }
     optimization {
+        render_w:i = 128
+        render_h:i = 128
         iterations:i = 250
         verbose:b = true
         save_intermediate_images:b = false

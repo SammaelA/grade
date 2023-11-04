@@ -55,11 +55,6 @@ namespace upg
     return pd;
   }
 
-  Texture resize_mask(Texture mask, int tex_w, int tex_h)
-  {
-    assert(mask.get_W() == tex_w && mask.get_H() == tex_h);
-    return mask;
-  }
   CameraSettings camera_from_params(const std::vector<float> &p)
   {
     CameraSettings cam;
@@ -106,7 +101,7 @@ namespace upg
       std::vector<Texture> references;
       for (int i=0; i<reference.size(); i++)
       {
-        reference[i].resized_mask = resize_mask(reference[i].mask, render_w, render_h);
+        reference[i].resized_mask = resize_mask(reference[i].mask, render_w, render_h, true);
         references.push_back(reference[i].resized_mask);
       }
 
