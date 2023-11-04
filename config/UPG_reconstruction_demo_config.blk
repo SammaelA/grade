@@ -1,6 +1,12 @@
 {
     input {
-        view_1 {
+        synthetic_reference {
+            tex_w:i = 128
+            tex_h:i = 128
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}
+            structure:arr = {1}
+        } 
+        view_0 {
             camera.origin:p3 = 0.000000, 0.000000, 3.000000
             camera.target:p3 = 0.000000, 0.000000, 0.000000
             camera.up:p3 = 0.000000, 1.000000, 0.000000
@@ -8,11 +14,6 @@
             camera.z_far:r = 100.000000
             camera.fov_rad:r = 1.00000
             camera.fixed:b = true
-
-            synthetic_reference {
-              tex_w:i = 128
-              tex_h:i = 128
-            } 
 
             //image:s = "resources/textures/building_7.png"
             //mask:s = "resources/textures/building_7_mask.png"
@@ -24,6 +25,6 @@
     optimization {
         iterations:i = 250
         verbose:b = true
-        save_intermediate_images:b = true
+        save_intermediate_images:b = false
     }
 }

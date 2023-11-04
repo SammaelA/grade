@@ -55,23 +55,6 @@ namespace upg
     return pd;
   }
 
-  std::vector<ReferenceView> get_reference(const Block &input_blk)
-  {
-    std::vector<ReferenceView> reference;
-    for (int i = 0; i < input_blk.size(); i++)
-    {
-      Block *view_blk = input_blk.get_block(i);
-      if (!view_blk)
-      {
-        logerr("UPG Reconstruction: views block should contain only blocks with data for each view");
-        continue;
-      }
-      reference.push_back(preprocess_get_reference_view(*view_blk));
-    }
-
-    return reference;
-  }
-
   Texture resize_mask(Texture mask, int tex_w, int tex_h)
   {
     assert(mask.get_W() == tex_w && mask.get_H() == tex_h);
@@ -126,7 +109,6 @@ namespace upg
         reference[i].resized_mask = resize_mask(reference[i].mask, render_w, render_h);
         references.push_back(reference[i].resized_mask);
       }
-      sleep(1); //to be sure that png save is finished
 
       if (diff_render)
       diff_render->init_optimization(references, diff_render_settings, 

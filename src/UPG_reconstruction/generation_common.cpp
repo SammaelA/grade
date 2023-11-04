@@ -97,13 +97,8 @@ namespace upg
   bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
                     ComplexModel &mod)
   {
-    logerr("paramss len %d", params.p.size());
-    //create mesh here
     UniversalGenInstance gen(structure);
     auto mesh = gen.generate(params.p);
-    //mesh.pos = {0,0,0, -1,0,0, 0,1,-1};
-    //mesh.norm = {0,1/sqrtf(2),1/sqrtf(2), 0,1/sqrtf(2),1/sqrtf(2), 0,1/sqrtf(2),1/sqrtf(2)};
-    //mesh.tc = {0,0, 1,0, 0,1};
     mesh_to_complex_model(mesh, mod);
 
     return true;
