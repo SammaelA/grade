@@ -39,6 +39,13 @@ namespace upg
         verbose:b = false
         save_intermediate_images:b = false
     }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+        save_folder:b = upg_triangle_reconstruction
+        save_turntable:b = true
+        save_reference_turntable:b = true
+    }
     }
       )"""";
     Block settings_blk;

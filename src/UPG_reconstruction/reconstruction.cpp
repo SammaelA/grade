@@ -255,7 +255,8 @@ namespace upg
     Block *input_blk = blk.get_block("input");
     Block *gen_blk = blk.get_block("generator");
     Block *opt_blk = blk.get_block("optimization");
-    if (!input_blk || !gen_blk || !opt_blk)
+    Block *res_blk = blk.get_block("results");
+    if (!input_blk || !gen_blk || !opt_blk || !res_blk)
     {
       logerr("UPG Reconstruction: input, generator, optimization blocks should exist in configuration");
       return {};
@@ -278,8 +279,9 @@ namespace upg
       ComplexModel reconstructed_model;
       if (!create_model(result.structure, result.parameters, reconstructed_model))
         logerr("failed to create model from reconstructed structure and parameters!");
-      result.quality_ir = get_image_based_quality(reference, reconstructed_model);
-      if (reference.is_synthetic)
+      if (res_blk->get_bool("check_image_quality"))
+        result.quality_ir = get_image_based_quality(reference, reconstructed_model);
+      if (reference.is_synthetic && res_blk->get_bool("check_model_quality"))
         result.quality_synt = get_model_based_quality(reference, reconstructed_model);
     }
 
