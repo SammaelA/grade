@@ -223,8 +223,10 @@ namespace upg
           X.differentiable[i] -= alpha*Vh/(sqrt(Sh) + eps);
         }
         if ((iter % 5 == 0) && verbose)
-          debug("Adam iter %d val = %.4f best_val = %.4f\n", iter, val, best_result);
+          debug("Adam iter %3d  val = %.4f best_val = %.4f\n", iter, val, best_result);
       }
+      if (verbose)
+        debug("Adam final res val = %.4f best_val = %.4f\n", best_result, best_result);
 
       UPGReconstructionResult res;
       res.structure = gen_structure;
@@ -264,13 +266,28 @@ namespace upg
 
     //get ReconstructionReference - all info about the object that we want to reconstruct
     ReconstructionReference reference = get_reference(*input_blk);
-    UPGReconstructionResult start_params;
-    opt_blk->get_arr("start_parameters", start_params.parameters.p);
-    opt_blk->get_arr("start_structure", start_params.structure.s);
 
-    //create optimizer and use it to find a set of best UPG parameters
-    std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*opt_blk, reference, start_params));
-    auto opt_res = optimizer->optimize();
+    //get start parameters for optimization. They are required for Adam and other local optimizers
+    //and have to be set manually
+    UPGReconstructionResult start_params;
+    Block *start_params_blk = opt_blk->get_block("start");
+    if (start_params_blk)
+    {
+      start_params_blk->get_arr("params", start_params.parameters.p);
+      start_params_blk->get_arr("structure", start_params.structure.s);
+    }
+
+    //perform optimization. There might be one or several steps of it, I expect the first step 
+    //to be some sort of Genetic Algorithm and others - Adam optimizers for fine-tuning the params
+    int step_n = 0;
+    std::vector<UPGReconstructionResult> opt_res = {start_params};
+    while (opt_blk->get_block("step_"+std::to_string(step_n)))
+    {
+      Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
+      std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*step_blk, reference, opt_res[0]));
+      opt_res = optimizer->optimize();
+      step_n++;
+    }
     
     //TODO: compare results with reference and calculate reconstruction quality
     //Also calculate another quality metric if we have synthetic reference

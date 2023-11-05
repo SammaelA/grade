@@ -31,13 +31,17 @@ namespace upg
 
     }
     optimization {
-        start_parameters:arr = {0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81}
-        start_structure:arr = {1}
-        render_w:i = 256
-        render_h:i = 256
-        iterations:i = 100
-        verbose:b = false
-        save_intermediate_images:b = false
+        start {
+            params:arr = {0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81}    
+            structure:arr = {1} 
+        }
+        step_0 {
+            render_w:i = 256
+            render_h:i = 256
+            iterations:i = 100
+            verbose:b = false
+            save_intermediate_images:b = false
+        }
     }
     results {
         check_image_quality:b = true
