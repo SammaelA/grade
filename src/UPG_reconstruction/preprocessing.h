@@ -30,4 +30,5 @@ namespace upg
   Texture resize_mask(Texture mask, int tex_w, int tex_h, bool to_binary_mask = false);
   float get_image_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model);
   float get_model_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model);
+  void  render_model_turntable(const Block &hydra_settings, const ComplexModel &model);
 }

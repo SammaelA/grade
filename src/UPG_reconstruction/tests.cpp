@@ -46,9 +46,27 @@ namespace upg
     results {
         check_image_quality:b = true
         check_model_quality:b = true
-        save_folder:b = upg_triangle_reconstruction
-        save_turntable:b = true
-        save_reference_turntable:b = true
+        //save_folder:s = "upg_triangle"
+        //save_turntable:b = true
+        save_turntable_hydra_settings {
+            save_filename:s = "upg_triangle/result"
+            image_count:i = 16
+            rays_per_pixel:i = 512
+            image_size:i2 = 1024, 1024
+            distance:r = 2
+            height:r = 0.5
+            render_terrain:b = false
+        }
+        //save_reference_turntable:b = true
+        save_reference_turntable_hydra_settings {
+            save_filename:s = "upg_triangle/reference"
+            image_count:i = 16
+            rays_per_pixel:i = 512
+            image_size:i2 = 1024, 1024
+            distance:r = 2
+            height:r = 0.5
+            render_terrain:b = false
+        }
     }
     }
       )"""";

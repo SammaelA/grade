@@ -294,12 +294,20 @@ namespace upg
     for (auto &result : opt_res)
     {
       ComplexModel reconstructed_model;
+      if (res_blk->get_string("save_folder") != "")
+        prepare_directory("saves/" + res_blk->get_string("save_folder"));
       if (!create_model(result.structure, result.parameters, reconstructed_model))
         logerr("failed to create model from reconstructed structure and parameters!");
       if (res_blk->get_bool("check_image_quality"))
         result.quality_ir = get_image_based_quality(reference, reconstructed_model);
       if (reference.is_synthetic && res_blk->get_bool("check_model_quality"))
         result.quality_synt = get_model_based_quality(reference, reconstructed_model);
+    
+      if (res_blk->get_bool("save_turntable") && res_blk->get_block("save_turntable_hydra_settings"))
+        render_model_turntable(*(res_blk->get_block("save_turntable_hydra_settings")), reconstructed_model);
+      if (reference.is_synthetic && res_blk->get_bool("save_reference_turntable") && 
+          res_blk->get_block("save_reference_turntable_hydra_settings"))
+        render_model_turntable(*(res_blk->get_block("save_reference_turntable_hydra_settings")), reference.model); 
     }
 
     //print results of the reconstruction

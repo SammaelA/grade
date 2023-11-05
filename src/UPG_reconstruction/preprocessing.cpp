@@ -4,6 +4,8 @@
 #include "tinyEngine/postfx.h"
 #include "graphics_utils/simple_model_utils.h"
 #include "simple_render_and_compare.h"
+#include "core/scene.h"
+#include "hydra/hydra_scene_exporter.h"
 #include <random>
 #include <glm/glm.hpp>
 
@@ -227,5 +229,18 @@ namespace upg
     
     float mse = render.render_and_compare_silhouette(reconstructed_model.models[0]->positions, cameras);
     return -10*log10(MAX(1e-9f,mse));
+  }
+
+  void render_model_turntable(const Block &hydra_settings, const ComplexModel &model)
+  {
+    Scene scene;
+    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap->fill_const(0);
+    scene.instanced_models.emplace_back();
+    scene.instanced_models[0].instances = {glm::mat4(1.0f)};
+    scene.instanced_models[0].model = model;
+    Block export_settings;
+    hydra::prepare_hydra_export_settings_block(hydra_settings, export_settings);
+    hydra::export_scene("model_turntable", scene, export_settings);
   }
 }

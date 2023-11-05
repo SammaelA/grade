@@ -549,7 +549,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       Scene scene;
       ParameterSelector::create_single_tree_scene(tree_type, scene);
       Block export_settings;
-      ParameterSelector::prepare_hydra_export_settings_block(cmd.args, export_settings);
+      hydra::prepare_hydra_export_settings_block(cmd.args, export_settings);
       hydra::export_scene("visualize_tree_scene", scene, export_settings);
     }
       break;
@@ -577,7 +577,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       scene.instanced_models[0].instances = {glm::mat4(1.0f)};
       scene.instanced_models[0].model = cm;
       Block export_settings;
-      ParameterSelector::prepare_hydra_export_settings_block(cmd.args, export_settings);
+      hydra::prepare_hydra_export_settings_block(cmd.args, export_settings);
       hydra::export_scene("visualize_obj_scene", scene, export_settings);
     }
       break;

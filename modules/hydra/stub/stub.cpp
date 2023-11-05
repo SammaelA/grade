@@ -17,4 +17,8 @@ namespace hydra
     logerr("Hydra module not implemented!");
     return false;
   }
+  void prepare_hydra_export_settings_block(const Block &in_settings, Block &export_settings)
+  {
+    logerr("Hydra module not implemented!");
+  }
 }

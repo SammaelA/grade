@@ -62,6 +62,34 @@ void sig_handler(int signo)
 
 namespace hydra
 {
+  void prepare_hydra_export_settings_block(const Block &in_settings, Block &export_settings)
+  {
+    std::string file_name = in_settings.get_string("save_filename", "selection/result");
+    int image_count = in_settings.get_int("image_count", 1);
+    float distance = in_settings.get_double("distance", 150);
+    float height = in_settings.get_double("height", 50);
+    glm::ivec2 image_size = in_settings.get_ivec2("image_size", {512, 512});
+    int rays_per_pixel = in_settings.get_int("rays_per_pixel", 64);
+    bool render_terrain = in_settings.get_bool("render_terrain", true);
+    
+    Block cameras;
+    for (int i = 0; i < image_count; i++)
+    {
+      Block camera_blk;
+      camera_blk.add_vec3("camera_look_at", glm::vec3(0, height, 0));
+      camera_blk.add_vec3("camera_pos", glm::vec3(distance * cos(2 * PI * i / ((float)image_count)), height, distance * sin(2 * PI * i / ((float)image_count))));
+      camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
+      cameras.add_block("camera", &camera_blk);
+    }
+    export_settings.add_block("cameras", &cameras);
+    export_settings.add_int("image_width", image_size.x);
+    export_settings.add_int("image_height", image_size.y);
+    export_settings.add_int("rays_per_pixel", rays_per_pixel);
+    export_settings.add_bool("need_terrain", render_terrain);
+    export_settings.add_bool("white_terrain", true);
+    export_settings.add_string("demo_copy_dir", "saves/" + file_name);
+  }
+
   bool export_scene(std::string directory, Scene &scene, Block &export_settings)
   {
     pid_t pid = fork();
