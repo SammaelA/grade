@@ -221,7 +221,7 @@ namespace upg
     std::vector<Texture> images;
     for (auto &c : cameras)
       images.push_back(render_silhouette(reference.model, c, render_settings.image_w, render_settings.image_h));
-    render.init_optimization(images, render_settings, true);
+    render.init_optimization(images, render_settings);
     
     std::vector<float> positions;
     for (auto *m : reconstructed_model.models)
