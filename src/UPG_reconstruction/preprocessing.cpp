@@ -3,6 +3,8 @@
 #include "tinyEngine/shader.h"
 #include "tinyEngine/postfx.h"
 #include "graphics_utils/simple_model_utils.h"
+#include "simple_render_and_compare.h"
+#include <random>
 #include <glm/glm.hpp>
 
 namespace upg
@@ -90,6 +92,7 @@ namespace upg
     Block *synthetic_reference = input_blk.get_block("synthetic_reference");
     if (synthetic_reference)
     {
+      reference.is_synthetic = true;
       create_model_from_block(*synthetic_reference, reference.model);
       reference.model.update();
     }
@@ -151,5 +154,78 @@ namespace upg
     delete_framebuffer(fbo);
 
     return resized_mask;
+  }
+
+  float get_image_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model)
+  {
+    NonDiffRender render;
+    IDiffRender::Settings render_settings;
+    render_settings.image_w = reference.images[0].mask.get_W();
+    render_settings.image_h = reference.images[0].mask.get_H();
+    std::vector<CameraSettings> cameras;
+    std::vector<Texture> images;
+    for (auto &im : reference.images)
+    {
+      assert(render_settings.image_w == im.mask.get_W());
+      assert(render_settings.image_h == im.mask.get_H());
+      cameras.push_back(im.camera);
+      images.push_back(im.mask);
+    }
+    render.init_optimization(images, render_settings);
+    
+    std::vector<float> positions;
+    for (auto *m : reconstructed_model.models)
+      positions.insert(positions.end(), m->positions.begin(), m->positions.end());
+    
+    float mse = render.render_and_compare_silhouette(positions, cameras);
+    return -10*log10(MAX(1e-9f,mse));
+  }
+
+  std::vector<CameraSettings> get_cameras_uniform_sphere(CameraSettings orig_camera, int cams_n, float distance)
+  {
+    std::vector<CameraSettings> cameras;
+    std::mt19937 gen(0);
+    std::uniform_real_distribution<float> d_ur = std::uniform_real_distribution<float>(0,1);
+
+    for (int i=0;i<cams_n;i++)
+    {
+      float phi = 2*PI*d_ur(gen);
+      float psi = (PI/2)*(1 - sqrtf(d_ur(gen)));
+      if (d_ur(gen) > 0.5)
+        psi = - psi;
+      
+      cameras.push_back(orig_camera);
+      glm::vec3 view_dir = -glm::vec3(cos(psi)*sin(phi), sin(psi), cos(psi)*cos(phi));
+      glm::vec3 tangent = glm::normalize(glm::cross(view_dir, orig_camera.up));
+      glm::vec3 new_up = glm::normalize(glm::cross(view_dir, tangent));
+      cameras.back().up = new_up;
+      cameras.back().origin = cameras.back().target -distance*view_dir;
+    }
+
+    return cameras;
+  }
+
+  float get_model_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model)
+  {
+    if (!reference.is_synthetic)
+      return 0;
+    
+    NonDiffRender render;
+    IDiffRender::Settings render_settings;
+    render_settings.image_w = reference.images[0].mask.get_W();
+    render_settings.image_h = reference.images[0].mask.get_H();
+    float distance = length(reference.images[0].camera.origin - reference.images[0].camera.target);
+    std::vector<CameraSettings> cameras = get_cameras_uniform_sphere(reference.images[0].camera, 64, distance);
+    std::vector<Texture> images;
+    for (auto &c : cameras)
+      images.push_back(render_silhouette(reference.model, c, render_settings.image_w, render_settings.image_h));
+    render.init_optimization(images, render_settings, true);
+    
+    std::vector<float> positions;
+    for (auto *m : reconstructed_model.models)
+      positions.insert(positions.end(), m->positions.begin(), m->positions.end());
+    
+    float mse = render.render_and_compare_silhouette(reconstructed_model.models[0]->positions, cameras);
+    return -10*log10(MAX(1e-9f,mse));
   }
 }

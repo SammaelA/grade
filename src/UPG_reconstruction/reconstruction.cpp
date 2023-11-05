@@ -233,7 +233,7 @@ namespace upg
         std::vector<CameraSettings> cameras;
         opt_paras_to_gen_params_and_camera(best_params, pd, full_gen_params, cameras);
         res.parameters.p = full_gen_params;
-        res.quality = -10*log10(MAX(1e-9f,best_result)); //MSE to PSNR
+        res.loss_optimizer = best_result;
       }
       return {res};
     }
@@ -273,6 +273,15 @@ namespace upg
     
     //TODO: compare results with reference and calculate reconstruction quality
     //Also calculate another quality metric if we have synthetic reference
+    for (auto &result : opt_res)
+    {
+      ComplexModel reconstructed_model;
+      if (!create_model(result.structure, result.parameters, reconstructed_model))
+        logerr("failed to create model from reconstructed structure and parameters!");
+      result.quality_ir = get_image_based_quality(reference, reconstructed_model);
+      if (reference.is_synthetic)
+        result.quality_synt = get_model_based_quality(reference, reconstructed_model);
+    }
 
     //print results of the reconstruction
     if (opt_blk->get_bool("verbose"))
@@ -282,7 +291,12 @@ namespace upg
       {
         debug("=============================\n");
         debug("Optimization result %d\n",i);
-        debug("Quality %.5f\n", opt_res[i].quality);
+        debug("Optimizer's loss    :%7.5f\n", opt_res[i].loss_optimizer);
+        debug("Image-based quality :%7.5f\n", opt_res[i].quality_ir);
+        if (reference.is_synthetic)
+        debug("Model-based quality :%7.5f\n", opt_res[i].quality_synt);
+        else
+        debug("Model-based quality : ----- \n");
       }
       debug("=============================\n");
     }

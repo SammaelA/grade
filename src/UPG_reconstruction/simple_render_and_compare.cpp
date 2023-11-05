@@ -70,16 +70,20 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
     int prev_FBO = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1.texture, 0);
-    glViewport(0, 0, tex_w, tex_h);
 
     glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
     float total_res = 0;
 
     for (int i=0;i<cameras.size();i++)
     {
+      glBindVertexArray(vao);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo);
+      glEnableVertexAttribArray(0);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
       //render model silhouette
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1.texture, 0);
+      glViewport(0, 0, tex_w, tex_h);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glm::mat4 projection = glm::perspective(cameras[i].fov_rad, 1.0f, cameras[i].z_near, cameras[i].z_far);
       glm::mat4 view = glm::lookAt(cameras[i].origin, cameras[i].target, cameras[i].up);

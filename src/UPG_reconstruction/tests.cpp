@@ -12,6 +12,8 @@ namespace upg
     {
     input {
         synthetic_reference {
+            tex_w:i = 256
+            tex_h:i = 256
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
@@ -31,8 +33,8 @@ namespace upg
     optimization {
         start_parameters:arr = {0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81}
         start_structure:arr = {1}
-        render_w:i = 128
-        render_h:i = 128
+        render_w:i = 256
+        render_h:i = 256
         iterations:i = 100
         verbose:b = false
         save_intermediate_images:b = false
@@ -44,8 +46,8 @@ namespace upg
     auto res = reconstruct(settings_blk);
     if (res.empty())
       debug("FAILED. No reconstruction result returned");
-    else if (res[0].quality < 80)
-      debug("FAILED. Low PSNR (%.1f < 80.0(target))", res[0].quality);
+    else if (res[0].quality_ir < 80)
+      debug("FAILED. Low PSNR (%.1f < 80.0(target))", res[0].quality_ir);
     else
       debug("PASSED.");
     debugnl();

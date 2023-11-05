@@ -100,6 +100,7 @@ namespace upg
     UniversalGenInstance gen(structure);
     auto mesh = gen.generate(params.p);
     mesh_to_complex_model(mesh, mod);
+    mod.update();
 
     return true;
   }
