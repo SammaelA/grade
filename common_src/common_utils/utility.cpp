@@ -236,7 +236,6 @@ bool prepare_directory(const std::string &save_path)
     {
       if (boost::filesystem::is_directory(save_path))
       {
-        printf("replacing previous save\n");
         boost::filesystem::remove_all(save_path);
       }
       else

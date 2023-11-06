@@ -11,6 +11,7 @@ using pugi::xml_node;
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
 namespace h_inter
 {
     void InfoCallBack(const wchar_t* message, const wchar_t* callerPlace, HR_SEVERITY_LEVEL a_level)
@@ -105,11 +106,17 @@ namespace hydra
       int rv = -2;
       wait(&rv);
       int status = WEXITSTATUS(rv);
-      logerr("hydra finished with status %d", status);
+      if (status != 0)
+        logerr("hydra finished with status %d", status);
       return status == 0;
     }
     else
     {
+      if (!export_settings.get_bool("show_hydra_log"))
+      {
+        freopen ("/dev/null","w",stdout);
+        freopen ("/dev/null","w",stderr);
+      }
       // child process. Does hydra stuff and dies
 
       hrInfoCallback(&h_inter::InfoCallBack);
