@@ -1,13 +1,17 @@
 #include "upg.h"
+#include "tinyEngine/engine.h"
+#include "graphics_utils/image_metrics.h"
+#include <unistd.h>
 
 namespace upg
 {
 
   //TEST 1 ONE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly (like 90 PSNR)
+  //Reconstruction should perform perfectly (like 80+ PSNR)
   void test_1()
   {
+    srand(0);
     debug("TEST 1. ONE TRIANGLE SINGLE-VIEW RECONSTRUCTION\n");
     std::string settings = R""""(
     {
@@ -135,6 +139,7 @@ namespace upg
   //Reconstruction should perform perfectly (like 90 PSNR)
   void test_2()
   {
+    srand(0);
     debug("TEST 2. ONE TRIANGLE MULTI-VIEW RECONSTRUCTION\n");
     std::string settings = R""""(
     {
@@ -233,6 +238,7 @@ namespace upg
   //Reconstruction should perform perfectly (like 90 PSNR)
   void test_3()
   {
+    srand(0);
     debug("TEST 3. ONE TRIANGLE RECONSTRUCTION FROM MASK\n");
     std::string settings = R""""(
     {
@@ -251,7 +257,7 @@ namespace upg
             camera.z_far:r = 100.000000
             camera.fov_rad:r = 1.00000
             camera.fixed:b = true
-            mask:s = "saves/UPG_tests/test_3_input.png"
+            mask:s = "saves/tests/test_3_input.png"
         }
     }
     generator {
@@ -311,10 +317,165 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_ir, 80);
   }
 
+  //image metrics
+  void test_4()
+  {
+    srand(0);
+    debug("TEST 4. IMAGE METRICS\n");
+    Texture t = engine::textureManager->load_unnamed_tex("saves/tests/test_3_input.png", 1);
+    
+    float mae = ImageMetric::get(t, t, ImageMetric::MAE);
+    debug("  4.1. %-64s", "MAE ");
+    if (mae < 1e-6)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n",mae, 1e-6);
+    
+    float mse = ImageMetric::get(t, t, ImageMetric::MSE);
+    debug("  4.2. %-64s", "MSE ");
+    if (mse < 1e-6)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n",mse, 1e-6);
+
+    float psnr = ImageMetric::get(t, t, ImageMetric::PSNR);
+    debug("  4.3. %-64s", "PSNR ");
+    if (psnr > 90 - 1e-6)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n",psnr, 90 - 1e-6);
+    
+    float iou = ImageMetric::get(t, t, ImageMetric::IOU);
+    debug("  4.4. %-64s", "IOU ");
+    if (iou > 1 - 1e-6)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n",iou, 1 - 1e-6);
+  }
+
+  //hydra visualization of reconstructed model
+  void test_5()
+  {
+    srand(0);
+    debug("TEST 5. HYDRA VISUALIZATION OF RECONSTRUCTION RESULTS\n");
+    
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            tex_w:i = 256
+            tex_h:i = 256
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}
+            structure:arr = {1}
+        } 
+        view_0 {
+            camera.origin:p3 = 0.000000, 0.000000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}   
+            structure:arr = {1} 
+        }
+        step_0 {
+            render_w:i = 256
+            render_h:i = 256
+            iterations:i = 1
+            verbose:b = false
+            save_intermediate_images:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+        save_folder:s = "tests/test_5"
+        save_turntable:b = true
+        save_turntable_hydra_settings {
+            save_filename:s = "tests/test_5/result"
+            image_count:i = 16
+            rays_per_pixel:i = 256
+            image_size:i2 = 256, 256
+            distance:r = 2
+            height:r = 0.5
+            render_terrain:b = false
+        }
+        save_reference_turntable:b = true
+        save_reference_turntable_hydra_settings {
+            save_filename:s = "tests/test_5/reference"
+            image_count:i = 16
+            rays_per_pixel:i = 256
+            image_size:i2 = 256, 256
+            distance:r = 2
+            height:r = 0.5
+            render_terrain:b = false
+        }
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    sleep(1);
+
+    bool same_size = true;
+    float min_psnr_ref = 90;
+    float min_psnr_res = 90;
+    for (int i=0;i<16;i++)
+    {
+      char path[1024];
+      sprintf(path, "%s-%04d.png", "saves/tests/test_5_ref/reference", i);
+      Texture t1 = engine::textureManager->load_unnamed_tex(std::string(path), 1);
+      sprintf(path, "%s-%04d.png", "saves/tests/test_5/reference", i);
+      Texture t2 = engine::textureManager->load_unnamed_tex(std::string(path), 1);
+      sprintf(path, "%s-%04d.png", "saves/tests/test_5_ref/result", i);
+      Texture t3 = engine::textureManager->load_unnamed_tex(std::string(path), 1);
+      sprintf(path, "%s-%04d.png", "saves/tests/test_5/result", i);
+      Texture t4 = engine::textureManager->load_unnamed_tex(std::string(path), 1);
+
+      if (t2.get_W() == 256 && t2.get_H() == 256 && t4.get_W() == 256 && t4.get_H() == 256)
+      {
+        min_psnr_ref = MIN(min_psnr_ref, ImageMetric::get(t1, t2, ImageMetric::PSNR));
+        min_psnr_res = MIN(min_psnr_res, ImageMetric::get(t3, t4, ImageMetric::PSNR));
+      }
+      else
+        same_size = false;
+    }
+
+    debug("  5.1. %-64s", "Images rendered ");
+    if (same_size)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug("  5.2. %-64s", "Reference images match ");
+    if (min_psnr_ref > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n",min_psnr_ref, 40);
+    
+    debug("  5.3. %-64s", "Result images match ");
+    if (min_psnr_res > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n",min_psnr_res, 40);
+  }
+
   void perform_tests()
   {
     test_1();
     test_2();
     test_3();
+    test_4();
+    test_5();
   }
 };
