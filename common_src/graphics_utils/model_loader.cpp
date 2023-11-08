@@ -117,7 +117,6 @@ Model *load_model_from_obj_directly(std::string obj_filename)
     int start_index = 0;
     for (auto &mesh : loader.LoadedMeshes)
     {
-        logerr("create mesh from %d", loader.LoadedMeshes.size());
         for (auto &lv : mesh.Vertices)
         {
             m->positions.push_back(lv.Position.X);
@@ -317,7 +316,7 @@ void save_model_to_obj(const Model *m, const std::string &filename)
   {
     v_data += "v " + std::to_string(m->positions[3*i]) + " " + std::to_string(m->positions[3*i+1]) + " " + std::to_string(m->positions[3*i+2]) + "\n";
     n_data += "vn " + std::to_string(m->normals[3*i]) + " " + std::to_string(m->normals[3*i+1]) + " " + std::to_string(m->normals[3*i+2]) + "\n";
-    tc_data += "vt " + std::to_string(m->colors[4*i]) + " " + std::to_string((glm::fract(m->colors[4*i+1]) + m->colors[4*i+2])/m->colors[4*i+3]) + "\n";
+    tc_data += "vt " + std::to_string(m->colors[4*i]) + " " + std::to_string(1 - (CLAMP(m->colors[4*i+1],0,1) + m->colors[4*i+2])/m->colors[4*i+3]) + "\n";
   }
   for (int i = 0; i < m->indices.size() / 3; ++i)
   {
