@@ -76,7 +76,7 @@ namespace upg
       }
     }
 
-    m->indices.resize(3*sz);
+    m->indices.resize(sz);
     for (int i=0;i<sz;i++)
       m->indices[i] = i;
 
