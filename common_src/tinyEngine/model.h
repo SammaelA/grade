@@ -134,6 +134,10 @@ struct ComplexModel //an object that contains different models with different ma
     for (Model *m : models)
       m->update();
   }
+  bool is_valid() const
+  {
+    return models.size() > 0 && models.size() == materials.size();
+  }
 };
 
 //Primitive Shapes (Pre-Made)

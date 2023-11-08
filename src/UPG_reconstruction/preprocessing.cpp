@@ -6,6 +6,7 @@
 #include "simple_render_and_compare.h"
 #include "core/scene.h"
 #include "hydra/hydra_scene_exporter.h"
+#include "graphics_utils/modeling.h"
 #include <random>
 #include <glm/glm.hpp>
 
@@ -52,7 +53,7 @@ namespace upg
     return {};
   }
 
-  ReferenceView preprocess_get_reference_view(const Block &view_blk)
+  ReferenceView get_reference_view(const Block &view_blk)
   {
     ReferenceView rv;
     rv.camera = visualizer::load_camera_settings(view_blk);
@@ -76,14 +77,14 @@ namespace upg
     return rv;
   }
 
-  ReferenceView preprocess_get_reference_view_synthetic(const ComplexModel &model, const Block &model_reference_blk, const Block &view_blk)
+  ReferenceView get_reference_view_from_model(const ComplexModel &model, const Block &model_reference_blk, const Block &view_blk)
   {
     ReferenceView rv;
     rv.camera = visualizer::load_camera_settings(view_blk);
     rv.fixed_camera = view_blk.get_bool("camera.fixed", true);
     rv.mask = render_silhouette(model, rv.camera, 
-                                model_reference_blk.get_int("tex_w", 1024),
-                                model_reference_blk.get_int("tex_h", 1024));
+                                model_reference_blk.get_int("reference_image_w", 1024),
+                                model_reference_blk.get_int("reference_image_h", 1024));
 
     return rv;
   }
@@ -91,22 +92,44 @@ namespace upg
   ReconstructionReference get_reference(const Block &input_blk)
   {
     ReconstructionReference reference;
-    Block *synthetic_reference = input_blk.get_block("synthetic_reference");
+    Block *synthetic_reference = input_blk.get_block("synthetic_reference"); //reference is parameters for our own generator
+    Block *model_reference = input_blk.get_block("model_reference"); //reference is an .obj (or other) file with 3D model
+    assert(!(synthetic_reference && model_reference));
     if (synthetic_reference)
     {
-      reference.is_synthetic = true;
       create_model_from_block(*synthetic_reference, reference.model);
       reference.model.update();
     }
+    else if (model_reference)
+    {
+      //load obj
+      std::string obj_filename = model_reference->get_string("obj_filename");
+      std::string tex_filename = model_reference->get_string("tex_filename");
+      assert(obj_filename != "");
+      Texture t;
+      if (tex_filename == "") 
+        t = engine::textureManager->get("porcelain");
+      else
+        t = engine::textureManager->load_unnamed_tex(tex_filename,1);
+      Model *m = model_loader::load_model_from_obj_directly(obj_filename);
+      if (model_reference->get_bool("normalize_model"))
+        model_loader::normalize_model(m);
+      reference.model.models = {m};
+      reference.model.materials = {Material(t)};
+      reference.model.update();
+    }
+
     for (int i = 0; i < input_blk.size(); i++)
     {
       Block *view_blk = input_blk.get_block(std::string("view_")+std::to_string(i));
       if (view_blk)
       {
         if (synthetic_reference)
-          reference.images.push_back(preprocess_get_reference_view_synthetic(reference.model, *synthetic_reference, *view_blk));
+          reference.images.push_back(get_reference_view_from_model(reference.model, *synthetic_reference, *view_blk));
+        else if (model_reference)
+          reference.images.push_back(get_reference_view_from_model(reference.model, *model_reference, *view_blk));
         else
-          reference.images.push_back(preprocess_get_reference_view(*view_blk));
+          reference.images.push_back(get_reference_view(*view_blk));
       }
     }
 
@@ -209,7 +232,7 @@ namespace upg
 
   float get_model_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model)
   {
-    if (!reference.is_synthetic)
+    if (!reference.model.is_valid())
       return 0;
     
     NonDiffRender render;

@@ -5,6 +5,7 @@
 #include "tinyEngine/engine.h"
 #include "custom_diff_render/custom_diff_render.h"
 #include "simple_render_and_compare.h"
+#include "graphics_utils/modeling.h"
 #include <memory>
 #include <unistd.h>
 
@@ -119,7 +120,7 @@ namespace upg
       std::vector<float> differentiable;
     };
 
-    void opt_paras_to_gen_params_and_camera(const Params &params, const ParametersDescription &pd, 
+    void opt_params_to_gen_params_and_camera(const Params &params, const ParametersDescription &pd, 
                                             /*out*/ std::vector<float> &full_gen_params,
                                             /*out*/ std::vector<CameraSettings> &cameras)
     {
@@ -160,7 +161,7 @@ namespace upg
     {
       std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
       std::vector<CameraSettings> cameras;
-      opt_paras_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
+      opt_params_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
       UniversalGenMesh mesh = gen.generate(full_gen_params);
       UniversalGenJacobian dPos_dP = gen.generate_jacobian(full_gen_params);
       float res = diff_render->render_and_compare_silhouette(mesh.pos, cameras);
@@ -233,7 +234,7 @@ namespace upg
       {
         std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
         std::vector<CameraSettings> cameras;
-        opt_paras_to_gen_params_and_camera(best_params, pd, full_gen_params, cameras);
+        opt_params_to_gen_params_and_camera(best_params, pd, full_gen_params, cameras);
         res.parameters.p = full_gen_params;
         res.loss_optimizer = best_result;
       }
@@ -294,20 +295,34 @@ namespace upg
     for (auto &result : opt_res)
     {
       ComplexModel reconstructed_model;
+      std::string save_directory = "saves/" + res_blk->get_string("save_folder") + "/";
       if (res_blk->get_string("save_folder") != "")
         prepare_directory("saves/" + res_blk->get_string("save_folder"));
       if (!create_model(result.structure, result.parameters, reconstructed_model))
         logerr("failed to create model from reconstructed structure and parameters!");
       if (res_blk->get_bool("check_image_quality"))
         result.quality_ir = get_image_based_quality(reference, reconstructed_model);
-      if (reference.is_synthetic && res_blk->get_bool("check_model_quality"))
+      if (reference.model.is_valid() && res_blk->get_bool("check_model_quality"))
         result.quality_synt = get_model_based_quality(reference, reconstructed_model);
     
       if (res_blk->get_bool("save_turntable") && res_blk->get_block("save_turntable_hydra_settings"))
         render_model_turntable(*(res_blk->get_block("save_turntable_hydra_settings")), reconstructed_model);
-      if (reference.is_synthetic && res_blk->get_bool("save_reference_turntable") && 
+      if (reference.model.is_valid() && res_blk->get_bool("save_reference_turntable") && 
           res_blk->get_block("save_reference_turntable_hydra_settings"))
-        render_model_turntable(*(res_blk->get_block("save_reference_turntable_hydra_settings")), reference.model); 
+        render_model_turntable(*(res_blk->get_block("save_reference_turntable_hydra_settings")), reference.model);
+
+      if (res_blk->get_bool("save_model"))
+      {
+        assert(reconstructed_model.is_valid());
+        assert(reconstructed_model.models.size() == 1); //TODO: save complex models with different materials too
+        model_loader::save_model_to_obj(reconstructed_model.models[0], save_directory + "reconstructed_model.obj");
+
+        if (reference.model.is_valid())
+        {
+          assert(reference.model.models.size() == 1); //TODO: save complex models with different materials too
+          model_loader::save_model_to_obj(reference.model.models[0], save_directory + "reference_model.obj");          
+        }
+      } 
     }
 
     //print results of the reconstruction
@@ -320,7 +335,7 @@ namespace upg
         debug("Optimization result %d\n",i);
         debug("Optimizer's loss    :%7.5f\n", opt_res[i].loss_optimizer);
         debug("Image-based quality :%7.5f\n", opt_res[i].quality_ir);
-        if (reference.is_synthetic)
+        if (reference.model.is_valid())
         debug("Model-based quality :%7.5f\n", opt_res[i].quality_synt);
         else
         debug("Model-based quality : ----- \n");

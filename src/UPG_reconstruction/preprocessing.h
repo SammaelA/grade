@@ -21,7 +21,6 @@ namespace upg
   //or 3D model reference, we save it here too to get quality metric after the reconstruction
   struct ReconstructionReference
   {
-    bool is_synthetic = false;
     ComplexModel model;
     std::vector<ReferenceView> images;
   };

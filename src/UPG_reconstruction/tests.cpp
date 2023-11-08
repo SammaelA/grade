@@ -17,8 +17,8 @@ namespace upg
     {
     input {
         synthetic_reference {
-            tex_w:i = 256
-            tex_h:i = 256
+            reference_image_w:i = 256
+            reference_image_h:i = 256
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
@@ -145,8 +145,8 @@ namespace upg
     {
     input {
         synthetic_reference {
-            tex_w:i = 512
-            tex_h:i = 512
+            reference_image_w:i = 512
+            reference_image_h:i = 512
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
@@ -244,8 +244,8 @@ namespace upg
     {
     input {
         synthetic_reference {
-            tex_w:i = 256
-            tex_h:i = 256
+            reference_image_w:i = 256
+            reference_image_h:i = 256
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
@@ -363,8 +363,8 @@ namespace upg
     {
     input {
         synthetic_reference {
-            tex_w:i = 256
-            tex_h:i = 256
+            reference_image_w:i = 256
+            reference_image_h:i = 256
             params:arr = {0,0,0, -1,0,0, 0,1,-1}
             structure:arr = {1}
         } 
