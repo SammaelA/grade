@@ -1,6 +1,7 @@
 #include "upg.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/image_metrics.h"
+#include "graphics_utils/modeling.h"
 #include <unistd.h>
 
 namespace upg
@@ -470,6 +471,131 @@ namespace upg
       debug("FAILED %f < %f\n",min_psnr_res, 40);
   }
 
+  //TEST 6 PARAMETERS PRESERVATION + OBJ SAVING
+  //Create model from synthetic reference. Optimize with 0 learning rate
+  //and starting parameters identical to reference. Save result to obj.
+  //Assure that it saved exactly the same model as input one and got
+  //perfect metrics for reconstruction
+  void test_6()
+  {
+    srand(0);
+    debug("TEST 6. PARAMETERS PRESERVATION + OBJ SAVING\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 256
+            reference_image_h:i = 256
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}
+            structure:arr = {1}
+        } 
+        view_0 {
+            camera.origin:p3 = 0.000000, 0.000000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}    
+            structure:arr = {1} 
+        }
+        step_0 {
+            render_w:i = 256
+            render_h:i = 256
+            iterations:i = 100
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.0
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+        save_model:b = true
+        save_folder:s = "tests/test_6"
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+    
+    debug("  1.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug("  1.2. %-64s", "Perfect one-view PSNR ");
+    if (res[0].quality_ir > 80.0)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 80.0);
+
+    debug("  1.3. %-64s", "Perfect turntable PSNR ");
+    if (res[0].quality_synt > 80.0)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 80.0);
+
+    sleep(1);
+    Model *m;
+    std::vector<float> ref_positions = {0,0,0, -1,0,0, 0,1,-1};
+    std::vector<float> ref_normals = {-0.000000, -0.707107, -0.707107, -0.000000, -0.707107, -0.707107, -0.000000, -0.707107, -0.707107};
+    std::vector<float> ref_tc = {0,0,0,1, 1,0,0,1, 0,1,0,1};
+    auto match = [](std::vector<float> &v1, std::vector<float> &v2) -> bool
+    {
+      for (int i=0;i<v1.size();i++)
+      {
+        if (abs(v2[i] - v1[i]) > 1e-6)
+          return false;
+      }
+      return true;
+    };
+    {
+    m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reconstructed_model.obj");
+    debug("  1.4. %-64s", "Reconstructed model saved to obj file ");
+    if (m)
+      debug("PASSED\n");
+    else 
+      debug("FAILED\n");
+    bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
+    bool norm_match = m && (m->normals.size() == ref_normals.size()) && match(m->normals, ref_normals);
+    bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
+    debug("  1.5. %-64s", "Reconstructed model preserved ");
+    if (pos_match && norm_match && tc_match)
+      debug("PASSED\n");
+    else 
+      debug("FAILED %d(sz %d, %d) %d %d\n", pos_match, m->positions.size(), ref_positions.size(), norm_match, tc_match);  
+    delete m;
+    }
+    {
+    m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reference_model.obj");
+    debug("  1.6. %-64s", "Reference model saved to obj file ");
+    if (m)
+      debug("PASSED\n");
+    else 
+      debug("FAILED\n");
+    bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
+    bool norm_match = m && (m->normals.size() == ref_normals.size()) && match(m->normals, ref_normals);
+    bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
+    debug("  1.7. %-64s", "Reference model preserved ");
+    if (pos_match && norm_match && tc_match)
+      debug("PASSED\n");
+    else 
+      debug("FAILED %d %d %d\n", pos_match, norm_match, tc_match);  
+    delete m;
+    }
+  }
+
   void perform_tests()
   {
     test_1();
@@ -477,5 +603,6 @@ namespace upg
     test_3();
     test_4();
     test_5();
+    test_6();
   }
 };
