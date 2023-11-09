@@ -741,11 +741,17 @@ namespace upg
     else
     {
       debug("FAILED %d\n", res);
+      return;
     }
     debug("  8.2. %-64s", "Compare results and expectations ");
     Model *model = m.models[0];
     std::vector<float> p = model->positions;
     res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
     for (int i = 0; res && i < 9; ++i)
     {
       res = (p[i] == tr[i] + shift[i % 3]);
@@ -756,10 +762,190 @@ namespace upg
     }
     else
     {
-      debug("FAILED %d %d %d, %d %d %d , %d %d %d\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
     }
-    
-    
+  }
+
+  void test_9()
+  {
+    srand(0);
+    debug("TEST 9. SIMPLE TRIANGLE SCALING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {2,0.5,1, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {2, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    std::vector<float> sc = {2, 0.5, 1};
+    ComplexModel m;
+    bool res;
+    debug("  9.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  9.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = (p[i] == tr[i] * sc[i % 3]);
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_10()
+  {
+    srand(0);
+    debug("TEST 10. SIMPLE TRIANGLE ROTATING GEN TREE\n");//180 graduses
+    std::string settings = R""""(
+    {
+    params:arr = {1,0,0,3.14159265, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {4, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, -1, 1};
+    ComplexModel m;
+    bool res;
+    debug("  10.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  10.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = ((p[i] - tr[i] < 1e-5 && p[i] >= tr[i]) || (tr[i] - p[i] < 1e-5 && p[i] <= tr[i]));
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_11()
+  {
+    srand(0);
+    debug("TEST 11. COMPLEX TRIANGLE ROTATING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {0.1,0.2,0.3,4, 0.1,0.2,0.3,-4, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {4, 4, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    ComplexModel m;
+    bool res;
+    debug("  11.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  11.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = ((p[i] - tr[i] < 1e-5 && p[i] >= tr[i]) || (tr[i] - p[i] < 1e-5 && p[i] <= tr[i]));
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_12()
+  {
+    srand(0);
+    debug("TEST 12. COMPLEX GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {0.5,2,1.5, 0,0,0, -1,0,0, 0,1,-1, 0.5,0,0.2,3, -0.5,1.5,0, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {6, 2, 1, 4, 3, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    ComplexModel m;
+    bool res;
+    debug("  12.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  12.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == 18);
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d != %d\n", p.size(), 18);
+    }
   }
 
   void perform_tests(const Block &blk)
@@ -802,6 +988,18 @@ namespace upg
           break;
         case 8:
           test_8();
+          break;
+        case 9:
+          test_9();
+          break;
+        case 10:
+          test_10();
+          break;
+        case 11:
+          test_11();
+          break;
+        case 12:
+          test_12();
           break;
       }
     }
