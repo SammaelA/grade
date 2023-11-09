@@ -528,19 +528,19 @@ namespace upg
     load_block_from_string(settings, settings_blk);
     auto res = reconstruct(settings_blk);
     
-    debug("  1.1. %-64s", "Perfect optimization loss ");
+    debug("  6.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("PASSED\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
-    debug("  1.2. %-64s", "Perfect one-view PSNR ");
+    debug("  6.2. %-64s", "Perfect one-view PSNR ");
     if (res[0].quality_ir > 80.0)
       debug("PASSED\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 80.0);
 
-    debug("  1.3. %-64s", "Perfect turntable PSNR ");
+    debug("  6.3. %-64s", "Perfect turntable PSNR ");
     if (res[0].quality_synt > 80.0)
       debug("PASSED\n");
     else
@@ -562,7 +562,7 @@ namespace upg
     };
     {
     m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reconstructed_model.obj");
-    debug("  1.4. %-64s", "Reconstructed model saved to obj file ");
+    debug("  6.4. %-64s", "Reconstructed model saved to obj file ");
     if (m)
       debug("PASSED\n");
     else 
@@ -570,7 +570,7 @@ namespace upg
     bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
     bool norm_match = m && (m->normals.size() == ref_normals.size()) && match(m->normals, ref_normals);
     bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
-    debug("  1.5. %-64s", "Reconstructed model preserved ");
+    debug("  6.5. %-64s", "Reconstructed model preserved ");
     if (pos_match && norm_match && tc_match)
       debug("PASSED\n");
     else 
@@ -579,7 +579,7 @@ namespace upg
     }
     {
     m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reference_model.obj");
-    debug("  1.6. %-64s", "Reference model saved to obj file ");
+    debug("  6.6. %-64s", "Reference model saved to obj file ");
     if (m)
       debug("PASSED\n");
     else 
@@ -587,12 +587,133 @@ namespace upg
     bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
     bool norm_match = m && (m->normals.size() == ref_normals.size()) && match(m->normals, ref_normals);
     bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
-    debug("  1.7. %-64s", "Reference model preserved ");
+    debug("  6.7. %-64s", "Reference model preserved ");
     if (pos_match && norm_match && tc_match)
       debug("PASSED\n");
     else 
       debug("FAILED %d %d %d\n", pos_match, norm_match, tc_match);  
     delete m;
+    }
+  }
+
+  //TEST 7 USING OBJ REFERENCE MODEL
+  void test_7()
+  {
+    srand(0);
+    debug("TEST 7. USING OBJ REFERENCE MODEL\n");
+    std::string settings = R""""(
+    {
+    input {
+        model_reference {
+            reference_image_w:i = 256
+            reference_image_h:i = 256
+            obj_filename:s = "saves/tests/test_7_ref/reference_model.obj"
+        } 
+        view_0 {
+            camera.origin:p3 = 0.000000, 0.000000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0,0,0, -1,0,0, 0,1,-1}    
+            structure:arr = {1} 
+        }
+        step_0 {
+            render_w:i = 256
+            render_h:i = 256
+            iterations:i = 100
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.0
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+        save_model:b = true
+        save_folder:s = "tests/test_7"
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+    
+    debug("  7.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug("  7.2. %-64s", "Perfect one-view PSNR ");
+    if (res[0].quality_ir > 80.0)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 80.0);
+
+    debug("  7.3. %-64s", "Perfect turntable PSNR ");
+    if (res[0].quality_synt > 80.0)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 80.0);
+
+    sleep(1);
+    Model *m, *m_ref;
+    auto match = [](std::vector<float> &v1, std::vector<float> &v2) -> bool
+    {
+      for (int i=0;i<v1.size();i++)
+      {
+        if (abs(v2[i] - v1[i]) > 1e-6)
+          return false;
+      }
+      return true;
+    };
+    {
+    m = model_loader::load_model_from_obj_directly("saves/tests/test_7/reconstructed_model.obj");
+    m_ref = model_loader::load_model_from_obj_directly("saves/tests/test_7_ref/reconstructed_model.obj");
+    debug("  7.4. %-64s", "Reconstructed model saved to obj file ");
+    if (m)
+      debug("PASSED\n");
+    else 
+      debug("FAILED\n");
+    bool pos_match = m && (m->positions.size() == m_ref->positions.size()) && match(m->positions, m_ref->positions);
+    bool norm_match = m && (m->normals.size() == m_ref->normals.size()) && match(m->normals, m_ref->normals);
+    bool tc_match = m && (m->colors.size() == m_ref->colors.size()) && match(m->colors, m_ref->colors);
+    debug("  7.5. %-64s", "Reconstructed model preserved ");
+    if (pos_match && norm_match && tc_match)
+      debug("PASSED\n");
+    else 
+      debug("FAILED %d(sz %d, %d) %d %d\n", pos_match, m->positions.size(), m_ref->positions.size(), norm_match, tc_match);  
+    delete m;
+    delete m_ref;
+    }
+    {
+    m = model_loader::load_model_from_obj_directly("saves/tests/test_7/reference_model.obj");
+    m_ref = model_loader::load_model_from_obj_directly("saves/tests/test_7_ref/reference_model.obj");
+    debug("  7.6. %-64s", "Reference model saved to obj file ");
+    if (m)
+      debug("PASSED\n");
+    else 
+      debug("FAILED\n");
+    bool pos_match = m && (m->positions.size() == m_ref->positions.size()) && match(m->positions, m_ref->positions);
+    bool norm_match = m && (m->normals.size() == m_ref->normals.size()) && match(m->normals, m_ref->normals);
+    bool tc_match = m && (m->colors.size() == m_ref->colors.size()) && match(m->colors, m_ref->colors);
+    debug("  7.7. %-64s", "Reference model preserved ");
+    if (pos_match && norm_match && tc_match)
+      debug("PASSED\n");
+    else 
+      debug("FAILED %d %d %d\n", pos_match, norm_match, tc_match);  
+    delete m;
+    delete m_ref;
     }
   }
 
@@ -604,5 +725,6 @@ namespace upg
     test_4();
     test_5();
     test_6();
+    test_7();
   }
 };
