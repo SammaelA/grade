@@ -24,8 +24,8 @@ namespace upg
     vec3 ax = norm(axis);
     my_float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
     vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y - s * z, (1 - c) * x * z + s * y};
-    vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
-    vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * x * y - s * z, c + (1 - c) * z * z};
+    vec3 e2 = {(1 - c) * x * y + s * z, c + (1 - c) * y * y, (1 - c) * y * z - s * x};
+    vec3 e3 = {(1 - c) * x * z - s * y, (1 - c) * z * y + s * x, c + (1 - c) * z * z};
     vec3 t = {0, 0, 0};
     return get_mat43(e1, e2, e3, t);
   }
@@ -87,6 +87,7 @@ namespace upg
       return 9;
     }
   };
+
   class FigureNode : public PrimitiveNode
   {
   public:
@@ -103,6 +104,11 @@ namespace upg
       add_rect({1, 1, 1}, {0, -1, 0}, {0, 0, -1}, mesh);
       add_rect({1, 1, 1}, {0, 0, -1}, {-1, 0, 0}, mesh);
       return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
     }
     unsigned param_cnt() override
     {
@@ -140,6 +146,13 @@ namespace upg
         }
       }
       return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      for (int i = 0; i < N; i++)
+        params.push_back({0, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "spline_" + std::to_string(i)});
+      return params;
     }
     unsigned param_cnt() override
     {
@@ -217,6 +230,14 @@ namespace upg
       }
       return mesh;
     }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({1.0f, 0.1f, 10.0f, ParameterType::DIFFERENTIABLE, "scale_x"});
+      params.push_back({1.0f, 0.1f, 10.0f, ParameterType::DIFFERENTIABLE, "scale_y"});
+      params.push_back({1.0f, 0.1f, 10.0f, ParameterType::DIFFERENTIABLE, "scale_z"});
+      return params;
+    }
     unsigned param_cnt() override
     {
       return 3;
@@ -247,6 +268,14 @@ namespace upg
         mesh.pos[i + 2] += p[MOVE_Z];
       }
       return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_x"});
+      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_y"});
+      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_z"});
+      return params;
     }
     unsigned param_cnt() override
     {
@@ -292,6 +321,15 @@ namespace upg
         mesh.norm[i + 2] = v.z;
       }
       return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
+      params.push_back({1.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      params.push_back({0.0f, 0.0f, 6.282f, ParameterType::DIFFERENTIABLE, "angle"});
+      return params;
     }
     unsigned param_cnt() override
     {
@@ -343,6 +381,11 @@ namespace upg
       //applying and
       return mesh1;
     }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
+    }
     unsigned param_cnt() override
     {
       return 0;
@@ -362,7 +405,12 @@ namespace upg
       mesh.pos.insert(mesh.pos.end(), mesh2.pos.begin(), mesh2.pos.end());
       mesh.norm.insert(mesh.norm.end(), mesh2.norm.begin(), mesh2.norm.end());
       mesh.tc.insert(mesh.tc.end(), mesh2.tc.begin(), mesh2.tc.end());
-      return mesh1;
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
     }
     unsigned param_cnt() override
     {
@@ -380,6 +428,11 @@ namespace upg
       UniversalGenMesh mesh2 = right->apply();
       //applying subtract
       return mesh1;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
     }
     unsigned param_cnt() override
     {
