@@ -587,7 +587,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case GC_UPG_TESTS:
-      upg::perform_tests();
+      upg::perform_tests(cmd.args);
       break;
     default:
       logerr("GenerationCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

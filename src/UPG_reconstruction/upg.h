@@ -33,5 +33,5 @@ namespace upg
   bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
                     ComplexModel &out_mod);
 
-  void perform_tests();
+  void perform_tests(const Block &blk);
 };

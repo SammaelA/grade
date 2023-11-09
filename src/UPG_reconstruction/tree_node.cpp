@@ -328,7 +328,7 @@ namespace upg
       params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
       params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
       params.push_back({1.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
-      params.push_back({0.0f, 0.0f, 6.282f, ParameterType::DIFFERENTIABLE, "angle"});
+      params.push_back({0.0f, 0.0f, 6.284f, ParameterType::DIFFERENTIABLE, "angle"});
       return params;
     }
     unsigned param_cnt() override

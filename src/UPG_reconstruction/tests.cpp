@@ -717,14 +717,93 @@ namespace upg
     }
   }
 
-  void perform_tests()
+  void test_8()
   {
-    test_1();
-    test_2();
-    test_3();
-    test_4();
-    test_5();
-    test_6();
-    test_7();
+    srand(0);
+    debug("TEST 8. SIMPLE TRIANGLE SHIFTING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {-1,1,3, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {3, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    std::vector<float> shift = {-1, 1, 3};
+    ComplexModel m;
+    bool res;
+    debug("  8.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+    }
+    debug("  8.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = (p[i] == tr[i] + shift[i % 3]);
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d %d %d, %d %d %d , %d %d %d\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+    
+    
+  }
+
+  void perform_tests(const Block &blk)
+  {
+
+    Block *tests_blk = blk.get_block("tests");
+    if (!tests_blk)
+    {
+      logerr("UPG Tests: tests block should exist in configuration");
+      return;
+    }
+
+    std::vector<int> tests;
+    tests_blk->get_arr("tests_num", tests);
+
+    for (int i : tests)
+    {
+      switch(i)
+      {
+        case 1:
+          test_1();
+          break;
+        case 2:
+          test_2();
+          break;
+        case 3:
+          test_3();
+          break;
+        case 4:
+          test_4();
+          break;
+        case 5:
+          test_5();
+          break;
+        case 6:
+          test_6();
+          break;
+        case 7:
+          test_7();
+          break;
+        case 8:
+          test_8();
+          break;
+      }
+    }
   }
 };
