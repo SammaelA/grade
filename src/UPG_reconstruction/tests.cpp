@@ -2,7 +2,9 @@
 #include "tinyEngine/engine.h"
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
+#include "generation.h"
 #include <unistd.h>
+#include <functional>
 
 namespace upg
 {
@@ -717,14 +719,316 @@ namespace upg
     }
   }
 
-  void perform_tests()
+  void test_8()
   {
-    test_1();
-    test_2();
-    test_3();
-    test_4();
-    test_5();
-    test_6();
-    test_7();
+    srand(0);
+    debug("TEST 8. SIMPLE TRIANGLE SHIFTING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {-1,1,3, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {3, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    std::vector<float> shift = {-1, 1, 3};
+    ComplexModel m;
+    bool res;
+    debug("  8.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  8.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = (p[i] == tr[i] + shift[i % 3]);
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_9()
+  {
+    srand(0);
+    debug("TEST 9. SIMPLE TRIANGLE SCALING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {2,0.5,1, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {2, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    std::vector<float> sc = {2, 0.5, 1};
+    ComplexModel m;
+    bool res;
+    debug("  9.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug("  9.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = (p[i] == tr[i] * sc[i % 3]);
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_10()
+  {
+    srand(0);
+    debug("TEST 10. SIMPLE TRIANGLE ROTATING GEN TREE\n");//180 graduses
+    std::string settings = R""""(
+    {
+    params:arr = {1,0,0,3.14159265, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {4, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, -1, 1};
+    ComplexModel m;
+    bool res;
+    debug(" 10.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug(" 10.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+      return;
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = ((p[i] - tr[i] < 1e-5 && p[i] >= tr[i]) || (tr[i] - p[i] < 1e-5 && p[i] <= tr[i]));
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_11()
+  {
+    srand(0);
+    debug("TEST 11. COMPLEX TRIANGLE ROTATING GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {0.1,0.2,0.3,4, 0.1,0.2,0.3,-4, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {4, 4, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
+    ComplexModel m;
+    bool res;
+    debug(" 11.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug(" 11.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == tr.size());
+    if (!res)
+    {
+      debug("FAILED %d != %d\n", p.size(), tr.size());
+    }
+    for (int i = 0; res && i < 9; ++i)
+    {
+      res = ((p[i] - tr[i] < 1e-5 && p[i] >= tr[i]) || (tr[i] - p[i] < 1e-5 && p[i] <= tr[i]));
+    }
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f %f %f, %f %f %f, %f %f %f\n", p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+    }
+  }
+
+  void test_12()
+  {
+    srand(0);
+    debug("TEST 12. COMPLEX GEN TREE\n");
+    std::string settings = R""""(
+    {
+    params:arr = {0.5,2,1.5, 0,0,0, -1,0,0, 0,1,-1, 0.5,0,0.2,3, -0.5,1.5,0, 0,0,0, -1,0,0, 0,1,-1}    
+    structure:arr = {6, 2, 1, 4, 3, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    ComplexModel m;
+    bool res;
+    debug(" 12.1. %-64s", "Creating model from params and structure ");
+    if (res = create_model_from_block(settings_blk, m))
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug(" 12.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == 18);
+    if (res)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d != %d\n", p.size(), 18);
+    }
+  }
+
+  void test_13()
+  {
+    debug("TEST 13. TREE JACOBIAN CALCULATION\n");
+
+    upg::UPGStructure structure;
+    structure.s = {3, 2, 1};
+    upg::UPGParametersRaw params;
+    params.p = {10000,10000,10000,  10,10,10,  1,2,3,4,5,6,7,8,9};
+    upg::UniversalGenInstance gen(structure);
+    upg::UniversalGenJacobian jac;
+    auto mesh = gen.generate(params.p, &jac);
+
+    bool res;
+    debug(" 13.1. %-64s", "Model and jacobian created, have right size ");
+    if (mesh.pos.size() == 9 && jac.get_xn() == 9 && jac.get_yn() == 15)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d %d %d\n", mesh.pos.size(), jac.get_xn(), jac.get_yn());
+    }
+
+    std::vector<float> reference_jac = {
+      10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 
+      1.0000, 0.0000, 0.0000, 4.0000, 0.0000, 0.0000, 7.0000, 0.0000, 0.0000, 
+      0.0000, 2.0000, 0.0000, 0.0000, 5.0000, 0.0000, 0.0000, 8.0000, 0.0000, 
+      0.0000, 0.0000, 3.0000, 0.0000, 0.0000, 6.0000, 0.0000, 0.0000, 9.0000, 
+      1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 
+      0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 
+      0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000};
+
+    float diff = 0;
+    for (int i=0;i<jac.get_yn();i++)
+    {
+      for (int j=0;j<jac.get_xn();j++)
+        diff += abs(reference_jac[i*jac.get_xn() + j] - jac.at(i,j));
+    }
+    debug(" 13.2. %-64s", "Jacobian is correct ");
+    if (diff < 1e-7)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f > %f\n", diff, 1e-7);
+    }
+  }
+
+  void perform_tests(const Block &blk)
+  {
+
+    Block *tests_blk = blk.get_block("tests");
+    if (!tests_blk)
+    {
+      logerr("UPG Tests: tests block should exist in configuration");
+      return;
+    }
+
+    std::vector<int> tests;
+    tests_blk->get_arr("tests_num", tests);
+    std::vector<std::function<void(void)>> test_functions = {
+      test_1, test_2, test_3, test_4, test_5,
+      test_6, test_7, test_8, test_9,
+      test_10, test_11, test_12, test_13
+    };
+
+    for (int i : tests)
+    {
+      assert(i > 0 && i <= test_functions.size());
+      test_functions[i-1]();
+    }
   }
 };

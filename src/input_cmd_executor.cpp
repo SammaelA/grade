@@ -327,7 +327,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
       renderCmdBuffer->push(RC_SHOW_WINDOW, cmd.args);
       break;
     case IC_UPG_TESTS:
-      genCmdBuffer->push(GC_UPG_TESTS);
+      genCmdBuffer->push(GC_UPG_TESTS, cmd.args);
       break;
     default:
       logerr("InputCmdExecutor: command %d is not implemented yet", (int)(cmd.type));

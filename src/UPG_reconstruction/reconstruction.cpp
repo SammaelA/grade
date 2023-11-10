@@ -71,12 +71,12 @@ namespace upg
   void grad_jac_mult(const UniversalGenJacobian &dPos_dP, std::span<const float> dLoss_dPos, 
                      std::span<float> out_dLoss_dP)
   {
-    assert(out_dLoss_dP.size() == dPos_dP.y_n);
-    assert(dLoss_dPos.size() == dPos_dP.x_n);
-    for (int i=0;i<dPos_dP.y_n;i++)
+    assert(out_dLoss_dP.size() == dPos_dP.get_yn());
+    assert(dLoss_dPos.size() == dPos_dP.get_xn());
+    for (int i=0;i<dPos_dP.get_yn();i++)
     { out_dLoss_dP[i] = 0;
-      for (int j=0;j<dPos_dP.x_n;j++)
-        out_dLoss_dP[i] += dPos_dP.jacobian[i*dPos_dP.x_n + j]*dLoss_dPos[j]; 
+      for (int j=0;j<dPos_dP.get_xn();j++)
+        out_dLoss_dP[i] += dPos_dP.at(i,j)*dLoss_dPos[j]; 
     }
   }
 
@@ -162,8 +162,8 @@ namespace upg
       std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
       std::vector<CameraSettings> cameras;
       opt_params_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
-      UniversalGenMesh mesh = gen.generate(full_gen_params);
-      UniversalGenJacobian dPos_dP = gen.generate_jacobian(full_gen_params);
+      UniversalGenJacobian dPos_dP;
+      UniversalGenMesh mesh = gen.generate(full_gen_params, &dPos_dP);
       float res = diff_render->render_and_compare_silhouette(mesh.pos, cameras);
       std::span<const float> dLoss_dPos(diff_render->get_vertex_grad(), mesh.pos.size());
       grad_jac_mult(dPos_dP, dLoss_dPos, out_grad);

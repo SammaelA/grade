@@ -3,6 +3,7 @@
 #include "generation_common.h"
 namespace upg
 {
+  struct UniversalGenJacobian;
   class GenNode
   {
   protected:
@@ -25,7 +26,7 @@ namespace upg
     {
       p = s;
     }
-    virtual UniversalGenMesh apply() = 0;
+    virtual UniversalGenMesh apply(UniversalGenJacobian *out_jac) = 0;
     virtual bool add_child(GenNode *node) = 0;// returns the availability of free space
     virtual unsigned param_cnt() = 0;
     virtual unsigned child_cnt() = 0;
