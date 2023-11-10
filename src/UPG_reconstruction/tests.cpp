@@ -3,6 +3,7 @@
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
 #include <unistd.h>
+#include <functional>
 
 namespace upg
 {
@@ -830,7 +831,7 @@ namespace upg
     std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, -1, 1};
     ComplexModel m;
     bool res;
-    debug("  10.1. %-64s", "Creating model from params and structure ");
+    debug(" 10.1. %-64s", "Creating model from params and structure ");
     if (res = create_model_from_block(settings_blk, m))
     {
       debug("PASSED\n");
@@ -840,7 +841,7 @@ namespace upg
       debug("FAILED %d\n", res);
       return;
     }
-    debug("  10.2. %-64s", "Compare results and expectations ");
+    debug(" 10.2. %-64s", "Compare results and expectations ");
     Model *model = m.models[0];
     std::vector<float> p = model->positions;
     res = (p.size() == tr.size());
@@ -878,7 +879,7 @@ namespace upg
     std::vector<float> tr = {0, 0, 0, -1, 0, 0, 0, 1, -1};
     ComplexModel m;
     bool res;
-    debug("  11.1. %-64s", "Creating model from params and structure ");
+    debug(" 11.1. %-64s", "Creating model from params and structure ");
     if (res = create_model_from_block(settings_blk, m))
     {
       debug("PASSED\n");
@@ -888,7 +889,7 @@ namespace upg
       debug("FAILED %d\n", res);
       return;
     }
-    debug("  11.2. %-64s", "Compare results and expectations ");
+    debug(" 11.2. %-64s", "Compare results and expectations ");
     Model *model = m.models[0];
     std::vector<float> p = model->positions;
     res = (p.size() == tr.size());
@@ -924,7 +925,7 @@ namespace upg
     load_block_from_string(settings, settings_blk);
     ComplexModel m;
     bool res;
-    debug("  12.1. %-64s", "Creating model from params and structure ");
+    debug(" 12.1. %-64s", "Creating model from params and structure ");
     if (res = create_model_from_block(settings_blk, m))
     {
       debug("PASSED\n");
@@ -934,7 +935,7 @@ namespace upg
       debug("FAILED %d\n", res);
       return;
     }
-    debug("  12.2. %-64s", "Compare results and expectations ");
+    debug(" 12.2. %-64s", "Compare results and expectations ");
     Model *model = m.models[0];
     std::vector<float> p = model->positions;
     res = (p.size() == 18);
@@ -960,48 +961,16 @@ namespace upg
 
     std::vector<int> tests;
     tests_blk->get_arr("tests_num", tests);
+    std::vector<std::function<void(void)>> test_functions = {
+      test_1, test_2, test_3, test_4, test_5,
+      test_6, test_7, test_8, test_9,
+      test_10, test_11, test_12
+    };
 
     for (int i : tests)
     {
-      switch(i)
-      {
-        case 1:
-          test_1();
-          break;
-        case 2:
-          test_2();
-          break;
-        case 3:
-          test_3();
-          break;
-        case 4:
-          test_4();
-          break;
-        case 5:
-          test_5();
-          break;
-        case 6:
-          test_6();
-          break;
-        case 7:
-          test_7();
-          break;
-        case 8:
-          test_8();
-          break;
-        case 9:
-          test_9();
-          break;
-        case 10:
-          test_10();
-          break;
-        case 11:
-          test_11();
-          break;
-        case 12:
-          test_12();
-          break;
-      }
+      assert(i > 0 && i <= test_functions.size());
+      test_functions[i-1]();
     }
   }
 };
