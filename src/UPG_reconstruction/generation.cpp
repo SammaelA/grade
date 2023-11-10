@@ -3,7 +3,7 @@
 
 namespace upg
 {
-  UniversalGenMesh UniversalGenInstance::generate(std::span<const float> parameters)
+  UniversalGenMesh UniversalGenInstance::generate(std::span<const float> parameters, UniversalGenJacobian *jac)
   {
     for (int i = 0; i < all_params.size(); ++i)
     {
@@ -16,7 +16,7 @@ namespace upg
         all_params[i] = 0;
       }
     }
-    return root->apply();
+    return root->apply(jac);
     // generator.take_params(parameters);
     // return generator.generate();
   }
@@ -70,17 +70,5 @@ namespace upg
       nptr->set_param_span(std::span<my_float>(all_params.data() + offset, nptr->param_cnt()));
       offset += nptr->param_cnt();
     }
-  }
-
-  UniversalGenJacobian UniversalGenInstance::generate_jacobian(std::span<const float> parameters) // maybe it will create mesh too?
-  {
-    UniversalGenJacobian jac;
-    jac.x_n = 9;
-    jac.y_n = 9;
-    jac.jacobian = std::vector<float>(9 * 9, 0);
-    for (int i = 0; i < jac.y_n; i++)
-      jac.jacobian[i * jac.x_n + i] = 1;
-
-    return jac;
   }
 }

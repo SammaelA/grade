@@ -8,8 +8,32 @@ namespace upg
   //where P is parameters list for specific
   //UniversalGenInstance. Jacobian is likely
   //to be represented as sprase or block matrix
-  struct UniversalGenJacobian
+  class UniversalGenJacobian
   {
+  public:
+    void resize(int xn, int yn)
+    {
+      x_n = xn;
+      y_n = yn;
+      jacobian.resize(xn*yn);
+    }
+    int get_xn() const 
+    {
+      return x_n;
+    }
+    int get_yn() const 
+    {
+      return y_n;
+    }
+    float &at(int y, int x)
+    {
+      return jacobian[y*x_n + x];
+    }
+    const float &at(int y, int x) const
+    {
+      return jacobian[y*x_n + x];
+    }
+  private:
     int x_n, y_n;
     std::vector<float> jacobian;
   };
@@ -21,8 +45,7 @@ namespace upg
   {
   public:
     UniversalGenInstance(const UPGStructure &structure);
-    UniversalGenMesh generate(std::span<const float> parameters);
-    UniversalGenJacobian generate_jacobian(std::span<const float> parameters);
+    UniversalGenMesh generate(std::span<const float> parameters, UniversalGenJacobian *jac = nullptr);
     ParametersDescription desc;
 
   private:

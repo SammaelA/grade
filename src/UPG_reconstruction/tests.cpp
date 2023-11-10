@@ -2,6 +2,7 @@
 #include "tinyEngine/engine.h"
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
+#include "generation.h"
 #include <unistd.h>
 #include <functional>
 
@@ -949,6 +950,63 @@ namespace upg
     }
   }
 
+  void test_13()
+  {
+    debug("TEST 13. TREE JACOBIAN CALCULATION\n");
+
+    upg::UPGStructure structure;
+    structure.s = {3, 2, 1};
+    upg::UPGParametersRaw params;
+    params.p = {10000,10000,10000,  10,10,10,  1,2,3,4,5,6,7,8,9};
+    upg::UniversalGenInstance gen(structure);
+    upg::UniversalGenJacobian jac;
+    auto mesh = gen.generate(params.p, &jac);
+
+    bool res;
+    debug(" 13.1. %-64s", "Model and jacobian created, have right size ");
+    if (mesh.pos.size() == 9 && jac.get_xn() == 9 && jac.get_yn() == 15)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d %d %d\n", mesh.pos.size(), jac.get_xn(), jac.get_yn());
+    }
+
+    std::vector<float> reference_jac = {
+      10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000, 
+      0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 
+      1.0000, 0.0000, 0.0000, 4.0000, 0.0000, 0.0000, 7.0000, 0.0000, 0.0000, 
+      0.0000, 2.0000, 0.0000, 0.0000, 5.0000, 0.0000, 0.0000, 8.0000, 0.0000, 
+      0.0000, 0.0000, 3.0000, 0.0000, 0.0000, 6.0000, 0.0000, 0.0000, 9.0000, 
+      1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 
+      0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 
+      0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 1.0000};
+
+    float diff = 0;
+    for (int i=0;i<jac.get_yn();i++)
+    {
+      for (int j=0;j<jac.get_xn();j++)
+        diff += abs(reference_jac[i*jac.get_xn() + j] - jac.at(i,j));
+    }
+    debug(" 13.2. %-64s", "Jacobian is correct ");
+    if (diff < 1e-7)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f > %f\n", diff, 1e-7);
+    }
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -964,7 +1022,7 @@ namespace upg
     std::vector<std::function<void(void)>> test_functions = {
       test_1, test_2, test_3, test_4, test_5,
       test_6, test_7, test_8, test_9,
-      test_10, test_11, test_12
+      test_10, test_11, test_12, test_13
     };
 
     for (int i : tests)

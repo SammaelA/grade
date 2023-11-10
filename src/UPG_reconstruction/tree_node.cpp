@@ -1,5 +1,6 @@
 #include <cmath>
 #include "tree_node.h"
+#include "generation.h"
 #include "common_utils/template_vectors.h"
 namespace upg
 { 
@@ -68,11 +69,17 @@ namespace upg
   {
   public:
     FreeTriangleNode(unsigned id) : PrimitiveNode(id) { node_num = 0; name = "FreeTriangle"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
       for (int i=0;i<9;i++)
         mesh.pos.push_back(p[i]);
+      if (out_jac)
+      {
+        out_jac->resize(9,9);
+        for (int i=0;i<9;i++)
+          out_jac->at(i,i) = 1;
+      }
       return mesh;
     }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() override
@@ -92,7 +99,7 @@ namespace upg
   {
   public:
     FigureNode(unsigned id) : PrimitiveNode(id) { node_num = 0; name = "Figure"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
       //creating for example cube
@@ -121,7 +128,7 @@ namespace upg
   {
   public:
     SpinNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "Spin"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       my_float data[N];
       for (int i = 0; i < N; ++i)
@@ -201,13 +208,46 @@ namespace upg
   public:
     ScaleNode(unsigned id) : OneChildNode(id) { node_num = 2; name = "Scale"; }
 
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      /*my_float scale_x = p.get();
-      my_float scale_y = p.get();
-      my_float scale_z = p.get();*/
-
-      UniversalGenMesh mesh = child->apply();
+      UniversalGenJacobian child_jac;
+      UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
+      if (out_jac)
+      {
+        /*
+        G = [Sx 0  0
+             0  Sy 0
+             0  0  Sz]
+        M = [G 0 ... 0
+             0 G ... 0
+             ...
+             0 0 ... G]
+        H(v) = [v.x 0  0
+                0  v.y 0
+                0  0  v.z]
+        M1 = [H(v0)
+              H(v1)
+              ...
+              H(vn)]
+        M' = [M*J | M1]
+        */
+        out_jac->resize(mesh.pos.size(), child_jac.get_yn() + 3);
+        for (int i=0;i<child_jac.get_yn();i++)
+        {
+          for (int j=0;j<child_jac.get_xn();j++)
+          {
+            out_jac->at(i, j) = p[j % 3]*child_jac.at(i,j);
+          }
+        } 
+        for (int i=0;i < 3; i++)
+        {
+          for (int j=0;j<child_jac.get_xn();j++)
+          {
+            if (j % 3 == i)
+              out_jac->at(child_jac.get_xn()+i, j) = (j % 3 == i) ? mesh.pos[j] : 0; //scale back to 
+          }
+        }
+      }
       //applying scaling
       for (int i = 0; i + 3 <= mesh.pos.size(); i += 3)
       {
@@ -253,13 +293,44 @@ namespace upg
   public:
     MoveNode(unsigned id) : OneChildNode(id) { node_num = 3; name = "Move"; }
 
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      //my_float move_x = p.diff_params[MOVE_X];
-      /*my_float move_x = p.get();
-      my_float move_y = p.get();
-      my_float move_z = p.get();*/
-      UniversalGenMesh mesh = child->apply();
+      UniversalGenJacobian child_jac;
+      UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
+            
+      if (out_jac)
+      {
+        /*
+        G = [1  0  0
+             0  1  0
+             0  0  1]
+        M = [G 0 ... 0
+             0 G ... 0
+             ...
+             0 0 ... G]
+        H(v) = [1  0  0
+                0  1  0
+                0  0  1]
+        M1 = [H(v0)
+              H(v1)
+              ...
+              H(vn)]
+        M' = [M*J | M1]
+        */
+        out_jac->resize(mesh.pos.size(), child_jac.get_yn() + 3);
+        for (int i=0;i<child_jac.get_yn();i++)
+          for (int j=0;j<child_jac.get_xn();j++)
+            out_jac->at(i, j) = child_jac.at(i,j);
+      
+        for (int i=0;i < 3; i++)
+        {
+          for (int j=0;j<child_jac.get_xn();j++)
+          {
+            if (j % 3 == i)
+              out_jac->at(child_jac.get_yn()+i, j) = (j % 3 == i) ? 1 : 0;
+          }
+        }
+      }
       //applying moving
       for (int i = 0; i + 3 <= mesh.pos.size(); i += 3)
       {
@@ -293,14 +364,14 @@ namespace upg
   public:
     RotateNode(unsigned id) : OneChildNode(id) { node_num = 4; name = "Rotate"; }
 
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       /*my_float axis_x = p.get();
       my_float axis_y = p.get();
       my_float axis_z = p.get();
       my_float angle = p.get();*/
 
-      UniversalGenMesh mesh = child->apply();
+      UniversalGenMesh mesh = child->apply(nullptr);
       //applying rotating
       vec3 ax = {p[AX_X], p[AX_Y], p[AX_Z]};
       mat43 matr = get_any_rot_mat(ax, p[ANGLE]);
@@ -374,10 +445,10 @@ namespace upg
   {
   public:
     AndNode(unsigned id) : TwoChildNode(id) { node_num = 5; name = "And"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      UniversalGenMesh mesh1 = left->apply();
-      UniversalGenMesh mesh2 = right->apply();
+      UniversalGenMesh mesh1 = left->apply(nullptr);
+      UniversalGenMesh mesh2 = right->apply(nullptr);
       //applying and
       return mesh1;
     }
@@ -396,10 +467,10 @@ namespace upg
   {
   public:
     OrNode(unsigned id) : TwoChildNode(id) { node_num = 6; name = "Or"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      UniversalGenMesh mesh1 = left->apply();
-      UniversalGenMesh mesh2 = right->apply();
+      UniversalGenMesh mesh1 = left->apply(nullptr);
+      UniversalGenMesh mesh2 = right->apply(nullptr);
       //applying or
       UniversalGenMesh mesh = mesh1;
       mesh.pos.insert(mesh.pos.end(), mesh2.pos.begin(), mesh2.pos.end());
@@ -422,10 +493,10 @@ namespace upg
   {
   public:
     SubtrNode(unsigned id) : TwoChildNode(id) { node_num = 7; name = "Subtract"; }
-    UniversalGenMesh apply() override
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      UniversalGenMesh mesh1 = left->apply();
-      UniversalGenMesh mesh2 = right->apply();
+      UniversalGenMesh mesh1 = left->apply(nullptr);
+      UniversalGenMesh mesh2 = right->apply(nullptr);
       //applying subtract
       return mesh1;
     }
