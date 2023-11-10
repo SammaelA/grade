@@ -736,7 +736,7 @@ namespace upg
     ComplexModel m;
     bool res;
     debug("  8.1. %-64s", "Creating model from params and structure ");
-    if (res = create_model_from_block(settings_blk, m))
+    if ((res = create_model_from_block(settings_blk, m)))
     {
       debug("PASSED\n");
     }
@@ -785,7 +785,7 @@ namespace upg
     ComplexModel m;
     bool res;
     debug("  9.1. %-64s", "Creating model from params and structure ");
-    if (res = create_model_from_block(settings_blk, m))
+    if ((res = create_model_from_block(settings_blk, m)))
     {
       debug("PASSED\n");
     }
@@ -833,7 +833,7 @@ namespace upg
     ComplexModel m;
     bool res;
     debug(" 10.1. %-64s", "Creating model from params and structure ");
-    if (res = create_model_from_block(settings_blk, m))
+    if ((res = create_model_from_block(settings_blk, m)))
     {
       debug("PASSED\n");
     }
@@ -881,7 +881,7 @@ namespace upg
     ComplexModel m;
     bool res;
     debug(" 11.1. %-64s", "Creating model from params and structure ");
-    if (res = create_model_from_block(settings_blk, m))
+    if ((res = create_model_from_block(settings_blk, m)))
     {
       debug("PASSED\n");
     }
@@ -927,7 +927,7 @@ namespace upg
     ComplexModel m;
     bool res;
     debug(" 12.1. %-64s", "Creating model from params and structure ");
-    if (res = create_model_from_block(settings_blk, m))
+    if ((res = create_model_from_block(settings_blk, m)))
     {
       debug("PASSED\n");
     }
@@ -1007,6 +1007,204 @@ namespace upg
     }
   }
 
+  //TEST 14 MOVE TRIANGLE RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly (like 90 PSNR)
+  void test_14()
+  {
+    srand(0);
+    debug("TEST 14. MOVE TRIANGLE RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0.2,0.2,0.2, 0,0,0, -1,0,0, 0,1,-1}
+            structure:arr = {3, 1}
+        } 
+        view_0 {
+            camera.origin:p3 = 2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.15,0.23,0.25, 0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81}    
+            structure:arr = {3, 1} 
+        }
+        step_0 {
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 500
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 14.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 14.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 14.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
+  //TEST 15 SCALE TRIANGLE RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly (like 90 PSNR)
+  void test_15()
+  {
+    srand(0);
+    debug("TEST 15. SCALE TRIANGLE RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0.8,1.0,1.2, 0,0,0, -1,0,0, 0,1,-1}
+            structure:arr = {2, 1}
+        } 
+        view_0 {
+            camera.origin:p3 = 2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {1.2,1,0.8, 0.1,0.1,0.1, -0.9,-0.1,-0.05, 0.07,0.85,-0.81}    
+            structure:arr = {2, 1} 
+        }
+        step_0 {
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 500
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 15.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 15.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 15.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1020,9 +1218,9 @@ namespace upg
     std::vector<int> tests;
     tests_blk->get_arr("tests_num", tests);
     std::vector<std::function<void(void)>> test_functions = {
-      test_1, test_2, test_3, test_4, test_5,
-      test_6, test_7, test_8, test_9,
-      test_10, test_11, test_12, test_13
+      test_1,  test_2,  test_3,  test_4,  test_5,
+      test_6,  test_7,  test_8,  test_9,  test_10,
+      test_11, test_12, test_13, test_14, test_15
     };
 
     for (int i : tests)
