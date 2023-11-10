@@ -224,10 +224,10 @@ namespace upg
           X.differentiable[i] -= alpha*Vh/(sqrt(Sh) + eps);
         }
         if ((iter % 5 == 0) && verbose)
-          debug("Adam iter %3d  val = %.4f best_val = %.4f\n", iter, val, best_result);
+          debug("Adam iter %3d  val = %.6f best_val = %.6f\n", iter, val, best_result);
       }
       if (verbose)
-        debug("Adam final res val = %.4f best_val = %.4f\n", best_result, best_result);
+        debug("Adam final res val = %.6f best_val = %.6f\n", best_result, best_result);
 
       UPGReconstructionResult res;
       res.structure = gen_structure;

@@ -236,7 +236,7 @@ namespace upg
         {
           for (int j=0;j<child_jac.get_xn();j++)
           {
-            out_jac->at(i, j) = p[j % 3]*child_jac.at(i,j);
+            out_jac->at(3+i, j) = p[j % 3]*child_jac.at(i,j);
           }
         } 
         for (int i=0;i < 3; i++)
@@ -244,7 +244,7 @@ namespace upg
           for (int j=0;j<child_jac.get_xn();j++)
           {
             if (j % 3 == i)
-              out_jac->at(child_jac.get_xn()+i, j) = (j % 3 == i) ? mesh.pos[j] : 0; //scale back to 
+              out_jac->at(i, j) = (j % 3 == i) ? mesh.pos[j] : 0; //scale back to 
           }
         }
       }
@@ -320,14 +320,14 @@ namespace upg
         out_jac->resize(mesh.pos.size(), child_jac.get_yn() + 3);
         for (int i=0;i<child_jac.get_yn();i++)
           for (int j=0;j<child_jac.get_xn();j++)
-            out_jac->at(i, j) = child_jac.at(i,j);
+            out_jac->at(3+i, j) = child_jac.at(i,j);
       
         for (int i=0;i < 3; i++)
         {
           for (int j=0;j<child_jac.get_xn();j++)
           {
             if (j % 3 == i)
-              out_jac->at(child_jac.get_yn()+i, j) = (j % 3 == i) ? 1 : 0;
+              out_jac->at(i, j) = (j % 3 == i) ? 1 : 0;
           }
         }
       }
