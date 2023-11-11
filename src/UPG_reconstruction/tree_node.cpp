@@ -75,7 +75,7 @@ namespace upg
   class FreeTriangleNode : public PrimitiveNode
   {
   public:
-    FreeTriangleNode(unsigned id) : PrimitiveNode(id) { node_num = 0; name = "FreeTriangle"; }
+    FreeTriangleNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "FreeTriangle"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
@@ -105,7 +105,7 @@ namespace upg
   class FigureNode : public PrimitiveNode
   {
   public:
-    FigureNode(unsigned id) : PrimitiveNode(id) { node_num = 0; name = "Figure"; }
+    FigureNode(unsigned id) : PrimitiveNode(id) { node_num = 5; name = "Figure"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
@@ -117,6 +117,8 @@ namespace upg
       add_rect({1, 1, 1}, {-1, 0, 0}, {0, -1, 0}, mesh);
       add_rect({1, 1, 1}, {0, -1, 0}, {0, 0, -1}, mesh);
       add_rect({1, 1, 1}, {0, 0, -1}, {-1, 0, 0}, mesh);
+      if (out_jac)
+        out_jac->resize(mesh.pos.size(), 0);
       return mesh;
     }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() override
@@ -448,64 +450,34 @@ namespace upg
     }
   };
 
-  class AndNode : public TwoChildNode
+  class MergeNode : public TwoChildNode
   {
   public:
-    AndNode(unsigned id) : TwoChildNode(id) { node_num = 5; name = "And"; }
+    MergeNode(unsigned id) : TwoChildNode(id) { node_num = 6; name = "Merge"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      UniversalGenMesh mesh1 = left->apply(nullptr);
-      UniversalGenMesh mesh2 = right->apply(nullptr);
-      //applying and
-      return mesh1;
-    }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
-    {
-      std::vector<ParametersDescription::Param> params;
-      return params;
-    }
-    unsigned param_cnt() override
-    {
-      return 0;
-    }
-  };
-
-  class OrNode : public TwoChildNode
-  {
-  public:
-    OrNode(unsigned id) : TwoChildNode(id) { node_num = 6; name = "Or"; }
-    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
-    {
-      UniversalGenMesh mesh1 = left->apply(nullptr);
-      UniversalGenMesh mesh2 = right->apply(nullptr);
+      UniversalGenJacobian ch1,ch2;
+      UniversalGenMesh mesh1 = left->apply(out_jac ? &ch1 : nullptr);
+      UniversalGenMesh mesh2 = right->apply(out_jac ? &ch2 : nullptr);
       //applying or
       UniversalGenMesh mesh = mesh1;
       mesh.pos.insert(mesh.pos.end(), mesh2.pos.begin(), mesh2.pos.end());
       mesh.norm.insert(mesh.norm.end(), mesh2.norm.begin(), mesh2.norm.end());
       mesh.tc.insert(mesh.tc.end(), mesh2.tc.begin(), mesh2.tc.end());
-      return mesh;
-    }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
-    {
-      std::vector<ParametersDescription::Param> params;
-      return params;
-    }
-    unsigned param_cnt() override
-    {
-      return 0;
-    }
-  };
 
-  class SubtrNode : public TwoChildNode
-  {
-  public:
-    SubtrNode(unsigned id) : TwoChildNode(id) { node_num = 7; name = "Subtract"; }
-    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
-    {
-      UniversalGenMesh mesh1 = left->apply(nullptr);
-      UniversalGenMesh mesh2 = right->apply(nullptr);
-      //applying subtract
-      return mesh1;
+      if (out_jac)
+      {
+        out_jac->resize(ch1.get_xn() + ch2.get_xn(), ch1.get_yn() + ch2.get_yn());
+        out_jac->clear();
+        for (int i=0;i<ch1.get_yn();i++)
+          for (int j=0;j<ch1.get_xn();j++)
+            out_jac->at(i, j) = ch1.at(i,j);
+        for (int i=0;i<ch2.get_yn();i++)
+          for (int j=0;j<ch2.get_xn();j++)
+            out_jac->at(ch1.get_yn() + i, ch1.get_xn() + j) = ch2.at(i,j);
+      }
+
+      return mesh;
     }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() override
     {
@@ -536,16 +508,14 @@ namespace upg
         node = new RotateNode(id);
         break;
       case 5:
-        node = new AndNode(id);
+        node = new FigureNode(id);
         break;
       case 6:
-        node = new OrNode(id);
-        break;
-      case 7:
-        node = new SubtrNode(id);
+        node = new MergeNode(id);
         break;
       default:
-        node = new FigureNode(id);
+        logerr("invalid node_id %u\n",id);
+        node = nullptr;
         break;
 
     }

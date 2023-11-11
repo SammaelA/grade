@@ -37,6 +37,10 @@ namespace upg
     {
       return jacobian.data();
     }
+    void clear()
+    {
+      std::fill(jacobian.begin(), jacobian.end(), 0);
+    }
   private:
     int x_n, y_n;
     std::vector<float> jacobian;
