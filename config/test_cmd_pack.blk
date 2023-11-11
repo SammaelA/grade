@@ -6,8 +6,8 @@ cmd {cmd_name:s = "IC_SET_DEFAULT_BIOME"}
 cmd {
     cmd_code:i=1
     procedural_model:b = true
-    params:arr = {0,0,0, -1,0,0, 0,1,-1}
-    structure:arr = {1}
+    params:arr = {0,0,0, 1,1,1,   0,1,0, 0.5,0.5,0.5,  0,1.5,0, 0.25,0.25,0.25}
+    structure:arr = {6,  6, 3,2,5, 3,2,5,  3,2,5}
 
     name:s = "upg_test"
     on_terrain:b = true

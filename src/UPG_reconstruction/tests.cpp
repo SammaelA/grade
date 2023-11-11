@@ -1205,6 +1205,218 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  void test_16()
+  {
+    debug("TEST 16. STACKED CUBES MODEL AND JACOBIAN\n");
+
+    upg::UPGStructure structure;
+    structure.s = {6,  6, 3,2,5, 3,2,5,  3,2,5};
+    upg::UPGParametersRaw params;
+    params.p = {0,0,0, 1,1,1,   0,1,0, 0.5,0.5,0.5,  0,1.5,0, 0.25,0.25,0.25};
+    upg::UniversalGenInstance gen(structure);
+    upg::UniversalGenJacobian jac;
+    auto mesh = gen.generate(params.p, &jac);
+
+    bool res;
+    debug(" 16.1. %-64s", "Model and jacobian created, have right size ");
+    if (mesh.pos.size() == 3*6*2*3*3 && jac.get_xn() == mesh.pos.size() && jac.get_yn() == params.p.size())
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d %d %d\n", mesh.pos.size(), jac.get_xn(), jac.get_yn());
+    }
+
+    std::vector<float> reference_model = {
+      0.000, 0.000, 0.000, 0.000, 1.000, 0.000, 1.000, 0.000, 0.000, 
+      1.000, 1.000, 0.000, 1.000, 0.000, 0.000, 0.000, 1.000, 0.000, 
+      0.000, 0.000, 0.000, 0.000, 0.000, 1.000, 0.000, 1.000, 0.000, 
+      0.000, 1.000, 1.000, 0.000, 1.000, 0.000, 0.000, 0.000, 1.000, 
+      0.000, 0.000, 0.000, 1.000, 0.000, 0.000, 0.000, 0.000, 1.000, 
+      1.000, 0.000, 1.000, 0.000, 0.000, 1.000, 1.000, 0.000, 0.000, 
+      1.000, 1.000, 1.000, 0.000, 1.000, 1.000, 1.000, 0.000, 1.000, 
+      0.000, 0.000, 1.000, 1.000, 0.000, 1.000, 0.000, 1.000, 1.000, 
+      1.000, 1.000, 1.000, 1.000, 0.000, 1.000, 1.000, 1.000, 0.000, 
+      1.000, 0.000, 0.000, 1.000, 1.000, 0.000, 1.000, 0.000, 1.000, 
+      1.000, 1.000, 1.000, 1.000, 1.000, 0.000, 0.000, 1.000, 1.000,
+      0.000, 1.000, 0.000, 0.000, 1.000, 1.000, 1.000, 1.000, 0.000,
+      
+      0.000, 1.000, 0.000, 0.000, 1.500, 0.000, 0.500, 1.000, 0.000,
+      0.500, 1.500, 0.000, 0.500, 1.000, 0.000, 0.000, 1.500, 0.000, 
+      0.000, 1.000, 0.000, 0.000, 1.000, 0.500, 0.000, 1.500, 0.000, 
+      0.000, 1.500, 0.500, 0.000, 1.500, 0.000, 0.000, 1.000, 0.500, 
+      0.000, 1.000, 0.000, 0.500, 1.000, 0.000, 0.000, 1.000, 0.500, 
+      0.500, 1.000, 0.500, 0.000, 1.000, 0.500, 0.500, 1.000, 0.000, 
+      0.500, 1.500, 0.500, 0.000, 1.500, 0.500, 0.500, 1.000, 0.500, 
+      0.000, 1.000, 0.500, 0.500, 1.000, 0.500, 0.000, 1.500, 0.500, 
+      0.500, 1.500, 0.500, 0.500, 1.000, 0.500, 0.500, 1.500, 0.000, 
+      0.500, 1.000, 0.000, 0.500, 1.500, 0.000, 0.500, 1.000, 0.500, 
+      0.500, 1.500, 0.500, 0.500, 1.500, 0.000, 0.000, 1.500, 0.500, 
+      0.000, 1.500, 0.000, 0.000, 1.500, 0.500, 0.500, 1.500, 0.000, 
+      
+      0.000, 1.500, 0.000, 0.000, 1.750, 0.000, 0.250, 1.500, 0.000, 
+      0.250, 1.750, 0.000, 0.250, 1.500, 0.000, 0.000, 1.750, 0.000, 
+      0.000, 1.500, 0.000, 0.000, 1.500, 0.250, 0.000, 1.750, 0.000, 
+      0.000, 1.750, 0.250, 0.000, 1.750, 0.000, 0.000, 1.500, 0.250, 
+      0.000, 1.500, 0.000, 0.250, 1.500, 0.000, 0.000, 1.500, 0.250, 
+      0.250, 1.500, 0.250, 0.000, 1.500, 0.250, 0.250, 1.500, 0.000, 
+      0.250, 1.750, 0.250, 0.000, 1.750, 0.250, 0.250, 1.500, 0.250, 
+      0.000, 1.500, 0.250, 0.250, 1.500, 0.250, 0.000, 1.750, 0.250, 
+      0.250, 1.750, 0.250, 0.250, 1.500, 0.250, 0.250, 1.750, 0.000, 
+      0.250, 1.500, 0.000, 0.250, 1.750, 0.000, 0.250, 1.500, 0.250, 
+      0.250, 1.750, 0.250, 0.250, 1.750, 0.000, 0.000, 1.750, 0.250, 
+      0.000, 1.750, 0.000, 0.000, 1.750, 0.250, 0.250, 1.750, 0.000};
+    float diff = 0;
+    for (int i=0;i<mesh.pos.size();i++)
+      diff += abs(mesh.pos[i] - reference_model[i]);
+    debug(" 16.2. %-64s", "Model is correct ");
+    if (diff < 1e-6)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", diff, 1e-6);
+
+    debug(" 16.3. %-64s", "Jacobian has correct structure ");
+    //the jacobian is too large to actually make sure that it is correct
+    //so we chech that it has the right structure:
+    //[A 0 0 
+    // 0 A 0
+    // 0 0 A]
+    int bx = mesh.pos.size()/3;
+    int by = params.p.size()/3;
+    for (int bi=0;bi<3;bi++)
+    {
+      for(int bj=0;bj<3;bj++)
+      {
+        if (bi != bj)
+        {
+          //it should be zero
+          for (int i=0;i<by;i++)
+            for (int j=0;j<bx;j++)
+              if (abs(jac.at(bi*by + i, bj*bx + j)) > 1e-6)
+              {
+                logerr("block %d %d is not zero", bi,bj);
+                goto fail;
+              }
+        }
+        else
+        {
+          //it should be equal to zero block
+          for (int i=0;i<by;i++)
+            for (int j=0;j<bx;j++)
+              if (abs(jac.at(bi*by + i, bj*bx + j) - jac.at(i, j)) > 1e-6)
+              {
+                logerr("blocks 0 0 and %d %d are not equal!", bi,bj);
+                goto fail;
+              }
+        }
+      }
+    }
+    if (true)
+      debug("PASSED\n");
+    else
+fail: debug("FAILED\n");
+  }
+
+  //TEST 17 STACKED CUBES RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly (like 90 PSNR)
+  void test_17()
+  {
+    srand(0);
+    debug("TEST 17. STACKED CUBES RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0,0,0, 1,1,1,   0,1,0, 0.5,0.5,0.5,  0,1.5,0, 0.25,0.25,0.25}
+            structure:arr = {6,  6, 3,2,5, 3,2,5,  3,2,5}
+        } 
+        view_0 {
+            camera.origin:p3 = 2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.05,0.09,-0.07, 1.1,0.94,0.98,   0.04,0.96,0.08, 0.45,0.51,0.53,  -0.05,1.6,0.1, 0.23,0.26,0.28}
+            structure:arr = {6,  6, 3,2,5, 3,2,5,  3,2,5}
+        }
+        step_0 {
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 500
+            verbose:b = true
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 17.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 17.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 17.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1220,7 +1432,8 @@ namespace upg
     std::vector<std::function<void(void)>> test_functions = {
       test_1,  test_2,  test_3,  test_4,  test_5,
       test_6,  test_7,  test_8,  test_9,  test_10,
-      test_11, test_12, test_13, test_14, test_15
+      test_11, test_12, test_13, test_14, test_15,
+      test_16, test_17
     };
 
     for (int i : tests)
