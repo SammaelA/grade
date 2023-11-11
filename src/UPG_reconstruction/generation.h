@@ -33,6 +33,10 @@ namespace upg
     {
       return jacobian[y*x_n + x];
     }
+    float *data()
+    {
+      return jacobian.data();
+    }
   private:
     int x_n, y_n;
     std::vector<float> jacobian;

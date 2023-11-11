@@ -2,6 +2,7 @@
 #include "tree_node.h"
 #include "generation.h"
 #include "common_utils/template_vectors.h"
+#include "custom_diff_render/autodiff.h"
 namespace upg
 { 
   vec3 norm(upg::vec3 v1, upg::vec3 v2);
@@ -65,6 +66,12 @@ namespace upg
     }
   };
 
+  void FreeTriangleNode_apply(const my_float *in, my_float *out)
+  {
+    for (int i=0;i<9;i++)
+      out[i] = in[i];
+  }
+
   class FreeTriangleNode : public PrimitiveNode
   {
   public:
@@ -72,14 +79,14 @@ namespace upg
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
-      for (int i=0;i<9;i++)
-        mesh.pos.push_back(p[i]);
+      mesh.pos.resize(9);
       if (out_jac)
       {
         out_jac->resize(9,9);
-        for (int i=0;i<9;i++)
-          out_jac->at(i,i) = 1;
+        ENZYME_EVALUATE_WITH_DIFF(FreeTriangleNode_apply, 9, 9, p.data(), mesh.pos.data(), out_jac->data());
       }
+      else
+        FreeTriangleNode_apply(p.data(), mesh.pos.data());
       return mesh;
     }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() override
