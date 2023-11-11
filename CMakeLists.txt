@@ -119,12 +119,12 @@ if (MODULE_DR)
   endif()
 
   file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
-  set(MODULES_SRC ${MODULES_SRC} ${DR_SOURCE} ${DR_SOURCE_RT} modules/custom_diff_render/halfgpu_diff_render.cpp)
+  set(MODULES_SRC ${MODULES_SRC} ${DR_SOURCE} ${DR_SOURCE_RT} modules/custom_diff_render/halfgpu_diff_render.cpp modules/custom_diff_render/autodiff.cpp)
   set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${OMP_LIBS} ${RT_EMBREE_LIBS})
   set(MODULES_COMPILE_FLAGS ${MODULES_COMPILE_FLAGS} "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
   message(${MODULES_COMPILE_FLAGS})
 else()
-set(MODULES_SRC ${MODULES_SRC} modules/custom_diff_render/diff_render_stub.cpp)
+set(MODULES_SRC ${MODULES_SRC} modules/custom_diff_render/diff_render_stub.cpp modules/custom_diff_render/autodiff_stub.cpp)
 endif()
 
 #target Tree Project. It is mostly abandoned as of 2023                    
