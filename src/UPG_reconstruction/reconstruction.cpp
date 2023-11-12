@@ -84,7 +84,8 @@ namespace upg
   {
   public:
     virtual ~UPGOptimizer() = default;
-    virtual std::vector<UPGReconstructionResult> optimize() = 0;
+    virtual void optimize(int iters = -1) = 0; //iters = -1 mean that we take it from settings
+    virtual std::vector<UPGReconstructionResult> get_best_results() = 0;
     UPGOptimizer(const Block &settings, ReconstructionReference &reference)
     {
       render_w = settings.get_int("render_w", 128);
@@ -114,7 +115,7 @@ namespace upg
     }
   protected:
     //all parameters that can be changed by optimizer structured
-    //in a convenient (or optimizer) way
+    //in a convenient (for optimizer) way
     struct Params
     {
       std::vector<float> differentiable;
@@ -171,6 +172,16 @@ namespace upg
       return res;
     }
 
+    float f_no_grad(UniversalGenInstance &gen, const ParametersDescription &pd, const Params &params)
+    {
+      std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
+      std::vector<CameraSettings> cameras;
+      opt_params_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
+      UniversalGenMesh mesh = gen.generate(full_gen_params, nullptr);
+      
+      return simple_render->render_and_compare_silhouette(mesh.pos, cameras);
+    }
+
     int render_w, render_h;
     std::unique_ptr<IDiffRender> diff_render;
     std::unique_ptr<IDiffRender> simple_render;
@@ -197,16 +208,16 @@ namespace upg
 
       pd.add(cameras_pd);
       pd.add(gen.desc);
-    }
-    virtual std::vector<UPGReconstructionResult> optimize() override
-    {
-      std::vector<float> V = std::vector<float>(X_n, 0); 
-      std::vector<float> S = std::vector<float>(X_n, 0);
-      UPGOptimizer::Params best_params = X;
-      std::vector<float> x_grad = std::vector<float>(X_n, 0); 
-      float best_result = 1e9;
 
-      for (int iter=0; iter<iterations; iter++)
+      V = std::vector<float>(X_n, 0); 
+      S = std::vector<float>(X_n, 0);
+      best_params = X;
+      x_grad = std::vector<float>(X_n, 0); 
+      best_result = 1e9;
+    }
+    virtual void optimize(int iters = -1) override
+    {
+      for (int iter=0; iter<iters>0 ? iters : iterations; iter++)
       {
         float val = f_grad_f(gen, pd, X, x_grad);
         if (val < best_result)
@@ -228,7 +239,10 @@ namespace upg
       }
       if (verbose)
         debug("Adam final res val = %.6f best_val = %.6f\n", best_result, best_result);
+    }
 
+    virtual std::vector<UPGReconstructionResult> get_best_results() override
+    {
       UPGReconstructionResult res;
       res.structure = gen_structure;
       {
@@ -241,7 +255,7 @@ namespace upg
       return {res};
     }
 
-  protected:
+  private:
     int iterations;
     float alpha, beta_1, beta_2, eps;
     bool verbose;
@@ -250,6 +264,26 @@ namespace upg
     UniversalGenInstance gen;
     ParametersDescription pd;
     UPGStructure gen_structure;
+
+    std::vector<float> V; 
+    std::vector<float> S;
+    UPGOptimizer::Params best_params;
+    std::vector<float> x_grad; 
+    float best_result;
+  };
+
+  class GeneticOptimizer : public UPGOptimizer
+  {
+  public:
+    virtual void optimize(int iters = -1) override
+    {
+
+    }
+    virtual std::vector<UPGReconstructionResult> get_best_results() override
+    {
+      return {};
+    }
+  private:
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk)
@@ -286,7 +320,8 @@ namespace upg
     {
       Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
       std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*step_blk, reference, opt_res[0]));
-      opt_res = optimizer->optimize();
+      optimizer->optimize();
+      opt_res = optimizer->get_best_results();
       step_n++;
     }
     
