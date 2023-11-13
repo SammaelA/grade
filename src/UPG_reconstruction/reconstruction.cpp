@@ -434,7 +434,7 @@ namespace upg
       }
 
      local_opt_block.set_int("render_w", render_w);
-     local_opt_block.set_int("render_w", render_h);
+     local_opt_block.set_int("render_h", render_h);
      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
      local_opt_block.set_bool("save_intermediate_images", false);
     }
