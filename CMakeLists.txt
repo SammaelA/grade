@@ -94,7 +94,7 @@ if (MODULE_DR)
   set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
   set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
 
-  include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
+  include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme", "${DR_SRC}/mitsuba_src/stub")
 
   add_definitions(-DUSE_EMBREE)
   add_definitions(-DUSE_CUSTOM_DIFF_RENDER)
@@ -197,6 +197,7 @@ if (DIFF_RECONSTRUCTION)
     file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
 
     include_directories("${DR_SRC}/mitsuba_src/stub")
+    message(SOURCE ${DR_SRC})
   endif()
 
   file(GLOB_RECURSE DRec_SRC RELATIVE ${CMAKE_SOURCE_DIR} "diff_reconstruction/*.c" "diff_reconstruction/*.cpp")
