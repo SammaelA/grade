@@ -23,11 +23,11 @@ namespace upg
 
   upg::mat43 get_any_rot_mat(upg::vec3 axis, my_float angle)
   {
-    vec3 ax = norm(axis);
+    vec3 ax = normalize_unsafe(axis);
     my_float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
-    vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y - s * z, (1 - c) * x * z + s * y};
-    vec3 e2 = {(1 - c) * x * y + s * z, c + (1 - c) * y * y, (1 - c) * y * z - s * x};
-    vec3 e3 = {(1 - c) * x * z - s * y, (1 - c) * z * y + s * x, c + (1 - c) * z * z};
+    vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
+    vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
+    vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
     vec3 t = {0, 0, 0};
     return get_mat43(e1, e2, e3, t);
   }
@@ -70,6 +70,17 @@ namespace upg
   {
     for (int i=0;i<9;i++)
       out[i] = in[i];
+  }
+
+  void RotateNode_apply(const my_float *in, my_float *out)
+  {
+    vec3 ax = {in[0], in[1], in[2]};
+    mat43 matr = get_any_rot_mat(ax, in[3]);
+    vec3 v = {in[4], in[5], in[6]};
+    v = mulv(matr, v);
+    out[0] = v.x;
+    out[1] = v.y;
+    out[2] = v.z;
   }
 
   class FreeTriangleNode : public PrimitiveNode
@@ -379,19 +390,69 @@ namespace upg
       my_float axis_y = p.get();
       my_float axis_z = p.get();
       my_float angle = p.get();*/
-
-      UniversalGenMesh mesh = child->apply(nullptr);
+      UniversalGenJacobian child_jac;
+      UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
       //applying rotating
       vec3 ax = {p[AX_X], p[AX_Y], p[AX_Z]};
       mat43 matr = get_any_rot_mat(ax, p[ANGLE]);
-      for (int i = 0; i + 3 <= mesh.pos.size(); i += 3)
+      if (out_jac)
       {
-        vec3 v = {mesh.pos[i], mesh.pos[i + 1], mesh.pos[i + 2]};
-        v = mulv(matr, v);
-        mesh.pos[i] = v.x;
-        mesh.pos[i + 1] = v.y;
-        mesh.pos[i + 2] = v.z;
+        out_jac->resize(child_jac.get_xn(),child_jac.get_yn() + 4);
+        UniversalGenJacobian G;
+        G.resize(child_jac.get_xn(),child_jac.get_xn());
+        for (int i = 0; i < mesh.pos.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(mesh.pos[i]);
+          x.push_back(mesh.pos[i + 1]);
+          x.push_back(mesh.pos[i + 2]);
+          UniversalGenJacobian tmp;
+          tmp.resize(3, 7);
+          ENZYME_EVALUATE_WITH_DIFF(RotateNode_apply, 7, 3, x.data(), mesh.pos.data() + i, tmp.data());
+          for (int a = 0; a < 4; ++a)
+          {
+            for (int b = 0; b < 3; ++b)
+            {
+              out_jac->at(a, i + b) = tmp.at(a, b);
+              if (a < 3)
+              {
+                G.at(i + a, i + b) = tmp.at(4 + a, b);
+              }
+            }
+          }
+        }
+        for (int i=0;i<child_jac.get_yn();i++)
+        {
+          for (int j=0;j<child_jac.get_xn();j++)
+          {
+            for (int u = 0; u < child_jac.get_xn();u++)
+            {
+              if (u == 0)
+              {
+                out_jac->at(4+i, j) = G.at(u, j)*child_jac.at(i,u);
+              }
+              else
+              {
+                out_jac->at(4+i, j) += G.at(u, j)*child_jac.at(i,u);
+              }
+            }
+          }
+        } 
       }
+      else
+      {
+        for (int i = 0; i < mesh.pos.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(mesh.pos[i]);
+          x.push_back(mesh.pos[i + 1]);
+          x.push_back(mesh.pos[i + 2]);
+          RotateNode_apply(x.data(), mesh.pos.data());
+        }
+      }
+      matr = dgen::transposedInverse3x3(matr);
       for (int i = 0; i + 3 <= mesh.norm.size(); i += 3)
       {
         vec3 v = {mesh.norm[i], mesh.norm[i + 1], mesh.norm[i + 2]};
