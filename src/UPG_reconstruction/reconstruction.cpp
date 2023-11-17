@@ -295,6 +295,31 @@ namespace upg
   class UPGFixedStructureMemeticOptimizer : public UPGOptimizer
   {
   private:
+    //creature is a unit of genetic algorithm
+    //it is a set of parameters P with some additional info and 
+    //values of loss(P) and fitness function
+    struct Creature
+    {
+      Creature() = default;
+      Creature(const Params &p, int epoch)
+      {
+        params = p;
+        birth_epoch = epoch;
+        local_opt_num = 0;
+      }
+      Creature(const Params &p, float l, int epoch)
+      {
+        params = p;
+        loss = l;
+        birth_epoch = epoch;
+        local_opt_num = 0;
+      }
+      Params params;
+      float loss = 1e9;
+      float fitness = -1;
+      int birth_epoch = -1;
+      int local_opt_num = 0;
+    };
     //maps [0, +inf) to [0,1)
     float normalize_loss(float x)
     {
@@ -303,22 +328,17 @@ namespace upg
     void initialize_population()
     {
       population.resize(population_size);
-      results.resize(population_size, 1e9);
-      best_params.resize(best_params_size);
-      best_results.resize(best_params_size, 1e9);
+      best_population.resize(best_params_size);
 
       for (int i=0;i<population_size;i++)
       {
-        population[i].resize(borders.size());
+        population[i].params.resize(borders.size());
         for (int j=0;j<borders.size();j++)
-          population[i][j] = borders[j].x + urand()*(borders[j].y - borders[j].x);
+          population[i].params[j] = borders[j].x + urand()*(borders[j].y - borders[j].x);
       }
 
       for (int i=0;i<population_size;i++)
-      {
-        results[i] = evaluate(population[i]);
-        register_new_param(population[i], results[i]);
-      }
+        evaluate(population[i]);
     }
 
     void mutation(Params &params, float mutation_chance, float mutation_power)
@@ -344,11 +364,11 @@ namespace upg
       return p;
     }
 
-    std::pair<Params, float> local_search(const Params &start_params, int iterations)
+    void local_search(Creature &c, int iterations)
     {
       UPGReconstructionResult res;
       res.structure = structure;
-      res.parameters.p = start_params.differentiable;//TODO: fixme
+      res.parameters.p = c.params.differentiable;//TODO: fixme
 
       UPGOptimizerAdam optimizer(local_opt_block, reconstruction_reference, res);
       optimizer.optimize(iterations);
@@ -356,54 +376,66 @@ namespace upg
       Params p = optimizer.get_best_params_in_optimizer_format();
       float value = optimizer.get_best_result_in_optimizer_format();
       diff_function_calls += iterations;
-      register_new_param(p, value);
-      return {p, value};
+      int local_opt_num = c.local_opt_num + 1;
+      c = Creature(p, value, c.birth_epoch);
+      c.local_opt_num = local_opt_num;
+      register_new_param(c);
     }
 
-    void register_new_param(const Params &p, float res)
+    void register_new_param(const Creature &c)
     {
-      float worst_best_res = best_results[0];
+      float worst_best_res = best_population[0].loss;
       int worst_index = 0;
       for (int i=1; i<best_params_size; i++)
       {
-        if (best_results[i] > worst_best_res)
+        if (best_population[i].loss > worst_best_res)
         {
           worst_index = i;
-          worst_best_res = best_results[i];
+          worst_best_res = best_population[i].loss;
         }
       }
       
-      if (worst_best_res > res)
+      if (worst_best_res > c.loss)
       {
-        debug("%d new best (%f) [", no_diff_function_calls, res);
-        for (auto &v : p.differentiable)
+        debug("%d new best (%f) [", no_diff_function_calls, c.loss);
+        for (auto &v : c.params.differentiable)//TODO: fixme
           debug("%f ", v);
         debug("]\n");
-        best_params[worst_index] = p;
-        best_results[worst_index] = res;
+        best_population[worst_index] = c;
       }
 
-      result_bins[CLAMP((int)(result_bin_count*res), 0, result_bin_count-1)]++;
+      result_bins[CLAMP((int)(result_bin_count*c.loss), 0, result_bin_count-1)]++;
     }
 
-    float evaluate(const Params &p)
+    void evaluate(Creature &c)
     {
-      float res = f_no_grad(gen, pd, p);
-      register_new_param(p, res);
+      c.loss = f_no_grad(gen, pd, c.params);
+      register_new_param(c);
       no_diff_function_calls++;
-
-      return res;
     }
   
     std::pair<int, int> choose_parents_tournament(int tournament_size)
     {
       std::vector<int> indexes = std::vector<int>(tournament_size, 0);
       for (int i=0;i<tournament_size;i++)
-        indexes[i] = urandi(0, population.size());
+        indexes[i] = urandi(0, population_size);
       std::sort(indexes.begin(), indexes.end(), [this](const int & a, const int & b) -> bool{    
-            return results[a] < results[b];});
+            return population[a].loss < population[b].loss;});
 
       return std::pair<int, int>(indexes[0], indexes[1]);
+    }
+
+    float pos_fitness_function(int pos)
+    {
+      return 1.0/(pos+1);
+    }
+
+    void sort_and_calculate_fitness()
+    {
+      std::sort(population.begin(), population.end(), [this](const Creature & a, const Creature & b) -> bool{    
+                return a.loss < b.loss;});
+      for (int i=0;i<population_size;i++)
+        population[i].fitness = pos_fitness_function(i);
     }
 
     void print_result_bins()
@@ -447,41 +479,39 @@ namespace upg
       int epoch = 0;
       while (no_diff_function_calls + diff_function_calls < budget)
       {
-        std::vector<Params> new_population(population.size());
-        std::vector<float> new_results(population.size());
-        for (int i=0;i<population.size();i++)
+        int elites_count = elites_fraction*population_size;
+        std::vector<Creature> new_population(population_size);
+
+        sort_and_calculate_fitness();
+        for (int i=0;i<elites_count;i++)
+          new_population[i] = population[i];
+
+        for (int i=elites_count;i<population_size;i++)
         {
-          auto p = choose_parents_tournament(tournament_size);
-          new_population[i] = crossover(population[p.first], population[p.second]);
-          mutation(new_population[i], mutation_chance, mutation_power);
-          new_results[i] = evaluate(new_population[i]);
+          auto parents = choose_parents_tournament(tournament_size);
+          Params p = crossover(population[parents.first].params, population[parents.second].params);
+          mutation(p, mutation_chance, mutation_power);
+          new_population[i] = Creature(p, epoch);
+          evaluate(new_population[i]);
         }
         population = new_population;
-        results = new_results;
 
         debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
         debug("best res [");
-        for (auto &r : best_results)
-          debug("%.5f ", r);
+        for (auto &c : best_population)
+          debug("%.5f ", c.loss);
         debug("]\n");
 
         int good_soulutions = 0;
-        for (int i=0;i<population.size();i++)
-          if (results[i] < good_soulution_thr)
+        for (int i=0;i<population_size;i++)
+          if (population[i].loss < good_soulution_thr)
             good_soulutions++;
 
-        float good_solutions_chance = (float)good_soulutions/local_opt_count;
-        for (int i=0;i<population.size();i++)
-          if (results[i] < good_soulution_thr)
-          {
-            auto p = local_search(population[i], local_opt_iters);
-            population[i] = p.first;
-            results[i] = p.second;
-          }
-        debug("best res [");
-        for (auto &r : best_results)
-          debug("%.5f ", r);
-        debug("]\n");
+        float good_solutions_chance = (float)local_opt_count/good_soulutions;
+        for (int i=0;i<population_size;i++)
+          if (population[i].loss < good_soulution_thr && (urand() < good_solutions_chance))
+            local_search(population[i], local_opt_iters);
+
         //debug("BINS\n");
         //for (int i=0;i<100;i++)
         //  debug("%d) %d\n",i, result_bins[i]);
@@ -495,23 +525,24 @@ namespace upg
       {
         std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
         std::vector<CameraSettings> cameras;
-        opt_params_to_gen_params_and_camera(best_params[0], pd, full_gen_params, cameras);
+        opt_params_to_gen_params_and_camera(best_population[0].params, pd, full_gen_params, cameras);
         res.parameters.p = full_gen_params;
-        res.loss_optimizer = best_results[0];
+        res.loss_optimizer = best_population[0].loss;
       }
       return {res};
     }
   private:
     //settings
-    int population_size = 1000;
+    int population_size = 5000;
     int best_params_size = 1;
-    int budget = 100'000; //total number of function calls
+    int budget = 150'000; //total number of function calls
     float mutation_chance = 0.3;
     float mutation_power = 0.2;
-    int tournament_size = 16;
+    int tournament_size = 128;
     int local_opt_count = 5;
     int local_opt_iters = 50;
-    float good_soulution_thr = 0.005;
+    float good_soulution_thr = 0.02;
+    float elites_fraction = 0.05;
 
     //generator-specific stuff
     UPGStructure structure;
@@ -522,13 +553,11 @@ namespace upg
     ReconstructionReference reconstruction_reference;
 
     //GA state
-    std::vector<Params> population;
-    std::vector<float> results;
+    std::vector<Creature> population;
+    std::vector<Creature> best_population;
+
     int no_diff_function_calls = 0;
     int diff_function_calls = 0;
-
-    std::vector<Params> best_params;
-    std::vector<float> best_results;
 
     //statistics
     constexpr static int result_bin_count = 1000;
