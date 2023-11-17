@@ -1396,6 +1396,62 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  void test_18()
+  {
+    debug("TEST 18. ROTATE JACOBIAN CALCULATION\n");
+
+    upg::UPGStructure structure;
+    structure.s = {4, 1};
+    upg::UPGParametersRaw params;
+    params.p = {1, 0, 0, 0,  0,0,0,0,0,1,0,1,0};
+    upg::UniversalGenInstance gen(structure);
+    upg::UniversalGenJacobian jac;
+    auto mesh = gen.generate(params.p, &jac);
+
+    bool res;
+    debug(" 18.1. %-64s", "Model and jacobian created, have right size ");
+    if (mesh.pos.size() == 9 && jac.get_xn() == 9 && jac.get_yn() == 13)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %d %d %d\n", mesh.pos.size(), jac.get_xn(), jac.get_yn());
+    }
+
+    std::vector<float> reference_jac = {0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, -1, 0, 0, 0, 1,
+                                        1, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 1, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 1, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 1, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 1, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 1, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 1, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 1, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 1};
+
+    float diff = 0;
+    for (int i=0;i<jac.get_yn();i++)
+    {
+      for (int j=0;j<jac.get_xn();j++)
+      {
+        diff += abs(reference_jac[i*jac.get_xn() + j] - jac.at(i,j));
+      }
+    }
+    debug(" 18.2. %-64s", "Jacobian is correct ");
+    if (diff < 1e-7)
+    {
+      debug("PASSED\n");
+    }
+    else
+    {
+      debug("FAILED %f > %f\n", diff, 1e-7);
+    }
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1412,7 +1468,7 @@ fail: debug("FAILED\n");
       test_1,  test_2,  test_3,  test_4,  test_5,
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
-      test_16, test_17
+      test_16, test_17, test_18
     };
 
     for (int i : tests)
