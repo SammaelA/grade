@@ -104,8 +104,22 @@ namespace upg
       std::vector<Texture> references;
       for (int i=0; i<reference.images.size(); i++)
       {
-        reference.images[i].resized_mask = resize_mask(reference.images[i].mask, render_w, render_h, true);
-        references.push_back(reference.images[i].resized_mask);
+        int mask_index = -1;
+        for (int j=0; j<reference.images[i].resized_masks.size(); j++)
+        {
+          Texture &mask = reference.images[i].resized_masks[j];
+          if (mask.get_W() == render_w && mask.get_H() == render_h)
+          {
+            mask_index = j;
+            break;
+          }
+        }
+        if (mask_index < 0)
+        {
+          reference.images[i].resized_masks.push_back(resize_mask(reference.images[i].mask, render_w, render_h, true));
+          mask_index = reference.images[i].resized_masks.size()-1;
+        }
+        references.push_back(reference.images[i].resized_masks[mask_index]);
       }
 
       if (diff_render)

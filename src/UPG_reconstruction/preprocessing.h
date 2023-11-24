@@ -13,7 +13,7 @@ namespace upg
     CameraSettings camera;
     bool fixed_camera = true;
     Texture mask;
-    Texture resized_mask;
+    std::vector<Texture> resized_masks;
   };
 
   //All data that we were able to get about the model that we want to reconstruct
