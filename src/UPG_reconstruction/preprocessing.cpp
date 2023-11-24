@@ -130,6 +130,8 @@ namespace upg
           reference.images.push_back(get_reference_view_from_model(reference.model, *model_reference, *view_blk));
         else
           reference.images.push_back(get_reference_view(*view_blk));
+
+        //engine::textureManager->save_png(reference.images.back().mask, "reference_"+std::to_string(i));
       }
     }
 

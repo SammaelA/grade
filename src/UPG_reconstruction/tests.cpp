@@ -1362,7 +1362,7 @@ fail: debug("FAILED\n");
             render_w:i = 512
             render_h:i = 512
             iterations:i = 500
-            verbose:b = true
+            verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
         }
@@ -1452,6 +1452,113 @@ fail: debug("FAILED\n");
     }
   }
 
+    //TEST 19 STACKED CUBES RECONSTRUCTION
+  //It uses Memetic+adam optimizer with no initial parameters set
+  //Reconstruction should perform perfectly (like 90 PSNR)
+  void test_19()
+  {
+    srand(0);
+    debug("TEST 19. STACKED CUBES RECONSTRUCTION WITH MEMETIC\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0,0,0, 0.5,0.5,0.5,   0,0.5,0, 0.4,0.4,0.4,  0,-0.5,0, 0.4,0.4,0.4}
+            structure:arr = {6,  6, 3,2,5, 3,2,5,  3,2,5}
+        } 
+        view_0 {
+            camera.origin:p3 = 3.000000, 0.500000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 3.000000, -0.500000, -3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -3.000000, 0.500000, 3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -3.000000, -0.500000, -3.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.05,0.09,-0.07, 1.1,0.94,0.98,   0.04,0.96,0.08, 0.45,0.51,0.53,  -0.05,1.6,0.1, 0.23,0.26,0.28}
+            structure:arr = {6,  6, 3,2,5, 3,2,5,  3,2,5}
+        }
+        step_0 {
+            optimizer_name:s = "memetic"
+            render_w:i = 256
+            render_h:i = 256
+            verbose:b = false
+            save_intermediate_images:b = false
+        }
+        step_1 {
+            optimizer_name:s = "adam"
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 500
+            verbose:b = true
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 19.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 19.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 19.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1468,7 +1575,7 @@ fail: debug("FAILED\n");
       test_1,  test_2,  test_3,  test_4,  test_5,
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
-      test_16, test_17, test_18
+      test_16, test_17, test_18, test_19
     };
 
     for (int i : tests)

@@ -88,32 +88,11 @@ namespace upg
     virtual ~UPGOptimizer() = default;
     virtual void optimize(int iters = -1) = 0; //iters = -1 mean that we take it from settings
     virtual std::vector<UPGReconstructionResult> get_best_results() = 0;
-    UPGOptimizer(const Block &settings, ReconstructionReference &reference)
+    UPGOptimizer(IDiffRender *_diff_render, IDiffRender *_simple_render, const ParametersDescription &_cameras_pd)
     {
-      render_w = settings.get_int("render_w", 128);
-      render_h = settings.get_int("render_h", 128);
-      cameras_pd = get_cameras_parameter_description(reference.images);
-      diff_render.reset(get_halfgpu_custom_diff_render());
-      simple_render.reset(new NonDiffRender());
-      
-      //get diff_render settings
-      IDiffRender::Settings diff_render_settings;
-      diff_render_settings.image_w = render_w;
-      diff_render_settings.image_h = render_h;
-
-      std::vector<Texture> references;
-      for (int i=0; i<reference.images.size(); i++)
-      {
-        reference.images[i].resized_mask = resize_mask(reference.images[i].mask, render_w, render_h, true);
-        references.push_back(reference.images[i].resized_mask);
-      }
-
-      if (diff_render)
-      diff_render->init_optimization(references, diff_render_settings, 
-                                     settings.get_bool("save_intermediate_images", false));
-      if (simple_render)
-      simple_render->init_optimization(references, diff_render_settings, 
-                                     settings.get_bool("save_intermediate_images", false));
+      diff_render = _diff_render;
+      simple_render = _simple_render;
+      cameras_pd = _cameras_pd;
     }
   protected:
     //all parameters that can be changed by optimizer structured
@@ -201,16 +180,17 @@ namespace upg
     }
 
     int render_w, render_h;
-    std::unique_ptr<IDiffRender> diff_render;
-    std::unique_ptr<IDiffRender> simple_render;
+    IDiffRender *diff_render;
+    IDiffRender *simple_render;
     ParametersDescription cameras_pd;
   };
 
   class UPGOptimizerAdam : public UPGOptimizer
   {
   public:
-    UPGOptimizerAdam(const Block &settings, ReconstructionReference &reference, const UPGReconstructionResult &start_params) :
-    UPGOptimizer(settings, reference),
+    UPGOptimizerAdam(IDiffRender *_diff_render, IDiffRender *_simple_render, const ParametersDescription &_cameras_pd, 
+                     const Block &settings, const UPGReconstructionResult &start_params) :
+    UPGOptimizer(_diff_render, _simple_render, _cameras_pd),
     gen(start_params.structure)
     {
       iterations = settings.get_int("iterations");
@@ -247,13 +227,14 @@ namespace upg
         {
           float g = x_grad[i];
           V[i] = beta_1 * V[i] + (1-beta_1)*g;
-          float Vh = V[i] / (1 - pow(beta_1, iter+1)); 
+          float Vh = V[i] / (1 - pow(beta_1, total_iterations+1)); 
           S[i] = beta_2 * S[i] + (1-beta_2)*g*g;
-          float Sh = S[i] / (1 - pow(beta_2, iter+1)); 
+          float Sh = S[i] / (1 - pow(beta_2, total_iterations+1)); 
           X.differentiable[i] -= alpha*Vh/(sqrt(Sh) + eps);
         }
-        if ((iter % 5 == 0) && verbose)
-          debug("Adam iter %3d  val = %.6f best_val = %.6f\n", iter, val, best_result);
+        if ((total_iterations % 5 == 0) && verbose)
+          debug("Adam iter %3d  val = %.6f best_val = %.6f\n", total_iterations, val, best_result);
+        total_iterations++;
       }
       if (verbose)
         debug("Adam final res val = %.6f best_val = %.6f\n", best_result, best_result);
@@ -290,6 +271,7 @@ namespace upg
     UPGOptimizer::Params best_params;
     std::vector<float> x_grad; 
     float best_result;
+    int total_iterations = 0;
   };
 
   class UPGFixedStructureMemeticOptimizer : public UPGOptimizer
@@ -315,6 +297,7 @@ namespace upg
         local_opt_num = 0;
       }
       Params params;
+      std::shared_ptr<UPGOptimizerAdam> local_optimizer;
       float loss = 1e9;
       float fitness = -1;
       int birth_epoch = -1;
@@ -325,20 +308,26 @@ namespace upg
     {
       return 2*(1/(1+expf(-CLAMP(x,0,10)))) - 1;
     }
+
+    Creature initialize_creature()
+    {
+      Creature c;
+      c.birth_epoch = epoch;
+      c.params.resize(borders.size());
+      for (int j=0;j<borders.size();j++)
+        c.params[j] = borders[j].x + urand()*(borders[j].y - borders[j].x);
+      evaluate(c);
+
+      return c;
+    }
+
     void initialize_population()
     {
       population.resize(population_size);
       best_population.resize(best_params_size);
 
       for (int i=0;i<population_size;i++)
-      {
-        population[i].params.resize(borders.size());
-        for (int j=0;j<borders.size();j++)
-          population[i].params[j] = borders[j].x + urand()*(borders[j].y - borders[j].x);
-      }
-
-      for (int i=0;i<population_size;i++)
-        evaluate(population[i]);
+        population[i] = initialize_creature();
     }
 
     void mutation(Params &params, float mutation_chance, float mutation_power)
@@ -366,19 +355,20 @@ namespace upg
 
     void local_search(Creature &c, int iterations)
     {
-      UPGReconstructionResult res;
-      res.structure = structure;
-      res.parameters.p = c.params.differentiable;//TODO: fixme
+      if (!c.local_optimizer)
+      {
+        UPGReconstructionResult res;
+        res.structure = structure;
+        res.parameters.p = c.params.differentiable;//TODO: fixme
 
-      UPGOptimizerAdam optimizer(local_opt_block, reconstruction_reference, res);
-      optimizer.optimize(iterations);
+        c.local_optimizer = std::make_shared<UPGOptimizerAdam>(diff_render, simple_render, cameras_pd, local_opt_block, res);
+      }
+      c.local_optimizer->optimize(iterations);
 
-      Params p = optimizer.get_best_params_in_optimizer_format();
-      float value = optimizer.get_best_result_in_optimizer_format();
+      c.params = c.local_optimizer->get_best_params_in_optimizer_format();
+      c.loss = c.local_optimizer->get_best_result_in_optimizer_format();
+      c.local_opt_num++;
       diff_function_calls += iterations;
-      int local_opt_num = c.local_opt_num + 1;
-      c = Creature(p, value, c.birth_epoch);
-      c.local_opt_num = local_opt_num;
       register_new_param(c);
     }
 
@@ -438,17 +428,40 @@ namespace upg
         population[i].fitness = pos_fitness_function(i);
     }
 
-    void print_result_bins()
+    void print_result_bins(int *bins)
     {
-
+      int total_cnt = 0;
+      for (int i=0;i<result_bin_count;i++)
+        total_cnt+=bins[i];
+      for (int i=0;i<10;i++)
+      {
+        int cnt = 0;
+        for (int j=0;j<1;j++)
+          cnt += bins[i+j];
+        debug("[%.4f-%.4f] %d (%.2f %)\n",(float)i/result_bin_count, (float)(i+1)/result_bin_count, cnt, 100.f*cnt/total_cnt);
+      }
+      for (int i=10;i<100;i+=10)
+      {
+        int cnt = 0;
+        for (int j=0;j<10;j++)
+          cnt += bins[i+j];
+        debug("[%.4f-%.4f] %d (%.2f %)\n",(float)i/result_bin_count, (float)(i+10)/result_bin_count, cnt, 100.f*cnt/total_cnt);
+      }
+      for (int i=100;i<result_bin_count;i+=100)
+      {
+        int cnt = 0;
+        for (int j=0;j<100;j++)
+          cnt += bins[i+j];
+        debug("[%.4f-%.4f] %d (%.2f %)\n",(float)i/result_bin_count, (float)(i+100)/result_bin_count, cnt, 100.f*cnt/total_cnt);
+      }
     }
 
   public:
-    UPGFixedStructureMemeticOptimizer(const Block &settings, ReconstructionReference &reference, const UPGStructure &_structure) :
-    UPGOptimizer(settings, reference),
+    UPGFixedStructureMemeticOptimizer(IDiffRender *_diff_render, IDiffRender *_simple_render, const ParametersDescription &_cameras_pd, 
+                                      const Block &settings, const UPGStructure &_structure) :
+    UPGOptimizer(_diff_render, _simple_render, _cameras_pd),
     gen(_structure)
     {
-      reconstruction_reference = reference;
       structure = _structure;
       pd.add(cameras_pd);
       pd.add(gen.desc);
@@ -469,6 +482,7 @@ namespace upg
      local_opt_block.set_int("render_h", render_h);
      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
      local_opt_block.set_bool("save_intermediate_images", false);
+     local_opt_block.set_double("learning_rate", local_learning_rate);
     }
     virtual void optimize(int iters = -1) override
     {
@@ -476,7 +490,7 @@ namespace upg
         budget = iters;
       if (population.empty())
         initialize_population();
-      int epoch = 0;
+
       while (no_diff_function_calls + diff_function_calls < budget)
       {
         int elites_count = elites_fraction*population_size;
@@ -488,12 +502,34 @@ namespace upg
 
         for (int i=elites_count;i<population_size;i++)
         {
-          auto parents = choose_parents_tournament(tournament_size);
-          Params p = crossover(population[parents.first].params, population[parents.second].params);
-          mutation(p, mutation_chance, mutation_power);
-          new_population[i] = Creature(p, epoch);
-          evaluate(new_population[i]);
+          std::vector<float> chances = {0.1, 0.1 + 0.5, 0.1 + 0.5 + 0.4};
+          float action_rnd = urand(0, chances.back());
+          if (action_rnd < chances[0])
+          {
+            //create new random creature from scratch
+            new_population[i] = initialize_creature();
+          }
+          else if (action_rnd < chances[1])
+          {
+            Params p = population[urandi(0, elites_count)].params;
+            mutation(p, mutation_chance, urand()*mutation_power);
+            new_population[i] = Creature(p, epoch);
+            evaluate(new_population[i]);
+          }
+          else
+          {
+            auto parents = choose_parents_tournament(tournament_size);
+            Params p = crossover(population[parents.first].params, population[parents.second].params);
+            mutation(p, mutation_chance, urand()*mutation_power);
+            new_population[i] = Creature(p, epoch);
+            evaluate(new_population[i]);
+          }
         }
+
+        for (int i=0; i<result_bin_count; i++)
+          current_bins[i] = 0;
+        for (auto &c : new_population)
+          current_bins[CLAMP((int)(result_bin_count*c.loss), 0, result_bin_count-1)]++;
         population = new_population;
 
         debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
@@ -512,6 +548,8 @@ namespace upg
           if (population[i].loss < good_soulution_thr && (urand() < good_solutions_chance))
             local_search(population[i], local_opt_iters);
 
+        print_result_bins(result_bins);
+        print_result_bins(current_bins);
         //debug("BINS\n");
         //for (int i=0;i<100;i++)
         //  debug("%d) %d\n",i, result_bins[i]);
@@ -533,15 +571,16 @@ namespace upg
     }
   private:
     //settings
-    int population_size = 5000;
+    int population_size = 2500;
     int best_params_size = 1;
-    int budget = 150'000; //total number of function calls
-    float mutation_chance = 0.3;
-    float mutation_power = 0.2;
+    int budget = 200'000; //total number of function calls
+    float mutation_chance = 0.1;
+    float mutation_power = 0.1;
     int tournament_size = 128;
     int local_opt_count = 5;
     int local_opt_iters = 50;
-    float good_soulution_thr = 0.02;
+    float local_learning_rate = 0.01;
+    float good_soulution_thr = 0.015;
     float elites_fraction = 0.05;
 
     //generator-specific stuff
@@ -550,27 +589,28 @@ namespace upg
     ParametersDescription pd;
     std::vector<glm::vec2> borders; //size equals total size of Params vector
     Block local_opt_block;
-    ReconstructionReference reconstruction_reference;
 
     //GA state
     std::vector<Creature> population;
     std::vector<Creature> best_population;
 
+    int epoch = 0;
     int no_diff_function_calls = 0;
     int diff_function_calls = 0;
 
     //statistics
     constexpr static int result_bin_count = 1000;
     int result_bins[result_bin_count] = {};
+    int current_bins[result_bin_count] = {};
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk)
   {
     //load settings from given blk
     Block *input_blk = blk.get_block("input");
-    Block *gen_blk = blk.get_block("generator");
-    Block *opt_blk = blk.get_block("optimization");
-    Block *res_blk = blk.get_block("results");
+    Block *gen_blk   = blk.get_block("generator");
+    Block *opt_blk   = blk.get_block("optimization");
+    Block *res_blk   = blk.get_block("results");
     if (!input_blk || !gen_blk || !opt_blk || !res_blk)
     {
       logerr("UPG Reconstruction: input, generator, optimization blocks should exist in configuration");
@@ -597,7 +637,38 @@ namespace upg
     while (opt_blk->get_block("step_"+std::to_string(step_n)))
     {
       Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
-      std::unique_ptr<UPGOptimizer> optimizer(new UPGOptimizerAdam(*step_blk, reference, opt_res[0]));
+
+      int render_w = step_blk->get_int("render_w", 128);
+      int render_h = step_blk->get_int("render_h", 128);
+      auto cameras_pd = get_cameras_parameter_description(reference.images);
+      std::unique_ptr<IDiffRender> diff_render(get_halfgpu_custom_diff_render());
+      std::unique_ptr<IDiffRender> simple_render(new NonDiffRender());
+      
+      //get diff_render settings
+      IDiffRender::Settings diff_render_settings;
+      diff_render_settings.image_w = render_w;
+      diff_render_settings.image_h = render_h;
+
+      std::vector<Texture> references;
+      for (int i=0; i<reference.images.size(); i++)
+      {
+        reference.images[i].resized_mask = resize_mask(reference.images[i].mask, render_w, render_h, true);
+        references.push_back(reference.images[i].resized_mask);
+      }
+
+      if (diff_render)
+      diff_render->init_optimization(references, diff_render_settings, 
+                                     step_blk->get_bool("save_intermediate_images", false));
+      if (simple_render)
+      simple_render->init_optimization(references, diff_render_settings, 
+                                       step_blk->get_bool("save_intermediate_images", false));
+
+      std::unique_ptr<UPGOptimizer> optimizer;
+      std::string optimizer_name = step_blk->get_string("optimizer_name", "adam");
+      if (optimizer_name == "adam")
+        optimizer.reset(new UPGOptimizerAdam(diff_render.get(), simple_render.get(), cameras_pd, *step_blk, opt_res[0]));
+      else if (optimizer_name == "memetic")
+        optimizer.reset(new UPGFixedStructureMemeticOptimizer(diff_render.get(), simple_render.get(), cameras_pd, *step_blk, start_params.structure));
       optimizer->optimize();
       opt_res = optimizer->get_best_results();
       step_n++;
