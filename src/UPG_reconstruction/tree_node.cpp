@@ -363,9 +363,9 @@ namespace upg
     virtual std::vector<ParametersDescription::Param> get_parameters_block() override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_x"});
-      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_y"});
-      params.push_back({-50.0f, 0.0f, 50.0f, ParameterType::DIFFERENTIABLE, "move_z"});
+      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_x"});
+      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_y"});
+      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_z"});
       return params;
     }
     unsigned param_cnt() override
