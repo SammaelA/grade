@@ -3,6 +3,7 @@
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
 #include "generation.h"
+#include "sdf_node.h"
 #include <unistd.h>
 #include <functional>
 
@@ -1452,7 +1453,7 @@ fail: debug("FAILED\n");
     }
   }
 
-    //TEST 19 STACKED CUBES RECONSTRUCTION
+  //TEST 19 STACKED CUBES RECONSTRUCTION
   //It uses Memetic+adam optimizer with no initial parameters set
   //Reconstruction should perform perfectly (like 90 PSNR)
   void test_19()
@@ -1559,6 +1560,74 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  //TEST 20 SDF NODES
+  //tests the most basic SDF nodes functions
+  //such as distance, merging and moving nodes
+  //an putting derivative is right (root,left,right) order
+  void test_20()
+  {
+    SdfGenInstance one_circle({std::vector<uint16_t>{1}});
+    SdfGenInstance moved_circle({std::vector<uint16_t>{2,1}});
+    SdfGenInstance two_circles({std::vector<uint16_t>{3,2,1,2,1}});
+
+    debug("TEST 20. SDF NODES\n");
+    {
+    int pcnt_1 = one_circle.desc.get_total_params_count();
+    int pcnt_2 = moved_circle.desc.get_total_params_count();
+    int pcnt_3 = two_circles.desc.get_total_params_count();
+    debug(" 20.1. %-64s", "SDF instances are created with expected number of parameters ");
+    if (pcnt_1 == 4 && pcnt_2 == 7 && pcnt_3 == 14)
+      debug("PASSED\n");
+    else
+      debug("FAILED %d %d %d\n", pcnt_1, pcnt_2, pcnt_3);
+    }
+    {
+      std::vector<float> params = {0,1,0, 2};
+      ProceduralSdf sdf = one_circle.generate(params);
+      std::vector<float> ddist,dpos = {0,0,0};
+      std::vector<float> ddist_ref = {0,1,0,-1}, dpos_ref = {0,-1,0};
+      float d1 = sdf.get_distance({0,0,0},&ddist,&dpos);
+      float d2 = sdf.get_distance({1,0,0});
+
+      debug(" 20.2. %-64s", "Distance to circle correct");
+      if (abs(d1 - (-1)) < 1e-6 && abs(d2 - (sqrtf(2)-2)) < 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %f %f\n", d1, d2);
+      
+      float dist_1=0,dist_2=0;
+      for (int i=0;i<std::min(ddist.size(), ddist_ref.size());i++)
+        dist_1 += std::abs(ddist[i]-ddist_ref[i]);
+      for (int i=0;i<std::min(dpos.size(), dpos_ref.size());i++)
+        dist_2 += std::abs(dpos[i]-dpos_ref[i]);
+      
+      debug(" 20.3. %-64s", "Derivatives correct");
+      if (ddist.size() == 4 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %d %d %d %d\n", ddist.size() == 4, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);
+    }
+    {
+      std::vector<float> params = {1,0,0 ,0,0,0,1.9,  -1,0,0 ,0,0,0,1};
+      ProceduralSdf sdf = two_circles.generate(params);
+      std::vector<float> ddist,dpos = {0,0,0};
+      float d1 = sdf.get_distance({-1,1.1,0},&ddist,&dpos);
+
+      debug(" 20.4. %-64s", "Distance to two triangles correct");
+      if (abs(d1 - 0.1) < 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %f\n", d1);
+      
+      debug(" 20.5. %-64s", "Sdf merge derivatives correct");
+      if (abs(ddist[0])+abs(ddist[1])+abs(ddist[2])+abs(ddist[3])+abs(ddist[4])+abs(ddist[5])+abs(ddist[6]) < 1e-6 &&
+          abs(ddist[7])+abs(ddist[8])+abs(ddist[9])+abs(ddist[10])+abs(ddist[11])+abs(ddist[12])+abs(ddist[13]) > 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED\n");
+    }
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1575,7 +1644,7 @@ fail: debug("FAILED\n");
       test_1,  test_2,  test_3,  test_4,  test_5,
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
-      test_16, test_17, test_18, test_19
+      test_16, test_17, test_18, test_19, test_20
     };
 
     for (int i : tests)

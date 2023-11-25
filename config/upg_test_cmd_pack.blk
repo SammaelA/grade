@@ -1,7 +1,7 @@
 {
   cmd {
     cmd_name:s = "IC_UPG_TESTS"
-    tests {tests_num:arr = {18}}
+    tests {tests_num:arr = {20}}
   }
   cmd {cmd_name:s = "IC_EXIT"}
 }
