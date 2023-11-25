@@ -9,16 +9,15 @@ namespace upg
   protected:
     unsigned ID;
     std::string name;
-    uint16_t node_num;
     std::span<const float> p;
   public:
     GenNode(unsigned id) { ID = id; }
     virtual ~GenNode() = default;
-    unsigned get_ID()
+    unsigned get_ID() const
     {
       return ID;
     }
-    std::string get_node_name()
+    std::string get_node_name() const
     {
       return name;
     }
@@ -28,10 +27,10 @@ namespace upg
     }
     virtual UniversalGenMesh apply(UniversalGenJacobian *out_jac) = 0;
     virtual bool add_child(GenNode *node) = 0;// returns the availability of free space
-    virtual unsigned param_cnt() = 0;
-    virtual unsigned child_cnt() = 0;
-    virtual std::vector<GenNode *> childs() = 0;
-    virtual std::vector<ParametersDescription::Param> get_parameters_block()
+    virtual unsigned param_cnt() const = 0;
+    virtual unsigned child_cnt() const = 0;
+    virtual std::vector<const GenNode *> get_children() const = 0;
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const
     {
       logerr("AAAAA");
       return {};

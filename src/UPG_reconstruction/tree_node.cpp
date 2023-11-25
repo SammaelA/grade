@@ -54,14 +54,14 @@ namespace upg
   {
   public:
     PrimitiveNode(unsigned id) : GenNode(id) {}
-    unsigned child_cnt() override
+    unsigned child_cnt() const override
     {
       return 0;
     }
     bool add_child(GenNode *node) override { return false; }
-    std::vector<GenNode *> childs() override
+    std::vector<const GenNode *> get_children() const override
     {
-      std::vector<GenNode *> ret;
+      std::vector<const GenNode *> ret;
       return ret;
     }
   };
@@ -86,7 +86,7 @@ namespace upg
   class FreeTriangleNode : public PrimitiveNode
   {
   public:
-    FreeTriangleNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "FreeTriangle"; }
+    FreeTriangleNode(unsigned id) : PrimitiveNode(id) { name = "FreeTriangle"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
@@ -100,14 +100,14 @@ namespace upg
         FreeTriangleNode_apply(p.data(), mesh.pos.data());
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       for (int i = 0; i < 9; i++)
         params.push_back({0, -1.0f, 1.0f, ParameterType::DIFFERENTIABLE, "p_" + std::to_string(i)});
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 9;
     }
@@ -116,7 +116,7 @@ namespace upg
   class FigureNode : public PrimitiveNode
   {
   public:
-    FigureNode(unsigned id) : PrimitiveNode(id) { node_num = 5; name = "Figure"; }
+    FigureNode(unsigned id) : PrimitiveNode(id) { name = "Figure"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenMesh mesh;
@@ -132,12 +132,12 @@ namespace upg
         out_jac->resize(mesh.pos.size(), 0);
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 0;
     }
@@ -147,7 +147,7 @@ namespace upg
   class SpinNode : public PrimitiveNode
   {
   public:
-    SpinNode(unsigned id) : PrimitiveNode(id) { node_num = 1; name = "Spin"; }
+    SpinNode(unsigned id) : PrimitiveNode(id) { name = "Spin"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       my_float data[N];
@@ -174,14 +174,14 @@ namespace upg
       }
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       for (int i = 0; i < N; i++)
         params.push_back({0, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "spline_" + std::to_string(i)});
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return N;
     }
@@ -199,7 +199,7 @@ namespace upg
     GenNode *child;
   public:
     OneChildNode(unsigned id) : TransformNode(id) { child = NULL; }
-    unsigned child_cnt() override
+    unsigned child_cnt() const override
     {
       return 1;
     }
@@ -211,9 +211,9 @@ namespace upg
       }
       return false;
     }
-    std::vector<GenNode *> childs() override
+    std::vector<const GenNode *> get_children() const override
     {
-      std::vector<GenNode *> ret;
+      std::vector<const GenNode *> ret;
       ret.push_back(child);
       return ret;
     }
@@ -226,7 +226,7 @@ namespace upg
     static constexpr int SCALE_Z = 2;
 
   public:
-    ScaleNode(unsigned id) : OneChildNode(id) { node_num = 2; name = "Scale"; }
+    ScaleNode(unsigned id) : OneChildNode(id) { name = "Scale"; }
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
@@ -290,7 +290,7 @@ namespace upg
       }
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       params.push_back({1.0f, 0.1f, 10.0f, ParameterType::DIFFERENTIABLE, "scale_x"});
@@ -298,7 +298,7 @@ namespace upg
       params.push_back({1.0f, 0.1f, 10.0f, ParameterType::DIFFERENTIABLE, "scale_z"});
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 3;
     }
@@ -311,7 +311,7 @@ namespace upg
     static constexpr int MOVE_Z = 2;
 
   public:
-    MoveNode(unsigned id) : OneChildNode(id) { node_num = 3; name = "Move"; }
+    MoveNode(unsigned id) : OneChildNode(id) { name = "Move"; }
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
@@ -360,7 +360,7 @@ namespace upg
       }
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_x"});
@@ -368,7 +368,7 @@ namespace upg
       params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_z"});
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 3;
     }
@@ -382,7 +382,7 @@ namespace upg
     static constexpr int ANGLE = 3;
 
   public:
-    RotateNode(unsigned id) : OneChildNode(id) { node_num = 4; name = "Rotate"; }
+    RotateNode(unsigned id) : OneChildNode(id) { name = "Rotate"; }
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
@@ -463,7 +463,7 @@ namespace upg
       }
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
@@ -472,7 +472,7 @@ namespace upg
       params.push_back({0.0f, -2*PI, 2*PI, ParameterType::DIFFERENTIABLE, "angle"});
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 4;
     }
@@ -485,7 +485,7 @@ namespace upg
     GenNode *right;
   public:
     TwoChildNode(unsigned id) : TransformNode(id) { left = NULL; right = NULL; }
-    unsigned child_cnt() override
+    unsigned child_cnt() const override
     {
       return 2;
     }
@@ -502,9 +502,9 @@ namespace upg
       }
       return false;
     }
-    std::vector<GenNode *> childs() override
+    std::vector<const GenNode *> get_children() const override
     {
-      std::vector<GenNode *> ret;
+      std::vector<const GenNode *> ret;
       ret.push_back(left);
       ret.push_back(right);
       return ret;
@@ -514,7 +514,7 @@ namespace upg
   class MergeNode : public TwoChildNode
   {
   public:
-    MergeNode(unsigned id) : TwoChildNode(id) { node_num = 6; name = "Merge"; }
+    MergeNode(unsigned id) : TwoChildNode(id) { name = "Merge"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       UniversalGenJacobian ch1,ch2;
@@ -540,12 +540,12 @@ namespace upg
 
       return mesh;
     }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
       return params;
     }
-    unsigned param_cnt() override
+    unsigned param_cnt() const override
     {
       return 0;
     }
