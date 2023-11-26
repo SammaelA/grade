@@ -29,6 +29,7 @@ namespace upg
   };
 
   std::vector<UPGReconstructionResult> reconstruct(const Block &blk);
+  std::vector<UPGReconstructionResult> reconstruct_sdf(const Block &blk);
   bool create_model_from_block(const Block &bl, ComplexModel &out_mod);
   bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
                     ComplexModel &out_mod);

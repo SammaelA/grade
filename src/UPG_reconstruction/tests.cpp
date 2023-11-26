@@ -1628,6 +1628,70 @@ fail: debug("FAILED\n");
     }
   }
 
+    //TEST 21 SPHERE SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void test_21()
+  {
+    srand(0);
+    debug("TEST 21. SPHERE SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+            params:arr = {0,0,0,1}
+            structure:arr = {1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1,0.2,-0.1,0.7}    
+            structure:arr = {1} 
+        }
+        step_0 {
+            iterations:i = 100
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 21.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("PASSED\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 21.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == 1)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 21.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 4)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 21.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1644,7 +1708,8 @@ fail: debug("FAILED\n");
       test_1,  test_2,  test_3,  test_4,  test_5,
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
-      test_16, test_17, test_18, test_19, test_20
+      test_16, test_17, test_18, test_19, test_20,
+      test_21
     };
 
     for (int i : tests)
