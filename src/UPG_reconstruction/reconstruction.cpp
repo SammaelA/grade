@@ -41,14 +41,14 @@ namespace upg
                                        optimization_blk.get_bool("save_intermediate_images", false));
     }
 
-    virtual float f_grad_f(UniversalGenInstance &gen, const ParametersDescription &pd,
+    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
                            const OptParams &params, std::span<float> out_grad) override
     {
       std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
       std::vector<CameraSettings> cameras;
       opt_params_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
       UniversalGenJacobian dPos_dP;
-      UniversalGenMesh mesh = gen.generate(full_gen_params, &dPos_dP);
+      UniversalGenMesh mesh = ((MeshGenInstance*)gen)->generate(full_gen_params, &dPos_dP);
       float res = diff_render->render_and_compare_silhouette(mesh.pos, cameras);
       std::span<const float> dLoss_dPos(diff_render->get_vertex_grad(), mesh.pos.size());
       grad_jac_mult(dPos_dP, dLoss_dPos, out_grad);
@@ -56,21 +56,26 @@ namespace upg
       return res;
     }
 
-    virtual float f_no_grad(UniversalGenInstance &gen, const ParametersDescription &pd, const OptParams &params) override
+    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
     {
       std::vector<float> full_gen_params; //all parameters, including non-differentiable and consts, for generation. No cameras here
       std::vector<CameraSettings> cameras;
       opt_params_to_gen_params_and_camera(params, pd, full_gen_params, cameras);
-      UniversalGenMesh mesh = gen.generate(full_gen_params, nullptr);
+      UniversalGenMesh mesh = ((MeshGenInstance*)gen)->generate(full_gen_params, nullptr);
       
       return simple_render->render_and_compare_silhouette(mesh.pos, cameras);
     }
-    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance &gen) override
+
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) override
     {
       ParametersDescription pd;
-      pd.add(gen.desc);
+      pd.add(((MeshGenInstance*)gen)->desc);
       pd.add(cameras_pd);
       return pd;
+    }
+    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
+    {
+      return std::make_shared<MeshGenInstance>(structure);
     }
 
   private:

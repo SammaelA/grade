@@ -7,9 +7,9 @@ namespace upg
   public:
     UPGOptimizerAdam(UPGOptimizableFunction *_func, 
                      const Block &settings, const UPGReconstructionResult &start_params) :
-    UPGOptimizer(_func),
-    gen(start_params.structure)
+    UPGOptimizer(_func)
     {
+      gen = func->get_generator(start_params.structure);
       iterations = settings.get_int("iterations");
       alpha = settings.get_double("learning_rate", 0.01);
       beta_1 = settings.get_double("beta_1", 0.9);
@@ -17,7 +17,7 @@ namespace upg
       eps = settings.get_double("eps", 1e-8);
       verbose = settings.get_bool("verbose") || settings.get_int("verbose") > 0;
 
-      pd = func->get_full_parameters_description(gen);
+      pd = func->get_full_parameters_description(gen.get());
       X_n = start_params.parameters.p.size();
       X = func->gen_params_to_opt_params(start_params.parameters.p, pd);
       gen_structure = start_params.structure;
@@ -33,7 +33,7 @@ namespace upg
     {
       for (int iter=0; iter< (iters>0 ? iters : iterations); iter++)
       {
-        float val = func->f_grad_f(gen, pd, X, x_grad);
+        float val = func->f_grad_f(gen.get(), pd, X, x_grad);
         if (val < best_result)
         {
           best_params = X;
@@ -75,7 +75,7 @@ namespace upg
     bool verbose;
     int X_n;
     OptParams X;
-    UniversalGenInstance gen;
+    std::shared_ptr<UniversalGenInstance> gen;
     ParametersDescription pd;
     UPGStructure gen_structure;
 

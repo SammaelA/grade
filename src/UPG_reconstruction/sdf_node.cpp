@@ -213,7 +213,13 @@ namespace upg
 
   SdfGenInstance::SdfGenInstance(const UPGStructure &structure)
   {
+    recreate(structure);
+  }
+  void SdfGenInstance::recreate(const UPGStructure &structure)
+  {
     all_params.clear();
+    all_nodes.clear();
+    
     std::vector<SdfNode *> nodes;
     std::vector<std::pair<SdfNode *, unsigned>> param_startings;
     int i = 0;

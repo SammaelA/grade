@@ -1,7 +1,5 @@
 #pragma once
-#include "upg.h"
 #include "tinyEngine/texture.h"
-#include "generation.h"
 #include "tinyEngine/camera.h"
 #include "diff_render_interface.h"
 #include "tinyEngine/postfx.h"

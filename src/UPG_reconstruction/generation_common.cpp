@@ -6,25 +6,6 @@
 namespace upg
 {
   void mesh_to_complex_model(const UniversalGenMesh &mesh, ComplexModel &mod);
-  void add_tri_data(upg::vec3 point, upg::vec3 n, upg::vec2 tex, UniversalGenMesh &mesh)
-  {
-    mesh.pos.push_back(point.x);
-    mesh.pos.push_back(point.y);
-    mesh.pos.push_back(point.z);
-    mesh.norm.push_back(n.x);
-    mesh.norm.push_back(n.y);
-    mesh.norm.push_back(n.z);
-    mesh.tc.push_back(tex.x);
-    mesh.tc.push_back(tex.y);
-  }
-  void add_point_data(upg::vec3 point, UniversalGenMesh &mesh)
-  {
-    mesh.pos.push_back(point.x);
-    mesh.pos.push_back(point.y);
-    mesh.pos.push_back(point.z);
-  }
-
-
   void mesh_to_complex_model(const UniversalGenMesh &mesh, ComplexModel &mod)
   {
     assert(mesh.pos.size()%9 == 0);
@@ -97,7 +78,7 @@ namespace upg
   bool create_model(const UPGStructure &structure, const UPGParametersRaw &params,
                     ComplexModel &mod)
   {
-    UniversalGenInstance gen(structure);
+    MeshGenInstance gen(structure);
     auto mesh = gen.generate(params.p);
     mesh_to_complex_model(mesh, mod);
     mod.update();

@@ -130,7 +130,7 @@ namespace upg
 
     void evaluate(Creature &c)
     {
-      c.loss = func->f_no_grad(gen, pd, c.params);
+      c.loss = func->f_no_grad(gen.get(), pd, c.params);
       register_new_param(c);
       no_diff_function_calls++;
     }
@@ -190,11 +190,11 @@ namespace upg
   public:
     UPGFixedStructureMemeticOptimizer(UPGOptimizableFunction *_func, 
                                       const Block &settings, const UPGStructure &_structure) :
-    UPGOptimizer(_func),
-    gen(_structure)
+    UPGOptimizer(_func)
     {
       structure = _structure;
-      pd = func->get_full_parameters_description(gen);
+      gen = func->get_generator(structure);
+      pd = func->get_full_parameters_description(gen.get());
 
       for (const auto &p : pd.get_block_params())
       {
@@ -310,7 +310,7 @@ namespace upg
 
     //generator-specific stuff
     UPGStructure structure;
-    UniversalGenInstance gen;
+    std::shared_ptr<UniversalGenInstance> gen;
     ParametersDescription pd;
     std::vector<glm::vec2> borders; //size equals total size of OptParams vector
     Block local_opt_block;

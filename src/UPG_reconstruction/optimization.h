@@ -1,8 +1,8 @@
 #pragma once
 #include "upg.h"
 #include "generation_common.h"
-#include "generation.h"
 #include <vector>
+#include <memory>
 
 namespace upg
 {
@@ -78,6 +78,7 @@ namespace upg
     }
     static OptParams gen_params_to_opt_params(const std::vector<float> &params, const ParametersDescription &pd)
     {
+      //TODO
       OptParams p;
       p.differentiable = params;
       return p;
@@ -85,13 +86,14 @@ namespace upg
     //calculate function that we optimize and it's gradient (put into given span)
     //requires already created UniversalGenInstance
     //size of out_grad - is a number of differentiable parameters in params
-    virtual float f_grad_f(UniversalGenInstance &gen, const ParametersDescription &pd, const OptParams &params, 
+    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params, 
                            std::span<float> out_grad) = 0;
-    virtual float f_no_grad(UniversalGenInstance &gen, const ParametersDescription &pd, const OptParams &params) = 0;
+    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) = 0;
 
     //based on GenInstance create full parameters description, that includes both generator's and 
     //scene's parameter blocks
-    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance &gen) = 0;
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) = 0;
+    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const = 0;
 
   protected:
     //we prepare parameters descriptions for generator's and scene (i.e. camera) parameters

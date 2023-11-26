@@ -3,7 +3,7 @@
 
 namespace upg
 {
-  UniversalGenMesh UniversalGenInstance::generate(std::span<const float> parameters, UniversalGenJacobian *jac)
+  UniversalGenMesh MeshGenInstance::generate(std::span<const float> parameters, UniversalGenJacobian *jac)
   {
     for (int i = 0; i < all_params.size(); ++i)
     {
@@ -21,9 +21,16 @@ namespace upg
     // return generator.generate();
   }
 
-  UniversalGenInstance::UniversalGenInstance(const UPGStructure &structure)
+  MeshGenInstance::MeshGenInstance(const UPGStructure &structure)
   {
-        all_params.clear();
+    recreate(structure);
+  }
+  
+  void MeshGenInstance::recreate(const UPGStructure &structure)
+  {
+    all_params.clear();
+    all_nodes.clear();
+
     std::vector<GenNode *> nodes;
     std::vector<std::pair<GenNode *, unsigned>> param_startings;
     int i = 0;

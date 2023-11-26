@@ -1,6 +1,7 @@
 #pragma once
 #include "upg.h"
 #include "tree_node.h"
+#include "generation_common.h"
 #include <memory>
 namespace upg
 {  
@@ -46,13 +47,24 @@ namespace upg
     std::vector<float> jacobian;
   };
 
+  struct UniversalGenMesh
+  {
+    //triangle mesh pos.size()%9 == 0
+    //norm and tc can be empty
+    std::vector<float> pos; //vec3
+    std::vector<float> norm; //vec3
+    std::vector<float> tc; //vec2
+  };
+
+
   //Generator with fixed structure.
   //It contains nodes tree as well as description for parameters that
   //should be passed to generate() function
-  class UniversalGenInstance
+  class MeshGenInstance : public UniversalGenInstance
   {
   public:
-    UniversalGenInstance(const UPGStructure &structure);
+    MeshGenInstance(const UPGStructure &structure);
+    virtual void recreate(const UPGStructure &structure) override;
     UniversalGenMesh generate(std::span<const float> parameters, UniversalGenJacobian *jac = nullptr);
     ParametersDescription desc;
 

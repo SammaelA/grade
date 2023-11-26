@@ -44,10 +44,11 @@ namespace upg
     const SdfNode *root = nullptr;
   };
 
-  class SdfGenInstance
+  class SdfGenInstance : public UniversalGenInstance
   {
   public:
     SdfGenInstance(const UPGStructure &structure);
+    virtual void recreate(const UPGStructure &structure) override;
     ProceduralSdf generate(std::span<const float> parameters);
     ParametersDescription desc;
 

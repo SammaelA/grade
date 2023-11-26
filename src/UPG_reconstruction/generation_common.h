@@ -3,6 +3,7 @@
 #include <map>
 #include "common_utils/utility.h"
 #include "common_utils/template_vectors.h"
+#include "upg.h"
 namespace upg
 {
   typedef float my_float;
@@ -11,18 +12,6 @@ namespace upg
   typedef dgen::g_vec3<my_float> vec3;
   typedef dgen::g_vec4<my_float> vec4;
   typedef dgen::g_mat43<my_float> mat43;
-
-  struct UniversalGenMesh
-  {
-    //triangle mesh pos.size()%9 == 0
-    //norm and tc can be empty
-    std::vector<float> pos; //vec3
-    std::vector<float> norm; //vec3
-    std::vector<float> tc; //vec2
-  };
-
-  void add_tri_data(upg::vec3 point, upg::vec3 n, upg::vec2 tex, UniversalGenMesh &mesh);
-  void add_point_data(upg::vec3 point, UniversalGenMesh &mesh);
 
   enum class ParameterType
   {
@@ -141,6 +130,16 @@ namespace upg
   private:
     int total_params_count = 0;
     std::map<unsigned, ParamBlock> block_params;
+  };
+
+  class UniversalGenInstance
+  {
+  public:
+    UniversalGenInstance() = default;
+    virtual ~UniversalGenInstance() {};
+    UniversalGenInstance(const UniversalGenInstance &) = delete;
+    UniversalGenInstance &operator=(const UniversalGenInstance&) = delete;
+    virtual void recreate(const UPGStructure &structure) = 0;
   };
   
 }

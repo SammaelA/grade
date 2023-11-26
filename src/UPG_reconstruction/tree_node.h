@@ -4,6 +4,7 @@
 namespace upg
 {
   struct UniversalGenJacobian;
+  struct UniversalGenMesh;
   class GenNode
   {
   protected:
