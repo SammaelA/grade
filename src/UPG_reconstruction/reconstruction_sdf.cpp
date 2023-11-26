@@ -2,9 +2,73 @@
 #include "sdf_node.h"
 #include "common_utils/distribution.h"
 #include "optimization.h"
+#include "tinyEngine/camera.h"
+#include "tinyEngine/engine.h"
 
 namespace upg
 {
+  inline glm::vec3 EyeRayDirNormalized(float x/*in [0,1]*/, float y/*in [0,1]*/, glm::mat4 projInv)
+  {
+    glm::vec4 pos = glm::vec4(2.0f*x - 1.0f, -2.0f*y + 1.0f, 0.0f, 1.0f);
+    pos = projInv * pos;
+    pos /= pos.w;
+    return glm::normalize(glm::vec3(pos));
+  }
+
+  inline glm::vec3 transformRay(glm::vec3 ray, glm::mat4 viewInv)
+  {
+    glm::vec3 p1 = glm::vec3(viewInv*glm::vec4(0,0,0,1));
+    glm::vec3 p2 = glm::vec3(viewInv*glm::vec4(ray.x,ray.y,ray.z,1));
+    return glm::normalize(p2-p1);
+  }
+
+  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp)
+  {
+    glm::mat4 projInv = glm::inverse(camera.get_proj());
+    glm::mat4 viewInv = glm::inverse(camera.get_view());
+    int spp_a = MAX(1,floor(sqrtf(spp)));
+    unsigned char *data = new unsigned char[4*image_w*image_h];
+
+    for (int yi=0;yi<image_h;yi++)
+    {
+      for (int xi=0;xi<image_w;xi++)
+      {
+        float c = 0;
+        for (int yp=0;yp<spp_a;yp++)
+        {
+          for (int xp=0;xp<spp_a;xp++)
+          {
+            float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
+            float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
+            glm::vec3 p0 = camera.origin;
+            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
+            
+            //sphere tracing
+            int iter = 0;
+            float d = sdf.get_distance(p0);
+            while (iter < 100 && d > 1e-6 && d < 1e6)
+            {
+              p0 += d*dir;
+              d = sdf.get_distance(p0);
+              iter++;
+            }
+            if (d <= 1e-6)
+              c++;
+          }
+        }
+        unsigned char color = 255*(c/SQR(spp_a));
+        data[4*(yi*image_w+xi)+0] = color;
+        data[4*(yi*image_w+xi)+1] = color;
+        data[4*(yi*image_w+xi)+2] = color;
+        data[4*(yi*image_w+xi)+3] = 255;
+      }
+    }
+
+    Texture t = engine::textureManager->create_texture(image_w, image_h, GL_RGBA8, 1, data, GL_RGBA);
+    delete[] data;
+    return t;
+  }
+
   struct PointCloudReference
   {
     std::vector<glm::vec3> points;
@@ -24,7 +88,7 @@ namespace upg
 
       int iter = 0;
       float d = sdf.get_distance(p0);
-      while (iter < 100 && d > 1e-6)
+      while (iter < 100 && d > 1e-6 && d < 1e6)
       {
         p0 += d*dir;
         d = sdf.get_distance(p0);
@@ -52,6 +116,13 @@ namespace upg
 
       int points = synthetic_reference->get_int("points_count", 10000);
       sdf_to_point_cloud(sdf, points, reference);
+
+      CameraSettings camera;
+      camera.origin = glm::vec3(0,0,3);
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(sdf, camera, 512, 512, 16);
+      engine::textureManager->save_png(t, "reference_sdf");
     }
     else if (model_reference)
     {
