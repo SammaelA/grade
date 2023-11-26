@@ -103,8 +103,6 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1.texture, 0);
   glViewport(0, 0, tex_w, tex_h);
 
-  glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
-
   float tr_z = scene_params[2] * tan(0.5*0.25) / tan(0.5*cameras[0].fov_rad);
   glm::mat4 transform = glm::rotate(glm::rotate(glm::rotate(glm::translate(glm::mat4(1.0f),
                                        glm::vec3(scene_params[0], scene_params[1], tr_z)), 
@@ -119,9 +117,7 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
   {
     //render model silhouette
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::mat4 projection = glm::perspective(cameras[i].fov_rad, 1.0f, cameras[i].z_near, cameras[i].z_far);
-    glm::mat4 view = glm::lookAt(cameras[i].origin, cameras[i].target, cameras[i].up);
-    glm::mat4 viewProj = y_swap * projection * view * transform;
+    glm::mat4 viewProj = cameras[i].get_viewProj();
     render_silhouette.use();
     render_silhouette.uniform("viewProj", viewProj);
     m.render();

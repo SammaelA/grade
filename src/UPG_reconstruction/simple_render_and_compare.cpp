@@ -70,8 +70,6 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
     int prev_FBO = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
     float total_res = 0;
 
     for (int i=0;i<cameras.size();i++)
@@ -85,9 +83,7 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1.texture, 0);
       glViewport(0, 0, tex_w, tex_h);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glm::mat4 projection = glm::perspective(cameras[i].fov_rad, 1.0f, cameras[i].z_near, cameras[i].z_far);
-      glm::mat4 view = glm::lookAt(cameras[i].origin, cameras[i].target, cameras[i].up);
-      glm::mat4 viewProj = y_swap * projection * view;
+      glm::mat4 viewProj = cameras[i].get_viewProj();
       render_silhouette.use();
       render_silhouette.uniform("viewProj", viewProj);
       glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);

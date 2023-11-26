@@ -28,12 +28,9 @@ namespace upg
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.texture, 0);
     glViewport(0, 0, tex_w, tex_h);
 
-    glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
     //render model silhouette
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::mat4 projection = glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
-    glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
-    glm::mat4 viewProj = y_swap * projection * view;
+    glm::mat4 viewProj = camera.get_viewProj();
     render_silhouette.use();
     render_silhouette.uniform("viewProj", viewProj);
     for (auto &m : model.models)
