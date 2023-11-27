@@ -1690,6 +1690,12 @@ fail: debug("FAILED\n");
       debug("PASSED\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 21.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 80)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 80);
   }
 
   void perform_tests(const Block &blk)

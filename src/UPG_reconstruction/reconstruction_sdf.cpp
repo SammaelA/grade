@@ -4,6 +4,9 @@
 #include "optimization.h"
 #include "tinyEngine/camera.h"
 #include "tinyEngine/engine.h"
+#include "common_utils/bbox.h"
+#include "preprocessing.h"
+#include "graphics_utils/image_metrics.h"
 
 namespace upg
 {
@@ -72,6 +75,7 @@ namespace upg
   struct PointCloudReference
   {
     std::vector<glm::vec3> points;
+    ProceduralSdf sdf;//empty if not synthetic reference
   };
 
   void sdf_to_point_cloud(const ProceduralSdf &sdf, int points, PointCloudReference &cloud)
@@ -99,6 +103,44 @@ namespace upg
     }
   }
 
+  AABB get_point_cloud_bbox(const std::vector<glm::vec3> &points)
+  {
+    glm::vec3 minv(1e9,1e9,1e9);
+    glm::vec3 maxv(-1e9,-1e9,-1e9);
+    for (auto &p : points)
+    {
+      minv = glm::min(minv, p);
+      maxv = glm::max(maxv, p);
+    }
+
+    return AABB(minv, maxv);
+  }
+
+  float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf)
+  {
+    int image_size = 1024;
+    int points = 1000;
+    PointCloudReference cloud;
+    sdf_to_point_cloud(reference_sdf, points, cloud);
+    AABB bbox = get_point_cloud_bbox(cloud.points);
+    float d = 1.5*length(bbox.max_pos - bbox.min_pos);
+    CameraSettings cam;
+    cam.target = 0.5f*(bbox.min_pos + bbox.max_pos);
+    cam.origin = cam.target + glm::vec3(0,0,-d);
+
+    auto cameras = get_cameras_uniform_sphere(cam, 64, d);
+
+    float diff = 0.0;
+    float mse = 0.0;
+    for (auto &cam : cameras)
+    {
+      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 1);
+      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 1);
+      mse += ImageMetric::get(t1, t2);
+    }
+    return -10*log10(MAX(1e-9f,mse));
+  }
+
   PointCloudReference get_point_cloud_reference(const Block &input_blk)
   {
     PointCloudReference reference;
@@ -112,16 +154,16 @@ namespace upg
       synthetic_reference->get_arr("structure", structure.s);
       synthetic_reference->get_arr("params", params.p);
       SdfGenInstance gen(structure);
-      ProceduralSdf sdf = gen.generate(params.p);
+      reference.sdf = gen.generate(params.p);
 
       int points = synthetic_reference->get_int("points_count", 10000);
-      sdf_to_point_cloud(sdf, points, reference);
+      sdf_to_point_cloud(reference.sdf, points, reference);
 
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
       camera.target = glm::vec3(0,0,0);
       camera.up = glm::vec3(0,1,0);
-      Texture t = render_sdf(sdf, camera, 512, 512, 16);
+      Texture t = render_sdf(reference.sdf, camera, 512, 512, 16);
       engine::textureManager->save_png(t, "reference_sdf");
     }
     else if (model_reference)
@@ -243,6 +285,17 @@ namespace upg
       optimizer->optimize();
       opt_res = optimizer->get_best_results();
       step_n++;
+    }
+
+    for (auto &result : opt_res)
+    {
+      SdfGenInstance gen(result.structure);
+      ProceduralSdf sdf = gen.generate(result.parameters.p);
+
+      result.quality_ir = result.loss_optimizer;
+
+      if (reference.sdf.root && res_blk->get_bool("check_model_quality"))
+        result.quality_synt = get_sdf_image_based_quality(reference.sdf, sdf);
     }
 
     return opt_res;

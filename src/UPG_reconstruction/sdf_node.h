@@ -40,7 +40,6 @@ namespace upg
     {
       return root->get_distance(pos, ddist_dp, ddist_dpos);
     }
-  private:
     const SdfNode *root = nullptr;
   };
 
