@@ -283,6 +283,8 @@ namespace upg
         optimizer = get_optimizer_adam(&opt_func, *step_blk, opt_res[0]);
       else if (optimizer_name == "memetic")
         optimizer = get_optimizer_memetic(&opt_func, *step_blk, start_params.structure);
+      else if (optimizer_name == "CHC")
+        optimizer = get_optimizer_CHC(&opt_func, *step_blk, start_params.structure);
       optimizer->optimize();
       opt_res = optimizer->get_best_results();
       step_n++;
