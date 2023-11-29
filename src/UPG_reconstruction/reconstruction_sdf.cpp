@@ -75,7 +75,9 @@ namespace upg
   struct PointCloudReference
   {
     std::vector<glm::vec3> points;
-    ProceduralSdf sdf;//empty if not synthetic reference
+    bool is_synthetic = false;
+    UPGStructure structure;//can be set manually to make reconstruction simplier
+    UPGParametersRaw parameters;//empty if not synthetic reference
   };
 
   void sdf_to_point_cloud(const ProceduralSdf &sdf, int points, PointCloudReference &cloud)
@@ -138,7 +140,7 @@ namespace upg
       Texture t2 = render_sdf(sdf, cam, image_size, image_size, 1);
       mse += ImageMetric::get(t1, t2);
     }
-    return -10*log10(MAX(1e-9f,mse));
+    return -10*log10(MAX(1e-9f,mse/cameras.size()));
   }
 
   PointCloudReference get_point_cloud_reference(const Block &input_blk)
@@ -149,21 +151,20 @@ namespace upg
     assert(!(synthetic_reference && model_reference));
     if (synthetic_reference)
     {
-      UPGStructure structure;
-      UPGParametersRaw params;
-      synthetic_reference->get_arr("structure", structure.s);
-      synthetic_reference->get_arr("params", params.p);
-      SdfGenInstance gen(structure);
-      reference.sdf = gen.generate(params.p);
+      reference.is_synthetic = true;
+      synthetic_reference->get_arr("structure", reference.structure.s);
+      synthetic_reference->get_arr("params", reference.parameters.p);
+      SdfGenInstance gen(reference.structure);
+      ProceduralSdf sdf = gen.generate(reference.parameters.p);
 
       int points = synthetic_reference->get_int("points_count", 10000);
-      sdf_to_point_cloud(reference.sdf, points, reference);
+      sdf_to_point_cloud(sdf, points, reference);
 
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
       camera.target = glm::vec3(0,0,0);
       camera.up = glm::vec3(0,1,0);
-      Texture t = render_sdf(reference.sdf, camera, 512, 512, 16);
+      Texture t = render_sdf(sdf, camera, 512, 512, 16);
       engine::textureManager->save_png(t, "reference_sdf");
     }
     else if (model_reference)
@@ -200,7 +201,7 @@ namespace upg
       for (const glm::vec3 &p : reference.points)
       {
         cur_grad.clear();
-        float d = SQR(sdf.get_distance(p, &cur_grad, &dpos_dparams));
+        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
         full_d += SQR(d);
         for (int i=0;i<gen_params.size();i++)
           out_grad[i] += 2*d*cur_grad[i] / reference.points.size();
@@ -294,8 +295,19 @@ namespace upg
 
       result.quality_ir = result.loss_optimizer;
 
-      if (reference.sdf.root && res_blk->get_bool("check_model_quality"))
-        result.quality_synt = get_sdf_image_based_quality(reference.sdf, sdf);
+      if (reference.is_synthetic && res_blk->get_bool("check_model_quality"))
+      {
+        SdfGenInstance reference_gen(reference.structure);
+        ProceduralSdf reference_sdf = reference_gen.generate(reference.parameters.p);
+        result.quality_synt = get_sdf_image_based_quality(reference_sdf, sdf);
+      }
+
+      CameraSettings camera;
+      camera.origin = glm::vec3(0,0,3);
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(sdf, camera, 512, 512, 16);
+      engine::textureManager->save_png(t, "result_sdf");
     }
 
     return opt_res;

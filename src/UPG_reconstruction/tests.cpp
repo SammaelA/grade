@@ -1698,6 +1698,81 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 80);
   }
 
+  //TEST 22 SPHERES SDF RECONSTRUCTION MEMETIC
+  void test_22()
+  {
+    srand(0);
+    debug("TEST 22. SPHERES SDF RECONSTRUCTION MEMETIC\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+            params:arr = {0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
+            structure:arr = {3,3,1,1,3,1,1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            structure:arr = {3,3,1,1,3,1,1}
+        }
+        step_0 {
+            optimizer_name:s = "memetic"
+            verbose:b = false
+        }
+        step_1 {
+            iterations:i = 100
+            verbose:b = true
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 22.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("PASSED\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    bool str_eq = true;
+    std::vector<uint16_t> ref_struct = {3,3,1,1,3,1,1};
+    for (int i=0;i<std::min(res[0].structure.s.size(), ref_struct.size());i++)
+       str_eq = str_eq && (res[0].structure.s[i] == ref_struct[i]);
+    debug(" 22.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == ref_struct.size() && str_eq)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 22.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 4*4)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 22.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 22.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 80)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 80);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1715,7 +1790,7 @@ fail: debug("FAILED\n");
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
       test_16, test_17, test_18, test_19, test_20,
-      test_21
+      test_21, test_22
     };
 
     for (int i : tests)
