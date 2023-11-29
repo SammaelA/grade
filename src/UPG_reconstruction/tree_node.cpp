@@ -468,7 +468,7 @@ namespace upg
           x.push_back(mesh.pos[i]);
           x.push_back(mesh.pos[i + 1]);
           x.push_back(mesh.pos[i + 2]);
-          RotateNode_apply(x.data(), mesh.pos.data());
+          RotateNode_apply(x.data(), mesh.pos.data() + i);
         }
       }
       matr = dgen::transposedInverse3x3(matr);

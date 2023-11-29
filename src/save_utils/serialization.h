@@ -1,4 +1,6 @@
 #pragma once
+#include <boost/serialization/library_version_type.hpp>
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -23,6 +25,7 @@
 #include "texture_save_manager.h"
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/engine.h"
+
 
 namespace boost
 {
