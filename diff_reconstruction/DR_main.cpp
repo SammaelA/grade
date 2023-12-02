@@ -440,25 +440,46 @@ int main(int argc, char **argv)
   }
   else if (argc >= 3 && std::string(argv[2]) == "-render_wireframe")
   {
-    std::vector<float> scene_params = {-0.146707, 0.536269, 0.473139, -0.027028, 2.750088, 0.000484, 0.000000, 0.500000, 662.898010, 1.000000, 79.108002, 0.200000, 0.500000};
-    std::vector<float> gen_params = {3.550591, 3.715814, 3.966238, 3.986568, 4.030954, 4.094914, 4.168126, 4.194885, 4.369867, 0.693920, 1.000000, 0.060869, 0.553867, 0.186609, 0.234847, 0.269397, 0.298828, 0.312449, 0.313711, 0.308487, 0.301948, 0.291360, 0.284970, 0.277301, 0.272561, 0.268144, 0.266445, 0.264405, 0.265336, 0.266025, 0.232359, 0.270066, 0.216850, 0.979304, 1.631409, 1.174466, 1.133552, 0.936276, 0.888447, 0.843601, 0.829158, 0.820061, 0.823618, 0.833987, 0.848319, 0.869524, 0.905610, 0.935543, 0.955388, 1.066534, 1.718385, 1.941411, 1.970230};
-    Model *m = new Model();
-    dgen::DFModel res;
-    dgen::not_diff_gen_test("dishes", gen_params, res, false, dgen::ModelQuality(false, 2));
-    dgen::transform_by_scene_parameters(scene_params, res.first);
-    visualizer::simple_mesh_to_model_332(res.first, m);
-    m->update();
-
     WireframeRenderer wr;
-    CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
-    glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
-    glm::mat4 view = glm::lookAt(rc.origin, rc.target, rc.up);
-    glm::mat4 viewProj = projection * view;
-    Texture res_tex = wr.render(*m, viewProj, 2048, 2048);
-    textureManager.save_png(res_tex, "aa_wireframe_test");
+    std::vector<float> scene_params = {-0.160, 0.05, 0.954, 0.00, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
+    std::vector<float> gen_params = {
+              1, //I_ENTRANCES_COUNT
+              2, //I_FLOORS_COUNT
+              0.040, //F_WALL_THICKNESS
+              0.100, 0.300, //F_BOTTOM_OFFSET_Q, F_TOP_OFFSET_Q
+              3, 6, 1, // END section
+              5, 650, 0.5, // MIDDLE section
+              4, 20, 0.75, // SIDE section
+              0.080, 0.080, 0.095, //window frame
+              0.001, 0.300, 0.000, 0.000, 0.241, //roof
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.4, 3.0, //base window
+              1.761, 3.000, 0.000, 0.581, 0.667, 0.4, 2.25, //balcony window
+              0.400, 0.900, 0.015, 0.1, 1.000, //balcony
+              2.719, 2.000, 2.000, 0.600, 0.400, 0.4, 3.0, //entrance window
+              0.550, 1.33, 0.67, 0.150, //door
+              0.116, 0.150, //stairs
+              1, 0.5, 0.67, //total size
+            };
+    for(int i=0;i<4;i++)
+    {
+      Model *m = new Model();
+      dgen::DFModel res;
+      dgen::not_diff_gen_test("buildings_2", gen_params, res, false, dgen::ModelQuality(false, i));
+      dgen::transform_by_scene_parameters(scene_params, res.first);
+      visualizer::simple_mesh_to_model_332(res.first, m);
+      m->update();
 
-    delete m;
+      CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
+      glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      glm::mat4 view = glm::lookAt(rc.origin+glm::vec3(0,1,0), rc.target, rc.up);
+      glm::mat4 viewProj = projection * view;
+      Texture res_tex = wr.render(*m, viewProj, 1024, 1024);
+      textureManager.save_png(res_tex, "wireframe_building_"+std::to_string(i));
+      delete m;
+    }
 
+
+    if (false)
     {
       auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
       visualizer::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
@@ -473,7 +494,7 @@ int main(int argc, char **argv)
       glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
       glm::mat4 view = glm::lookAt(rc.origin, rc.target, rc.up);
       glm::mat4 viewProj = projection * view;
-      Texture res_tex_2 = wr.render(*m, viewProj, 2048, 2048);
+      Texture res_tex_2 = wr.render(*m2, viewProj, 2048, 2048);
       textureManager.save_png(res_tex_2, "result_quaking_aspen_wireframe");
       //dgen::save_obj("saves/selection/reference_medium_oak_simplified_norm.obj", model);
 
