@@ -75,11 +75,13 @@ namespace upg
   struct PointCloudReference
   {
     std::vector<glm::vec3> points;
+    std::vector<glm::vec3> outside_points;
     bool is_synthetic = false;
     UPGStructure structure;//can be set manually to make reconstruction simplier
     UPGParametersRaw parameters;//empty if not synthetic reference
   };
 
+  AABB get_point_cloud_bbox(const std::vector<glm::vec3> &points);
   void sdf_to_point_cloud(const ProceduralSdf &sdf, int points, PointCloudReference &cloud)
   {
     float r = 10000;
@@ -102,6 +104,19 @@ namespace upg
       }
       if (d <= 1e-6)
         cloud.points.push_back(p0);
+    }
+
+    AABB bbox = get_point_cloud_bbox(cloud.points);
+    AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
+    
+    cloud.outside_points.reserve(points);
+    while (cloud.outside_points.size() < points)
+    {
+      glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
+                              urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
+                              urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
+      if (!bbox.contains(p))
+        cloud.outside_points.push_back(p);
     }
   }
 
@@ -198,6 +213,8 @@ namespace upg
         out_grad[i] = 0;
 
       double full_d = 0.0;
+
+      //main step - minimize SDF values on surface
       for (const glm::vec3 &p : reference.points)
       {
         cur_grad.clear();
@@ -206,6 +223,19 @@ namespace upg
         for (int i=0;i<gen_params.size();i++)
           out_grad[i] += 2*d*cur_grad[i] / reference.points.size();
       }
+
+      for (const glm::vec3 &p : reference.outside_points)
+      {
+        cur_grad.clear();
+        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams) - 0.01;
+        if (d < 0)
+        {
+          full_d += SQR(d);
+          for (int i=0;i<gen_params.size();i++)
+            out_grad[i] += 2*d*cur_grad[i] / reference.points.size();
+        }
+      }
+      //regularization - penalty for outside points with sdf < 0
       /*
       debug("params [");
       for (int i=0;i<gen_params.size();i++)
@@ -227,6 +257,12 @@ namespace upg
       double d = 0.0;
       for (const glm::vec3 &p : reference.points)
         d += SQR(sdf.get_distance(p));
+      for (const glm::vec3 &p : reference.outside_points)
+      {
+        float od = sdf.get_distance(p) - 0.01;
+        if (od < 0)
+          d += SQR(d);
+      }
 
       return d/reference.points.size();
     }
