@@ -32,6 +32,7 @@ namespace upg
     int spp_a = MAX(1,floor(sqrtf(spp)));
     unsigned char *data = new unsigned char[4*image_w*image_h];
 
+    #pragma omp parallel for
     for (int yi=0;yi<image_h;yi++)
     {
       for (int xi=0;xi<image_w;xi++)
@@ -135,7 +136,7 @@ namespace upg
 
   float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf)
   {
-    int image_size = 1024;
+    int image_size = 512;
     int points = 1000;
     PointCloudReference cloud;
     sdf_to_point_cloud(reference_sdf, points, cloud);
@@ -151,8 +152,8 @@ namespace upg
     float mse = 0.0;
     for (auto &cam : cameras)
     {
-      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 1);
-      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 1);
+      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4);
+      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4);
       mse += ImageMetric::get(t1, t2);
     }
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
