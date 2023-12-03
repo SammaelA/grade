@@ -62,41 +62,32 @@ namespace upg
 
   class SphereSdfNode : public PrimitiveSdfNode
   {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    static constexpr int RADIUS = 3;
+    static constexpr int RADIUS = 0;
   public:
     SphereSdfNode(unsigned id) : PrimitiveSdfNode(id) { name = "Sphere"; }
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      float d = std::max(1e-9f, glm::length(glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]) - pos));
+      float d = std::max(1e-9f, glm::length(pos));
       
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 4);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/d;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/d;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/d;
-        (*ddist_dp)[offset+3] = -1;
+        ddist_dp->resize(offset + 1);
+        (*ddist_dp)[offset] = -1;
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/d;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/d;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/d;
+        (*ddist_dpos)[0] = pos.x/d;
+        (*ddist_dpos)[1] = pos.y/d;
+        (*ddist_dpos)[2] = pos.z/d;
       }
 
       return d - p[RADIUS];
     }
 
-    virtual unsigned param_cnt() const override { return 4; }
+    virtual unsigned param_cnt() const override { return 1; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
       params.push_back({1,0.01,10, ParameterType::DIFFERENTIABLE, "radius"});
       return params;
     }
@@ -107,7 +98,6 @@ namespace upg
     static constexpr int MOVE_X = 0;
     static constexpr int MOVE_Y = 1;
     static constexpr int MOVE_Z = 2;
-    static constexpr int RADIUS = 3;
   public:
     MoveSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Move"; }
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
@@ -120,7 +110,7 @@ namespace upg
         offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
       }
-      float d = child->get_distance(pos - glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]));
+      float d = child->get_distance(pos - glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]), ddist_dp, ddist_dpos);
 
       if (ddist_dp)
       {

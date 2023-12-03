@@ -1641,7 +1641,7 @@ fail: debug("FAILED\n");
         synthetic_reference {
             points_count:i = 1000
             params:arr = {0,0,0,1}
-            structure:arr = {1}
+            structure:arr = {2,1}
         } 
     }
     generator {
@@ -1650,7 +1650,7 @@ fail: debug("FAILED\n");
     optimization {
         start {
             params:arr = {0.1,0.2,-0.1,0.7}    
-            structure:arr = {1} 
+            structure:arr = {2,1} 
         }
         step_0 {
             learning_rate:r = 0.003
@@ -1675,7 +1675,7 @@ fail: debug("FAILED\n");
       debug("FAILED %d != %d\n", res.size(), 1);
     
     debug(" 21.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == 1)
+    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 1)
       debug("PASSED\n");
     else
       debug("FAILED\n");
@@ -1710,7 +1710,7 @@ fail: debug("FAILED\n");
         synthetic_reference {
             points_count:i = 1000
             params:arr = {0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
-            structure:arr = {3,3,1,1,3,1,1}
+            structure:arr = {3,3,2,1,2,1,3,2,1,2,1}
         } 
     }
     generator {
@@ -1718,7 +1718,7 @@ fail: debug("FAILED\n");
     }
     optimization {
         start {
-            structure:arr = {3,3,1,1,3,1,1}
+            structure:arr = {3,3,2,1,2,1,3,2,1,2,1}
         }
         step_0 {
             optimizer_name:s = "memetic"
