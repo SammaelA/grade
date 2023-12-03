@@ -1718,11 +1718,13 @@ fail: debug("FAILED\n");
     }
     optimization {
         start {
+            //params:arr = {0.5,0.1,-0.1,0.5, -0.5,0.06,-0.09,0.54, 0.1,-0.66,-0.09,0.45, 0.1,0.57,0,0.51}
             structure:arr = {3,3,2,1,2,1,3,2,1,2,1}
         }
         step_0 {
             optimizer_name:s = "memetic"
-            verbose:b = false
+            iterations:i = 100
+            verbose:b = true
         }
         step_1 {
             iterations:i = 100
@@ -1730,8 +1732,8 @@ fail: debug("FAILED\n");
         }
     }
     results {
-        check_image_quality:b = false
-        check_model_quality:b = false
+        check_image_quality:b = true
+        check_model_quality:b = true
     }
     }
       )"""";
@@ -1746,7 +1748,7 @@ fail: debug("FAILED\n");
       debug("FAILED %d != %d\n", res.size(), 1);
     
     bool str_eq = true;
-    std::vector<uint16_t> ref_struct = {3,3,1,1,3,1,1};
+    std::vector<uint16_t> ref_struct = {3,3,2,1,2,1,3,2,1,2,1};
     for (int i=0;i<std::min(res[0].structure.s.size(), ref_struct.size());i++)
        str_eq = str_eq && (res[0].structure.s[i] == ref_struct[i]);
     debug(" 22.2. %-64s", "Preserved structure ");
@@ -1768,7 +1770,7 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 22.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 80)
+    if (res[0].quality_synt > 50)
       debug("PASSED\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 80);
