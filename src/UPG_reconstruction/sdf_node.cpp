@@ -121,13 +121,13 @@ namespace upg
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 6);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+3] = -1;
-        (*ddist_dp)[offset+4] = -1;
-        (*ddist_dp)[offset+5] = -1;
+        ddist_dp->resize(offset + 3);
+        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
+        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
+        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dp)[offset] = -1;
+        (*ddist_dp)[offset+1] = -1;
+        (*ddist_dp)[offset+2] = -1;
 
         (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
         (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
@@ -137,13 +137,10 @@ namespace upg
       return d;
     }
 
-    virtual unsigned param_cnt() const override { return 6; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual unsigned param_cnt() const override { return 3; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
       
       params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "size_x"});
       params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "size_y"});
@@ -177,12 +174,12 @@ namespace upg
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 5);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+3] = -1;
-        (*ddist_dp)[offset+4] = -1;
+        ddist_dp->resize(offset + 2);
+        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
+        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
+        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dp)[offset] = -1;
+        (*ddist_dp)[offset+1] = -1;
 
         (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
         (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
@@ -192,13 +189,10 @@ namespace upg
       return d;
     }
 
-    virtual unsigned param_cnt() const override { return 5; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual unsigned param_cnt() const override { return 2; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
       
       params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height"});
       params.push_back({2,0.01,10, ParameterType::DIFFERENTIABLE, "radius"});
@@ -232,13 +226,13 @@ namespace upg
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 6);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+3] = -1;
-        (*ddist_dp)[offset+4] = -1;
-        (*ddist_dp)[offset+5] = -1;
+        ddist_dp->resize(offset + 3);
+        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
+        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
+        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dp)[offset+0] = -1;
+        (*ddist_dp)[offset+1] = -1;
+        (*ddist_dp)[offset+2] = -1;
 
         (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
         (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
@@ -248,13 +242,10 @@ namespace upg
       return d;
     }
 
-    virtual unsigned param_cnt() const override { return 6; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual unsigned param_cnt() const override { return 3; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
       
       params.push_back({1,0.01,10, ParameterType::DIFFERENTIABLE, "ra"});
       params.push_back({2,0.01,10, ParameterType::DIFFERENTIABLE, "rb"});
@@ -304,11 +295,11 @@ namespace upg
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 4);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+3] = -1;
+        ddist_dp->resize(offset + 1);
+        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
+        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
+        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dp)[offset+0] = -1;
 
         (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
         (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
@@ -318,13 +309,10 @@ namespace upg
       return d;
     }
 
-    virtual unsigned param_cnt() const override { return 4; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
       
       params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height"});
 
