@@ -2,6 +2,7 @@
 
 namespace upg
 {
+  AABB SdfGenInstance::scene_bbox;
   class PrimitiveSdfNode : public SdfNode
   {
   public:
@@ -85,10 +86,11 @@ namespace upg
     }
 
     virtual unsigned param_cnt() const override { return 1; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
+      float max_r = 0.5*length(scene_bbox.max_pos-scene_bbox.min_pos);
       std::vector<ParametersDescription::Param> params;
-      params.push_back({1,0.01,10, ParameterType::DIFFERENTIABLE, "radius"});
+      params.push_back({1,0.01f*max_r,max_r, ParameterType::DIFFERENTIABLE, "radius"});
       return params;
     }
   };
@@ -133,12 +135,12 @@ namespace upg
       return d;
     }
     virtual unsigned param_cnt() const override { return 3; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_z"});
+      params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "move_x"});
+      params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "move_y"});
+      params.push_back({0,scene_bbox.min_pos.z,scene_bbox.max_pos.z, ParameterType::DIFFERENTIABLE, "move_z"});
       return params;
     }
   };
@@ -182,7 +184,7 @@ namespace upg
       return std::min(d1,d2);
     }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override { return {}; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
   };
 
   ProceduralSdf SdfGenInstance::generate(std::span<const float> parameters)
@@ -222,7 +224,7 @@ namespace upg
       }
       SdfNode *node = sdf_node_by_node_type_id(n, i);
       all_nodes.push_back(std::unique_ptr<SdfNode>(node));
-      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block());
+      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block(scene_bbox));
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       

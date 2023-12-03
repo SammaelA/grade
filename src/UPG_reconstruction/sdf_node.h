@@ -1,6 +1,7 @@
 #pragma once
 #include "upg.h"
 #include "generation_common.h"
+#include "common_utils/bbox.h"
 #include <memory>
 
 namespace upg
@@ -24,7 +25,7 @@ namespace upg
     virtual unsigned param_cnt() const = 0;
     virtual unsigned child_cnt() const = 0;
     virtual std::vector<const SdfNode *> get_children() const = 0;
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const = 0;
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
   };
 
   class ProceduralSdf
@@ -46,6 +47,11 @@ namespace upg
   class SdfGenInstance : public UniversalGenInstance
   {
   public:
+    //to better perform optimization on different scales, we should better
+    //determine the size of scene we are working on.
+    //BBox affects only ParametersDescription, not the generation itself.
+    static void set_scene_bbox(AABB bbox) {scene_bbox = bbox;}
+
     SdfGenInstance(const UPGStructure &structure);
     virtual void recreate(const UPGStructure &structure) override;
     ProceduralSdf generate(std::span<const float> parameters);
@@ -58,6 +64,8 @@ namespace upg
     //put raw parameters list here to generate
     //DO NOT change size of this vector
     std::vector<my_float> all_params;
+
+    static AABB scene_bbox;
   };
 
   SdfNode *sdf_node_by_node_type_id(uint16_t num, unsigned id);
