@@ -171,18 +171,18 @@ namespace dgen
         real w1 = inner_frame_width * length(q.v2) / length(q.v1);
         real h1 = inner_frame_width;
         for (int i = 1; i < hor_parts; i++)
-          make_box(M_frame, th, Quad(p_off + w * q.v1 + (i/hor_parts - 0.5*h1) * q.v2, vec2(0, 0), (1 - 2 * w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
+          make_box(M_frame, th, Quad(p_off + w * q.v1 + (i/hor_parts - 0.5f*h1) * q.v2, vec2(0, 0), (1 - 2 * w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
         for (int i = 1; i < vert_parts; i++)
-          make_box(M_frame, th, Quad(p_off + h * q.v2 + (i/vert_parts - 0.5*w1) * q.v1, vec2(0, 0), w1 * q.v1, vec2(1, 0), (1 - 2 * h) * q.v2, vec2(0, 1), q.n));
+          make_box(M_frame, th, Quad(p_off + h * q.v2 + (i/vert_parts - 0.5f*w1) * q.v1, vec2(0, 0), w1 * q.v1, vec2(1, 0), (1 - 2 * h) * q.v2, vec2(0, 1), q.n));
 
         if (ws == WindowSplit::WS_LEFT || ws == WindowSplit::WS_BOTH)
         {
-          make_box(M_frame, th, Quad(p_off + w * q.v1 + split_h_q * q.v2, vec2(0, 0), (1/vert_parts - 0.5*w1 - w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
+          make_box(M_frame, th, Quad(p_off + w * q.v1 + split_h_q * q.v2, vec2(0, 0), (1/vert_parts - 0.5f*w1 - w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
         }
 
         if (ws == WindowSplit::WS_RIGHT || ws == WindowSplit::WS_BOTH)
         {
-          make_box(M_frame, th, Quad(p_off + (1 - 1/vert_parts + 0.5*w1) * q.v1 + split_h_q * q.v2, vec2(0, 0), (1/vert_parts - 0.5*w1 - w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
+          make_box(M_frame, th, Quad(p_off + (1 - 1/vert_parts + 0.5f*w1) * q.v1 + split_h_q * q.v2, vec2(0, 0), (1/vert_parts - 0.5f*w1 - w) * q.v1, vec2(1, 0), h1 * q.v2, vec2(0, 1), q.n));
         }
 
         //alcove
@@ -219,7 +219,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count-0.5;i++)
+      for (int i=0;i<floors_count-0.5f;i++)
       {
         make_panel(M_ext, M_int, has_interior, thick, q_part);
         q_part.p1 += y_mul*q.v2;
@@ -294,7 +294,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count-0.5;i++)
+      for (int i=0;i<floors_count-0.5f;i++)
       {
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
                           window_width_q, window_height_q, q_part);
@@ -427,7 +427,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=1;i<floors_count-0.5;i++)
+      for (int i=1;i<floors_count-0.5f;i++)
       {
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
                             window_width_q, window_height_q, q_part);
@@ -524,7 +524,7 @@ namespace dgen
       q_part.v2 = y_mul * q.v2;
       q_part.tc_v2 = q.tc_v2;
 
-      for (int i=0;i<floors_count-0.5;i++)
+      for (int i=0;i<floors_count-0.5f;i++)
       {
         //make window
         make_window_panel(M_glass, M_wall, M_frame, M_int, wq, hor_parts, vert_parts, ws, split_h_q, thick, outer_frame_width, inner_frame_width, glass_deep_q, 
@@ -560,7 +560,7 @@ namespace dgen
       q_rp.p1 += roof_base_h*q.n;
       make_box(M_wall, length(q.v2), Quad(q.p1, q.v1, roof_base_h*q.n, -q.v2));
 
-      real f05 = 0.5;
+      real f05 = 0.5f;
       vec3 p1 = q.p1 + roof_base_h*q.n;
       vec3 p2 = q.p1 + roof_base_h*q.n + q.v2;
       vec3 p3 = q.p1 + (roof_base_h+roof_h)*q.n + f05*q.v2 + roof_side_slope*q.v1;
@@ -609,9 +609,9 @@ namespace dgen
                             const Quad &q /*stripe quad*/)
     {
       //floors (and roofs)
-      vec3 th = 0.1*thick*normalize(q.v2);
-      vec3 p1 = q.p1 + 0.1*thick*normalize(q.v1);
-      vec3 v1 = q.v1 - 0.1*thick*normalize(q.v1);
+      vec3 th = 0.1f*thick*normalize(q.v2);
+      vec3 p1 = q.p1 + 0.1f*thick*normalize(q.v1);
+      vec3 v1 = q.v1 - 0.1f*thick*normalize(q.v1);
       real y_mul = 1/length(q.v2);
       make_box(M_int, depth - 2*thick, Quad(p1 - q.n*thick, v1, th, q.n));
       p1 += y_mul*bottom_offset_q*q.v2;
@@ -623,11 +623,11 @@ namespace dgen
       }
 
       //middle wall
-      make_box(M_int, 0.1*thick, Quad(q.p1 - 0.5*depth*q.n, v1, q.v2, q.n));
+      make_box(M_int, 0.1f*thick, Quad(q.p1 - 0.5f*depth*q.n, v1, q.v2, q.n));
 
       if (left_wall)
       {
-        make_box(M_int, depth - 2*thick, Quad(q.p1 - q.n*thick, 0.1*thick*normalize(q.v1), q.v2, q.n));
+        make_box(M_int, depth - 2*thick, Quad(q.p1 - q.n*thick, 0.1f*thick*normalize(q.v1), q.v2, q.n));
       }
     };
 
@@ -716,7 +716,7 @@ namespace dgen
 
     auto params_to_window_split_type = [&](real v) -> WindowSplit
     {
-      if (v<0.5)
+      if (v<0.5f)
         return WindowSplit::WS_LEFT;
       if (v<1.5)
         return WindowSplit::WS_RIGHT;
@@ -759,7 +759,7 @@ namespace dgen
       for (int i=0; i<stripes_count; i++)
       {
         real stripe_type = stripe_types[i];
-        if (stripe_type < 0.5)
+        if (stripe_type < 0.5f)
           sz += wall_stripe_size;
         else if (stripe_type < 1.5 || stripe_type >= 2.5)
           sz += params[F_BASE_WINDOW_STRIPE_SIZE];
@@ -787,7 +787,7 @@ namespace dgen
         real stripe_type = right_end ? stripe_types[stripe_types.size() - i - 1] : stripe_types[i];
         real stripe_size = 0;
 
-        if (stripe_type < 0.5)
+        if (stripe_type < 0.5f)
         {
           //wall stripe
           make_stripe_wall(wallM, intM, window_quality >= WindowQuality::WQ_LOW,
@@ -911,11 +911,11 @@ namespace dgen
 
     if (quality.quality_level == ModelQuality::LOW)
     {
-      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0), vec3(1,0,0), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(0,0,-1)));
-      make_quad(wallM, Quad(vec3(0,0, 0), vec2(0,0), vec3(0,1,0), vec2(0, 0.5), vec3(1,0,0), vec2(0.5, 0), vec3(0,0,1)));
-      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0.5), vec3(0,1,0), vec2(0, 0.5), vec3(0,0,1), vec2(0.5, 0), vec3(-1,0,0)));
-      make_quad(wallM, Quad(vec3(1,0,-1), vec2(0,0.5), vec3(0,0,1), vec2(0.5, 0), vec3(0,1,0), vec2(0, 0.5), vec3(1,0,0)));
-      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0.5,0), vec3(0,0,1), vec2(0.5, 0), vec3(1,0,0), vec2(0, 0.5), vec3(0,-1,0)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0), vec3(1,0,0), vec2(0.5f, 0), vec3(0,1,0), vec2(0, 0.5f), vec3(0,0,-1)));
+      make_quad(wallM, Quad(vec3(0,0, 0), vec2(0,0), vec3(0,1,0), vec2(0, 0.5f), vec3(1,0,0), vec2(0.5f, 0), vec3(0,0,1)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0,0.5f), vec3(0,1,0), vec2(0, 0.5f), vec3(0,0,1), vec2(0.5f, 0), vec3(-1,0,0)));
+      make_quad(wallM, Quad(vec3(1,0,-1), vec2(0,0.5f), vec3(0,0,1), vec2(0.5f, 0), vec3(0,1,0), vec2(0, 0.5f), vec3(1,0,0)));
+      make_quad(wallM, Quad(vec3(0,0,-1), vec2(0.5f,0), vec3(0,0,1), vec2(0.5f, 0), vec3(1,0,0), vec2(0, 0.5f), vec3(0,-1,0)));
 
       //make_roof_segment(wallM, wallM, params[F_ROOF_BASE_HEIGHT_Q], params[F_ROOF_HEIGHT_Q],
       //                  true, true,
@@ -930,7 +930,7 @@ namespace dgen
 
       real size_w = calculate_building_width(params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE]);
       real height = params[F_BOTTOM_OFFSET_Q] + params[F_TOP_OFFSET_Q];
-      for (int i=0;i<params[I_FLOORS_COUNT]-0.5;i++)
+      for (int i=0;i<params[I_FLOORS_COUNT]-0.5f;i++)
         height = height + 1;
       real start_x = 0;
       vec3 start_point = vec3(start_x,0,0);
@@ -950,17 +950,17 @@ namespace dgen
       make_section(false, false, vec3(start_x,0,-size_w), size_l, height, params[I_SS_CODE], params[I_SS_STRIPES], params[F_SS_WALL_STRIPE_SIZE],
                                 true, vec3(0,0,1), vec3(-1,0,0), wq, bq);
 
-      original_sizes = dvec3(size_l, height, size_w);
+      original_sizes = vec3(size_l, height, size_w);
     }
 
     make_roof_segment(wallM, roofM, original_sizes.y*params[F_ROOF_BASE_HEIGHT_Q], original_sizes.y*params[F_ROOF_HEIGHT_Q],
                       params[F_ROOF_SIDE_SLOPE_SIZE],
                       Quad(vec3(-original_sizes.z*params[F_ROOF_OVERSIZE_X], original_sizes.y, original_sizes.z*params[F_ROOF_OVERSIZE_Z]), 
-                           vec2(0.5,0.5),
+                           vec2(0.5f,0.5f),
                            vec3(original_sizes.x*(1+2*params[F_ROOF_OVERSIZE_X]),0,0), 
-                           vec2(0.5, 0),
+                           vec2(0.5f, 0),
                            vec3(0,0,-1.0f*original_sizes.z*(1+2*params[F_ROOF_OVERSIZE_Z])), 
-                           vec2(0, 0.5),
+                           vec2(0, 0.5f),
                            vec3(0,1,0)));
 
     std::vector<std::vector<real> *> models = {&wallM, &windowsM, &intM, &woodenM, &metalM, &roofM, &doorM};
@@ -983,7 +983,7 @@ namespace dgen
         k++;
       }
     }
-    dmat43 sc2 = scale(ident<dfloat>(), dvec3(params[F_BUILDING_LENGTH], params[F_BUILDING_HEIGHT], params[F_BUILDING_WIDTH])/original_sizes);
+    mat43 sc2 = scale(ident<real>(), vec3(params[F_BUILDING_LENGTH], params[F_BUILDING_HEIGHT], params[F_BUILDING_WIDTH])/original_sizes);
     transform(model, sc2);
 
     if (quality.quality_level <= ModelQuality::MEDIUM)
@@ -995,5 +995,10 @@ namespace dgen
   PartOffsets create_building_2(const std::vector<dfloat> &params, std::vector<dfloat> &model, ModelQuality quality)
   {
     return create_building_2t<dfloat>(params, model, quality);
+  }
+
+  PartOffsets create_building_2f(const std::vector<float> &params, std::vector<float> &model, ModelQuality quality)
+  {
+    return create_building_2t<float>(params, model, quality);
   }
 }

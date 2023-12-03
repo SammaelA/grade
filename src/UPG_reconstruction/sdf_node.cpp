@@ -2,6 +2,7 @@
 
 namespace upg
 {
+  AABB SdfGenInstance::scene_bbox;
   class PrimitiveSdfNode : public SdfNode
   {
   public:
@@ -62,42 +63,34 @@ namespace upg
 
   class SphereSdfNode : public PrimitiveSdfNode
   {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    static constexpr int RADIUS = 3;
+    static constexpr int RADIUS = 0;
   public:
     SphereSdfNode(unsigned id) : PrimitiveSdfNode(id) { name = "Sphere"; }
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      float d = std::max(1e-9f, glm::length(glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]) - pos));
+      float d = std::max(1e-9f, glm::length(pos));
       
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 4);
-        (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/d;
-        (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/d;
-        (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/d;
-        (*ddist_dp)[offset+3] = -1;
+        ddist_dp->resize(offset + 1);
+        (*ddist_dp)[offset] = -1;
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/d;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/d;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/d;
+        (*ddist_dpos)[0] = pos.x/d;
+        (*ddist_dpos)[1] = pos.y/d;
+        (*ddist_dpos)[2] = pos.z/d;
       }
 
       return d - p[RADIUS];
     }
 
-    virtual unsigned param_cnt() const override { return 4; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
+      float max_r = 0.5*length(scene_bbox.max_pos-scene_bbox.min_pos);
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "center_z"});
-      params.push_back({1,0.01,10, ParameterType::DIFFERENTIABLE, "radius"});
+      params.push_back({1,0.01f*max_r,max_r, ParameterType::DIFFERENTIABLE, "radius"});
       return params;
     }
   };
@@ -344,7 +337,6 @@ namespace upg
     static constexpr int MOVE_X = 0;
     static constexpr int MOVE_Y = 1;
     static constexpr int MOVE_Z = 2;
-    static constexpr int RADIUS = 3;
   public:
     MoveSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Move"; }
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
@@ -357,7 +349,7 @@ namespace upg
         offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
       }
-      float d = child->get_distance(pos - glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]));
+      float d = child->get_distance(pos - glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]), ddist_dp, ddist_dpos);
 
       if (ddist_dp)
       {
@@ -380,12 +372,12 @@ namespace upg
       return d;
     }
     virtual unsigned param_cnt() const override { return 3; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_x"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_y"});
-      params.push_back({0,-5,5, ParameterType::DIFFERENTIABLE, "move_z"});
+      params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "move_x"});
+      params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "move_y"});
+      params.push_back({0,scene_bbox.min_pos.z,scene_bbox.max_pos.z, ParameterType::DIFFERENTIABLE, "move_z"});
       return params;
     }
   };
@@ -429,7 +421,7 @@ namespace upg
       return std::min(d1,d2);
     }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override { return {}; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
   };
 
   ProceduralSdf SdfGenInstance::generate(std::span<const float> parameters)
@@ -469,7 +461,7 @@ namespace upg
       }
       SdfNode *node = sdf_node_by_node_type_id(n, i);
       all_nodes.push_back(std::unique_ptr<SdfNode>(node));
-      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block());
+      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block(scene_bbox));
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       

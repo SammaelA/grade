@@ -1,6 +1,15 @@
 #pragma once
-#include <boost/serialization/library_version_type.hpp>
+
+/* This <boost/serialization/library_version_type.hpp> include guards against
+ * an issue in boost::serialization from boost 1.74.0 that leads to compiler
+ * error "'library_version_type' is not a member of 'boost::serialization'"
+ * when including <boost/serialization/unordered_map.hpp>. More details
+ * in ticket https://github.com/boostorg/serialization/issues/219
+ */
 #include <boost/serialization/version.hpp>
+#if BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 == 74
+#include <boost/serialization/library_version_type.hpp>
+#endif
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
@@ -25,7 +34,6 @@
 #include "texture_save_manager.h"
 #include "graphics_utils/texture_atlas.h"
 #include "tinyEngine/engine.h"
-
 
 namespace boost
 {

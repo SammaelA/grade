@@ -47,6 +47,7 @@ namespace dgen
         std::string name = "buildings_2";
         gen.name = name;
         gen.generator = create_building_2;
+        gen.gen_not_diff = create_building_2f;
         gen.params_regularizer = default_parameters_reg;
         gen.model_regularizer = default_model_reg;
         gen.generator_description_blk_path = "buildings_2_gen_parameters_description.blk";

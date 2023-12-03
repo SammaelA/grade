@@ -30,4 +30,5 @@ namespace upg
   float get_image_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model);
   float get_model_based_quality(const ReconstructionReference &reference, const ComplexModel &reconstructed_model);
   void  render_model_turntable(const Block &hydra_settings, const ComplexModel &model);
+  std::vector<CameraSettings> get_cameras_uniform_sphere(CameraSettings orig_camera, int cams_n, float distance);
 }

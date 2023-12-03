@@ -121,4 +121,6 @@ namespace upg
                                                    const Block &settings, const UPGReconstructionResult &start_params);
   std::shared_ptr<UPGOptimizer> get_optimizer_memetic(UPGOptimizableFunction *_func, 
                                                       const Block &settings, const UPGStructure &_structure);
+  std::shared_ptr<UPGOptimizer> get_optimizer_CHC(UPGOptimizableFunction *_func, 
+                                                  const Block &settings, const UPGStructure &_structure);
 }
