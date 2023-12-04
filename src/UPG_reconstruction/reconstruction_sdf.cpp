@@ -262,7 +262,7 @@ namespace upg
       {
         float od = sdf.get_distance(p) - 0.01;
         if (od < 0)
-          d += SQR(d);
+          d += SQR(od);
       }
 
       return d/reference.points.size();
