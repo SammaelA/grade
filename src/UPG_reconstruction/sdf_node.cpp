@@ -116,22 +116,32 @@ namespace upg
       glm::vec3 q = abs(pos_in_new_space) - size;
       
       float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
-      float d = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0))) + std::min(std::max(q.y, q.z), 0.f);
+      float d = std::max(1e-9f, glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0))) + std::min(std::max(q.y, q.z), 0.f));
 
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
-        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset] = -1;
-        (*ddist_dp)[offset+1] = -1;
-        (*ddist_dp)[offset+2] = -1;
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/pos_dist;
+        //? Считаю производные по параметрам - длины сторон бокса (по x, y, z)
+        bool is_bigger = (std::abs(pos_in_new_space.x) - p[SIZE_X]) > 0;
+        (*ddist_dp)[offset] = is_bigger * (-(std::abs(pos_in_new_space.x) - p[SIZE_X]) / d);
+
+        is_bigger = (std::abs(pos_in_new_space.y) - p[SIZE_Y]) > 0;
+        (*ddist_dp)[offset+1] = is_bigger * (-(std::abs(pos_in_new_space.y) - p[SIZE_Y]) / d);
+
+        is_bigger = (std::abs(pos_in_new_space.z) - p[SIZE_Z]) > 0;
+        (*ddist_dp)[offset+2] = is_bigger * (-(std::abs(pos_in_new_space.z) - p[SIZE_Z]) / d);
+
+        //? Производные по параметру рos - позиции точки
+        is_bigger = (std::abs(pos_in_new_space.x) - p[SIZE_X]) > 0;
+        (*ddist_dpos)[0] = is_bigger * pos_in_new_space.x / std::abs(pos_in_new_space.x) * (std::abs(pos_in_new_space.x) - p[SIZE_X]) / d;
+
+        is_bigger = (std::abs(pos_in_new_space.y) - p[SIZE_Y]) > 0;
+        (*ddist_dpos)[1] = is_bigger * pos_in_new_space.y / std::abs(pos_in_new_space.y) * (std::abs(pos_in_new_space.y) - p[SIZE_Y]) / d;
+
+        is_bigger = (std::abs(pos_in_new_space.z) - p[SIZE_Z]) > 0;
+        (*ddist_dpos)[2] = is_bigger * pos_in_new_space.z / std::abs(pos_in_new_space.z) * (std::abs(pos_in_new_space.z) - p[SIZE_Z]) / d;
       }
 
       return d;
