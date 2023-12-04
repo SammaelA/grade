@@ -102,6 +102,56 @@ namespace upg
     out[2] = v.z;
   }
 
+  void ComplexRotateNode_apply(const my_float *in, my_float *out)
+  {
+    for (int i=0;i<3;i++)
+      out[i] = in[7 + i] - in[4 + i];
+    my_float data[7] = {in[0], in[1], in[2], in[3], out[0], out[1], out[2]};
+    RotateNode_apply(data, out);
+    for (int i=0;i<3;i++)
+      out[i] += in[4 + i];
+  }
+
+  void SpinNode_8_apply(const my_float *in, my_float *out)
+  {
+    my_float y = 1;
+    for (int i = 1; i < 8; ++i)
+    {
+      int j = 0;
+      for (my_float ang = 1; ang <= 8; ++ang)
+      {
+        my_float prev_angle = (ang - 1) * M_PI / 4.0;
+        my_float angle = ang * M_PI / 4.0;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 1] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
+
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 3] = cos(prev_angle) * in[i];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 4] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 5] = sin(prev_angle) * in[i];
+
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 6] = cos(angle) * in[i - 1];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 7] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 8] = sin(angle) * in[i - 1];
+
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 0] = cos(angle) * in[i];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 1] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 2] = sin(angle) * in[i];
+
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 3] = cos(angle) * in[i - 1];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 4] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 5] = sin(angle) * in[i - 1];
+
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 6] = cos(prev_angle) * in[i];
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 7] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 8] = sin(prev_angle) * in[i];
+
+        ++j;
+      }
+      ++y;
+    }
+  }
+
   class FreeTriangleNode : public PrimitiveNode
   {
   public:
@@ -162,47 +212,39 @@ namespace upg
     }
   };
 
-  template <int N>
-  class SpinNode : public PrimitiveNode
+  class SpinNode_8 : public PrimitiveNode
   {
   public:
-    SpinNode(unsigned id) : PrimitiveNode(id) { name = "Spin"; }
+    SpinNode_8(unsigned id) : PrimitiveNode(id) { name = "Spin_8"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      my_float data[N];
-      for (int i = 0; i < N; ++i)
+      my_float data[8];
+      for (int i = 0; i < 8; ++i)
       {
         data[i] = p[i];
       }
       UniversalGenMesh mesh;
+      mesh.pos.resize((8 - 1) * 8 * 2 * 9);
       //creating spin mesh
-      my_float y = 1;
-      for (int i = 1; i < N; ++i, ++y)
+      /*if (out_jac)
       {
-        for (my_float ang = 1; ang <= 8; ++ang)
-        {
-          my_float prev_angle = (ang - 1) * M_PI / 4.0;
-          my_float angle = ang * M_PI / 4.0;
-          add_tri({cos(prev_angle) * data[i - 1], y - 1, sin(prev_angle) * data[i - 1]}, 
-                   {cos(prev_angle) * data[i], y, sin(prev_angle) * data[i]},
-                   {cos(angle) * data[i - 1], y - 1, sin(angle) * data[i - 1]}, mesh);
-          add_tri({cos(angle) * data[i], y, sin(prev_angle) * data[i]}, 
-                   {cos(angle) * data[i - 1], y - 1, sin(angle) * data[i - 1]},
-                   {cos(prev_angle) * data[i], y, sin(prev_angle) * data[i]}, mesh);
-        }
+        out_jac->resize((8 - 1) * 8 * 2 * 9, 8);
+        ENZYME_EVALUATE_WITH_DIFF(SpinNode_8_apply, 8, (8 - 1) * 8 * 2 * 9, p.data(), mesh.pos.data(), out_jac->data());
       }
+      else*/
+        SpinNode_8_apply(p.data(), mesh.pos.data());
       return mesh;
     }
     virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
     {
       std::vector<ParametersDescription::Param> params;
-      for (int i = 0; i < N; i++)
+      for (int i = 0; i < 8; i++)
         params.push_back({0, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "spline_" + std::to_string(i)});
       return params;
     }
     unsigned param_cnt() const override
     {
-      return N;
+      return 8;
     }
   };
 
@@ -497,6 +539,116 @@ namespace upg
     }
   };
 
+  class ComplexRotateNode : public OneChildNode
+  {
+    static constexpr int AX_X = 0;
+    static constexpr int AX_Y = 1;
+    static constexpr int AX_Z = 2;
+    static constexpr int ANGLE = 3;
+    static constexpr int OFF_X = 4;
+    static constexpr int OFF_Y = 5;
+    static constexpr int OFF_Z = 6;
+
+  public:
+    ComplexRotateNode(unsigned id) : OneChildNode(id) { name = "ComplexRotate"; }
+
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      /*my_float axis_x = p.get();
+      my_float axis_y = p.get();
+      my_float axis_z = p.get();
+      my_float angle = p.get();*/
+      UniversalGenJacobian child_jac;
+      UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
+      //applying rotating
+      vec3 ax = {p[AX_X], p[AX_Y], p[AX_Z]};
+      mat43 matr = get_any_rot_mat(ax, p[ANGLE]);
+      if (out_jac)
+      {
+        out_jac->resize(child_jac.get_xn(),child_jac.get_yn() + 4);
+        UniversalGenJacobian G;
+        G.resize(child_jac.get_xn(),child_jac.get_xn());
+        for (int i = 0; i < mesh.pos.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(mesh.pos[i]);
+          x.push_back(mesh.pos[i + 1]);
+          x.push_back(mesh.pos[i + 2]);
+          UniversalGenJacobian tmp;
+          tmp.resize(3, 10);
+          ENZYME_EVALUATE_WITH_DIFF(ComplexRotateNode_apply, 10, 3, x.data(), mesh.pos.data() + i, tmp.data());
+          for (int a = 0; a < 7; ++a)
+          {
+            for (int b = 0; b < 3; ++b)
+            {
+              out_jac->at(a, i + b) = tmp.at(a, b);
+              if (a < 3)
+              {
+                G.at(i + a, i + b) = tmp.at(7 + a, b);
+              }
+            }
+          }
+        }
+        for (int i=0;i<child_jac.get_yn();i++)
+        {
+          for (int j=0;j<child_jac.get_xn();j++)
+          {
+            for (int u = 0; u < child_jac.get_xn();u++)
+            {
+              if (u == 0)
+              {
+                out_jac->at(7+i, j) = G.at(u, j)*child_jac.at(i,u);
+              }
+              else
+              {
+                out_jac->at(7+i, j) += G.at(u, j)*child_jac.at(i,u);
+              }
+            }
+          }
+        } 
+      }
+      else
+      {
+        for (int i = 0; i < mesh.pos.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(mesh.pos[i]);
+          x.push_back(mesh.pos[i + 1]);
+          x.push_back(mesh.pos[i + 2]);
+          ComplexRotateNode_apply(x.data(), mesh.pos.data() + i);
+        }
+      }
+      matr = dgen::transposedInverse3x3(matr);
+      for (int i = 0; i + 3 <= mesh.norm.size(); i += 3)
+      {
+        vec3 v = {mesh.norm[i], mesh.norm[i + 1], mesh.norm[i + 2]};
+        v = mulv(matr, v);
+        mesh.norm[i] = v.x;
+        mesh.norm[i + 1] = v.y;
+        mesh.norm[i + 2] = v.z;
+      }
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
+      params.push_back({1.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      params.push_back({0.0f, -2*PI, 2*PI, ParameterType::DIFFERENTIABLE, "angle"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_x"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_y"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_z"});
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 7;
+    }
+  };
+
   class TwoChildNode : public TransformNode
   {
   protected:
@@ -592,6 +744,12 @@ namespace upg
         break;
       case 6:
         node = new MergeNode(id);
+        break;
+      case 7:
+        node = new SpinNode_8(id);
+        break;
+      case 8:
+        node = new ComplexRotateNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);
