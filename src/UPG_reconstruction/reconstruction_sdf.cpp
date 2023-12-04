@@ -50,7 +50,7 @@ namespace upg
             //sphere tracing
             int iter = 0;
             float d = sdf.get_distance(p0);
-            while (iter < 100 && d > 1e-6 && d < 1e6)
+            while (iter < 1000 && d > 1e-6 && d < 1e6)
             {
               p0 += d*dir;
               d = sdf.get_distance(p0);
@@ -97,7 +97,7 @@ namespace upg
 
       int iter = 0;
       float d = sdf.get_distance(p0);
-      while (iter < 100 && d > 1e-6 && d < 1e6)
+      while (iter < 1000 && d > 1e-6 && d < 1e6)
       {
         p0 += d*dir;
         d = sdf.get_distance(p0);
