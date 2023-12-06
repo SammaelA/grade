@@ -146,9 +146,10 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "size_x"});
-      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "size_y"});
-      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "size_z"});
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
+      params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "size_z"});
 
       return params;
     }
