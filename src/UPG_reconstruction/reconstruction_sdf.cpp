@@ -25,19 +25,23 @@ namespace upg
     return glm::normalize(p2-p1);
   }
 
-  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp)
+  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert = true)
   {
     glm::mat4 projInv = glm::inverse(camera.get_proj());
     glm::mat4 viewInv = glm::inverse(camera.get_view());
+    //set light somewhere to the side 
+    glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
     int spp_a = MAX(1,floor(sqrtf(spp)));
     unsigned char *data = new unsigned char[4*image_w*image_h];
 
     #pragma omp parallel for
     for (int yi=0;yi<image_h;yi++)
     {
+      std::vector<float> cur_grad;
+      std::vector<float> ddist_dpos = {0,0,0};
       for (int xi=0;xi<image_w;xi++)
       {
-        float c = 0;
+        glm::vec3 color = {0,0,0};
         for (int yp=0;yp<spp_a;yp++)
         {
           for (int xp=0;xp<spp_a;xp++)
@@ -57,13 +61,24 @@ namespace upg
               iter++;
             }
             if (d <= 1e-6)
-              c++;
+            {
+              if (lambert)
+              {
+                cur_grad.clear();
+                sdf.get_distance(p0, &cur_grad, &ddist_dpos);
+                glm::vec3 n = glm::normalize(glm::vec3(ddist_dpos[0], ddist_dpos[1], ddist_dpos[2]));
+                color += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
+              }
+              else
+                color += glm::vec3(1,1,1);
+            }
           }
         }
-        unsigned char color = 255*(c/SQR(spp_a));
-        data[4*(yi*image_w+xi)+0] = color;
-        data[4*(yi*image_w+xi)+1] = color;
-        data[4*(yi*image_w+xi)+2] = color;
+        if (!lambert)
+          color = {1,1,1};
+        data[4*(yi*image_w+xi)+0] = 255*(color.x/SQR(spp_a));
+        data[4*(yi*image_w+xi)+1] = 255*(color.y/SQR(spp_a));
+        data[4*(yi*image_w+xi)+2] = 255*(color.z/SQR(spp_a));
         data[4*(yi*image_w+xi)+3] = 255;
       }
     }
