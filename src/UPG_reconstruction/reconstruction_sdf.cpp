@@ -158,6 +158,7 @@ namespace upg
     CameraSettings cam;
     cam.target = 0.5f*(bbox.min_pos + bbox.max_pos);
     cam.origin = cam.target + glm::vec3(0,0,-d);
+    cam.up = glm::vec3(0,1,0);
 
     auto cameras = get_cameras_uniform_sphere(cam, 64, d);
 
@@ -165,8 +166,8 @@ namespace upg
     float mse = 0.0;
     for (auto &cam : cameras)
     {
-      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4);
-      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4);
+      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 1, false);
+      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 1, false);
       mse += ImageMetric::get(t1, t2);
     }
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
