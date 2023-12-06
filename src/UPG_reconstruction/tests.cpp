@@ -1751,7 +1751,7 @@ fail: debug("FAILED\n");
       debug("FAILED %d != %d\n", res.size(), 1);
     
     bool str_eq = true;
-    std::vector<uint16_t> ref_struct = {3,3,2,1,2,1,3,2,1,2,1};
+    std::vector<uint16_t> ref_struct = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1};
     for (int i=0;i<std::min(res[0].structure.s.size(), ref_struct.size());i++)
        str_eq = str_eq && (res[0].structure.s[i] == ref_struct[i]);
     debug(" 22.2. %-64s", "Preserved structure ");
@@ -1761,7 +1761,7 @@ fail: debug("FAILED\n");
       debug("FAILED\n");
     
     debug(" 22.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 4*4)
+    if (res[0].parameters.p.size() == 4*8)
       debug("PASSED\n");
     else
       debug("FAILED\n");
