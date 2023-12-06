@@ -74,8 +74,6 @@ namespace upg
             }
           }
         }
-        if (!lambert)
-          color = {1,1,1};
         data[4*(yi*image_w+xi)+0] = 255*(color.x/SQR(spp_a));
         data[4*(yi*image_w+xi)+1] = 255*(color.y/SQR(spp_a));
         data[4*(yi*image_w+xi)+2] = 255*(color.z/SQR(spp_a));
@@ -126,7 +124,7 @@ namespace upg
     AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
     
     cloud.outside_points.reserve(points);
-    while (cloud.outside_points.size() < points)
+    while (cloud.outside_points.size() < 0)
     {
       glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
                               urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
