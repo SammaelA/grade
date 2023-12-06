@@ -1779,6 +1779,77 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 80);
   }
 
+  //TEST 23 BOX SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void test_23()
+  {
+    srand(time(NULL));
+    debug("TEST 23. BOX SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+            params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
+            structure:arr = {2,4}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1,-0.15,-0.1,0.41,0.43,0.61}    
+            structure:arr = {2,4} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 500
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 23.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("PASSED\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 23.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 4)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 23.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 6)
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 23.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 23.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1796,7 +1867,7 @@ fail: debug("FAILED\n");
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
       test_16, test_17, test_18, test_19, test_20,
-      test_21, test_22
+      test_21, test_22, test_23
     };
 
     for (int i : tests)
