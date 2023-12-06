@@ -97,13 +97,9 @@ namespace upg
 
   class BoxSdNode : public PrimitiveSdfNode
   {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    
-    static constexpr int SIZE_X = 3;
-    static constexpr int SIZE_Y = 4;
-    static constexpr int SIZE_Z = 5;
+    static constexpr int SIZE_X = 0;
+    static constexpr int SIZE_Y = 1;
+    static constexpr int SIZE_Z = 2;
 
   public:
     BoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Box"; }
@@ -112,10 +108,9 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
-      glm::vec3 pos_in_new_space = pos - glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]);
-      glm::vec3 q = abs(pos_in_new_space) - size;
+      glm::vec3 q = abs(pos) - size;
       
-      float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
+      float pos_dist = std::max(1e-9f, glm::length(pos));
       float d = std::max(1e-9f, glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0))) + std::min(std::max(q.y, q.z), 0.f));
 
       if (ddist_dp)
@@ -124,24 +119,24 @@ namespace upg
         ddist_dp->resize(offset + 3);
 
         //? Считаю производные по параметрам - длины сторон бокса (по x, y, z)
-        bool is_bigger = (std::abs(pos_in_new_space.x) - p[SIZE_X]) > 0;
-        (*ddist_dp)[offset] = is_bigger * (-(std::abs(pos_in_new_space.x) - p[SIZE_X]) / d);
+        bool is_bigger = (std::abs(pos.x) - p[SIZE_X]) > 0;
+        (*ddist_dp)[offset] = is_bigger * (-(std::abs(pos.x) - p[SIZE_X]) / d);
 
-        is_bigger = (std::abs(pos_in_new_space.y) - p[SIZE_Y]) > 0;
-        (*ddist_dp)[offset+1] = is_bigger * (-(std::abs(pos_in_new_space.y) - p[SIZE_Y]) / d);
+        is_bigger = (std::abs(pos.y) - p[SIZE_Y]) > 0;
+        (*ddist_dp)[offset+1] = is_bigger * (-(std::abs(pos.y) - p[SIZE_Y]) / d);
 
-        is_bigger = (std::abs(pos_in_new_space.z) - p[SIZE_Z]) > 0;
-        (*ddist_dp)[offset+2] = is_bigger * (-(std::abs(pos_in_new_space.z) - p[SIZE_Z]) / d);
+        is_bigger = (std::abs(pos.z) - p[SIZE_Z]) > 0;
+        (*ddist_dp)[offset+2] = is_bigger * (-(std::abs(pos.z) - p[SIZE_Z]) / d);
 
         //? Производные по параметру рos - позиции точки
-        is_bigger = (std::abs(pos_in_new_space.x) - p[SIZE_X]) > 0;
-        (*ddist_dpos)[0] = is_bigger * pos_in_new_space.x / std::abs(pos_in_new_space.x) * (std::abs(pos_in_new_space.x) - p[SIZE_X]) / d;
+        is_bigger = (std::abs(pos.x) - p[SIZE_X]) > 0;
+        (*ddist_dpos)[0] = is_bigger * pos.x / std::abs(pos.x) * (std::abs(pos.x) - p[SIZE_X]) / d;
 
-        is_bigger = (std::abs(pos_in_new_space.y) - p[SIZE_Y]) > 0;
-        (*ddist_dpos)[1] = is_bigger * pos_in_new_space.y / std::abs(pos_in_new_space.y) * (std::abs(pos_in_new_space.y) - p[SIZE_Y]) / d;
+        is_bigger = (std::abs(pos.y) - p[SIZE_Y]) > 0;
+        (*ddist_dpos)[1] = is_bigger * pos.y / std::abs(pos.y) * (std::abs(pos.y) - p[SIZE_Y]) / d;
 
-        is_bigger = (std::abs(pos_in_new_space.z) - p[SIZE_Z]) > 0;
-        (*ddist_dpos)[2] = is_bigger * pos_in_new_space.z / std::abs(pos_in_new_space.z) * (std::abs(pos_in_new_space.z) - p[SIZE_Z]) / d;
+        is_bigger = (std::abs(pos.z) - p[SIZE_Z]) > 0;
+        (*ddist_dpos)[2] = is_bigger * pos.z / std::abs(pos.z) * (std::abs(pos.z) - p[SIZE_Z]) / d;
       }
 
       return d;
@@ -162,12 +157,8 @@ namespace upg
 
   class CylinderSdNode : public PrimitiveSdfNode
   {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    
-    static constexpr int HEIGHT = 3;
-    static constexpr int RADIUS = 4;
+    static constexpr int HEIGHT = 0;
+    static constexpr int RADIUS = 1;
 
   public:
     CylinderSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Cylinder"; }
@@ -175,10 +166,9 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 pos_in_new_space = pos - glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]);
-      glm::vec2 vec_d = glm::abs(glm::vec2(glm::length(glm::vec2(pos_in_new_space.x, pos_in_new_space.z)), pos_in_new_space.y)) - glm::vec2(p[RADIUS], p[HEIGHT]);
+      glm::vec2 vec_d = glm::abs(glm::vec2(glm::length(glm::vec2(pos.x, pos.z)), pos.y)) - glm::vec2(p[RADIUS], p[HEIGHT]);
       
-      float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
+      float pos_dist = std::max(1e-9f, glm::length(pos));
       float d = std::min(std::max(vec_d.x, vec_d.y), 0.f) + glm::length(glm::max(vec_d, glm::vec2(0, 0)));
 
       if (ddist_dp)
@@ -186,8 +176,8 @@ namespace upg
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 2);
         
-        float d1 = glm::length(glm::vec2(pos_in_new_space.x, pos_in_new_space.z)) - p[RADIUS];
-        float d2 = abs(pos_in_new_space.y) - p[HEIGHT];
+        float d1 = glm::length(glm::vec2(pos.x, pos.z)) - p[RADIUS];
+        float d2 = abs(pos.y) - p[HEIGHT];
         float l2 = glm::length(glm::max(vec_d, glm::vec2(0, 0)));
 
         //? Calculate derivatives of cylinder radius and height parameters 
@@ -203,20 +193,20 @@ namespace upg
 
         //? Calculate derivatives of point position parameters
         float const_val = pow(std::max(d2, 0.f), 2);
-        float L1_x = (d1 > d2 && d1 < 0) ? pos_in_new_space.x / (d1 + p[RADIUS]) : 0;
-        float L2_x = (d1 > 0) ? pos_in_new_space.x * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
+        float L1_x = (d1 > d2 && d1 < 0) ? pos.x / (d1 + p[RADIUS]) : 0;
+        float L2_x = (d1 > 0) ? pos.x * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
         
         (*ddist_dpos)[0] = L1_x + L2_x;
 
         const_val = pow(std::max(d1, 0.f), 2);
-        float L1_y = (d1 <= d2 && d2 < 0) ? pos_in_new_space.y / abs(pos_in_new_space.y) : 0;
-        float L2_y = (d2 > 0) ? pos_in_new_space.y / abs(pos_in_new_space.y) * d2 / sqrt(const_val + pow(d2, 2)) : 0;
+        float L1_y = (d1 <= d2 && d2 < 0) ? pos.y / abs(pos.y) : 0;
+        float L2_y = (d2 > 0) ? pos.y / abs(pos.y) * d2 / sqrt(const_val + pow(d2, 2)) : 0;
         
         (*ddist_dpos)[1] = L1_y + L2_y;
 
         const_val = pow(std::max(d2, 0.f), 2);
-        float L1_z = (d1 > d2 && d1 < 0) ? pos_in_new_space.z / (d1 + p[RADIUS]) : 0;
-        float L2_z = (d1 > 0) ? pos_in_new_space.z * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
+        float L1_z = (d1 > d2 && d1 < 0) ? pos.z / (d1 + p[RADIUS]) : 0;
+        float L2_z = (d1 > 0) ? pos.z * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
         
         (*ddist_dpos)[2] = L1_z + L2_z;
       }
@@ -237,14 +227,10 @@ namespace upg
   };
 
   class RoundedCylinderSdNode : public PrimitiveSdfNode
-  {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    
-    static constexpr int RA = 3;
-    static constexpr int RB = 4;
-    static constexpr int HEIGHT = 5;
+  {    
+    static constexpr int RA = 0;
+    static constexpr int RB = 1;
+    static constexpr int HEIGHT = 2;
 
   public:
     RoundedCylinderSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "RoundedCylinder"; }
@@ -252,10 +238,9 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 pos_in_new_space = pos - glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]);
-      glm::vec2 vec_d = glm::vec2(glm::length(glm::vec2(pos_in_new_space.x, pos_in_new_space.z)) - 2.0 * p[RA] + p[RB], std::abs(pos_in_new_space.y - p[HEIGHT]));
+      glm::vec2 vec_d = glm::vec2(glm::length(glm::vec2(pos.x, pos.z)) - 2.0 * p[RA] + p[RB], std::abs(pos.y - p[HEIGHT]));
       
-      float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
+      float pos_dist = std::max(1e-9f, glm::length(pos));
       float d = std::min(std::max(vec_d.x, vec_d.y), 0.f) + glm::length(glm::max(vec_d, glm::vec2(0, 0))) - p[RB];
 
       if (ddist_dp)
@@ -269,9 +254,9 @@ namespace upg
         (*ddist_dp)[offset+1] = -1;
         (*ddist_dp)[offset+2] = -1;
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dpos)[0] = pos.x/pos_dist;
+        (*ddist_dpos)[1] = pos.y/pos_dist;
+        (*ddist_dpos)[2] = pos.z/pos_dist;
       }
 
       return d;
@@ -292,11 +277,7 @@ namespace upg
 
   class PyramidSdNode : public PrimitiveSdfNode
   {
-    static constexpr int CENTER_X = 0;
-    static constexpr int CENTER_Y = 1;
-    static constexpr int CENTER_Z = 2;
-    
-    static constexpr int H = 3;
+    static constexpr int H = 0;
 
   public:
     PyramidSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Pyramid"; }
@@ -304,7 +285,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 pos_in_new_space = pos - glm::vec3(p[CENTER_X], p[CENTER_Y], p[CENTER_Z]);
+      glm::vec3 pos_in_new_space = pos;
       float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
 
       float m2 = p[H] * p[H] + 0.25;
@@ -336,9 +317,9 @@ namespace upg
         // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
         (*ddist_dp)[offset+0] = -1;
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/pos_dist;
+        (*ddist_dpos)[0] = pos.x/pos_dist;
+        (*ddist_dpos)[1] = pos.y/pos_dist;
+        (*ddist_dpos)[2] = pos.z/pos_dist;
       }
 
       return d;
