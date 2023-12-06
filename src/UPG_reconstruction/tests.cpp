@@ -1850,6 +1850,111 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 50);
   }
 
+
+  //TEST 24 COMPLEX DETAIL RECONSTRUCTION MEMETIC
+  void test_24()
+  {
+    srand(0);
+    debug("TEST 24. COMPLEX DETAIL RECONSTRUCTION MEMETIC\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+        }
+        step_0 {
+            optimizer_name:s = "memetic"
+            iterations:i = 100
+            verbose:b = true
+        }
+        step_1 {
+            iterations:i = 100
+            verbose:b = true
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+
+    int cnt_x = 8;
+    int cnt_z = 4;
+    glm::vec3 p0(-1,1.2, 0.5);
+    glm::vec3 p1(1, 1, -0.5);
+    
+    float base_r = std::min(abs(p1.x-p0.x)/(cnt_x+1), abs(p1.z-p0.z)/(cnt_z+1));
+
+    std::vector<uint16_t> structure_inv;
+    std::vector<float> params_inv;
+    uint32_t num = 1;
+    for (int i=0;i<cnt_z;i++)
+    {
+      for (int j=0;j<cnt_x;j++)
+      {
+        glm::vec3 p = glm::vec3(p0.x + (j+1+urand(-0.5,0.5))*(p1.x-p0.x)/(cnt_x+1), 
+                                p1.y,
+                                p0.z + (i+1+urand(-0.5,0.5))*(p1.z-p0.z)/(cnt_z+1));
+        float rnd = urand(0.5,1);
+        float r = rnd*base_r;
+        structure_inv.push_back(1);
+        structure_inv.push_back(2);
+        params_inv.push_back(r);
+        params_inv.push_back(p.x);
+        params_inv.push_back(p.y);
+        params_inv.push_back(p.z);
+
+        uint32_t S = 1;
+        while (num>= S && ((num & S) == 0))
+        {
+          structure_inv.push_back(3);
+          S = S << 1;
+        }
+        num++;
+      }
+    }
+
+    structure_inv.push_back(4);
+    structure_inv.push_back(2);
+    structure_inv.push_back(3);
+    params_inv.push_back(0.5*abs(p0.x-p1.x));
+    params_inv.push_back(0.5*abs(p0.y-p1.y));
+    params_inv.push_back(0.5*abs(p0.z-p1.z));
+    params_inv.push_back(0.5*(p0.x+p1.x));
+    params_inv.push_back(0.5*(p0.y+p1.y));
+    params_inv.push_back(0.5*(p0.z+p1.z));
+
+    std::vector<uint16_t> structure = structure_inv;
+    std::vector<float> params = params_inv;
+    for (int i=0;i<structure.size();i++)
+      structure[i] = structure_inv[structure.size()-i-1];
+    for (int i=0;i<params.size();i++)
+      params[i] = params_inv[params.size()-i-1];
+
+    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("structure", structure);
+    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("params", params);
+    settings_blk.get_block("optimization")->get_block("start")->set_arr("structure", structure);
+
+    //return;
+    auto res = reconstruct_sdf(settings_blk);
+    
+    debug(" 24.1. %-64s", "Low optimization loss ");
+    if (res[0].loss_optimizer < 5e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 5e-5);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -1867,7 +1972,7 @@ fail: debug("FAILED\n");
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
       test_16, test_17, test_18, test_19, test_20,
-      test_21, test_22, test_23
+      test_21, test_22, test_23, test_24
     };
 
     for (int i : tests)
