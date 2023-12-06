@@ -185,15 +185,40 @@ namespace upg
       {
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 2);
-        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset] = -1;
-        (*ddist_dp)[offset+1] = -1;
+        
+        float d1 = glm::length(glm::vec2(pos_in_new_space.x, pos_in_new_space.z)) - p[RADIUS];
+        float d2 = abs(pos_in_new_space.y) - p[HEIGHT];
+        float l2 = glm::length(glm::max(vec_d, glm::vec2(0, 0)));
 
-        (*ddist_dpos)[0] = -(p[CENTER_X] - pos.x)/pos_dist;
-        (*ddist_dpos)[1] = -(p[CENTER_Y] - pos.y)/pos_dist;
-        (*ddist_dpos)[2] = -(p[CENTER_Z] - pos.z)/pos_dist;
+        //? Calculate derivatives of cylinder radius and height parameters 
+        float L1_h = (d1 <= d2 && d2 < 0) ? -1 : 0;
+        float L2_h = (d2 > 0) ? -d2 / l2 : 0;
+
+        (*ddist_dp)[offset] = L1_h + L2_h;
+
+        float L1_r = (d1 > d2 && d1 < 0) ? -1 : 0;
+        float L2_r = (d1 > 0) ? -d1 / l2 : 0;
+
+        (*ddist_dp)[offset+1] = L1_r + L2_r;
+
+        //? Calculate derivatives of point position parameters
+        float const_val = pow(std::max(d2, 0.f), 2);
+        float L1_x = (d1 > d2 && d1 < 0) ? pos_in_new_space.x / (d1 + p[RADIUS]) : 0;
+        float L2_x = (d1 > 0) ? pos_in_new_space.x * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
+        
+        (*ddist_dpos)[0] = L1_x + L2_x;
+
+        const_val = pow(std::max(d1, 0.f), 2);
+        float L1_y = (d1 <= d2 && d2 < 0) ? pos_in_new_space.y / abs(pos_in_new_space.y) : 0;
+        float L2_y = (d2 > 0) ? pos_in_new_space.y / abs(pos_in_new_space.y) * d2 / sqrt(const_val + pow(d2, 2)) : 0;
+        
+        (*ddist_dpos)[1] = L1_y + L2_y;
+
+        const_val = pow(std::max(d2, 0.f), 2);
+        float L1_z = (d1 > d2 && d1 < 0) ? pos_in_new_space.z / (d1 + p[RADIUS]) : 0;
+        float L2_z = (d1 > 0) ? pos_in_new_space.z * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
+        
+        (*ddist_dpos)[2] = L1_z + L2_z;
       }
 
       return d;
