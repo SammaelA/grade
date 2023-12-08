@@ -118,10 +118,13 @@ namespace upg
       
       if (worst_best_res > c.loss)
       {
-        debug("%d new best (%f) [", no_diff_function_calls, c.loss);
-        for (auto &v : c.params.differentiable)
-          debug("%f ", v);
-        debug("]\n");
+        if (verbose)
+        {
+          debug("%d new best (%f) [", no_diff_function_calls, c.loss);
+          for (auto &v : c.params.differentiable)
+            debug("%f ", v);
+          debug("]\n");
+        }
         best_population[worst_index] = c;
       }
 
@@ -202,12 +205,13 @@ namespace upg
         {
           if (param_info.type != ParameterType::CONST)
           {
-            logerr("added parameter %s", param_info.name.c_str());
+            //logerr("added parameter %s", param_info.name.c_str());
             borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
           }
         }
       }
 
+     verbose = settings.get_bool("verbose");
      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
      local_opt_block.set_bool("save_intermediate_images", false);
      local_opt_block.set_double("learning_rate", local_learning_rate);
@@ -260,11 +264,14 @@ namespace upg
           current_bins[CLAMP((int)(result_bin_count*c.loss), 0, result_bin_count-1)]++;
         population = new_population;
 
-        debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
-        debug("best res [");
-        for (auto &c : best_population)
-          debug("%.5f ", c.loss);
-        debug("]\n");
+        if (verbose)
+        {
+          debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
+          debug("best res [");
+          for (auto &c : best_population)
+            debug("%.5f ", c.loss);
+          debug("]\n");
+        }
 
         int good_soulutions = 0;
         for (int i=0;i<population_size;i++)
@@ -276,11 +283,12 @@ namespace upg
           if (population[i].loss < good_soulution_thr && (urand() < good_solutions_chance))
             local_search(population[i], local_opt_iters);
 
-        print_result_bins(result_bins);
-        print_result_bins(current_bins);
-        //debug("BINS\n");
-        //for (int i=0;i<100;i++)
-        //  debug("%d) %d\n",i, result_bins[i]);
+        if (verbose)
+        {
+          print_result_bins(result_bins);
+          print_result_bins(current_bins);
+        }
+
         epoch++;
       }
     }
@@ -307,6 +315,7 @@ namespace upg
     float local_learning_rate = 0.01;
     float good_soulution_thr = 0.05;
     float elites_fraction = 0.05;
+    bool verbose = false;
 
     //generator-specific stuff
     UPGStructure structure;

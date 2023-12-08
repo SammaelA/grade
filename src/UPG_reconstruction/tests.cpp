@@ -1576,21 +1576,21 @@ fail: debug("FAILED\n");
     int pcnt_2 = moved_circle.desc.get_total_params_count();
     int pcnt_3 = two_circles.desc.get_total_params_count();
     debug(" 20.1. %-64s", "SDF instances are created with expected number of parameters ");
-    if (pcnt_1 == 4 && pcnt_2 == 7 && pcnt_3 == 14)
+    if (pcnt_1 == 1 && pcnt_2 == 4 && pcnt_3 == 8)
       debug("PASSED\n");
     else
       debug("FAILED %d %d %d\n", pcnt_1, pcnt_2, pcnt_3);
     }
     {
-      std::vector<float> params = {0,1,0, 2};
+      std::vector<float> params = {0.5};
       ProceduralSdf sdf = one_circle.generate(params);
       std::vector<float> ddist,dpos = {0,0,0};
-      std::vector<float> ddist_ref = {0,1,0,-1}, dpos_ref = {0,-1,0};
-      float d1 = sdf.get_distance({0,0,0},&ddist,&dpos);
+      std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
+      float d1 = sdf.get_distance({0,1,0},&ddist,&dpos);
       float d2 = sdf.get_distance({1,0,0});
 
       debug(" 20.2. %-64s", "Distance to circle correct");
-      if (abs(d1 - (-1)) < 1e-6 && abs(d2 - (sqrtf(2)-2)) < 1e-6)
+      if (abs(d1 - (0.5)) < 1e-6 && abs(d2 - (0.5)) < 1e-6)
         debug("PASSED\n");
       else
         debug("FAILED %f %f\n", d1, d2);
@@ -1602,29 +1602,10 @@ fail: debug("FAILED\n");
         dist_2 += std::abs(dpos[i]-dpos_ref[i]);
       
       debug(" 20.3. %-64s", "Derivatives correct");
-      if (ddist.size() == 4 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
+      if (ddist.size() == 1 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
         debug("PASSED\n");
       else
-        debug("FAILED %d %d %d %d\n", ddist.size() == 4, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);
-    }
-    {
-      std::vector<float> params = {1,0,0 ,0,0,0,1.9,  -1,0,0 ,0,0,0,1};
-      ProceduralSdf sdf = two_circles.generate(params);
-      std::vector<float> ddist,dpos = {0,0,0};
-      float d1 = sdf.get_distance({-1,1.1,0},&ddist,&dpos);
-
-      debug(" 20.4. %-64s", "Distance to two triangles correct");
-      if (abs(d1 - 0.1) < 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED %f\n", d1);
-      
-      debug(" 20.5. %-64s", "Sdf merge derivatives correct");
-      if (abs(ddist[0])+abs(ddist[1])+abs(ddist[2])+abs(ddist[3])+abs(ddist[4])+abs(ddist[5])+abs(ddist[6]) < 1e-6 &&
-          abs(ddist[7])+abs(ddist[8])+abs(ddist[9])+abs(ddist[10])+abs(ddist[11])+abs(ddist[12])+abs(ddist[13]) > 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED\n");
+        debug("FAILED %d %d %d %d\n", ddist.size() == 1, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);
     }
   }
 
@@ -1727,11 +1708,12 @@ fail: debug("FAILED\n");
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = true
+            verbose:b = false
         }
         step_1 {
-            iterations:i = 100
-            verbose:b = true
+            learning_rate:r = 0.003
+            iterations:i = 500
+            verbose:b = false
         }
     }
     results {
@@ -1854,13 +1836,13 @@ fail: debug("FAILED\n");
   //TEST 24 COMPLEX DETAIL RECONSTRUCTION MEMETIC
   void test_24()
   {
-    srand(0);
+    srand(time(NULL));
     debug("TEST 24. COMPLEX DETAIL RECONSTRUCTION MEMETIC\n");
     std::string settings = R""""(
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
         } 
     }
     generator {
@@ -1872,10 +1854,11 @@ fail: debug("FAILED\n");
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = true
+            verbose:b = false
         }
         step_1 {
-            iterations:i = 100
+            learning_rate:r = 0.003
+            iterations:i = 500
             verbose:b = true
         }
     }
@@ -1949,10 +1932,10 @@ fail: debug("FAILED\n");
     auto res = reconstruct_sdf(settings_blk);
     
     debug(" 24.1. %-64s", "Low optimization loss ");
-    if (res[0].loss_optimizer < 5e-5)
+    if (res[0].loss_optimizer < 1e-5)
       debug("PASSED\n");
     else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 5e-5);
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
   }
 
   void perform_tests(const Block &blk)
