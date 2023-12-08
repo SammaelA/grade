@@ -124,12 +124,12 @@ namespace upg
     AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
     
     cloud.outside_points.reserve(points);
-    while (cloud.outside_points.size() < 0)
+    while (cloud.outside_points.size() < points)
     {
       glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
                               urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
                               urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
-      if (!bbox.contains(p))
+      if (sdf.get_distance(p) > 0.01)
         cloud.outside_points.push_back(p);
     }
   }
@@ -228,26 +228,29 @@ namespace upg
         out_grad[i] = 0;
 
       double full_d = 0.0;
+      int batch_size = 256;
 
       //main step - minimize SDF values on surface
-      for (const glm::vec3 &p : reference.points)
+      for (int b=0;b<batch_size;b++)
       {
+        const glm::vec3 &p = reference.points[rand()%reference.points.size()];
         cur_grad.clear();
         float d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
         full_d += SQR(d);
         for (int i=0;i<gen_params.size();i++)
-          out_grad[i] += 2*d*cur_grad[i] / reference.points.size();
+          out_grad[i] += 2*d*cur_grad[i] / batch_size;
       }
 
-      for (const glm::vec3 &p : reference.outside_points)
+      for (int b=0;b<batch_size;b++)
       {
+        const glm::vec3 &p = reference.outside_points[rand()%reference.outside_points.size()];
         cur_grad.clear();
-        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams) - 0.01;
+        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
         if (d < 0)
         {
           full_d += SQR(d);
           for (int i=0;i<gen_params.size();i++)
-            out_grad[i] += 2*d*cur_grad[i] / reference.points.size();
+            out_grad[i] += 2*d*cur_grad[i] / batch_size;
         }
       }
       //regularization - penalty for outside points with sdf < 0
@@ -270,16 +273,23 @@ namespace upg
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
       ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
       double d = 0.0;
-      for (const glm::vec3 &p : reference.points)
-        d += SQR(sdf.get_distance(p));
-      for (const glm::vec3 &p : reference.outside_points)
+      int batch_size = 256;
+
+      //main step - minimize SDF values on surface
+      for (int b=0;b<batch_size;b++)
       {
-        float od = sdf.get_distance(p) - 0.01;
+        const glm::vec3 &p = reference.points[rand()%reference.points.size()];
+        d += SQR(sdf.get_distance(p));
+      }
+      for (int b=0;b<batch_size;b++)
+      {
+        const glm::vec3 &p = reference.outside_points[rand()%reference.outside_points.size()];
+        float od = sdf.get_distance(p);
         if (od < 0)
           d += SQR(od);
       }
 
-      return d/reference.points.size();
+      return d/(2*batch_size);
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) override
     {
