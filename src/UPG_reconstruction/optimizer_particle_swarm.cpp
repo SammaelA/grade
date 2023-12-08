@@ -18,6 +18,9 @@ namespace upg
 
       OptParams best_params;
       float best_loss;
+      
+      std::shared_ptr<UPGOptimizer> local_optimizer;
+      int local_opt_num = 0;
     };
 
     Creature initialize_creature()
@@ -90,6 +93,26 @@ namespace upg
       no_diff_function_calls++;
     }
 
+    void local_search(Creature &c, int iterations)
+    {
+      if (!c.local_optimizer)
+      {
+        UPGReconstructionResult res;
+        res.structure = structure;
+        res.parameters.p = c.params.differentiable;//TODO: fixme
+
+        c.local_optimizer = get_optimizer_adam(func, local_opt_block, res);
+      }
+      c.local_optimizer->optimize(iterations);
+      UPGReconstructionResult lo_res = c.local_optimizer->get_best_results()[0];
+
+      c.params = func->gen_params_to_opt_params(lo_res.parameters.p, pd);
+      c.loss = lo_res.loss_optimizer;
+      c.local_opt_num++;
+      diff_function_calls += iterations;
+      register_new_param(c);
+    }
+
     void print_result_bins(int *bins)
     {
       int total_cnt = 0;
@@ -144,6 +167,15 @@ namespace upg
      local_opt_block.set_bool("save_intermediate_images", false);
      local_opt_block.set_double("learning_rate", local_learning_rate);
     }
+
+    float dist(const Creature &c1, const Creature &c2)
+    {
+      float dist = 0;
+      for (int i=0;i<borders.size();i++)
+        dist += abs(c1.params[i]-c2.params[i])/abs(borders[i].x-borders[i].y);
+      return dist/borders.size();
+    }
+
     virtual void optimize(int iters = -1) override
     {
       if (iters > 0)
@@ -156,33 +188,60 @@ namespace upg
       float c2 = 1.49445; // social weight
       float r1, r2; // randomizers
 
+      std::vector<float> distances(population_size, 0);
+      std::vector<int> indices(population_size, 0);
+
       while (no_diff_function_calls + diff_function_calls < budget)
-      {
-        
+      {        
+        float total_movement = 0;
         for (auto &c : population)
         {
-          for (int j=0;j<c.velocity.size();j++)
+          for (int i=0;i<population_size;i++)
           {
-            r1 = urand();
-            r2 = urand();
-            c.velocity[j] = (w * c.velocity[j]) +
-                            (c1 * r1 * (c.best_params[j] - c.params[j])) +
-                            (c2 * r2 * (best_population[0].params[j] - c.params[j]));
-          
-            if (c.velocity[j] > abs(borders[j].x-borders[j].y))
-              c.velocity[j] = abs(borders[j].x-borders[j].y);
-            else if (c.velocity[j] < -abs(borders[j].x-borders[j].y))
-              c.velocity[j] = -abs(borders[j].x-borders[j].y);
-          
-            c.params[j] = CLAMP(c.params[j]+c.velocity[j], borders[j].x, borders[j].y);
+            indices[i] = i;
+            distances[i] = dist(c, population[i]);
           }
-          evaluate(c);
+
+          std::sort(indices.begin(), indices.end(), [&distances](int a, int b)-> bool { return distances[a]<distances[b];});
+          std::sort(indices.begin(), indices.begin() + population_size/5, [&](int a, int b)-> bool {return population[a].loss < population[b].loss;});
+
+          OptParams local_best = population[indices[0]].params;
+          if (dist(c, population[indices[0]]) < 1e-5)
+          {
+            for (int j=0;j<c.velocity.size();j++)
+              c.velocity[j] = 0;
+            local_search(c, 1);
+          }
+          else
+          {
+            for (int j=0;j<c.velocity.size();j++)
+            {
+              r1 = urand();
+              r2 = urand();
+              c.velocity[j] = (w * c.velocity[j]) +
+                              (c1 * r1 * (c.best_params[j] - c.params[j])) +
+                              (c2 * r2 * (local_best[j] - c.params[j]));
+            
+              if (c.velocity[j] > abs(borders[j].x-borders[j].y))
+                c.velocity[j] = abs(borders[j].x-borders[j].y);
+              else if (c.velocity[j] < -abs(borders[j].x-borders[j].y))
+                c.velocity[j] = -abs(borders[j].x-borders[j].y);
+            
+              c.params[j] = CLAMP(c.params[j]+c.velocity[j], borders[j].x, borders[j].y);
+            }
+            evaluate(c);
+          }
+          float vlen = 0;
+          for (auto &v : c.velocity)
+            vlen += SQR(v);
+          total_movement += sqrt(vlen)/population_size;
         }
         if (verbose)
         {
           //print_result_bins(result_bins);
           //print_result_bins(current_bins);
         }
+        logerr("total movement %f", total_movement);
 
         epoch++;
       }
@@ -199,7 +258,7 @@ namespace upg
     }
   private:
     //settings
-    int population_size = 2500;
+    int population_size = 1000;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
     float mutation_chance = 0.1;
