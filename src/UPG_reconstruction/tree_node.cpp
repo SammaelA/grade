@@ -5,6 +5,8 @@
 #include "custom_diff_render/autodiff.h"
 namespace upg
 { 
+  const int MESH_REPEATS = 5;
+
   vec3 norm(upg::vec3 v1, upg::vec3 v2);
   vec3 norm(upg::vec3 v);
   void add_rect(upg::vec3 point, upg::vec3 v1, upg::vec3 v2, UniversalGenMesh &mesh);
@@ -110,6 +112,19 @@ namespace upg
     RotateNode_apply(data, out);
     for (int i=0;i<3;i++)
       out[i] += in[4 + i];
+  }
+
+  void ComplexRotateRepeatNode_apply(const my_float *in, my_float *out)
+  {
+    for (int i=0;i<3;i++)
+    {
+      out[i] = in[6 + i];
+    }
+    for (int j = 1; j < MESH_REPEATS; ++j)
+    {
+      my_float data[10] = {in[0], in[1], in[2], 2.0 * PI * (my_float)j / (my_float)MESH_REPEATS, in[3], in[4], in[5], in[6], in[7], in[8]};
+      ComplexRotateNode_apply(data, out + j * 3);
+    }
   }
 
   void SpinNode_8_apply(const my_float *in, my_float *out)
@@ -565,7 +580,7 @@ namespace upg
       mat43 matr = get_any_rot_mat(ax, p[ANGLE]);
       if (out_jac)
       {
-        out_jac->resize(child_jac.get_xn(),child_jac.get_yn() + 4);
+        out_jac->resize(child_jac.get_xn(),child_jac.get_yn() + 7);
         UniversalGenJacobian G;
         G.resize(child_jac.get_xn(),child_jac.get_xn());
         for (int i = 0; i < mesh.pos.size(); i += 3)
@@ -646,6 +661,149 @@ namespace upg
     unsigned param_cnt() const override
     {
       return 7;
+    }
+  };
+
+  class ComplexRotateRepeatNode : public OneChildNode
+  {
+    static constexpr int AX_X = 0;
+    static constexpr int AX_Y = 1;
+    static constexpr int AX_Z = 2;
+    //static constexpr int ANGLE = 3;
+    static constexpr int OFF_X = 3;
+    static constexpr int OFF_Y = 4;
+    static constexpr int OFF_Z = 5;
+
+  public:
+    ComplexRotateRepeatNode(unsigned id) : OneChildNode(id) { name = "ComplexRotateRepeat"; }
+
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      /*my_float axis_x = p.get();
+      my_float axis_y = p.get();
+      my_float axis_z = p.get();
+      my_float angle = p.get();*/
+      UniversalGenJacobian child_jac;
+      UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
+      //applying rotating
+      vec3 ax = {p[AX_X], p[AX_Y], p[AX_Z]};
+      mat43 matr[MESH_REPEATS];
+      for (int q = 0; q < MESH_REPEATS; ++q)
+      {
+        matr[q] = get_any_rot_mat(ax, 2 * PI * q / MESH_REPEATS);
+      }
+      std::vector<my_float> old_mesh;
+      old_mesh.insert(old_mesh.end(), mesh.pos.begin(), mesh.pos.end());
+      mesh.pos.resize(mesh.pos.size() * MESH_REPEATS);
+      if (out_jac)
+      {
+        out_jac->resize(child_jac.get_xn() * MESH_REPEATS,child_jac.get_yn() + 6);
+        UniversalGenJacobian G;
+        G.resize(child_jac.get_xn() * MESH_REPEATS,child_jac.get_xn());
+        for (int i = 0; i < old_mesh.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(old_mesh[i]);
+          x.push_back(old_mesh[i + 1]);
+          x.push_back(old_mesh[i + 2]);
+          UniversalGenJacobian tmp;
+          tmp.resize(3 * MESH_REPEATS, 9);
+          std::vector <my_float> data(3 * MESH_REPEATS);
+          ENZYME_EVALUATE_WITH_DIFF(ComplexRotateRepeatNode_apply, 9, 3 * MESH_REPEATS, x.data(), data.data(), tmp.data());
+          for (int a = 0; a < 6; ++a)
+          {
+            for (int c = 0; c < MESH_REPEATS; ++c)
+            {
+              if (a == 0)
+              {
+                mesh.pos.insert(mesh.pos.begin() + i * (c + 1) + 3 * c, data.begin() + c * 3, data.begin() + 3 + c * 3);
+              }
+              for (int b = 0; b < 3; ++b)
+              {
+                out_jac->at(a, i + c * old_mesh.size() + b) = tmp.at(a, c * 3 + b);
+                if (a < 3)
+                {
+                  G.at(i + a, i + c * old_mesh.size() + b) = tmp.at(6 + a, c * 3 + b);
+                }
+              }
+            }
+          }
+        }
+        for (int i=0;i<child_jac.get_yn();i++)
+        {
+          for (int j=0;j<child_jac.get_xn() * MESH_REPEATS;j++)
+          {
+            for (int u = 0; u < child_jac.get_xn();u++)
+            {
+              if (u == 0)
+              {
+                out_jac->at(6+i, j) = G.at(u, j)*child_jac.at(i,u);
+              }
+              else
+              {
+                out_jac->at(6+i, j) += G.at(u, j)*child_jac.at(i,u);
+              }
+            }
+          }
+        } 
+      }
+      else
+      {
+        for (int i = 0; i < old_mesh.size(); i += 3)
+        {
+          std::vector<my_float> x;
+          x.insert(x.end(), p.begin(), p.end());
+          x.push_back(old_mesh[i]);
+          x.push_back(old_mesh[i + 1]);
+          x.push_back(old_mesh[i + 2]);
+
+          std::vector <my_float> data(3 * MESH_REPEATS);
+          ComplexRotateRepeatNode_apply(x.data(), data.data());
+          for (int a = 0; a < MESH_REPEATS; ++a)
+          {
+            for (int b = 0; b < 3; ++b)
+            {
+              mesh.pos[a * old_mesh.size() + i + b] = data[a * 3 + b];
+            }
+          }
+        }
+      }
+      for (int q = 0; q < MESH_REPEATS; ++q)
+      {
+        matr[q] = dgen::transposedInverse3x3(matr[q]);
+      }
+      old_mesh.clear();
+      old_mesh.insert(old_mesh.end(), mesh.norm.begin(), mesh.norm.end());
+      mesh.norm.resize(mesh.norm.size() * MESH_REPEATS);
+      for (int q = 0; q < MESH_REPEATS; ++q)
+      {
+        for (int i = 0; i + 3 <= old_mesh.size(); i += 3)
+        {
+          vec3 v = {old_mesh[i], old_mesh[i + 1], old_mesh[i + 2]};
+          v = mulv(matr[q], v);
+          mesh.norm[q * old_mesh.size() + i] = v.x;
+          mesh.norm[q * old_mesh.size() + i + 1] = v.y;
+          mesh.norm[q * old_mesh.size() + i + 2] = v.z;
+        }
+      }
+      logerr("XXXX");
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
+      params.push_back({0.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
+      params.push_back({1.0f, 0.0f, 1.0f, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_x"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_y"});
+      params.push_back({0.0f, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "offset_z"});
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 6;
     }
   };
 
@@ -750,6 +908,9 @@ namespace upg
         break;
       case 8:
         node = new ComplexRotateNode(id);
+        break;
+      case 9:
+        node = new ComplexRotateRepeatNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);
