@@ -123,27 +123,27 @@ namespace upg
         my_float prev_angle = (ang - 1) * M_PI / 4.0;
         my_float angle = ang * M_PI / 4.0;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 1] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 1] = (y - 1)/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
 
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 3] = cos(prev_angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 4] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 4] = y/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 5] = sin(prev_angle) * in[i];
 
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 6] = cos(angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 7] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 7] = (y - 1)/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 8] = sin(angle) * in[i - 1];
 
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 0] = cos(angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 1] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 1] = y/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 2] = sin(angle) * in[i];
 
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 3] = cos(angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 4] = y - 1;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 4] = (y - 1)/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 5] = sin(angle) * in[i - 1];
 
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 6] = cos(prev_angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 7] = y;
+        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 7] = y/8;
         out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 8] = sin(prev_angle) * in[i];
 
         ++j;
@@ -224,14 +224,15 @@ namespace upg
         data[i] = p[i];
       }
       UniversalGenMesh mesh;
-      mesh.pos.resize((8 - 1) * 8 * 2 * 9);
+      int mesh_size = (8 - 1) * 8 * 2 * 9;
+      mesh.pos.resize(mesh_size);
       //creating spin mesh
-      /*if (out_jac)
+      if (out_jac)
       {
-        out_jac->resize((8 - 1) * 8 * 2 * 9, 8);
-        ENZYME_EVALUATE_WITH_DIFF(SpinNode_8_apply, 8, (8 - 1) * 8 * 2 * 9, p.data(), mesh.pos.data(), out_jac->data());
+        out_jac->resize(mesh_size, param_cnt());
+        ENZYME_EVALUATE_WITH_DIFF(SpinNode_8_apply, param_cnt(), mesh_size, p.data(), mesh.pos.data(), out_jac->data());
       }
-      else*/
+      else
         SpinNode_8_apply(p.data(), mesh.pos.data());
       return mesh;
     }
