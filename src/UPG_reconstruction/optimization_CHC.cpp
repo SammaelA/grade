@@ -215,7 +215,7 @@ namespace upg
       std::vector<int> indices(population.size(), 0);
       for (int i=0;i<population.size(); i++)
         indices[i] = i;
-      std::random_shuffle(indices.begin(),indices.end());
+      std::shuffle(indices.begin(),indices.end(), std::default_random_engine{});
       std::vector<std::pair<int,int>> pairs(population.size()/2);
       for (int i=0;i<population.size(); i+=2)
         pairs[i/2] = {indices[i], indices[i+1]};

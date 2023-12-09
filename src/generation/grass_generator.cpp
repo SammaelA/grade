@@ -76,7 +76,7 @@ void GrassGenerator::prepare_grass_patches(std::vector<Cell> &cells, int cells_x
         {
             rand_cells[c] = c;
         }
-        std::random_shuffle(rand_cells.begin(),rand_cells.end());
+        std::shuffle(rand_cells.begin(),rand_cells.end(), std::default_random_engine{});
         for (int j=0;j<patches_left;j++)
         {
             add_patch(cells, cells_x, cells_y, rand_cells[j], i);

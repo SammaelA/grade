@@ -57,6 +57,14 @@ struct InstanceDataArrays
             this->positions = b.positions;
             this->instancing = b.instancing;
         }
+        Billboard &operator=(const Billboard &b)
+        {
+            this->id = b.id;
+            this->branch_id = b.branch_id;
+            this->positions = b.positions;
+            this->instancing = b.instancing;
+            return *this;
+        }
         Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
       
     private:

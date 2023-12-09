@@ -11,7 +11,6 @@ public:
     glm::vec3 right = glm::vec3(1,0,0);
     float width = 0;
     CHTurtle() {};
-    CHTurtle(const CHTurtle &other) = default;
 
     void turn_right(float angle)
     {
