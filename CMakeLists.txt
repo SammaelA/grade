@@ -6,6 +6,7 @@ project(main)
 #cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF -DMODULE_HYDRA=ON -DMODULE_DR=ON
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=OFF -DDEBUG=OFF
 #cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DTREE_PROJECT=ON -DDEBUG=OFF -DCLANG_VERSION=9
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DDEBUG=OFF -DMODULE_HYDRA=ON -DMODULE_DR=ON -DDIFF_RECONSTRUCTION=OFF -DAUX_OMP_INC=/usr/include/omp.h -DAUX_OMP_LIB=/usr/lib/x86_64-linux-gnu/libomp.so -DCLANG_VERSION=14
 
 #a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
