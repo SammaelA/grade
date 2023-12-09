@@ -711,14 +711,17 @@ namespace upg
           tmp.resize(3 * MESH_REPEATS, 9);
           std::vector <my_float> data(3 * MESH_REPEATS);
           ENZYME_EVALUATE_WITH_DIFF(ComplexRotateRepeatNode_apply, 9, 3 * MESH_REPEATS, x.data(), data.data(), tmp.data());
+          for (int a = 0; a < MESH_REPEATS; ++a)
+          {
+            for (int b = 0; b < 3; ++b)
+            {
+              mesh.pos[a * old_mesh.size() + i + b] = data[a * 3 + b];
+            }
+          }
           for (int a = 0; a < 6; ++a)
           {
             for (int c = 0; c < MESH_REPEATS; ++c)
             {
-              if (a == 0)
-              {
-                mesh.pos.insert(mesh.pos.begin() + i * (c + 1) + 3 * c, data.begin() + c * 3, data.begin() + 3 + c * 3);
-              }
               for (int b = 0; b < 3; ++b)
               {
                 out_jac->at(a, i + c * old_mesh.size() + b) = tmp.at(a, c * 3 + b);
