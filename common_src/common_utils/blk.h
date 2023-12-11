@@ -231,13 +231,13 @@ struct Block
     void set_mat4(const std::string name, glm::mat4 base_val = glm::mat4(1.0f));
     void set_string(const std::string name, std::string base_val = "");
     void set_block(const std::string name, Block *bl);
-    void set_arr(const std::string name, std::vector<double> &values);
-    void set_arr(const std::string name, std::vector<float> &values);
-    void set_arr(const std::string name, std::vector<int> &values);
-    void set_arr(const std::string name, std::vector<unsigned> &values);
-    void set_arr(const std::string name, std::vector<short> &values);
-    void set_arr(const std::string name, std::vector<unsigned short> &values);
-    void set_arr(const std::string name, std::vector<std::string> &values);
+    void set_arr(const std::string name, const std::vector<double> &values);
+    void set_arr(const std::string name, const std::vector<float> &values);
+    void set_arr(const std::string name, const std::vector<int> &values);
+    void set_arr(const std::string name, const std::vector<unsigned> &values);
+    void set_arr(const std::string name, const std::vector<short> &values);
+    void set_arr(const std::string name, const std::vector<unsigned short> &values);
+    void set_arr(const std::string name, const std::vector<std::string> &values);
 
     void add_value(const std::string &name, const Value &value);
     void set_value(const std::string &name, const Value &value);

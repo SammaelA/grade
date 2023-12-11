@@ -1266,13 +1266,13 @@ void Block::set_block(const std::string name, Block *bl)
     val.bl->copy(bl);
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<double> &_values)
+void Block::set_arr(const std::string name, const std::vector<double> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (double &d : _values)
+    for (const double &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1281,13 +1281,13 @@ void Block::set_arr(const std::string name, std::vector<double> &_values)
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<float> &_values)
+void Block::set_arr(const std::string name, const std::vector<float> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (float &d : _values)
+    for (const float &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1296,13 +1296,13 @@ void Block::set_arr(const std::string name, std::vector<float> &_values)
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<int> &_values)
+void Block::set_arr(const std::string name, const std::vector<int> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (int &d : _values)
+    for (const int &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1311,13 +1311,13 @@ void Block::set_arr(const std::string name, std::vector<int> &_values)
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<unsigned> &_values)
+void Block::set_arr(const std::string name, const std::vector<unsigned> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (unsigned &d : _values)
+    for (const unsigned &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1326,13 +1326,13 @@ void Block::set_arr(const std::string name, std::vector<unsigned> &_values)
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<short> &_values)
+void Block::set_arr(const std::string name, const std::vector<short> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (short &d : _values)
+    for (const short &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1341,13 +1341,13 @@ void Block::set_arr(const std::string name, std::vector<short> &_values)
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<unsigned short> &_values)
+void Block::set_arr(const std::string name, const std::vector<unsigned short> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::DOUBLE;
-    for (unsigned short &d : _values)
+    for (const unsigned short &d : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::DOUBLE;
@@ -1356,13 +1356,13 @@ void Block::set_arr(const std::string name, std::vector<unsigned short> &_values
     }
     set_value(name, val);
 }
-void Block::set_arr(const std::string name, std::vector<std::string> &_values)
+void Block::set_arr(const std::string name, const std::vector<std::string> &_values)
 {
     Block::Value val;
     val.type = Block::ValueType::ARRAY;
     val.a = new Block::DataArray();
     val.a->type = Block::ValueType::STRING;
-    for (std::string &str : _values)
+    for (const std::string &str : _values)
     {
         Block::Value av;
         av.type = Block::ValueType::STRING;
