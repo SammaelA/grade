@@ -212,6 +212,8 @@ namespace upg
       }
 
      verbose = settings.get_bool("verbose");
+     finish_thr = settings.get_double("finish_threshold");
+     budget = settings.get_int("iterations");
      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
      local_opt_block.set_bool("save_intermediate_images", false);
      local_opt_block.set_double("learning_rate", local_learning_rate);
@@ -290,6 +292,8 @@ namespace upg
         }
 
         epoch++;
+        if (best_population[0].loss < finish_thr)
+          break;
       }
     }
     virtual std::vector<UPGReconstructionResult> get_best_results() override
@@ -315,6 +319,7 @@ namespace upg
     float local_learning_rate = 0.01;
     float good_soulution_thr = 0.05;
     float elites_fraction = 0.05;
+    float finish_thr = 0;
     bool verbose = false;
 
     //generator-specific stuff

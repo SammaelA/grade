@@ -35,4 +35,5 @@ namespace upg
                     ComplexModel &out_mod);
 
   void perform_tests(const Block &blk);
+  void perform_benchmarks(const Block &blk);
 };
