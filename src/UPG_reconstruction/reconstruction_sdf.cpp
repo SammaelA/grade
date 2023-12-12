@@ -349,6 +349,8 @@ namespace upg
         optimizer = get_optimizer_CHC(&opt_func, *step_blk, start_params.structure);
       else if (optimizer_name == "particle_swarm")
         optimizer = get_optimizer_particle_swarm(&opt_func, *step_blk, start_params.structure);
+      else if (optimizer_name == "CC")
+        optimizer = get_optimizer_CC(&opt_func, *step_blk, start_params.structure);
       optimizer->optimize();
       opt_res = optimizer->get_best_results();
       step_n++;

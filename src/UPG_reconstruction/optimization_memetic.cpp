@@ -287,8 +287,8 @@ namespace upg
 
         if (verbose)
         {
-          print_result_bins(result_bins);
-          print_result_bins(current_bins);
+          //print_result_bins(result_bins);
+          //print_result_bins(current_bins);
         }
 
         epoch++;

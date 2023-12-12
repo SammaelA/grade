@@ -125,4 +125,6 @@ namespace upg
                                                   const Block &settings, const UPGStructure &_structure);
   std::shared_ptr<UPGOptimizer> get_optimizer_particle_swarm(UPGOptimizableFunction *_func, 
                                                              const Block &settings, const UPGStructure &_structure);
+  std::shared_ptr<UPGOptimizer> get_optimizer_CC(UPGOptimizableFunction *_func, 
+                                                 const Block &settings, const UPGStructure &_structure);
 }
