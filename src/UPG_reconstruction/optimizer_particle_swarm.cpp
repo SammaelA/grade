@@ -4,6 +4,7 @@
 
 namespace upg
 {
+  //Adaptive weight taken from paper "A novel particle swarm optimization algorithm with adaptive inertia weight"
   class UPGParticleSwarmOptimizer : public UPGOptimizer
   {
   private:
@@ -165,7 +166,7 @@ namespace upg
       verbose = settings.get_bool("verbose");
       finish_thr = settings.get_double("finish_threshold");
       budget = settings.get_int("iterations");
-      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
+      local_opt_block.set_bool("verbose", false);
       local_opt_block.set_bool("save_intermediate_images", false);
       local_opt_block.set_double("learning_rate", local_learning_rate);
     }
@@ -189,26 +190,36 @@ namespace upg
       float c1 = 1.49445; // cognitive weight
       float c2 = 1.49445; // social weight
       float r1, r2; // randomizers
+      bool use_local_best = false;
+      bool use_adaptive_weight = true;
 
       std::vector<float> distances(population_size, 0);
       std::vector<int> indices(population_size, 0);
 
       while (no_diff_function_calls + diff_function_calls < budget)
       {        
+        int success_count = 0;
         float total_movement = 0;
+        Creature best_creature = best_population[0];
+
         for (auto &c : population)
         {
-          for (int i=0;i<population_size;i++)
+          if (use_local_best)
           {
-            indices[i] = i;
-            distances[i] = dist(c, population[i]);
+            for (int i=0;i<population_size;i++)
+            {
+              indices[i] = i;
+              distances[i] = dist(c, population[i]);
+            }
+
+            std::sort(indices.begin(), indices.end(), [&distances](int a, int b)-> bool { return distances[a]<distances[b];});
+            std::sort(indices.begin(), indices.begin() + population_size/5, [&](int a, int b)-> bool {return population[a].loss < population[b].loss;});
+
+            best_creature = population[indices[0]];
           }
 
-          std::sort(indices.begin(), indices.end(), [&distances](int a, int b)-> bool { return distances[a]<distances[b];});
-          std::sort(indices.begin(), indices.begin() + population_size/5, [&](int a, int b)-> bool {return population[a].loss < population[b].loss;});
-
-          OptParams local_best = population[indices[0]].params;
-          if (dist(c, population[indices[0]]) < 1e-5)
+          OptParams best_params = best_creature.params;
+          if (dist(c, best_creature) < 1e-5)
           {
             for (int j=0;j<c.velocity.size();j++)
               c.velocity[j] = 0;
@@ -222,7 +233,7 @@ namespace upg
               r2 = urand();
               c.velocity[j] = (w * c.velocity[j]) +
                               (c1 * r1 * (c.best_params[j] - c.params[j])) +
-                              (c2 * r2 * (local_best[j] - c.params[j]));
+                              (c2 * r2 * (best_params[j] - c.params[j]));
             
               if (c.velocity[j] > abs(borders[j].x-borders[j].y))
                 c.velocity[j] = abs(borders[j].x-borders[j].y);
@@ -231,19 +242,37 @@ namespace upg
             
               c.params[j] = CLAMP(c.params[j]+c.velocity[j], borders[j].x, borders[j].y);
             }
+            float prev_loss = c.best_loss;
             evaluate(c);
+            if (c.loss < prev_loss)
+              success_count++;
           }
           float vlen = 0;
           for (auto &v : c.velocity)
             vlen += SQR(v);
           total_movement += sqrt(vlen)/population_size;
         }
-        if (verbose)
+
+        //find worst particle and replace it with mutated version of the best one
         {
-          //print_result_bins(result_bins);
-          //print_result_bins(current_bins);
+          int worst_pos = 0;
+          for (int i=0;i<population_size;i++)
+            if (population[i].best_loss > population[worst_pos].best_loss)
+              worst_pos = i;
+        
+          population[worst_pos] = best_population[0];
+          Normal normal_gen(0, borders.size()*(1-(no_diff_function_calls + diff_function_calls+0) / budget));
+          int id = urandi(0, borders.size());
+          float t = borders[id].y + 1;
+          while (t >= borders[id].y || t <= borders[id].x)
+            t = population[worst_pos].params[id] + normal_gen.get()*(borders[id].y - borders[id].x);
+          population[worst_pos].params[id] = t;
         }
-        logerr("total movement %f", total_movement);
+
+        float success_rate = (success_count+0.0)/population_size;
+        if (use_adaptive_weight)
+          w = success_rate;
+        logerr("TM SR %.3f %.3f", total_movement, success_rate);
         if (best_population[0].loss < finish_thr)
           break;
         epoch++;
@@ -261,7 +290,7 @@ namespace upg
     }
   private:
     //settings
-    int population_size = 1000;
+    int population_size = 30;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
     float mutation_chance = 0.1;
