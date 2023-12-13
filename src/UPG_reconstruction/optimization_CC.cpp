@@ -8,11 +8,11 @@ namespace upg
   public:
     struct Creature;
 
-    int population_size = 500;
+    int population_size = 1000;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
     int GA_generations = 5;
-    int min_epochs = 20;
+    int min_epochs = 10;
     float mutation_chance = 0.1;
     float mutation_power = 0.1;
     int tournament_size = 64;
@@ -62,6 +62,9 @@ namespace upg
       }
       OptParams params;
       float loss = 1e9;
+
+      OptParams best_params;
+      float best_loss;
     };
 
     UPGCCMemeticOptimizer(UPGOptimizableFunction *_func, 
@@ -138,6 +141,8 @@ namespace upg
       for (int j=0;j<borders.size();j++)
         c.params[j] = borders[j].x + urand()*(borders[j].y - borders[j].x);
       evaluate(c);
+      c.best_params = c.params;
+      c.best_loss = c.loss;
 
       return c;
     }
@@ -225,6 +230,11 @@ namespace upg
       c.loss = func->f_no_grad(gen.get(), pd, c.params);
       register_new_param(c);
       no_diff_function_calls++;
+      if (c.loss < c.best_loss)
+      {
+        c.best_loss = c.loss;
+        c.best_params = c.params;
+      }
     }
   
     std::pair<int, int> choose_parents_tournament(int tournament_size)
@@ -362,11 +372,125 @@ namespace upg
       }
     }
 
+    float dist(const Creature &c1, const Creature &c2)
+    {
+      float dist = 0;
+      for (int i=0;i<borders.size();i++)
+        dist += abs(c1.params[i]-c2.params[i])/abs(borders[i].x-borders[i].y);
+      return dist/borders.size();
+    }
+
+    void perform_particle_swarm_optimization(int generations, std::pair<int, int> group)
+    {
+      float w = 0.729; // inertia weight
+      float c1 = 1.49445; // cognitive weight
+      float c2 = 1.49445; // social weight
+      float r1, r2; // randomizers
+      bool use_local_best = true;
+      bool use_adaptive_weight = true;
+      int group_size = group.second - group.first;
+
+      std::vector<float> distances(population_size, 0);
+      std::vector<int> indices(population_size, 0);
+      std::vector<std::vector<float>> velocities(population_size, std::vector<float>(group_size,0));
+      for (auto &v : velocities)
+      {
+        for (int j=0;j<group_size;j++)
+          v[j] = 0.1*abs(borders[group.first+j].y - borders[group.first+j].x)*urand(-1,1);
+      }
+
+      for (int generation = 0; generation<generations; generation++)
+      {        
+        int success_count = 0;
+        float total_movement = 0;
+        Creature best_creature = best_population[0];
+
+        for (int num=0;num<population_size;num++)
+        {
+          Creature &c = population[num];
+          if (use_local_best)
+          {
+            for (int i=0;i<population_size;i++)
+            {
+              indices[i] = i;
+              distances[i] = dist(c, population[i]);
+            }
+
+            std::sort(indices.begin(), indices.end(), [&distances](int a, int b)-> bool { return distances[a]<distances[b];});
+            std::sort(indices.begin(), indices.begin() + population_size/5, [&](int a, int b)-> bool {return population[a].loss < population[b].loss;});
+
+            best_creature = population[indices[0]];
+          }
+
+          OptParams best_params = best_creature.params;
+          if (dist(c, best_creature) < 1e-5)
+          {
+            for (int j=0;j<velocities[num].size();j++)
+              velocities[num][j] = 0;
+            local_search(c, 1);
+          }
+          else
+          {
+            for (int j=0;j<velocities[num].size();j++)
+            {
+              r1 = urand();
+              r2 = urand();
+              velocities[num][j] = (w * velocities[num][j]) +
+                              (c1 * r1 * (c.best_params[group.first+j] - c.params[group.first+j])) +
+                              (c2 * r2 * (best_params[group.first+j] - c.params[group.first+j]));
+            
+              if (velocities[num][j] > abs(borders[group.first+j].x-borders[group.first+j].y))
+                velocities[num][j] = abs(borders[group.first+j].x-borders[group.first+j].y);
+              else if (velocities[num][j] < -abs(borders[group.first+j].x-borders[group.first+j].y))
+                velocities[num][j] = -abs(borders[group.first+j].x-borders[group.first+j].y);
+            
+              c.params[group.first+j] = CLAMP(c.params[group.first+j]+velocities[num][j], borders[group.first+j].x, borders[group.first+j].y);
+            }
+            float prev_loss = c.best_loss;
+            evaluate(c);
+            if (c.loss < prev_loss)
+              success_count++;
+          }
+          float vlen = 0;
+          for (auto &v : velocities[num])
+            vlen += SQR(v);
+          total_movement += sqrt(vlen)/population_size;
+        }
+
+        //find worst particle and replace it with mutated version of the best one
+        {
+          int worst_pos = 0;
+          for (int i=0;i<population_size;i++)
+            if (population[i].best_loss > population[worst_pos].best_loss)
+              worst_pos = i;
+        
+          population[worst_pos] = best_population[0];
+          Normal normal_gen(0, borders.size()*(1-(no_diff_function_calls + diff_function_calls+0) / budget));
+          int id = urandi(0, borders.size());
+          float t = borders[id].y + 1;
+          while (t >= borders[id].y || t <= borders[id].x)
+            t = population[worst_pos].params[id] + normal_gen.get()*(borders[id].y - borders[id].x);
+          population[worst_pos].params[id] = t;
+        }
+
+        float success_rate = (success_count+0.0)/population_size;
+        if (use_adaptive_weight)
+          w = success_rate;
+        //logerr("TM SR %.3f %.3f", total_movement, success_rate);
+        if (best_population[0].loss < finish_thr)
+          break;
+      }
+    }
+
     virtual void optimize(int iters = -1) override
     {
       if (iters > 0)
         budget = iters;
-      
+      optimize_simple_CC();
+    }
+
+    void optimize_simple_CC()
+    {      
       std::vector<std::pair<int, int>> groups = get_param_groups(structure);
       int predicted_epochs = budget/(groups.size()*GA_generations*(population_size+local_opt_count*local_opt_iters));
       while (predicted_epochs < min_epochs && groups.size() > 2)
