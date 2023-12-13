@@ -87,13 +87,13 @@ else()
   set(MODULES_SRC ${MODULES_SRC} modules/hydra/stub/stub.cpp)
 endif()
 if (MODULE_DR)
-  set(CLANG_VERSION "9" CACHE STRING "clang and LLVM version to use")
+  set(CLANG_VERSION "15" CACHE STRING "clang and LLVM version to use")
   set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}")
 
-  set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
+  set(DR_SRC "/home/james/Рабочий стол/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
   find_package(OpenMP REQUIRED)
-  set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
-  set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
+  set(AUX_OMP_INC "/usr/lib/llvm-15/lib/clang/15/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
+  set(AUX_OMP_LIB "/usr/lib/llvm-15/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
 
   include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme", "${DR_SRC}/mitsuba_src/stub")
 
@@ -166,10 +166,10 @@ if (DIFF_RECONSTRUCTION)
   set(DR_SOURCE_RT )
   set(DR_SOURCE )
   if(USE_CUSTOM_DIFF_RENDER)
-    set(DR_SRC "/home/sammael/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
+    set(DR_SRC "/home/james/Рабочий стол/diff_render/diffrender_tutorials" CACHE STRING "Custom diff render location")
     find_package(OpenMP REQUIRED)
-    set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
-    set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
+    set(AUX_OMP_INC "/usr/lib/llvm-15/lib/clang/15/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
+    set(AUX_OMP_LIB "/usr/lib/llvm-15/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
 
     include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
 
