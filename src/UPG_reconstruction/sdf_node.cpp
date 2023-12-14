@@ -422,26 +422,33 @@ namespace upg
   float
   diff_cone_sdf(float params[6])
   {
-    float q[3], max_q[3];
-    q[0] = abs(params[0]) - params[3];
-    q[1] = abs(params[1]) - params[4];
-    q[2] = abs(params[2]) - params[5];
+    float q[2], w[2], a[2], b[2];
+    
+    q[0] = params[5] * params[3] / params[4];
+    q[1] = -params[5];
 
-    max_q[0] = std::max(q[0], 0.f);
-    max_q[1] = std::max(q[1], 0.f);
-    max_q[2] = std::max(q[2], 0.f);
+    w[0] = sqrt(std::pow(params[0], 2) + std::pow(params[2], 2));
+    w[1] = params[1];
 
-    float d1 = std::sqrt(std::pow(max_q[0], 2) + std::pow(max_q[1], 2) + std::pow(max_q[2], 2));
-    float d2 = std::min(std::max(q[0],std::max(q[1], q[2])), 0.f);
+    a[0] = w[0] - q[0] * glm::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
+    a[1] = w[1] - q[1] * glm::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
 
-    return d1 + d2;
+    b[0] = w[0] - q[0] * glm::clamp(w[0] / q[0], 0.f, 1.f);
+    b[1] = w[1] - q[1];
+
+    float k = glm::sign(q[1]);
+    float v = std::min(a[0] * a[0] + a[1] * a[1], b[0] * b[0] + b[1] * b[1]);
+    float s = std::max(k * (w[0] * q[1] - w[1] * q[0]), k * (w[1] - q[1]));
+    float d = sqrt(v) * glm::sign(s);
+
+    return d;
   }
 
   class Cone : public PrimitiveSdfNode
   {
-    static constexpr int SIZE_X = 0;
-    static constexpr int SIZE_Y = 1;
-    static constexpr int SIZE_Z = 2;
+    static constexpr int C1 = 0;
+    static constexpr int C2 = 1;
+    static constexpr int HEIGHT = 2;
 
   public:
     Cone(unsigned id) : PrimitiveSdfNode(id) { name = "Cone"; }
@@ -449,23 +456,26 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
-      glm::vec3 q = abs(pos) - size;
-      float d1 = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0)));
-      float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
-      float d = d1 + d2;
+      glm::vec2 q = p[HEIGHT] * glm::vec2(p[C1]/p[C2],-1.0);
+      glm::vec2 w = glm::vec2( glm::length(glm::vec2(pos.x, pos.z)), pos.y );
+      glm::vec2 a = w - q * glm::clamp(glm::dot(w,q)/glm::dot(q,q), 0.0f, 1.0f);
+      glm::vec2 b = w - q * glm::vec2(glm::clamp( w.x/q.x, 0.f, 1.f), 1.0);
+      float k = glm::sign( q.y );
+      float v = std::min(dot( a, a ),dot(b, b));
+      float s = std::max(k*(w.x*q.y-w.y*q.x),k*(w.y-q.y));
+      float d = sqrt(v)*glm::sign(s);
 
       float p_args[6], d_p[6] = {0};
       p_args[0] = pos.x;
       p_args[1] = pos.y;
       p_args[2] = pos.z;
-      p_args[3] = p[SIZE_X];
-      p_args[4] = p[SIZE_Y];
-      p_args[5] = p[SIZE_Z];
+      p_args[3] = p[C1];
+      p_args[4] = p[C2];
+      p_args[5] = p[HEIGHT];
 
       if (ddist_dp)
       {        
-        float ans = __enzyme_autodiff((void*)diff_box_sdf, p_args, d_p);
+        float ans = __enzyme_autodiff((void*)diff_cone_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
 
