@@ -2247,7 +2247,7 @@ fail: debug("FAILED\n");
   void test_29()
   {
     srand(time(NULL));
-    debug("TEST 23. BOX SDF RECONSTRUCTION\n");
+    debug("TEST 29. CONE SDF RECONSTRUCTION\n");
     std::string settings = R""""(
     {
     input {
@@ -2281,31 +2281,31 @@ fail: debug("FAILED\n");
     load_block_from_string(settings, settings_blk);
     auto res = reconstruct_sdf(settings_blk);
 
-    debug(" 23.1. %-64s", "ReconstructionResult size ");
+    debug(" 29.1. %-64s", "ReconstructionResult size ");
     if (res.size() == 1)
       debug("PASSED\n");
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
-    debug(" 23.2. %-64s", "Preserved structure ");
+    debug(" 29.2. %-64s", "Preserved structure ");
     if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 8)
       debug("PASSED\n");
     else
       debug("FAILED\n");
     
-    debug(" 23.3. %-64s", "Preserved parameters count ");
+    debug(" 29.3. %-64s", "Preserved parameters count ");
     if (res[0].parameters.p.size() == 6)
       debug("PASSED\n");
     else
       debug("FAILED\n");
     
-    debug(" 23.4. %-64s", "Perfect optimization loss ");
+    debug(" 29.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("PASSED\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
-    debug(" 23.5. %-64s", "Perfect multi-view PSNR ");
+    debug(" 29.5. %-64s", "Perfect multi-view PSNR ");
     if (res[0].quality_synt > 50)
       debug("PASSED\n");
     else
