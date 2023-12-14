@@ -1,4 +1,18 @@
 #include "sdf_node.h"
+#include <stdio.h>
+
+template<typename T>
+T square(T x) { return x * x; }
+
+float __enzyme_autodiffFloat(float (*)(float), float);
+double __enzyme_autodiffDouble(double (*)(double), double);
+float __enzyme_autodiff(...);
+
+void
+f()
+{
+  printf("float  d/dx %f\n", __enzyme_autodiffFloat(square<float>, 1.0f));
+}
 
 namespace upg
 {
@@ -61,25 +75,40 @@ namespace upg
     }
   };
 
+
+  float 
+  diff_sphere_sdf(float params[4]) 
+  {
+    return std::max(1e-9f, sqrt(params[0] * params[0] + params[1] * params[1] + params[2] * params[2])) - params[3];
+  }
+    
   class SphereSdfNode : public PrimitiveSdfNode
   {
     static constexpr int RADIUS = 0;
   public:
     SphereSdfNode(unsigned id) : PrimitiveSdfNode(id) { name = "Sphere"; }
+
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       float d = std::max(1e-9f, glm::length(pos));
-      
+      float p_args[4], d_p[4] = {0};
+      p_args[0] = pos.x;
+      p_args[1] = pos.y;
+      p_args[2] = pos.z;
+      p_args[3] = p[RADIUS];
+
+      float ans = __enzyme_autodiff((void*)diff_sphere_sdf, p_args, d_p);
+
       if (ddist_dp)
       {
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 1);
-        (*ddist_dp)[offset] = -1;
-
-        (*ddist_dpos)[0] = pos.x/d;
-        (*ddist_dpos)[1] = pos.y/d;
-        (*ddist_dpos)[2] = pos.z/d;
+        (*ddist_dp)[offset] = d_p[3];
+        
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
       }
 
       return d - p[RADIUS];
@@ -94,6 +123,24 @@ namespace upg
       return params;
     }
   };
+
+  float
+  diff_box_sdf(float params[6])
+  {
+    float q[3], max_q[3];
+    q[0] = abs(params[0]) - params[3];
+    q[1] = abs(params[1]) - params[4];
+    q[2] = abs(params[2]) - params[5];
+
+    max_q[0] = std::max(q[0], 0.f);
+    max_q[1] = std::max(q[1], 0.f);
+    max_q[2] = std::max(q[2], 0.f);
+
+    float d1 = std::sqrt(std::pow(max_q[0], 2) + std::pow(max_q[1], 2) + std::pow(max_q[2], 2));
+    float d2 = std::min(std::max(q[0],std::max(q[1], q[2])), 0.f);
+
+    return d1 + d2;
+  }
 
   class BoxSdNode : public PrimitiveSdfNode
   {
@@ -113,29 +160,29 @@ namespace upg
       float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
       float d = d1 + d2;
 
+      float p_args[6], d_p[6] = {0};
+      p_args[0] = pos.x;
+      p_args[1] = pos.y;
+      p_args[2] = pos.z;
+      p_args[3] = p[SIZE_X];
+      p_args[4] = p[SIZE_Y];
+      p_args[5] = p[SIZE_Z];
+
       if (ddist_dp)
       {        
-        float dd1_dqx = q.x < 0 ? 0 : q.x/std::max(1e-9f,d1);
-        float dd1_dqy = q.y < 0 ? 0 : q.y/std::max(1e-9f,d1);
-        float dd1_dqz = q.z < 0 ? 0 : q.z/std::max(1e-9f,d1);
-
-        float dd2_dqx = (q.x<=0 && q.x>=q.y && q.x>=q.z);
-        float dd2_dqy = (q.y<=0 && q.y>=q.x && q.y>=q.z);
-        float dd2_dqz = (q.z<=0 && q.z>=q.x && q.z>=q.y);
-
+        float ans = __enzyme_autodiff((void*)diff_box_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
-        (*ddist_dp)[offset]   = -(dd1_dqx+dd2_dqx);
-        (*ddist_dp)[offset+1] = -(dd1_dqy+dd2_dqy);
-        (*ddist_dp)[offset+2] = -(dd1_dqz+dd2_dqz);
 
-        (*ddist_dpos)[0] = glm::sign(pos.x)*(dd1_dqx+dd2_dqx);
-        (*ddist_dpos)[1] = glm::sign(pos.y)*(dd1_dqy+dd2_dqy);
-        (*ddist_dpos)[2] = glm::sign(pos.z)*(dd1_dqz+dd2_dqz);
-                
-        //debug("%f %f %f %f - %f %f %f - %f %f %f\n", d, pos.x, pos.y, pos.z, (*ddist_dp)[offset], (*ddist_dp)[offset+1],
-        //        (*ddist_dp)[offset+2], (*ddist_dpos)[0], (*ddist_dpos)[1], (*ddist_dpos)[2]);
+        (*ddist_dp)[offset]   = d_p[3];
+        (*ddist_dp)[offset+1] = d_p[4];
+        (*ddist_dp)[offset+2] = d_p[5];
 
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
+
+        // std::cout << ans << " " << d << std::endl;
       }
 
       return d;
@@ -155,6 +202,107 @@ namespace upg
     }
   };
 
+  float
+  diff_round_box_sdf(float params[7])
+  {
+    float q[3], max_q[3];
+    q[0] = abs(params[0]) - params[3];
+    q[1] = abs(params[1]) - params[4];
+    q[2] = abs(params[2]) - params[5];
+
+    max_q[0] = std::max(q[0], 0.f);
+    max_q[1] = std::max(q[1], 0.f);
+    max_q[2] = std::max(q[2], 0.f);
+
+    float d1 = std::sqrt(std::pow(max_q[0], 2) + std::pow(max_q[1], 2) + std::pow(max_q[2], 2));
+    float d2 = std::min(std::max(q[0],std::max(q[1], q[2])), 0.f);
+
+    return d1 + d2 - params[6];
+  }
+
+  class RoundBoxSdNode : public PrimitiveSdfNode
+  {
+    static constexpr int SIZE_X = 0;
+    static constexpr int SIZE_Y = 1;
+    static constexpr int SIZE_Z = 2;
+    static constexpr int RADIUS = 3;
+
+  public:
+    RoundBoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "RoundBox"; }
+
+    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const override
+    {
+      glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
+      glm::vec3 q = abs(pos) - size;
+      float d1 = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0)));
+      float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
+      float d = d1 + d2 - p[RADIUS];
+
+      float p_args[7], d_p[7] = {0};
+      p_args[0] = pos.x;
+      p_args[1] = pos.y;
+      p_args[2] = pos.z;
+      p_args[3] = p[SIZE_X];
+      p_args[4] = p[SIZE_Y];
+      p_args[5] = p[SIZE_Z];
+      p_args[6] = p[RADIUS];
+
+      if (ddist_dp)
+      {        
+        float ans = __enzyme_autodiff((void*)diff_round_box_sdf, p_args, d_p);
+        int offset = ddist_dp->size();
+        ddist_dp->resize(offset + 4);
+
+        (*ddist_dp)[offset]   = d_p[3];
+        (*ddist_dp)[offset+1] = d_p[4];
+        (*ddist_dp)[offset+2] = d_p[5];
+        (*ddist_dp)[offset+3] = d_p[6];
+
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
+
+        // std::cout << ans << " " << d << std::endl;
+      }
+
+      return d;
+    }
+
+    virtual unsigned param_cnt() const override { return 4; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
+      params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "size_z"});
+      params.push_back({0.3,0.01f*size.z,size.z * 4, ParameterType::DIFFERENTIABLE, "radius"});
+
+      return params;
+    }
+  };
+
+  float
+  diff_cylinder_sdf(float params[5])
+  {
+    float d[2];
+    d[0] = sqrt(std::pow(params[0], 2) + std::pow(params[2], 2)) - params[4];
+    d[1] = std::abs(params[1]) - params[3];
+
+    float d1 = 0, d2 = 0;
+    float max_d[2];
+
+    max_d[0] = std::max(d[0], 0.f);
+    max_d[1] = std::max(d[1], 0.f);
+
+    d1 = std::min(std::max(d[0], d[1]), 0.f);
+    d2 = sqrt(std::pow(max_d[0], 2) + std::pow(max_d[1], 2));
+
+    return d1 + d2;
+  }
+
   class CylinderSdNode : public PrimitiveSdfNode
   {
     static constexpr int HEIGHT = 0;
@@ -168,47 +316,29 @@ namespace upg
     {
       glm::vec2 vec_d = glm::abs(glm::vec2(glm::length(glm::vec2(pos.x, pos.z)), pos.y)) - glm::vec2(p[RADIUS], p[HEIGHT]);
       
-      float pos_dist = std::max(1e-9f, glm::length(pos));
       float d = std::min(std::max(vec_d.x, vec_d.y), 0.f) + glm::length(glm::max(vec_d, glm::vec2(0, 0)));
 
       if (ddist_dp)
       {
+        float p_args[5], d_p[5] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[HEIGHT];
+        p_args[4] = p[RADIUS];
+        
+        float ans = __enzyme_autodiff((void*)diff_cylinder_sdf, p_args, d_p);
+        ans = diff_cylinder_sdf(p_args);
+
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 2);
         
-        float d1 = glm::length(glm::vec2(pos.x, pos.z)) - p[RADIUS];
-        float d2 = abs(pos.y) - p[HEIGHT];
-        float l2 = glm::length(glm::max(vec_d, glm::vec2(0, 0)));
+        (*ddist_dp)[offset] = d_p[3];
+        (*ddist_dp)[offset+1] = d_p[4];
 
-        //? Calculate derivatives of cylinder radius and height parameters 
-        float L1_h = (d1 <= d2 && d2 < 0) ? -1 : 0;
-        float L2_h = (d2 > 0) ? -d2 / l2 : 0;
-
-        (*ddist_dp)[offset] = L1_h + L2_h;
-
-        float L1_r = (d1 > d2 && d1 < 0) ? -1 : 0;
-        float L2_r = (d1 > 0) ? -d1 / l2 : 0;
-
-        (*ddist_dp)[offset+1] = L1_r + L2_r;
-
-        //? Calculate derivatives of point position parameters
-        float const_val = pow(std::max(d2, 0.f), 2);
-        float L1_x = (d1 > d2 && d1 < 0) ? pos.x / (d1 + p[RADIUS]) : 0;
-        float L2_x = (d1 > 0) ? pos.x * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
-        
-        (*ddist_dpos)[0] = L1_x + L2_x;
-
-        const_val = pow(std::max(d1, 0.f), 2);
-        float L1_y = (d1 <= d2 && d2 < 0) ? pos.y / abs(pos.y) : 0;
-        float L2_y = (d2 > 0) ? pos.y / abs(pos.y) * d2 / sqrt(const_val + pow(d2, 2)) : 0;
-        
-        (*ddist_dpos)[1] = L1_y + L2_y;
-
-        const_val = pow(std::max(d2, 0.f), 2);
-        float L1_z = (d1 > d2 && d1 < 0) ? pos.z / (d1 + p[RADIUS]) : 0;
-        float L2_z = (d1 > 0) ? pos.z * d1 / ((d1 + p[RADIUS]) * sqrt(pow(d1 + p[RADIUS], 2) - 2 * p[RADIUS] * (d1 + p[RADIUS]) + pow(p[RADIUS], 2) + const_val)) : 0;
-        
-        (*ddist_dpos)[2] = L1_z + L2_z;
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
       }
 
       return d;
@@ -226,37 +356,128 @@ namespace upg
     }
   };
 
-  class RoundedCylinderSdNode : public PrimitiveSdfNode
-  {    
-    static constexpr int RA = 0;
-    static constexpr int RB = 1;
-    static constexpr int HEIGHT = 2;
+  float
+  diff_prism_sdf(float params[5])
+  {
+    float q[3];
+    q[0] = abs(params[0]);
+    q[1] = abs(params[1]);
+    q[2] = abs(params[2]);
+
+    float d = std::max(q[2] - params[4], std::max(q[0] * 0.866025f + params[1] * 0.5f, -params[1]) - params[3] * 0.5f);
+
+    return d;
+  }
+
+  class Prism : public PrimitiveSdfNode
+  {
+    static constexpr int H1 = 0;
+    static constexpr int H2 = 1;
 
   public:
-    RoundedCylinderSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "RoundedCylinder"; }
+    Prism(unsigned id) : PrimitiveSdfNode(id) { name = "Prism"; }
 
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec2 vec_d = glm::vec2(glm::length(glm::vec2(pos.x, pos.z)) - 2.0 * p[RA] + p[RB], std::abs(pos.y - p[HEIGHT]));
-      
-      float pos_dist = std::max(1e-9f, glm::length(pos));
-      float d = std::min(std::max(vec_d.x, vec_d.y), 0.f) + glm::length(glm::max(vec_d, glm::vec2(0, 0))) - p[RB];
+      glm::vec3 q = abs(pos);
+      float d = std::max(q.z - p[H2], std::max(q.x * 0.866025f + pos.y*0.5f, -pos.y) - p[H1] * 0.5f);
 
       if (ddist_dp)
       {
+        float p_args[5], d_p[5] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[H1];
+        p_args[4] = p[H2];
+
+        float ans =  __enzyme_autodiff((void*)diff_prism_sdf, p_args, d_p);
+
+        int offset = ddist_dp->size();
+        ddist_dp->resize(offset + 2);
+        (*ddist_dp)[offset+0] = d_p[3];
+        (*ddist_dp)[offset+1] = d_p[4];
+
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
+      }
+
+      return d;
+    }
+
+    virtual unsigned param_cnt() const override { return 2; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height1"});
+      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height2"});
+
+      return params;
+    }
+  };
+
+  float
+  diff_cone_sdf(float params[6])
+  {
+    float q[3], max_q[3];
+    q[0] = abs(params[0]) - params[3];
+    q[1] = abs(params[1]) - params[4];
+    q[2] = abs(params[2]) - params[5];
+
+    max_q[0] = std::max(q[0], 0.f);
+    max_q[1] = std::max(q[1], 0.f);
+    max_q[2] = std::max(q[2], 0.f);
+
+    float d1 = std::sqrt(std::pow(max_q[0], 2) + std::pow(max_q[1], 2) + std::pow(max_q[2], 2));
+    float d2 = std::min(std::max(q[0],std::max(q[1], q[2])), 0.f);
+
+    return d1 + d2;
+  }
+
+  class Cone : public PrimitiveSdfNode
+  {
+    static constexpr int SIZE_X = 0;
+    static constexpr int SIZE_Y = 1;
+    static constexpr int SIZE_Z = 2;
+
+  public:
+    Cone(unsigned id) : PrimitiveSdfNode(id) { name = "Cone"; }
+
+    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const override
+    {
+      glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
+      glm::vec3 q = abs(pos) - size;
+      float d1 = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0)));
+      float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
+      float d = d1 + d2;
+
+      float p_args[6], d_p[6] = {0};
+      p_args[0] = pos.x;
+      p_args[1] = pos.y;
+      p_args[2] = pos.z;
+      p_args[3] = p[SIZE_X];
+      p_args[4] = p[SIZE_Y];
+      p_args[5] = p[SIZE_Z];
+
+      if (ddist_dp)
+      {        
+        float ans = __enzyme_autodiff((void*)diff_box_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
-        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+0] = -1;
-        (*ddist_dp)[offset+1] = -1;
-        (*ddist_dp)[offset+2] = -1;
 
-        (*ddist_dpos)[0] = pos.x/pos_dist;
-        (*ddist_dpos)[1] = pos.y/pos_dist;
-        (*ddist_dpos)[2] = pos.z/pos_dist;
+        (*ddist_dp)[offset]   = d_p[3];
+        (*ddist_dp)[offset+1] = d_p[4];
+        (*ddist_dp)[offset+2] = d_p[5];
+
+        (*ddist_dpos)[0] = d_p[0];
+        (*ddist_dpos)[1] = d_p[1];
+        (*ddist_dpos)[2] = d_p[2];
+
+        // std::cout << ans << " " << d << std::endl;
       }
 
       return d;
@@ -267,70 +488,10 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      params.push_back({1,0.01,10, ParameterType::DIFFERENTIABLE, "ra"});
-      params.push_back({2,0.01,10, ParameterType::DIFFERENTIABLE, "rb"});
-      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height"});
-
-      return params;
-    }
-  };
-
-  class PyramidSdNode : public PrimitiveSdfNode
-  {
-    static constexpr int H = 0;
-
-  public:
-    PyramidSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Pyramid"; }
-
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      glm::vec3 pos_in_new_space = pos;
-      float pos_dist = std::max(1e-9f, glm::length(pos_in_new_space));
-
-      float m2 = p[H] * p[H] + 0.25;
-      
-      pos_in_new_space.x = abs(pos_in_new_space.x);
-      pos_in_new_space.z = abs(pos_in_new_space.z);
-      pos_in_new_space = (pos_in_new_space.z > pos_in_new_space.x) ? glm::vec3(pos_in_new_space.z, pos_in_new_space.y, pos_in_new_space.x) : pos_in_new_space;
-      pos_in_new_space -= glm::vec3(0.5, 0, 0.5);
-
-      glm::vec3 q = glm::vec3(pos_in_new_space.z, 
-                              p[H] * pos_in_new_space.y - 0.5 * pos_in_new_space.x, 
-                              p[H] * pos_in_new_space.x + 0.5 * pos_in_new_space.y);
-
-      float s = std::max(-q.x, 0.f);
-      float t = glm::clamp((q.y - 0.5 * pos_in_new_space.z) / (m2 + 0.25), 0.0, 1.0);
-
-      float a = m2 * (q.x + s) * (q.x + s) + q.y * q.y;
-      float b = m2 * (q.x + 0.5 * t) * (q.x + 0.5 * t) + (q.y - m2 * t) * (q.y - m2 * t);
-      float d2 = std::min(q.y, -q.x * m2 - q.y * 0.5f) > 0.0 ? 0.0 : std::min(a,b);
-      
-      float d = sqrt((d2 + q.z * q.z) / m2 ) * glm::sign(std::max(q.z, -pos_in_new_space.y));
-
-      if (ddist_dp)
-      {
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 1);
-        // (*ddist_dp)[offset+0] = (p[CENTER_X] - pos.x)/pos_dist;
-        // (*ddist_dp)[offset+1] = (p[CENTER_Y] - pos.y)/pos_dist;
-        // (*ddist_dp)[offset+2] = (p[CENTER_Z] - pos.z)/pos_dist;
-        (*ddist_dp)[offset+0] = -1;
-
-        (*ddist_dpos)[0] = pos.x/pos_dist;
-        (*ddist_dpos)[1] = pos.y/pos_dist;
-        (*ddist_dpos)[2] = pos.z/pos_dist;
-      }
-
-      return d;
-    }
-
-    virtual unsigned param_cnt() const override { return 1; }
-    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
-    {
-      std::vector<ParametersDescription::Param> params;
-      
-      params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height"});
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "c1"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "c2"});
+      params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "height"});
 
       return params;
     }
@@ -609,15 +770,18 @@ namespace upg
         node = new CylinderSdNode(id);
         break;
       case 6:
-        node = new RoundedCylinderSdNode(id);
+        node = new RoundBoxSdNode(id);
         break;
       case 7:
-        node = new PyramidSdNode(id);
+        node = new Prism(id);
         break;
       case 8:
-        node = new AndSdfNode(id);
+        node = new Cone(id);
         break;
       case 9:
+        node = new AndSdfNode(id);
+        break;
+      case 10:
         node = new SubtractSdfNode(id);
         break;
       default:

@@ -26,7 +26,7 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
 
     int trees_planted = 0;
     bool generating = true;
-    Planter planter = Planter(&voxels, &hmap, &mask, prototype.biome_mask,
+    Planter planter(&voxels, &hmap, &mask, prototype.biome_mask,
                               glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size,
                               1,prototype.trees_count - prototype.preplanted_trees.size(),5);
     
