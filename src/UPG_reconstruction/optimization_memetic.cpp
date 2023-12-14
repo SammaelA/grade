@@ -213,7 +213,7 @@ namespace upg
 
      verbose = settings.get_bool("verbose");
      finish_thr = settings.get_double("finish_threshold");
-     budget = settings.get_int("iterations");
+     budget = settings.get_int("iterations", budget);
      local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
      local_opt_block.set_bool("save_intermediate_images", false);
      local_opt_block.set_double("learning_rate", local_learning_rate);
