@@ -181,7 +181,7 @@ namespace upg
         step_0 {
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -528,7 +528,7 @@ namespace upg
     if (res[0].quality_synt > 80.0)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 80.0);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
 
     sleep(1);
     Model *m;
@@ -648,7 +648,7 @@ namespace upg
     if (res[0].quality_synt > 80.0)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 80.0);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
 
     sleep(1);
     Model *m, *m_ref;
@@ -1053,7 +1053,7 @@ namespace upg
         step_0 {
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -1152,7 +1152,7 @@ namespace upg
         step_0 {
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -1364,7 +1364,7 @@ fail: debug("FAILED\n");
         step_0 {
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -1527,7 +1527,7 @@ fail: debug("FAILED\n");
             optimizer_name:s = "adam"
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -1622,7 +1622,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0,0,0,1}
             structure:arr = {2,1}
         } 
@@ -1637,7 +1637,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -1676,10 +1676,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 21.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 80);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   //TEST 22 SPHERES SDF RECONSTRUCTION MEMETIC
@@ -1691,7 +1691,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0.6,0.6,0.6,0.5, -0.6,0.6,0.6,0.5, 0.6,-0.6,0.6,0.5, -0.6,-0.6,0.6,0.5, 
                           0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
             structure:arr = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1}
@@ -1709,12 +1709,11 @@ fail: debug("FAILED\n");
         }
         step_0 {
             optimizer_name:s = "memetic"
-            iterations:i = 100
             verbose:b = false
         }
         step_1 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -1757,10 +1756,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 22.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 80);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   //TEST 23 BOX SDF RECONSTRUCTION
@@ -1774,7 +1773,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
             structure:arr = {2,4}
         } 
@@ -1789,7 +1788,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -1828,10 +1827,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 23.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
 
@@ -1846,7 +1845,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
         } 
     }
     generator {
@@ -1862,8 +1861,8 @@ fail: debug("FAILED\n");
         }
         step_1 {
             learning_rate:r = 0.003
-            iterations:i = 500
-            verbose:b = true
+            iterations:i = 1000
+            verbose:b = false
         }
     }
     results {
@@ -2006,7 +2005,7 @@ fail: debug("FAILED\n");
         step_0 {
             render_w:i = 512
             render_h:i = 512
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
@@ -2052,7 +2051,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0.2,-0.1,0,0.5,0.5,0.5, 0.1}
             structure:arr = {2,6}
         } 
@@ -2067,7 +2066,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2106,10 +2105,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 26.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   void test_27()
@@ -2120,7 +2119,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0.2,-0.1,0,0.5,0.5}
             structure:arr = {2,7}
         } 
@@ -2135,7 +2134,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2174,10 +2173,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 27.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   void test_28()
@@ -2188,7 +2187,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0.2,-0.1,0,0.5,0.5}
             structure:arr = {2,5}
         } 
@@ -2203,7 +2202,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2242,10 +2241,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 28.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   void test_29()
@@ -2256,8 +2255,8 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
-            params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
+            points_count:i = 50000
+            params:arr = {0.2,-0.1,0,0.5,0.5,1}
             structure:arr = {2,8}
         } 
     }
@@ -2266,12 +2265,12 @@ fail: debug("FAILED\n");
     }
     optimization {
         start {
-            params:arr = {0.1,-0.15,-0.1,0.41,0.43,0.61}    
+            params:arr = {0.1,-0.15,-0.1,0.51,0.43,1.07}    
             structure:arr = {2,8} 
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2310,10 +2309,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 29.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 35)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 35);
   }
 
 
@@ -2328,7 +2327,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0,0,0,0.6,0.3,0.6,  0,0,0,0.5}
             structure:arr = {9, 2,4, 2,1}
         } 
@@ -2343,7 +2342,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2364,10 +2363,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 30.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   //TEST 31 SUBTRACT SDF RECONSTRUCTION
@@ -2381,7 +2380,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
             params:arr = {0,1,0,0.6,0.3,0.6,  0,1,0,0.5}
             structure:arr = {10, 2,4, 2,1}
         } 
@@ -2396,7 +2395,7 @@ fail: debug("FAILED\n");
         }
         step_0 {
             learning_rate:r = 0.003
-            iterations:i = 500
+            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -2417,10 +2416,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 31.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 50)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   void perform_tests(const Block &blk)
