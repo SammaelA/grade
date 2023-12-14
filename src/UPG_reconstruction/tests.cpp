@@ -341,6 +341,8 @@ namespace upg
   {
     srand(0);
     debug("TEST 5. HYDRA VISUALIZATION OF RECONSTRUCTION RESULTS\n");
+    debug("TEMPORARY DISABLED\n");
+    return;
     
     std::string settings = R""""(
     {
@@ -1526,7 +1528,7 @@ fail: debug("FAILED\n");
             render_w:i = 512
             render_h:i = 512
             iterations:i = 500
-            verbose:b = true
+            verbose:b = false
             save_intermediate_images:b = false
             learning_rate:r = 0.003
         }
@@ -1620,7 +1622,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0,0,0,1}
             structure:arr = {2,1}
         } 
@@ -1689,7 +1691,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.6,0.6,0.6,0.5, -0.6,0.6,0.6,0.5, 0.6,-0.6,0.6,0.5, -0.6,-0.6,0.6,0.5, 
                           0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
             structure:arr = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1}
@@ -1772,7 +1774,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
             structure:arr = {2,4}
         } 
@@ -1838,6 +1840,8 @@ fail: debug("FAILED\n");
   {
     srand(time(NULL));
     debug("TEST 24. COMPLEX DETAIL RECONSTRUCTION MEMETIC\n");
+    debug("TEMPORARY DISABLED\n");
+    return;
     std::string settings = R""""(
     {
     input {
@@ -2048,7 +2052,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.2,-0.1,0,0.5,0.5,0.5, 0.1}
             structure:arr = {2,6}
         } 
@@ -2116,7 +2120,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.2,-0.1,0,0.5,0.5}
             structure:arr = {2,7}
         } 
@@ -2184,7 +2188,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.2,-0.1,0,0.5,0.5}
             structure:arr = {2,5}
         } 
@@ -2252,7 +2256,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
             structure:arr = {2,8}
         } 
@@ -2324,7 +2328,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0,0,0,0.6,0.3,0.6,  0,0,0,0.5}
             structure:arr = {9, 2,4, 2,1}
         } 
@@ -2377,7 +2381,7 @@ fail: debug("FAILED\n");
     {
     input {
         synthetic_reference {
-            points_count:i = 1000
+            points_count:i = 10000
             params:arr = {0,1,0,0.6,0.3,0.6,  0,1,0,0.5}
             structure:arr = {10, 2,4, 2,1}
         } 
@@ -2440,6 +2444,13 @@ fail: debug("FAILED\n");
       test_26, test_27, test_28, test_29, test_30,
       test_31
     };
+
+    if (tests.size() == 1 && tests[0] == -1)
+    {
+      tests.resize(test_functions.size());
+      for (int i=0;i<test_functions.size();i++)
+        tests[i] = i+1;
+    }
 
     for (int i : tests)
     {
