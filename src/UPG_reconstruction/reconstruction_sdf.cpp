@@ -166,8 +166,8 @@ namespace upg
     float mse = 0.0;
     for (auto &cam : cameras)
     {
-      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 1, false);
-      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 1, false);
+      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4, false);
+      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4, false);
       mse += ImageMetric::get(t1, t2);
     }
     return -10*log10(MAX(1e-9f,mse/cameras.size()));

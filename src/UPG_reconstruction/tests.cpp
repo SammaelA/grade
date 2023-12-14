@@ -2037,6 +2037,112 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  //TEST 26 INTERSECTION SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void test_26()
+  {
+    srand(time(NULL));
+    debug("TEST 26. INTERSECTION SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+            params:arr = {0,0,0,0.6,0.3,0.6,  0,0,0,0.5}
+            structure:arr = {8, 2,4, 2,1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {-0.08, 0.1, 0.1, 0.53, 0.27, 0.67, 0.11, 0.08, -0.09, 0.51}    
+            structure:arr = {8, 2,4, 2,1}
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 500
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 26.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 26.2. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+  }
+
+  //TEST 27 SUBTRACT SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void test_27()
+  {
+    srand(time(NULL));
+    debug("TEST 27. SUBTRACT SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 1000
+            params:arr = {0,1,0,0.6,0.3,0.6,  0,1,0,0.5}
+            structure:arr = {9, 2,4, 2,1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {-0.08, 0.91, 0.1, 0.53, 0.27, 0.67, 0.11, 0.98, -0.09, 0.51}    
+            structure:arr = {9, 2,4, 2,1}
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 500
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 27.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 27.2. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 50)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 50);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -2054,7 +2160,8 @@ fail: debug("FAILED\n");
       test_6,  test_7,  test_8,  test_9,  test_10,
       test_11, test_12, test_13, test_14, test_15,
       test_16, test_17, test_18, test_19, test_20,
-      test_21, test_22, test_23, test_24, test_25
+      test_21, test_22, test_23, test_24, test_25,
+      test_26, test_27
     };
 
     for (int i : tests)

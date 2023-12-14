@@ -428,6 +428,93 @@ namespace upg
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
   };
 
+  class AndSdfNode : public TwoChildSdfNode
+  {
+  public:
+    AndSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "And"; }
+    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const override
+    {
+      std::vector<float> ddist_dpos1 = {0,0,0};
+      std::vector<float> ddist_dpos2 = {0,0,0};
+
+      int offset_left = ddist_dp ? ddist_dp->size() : 0;
+      float d1 = left->get_distance(pos, ddist_dp, &ddist_dpos1);
+      int offset_right = ddist_dp ? ddist_dp->size() : 0;
+      float d2 = right->get_distance(pos, ddist_dp, &ddist_dpos2);
+      int offset_next = ddist_dp ? ddist_dp->size() : 0;
+
+      if (ddist_dp)
+      {
+        //d(p,x,y) = max(d1(p,x), d2(p,y))
+        
+        if (d1 > d2)
+        {
+          for (int i=offset_right;i<offset_next;i++)
+            (*ddist_dp)[i] = 0;
+          for (int i=0;i<3;i++)
+            (*ddist_dpos)[i] = ddist_dpos1[i];
+        }
+        else
+        {
+          for (int i=offset_left;i<offset_right;i++)
+            (*ddist_dp)[i] = 0;
+          for (int i=0;i<3;i++)
+            (*ddist_dpos)[i] = ddist_dpos2[i];
+        }
+      }
+
+      return std::max(d1,d2);
+    }
+    virtual unsigned param_cnt() const override { return 0; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
+  };
+
+  class SubtractSdfNode : public TwoChildSdfNode
+  {
+  public:
+    SubtractSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "Subtract"; }
+    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const override
+    {
+      std::vector<float> ddist_dpos1 = {0,0,0};
+      std::vector<float> ddist_dpos2 = {0,0,0};
+
+      int offset_left = ddist_dp ? ddist_dp->size() : 0;
+      float d1 = left->get_distance(pos, ddist_dp, &ddist_dpos1);
+      int offset_right = ddist_dp ? ddist_dp->size() : 0;
+      float d2 = right->get_distance(pos, ddist_dp, &ddist_dpos2);
+      int offset_next = ddist_dp ? ddist_dp->size() : 0;
+
+      if (ddist_dp)
+      {
+        //Node1 - Node2
+        //d(p,x,y) = max(d1(p,x), -d2(p,y))
+        
+        if (d1 > -d2)
+        {
+          for (int i=offset_right;i<offset_next;i++)
+            (*ddist_dp)[i] = 0;
+          for (int i=0;i<3;i++)
+            (*ddist_dpos)[i] = ddist_dpos1[i];
+        }
+        else
+        {
+          for (int i=offset_left;i<offset_right;i++)
+            (*ddist_dp)[i] = 0;
+          for (int i=offset_right;i<offset_next;i++)
+            (*ddist_dp)[i] *= -1;
+          for (int i=0;i<3;i++)
+            (*ddist_dpos)[i] = -ddist_dpos2[i];
+        }
+      }
+
+      return std::max(d1,-d2);
+    }
+    virtual unsigned param_cnt() const override { return 0; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
+  };
+
   ProceduralSdf SdfGenInstance::generate(std::span<const float> parameters)
   {
     for (int i = 0; i < all_params.size(); ++i)
@@ -526,6 +613,12 @@ namespace upg
         break;
       case 7:
         node = new PyramidSdNode(id);
+        break;
+      case 8:
+        node = new AndSdfNode(id);
+        break;
+      case 9:
+        node = new SubtractSdfNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);
