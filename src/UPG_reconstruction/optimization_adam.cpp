@@ -49,11 +49,11 @@ namespace upg
           X.differentiable[i] -= alpha*Vh/(sqrt(Sh) + eps);
         }
         if ((total_iterations % 5 == 0) && verbose)
-          debug("Adam iter %3d  val = %.6f best_val = %.6f\n", total_iterations, val, best_result);
+          debug("Adam iter %3d  val = %.8f best_val = %.8f\n", total_iterations, val, best_result);
         total_iterations++;
       }
       if (verbose)
-        debug("Adam final res val = %.6f best_val = %.6f\n", best_result, best_result);
+        debug("Adam final res val = %.8f best_val = %.8f\n", best_result, best_result);
     }
 
     virtual std::vector<UPGReconstructionResult> get_best_results() override

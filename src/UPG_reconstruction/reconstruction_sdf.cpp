@@ -214,46 +214,72 @@ namespace upg
       
     }
 
+    // estimate sum(f(0), ..., f(max_index)) by sampling only part of these values
+    // function expect all f(i) >= 0 and increases number of samples if average f(i) is small
+    // returns partial sum and number of samples
+    static std::pair<int, double> sum_with_adaptive_batching(std::function<double(int)> get_value, 
+                                                             int max_index, int base_batch_size,
+                                                             int max_batch_size,
+                                                             double sensitivity)
+    {
+      int samples = 0;
+      double partial_sum = 0.0;
+      while (samples < max_batch_size && partial_sum <= sensitivity)
+      {
+        for (int b=0;b<base_batch_size;b++)
+        {
+          int index = rand()%max_index;
+          partial_sum += get_value(index);
+        }
+        samples += base_batch_size;
+        sensitivity /= 10;
+        if (sensitivity == 0)
+          break;
+      }
+
+      return {samples, partial_sum};
+    }
+
     virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
                            const OptParams &params, std::span<float> out_grad) override
     {
       assert(reference.points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
       ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      assert(gen_params.size() == out_grad.size());
 
       std::vector<float> cur_grad;
       std::vector<float> dpos_dparams = {0,0,0};
       cur_grad.reserve(gen_params.size());
-      for (int i=0;i<gen_params.size();i++)
-        out_grad[i] = 0;
-
-      double full_d = 0.0;
-      int batch_size = 256;
+      std::vector<double> out_grad_d(gen_params.size(), 0);
 
       //main step - minimize SDF values on surface
-      for (int b=0;b<batch_size;b++)
+      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
       {
-        const glm::vec3 &p = reference.points[rand()%reference.points.size()];
+        const glm::vec3 &p = reference.points[index];
         cur_grad.clear();
-        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
-        full_d += SQR(d);
+        double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
         for (int i=0;i<gen_params.size();i++)
-          out_grad[i] += 2*d*cur_grad[i] / batch_size;
-      }
+          out_grad_d[i] += 2*d*cur_grad[i];
+        return d*d;
+      }, reference.points.size(), 256, 5000, 10);
 
-      for (int b=0;b<batch_size;b++)
+      //regularization - penalty for outside points with sdf < 0
+      auto p2 = sum_with_adaptive_batching([&](int index) -> double 
       {
-        const glm::vec3 &p = reference.outside_points[rand()%reference.outside_points.size()];
+        const glm::vec3 &p = reference.outside_points[index];
         cur_grad.clear();
-        float d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
+        double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
         if (d < 0)
         {
-          full_d += SQR(d);
           for (int i=0;i<gen_params.size();i++)
-            out_grad[i] += 2*d*cur_grad[i] / batch_size;
+            out_grad_d[i] += 2*d*cur_grad[i];
+          return d*d;
         }
-      }
-      //regularization - penalty for outside points with sdf < 0
+        else
+          return 0;
+      }, reference.outside_points.size(), 128, 5000, 0.1);
+
       /*
       debug("params [");
       for (int i=0;i<gen_params.size();i++)
@@ -264,7 +290,11 @@ namespace upg
         debug("%f ",out_grad[i]);
       debug("]\n");
       */
-      return full_d/reference.points.size();
+      
+      for (int i=0;i<gen_params.size();i++)
+        out_grad[i] = out_grad_d[i]/(p1.first+p2.first);
+      
+      return p1.second/p1.first + p2.second/p2.first;
     }
 
     virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
@@ -272,24 +302,27 @@ namespace upg
       assert(reference.points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
       ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
-      double d = 0.0;
-      int batch_size = 256;
 
       //main step - minimize SDF values on surface
-      for (int b=0;b<batch_size;b++)
+      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
       {
-        const glm::vec3 &p = reference.points[rand()%reference.points.size()];
-        d += SQR(sdf.get_distance(p));
-      }
-      for (int b=0;b<batch_size;b++)
-      {
-        const glm::vec3 &p = reference.outside_points[rand()%reference.outside_points.size()];
-        float od = sdf.get_distance(p);
-        if (od < 0)
-          d += SQR(od);
-      }
+        const glm::vec3 &p = reference.points[index];
+        double d = sdf.get_distance(p);
+        return d*d;
+      }, reference.points.size(), 256, 5000, 10);
 
-      return d/(2*batch_size);
+      //regularization - penalty for outside points with sdf < 0
+      auto p2 = sum_with_adaptive_batching([&](int index) -> double 
+      {
+        const glm::vec3 &p = reference.outside_points[index];
+        double d = sdf.get_distance(p);
+        if (d < 0)
+          return d*d;
+        else
+          return 0;
+      }, reference.outside_points.size(), 128, 5000, 0.1);
+
+      return p1.second/p1.first + p2.second/p2.first;
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) override
     {
