@@ -109,6 +109,7 @@ bool View::init(std::string _name, int W, int H)
   else
     glFrontFace(GL_CW);
   glLineWidth(lineWidth);
+  glEnable(GL_PROGRAM_POINT_SIZE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   if (!audio.init())

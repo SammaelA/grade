@@ -5,6 +5,7 @@
 #include "tinyEngine/engine.h"
 #include "common_utils/bbox.h"
 #include "sdf_rendering.h"
+#include "graphics_utils/render_point_cloud.h"
 
 namespace upg
 {
@@ -256,6 +257,10 @@ namespace upg
       camera.up = glm::vec3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 16);
       engine::textureManager->save_png(t, "result_sdf");
+
+      PointCloudRenderer renderer;
+      Texture tp = renderer.render(reference.points, camera.get_viewProj(), 1024, 1024, {1,0,0}, 0.2);
+      engine::textureManager->save_png(tp, "result_points");
     }
 
     return opt_res;
