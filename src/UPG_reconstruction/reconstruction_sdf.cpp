@@ -1,90 +1,13 @@
 #include "upg.h"
 #include "sdf_node.h"
-#include "common_utils/distribution.h"
 #include "optimization.h"
 #include "tinyEngine/camera.h"
 #include "tinyEngine/engine.h"
 #include "common_utils/bbox.h"
-#include "preprocessing.h"
-#include "graphics_utils/image_metrics.h"
+#include "sdf_rendering.h"
 
 namespace upg
 {
-  inline glm::vec3 EyeRayDirNormalized(float x/*in [0,1]*/, float y/*in [0,1]*/, glm::mat4 projInv)
-  {
-    glm::vec4 pos = glm::vec4(2.0f*x - 1.0f, -2.0f*y + 1.0f, 0.0f, 1.0f);
-    pos = projInv * pos;
-    pos /= pos.w;
-    return glm::normalize(glm::vec3(pos));
-  }
-
-  inline glm::vec3 transformRay(glm::vec3 ray, glm::mat4 viewInv)
-  {
-    glm::vec3 p1 = glm::vec3(viewInv*glm::vec4(0,0,0,1));
-    glm::vec3 p2 = glm::vec3(viewInv*glm::vec4(ray.x,ray.y,ray.z,1));
-    return glm::normalize(p2-p1);
-  }
-
-  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert = true)
-  {
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
-    glm::mat4 viewInv = glm::inverse(camera.get_view());
-    //set light somewhere to the side 
-    glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
-    int spp_a = MAX(1,floor(sqrtf(spp)));
-    unsigned char *data = new unsigned char[4*image_w*image_h];
-
-    #pragma omp parallel for
-    for (int yi=0;yi<image_h;yi++)
-    {
-      std::vector<float> cur_grad;
-      std::vector<float> ddist_dpos = {0,0,0};
-      for (int xi=0;xi<image_w;xi++)
-      {
-        glm::vec3 color = {0,0,0};
-        for (int yp=0;yp<spp_a;yp++)
-        {
-          for (int xp=0;xp<spp_a;xp++)
-          {
-            float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
-            float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
-            glm::vec3 p0 = camera.origin;
-            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
-            
-            //sphere tracing
-            int iter = 0;
-            float d = sdf.get_distance(p0);
-            while (iter < 1000 && d > 1e-6 && d < 1e6)
-            {
-              p0 += d*dir;
-              d = sdf.get_distance(p0);
-              iter++;
-            }
-            if (d <= 1e-6)
-            {
-              if (lambert)
-              {
-                cur_grad.clear();
-                sdf.get_distance(p0, &cur_grad, &ddist_dpos);
-                glm::vec3 n = glm::normalize(glm::vec3(ddist_dpos[0], ddist_dpos[1], ddist_dpos[2]));
-                color += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
-              }
-              else
-                color += glm::vec3(1,1,1);
-            }
-          }
-        }
-        data[4*(yi*image_w+xi)+0] = 255*(color.x/SQR(spp_a));
-        data[4*(yi*image_w+xi)+1] = 255*(color.y/SQR(spp_a));
-        data[4*(yi*image_w+xi)+2] = 255*(color.z/SQR(spp_a));
-        data[4*(yi*image_w+xi)+3] = 255;
-      }
-    }
-
-    Texture t = engine::textureManager->create_texture(image_w, image_h, GL_RGBA8, 1, data, GL_RGBA);
-    delete[] data;
-    return t;
-  }
 
   struct PointCloudReference
   {
@@ -94,84 +17,6 @@ namespace upg
     UPGStructure structure;//can be set manually to make reconstruction simplier
     UPGParametersRaw parameters;//empty if not synthetic reference
   };
-
-  AABB get_point_cloud_bbox(const std::vector<glm::vec3> &points);
-  void sdf_to_point_cloud(const ProceduralSdf &sdf, int points, PointCloudReference &cloud)
-  {
-    float r = 10000;
-
-    cloud.points.reserve(points);
-    for (int i=0;i<points;i++)
-    {
-      float phi = urand(0, 2*PI);
-      float psi = urand(-PI/2, PI/2);
-      glm::vec3 p0 = r*glm::vec3{cos(psi)*cos(phi), sin(psi), cos(psi)*sin(phi)};
-      glm::vec3 dir = glm::normalize(-p0); //tracing rays from random points to (0,0,0)
-
-      int iter = 0;
-      float d = sdf.get_distance(p0);
-      while (iter < 1000 && d > 1e-6 && d < 1e6)
-      {
-        p0 += d*dir;
-        d = sdf.get_distance(p0);
-        iter++;
-      }
-      if (d <= 1e-6)
-        cloud.points.push_back(p0);
-    }
-
-    AABB bbox = get_point_cloud_bbox(cloud.points);
-    AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
-    
-    cloud.outside_points.reserve(points);
-    while (cloud.outside_points.size() < points)
-    {
-      glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
-                              urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
-                              urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
-      if (sdf.get_distance(p) > 0.01)
-        cloud.outside_points.push_back(p);
-    }
-  }
-
-  AABB get_point_cloud_bbox(const std::vector<glm::vec3> &points)
-  {
-    glm::vec3 minv(1e9,1e9,1e9);
-    glm::vec3 maxv(-1e9,-1e9,-1e9);
-    for (auto &p : points)
-    {
-      minv = glm::min(minv, p);
-      maxv = glm::max(maxv, p);
-    }
-
-    return AABB(minv, maxv);
-  }
-
-  float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf)
-  {
-    int image_size = 512;
-    int points = 1000;
-    PointCloudReference cloud;
-    sdf_to_point_cloud(reference_sdf, points, cloud);
-    AABB bbox = get_point_cloud_bbox(cloud.points);
-    float d = 1.5*length(bbox.max_pos - bbox.min_pos);
-    CameraSettings cam;
-    cam.target = 0.5f*(bbox.min_pos + bbox.max_pos);
-    cam.origin = cam.target + glm::vec3(0,0,-d);
-    cam.up = glm::vec3(0,1,0);
-
-    auto cameras = get_cameras_uniform_sphere(cam, 64, d);
-
-    float diff = 0.0;
-    float mse = 0.0;
-    for (auto &cam : cameras)
-    {
-      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4, false);
-      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4, false);
-      mse += ImageMetric::get(t1, t2);
-    }
-    return -10*log10(MAX(1e-9f,mse/cameras.size()));
-  }
 
   PointCloudReference get_point_cloud_reference(const Block &input_blk)
   {
@@ -188,7 +33,7 @@ namespace upg
       ProceduralSdf sdf = gen.generate(reference.parameters.p);
 
       int points = synthetic_reference->get_int("points_count", 10000);
-      sdf_to_point_cloud(sdf, points, reference);
+      sdf_to_point_cloud(sdf, points, &(reference.points), &(reference.outside_points));
 
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
