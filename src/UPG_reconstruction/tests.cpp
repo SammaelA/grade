@@ -2309,10 +2309,10 @@ fail: debug("FAILED\n");
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
     debug(" 29.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 35)
+    if (res[0].quality_synt > 40)
       debug("PASSED\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 35);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
 

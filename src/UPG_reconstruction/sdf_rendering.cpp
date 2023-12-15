@@ -24,7 +24,7 @@ namespace upg
   //intersects SDF with ray start_pos + t*dir. Returns if ray intersected with SDF and optionally - point of intersection
   bool sdf_sphere_tracing(const ProceduralSdf &sdf, const glm::vec3 &start_pos, const glm::vec3 &dir, glm::vec3 *surface_pos = nullptr)
   {
-    constexpr float EPS = 1e-6;
+    constexpr float EPS = 3*1e-6;
     glm::vec3 p0 = start_pos;
     int iter = 0;
     float d = sdf.get_distance(p0);
@@ -91,9 +91,12 @@ namespace upg
     return t;
   }
 
-  void sdf_to_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
-                          std::vector<glm::vec3> *outside_points)
+  void sdf_to_outer_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
+                                std::vector<glm::vec3> *outside_points)
   {
+    //cast rays from large sphere outside of model to (0,0,0)
+    //This method can't be an accurate representation of surface
+    //as points won't be uniformly distributed.
     assert(points != nullptr);
     float r = 10000;
 
@@ -117,6 +120,64 @@ namespace upg
       AABB bbox = get_point_cloud_bbox(*points);
       AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
       
+      *outside_points = {};
+      outside_points->reserve(points_count);
+      while (outside_points->size() < points_count)
+      {
+        glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
+                                urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
+                                urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
+        if (sdf.get_distance(p) > 0.01)
+          outside_points->push_back(p);
+      }
+    }
+  }
+
+  void sdf_to_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
+                          std::vector<glm::vec3> *outside_points)
+  {
+    //More accurate ay to get point clouds from an arbitrary SDF.
+    //It has two steps: first we estimate size of SDF (as bounding box)
+    //Then we are tracing rays from random points outside of model in random
+    //direction and store all hits. I haven't tried to prove it, but 
+    //likely it will give more or less random distribution of points on 
+    //relatively simple surfaces.
+    assert(points != nullptr);
+    float r = 10000;
+
+    *points = {};
+    points->reserve(points_count);
+
+    std::vector<glm::vec3> estimate_points;
+    sdf_to_outer_point_cloud(sdf, 5000, &estimate_points, nullptr);
+    AABB bbox = get_point_cloud_bbox(estimate_points);
+    glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
+    glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
+    AABB inflated_bbox = AABB(center - 2.0f*size, center + 2.0f*size);
+
+    int tries = 100*points_count;
+    int iter = 0;
+    while (iter<tries && points->size()<points_count)
+    {
+      glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
+                              urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
+                              urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
+      if (sdf.get_distance(p) > 0.01)
+      {
+        float phi = urand(0, 2*PI);
+        float psi = acos(1 - 2*urand());
+        if (urand() < 0.5)
+          psi = -psi;
+        glm::vec3 dir = glm::vec3{sin(psi)*cos(phi), cos(psi), sin(psi)*sin(phi)};
+        glm::vec3 p0;
+        if (sdf_sphere_tracing(sdf, p, dir, &p0))
+          points->push_back(p0);
+      }
+      iter++;
+    }
+
+    if (outside_points)
+    {
       *outside_points = {};
       outside_points->reserve(points_count);
       while (outside_points->size() < points_count)
