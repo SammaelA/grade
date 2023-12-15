@@ -275,10 +275,11 @@ namespace upg
       std::vector<ParametersDescription::Param> params;
       
       glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float max_size = std::max(size.x, std::max(size.y, size.z));
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
       params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "size_z"});
-      params.push_back({0.3,0.01f*size.z,size.z * 4, ParameterType::DIFFERENTIABLE, "radius"});
+      params.push_back({0.3,0.01f*max_size,0.2f*max_size, ParameterType::DIFFERENTIABLE, "radius"});
 
       return params;
     }
