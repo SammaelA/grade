@@ -102,8 +102,10 @@ namespace upg
     for (int i=0;i<points_count;i++)
     {
       float phi = urand(0, 2*PI);
-      float psi = urand(-PI/2, PI/2);
-      glm::vec3 start_pos = r*glm::vec3{cos(psi)*cos(phi), sin(psi), cos(psi)*sin(phi)};
+      float psi = acos(1 - 2*urand());
+      if (urand() < 0.5)
+        psi = -psi;
+      glm::vec3 start_pos = r*glm::vec3{sin(psi)*cos(phi), cos(psi), sin(psi)*sin(phi)};
       glm::vec3 dir = glm::normalize(-start_pos); //tracing rays from random points to (0,0,0)
       glm::vec3 p0;
       if (sdf_sphere_tracing(sdf, start_pos, dir, &p0))
