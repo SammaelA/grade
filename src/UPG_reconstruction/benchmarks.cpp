@@ -20,7 +20,7 @@ namespace upg
     {
     input {
         synthetic_reference {
-            points_count:i = 10000
+            points_count:i = 50000
         } 
     }
     generator {
@@ -32,7 +32,7 @@ namespace upg
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = false
+            verbose:b = true
         }
         step_1 {
             learning_rate:r = 0.003
@@ -74,6 +74,15 @@ namespace upg
     desc.first.s = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1};
     desc.second.p = {0.6,0.6,0.6,0.5, -0.6,0.6,0.6,0.5, 0.6,-0.6,0.6,0.5, -0.6,-0.6,0.6,0.5, 
                      0.6,0  ,0  ,0.5, -0.6,0  ,0  ,0.5, 0  ,-0.6,0  ,0.5, 0   ,0.6 ,0  ,0.5};
+    return desc;
+  }
+
+  SceneDesc scene_8_boxes()
+  {
+    SceneDesc desc;
+    desc.first.s = {3,3,3,2,6,2,6,3,2,6,2,6,3,3,2,6,2,6,3,2,6,2,6};
+    desc.second.p = {0.6,0.6,0.6,0.3,0.3,0.3,0.1, -0.6,0.6,0.6,0.3,0.3,0.3,0.1, 0.6,-0.6,0.6,0.3,0.3,0.3,0.1, -0.6,-0.6,0.6,0.3,0.3,0.3,0.1,
+                     0.6,0  ,0  ,0.3,0.3,0.3,0.1, -0.6,0  ,0  ,0.3,0.3,0.3,0.1, 0  ,-0.6,0  ,0.3,0.3,0.3,0.1, 0   ,0.6 ,0  ,0.3,0.3,0.3,0.1};
     return desc;
   }
 
@@ -147,11 +156,12 @@ namespace upg
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
   {
     std::map<std::string, SceneDesc> scenes;
-    scenes["1 Sphere"] = scene_1_sphere();
-    scenes["8 Spheres"] = scene_8_spheres();
-    scenes["1 Box"] = scene_1_box();
+    //scenes["1 Sphere"] = scene_1_sphere();
+    //scenes["8 Spheres"] = scene_8_spheres();
+    //scenes["1 Box"] = scene_1_box();
     scenes["8 Bubbles"] = scene_bubbles(4, 2);
-    scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    //scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    //scenes["8 Boxes"] = scene_8_boxes();
 
     int max_iters = 200'000;
     std::vector<UPGReconstructionResult> results;
@@ -182,7 +192,10 @@ namespace upg
 
   void benchmark_sdf_complex_optimization()
   {
-    benchmark_for_optimizer("particle_swarm", true);
+    //benchmark_for_optimizer("CC", true);
+    //benchmark_for_optimizer("DE", true);
+    benchmark_for_optimizer("memetic", true);
+    //benchmark_for_optimizer("particle_swarm", true);
   }
 
   void perform_benchmarks(const Block &blk)
