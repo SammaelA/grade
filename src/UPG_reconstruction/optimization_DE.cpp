@@ -265,18 +265,24 @@ namespace upg
         {
           std::sort(population.begin(), population.end(), [this](const Creature & a, const Creature & b) -> bool {    
                     return a.loss < b.loss;});
+          for (int i=0;i<population_size-k;i++)
+          {
+            if (urand() < 1/(i+1.0))
+              local_search(population[i], 5);
+          }
           for (int i=population_size-k;i<population_size;i++)
             population[i] = initialize_creature();
         }
         if (verbose)
         {
-          debug("EPOCH %d: replaced %d/%d (k=%d). Best %.8f\n", epoch, replaced, population_size, k, best_population[0].loss);
+          debug("EPOCH %d (%d %d): replaced %d/%d (k=%d). Best %.8f\n", epoch, no_diff_function_calls, diff_function_calls,
+                                                                        replaced, population_size, k, best_population[0].loss);
           for (auto &arr : stat)
           {
-            debug("param stat: ");
-            for (auto &p : arr)
-              debug("[%f %d]",(float)p.second, p.first);
-            debug("\n");
+            //debug("param stat: ");
+            //for (auto &p : arr)
+            //  debug("[%f %d]",(float)p.second, p.first);
+            //debug("\n");
           }
         }
         

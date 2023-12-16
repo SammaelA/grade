@@ -129,6 +129,14 @@ namespace upg
       }
 
       result_bins[CLAMP((int)(result_bin_count*c.loss), 0, result_bin_count-1)]++;
+      double slide = 0.9975;
+      for (int i=0;i<borders.size();i++)
+      {
+        int bin = stat[i].size()*((c.params[i] - borders[i].x)/(borders[i].y-borders[i].x));
+        bin = CLAMP(bin, 0, stat[i].size()-1);
+        stat[i][bin].first++;
+        stat[i][bin].second = slide*stat[i][bin].second + (1-slide)*c.loss;
+      }
     }
 
     void evaluate(Creature &c)
@@ -210,11 +218,15 @@ namespace upg
           }
         }
       }
+      stat.resize(borders.size());
+      for (auto &a : stat)
+        for (auto &p : a)
+          p = {0, 0.0};
 
      verbose = settings.get_bool("verbose");
      finish_thr = settings.get_double("finish_threshold");
      budget = settings.get_int("iterations", budget);
-     local_opt_block.set_bool("verbose", settings.get_bool("verbose"));
+     local_opt_block.set_bool("verbose", false);
      local_opt_block.set_bool("save_intermediate_images", false);
      local_opt_block.set_double("learning_rate", local_learning_rate);
     }
@@ -234,6 +246,7 @@ namespace upg
         for (int i=0;i<elites_count;i++)
           new_population[i] = population[i];
 
+        #pragma omp parallel for
         for (int i=elites_count;i<population_size;i++)
         {
           std::vector<float> chances = {0.1, 0.1 + 0.5, 0.1 + 0.5 + 0.4};
@@ -273,23 +286,46 @@ namespace upg
           for (auto &c : best_population)
             debug("%.5f ", c.loss);
           debug("]\n");
+          /*
+          for (auto &arr : stat)
+          {
+            debug("param stat: ");
+            for (auto &p : arr)
+              debug("%f ",(float)p.second);
+            debug("\n");
+          }
+          */
         }
 
+        sort_and_calculate_fitness();
         int good_soulutions = 0;
         for (int i=0;i<population_size;i++)
+        {
           if (population[i].loss < good_soulution_thr)
             good_soulutions++;
-
-        float good_solutions_chance = (float)local_opt_count/good_soulutions;
-        for (int i=0;i<population_size;i++)
-          if (population[i].loss < good_soulution_thr && (urand() < good_solutions_chance))
-            local_search(population[i], local_opt_iters);
-
-        if (verbose)
-        {
-          //print_result_bins(result_bins);
-          //print_result_bins(current_bins);
+          else
+            break;
         }
+        std::vector<float> chances(good_soulutions,0);
+        chances[0] = 1;
+        for (int i=1;i<good_soulutions;i++)
+          chances[i] = chances[i-1] + 1.0/(i+1);
+        std::vector<int> indices_to_opt(local_opt_count, 0);
+        for (int i=0;i<local_opt_count;i++)
+        {
+          float rnd = urand(0, chances.back());
+          for (int j=0;j<good_soulutions;j++)
+          {
+            if (rnd<chances[j])
+            {
+              indices_to_opt[i] = j;
+              break;
+            }
+          }
+        }
+
+        for (auto &i : indices_to_opt)
+          local_search(population[i], local_opt_iters);
 
         epoch++;
         if (best_population[0].loss < finish_thr)
@@ -308,17 +344,17 @@ namespace upg
     }
   private:
     //settings
-    int population_size = 2500;
+    int population_size = 1000;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
-    float mutation_chance = 0.1;
-    float mutation_power = 0.1;
-    int tournament_size = 128;
-    int local_opt_count = 5;
+    float mutation_chance = 0.01;
+    float mutation_power = 0.3;
+    int tournament_size = 200;
+    int local_opt_count = 2;
     int local_opt_iters = 50;
     float local_learning_rate = 0.01;
-    float good_soulution_thr = 0.05;
-    float elites_fraction = 0.05;
+    float good_soulution_thr = 0.02;
+    float elites_fraction = 0.01;
     float finish_thr = 0;
     bool verbose = false;
 
@@ -328,6 +364,7 @@ namespace upg
     ParametersDescription pd;
     std::vector<glm::vec2> borders; //size equals total size of OptParams vector
     Block local_opt_block;
+    std::vector<std::array<std::pair<int, double>, 16>> stat;
 
     //GA state
     std::vector<Creature> population;
