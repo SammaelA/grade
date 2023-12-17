@@ -2,6 +2,7 @@
 #include "tinyEngine/engine.h"
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
+#include "sdf_rendering.h"
 #include "generation.h"
 #include "sdf_node.h"
 #include <unistd.h>
@@ -206,8 +207,43 @@ namespace upg
     //benchmark_for_optimizer("particle_swarm", true);
   }
 
+  void benchmark_sdf_rendering(int image_size, int spp)
+  {
+    std::map<std::string, SceneDesc> scenes;
+    scenes["1 Sphere"] = scene_1_sphere();
+    scenes["8 Spheres"] = scene_8_spheres();
+    scenes["1 Box"] = scene_1_box();
+    scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    scenes["8 Boxes"] = scene_8_boxes();
+
+    CameraSettings camera;
+    camera.origin = glm::vec3(0,0,3);
+    camera.target = glm::vec3(0,0,0);
+    camera.up = glm::vec3(0,1,0);
+
+    std::chrono::steady_clock::time_point t1, t2;
+
+    for (auto &scene : scenes)
+    {
+      SdfGenInstance gen(scene.second.first);
+      ProceduralSdf sdf = gen.generate(scene.second.second.p);
+      t1 = std::chrono::steady_clock::now();
+      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, true);
+      t2 = std::chrono::steady_clock::now();
+      float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+      debug("%s rendered in %.1f s. %d kRays/s\n", scene.first.c_str(), 1e-3*time_ms, (int)((image_size*image_size*spp)/time_ms));
+      engine::textureManager->save_png(t, scene.first+" demo");
+    }
+
+  }
+
   void perform_benchmarks(const Block &blk)
   {
-    benchmark_sdf_complex_optimization();
+    std::string name = blk.get_string("name", "rendering");
+    if (name == "rendering")
+      benchmark_sdf_rendering(512, 16);
+    else 
+      benchmark_sdf_complex_optimization();
   }
 }
