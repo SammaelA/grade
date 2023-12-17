@@ -802,4 +802,63 @@ namespace upg
     }
     return node;
   }
+
+  int get_node_power(int node_id)
+  {
+    // how many children each node has. It should be done differently, but now it's just testing
+    std::vector<int> node_powers = {0, 0, 1, 2, 0, 0, 0, 0};
+    assert(node_id >= 0 && node_id < node_powers.size());
+    return node_powers[node_id];
+  }
+
+  int get_node_param_count(int node_id)
+  {
+    // how many parameters each node has. It should be done differently, but now it's just testing
+    std::vector<int> node_param_counts = {0, 1, 3, 0, 3, 2, 3, 1};
+    assert(node_id >= 0 && node_id < node_param_counts.size());
+    return node_param_counts[node_id];
+  }
+
+  int parse_node_rec(const UPGStructure &structure, std::vector<UPGPart> &parts, bool merge_level, int start)
+  {
+    constexpr int merge_node_num = 3;
+
+    bool is_merge = merge_level && (structure.s[start] == merge_node_num);
+    int power = get_node_power(structure.s[start]);
+    int pos = start + 1;
+
+    for (int i = 0; i < power; i++)
+    {
+      int fin_pos = parse_node_rec(structure, parts, is_merge, pos);
+      if (is_merge && structure.s[pos] != merge_node_num)
+      {
+        int p_st = parts.empty() ? 0 : parts.back().p_range.second;
+        int p_cnt = 0;
+        for (int p = pos; p < fin_pos; p++)
+          p_cnt += get_node_param_count(structure.s[p]);
+        parts.push_back(UPGPart({pos, fin_pos}, {p_st, p_st + p_cnt}));
+      }
+      pos = fin_pos;
+    }
+    return pos;
+  }
+
+  int total_param_count(const UPGStructure &structure)
+  {
+    int cnt = 0;
+    for (auto &node_id : structure.s)
+      cnt += get_node_param_count(node_id);
+    return cnt;
+  }
+
+  std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure)
+  {
+    std::vector<UPGPart> parts;
+    parse_node_rec(structure, parts, true, 0);
+    if (parts.empty())
+      parts.push_back(UPGPart({0, (int)structure.s.size()}, {0, total_param_count(structure)}));
+    for (auto &g : parts)
+      logerr("part [%d %d][%d %d]", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second);
+    return parts;
+  }
 }

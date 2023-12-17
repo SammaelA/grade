@@ -6,6 +6,7 @@
 #include "common_utils/bbox.h"
 #include "sdf_rendering.h"
 #include "graphics_utils/render_point_cloud.h"
+#include "common_utils/distribution.h"
 
 namespace upg
 {
@@ -50,6 +51,40 @@ namespace upg
 
     return reference;
   };
+
+  float normal_pdf(float x, float x0, float sigma)
+  {
+    return (1 / sqrt(2 * PI * sigma * sigma)) * exp(-SQR(x - x0) / (2 * sigma * sigma));
+  }
+
+  float estimate_positioning_quality(const PointCloudReference &reference, const UPGStructure &structure,
+                                     const UPGPart &part, std::span<const float> parameters,
+                                     float border_sigma = 0.01f,
+                                     float inner_point_penalty = 10)
+  {
+    UPGStructure part_structure;
+    part_structure.s = std::vector<uint16_t>(structure.s.begin() + part.s_range.first, structure.s.begin() + part.s_range.second);
+    std::span<const float> part_parameters(parameters.data() + part.p_range.first, parameters.data() + part.p_range.second);
+
+    SdfGenInstance gen(part_structure);
+    ProceduralSdf sdf = gen.generate(part_parameters);
+
+    double quality = 0;
+    float denom = normal_pdf(0,0,border_sigma);
+    for (auto &p : reference.points)
+    {
+      float dist = sdf.get_distance(p);
+      float border_q = normal_pdf(dist, 0, border_sigma)/denom; //in range (0,1], where 1 is perfect border point, 0 is not border at all
+      float inner_q = (dist<0)*(1-border_q);
+      quality += border_q - inner_point_penalty*inner_q;
+    }
+    quality /= reference.points.size();
+
+    logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
+    logerr("quality %f", (float)quality);
+
+    return quality;
+  }
 
   class SdfRenderAndCompare : public UPGOptimizableFunction
   {
