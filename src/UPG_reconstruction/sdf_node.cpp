@@ -15,6 +15,31 @@ namespace upg
     virtual std::vector<const SdfNode *> get_children() const override { return {}; }
   };
 
+  static constexpr int MAX_PARAMS = 256;
+
+  #define GET_DISTANCE_WITH_DIFF(func)                       \
+  {                                                          \
+    float p_args[MAX_PARAMS];                                \
+    p_args[0] = pos.x;                                       \
+    p_args[1] = pos.y;                                       \
+    p_args[2] = pos.z;                                       \
+    for (int i = 0; i < param_cnt(); i++)                    \
+      p_args[3 + i] = p[i];                                  \
+    if (ddist_dp)                                            \
+    {                                                        \
+      float d_p[MAX_PARAMS] = {0};                           \
+      float d = __enzyme_autodiff((void *)func, p_args, d_p);\
+      int offset = ddist_dp->size();                         \
+      ddist_dp->resize(offset + param_cnt());                \
+      for (int i = 0; i < param_cnt(); i++)                  \
+        (*ddist_dp)[offset + i] = d_p[3 + i];                \
+      (*ddist_dpos)[0] = d_p[0];                             \
+      (*ddist_dpos)[1] = d_p[1];                             \
+      (*ddist_dpos)[2] = d_p[2];                             \
+    }                                                        \
+    return func(p_args);                                     \
+  }
+
   class OneChildSdfNode : public SdfNode
   {
   protected:
@@ -65,7 +90,7 @@ namespace upg
   };
 
 
-  float 
+  inline float 
   diff_sphere_sdf(float params[4]) 
   {
     return std::max(1e-9f, sqrt(params[0] * params[0] + params[1] * params[1] + params[2] * params[2])) - params[3];
@@ -80,27 +105,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      float d = std::max(1e-9f, glm::length(pos));
-
-      if (ddist_dp)
-      {
-        float p_args[4], d_p[4] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[RADIUS];
-        __enzyme_autodiff((void*)diff_sphere_sdf, p_args, d_p);
-
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 1);
-        (*ddist_dp)[offset] = d_p[3];
-        
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-      }
-
-      return d - p[RADIUS];
+      GET_DISTANCE_WITH_DIFF(diff_sphere_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 1; }
@@ -113,7 +118,7 @@ namespace upg
     }
   };
 
-  float
+  inline float
   diff_box_sdf(float params[6])
   {
     float q[3], max_q[3];
@@ -143,38 +148,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
-      glm::vec3 q = abs(pos) - size;
-      float d1 = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0)));
-      float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
-      float d = d1 + d2;
-
-      if (ddist_dp)
-      {        
-        float p_args[6], d_p[6] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[SIZE_X];
-        p_args[4] = p[SIZE_Y];
-        p_args[5] = p[SIZE_Z];
-
-        float ans = __enzyme_autodiff((void*)diff_box_sdf, p_args, d_p);
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 3);
-
-        (*ddist_dp)[offset]   = d_p[3];
-        (*ddist_dp)[offset+1] = d_p[4];
-        (*ddist_dp)[offset+2] = d_p[5];
-
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-
-        // std::cout << ans << " " << d << std::endl;
-      }
-
-      return d;
+      GET_DISTANCE_WITH_DIFF(diff_box_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 3; }
@@ -191,7 +165,7 @@ namespace upg
     }
   };
 
-  float
+  inline float
   diff_round_box_sdf(float params[7])
   {
     float q[3], max_q[3];
@@ -222,40 +196,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 size(p[SIZE_X], p[SIZE_Y], p[SIZE_Z]);
-      glm::vec3 q = abs(pos) - size;
-      float d1 = glm::length(glm::max(q, glm::vec3(0.0, 0.0, 0.0)));
-      float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
-      float d = d1 + d2 - p[RADIUS];
-
-      if (ddist_dp)
-      {        
-        float p_args[7], d_p[7] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[SIZE_X];
-        p_args[4] = p[SIZE_Y];
-        p_args[5] = p[SIZE_Z];
-        p_args[6] = p[RADIUS];
-
-        float ans = __enzyme_autodiff((void*)diff_round_box_sdf, p_args, d_p);
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 4);
-
-        (*ddist_dp)[offset]   = d_p[3];
-        (*ddist_dp)[offset+1] = d_p[4];
-        (*ddist_dp)[offset+2] = d_p[5];
-        (*ddist_dp)[offset+3] = d_p[6];
-
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-
-        // std::cout << ans << " " << d << std::endl;
-      }
-
-      return d;
+      GET_DISTANCE_WITH_DIFF(diff_round_box_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 4; }
@@ -274,7 +215,7 @@ namespace upg
     }
   };
 
-  float
+  inline float
   diff_cylinder_sdf(float params[5])
   {
     float d[2];
@@ -304,34 +245,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec2 vec_d = glm::abs(glm::vec2(glm::length(glm::vec2(pos.x, pos.z)), pos.y)) - glm::vec2(p[RADIUS], p[HEIGHT]);
-      
-      float d = std::min(std::max(vec_d.x, vec_d.y), 0.f) + glm::length(glm::max(vec_d, glm::vec2(0, 0)));
-
-      if (ddist_dp)
-      {
-        float p_args[5], d_p[5] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[HEIGHT];
-        p_args[4] = p[RADIUS];
-        
-        float ans = __enzyme_autodiff((void*)diff_cylinder_sdf, p_args, d_p);
-        ans = diff_cylinder_sdf(p_args);
-
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 2);
-        
-        (*ddist_dp)[offset] = d_p[3];
-        (*ddist_dp)[offset+1] = d_p[4];
-
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-      }
-
-      return d;
+      GET_DISTANCE_WITH_DIFF(diff_cylinder_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 2; }
@@ -346,7 +260,7 @@ namespace upg
     }
   };
 
-  float
+  inline float
   diff_prism_sdf(float params[5])
   {
     float q[3];
@@ -370,31 +284,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec3 q = abs(pos);
-      float d = std::max(q.z - p[H2], std::max(q.x * 0.866025f + pos.y*0.5f, -pos.y) - p[H1] * 0.5f);
-
-      if (ddist_dp)
-      {
-        float p_args[5], d_p[5] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[H1];
-        p_args[4] = p[H2];
-
-        float ans =  __enzyme_autodiff((void*)diff_prism_sdf, p_args, d_p);
-
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 2);
-        (*ddist_dp)[offset+0] = d_p[3];
-        (*ddist_dp)[offset+1] = d_p[4];
-
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-      }
-
-      return d;
+      GET_DISTANCE_WITH_DIFF(diff_prism_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 2; }
@@ -409,7 +299,7 @@ namespace upg
     }
   };
 
-  float
+  inline float
   diff_cone_sdf(float params[6])
   {
     float q[2], w[2], a[2], b[2];
@@ -446,41 +336,7 @@ namespace upg
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
-      glm::vec2 q = p[HEIGHT] * glm::vec2(p[C1]/p[C2],-1.0);
-      glm::vec2 w = glm::vec2( glm::length(glm::vec2(pos.x, pos.z)), pos.y );
-      glm::vec2 a = w - q * glm::clamp(glm::dot(w,q)/glm::dot(q,q), 0.0f, 1.0f);
-      glm::vec2 b = w - q * glm::vec2(glm::clamp( w.x/q.x, 0.f, 1.f), 1.0);
-      float k = glm::sign( q.y );
-      float v = std::min(dot( a, a ),dot(b, b));
-      float s = std::max(k*(w.x*q.y-w.y*q.x),k*(w.y-q.y));
-      float d = sqrt(v)*glm::sign(s);
-
-      if (ddist_dp)
-      {        
-        float p_args[6], d_p[6] = {0};
-        p_args[0] = pos.x;
-        p_args[1] = pos.y;
-        p_args[2] = pos.z;
-        p_args[3] = p[C1];
-        p_args[4] = p[C2];
-        p_args[5] = p[HEIGHT];
-
-        float ans = __enzyme_autodiff((void*)diff_cone_sdf, p_args, d_p);
-        int offset = ddist_dp->size();
-        ddist_dp->resize(offset + 3);
-
-        (*ddist_dp)[offset]   = d_p[3];
-        (*ddist_dp)[offset+1] = d_p[4];
-        (*ddist_dp)[offset+2] = d_p[5];
-
-        (*ddist_dpos)[0] = d_p[0];
-        (*ddist_dpos)[1] = d_p[1];
-        (*ddist_dpos)[2] = d_p[2];
-
-        // std::cout << ans << " " << d << std::endl;
-      }
-
-      return d;
+      GET_DISTANCE_WITH_DIFF(diff_cone_sdf);
     }
 
     virtual unsigned param_cnt() const override { return 3; }
