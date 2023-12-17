@@ -1,18 +1,7 @@
 #include "sdf_node.h"
 #include <stdio.h>
 
-template<typename T>
-T square(T x) { return x * x; }
-
-float __enzyme_autodiffFloat(float (*)(float), float);
-double __enzyme_autodiffDouble(double (*)(double), double);
 float __enzyme_autodiff(...);
-
-void
-f()
-{
-  printf("float  d/dx %f\n", __enzyme_autodiffFloat(square<float>, 1.0f));
-}
 
 namespace upg
 {
@@ -92,16 +81,16 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       float d = std::max(1e-9f, glm::length(pos));
-      float p_args[4], d_p[4] = {0};
-      p_args[0] = pos.x;
-      p_args[1] = pos.y;
-      p_args[2] = pos.z;
-      p_args[3] = p[RADIUS];
-
-      float ans = __enzyme_autodiff((void*)diff_sphere_sdf, p_args, d_p);
 
       if (ddist_dp)
       {
+        float p_args[4], d_p[4] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[RADIUS];
+        __enzyme_autodiff((void*)diff_sphere_sdf, p_args, d_p);
+
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 1);
         (*ddist_dp)[offset] = d_p[3];
@@ -160,16 +149,16 @@ namespace upg
       float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
       float d = d1 + d2;
 
-      float p_args[6], d_p[6] = {0};
-      p_args[0] = pos.x;
-      p_args[1] = pos.y;
-      p_args[2] = pos.z;
-      p_args[3] = p[SIZE_X];
-      p_args[4] = p[SIZE_Y];
-      p_args[5] = p[SIZE_Z];
-
       if (ddist_dp)
       {        
+        float p_args[6], d_p[6] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[SIZE_X];
+        p_args[4] = p[SIZE_Y];
+        p_args[5] = p[SIZE_Z];
+
         float ans = __enzyme_autodiff((void*)diff_box_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
@@ -239,17 +228,17 @@ namespace upg
       float d2 = std::min(std::max(q.x,std::max(q.y, q.z)), 0.f);
       float d = d1 + d2 - p[RADIUS];
 
-      float p_args[7], d_p[7] = {0};
-      p_args[0] = pos.x;
-      p_args[1] = pos.y;
-      p_args[2] = pos.z;
-      p_args[3] = p[SIZE_X];
-      p_args[4] = p[SIZE_Y];
-      p_args[5] = p[SIZE_Z];
-      p_args[6] = p[RADIUS];
-
       if (ddist_dp)
       {        
+        float p_args[7], d_p[7] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[SIZE_X];
+        p_args[4] = p[SIZE_Y];
+        p_args[5] = p[SIZE_Z];
+        p_args[6] = p[RADIUS];
+
         float ans = __enzyme_autodiff((void*)diff_round_box_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 4);
@@ -466,16 +455,16 @@ namespace upg
       float s = std::max(k*(w.x*q.y-w.y*q.x),k*(w.y-q.y));
       float d = sqrt(v)*glm::sign(s);
 
-      float p_args[6], d_p[6] = {0};
-      p_args[0] = pos.x;
-      p_args[1] = pos.y;
-      p_args[2] = pos.z;
-      p_args[3] = p[C1];
-      p_args[4] = p[C2];
-      p_args[5] = p[HEIGHT];
-
       if (ddist_dp)
       {        
+        float p_args[6], d_p[6] = {0};
+        p_args[0] = pos.x;
+        p_args[1] = pos.y;
+        p_args[2] = pos.z;
+        p_args[3] = p[C1];
+        p_args[4] = p[C2];
+        p_args[5] = p[HEIGHT];
+
         float ans = __enzyme_autodiff((void*)diff_cone_sdf, p_args, d_p);
         int offset = ddist_dp->size();
         ddist_dp->resize(offset + 3);
