@@ -72,8 +72,8 @@ namespace upg
         if (verbose)
         {
           debug("%d new best (%f) [", no_diff_function_calls, c.loss);
-          for (auto &v : c.params.differentiable)
-            debug("%f ", v);
+          for (int i=0;i<c.params.size();i++)
+            debug("%f ", c.params[i]);
           debug("]\n");
         }
         best_population[worst_index] = c;
@@ -100,7 +100,7 @@ namespace upg
       {
         UPGReconstructionResult res;
         res.structure = structure;
-        res.parameters.p = c.params.differentiable;//TODO: fixme
+        res.parameters.p = func->opt_params_to_gen_params(c.params, pd);
 
         c.local_optimizer = get_optimizer_adam(func, local_opt_block, res);
       }

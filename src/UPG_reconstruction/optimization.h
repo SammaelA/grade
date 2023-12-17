@@ -8,25 +8,33 @@ namespace upg
 {
   // all parameters that can be changed by optimizer structured
   // in a convenient (for optimizer) way
+  // This class is basically a vector that is deliberately put into
+  // a separate structure to clarify it's meaning (i.e. - it should not be put 
+  // into a generator directly!)
   struct OptParams
   {
-    std::vector<float> differentiable;
     int size() const
     {
-      return differentiable.size();
+      return data.size();
     }
     void resize(int size)
     {
-      differentiable.resize(size);
+      data.resize(size);
     }
     float &operator[](int index)
     {
-      return differentiable[index];
+      return data[index];
     }
     const float &operator[](int index) const
     {
-      return differentiable[index];
+      return data[index];
     }
+    void set(const std::span<const float> &p)
+    {
+      data = std::vector<float>(p.begin(), p.end());
+    }
+  private:
+    std::vector<float> data;
   };
 
   /*
@@ -45,7 +53,7 @@ namespace upg
     {
       //iterate all parameters' groups from description
       //map orders them by block_id, so generator's params are first, and scene's are after it
-      int diff_i = 0;
+      int i = 0;
       std::vector<float> gen_params;
       std::vector<float> scene_params;
       gen_params.reserve(pd.get_total_params_count());
@@ -59,15 +67,11 @@ namespace upg
           {
             p_v.push_back(par.value);
           }
-          else if (par.type == ParameterType::DIFFERENTIABLE)
-          {
-            float v = CLAMP(params.differentiable[diff_i], par.min_val, par.max_val);
-            p_v.push_back(v);
-            diff_i++;
-          }
           else
           {
-            // TODO: other types
+            float v = CLAMP(params[i], par.min_val, par.max_val);
+            p_v.push_back(v);
+            i++;
           }
         }
       }
@@ -80,7 +84,7 @@ namespace upg
     {
       //TODO
       OptParams p;
-      p.differentiable = params;
+      p.set(params);
       return p;
     }
     //calculate function that we optimize and it's gradient (put into given span)

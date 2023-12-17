@@ -46,7 +46,7 @@ namespace upg
           float Vh = V[i] / (1 - pow(beta_1, total_iterations+1)); 
           S[i] = beta_2 * S[i] + (1-beta_2)*g*g;
           float Sh = S[i] / (1 - pow(beta_2, total_iterations+1)); 
-          X.differentiable[i] -= alpha*Vh/(sqrt(Sh) + eps);
+          X[i] -= alpha*Vh/(sqrt(Sh) + eps);
         }
         if ((total_iterations % 5 == 0) && verbose)
           debug("Adam iter %3d  val = %.8f best_val = %.8f\n", total_iterations, val, best_result);

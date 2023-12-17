@@ -164,7 +164,7 @@ namespace upg
       /*
       debug("params [");
       for (int i=0;i<gen_params.size();i++)
-        debug("%f ",params.differentiable[i]);
+        debug("%f ",params[i]);
       debug("]\n");
       debug("grad [");
       for (int i=0;i<gen_params.size();i++)
