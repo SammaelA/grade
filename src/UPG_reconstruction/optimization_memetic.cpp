@@ -60,6 +60,11 @@ namespace upg
         population[i] = initialize_creature();
     }
 
+    float normal_pdf(float x, float x0, float sigma)
+    {
+      return (1/sqrt(2*PI*sigma*sigma)) * exp(-SQR(x-x0)/(2*sigma*sigma));
+    }
+
     void mutation(OptParams &params, float mutation_chance, float mutation_power)
     {
       Normal normal_gen = Normal(0, mutation_power);
@@ -67,9 +72,26 @@ namespace upg
       for (int i=0;i<MAX(1, mutation_chance * params.size());i++)
       {
         int id = urandi(0, params.size());
+        std::vector<float> mutation_power_chances(stat[0].size(), 0);
+        float bin_f = stat[0].size()*((params[id] - borders[id].x)/(borders[id].y-borders[id].x));
+        
+        for (int j=0;j<stat[0].size();j++)
+        {
+          mutation_power_chances[j] = (j==0) ? 0 : mutation_power_chances[j-1];
+          mutation_power_chances[j] += (1/(stat[id][j].second + 1e-6)) * normal_pdf((float)j/(stat[0].size()), bin_f, mutation_power);
+        }
+        float rnd = urand(0, mutation_power_chances.back());
+        int mut_id = 0;
+        while (rnd > mutation_power_chances[mut_id])
+          mut_id++;
+        mut_id += urand();
+        float t = borders[id].x + ((float)mut_id/(stat[0].size()))*(borders[id].y - borders[id].x);
+        t = CLAMP(t, borders[id].x, borders[id].y);
+        /*
         float t = borders[id].y + 1;
         while (t >= borders[id].y || t <= borders[id].x)
           t = CLAMP(params[id] + normal_gen.get()*(borders[id].y - borders[id].x), borders[id].x, borders[id].y);
+        */
         params[id] = t;
       }
     }
@@ -129,13 +151,12 @@ namespace upg
       }
 
       result_bins[CLAMP((int)(result_bin_count*c.loss), 0, result_bin_count-1)]++;
-      double slide = 0.9975;
       for (int i=0;i<borders.size();i++)
       {
         int bin = stat[i].size()*((c.params[i] - borders[i].x)/(borders[i].y-borders[i].x));
         bin = CLAMP(bin, 0, stat[i].size()-1);
         stat[i][bin].first++;
-        stat[i][bin].second = slide*stat[i][bin].second + (1-slide)*c.loss;
+        stat[i][bin].second = std::min(stat[i][bin].second, (double)(c.loss));
       }
     }
 
@@ -221,7 +242,7 @@ namespace upg
       stat.resize(borders.size());
       for (auto &a : stat)
         for (auto &p : a)
-          p = {0, 0.0};
+          p = {0, 1.0};
 
      verbose = settings.get_bool("verbose");
      finish_thr = settings.get_double("finish_threshold");
@@ -246,7 +267,6 @@ namespace upg
         for (int i=0;i<elites_count;i++)
           new_population[i] = population[i];
 
-        #pragma omp parallel for
         for (int i=elites_count;i<population_size;i++)
         {
           std::vector<float> chances = {0.1, 0.1 + 0.5, 0.1 + 0.5 + 0.4};
@@ -284,14 +304,14 @@ namespace upg
           debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
           debug("best res [");
           for (auto &c : best_population)
-            debug("%.5f ", c.loss);
+            debug("%.6f ", c.loss);
           debug("]\n");
           /*
           for (auto &arr : stat)
           {
             debug("param stat: ");
             for (auto &p : arr)
-              debug("%f ",(float)p.second);
+              debug("[%d %f]",p.first, (float)p.second);
             debug("\n");
           }
           */
@@ -364,7 +384,7 @@ namespace upg
     ParametersDescription pd;
     std::vector<glm::vec2> borders; //size equals total size of OptParams vector
     Block local_opt_block;
-    std::vector<std::array<std::pair<int, double>, 16>> stat;
+    std::vector<std::array<std::pair<int, double>, 64>> stat;
 
     //GA state
     std::vector<Creature> population;

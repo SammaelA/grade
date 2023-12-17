@@ -34,11 +34,11 @@ namespace upg
             iterations:i = 100
             verbose:b = true
         }
-        step_1 {
-            learning_rate:r = 0.003
-            iterations:i = 500
-            verbose:b = false
-        }
+        //step_1 {
+        //    learning_rate:r = 0.003
+        //    iterations:i = 500
+        //    verbose:b = false
+        //}
     }
     results {
         check_image_quality:b = false
@@ -163,15 +163,18 @@ namespace upg
     //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Boxes"] = scene_8_boxes();
 
-    int max_iters = 200'000;
-    std::vector<UPGReconstructionResult> results;
+    int max_iters = 100'000;
+    int tries = 5;
+    std::vector<std::vector<UPGReconstructionResult>> results;
     std::vector<int> timings;
     std::chrono::steady_clock::time_point t1, t2;
     
     for (auto &scene : scenes)
     {
       t1 = std::chrono::steady_clock::now();
-      results.push_back(benchmark_single(optimizer_name, max_iters, scene.second, fixed_structure));
+      results.emplace_back();
+      for (int i=0;i<tries;i++)
+      results.back().push_back(benchmark_single(optimizer_name, max_iters, scene.second, fixed_structure));
       t2 = std::chrono::steady_clock::now();
       timings.push_back(std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count());
     }
@@ -181,20 +184,25 @@ namespace upg
     int j = 0;
     for (auto &scene : scenes)
     {
+      float average_loss = 0;
+      for (auto &r : results[j])
+        average_loss += r.loss_optimizer;
+      average_loss /= tries;
+      timings[j] /= tries;
       debug("Scene %d: %s\n", j, scene.first.c_str());
-      debug("Value: %.1f*1e-6\n", 1e6*results[j].loss_optimizer);
+      debug("Average loss: %.1f*1e-6\n", 1e6*average_loss);
       debug("Time %d m %d s\n", timings[j]/60, timings[j] % 60);
       j++;
     }
 
-    return results;
+    return results[0];
   }
 
   void benchmark_sdf_complex_optimization()
   {
-    //benchmark_for_optimizer("CC", true);
+    benchmark_for_optimizer("CC", true);
     //benchmark_for_optimizer("DE", true);
-    benchmark_for_optimizer("memetic", true);
+    //benchmark_for_optimizer("memetic", true);
     //benchmark_for_optimizer("particle_swarm", true);
   }
 
