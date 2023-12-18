@@ -7,6 +7,8 @@ namespace upg
 { 
   const int MESH_REPEATS = 5;
 
+  const int SPINS = 16;
+
   vec3 norm(upg::vec3 v1, upg::vec3 v2);
   vec3 norm(upg::vec3 v);
   void add_rect(upg::vec3 point, upg::vec3 v1, upg::vec3 v2, UniversalGenMesh &mesh);
@@ -93,6 +95,51 @@ namespace upg
       out[i] = in[i];
   }
 
+  void TriPrismNode_apply(const my_float *in, my_float *out)
+  {
+    out[0] = in[0];
+    out[1] = 0;
+    out[2] = in[1];
+    out[3] = in[2];
+    out[4] = 0;
+    out[5] = in[3];
+    out[6] = in[4];
+    out[7] = 0;
+    out[8] = in[5];
+
+    out[9 + 0] = in[0];
+    out[9 + 1] = 1;
+    out[9 + 2] = in[1];
+    out[9 + 3] = in[2];
+    out[9 + 4] = 1;
+    out[9 + 5] = in[3];
+    out[9 + 6] = in[4];
+    out[9 + 7] = 1;
+    out[9 + 8] = in[5];
+    for (int i = 0; i < 3; ++i)
+    {
+      out[18 + 18 * i + 0] = in[(0 + 2 * i) % 6];
+      out[18 + 18 * i + 1] = 0;
+      out[18 + 18 * i + 2] = in[(1 + 2 * i) % 6];
+      out[18 + 18 * i + 3] = in[(0 + 2 * i) % 6];
+      out[18 + 18 * i + 4] = 1;
+      out[18 + 18 * i + 5] = in[(1 + 2 * i) % 6];
+      out[18 + 18 * i + 6] = in[(2 + 2 * i) % 6];
+      out[18 + 18 * i + 7] = 0;
+      out[18 + 18 * i + 8] = in[(3 + 2 * i) % 6];
+
+      out[18 + 18 * i + 9 + 0] = in[(2 + 2 * i) % 6];
+      out[18 + 18 * i + 9 + 1] = 1;
+      out[18 + 18 * i + 9 + 2] = in[(3 + 2 * i) % 6];
+      out[18 + 18 * i + 9 + 3] = in[(2 + 2 * i) % 6];
+      out[18 + 18 * i + 9 + 4] = 0;
+      out[18 + 18 * i + 9 + 5] = in[(3 + 2 * i) % 6];
+      out[18 + 18 * i + 9 + 6] = in[(0 + 2 * i) % 6];
+      out[18 + 18 * i + 9 + 7] = 1;
+      out[18 + 18 * i + 9 + 8] = in[(1 + 2 * i) % 6];
+    }
+  }
+
   void RotateNode_apply(const my_float *in, my_float *out)
   {
     vec3 ax = {in[0], in[1], in[2]};
@@ -133,33 +180,33 @@ namespace upg
     for (int i = 1; i < 8; ++i)
     {
       int j = 0;
-      for (my_float ang = 1; ang <= 8; ++ang)
+      for (my_float ang = 1; ang <= SPINS; ++ang)
       {
-        my_float prev_angle = (ang - 1) * M_PI / 4.0;
-        my_float angle = ang * M_PI / 4.0;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 1] = (y - 1)/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
+        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
+        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 1] = (y - 1)/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
 
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 3] = cos(prev_angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 4] = y/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 5] = sin(prev_angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 3] = cos(prev_angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 4] = y/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 5] = sin(prev_angle) * in[i];
 
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 6] = cos(angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 7] = (y - 1)/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 0 + 8] = sin(angle) * in[i - 1];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 6] = cos(angle) * in[i - 1];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 7] = (y - 1)/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 8] = sin(angle) * in[i - 1];
 
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 0] = cos(angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 1] = y/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 2] = sin(angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 0] = cos(angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 1] = y/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 2] = sin(angle) * in[i];
 
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 3] = cos(angle) * in[i - 1];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 4] = (y - 1)/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 5] = sin(angle) * in[i - 1];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 3] = cos(angle) * in[i - 1];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 4] = (y - 1)/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 5] = sin(angle) * in[i - 1];
 
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 6] = cos(prev_angle) * in[i];
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 7] = y/8;
-        out[(i - 1) * 8 * 2 * 9 + j * 2 * 9 + 9 + 8] = sin(prev_angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 6] = cos(prev_angle) * in[i];
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 7] = y/8;
+        out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 9 + 8] = sin(prev_angle) * in[i];
 
         ++j;
       }
@@ -239,7 +286,7 @@ namespace upg
         data[i] = p[i];
       }
       UniversalGenMesh mesh;
-      int mesh_size = (8 - 1) * 8 * 2 * 9;
+      int mesh_size = (8 - 1) * SPINS * 2 * 9;
       mesh.pos.resize(mesh_size);
       //creating spin mesh
       if (out_jac)
@@ -261,6 +308,152 @@ namespace upg
     unsigned param_cnt() const override
     {
       return 8;
+    }
+  };
+
+  class SphereNode : public PrimitiveNode
+  {
+  public:
+    SphereNode(unsigned id) : PrimitiveNode(id) { name = "Sphere"; }
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      //creating for example sphere
+      my_float data[8], j = 0;
+      for (int i = 0; i < 8; ++i)
+      {
+        data[i] = sqrt(abs(49.0 / 256.0 - pow(j / 8.0 - 7.0 / 16.0, 2)));
+        j += 1;
+      }
+      UniversalGenMesh mesh;
+      int mesh_size = (8 - 1) * SPINS * 2 * 9;
+      mesh.pos.resize(mesh_size);
+      SpinNode_8_apply(data, mesh.pos.data());
+      if (out_jac)
+        out_jac->resize(mesh.pos.size(), 0);
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 0;
+    }
+  };
+
+  class ConeNode : public PrimitiveNode
+  {
+  public:
+    ConeNode(unsigned id) : PrimitiveNode(id) { name = "Cone"; }
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      //creating for example cone
+      my_float data[8], j = 7;
+      for (int i = 0; i < 8; ++i)
+      {
+        data[i] = j / 16.0;
+        j -= 1;
+      }
+      UniversalGenMesh mesh;
+      int mesh_size = (8 - 1) * SPINS * 2 * 9;
+      mesh.pos.resize(mesh_size);
+      SpinNode_8_apply(data, mesh.pos.data());
+      for (int ang = 1; ang <= SPINS; ++ang)
+      {
+        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
+        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        add_tri({0, 0, 0}, {cos(angle) * 7.0 / 16.0, 0, sin(angle) * 7.0 / 16.0}, {cos(prev_angle) * 7.0 / 16.0, 0, sin(prev_angle) * 7.0 / 16.0}, mesh);
+      }
+      if (out_jac)
+        out_jac->resize(mesh.pos.size(), 0);
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 0;
+    }
+  };
+
+  class CylinderNode : public PrimitiveNode
+  {
+  public:
+    CylinderNode(unsigned id) : PrimitiveNode(id) { name = "Cylinder"; }
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      //creating for example cylinder
+      my_float data[8];
+      for (int i = 0; i < 8; ++i)
+      {
+        data[i] = 0.5;
+      }
+      UniversalGenMesh mesh;
+      int mesh_size = (8 - 1) * SPINS * 2 * 9;
+      mesh.pos.resize(mesh_size);
+      SpinNode_8_apply(data, mesh.pos.data());
+      for (int ang = 1; ang <= SPINS; ++ang)
+      {
+        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
+        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        add_tri({0, 7.0 / 8.0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
+      }
+      for (int ang = 1; ang <= SPINS; ++ang)
+      {
+        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
+        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        add_tri({0, 0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
+      }
+      if (out_jac)
+        out_jac->resize(mesh.pos.size(), 0);
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 0;
+    }
+  };
+
+  class TriPrismNode : public PrimitiveNode
+  {
+  public:
+    TriPrismNode(unsigned id) : PrimitiveNode(id) { name = "TriPrism"; }
+    UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
+    {
+      //creating for example prism
+      UniversalGenMesh mesh;
+      mesh.pos.resize(9 * 8);
+      if (out_jac)
+      {
+        out_jac->resize(mesh.pos.size(), 6);
+        ENZYME_EVALUATE_WITH_DIFF(TriPrismNode_apply, 6, mesh.pos.size(), p.data(), mesh.pos.data(), out_jac);
+      }
+      else
+      {
+        TriPrismNode_apply(p.data(), mesh.pos.data());
+      }
+      return mesh;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block() const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      for (int i = 0; i < 6; i++)
+        params.push_back({0, -10.0f, 10.0f, ParameterType::DIFFERENTIABLE, "triangle_point_" + std::to_string(i)});
+      return params;
+    }
+    unsigned param_cnt() const override
+    {
+      return 6;
     }
   };
 
@@ -915,6 +1108,18 @@ namespace upg
         break;
       case 9:
         node = new ComplexRotateRepeatNode(id);
+        break;
+      case 10:
+        node = new SphereNode(id);
+        break;
+      case 11:
+        node = new ConeNode(id);
+        break;
+      case 12:
+        node = new CylinderNode(id);
+        break;
+      case 13:
+        node = new TriPrismNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);
