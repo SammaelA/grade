@@ -599,15 +599,16 @@ namespace upg
         all_params[i] = 0;
       }
     }
-    return ProceduralSdf(root);
+    return ProceduralSdf(root, structure, all_nodes);
   }
 
   SdfGenInstance::SdfGenInstance(const UPGStructure &structure)
   {
     recreate(structure);
   }
-  void SdfGenInstance::recreate(const UPGStructure &structure)
+  void SdfGenInstance::recreate(const UPGStructure &_structure)
   {
+    structure = _structure;
     all_params.clear();
     all_nodes.clear();
     

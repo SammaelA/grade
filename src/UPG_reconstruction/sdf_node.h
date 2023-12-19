@@ -33,9 +33,12 @@ namespace upg
   {
   public:
     ProceduralSdf() = default;
-    ProceduralSdf(const SdfNode *_root)
+    ProceduralSdf(const SdfNode *_root, const UPGStructure &_structure,
+                std::span<const std::unique_ptr<SdfNode>> _all_nodes):
+      all_nodes(_all_nodes)
     {
       root = _root;
+      structure = _structure;
     }
     float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const
@@ -43,6 +46,8 @@ namespace upg
       return root->get_distance(pos, ddist_dp, ddist_dpos);
     }
     const SdfNode *root = nullptr;
+    const std::span<const std::unique_ptr<SdfNode>> all_nodes;
+    UPGStructure structure;
   };
 
   class SdfGenInstance : public UniversalGenInstance
@@ -65,6 +70,7 @@ namespace upg
     //put raw parameters list here to generate
     //DO NOT change size of this vector
     std::vector<my_float> all_params;
+    UPGStructure structure;
 
     static AABB scene_bbox;
   };
