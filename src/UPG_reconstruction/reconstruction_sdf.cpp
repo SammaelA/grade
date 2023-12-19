@@ -57,35 +57,6 @@ namespace upg
     return (1 / sqrt(2 * PI * sigma * sigma)) * exp(-SQR(x - x0) / (2 * sigma * sigma));
   }
 
-  float estimate_positioning_quality(const PointCloudReference &reference, const UPGStructure &structure,
-                                     const UPGPart &part, std::span<const float> parameters,
-                                     float border_sigma = 0.01f,
-                                     float inner_point_penalty = 10)
-  {
-    UPGStructure part_structure;
-    part_structure.s = std::vector<uint16_t>(structure.s.begin() + part.s_range.first, structure.s.begin() + part.s_range.second);
-    std::span<const float> part_parameters(parameters.data() + part.p_range.first, parameters.data() + part.p_range.second);
-
-    SdfGenInstance gen(part_structure);
-    ProceduralSdf sdf = gen.generate(part_parameters);
-
-    double quality = 0;
-    float denom = normal_pdf(0,0,border_sigma);
-    for (auto &p : reference.points)
-    {
-      float dist = sdf.get_distance(p);
-      float border_q = normal_pdf(dist, 0, border_sigma)/denom; //in range (0,1], where 1 is perfect border point, 0 is not border at all
-      float inner_q = (dist<0)*(1-border_q);
-      quality += border_q - inner_point_penalty*inner_q;
-    }
-    quality /= reference.points.size();
-
-    logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
-    logerr("quality %f", (float)quality);
-
-    return quality;
-  }
-
   class SdfRenderAndCompare : public UPGOptimizableFunction
   {
   public:
@@ -105,17 +76,26 @@ namespace upg
     {
       int samples = 0;
       double partial_sum = 0.0;
-      while (samples < max_batch_size && partial_sum <= sensitivity)
+      if (base_batch_size < max_index)
       {
-        for (int b=0;b<base_batch_size;b++)
+        while (samples < max_batch_size && partial_sum <= sensitivity)
         {
-          int index = rand()%max_index;
-          partial_sum += get_value(index);
+          for (int b=0;b<base_batch_size;b++)
+          {
+            int index = rand()%max_index;
+            partial_sum += get_value(index);
+          }
+          samples += base_batch_size;
+          sensitivity /= 10;
+          if (sensitivity == 0)
+            break;
         }
-        samples += base_batch_size;
-        sensitivity /= 10;
-        if (sensitivity == 0)
-          break;
+      }
+      else
+      {
+        samples = max_index;
+        for (int i=0;i<max_index;i++)
+          partial_sum += get_value(i);
       }
 
       return {samples, partial_sum};
@@ -154,7 +134,7 @@ namespace upg
         if (d < 0)
         {
           for (int i=0;i<gen_params.size();i++)
-            out_grad_d[i] += 2*d*cur_grad[i];
+            out_grad_d[i] += (d > 0 ? 2 : 4)*d*cur_grad[i];
           return d*d;
         }
         else
@@ -213,6 +193,37 @@ namespace upg
     {
       return std::make_shared<SdfGenInstance>(structure);
     }
+
+    virtual float estimate_positioning_quality(const UPGStructure &structure,
+                                               const UPGPart &part, std::span<const float> parameters,
+                                               float border_sigma,
+                                               float inner_point_penalty) const override
+  {
+    UPGStructure part_structure;
+    part_structure.s = std::vector<uint16_t>(structure.s.begin() + part.s_range.first, structure.s.begin() + part.s_range.second);
+    std::span<const float> part_parameters(parameters.data() + part.p_range.first, parameters.data() + part.p_range.second);
+
+    SdfGenInstance gen(part_structure);
+    ProceduralSdf sdf = gen.generate(part_parameters);
+
+    double quality = 0, q1 = 0, q2 = 0;
+    float denom = normal_pdf(0,0,border_sigma);
+    for (auto &p : reference.points)
+    {
+      float dist = sdf.get_distance(p);
+      float border_q = normal_pdf(dist, 0, border_sigma)/denom; //in range (0,1], where 1 is perfect border point, 0 is not border at all
+      float inner_q = (dist<0)*(1-border_q);
+      quality += border_q - inner_point_penalty*inner_q;
+      q1 += border_q;
+      q2 += inner_q;
+    }
+    quality /= reference.points.size();
+
+    //logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
+    //logerr("quality %f (%f %f)", (float)quality, (float)q1, (float)q2);
+
+    return quality;
+  }
   private:
     const PointCloudReference &reference;
   };

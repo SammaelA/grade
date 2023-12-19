@@ -1,6 +1,7 @@
 #include "optimization.h"
 #include "common_utils/distribution.h"
 #include <algorithm>
+#include "sdf_node.h"
 
 namespace upg
 {
@@ -53,6 +54,8 @@ namespace upg
 
     void initialize_population()
     {
+      population.clear();
+      best_population.clear();
       population.resize(population_size);
       best_population.resize(best_params_size);
 
@@ -80,6 +83,7 @@ namespace upg
           mutation_power_chances[j] = (j==0) ? 0 : mutation_power_chances[j-1];
           mutation_power_chances[j] += (1/(stat[id][j].second + 1e-6)) * normal_pdf((float)j/(stat[0].size()), bin_f, mutation_power);
         }
+        /*
         float rnd = urand(0, mutation_power_chances.back());
         int mut_id = 0;
         while (rnd > mutation_power_chances[mut_id])
@@ -87,11 +91,11 @@ namespace upg
         mut_id += urand();
         float t = borders[id].x + ((float)mut_id/(stat[0].size()))*(borders[id].y - borders[id].x);
         t = CLAMP(t, borders[id].x, borders[id].y);
-        /*
+        */
         float t = borders[id].y + 1;
         while (t >= borders[id].y || t <= borders[id].x)
           t = CLAMP(params[id] + normal_gen.get()*(borders[id].y - borders[id].x), borders[id].x, borders[id].y);
-        */
+        
         params[id] = t;
       }
     }
@@ -105,15 +109,15 @@ namespace upg
       return p;
     }
 
-    void local_search(Creature &c, int iterations)
+    void local_search(Creature &c, int iterations, bool precise)
     {
-      if (!c.local_optimizer)
+      if (!c.local_optimizer || precise)
       {
         UPGReconstructionResult res;
         res.structure = structure;
         res.parameters.p = func->opt_params_to_gen_params(c.params, pd);
 
-        c.local_optimizer = get_optimizer_adam(func, local_opt_block, res);
+        c.local_optimizer = get_optimizer_adam(func, precise ? precise_opt_block : local_opt_block, res);
       }
       c.local_optimizer->optimize(iterations);
       UPGReconstructionResult lo_res = c.local_optimizer->get_best_results()[0];
@@ -228,33 +232,127 @@ namespace upg
       gen = func->get_generator(structure);
       pd = func->get_full_parameters_description(gen.get());
 
+      verbose = settings.get_bool("verbose");
+      finish_thr = settings.get_double("finish_threshold");
+      budget = settings.get_int("iterations", budget);
+      local_opt_block.set_bool("verbose", false);
+      local_opt_block.set_bool("save_intermediate_images", false);
+      local_opt_block.set_double("learning_rate", local_learning_rate);
+      precise_opt_block.set_bool("verbose", verbose);
+      precise_opt_block.set_bool("save_intermediate_images", false);
+      precise_opt_block.set_double("learning_rate", 0.005);
+    }
+    virtual void optimize(int iters = -1) override
+    {
+      if ((SdfGenInstance*)gen.get())
+        optimize_part_based(iters);
+      else
+        optimize_memetic(iters);
+    }
+
+    void optimize_part_based(int iters)
+    {
+      population_size = 500;
+      int step_budget = 10000;
+      float quality_thr = 0.001;
+      
+      iters = iters > 0 ? iters : budget;
+      int steps = ceil(iters/step_budget);
+      std::vector<UPGPart> parts = get_sdf_parts(structure);
+      std::vector<bool> fixed_parts(parts.size(), false);
+      std::vector<bool> fixed_params(pd.get_total_params_count(), false);
+      int parts_left = parts.size();
+      int step = 0;
+
+      //pd.print_info();
+
+      while (step < steps && parts_left > 0)
+      {
+        optimize_memetic(step_budget);
+        std::vector<float> grad(get_best_results()[0].parameters.p.size());
+        //logerr("optimizing from %f. %f", best_population[0].loss, func->f_grad_f(gen.get(), pd, best_population[0].params, grad));
+        //logerr("optimizing from %f. %f", best_population[0].loss, func->f_grad_f(gen.get(), pd, best_population[0].params, grad));
+        
+        local_search(best_population[0], 300, true);
+
+        auto best_res = get_best_results()[0];
+        debug("fixed [ ");
+
+        parts_left = parts.size();
+        for (int i=0;i<parts.size();i++)
+        {
+          float q = func->estimate_positioning_quality(structure, parts[i], best_res.parameters.p, 0.005, 100);
+          if (q > quality_thr)
+          {
+            fixed_parts[i] = true;
+            parts_left--;
+          }
+          debug("%d ",(int)fixed_parts[i]);
+        }
+        debug("] best %.8f\n", best_population[0].loss);
+
+        //make parameters in fixed parts constant
+        ParametersDescription old_pd = pd;
+        for (int i=0;i<parts.size();i++)
+        {
+          if (!fixed_parts[i])
+            continue;
+          int p_id = parts[i].p_range.first;
+          for (unsigned n_id = parts[i].s_range.first; n_id < parts[i].s_range.second; n_id++)
+          {
+            assert(pd.get_block_params().find(n_id) != pd.get_block_params().end());
+            for (auto &param : pd.get_block_params().at(n_id).p)
+            {
+              //logerr("fixed param %d %d %s", n_id, p_id, param.name.c_str());
+              assert(p_id < parts[i].p_range.second);
+              param.type = ParameterType::CONST;
+              param.value = best_res.parameters.p[p_id];
+              fixed_params[p_id] = true;
+              p_id++;
+            }
+          }
+        }
+
+        //set constant values for these fixed parameters for the whole population
+        for (auto &c : population)
+        {
+          //population was coded with old parameters description (less constants, more opt parameters)
+          auto gen_params = func->opt_params_to_gen_params(c.params, old_pd); 
+          c = Creature(func->gen_params_to_opt_params(gen_params, pd), 0);
+        }
+
+        step++;
+        //pd.print_info();
+        if (best_population[0].loss < finish_thr)
+          break;
+      }
+    }
+
+    void optimize_memetic(int iters)
+    {
+      borders.clear();
+
       for (const auto &p : pd.get_block_params())
       {
         for (const auto &param_info : p.second.p)
         {
           if (param_info.type != ParameterType::CONST)
           {
-            //logerr("added parameter %s", param_info.name.c_str());
             borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
           }
         }
       }
+  
       stat.resize(borders.size());
       for (auto &a : stat)
         for (auto &p : a)
           p = {0, 1.0};
-
-     verbose = settings.get_bool("verbose");
-     finish_thr = settings.get_double("finish_threshold");
-     budget = settings.get_int("iterations", budget);
-     local_opt_block.set_bool("verbose", false);
-     local_opt_block.set_bool("save_intermediate_images", false);
-     local_opt_block.set_double("learning_rate", local_learning_rate);
-    }
-    virtual void optimize(int iters = -1) override
-    {
       if (iters > 0)
         budget = iters;
+      epoch = 0;
+      no_diff_function_calls = 0;
+      diff_function_calls = 0;
+
       if (population.empty())
         initialize_population();
 
@@ -267,8 +365,12 @@ namespace upg
         for (int i=0;i<elites_count;i++)
           new_population[i] = population[i];
 
+        #pragma omp parallel for
         for (int i=elites_count;i<population_size;i++)
         {
+          float time_q = (no_diff_function_calls + diff_function_calls + 0.0) / budget;
+          float mutation_chance = (1-time_q)*max_mutation_chance + time_q*min_mutation_chance;
+          float mutation_power = (1-time_q)*max_mutation_power + time_q*min_mutation_power;
           std::vector<float> chances = {0.1, 0.1 + 0.5, 0.1 + 0.5 + 0.4};
           float action_rnd = urand(0, chances.back());
           if (action_rnd < chances[0])
@@ -302,10 +404,14 @@ namespace upg
         if (verbose)
         {
           debug("EPOCH %d (%d+%d/%d)\n", epoch, no_diff_function_calls, diff_function_calls, budget);
-          debug("best res [");
           for (auto &c : best_population)
-            debug("%.6f ", c.loss);
-          debug("]\n");
+          {
+            debug("best res %.6f [", c.loss);
+            for (int i=0;i<c.params.size();i++)
+              debug("%f ", c.params[i]);
+            debug("]\n");
+          }
+          debug("\n");
           /*
           for (auto &arr : stat)
           {
@@ -345,7 +451,7 @@ namespace upg
         }
 
         for (auto &i : indices_to_opt)
-          local_search(population[i], local_opt_iters);
+          local_search(population[i], local_opt_iters, false);
 
         epoch++;
         if (best_population[0].loss < finish_thr)
@@ -367,8 +473,10 @@ namespace upg
     int population_size = 1000;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
-    float mutation_chance = 0.01;
-    float mutation_power = 0.3;
+    float max_mutation_chance = 0.5;
+    float min_mutation_chance = 0.1;
+    float max_mutation_power = 0.5;
+    float min_mutation_power = 0.3;
     int tournament_size = 200;
     int local_opt_count = 2;
     int local_opt_iters = 50;
@@ -383,7 +491,7 @@ namespace upg
     std::shared_ptr<UniversalGenInstance> gen;
     ParametersDescription pd;
     std::vector<glm::vec2> borders; //size equals total size of OptParams vector
-    Block local_opt_block;
+    Block local_opt_block, precise_opt_block;
     std::vector<std::array<std::pair<int, double>, 64>> stat;
 
     //GA state

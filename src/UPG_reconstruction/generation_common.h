@@ -123,6 +123,10 @@ namespace upg
     {
       return block_params;
     }
+    std::map<unsigned, ParamBlock> &get_block_params()
+    {
+      return block_params;
+    }
     int get_total_params_count() const
     {
       return total_params_count;
@@ -142,4 +146,15 @@ namespace upg
     virtual void recreate(const UPGStructure &structure) = 0;
   };
   
+  struct UPGPart
+  {
+    UPGPart() = default;
+    UPGPart(std::pair<int, int> _s, std::pair<int, int> _p)
+    {
+      s_range = _s;
+      p_range = _p;
+    }
+    std::pair<int, int> s_range; // range of indices in structure that corresponds to this part. This range is guaranteed to be a valid structure.
+    std::pair<int, int> p_range; // range of indices in parameters array.
+  };
 }

@@ -33,7 +33,7 @@ namespace upg
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = true
+            verbose:b = false
         }
         //step_1 {
         //    learning_rate:r = 0.003
@@ -97,8 +97,8 @@ namespace upg
 
   SceneDesc scene_bubbles(int cnt_x, int cnt_z)
   {
-    glm::vec3 p0(-1,1.2, 0.5);
-    glm::vec3 p1(1, 1, -0.5);
+    glm::vec3 p0(-2,1.2, 0.6);
+    glm::vec3 p1(1, 1, -0.6);
     
     float base_r = std::min(abs(p1.x-p0.x)/(cnt_x+1), abs(p1.z-p0.z)/(cnt_z+1));
 
@@ -156,16 +156,17 @@ namespace upg
 
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
   {
+    srand(time(NULL));
     std::map<std::string, SceneDesc> scenes;
     //scenes["1 Sphere"] = scene_1_sphere();
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
-    scenes["8 Bubbles"] = scene_bubbles(4, 2);
-    //scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    //scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Boxes"] = scene_8_boxes();
 
-    int max_iters = 100'000;
-    int tries = 5;
+    int max_iters = 300'000;
+    int tries = 1;
     std::vector<std::vector<UPGReconstructionResult>> results;
     std::vector<int> timings;
     std::chrono::steady_clock::time_point t1, t2;
@@ -201,9 +202,9 @@ namespace upg
 
   void benchmark_sdf_complex_optimization()
   {
-    benchmark_for_optimizer("CC", true);
+    //benchmark_for_optimizer("CC", true);
     //benchmark_for_optimizer("DE", true);
-    //benchmark_for_optimizer("memetic", true);
+    benchmark_for_optimizer("memetic", true);
     //benchmark_for_optimizer("particle_swarm", true);
   }
 
@@ -229,7 +230,7 @@ namespace upg
       SdfGenInstance gen(scene.second.first);
       ProceduralSdf sdf = gen.generate(scene.second.second.p);
       t1 = std::chrono::steady_clock::now();
-      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, true);
+      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, false);
       t2 = std::chrono::steady_clock::now();
       float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
       debug("%s rendered in %.1f s. %d kRays/s\n", scene.first.c_str(), 1e-3*time_ms, (int)((image_size*image_size*spp)/time_ms));

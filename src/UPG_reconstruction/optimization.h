@@ -82,9 +82,23 @@ namespace upg
     }
     static OptParams gen_params_to_opt_params(const std::vector<float> &params, const ParametersDescription &pd)
     {
-      //TODO
       OptParams p;
-      p.set(params);
+      std::vector<float> non_const_params;
+      non_const_params.reserve(params.size());
+
+      int p_id = 0;
+      for (const auto &p : pd.get_block_params())
+      {
+        bool is_scene_block = p.first >= get_scene_params_block_offset();
+        for (auto &par : p.second.p)
+        {
+          if (par.type != ParameterType::CONST)
+            non_const_params.push_back(params[p_id]);
+          p_id++;
+        }
+      }
+
+      p.set(non_const_params);
       return p;
     }
     //calculate function that we optimize and it's gradient (put into given span)
@@ -98,7 +112,13 @@ namespace upg
     //scene's parameter blocks
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) = 0;
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const = 0;
-
+    virtual float estimate_positioning_quality(const UPGStructure &structure,
+                                               const UPGPart &part, std::span<const float> parameters,
+                                               float border_sigma = 0.01f,
+                                               float inner_point_penalty = 10) const 
+    {
+      return 0;
+    }
   protected:
     //we prepare parameters descriptions for generator's and scene (i.e. camera) parameters
     //independently, so we must assure that their block ids do not overlap. To do so,
