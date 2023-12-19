@@ -26,6 +26,7 @@ namespace upg
     virtual unsigned child_cnt() const = 0;
     virtual std::vector<const SdfNode *> get_children() const = 0;
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
+    virtual AABB get_bbox() const = 0;
   };
 
   class ProceduralSdf

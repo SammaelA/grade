@@ -117,7 +117,7 @@ namespace upg
 
     if (outside_points)
     {
-      AABB bbox = get_point_cloud_bbox(*points);
+      AABB bbox = sdf.root->get_bbox();
       AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
       
       *outside_points = {};

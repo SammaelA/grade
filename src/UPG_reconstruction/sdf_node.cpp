@@ -116,6 +116,11 @@ namespace upg
       params.push_back({1,0.01f*max_r,max_r, ParameterType::DIFFERENTIABLE, "radius"});
       return params;
     }
+    virtual AABB get_bbox() const override
+    {
+      float r = p[RADIUS];
+      return AABB({-r,-r,-r}, {r,r,r});
+    }
   };
 
   inline float
@@ -162,6 +167,10 @@ namespace upg
       params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "size_z"});
 
       return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      return AABB({-p[SIZE_X], -p[SIZE_Y], -p[SIZE_Z]}, {p[SIZE_X], p[SIZE_Y], p[SIZE_Z]});
     }
   };
 
@@ -213,6 +222,10 @@ namespace upg
 
       return params;
     }
+    virtual AABB get_bbox() const override
+    {
+      return AABB({-p[SIZE_X], -p[SIZE_Y], -p[SIZE_Z]}, {p[SIZE_X], p[SIZE_Y], p[SIZE_Z]});
+    }
   };
 
   inline float
@@ -258,6 +271,11 @@ namespace upg
 
       return params;
     }
+
+    virtual AABB get_bbox() const override
+    {
+      return AABB({-p[RADIUS], -p[HEIGHT], -p[RADIUS]}, {p[RADIUS], p[HEIGHT], p[RADIUS]});
+    }
   };
 
   inline float
@@ -296,6 +314,12 @@ namespace upg
       params.push_back({5,0.01,10, ParameterType::DIFFERENTIABLE, "height2"});
 
       return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      float max_h = std::max(p[H1], p[H2]);
+      //I have no idea what the exact formula look like
+      return AABB({-max_h, -max_h, -max_h}, {max_h, max_h, max_h});
     }
   };
 
@@ -351,6 +375,13 @@ namespace upg
 
       return params;
     }
+    virtual AABB get_bbox() const override
+    {
+      float max_s = std::max(p[C1], sqrtf(1-SQR(p[C2])));
+      float r = max_s*p[HEIGHT];
+      //I have no idea what the exact formula look like
+      return AABB({-r, -p[HEIGHT], -r}, {r, 0, r});
+    }
   };
 
   class MoveSdfNode : public OneChildSdfNode
@@ -401,6 +432,12 @@ namespace upg
       params.push_back({0,scene_bbox.min_pos.z,scene_bbox.max_pos.z, ParameterType::DIFFERENTIABLE, "move_z"});
       return params;
     }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      glm::vec3 sh = glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]);
+      return AABB(ch_bbox.min_pos+sh, ch_bbox.max_pos+sh);
+    }
   };
 
   class OrSdfNode : public TwoChildSdfNode
@@ -443,6 +480,12 @@ namespace upg
     }
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
+    virtual AABB get_bbox() const override
+    {
+      AABB b1 = left->get_bbox();
+      AABB b2 = right->get_bbox();
+      return AABB(glm::min(b1.min_pos, b2.min_pos), glm::max(b1.max_pos, b2.max_pos));
+    }
   };
 
   class AndSdfNode : public TwoChildSdfNode
@@ -485,6 +528,12 @@ namespace upg
     }
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
+    virtual AABB get_bbox() const override
+    {
+      AABB b1 = left->get_bbox();
+      AABB b2 = right->get_bbox();
+      return AABB(glm::max(b1.min_pos, b2.min_pos), glm::min(b1.max_pos, b2.max_pos));
+    }
   };
 
   class SubtractSdfNode : public TwoChildSdfNode
@@ -530,6 +579,11 @@ namespace upg
     }
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
+    virtual AABB get_bbox() const override
+    {
+      //not always optimal, but valid
+      return left->get_bbox();
+    }
   };
 
   ProceduralSdf SdfGenInstance::generate(std::span<const float> parameters)
