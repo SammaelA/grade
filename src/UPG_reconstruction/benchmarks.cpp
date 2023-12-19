@@ -154,6 +154,14 @@ namespace upg
     return desc;
   }
 
+  SceneDesc scene_1_cone()
+  {
+    SceneDesc desc;
+    desc.first.s = {2,8};
+    desc.second.p = {0.2,-0.1,0,0.2,sqrtf(1-0.2*0.2),1};
+    return desc;
+  }
+
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
   {
     srand(time(NULL));
@@ -211,6 +219,7 @@ namespace upg
   void benchmark_sdf_rendering(int image_size, int spp)
   {
     std::map<std::string, SceneDesc> scenes;
+    scenes["1 Cone"] = scene_1_cone();
     scenes["1 Sphere"] = scene_1_sphere();
     scenes["8 Spheres"] = scene_8_spheres();
     scenes["1 Box"] = scene_1_box();
@@ -243,7 +252,7 @@ namespace upg
   {
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
-      benchmark_sdf_rendering(512, 16);
+      benchmark_sdf_rendering(512, 1);
     else 
       benchmark_sdf_complex_optimization();
   }
