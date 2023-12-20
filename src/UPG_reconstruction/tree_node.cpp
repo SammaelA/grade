@@ -2,7 +2,7 @@
 #include "tree_node.h"
 #include "generation.h"
 #include "common_utils/template_vectors.h"
-#include "custom_diff_render/autodiff.h"
+#include "autodiff/autodiff.h"
 namespace upg
 { 
   const int MESH_REPEATS = 5;
