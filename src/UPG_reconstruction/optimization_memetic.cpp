@@ -244,7 +244,7 @@ namespace upg
     }
     virtual void optimize(int iters = -1) override
     {
-      if ((SdfGenInstance*)gen.get())
+      if (dynamic_cast<SdfGenInstance*>(gen.get()))
         optimize_part_based(iters);
       else
         optimize_memetic(iters);
@@ -365,7 +365,7 @@ namespace upg
         for (int i=0;i<elites_count;i++)
           new_population[i] = population[i];
 
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i=elites_count;i<population_size;i++)
         {
           float time_q = (no_diff_function_calls + diff_function_calls + 0.0) / budget;
