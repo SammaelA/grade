@@ -33,7 +33,7 @@ namespace upg
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = false
+            verbose:b = true
         }
         //step_1 {
         //    learning_rate:r = 0.003
@@ -56,7 +56,10 @@ namespace upg
     settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("structure", ref_scene.first.s);
     settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("params", ref_scene.second.p);
     if (fixed_structure)
+    {
       settings_blk.get_block("optimization")->get_block("start")->set_arr("structure", ref_scene.first.s);
+      settings_blk.get_block("optimization")->get_block("step_0")->set_arr("params", ref_scene.second.p);
+    }
 
     return reconstruct_sdf(settings_blk)[0];
   }
@@ -78,7 +81,7 @@ namespace upg
     return desc;
   }
 
-  SceneDesc scene_8_boxes()
+  SceneDesc scene_8_rboxes()
   {
     SceneDesc desc;
     desc.first.s = {3,3,3,2,6,2,6,3,2,6,2,6,3,3,2,6,2,6,3,2,6,2,6};
@@ -91,7 +94,32 @@ namespace upg
   {
     SceneDesc desc;
     desc.first.s = {2,4};
-    desc.second.p = {0.2,-0.1,0,0.5,0.5,0.5};
+    desc.second.p = {0.6,0.6,0.6,0.3,0.3,0.3};
+    return desc;
+  }
+
+  SceneDesc scene_2_boxes()
+  {
+    SceneDesc desc;
+    desc.first.s = {3,2,4,2,4};
+    desc.second.p = {0.6,0.6,0.6,0.3,0.3,0.3, -0.6,0.6,0.6,0.3,0.3,0.3};
+    return desc;
+  }
+
+  SceneDesc scene_4_boxes()
+  {
+    SceneDesc desc;
+    desc.first.s = {3,3,2,4,2,4,3,2,4,2,4};
+    desc.second.p = {0.6,0.6,0.6,0.3,0.3,0.3, -0.6,0.6,0.6,0.3,0.3,0.3, 0.6,-0.6,0.6,0.3,0.3,0.3, -0.6,-0.6,0.6,0.3,0.3,0.3};
+    return desc;
+  }
+
+  SceneDesc scene_8_boxes()
+  {
+    SceneDesc desc;
+    desc.first.s = {3,3,3,2,4,2,4,3,2,4,2,4,3,3,2,4,2,4,3,2,4,2,4};
+    desc.second.p = {0.6,0.6,0.6,0.3,0.3,0.3, -0.6,0.6,0.6,0.3,0.3,0.3, 0.6,-0.6,0.6,0.3,0.3,0.3, -0.6,-0.6,0.6,0.3,0.3,0.3,
+                     0.6,0  ,0  ,0.3,0.3,0.3, -0.6,0  ,0  ,0.3,0.3,0.3, 0  ,-0.6,0  ,0.3,0.3,0.3, 0   ,0.6 ,0  ,0.3,0.3,0.3};
     return desc;
   }
 
@@ -170,10 +198,14 @@ namespace upg
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
     //scenes["8 Bubbles"] = scene_bubbles(4, 2);
-    scenes["32 Bubbles"] = scene_bubbles(8, 4);
-    //scenes["8 Boxes"] = scene_8_boxes();
+    //scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    //scenes["8 Rounded Boxes"] = scene_8_rboxes();
+    //scenes["1 Box"] = scene_1_box();
+    //scenes["2 Boxes"] = scene_2_boxes();
+    //scenes["4 Boxes"] = scene_4_boxes();
+    scenes["8 Boxes"] = scene_8_boxes();
 
-    int max_iters = 300'000;
+    int max_iters = 200'000;
     int tries = 1;
     std::vector<std::vector<UPGReconstructionResult>> results;
     std::vector<int> timings;
@@ -225,7 +257,7 @@ namespace upg
     scenes["1 Box"] = scene_1_box();
     scenes["8 Bubbles"] = scene_bubbles(4, 2);
     scenes["32 Bubbles"] = scene_bubbles(8, 4);
-    scenes["8 Boxes"] = scene_8_boxes();
+    scenes["8 Rounded Boxes"] = scene_8_rboxes();
 
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);
