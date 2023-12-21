@@ -155,6 +155,29 @@ namespace upg
     }
   }
 
+  void sdf_to_point_cloud_with_dist(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
+                                    std::vector<float> *distances)
+  {
+    *points = {};
+    points->resize(points_count);
+    *distances = {};
+    distances->resize(points_count);
+    
+    AABB bbox = sdf.root->get_bbox();
+    glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
+    glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
+    AABB inflated_bbox = AABB(center - 2.0f*size, center + 2.0f*size);
+
+    for (int i=0;i<points_count;i++)
+    {
+              glm::vec3 p = glm::vec3(urand(inflated_bbox.min_pos.x, inflated_bbox.max_pos.x),
+                                urand(inflated_bbox.min_pos.y, inflated_bbox.max_pos.y),
+                                urand(inflated_bbox.min_pos.z, inflated_bbox.max_pos.z));
+      (*points)[i] = p;
+      (*distances)[i] = sdf.get_distance(p);
+    }
+  }
+
   void sdf_to_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
                           std::vector<glm::vec3> *outside_points)
   {
