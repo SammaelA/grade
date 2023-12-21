@@ -244,8 +244,9 @@ namespace upg
   {
     //benchmark_for_optimizer("CC", true);
     //benchmark_for_optimizer("DE", true);
-    benchmark_for_optimizer("memetic", true);
+    //benchmark_for_optimizer("memetic", true);
     //benchmark_for_optimizer("particle_swarm", true);
+    benchmark_for_optimizer("iterative_fitting", true);
   }
 
   void benchmark_sdf_rendering(int image_size, int spp)

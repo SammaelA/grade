@@ -703,6 +703,9 @@ namespace upg
     return node;
   }
 
+  constexpr int merge_node_num = 3;
+  constexpr int move_node_num  = 2;
+
   int get_node_power(int node_id)
   {
     // how many children each node has. It should be done differently, but now it's just testing
@@ -719,9 +722,22 @@ namespace upg
     return node_param_counts[node_id];
   }
 
+  int get_position_index(const UPGStructure &structure, int start, int p_start)
+  {
+    int pi = p_start;
+    int si = start;
+    while (si < structure.s.size() && get_node_power(structure.s[si]) == 1)
+    {
+      if (structure.s[si] == move_node_num)
+        return pi;
+      si++;
+      pi += get_node_param_count(structure.s[si]);
+    }
+    return -1;
+  }
+
   int parse_node_rec(const UPGStructure &structure, std::vector<UPGPart> &parts, bool merge_level, int start)
   {
-    constexpr int merge_node_num = 3;
 
     bool is_merge = merge_level && (structure.s[start] == merge_node_num);
     int power = get_node_power(structure.s[start]);
@@ -736,7 +752,7 @@ namespace upg
         int p_cnt = 0;
         for (int p = pos; p < fin_pos; p++)
           p_cnt += get_node_param_count(structure.s[p]);
-        parts.push_back(UPGPart({pos, fin_pos}, {p_st, p_st + p_cnt}));
+        parts.push_back(UPGPart({pos, fin_pos}, {p_st, p_st + p_cnt}, get_position_index(structure, pos, p_st)));
       }
       pos = fin_pos;
     }
@@ -756,9 +772,9 @@ namespace upg
     std::vector<UPGPart> parts;
     parse_node_rec(structure, parts, true, 0);
     if (parts.empty())
-      parts.push_back(UPGPart({0, (int)structure.s.size()}, {0, total_param_count(structure)}));
+      parts.push_back(UPGPart({0, (int)structure.s.size()}, {0, total_param_count(structure)}, get_position_index(structure, 0, 0)));
     for (auto &g : parts)
-      logerr("part [%d %d][%d %d]", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second);
+      logerr("part [%d %d][%d %d] %d", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second, g.position_index);
     return parts;
   }
 }

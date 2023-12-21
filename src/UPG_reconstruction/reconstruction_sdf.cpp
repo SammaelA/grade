@@ -120,10 +120,11 @@ namespace upg
         const glm::vec3 &p = reference.points[index];
         cur_grad.clear();
         double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
+        d = glm::sign(d)*std::min(0.03, abs(d));
         for (int i=0;i<gen_params.size();i++)
           out_grad_d[i] += 2*d*cur_grad[i];
         return d*d;
-      }, reference.points.size(), 256, 5000, 10);
+      }, reference.points.size(), 256, 1024, 10);
 
       //regularization - penalty for outside points with sdf < 0
       auto p2 = sum_with_adaptive_batching([&](int index) -> double 
@@ -139,7 +140,7 @@ namespace upg
         }
         else
           return 0;
-      }, reference.outside_points.size(), 128, 5000, 0.1);
+      }, reference.outside_points.size(), 128, 1024, 0.1);
 
       /*
       debug("params [");
@@ -169,8 +170,9 @@ namespace upg
       {
         const glm::vec3 &p = reference.points[index];
         double d = sdf.get_distance(p);
+        d = glm::sign(d)*std::min(0.03, abs(d));
         return d*d;
-      }, reference.points.size(), 256, 5000, 10);
+      }, reference.points.size(), 256, 1024, 10);
 
       //regularization - penalty for outside points with sdf < 0
       auto p2 = sum_with_adaptive_batching([&](int index) -> double 
@@ -181,7 +183,7 @@ namespace upg
           return d*d;
         else
           return 0;
-      }, reference.outside_points.size(), 128, 5000, 0.1);
+      }, reference.outside_points.size(), 128, 1024, 0.1);
 
       return p1.second/p1.first + p2.second/p2.first;
     }
@@ -219,8 +221,8 @@ namespace upg
     }
     quality /= reference.points.size();
 
-    //logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
-    //logerr("quality %f (%f %f)", (float)quality, (float)q1, (float)q2);
+    logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
+    logerr("quality %f (%f %f)", (float)quality, (float)q1, (float)q2);
 
     return quality;
   }
@@ -278,6 +280,8 @@ namespace upg
         optimizer = get_optimizer_CC(&opt_func, *step_blk, start_params.structure);
       else if (optimizer_name == "DE")
         optimizer = get_optimizer_differentiable_evolution(&opt_func, *step_blk, start_params.structure);
+      else if (optimizer_name == "iterative_fitting")
+        optimizer = get_optimizer_iterative_fitting(&opt_func, *step_blk, start_params.structure);
       optimizer->optimize();
       opt_res = optimizer->get_best_results();
       step_n++;

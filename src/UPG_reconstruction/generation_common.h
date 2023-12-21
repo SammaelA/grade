@@ -149,12 +149,14 @@ namespace upg
   struct UPGPart
   {
     UPGPart() = default;
-    UPGPart(std::pair<int, int> _s, std::pair<int, int> _p)
+    UPGPart(std::pair<int, int> _s, std::pair<int, int> _p, int _position_index)
     {
       s_range = _s;
       p_range = _p;
+      position_index = _position_index;
     }
     std::pair<int, int> s_range; // range of indices in structure that corresponds to this part. This range is guaranteed to be a valid structure.
     std::pair<int, int> p_range; // range of indices in parameters array.
+    int position_index = -1;     // index of position parameter (first of 3) in parameters array
   };
 }
