@@ -4,8 +4,8 @@ project(main)
 message("Building project")
 
 #some examples how to use this file
-#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -MODULE_ENZYME=ON -DMODULE_DR=ON -DCLANG_VERSION=14
-
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=ON  -DMODULE_DR=ON  -DCLANG_VERSION=14
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=OFF -DMODULE_DR=OFF
 #a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
 option(TREE_PROJECT "Build Tree Project" OFF)
