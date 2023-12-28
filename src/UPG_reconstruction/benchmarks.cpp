@@ -272,7 +272,7 @@ namespace upg
       SdfGenInstance gen(scene.second.first);
       ProceduralSdf sdf = gen.generate(scene.second.second.p);
       t1 = std::chrono::steady_clock::now();
-      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, false);
+      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, true);
       t2 = std::chrono::steady_clock::now();
       float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
       debug("%s rendered in %.1f s. %d kRays/s\n", scene.first.c_str(), 1e-3*time_ms, (int)((image_size*image_size*spp)/time_ms));

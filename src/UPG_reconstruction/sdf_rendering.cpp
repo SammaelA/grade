@@ -91,9 +91,12 @@ namespace upg
             {
               if (lambert)
               {
+                constexpr float h = 0.001;
                 cur_grad.clear();
-                sdf.get_distance(p0, &cur_grad, &ddist_dpos);
-                glm::vec3 n = glm::normalize(glm::vec3(ddist_dpos[0], ddist_dpos[1], ddist_dpos[2]));
+                float ddx = (sdf.get_distance(p0 + glm::vec3(h,0,0)) - sdf.get_distance(p0 + glm::vec3(-h,0,0)))/(2*h);
+                float ddy = (sdf.get_distance(p0 + glm::vec3(0,h,0)) - sdf.get_distance(p0 + glm::vec3(0,-h,0)))/(2*h);
+                float ddz = (sdf.get_distance(p0 + glm::vec3(0,0,h)) - sdf.get_distance(p0 + glm::vec3(0,0,-h)))/(2*h);
+                glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
                 color += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
               }
               else
