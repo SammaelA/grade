@@ -22,10 +22,18 @@ namespace upg
   }
 
   //intersects SDF with ray start_pos + t*dir. Returns if ray intersected with SDF and optionally - point of intersection
-  bool sdf_sphere_tracing(const ProceduralSdf &sdf, const glm::vec3 &start_pos, const glm::vec3 &dir, glm::vec3 *surface_pos = nullptr)
+  bool sdf_sphere_tracing(const ProceduralSdf &sdf, const AABB &sdf_bbox, const glm::vec3 &start_pos, const glm::vec3 &dir, glm::vec3 *surface_pos = nullptr)
   {
     constexpr float EPS = 3*1e-6;
     glm::vec3 p0 = start_pos;
+    if (!sdf_bbox.contains(p0))
+    {
+      float t = 0;
+      if (sdf_bbox.intersects(start_pos, dir, &t))
+        p0 = start_pos + t*dir;
+      else //ray won't intersect SDF
+        return false;
+    }
     int iter = 0;
     float d = sdf.get_distance(p0);
     while (iter < 1000 && d > EPS && d < 1e6)
@@ -63,6 +71,7 @@ namespace upg
 
   Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert)
   {
+    AABB sdf_bbox = sdf.root->get_bbox();
     glm::mat4 projInv = glm::inverse(camera.get_proj());
     glm::mat4 viewInv = glm::inverse(camera.get_view());
     //set light somewhere to the side 
@@ -87,7 +96,7 @@ namespace upg
             glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
             glm::vec3 p0;
             
-            if (sdf_sphere_tracing(sdf, camera.origin, dir, &p0))
+            if (sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
             {
               if (lambert)
               {
@@ -125,6 +134,7 @@ namespace upg
     assert(points != nullptr);
     float r = 10000;
 
+    AABB sdf_bbox = sdf.root->get_bbox();
     *points = {};
     points->reserve(points_count);
     for (int i=0;i<points_count;i++)
@@ -136,7 +146,7 @@ namespace upg
       glm::vec3 start_pos = r*glm::vec3{sin(psi)*cos(phi), cos(psi), sin(psi)*sin(phi)};
       glm::vec3 dir = glm::normalize(-start_pos); //tracing rays from random points to (0,0,0)
       glm::vec3 p0;
-      if (sdf_sphere_tracing(sdf, start_pos, dir, &p0))
+      if (sdf_sphere_tracing(sdf, sdf_bbox, start_pos, dir, &p0))
         points->push_back(p0);
     }
 
@@ -193,6 +203,7 @@ namespace upg
     assert(points != nullptr);
     float r = 10000;
 
+    AABB sdf_bbox = sdf.root->get_bbox();
     *points = {};
     points->reserve(points_count);
 
@@ -218,7 +229,7 @@ namespace upg
           psi = -psi;
         glm::vec3 dir = glm::vec3{sin(psi)*cos(phi), cos(psi), sin(psi)*sin(phi)};
         glm::vec3 p0;
-        if (sdf_sphere_tracing(sdf, p, dir, &p0))
+        if (sdf_sphere_tracing(sdf, sdf_bbox, p, dir, &p0))
           points->push_back(p0);
       }
       iter++;
