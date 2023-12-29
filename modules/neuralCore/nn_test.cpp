@@ -196,8 +196,8 @@ using namespace nn;
 
   int main(int argc, char **argv)
   {
-    //test_1_linear_regression();
-    //test_2_simple_classification();
+    test_1_linear_regression();
+    test_2_simple_classification();
     test_3_SIREN_image();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);

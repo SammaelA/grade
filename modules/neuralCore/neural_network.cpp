@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <string>
 #include <fstream>
+#include <chrono>
 
 namespace nn
 {
@@ -364,6 +365,8 @@ namespace nn
 
     // main training loop
     int count = inputs.size(inputs.Dim - 1);
+    std::chrono::steady_clock::time_point t1, t2;
+    t1 = std::chrono::steady_clock::now();
 
     for (int iter = 0; iter < iterations; iter++)
     {
@@ -394,9 +397,13 @@ namespace nn
         g /= batch_size;
       optimizer->step(weights.data(), gradients.data());
 
-      if (iter % 100 == 0)
+      if (iter % 100 == 0 && iter > 0)
       {
-        printf("iteration %d/%d: average loss %f\n", iter, iterations, loss);
+        t2 = std::chrono::steady_clock::now();
+        float time_ms = 1e-6*std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
+        t1 = t2;
+        float pass_per_msec = 100*batch_size/time_ms;
+        printf("iteration %d/%d: average loss %f. %.1f Kpass/sec \n", iter, iterations, loss, pass_per_msec);
         if (inputs_val.Dim > 0)
           test(inputs_val, outputs_val, loss_func);
       }
