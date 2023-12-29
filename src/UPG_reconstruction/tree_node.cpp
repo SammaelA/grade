@@ -5,9 +5,9 @@
 #include "autodiff/autodiff.h"
 namespace upg
 { 
-  const int MESH_REPEATS = 5;
+  //const int MESH_REPEATS = 2;
 
-  const int SPINS = 16;
+  //const int SPINS = 16;
 
   vec3 norm(upg::vec3 v1, upg::vec3 v2);
   vec3 norm(upg::vec3 v);
@@ -436,7 +436,7 @@ namespace upg
       if (out_jac)
       {
         out_jac->resize(mesh.pos.size(), 6);
-        ENZYME_EVALUATE_WITH_DIFF(TriPrismNode_apply, 6, mesh.pos.size(), p.data(), mesh.pos.data(), out_jac);
+        ENZYME_EVALUATE_WITH_DIFF(TriPrismNode_apply, 6, mesh.pos.size(), p.data(), mesh.pos.data(), out_jac->data());
       }
       else
       {
