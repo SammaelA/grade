@@ -16,6 +16,7 @@ option(CITIES_GENERATOR "Build project for cities generator" OFF)
 option(MODULE_HYDRA "include Hydra module in project" OFF)
 option(MODULE_ENZYME "use Enzyme automatic differentiation tool" OFF)
 option(MODULE_DR "include Custom differentiable render in project" OFF)
+option(MODULE_NN "include neural networks module in project" ON)
 
 #common dependencies for all projects
 find_package(SDL2 REQUIRED)
@@ -120,6 +121,14 @@ else()
   message("Module CUSTOM DIFF RENDERER OFF")
   set(MODULES_SRC ${MODULES_SRC} modules/custom_diff_render/diff_render_stub.cpp)
 endif()
+
+#####################################################################################################################################################
+
+#if (MODULE_NN)
+  message("Module NEURALCORE           ON")
+  set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensors.cpp modules/neuralCore/neural_network.cpp)
+#else()
+#endif()
 
 #####################################################################################################################################################
 #####################################################################################################################################################

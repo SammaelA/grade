@@ -85,3 +85,7 @@ Thumbs.db
 output.png
 imgui.ini
 config/backup.blk
+
+modules/neuralCore/CMakeFiles/*
+modules/neuralCore/Makefile
+modules/neuralCore/nn_test
