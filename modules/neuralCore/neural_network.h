@@ -168,7 +168,10 @@ namespace nn
 
     void add_layer(std::shared_ptr<Layer> layer);
     bool check_validity();
-    void initialize(const float *weights = nullptr);
+    void initialize();
+    void initialize_with_weights(const float *weights);
+    void initialize_from_file(std::string filename);
+    void save_weights_to_file(std::string filename);
     void print_info();
     void train(const TensorView &inputs /*[input_size, count]*/, const TensorView &outputs /*[output_size, count]*/,
                const TensorView &inputs_val, const TensorView &outputs_val,

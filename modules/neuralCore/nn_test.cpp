@@ -80,9 +80,9 @@ using namespace nn;
     TensorView Xv(X.data(), Shape{dim, size});
     TensorView yv(y.data(), Shape{1  , size});
 
-    IndexType train_size = 0.8*size;
-    IndexType val_size = 0.1*size;
-    IndexType test_size = size-train_size-val_size;
+    IndexType train_size = 900;
+    IndexType val_size = 90;
+    IndexType test_size = 10;
 
     TensorView X_train = slice(Xv, {0, train_size});
     TensorView y_train = slice(yv, {0, train_size});
@@ -96,6 +96,15 @@ using namespace nn;
     NeuralNetwork nn;
     nn.add_layer(std::make_shared<DenseLayer>(dim, 1));
     nn.train(X_train, y_train, X_val, y_val, 50, 3000, NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.01);
+    nn.save_weights_to_file("weights.bin");
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 1));
+    nn2.initialize_from_file("weights.bin");
+
+    print(y_test);
+    nn2.evaluate(X_test, y_test);
+    print(y_test);
   }
 
   void test_2_simple_classification()
@@ -211,9 +220,9 @@ using namespace nn;
 
   int main(int argc, char **argv)
   {
-    //test_1_linear_regression();
+    test_1_linear_regression();
     //test_2_simple_classification();
-    test_3_SIREN_image();
+    //test_3_SIREN_image();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

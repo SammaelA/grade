@@ -2,6 +2,8 @@
 #include "neural_network.h"
 #include <cassert>
 #include <cstdio>
+#include <string>
+#include <fstream>
 
 namespace nn
 {
@@ -242,7 +244,7 @@ namespace nn
     return true;
   }
 
-  void NeuralNetwork::initialize(const float *init_weights)
+  void NeuralNetwork::initialize()
   {
     if (!check_validity())
       return;
@@ -257,10 +259,7 @@ namespace nn
       network_tmp_size = std::max(network_tmp_size, (int)get_total_size(layers[i]->output_shape));
     }
 
-    if (init_weights)
-      weights = std::vector<float>(init_weights, init_weights + total_params);
-    else
-      weights = std::vector<float>(total_params, 0);
+    weights = std::vector<float>(total_params, 0);
     tmp_mem = std::vector<float>(layers_tmp_size + 2 * network_tmp_size, 0);
 
     // init layer for evaluation (null-pointing tensors for gradients)
@@ -288,6 +287,29 @@ namespace nn
     printf("%d input size\n", get_total_size(layers[0]->input_shape));
     printf("%d output size\n", get_total_size(layers.back()->output_shape));
     printf("%d weights\n", total_params);
+  }
+
+  void NeuralNetwork::initialize_with_weights(const float *init_weights)
+  {
+    initialize();
+    weights = std::vector<float>(init_weights, init_weights + weights.size());
+  }
+
+  void NeuralNetwork::initialize_from_file(std::string filename)
+  {
+    initialize();
+    std::ifstream in(filename, std::ios_base::binary);
+    assert(in.is_open());
+    in.read(reinterpret_cast<char*>(weights.data()), sizeof(float)*weights.size());
+    in.close();
+  }
+
+  void NeuralNetwork::save_weights_to_file(std::string filename)
+  {
+    std::ofstream out(filename, std::ios_base::binary);
+    assert(out.is_open());
+    out.write(reinterpret_cast<char*>(weights.data()), sizeof(float)*weights.size());
+    out.close();
   }
 
   void NeuralNetwork::train(const TensorView &inputs /*[input_size, count]*/, const TensorView &outputs /*[output_size, count]*/,
