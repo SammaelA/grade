@@ -63,14 +63,18 @@ struct AABB
                (aabb.min_pos.z <= max_pos.z) &&
                (aabb.max_pos.z >= min_pos.z);
     }
-    inline bool intersects(const glm::vec3 &origin, const glm::vec3 &dir)
+    inline bool intersects(const glm::vec3 &origin, const glm::vec3 &dir, float *t_near = nullptr) const
     {
-        glm::vec3 tMin = (min_pos - origin)/glm::max(glm::vec3(1e-9f),dir);
-        glm::vec3 tMax = (max_pos - origin)/glm::max(glm::vec3(1e-9f),dir);
+        glm::vec3 safe_dir = glm::sign(dir)*glm::max(glm::vec3(1e-9f),glm::abs(dir));
+        glm::vec3 tMin = (min_pos - origin)/safe_dir;
+        glm::vec3 tMax = (max_pos - origin)/safe_dir;
         glm::vec3 t1 = glm::min(tMin, tMax);
         glm::vec3 t2 = glm::max(tMin, tMax);
         float tNear  = std::max(t1.x, std::max(t1.y, t1.z));
         float tFar   = std::min(t2.x, std::min(t2.y, t2.z));
+
+        if (t_near)
+          *t_near = tNear;
 
         return tNear <= tFar;
     }
