@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <functional>
 #include <chrono>
+#include "neuralCore/siren.h"
 
 namespace upg
 {
@@ -249,6 +250,33 @@ namespace upg
     benchmark_for_optimizer("iterative_fitting", true);
   }
 
+  void neural_sdf_test()
+  {
+    unsigned count = 25000;
+
+    SceneDesc scene = scene_4_boxes();
+    SdfGenInstance gen(scene.first);
+    ProceduralSdf sdf = gen.generate(scene.second.p);
+    std::vector<glm::vec3> positions;
+    std::vector<float> distances;
+    sdf_to_point_cloud_with_dist(sdf, count, &positions, &distances);
+    AABB bbox = sdf.root->get_bbox();
+
+    nn::TensorView Xv = nn::TensorView((float *)positions.data(), nn::Shape{3, count}); //pixel coordinates
+    nn::TensorView yv = nn::TensorView(distances.data(), nn::Shape{1, count}); //list of pixels
+
+    nn::Siren network(nn::Siren::Type::SDF, 2, 32);
+    network.train(Xv, yv, 512, 5000);
+  
+    CameraSettings camera;
+    camera.origin = glm::vec3(0,0,3);
+    camera.target = glm::vec3(0,0,0);
+    camera.up = glm::vec3(0,1,0);
+
+    Texture t = render_neural_sdf(network, bbox, camera, 256, 256, 9, true);
+    engine::textureManager->save_png(t, "NN demo");
+  }
+
   void benchmark_sdf_rendering(int image_size, int spp)
   {
     std::map<std::string, SceneDesc> scenes;
@@ -283,6 +311,8 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
+    //neural_sdf_test();
+    //return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);
