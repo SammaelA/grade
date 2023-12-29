@@ -126,7 +126,7 @@ endif()
 
 #if (MODULE_NN)
   message("Module NEURALCORE           ON")
-  set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensors.cpp modules/neuralCore/neural_network.cpp)
+  set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensors.cpp modules/neuralCore/neural_network.cpp modules/neuralCore/siren.cpp)
 #else()
 #endif()
 

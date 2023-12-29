@@ -14,6 +14,7 @@
 
 #include "tensors.h"
 #include "neural_network.h"
+#include "siren.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../third_party/third_party/stb_image.h"
@@ -174,34 +175,9 @@ using namespace nn;
     TensorView Xv = TensorView(pixel_data.data(), Shape{2, pixel_count}); //pixel coordinates
     TensorView yv = TensorView(image_data_grayscale.data(), Shape{1, pixel_count}); //list of pixels
 
-    IndexType size = pixel_count;
-    IndexType train_size = 0.8*size;
-    IndexType val_size = 0.05*size;
-    IndexType test_size = size-train_size-val_size;
-
-    TensorView X_train = slice(Xv, {0, train_size});
-    TensorView y_train = slice(yv, {0, train_size});
-
-    TensorView X_val = slice(Xv, {train_size, train_size+val_size});
-    TensorView y_val = slice(yv, {train_size, train_size+val_size});
-
-    TensorView X_test = slice(Xv, {train_size+val_size, size});
-    TensorView y_test = slice(yv, {train_size+val_size, size});
-
-    NeuralNetwork nn;
-    nn.add_layer(std::make_shared<DenseLayer>(2, 64));
-    nn.add_layer(std::make_shared<SinLayer>());
-    //nn.add_layer(std::make_shared<DenseLayer>(128, 128));
-    //nn.add_layer(std::make_shared<SinLayer>());
-    nn.add_layer(std::make_shared<DenseLayer>(64, 64));
-    nn.add_layer(std::make_shared<SinLayer>());
-    nn.add_layer(std::make_shared<DenseLayer>(64, 64));
-    nn.add_layer(std::make_shared<SinLayer>());
-    nn.add_layer(std::make_shared<DenseLayer>(64, 1));
-    //nn.add_layer(std::make_shared<SinLayer>());
-    nn.train(Xv, yv, X_val, y_val, 1000, 10000, NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.0001);
-
-    nn.evaluate(Xv, yv);
+    Siren siren(Siren::Type::Image, 3, 64);
+    siren.train(Xv, yv, 1000, 10000);
+    siren.evaluate(Xv, yv);
     yv = reshape(yv, Shape{view.size(1), view.size(2)});
     for (IndexType i=0;i<yv.total_size;i++)
       yv.get(i) = 0.5*(yv.get(i)+1);
@@ -220,9 +196,9 @@ using namespace nn;
 
   int main(int argc, char **argv)
   {
-    test_1_linear_regression();
+    //test_1_linear_regression();
     //test_2_simple_classification();
-    //test_3_SIREN_image();
+    test_3_SIREN_image();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

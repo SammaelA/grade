@@ -397,8 +397,8 @@ namespace nn
       if (iter % 100 == 0)
       {
         printf("iteration %d/%d: average loss %f\n", iter, iterations, loss);
-        test(inputs_val, outputs_val, loss_func);
-        // evaluate(inputs_val, outputs_val);
+        if (inputs_val.Dim > 0)
+          test(inputs_val, outputs_val, loss_func);
       }
     }
 

@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(SRC
     tensors.cpp
     neural_network.cpp
+    siren.cpp
     nn_test.cpp
     )
 set(CMAKE_CXX_FLAGS "-g -O3")
