@@ -15,6 +15,7 @@
 #include "tensors.h"
 #include "neural_network.h"
 #include "siren.h"
+#include "tensor_processor.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../third_party/third_party/stb_image.h"
@@ -194,11 +195,35 @@ using namespace nn;
     write_image_rgb("res.png", view);
   }
 
+  void test_4_tensor_processor()
+  {
+    std::vector<float> v = {1,2,3,  4,3,12, 5};
+    std::vector<TensorProcessor::Variable> vars(4);
+    vars[0] = {1,0,3, {3,0,0,0}};//A
+    vars[1] = {1,3,3, {3,0,0,0}};//B
+    vars[2] = {0,6,1, {0,0,0,0}};//c
+    vars[3] = {0,6,1, {0,0,0,0}};//s
+    std::vector<TensorProcessor::Command> commands(4);
+    commands[0] = {TensorProcessor::ADD, {0, 1, 0, 0}}; //A = A + B
+    commands[1] = {TensorProcessor::ADD, {0, 2, 0, 0}}; //A = A + c
+    commands[2] = {TensorProcessor::SUM, {0, 3, 0, 0}}; //s = sum(A)
+    commands[3] = {TensorProcessor::DIV, {0, 3, 0, 0}}; //A = A/s
+
+    TensorProcessor tProc;
+    tProc.process(commands.data(), commands.size(), vars.data(), vars.size(), v.data(), v.size());
+
+    printf("res = ");
+    for (int i=0;i<3;i++)
+      printf("%f ", v[i]);
+    printf("\n");
+  }
+
   int main(int argc, char **argv)
   {
-    test_1_linear_regression();
-    test_2_simple_classification();
-    test_3_SIREN_image();
+    //test_1_linear_regression();
+    //test_2_simple_classification();
+    //test_3_SIREN_image();
+    test_4_tensor_processor();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

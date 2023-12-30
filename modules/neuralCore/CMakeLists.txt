@@ -8,6 +8,7 @@ set(SRC
     neural_network.cpp
     siren.cpp
     nn_test.cpp
+    tensor_processor.cpp
     )
 set(CMAKE_CXX_FLAGS "-g -O3")
 
