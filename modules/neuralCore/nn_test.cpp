@@ -198,23 +198,37 @@ using namespace nn;
   void test_4_tensor_processor()
   {
     std::vector<float> v = {1,2,3,  4,3,12, 5};
-    std::vector<TensorProcessor::Variable> vars(4);
+    std::vector<TensorProgram::Variable> vars(4);
     vars[0] = {1,0,3, {3,0,0,0}};//A
     vars[1] = {1,3,3, {3,0,0,0}};//B
     vars[2] = {0,6,1, {0,0,0,0}};//c
     vars[3] = {0,6,1, {0,0,0,0}};//s
-    std::vector<TensorProcessor::Command> commands(4);
-    commands[0] = {TensorProcessor::ADD, {0, 1, 0, 0}}; //A = A + B
-    commands[1] = {TensorProcessor::ADD, {0, 2, 0, 0}}; //A = A + c
-    commands[2] = {TensorProcessor::SUM, {0, 3, 0, 0}}; //s = sum(A)
-    commands[3] = {TensorProcessor::DIV, {0, 3, 0, 0}}; //A = A/s
+    std::vector<TensorProgram::Command> commands(4);
+    commands[0] = {TensorProgram::ADD, {0, 1, 0, 0}}; //A = A + B
+    commands[1] = {TensorProgram::ADD, {0, 2, 0, 0}}; //A = A + c
+    commands[2] = {TensorProgram::SUM, {0, 3, 0, 0}}; //s = sum(A)
+    commands[3] = {TensorProgram::DIV, {0, 2, 0, 0}}; //A = A/c
 
-    TensorProcessor tProc;
-    tProc.process(commands.data(), commands.size(), vars.data(), vars.size(), v.data(), v.size());
+    TensorProgram p;
+    p.commands = commands;
+    p.vars = vars;
+    p.total_memory_req = 16;
+    p.input_vars = std::map<std::string, unsigned>{{"A", 0},{"B", 1}, {"c", 2}};
+    p.output_vars = std::map<std::string, unsigned>{{"A", 0}};
+
+    std::vector<float> A = {1, 2, 3};
+    std::vector<float> B = {4, 3,12};
+    float c = 5;
+
+    TensorProcessor tp;
+    tp.set_program(p);
+    tp.set_input({{"A", A.data()},{"B", B.data()}, {"c", &c}});
+    tp.execute();
+    tp.set_output({{"A", A.data()}});
 
     printf("res = ");
-    for (int i=0;i<3;i++)
-      printf("%f ", v[i]);
+    for (int i=0;i<A.size();i++)
+      printf("%f ", A[i]);
     printf("\n");
   }
 

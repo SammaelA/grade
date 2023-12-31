@@ -1,39 +1,62 @@
 #pragma once
 #include <vector>
 #include <cmath>
+#include <map>
+#include <string>
+#include <memory>
 
-class TensorProcessor
+class TensorProcessorImpl;
+namespace nn
 {
-public:
-  constexpr static unsigned ADD = 0;
-  constexpr static unsigned DIV = 1;
-  constexpr static unsigned EXP = 2;
-  constexpr static unsigned SUM = 3;
-  constexpr static unsigned MATMUL_T = 4;
-  struct Command
+  struct TensorProgram
   {
-    unsigned type;
-    unsigned args[4];
+    enum CommandType
+    {
+      ADD,
+      DIV,
+      EXP,
+      SUM,
+      MATMUL_T,
+      MOV,
+      FTT
+    };
+
+    struct Command
+    {
+      CommandType type;
+      unsigned args[4];
+    };
+
+    struct Variable
+    {
+      unsigned Dim;
+      unsigned offset;
+      unsigned total_size;
+      unsigned sizes[4];
+    };
+
+    std::vector<Command> commands;
+    std::vector<Variable> vars;
+
+    unsigned total_memory_req;
+
+    std::map<std::string, unsigned> input_vars;  //name -> var_id
+    std::map<std::string, unsigned> output_vars; //name -> var_id
   };
 
-  struct Variable
+  class TensorProcessor
   {
-    unsigned Dim;
-    unsigned offset;
-    unsigned total_size;
-    unsigned sizes[4];
+  public:
+    TensorProcessor();
+    void set_program(const TensorProgram &program);
+    void set_input(const std::map<std::string, float * const> &vars);
+    void set_output(const std::map<std::string, float *> &vars);
+    void execute();
+  private:
+    std::shared_ptr<TensorProcessorImpl> pImpl;
+    TensorProgram program;
+    std::vector<float> cpu_memory;
+    bool input_prepared = false;
+    bool program_prepared = false;
   };
-  TensorProcessor(){};
-  virtual void process(const Command *commands __attribute__((size("cmd_count"))), unsigned cmd_count,
-                       const Variable *vars __attribute__((size("var_count"))), unsigned var_count,
-                       float *memory __attribute__((size("data_size"))), unsigned data_size);
-
-  virtual void CommitDeviceData() {}                                                         // will be overriden in generated class
-  virtual void GetExecutionTime(const char *a_funcName, float a_out[4]) { a_out[0] = 0.0f; } // will be overriden in generated class
-protected:
-  virtual void kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A + B
-  virtual void kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A / B
-  virtual void kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
-  virtual void kernel2D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
-  virtual void matmul_transposed(float *data, Variable A, Variable B, Variable C);                                // C = A * (B)^T
-};
+}

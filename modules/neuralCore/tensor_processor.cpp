@@ -1,66 +1,61 @@
-#include "tensor_processor.h"
+#include "tensor_processor_impl.h"
+#include <cassert>
+#include <cstring>
 
-#define GET(A, i) (data[(A).offset + i])
+#define USE_GPU 0
+#if USE_GPU
+#include "tensor_processor_impl_gpu.h"
+std::shared_ptr<TensorProcessorImpl> CreateTensorProcessorImpl_GPU(vk_utils::VulkanContext a_ctx, size_t a_maxThreadsGenerated);
+#endif
 
-void TensorProcessor::process(const Command *commands, unsigned cmd_count,
-                              const Variable *vars, unsigned var_count,
-                              float *memory, unsigned data_size)
+namespace nn
 {
-  for (int i = 0; i < cmd_count; i++)
+  TensorProcessor::TensorProcessor()
   {
-    Variable A = vars[commands[i].args[0]];
-    Variable B = vars[commands[i].args[1]];
-    Variable C = vars[commands[i].args[2]];
-    Variable D = vars[commands[i].args[3]];
-    switch (commands[i].type)
+    #if USE_GPU
+    pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(), 256);
+    #else
+    pImpl = std::shared_ptr<TensorProcessorImpl>(new TensorProcessorImpl());
+    #endif
+  }
+
+  void TensorProcessor::set_program(const TensorProgram &_program)
+  {
+    program = _program;
+    cpu_memory = std::vector<float>(program.total_memory_req, 0);
+    program_prepared = true;
+  }
+
+  void TensorProcessor::set_input(const std::map<std::string, float * const> &vars)
+  {
+    assert(vars.size() == program.input_vars.size());
+
+    for (auto &p : program.input_vars)
     {
-    case ADD:
-      kernel2D_add(memory, A.total_size / B.total_size, B.total_size, A, B, C);
-      break;
-    case DIV:
-      kernel2D_div(memory, A.total_size / B.total_size, B.total_size, A, B, C);
-      break;
-    case EXP:
-      kernel1D_exp(memory, A.total_size, A, B);
-      break;
-    case SUM:
-      kernel2D_sum(memory, B.total_size, A.total_size / B.total_size, A, B);
-      break;
-    case MATMUL_T:
-      matmul_transposed(memory, A, B, C);
-      break;
-    default:
-      break;
+      float *data = vars.at(p.first);
+      unsigned offset = program.vars[p.second].offset;
+      unsigned size = program.vars[p.second].total_size;
+      memcpy(cpu_memory.data() + offset, data, sizeof(float) * size);
+    }
+    
+    input_prepared = true;
+  }
+
+  void TensorProcessor::set_output(const std::map<std::string, float *> &vars)
+  {
+    assert(vars.size() == program.output_vars.size());
+    for (auto &p : program.output_vars)
+    {
+      float *data = vars.at(p.first);
+      unsigned offset = program.vars[p.second].offset;
+      unsigned size = program.vars[p.second].total_size;
+      memcpy(data, cpu_memory.data() + offset, sizeof(float) * size);
     }
   }
-}
 
-void TensorProcessor::kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A + B
-{
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] + data[B.offset + j];
-}
-void TensorProcessor::kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A / B
-{
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] / data[B.offset + j];
-}
-void TensorProcessor::kernel1D_exp(float *data, unsigned steps, Variable A, Variable B) // B = exp(A)
-{
-  for (unsigned i = 0; i < steps; i++)
-    data[B.offset + i] = std::exp(data[A.offset + i]);
-}
-void TensorProcessor::kernel2D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
-{
-  for (unsigned i = 0; i < steps; i++)
+  void TensorProcessor::execute()
   {
-    data[B.offset + i] = 0;
-    for (unsigned j = 0; j < step_size; j++)
-      data[B.offset + i] += data[A.offset + i * step_size + j];
+    assert((pImpl.get() != nullptr) && input_prepared && program_prepared);
+    pImpl->process(program, cpu_memory.data(), cpu_memory.data(), cpu_memory.size());
   }
-}
-void TensorProcessor::matmul_transposed(float *data, Variable A, Variable B, Variable C) // C = A * (B)^T
-{
 }

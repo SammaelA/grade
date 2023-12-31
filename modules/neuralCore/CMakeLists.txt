@@ -9,8 +9,9 @@ set(SRC
     siren.cpp
     nn_test.cpp
     tensor_processor.cpp
+    tensor_processor_impl.cpp
     )
-set(CMAKE_CXX_FLAGS "-g -O3")
+set(CMAKE_CXX_FLAGS "-g -O3 -Wno-attributes")
 
 add_executable(nn_test ${SRC})
 target_include_directories(nn_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
