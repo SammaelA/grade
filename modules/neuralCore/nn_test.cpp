@@ -16,6 +16,7 @@
 #include "neural_network.h"
 #include "siren.h"
 #include "tensor_processor.h"
+#include "tensor_compiler.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../third_party/third_party/stb_image.h"
@@ -232,12 +233,48 @@ using namespace nn;
     printf("\n");
   }
 
+  void test_5_tensor_tokens()
+  {
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3);
+      TensorToken B = TensorToken(3);
+      TensorToken c = TensorToken(1);
+
+      TensorToken res = A + B + c;
+      res /= res.sum();
+
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.input(c, "c");
+      tc.output(res, "A");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1, 2, 3};
+    std::vector<float> B = {4, 3,12};
+    float c = 5;
+
+    TensorProcessor tp;
+    tp.set_program(p);
+    tp.set_input({{"A", A.data()},{"B", B.data()}, {"c", &c}});
+    tp.execute();
+    tp.set_output({{"A", A.data()}});
+
+    printf("res = ");
+    for (int i=0;i<A.size();i++)
+      printf("%f ", A[i]);
+    printf("\n");
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
     //test_2_simple_classification();
     //test_3_SIREN_image();
     test_4_tensor_processor();
+    test_5_tensor_tokens();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

@@ -10,6 +10,7 @@ set(SRC
     nn_test.cpp
     tensor_processor.cpp
     tensor_processor_impl.cpp
+    tensor_compiler.cpp
     )
 set(CMAKE_CXX_FLAGS "-g -O3 -Wno-attributes")
 
