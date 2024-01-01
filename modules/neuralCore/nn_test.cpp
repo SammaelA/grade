@@ -242,23 +242,21 @@ using namespace nn;
       TensorToken B = TensorToken(3);
       TensorToken c = TensorToken(1);
 
-      TensorToken res = A + B + c;
+      TensorToken res = A + B + 2.0f + 3.0f;
       res /= res.sum();
 
       tc.input(A, "A");
       tc.input(B, "B");
-      tc.input(c, "c");
       tc.output(res, "A");
     }
     TensorProgram p = tc.finish_program();
 
     std::vector<float> A = {1, 2, 3};
     std::vector<float> B = {4, 3,12};
-    float c = 5;
 
     TensorProcessor tp;
     tp.set_program(p);
-    tp.set_input({{"A", A.data()},{"B", B.data()}, {"c", &c}});
+    tp.set_input({{"A", A.data()},{"B", B.data()}});
     tp.execute();
     tp.set_output({{"A", A.data()}});
 

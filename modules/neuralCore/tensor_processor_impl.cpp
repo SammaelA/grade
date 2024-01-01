@@ -10,7 +10,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     Variable A = program.vars[program.commands[i].args[0]];
     Variable B = program.vars[program.commands[i].args[1]];
     Variable C = program.vars[program.commands[i].args[2]];
-    Variable D = program.vars[program.commands[i].args[3]];
+
+    unsigned num_arg = program.commands[i].args[3];
+
     switch (program.commands[i].type)
     {
     case nn::TensorProgram::ADD:
@@ -30,6 +32,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       break;
     case nn::TensorProgram::MOV:
       memcpy(memory_out + B.offset, memory_out + A.offset, sizeof(float)*A.total_size);
+      break;
+    case nn::TensorProgram::FTT:
+      memory_out[A.offset] = program.constants[num_arg];
       break;
     default:
       break;

@@ -34,7 +34,7 @@ namespace nn
 
     unsigned add_var(const TensorToken &t);
     void ftt(unsigned id, float val);
-    void add_command(TensorProgram::CommandType type, unsigned A = 0, unsigned B = 0, unsigned C = 0, unsigned D = 0);
+    void add_command(TensorProgram::CommandType type, unsigned A = 0, unsigned B = 0, unsigned C = 0, unsigned num_arg = 0);
     void optimize_program();
     unsigned calculate_memory_layout();
 

@@ -40,6 +40,7 @@ namespace nn
 
     unsigned total_memory_req;
 
+    std::vector<float> constants;
     std::map<std::string, unsigned> input_vars;  //name -> var_id
     std::map<std::string, unsigned> output_vars; //name -> var_id
   };

@@ -21,7 +21,7 @@ namespace nn
   }
   void TensorCompiler::ftt(unsigned id, float val)
   {
-    commands.push_back({TensorProgram::FTT, {id, (unsigned)constants.size(), 0, 0}});
+    commands.push_back({TensorProgram::FTT, {id, 0, 0, (unsigned)constants.size()}});
     constants.push_back(val);
   }
 
@@ -74,6 +74,7 @@ namespace nn
     unsigned total_memory_req = calculate_memory_layout();
 
     TensorProgram pr;
+    pr.constants = constants;
     pr.commands = commands;
     pr.output_vars = output_vars;
     pr.input_vars = input_vars;
@@ -109,15 +110,15 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
-      printf("Cmd %u: %s %u %u %u %u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2], cmd.args[3]);
+      printf("Cmd %u: %s %u %u %u - %u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2], cmd.args[3]);
       cid++;
     }
 
     return pr;
   }
 
-  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned D)
+  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned num_arg)
   {
-    commands.push_back({type, {A, B, C, D}});
+    commands.push_back({type, {A, B, C, num_arg}});
   }
 }
