@@ -27,6 +27,7 @@ namespace nn
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
+      URAND,    // C = random_float_uniform(A, B)
     };
 
     struct Command

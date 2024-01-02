@@ -52,6 +52,15 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     case nn::TensorProgram::OUTER_P:
       kernel2D_outer_product(memory_out, A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
       break;
+    case nn::TensorProgram::URAND:
+    {
+      float from = memory_out[A.offset];
+      float to = memory_out[B.offset];
+      //TODO: GPU-compatible random
+      for (unsigned i = 0; i < C.total_size; i++)
+        memory_out[C.offset + i] = from + ((double)rand()/RAND_MAX)*(to-from);
+    }
+      break;
     default:
       break;
     }

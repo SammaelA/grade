@@ -8,6 +8,7 @@ namespace nn
 
   unsigned TensorCompiler::add_var(const TensorToken &t)
   {
+    printf("add var %d\n",(int)vars.size());
     vars.emplace_back();
 
     vars.back().Dim = t.Dim;
@@ -30,6 +31,7 @@ namespace nn
     assert(input_vars.find(name) == input_vars.end());
     input_vars[name] = t.id;
     vars[t.id].is_input = true;
+    printf("input %s %d\n",name.c_str(), t.id);
   }
 
   void TensorCompiler::output(const TensorToken &t, std::string name)
@@ -102,7 +104,7 @@ namespace nn
     for (unsigned vid = 0; vid < vars.size(); vid++)
     {
       auto &var = vars[vid];
-      printf("V%u: %u %u [%u %u %u %u] %s %s\n", vid, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
+      printf("V%2u: %u %5u [%2u %2u %2u %2u] %s %s\n", vid, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
              var.is_input ? "  input" : "", var.is_output ? "output" : "");
     }
 
@@ -110,7 +112,7 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
-      printf("Cmd %u: %8s %u %u %u - %u %u %u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
+      printf("Cmd %2u: %8s %2u %2u %2u - %3u %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
              cmd.args[3], cmd.args[4], cmd.args[5]);
       cid++;
     }

@@ -63,13 +63,21 @@ namespace nn
       id = tp->add_var(*this);
       tp->ftt(id, val);
     }
+    TensorToken(const std::vector<unsigned> &shape)
+    {
+      assert(shape.size() <= TensorCompiler::MAX_DIM);
+      Dim = shape.size();
+      for (int i=0;i<Dim;i++)
+        sizes[i] = shape[i];
+      id = tp->add_var(*this);
+    }
     TensorToken(const unsigned _sizes[TensorCompiler::MAX_DIM]) : TensorToken(_sizes[0], _sizes[1], _sizes[2], _sizes[3])
     {
     }
     explicit TensorToken(int sz_0, int sz_1 = 0, int sz_2 = 0, int sz_3 = 0) : TensorToken((unsigned)sz_0, (unsigned)sz_1, (unsigned)sz_2, (unsigned)sz_3) {}
     explicit TensorToken(unsigned sz_0, unsigned sz_1 = 0, unsigned sz_2 = 0, unsigned sz_3 = 0)
     {
-      assert(TensorCompiler::MAX_DIM == 4);
+      static_assert(TensorCompiler::MAX_DIM == 4);
       Dim = sz_0 == 0 ? 0 : (sz_1 == 0 ? 1 : (sz_2 == 0 ? 2 : (sz_3 == 0 ? 3 : 4)));
       sizes[0] = sz_0;
       sizes[1] = sz_1;
@@ -92,6 +100,14 @@ namespace nn
         sizes[i] = other.sizes[i];
       tp->add_command(TensorProgram::MOV, other.id, 0, id);
       return *this;
+    }
+
+    unsigned total_size() const
+    {
+      unsigned size = 1;
+      for (int i = 0; i < Dim; i++)
+        size *= sizes[i];
+      return size;
     }
 
     TensorToken &operator+=(const TensorToken &other) 
@@ -215,6 +231,17 @@ namespace nn
       tp->add_command(TensorProgram::COPY, t.id, 0, id, n*sub_size, 0, sub_size);
     }
 
+    void set_flatten(std::pair<unsigned, unsigned> range, const TensorToken &t)
+    {
+      unsigned from = range.first;
+      unsigned to = range.second;
+      assert(t.total_size() == to-from);
+      assert(from < to);
+      assert(to <= total_size());
+
+      tp->add_command(TensorProgram::COPY, t.id, 0, id, from, 0, (to-from));
+    }
+
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t)
     {
       unsigned from = range.first;
@@ -313,6 +340,6 @@ namespace nn
 
     unsigned id;
     unsigned Dim;
-    unsigned sizes[TensorCompiler::MAX_DIM];
+    unsigned sizes[TensorCompiler::MAX_DIM] = {0};
   };
 }

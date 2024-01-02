@@ -17,6 +17,7 @@
 #include "siren.h"
 #include "tensor_processor.h"
 #include "tensor_compiler.h"
+#include "neural_network_2.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../third_party/third_party/stb_image.h"
@@ -333,6 +334,19 @@ using namespace nn;
     */
   }
 
+  void test_7_linear_regression_2()
+  {
+    std::vector<float> X = {1,2,3,2,4,5};
+    std::vector<float> w = {1,1,-1,0.01};
+    std::vector<float> r = {0,0};
+    NeuralNetwork2 nn2;
+    nn2.add_layer(std::make_shared<DenseLayer2>(3, 1));
+    nn2.initialize_with_weights(w.data());
+    nn2.evaluate(X, r);
+    printf("%f %f\n", r[0], r[1]);
+    //nn.train(X_train, y_train, X_val, y_val, 50, 3000, NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.01);
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
@@ -341,6 +355,7 @@ using namespace nn;
     test_4_tensor_processor();
     test_5_tensor_tokens();
     test_6_tensor_operations();
+    test_7_linear_regression_2();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));
