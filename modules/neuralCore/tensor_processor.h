@@ -24,7 +24,7 @@ namespace nn
       MATMUL_T, // C = AxB
       MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
       FTT,      // C = constants[arg0]
-      COPY,      // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
+      COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
     };

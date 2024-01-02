@@ -14,6 +14,7 @@ protected:
 
   virtual void CommitDeviceData() {}                                                         // will be overriden in generated class
   virtual void GetExecutionTime(const char *a_funcName, float a_out[4]) { a_out[0] = 0.0f; } // will be overriden in generated class
+  virtual void kernel1D_fill(float *data, unsigned steps, Variable A, float val); // A = val
   virtual void kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A + B
   virtual void kernel2D_mul(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A + B
   virtual void kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A / B

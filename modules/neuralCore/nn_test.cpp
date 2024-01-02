@@ -273,12 +273,18 @@ using namespace nn;
       tc.start_program();
       TensorToken A = TensorToken(3, 2);
       TensorToken B = TensorToken(3, 3);
-      TensorToken R1 = B.slice(0, 2);
+      TensorToken R1 = B.get({0, 2});
       TensorToken R2 = TensorToken::mat_mul_t(A, R1);
-      TensorToken R3 = B.slice(2);
+      TensorToken R3 = B.get(2);
       TensorToken R4 = TensorToken::mat_vec_mul(A, R3);
       TensorToken R5 = A.transpose();
-      TensorToken R6 = TensorToken::vector_outer_product(A, B.slice(0));
+      TensorToken O = TensorToken::vector_outer_product(A, B.get(0));
+      TensorToken R6 = O.get(0);
+      TensorToken R7 = O.get(1);
+      TensorToken OF = O.flatten();
+      OF.set(0, 171.0f);
+      TensorToken R8 = OF.get({0, 9});
+      TensorToken R9 = OF.get({9, 18});
 
       tc.input(A, "A");
       tc.input(B, "B");
@@ -288,6 +294,9 @@ using namespace nn;
       tc.output(R4, "R4");
       tc.output(R5, "R5");
       tc.output(R6, "R6");
+      tc.output(R7, "R7");
+      tc.output(R8, "R8");
+      tc.output(R9, "R9");
     }
     TensorProgram p = tc.finish_program();
 
@@ -300,7 +309,8 @@ using namespace nn;
     tp.set_input({{"A", A.data()},{"B", B.data()}});
     tp.execute();
     tp.set_output({{"R1", res.data()+0*9},{"R2", res.data()+1*9},{"R3", res.data()+2*9},
-                   {"R4", res.data()+3*9},{"R5", res.data()+4*9},{"R6", res.data()+5*9}});
+                   {"R4", res.data()+3*9},{"R5", res.data()+4*9},{"R6", res.data()+5*9},
+                   {"R7", res.data()+6*9},{"R8", res.data()+7*9},{"R9", res.data()+8*9}});
 
     for (int k=0;k<10;k++)
     {
@@ -317,6 +327,9 @@ using namespace nn;
     R5 = 1.00 -1.00 2.00 -2.00 3.00 -3.00 0.00 0.00 0.00 
     R6 = 1.00 2.00 3.00 2.00 4.00 6.00 3.00 6.00 9.00 
     R7 = -1.00 -2.00 -3.00 -2.00 -4.00 -6.00 -3.00 -6.00 -9.00 
+    R8 = 171.00 2.00 3.00 2.00 4.00 6.00 3.00 6.00 9.00 
+    R9 = -1.00 -2.00 -3.00 -2.00 -4.00 -6.00 -3.00 -6.00 -9.00 
+    R10 = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
     */
   }
 
