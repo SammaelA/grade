@@ -34,7 +34,8 @@ namespace nn
 
     unsigned add_var(const TensorToken &t);
     void ftt(unsigned id, float val);
-    void add_command(TensorProgram::CommandType type, unsigned A = 0, unsigned B = 0, unsigned C = 0, unsigned num_arg = 0);
+    void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
+                                                      unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
     void optimize_program();
     unsigned calculate_memory_layout();
 
@@ -62,14 +63,14 @@ namespace nn
       id = tp->add_var(*this);
       tp->ftt(id, val);
     }
-    TensorToken(unsigned _sizes[TensorCompiler::MAX_DIM]) : TensorToken(_sizes[0], _sizes[1], _sizes[2], _sizes[3])
+    TensorToken(const unsigned _sizes[TensorCompiler::MAX_DIM]) : TensorToken(_sizes[0], _sizes[1], _sizes[2], _sizes[3])
     {
     }
     explicit TensorToken(int sz_0, int sz_1 = 0, int sz_2 = 0, int sz_3 = 0) : TensorToken((unsigned)sz_0, (unsigned)sz_1, (unsigned)sz_2, (unsigned)sz_3) {}
     explicit TensorToken(unsigned sz_0, unsigned sz_1 = 0, unsigned sz_2 = 0, unsigned sz_3 = 0)
     {
       assert(TensorCompiler::MAX_DIM == 4);
-      Dim = sz_0 == 0 ? 0 : (sz_1 == 0 ? 1 : (sz_1 == 0 ? 2 : (sz_1 == 0 ? 3 : 4)));
+      Dim = sz_0 == 0 ? 0 : (sz_1 == 0 ? 1 : (sz_2 == 0 ? 2 : (sz_3 == 0 ? 3 : 4)));
       sizes[0] = sz_0;
       sizes[1] = sz_1;
       sizes[2] = sz_2;
@@ -82,24 +83,24 @@ namespace nn
       for (int i = 0; i < Dim; i++)
         sizes[i] = other.sizes[i];
       id = tp->add_var(*this);
-      tp->add_command(TensorProgram::MOV, other.id, id);
+      tp->add_command(TensorProgram::MOV, other.id, 0, id);
     }
     TensorToken &operator=(const TensorToken &other)
     {
       Dim = other.Dim;
       for (int i = 0; i < Dim; i++)
         sizes[i] = other.sizes[i];
-      tp->add_command(TensorProgram::MOV, other.id, id);
+      tp->add_command(TensorProgram::MOV, other.id, 0, id);
       return *this;
     }
 
-    TensorToken &operator+=(const TensorToken &other)
+    TensorToken &operator+=(const TensorToken &other) 
     {
       tp->add_command(TensorProgram::ADD, id, other.id, id);
       return *this;
     }
 
-    TensorToken operator+(const TensorToken &other)
+    TensorToken operator+(const TensorToken &other) const
     {
       TensorToken res(sizes);
       tp->add_command(TensorProgram::ADD, id, other.id, res.id);
@@ -112,21 +113,21 @@ namespace nn
       return *this;
     }
 
-    TensorToken operator/(const TensorToken &other)
+    TensorToken operator/(const TensorToken &other) const
     {
       TensorToken res(sizes);
       tp->add_command(TensorProgram::DIV, id, other.id, res.id);
       return res;
     }
 
-    TensorToken exp()
+    TensorToken exp() const
     {
       TensorToken res(sizes);
-      tp->add_command(TensorProgram::EXP, id, res.id);
+      tp->add_command(TensorProgram::EXP, id, 0, res.id);
       return res;
     }
 
-    TensorToken sum(int Dims = -1)
+    TensorToken sum(int Dims = -1) const
     {
       if (Dim == 0) // sum of scalar is this scalar itself
         return *this;
@@ -135,12 +136,116 @@ namespace nn
       assert(Dims > 0);
       assert(Dims <= Dim);
       unsigned res_Dim = Dim - Dims; // remaining dimensions
-      unsigned res_sizes[TensorCompiler::MAX_DIM];
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
       for (int i = 0; i < res_Dim; i++)
         res_sizes[i] = sizes[i + Dims];
 
       TensorToken res(res_sizes);
-      tp->add_command(TensorProgram::SUM, id, res.id);
+      tp->add_command(TensorProgram::SUM, id, 0, res.id);
+      return res;
+    }
+
+    TensorToken transpose() const
+    {
+      assert(Dim > 1);
+      unsigned res_Dim = Dim;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      res_sizes[0] = sizes[1];
+      res_sizes[1] = sizes[0];
+      for (int i = 2; i < res_Dim; i++)
+        res_sizes[i] = sizes[i];
+
+      TensorToken res(res_sizes);
+      tp->add_command(TensorProgram::TRANSP, id, 0, res.id);
+      return res;
+    }
+
+    TensorToken slice(unsigned n) const
+    {
+      assert(Dim > 0);
+      assert(n < sizes[Dim-1]);
+
+      unsigned res_size = 1;
+      unsigned res_Dim = Dim-1;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      for (int i = 0; i < res_Dim; i++)
+      {
+        res_sizes[i] = sizes[i];
+        res_size *= res_sizes[i];
+      }
+      TensorToken res(res_sizes);
+
+      tp->add_command(TensorProgram::COPY, id, 0, res.id, n*res_size, 0, res_size);
+      return res;
+    }
+
+    TensorToken slice(unsigned from, unsigned to) const
+    {
+      assert(Dim > 0);
+      assert(from < to);
+      assert(to <= sizes[Dim-1]);
+
+      unsigned res_size = 1;
+      unsigned res_Dim = Dim;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      for (int i = 0; i < Dim-1; i++)
+      {
+        res_sizes[i] = sizes[i];
+        res_size *= res_sizes[i];
+      }
+      res_sizes[Dim-1] = to-from;
+      TensorToken res(res_sizes);
+
+      tp->add_command(TensorProgram::COPY, id, 0, res.id, from*res_size, 0, (to-from)*res_size);
+      return res;      
+    }
+
+    static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B)
+    {
+      assert(A.Dim >= 1);
+      assert(A.Dim < TensorCompiler::MAX_DIM);
+      assert(B.Dim == 1);
+      assert(A.sizes[0] == B.sizes[0]);
+      
+      unsigned res_Dim = A.Dim + 1;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      res_sizes[0] = B.sizes[0];
+      res_sizes[1] = A.sizes[0];
+      for (int i = 2; i < res_Dim; i++)
+        res_sizes[i] = A.sizes[i - 1];
+
+      TensorToken res(res_sizes);
+      tp->add_command(TensorProgram::OUTER_P, A.id, B.id, res.id);
+      return res;
+    }
+
+    static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B)
+    {
+      assert(A.Dim == 2);
+      assert(B.Dim == 2);
+      assert(A.sizes[0] == B.sizes[0]);
+
+      unsigned res_Dim = 2;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      res_sizes[0] = A.sizes[1];
+      res_sizes[1] = B.sizes[1];
+      TensorToken res(res_sizes);
+      tp->add_command(TensorProgram::MATMUL_T, A.id, B.id, res.id);
+      return res;
+    }
+
+    static TensorToken mat_vec_mul(const TensorToken &A, const TensorToken &B)
+    {
+      assert(A.Dim == 2);
+      assert(B.Dim == 1);
+      assert(A.sizes[0] == B.sizes[0]);
+
+      unsigned res_Dim = 2;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {};
+      res_sizes[0] = A.sizes[1];
+      res_sizes[1] = 1;
+      TensorToken res(res_sizes);
+      tp->add_command(TensorProgram::MATMUL_T, A.id, B.id, res.id);
       return res;
     }
 

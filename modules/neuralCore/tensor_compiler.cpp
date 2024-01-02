@@ -21,7 +21,7 @@ namespace nn
   }
   void TensorCompiler::ftt(unsigned id, float val)
   {
-    commands.push_back({TensorProgram::FTT, {id, 0, 0, (unsigned)constants.size()}});
+    commands.push_back({TensorProgram::FTT, {0, 0, id, (unsigned)constants.size()}});
     constants.push_back(val);
   }
 
@@ -64,8 +64,8 @@ namespace nn
 
   TensorProgram TensorCompiler::finish_program()
   {
-    std::vector<std::string> names = {"ADD", "DIV", "EXP", "SUM", "MATMUL_T",
-                                      "MOV", "FTT", "", "", "",
+    std::vector<std::string> names = {"NOOP", "ADD", "MUL", "DIV", "EXP", "SUM", "MATMUL_T",
+                                      "MOV", "FTT", "COPY", "TRANSP", "OUTER_P",
                                       "", "", "", "", "",
                                       "", "", "", "", ""};
 
@@ -110,15 +110,16 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
-      printf("Cmd %u: %s %u %u %u - %u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2], cmd.args[3]);
+      printf("Cmd %u: %8s %u %u %u - %u %u %u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
+             cmd.args[3], cmd.args[4], cmd.args[5]);
       cid++;
     }
 
     return pr;
   }
 
-  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned num_arg)
+  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned arg0, unsigned arg1, unsigned arg2)
   {
-    commands.push_back({type, {A, B, C, num_arg}});
+    commands.push_back({type, {A, B, C, arg0, arg1, arg2}});
   }
 }

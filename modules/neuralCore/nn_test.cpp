@@ -205,10 +205,10 @@ using namespace nn;
     vars[2] = {0,6,1, {0,0,0,0}};//c
     vars[3] = {0,6,1, {0,0,0,0}};//s
     std::vector<TensorProgram::Command> commands(4);
-    commands[0] = {TensorProgram::ADD, {0, 1, 0, 0}}; //A = A + B
-    commands[1] = {TensorProgram::ADD, {0, 2, 0, 0}}; //A = A + c
-    commands[2] = {TensorProgram::SUM, {0, 3, 0, 0}}; //s = sum(A)
-    commands[3] = {TensorProgram::DIV, {0, 2, 0, 0}}; //A = A/c
+    commands[0] = {TensorProgram::ADD, {0, 1, 0, 0, 0, 0}}; //A = A + B
+    commands[1] = {TensorProgram::ADD, {0, 2, 0, 0, 0, 0}}; //A = A + c
+    commands[2] = {TensorProgram::SUM, {0, 0, 3, 0, 0, 0}}; //s = sum(A)
+    commands[3] = {TensorProgram::DIV, {0, 2, 0, 0, 0, 0}}; //A = A/c
 
     TensorProgram p;
     p.commands = commands;
@@ -266,6 +266,60 @@ using namespace nn;
     printf("\n");
   }
 
+  void test_6_tensor_operations()
+  {
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3, 2);
+      TensorToken B = TensorToken(3, 3);
+      TensorToken R1 = B.slice(0, 2);
+      TensorToken R2 = TensorToken::mat_mul_t(A, R1);
+      TensorToken R3 = B.slice(2);
+      TensorToken R4 = TensorToken::mat_vec_mul(A, R3);
+      TensorToken R5 = A.transpose();
+      TensorToken R6 = TensorToken::vector_outer_product(A, B.slice(0));
+
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.output(R1, "R1");
+      tc.output(R2, "R2");
+      tc.output(R3, "R3");
+      tc.output(R4, "R4");
+      tc.output(R5, "R5");
+      tc.output(R6, "R6");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1, 2, 3, -1, -2, -3};
+    std::vector<float> B = {1,2,3,4,5,6,7,8,9};
+    std::vector<float> res(90, 0.0f);
+
+    TensorProcessor tp;
+    tp.set_program(p);
+    tp.set_input({{"A", A.data()},{"B", B.data()}});
+    tp.execute();
+    tp.set_output({{"R1", res.data()+0*9},{"R2", res.data()+1*9},{"R3", res.data()+2*9},
+                   {"R4", res.data()+3*9},{"R5", res.data()+4*9},{"R6", res.data()+5*9}});
+
+    for (int k=0;k<10;k++)
+    {
+      printf("R%d = ", k+1);
+      for (int i=0;i<9;i++)
+        printf("%.2f ", res[9*k + i]);
+      printf("\n");
+    }
+    /* Reference values
+    R1 = 1.00 2.00 3.00 4.00 5.00 6.00 0.00 0.00 0.00 
+    R2 = 14.00 -14.00 32.00 -32.00 0.00 0.00 0.00 0.00 0.00 
+    R3 = 7.00 8.00 9.00 0.00 0.00 0.00 0.00 0.00 0.00 
+    R4 = 50.00 -50.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
+    R5 = 1.00 -1.00 2.00 -2.00 3.00 -3.00 0.00 0.00 0.00 
+    R6 = 1.00 2.00 3.00 2.00 4.00 6.00 3.00 6.00 9.00 
+    R7 = -1.00 -2.00 -3.00 -2.00 -4.00 -6.00 -3.00 -6.00 -9.00 
+    */
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
@@ -273,6 +327,7 @@ using namespace nn;
     //test_3_SIREN_image();
     test_4_tensor_processor();
     test_5_tensor_tokens();
+    test_6_tensor_operations();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

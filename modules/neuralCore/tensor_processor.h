@@ -10,21 +10,29 @@ namespace nn
 {
   struct TensorProgram
   {
+    //each command is [type, A, B, C, arg0, arg1, arg2]
+    //A,B - input variables
+    //C - output variable
     enum CommandType
     {
-      ADD,
-      DIV,
-      EXP,
-      SUM,
-      MATMUL_T,
-      MOV,
-      FTT
+      NOOP,
+      ADD,      // C = A+B
+      MUL,      // C = A*B
+      DIV,      // C = A/B
+      EXP,      // C = exp(A)
+      SUM,      // C = sum(A)
+      MATMUL_T, // C = AxB
+      MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
+      FTT,      // C = constants[arg0]
+      COPY,      // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
+      TRANSP,   // C = transpose(A)
+      OUTER_P,  // C = outer_product(A, B)
     };
 
     struct Command
     {
       CommandType type;
-      unsigned args[4];
+      unsigned args[6];
     };
 
     struct Variable
