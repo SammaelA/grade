@@ -99,13 +99,13 @@ namespace nn
       p.second = var_remap[p.second];
   }
 
-  bool TensorCompiler::optimize_unused_cycle()
+  void TensorCompiler::calculate_variable_usage_intervals()
   {
-    std::vector<unsigned> fm(vars.size(), commands.size());
-    std::vector<unsigned> fu(vars.size(), commands.size());
-    std::vector<unsigned> lm(vars.size(), 0);
-    std::vector<unsigned> lu(vars.size(), 0);
-
+    fm = std::vector<unsigned>(vars.size(), commands.size());
+    fu = std::vector<unsigned>(vars.size(), commands.size());
+    lm = std::vector<unsigned>(vars.size(), 0);
+    lu = std::vector<unsigned>(vars.size(), 0);
+    
     for (unsigned i=0;i<commands.size();i++)
     {
       if (commands[i].type == TensorProgram::NOOP)
@@ -131,6 +131,11 @@ namespace nn
         lu[i] = commands.size();
       //printf("%u - %u %u - %u %u\n",i,fu[i],lu[i],fm[i],lm[i]);
     }
+  }
+
+  bool TensorCompiler::optimize_unused_cycle()
+  {
+    calculate_variable_usage_intervals();
 
     //remove commands that use uninitialized variables or 
     //create variables that won't be used
@@ -152,41 +157,41 @@ namespace nn
     return optimized;
   }
 
+  bool TensorCompiler::have_same_scheme(const Variable &a, const Variable &b)
+  {
+    bool same_scheme = a.Dim == b.Dim;
+    for (int i=0;i<a.Dim;i++)
+      same_scheme = same_scheme && a.sizes[i] == b.sizes[i];
+    return same_scheme;
+  }
+
+  bool TensorCompiler::is_self_applicable_command(TensorProgram::CommandType type)
+  {
+    std::vector<TensorProgram::CommandType> sacs = {TensorProgram::ADD, TensorProgram::MUL, TensorProgram::DIV};
+
+    for (auto &t : sacs)
+      if (type == t)
+        return true;
+    return false;
+  }
+
+  void TensorCompiler::replace_output_var(unsigned old_id, unsigned new_id)
+  {
+    if (!vars[old_id].is_output)
+      return;
+    vars[old_id].is_output = false;
+    vars[new_id].is_output = true;
+    for (auto &p : output_vars)
+      if (p.second == old_id)
+        p.second = new_id;
+  }
+
   void TensorCompiler::optimize_renaming_moves()
   {
-    std::vector<unsigned> fm(vars.size(), commands.size());
-    std::vector<unsigned> fu(vars.size(), commands.size());
-    std::vector<unsigned> lm(vars.size(), 0);
-    std::vector<unsigned> lu(vars.size(), 0);
-
-    for (unsigned i=0;i<commands.size();i++)
+    for (unsigned i=1;i<commands.size();i++)
     {
       if (commands[i].type == TensorProgram::NOOP)
         continue;
-      unsigned A = commands[i].args[0];
-      unsigned B = commands[i].args[1];
-      unsigned C = commands[i].args[2];
-
-      fu[A] = std::min(fu[A], i);
-      fu[B] = std::min(fu[B], i);
-      fm[C] = std::min(fm[C], i);
-
-      lu[A] = std::max(lu[A], i);
-      lu[B] = std::max(lu[B], i);
-      lm[C] = std::max(lm[C], i);
-    }
-
-    for (unsigned i=0;i<vars.size();i++)
-    {
-      if (vars[i].is_input)
-        fm[i] = 0;
-      if (vars[i].is_output)
-        lu[i] = commands.size();
-      //printf("%u - %u %u - %u %u\n",i,fu[i],lu[i],fm[i],lm[i]);
-    }
-
-    for (unsigned i=1;i<commands.size();i++)
-    {
       unsigned A = commands[i].args[0];
       unsigned C = commands[i].args[2];
 
@@ -195,13 +200,16 @@ namespace nn
                            commands[i].args[4] == 0 && commands[i].args[5] == vars[A].total_size);
       bool last_A = lu[A] <= i && lm[A] <= i;
       bool first_C = fu[C] >= i && fm[C] >= i;
-      bool same_size = vars[A].Dim == vars[C].Dim;
-      for (int i=0;i<vars[A].Dim;i++)
-        same_size = same_size && vars[A].sizes[i] == vars[C].sizes[i];
-      if ((is_mov || is_full_copy) && last_A && first_C && same_size)
+      bool same_scheme = have_same_scheme(vars[A], vars[C]);
+      if ((is_mov || is_full_copy) && last_A && first_C && same_scheme)
       {
         //this command only renames variable, no operation is needed
         commands[i].type = TensorProgram::NOOP;
+        //we use A instead of C everywhere
+        lu[A] = std::max(lu[A], lu[C]);
+        lm[A] = std::max(lm[A], lm[C]);
+        //if C is output, me make A output variable instead
+        replace_output_var(C, A);
         for (unsigned j=i+1;j<commands.size();j++)
         {
           if (commands[j].args[0] == C)
@@ -223,12 +231,57 @@ namespace nn
     }
   }
 
+  void TensorCompiler::optimize_self_applicable_commands()
+  {
+    for (unsigned i=1;i<commands.size();i++)
+    {
+      if (commands[i].type == TensorProgram::NOOP)
+        continue;
+      unsigned A = commands[i].args[0];
+      unsigned B = commands[i].args[1];
+      unsigned C = commands[i].args[2];
+
+      bool last_A = lu[A] <= i && lm[A] <= i;
+      bool last_B = lu[B] <= i && lm[B] <= i;
+      bool first_C = fu[C] >= i && fm[C] >= i;
+
+      unsigned rp = 0;
+      if (A > 0 && last_A && first_C && have_same_scheme(vars[A], vars[C]) && 
+          is_self_applicable_command(commands[i].type))
+        rp = A; //replace C = A x B with A = A x B
+      else if (B > 0 && last_B && first_C && have_same_scheme(vars[B], vars[C]) && 
+               is_self_applicable_command(commands[i].type))
+        rp = B; //replace C = A x B with B = A x B
+      
+      if (rp > 0)
+      {
+        commands[i].args[2] = rp;
+        //we use rp instead of C everywhere
+        lu[rp] = std::max(lu[rp], lu[C]);
+        lm[rp] = std::max(lm[rp], lm[C]);
+        //if C is output, me make rp output variable instead
+        replace_output_var(C, rp);
+        for (unsigned j=i+1;j<commands.size();j++)
+        {
+          if (commands[j].args[0] == C)
+            commands[j].args[0] = rp;
+          if (commands[j].args[1] == C)
+            commands[j].args[1] = rp;
+          if (commands[j].args[2] == C)
+            commands[j].args[2] = rp;
+        }
+      }
+    }
+  }
+
   void TensorCompiler::optimize_program()
   {
     //initial optimization
     //removes redundant MOV operations
     while (optimize_unused_cycle());
+    calculate_variable_usage_intervals();
     optimize_renaming_moves();
+    optimize_self_applicable_commands();
     compactify();
   }
 

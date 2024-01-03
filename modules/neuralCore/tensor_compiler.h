@@ -32,13 +32,19 @@ namespace nn
       bool is_output = false;
     };
 
+    static bool have_same_scheme(const Variable &a, const Variable &b);
+    static bool is_self_applicable_command(TensorProgram::CommandType type);
+
     unsigned add_var(const TensorToken &t);
     void ftt(unsigned id, float val);
     void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
                                                       unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
     void compactify();
+    void calculate_variable_usage_intervals();
+    void replace_output_var(unsigned old_id, unsigned new_id);
     bool optimize_unused_cycle();
     void optimize_renaming_moves();
+    void optimize_self_applicable_commands();
     void optimize_program();
     unsigned calculate_memory_layout();
 
@@ -47,6 +53,8 @@ namespace nn
     
     std::map<std::string, unsigned> input_vars;  //name -> var_id
     std::map<std::string, unsigned> output_vars; //name -> var_id
+
+    std::vector<unsigned> fm, lm, fu, lu; //variable usage intervals
   };
 
   struct TensorToken
