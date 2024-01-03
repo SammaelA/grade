@@ -129,7 +129,7 @@ namespace nn
       for (auto &lw : l->weights)
       {
         unsigned sz = lw.total_size();
-        lw.set_flatten({0, sz}, w.get({offset, offset + sz}));
+        lw.copy_to({0, sz}, w, {offset, offset + sz});
         offset += sz;
       }
     }

@@ -36,6 +36,8 @@ namespace nn
     void ftt(unsigned id, float val);
     void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
                                                       unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
+    void compactify();
+    bool optimize_mov_cycle();
     void optimize_program();
     unsigned calculate_memory_layout();
 
@@ -227,7 +229,7 @@ namespace nn
         assert(sizes[i] == t.sizes[i]);
         sub_size *= sizes[i];
       }
-      tp->add_command(TensorProgram::COPY, t.id, 0, id, n*sub_size, 0, sub_size);
+      tp->add_command(TensorProgram::COPY, t.id, 0, id, 0, n*sub_size, sub_size);
     }
 
     void set_flatten(std::pair<unsigned, unsigned> range, const TensorToken &t)
@@ -239,6 +241,14 @@ namespace nn
       assert(to <= total_size());
 
       tp->add_command(TensorProgram::COPY, t.id, 0, id, from, 0, (to-from));
+    }
+
+    void copy_to(std::pair<unsigned, unsigned> to_range, const TensorToken &t, std::pair<unsigned, unsigned> from_range)
+    {
+      assert(to_range.second <= total_size());
+      assert(from_range.second <= t.total_size());
+      assert(to_range.second-to_range.first == from_range.second-from_range.first);
+      tp->add_command(TensorProgram::COPY, t.id, 0, id, from_range.first, to_range.first, to_range.second-to_range.first);
     }
 
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t)
@@ -255,7 +265,7 @@ namespace nn
         assert(sizes[i] == t.sizes[i]);
         sub_size *= sizes[i];
       }
-      tp->add_command(TensorProgram::COPY, t.id, 0, id, from*sub_size, 0, (to-from)*sub_size);
+      tp->add_command(TensorProgram::COPY, t.id, 0, id, 0, from*sub_size, (to-from)*sub_size);
     }
 
     TensorToken reshape(std::vector<unsigned> new_shape) const
