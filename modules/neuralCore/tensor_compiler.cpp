@@ -99,7 +99,7 @@ namespace nn
       p.second = var_remap[p.second];
   }
 
-  bool TensorCompiler::optimize_mov_cycle()
+  bool TensorCompiler::optimize_unused_cycle()
   {
     std::vector<unsigned> fm(vars.size(), commands.size());
     std::vector<unsigned> fu(vars.size(), commands.size());
@@ -132,6 +132,8 @@ namespace nn
       //printf("%u - %u %u - %u %u\n",i,fu[i],lu[i],fm[i],lm[i]);
     }
 
+    //remove commands that use uninitialized variables or 
+    //create variables that won't be used
     bool optimized = false;
     for (unsigned i=0;i<commands.size();i++)
     {
@@ -150,11 +152,83 @@ namespace nn
     return optimized;
   }
 
+  void TensorCompiler::optimize_renaming_moves()
+  {
+    std::vector<unsigned> fm(vars.size(), commands.size());
+    std::vector<unsigned> fu(vars.size(), commands.size());
+    std::vector<unsigned> lm(vars.size(), 0);
+    std::vector<unsigned> lu(vars.size(), 0);
+
+    for (unsigned i=0;i<commands.size();i++)
+    {
+      if (commands[i].type == TensorProgram::NOOP)
+        continue;
+      unsigned A = commands[i].args[0];
+      unsigned B = commands[i].args[1];
+      unsigned C = commands[i].args[2];
+
+      fu[A] = std::min(fu[A], i);
+      fu[B] = std::min(fu[B], i);
+      fm[C] = std::min(fm[C], i);
+
+      lu[A] = std::max(lu[A], i);
+      lu[B] = std::max(lu[B], i);
+      lm[C] = std::max(lm[C], i);
+    }
+
+    for (unsigned i=0;i<vars.size();i++)
+    {
+      if (vars[i].is_input)
+        fm[i] = 0;
+      if (vars[i].is_output)
+        lu[i] = commands.size();
+      //printf("%u - %u %u - %u %u\n",i,fu[i],lu[i],fm[i],lm[i]);
+    }
+
+    for (unsigned i=1;i<commands.size();i++)
+    {
+      unsigned A = commands[i].args[0];
+      unsigned C = commands[i].args[2];
+
+      bool is_mov = (commands[i].type == TensorProgram::MOV);
+      bool is_full_copy = (commands[i].type == TensorProgram::COPY && commands[i].args[3] == 0 && 
+                           commands[i].args[4] == 0 && commands[i].args[5] == vars[A].total_size);
+      bool last_A = lu[A] <= i && lm[A] <= i;
+      bool first_C = fu[C] >= i && fm[C] >= i;
+      bool same_size = vars[A].Dim == vars[C].Dim;
+      for (int i=0;i<vars[A].Dim;i++)
+        same_size = same_size && vars[A].sizes[i] == vars[C].sizes[i];
+      if ((is_mov || is_full_copy) && last_A && first_C && same_size)
+      {
+        //this command only renames variable, no operation is needed
+        commands[i].type = TensorProgram::NOOP;
+        for (unsigned j=i+1;j<commands.size();j++)
+        {
+          if (commands[j].args[0] == C)
+            commands[j].args[0] = A;
+          if (commands[j].args[1] == C)
+            commands[j].args[1] = A;
+          if (commands[j].args[2] == C)
+            commands[j].args[2] = A;
+        }
+      }
+      else if (is_mov)
+      {
+        //replace move with copy for uniformity
+        commands[i].type = TensorProgram::COPY;
+        commands[i].args[3] = 0;
+        commands[i].args[4] = 0;
+        commands[i].args[5] = vars[A].total_size;
+      }
+    }
+  }
+
   void TensorCompiler::optimize_program()
   {
     //initial optimization
     //removes redundant MOV operations
-    while (optimize_mov_cycle());
+    while (optimize_unused_cycle());
+    optimize_renaming_moves();
     compactify();
   }
 

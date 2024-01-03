@@ -37,7 +37,8 @@ namespace nn
     void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
                                                       unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
     void compactify();
-    bool optimize_mov_cycle();
+    bool optimize_unused_cycle();
+    void optimize_renaming_moves();
     void optimize_program();
     unsigned calculate_memory_layout();
 
