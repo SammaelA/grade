@@ -35,7 +35,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       kernel1D_sum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
-      kernel2D_matmul_transposed(memory_out, A.sizes[0], A.sizes[1], C.sizes[1], A, B, C);
+      kernel2D_matmul_transposed(memory_out, A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
       break;
     case nn::TensorProgram::MOV:
       memcpy(memory_out + C.offset, memory_out + A.offset, sizeof(float)*A.total_size);

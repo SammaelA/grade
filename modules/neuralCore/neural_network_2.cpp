@@ -119,8 +119,13 @@ namespace nn
   {
     TensorCompiler compiler;
     compiler.start_program();
+    auto i_shape = layers[0]->input_shape;
+    i_shape.push_back(batch_size);
+    auto o_shape = layers.back()->output_shape;
+    o_shape.push_back(batch_size);
 
-    TensorToken t = TensorToken(layers[0]->input_shape);
+    TensorToken input = TensorToken(i_shape);
+    TensorToken output = TensorToken(o_shape);
     TensorToken w = TensorToken(total_params);
     unsigned offset = 0;
     for (auto &l : layers)
@@ -133,26 +138,35 @@ namespace nn
         offset += sz;
       }
     }
-    for (auto &l : layers)
-      t = l->forward(t);
+    for (int i=0;i<batch_size;i++)
+    {
+      TensorToken t = input.get(i);
+      for (auto &l : layers)
+        t = l->forward(t);
+      output.set(i, t);
+    }
     
     compiler.input(w, "W");
-    compiler.input(t, "In");
-    compiler.output(t, "Out");
+    compiler.input(input, "In");
+    compiler.output(output, "Out");
     compiler.output(w, "W"); //prevent weights to be overwrittent during program execution
     evaluate_prog = compiler.finish_program();
   }
 
   void NeuralNetwork2::evaluate(std::vector<float> &input_data, std::vector<float> &output_data)
   {
+    unsigned input_size = get_total_size_2(layers[0]->input_shape);
+    unsigned output_size = get_total_size_2(layers.back()->output_shape);
+    unsigned batches = ((input_data.size()/input_size) + batch_size - 1)/batch_size;
+    
     tp.set_program(evaluate_prog);
-    tp.set_input("W", weights.data());
-    int cnt = input_data.size()/get_total_size_2(layers[0]->input_shape);
-    for (int i=0;i<cnt;i++)
+    tp.set_input("W", weights.data(), weights.size());
+    
+    for (int i=0;i<batches;i++)
     {
-      tp.set_input("In", input_data.data() + i*get_total_size_2(layers[0]->input_shape));
+      tp.set_input("In", input_data.data() + i*batch_size*input_size, input_data.size() - i*batch_size*input_size);
       tp.execute();
-      tp.get_output("Out", output_data.data() + i*get_total_size_2(layers.back()->output_shape));
+      tp.get_output("Out", output_data.data() + i*batch_size*output_size, output_data.size() - i*batch_size*output_size);
     }
   }
 

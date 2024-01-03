@@ -70,6 +70,7 @@ namespace nn
     NeuralNetwork2 &operator=(const NeuralNetwork2 &other) = delete;
 
   private:
+    unsigned batch_size = 2;
     std::vector<std::shared_ptr<Layer2>> layers;
     std::vector<float> weights;
     unsigned total_params = 0;

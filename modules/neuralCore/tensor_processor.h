@@ -57,11 +57,15 @@ namespace nn
   {
   public:
     TensorProcessor();
+    //sets given program for execution. Initializes memory etc.
     void set_program(const TensorProgram &program);
-    void set_input(const std::string &name, float * const data);
-    void set_input(const std::map<std::string, float * const> &vars);
-    void get_output(const std::map<std::string, float *> &vars);
-    void get_output(const std::string &name, float *data);
+    //transfers data to input tensor with <name>
+    //if <data_size> less that tensor size, remaining part is padded with zeros
+    //all inputs should be set before execution
+    void set_input(const std::string &name, float * const data, unsigned data_size);
+    //transfers data from output tensor with <name> to given address
+    //if <data_size> less that tensor size, only this part is tranfered
+    void get_output(const std::string &name, float *data, unsigned data_size);
     void execute();
   private:
     std::shared_ptr<TensorProcessorImpl> pImpl;

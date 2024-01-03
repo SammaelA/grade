@@ -28,21 +28,7 @@ namespace nn
       input_prepared[p.first] = false;
   }
 
-  void TensorProcessor::set_input(const std::map<std::string, float * const> &vars)
-  {
-    assert(vars.size() == program.input_vars.size());
-
-    for (auto &p : program.input_vars)
-    {
-      float *data = vars.at(p.first);
-      unsigned offset = program.vars[p.second].offset;
-      unsigned size = program.vars[p.second].total_size;
-      memcpy(cpu_memory.data() + offset, data, sizeof(float) * size);
-      input_prepared[p.first] = true;
-    }
-  }
-
-  void TensorProcessor::set_input(const std::string &name, float * const data)
+  void TensorProcessor::set_input(const std::string &name, float * const data, unsigned data_size)
   {
     if (input_prepared.find(name) == input_prepared.end())
     {
@@ -52,25 +38,13 @@ namespace nn
     {
       unsigned var_id = program.input_vars.at(name);
       unsigned offset = program.vars[var_id].offset;
-      unsigned size = program.vars[var_id].total_size;
+      unsigned size = std::min(data_size, program.vars[var_id].total_size);
       memcpy(cpu_memory.data() + offset, data, sizeof(float) * size);
       input_prepared[name] = true;
     }
   }
 
-  void TensorProcessor::get_output(const std::map<std::string, float *> &vars)
-  {
-    assert(vars.size() == program.output_vars.size());
-    for (auto &p : program.output_vars)
-    {
-      float *data = vars.at(p.first);
-      unsigned offset = program.vars[p.second].offset;
-      unsigned size = program.vars[p.second].total_size;
-      memcpy(data, cpu_memory.data() + offset, sizeof(float) * size);
-    }
-  }
-
-  void TensorProcessor::get_output(const std::string &name, float * data)
+  void TensorProcessor::get_output(const std::string &name, float * data, unsigned data_size)
   {
     if (program.output_vars.find(name) == program.output_vars.end())
     {
@@ -80,7 +54,7 @@ namespace nn
     {
       unsigned var_id = program.output_vars.at(name);
       unsigned offset = program.vars[var_id].offset;
-      unsigned size = program.vars[var_id].total_size;
+      unsigned size = std::min(data_size, program.vars[var_id].total_size);
       memcpy(data, cpu_memory.data() + offset, sizeof(float) * size);
     }
   }
