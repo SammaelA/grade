@@ -30,6 +30,12 @@ namespace nn
       unsigned cmd_end;
       bool is_input = false;
       bool is_output = false;
+
+      bool is_alias = false;
+      unsigned alias_master_id = 0;
+      unsigned alias_range_from = 0;
+      unsigned alias_range_to = 0;
+      std::vector<unsigned> aliases;
     };
 
     static bool have_same_scheme(const Variable &a, const Variable &b);
@@ -40,11 +46,15 @@ namespace nn
     void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
                                                       unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
     void compactify();
+    void remove_noop();
     void calculate_variable_usage_intervals();
     void replace_output_var(unsigned old_id, unsigned new_id);
+    void reset_alias_rec(unsigned alias_id, unsigned master_id, unsigned base_offset);
+    void set_alias(unsigned alias_id, unsigned master_id, unsigned from, unsigned to);
     bool optimize_unused_cycle();
     void optimize_renaming_moves();
     void optimize_self_applicable_commands();
+    void optimize_copy_to_aliases();
     void optimize_program();
     unsigned calculate_memory_layout();
 

@@ -64,6 +64,12 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     default:
       break;
     }
+/*
+    printf("data [ ");
+    for (int i=0;i<data_size;i++)
+      printf("%.1f ", memory_out[i]);
+    printf("\n");
+*/
   }
 }
 

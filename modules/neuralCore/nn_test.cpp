@@ -350,6 +350,47 @@ using namespace nn;
     //nn.train(X_train, y_train, X_val, y_val, 50, 3000, NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.01);
   }
 
+  void test_8_aliases()
+  {
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken X = TensorToken(2, 2, 3);
+      TensorToken A = TensorToken(2, 2);
+      TensorToken r = TensorToken(2, 2, 3);
+      for (int i=0;i<3;i++)
+      {
+        TensorToken Xm = X.get(i);
+        TensorToken rm = TensorToken(2, 2);
+        for (int j=0;j<2;j++)
+        {
+          rm.set(j, TensorToken::mat_vec_mul(A, Xm.get(j)));
+        }
+        r.set(i, rm);
+      }
+      tc.input(X, "X");
+      tc.input(A, "A");
+      tc.output(r, "r");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> X = {1,2,3,4, 5,6,7,8, 9,10,11,12};
+    std::vector<float> A = {1,1,2,2};
+    std::vector<float> r = {0,0,0,0, 0,0,0,0, 0,0,0,0};
+
+    TensorProcessor tp;
+    tp.set_program(p);
+    tp.set_input("A", A.data(), A.size());
+    tp.set_input("X", X.data(), X.size());
+    tp.execute();
+    tp.get_output("r", r.data(), r.size());
+
+    printf("r=[ ");
+    for (auto &v : r)
+      printf("%f ", v);
+    printf("]\n");
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
@@ -359,6 +400,7 @@ using namespace nn;
     test_5_tensor_tokens();
     test_6_tensor_operations();
     test_7_linear_regression_2();
+    test_8_aliases();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

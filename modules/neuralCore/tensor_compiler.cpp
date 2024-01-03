@@ -99,6 +99,18 @@ namespace nn
       p.second = var_remap[p.second];
   }
 
+  void TensorCompiler::remove_noop()
+  {
+    std::vector<TensorProgram::Command> new_commands;
+    for (unsigned i=1;i<commands.size();i++)
+    {
+      if (commands[i].type == TensorProgram::NOOP)
+        continue;
+      new_commands.push_back(commands[i]);
+    }
+    commands = new_commands;
+  }
+
   void TensorCompiler::calculate_variable_usage_intervals()
   {
     fm = std::vector<unsigned>(vars.size(), commands.size());
@@ -184,6 +196,39 @@ namespace nn
     for (auto &p : output_vars)
       if (p.second == old_id)
         p.second = new_id;
+  }
+
+  void TensorCompiler::reset_alias_rec(unsigned alias_id, unsigned master_id, unsigned base_offset)
+  {
+    for (auto &child_alias : vars[alias_id].aliases)
+    {
+      reset_alias_rec(child_alias, master_id, base_offset + vars[child_alias].alias_range_from);
+      vars[child_alias].alias_master_id = master_id;
+      vars[child_alias].alias_range_from += base_offset;
+      vars[child_alias].alias_range_to += base_offset;
+      vars[master_id].aliases.push_back(child_alias);
+    }
+    vars[alias_id].aliases = {};
+  }
+
+  void TensorCompiler::set_alias(unsigned alias_id, unsigned master_id, unsigned from, unsigned to)
+  {
+    while (vars[master_id].is_alias)
+    {
+      from += vars[master_id].alias_range_from;
+      to += vars[master_id].alias_range_from;
+      master_id = vars[master_id].alias_master_id;
+    }
+    assert(alias_id > 0 && master_id > 0);
+    assert(vars[alias_id].is_alias == false);
+
+    vars[alias_id].is_alias = true;
+    vars[alias_id].alias_master_id = master_id;
+    vars[alias_id].alias_range_from = from;
+    vars[alias_id].alias_range_to = to;
+
+    vars[master_id].aliases.push_back(alias_id);
+    reset_alias_rec(alias_id, master_id, vars[alias_id].alias_range_from);
   }
 
   void TensorCompiler::optimize_renaming_moves()
@@ -274,6 +319,111 @@ namespace nn
     }
   }
 
+  void TensorCompiler::optimize_copy_to_aliases()
+  {
+    struct Usage
+    {
+      unsigned cmd_id;
+      unsigned begin;
+      unsigned end;
+    };
+
+    std::vector<std::vector<Usage>> usages, modifications;
+    usages.resize(vars.size());
+    modifications.resize(vars.size());
+    for (unsigned i=1;i<commands.size();i++)
+    {
+      unsigned A = commands[i].args[0];
+      unsigned B = commands[i].args[1];
+      unsigned C = commands[i].args[2];
+
+      if (commands[i].type == TensorProgram::COPY)
+      {
+        unsigned A_begin = commands[i].args[3];
+        unsigned A_end = A_begin + commands[i].args[5];
+        unsigned C_begin = commands[i].args[4];
+        unsigned C_end = C_begin + commands[i].args[5];
+
+        usages[A].push_back({i, A_begin, A_end});
+        modifications[C].push_back({i, C_begin, C_end});
+      }
+      else
+      {
+        if (A > 0)
+          usages[A].push_back({i, 0, vars[A].total_size});
+        if (B > 0 && B != A)
+          usages[B].push_back({i, 0, vars[B].total_size});
+        if (C > 0)
+          modifications[C].push_back({i, 0, vars[C].total_size});
+      }
+    }
+
+    auto nextM = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      for (auto &m : modifications[var_id])
+        if (m.cmd_id > start_index && std::max(begin, m.begin) < std::min(end, m.end))
+          return m.cmd_id;
+      return commands.size()+2;
+    };
+
+    auto nextU = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      for (auto &m : usages[var_id])
+        if (m.cmd_id > start_index && std::max(begin, m.begin) < std::min(end, m.end))
+          return m.cmd_id;
+      return commands.size()+1;
+    };
+
+    auto prevU = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      for (int i=usages[var_id].size()-1;i>=0;i--)
+      {
+        auto &m = usages[var_id][i];
+        if (m.cmd_id < start_index && std::max(begin, m.begin) < std::min(end, m.end))
+          return m.cmd_id;
+      }
+      return 0;
+    };
+
+    for (unsigned i=1;i<commands.size();i++)
+    {
+      if (commands[i].type != TensorProgram::COPY)
+        continue;
+      
+      unsigned A = commands[i].args[0];
+      unsigned A_begin = commands[i].args[3];
+      unsigned A_end = A_begin + commands[i].args[5];
+      unsigned C = commands[i].args[2];
+      unsigned C_begin = commands[i].args[4];
+      unsigned C_end = C_begin + commands[i].args[5];
+
+      //C is created with this copy
+      if (commands[i].args[5] == vars[C].total_size && modifications[C][0].cmd_id == i)
+      {
+        //when A and C coexist, C and (part of A that was copied to C)
+        //both have the same value. So we can avoid this copy
+        if (nextU(A, i, A_begin, A_end) < nextM(C, i, C_begin, C_end) && 
+            nextU(C, i, C_begin, C_end) < nextM(A, i, A_begin, A_end))
+        {
+          commands[i].type = TensorProgram::NOOP;
+          set_alias(C, A, A_begin, A_end);
+          printf("%u can be an alias of %u\n", C, A);
+        }
+      }
+
+      //A is no longer used after this copy
+      if (commands[i].args[5] == vars[A].total_size && usages[A].back().cmd_id == i)
+      {
+        if (prevU(C, i, C_begin, C_end) < modifications[A][0].cmd_id)
+        {
+          commands[i].type = TensorProgram::NOOP;
+          set_alias(A, C, C_begin, C_end);
+          printf("2 %u can be an alias of %u\n", A, C);
+        }
+      }
+    }
+  }
+
   void TensorCompiler::optimize_program()
   {
     //initial optimization
@@ -283,6 +433,8 @@ namespace nn
     optimize_renaming_moves();
     optimize_self_applicable_commands();
     compactify();
+    optimize_copy_to_aliases();
+    remove_noop();
   }
 
   unsigned TensorCompiler::calculate_memory_layout()
@@ -290,8 +442,13 @@ namespace nn
     unsigned total_memory = 0;
     for (auto &var : vars)
     {
-      var.offset = total_memory;
-      total_memory += var.total_size;
+      if (var.is_alias == false)
+      {
+        var.offset = total_memory;
+        total_memory += var.total_size;
+        for (auto &aid : var.aliases)
+          vars[aid].offset = var.offset + vars[aid].alias_range_from;
+      }
     }
 
     return total_memory;
@@ -329,8 +486,22 @@ namespace nn
     for (unsigned vid = 0; vid < vars.size(); vid++)
     {
       auto &var = vars[vid];
-      printf("V%2u: %u %5u [%2u %2u %2u %2u] %s %s\n", vid, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
-             var.is_input ? "  input" : "", var.is_output ? "output" : "");
+      printf("V%2u: %u %5u [%2u %2u %2u %2u] %s %s ", vid, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
+             var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
+      if (var.is_alias)
+      {
+        printf("alias of %2u [%2u %2u]", var.alias_master_id, var.alias_range_from, var.alias_range_to);
+      }
+      else if (var.aliases.size() > 0)
+      {
+        printf("master of { ");
+        for (auto &aid : var.aliases)
+          printf("%2u ", aid);
+        printf("}");
+      }
+
+
+      printf("\n");
     }
 
     printf("%d commands\n", (int)commands.size());
