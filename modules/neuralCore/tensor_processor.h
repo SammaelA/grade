@@ -23,7 +23,7 @@ namespace nn
       SUM,      // C = sum(A)
       MATMUL_T, // C = AxB
       MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
-      FTT,      // C = constants[arg0]
+      FTT,      // C = as_float(arg0)
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
@@ -49,7 +49,6 @@ namespace nn
 
     unsigned total_memory_req;
 
-    std::vector<float> constants;
     std::map<std::string, unsigned> input_vars;  //name -> var_id
     std::map<std::string, unsigned> output_vars; //name -> var_id
   };

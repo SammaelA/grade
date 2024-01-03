@@ -41,7 +41,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       memcpy(memory_out + C.offset, memory_out + A.offset, sizeof(float)*A.total_size);
       break;
     case nn::TensorProgram::FTT:
-      kernel1D_fill(memory_out, C.total_size, C, program.constants[arg0]);
+      kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
       break;
     case nn::TensorProgram::COPY:
       memcpy(memory_out + C.offset + arg1, memory_out + A.offset + arg0, sizeof(float)*arg2);

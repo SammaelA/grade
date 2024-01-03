@@ -22,8 +22,7 @@ namespace nn
   }
   void TensorCompiler::ftt(unsigned id, float val)
   {
-    commands.push_back({TensorProgram::FTT, {0, 0, id, (unsigned)constants.size()}});
-    constants.push_back(val);
+    commands.push_back({TensorProgram::FTT, {0, 0, id, *((unsigned *)(&val))}});
   }
 
   void TensorCompiler::input(const TensorToken &t, std::string name)
@@ -76,7 +75,6 @@ namespace nn
     unsigned total_memory_req = calculate_memory_layout();
 
     TensorProgram pr;
-    pr.constants = constants;
     pr.commands = commands;
     pr.output_vars = output_vars;
     pr.input_vars = input_vars;
@@ -92,13 +90,6 @@ namespace nn
 
     printf("finished recording tensor program\n");
     printf("requires %d bytes of memory\n", (int)(sizeof(float)*total_memory_req));
-    printf("%d constants\n", (int)constants.size());
-    unsigned cn = 0;
-    for (auto &c : constants)
-    {
-      printf("C%u: %f\n", cn, c);
-      cn++;
-    }
 
     printf("%d variables\n", (int)vars.size());
     for (unsigned vid = 0; vid < vars.size(); vid++)
