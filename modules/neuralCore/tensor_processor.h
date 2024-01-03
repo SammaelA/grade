@@ -58,14 +58,16 @@ namespace nn
   public:
     TensorProcessor();
     void set_program(const TensorProgram &program);
+    void set_input(const std::string &name, float * const data);
     void set_input(const std::map<std::string, float * const> &vars);
-    void set_output(const std::map<std::string, float *> &vars);
+    void get_output(const std::map<std::string, float *> &vars);
+    void get_output(const std::string &name, float *data);
     void execute();
   private:
     std::shared_ptr<TensorProcessorImpl> pImpl;
     TensorProgram program;
     std::vector<float> cpu_memory;
-    bool input_prepared = false;
+    std::map<std::string, bool> input_prepared;
     bool program_prepared = false;
   };
 }

@@ -24,6 +24,8 @@ namespace nn
     program = _program;
     cpu_memory = std::vector<float>(program.total_memory_req, 0);
     program_prepared = true;
+    for (auto &p : program.input_vars)
+      input_prepared[p.first] = false;
   }
 
   void TensorProcessor::set_input(const std::map<std::string, float * const> &vars)
@@ -36,12 +38,27 @@ namespace nn
       unsigned offset = program.vars[p.second].offset;
       unsigned size = program.vars[p.second].total_size;
       memcpy(cpu_memory.data() + offset, data, sizeof(float) * size);
+      input_prepared[p.first] = true;
     }
-    
-    input_prepared = true;
   }
 
-  void TensorProcessor::set_output(const std::map<std::string, float *> &vars)
+  void TensorProcessor::set_input(const std::string &name, float * const data)
+  {
+    if (input_prepared.find(name) == input_prepared.end())
+    {
+      printf("TensorProcessor::trying to set input variable %s that does not exist!\n",name.c_str());
+    }
+    else
+    {
+      unsigned var_id = program.input_vars.at(name);
+      unsigned offset = program.vars[var_id].offset;
+      unsigned size = program.vars[var_id].total_size;
+      memcpy(cpu_memory.data() + offset, data, sizeof(float) * size);
+      input_prepared[name] = true;
+    }
+  }
+
+  void TensorProcessor::get_output(const std::map<std::string, float *> &vars)
   {
     assert(vars.size() == program.output_vars.size());
     for (auto &p : program.output_vars)
@@ -53,9 +70,31 @@ namespace nn
     }
   }
 
+  void TensorProcessor::get_output(const std::string &name, float * data)
+  {
+    if (program.output_vars.find(name) == program.output_vars.end())
+    {
+      printf("TensorProcessor::trying to get output variable %s that does not exist!\n",name.c_str());
+    }
+    else
+    {
+      unsigned var_id = program.output_vars.at(name);
+      unsigned offset = program.vars[var_id].offset;
+      unsigned size = program.vars[var_id].total_size;
+      memcpy(data, cpu_memory.data() + offset, sizeof(float) * size);
+    }
+  }
+
   void TensorProcessor::execute()
   {
-    assert((pImpl.get() != nullptr) && input_prepared && program_prepared);
+    assert((pImpl.get() != nullptr) && program_prepared);
+    for (auto &p : input_prepared)
+    {
+      if (!p.second)
+      {
+        printf("TensorProcessor::input variable %s is not set! Execution failed!\n", p.first.c_str());
+      }
+    }
     pImpl->process(program, cpu_memory.data(), cpu_memory.data(), cpu_memory.size());
   }
 }

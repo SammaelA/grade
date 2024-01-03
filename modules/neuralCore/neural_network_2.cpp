@@ -139,18 +139,20 @@ namespace nn
     compiler.input(w, "W");
     compiler.input(t, "In");
     compiler.output(t, "Out");
+    compiler.output(w, "W"); //prevent weights to be overwrittent during program execution
     evaluate_prog = compiler.finish_program();
   }
 
   void NeuralNetwork2::evaluate(std::vector<float> &input_data, std::vector<float> &output_data)
   {
+    tp.set_program(evaluate_prog);
+    tp.set_input("W", weights.data());
     int cnt = input_data.size()/get_total_size_2(layers[0]->input_shape);
     for (int i=0;i<cnt;i++)
     {
-      tp.set_program(evaluate_prog);
-      tp.set_input({{"W", weights.data()}, {"In", input_data.data() + i*get_total_size_2(layers[0]->input_shape)}});
+      tp.set_input("In", input_data.data() + i*get_total_size_2(layers[0]->input_shape));
       tp.execute();
-      tp.set_output({{"Out", output_data.data() + i*get_total_size_2(layers.back()->output_shape)}});
+      tp.get_output("Out", output_data.data() + i*get_total_size_2(layers.back()->output_shape));
     }
   }
 

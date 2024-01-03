@@ -226,7 +226,7 @@ using namespace nn;
     tp.set_program(p);
     tp.set_input({{"A", A.data()},{"B", B.data()}, {"c", &c}});
     tp.execute();
-    tp.set_output({{"A", A.data()}});
+    tp.get_output({{"A", A.data()}});
 
     printf("res = ");
     for (int i=0;i<A.size();i++)
@@ -259,7 +259,7 @@ using namespace nn;
     tp.set_program(p);
     tp.set_input({{"A", A.data()},{"B", B.data()}});
     tp.execute();
-    tp.set_output({{"A", A.data()}});
+    tp.get_output({{"A", A.data()}});
 
     printf("res = ");
     for (int i=0;i<A.size();i++)
@@ -309,7 +309,7 @@ using namespace nn;
     tp.set_program(p);
     tp.set_input({{"A", A.data()},{"B", B.data()}});
     tp.execute();
-    tp.set_output({{"R1", res.data()+0*9},{"R2", res.data()+1*9},{"R3", res.data()+2*9},
+    tp.get_output({{"R1", res.data()+0*9},{"R2", res.data()+1*9},{"R3", res.data()+2*9},
                    {"R4", res.data()+3*9},{"R5", res.data()+4*9},{"R6", res.data()+5*9},
                    {"R7", res.data()+6*9},{"R8", res.data()+7*9},{"R9", res.data()+8*9}});
 
