@@ -57,9 +57,9 @@ namespace nn
     void initialize_from_file(std::string filename);
     void save_weights_to_file(std::string filename);
     void print_info();
-    //void train(const TensorView &inputs /*[input_size, count]*/, const TensorView &outputs /*[output_size, count]*/,
-    //           const TensorView &inputs_val, const TensorView &outputs_val,
-    //           int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f);
+    TensorProgram get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr);
+    void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
+               int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f);
     void get_evaluate_prog();
     void evaluate(std::vector<float> &input_data, std::vector<float> &output_data);
     //float test(const TensorView &input, const TensorView &target_output, Loss loss);
@@ -70,7 +70,7 @@ namespace nn
     NeuralNetwork2 &operator=(const NeuralNetwork2 &other) = delete;
 
   private:
-    unsigned batch_size = 256;
+    unsigned batch_size_evaluate = 256;
     std::vector<std::shared_ptr<Layer2>> layers;
     std::vector<float> weights;
     unsigned total_params = 0;

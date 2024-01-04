@@ -330,9 +330,9 @@ using namespace nn;
     R4 = 50.00 -50.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
     R5 = 1.00 -1.00 2.00 -2.00 3.00 -3.00 0.00 0.00 0.00 
     R6 = 1.00 2.00 3.00 2.00 4.00 6.00 3.00 6.00 9.00 
-    R7 = -1.00 -2.00 -3.00 -2.00 -4.00 -6.00 -3.00 -6.00 -9.00 
+    R7 = -4.00 -5.00 -6.00 -8.00 -10.00 -12.00 -12.00 -15.00 -18.00 
     R8 = 171.00 2.00 3.00 2.00 4.00 6.00 3.00 6.00 9.00 
-    R9 = -1.00 -2.00 -3.00 -2.00 -4.00 -6.00 -3.00 -6.00 -9.00 
+    R9 = -4.00 -5.00 -6.00 -8.00 -10.00 -12.00 -12.00 -15.00 -18.00 
     R10 = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
     */
   }
@@ -391,6 +391,25 @@ using namespace nn;
     printf("]\n");
   }
 
+  void test_9_linear_regression_2_train()
+  {
+    int sz = 256;
+    std::vector<float> X(3*sz,0);
+    std::vector<float> res(sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      X[3*i + 0] = 2*((float)rand())/RAND_MAX - 1;
+      X[3*i + 1] = 2*((float)rand())/RAND_MAX - 1;
+      X[3*i + 2] = 2*((float)rand())/RAND_MAX - 1;
+      res[i] = X[3*i + 0] + X[3*i + 1] - X[3*i + 2] + 0.01;
+    }
+
+    NeuralNetwork2 nn2;
+    nn2.add_layer(std::make_shared<DenseLayer2>(3, 4));
+    nn2.add_layer(std::make_shared<DenseLayer2>(4, 1));
+    nn2.train(X, res, sz, 200, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.05f);
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
@@ -401,6 +420,7 @@ using namespace nn;
     test_6_tensor_operations();
     test_7_linear_regression_2();
     test_8_aliases();
+    test_9_linear_regression_2_train();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));
