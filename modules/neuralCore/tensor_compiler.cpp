@@ -213,12 +213,6 @@ namespace nn
 
   void TensorCompiler::set_alias(unsigned alias_id, unsigned master_id, unsigned from, unsigned to)
   {
-    while (vars[master_id].is_alias)
-    {
-      from += vars[master_id].alias_range_from;
-      to += vars[master_id].alias_range_from;
-      master_id = vars[master_id].alias_master_id;
-    }
     assert(alias_id > 0 && master_id > 0);
     assert(vars[alias_id].is_alias == false);
 
@@ -365,7 +359,7 @@ namespace nn
 
     for (unsigned i=1;i<vars.size();i++)
       if (vars[i].is_output)
-        usages[i].push_back({(unsigned)commands.size()+3, 0, vars[i].total_size});
+        usages[i].push_back({(unsigned)commands.size()+1, 0, vars[i].total_size});
 
     auto nextM = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
     {
@@ -373,6 +367,19 @@ namespace nn
         if (m.cmd_id > start_index && std::max(begin, m.begin) < std::min(end, m.end))
           return m.cmd_id;
       return commands.size()+2;
+    };
+    auto nextMA = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      unsigned minM = nextM(var_id, start_index, begin, end);
+      for (auto &aid : vars[var_id].aliases)
+      {
+        if (std::max(begin, vars[aid].alias_range_from) < std::min(end, vars[aid].alias_range_to))
+          minM = std::min(minM, nextM(aid, start_index,
+                          std::max(0,(int)begin-(int)vars[aid].alias_range_from),
+                          std::max(0,(int)end-(int)vars[aid].alias_range_from)));
+        printf("nextMA %u %u\n", aid, minM);
+      }
+      return minM;
     };
 
     auto nextU = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
@@ -382,6 +389,19 @@ namespace nn
           return m.cmd_id;
       return commands.size()+1;
     };
+    auto nextUA = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      unsigned minU = nextU(var_id, start_index, begin, end);
+      for (auto &aid : vars[var_id].aliases)
+      {
+        if (std::max(begin, vars[aid].alias_range_from) < std::min(end, vars[aid].alias_range_to))
+          minU = std::min(minU, nextU(aid, start_index,
+                          std::max(0,(int)begin-(int)vars[aid].alias_range_from),
+                          std::max(0,(int)end-(int)vars[aid].alias_range_from)));
+      }
+      return minU;
+    };
+
 
     auto prevU = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
     {
@@ -393,7 +413,21 @@ namespace nn
       }
       return 0;
     };
+    auto prevUA = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
+    {
+      unsigned maxU = prevU(var_id, start_index, begin, end);
+      for (auto &aid : vars[var_id].aliases)
+      {
+        if (std::max(begin, vars[aid].alias_range_from) < std::min(end, vars[aid].alias_range_to))
+          maxU = std::max(maxU, prevU(aid, start_index,
+                          std::max(0,(int)begin-(int)vars[aid].alias_range_from),
+                          std::max(0,(int)end-(int)vars[aid].alias_range_from)));
+      }
+      return maxU;
+    };
 
+    auto set_aliases = [&](bool output_pass)
+    {
     for (unsigned i=1;i<commands.size();i++)
     {
       if (commands[i].type != TensorProgram::COPY)
@@ -409,28 +443,55 @@ namespace nn
       //C is created with this copy
       if (commands[i].args[5] == vars[C].total_size && modifications[C][0].cmd_id == i)
       {
+        unsigned master_id = A;
+        unsigned from = A_begin;
+        unsigned to = A_end;
+        while (vars[master_id].is_alias)
+        {
+          from += vars[master_id].alias_range_from;
+          to += vars[master_id].alias_range_from;
+          master_id = vars[master_id].alias_master_id;
+        }
+
         //when A and C coexist, C and (part of A that was copied to C)
         //both have the same value. So we can avoid this copy
-        if (nextU(A, i, A_begin, A_end) < nextM(C, i, C_begin, C_end) && 
-            nextU(C, i, C_begin, C_end) < nextM(A, i, A_begin, A_end))
+        if (vars[C].is_output == output_pass &&
+            nextUA(master_id, i, from, to) < nextMA(C, i, C_begin, C_end) && 
+            nextUA(C, i, C_begin, C_end) < nextMA(master_id, i, from, to))
         {
           commands[i].type = TensorProgram::NOOP;
-          set_alias(C, A, A_begin, A_end);
-          printf("%u can be an alias of %u\n", C, A);
+          set_alias(C, master_id, from, to);
+          printf("%u can be an alias of %u (%u %u) (%u %u)\n", C, master_id, nextUA(A, i, from, to), nextMA(C, i, C_begin, C_end),
+                 nextUA(C, i, C_begin, C_end), nextMA(A, i, from, to));
         }
       }
 
       //A is no longer used after this copy
-      if (commands[i].args[5] == vars[A].total_size && usages[A].back().cmd_id == i)
+      if (vars[A].is_output == output_pass &&
+          commands[i].args[5] == vars[A].total_size && usages[A].back().cmd_id == i)
       {
-        if (prevU(C, i, C_begin, C_end) < modifications[A][0].cmd_id)
+        unsigned master_id = C;
+        unsigned from = C_begin;
+        unsigned to = C_end;
+        while (vars[master_id].is_alias)
+        {
+          from += vars[master_id].alias_range_from;
+          to += vars[master_id].alias_range_from;
+          master_id = vars[master_id].alias_master_id;
+        }
+
+        if (prevUA(master_id, i, from, to) < modifications[A][0].cmd_id)
         {
           commands[i].type = TensorProgram::NOOP;
-          set_alias(A, C, C_begin, C_end);
-          printf("2 %u can be an alias of %u\n", A, C);
+          set_alias(A, C, from, to);
+          printf("2 %u can be an alias of %u\n", A, master_id);
         }
       }
     }
+    };
+
+    set_aliases(false);
+    set_aliases(true);
   }
 
   void TensorCompiler::optimize_program()
