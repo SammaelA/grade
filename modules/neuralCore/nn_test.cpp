@@ -393,7 +393,7 @@ using namespace nn;
 
   void test_9_linear_regression_2_train()
   {
-    int sz = 256;
+    int sz = 1000;
     std::vector<float> X(3*sz,0);
     std::vector<float> res(sz,0);
     for (int i=0;i<sz;i++)
@@ -407,7 +407,7 @@ using namespace nn;
     NeuralNetwork2 nn2;
     nn2.add_layer(std::make_shared<DenseLayer2>(3, 4));
     nn2.add_layer(std::make_shared<DenseLayer2>(4, 1));
-    nn2.train(X, res, sz, 200, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.05f);
+    nn2.train(X, res, 256, 200, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.05f);
   }
 
   int main(int argc, char **argv)

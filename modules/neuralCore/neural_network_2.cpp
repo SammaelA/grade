@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#include <cstring>
 
 constexpr bool DEBUG = false;
 namespace nn
@@ -270,8 +271,8 @@ namespace nn
     }
   }
 
-      void NeuralNetwork2::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                                 int batch_size, int iterations, Opt optimizer, Loss loss, float lr)
+  void NeuralNetwork2::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
+                             int batch_size, int iterations, Opt optimizer, Loss loss, float lr)
   {
     initialize();
     float mn = -sqrt(6 / 3.0);
@@ -281,19 +282,35 @@ namespace nn
       w = d * (((double)rand()) / RAND_MAX) + mn;
     TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, lr);
 
+    unsigned input_size = get_total_size_2(layers[0]->input_shape);
+    unsigned output_size = get_total_size_2(layers.back()->output_shape);
+    unsigned count = inputs.size()/input_size;
+    assert(inputs.size() % input_size == 0);
+    assert(outputs.size() % output_size == 0);
+    assert(count == outputs.size() / output_size);
+
     std::vector<float> V(total_params, 0);
     std::vector<float> S(total_params, 0);
+    std::vector<float> in_batch(input_size*batch_size);
+    std::vector<float> out_batch(output_size*batch_size);
     float iter = 0;
     tp.set_program(train_prog);
     tp.set_input("W", weights.data(), weights.size());
     tp.set_input("V", V.data(), V.size());
     tp.set_input("S", S.data(), S.size());
-    tp.set_input("In",(float*)inputs.data(), inputs.size());
-    tp.set_input("Out",(float*)outputs.data(), inputs.size());
 
     for (int it=0;it<iterations;it++)
     {
+      for (int i=0;i<batch_size;i++)
+      {
+        unsigned b_id = rand()%count;
+        memcpy(in_batch.data() + i*input_size, inputs.data() + b_id*input_size, sizeof(float)*input_size);
+        memcpy(out_batch.data() + i*output_size, outputs.data() + b_id*output_size, sizeof(float)*output_size);
+      }
+
       iter = it;
+      tp.set_input("In", in_batch.data(), in_batch.size());
+      tp.set_input("Out", out_batch.data(), out_batch.size());
       tp.set_input("iter", &iter, 1);
       tp.execute();
       float loss = -1;
