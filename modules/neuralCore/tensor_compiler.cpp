@@ -526,8 +526,8 @@ namespace nn
 
   TensorProgram TensorCompiler::finish_program()
   {
-    std::vector<std::string> names = {"NOOP", "ADD", "MUL", "DIV", "EXP", "SUM", "MATMUL_T",
-                                      "MOV", "FTT", "COPY", "TRANSP", "OUTER_P",
+    std::vector<std::string> names = {"NOOP", "ADD", "MUL", "SUB", "DIV", "EXP", "POW", "SUM", "O_SUM", "MATMUL_T",
+                                      "MOV", "FTT", "FILL", "COPY", "TRANSP", "OUTER_P",
                                       "", "", "", "", "",
                                       "", "", "", "", ""};
 
@@ -556,7 +556,7 @@ namespace nn
     for (unsigned vid = 0; vid < vars.size(); vid++)
     {
       auto &var = vars[vid];
-      printf("V%2u: %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
+      printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
              var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
       if (var.is_alias)
       {
@@ -578,8 +578,8 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
-      printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
-             cmd.args[3], cmd.args[4], cmd.args[5]);
+      printf("Cmd %2u: %-8s %2u %2u %2u - %.8f %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
+             *((float*)&cmd.args[3]), cmd.args[4], cmd.args[5]);
       cid++;
     }
 

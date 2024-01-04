@@ -18,12 +18,16 @@ namespace nn
       NOOP,
       ADD,      // C = A+B
       MUL,      // C = A*B
+      SUB,      // C = A-B
       DIV,      // C = A/B
       EXP,      // C = exp(A)
+      POW,      // C = A^B (B is 1-element tensor)
       SUM,      // C = sum(A)
+      O_SUM,    // C = sum(A)
       MATMUL_T, // C = AxB
       MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
       FTT,      // C = as_float(arg0)
+      FILL,     // fill(C, as_float(arg0))
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)

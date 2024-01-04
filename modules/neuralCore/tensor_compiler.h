@@ -116,10 +116,17 @@ namespace nn
     }
     TensorToken &operator=(const TensorToken &other)
     {
+      bool same_size = (Dim == other.Dim);
+      if (same_size)
+      {
+        for (int i = 0; i < Dim; i++)
+          same_size = same_size && (sizes[i] == other.sizes[i]);
+      }
       Dim = other.Dim;
       for (int i = 0; i < Dim; i++)
         sizes[i] = other.sizes[i];
-      id = tp->add_var(*this);
+      if (!same_size) //TODO: do something more clear for end user
+        id = tp->add_var(*this);
       tp->add_command(TensorProgram::MOV, other.id, 0, id);
       return *this;
     }
@@ -142,6 +149,32 @@ namespace nn
     {
       TensorToken res(sizes);
       tp->add_command(TensorProgram::ADD, id, other.id, res.id);
+      return res;
+    }
+
+    TensorToken &operator*=(const TensorToken &other) 
+    {
+      tp->add_command(TensorProgram::MUL, id, other.id, id);
+      return *this;
+    }
+
+    TensorToken operator*(const TensorToken &other) const
+    {
+      TensorToken res(sizes);
+      tp->add_command(TensorProgram::MUL, id, other.id, res.id);
+      return res;
+    }
+
+    TensorToken &operator-=(const TensorToken &other) 
+    {
+      tp->add_command(TensorProgram::SUB, id, other.id, id);
+      return *this;
+    }
+
+    TensorToken operator-(const TensorToken &other) const
+    {
+      TensorToken res(sizes);
+      tp->add_command(TensorProgram::SUB, id, other.id, res.id);
       return res;
     }
 
@@ -181,6 +214,19 @@ namespace nn
       TensorToken res(res_sizes);
       tp->add_command(TensorProgram::SUM, id, 0, res.id);
       return res;
+    }
+
+    TensorToken outer_sum() const
+    {
+      if (Dim == 0) // sum of scalar is this scalar itself
+        return *this;
+      unsigned res_Dim = 1;
+      unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+      res_sizes[0] = total_size()/sizes[Dim-1];
+
+      TensorToken res(res_sizes);
+      tp->add_command(TensorProgram::O_SUM, id, 0, res.id);
+      return res;      
     }
 
     TensorToken transpose() const
@@ -319,6 +365,11 @@ namespace nn
       return reshape({size});
     }
 
+    void fill(float val)
+    {
+      tp->add_command(TensorProgram::FILL, 0, 0, id, *((unsigned *)(&val)));
+    }
+
     static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B)
     {
       assert(A.Dim >= 1);
@@ -367,6 +418,14 @@ namespace nn
         res_sizes[i] = B.sizes[i];
       TensorToken res(res_sizes);
       tp->add_command(TensorProgram::MATMUL_T, A.id, B.id, res.id);
+      return res;
+    }
+
+    static TensorToken pow(const TensorToken &A, const TensorToken &B)
+    {
+      assert(B.total_size() == 1);
+      TensorToken res(A.sizes);
+      tp->add_command(TensorProgram::POW, A.id, B.id, res.id);
       return res;
     }
 

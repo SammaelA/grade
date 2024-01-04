@@ -4,6 +4,14 @@
 void TensorProcessorImpl::process(const nn::TensorProgram &program,
                                   const float *memory_in, float *memory_out, unsigned data_size)
 {
+  bool debug = false;
+  if (debug)
+  {
+    printf("data [");
+    for (int i=0;i<data_size;i++)
+      printf("%8d ", i);
+    printf("]\n");
+  }
   memcpy(memory_out, memory_in, sizeof(float) * data_size);
   for (int i = 0; i < program.commands.size(); i++)
   {
@@ -25,14 +33,23 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     case nn::TensorProgram::MUL:
       kernel2D_mul(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
       break;
+    case nn::TensorProgram::SUB:
+      kernel2D_sub(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
+      break;
     case nn::TensorProgram::DIV:
       kernel2D_div(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
       break;
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory_out, A.total_size, A, C);
       break;
+    case nn::TensorProgram::POW:
+      kernel1D_pow(memory_out, A.total_size, A, B, C);
+      break;
     case nn::TensorProgram::SUM:
       kernel1D_sum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
+      break;
+    case nn::TensorProgram::O_SUM:
+      kernel1D_osum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
       kernel2D_matmul_transposed(memory_out, A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
@@ -41,6 +58,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       memcpy(memory_out + C.offset, memory_out + A.offset, sizeof(float)*A.total_size);
       break;
     case nn::TensorProgram::FTT:
+      kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
+      break;
+    case nn::TensorProgram::FILL:
       kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
       break;
     case nn::TensorProgram::COPY:
@@ -64,12 +84,14 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     default:
       break;
     }
-/*
-    printf("data [ ");
-    for (int i=0;i<data_size;i++)
-      printf("%.1f ", memory_out[i]);
-    printf("\n");
-*/
+    if (debug)
+    {
+      printf("data [");
+      for (int i=0;i<data_size;i++)
+        printf("%8.4f ", memory_out[i]);
+      printf("]\n");
+    }
+
   }
 }
 
@@ -91,6 +113,12 @@ void TensorProcessorImpl::kernel2D_mul(float *data, unsigned steps, unsigned ste
     for (unsigned j = 0; j < step_size; j++)
       data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] * data[B.offset + j];
 }
+void TensorProcessorImpl::kernel2D_sub(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A * B
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] - data[B.offset + j];
+}
 void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A / B
 {
   for (unsigned i = 0; i < steps; i++)
@@ -102,6 +130,11 @@ void TensorProcessorImpl::kernel1D_exp(float *data, unsigned steps, Variable A, 
   for (unsigned i = 0; i < steps; i++)
     data[B.offset + i] = std::exp(data[A.offset + i]);
 }
+void TensorProcessorImpl::kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    data[C.offset + i] = std::pow(data[A.offset + i], data[B.offset]);
+}
 void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -109,6 +142,15 @@ void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned ste
     data[B.offset + i] = 0;
     for (unsigned j = 0; j < step_size; j++)
       data[B.offset + i] += data[A.offset + i * step_size + j];
+  }
+}
+void TensorProcessorImpl::kernel1D_osum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    data[B.offset + i] = 0;
+    for (unsigned j = 0; j < step_size; j++)
+      data[B.offset + i] += data[A.offset + j * steps + i];
   }
 }
 
