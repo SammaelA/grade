@@ -377,7 +377,6 @@ namespace nn
           minM = std::min(minM, nextM(aid, start_index,
                           std::max(0,(int)begin-(int)vars[aid].alias_range_from),
                           std::max(0,(int)end-(int)vars[aid].alias_range_from)));
-        printf("nextMA %u %u\n", aid, minM);
       }
       return minM;
     };
@@ -461,8 +460,8 @@ namespace nn
         {
           commands[i].type = TensorProgram::NOOP;
           set_alias(C, master_id, from, to);
-          printf("%u can be an alias of %u (%u %u) (%u %u)\n", C, master_id, nextUA(A, i, from, to), nextMA(C, i, C_begin, C_end),
-                 nextUA(C, i, C_begin, C_end), nextMA(A, i, from, to));
+          //printf("%u can be an alias of %u (%u %u) (%u %u)\n", C, master_id, nextUA(A, i, from, to), nextMA(C, i, C_begin, C_end),
+          //       nextUA(C, i, C_begin, C_end), nextMA(A, i, from, to));
         }
       }
 
@@ -484,7 +483,7 @@ namespace nn
         {
           commands[i].type = TensorProgram::NOOP;
           set_alias(A, C, from, to);
-          printf("2 %u can be an alias of %u\n", A, master_id);
+          //printf("2 %u can be an alias of %u\n", A, master_id);
         }
       }
     }
@@ -578,8 +577,10 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
-      printf("Cmd %2u: %-8s %2u %2u %2u - %.8f %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2],
-             *((float*)&cmd.args[3]), cmd.args[4], cmd.args[5]);
+      if (cmd.type == TensorProgram::FTT)
+        printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
+      else
+        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
       cid++;
     }
 

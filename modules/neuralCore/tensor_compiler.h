@@ -104,7 +104,6 @@ namespace nn
       sizes[2] = sz_2;
       sizes[3] = sz_3;
       id = tp->add_var(*this);
-      printf("created tensor %u - %u %u %u %u\n",id, sz_0, sz_1, sz_2, sz_3);
     }
     TensorToken(const TensorToken &other)
     {

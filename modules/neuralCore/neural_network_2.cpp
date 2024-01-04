@@ -216,7 +216,6 @@ namespace nn
       {
         TensorToken av_grad = dLoss_dWeight.outer_sum()/(float)batch_size;
         unsigned sz = av_grad.total_size();
-        printf("%u %u %u %u - %u %u\n", grad.total_size(), offset, sz, av_grad.total_size(), dLoss_dWeight.total_size(), dLoss_dWeight.id);
         grad.set({offset, offset + sz}, av_grad.flatten());
         offset += sz;
       }
