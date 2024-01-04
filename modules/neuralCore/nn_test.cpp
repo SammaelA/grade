@@ -394,20 +394,24 @@ using namespace nn;
   void test_9_linear_regression_2_train()
   {
     int sz = 1000;
-    std::vector<float> X(3*sz,0);
+    int dim = 32;
+    std::vector<float> X(dim*sz,0);
     std::vector<float> res(sz,0);
     for (int i=0;i<sz;i++)
     {
-      X[3*i + 0] = 2*((float)rand())/RAND_MAX - 1;
-      X[3*i + 1] = 2*((float)rand())/RAND_MAX - 1;
-      X[3*i + 2] = 2*((float)rand())/RAND_MAX - 1;
-      res[i] = X[3*i + 0] + X[3*i + 1] - X[3*i + 2] + 0.01;
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X[dim*i + j] = 2*((float)rand())/RAND_MAX - 1;
+        s += (j%2 ? 1 : -1)*X[dim*i + j];
+      }
+      res[i] = s + 0.01;
     }
 
     NeuralNetwork2 nn2;
-    nn2.add_layer(std::make_shared<DenseLayer2>(3, 4));
-    nn2.add_layer(std::make_shared<DenseLayer2>(4, 1));
-    nn2.train(X, res, 256, 200, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.05f);
+    nn2.add_layer(std::make_shared<DenseLayer2>(dim, 64));
+    nn2.add_layer(std::make_shared<DenseLayer2>(64, 1));
+    nn2.train(X, res, 256, 400, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.01f);
   }
 
   int main(int argc, char **argv)
@@ -415,11 +419,11 @@ using namespace nn;
     //test_1_linear_regression();
     //test_2_simple_classification();
     //test_3_SIREN_image();
-    test_4_tensor_processor();
-    test_5_tensor_tokens();
-    test_6_tensor_operations();
-    test_7_linear_regression_2();
-    test_8_aliases();
+    //test_4_tensor_processor();
+    //test_5_tensor_tokens();
+    //test_6_tensor_operations();
+    //test_7_linear_regression_2();
+    //test_8_aliases();
     test_9_linear_regression_2_train();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
