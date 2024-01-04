@@ -331,6 +331,11 @@ namespace nn
     std::vector<std::vector<Usage>> usages, modifications;
     usages.resize(vars.size());
     modifications.resize(vars.size());
+
+    for (unsigned i=1;i<vars.size();i++)
+      if (vars[i].is_input)
+        modifications[i].push_back({0, 0, vars[i].total_size});
+
     for (unsigned i=1;i<commands.size();i++)
     {
       unsigned A = commands[i].args[0];
@@ -357,6 +362,10 @@ namespace nn
           modifications[C].push_back({i, 0, vars[C].total_size});
       }
     }
+
+    for (unsigned i=1;i<vars.size();i++)
+      if (vars[i].is_output)
+        usages[i].push_back({(unsigned)commands.size()+3, 0, vars[i].total_size});
 
     auto nextM = [&](unsigned var_id, unsigned start_index, unsigned begin, unsigned end) -> unsigned
     {

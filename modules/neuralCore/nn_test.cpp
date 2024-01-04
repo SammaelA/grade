@@ -282,7 +282,7 @@ using namespace nn;
       TensorToken R3 = B.get(2);
       TensorToken R4 = TensorToken::mat_vec_mul(A, R3);
       TensorToken R5 = A.transpose();
-      TensorToken O = TensorToken::vector_outer_product(A, B.get(0));
+      TensorToken O = TensorToken::vector_outer_product(A, B.get({0,2}));
       TensorToken R6 = O.get(0);
       TensorToken R7 = O.get(1);
       TensorToken OF = O.flatten();

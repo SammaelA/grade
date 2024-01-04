@@ -140,5 +140,5 @@ void TensorProcessorImpl::kernel2D_outer_product(float *data, unsigned steps, un
   for (unsigned s = 0; s < steps; s++)
     for (unsigned i = 0; i < A_len; i++)
       for (unsigned j = 0; j < B_len; j++)
-        data[C.offset + s*A_len*B_len + i*B_len + j] = data[A.offset + s*A_len + i]*data[B.offset + j];
+        data[C.offset + s*A_len*B_len + i*B_len + j] = data[A.offset + s*A_len + i]*data[B.offset + s*B_len + j];
 }

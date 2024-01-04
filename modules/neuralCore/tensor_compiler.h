@@ -323,8 +323,9 @@ namespace nn
     {
       assert(A.Dim >= 1);
       assert(A.Dim < TensorCompiler::MAX_DIM);
-      assert(B.Dim == 1);
-      assert(A.sizes[0] == B.sizes[0]);
+      assert(B.Dim == A.Dim);
+      for (int i=1;i<A.Dim;i++)
+        assert(A.sizes[i] == B.sizes[i]);
       
       unsigned res_Dim = A.Dim + 1;
       unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
