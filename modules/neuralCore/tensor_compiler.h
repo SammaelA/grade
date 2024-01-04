@@ -356,12 +356,14 @@ namespace nn
     static TensorToken mat_vec_mul(const TensorToken &A, const TensorToken &B)
     {
       assert(A.Dim == 2);
-      assert(B.Dim == 1);
+      assert(B.Dim >= 1);
       assert(A.sizes[0] == B.sizes[0]);
 
-      unsigned res_Dim = 1;
+      unsigned res_Dim = B.Dim;
       unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
       res_sizes[0] = A.sizes[1];
+      for (int i=1;i<B.Dim;i++)
+        res_sizes[i] = B.sizes[i];
       TensorToken res(res_sizes);
       tp->add_command(TensorProgram::MATMUL_T, A.id, B.id, res.id);
       return res;

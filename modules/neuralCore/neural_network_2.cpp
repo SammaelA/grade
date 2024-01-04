@@ -138,13 +138,11 @@ namespace nn
         offset += sz;
       }
     }
-    for (int i=0;i<batch_size;i++)
-    {
-      TensorToken t = input.get(i);
-      for (auto &l : layers)
-        t = l->forward(t);
-      output.set(i, t);
-    }
+    
+    TensorToken t = input;
+    for (auto &l : layers)
+      t = l->forward(t);
+    output = t;
     
     compiler.input(w, "W");
     compiler.input(input, "In");
