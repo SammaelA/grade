@@ -10,9 +10,40 @@ std::shared_ptr<TensorProcessorImpl> CreateTensorProcessorImpl_GPU(vk_utils::Vul
 
 namespace nn
 {
+
+  std::vector<TensorProgram::CmdProperties> TensorProgram::cmd_properties =
+  {
+    {NOOP     , "NOOP"     , AUXILIARY     , SELF_APPLICABLE_NO },
+    {FTT      , "FTT"      , AUXILIARY     , SELF_APPLICABLE_NO },
+
+    {MOV      , "MOV"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+    {FILL     , "FILL"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+    {COPY     , "COPY"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+
+    {ADD      , "ADD"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {SUB      , "SUB"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {MUL      , "MUL"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {DIV      , "DIV"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+
+    {EXP      , "EXP"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+    {POW      , "POW"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+
+    {SUM      , "SUM"      , REDUCTION     , SELF_APPLICABLE_NO },
+    {O_SUM    , "O_SUM"    , REDUCTION     , SELF_APPLICABLE_NO },
+
+    {MATMUL_T , "MATMUL_T" , ALGEBRA       , SELF_APPLICABLE_NO },
+    {TRANSP   , "TRANSP"   , ALGEBRA       , SELF_APPLICABLE_NO },
+    {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
+
+    {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
+  };
+
   std::unique_ptr<TensorProcessor> proc;
   void TensorProcessor::init(std::string backend)
   {
+    assert(TensorProgram::cmd_properties.size() == TensorProgram::CMD_COUNT);
+    for (int i=0;i<TensorProgram::cmd_properties.size();i++)
+      assert(TensorProgram::cmd_properties[i].type == i);
     if (!proc)
       proc.reset(new TensorProcessor());
     #if USE_GPU

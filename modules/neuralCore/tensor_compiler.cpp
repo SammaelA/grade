@@ -179,12 +179,7 @@ namespace nn
 
   bool TensorCompiler::is_self_applicable_command(TensorProgram::CommandType type)
   {
-    std::vector<TensorProgram::CommandType> sacs = {TensorProgram::ADD, TensorProgram::MUL, TensorProgram::DIV};
-
-    for (auto &t : sacs)
-      if (type == t)
-        return true;
-    return false;
+    return TensorProgram::cmd_properties[type].is_self_applicable == TensorProgram::SELF_APPLICABLE_YES;
   }
 
   void TensorCompiler::replace_output_var(unsigned old_id, unsigned new_id)
@@ -285,13 +280,13 @@ namespace nn
       bool first_C = fu[C] >= i && fm[C] >= i;
 
       unsigned rp = 0;
-      if (A > 0 && last_A && first_C && have_same_scheme(vars[A], vars[C]) && 
-          is_self_applicable_command(commands[i].type))
-        rp = A; //replace C = A x B with A = A x B
-      else if (B > 0 && last_B && first_C && have_same_scheme(vars[B], vars[C]) && 
-               is_self_applicable_command(commands[i].type))
-        rp = B; //replace C = A x B with B = A x B
-      
+      if (is_self_applicable_command(commands[i].type))
+      {
+        if (A > 0 && last_A && first_C && have_same_scheme(vars[A], vars[C]))
+          rp = A; //replace C = A x B with A = A x B
+        else if (B > 0 && last_B && first_C && have_same_scheme(vars[B], vars[C]))
+          rp = B; //replace C = A x B with B = A x B
+      }
       if (rp > 0)
       {
         commands[i].args[2] = rp;
@@ -577,10 +572,11 @@ namespace nn
     unsigned cid = 0;
     for (auto &cmd : commands)
     {
+      const char *cmd_name = TensorProgram::cmd_properties[cmd.type].name.c_str();
       if (cmd.type == TensorProgram::FTT)
-        printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, names[cmd.type].c_str(), cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
+        printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, cmd_name, cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
       else
-        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, names[cmd.type].c_str(), cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
+        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
       cid++;
     }
 

@@ -15,23 +15,56 @@ namespace nn
     //C - output variable
     enum CommandType
     {
-      NOOP,
-      ADD,      // C = A+B
-      MUL,      // C = A*B
-      SUB,      // C = A-B
-      DIV,      // C = A/B
-      EXP,      // C = exp(A)
-      POW,      // C = A^B (B is 1-element tensor)
-      SUM,      // C = sum(A)
-      O_SUM,    // C = sum(A)
-      MATMUL_T, // C = AxB
-      MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
+      NOOP,     // do nothing
       FTT,      // C = as_float(arg0)
+
+      MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
       FILL,     // fill(C, as_float(arg0))
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
+
+      ADD,      // C = A+B
+      SUB,      // C = A-B
+      MUL,      // C = A*B
+      DIV,      // C = A/B
+
+      EXP,      // C = exp(A)
+      POW,      // C = A^B (B is 1-element tensor)
+
+      SUM,      // C = sum(A)
+      O_SUM,    // C = sum(A)
+
+      MATMUL_T, // C = AxB
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
+
       URAND,    // C = random_float_uniform(A, B)
+      
+      CMD_COUNT
+    };
+
+    enum CmdClass
+    {
+      AUXILIARY,
+      MEM_MANAGEMENT,
+      ARITHMETICS,
+      ELEMENTWISE,
+      REDUCTION,
+      ALGEBRA,
+      OTHER
+    };
+
+    enum CmdIsSelfApplicable
+    {
+      SELF_APPLICABLE_NO,
+      SELF_APPLICABLE_YES
+    };
+
+    struct CmdProperties
+    {
+      CommandType type;
+      std::string name;
+      CmdClass cls;
+      CmdIsSelfApplicable is_self_applicable;
     };
 
     struct Command
@@ -47,6 +80,8 @@ namespace nn
       unsigned total_size;
       unsigned sizes[4];
     };
+
+    static std::vector<CmdProperties> cmd_properties;
 
     std::vector<Command> commands;
     std::vector<Variable> vars;
