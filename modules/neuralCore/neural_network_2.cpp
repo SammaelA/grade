@@ -16,7 +16,7 @@ namespace nn
     weights.push_back(TensorToken(input_shape[0], output_shape[0])); // A
     weights.push_back(TensorToken(output_shape[0]));                 // b
 
-    dLoss_dWeights = weights;
+    dLoss_dWeights.resize(weights.size());
   }
 
   TensorToken DenseLayer2::forward(const TensorToken &in)
@@ -28,9 +28,10 @@ namespace nn
   {
     TensorToken At = weights[0].transpose();
     TensorToken dLoss_dInput = TensorToken::mat_vec_mul(At, dLoss_dOutput);
-    TensorToken batch_size = (float)(dLoss_dWeights[0].sizes[dLoss_dWeights[0].Dim-1]);
+    TensorToken batch_size = (float)(input.sizes[input.Dim-1]);
 
-    dLoss_dWeights[0] = TensorToken::vector_outer_product(dLoss_dOutput, input).outer_sum()/batch_size;
+    //dLoss_dWeights[0] = TensorToken::vector_outer_product(dLoss_dOutput, input).outer_sum()/batch_size;
+    dLoss_dWeights[0] = (TensorToken::vector_outer_product_sum(dLoss_dOutput, input).flatten())/batch_size;
     dLoss_dWeights[1] = dLoss_dOutput.outer_sum()/batch_size;
 
     return dLoss_dInput;

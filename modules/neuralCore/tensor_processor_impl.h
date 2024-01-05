@@ -31,4 +31,8 @@ protected:
                                           Variable A, Variable B, Variable C);                                // C = A * (B)^T
   virtual void __attribute__((noinline)) kernel2D_outer_product(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
+  virtual void __attribute__((noinline)) outer_ps(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
+                                         Variable A, Variable B, Variable C);
+  virtual void __attribute__((noinline)) kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
+                                         Variable A, Variable B, Variable C);
 };

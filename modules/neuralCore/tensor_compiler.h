@@ -120,11 +120,12 @@ namespace nn
     //linear algebra operations
     TensorToken transpose() const;
     static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B);
+    static TensorToken vector_outer_product_sum(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_vec_mul(const TensorToken &A, const TensorToken &B);
 
-    unsigned id;
-    unsigned Dim;
+    unsigned id = 0;
+    unsigned Dim = 0;
     unsigned sizes[TensorCompiler::MAX_DIM] = {0};
   };
 }

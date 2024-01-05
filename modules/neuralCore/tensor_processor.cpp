@@ -37,6 +37,7 @@ namespace nn
     {MATMUL_T , "MATMUL_T" , ALGEBRA       , SELF_APPLICABLE_NO },
     {TRANSP   , "TRANSP"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
+    {OUTER_PS , "OUTER_PS" , ALGEBRA       , SELF_APPLICABLE_NO },
 
     {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
   };

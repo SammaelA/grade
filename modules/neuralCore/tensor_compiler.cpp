@@ -434,8 +434,9 @@ namespace nn
       unsigned C_begin = commands[i].args[4];
       unsigned C_end = C_begin + commands[i].args[5];
 
+      //printf("COPY%u %u(%u) %u(%u) - %u %u %u\n", i, A,vars[A].total_size, C,vars[C].total_size, commands[i].args[3], commands[i].args[4], commands[i].args[5]);
       //C is created with this copy
-      if (commands[i].args[5] == vars[C].total_size && modifications[C][0].cmd_id == i)
+      if (commands[i].args[5] == vars[C].total_size && modifications[C][0].cmd_id == i && vars[C].is_alias == false)
       {
         unsigned master_id = A;
         unsigned from = A_begin;
@@ -459,10 +460,8 @@ namespace nn
           //       nextUA(C, i, C_begin, C_end), nextMA(A, i, from, to));
         }
       }
-
-      //A is no longer used after this copy
-      if (vars[A].is_output == output_pass &&
-          commands[i].args[5] == vars[A].total_size && usages[A].back().cmd_id == i)
+      else if (vars[A].is_output == output_pass && //A is no longer used after this copy
+               commands[i].args[5] == vars[A].total_size && usages[A].back().cmd_id == i && vars[A].is_alias == false)
       {
         unsigned master_id = C;
         unsigned from = C_begin;
@@ -586,5 +585,7 @@ namespace nn
   void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned arg0, unsigned arg1, unsigned arg2)
   {
     commands.push_back({type, {A, B, C, arg0, arg1, arg2}});
+    //printf("%s add command %u %u %u %u %u %u (%d %d) -> (%d %d)\n", TensorProgram::cmd_properties[type].name.c_str(),
+    //A, B, C, arg0, arg1, arg2, vars[A].sizes[0], vars[A].sizes[1], vars[C].sizes[0], vars[C].sizes[1]);
   }
 }
