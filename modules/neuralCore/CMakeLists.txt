@@ -12,6 +12,7 @@ set(SRC
     tensor_processor_impl.cpp
     tensor_compiler.cpp
     neural_network_2.cpp
+    tensor_token.cpp
     )
 set(CMAKE_CXX_FLAGS "-g -O3 -Wno-attributes")
 
