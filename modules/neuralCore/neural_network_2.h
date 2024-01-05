@@ -49,8 +49,14 @@ namespace nn
       MSE,
       CrossEntropy
     };
+    enum WeightsInitializer
+    {
+      ZERO,
+      HE,
+      SIREN
+    };
 
-    void add_layer(std::shared_ptr<Layer2> layer);
+    void add_layer(std::shared_ptr<Layer2> layer, WeightsInitializer initializer = ZERO);
     bool check_validity();
     void initialize();
     void initialize_with_weights(const float *weights);
@@ -72,6 +78,7 @@ namespace nn
   private:
     unsigned batch_size_evaluate = 256;
     std::vector<std::shared_ptr<Layer2>> layers;
+    std::vector<WeightsInitializer> initializers;
     std::vector<float> weights;
     unsigned total_params = 0;
     TensorProgram evaluate_prog;

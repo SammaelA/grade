@@ -34,9 +34,42 @@ namespace nn
 
     return dLoss_dInput;
   }
-  void NeuralNetwork2::add_layer(std::shared_ptr<Layer2> layer)
+
+  unsigned total_size(const std::vector<unsigned> &sizes)
+  {
+    unsigned total_sz = 1;
+    for (auto sz : sizes)
+      total_sz *= sz;
+    return total_sz;
+  }
+
+  void zero_initialization(float *data, int size)
+  {
+    std::fill_n(data, size, 0.0f);
+  }
+
+  void he_initialization(float *data, int size, int fan_in, int fan_out)
+  {
+    float mn = -sqrt(6 / fan_in);
+    float mx = sqrt(6 / fan_out);
+    float d = mx - mn;
+    for (int i = 0; i < size; i++)
+      data[i] = d * (((double)rand()) / RAND_MAX) + mn;
+  }
+  void SIREN_initialization(float *data, int size, int fan_in, int fan_out)
+  {
+    constexpr float omega_0 = 30.0f;
+    float mx = (fan_in == 2) ? 0.5 : (sqrt(6.0 / fan_in) / omega_0);
+    float mn = -mx;
+    float d = mx - mn;
+    for (int i = 0; i < size; i++)
+      data[i] = d * (((double)rand()) / RAND_MAX) + mn;
+  }
+
+  void NeuralNetwork2::add_layer(std::shared_ptr<Layer2> layer, WeightsInitializer initializer)
   {
     layers.push_back(layer);
+    initializers.push_back(initializer);
   }
 
   bool NeuralNetwork2::check_validity()
@@ -73,6 +106,31 @@ namespace nn
     for (auto &l : layers)
       total_params += l->parameters_count();
     weights.resize(total_params);
+
+    int offset = 0;
+    for (int i=0;i<layers.size();i++)
+    {
+      unsigned fan_in = total_size(layers[i]->input_shape);
+      unsigned fan_out = total_size(layers[i]->output_shape);
+      unsigned size = layers[i]->parameters_count();
+
+      switch (initializers[i])
+      {
+        case ZERO:
+          zero_initialization(weights.data()+offset, size);
+          break;
+        case HE:
+          he_initialization(weights.data()+offset, size, fan_in, fan_out);
+          break;
+        case SIREN:
+          SIREN_initialization(weights.data()+offset, size, fan_in, fan_out);
+          break;
+        default:
+          break;
+      }
+      offset += size;
+    }
+
     get_evaluate_prog();
     print_info();
   }
@@ -100,22 +158,14 @@ namespace nn
     out.close();
   }
 
-  unsigned get_total_size_2(const std::vector<unsigned> &sizes)
-  {
-    unsigned total_sz = 1;
-    for (auto sz : sizes)
-      total_sz *= sz;
-    return total_sz;
-  }
-
   void NeuralNetwork2::print_info()
   {
     printf("Neural Network\n");
     printf("%d layers\n", (int)(layers.size()));
     for (int i = 0; i < layers.size(); i++)
       printf("Layer %d has %d parameters\n", i, layers[i]->parameters_count());
-    printf("%d input size\n", get_total_size_2(layers[0]->input_shape));
-    printf("%d output size\n", get_total_size_2(layers.back()->output_shape));
+    printf("%d input size\n", total_size(layers[0]->input_shape));
+    printf("%d output size\n", total_size(layers.back()->output_shape));
     printf("%d weights\n", total_params);
   }
 
@@ -256,8 +306,8 @@ namespace nn
 
   void NeuralNetwork2::evaluate(std::vector<float> &input_data, std::vector<float> &output_data)
   {
-    unsigned input_size = get_total_size_2(layers[0]->input_shape);
-    unsigned output_size = get_total_size_2(layers.back()->output_shape);
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned output_size = total_size(layers.back()->output_shape);
     unsigned batches = ((input_data.size()/input_size) + batch_size_evaluate - 1)/batch_size_evaluate;
     
     tp.set_program(evaluate_prog);
@@ -275,15 +325,11 @@ namespace nn
                              int batch_size, int iterations, Opt optimizer, Loss loss, float lr)
   {
     initialize();
-    float mn = -sqrt(6 / 3.0);
-    float mx = sqrt(6 / 1.0);
-    float d = mx - mn;
-    for (auto &w : weights)
-      w = d * (((double)rand()) / RAND_MAX) + mn;
+
     TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, lr);
 
-    unsigned input_size = get_total_size_2(layers[0]->input_shape);
-    unsigned output_size = get_total_size_2(layers.back()->output_shape);
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned output_size = total_size(layers.back()->output_shape);
     unsigned count = inputs.size()/input_size;
     assert(inputs.size() % input_size == 0);
     assert(outputs.size() % output_size == 0);

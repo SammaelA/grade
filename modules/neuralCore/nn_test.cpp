@@ -409,8 +409,8 @@ using namespace nn;
     }
 
     NeuralNetwork2 nn2;
-    nn2.add_layer(std::make_shared<DenseLayer2>(dim, 64));
-    nn2.add_layer(std::make_shared<DenseLayer2>(64, 1));
+    nn2.add_layer(std::make_shared<DenseLayer2>(dim, 64), NeuralNetwork2::HE);
+    nn2.add_layer(std::make_shared<DenseLayer2>(64, 1), NeuralNetwork2::HE);
     nn2.train(X, res, 256, 400, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.01f);
   }
 
