@@ -28,9 +28,10 @@ namespace nn
   {
     TensorToken At = weights[0].transpose();
     TensorToken dLoss_dInput = TensorToken::mat_vec_mul(At, dLoss_dOutput);
+    TensorToken batch_size = (float)(dLoss_dWeights[0].sizes[dLoss_dWeights[0].Dim-1]);
 
-    dLoss_dWeights[0] = TensorToken::vector_outer_product(dLoss_dOutput, input);
-    dLoss_dWeights[1] = dLoss_dOutput;
+    dLoss_dWeights[0] = TensorToken::vector_outer_product(dLoss_dOutput, input).outer_sum()/batch_size;
+    dLoss_dWeights[1] = dLoss_dOutput.outer_sum()/batch_size;
 
     return dLoss_dInput;
   }
@@ -227,14 +228,6 @@ namespace nn
       {
         unsigned sz = l->weights[i].total_size();
         l->weights[i].copy_to({0, sz}, w, {offset, offset + sz});
-        
-        unsigned dw_sizes[TensorCompiler::MAX_DIM] = {0,0,0,0};
-        for (int d=0;d<l->weights[i].Dim;d++)
-          dw_sizes[d] = l->weights[i].sizes[d];
-        dw_sizes[l->weights[i].Dim] = batch_size;
-        l->dLoss_dWeights[i] = TensorToken(dw_sizes);
-        l->dLoss_dWeights[i].fill(0);
-        
         offset += sz;
       }
     }
@@ -266,9 +259,8 @@ namespace nn
     {
       for (auto &dLoss_dWeight : l->dLoss_dWeights)
       {
-        TensorToken av_grad = dLoss_dWeight.outer_sum()/(float)batch_size;
-        unsigned sz = av_grad.total_size();
-        grad.set({offset, offset + sz}, av_grad.flatten());
+        unsigned sz = dLoss_dWeight.total_size();
+        grad.set({offset, offset + sz}, dLoss_dWeight.flatten());
         offset += sz;
       }
     }
