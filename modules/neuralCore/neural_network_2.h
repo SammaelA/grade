@@ -82,6 +82,5 @@ namespace nn
     std::vector<float> weights;
     unsigned total_params = 0;
     TensorProgram evaluate_prog;
-    TensorProcessor tp;
   };
 }

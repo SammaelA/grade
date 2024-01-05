@@ -310,14 +310,14 @@ namespace nn
     unsigned output_size = total_size(layers.back()->output_shape);
     unsigned batches = ((input_data.size()/input_size) + batch_size_evaluate - 1)/batch_size_evaluate;
     
-    tp.set_program(evaluate_prog);
-    tp.set_input("W", weights.data(), weights.size());
+    TensorProcessor::set_program(evaluate_prog);
+    TensorProcessor::set_input("W", weights.data(), weights.size());
     
     for (int i=0;i<batches;i++)
     {
-      tp.set_input("In", input_data.data() + i*batch_size_evaluate*input_size, input_data.size() - i*batch_size_evaluate*input_size);
-      tp.execute();
-      tp.get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, output_data.size() - i*batch_size_evaluate*output_size);
+      TensorProcessor::set_input("In", input_data.data() + i*batch_size_evaluate*input_size, input_data.size() - i*batch_size_evaluate*input_size);
+      TensorProcessor::execute();
+      TensorProcessor::get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, output_data.size() - i*batch_size_evaluate*output_size);
     }
   }
 
@@ -340,10 +340,10 @@ namespace nn
     std::vector<float> in_batch(input_size*batch_size);
     std::vector<float> out_batch(output_size*batch_size);
     float iter = 0;
-    tp.set_program(train_prog);
-    tp.set_input("W", weights.data(), weights.size());
-    tp.set_input("V", V.data(), V.size());
-    tp.set_input("S", S.data(), S.size());
+    TensorProcessor::set_program(train_prog);
+    TensorProcessor::set_input("W", weights.data(), weights.size());
+    TensorProcessor::set_input("V", V.data(), V.size());
+    TensorProcessor::set_input("S", S.data(), S.size());
 
     for (int it=0;it<iterations;it++)
     {
@@ -355,19 +355,19 @@ namespace nn
       }
 
       iter = it;
-      tp.set_input("In", in_batch.data(), in_batch.size());
-      tp.set_input("Out", out_batch.data(), out_batch.size());
-      tp.set_input("iter", &iter, 1);
-      tp.execute();
+      TensorProcessor::set_input("In", in_batch.data(), in_batch.size());
+      TensorProcessor::set_input("Out", out_batch.data(), out_batch.size());
+      TensorProcessor::set_input("iter", &iter, 1);
+      TensorProcessor::execute();
       float loss = -1;
-      tp.get_output("loss", &loss, 1);
+      TensorProcessor::get_output("loss", &loss, 1);
       printf("loss = %f\n", loss);
 
       if (DEBUG)
       {
         std::vector<float> grad(weights.size(),0);
-        tp.get_output("grad", grad.data(), grad.size());
-        tp.get_output("W", weights.data(), weights.size());
+        TensorProcessor::get_output("grad", grad.data(), grad.size());
+        TensorProcessor::get_output("W", weights.data(), weights.size());
         printf("grad = [ ");
         for (int i=0;i<weights.size();i++)
           printf("%f ", grad[i]);
@@ -379,7 +379,7 @@ namespace nn
         printf("]\n");
       }
     }
-    tp.get_output("W", weights.data(), weights.size());
+    TensorProcessor::get_output("W", weights.data(), weights.size());
   }
 
 }

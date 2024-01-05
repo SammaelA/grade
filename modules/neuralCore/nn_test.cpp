@@ -222,13 +222,12 @@ using namespace nn;
     std::vector<float> B = {4, 3,12};
     float c = 5;
 
-    TensorProcessor tp;
-    tp.set_program(p);
-    tp.set_input("A", A.data(), A.size());
-    tp.set_input("B", B.data(), B.size());
-    tp.set_input("c", &c, 1);
-    tp.execute();
-    tp.get_output("A", A.data(), A.size());
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::set_input("c", &c, 1);
+    TensorProcessor::execute();
+    TensorProcessor::get_output("A", A.data(), A.size());
 
     printf("res = ");
     for (int i=0;i<A.size();i++)
@@ -257,12 +256,11 @@ using namespace nn;
     std::vector<float> A = {1, 2, 3};
     std::vector<float> B = {4, 3,12};
 
-    TensorProcessor tp;
-    tp.set_program(p);
-    tp.set_input("A", A.data(), A.size());
-    tp.set_input("B", B.data(), B.size());
-    tp.execute();
-    tp.get_output("A", A.data(), A.size());
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("A", A.data(), A.size());
 
     printf("res = ");
     for (int i=0;i<A.size();i++)
@@ -308,13 +306,12 @@ using namespace nn;
     std::vector<float> B = {1,2,3,4,5,6,7,8,9};
     std::vector<float> res(90, 0.0f);
 
-    TensorProcessor tp;
-    tp.set_program(p);
-    tp.set_input("A", A.data(), A.size());
-    tp.set_input("B", B.data(), B.size());
-    tp.execute();
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::execute();
     for (int i=0;i<9;i++)
-      tp.get_output("R"+std::to_string(i+1), res.data()+i*9, 9);
+      TensorProcessor::get_output("R"+std::to_string(i+1), res.data()+i*9, 9);
 
     for (int k=0;k<10;k++)
     {
@@ -378,12 +375,11 @@ using namespace nn;
     std::vector<float> A = {1,1,2,2};
     std::vector<float> r = {0,0,0,0, 0,0,0,0, 0,0,0,0};
 
-    TensorProcessor tp;
-    tp.set_program(p);
-    tp.set_input("A", A.data(), A.size());
-    tp.set_input("X", X.data(), X.size());
-    tp.execute();
-    tp.get_output("r", r.data(), r.size());
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("X", X.data(), X.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("r", r.data(), r.size());
 
     printf("r=[ ");
     for (auto &v : r)
