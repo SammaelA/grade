@@ -36,6 +36,23 @@ namespace nn
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override;
   };
 
+  class SinLayer2 : public Layer2
+  {
+    float mult = 30.0f;
+  public:
+    SinLayer2(float _mult = 30.0f){ mult = _mult; }
+    virtual void init() { };
+    virtual int parameters_count() { return 0; }
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      return TensorToken::sin(input*mult);
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput)
+    {
+      return dLoss_dOutput * TensorToken::cos(input*mult) * mult;
+    }
+  };
+
   class NeuralNetwork2
   {
   public:

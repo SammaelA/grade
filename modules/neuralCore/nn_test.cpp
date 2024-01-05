@@ -407,7 +407,51 @@ using namespace nn;
     NeuralNetwork2 nn2;
     nn2.add_layer(std::make_shared<DenseLayer2>(dim, 64), NeuralNetwork2::HE);
     nn2.add_layer(std::make_shared<DenseLayer2>(64, 1), NeuralNetwork2::HE);
-    nn2.train(X, res, 256, 400, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.01f);
+    nn2.train(X, res, 512, 500, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.01f);
+  }
+
+  void test_10_SIREN_image_2_train()
+  {
+    std::vector<float> image_data, pixel_data, image_data_grayscale;
+    TensorView view = read_image_rgb("1a.png", image_data);
+    IndexType pixel_count = view.size(1)*view.size(2);
+    pixel_data.resize(2*pixel_count, 0);
+    image_data_grayscale.resize(pixel_count, 0);
+    for (IndexType i=0;i<view.size(2);i++)
+    {
+      for (IndexType j=0;j<view.size(1);j++)
+      {
+        pixel_data[2*(i*view.size(1) + j) + 0] = 2*(float)j/view.size(1)-1;
+        pixel_data[2*(i*view.size(1) + j) + 1] = 2*(float)i/view.size(2)-1;
+        image_data_grayscale[i*view.size(1) + j] = 0.2126 * view.get(0,j,i)+ 0.7152 * view.get(1,j,i) + 0.0722 * view.get(2,j,i);
+        image_data_grayscale[i*view.size(1) + j] = 2*(image_data_grayscale[i*view.size(1) + j]) - 1;
+      }
+    }
+
+    NeuralNetwork2 nn2;
+    nn2.add_layer(std::make_shared<DenseLayer2>( 2, 64), NeuralNetwork2::SIREN);
+    nn2.add_layer(std::make_shared<SinLayer2>());
+    nn2.add_layer(std::make_shared<DenseLayer2>(64, 64), NeuralNetwork2::SIREN);
+    nn2.add_layer(std::make_shared<SinLayer2>());
+    nn2.add_layer(std::make_shared<DenseLayer2>(64, 64), NeuralNetwork2::SIREN);
+    nn2.add_layer(std::make_shared<SinLayer2>());
+    nn2.add_layer(std::make_shared<DenseLayer2>(64,  1), NeuralNetwork2::SIREN);
+    nn2.train(pixel_data, image_data_grayscale, 1000, 2500, NeuralNetwork2::Adam, NeuralNetwork2::MSE, 0.0001f);
+    nn2.evaluate(pixel_data, image_data_grayscale);
+
+    for (float &val : image_data_grayscale)
+      val = 0.5*(val+1);
+    for (IndexType i=0;i<view.size(2);i++)
+    {
+      for (IndexType j=0;j<view.size(1);j++)
+      {
+        view.get(0,j,i) = image_data_grayscale[i*view.size(1)+j];
+        view.get(1,j,i) = image_data_grayscale[i*view.size(1)+j];
+        view.get(2,j,i) = image_data_grayscale[i*view.size(1)+j];
+      }
+    }
+
+    write_image_rgb("res.png", view);
   }
 
   int main(int argc, char **argv)
@@ -421,6 +465,7 @@ using namespace nn;
     test_7_linear_regression_2();
     test_8_aliases();
     test_9_linear_regression_2_train();
+    test_10_SIREN_image_2_train();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

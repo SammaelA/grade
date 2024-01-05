@@ -74,25 +74,23 @@ namespace nn
 
   bool NeuralNetwork2::check_validity()
   {
+    if (layers[0]->input_shape.empty() || layers[0]->output_shape.empty())
+    {
+      printf("NeuralNetwork: first layer must have implicit shape!\n");
+      return false;
+    }
     for (int i = 1; i < layers.size(); i++)
     {
       // shape-insensitive layers
-      if (layers[i]->input_shape.empty() || layers[i - 1]->output_shape.empty())
-        ;
-      continue;
-
-      if (layers[i]->input_shape.size() != layers[i - 1]->output_shape.size())
+      if (layers[i]->input_shape.empty() && layers[i]->output_shape.empty())
+      {
+        layers[i]->input_shape = layers[i-1]->output_shape;
+        layers[i]->output_shape = layers[i-1]->output_shape;
+      }
+      else if (layers[i]->input_shape.size() != layers[i - 1]->output_shape.size())
       {
         printf("NeuralNetwork: layers %d and %d have incompatible shapes!\n", i - 1, i);
         return false;
-      }
-      for (int j = 0; j < layers[i]->input_shape.size(); j++)
-      {
-        if (layers[i]->input_shape[j] != layers[i - 1]->output_shape[j])
-        {
-          printf("NeuralNetwork: layers %d and %d have incompatible sizes!\n", i - 1, i);
-          return false;
-        }
       }
     }
     return true;
@@ -113,6 +111,9 @@ namespace nn
       unsigned fan_in = total_size(layers[i]->input_shape);
       unsigned fan_out = total_size(layers[i]->output_shape);
       unsigned size = layers[i]->parameters_count();
+
+      if (size == 0)
+        continue;
 
       switch (initializers[i])
       {
