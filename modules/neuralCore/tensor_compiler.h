@@ -125,7 +125,10 @@ namespace nn
       for (int i = 0; i < Dim; i++)
         sizes[i] = other.sizes[i];
       if (!same_size) //TODO: do something more clear for end user
+      {
         id = tp->add_var(*this);
+        printf("TensorToken warning: reassigning tensor with different size. It will create new id for the same variable. Mind your step!\n");
+      }
       tp->add_command(TensorProgram::MOV, other.id, 0, id);
       return *this;
     }
@@ -138,14 +141,31 @@ namespace nn
       return size;
     }
 
+    void check_dimensions_for_arithmetics(const TensorToken &other) const
+    {
+      if (other.total_size() == 1)
+        return;
+      if (Dim < other.Dim)
+        printf("TensorToken: check failed %u < %u\n", Dim, other.Dim);
+      assert(Dim >= other.Dim);
+      for (int i=0;i<other.Dim;i++)
+      {
+        if (sizes[i] != other.sizes[i])
+          printf("TensorToken: check failed %u != %u\n", sizes[i], other.sizes[i]);
+        assert(sizes[i] == other.sizes[i]);
+      }
+    }
+
     TensorToken &operator+=(const TensorToken &other) 
     {
+      check_dimensions_for_arithmetics(other);
       tp->add_command(TensorProgram::ADD, id, other.id, id);
       return *this;
     }
 
     TensorToken operator+(const TensorToken &other) const
     {
+      check_dimensions_for_arithmetics(other);
       TensorToken res(sizes);
       tp->add_command(TensorProgram::ADD, id, other.id, res.id);
       return res;
@@ -153,12 +173,14 @@ namespace nn
 
     TensorToken &operator*=(const TensorToken &other) 
     {
+      check_dimensions_for_arithmetics(other);
       tp->add_command(TensorProgram::MUL, id, other.id, id);
       return *this;
     }
 
     TensorToken operator*(const TensorToken &other) const
     {
+      check_dimensions_for_arithmetics(other);
       TensorToken res(sizes);
       tp->add_command(TensorProgram::MUL, id, other.id, res.id);
       return res;
@@ -166,12 +188,14 @@ namespace nn
 
     TensorToken &operator-=(const TensorToken &other) 
     {
+      check_dimensions_for_arithmetics(other);
       tp->add_command(TensorProgram::SUB, id, other.id, id);
       return *this;
     }
 
     TensorToken operator-(const TensorToken &other) const
     {
+      check_dimensions_for_arithmetics(other);
       TensorToken res(sizes);
       tp->add_command(TensorProgram::SUB, id, other.id, res.id);
       return res;
@@ -179,12 +203,14 @@ namespace nn
 
     TensorToken &operator/=(const TensorToken &other)
     {
+      check_dimensions_for_arithmetics(other);
       tp->add_command(TensorProgram::DIV, id, other.id, id);
       return *this;
     }
 
     TensorToken operator/(const TensorToken &other) const
     {
+      check_dimensions_for_arithmetics(other);
       TensorToken res(sizes);
       tp->add_command(TensorProgram::DIV, id, other.id, res.id);
       return res;

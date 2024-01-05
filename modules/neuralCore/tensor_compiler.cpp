@@ -42,8 +42,8 @@ namespace nn
   {
     TensorToken::tp = this;
     printf("started recording tensor program\n");
-    add_command(TensorProgram::NOOP);
     vars.emplace_back();
+    add_command(TensorProgram::NOOP);
   }
 
   void TensorCompiler::compactify()

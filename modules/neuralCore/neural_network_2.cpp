@@ -319,7 +319,7 @@ namespace nn
 
       if (DEBUG)
       {
-        std::vector<float> grad(1000,0);
+        std::vector<float> grad(weights.size(),0);
         tp.get_output("grad", grad.data(), grad.size());
         tp.get_output("W", weights.data(), weights.size());
         printf("grad = [ ");
