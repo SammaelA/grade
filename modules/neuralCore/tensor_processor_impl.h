@@ -21,6 +21,9 @@ protected:
   virtual void kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A / B
   virtual void kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
   virtual void kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C);                     // C = pow(A, B)
+  virtual void kernel1D_sin(float *data, unsigned steps, Variable A, Variable B);                                 // B = sin(A)
+  virtual void kernel1D_cos(float *data, unsigned steps, Variable A, Variable B);                                 // B = cos(A)
+  virtual void kernel1D_log(float *data, unsigned steps, Variable A, Variable B);                                 // B = log(A)
   virtual void kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
   virtual void kernel1D_osum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
   virtual void kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B); // B = (A)^T

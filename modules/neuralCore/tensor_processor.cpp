@@ -27,6 +27,9 @@ namespace nn
 
     {EXP      , "EXP"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
     {POW      , "POW"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+    {SIN      , "SIN"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+    {COS      , "COS"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+    {LOG      , "LOG"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
 
     {SUM      , "SUM"      , REDUCTION     , SELF_APPLICABLE_NO },
     {O_SUM    , "O_SUM"    , REDUCTION     , SELF_APPLICABLE_NO },

@@ -45,6 +45,15 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     case nn::TensorProgram::POW:
       kernel1D_pow(memory_out, A.total_size, A, B, C);
       break;
+    case nn::TensorProgram::SIN:
+      kernel1D_sin(memory_out, A.total_size, A, C);
+      break;
+    case nn::TensorProgram::COS:
+      kernel1D_cos(memory_out, A.total_size, A, C);
+      break;
+    case nn::TensorProgram::LOG:
+      kernel1D_log(memory_out, A.total_size, A, C);
+      break;
     case nn::TensorProgram::SUM:
       kernel1D_sum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
       break;
@@ -134,6 +143,21 @@ void TensorProcessorImpl::kernel1D_pow(float *data, unsigned steps, Variable A, 
 {
   for (unsigned i = 0; i < steps; i++)
     data[C.offset + i] = std::pow(data[A.offset + i], data[B.offset]);
+}
+void TensorProcessorImpl::kernel1D_sin(float *data, unsigned steps, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+    data[B.offset + i] = std::sin(data[A.offset + i]);
+}
+void TensorProcessorImpl::kernel1D_cos(float *data, unsigned steps, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+    data[B.offset + i] = std::cos(data[A.offset + i]);
+}
+void TensorProcessorImpl::kernel1D_log(float *data, unsigned steps, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+    data[B.offset + i] = std::log(data[A.offset + i]);
 }
 void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {

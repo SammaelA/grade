@@ -107,8 +107,11 @@ namespace nn
     TensorToken operator/(const TensorToken &other) const;
 
     //per-element operations
-    TensorToken exp() const;
+    static TensorToken exp(const TensorToken &A);
     static TensorToken pow(const TensorToken &A, const TensorToken &B);
+    static TensorToken sin(const TensorToken &A);
+    static TensorToken cos(const TensorToken &A);
+    static TensorToken log(const TensorToken &A);
 
     //aggregation
     TensorToken sum(int Dims = -1) const;

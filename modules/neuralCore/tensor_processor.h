@@ -29,6 +29,9 @@ namespace nn
 
       EXP,      // C = exp(A)
       POW,      // C = A^B (B is 1-element tensor)
+      SIN,      // C = sin(A)
+      COS,      // C = cos(A)
+      LOG,      // C = log(A)
 
       SUM,      // C = sum(A)
       O_SUM,    // C = sum(A)

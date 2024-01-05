@@ -150,13 +150,6 @@ namespace nn
     return res;
   }
 
-  TensorToken TensorToken::exp() const
-  {
-    TensorToken res(sizes);
-    tp->add_command(TensorProgram::EXP, id, 0, res.id);
-    return res;
-  }
-
   TensorToken TensorToken::sum(int Dims) const
   {
     if (Dim == 0) // sum of scalar is this scalar itself
@@ -387,4 +380,33 @@ namespace nn
     tp->add_command(TensorProgram::POW, A.id, B.id, res.id);
     return res;
   }
+
+  TensorToken TensorToken::exp(const TensorToken &A)
+  {
+    TensorToken res(A.sizes);
+    tp->add_command(TensorProgram::EXP, A.id, 0, res.id);
+    return res;
+  }
+
+  TensorToken TensorToken::sin(const TensorToken &A)
+  {
+    TensorToken res(A.sizes);
+    tp->add_command(TensorProgram::SIN, A.id, 0, res.id);
+    return res;
+  }
+  
+  TensorToken TensorToken::cos(const TensorToken &A)
+  {
+    TensorToken res(A.sizes);
+    tp->add_command(TensorProgram::COS, A.id, 0, res.id);
+    return res;
+  }
+  
+  TensorToken TensorToken::log(const TensorToken &A)
+  {
+    TensorToken res(A.sizes);
+    tp->add_command(TensorProgram::LOG, A.id, 0, res.id);
+    return res;
+  }
+  
 }
