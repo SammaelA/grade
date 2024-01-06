@@ -1,17 +1,18 @@
 #include "tensor_processor_impl.h"
 #include <cstring>
+#define DEBUG 0
 
 void TensorProcessorImpl::process(const nn::TensorProgram &program,
                                   const float *memory_in, float *memory_out, unsigned data_size)
 {
-  bool debug = false;
-  if (debug)
+  #if DEBUG
   {
     printf("data [");
     for (int i=0;i<data_size;i++)
       printf("%8d ", i);
     printf("]\n");
   }
+  #endif
   memcpy(memory_out, memory_in, sizeof(float) * data_size);
   for (int i = 0; i < program.commands.size(); i++)
   {
@@ -64,7 +65,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       kernel2D_matmul_transposed(memory_out, A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
       break;
     case nn::TensorProgram::MOV:
-      memcpy(memory_out + C.offset, memory_out + A.offset, sizeof(float)*A.total_size);
+      kernel1D_copy(memory_out, A.total_size, 0, 0, A, C);
       break;
     case nn::TensorProgram::FTT:
       kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
@@ -73,7 +74,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
       break;
     case nn::TensorProgram::COPY:
-      memcpy(memory_out + C.offset + arg1, memory_out + A.offset + arg0, sizeof(float)*arg2);
+      kernel1D_copy(memory_out, arg2, arg0, arg1, A, C);
       break;
     case nn::TensorProgram::TRANSP:
       kernel2D_transpose(memory_out, A.total_size/(A.sizes[0]*A.sizes[1]), A.sizes[0], A.sizes[1], A, C);
@@ -82,7 +83,13 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
       kernel2D_outer_product(memory_out, A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
       break;
     case nn::TensorProgram::OUTER_PS:
-      outer_ps(memory_out, A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
+    {
+      kernel1D_fill(memory_out, A.sizes[0]*B.sizes[0], C, 0.0f);
+      for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
+      {
+        kernel2D_outer_p_add(memory_out, s, A.sizes[0], B.sizes[0], A, B, C);
+      }
+    }
       break;
     case nn::TensorProgram::URAND:
     {
@@ -96,15 +103,22 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     default:
       break;
     }
-    if (debug)
+    #if DEBUG
     {
       printf("data [");
       for (int i=0;i<data_size;i++)
         printf("%8.4f ", memory_out[i]);
       printf("]\n");
     }
+    #endif
 
   }
+}
+
+void TensorProcessorImpl::kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++) 
+    data[B.offset + to + i] = 1.0f*data[A.offset + from + i];
 }
 
 void TensorProcessorImpl::kernel1D_fill(float *data, unsigned steps, Variable A, float val)
@@ -160,7 +174,7 @@ void TensorProcessorImpl::kernel1D_cos(float *data, unsigned steps, Variable A, 
 void TensorProcessorImpl::kernel1D_log(float *data, unsigned steps, Variable A, Variable B)
 {
   for (unsigned i = 0; i < steps; i++)
-    data[B.offset + i] = std::log(data[A.offset + i]);
+    data[B.offset + i] = log2(data[A.offset + i])*0.69314718056f; //slicer's libraries don't have log for some reason
 }
 void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
@@ -212,12 +226,14 @@ void TensorProcessorImpl::kernel2D_outer_product(float *data, unsigned steps, un
         data[C.offset + s*A_len*B_len + i*B_len + j] = data[A.offset + s*A_len + i]*data[B.offset + s*B_len + j];
 }
 
-void TensorProcessorImpl::outer_ps(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
-                                         Variable A, Variable B, Variable C)
+void TensorProcessorImpl::outer_ps(float *data, unsigned data_size, unsigned steps, unsigned A_len, unsigned B_len, 
+                                   Variable A, Variable B, Variable C)
 {
   kernel1D_fill(data, A_len*B_len, C, 0.0f);
   for (unsigned s = 0; s < steps; s++)
+  {
     kernel2D_outer_p_add(data, s, A_len, B_len, A, B, C);
+  }
 }
 void TensorProcessorImpl::kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C)
