@@ -2,8 +2,7 @@
 #include <cassert>
 #include <cstring>
 
-#define USE_GPU 0
-#if USE_GPU
+#if defined(USE_GPU)
 #include "tensor_processor_impl_gpu.h"
 std::shared_ptr<TensorProcessorImpl> CreateTensorProcessorImpl_GPU(vk_utils::VulkanContext a_ctx, size_t a_maxThreadsGenerated);
 #endif
@@ -50,9 +49,9 @@ namespace nn
       assert(TensorProgram::cmd_properties[i].type == i);
     if (!proc)
       proc.reset(new TensorProcessor());
-    #if USE_GPU
+    #if defined(USE_GPU)
     if (backend == "GPU")
-      proc->pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(), 256);
+      proc->pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(true, 0u), 256);
     else
     #endif
       proc->pImpl = std::shared_ptr<TensorProcessorImpl>(new TensorProcessorImpl());

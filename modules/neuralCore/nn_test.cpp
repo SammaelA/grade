@@ -482,6 +482,12 @@ using namespace nn;
     siren.train(points, distances, 512, 5000);
   }
 
+  void test_12_GPU()
+  {
+    TensorProcessor::init("GPU");
+    test_10_SIREN_image_2_train();
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
@@ -495,6 +501,7 @@ using namespace nn;
     //test_9_linear_regression_2_train();
     //test_10_SIREN_image_2_train();
     test_11_SIREN_SDF_2_train();
+    test_12_GPU();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

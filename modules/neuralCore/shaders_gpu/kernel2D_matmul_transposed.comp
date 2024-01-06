@@ -1,0 +1,45 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "common_gpu.h"
+
+layout(binding = 0, set = 0) buffer data0 { float data[]; }; //
+layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data ubo; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint A_row_len;
+  Variable A;
+  Variable B;
+  Variable C;
+  uint A_col_len; 
+  uint B_col_len; 
+  uint iNumElementsZ; 
+  uint tFlagsMask;    
+} kgenArgs;
+
+
+void main()
+{
+  bool runThisThread = true;
+  ///////////////////////////////////////////////////////////////// prolog
+  const uint j = uint(gl_GlobalInvocationID[0]); 
+  const uint i = uint(gl_GlobalInvocationID[1]); 
+  if(j >= kgenArgs.A_col_len + 0 || i >= kgenArgs.B_col_len + 0)
+    runThisThread = false;
+    ///////////////////////////////////////////////////////////////// prolog
+  if(runThisThread)
+  {
+  
+      data[kgenArgs.C.offset + i*kgenArgs.A_col_len + j] = 0;
+      for (uint k = 0; k < kgenArgs.A_row_len; k++)
+        data[kgenArgs.C.offset + i*kgenArgs.A_col_len + j] += data[kgenArgs.A.offset + j*kgenArgs.A_row_len + k]*data[kgenArgs.B.offset + i*kgenArgs.A_row_len + k];
+    
+  }
+}
+
