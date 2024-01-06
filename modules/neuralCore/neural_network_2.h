@@ -93,7 +93,7 @@ namespace nn
     NeuralNetwork2 &operator=(const NeuralNetwork2 &other) = delete;
 
   private:
-    unsigned batch_size_evaluate = 256;
+    unsigned batch_size_evaluate = 1;
     std::vector<std::shared_ptr<Layer2>> layers;
     std::vector<WeightsInitializer> initializers;
     std::vector<float> weights;

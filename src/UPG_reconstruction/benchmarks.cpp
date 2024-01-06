@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <functional>
 #include <chrono>
-#include "neuralCore/siren.h"
+#include "neuralCore/siren2.h"
 
 namespace upg
 {
@@ -261,12 +261,17 @@ namespace upg
     std::vector<float> distances;
     sdf_to_point_cloud_with_dist(sdf, count, &positions, &distances);
     AABB bbox = sdf.root->get_bbox();
+    std::vector<float> positions_f;
+    positions_f.reserve(positions.size()*3);
+    for (auto &p : positions)
+    {
+      positions_f.push_back(p.x);
+      positions_f.push_back(p.y);
+      positions_f.push_back(p.z);
+    }
 
-    nn::TensorView Xv = nn::TensorView((float *)positions.data(), nn::Shape{3, count}); //pixel coordinates
-    nn::TensorView yv = nn::TensorView(distances.data(), nn::Shape{1, count}); //list of pixels
-
-    nn::Siren network(nn::Siren::Type::SDF, 2, 32);
-    network.train(Xv, yv, 512, 5000);
+    nn::Siren2 network(nn::Siren2::Type::SDF, 2, 32);
+    network.train(positions_f, distances, 512, 5000);
   
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);
@@ -311,8 +316,8 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    //neural_sdf_test();
-    //return;
+    neural_sdf_test();
+    return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);

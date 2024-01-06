@@ -289,12 +289,12 @@ namespace upg
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
   }
 
-  inline float neural_sdf_get_distance(nn::Siren &sdf, const glm::vec3 &p0)
+  inline float neural_sdf_get_distance(nn::Siren2 &sdf, const glm::vec3 &p0)
   {
     return sdf.get(p0.x, p0.y, p0.z);
   }
 
-  bool neural_sdf_sphere_tracing(nn::Siren &sdf, AABB sdf_bbox,
+  bool neural_sdf_sphere_tracing(nn::Siren2 &sdf, AABB sdf_bbox,
                                  const glm::vec3 &start_pos, const glm::vec3 &dir, glm::vec3 *surface_pos = nullptr)
   {
     constexpr float EPS = 3*1e-6;
@@ -320,15 +320,11 @@ namespace upg
     return d <= EPS;
   }
 
-  Texture render_neural_sdf(nn::Siren &sdf, AABB bbox, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert)
+  Texture render_neural_sdf(nn::Siren2 &sdf, AABB bbox, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert)
   {
     glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
     glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
     AABB inflated_bbox = AABB(center - 1.01f*size, center + 1.01f*size);
-    std::array<float, 3> one_point_tv_data = {};
-    float one_point_tv_res = 0;
-    nn::TensorView one_point_tv(one_point_tv_data.data(), nn::Shape{3, 1});
-    nn::TensorView res_tv(&one_point_tv_res, nn::Shape{1, 1});
 
     glm::mat4 projInv = glm::inverse(camera.get_proj());
     glm::mat4 viewInv = glm::inverse(camera.get_view());
