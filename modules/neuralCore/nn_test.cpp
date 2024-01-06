@@ -18,6 +18,7 @@
 #include "tensor_processor.h"
 #include "tensor_compiler.h"
 #include "neural_network_2.h"
+#include "siren2.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../third_party/third_party/stb_image.h"
@@ -454,18 +455,46 @@ using namespace nn;
     write_image_rgb("res.png", view);
   }
 
+  void test_11_SIREN_SDF_2_train()
+  {
+    auto circle_sdf = [](float x, float y, float z) -> float
+    {
+      return std::sqrt(x*x+y*y+z*z) - 0.75;
+    };
+
+    int samples = 25000;
+    std::vector<float> points(3*samples);
+    std::vector<float> distances(samples);
+
+    for (int i=0;i<samples;i++)
+    {
+      float x = 2*((float)rand())/RAND_MAX - 1;
+      float y = 2*((float)rand())/RAND_MAX - 1;
+      float z = 2*((float)rand())/RAND_MAX - 1;
+
+      points[3*i+0] = x;
+      points[3*i+1] = y;
+      points[3*i+2] = z;
+      distances[i] = circle_sdf(x,y,z);
+    }
+
+    Siren2 siren(Siren2::Type::SDF, 3, 32);
+    siren.train(points, distances, 512, 5000);
+  }
+
   int main(int argc, char **argv)
   {
     //test_1_linear_regression();
     //test_2_simple_classification();
     //test_3_SIREN_image();
-    test_4_tensor_processor();
-    test_5_tensor_tokens();
-    test_6_tensor_operations();
-    test_7_linear_regression_2();
-    test_8_aliases();
-    test_9_linear_regression_2_train();
-    test_10_SIREN_image_2_train();
+    //test_4_tensor_processor();
+    //test_5_tensor_tokens();
+    //test_6_tensor_operations();
+    //test_7_linear_regression_2();
+    //test_8_aliases();
+    //test_9_linear_regression_2_train();
+    //test_10_SIREN_image_2_train();
+    test_11_SIREN_SDF_2_train();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);
     //printf("%d %d %d %d\n", view.Dim, view.size(0), view.size(1), view.size(2));

@@ -355,7 +355,8 @@ namespace nn
       TensorProcessor::execute();
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
-      printf("loss = %f\n", loss);
+      if (it % 100 == 0)
+        printf("[%d/%d] Loss = %f\n", it, iterations, loss);
 
       if (DEBUG)
       {
