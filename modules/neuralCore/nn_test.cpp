@@ -430,6 +430,7 @@ using namespace nn;
     }
 
     NeuralNetwork2 nn2;
+    nn2.set_batch_size_for_evaluate(2048);
     nn2.add_layer(std::make_shared<DenseLayer2>( 2, 64), NeuralNetwork2::SIREN);
     nn2.add_layer(std::make_shared<SinLayer2>());
     nn2.add_layer(std::make_shared<DenseLayer2>(64, 64), NeuralNetwork2::SIREN);
@@ -486,7 +487,7 @@ using namespace nn;
   {
     TensorProcessor::init("GPU");
     //test_9_linear_regression_2_train();
-    test_11_SIREN_SDF_2_train();
+    test_10_SIREN_image_2_train();
   }
 
   int main(int argc, char **argv)

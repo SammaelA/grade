@@ -74,6 +74,13 @@ namespace nn
     initializers.push_back(initializer);
   }
 
+  void NeuralNetwork2::set_batch_size_for_evaluate(int size)
+  {
+    batch_size_evaluate = size;
+    if (initialized)
+      get_evaluate_prog();
+  }
+
   bool NeuralNetwork2::check_validity()
   {
     if (layers[0]->input_shape.empty() || layers[0]->output_shape.empty())
@@ -136,6 +143,7 @@ namespace nn
 
     get_evaluate_prog();
     print_info();
+    initialized = true;
   }
 
   void NeuralNetwork2::initialize_with_weights(const float *w)

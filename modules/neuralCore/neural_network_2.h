@@ -74,6 +74,7 @@ namespace nn
     };
 
     void add_layer(std::shared_ptr<Layer2> layer, WeightsInitializer initializer = ZERO);
+    void set_batch_size_for_evaluate(int size);
     bool check_validity();
     void initialize();
     void initialize_with_weights(const float *weights);
@@ -93,7 +94,8 @@ namespace nn
     NeuralNetwork2 &operator=(const NeuralNetwork2 &other) = delete;
 
   private:
-    unsigned batch_size_evaluate = 1;
+    bool initialized = false;
+    unsigned batch_size_evaluate = 256;
     std::vector<std::shared_ptr<Layer2>> layers;
     std::vector<WeightsInitializer> initializers;
     std::vector<float> weights;
