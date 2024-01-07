@@ -306,20 +306,24 @@ namespace nn
     return compiler.finish_program();
   }
 
-  void NeuralNetwork2::evaluate(std::vector<float> &input_data, std::vector<float> &output_data)
+  void NeuralNetwork2::evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples)
   {
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned output_size = total_size(layers.back()->output_shape);
-    unsigned batches = ((input_data.size()/input_size) + batch_size_evaluate - 1)/batch_size_evaluate;
+
+    if (samples < 0)
+      samples = input_data.size()/input_size;
+
+    unsigned batches = (samples + batch_size_evaluate - 1)/batch_size_evaluate;
     
     TensorProcessor::set_program(evaluate_prog);
     TensorProcessor::set_input("W", weights.data(), weights.size());
     
     for (int i=0;i<batches;i++)
     {
-      TensorProcessor::set_input("In", input_data.data() + i*batch_size_evaluate*input_size, input_data.size() - i*batch_size_evaluate*input_size);
+      TensorProcessor::set_input("In", input_data.data() + i*batch_size_evaluate*input_size, samples*input_size - i*batch_size_evaluate*input_size);
       TensorProcessor::execute();
-      TensorProcessor::get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, output_data.size() - i*batch_size_evaluate*output_size);
+      TensorProcessor::get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, samples*output_size - i*batch_size_evaluate*output_size);
     }
   }
 
