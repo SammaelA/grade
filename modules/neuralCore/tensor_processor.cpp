@@ -51,7 +51,7 @@ namespace nn
       proc.reset(new TensorProcessor());
     #if defined(USE_GPU)
     if (backend == "GPU")
-      proc->pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(true, 0u), 256);
+      proc->pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(false, 0u), 256);
     else
     #endif
       proc->pImpl = std::shared_ptr<TensorProcessorImpl>(new TensorProcessorImpl());
@@ -66,7 +66,8 @@ namespace nn
     if (!proc)
       TensorProcessor::init();
     proc->program = _program;
-    proc->cpu_memory = std::vector<float>(proc->program.total_memory_req, 0);
+    proc->pImpl->allocate_memory(proc->program.total_memory_req);
+    proc->pImpl->CommitDeviceData();
     proc->program_prepared = true;
 
     proc->input_prepared = {};
@@ -85,7 +86,7 @@ namespace nn
       unsigned var_id = proc->program.input_vars.at(name);
       unsigned offset = proc->program.vars[var_id].offset;
       unsigned size = std::min(data_size, proc->program.vars[var_id].total_size);
-      memcpy(proc->cpu_memory.data() + offset, data, sizeof(float) * size);
+      proc->pImpl->set_input(data, offset, size);
       proc->input_prepared[name] = true;
     }
   }
@@ -101,7 +102,7 @@ namespace nn
       unsigned var_id = proc->program.output_vars.at(name);
       unsigned offset = proc->program.vars[var_id].offset;
       unsigned size = std::min(data_size, proc->program.vars[var_id].total_size);
-      memcpy(data, proc->cpu_memory.data() + offset, sizeof(float) * size);
+      proc->pImpl->get_output(data, offset, size);
     }
   }
 
@@ -115,6 +116,6 @@ namespace nn
         printf("TensorProcessor::input variable %s is not set! Execution failed!\n", p.first.c_str());
       }
     }
-    proc->pImpl->process(proc->program, proc->cpu_memory.data(), proc->cpu_memory.data(), proc->cpu_memory.size());
+    proc->pImpl->process(proc->program);
   }
 }

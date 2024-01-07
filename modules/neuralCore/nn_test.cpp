@@ -485,7 +485,8 @@ using namespace nn;
   void test_12_GPU()
   {
     TensorProcessor::init("GPU");
-    test_10_SIREN_image_2_train();
+    //test_9_linear_regression_2_train();
+    test_11_SIREN_SDF_2_train();
   }
 
   int main(int argc, char **argv)
@@ -500,7 +501,7 @@ using namespace nn;
     //test_8_aliases();
     //test_9_linear_regression_2_train();
     //test_10_SIREN_image_2_train();
-    test_11_SIREN_SDF_2_train();
+    //test_11_SIREN_SDF_2_train();
     test_12_GPU();
     //std::vector<float> data;
     //TensorView view = read_image_rgb("empty_64.png", data);

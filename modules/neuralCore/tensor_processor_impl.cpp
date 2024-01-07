@@ -2,9 +2,9 @@
 #include <cstring>
 #define DEBUG 0
 
-void TensorProcessorImpl::process(const nn::TensorProgram &program,
-                                  const float *memory_in, float *memory_out, unsigned data_size)
+void TensorProcessorImpl::process(const nn::TensorProgram &program)
 {
+  unsigned data_size = memory.size();
   #if DEBUG
   {
     printf("data [");
@@ -13,7 +13,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     printf("]\n");
   }
   #endif
-  memcpy(memory_out, memory_in, sizeof(float) * data_size);
+
   for (int i = 0; i < program.commands.size(); i++)
   {
     Variable A = program.vars[program.commands[i].args[0]];
@@ -29,75 +29,75 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     case nn::TensorProgram::NOOP:
       break;
     case nn::TensorProgram::ADD:
-      kernel2D_add(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_add(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
       break;
     case nn::TensorProgram::MUL:
-      kernel2D_mul(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_mul(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
       break;
     case nn::TensorProgram::SUB:
-      kernel2D_sub(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_sub(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
       break;
     case nn::TensorProgram::DIV:
-      kernel2D_div(memory_out, A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_div(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
       break;
     case nn::TensorProgram::EXP:
-      kernel1D_exp(memory_out, A.total_size, A, C);
+      kernel1D_exp(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::POW:
-      kernel1D_pow(memory_out, A.total_size, A, B, C);
+      kernel1D_pow(memory.data(), A.total_size, A, B, C);
       break;
     case nn::TensorProgram::SIN:
-      kernel1D_sin(memory_out, A.total_size, A, C);
+      kernel1D_sin(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::COS:
-      kernel1D_cos(memory_out, A.total_size, A, C);
+      kernel1D_cos(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::LOG:
-      kernel1D_log(memory_out, A.total_size, A, C);
+      kernel1D_log(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::SUM:
-      kernel1D_sum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
+      kernel1D_sum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::O_SUM:
-      kernel1D_osum(memory_out, C.total_size, A.total_size / C.total_size, A, C);
+      kernel1D_osum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
-      kernel2D_matmul_transposed(memory_out, A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
+      kernel2D_matmul_transposed(memory.data(), A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
       break;
     case nn::TensorProgram::MOV:
-      kernel1D_copy(memory_out, A.total_size, 0, 0, A, C);
+      kernel1D_copy(memory.data(), A.total_size, 0, 0, A, C);
       break;
     case nn::TensorProgram::FTT:
-      kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
+      kernel1D_fill(memory.data(), C.total_size, C, *((float *)(&arg0)));
       break;
     case nn::TensorProgram::FILL:
-      kernel1D_fill(memory_out, C.total_size, C, *((float *)(&arg0)));
+      kernel1D_fill(memory.data(), C.total_size, C, *((float *)(&arg0)));
       break;
     case nn::TensorProgram::COPY:
-      kernel1D_copy(memory_out, arg2, arg0, arg1, A, C);
+      kernel1D_copy(memory.data(), arg2, arg0, arg1, A, C);
       break;
     case nn::TensorProgram::TRANSP:
-      kernel2D_transpose(memory_out, A.total_size/(A.sizes[0]*A.sizes[1]), A.sizes[0], A.sizes[1], A, C);
+      kernel2D_transpose(memory.data(), A.total_size/(A.sizes[0]*A.sizes[1]), A.sizes[0], A.sizes[1], A, C);
       break;
     case nn::TensorProgram::OUTER_P:
-      kernel2D_outer_product(memory_out, A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
+      kernel2D_outer_product(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
       break;
     case nn::TensorProgram::OUTER_PS:
     {
-      kernel1D_fill(memory_out, A.sizes[0]*B.sizes[0], C, 0.0f);
+      kernel1D_fill(memory.data(), A.sizes[0]*B.sizes[0], C, 0.0f);
       for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
       {
-        kernel2D_outer_p_add(memory_out, s, A.sizes[0], B.sizes[0], A, B, C);
+        kernel2D_outer_p_add(memory.data(), s, A.sizes[0], B.sizes[0], A, B, C);
       }
     }
       break;
     case nn::TensorProgram::URAND:
     {
-      float from = memory_out[A.offset];
-      float to = memory_out[B.offset];
+      float from = memory.data()[A.offset];
+      float to = memory.data()[B.offset];
       //TODO: GPU-compatible random
       for (unsigned i = 0; i < C.total_size; i++)
-        memory_out[C.offset + i] = from + ((double)rand()/RAND_MAX)*(to-from);
+        memory.data()[C.offset + i] = from + ((double)rand()/RAND_MAX)*(to-from);
     }
       break;
     default:
@@ -107,12 +107,40 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program,
     {
       printf("data [");
       for (int i=0;i<data_size;i++)
-        printf("%8.4f ", memory_out[i]);
+        printf("%8.4f ", memory.data()[i]);
       printf("]\n");
     }
     #endif
 
   }
+}
+
+void TensorProcessorImpl::allocate_memory(unsigned size)
+{
+  memory.resize(size);
+}
+
+void TensorProcessorImpl::set_input(const float* in, unsigned offset, unsigned size)
+{
+  kernel1D_set_input(in, offset, size);
+}
+
+void TensorProcessorImpl::get_output(float* out, unsigned offset, unsigned size)
+{
+  kernel1D_get_output(out, offset, size);
+}
+
+
+void TensorProcessorImpl::kernel1D_set_input(const float* data_in, unsigned offset, unsigned size)
+{
+  for (unsigned i=0;i<size;i++)
+    memory[offset + i] = data_in[i];
+}
+
+void TensorProcessorImpl::kernel1D_get_output(float* data_out, unsigned offset, unsigned size)
+{
+  for (unsigned i=0;i<size;i++)
+    data_out[i] = memory[offset + i];
 }
 
 void TensorProcessorImpl::kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B)
@@ -226,15 +254,6 @@ void TensorProcessorImpl::kernel2D_outer_product(float *data, unsigned steps, un
         data[C.offset + s*A_len*B_len + i*B_len + j] = data[A.offset + s*A_len + i]*data[B.offset + s*B_len + j];
 }
 
-void TensorProcessorImpl::outer_ps(float *data, unsigned data_size, unsigned steps, unsigned A_len, unsigned B_len, 
-                                   Variable A, Variable B, Variable C)
-{
-  kernel1D_fill(data, A_len*B_len, C, 0.0f);
-  for (unsigned s = 0; s < steps; s++)
-  {
-    kernel2D_outer_p_add(data, s, A_len, B_len, A, B, C);
-  }
-}
 void TensorProcessorImpl::kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C)
 {

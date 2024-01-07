@@ -26,27 +26,29 @@ public:
   virtual void InitVulkanObjects(VkDevice a_device, VkPhysicalDevice a_physicalDevice, size_t a_maxThreadsCount);
   
   virtual void SetVulkanContext(vk_utils::VulkanContext a_ctx) { m_ctx = a_ctx; }
-  virtual void SetVulkanInOutFor_outer_ps(
-    VkBuffer dataBuffer,
-    size_t   dataOffset,
+  virtual void SetVulkanInOutFor_get_output(
+    VkBuffer outBuffer,
+    size_t   outOffset,
     uint32_t dummyArgument = 0)
   {
-    outer_ps_local.dataBuffer = dataBuffer;
-    outer_ps_local.dataOffset = dataOffset;
-    InitAllGeneratedDescriptorSets_outer_ps();
+    get_output_local.outBuffer = outBuffer;
+    get_output_local.outOffset = outOffset;
+    InitAllGeneratedDescriptorSets_get_output();
+  }
+
+  virtual void SetVulkanInOutFor_set_input(
+    VkBuffer inBuffer,
+    size_t   inOffset,
+    uint32_t dummyArgument = 0)
+  {
+    set_input_local.inBuffer = inBuffer;
+    set_input_local.inOffset = inOffset;
+    InitAllGeneratedDescriptorSets_set_input();
   }
 
   virtual void SetVulkanInOutFor_process(
-    VkBuffer memory_inBuffer,
-    size_t   memory_inOffset,
-    VkBuffer memory_outBuffer,
-    size_t   memory_outOffset,
     uint32_t dummyArgument = 0)
   {
-    process_local.memory_inBuffer = memory_inBuffer;
-    process_local.memory_inOffset = memory_inOffset;
-    process_local.memory_outBuffer = memory_outBuffer;
-    process_local.memory_outOffset = memory_outOffset;
     InitAllGeneratedDescriptorSets_process();
   }
 
@@ -77,38 +79,44 @@ public:
   virtual void ReadPlainMembers(std::shared_ptr<vk_utils::ICopyEngine> a_pCopyEngine);
   static VkPhysicalDeviceFeatures2 ListRequiredDeviceFeatures(std::vector<const char*>& deviceExtensions);
   
-  virtual void outer_psCmd(VkCommandBuffer a_commandBuffer, float *data, unsigned data_size, unsigned steps, unsigned A_len, unsigned B_len, Variable A, Variable B, Variable C);
-  virtual void processCmd(VkCommandBuffer a_commandBuffer, const nn::TensorProgram &program, const float *memory_in, float *memory_out, unsigned data_size);
+  virtual void get_outputCmd(VkCommandBuffer a_commandBuffer, float* out, unsigned offset, unsigned size);
+  virtual void set_inputCmd(VkCommandBuffer a_commandBuffer, const float* in, unsigned offset, unsigned size);
+  virtual void processCmd(VkCommandBuffer a_commandBuffer, const nn::TensorProgram &program);
 
-  void outer_ps(float *data, unsigned data_size, unsigned steps, unsigned A_len, unsigned B_len, Variable A, Variable B, Variable C) override;
-  void process(const nn::TensorProgram &program, const float *memory_in, float *memory_out, unsigned data_size) override;
+  void get_output(float* out, unsigned offset, unsigned size) override;
+  void set_input(const float* in, unsigned offset, unsigned size) override;
+  void process(const nn::TensorProgram &program) override;
 
-  inline vk_utils::ExecTime Getouter_psExecutionTime() const { return m_exTimeouter_ps; }
+  inline vk_utils::ExecTime Getget_outputExecutionTime() const { return m_exTimeget_output; }
+  inline vk_utils::ExecTime Getset_inputExecutionTime() const { return m_exTimeset_input; }
   inline vk_utils::ExecTime GetprocessExecutionTime() const { return m_exTimeprocess; }
 
-  vk_utils::ExecTime m_exTimeouter_ps;
+  vk_utils::ExecTime m_exTimeget_output;
+  vk_utils::ExecTime m_exTimeset_input;
   vk_utils::ExecTime m_exTimeprocess;
 
   virtual void copyKernelFloatCmd(uint32_t length);
   
   virtual void powCmd(float *data, unsigned steps, Variable A, Variable B, Variable C);
-  virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
-  virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void expCmd(float *data, unsigned steps, Variable A, Variable B);
-  virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
-  virtual void sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
-  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
-  virtual void divCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
-  virtual void subCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
   virtual void sinCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
+  virtual void divCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
+  virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
   virtual void addCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
-  virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
-  virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
+  virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void subCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
   virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);
   virtual void outer_p_addCmd(float *data, unsigned step, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
-  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
+  virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
+  virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
+  virtual void set_inputCmd(const float* data_in, unsigned offset, unsigned size);
+  virtual void sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
+  virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
   virtual void outer_productCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                       Variable A, Variable B, Variable C);
   
@@ -142,7 +150,8 @@ protected:
   virtual void InitKernels(const char* a_filePath);
   virtual void AllocateAllDescriptorSets();
 
-  virtual void InitAllGeneratedDescriptorSets_outer_ps();
+  virtual void InitAllGeneratedDescriptorSets_get_output();
+  virtual void InitAllGeneratedDescriptorSets_set_input();
   virtual void InitAllGeneratedDescriptorSets_process();
 
   virtual void AssignBuffersToMemory(const std::vector<VkBuffer>& a_buffers, VkDeviceMemory a_mem);
@@ -153,19 +162,22 @@ protected:
   
   
 
-  struct outer_ps_Data
+  struct get_output_Data
   {
-    VkBuffer dataBuffer = VK_NULL_HANDLE;
-    size_t   dataOffset = 0;
+    VkBuffer outBuffer = VK_NULL_HANDLE;
+    size_t   outOffset = 0;
     bool needToClearOutput = false;
-  } outer_ps_local;
+  } get_output_local;
+
+  struct set_input_Data
+  {
+    VkBuffer inBuffer = VK_NULL_HANDLE;
+    size_t   inOffset = 0;
+    bool needToClearOutput = false;
+  } set_input_local;
 
   struct process_Data
   {
-    VkBuffer memory_inBuffer = VK_NULL_HANDLE;
-    size_t   memory_inOffset = 0;
-    VkBuffer memory_outBuffer = VK_NULL_HANDLE;
-    size_t   memory_outOffset = 0;
     bool needToClearOutput = false;
   } process_local;
 
@@ -173,6 +185,8 @@ protected:
 
   struct MembersDataGPU
   {
+    VkBuffer memoryBuffer = VK_NULL_HANDLE;
+    size_t   memoryOffset = 0;
   } m_vdata;
   
   
@@ -184,66 +198,51 @@ protected:
   VkDescriptorSetLayout powDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatepowDSLayout();
   virtual void InitKernel_pow(const char* a_filePath);
-  VkPipelineLayout      transposeLayout   = VK_NULL_HANDLE;
-  VkPipeline            transposePipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatetransposeDSLayout();
-  virtual void InitKernel_transpose(const char* a_filePath);
-  VkPipelineLayout      osumLayout   = VK_NULL_HANDLE;
-  VkPipeline            osumPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout osumDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreateosumDSLayout();
-  virtual void InitKernel_osum(const char* a_filePath);
   VkPipelineLayout      expLayout   = VK_NULL_HANDLE;
   VkPipeline            expPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout expDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateexpDSLayout();
   virtual void InitKernel_exp(const char* a_filePath);
-  VkPipelineLayout      logLayout   = VK_NULL_HANDLE;
-  VkPipeline            logPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout logDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatelogDSLayout();
-  virtual void InitKernel_log(const char* a_filePath);
-  VkPipelineLayout      sumLayout   = VK_NULL_HANDLE;
-  VkPipeline            sumPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout sumDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatesumDSLayout();
-  virtual void InitKernel_sum(const char* a_filePath);
-  VkPipelineLayout      mulLayout   = VK_NULL_HANDLE;
-  VkPipeline            mulPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout mulDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatemulDSLayout();
-  virtual void InitKernel_mul(const char* a_filePath);
-  VkPipelineLayout      divLayout   = VK_NULL_HANDLE;
-  VkPipeline            divPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout divDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatedivDSLayout();
-  virtual void InitKernel_div(const char* a_filePath);
-  VkPipelineLayout      subLayout   = VK_NULL_HANDLE;
-  VkPipeline            subPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout subDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatesubDSLayout();
-  virtual void InitKernel_sub(const char* a_filePath);
   VkPipelineLayout      sinLayout   = VK_NULL_HANDLE;
   VkPipeline            sinPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout sinDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatesinDSLayout();
   virtual void InitKernel_sin(const char* a_filePath);
+  VkPipelineLayout      osumLayout   = VK_NULL_HANDLE;
+  VkPipeline            osumPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout osumDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreateosumDSLayout();
+  virtual void InitKernel_osum(const char* a_filePath);
+  VkPipelineLayout      divLayout   = VK_NULL_HANDLE;
+  VkPipeline            divPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout divDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatedivDSLayout();
+  virtual void InitKernel_div(const char* a_filePath);
+  VkPipelineLayout      transposeLayout   = VK_NULL_HANDLE;
+  VkPipeline            transposePipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatetransposeDSLayout();
+  virtual void InitKernel_transpose(const char* a_filePath);
   VkPipelineLayout      addLayout   = VK_NULL_HANDLE;
   VkPipeline            addPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout addDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateaddDSLayout();
   virtual void InitKernel_add(const char* a_filePath);
-  VkPipelineLayout      copyLayout   = VK_NULL_HANDLE;
-  VkPipeline            copyPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout copyDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatecopyDSLayout();
-  virtual void InitKernel_copy(const char* a_filePath);
-  VkPipelineLayout      cosLayout   = VK_NULL_HANDLE;
-  VkPipeline            cosPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout cosDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatecosDSLayout();
-  virtual void InitKernel_cos(const char* a_filePath);
+  VkPipelineLayout      fillLayout   = VK_NULL_HANDLE;
+  VkPipeline            fillPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout fillDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatefillDSLayout();
+  virtual void InitKernel_fill(const char* a_filePath);
+  VkPipelineLayout      logLayout   = VK_NULL_HANDLE;
+  VkPipeline            logPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout logDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatelogDSLayout();
+  virtual void InitKernel_log(const char* a_filePath);
+  VkPipelineLayout      subLayout   = VK_NULL_HANDLE;
+  VkPipeline            subPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout subDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatesubDSLayout();
+  virtual void InitKernel_sub(const char* a_filePath);
   VkPipelineLayout      matmul_transposedLayout   = VK_NULL_HANDLE;
   VkPipeline            matmul_transposedPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout matmul_transposedDSLayout = VK_NULL_HANDLE;
@@ -254,11 +253,36 @@ protected:
   VkDescriptorSetLayout outer_p_addDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createouter_p_addDSLayout();
   virtual void InitKernel_outer_p_add(const char* a_filePath);
-  VkPipelineLayout      fillLayout   = VK_NULL_HANDLE;
-  VkPipeline            fillPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout fillDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatefillDSLayout();
-  virtual void InitKernel_fill(const char* a_filePath);
+  VkPipelineLayout      get_outputLayout   = VK_NULL_HANDLE;
+  VkPipeline            get_outputPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout get_outputDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createget_outputDSLayout();
+  virtual void InitKernel_get_output(const char* a_filePath);
+  VkPipelineLayout      copyLayout   = VK_NULL_HANDLE;
+  VkPipeline            copyPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout copyDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatecopyDSLayout();
+  virtual void InitKernel_copy(const char* a_filePath);
+  VkPipelineLayout      set_inputLayout   = VK_NULL_HANDLE;
+  VkPipeline            set_inputPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout set_inputDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createset_inputDSLayout();
+  virtual void InitKernel_set_input(const char* a_filePath);
+  VkPipelineLayout      sumLayout   = VK_NULL_HANDLE;
+  VkPipeline            sumPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout sumDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatesumDSLayout();
+  virtual void InitKernel_sum(const char* a_filePath);
+  VkPipelineLayout      cosLayout   = VK_NULL_HANDLE;
+  VkPipeline            cosPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout cosDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatecosDSLayout();
+  virtual void InitKernel_cos(const char* a_filePath);
+  VkPipelineLayout      mulLayout   = VK_NULL_HANDLE;
+  VkPipeline            mulPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout mulDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatemulDSLayout();
+  virtual void InitKernel_mul(const char* a_filePath);
   VkPipelineLayout      outer_productLayout   = VK_NULL_HANDLE;
   VkPipeline            outer_productPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout outer_productDSLayout = VK_NULL_HANDLE;
@@ -275,7 +299,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[15];
+  VkDescriptorSet  m_allGeneratedDS[14];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

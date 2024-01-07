@@ -24,6 +24,8 @@ typedef LiteMath::uint4    uvec4;
 
 struct TensorProcessorImpl_GPU_UBO_Data
 {
+  uint memory_capacity; 
+  uint memory_size; 
   uint dummy_last;
 };
 

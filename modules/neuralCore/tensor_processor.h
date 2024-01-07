@@ -114,7 +114,6 @@ namespace nn
     TensorProcessor();
     std::shared_ptr<TensorProcessorImpl> pImpl;
     TensorProgram program;
-    std::vector<float> cpu_memory;
     std::map<std::string, bool> input_prepared;
     bool program_prepared = false;
   };
