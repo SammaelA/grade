@@ -73,6 +73,11 @@ namespace nn
     proc->input_prepared = {};
     for (auto &p : proc->program.input_vars)
       proc->input_prepared[p.first] = false;
+
+    _stat_execution_times = 0;
+    _stat_time_cmd_id  = std::vector<float>(nn::TensorProgram::cmd_properties.size(), 0.0f);
+    _stat_time_cmd_num = std::vector<float>(_program.commands.size(), 0.0f);
+  
   }
 
   void TensorProcessor::set_input(const std::string &name, float * const data, unsigned data_size)
@@ -117,5 +122,26 @@ namespace nn
       }
     }
     proc->pImpl->process(proc->program);
+  }
+
+  void TensorProcessor::print_execution_stat()
+  {
+    float total_time = 0.0;
+    for (auto &v : _stat_time_cmd_id)
+      total_time += v;
+    total_time *= 1e-6;//us to seconds
+    printf("TensorProcessor: program execution statistics\n");
+    printf("Executions: %d\n", _stat_execution_times);
+    printf("Took %.2f s (%.4f s/exec)\n", total_time, total_time/_stat_execution_times);
+    printf("Time spent by command type:\n");
+    for (int i=0;i<TensorProgram::CMD_COUNT;i++)
+      printf("%8s: %.3f s (%4.1f%%)\n", TensorProgram::cmd_properties[i].name.c_str(), 1e-6*_stat_time_cmd_id[i],
+                                          100*1e-6*_stat_time_cmd_id[i]/total_time);
+    printf("Time spent by command number:\n");
+    for (int i=0;i<proc->program.commands.size();i++)
+      printf("%3d[%8s]: %.3f s (%4.1f%%)\n", i, TensorProgram::cmd_properties[proc->program.commands[i].type].name.c_str(), 
+                                                  1e-6*_stat_time_cmd_num[i],
+                                                  100*1e-6*_stat_time_cmd_num[i]/total_time);
+    printf("\n");
   }
 }

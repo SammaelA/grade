@@ -841,6 +841,8 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
 
   for (int i = 0; i < program.commands.size(); i++)
   {
+    auto t1 = std::chrono::high_resolution_clock::now();
+
     Variable A = program.vars[program.commands[i].args[0]];
     Variable B = program.vars[program.commands[i].args[1]];
     Variable C = program.vars[program.commands[i].args[2]];
@@ -978,7 +980,12 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
     }
     #endif
 
+    auto t2 = std::chrono::high_resolution_clock::now();
+    float total_time_us = 1e-3 * std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
+    _stat_time_cmd_id[program.commands[i].type] += total_time_us;
+    _stat_time_cmd_num[i] += total_time_us;
   }
+  _stat_execution_times++;
 
 }
 

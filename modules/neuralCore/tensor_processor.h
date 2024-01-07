@@ -110,6 +110,7 @@ namespace nn
     //if <data_size> less that tensor size, only this part is tranfered
     static void get_output(const std::string &name, float *data, unsigned data_size);
     static void execute();
+    static void print_execution_stat();
   private:
     TensorProcessor();
     std::shared_ptr<TensorProcessorImpl> pImpl;

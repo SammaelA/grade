@@ -375,6 +375,7 @@ namespace nn
       }
     }
     TensorProcessor::get_output("W", weights.data(), weights.size());
+    TensorProcessor::print_execution_stat();
   }
 
 }

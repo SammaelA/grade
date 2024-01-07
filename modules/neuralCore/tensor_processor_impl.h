@@ -1,6 +1,10 @@
 #pragma once
 #include "tensor_processor.h"
 
+extern std::vector<float> _stat_time_cmd_num;
+extern std::vector<float> _stat_time_cmd_id;
+extern int _stat_execution_times;
+
 class TensorProcessorImpl
 {
 protected:
