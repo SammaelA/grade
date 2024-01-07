@@ -109,7 +109,7 @@ public:
   virtual void subCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
   virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);
-  virtual void outer_p_addCmd(float *data, unsigned step, unsigned A_len, unsigned B_len, 
+  virtual void outer_p_addCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
   virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
   virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
@@ -299,7 +299,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[14];
+  VkDescriptorSet  m_allGeneratedDS[13];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

@@ -85,10 +85,11 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::OUTER_PS:
     {
       kernel1D_fill(memory.data(), A.sizes[0]*B.sizes[0], C, 0.0f);
-      for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
-      {
-        kernel2D_outer_p_add(memory.data(), s, A.sizes[0], B.sizes[0], A, B, C);
-      }
+      kernel2D_outer_p_add(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
+      //for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
+      //{
+      //  kernel2D_outer_p_add(memory.data(), s, A.sizes[0], B.sizes[0], A, B, C);
+      //}
     }
       break;
     case nn::TensorProgram::URAND:
@@ -254,10 +255,16 @@ void TensorProcessorImpl::kernel2D_outer_product(float *data, unsigned steps, un
         data[C.offset + s*A_len*B_len + i*B_len + j] = data[A.offset + s*A_len + i]*data[B.offset + s*B_len + j];
 }
 
-void TensorProcessorImpl::kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
+void TensorProcessorImpl::kernel2D_outer_p_add(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < A_len; i++)
+  {
     for (unsigned j = 0; j < B_len; j++)
-      data[C.offset + i*B_len + j] += data[A.offset + step*A_len + i]*data[B.offset + step*B_len + j];
+    {
+      data[C.offset + i*B_len + j] = 0;
+      for (unsigned step = 0; step < steps; step++)
+        data[C.offset + i*B_len + j] += data[A.offset + step*A_len + i]*data[B.offset + step*B_len + j];
+    }
+  }
 }

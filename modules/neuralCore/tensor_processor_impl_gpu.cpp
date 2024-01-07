@@ -463,7 +463,7 @@ void TensorProcessorImpl_GPU::matmul_transposedCmd(float *data, unsigned A_row_l
  
 }
 
-void TensorProcessorImpl_GPU::outer_p_addCmd(float *data, unsigned step, unsigned A_len, unsigned B_len, 
+void TensorProcessorImpl_GPU::outer_p_addCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 32;
@@ -472,7 +472,7 @@ void TensorProcessorImpl_GPU::outer_p_addCmd(float *data, unsigned step, unsigne
 
   struct KernelArgsPC
   {
-    unsigned int m_step; 
+    unsigned int m_steps; 
     Variable m_A; 
     Variable m_B; 
     Variable m_C; 
@@ -490,7 +490,7 @@ void TensorProcessorImpl_GPU::outer_p_addCmd(float *data, unsigned step, unsigne
   pcData.m_sizeY  = A_len;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_step = step; 
+  pcData.m_steps = steps; 
   pcData.m_A = A; 
   pcData.m_B = B; 
   pcData.m_C = C; 
@@ -948,12 +948,13 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, fillLayout, 0, 1, &m_allGeneratedDS[12], 0, nullptr);
   fillCmd(memory.data(), A.sizes[0]*B.sizes[0], C, 0.0f);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
-      for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
-      {
-        vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, outer_p_addLayout, 0, 1, &m_allGeneratedDS[13], 0, nullptr);
-  outer_p_addCmd(memory.data(), s, A.sizes[0], B.sizes[0], A, B, C);
+      vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, outer_p_addLayout, 0, 1, &m_allGeneratedDS[11], 0, nullptr);
+  outer_p_addCmd(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
-      }
+      //for (unsigned s = 0; s < A.total_size/A.sizes[0]; s++)
+      //{
+      //  kernel2D_outer_p_add(memory.data(), s, A.sizes[0], B.sizes[0], A, B, C);
+      //}
     }
       break;
     case nn::TensorProgram::URAND:

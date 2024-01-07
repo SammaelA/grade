@@ -478,8 +478,8 @@ using namespace nn;
       distances[i] = circle_sdf(x,y,z);
     }
 
-    Siren2 siren(Siren2::Type::SDF, 3, 32);
-    siren.train(points, distances, 512, 5000);
+    Siren2 siren(Siren2::Type::SDF, 3, 64);
+    siren.train(points, distances, 512, 1000);
   }
 
   void test_12_GPU()
