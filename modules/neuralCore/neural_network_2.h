@@ -31,7 +31,7 @@ namespace nn
       output_shape.push_back(output_size);
     }
     virtual void init() override;
-    virtual int parameters_count() { return (input_shape[0]+1)*output_shape[0]; }
+    virtual int parameters_count() override { return (input_shape[0]+1)*output_shape[0]; };
     virtual TensorToken forward(const TensorToken &in) override;
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override;
   };
@@ -41,13 +41,13 @@ namespace nn
     float mult = 30.0f;
   public:
     SinLayer2(float _mult = 30.0f){ mult = _mult; }
-    virtual void init() { };
-    virtual int parameters_count() { return 0; }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
     virtual TensorToken forward(const TensorToken &input) override
     {
       return TensorToken::sin(input*mult);
     }
-    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput)
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
       return dLoss_dOutput * TensorToken::cos(input*mult) * mult;
     }
