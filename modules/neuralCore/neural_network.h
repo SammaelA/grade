@@ -14,6 +14,7 @@ namespace nn
   public:
     Shape input_shape, output_shape;
 
+    virtual ~Layer() {};
     virtual void init(float *param_mem, float *gradient_mem, float *tmp_mem, bool initialize_random_weights) = 0;
     virtual void forward(const TensorView &input, TensorView &output) = 0;
     virtual void backward(const TensorView &input, const TensorView &output,

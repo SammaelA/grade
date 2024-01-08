@@ -2,7 +2,7 @@
 #include "common_utils/field_2d.h"
 #include "common_utils/utility.h"
 #include "tinyEngine/texture.h"
-class DirectedLight;
+struct DirectedLight;
 class Heightmap : public Field_2d
 {
 public:
@@ -26,5 +26,4 @@ public:
 private:
     Texture hmtex;
     float base_value = 0;
-    float size_x,size_y,height;
 };

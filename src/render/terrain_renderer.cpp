@@ -3,12 +3,12 @@
 #include "tree_utils/tree_modeling.h"
 
 TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step):
-        terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-        terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
         terrain_tex1(engine::textureManager->get("terrain1")),
         terrain_tex2(engine::textureManager->get("terrain2")),
         terrain_tex3(engine::textureManager->get("terrain3")),
-        perlin(engine::textureManager->get("noise"))
+        perlin(engine::textureManager->get("noise")),
+        terrain({"terrain_render.vs", "terrain_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
+        terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"})
         {
             flat_terrain = new Model();
             visualizer::heightmap_to_model(h, flat_terrain, size, glm::vec2(8192, 8192), MIN(step.x, step.y),0);

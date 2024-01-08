@@ -50,7 +50,8 @@ struct DistDataTable
     {
         n = ddt.n;
         data = safe_new<std::pair<Answer, DistData>>(n * n, "DistDataTable_data");
-        memcpy(data, ddt.data, n * n * sizeof(std::pair<Answer, DistData>));
+        for (int i=0;i<n*n;i++)
+          data[i] = ddt.data[i];
     }
     ~DistDataTable() { clear(); }
 };

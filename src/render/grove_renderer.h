@@ -13,7 +13,7 @@
 #include "core/grove.h"
 
 class ImpostorRenderer;
-class BillboardCloudRenderer;
+struct BillboardCloudRenderer;
 
 struct GroveRendererDebugParams
 {

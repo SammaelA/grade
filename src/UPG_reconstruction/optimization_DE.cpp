@@ -263,7 +263,7 @@ namespace upg
         }
         if (epoch > 0 && epoch % l == 0)
         {
-          std::sort(population.begin(), population.end(), [this](const Creature & a, const Creature & b) -> bool {    
+          std::sort(population.begin(), population.end(), [](const Creature & a, const Creature & b) -> bool {    
                     return a.loss < b.loss;});
           for (int i=0;i<population_size-k;i++)
           {
@@ -317,14 +317,7 @@ namespace upg
     int population_size = 30;
     int best_params_size = 1;
     int budget = 200'000; //total number of function calls
-    float mutation_chance = 0.1;
-    float mutation_power = 0.1;
-    int tournament_size = 128;
-    int local_opt_count = 5;
-    int local_opt_iters = 50;
     float local_learning_rate = 0.01;
-    float good_soulution_thr = 0.05;
-    float elites_fraction = 0.05;
     float finish_thr = 0;
     bool verbose = false;
 
@@ -347,7 +340,6 @@ namespace upg
     //statistics
     constexpr static int result_bin_count = 1000;
     int result_bins[result_bin_count] = {};
-    int current_bins[result_bin_count] = {};
   };
 
   std::shared_ptr<UPGOptimizer> get_optimizer_differentiable_evolution(UPGOptimizableFunction *_func, 

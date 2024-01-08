@@ -4,12 +4,12 @@
 #include "tree_utils/tree_modeling.h"
 
 GrassRenderer::GrassRenderer():
- grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
- grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"}),
  grass_base(engine::textureManager->get("grass")),
  grass_tall(engine::textureManager->get("grass")),
  perlin(engine::textureManager->get("noise")),
- noise(engine::textureManager->get("colored_noise"))
+ noise(engine::textureManager->get("colored_noise")),
+ grass({"grass.vs", "grass.fs"}, {"in_Position","in_Normal", "in_Tex"}),
+ grassShadow({"grass.vs", "depth_billboard.fs"}, {"in_Position","in_Normal", "in_Tex"})
 {
     std::vector<float> vertexes = {-0.5,0,0, -0.5,1,0, 0.5,0,0, 0.5,1,0,   0,0,-0.5, 0,1,-0.5, 0,0,0.5, 0,1,0.5};
     std::vector<float> tc = {0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0, 0,1,0,0, 0,0,0,0, 1,1,0,0, 1,0,0,0};
@@ -46,9 +46,9 @@ void GrassRenderer::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &sh
 }
 
 GrassRenderer2::GrassRenderer2(const GrassPacked &data):
-grass_atlas(data.grass_textures),
 grass({"grass2.vs", "grass2.fs"}, {"in_Position","in_Normal", "in_Tex"}),
-grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_Tex"})
+grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_Tex"}),
+grass_atlas(data.grass_textures)
 {
     glm::vec4 tex_transform = glm::vec4(1,1,0,0);
 
@@ -102,22 +102,22 @@ void GrassRenderer2::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &s
 {
   if (models.empty())
     return;
-    
-    Shader &shader = to_shadow ? grassShadow : grass;
-    shader.use();
-    shader.uniform("projection", projection);
-    shader.uniform("view", view);
-    if (to_shadow)
-        shader.uniform("opaqueness",0.67f);
-    shader.texture("tex",grass_atlas.color());
-    for (int i=0;i<models.size();i++)
-    {
-        shader.uniform("inst_buf_offset",inst_offsets[i]);
 
-        glBindVertexArray(models[i]->vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i]->ibo);
-        //logerr("set IBO %d size %d",models[i]->ibo,models[i]->SIZE);
-        //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, instances_buffer);
-        glDrawElementsInstanced(GL_TRIANGLES, models[i]->SIZE, GL_UNSIGNED_INT, 0, inst_counts[i]);
-    }
+  Shader &shader = to_shadow ? grassShadow : grass;
+  shader.use();
+  shader.uniform("projection", projection);
+  shader.uniform("view", view);
+  if (to_shadow)
+    shader.uniform("opaqueness", 0.67f);
+  shader.texture("tex", grass_atlas.color());
+  for (int i = 0; i < models.size(); i++)
+  {
+    shader.uniform("inst_buf_offset", inst_offsets[i]);
+
+    glBindVertexArray(models[i]->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i]->ibo);
+    // logerr("set IBO %d size %d",models[i]->ibo,models[i]->SIZE);
+    // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, instances_buffer);
+    glDrawElementsInstanced(GL_TRIANGLES, models[i]->SIZE, GL_UNSIGNED_INT, 0, inst_counts[i]);
+  }
 }

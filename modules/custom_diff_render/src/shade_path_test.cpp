@@ -24,7 +24,7 @@ inline float Tan2Theta(const float3 &w) { return Sin2Theta(w) / Cos2Theta(w); }
 
 float rf01()
 {
-  return ((float)rand())/RAND_MAX;
+  return ((double)rand())/RAND_MAX;
 }
 float rf_11()
 {
@@ -257,7 +257,7 @@ float3 shade<SHADING_MODEL::PATH_TEST>(const Scene &scene, IRayTracer *m_pTracer
     float3 view_dir_local = sInfo.WorldToLocal(sInfo.wo);
     float3 next_ray_dir_local;
     float pdf;
-    float2 rnd = float2(((float)rand())/RAND_MAX, ((float)rand())/RAND_MAX);
+    float2 rnd = float2(((double)rand())/RAND_MAX, ((double)rand())/RAND_MAX);
 
     float3 bsdf_val = bsdf_sample_f_diffuse(sInfo, view_dir_local, &next_ray_dir_local, rnd, &pdf);//*::std::max(0.0f,dot(sInfo.n, light_dir));
 
@@ -271,7 +271,7 @@ float3 shade<SHADING_MODEL::PATH_TEST>(const Scene &scene, IRayTracer *m_pTracer
     if (bounce > RR_DEPTH) 
     {
       float q = ::std::max((float).05, 1 - intensity(beta));
-      if (((float)rand())/RAND_MAX < q)
+      if (((double)rand())/RAND_MAX < q)
         break;
       beta /= 1 - q;
     }

@@ -19,7 +19,7 @@ using LiteMath::normalize;
 
 using Img = LiteImage::Image2D<float3>;
 
-struct DScene;
+class DScene;
 
 float LossAndDiffLoss(const Img& b, const Img& a, Img& a_outDiff);
 

@@ -41,7 +41,7 @@ class HierarcialClusteringBase : public ClusteringBase
 {
 public:
     virtual bool clusterize(Block &settings, IntermediateClusteringData *data, std::vector<ClusterStruct> &result) override;
-    friend class Cluster;
+    friend struct Cluster;
 
 private:
     int get_typical(std::vector<Cluster *> &clusters);

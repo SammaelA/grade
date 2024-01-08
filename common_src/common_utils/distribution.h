@@ -10,6 +10,7 @@ class Distribution
 {
 public:
     Distribution(){};
+    virtual ~Distribution(){};
     virtual double get() = 0;
     virtual double *get_series(unsigned size) = 0;
 };
@@ -113,7 +114,7 @@ struct DistributionData
         DEL(ui_allocs);
         DEL(dg_allocs);
     }
-    ~DistributionData() { clear(); }
+    virtual ~DistributionData() { clear(); }
 };
 
 extern DistributionData basicData;

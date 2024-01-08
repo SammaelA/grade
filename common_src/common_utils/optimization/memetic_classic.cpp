@@ -136,18 +136,18 @@ namespace opt
       solutions = std::vector<Solution>(population_size, {std::vector<float>(min_X.size(), 0), 1000, 1000, 0});
       for (int i=0;i<population_size;i++)
         solutions[i].params = initialize();
-      
-        for (int i=st; i<solutions.size(); i++)
+
+      for (int i = st; i < solutions.size(); i++)
+      {
+        auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
+        solutions[i] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
+        if (res.first < best_result)
         {
-          auto res = local_search(solutions[i].params, start_search_iterations, start_search_learning_rate);
-          solutions[i] = Solution{res.second, res.first, 1e-3f / (res.first * res.first), 1};
-          if (res.first < best_result)
-          {
-            best_result = res.first;
-            best_params = res.second;
-            debug("%d new best %.4f\n", budget, res.first);
-          }
+          best_result = res.first;
+          best_params = res.second;
+          debug("%d new best %.4f\n", budget, res.first);
         }
+      }
       return;
     };
 

@@ -7,7 +7,7 @@ struct Block;
 class TextureManager
 {
 public:
-  friend class Texture;
+  friend struct Texture;
     const static int baseMipLevelCount = 1;
 
     Texture get(std::string name);

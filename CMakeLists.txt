@@ -36,7 +36,10 @@ set(CMAKE_HAVE_THREADS_LIBRARY 1)
 set(CMAKE_USE_WIN32_THREADS_INIT 0) 
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-attributes -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -pthread -Wall -Wno-unused-function \
+                     -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-result \
+                     -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wdisabled-optimization \
+                     -Wno-narrowing -Wno-attributes -Wno-sign-compare")
 
 #prepare common lists of options to use it when building targets
 set(COMMON_LINKER_FLAGS "-lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")

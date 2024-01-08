@@ -13,7 +13,6 @@ public:
                 Texture *debug_tex_ptr = nullptr);
     Model *flat_terrain;
 private:
-    float base_height = 0.0;
     Texture terrain_tex1;
     Texture terrain_tex2;
     Texture terrain_tex3;

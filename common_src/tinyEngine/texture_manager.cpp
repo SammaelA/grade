@@ -468,8 +468,8 @@ void TextureManager::save_bmp_directly(Texture &t, std::string name)
 }
 void TextureManager::delete_tex(Texture &t)
 {
-  if (t.texture == Texture::INVALID_ID)
-    return;
+    if (t.texture == Texture::INVALID_ID)
+      return;
     if (t.type == GL_TEXTURE_2D)
     {
         auto it = unnamed_textures.find(t.texture);

@@ -189,7 +189,7 @@ namespace upg
 
     void sort_and_calculate_fitness()
     {
-      std::sort(population.begin(), population.end(), [this](const Creature & a, const Creature & b) -> bool{    
+      std::sort(population.begin(), population.end(), [](const Creature & a, const Creature & b) -> bool{    
                 return a.loss < b.loss;});
       for (int i=0;i<population_size;i++)
         population[i].fitness = pos_fitness_function(i);

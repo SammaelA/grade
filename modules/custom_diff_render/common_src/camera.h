@@ -10,11 +10,11 @@ struct CamInfo
   origin(_origin),
   target(_target),
   up(_up),
-  width(w),
-  height(h),
   fov_rad(_fov_rad),
   zNear(_z_near),
-  zFar(_z_far)
+  zFar(_z_far),
+  width(w),
+  height(h)
   {
     mProj = LiteMath::perspectiveMatrix(fov_rad/LiteMath::DEG_TO_RAD, width/height, zNear, zFar);
     mWorldView = LiteMath::lookAt(origin, target, up);

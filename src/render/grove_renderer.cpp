@@ -15,10 +15,10 @@ GroveRenderer::GroveRenderer(const GrovePacked *_source, AABB2D _scene_bbox, con
 renderer({"simple_render.vs", "simple_render.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
 rendererInstancing({"simple_render_instancing.vs", "simple_render_instancing.fs"},
                    {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
-shadowRendererInstancing({"simple_render_instancing.vs", "depth_billboard_array.fs"},
-                   {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
 lodCompute({"lod_compute.comp"},{}),
 cellsCompute({"cells_compute.comp"},{}),
+shadowRendererInstancing({"simple_render_instancing.vs", "depth_billboard_array.fs"},
+                   {"in_Position", "in_Normal", "in_Tex", "in_Center_par", "in_Center_self", "in_Model"}),
 types(_types)
 {
     ts = Timestamp(print_perf);

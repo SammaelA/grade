@@ -4,7 +4,7 @@
 #include <functional>
 #include "common_utils/utility.h"
 class TextureManager;
-class Texture
+struct Texture
 {
   friend class TextureManager;
   static constexpr GLuint INVALID_ID = ~0u;

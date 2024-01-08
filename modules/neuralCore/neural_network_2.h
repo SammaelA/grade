@@ -16,6 +16,7 @@ namespace nn
     std::vector<TensorToken> weights;
     std::vector<TensorToken> dLoss_dWeights;
 
+    virtual ~Layer2() {};
     virtual void init() {};
     virtual int parameters_count() { return 0; }
     virtual TensorToken forward(const TensorToken &in) = 0;

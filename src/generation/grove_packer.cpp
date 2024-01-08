@@ -399,8 +399,8 @@ void GrovePacker::pack_layer(Block &settings, const GrovePackingParams &params, 
   if (br_cl_cnt != grove.instancedBranches.size())
     logerr("we have %d clusters, %d with branches and %d instanced branches",total_cl_cnt, br_cl_cnt, grove.instancedBranches.size());
 
-    if (cl)
-        delete cl;
+  if (cl)
+    delete cl;
 }
 
 void GrovePacker::recalculate_nodes(ClusterData &cl)

@@ -54,7 +54,7 @@ public:
   size_t SIZE = 4;
   glm::mat4 model = glm::mat4(1.0);
 
-  virtual int get_size() {return positions.size()/3;}
+  int get_size() {return positions.size()/3;}
 
   void bindf(int index, int count, int size, float* data)
   {

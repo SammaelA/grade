@@ -3,8 +3,8 @@
 
 NonDiffRender::NonDiffRender():
   render_silhouette({"render_silhouette.vs", "render_silhouette.fs"}, {"in_Position"}),
-  diff_loss("diff_loss.fs"),
-  diff_loss_sum({"diff_loss_sum.comp"},{})
+    diff_loss_sum({"diff_loss_sum.comp"},{}),
+  diff_loss("diff_loss.fs")
   {
     fbo = create_framebuffer();
 

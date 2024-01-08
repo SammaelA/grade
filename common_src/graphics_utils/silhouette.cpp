@@ -4,12 +4,12 @@
 #include <vector>
 
 SilhouetteExtractor::SilhouetteExtractor(float _blur_sigma, float low_thr, float high_thr, float _color_thr):
+blur_sigma(_blur_sigma),
+color_thr(_color_thr),
 gauss(MAX(0.1, _blur_sigma)),
 detect_object("detect_object.fs"),
 blur_mask_edges("blur_mask_edges.fs"),
-remove_holes("remove_holes.fs"),
-blur_sigma(_blur_sigma),
-color_thr(_color_thr)
+remove_holes("remove_holes.fs")
 {
 
 }

@@ -14,8 +14,8 @@ class HalfGPUCustomDiffRender : public IDiffRender
 public:
   HalfGPUCustomDiffRender():
   render_silhouette({"render_silhouette.vs", "render_silhouette.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-  diff_loss("diff_loss.fs"),
-  diff_loss_sum({"diff_loss_sum.comp"},{})
+    diff_loss_sum({"diff_loss_sum.comp"},{}),
+  diff_loss("diff_loss.fs")
   {
     fbo = create_framebuffer();
 

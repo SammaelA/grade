@@ -8,7 +8,7 @@
 #include "common_utils/parameter.h"
 #include "save_utils/serialization.h"
 
-class Texture;
+struct Texture;
 struct Joint;
 struct Segment;
 struct Branch;

@@ -19,6 +19,6 @@ private:
   int width, height;
   GLuint cubeFBO;
   Texture tex, cube;
-  Shader cube_shader;
   Cube cube_model;
+  Shader cube_shader;
 };

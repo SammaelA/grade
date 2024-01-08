@@ -277,9 +277,9 @@ namespace scene_gen
                   const std::vector<TreeTypeData> &_types, RawTreesDatabase &_database,
                   GroveMask &_mask, int _cells_x, int _cells_y, int _id) : ctx(_ctx),
                                                                   cells(_cells),
+                                                                  types(_types),
                                                                   rawTreesDatabase(_database),
-                                                                  mask(_mask),
-                                                                  types(_types)
+                                                                  mask(_mask)
     {
       cells_x = _cells_x;
       cells_y = _cells_y;

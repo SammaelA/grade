@@ -7,8 +7,8 @@ static glm::vec2 calcFocalLen(float fovRad, float width, float height)
     return res;
 }
 HBAORenderer::HBAORenderer():
-              shader("hbao.fs"),
-              noise(engine::textureManager->get("colored_noise"))
+              noise(engine::textureManager->get("colored_noise")),
+              shader("hbao.fs")
 {
 
 }

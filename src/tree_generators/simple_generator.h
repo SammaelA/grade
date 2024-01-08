@@ -43,7 +43,6 @@ private:
     void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
                        float base_r, float leaves_chance);
     SimpleTreeStructureParameters params;
-    Heightmap *h;
     std::vector<glm::vec3> tree_positions;
     std::vector<const TreeTypeData *> types;
 };

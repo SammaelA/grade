@@ -7,14 +7,17 @@ extern int _stat_execution_times;
 
 class TensorProcessorImpl
 {
-protected:
+public:
   friend class nn::TensorProcessor;
   using Command = nn::TensorProgram::Command;
   using Variable = nn::TensorProgram::Variable;
 
+  TensorProcessorImpl(){};
+  virtual ~TensorProcessorImpl(){};
+
+protected:
   std::vector<float> memory;
 
-  TensorProcessorImpl(){};
   virtual void allocate_memory(unsigned size);
   virtual void set_input(const float* in __attribute__((size("size"))), unsigned offset, unsigned size);
   virtual void get_output(float* out __attribute__((size("size"))), unsigned offset, unsigned size);

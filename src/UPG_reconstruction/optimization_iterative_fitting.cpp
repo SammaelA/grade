@@ -244,7 +244,7 @@ namespace upg
 
     void sort_and_calculate_fitness()
     {
-      std::sort(population.begin(), population.end(), [this](const Creature & a, const Creature & b) -> bool{    
+      std::sort(population.begin(), population.end(), [](const Creature & a, const Creature & b) -> bool{    
                 return a.loss < b.loss;});
       for (int i=0;i<population_size;i++)
         population[i].fitness = pos_fitness_function(i);
@@ -593,8 +593,6 @@ namespace upg
     std::vector<int> position_indices;   //indices in OptVector that represents positions of primitives (one for every non-fixed primitive)
     std::vector<int> gen_to_opt_indices; //-1 mean that this parameter is fixed and shouldn't be optimized
     std::vector<int> opt_to_gen_indices; //all elements >= 0
-    int opt_params_count = 0;
-    int gen_params_count = 0;            //always >= opt_params_count 
 
     //generator-specific stuff
     UPGStructure structure;

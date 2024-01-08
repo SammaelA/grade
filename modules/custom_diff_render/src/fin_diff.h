@@ -2,7 +2,7 @@
 #include "utils.h"
 namespace diff_render
 {
-struct DScene;
+class DScene;
 struct TriangleMesh;
 struct Scene;
 

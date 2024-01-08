@@ -27,10 +27,10 @@ TextureAtlas::TextureAtlas():
 }
 TextureAtlas::TextureAtlas(const TextureAtlas &atlas):
 Countable(1),
-mipMapRenderer(atlas.mipMapRenderer),
-copy(atlas.copy),
 colorTex(atlas.colorTex),
-normalTex(atlas.normalTex)
+normalTex(atlas.normalTex),
+mipMapRenderer(atlas.mipMapRenderer),
+copy(atlas.copy)
 {
     curNum = atlas.curNum;
     width = atlas.width;

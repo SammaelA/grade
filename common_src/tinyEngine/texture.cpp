@@ -56,13 +56,13 @@
           GLenum _format, std::string _origin):
   texture(_texture),
   type(_type),
+  format(_format),
+  origin(_origin),
   W(_W),
   H(_H),
   layers(_layers),
   tag(_tag),
-  mip_levels(_mip_levels),
-  format(_format),
-  origin(_origin)
+  mip_levels(_mip_levels)
   {
     if (texture != INVALID_ID)
     {

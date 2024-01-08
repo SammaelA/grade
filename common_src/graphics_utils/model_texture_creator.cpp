@@ -10,11 +10,11 @@
 ModelTex::ModelTex():
 UV({"uv_coords.vs", "uv_coords.fs"}, {"in_Position", "in_Normal", "in_Tex"}), 
 tex_get({"tex_from_uv.comp"},{}),
-photo_transform("copy.fs"),
+copy("copy.fs"),
 texture_postprocess("texture_postprocess.fs"),
 tex_com("tex_com_2.fs"),
 texs_div("tex_div_tex.fs"),
-copy("copy.fs")
+photo_transform("copy.fs")
 {
   //create FBO and SSBO
   fbo = create_framebuffer();

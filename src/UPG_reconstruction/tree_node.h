@@ -5,7 +5,7 @@ namespace upg
 {
   const int MESH_REPEATS = 4;
   const int SPINS = 16;
-  struct UniversalGenJacobian;
+  class UniversalGenJacobian;
   struct UniversalGenMesh;
   class GenNode
   {
