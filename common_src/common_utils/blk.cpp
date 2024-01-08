@@ -1385,8 +1385,7 @@ void Block::set_value(const std::string &name, const Block::Value &value)
     int id = get_id(name);
     if (id >= 0)
     {
-        values[id].clear();
-        values[id] = value;
+        values[id].copy(value);
     }
     else 
         add_value(name,value);
