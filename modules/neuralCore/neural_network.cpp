@@ -225,7 +225,6 @@ namespace nn
     {
       // shape-insensitive layers
       if (layers[i]->input_shape.empty() || layers[i - 1]->output_shape.empty())
-        ;
       continue;
 
       if (layers[i]->input_shape.size() != layers[i - 1]->output_shape.size())

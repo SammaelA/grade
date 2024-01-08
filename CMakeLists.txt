@@ -5,7 +5,7 @@ message("Building project")
 
 #some examples how to use this file
 #cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=ON  -DMODULE_DR=ON  -DCLANG_VERSION=14
-#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=OFF -DMODULE_DR=OFF
+#cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=OFF -DMODULE_DR=OFF -DMODULE_VULKAN=ON
 #a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
 option(TREE_PROJECT "Build Tree Project" OFF)
@@ -17,6 +17,7 @@ option(MODULE_HYDRA "include Hydra module in project" OFF)
 option(MODULE_ENZYME "use Enzyme automatic differentiation tool" OFF)
 option(MODULE_DR "include Custom differentiable render in project" OFF)
 option(MODULE_NN "include neural networks module in project" ON)
+option(MODULE_VULKAN "include GPU support for neural networks" OFF)
 
 #common dependencies for all projects
 find_package(SDL2 REQUIRED)
@@ -35,7 +36,7 @@ set(CMAKE_HAVE_THREADS_LIBRARY 1)
 set(CMAKE_USE_WIN32_THREADS_INIT 0) 
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wunknown-attributes -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -pthread -Wno-attributes -Wno-sign-compare -Wno-int-to-pointer-cast -Wno-register -Wreturn-type -Wno-narrowing -Wno-unused-result -Wno-unused-parameter")
 
 #prepare common lists of options to use it when building targets
 set(COMMON_LINKER_FLAGS "-lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")
@@ -137,6 +138,49 @@ endif()
                                  modules/neuralCore/siren2.cpp)
 #else()
 #endif()
+
+#####################################################################################################################################################
+
+if (MODULE_VULKAN)
+  message("Module VULKAN               ON")
+  list(APPEND CMAKE_MODULE_PATH "modules/neuralCore/")
+  set(SLICER_DIR "/home/sammael/kernel_slicer" CACHE STRING "Custom diff render location")
+  
+  find_package(OpenMP)
+  find_package(Vulkan)
+  find_package(FreeImage REQUIRED)
+
+  set(MODULES_INCLUDE_DIRS ${MODULES_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIR}
+                                                   ${FREEIMAGE_INCLUDE_DIRS}
+                                                   ${SLICER_DIR}/apps/vkutils
+                                                   ${SLICER_DIR}/apps/volk
+                                                   ${SLICER_DIR}/apps/LiteMath
+                                                   ${SLICER_DIR}/apps/utils)
+
+  link_directories(${SLICER_DIR}/apps/volk)
+
+  add_compile_definitions(USE_GPU)
+  add_compile_definitions(USE_VOLK)
+
+  #if (MODULE_NN)
+    set(VKGEN_SOURCE modules/neuralCore/tensor_processor_impl_gpu.cpp 
+                     modules/neuralCore/tensor_processor_impl_gpu_ds.cpp
+                     modules/neuralCore/tensor_processor_impl_gpu_init.cpp)
+  #else()
+  #endif()
+  set(VKUTILS_SOURCE ${SLICER_DIR}/apps/vkutils/vk_utils.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_copy.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_buffers.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_images.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_context.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_alloc_simple.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_pipeline.cpp
+                     ${SLICER_DIR}/apps/vkutils/vk_descriptor_sets.cpp)   
+
+  set(MODULES_SRC ${MODULES_SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
+
+  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} ${FREEIMAGE_LIBRARIES} OpenMP::OpenMP_CXX volk dl)
+endif()
 
 #####################################################################################################################################################
 #####################################################################################################################################################

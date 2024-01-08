@@ -252,6 +252,7 @@ namespace upg
 
   void neural_sdf_test()
   {
+    nn::TensorProcessor::init("GPU");
     unsigned count = 25000;
 
     SceneDesc scene = scene_4_boxes();

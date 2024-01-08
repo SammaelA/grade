@@ -2,52 +2,64 @@ cmake_minimum_required(VERSION 3.5)
 
 project(nn_test)
 set(CMAKE_CXX_STANDARD 17)
-include_directories(".")
+option(MODULE_VULKAN "include GPU support for neural networks" ON)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS ${CMAKE_CURRENT_SOURCE_DIR})
+set(MODULES_SRC "")
+set(MODULES_INCLUDE_DIRS "modules")
+set(MODULES_LIBRARIES "")
+set(MODULES_COMPILE_FLAGS "")
 
-find_package(OpenMP)
-find_package(Vulkan)
-find_package(FreeImage REQUIRED)
-include_directories(${Vulkan_INCLUDE_DIR})
-include_directories(${FREEIMAGE_INCLUDE_DIRS})
-include_directories("/home/sammael/kernel_slicer/apps/vkutils"
-                    "/home/sammael/kernel_slicer/apps/volk"
-                    "/home/sammael/kernel_slicer/apps/LiteMath"
-                    "/home/sammael/kernel_slicer/apps/utils")
-link_directories("/home/sammael/kernel_slicer/apps/volk")
+if (MODULE_VULKAN)
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+  set(SLICER_DIR "/home/sammael/kernel_slicer" CACHE STRING "Custom diff render location")
+  
+  find_package(OpenMP)
+  find_package(Vulkan)
+  find_package(FreeImage REQUIRED)
 
-add_compile_definitions(USE_GPU)
-add_compile_definitions(USE_VOLK)
+  set(MODULES_INCLUDE_DIRS ${MODULES_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIR}
+                                                   ${FREEIMAGE_INCLUDE_DIRS}
+                                                   ${SLICER_DIR}/apps/vkutils
+                                                   ${SLICER_DIR}/apps/volk
+                                                   ${SLICER_DIR}/apps/LiteMath
+                                                   ${SLICER_DIR}/apps/utils)
 
-set(VKGEN_SOURCE tensor_processor_impl_gpu.cpp 
-                 tensor_processor_impl_gpu_ds.cpp
-                 tensor_processor_impl_gpu_init.cpp)
+  link_directories(${SLICER_DIR}/apps/volk)
 
-set(VKUTILS_SOURCE /home/sammael/kernel_slicer/apps/vkutils/vk_utils.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_copy.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_buffers.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_images.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_context.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_alloc_simple.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_pipeline.cpp
-                   /home/sammael/kernel_slicer/apps/vkutils/vk_descriptor_sets.cpp)   
+  add_compile_definitions(USE_GPU)
+  add_compile_definitions(USE_VOLK)
+
+  set(VKGEN_SOURCE tensor_processor_impl_gpu.cpp 
+                  tensor_processor_impl_gpu_ds.cpp
+                  tensor_processor_impl_gpu_init.cpp)
+
+  set(VKUTILS_SOURCE ${SLICER_DIR}/apps/vkutils/vk_utils.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_copy.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_buffers.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_images.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_context.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_alloc_simple.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_pipeline.cpp
+                    ${SLICER_DIR}/apps/vkutils/vk_descriptor_sets.cpp)   
+
+  set(MODULES_SRC ${MODULES_SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
+
+  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} ${FREEIMAGE_LIBRARIES} OpenMP::OpenMP_CXX volk dl)
+endif()
 
 set(SRC
-    tensors.cpp
-    neural_network.cpp
-    siren.cpp
-    nn_test.cpp
-    tensor_processor.cpp
-    tensor_processor_impl.cpp
-    tensor_compiler.cpp
-    neural_network_2.cpp
-    tensor_token.cpp
-    siren2.cpp
-    )
-set(CMAKE_CXX_FLAGS "-g -O3 -Wno-attributes -fopenmp")
+      tensors.cpp
+      neural_network.cpp
+      siren.cpp
+      nn_test.cpp
+      tensor_processor.cpp
+      tensor_processor_impl.cpp
+      tensor_compiler.cpp
+      neural_network_2.cpp
+      tensor_token.cpp
+      siren2.cpp)  
 
-add_executable(nn_test ${SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
-target_include_directories(nn_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(nn_test LINK_PUBLIC ${Vulkan_LIBRARY} ${FREEIMAGE_LIBRARIES} OpenMP::OpenMP_CXX volk dl)
+set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -Wno-attributes -Wno-sign-compare")
+add_executable(nn_test ${MODULES_SRC} ${SRC})
+target_include_directories(nn_test PUBLIC ${MODULES_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(nn_test ${MODULES_LIBRARIES})

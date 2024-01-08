@@ -56,7 +56,7 @@ namespace nn
 
   FullIndex linear_to_full_index(const TensorView &t, IndexType index)
   {
-    FullIndex full_index;
+    FullIndex full_index = {0,0,0,0};
     for (int i = 0; i < t.Dim; i++)
     {
       full_index[i] = index % t.scheme[i].size;
