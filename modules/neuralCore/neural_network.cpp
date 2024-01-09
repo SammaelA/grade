@@ -142,7 +142,7 @@ namespace nn
     }
 
     get_evaluate_prog();
-    print_info();
+    //print_info();
     initialized = true;
   }
 
@@ -328,7 +328,7 @@ namespace nn
   }
 
   void NeuralNetwork::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                             int batch_size, int iterations, Opt optimizer, Loss loss, float lr)
+                             int batch_size, int iterations, Opt optimizer, Loss loss, float lr, bool verbose)
   {
     initialize();
 
@@ -367,7 +367,7 @@ namespace nn
       TensorProcessor::execute();
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
-      if (it % 100 == 0)
+      if (verbose && it % 100 == 0)
         printf("[%d/%d] Loss = %f\n", it, iterations, loss);
 
       if (DEBUG)
@@ -387,7 +387,6 @@ namespace nn
       }
     }
     TensorProcessor::get_output("W", weights.data(), weights.size());
-    TensorProcessor::print_execution_stat();
   }
 
 }

@@ -84,7 +84,7 @@ namespace nn
     void print_info();
     TensorProgram get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-               int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f);
+               int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f, bool verbose = false);
     void get_evaluate_prog();
     void evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples = -1);
     //float test(const TensorView &input, const TensorView &target_output, Loss loss);

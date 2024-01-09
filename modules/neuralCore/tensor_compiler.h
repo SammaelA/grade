@@ -14,7 +14,7 @@ namespace nn
     constexpr static int MAX_DIM = 4;
 
     void start_program();
-    TensorProgram finish_program();
+    TensorProgram finish_program(bool print_program = false);
     void input(const TensorToken &t, std::string name);
     void output(const TensorToken &t, std::string name);
 

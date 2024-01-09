@@ -41,7 +41,6 @@ namespace nn
   void TensorCompiler::start_program()
   {
     TensorToken::tp = this;
-    printf("started recording tensor program\n");
     vars.emplace_back();
     add_command(TensorProgram::NOOP);
   }
@@ -517,14 +516,8 @@ namespace nn
     return total_memory;
   }
 
-  TensorProgram TensorCompiler::finish_program()
+  TensorProgram TensorCompiler::finish_program(bool print_program)
   {
-    std::vector<std::string> names = {"NOOP", "ADD", "MUL", "SUB", "DIV", "EXP", "POW", "SUM", "O_SUM", "MATMUL_T",
-                                      "MOV", "FTT", "FILL", "COPY", "TRANSP", "OUTER_P",
-                                      "", "", "", "", "",
-                                      "", "", "", "", ""};
-
-
     optimize_program();
     unsigned total_memory_req = calculate_memory_layout();
 
@@ -542,43 +535,45 @@ namespace nn
       pr.vars[i].total_size = vars[i].total_size;
     }
 
-    printf("finished recording tensor program\n");
-    printf("requires %d bytes of memory\n", (int)(sizeof(float)*total_memory_req));
-
-    printf("%d variables\n", (int)vars.size());
-    for (unsigned vid = 0; vid < vars.size(); vid++)
+    if (print_program)
     {
-      auto &var = vars[vid];
-      printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
-             var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
-      if (var.is_alias)
+      printf("finished recording tensor program\n");
+      printf("requires %d bytes of memory\n", (int)(sizeof(float)*total_memory_req));
+
+      printf("%d variables\n", (int)vars.size());
+      for (unsigned vid = 0; vid < vars.size(); vid++)
       {
-        printf("alias of %2u [%2u %2u]", var.alias_master_id, var.alias_range_from, var.alias_range_to);
+        auto &var = vars[vid];
+        printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
+              var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
+        if (var.is_alias)
+        {
+          printf("alias of %2u [%2u %2u]", var.alias_master_id, var.alias_range_from, var.alias_range_to);
+        }
+        else if (var.aliases.size() > 0)
+        {
+          printf("master of { ");
+          for (auto &aid : var.aliases)
+            printf("%2u ", aid);
+          printf("}");
+        }
+
+
+        printf("\n");
       }
-      else if (var.aliases.size() > 0)
+
+      printf("%d commands\n", (int)commands.size());
+      unsigned cid = 0;
+      for (auto &cmd : commands)
       {
-        printf("master of { ");
-        for (auto &aid : var.aliases)
-          printf("%2u ", aid);
-        printf("}");
+        const char *cmd_name = TensorProgram::cmd_properties[cmd.type].name.c_str();
+        if (cmd.type == TensorProgram::FTT)
+          printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, cmd_name, cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
+        else
+          printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
+        cid++;
       }
-
-
-      printf("\n");
     }
-
-    printf("%d commands\n", (int)commands.size());
-    unsigned cid = 0;
-    for (auto &cmd : commands)
-    {
-      const char *cmd_name = TensorProgram::cmd_properties[cmd.type].name.c_str();
-      if (cmd.type == TensorProgram::FTT)
-        printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, cmd_name, cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
-      else
-        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
-      cid++;
-    }
-
     return pr;
   }
 
