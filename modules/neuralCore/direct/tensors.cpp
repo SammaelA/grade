@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 
-namespace nn
+namespace nnd
 {
   TensorView::TensorView(ValueType *data, const std::vector<IndexType> &sizes) : TensorView(data, get_scheme(sizes))
   {

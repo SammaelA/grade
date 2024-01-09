@@ -48,16 +48,20 @@ if (MODULE_VULKAN)
 endif()
 
 set(SRC
-      tensors.cpp
-      neural_network.cpp
-      siren.cpp
-      nn_test.cpp
+      direct/tensors.cpp
+      direct/neural_network.cpp
+      direct/siren.cpp
+      direct/nnd_tests.cpp
+      
       tensor_processor.cpp
       tensor_processor_impl.cpp
       tensor_compiler.cpp
-      neural_network_2.cpp
+      neural_network.cpp
       tensor_token.cpp
-      siren2.cpp)  
+      siren.cpp
+      nn_tests.cpp
+      
+      standalone_tests.cpp)  
 
 set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -g -O3 -W -Wno-attributes -Wno-sign-compare")
 add_executable(nn_test ${MODULES_SRC} ${SRC})

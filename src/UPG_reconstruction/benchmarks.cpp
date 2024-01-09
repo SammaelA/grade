@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <functional>
 #include <chrono>
-#include "neuralCore/siren2.h"
+#include "neuralCore/siren.h"
 
 namespace upg
 {
@@ -271,7 +271,7 @@ namespace upg
       positions_f.push_back(p.z);
     }
 
-    nn::Siren2 network(nn::Siren2::Type::SDF, 2, 32);
+    nn::Siren network(nn::Siren::Type::SDF, 2, 32);
     network.train(positions_f, distances, 512, 5000);
   
     CameraSettings camera;

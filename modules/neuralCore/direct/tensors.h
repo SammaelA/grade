@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <array>
 
-namespace nn
+namespace nnd
 {
   using AxisIdType = uint8_t;
   using IndexType = uint32_t;

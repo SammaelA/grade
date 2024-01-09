@@ -130,15 +130,13 @@ endif()
 
 #if (MODULE_NN)
   message("Module NEURALCORE           ON")
-  set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensors.cpp 
-                                 modules/neuralCore/neural_network.cpp
-                                 modules/neuralCore/siren.cpp
-                                 modules/neuralCore/tensor_processor.cpp
+  set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensor_processor.cpp
                                  modules/neuralCore/tensor_processor_impl.cpp
                                  modules/neuralCore/tensor_compiler.cpp
-                                 modules/neuralCore/neural_network_2.cpp
+                                 modules/neuralCore/neural_network.cpp
                                  modules/neuralCore/tensor_token.cpp
-                                 modules/neuralCore/siren2.cpp)
+                                 modules/neuralCore/siren.cpp
+                                 modules/neuralCore/nn_tests.cpp)
 #else()
 #endif()
 

@@ -3,7 +3,7 @@
 #include "sdf_node.h"
 #include "tinyEngine/camera.h"
 #include "common_utils/bbox.h"
-#include "neuralCore/siren2.h"
+#include "neuralCore/siren.h"
 
 namespace upg
 {
@@ -13,6 +13,6 @@ namespace upg
   void sdf_to_point_cloud_with_dist(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
                                     std::vector<float> *distances);
   Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert = true);
-  Texture render_neural_sdf(nn::Siren2 &sdf, AABB region_bbox, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert = true);
+  Texture render_neural_sdf(nn::Siren &sdf, AABB region_bbox, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert = true);
   float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf);
 }
