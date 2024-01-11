@@ -16,7 +16,6 @@ namespace nn
     enum CommandType
     {
       NOOP,     // do nothing
-      FTT,      // C = as_float(arg0)
 
       MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
       FILL,     // fill(C, as_float(arg0))
@@ -85,10 +84,13 @@ namespace nn
       unsigned sizes[4];
     };
 
+    constexpr static unsigned CONSTS_VAR_ID = 1;
+
     static std::vector<CmdProperties> cmd_properties;
 
     std::vector<Command> commands;
     std::vector<Variable> vars;
+    std::vector<float> constants;
 
     unsigned total_memory_req;
 

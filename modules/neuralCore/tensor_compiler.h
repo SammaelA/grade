@@ -61,6 +61,7 @@ namespace nn
     std::vector<Variable> vars;
     std::vector<TensorProgram::Command> commands;
     
+    std::vector<float> constants;
     std::map<std::string, unsigned> input_vars;  //name -> var_id
     std::map<std::string, unsigned> output_vars; //name -> var_id
 

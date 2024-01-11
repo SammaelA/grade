@@ -21,7 +21,23 @@ namespace nn
   }
   void TensorCompiler::ftt(unsigned id, float val)
   {
-    commands.push_back({TensorProgram::FTT, {0, 0, id, *((unsigned *)(&val))}});
+    unsigned constant_id = constants.size();
+    for (int i=0;i<constants.size();i++)
+    {
+      //to prevent any rounding errors we merge only exactly equal constants
+      if (val == constants[i])
+      {
+        constant_id = i;
+        break;
+      }
+    }
+    if (constant_id == constants.size())
+    {
+      constants.push_back(val);
+      vars[TensorProgram::CONSTS_VAR_ID].total_size = constants.size();
+      vars[TensorProgram::CONSTS_VAR_ID].sizes[0] = constants.size();
+    }
+    commands.push_back({TensorProgram::COPY, {TensorProgram::CONSTS_VAR_ID, 0, id, constant_id, 0, 1u}});
   }
 
   void TensorCompiler::input(const TensorToken &t, std::string name)
@@ -41,7 +57,18 @@ namespace nn
   void TensorCompiler::start_program()
   {
     TensorToken::tp = this;
-    vars.emplace_back();
+
+    vars.clear();
+    commands.clear();
+    constants.clear();
+    input_vars.clear();
+    output_vars.clear();
+
+    vars.emplace_back();//leave 0 variable empty to let 0 indicate no argument in command
+    vars.emplace_back();//reserve first variable for array of all constants
+    vars[TensorProgram::CONSTS_VAR_ID].Dim = 1;
+    vars[TensorProgram::CONSTS_VAR_ID].is_input = true;
+    vars[TensorProgram::CONSTS_VAR_ID].is_output = true;
     add_command(TensorProgram::NOOP);
   }
 
@@ -523,6 +550,7 @@ namespace nn
 
     TensorProgram pr;
     pr.commands = commands;
+    pr.constants = constants;
     pr.output_vars = output_vars;
     pr.input_vars = input_vars;
     pr.total_memory_req = total_memory_req;
@@ -567,10 +595,7 @@ namespace nn
       for (auto &cmd : commands)
       {
         const char *cmd_name = TensorProgram::cmd_properties[cmd.type].name.c_str();
-        if (cmd.type == TensorProgram::FTT)
-          printf("Cmd %2u: %-8s %2u %2u %2u - %.8f\n", cid, cmd_name, cmd.args[0], cmd.args[1], cmd.args[2], *((float*)&cmd.args[3]));
-        else
-          printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
+        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
         cid++;
       }
     }

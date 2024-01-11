@@ -74,9 +74,6 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::MOV:
       kernel1D_copy(memory.data(), A.total_size, 0, 0, A, C);
       break;
-    case nn::TensorProgram::FTT:
-      kernel1D_fill(memory.data(), C.total_size, C, *((float *)(&arg0)));
-      break;
     case nn::TensorProgram::FILL:
       kernel1D_fill(memory.data(), C.total_size, C, *((float *)(&arg0)));
       break;

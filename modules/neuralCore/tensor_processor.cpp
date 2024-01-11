@@ -13,7 +13,6 @@ namespace nn
   std::vector<TensorProgram::CmdProperties> TensorProgram::cmd_properties =
   {
     {NOOP     , "NOOP"     , AUXILIARY     , SELF_APPLICABLE_NO },
-    {FTT      , "FTT"      , AUXILIARY     , SELF_APPLICABLE_NO },
 
     {MOV      , "MOV"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {FILL     , "FILL"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
@@ -73,6 +72,11 @@ namespace nn
     proc->input_prepared = {};
     for (auto &p : proc->program.input_vars)
       proc->input_prepared[p.first] = false;
+
+    if (proc->program.constants.size() > 0)
+      proc->pImpl->set_input(proc->program.constants.data(), 
+                             proc->program.vars[TensorProgram::CONSTS_VAR_ID].offset,
+                             proc->program.vars[TensorProgram::CONSTS_VAR_ID].total_size);
 
     _stat_execution_times = 0;
     _stat_time_cmd_id  = std::vector<float>(nn::TensorProgram::cmd_properties.size(), 0.0f);
