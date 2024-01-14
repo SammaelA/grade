@@ -52,8 +52,8 @@ namespace nn
     void reset_alias_rec(unsigned alias_id, unsigned master_id, unsigned base_offset);
     void set_alias(unsigned alias_id, unsigned master_id, unsigned from, unsigned to);
     bool optimize_unused_cycle();
-    void optimize_renaming_moves();
-    void optimize_self_applicable_commands();
+    bool optimize_renaming_moves();
+    bool optimize_self_applicable_commands();
     void optimize_copy_to_aliases();
     void optimize_program();
     unsigned calculate_memory_layout();

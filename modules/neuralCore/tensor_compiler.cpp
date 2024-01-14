@@ -246,8 +246,9 @@ namespace nn
     reset_alias_rec(alias_id, master_id, vars[alias_id].alias_range_from);
   }
 
-  void TensorCompiler::optimize_renaming_moves()
+  bool TensorCompiler::optimize_renaming_moves()
   {
+    bool made_change = false;
     for (unsigned i=1;i<commands.size();i++)
     {
       if (commands[i].type == TensorProgram::NOOP)
@@ -261,7 +262,7 @@ namespace nn
       bool last_A = lu[A] <= i && lm[A] <= i;
       bool first_C = fu[C] >= i && fm[C] >= i;
       bool same_scheme = have_same_scheme(vars[A], vars[C]);
-      if ((is_mov || is_full_copy) && last_A && first_C && same_scheme)
+      if ((is_mov || is_full_copy) && last_A && same_scheme)
       {
         //this command only renames variable, no operation is needed
         commands[i].type = TensorProgram::NOOP;
@@ -279,6 +280,7 @@ namespace nn
           if (commands[j].args[2] == C)
             commands[j].args[2] = A;
         }
+        made_change = true;
       }
       else if (is_mov)
       {
@@ -289,10 +291,12 @@ namespace nn
         commands[i].args[5] = vars[A].total_size;
       }
     }
+    return made_change;
   }
 
-  void TensorCompiler::optimize_self_applicable_commands()
+  bool TensorCompiler::optimize_self_applicable_commands()
   {
+    bool made_change = false;
     for (unsigned i=1;i<commands.size();i++)
     {
       if (commands[i].type == TensorProgram::NOOP)
@@ -330,8 +334,10 @@ namespace nn
           if (commands[j].args[2] == C)
             commands[j].args[2] = rp;
         }
+        made_change = true;
       }
     }
+    return made_change;
   }
 
   void TensorCompiler::optimize_copy_to_aliases()
@@ -505,6 +511,13 @@ namespace nn
           set_alias(A, C, from, to);
           //printf("2 %u can be an alias of %u\n", A, master_id);
         }
+        else if (prevUA(master_id, i, from, to) == modifications[A][0].cmd_id && 
+                 is_self_applicable_command(commands[modifications[A][0].cmd_id].type))
+        {
+          printf("modific %s\n", TensorProgram::cmd_properties[commands[modifications[A][0].cmd_id].type].name.c_str());
+          commands[i].type = TensorProgram::NOOP;
+          set_alias(A, C, from, to);
+        }
       }
     }
     };
@@ -517,10 +530,16 @@ namespace nn
   {
     //initial optimization
     //removes redundant MOV operations
-    while (optimize_unused_cycle());
-    calculate_variable_usage_intervals();
-    optimize_renaming_moves();
-    optimize_self_applicable_commands();
+    bool has_change = true;
+    while (has_change)
+    {
+      has_change = false;
+      has_change = has_change || optimize_unused_cycle();
+      calculate_variable_usage_intervals();
+      has_change = has_change || optimize_renaming_moves();
+      has_change = has_change || optimize_self_applicable_commands();
+      //printf("OPTIMIZE!!!\n");
+    }
     compactify();
     optimize_copy_to_aliases();
     remove_noop();
