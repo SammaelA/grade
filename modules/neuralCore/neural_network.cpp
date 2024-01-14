@@ -209,10 +209,9 @@ namespace nn
       t = l->forward(t);
     output = t;
     
-    compiler.input(w, "W");
+    compiler.inout(w, "W");
     compiler.input(input, "In");
     compiler.output(output, "Out");
-    compiler.output(w, "W"); //prevent weights to be overwritten during program execution
     evaluate_prog = compiler.finish_program();
   }
 
@@ -227,7 +226,7 @@ namespace nn
 
     TensorToken input = TensorToken(i_shape); compiler.input(input, "In");
     TensorToken target_output = TensorToken(o_shape); compiler.input(target_output, "Out");
-    TensorToken w = TensorToken(total_params); compiler.input(w, "W");
+    TensorToken w = TensorToken(total_params); compiler.inout(w, "W");
     
     unsigned offset = 0;
     for (auto &l : layers)
@@ -275,8 +274,8 @@ namespace nn
     }
 
     //Adam optimizer
-    TensorToken V = TensorToken(total_params); compiler.input(V, "V");
-    TensorToken S = TensorToken(total_params); compiler.input(S, "S");
+    TensorToken V = TensorToken(total_params); compiler.inout(V, "V");
+    TensorToken S = TensorToken(total_params); compiler.inout(S, "S");
     TensorToken iter = TensorToken(1); compiler.input(iter, "iter");
     TensorToken beta_1 = 0.9f;
     TensorToken beta_2 = 0.999f;
@@ -297,9 +296,6 @@ namespace nn
     TensorToken Sh = S / (one - TensorToken::pow(beta_2, iter + one));
     w -= (Vh*lr)/(TensorToken::pow(Sh, 0.5f) + eps);
     
-    compiler.output(V, "V");
-    compiler.output(S, "S");
-    compiler.output(w, "W");
     compiler.output(l, "loss");
     if (DEBUG)
       compiler.output(grad, "grad");

@@ -22,10 +22,10 @@ namespace nn
   }
 
   void Siren::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                    int batch_size, int iterations)
+                    int batch_size, int iterations, bool verbose)
   {
     NeuralNetwork::train(inputs, outputs, batch_size, iterations, 
-                          NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.0001f);
+                          NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.0001f, verbose);
   }
 
   float Siren::get(float x, float y)

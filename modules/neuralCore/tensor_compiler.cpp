@@ -54,6 +54,12 @@ namespace nn
     vars[t.id].is_output = true;
   }
 
+  void TensorCompiler::inout(const TensorToken &t, std::string name)
+  {
+    input(t, name);
+    output(t, name);
+  }
+
   void TensorCompiler::start_program()
   {
     TensorToken::tp = this;

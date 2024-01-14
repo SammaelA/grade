@@ -58,10 +58,13 @@ namespace nn
     Dim = other.Dim;
     for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
       sizes[i] = other.sizes[i];
-    if (!same_size) // TODO: do something more clear for end user
+    
+    //reassigning tensor token. It means that the same variable will have another tensor_id
+    if (!same_size)
     {
+      assert(!(tp->vars[id].is_input && tp->vars[id].is_output)); //it wil mess up your input/output declarations!
       id = tp->add_var(*this);
-      printf("TensorToken warning: reassigning tensor with different size. It will create new id for the same variable. Mind your step!\n");
+      //printf("TensorToken warning: reassigning tensor with different size. It will create new id for the same variable. Mind your step!\n");
     }
     tp->add_command(TensorProgram::MOV, other.id, 0, id);
     return *this;
