@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <functional>
 #include <chrono>
-#include "neuralCore/siren.h"
 #include "neural_SDF/neural_sdf.h"
 
 namespace upg
@@ -253,6 +252,7 @@ namespace upg
 
   void neural_sdf_test()
   {
+    /*
     nn::TensorProcessor::init("GPU");
     unsigned count = 25000;
 
@@ -282,6 +282,7 @@ namespace upg
 
     Texture t = render_neural_sdf(network, bbox, camera, 256, 256, 9, true);
     engine::textureManager->save_png(t, "NN demo");
+    */
   }
 
   void benchmark_sdf_rendering(int image_size, int spp)
