@@ -47,9 +47,12 @@ namespace nn
     for (int i=0;i<TensorProgram::cmd_properties.size();i++)
       assert(TensorProgram::cmd_properties[i].type == i);
     if (!proc)
+    {
       proc.reset(new TensorProcessor());
+      proc->used_backend = backend;
+    }
     #if defined(USE_GPU)
-    if (backend == "GPU")
+    if (proc->used_backend == "GPU")
       proc->pImpl = CreateTensorProcessorImpl_GPU(vk_utils::globalContextGet(false, 0u), 256);
     else
     #endif
@@ -62,8 +65,7 @@ namespace nn
 
   void TensorProcessor::set_program(const TensorProgram &_program)
   {
-    if (!proc)
-      TensorProcessor::init();
+    TensorProcessor::init();
     proc->program = _program;
     proc->pImpl->allocate_memory(proc->program.total_memory_req);
     proc->pImpl->CommitDeviceData();

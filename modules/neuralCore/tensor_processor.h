@@ -119,5 +119,6 @@ namespace nn
     TensorProgram program;
     std::map<std::string, bool> input_prepared;
     bool program_prepared = false;
+    std::string used_backend = "CPU";
   };
 }
