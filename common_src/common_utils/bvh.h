@@ -25,6 +25,8 @@ struct BVH
     int added_boxes_cnt = 0;
     int removed_boxes_cnt = 0;
     //different bboxes can have the same tag is they will always be added and deleted together
+
+    BVH(const std::vector<float> &position, const std::vector<unsigned> &indices);
     void rebuild();
     void clear();
     int add_node_rec(std::vector<int> &boxes);

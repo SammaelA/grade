@@ -215,3 +215,28 @@ void BVH::rebuild()
   root_node_idx = add_node_rec(boxes);
   added_boxes_cnt = 0;
 }
+
+AABB triangle_bbox(const float *positions)
+{
+  glm::vec3 p0(positions[0], positions[1], positions[2]);
+  glm::vec3 p1(positions[3], positions[4], positions[5]);
+  glm::vec3 p2(positions[6], positions[7], positions[8]);
+  return AABB(min(p0, min(p1,p2)), max(p0, max(p1,p2)));
+}
+BVH::BVH(const std::vector<float> &positions, const std::vector<unsigned> &indices)
+{
+  simple_list = false;
+  assert(positions.size()%3==0);
+  assert(indices.size()%3==0);
+
+  obj_bboxes.reserve(indices.size()/3);
+  for (int i=0;i<indices.size();i+=3)
+  {
+    glm::vec3 p0(positions[3*indices[i+0]+0], positions[3*indices[i+0]+1], positions[3*indices[i+0]+2]);
+    glm::vec3 p1(positions[3*indices[i+1]+0], positions[3*indices[i+1]+1], positions[3*indices[i+1]+2]);
+    glm::vec3 p2(positions[3*indices[i+2]+0], positions[3*indices[i+2]+1], positions[3*indices[i+2]+2]);
+    obj_bboxes.emplace_back(AABB(min(p0, min(p1,p2)), max(p0, max(p1,p2))), (uint64_t)(i/3 + 1));
+  }
+
+  rebuild();
+}
