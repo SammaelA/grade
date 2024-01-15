@@ -25,7 +25,7 @@ namespace nn
                     int batch_size, int iterations, bool verbose)
   {
     NeuralNetwork::train(inputs, outputs, batch_size, iterations, 
-                          NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.0001f, verbose);
+                          NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.00002f, verbose);
   }
 
   float Siren::get(float x, float y)
