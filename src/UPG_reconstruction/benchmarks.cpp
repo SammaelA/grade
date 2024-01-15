@@ -9,6 +9,7 @@
 #include <functional>
 #include <chrono>
 #include "neuralCore/siren.h"
+#include "neural_SDF/neural_sdf.h"
 
 namespace upg
 {
@@ -317,8 +318,7 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    neural_sdf_test();
-    return;
+    nsdf::neural_SDF_test();
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);
