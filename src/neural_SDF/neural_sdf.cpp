@@ -2,8 +2,12 @@
 #include "private_camera.h"
 #include "common_utils/bbox.h"
 #include "tinyEngine/engine.h"
+#include "tinyEngine/model.h"
+#include "graphics_utils/modeling.h"
+#include "common_utils/bvh.h"
 #include "common_utils/distribution.h"
 #include "neuralCore/siren.h"
+#include "graphics_utils/render_point_cloud.h"
 
 #include <vector>
 #include <fstream>
@@ -222,6 +226,126 @@ namespace nsdf
     out.close();
   }
 
+  glm::vec3 closest_point_triangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+  {
+    //implementation taken from Embree library
+    const glm::vec3 ab = b - a;
+    const glm::vec3 ac = c - a;
+    const glm::vec3 ap = p - a;
+
+    const float d1 = dot(ab, ap);
+    const float d2 = dot(ac, ap);
+    if (d1 <= 0.f && d2 <= 0.f) return a; //#1
+
+    const glm::vec3 bp = p - b;
+    const float d3 = dot(ab, bp);
+    const float d4 = dot(ac, bp);
+    if (d3 >= 0.f && d4 <= d3) return b; //#2
+
+    const glm::vec3 cp = p - c;
+    const float d5 = dot(ab, cp);
+    const float d6 = dot(ac, cp);
+    if (d6 >= 0.f && d5 <= d6) return c; //#3
+
+    const float vc = d1 * d4 - d3 * d2;
+    if (vc <= 0.f && d1 >= 0.f && d3 <= 0.f)
+    {
+        const float v = d1 / (d1 - d3);
+        return a + v * ab; //#4
+    }
+      
+    const float vb = d5 * d2 - d1 * d6;
+    if (vb <= 0.f && d2 >= 0.f && d6 <= 0.f)
+    {
+        const float v = d2 / (d2 - d6);
+        return a + v * ac; //#5
+    }
+      
+    const float va = d3 * d6 - d5 * d4;
+    if (va <= 0.f && (d4 - d3) >= 0.f && (d5 - d6) >= 0.f)
+    {
+        const float v = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+        return b + v * (c - b); //#6
+    }
+
+    const float denom = 1.f / (va + vb + vc);
+    const float v = vb * denom;
+    const float w = vc * denom;
+    return a + v * ab + w * ac; //#0
+  }
+
+  void model_to_point_cloud(const Mesh *m, int count, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
+  {
+    std::vector<glm::vec3> face_normals(m->indices.size()/3);
+    for (int i=0;i<m->indices.size();i+=3)
+    {
+      glm::vec3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
+      glm::vec3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
+      glm::vec3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
+      face_normals[i/3] = glm::normalize(glm::cross(p1-p0, p2-p0));
+    }
+
+    //BVH bvh(m->positions, m->indices);
+
+    points->resize(3*count);
+    distances->resize(count);
+    std::vector<glm::vec3> surface_points(count);
+    for (int j=0;j<count;j++)
+    {
+      glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+                              urand(bbox.min_pos.y, bbox.max_pos.y),
+                              urand(bbox.min_pos.z, bbox.max_pos.z));
+      (*points)[3*j+0] = p.x;
+      (*points)[3*j+1] = p.y;
+      (*points)[3*j+2] = p.z;
+
+      float min_dist = 1e9;
+      glm::vec3 closest_pos(0,0,0);
+      glm::vec3 closest_norm(1,0,0);
+      for (int i=0;i<m->indices.size();i+=3)
+      {
+        glm::vec3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
+        glm::vec3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
+        glm::vec3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
+        
+        glm::vec3 tp = closest_point_triangle(p, p0, p1, p2);
+        float d = length(p-tp);
+        if (d < min_dist)
+        {
+          closest_pos = tp;
+          closest_norm = face_normals[i/3];
+          min_dist = d;
+        }
+      }
+      if (dot(p-closest_pos, closest_norm) < 0)
+        min_dist = -min_dist;
+
+      (*distances)[j] = min_dist;
+      surface_points[j] = closest_pos;
+      //printf("%f %f %f d= %f\n", p.x, p.y, p.z, min_dist);
+    }
+    /*
+    for (int i=0;i<10;i++)
+    {
+      CameraSettings cam;
+      cam.origin = glm::vec3(3*sin(0.2*PI*i),0, 3*cos(0.2*PI*i));
+      cam.target = glm::vec3(0,0,0);
+      cam.up = glm::vec3(0,1,0);
+      PointCloudRenderer pcr;
+      Texture t = pcr.render(surface_points, cam.get_viewProj(), 1024, 1024);
+      engine::textureManager->save_png(t, "task2_references/point_cloud_"+std::to_string(i));
+    }
+    */
+  }
+
+  void create_point_cloud_house(int count, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
+  {
+    Model *m = model_loader::load_model_from_obj_directly("resources/models/cup_1n.obj");
+    model_loader::normalize_model(m);
+    model_to_point_cloud(m, count, bbox, points, distances);
+    delete m;
+  }
+
   void create_point_cloud_spheres(int count, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
     PrimitiveSDF sdf2;
@@ -421,19 +545,18 @@ namespace nsdf
     convert(cam3).to_file("saves/task2_references/cam3.txt");
 
     {
-      nn::TensorProcessor::init("GPU");
       std::vector<float> points, distances;
       create_point_cloud_spheres(5000, bbox, &points, &distances);
-      save_points_cloud("saves/task2_references/points.bin", points, distances);
+      save_points_cloud("saves/task2_references/sdf1_points.bin", points, distances);
       nn::Siren network(nn::Siren::Type::SDF, 3, 64);
       network.train(points, distances, 512, 15000);
-      network.save_weights_to_file("saves/task2_references/weights.bin");
+      network.save_weights_to_file("saves/task2_references/sdf1_weights.bin");
     }
     {
       std::vector<float> points, distances;
-      load_points_cloud("saves/task2_references/points.bin", &points, &distances);
+      load_points_cloud("saves/task2_references/sdf1_points.bin", &points, &distances);
       nn::Siren network(nn::Siren::Type::SDF, 3, 64);
-      network.initialize_from_file("saves/task2_references/weights.bin");
+      network.initialize_from_file("saves/task2_references/sdf1_weights.bin");
       
       Texture t;
       t = render_neural_sdf(network, bbox, cam1, 512, 512, 16, true, light_dir);
@@ -443,11 +566,35 @@ namespace nsdf
       t = render_neural_sdf(network, bbox, cam3, 512, 512, 16, true, light_dir);
       engine::textureManager->save_png(t, "task2_references/sdf1_cam3_reference");
     }
+
+    {
+      std::vector<float> points, distances;
+      create_point_cloud_house(50000, bbox, &points, &distances);
+      save_points_cloud("saves/task2_references/sdf2_points.bin", points, distances);
+      nn::Siren network(nn::Siren::Type::SDF, 5, 256);
+      network.train(points, distances, 512, 15000, true);
+      network.save_weights_to_file("saves/task2_references/sdf2_weights.bin");
+    }
+    {
+      std::vector<float> points, distances;
+      load_points_cloud("saves/task2_references/sdf2_points.bin", &points, &distances);
+      nn::Siren network(nn::Siren::Type::SDF, 5, 256);
+      network.initialize_from_file("saves/task2_references/sdf2_weights.bin");
+      
+      Texture t;
+      t = render_neural_sdf(network, bbox, cam1, 512, 512, 16, true, light_dir);
+      engine::textureManager->save_png(t, "task2_references/sdf2_cam1_reference");
+      t = render_neural_sdf(network, bbox, cam2, 512, 512, 16, true, light_dir);
+      engine::textureManager->save_png(t, "task2_references/sdf2_cam2_reference");
+      t = render_neural_sdf(network, bbox, cam3, 512, 512, 16, true, light_dir);
+      engine::textureManager->save_png(t, "task2_references/sdf2_cam3_reference");
+    }
   }
 
   void neural_SDF_test()
   {
-    //task_1_create_references();
+    nn::TensorProcessor::init("GPU");
+    task_1_create_references();
     task_2_create_references();
   }
 }
