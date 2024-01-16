@@ -169,6 +169,32 @@ namespace nn
     out.close();
   }
 
+  void NeuralNetwork::set_arch_to_file(std::string filename)
+  {
+    std::ofstream out(filename);
+    assert(out.is_open());
+    for (auto &l : layers)
+    {
+      out << l->get_name() << " ";
+      if (l->input_shape.size() > 0)
+      {
+        out << "input shape ("<<l->input_shape[0];
+        for (int i=1;i<l->input_shape.size();i++)
+          out << ", "<<l->input_shape[i];
+        out <<") ";
+      }
+      if (l->output_shape.size() > 0)
+      {
+        out << "output shape ("<<l->output_shape[0];
+        for (int i=1;i<l->output_shape.size();i++)
+          out << ", "<<l->output_shape[i];
+        out <<")";
+      }
+      out<<"\n";
+    }
+    out.close();
+  }
+
   void NeuralNetwork::print_info()
   {
     printf("Neural Network\n");

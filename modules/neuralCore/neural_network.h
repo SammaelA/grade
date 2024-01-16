@@ -21,6 +21,7 @@ namespace nn
     virtual int parameters_count() { return 0; }
     virtual TensorToken forward(const TensorToken &in) = 0;
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) = 0;
+    virtual std::string get_name() = 0;
   };
 
   class DenseLayer : public Layer
@@ -35,6 +36,7 @@ namespace nn
     virtual int parameters_count() override { return (input_shape[0]+1)*output_shape[0]; };
     virtual TensorToken forward(const TensorToken &in) override;
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override;
+    virtual std::string get_name() override { return "Dense"; }
   };
 
   class SinLayer : public Layer
@@ -52,6 +54,7 @@ namespace nn
     {
       return dLoss_dOutput * TensorToken::cos(input*mult) * mult;
     }
+    virtual std::string get_name() override { return "Sin"; }
   };
 
   class NeuralNetwork
@@ -81,6 +84,7 @@ namespace nn
     void initialize_with_weights(const float *weights);
     void initialize_from_file(std::string filename);
     void save_weights_to_file(std::string filename);
+    void set_arch_to_file(std::string filename);
     void print_info();
     TensorProgram get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,

@@ -591,6 +591,11 @@ namespace nsdf
       nn::Siren network(nn::Siren::Type::SDF, 3, 64);
       network.train(points, distances, 512, 15000);
       network.save_weights_to_file("saves/task2_references/sdf1_weights.bin");
+      network.set_arch_to_file("saves/task2_references/sdf1_arch.txt");
+      
+      std::vector<float> estimated_distances = distances;
+      network.evaluate(points, estimated_distances);
+      save_points_cloud("saves/task2_references/sdf1_test.bin", points, estimated_distances);
     }
     {
       std::vector<float> points, distances;
@@ -614,6 +619,11 @@ namespace nsdf
       nn::Siren network(nn::Siren::Type::SDF, 5, 256);
       network.train(points, distances, 512, 15000, true);
       network.save_weights_to_file("saves/task2_references/sdf2_weights.bin");
+      network.set_arch_to_file("saves/task2_references/sdf2_arch.txt");
+            
+      std::vector<float> estimated_distances = distances;
+      network.evaluate(points, estimated_distances);
+      save_points_cloud("saves/task2_references/sdf2_test.bin", points, estimated_distances);
     }
     {
       std::vector<float> points, distances;
@@ -635,6 +645,6 @@ namespace nsdf
   {
     nn::TensorProcessor::init("GPU");
     task_1_create_references();
-    //task_2_create_references();
+    task_2_create_references();
   }
 }
