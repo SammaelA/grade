@@ -1,5 +1,6 @@
 #include "neural_sdf.h"
 #include "private_camera.h"
+#include "public_scene.h"
 #include "common_utils/bbox.h"
 #include "tinyEngine/engine.h"
 #include "tinyEngine/model.h"
@@ -165,10 +166,49 @@ namespace nsdf
     PrimitiveSDF sdf1;
     sdf1.circles.push_back({0,0,0,0.7f});
 
+    {
+      PrimitiveSDFScene psdf;
+      for (auto &s : sdf1.circles)
+      {
+        psdf.scene_data.push_back(s.x);
+        psdf.scene_data.push_back(s.y);
+        psdf.scene_data.push_back(s.z);
+        psdf.scene_data.push_back(s.w);
+      }
+      psdf.to_file("saves/task1_references/scene1.txt");
+    }
+    {
+      PrimitiveSDFScene psdf;
+      psdf.from_file("saves/task1_references/scene1.txt");
+      sdf1.circles = std::vector<glm::vec4>(psdf.scene_data.size()/4);
+      for (int i=0;i<sdf1.circles.size();i++)
+        sdf1.circles[i] = glm::vec4(psdf.scene_data[4*i+0], psdf.scene_data[4*i+1], psdf.scene_data[4*i+2], psdf.scene_data[4*i+3]);
+    }
+
     PrimitiveSDF sdf2;
     sdf2.circles.push_back({0,0.3f,0.4f,0.4f});
     sdf2.circles.push_back({-0.3f,0,0.1f,0.3f});
     sdf2.circles.push_back({0,-0.2f,0,0.25f});
+
+    {
+      PrimitiveSDFScene psdf;
+      for (auto &s : sdf2.circles)
+      {
+        psdf.scene_data.push_back(s.x);
+        psdf.scene_data.push_back(s.y);
+        psdf.scene_data.push_back(s.z);
+        psdf.scene_data.push_back(s.w);
+      }
+      psdf.to_file("saves/task1_references/scene2.txt");
+    }
+    {
+      PrimitiveSDFScene psdf;
+      psdf.from_file("saves/task1_references/scene2.txt");
+      sdf2.circles = std::vector<glm::vec4>(psdf.scene_data.size()/4);
+      for (int i=0;i<sdf2.circles.size();i++)
+        sdf2.circles[i] = glm::vec4(psdf.scene_data[4*i+0], psdf.scene_data[4*i+1], psdf.scene_data[4*i+2], psdf.scene_data[4*i+3]);
+    }
+
     Texture t;
     
     t = render_primitive_sdf(sdf1, cam1, light_dir, 512, 512, 16, false);
@@ -595,6 +635,6 @@ namespace nsdf
   {
     nn::TensorProcessor::init("GPU");
     task_1_create_references();
-    task_2_create_references();
+    //task_2_create_references();
   }
 }
