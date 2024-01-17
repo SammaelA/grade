@@ -34,7 +34,7 @@ namespace upg
         step_0 {
             optimizer_name:s = "memetic"
             iterations:i = 100
-            verbose:b = true
+            verbose:b = false
         }
         //step_1 {
         //    learning_rate:r = 0.003
@@ -44,7 +44,7 @@ namespace upg
     }
     results {
         check_image_quality:b = false
-        check_model_quality:b = false
+        check_model_quality:b = true
     }
     }
       )"""";
@@ -198,7 +198,7 @@ namespace upg
     //scenes["1 Sphere"] = scene_1_sphere();
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
-    //scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    scenes["8 Bubbles"] = scene_bubbles(4, 2);
     //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
     //scenes["1 Box"] = scene_1_box();
@@ -228,12 +228,18 @@ namespace upg
     for (auto &scene : scenes)
     {
       float average_loss = 0;
+      float average_quality = 0;
       for (auto &r : results[j])
+      {
         average_loss += r.loss_optimizer;
+        average_quality += r.quality_synt;
+      }
       average_loss /= tries;
+      average_quality /= tries;
       timings[j] /= tries;
       debug("Scene %d: %s\n", j, scene.first.c_str());
       debug("Average loss: %.1f*1e-6\n", 1e6*average_loss);
+      debug("Average quality: %.1f*1e-6\n", 1e6*average_quality);
       debug("Time %d m %d s\n", timings[j]/60, timings[j] % 60);
       j++;
     }
@@ -319,7 +325,6 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    nsdf::neural_SDF_test();
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);

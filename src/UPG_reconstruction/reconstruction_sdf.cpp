@@ -298,7 +298,7 @@ namespace upg
       {
         SdfGenInstance reference_gen(reference.structure);
         ProceduralSdf reference_sdf = reference_gen.generate(reference.parameters.p);
-        result.quality_synt = get_sdf_image_based_quality(reference_sdf, sdf);
+        result.quality_synt = get_sdf_similarity_MSE(reference_sdf, sdf);
       }
 
       CameraSettings camera;

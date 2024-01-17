@@ -288,4 +288,20 @@ namespace upg
     }
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
   }
+
+  float get_sdf_similarity_MSE(ProceduralSdf reference_sdf, ProceduralSdf sdf)
+  {
+    int points = 50000;
+    AABB bbox = AABB(min(reference_sdf.root->get_bbox().min_pos, sdf.root->get_bbox().min_pos),
+                     max(reference_sdf.root->get_bbox().max_pos, sdf.root->get_bbox().max_pos));
+    double dist_sum = 0;
+    for (int i=0;i<points;i++)
+    {
+      glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+                              urand(bbox.min_pos.y, bbox.max_pos.y),
+                              urand(bbox.min_pos.z, bbox.max_pos.z));
+      dist_sum += SQR(sdf.get_distance(p) - reference_sdf.get_distance(p));
+    }
+    return dist_sum/points;
+  }
 }
