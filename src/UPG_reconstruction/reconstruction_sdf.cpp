@@ -230,6 +230,46 @@ namespace upg
     const PointCloudReference &reference;
   };
 
+  std::shared_ptr<UPGOptimizer> get_optimizer(const std::string &optimizer_name,
+                                              SdfRenderAndCompare &opt_func,
+                                              Block *step_blk,
+                                              UPGReconstructionResult start_params = UPGReconstructionResult(),
+                                              UPGStructure structure = UPGStructure())
+  {
+    std::shared_ptr<UPGOptimizer> optimizer;
+    if (optimizer_name == "adam")
+      optimizer = get_optimizer_adam(&opt_func, *step_blk, start_params);
+    else if (optimizer_name == "memetic")
+      optimizer = get_optimizer_memetic(&opt_func, *step_blk, structure);
+    else if (optimizer_name == "CHC")
+      optimizer = get_optimizer_CHC(&opt_func, *step_blk, structure);
+    else if (optimizer_name == "particle_swarm")
+      optimizer = get_optimizer_particle_swarm(&opt_func, *step_blk, structure);
+    else if (optimizer_name == "CC")
+      optimizer = get_optimizer_CC(&opt_func, *step_blk, structure);
+    else if (optimizer_name == "DE")
+      optimizer = get_optimizer_differentiable_evolution(&opt_func, *step_blk, structure);
+    else if (optimizer_name == "iterative_fitting")
+      optimizer = get_optimizer_iterative_fitting(&opt_func, *step_blk, structure);
+    return optimizer;
+  }
+
+  std::vector<UPGReconstructionResult> simple_reconstruction_step(Block *step_blk, PointCloudReference &reference,
+                                                                  const std::vector<UPGReconstructionResult> &prev_step_res)
+  {
+    SdfRenderAndCompare opt_func(reference, *step_blk);
+    std::shared_ptr<UPGOptimizer> optimizer = get_optimizer(step_blk->get_string("optimizer_name", "adam"), opt_func, step_blk,
+                                                            prev_step_res[0], prev_step_res[0].structure);
+    optimizer->optimize();
+    return optimizer->get_best_results();
+  }
+
+  std::vector<UPGReconstructionResult> constructive_reconstruction_step(Block *step_blk, PointCloudReference &reference,
+                                                                        const std::vector<UPGReconstructionResult> &prev_step_res)
+  {
+
+  }
+
   std::vector<UPGReconstructionResult> reconstruct_sdf(const Block &blk)
   {
     //load settings from given blk
@@ -264,26 +304,10 @@ namespace upg
     while (opt_blk->get_block("step_"+std::to_string(step_n)))
     {
       Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
-
-      SdfRenderAndCompare opt_func(reference, *step_blk);
-      std::shared_ptr<UPGOptimizer> optimizer;
-      std::string optimizer_name = step_blk->get_string("optimizer_name", "adam");
-      if (optimizer_name == "adam")
-        optimizer = get_optimizer_adam(&opt_func, *step_blk, opt_res[0]);
-      else if (optimizer_name == "memetic")
-        optimizer = get_optimizer_memetic(&opt_func, *step_blk, start_params.structure);
-      else if (optimizer_name == "CHC")
-        optimizer = get_optimizer_CHC(&opt_func, *step_blk, start_params.structure);
-      else if (optimizer_name == "particle_swarm")
-        optimizer = get_optimizer_particle_swarm(&opt_func, *step_blk, start_params.structure);
-      else if (optimizer_name == "CC")
-        optimizer = get_optimizer_CC(&opt_func, *step_blk, start_params.structure);
-      else if (optimizer_name == "DE")
-        optimizer = get_optimizer_differentiable_evolution(&opt_func, *step_blk, start_params.structure);
-      else if (optimizer_name == "iterative_fitting")
-        optimizer = get_optimizer_iterative_fitting(&opt_func, *step_blk, start_params.structure);
-      optimizer->optimize();
-      opt_res = optimizer->get_best_results();
+      if (step_blk->get_bool("constructive_reconstruction"))
+        opt_res = constructive_reconstruction_step(step_blk, reference, opt_res);
+      else
+        opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;
     }
 

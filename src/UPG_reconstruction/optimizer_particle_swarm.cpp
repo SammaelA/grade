@@ -272,7 +272,7 @@ namespace upg
         float success_rate = (success_count+0.0)/population_size;
         if (use_adaptive_weight)
           w = success_rate;
-        logerr("TM SR %.3f %.3f", total_movement, success_rate);
+        //logerr("TM SR %.3f %.3f", total_movement, success_rate);
         if (best_population[0].loss < finish_thr)
           break;
         epoch++;
