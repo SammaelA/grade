@@ -15,6 +15,10 @@ namespace upg
   {
     std::vector<glm::vec3> points;
     std::vector<glm::vec3> outside_points;
+
+    std::vector<glm::vec3> d_points;
+    std::vector<float> d_distances;
+
     bool is_synthetic = false;
     UPGStructure structure;//can be set manually to make reconstruction simplier
     UPGParametersRaw parameters;//empty if not synthetic reference
@@ -36,6 +40,7 @@ namespace upg
 
       int points = synthetic_reference->get_int("points_count", 10000);
       sdf_to_point_cloud(sdf, points, &(reference.points), &(reference.outside_points));
+      sdf_to_point_cloud_with_dist(sdf, 2*points, &(reference.d_points), &(reference.d_distances));
 
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
@@ -379,6 +384,146 @@ namespace upg
     }
   };
 
+class FieldSdfCompare : public UPGOptimizableFunction
+  {
+  private:
+    //same size
+    std::vector<glm::vec3> points;
+    std::vector<float> distances;
+    std::vector<glm::vec3> a_points;
+    std::vector<float> a_distances;
+
+    float beta;
+    float p;
+    float beta_p;
+    float beta_p_inv;
+    float reg_q;
+
+  public:
+    FieldSdfCompare(const std::vector<glm::vec3> &_points,
+                    const std::vector<float> &_distances,
+                    const std::vector<glm::vec3> &_a_points,
+                    const std::vector<float> &_a_distances,
+                    float _beta = 0.1, float _p = 2, float _reg_q = 1e6)
+    {
+      points = _points;
+      distances = _distances;
+      a_points = _a_points;
+      a_distances = _a_distances;
+      beta = _beta;
+      p = _p;
+      beta_p = pow(beta, p);
+      beta_p_inv = 1/beta_p;
+      reg_q = _reg_q;
+    }
+
+    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
+                           const OptParams &params, std::span<float> out_grad) override
+    {
+      assert(a_points.size() > 0);
+      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      assert(gen_params.size() == out_grad.size());
+
+      std::vector<float> cur_grad;
+      std::vector<float> dpos_dparams = {0,0,0};
+      cur_grad.reserve(gen_params.size());
+      std::vector<double> out_grad_d(gen_params.size(), 0);
+
+      //main step - minimize SDF values on surface
+      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
+      {
+        const glm::vec3 &point = a_points[index];
+        cur_grad.clear();
+        double dist = sdf.get_distance(point, &cur_grad, &dpos_dparams) - a_distances[index];
+
+        //loss function, value in range (0, 1]
+        double dist_inv = 1/MAX(abs(dist), 1e-12);
+        double dist_p = pow(abs(dist),p);
+        double dist_p_inv = 1/dist_p;
+        double loss = abs(dist) >= beta ? (-0.5*beta_p*dist_p_inv) : (0.5*beta_p_inv*dist_p - 1);
+        double dloss_ddist = abs(dist) >= beta ? (0.5*beta_p*p*(dist_p_inv*dist_inv)*glm::sign(dist)) : (0.5*beta_p_inv*(dist_p*dist_inv)*glm::sign(dist));
+
+        for (int i=0;i<gen_params.size();i++)
+          out_grad_d[i] += dloss_ddist*cur_grad[i];
+        return loss;
+      }, a_points.size(), 512, 512, 1);
+
+      //regularization - penalty for outside points with sdf < 0
+      std::pair<int, double> p2 = {0,0};
+      if (points.size() > 0)
+      {
+        p2 = sum_with_adaptive_batching([&](int index) -> double 
+        {
+          const glm::vec3 &p = points[index];
+          cur_grad.clear();
+          double d = sdf.get_distance(p, &cur_grad, &dpos_dparams) - distances[index];
+          if (d < 0)
+          {
+            for (int i=0;i<gen_params.size();i++)
+              out_grad_d[i] += 2*reg_q*d*cur_grad[i];
+            return reg_q*d*d;
+          }
+          else
+            return 0;
+        }, points.size(), 512, 512, 1);
+      }
+
+     //logerr("P1 P2 %f %f\n", p1.second/p1.first, p2.second);
+      
+      for (int i=0;i<gen_params.size();i++)
+        out_grad[i] = out_grad_d[i]/(p1.first+p2.first);
+      
+      return p1.second/p1.first + p2.second/MAX(1, p2.first);
+    }
+
+    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
+    {
+      assert(a_points.size() > 0);
+      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+
+      //main step - minimize SDF values on surface
+      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
+      {
+        const glm::vec3 &point = a_points[index];
+        double dist = sdf.get_distance(point) - a_distances[index];
+
+        //loss function, value in range (0, 1]
+        double dist_inv = 1/MAX(abs(dist), 1e-12);
+        double dist_p = pow(abs(dist),p);
+        double dist_p_inv = 1/dist_p;
+        double loss = abs(dist) >= beta ? (-0.5*beta_p*dist_p_inv) : (0.5*beta_p_inv*dist_p-1);
+        return loss;
+      }, a_points.size(), 512, 512, 1);
+
+      //regularization - penalty for outside points with sdf < 0
+      std::pair<int, double> p2 = {0,0};
+      if (points.size() > 0)
+      {
+        p2 = sum_with_adaptive_batching([&](int index) -> double 
+        {
+          const glm::vec3 &p = points[index];
+          double d = sdf.get_distance(p) - distances[index];
+          if (d < 0)
+            return reg_q*d*d;
+          else
+            return 0;
+        }, points.size(), 512, 512, 1);
+      }
+
+      return p1.second/p1.first + p2.second/MAX(1, p2.first);
+    }
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) override
+    {
+      return ((SdfGenInstance*)gen)->desc;
+    }
+    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
+    {
+      return std::make_shared<SdfGenInstance>(structure);
+    }
+  };
+
   std::shared_ptr<UPGOptimizer> get_optimizer(const std::string &optimizer_name,
                                               UPGOptimizableFunction *opt_func,
                                               Block *step_blk,
@@ -494,6 +639,84 @@ namespace upg
     logerr("reassigned %d/%d points %d/%d surface points left", reassigned, target, (int)surface_points.size(), (int)(surface_points.size()+outer_points.size()));
   }
 
+  void remove_inactive_points(std::vector<glm::vec3> &points, std::vector<float> &distances, ProceduralSdf &sdf, float threshold = 0.001f)
+  {
+    std::vector<glm::vec3> active_points;
+    std::vector<float> active_distances;
+    for (int i=0;i<points.size();i++)
+    {
+      if (abs(sdf.get_distance(points[i]) - distances[i]) >= threshold)
+      {
+        active_points.push_back(points[i]);
+        active_distances.push_back(distances[i]);
+      }
+    }
+    logerr("removed %d/%d points", (int)(points.size()-active_points.size()), (int)points.size());
+    points = active_points;
+    distances = active_distances;
+  }
+
+  std::vector<UPGReconstructionResult> field_reconstruction_step(Block *step_blk, PointCloudReference &reference,
+                                                                 const std::vector<UPGReconstructionResult> &prev_step_res)
+  {
+    std::vector<UPGReconstructionResult> part_results;
+    std::vector<glm::vec3> active_points = reference.d_points;
+    std::vector<float> active_distances = reference.d_distances;
+
+    //step_blk->set_int("iterations", 1000);
+    //step_blk->set_bool("verbose", true);
+    //step_blk->set_double("learning_rate", 0.005f);
+    //step_blk->set_string("optimizer_name", "adam");
+    Block fine_opt_blk;
+    fine_opt_blk.copy(step_blk);
+    fine_opt_blk.set_string("optimizer_name", "adam");
+    fine_opt_blk.set_int("iterations", 1000);
+    fine_opt_blk.set_bool("verbose", true);
+    fine_opt_blk.set_double("learning_rate", 0.001f);
+
+    auto parts = get_sdf_parts(prev_step_res[0].structure);
+
+    for (int i=0; i<parts.size(); i++)
+    {      
+      srand(time(NULL));
+      UPGStructure part_structure;
+      for (int j=parts[i].s_range.first; j<parts[i].s_range.second; j++)
+      {
+        part_structure.s.push_back(prev_step_res[0].structure.s[j]);
+      }
+
+      FieldSdfCompare opt_func(reference.d_points, reference.d_distances, active_points, active_distances, 0.03f, 2.0f);
+      std::shared_ptr<UPGOptimizer> optimizer = get_optimizer(step_blk->get_string("optimizer_name", "adam"), &opt_func, step_blk,
+                                                              UPGReconstructionResult(), part_structure);
+      optimizer->optimize();
+      auto partial_result = optimizer->get_best_results()[0];
+      logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
+                                  partial_result.parameters.p[2], partial_result.parameters.p[3]);
+
+      FieldSdfCompare fine_opt_func(reference.d_points, reference.d_distances, active_points, active_distances, 0.003f, 2.0f);
+      std::shared_ptr<UPGOptimizer> fine_optimizer = get_optimizer("adam", &fine_opt_func, &fine_opt_blk,
+                                                                   partial_result, partial_result.structure);
+      fine_optimizer->optimize();
+      partial_result = fine_optimizer->get_best_results()[0];
+      logerr("tuned res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
+                                        partial_result.parameters.p[2], partial_result.parameters.p[3]);
+
+      part_results.push_back(partial_result);
+
+      SdfGenInstance gen(partial_result.structure);
+      ProceduralSdf sdf = gen.generate(partial_result.parameters.p);
+      CameraSettings camera;
+      camera.origin = glm::vec3(0,0,3);
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(sdf, camera, 512, 512, 4);
+      engine::textureManager->save_png(t, "partial_sdf_"+std::to_string(i));
+      remove_inactive_points(active_points, active_distances, sdf, 0.003f);
+    }
+    return {merge_results(part_results)};
+
+  }
+
   std::vector<UPGReconstructionResult> constructive_reconstruction_step(Block *step_blk, PointCloudReference &reference,
                                                                         const std::vector<UPGReconstructionResult> &prev_step_res)
   {
@@ -595,7 +818,7 @@ namespace upg
     {
       Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
       if (step_blk->get_bool("constructive_reconstruction"))
-        opt_res = constructive_reconstruction_step(step_blk, reference, opt_res);
+        opt_res = field_reconstruction_step(step_blk, reference, opt_res);
       else
         opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;

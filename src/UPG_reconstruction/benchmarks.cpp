@@ -40,9 +40,10 @@ namespace upg
             tournament_size:i = 50
             local_opt_count:i = 10
             local_opt_iters:i = 500
-            local_learning_rate:i = 0.005
-            good_soulution_thr:i = 1.0
+            local_learning_rate:r = 0.005
+            good_soulution_thr:r = 1.0
             part_based_memetic:b = false
+            finish_threshold:r = -1.0
         }
         //step_1 {
         //    learning_rate:r = 0.003
@@ -61,7 +62,6 @@ namespace upg
 
     settings_blk.get_block("optimization")->get_block("step_0")->set_string("optimizer_name", optimizer_name);
     settings_blk.get_block("optimization")->get_block("step_0")->set_int("iterations", total_iterations);
-    settings_blk.get_block("optimization")->get_block("step_0")->set_double("finish_threshold", 1e-6);
     settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("structure", ref_scene.first.s);
     settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("params", ref_scene.second.p);
     if (fixed_structure)
@@ -206,8 +206,8 @@ namespace upg
     //scenes["1 Sphere"] = scene_1_sphere();
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
-    scenes["8 Bubbles"] = scene_bubbles(4, 2);
-    //scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    //scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
     //scenes["1 Box"] = scene_1_box();
     //scenes["2 Boxes"] = scene_2_boxes();
