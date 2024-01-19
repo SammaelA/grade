@@ -35,6 +35,14 @@ namespace upg
             optimizer_name:s = "memetic"
             iterations:i = 100
             verbose:b = false
+            constructive_reconstruction:b = true
+            population_size:i = 1000
+            tournament_size:i = 50
+            local_opt_count:i = 10
+            local_opt_iters:i = 500
+            local_learning_rate:i = 0.005
+            good_soulution_thr:i = 1.0
+            part_based_memetic:b = false
         }
         //step_1 {
         //    learning_rate:r = 0.003
@@ -204,7 +212,7 @@ namespace upg
     //scenes["1 Box"] = scene_1_box();
     //scenes["2 Boxes"] = scene_2_boxes();
     //scenes["4 Boxes"] = scene_4_boxes();
-    scenes["8 Boxes"] = scene_8_boxes();
+    //scenes["8 Boxes"] = scene_8_boxes();
 
     int max_iters = 200'000;
     int tries = 1;
@@ -232,7 +240,7 @@ namespace upg
       for (auto &r : results[j])
       {
         average_loss += r.loss_optimizer;
-        average_quality += r.quality_synt;
+        average_quality += r.quality_ir;
       }
       average_loss /= tries;
       average_quality /= tries;
@@ -251,9 +259,9 @@ namespace upg
   {
     //benchmark_for_optimizer("CC", true);
     //benchmark_for_optimizer("DE", true);
-    //benchmark_for_optimizer("memetic", true);
+    benchmark_for_optimizer("memetic", true);
     //benchmark_for_optimizer("particle_swarm", true);
-    benchmark_for_optimizer("iterative_fitting", true);
+    //benchmark_for_optimizer("iterative_fitting", true);
   }
 
   void neural_sdf_test()

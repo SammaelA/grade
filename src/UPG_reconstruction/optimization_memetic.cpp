@@ -232,9 +232,17 @@ namespace upg
       gen = func->get_generator(structure);
       pd = func->get_full_parameters_description(gen.get());
 
-      verbose = settings.get_bool("verbose");
-      finish_thr = settings.get_double("finish_threshold");
+      verbose = settings.get_bool("verbose", false);
+      finish_thr = settings.get_double("finish_threshold", finish_thr);
       budget = settings.get_int("iterations", budget);
+      population_size = settings.get_int("population_size", population_size);
+      tournament_size = settings.get_int("tournament_size", tournament_size);
+      local_opt_count = settings.get_int("local_opt_count", local_opt_count);
+      local_opt_iters = settings.get_int("local_opt_iters", local_opt_iters);
+      local_learning_rate = settings.get_double("local_learning_rate", local_learning_rate);
+      good_soulution_thr = settings.get_double("good_soulution_thr", good_soulution_thr);
+      part_based_memetic = settings.get_bool("part_based_memetic", part_based_memetic);
+
       local_opt_block.set_bool("verbose", false);
       local_opt_block.set_bool("save_intermediate_images", false);
       local_opt_block.set_double("learning_rate", local_learning_rate);
@@ -244,7 +252,7 @@ namespace upg
     }
     virtual void optimize(int iters = -1) override
     {
-      if (dynamic_cast<SdfGenInstance*>(gen.get()))
+      if (part_based_memetic && dynamic_cast<SdfGenInstance*>(gen.get()))
         optimize_part_based(iters);
       else
         optimize_memetic(iters);
@@ -484,6 +492,7 @@ namespace upg
     float good_soulution_thr = 0.02;
     float elites_fraction = 0.01;
     float finish_thr = 0;
+    bool part_based_memetic = true;
     bool verbose = false;
 
     //generator-specific stuff
