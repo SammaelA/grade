@@ -48,6 +48,23 @@ struct AABB
         min_pos = _min_pos;
         max_pos = _max_pos;
     }
+    inline glm::vec3 size() const
+    {
+      return max_pos - min_pos;
+    }
+    inline glm::vec3 center() const 
+    {
+      return 0.5f*(min_pos + max_pos);
+    }
+    inline float volume() const
+    {
+      return (max_pos.x-min_pos.x)*(max_pos.y-min_pos.y)*(max_pos.z-min_pos.z);
+    }
+    inline AABB expand(float ratio) const
+    {
+      return AABB(center()-0.5f*ratio*size(), center()+0.5f*ratio*size());
+    }
+
     inline bool contains(glm::vec3 &p) const
     {
         return (p.x >= min_pos.x) && (p.x < max_pos.x) &&
