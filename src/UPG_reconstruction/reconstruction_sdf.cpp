@@ -1042,11 +1042,38 @@ class FieldSdfCompare : public UPGOptimizableFunction
     return res;
   }
 
+  float estimate_positioning_quality(UPGReconstructionResult &res, FieldSdfCompare &opt_func, float threshold)
+  {
+    SdfGenInstance gen(res.structure);
+    ProceduralSdf sdf = gen.generate(res.parameters.p);
+
+    int inside_count = 0;
+    int apr_count = 0;
+    int inside_apr_count = 0;
+    for (int i=0;i<opt_func.a_points.size();i++)
+    {
+      if (opt_func.a_distances[i] < 0)
+        inside_count++;
+      if (abs(sdf.get_distance(opt_func.a_points[i]) - opt_func.a_distances[i]) < threshold)
+      {
+        if (opt_func.a_distances[i] < 0)
+          inside_apr_count++;
+        apr_count++;
+      }
+    }
+
+    return ((float)inside_apr_count/inside_count);
+
+    float base_density = opt_func.grid.points.size()/opt_func.grid.grid_box.volume();
+    float apr_density = apr_count/sdf.root->get_bbox().volume();
+    return ((float)apr_count/opt_func.a_points.size())/(sdf.root->get_bbox().volume() / opt_func.grid.grid_box.volume());
+  }
+
   std::vector<UPGReconstructionResult> field_reconstruction_step2(Block *step_blk, PointCloudReference &reference,
                                                                   const std::vector<UPGReconstructionResult> &prev_step_res)
   {
     std::vector<UPGReconstructionResult> part_results;
-    int tries = 15;
+    int tries = 25;
 
     Block opt_blk;
     opt_blk.copy(step_blk);
@@ -1059,7 +1086,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
     fine_opt_blk.copy(step_blk);
     fine_opt_blk.set_string("optimizer_name", "adam");
     fine_opt_blk.set_int("iterations", 200);
-    fine_opt_blk.set_bool("verbose", true);
+    fine_opt_blk.set_bool("verbose", false);
     fine_opt_blk.set_double("learning_rate", 0.0005f);
 
     auto parts = get_sdf_parts(prev_step_res[0].structure);
@@ -1075,7 +1102,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
       opt_func.verbose = false;
 
       UPGReconstructionResult best_part_result;
-      best_part_result.loss_optimizer = 1e9;
+      float best_quality = -1;
 
       for (int try_n=0;try_n<tries; try_n++)
       {
@@ -1092,23 +1119,28 @@ class FieldSdfCompare : public UPGOptimizableFunction
           }
         }
 
-        logerr("start pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
+        //logerr("start pos %f %f %f", best_pos.x, best_pos.y, best_pos.z);
         auto init_params = set_initial_parameters(part_structure, opt_func, best_pos);
-        logerr("start val = %f %f %f %f",init_params.parameters.p[0], init_params.parameters.p[1],
-                                         init_params.parameters.p[2], init_params.parameters.p[3]);
+        //logerr("start val = %f %f %f %f",init_params.parameters.p[0], init_params.parameters.p[1],
+        //                                 init_params.parameters.p[2], init_params.parameters.p[3]);
         std::shared_ptr<UPGOptimizer> optimizer = get_optimizer("adam", &opt_func, &opt_blk, init_params, part_structure);
         optimizer->optimize();
         auto partial_result = optimizer->get_best_results()[0];
-        logerr("res %f = %f %f %f %f",partial_result.loss_optimizer, partial_result.parameters.p[0], partial_result.parameters.p[1],
-                                    partial_result.parameters.p[2], partial_result.parameters.p[3]);
-        if (partial_result.loss_optimizer < best_part_result.loss_optimizer)
+        //logerr("res %f = %f %f %f %f",partial_result.loss_optimizer, partial_result.parameters.p[0], partial_result.parameters.p[1],
+        //                            partial_result.parameters.p[2], partial_result.parameters.p[3]);
+        float quality = estimate_positioning_quality(partial_result, opt_func, 0.002f);
+        logerr("Q=%f", quality);
+        if (quality > best_quality)
+        {
+          best_quality = quality;
           best_part_result = partial_result;
+        }
       }
-      logerr("best res = %f %f %f %f", best_part_result.parameters.p[0], best_part_result.parameters.p[1],
-                                       best_part_result.parameters.p[2], best_part_result.parameters.p[3]);
+      logerr("Q=%f best res = %f %f %f %f", best_quality, best_part_result.parameters.p[0], best_part_result.parameters.p[1],
+                                            best_part_result.parameters.p[2], best_part_result.parameters.p[3]);
 
       opt_func.set_hyperparameters(0.002f, 2.0f, reference.d_points.size(), 100);
-      opt_func.verbose = true;
+      opt_func.verbose = false;
       std::shared_ptr<UPGOptimizer> fine_optimizer = get_optimizer("adam", &opt_func, &fine_opt_blk,
                                                                    best_part_result, best_part_result.structure);
       fine_optimizer->optimize();
@@ -1126,7 +1158,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
       camera.up = glm::vec3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 4);
       engine::textureManager->save_png(t, "partial_sdf_"+std::to_string(i));
-      opt_func.remove_inactive_points(sdf, 0.002f);
+      opt_func.remove_inactive_points(sdf, 0.001f);
     }
     return {merge_results(part_results)};
 
