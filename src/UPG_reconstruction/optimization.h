@@ -110,7 +110,7 @@ namespace upg
 
     //based on GenInstance create full parameters description, that includes both generator's and 
     //scene's parameter blocks
-    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) = 0;
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const = 0;
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const = 0;
     virtual float estimate_positioning_quality(const UPGStructure &structure,
                                                const UPGPart &part, std::span<const float> parameters,

@@ -67,6 +67,7 @@ namespace upg
     if (fixed_structure)
     {
       settings_blk.get_block("optimization")->get_block("start")->set_arr("structure", ref_scene.first.s);
+      settings_blk.get_block("optimization")->get_block("step_0")->set_arr("structure", ref_scene.first.s);
       settings_blk.get_block("optimization")->get_block("step_0")->set_arr("params", ref_scene.second.p);
     }
 
@@ -206,8 +207,8 @@ namespace upg
     //scenes["1 Sphere"] = scene_1_sphere();
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
-    //scenes["8 Bubbles"] = scene_bubbles(4, 2);
-    scenes["32 Bubbles"] = scene_bubbles(8, 4);
+    scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
     //scenes["1 Box"] = scene_1_box();
     //scenes["2 Boxes"] = scene_2_boxes();

@@ -66,7 +66,7 @@ namespace upg
       return simple_render->render_and_compare_silhouette(mesh.pos, cameras);
     }
 
-    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) override
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
       ParametersDescription pd;
       pd.add(((MeshGenInstance*)gen)->desc);
