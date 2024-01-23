@@ -542,6 +542,11 @@ class FieldSdfCompare : public UPGOptimizableFunction
         }
       }
       logerr("removed %d/%d points", (int)(a_points.size()-active_points.size()), (int)a_points.size());
+      if (active_points.empty())
+      {
+        active_points = {a_points[0]};
+        active_distances = {a_distances[0]};
+      }
       a_points = active_points;
       a_distances = active_distances;
 
