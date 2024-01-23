@@ -67,7 +67,7 @@ namespace upg
     auto &part = ctx.target_structure_parts[node.depth];
     for (int j=part.s_range.first; j<part.s_range.second; j++)
       part_structure.s.push_back(ctx.target_structure.s[j]);
-    logerr("depth %d created structure %d %d", node.depth, (int)part_structure.s[0], (int)part_structure.s[1]);
+    //logerr("depth %d created structure %d %d", node.depth, (int)part_structure.s[0], (int)part_structure.s[1]);
     return part_structure;
   }
   UPGStructure get_random_structure(const GROptimizationContext &ctx, const GRNode &node)
@@ -171,6 +171,7 @@ namespace upg
     int inside_count = 0;
     int apr_count = 0;
     int inside_apr_count = 0;
+    int swallowed_points = 0;
     for (int i=0;i<opt_func.a_points.size();i++)
     {
       if (opt_func.a_distances[i] < 0)
@@ -181,9 +182,11 @@ namespace upg
           inside_apr_count++;
         apr_count++;
       }
+      else if (sdf.get_distance(opt_func.a_points[i]) < 0 && opt_func.a_distances[i] > 0)
+        swallowed_points++;
     }
 
-    return ((float)inside_apr_count/inside_count);
+    return ((float)(inside_apr_count - 100*swallowed_points)/inside_count);
   }
 
   void activate_node_on_edge(const GROptimizationContext &ctx, GREdge &edge)
@@ -197,8 +200,8 @@ namespace upg
     std::shared_ptr<UPGOptimizer> optimizer = get_optimizer_adam(&(edge.start->opt_func), ctx.fine_opt_settings_blk, start_p);
     optimizer->optimize();
     auto partial_result = optimizer->get_best_results()[0];
-    logerr("fine res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
-                                     partial_result.parameters.p[2], partial_result.parameters.p[3]);
+    //logerr("fine res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
+    //                                 partial_result.parameters.p[2], partial_result.parameters.p[3]);
  
     //calculate edge quality for fine optimized element
     edge.fine_prim = GRPrimitive{partial_result.structure, partial_result.parameters};
@@ -212,7 +215,7 @@ namespace upg
     edge.end->opt_func.remove_inactive_points(sdf, 0.001f); 
     edge.end->parent = edge.start;
     edge.end->depth = edge.start->depth+1;
-    edge.end->quality = -1;//TODO
+    edge.end->quality = edge.fine_quality;
     edge.end->primitives = edge.start->primitives;
     edge.end->primitives.push_back(edge.fine_prim);
   }
@@ -231,8 +234,8 @@ namespace upg
     std::shared_ptr<UPGOptimizer> optimizer = get_optimizer_adam(&(node.opt_func), ctx.opt_settings_blk, start_p);
     optimizer->optimize();
     auto partial_result = optimizer->get_best_results()[0];
-    logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
-                                partial_result.parameters.p[2], partial_result.parameters.p[3]);
+    //logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
+    //                            partial_result.parameters.p[2], partial_result.parameters.p[3]);
   
     //calculate edge quality
     float result_quality = estimate_positioning_quality(partial_result, node.opt_func, ctx.settings.distance_fine_thr);
@@ -245,25 +248,6 @@ namespace upg
     new_edge.opt_prim = GRPrimitive{partial_result.structure, partial_result.parameters};
     new_edge.opt_quality = result_quality;
     node.edges.push_back(new_edge);
-  }
-
-  GRNode *graph_step_N_greedy(const GROptimizationContext &ctx, GRNode &node, int N_tries = 50)
-  {
-    //if some tries left, stay in the same node and try again
-    if (node.edges.size() < N_tries)
-      return &node;
-
-    //else choose best edge and go to it's end node
-    int best_pos = 0;
-    for (int i=0;i<node.edges.size();i++)
-    {
-      if (node.edges[i].opt_quality > node.edges[best_pos].opt_quality)
-        best_pos = i;
-    }
-    if (!node.edges[best_pos].end)
-      activate_node_on_edge(ctx, node.edges[best_pos]);
-    logerr("best Q = %f", node.edges[best_pos].opt_quality);
-    return node.edges[best_pos].end.get();
   }
 
   UPGReconstructionResult merge_primitives(const std::vector<GRPrimitive> &primitives)
@@ -304,7 +288,19 @@ namespace upg
     return res;
   }
 
-  UPGReconstructionResult GR_agent_main_loop(GROptimizationContext &ctx)
+  void debug_render_node(const GRNode *n, int id)
+  {
+    SdfGenInstance gen(n->primitives.back().structure);
+    ProceduralSdf sdf = gen.generate(n->primitives.back().parameters.p);
+    CameraSettings camera;
+    camera.origin = glm::vec3(0, 0, 3);
+    camera.target = glm::vec3(0, 0, 0);
+    camera.up = glm::vec3(0, 1, 0);
+    Texture t = render_sdf(sdf, camera, 512, 512, 4);
+    engine::textureManager->save_png(t, "sdf_node_" + std::to_string(id));
+  }
+
+  UPGReconstructionResult GR_agent_N_greedy(GROptimizationContext &ctx, int N_tries = 25)
   {
     int total_nodes = 0;
     int steps = 0;
@@ -317,24 +313,110 @@ namespace upg
     while (node->depth < max_depth && steps < max_steps)
     {
       opt_step(ctx, *node);
-      GRNode *n = graph_step_N_greedy(ctx, *node);
-      if (node != n)
+      GRNode *new_node = node;
+
+      //choose best edge and go to the next stop with it
+      if (node->edges.size() >= N_tries)
       {
-        SdfGenInstance gen(n->primitives.back().structure);
-        ProceduralSdf sdf = gen.generate(n->primitives.back().parameters.p);
-        CameraSettings camera;
-        camera.origin = glm::vec3(0,0,3);
-        camera.target = glm::vec3(0,0,0);
-        camera.up = glm::vec3(0,1,0);
-        Texture t = render_sdf(sdf, camera, 512, 512, 4);
-        engine::textureManager->save_png(t, "sdf_node_"+std::to_string(total_nodes));
+        int best_pos = 0;
+        for (int i=0;i<node->edges.size();i++)
+        {
+          if (node->edges[i].opt_quality > node->edges[best_pos].opt_quality)
+            best_pos = i;
+        }
+        if (!node->edges[best_pos].end)
+          activate_node_on_edge(ctx, node->edges[best_pos]);
+        //logerr("best Q = %f", node->edges[best_pos].opt_quality);
+        new_node = node->edges[best_pos].end.get();
+      }
+      if (node != new_node)
+      {
+        debug_render_node(new_node, total_nodes);
         total_nodes++;
       }
-      node = n;
+      node = new_node;
       steps++;
     }
 
     return merge_primitives(node->primitives);
+  }
+
+  UPGReconstructionResult GR_agent_stochastic_returns(const GROptimizationContext &ctx, int path_limit = 25)
+  {
+    float best_quality = -1e9;
+    UPGReconstructionResult best_result;
+    GRNode *node = ctx.root.get();
+    int max_depth = ctx.target_structure_parts.size();
+    int total_nodes = 0;
+    int paths = 0;
+
+    while (paths < path_limit)
+    {
+      GRNode *new_node = node;
+
+      //pick best and go deeper
+      if (node->depth < max_depth)
+      {
+        opt_step(ctx, *node);
+        int best_pos = 0;
+        for (int i=0;i<node->edges.size();i++)
+        {
+          if (node->edges[i].opt_quality > node->edges[best_pos].opt_quality)
+            best_pos = i;
+        }
+        if (!node->edges[best_pos].end)
+          activate_node_on_edge(ctx, node->edges[best_pos]);
+        //logerr("best Q = %f", node->edges[best_pos].opt_quality);
+        new_node = node->edges[best_pos].end.get();
+      }
+      else //we found some solution. Remember it if it's the best and go to some previous node to improve later
+      {
+        UPGReconstructionResult res = merge_primitives(node->primitives);
+        if (node->quality > best_quality)
+        {
+          best_quality = node->quality;
+          best_result = res;
+        }
+        paths++;
+
+        std::vector<float> improvement_chances;
+        std::vector<float> qualities;
+        std::vector<GRNode *> path;
+        GRNode *n = node;
+        while (n->parent != nullptr)
+        {
+          //for every node chance of improvement is inverse proportional to it's best edge quality
+          path.push_back(n->parent);
+          float prev_chance = improvement_chances.empty() ? 0 : improvement_chances.back();
+          improvement_chances.push_back(1.0f/MAX(1e-6, n->quality) + prev_chance);
+          qualities.push_back(n->quality);
+          n = n->parent;
+        }
+
+        float rnd = urand(0, improvement_chances.back());
+        int i_node_id = 0;
+        for (int i=0;i<improvement_chances.size();i++)
+        {
+          if (rnd < improvement_chances[i])
+          {
+            i_node_id = i;
+            break;
+          } 
+        }
+
+        logerr("improving node %d with chance %f", i_node_id, qualities[i_node_id]);
+        new_node = path[i_node_id];
+      }
+
+      if (node != new_node && new_node->depth > 0)
+      {
+        debug_render_node(new_node, total_nodes);
+        total_nodes++;
+      }
+      node = new_node;
+    }
+
+    return best_result;
   }
 
   std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<glm::vec3> &points,
@@ -363,6 +445,8 @@ namespace upg
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
-    return {GR_agent_main_loop(ctx)};
+    auto res = GR_agent_stochastic_returns(ctx);
+
+    return {res};
   }
 }
