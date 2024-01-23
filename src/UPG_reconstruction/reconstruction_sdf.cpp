@@ -488,7 +488,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 class FieldSdfCompare : public UPGOptimizableFunction
   {
   public:
-    ReferencePointsGrid grid;
+    const std::vector<glm::vec3> &points;
+    const std::vector<float> &distances;
+    //ReferencePointsGrid grid;
     std::vector<glm::vec3> a_points;
     std::vector<float> a_distances;
 
@@ -510,7 +512,9 @@ class FieldSdfCompare : public UPGOptimizableFunction
                     unsigned grid_cells_count = 16*16*16,
                     unsigned max_parameters = 1024):
 //                    float _beta = 0.1, float _p = 2, float _reg_q = 1e6)
-    grid(_points, _distances, grid_cells_count)
+    points(_points),
+    distances(_distances)
+//    grid(_points, _distances, grid_cells_count)
     {
       a_points = _points;
       a_distances = _distances;
@@ -550,6 +554,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
       a_points = active_points;
       a_distances = active_distances;
 
+/*
       unsigned active_left = 0;
       unsigned active_cells = 0;
       for (auto &c : grid.cells)
@@ -558,7 +563,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
           continue;
         for (unsigned i=c.offset;i<c.offset+c.count;i++)
         {
-          if (grid.is_active[i] && abs(sdf.get_distance(grid.points[i]) - grid.distances[i]) < threshold)
+          if (grid.is_active[i] && abs(sdf.get_distance(points[i]) - distances[i]) < threshold)
           {
             grid.is_active[i] = false;
             c.active_count--;
@@ -568,6 +573,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
         active_cells += (c.active_count>0);
       }
       logerr("active cells left %u points %u", active_cells, active_left);
+*/
     }
 
     template <bool is_differentiable>
@@ -645,20 +651,20 @@ class FieldSdfCompare : public UPGOptimizableFunction
 
       double total_loss_r = 0;
       int Ns = 1;
-      if (samples < 0.75*grid.points.size())
+      if (samples < 0.75*points.size())
       {
         Ns = samples;
         for (int i=0;i<samples;i++)
         {
-          int index = rand() % grid.points.size();
-          total_loss_r += reg_loss_func<is_differentiable>(sdf, grid.points[index], grid.distances[index]);
+          int index = rand() % points.size();
+          total_loss_r += reg_loss_func<is_differentiable>(sdf, points[index], distances[index]);
         }
       }
       else
       {
-        Ns = grid.points.size();
-        for (int i=0;i<grid.points.size();i++)
-          total_loss_r += reg_loss_func<is_differentiable>(sdf, grid.points[i], grid.distances[i]);
+        Ns = points.size();
+        for (int i=0;i<points.size();i++)
+          total_loss_r += reg_loss_func<is_differentiable>(sdf, points[i], distances[i]);
       }
       if constexpr (is_differentiable)
       {
@@ -672,6 +678,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
       return total_loss/Na + total_loss_r/Ns;
     }
 
+/*
     template <bool is_differentiable>
     float sample_grid(const ProceduralSdf &sdf, int samples, std::span<float> out_grad = {})
     {
@@ -767,6 +774,7 @@ class FieldSdfCompare : public UPGOptimizableFunction
       
       return total_loss/samples + total_loss_r/samples;
     }
+*/
 
     virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
                            const OptParams &params, std::span<float> out_grad) override
@@ -1069,9 +1077,9 @@ class FieldSdfCompare : public UPGOptimizableFunction
 
     return ((float)inside_apr_count/inside_count);
 
-    float base_density = opt_func.grid.points.size()/opt_func.grid.grid_box.volume();
-    float apr_density = apr_count/sdf.root->get_bbox().volume();
-    return ((float)apr_count/opt_func.a_points.size())/(sdf.root->get_bbox().volume() / opt_func.grid.grid_box.volume());
+    //float base_density = opt_func.points.size()/opt_func.grid.grid_box.volume();
+    //float apr_density = apr_count/sdf.root->get_bbox().volume();
+    //return ((float)apr_count/opt_func.a_points.size())/(sdf.root->get_bbox().volume() / opt_func.grid.grid_box.volume());
   }
 
   std::vector<UPGReconstructionResult> field_reconstruction_step2(Block *step_blk, PointCloudReference &reference,
@@ -1111,16 +1119,15 @@ class FieldSdfCompare : public UPGOptimizableFunction
 
       for (int try_n=0;try_n<tries; try_n++)
       {
-        AABB bbox = opt_func.grid.grid_box;
         glm::vec3 best_pos;
         float best_dist = 1e6;
         for (int k=0;k<15000;k++)
         {
-          unsigned index = rand() % opt_func.grid.points.size();
-          if (opt_func.grid.is_active[index] && opt_func.grid.distances[index] < best_dist)
+          unsigned index = rand() % opt_func.a_points.size();
+          if (opt_func.a_distances[index] < best_dist)
           {
-            best_dist = opt_func.grid.distances[index];
-            best_pos = opt_func.grid.points[index];
+            best_dist = opt_func.a_distances[index];
+            best_pos = opt_func.a_points[index];
           }
         }
 
