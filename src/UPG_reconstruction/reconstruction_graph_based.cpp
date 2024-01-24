@@ -4,6 +4,7 @@
 #include "common_utils/distribution.h"
 #include "tinyEngine/camera.h"
 #include "tinyEngine/engine.h"
+#include <algorithm>
 
 namespace upg
 {
@@ -26,7 +27,7 @@ namespace upg
     std::vector<GREdge> edges;
     GRNode *parent = nullptr;
 
-    float quality = -1;
+    float quality = 0;
     int depth = 0;
   };
 
@@ -60,6 +61,114 @@ namespace upg
     std::vector<UPGPart> target_structure_parts; //can be empty
     AABB point_cloud_bbox;
   };
+
+  //[0.000]--(-0.11)-->[-0.11]
+  //   |                
+  //   ------(0.093)-->[0.093]--(0.112)-->
+  //   |                  |
+  //   |                  ------(0.011)-->
+  //   |
+  //   ------(0.007)-->[0.007]
+  std::string get_node_string(const GRNode &node)
+  {
+    char ns[8];
+    if (node.quality >= 0)
+      snprintf(ns, 8, "[%.3f]", MIN(1, node.quality));
+    else
+      snprintf(ns, 8, "[%.2f]", MAX(-1, node.quality));
+    return std::string(ns);
+  }
+
+  std::string get_edge_string(const GREdge &edge)
+  {
+    char es[13];
+    if (edge.opt_quality >= 0)
+      snprintf(es, 13, "--(%.3f)%s", MIN(1, edge.opt_quality), edge.end ? "-->" : "   ");
+    else
+      snprintf(es, 13, "--(%.2f)%s", MAX(-1, edge.opt_quality), edge.end ? "-->" : "   ");
+    return std::string(es);
+  }
+
+  std::string get_v_string()
+  {
+    return "   |               ";
+  }
+
+  void print_reconstruction_node_rec(std::vector<std::string> &lines, const GRNode &node, int offset)
+  {    
+    std::string empty_line(offset, ' ');
+    lines.back() += get_node_string(node);
+
+    if (node.edges.empty())
+      return;
+    
+    std::vector<unsigned> indices(node.edges.size());
+    for (int i=0;i<node.edges.size();i++)
+      indices[i] = i;
+    std::sort(indices.begin(), indices.end(), [&node](int a, int b)-> bool {
+      if (!node.edges[a].end && node.edges[b].end)
+        return false;
+      else if (node.edges[a].end && !node.edges[b].end)
+        return true;
+      else
+        return node.edges[a].fine_quality > node.edges[b].fine_quality;
+    });
+
+    lines.back() += get_edge_string(node.edges[indices[0]]);
+    int prev_lines_size = lines.size();
+    int next_row_offset = lines.back().size();
+    if (node.edges[indices[0]].end)
+      print_reconstruction_node_rec(lines, *(node.edges[indices[0]].end), next_row_offset);
+    for (int i=1;i<node.edges.size();i++)
+    {
+      if (node.edges[indices[i]].end)
+      {
+        for (int l = prev_lines_size; l<lines.size();l++)
+          lines[l].at(offset + 3) = '|';
+        lines.emplace_back(); 
+        lines.back() = empty_line + get_v_string();
+        lines.emplace_back();
+        lines.back() = empty_line + "   ----" + get_edge_string(node.edges[indices[i]]);
+        prev_lines_size = lines.size();
+        print_reconstruction_node_rec(lines, *(node.edges[indices[i]].end), next_row_offset);
+      }
+      else
+      {
+        if (lines.size() == prev_lines_size)
+        {
+          lines.emplace_back(); 
+          lines.back() = empty_line + get_v_string();
+          lines.emplace_back();
+          lines.back() = empty_line + "   ----" + get_edge_string(node.edges[indices[i]]);
+        }
+        else
+        {
+          std::string l1 = get_v_string();
+          for (int c=0;c<l1.size();c++)
+            lines[prev_lines_size].at(offset + c) = l1.at(c);
+          std::string l2 = "   ----" + get_edge_string(node.edges[indices[i]]);
+          for (int c=0;c<l2.size();c++)
+            lines[prev_lines_size+1].at(offset + c) = l2.at(c);
+        }
+        prev_lines_size += 2;
+      }
+    }
+  }
+
+  void print_reconstruction_graph(const GROptimizationContext &ctx, const GRNode &root)
+  {
+    debug("RECONSTRUCTION GRAPH\n");
+    for (int i=0;i<80;i++)
+      debug("=");
+    debug("\n");
+    std::vector<std::string> lines = {""};
+    print_reconstruction_node_rec(lines, root, 0);
+    for (std::string &l : lines)
+      debug("%s\n",l.c_str());
+    for (int i=0;i<80;i++)
+      debug("=");
+    debug("\n");
+  }
 
   UPGStructure get_structure_known_structure(const GROptimizationContext &ctx, const GRNode &node)
   {
@@ -445,7 +554,8 @@ namespace upg
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
-    auto res = GR_agent_stochastic_returns(ctx);
+    auto res = GR_agent_stochastic_returns(ctx, 5);
+    print_reconstruction_graph(ctx, *(ctx.root));
 
     return {res};
   }
