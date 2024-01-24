@@ -8,6 +8,8 @@
 
 namespace upg
 {
+  static int id_counter = 0;
+  
   struct GRPrimitive
   {
     UPGStructure structure;
@@ -20,7 +22,7 @@ namespace upg
     GRNode(const FieldSdfCompare &_opt_func):
       opt_func(_opt_func)
     {
-
+      id = id_counter++;
     }
     FieldSdfCompare opt_func;
     std::vector<GRPrimitive> primitives;
@@ -29,6 +31,7 @@ namespace upg
 
     float quality = 0;
     int depth = 0;
+    int id = 0;
   };
 
   struct GREdge
@@ -72,11 +75,14 @@ namespace upg
   std::string get_node_string(const GRNode &node)
   {
     char ns[8];
+    char op = node.edges.empty() ? '#' : '[';
+    char cl = node.edges.empty() ? '#' : ']';
     if (node.quality >= 0)
-      snprintf(ns, 8, "[%.3f]", MIN(1, node.quality));
+      snprintf(ns, 8, "%c%.3f%c", op, MIN(1, node.quality), cl);
     else
-      snprintf(ns, 8, "[%.2f]", MAX(-1, node.quality));
-    return std::string(ns);
+      snprintf(ns, 8, "%c%.2f%c", op, MAX(-1, node.quality), cl);
+    std::string n_string = node.edges.empty() ? std::to_string(node.id) : "";
+    return std::string(ns) + n_string;
   }
 
   std::string get_edge_string(const GREdge &edge)
@@ -110,6 +116,8 @@ namespace upg
         return false;
       else if (node.edges[a].end && !node.edges[b].end)
         return true;
+      else if (node.edges[a].end && node.edges[b].end)
+        return node.edges[a].end->id < node.edges[b].end->id;
       else
         return node.edges[a].fine_quality > node.edges[b].fine_quality;
     });
@@ -283,8 +291,8 @@ namespace upg
     int swallowed_points = 0;
     for (int i=0;i<opt_func.a_points.size();i++)
     {
-      if (opt_func.a_distances[i] < 0)
-        inside_count++;
+      //if (opt_func.a_distances[i] < 0)
+      //  inside_count++;
       if (abs(sdf.get_distance(opt_func.a_points[i]) - opt_func.a_distances[i]) < threshold)
       {
         if (opt_func.a_distances[i] < 0)
@@ -295,7 +303,26 @@ namespace upg
         swallowed_points++;
     }
 
+    for (int i=0;i<opt_func.points.size();i++)
+    {
+      if (opt_func.distances[i] < 0)
+        inside_count++;
+    }
+
     return ((float)(inside_apr_count - 100*swallowed_points)/inside_count);
+  }
+
+  float estimate_solution_quality_MAE(const UPGReconstructionResult &res, const FieldSdfCompare &opt_func)
+  {
+    SdfGenInstance gen(res.structure);
+    ProceduralSdf sdf = gen.generate(res.parameters.p);
+    double AE = 0;
+    for (int i=0;i<opt_func.points.size();i++)
+    {
+      AE += abs(opt_func.distances[i] - sdf.get_distance(opt_func.points[i]));
+    }
+
+    return MAX(0, 1-AE/opt_func.points.size());
   }
 
   void activate_node_on_edge(const GROptimizationContext &ctx, GREdge &edge)
@@ -361,6 +388,14 @@ namespace upg
 
   UPGReconstructionResult merge_primitives(const std::vector<GRPrimitive> &primitives)
   {
+    assert(primitives.size() > 0);
+    if (primitives.size() == 1)
+    {
+      UPGReconstructionResult res;
+      res.structure = primitives[0].structure;
+      res.parameters = primitives[0].parameters;
+      return res;
+    }
     std::vector<uint16_t> structure_inv;
     std::vector<float> params_inv;
     uint32_t num = 1;
@@ -450,10 +485,11 @@ namespace upg
     return merge_primitives(node->primitives);
   }
 
-  UPGReconstructionResult GR_agent_stochastic_returns(const GROptimizationContext &ctx, int path_limit = 25)
+  UPGReconstructionResult GR_agent_stochastic_returns(const GROptimizationContext &ctx, int path_limit = 25, int tries_per_step = 3)
   {
     float best_quality = -1e9;
     UPGReconstructionResult best_result;
+    GRNode *best_end_node = nullptr;
     GRNode *node = ctx.root.get();
     int max_depth = ctx.target_structure_parts.size();
     int total_nodes = 0;
@@ -466,7 +502,8 @@ namespace upg
       //pick best and go deeper
       if (node->depth < max_depth)
       {
-        opt_step(ctx, *node);
+        for (int k=0;k<tries_per_step;k++)
+          opt_step(ctx, *node);
         int best_pos = 0;
         for (int i=0;i<node->edges.size();i++)
         {
@@ -481,9 +518,12 @@ namespace upg
       else //we found some solution. Remember it if it's the best and go to some previous node to improve later
       {
         UPGReconstructionResult res = merge_primitives(node->primitives);
-        if (node->quality > best_quality)
+        float solution_quality = estimate_solution_quality_MAE(res, node->opt_func);
+        node->quality = solution_quality;
+        if (solution_quality > best_quality)
         {
-          best_quality = node->quality;
+          best_quality = solution_quality;
+          best_end_node = node;
           best_result = res;
         }
         paths++;
@@ -491,7 +531,7 @@ namespace upg
         std::vector<float> improvement_chances;
         std::vector<float> qualities;
         std::vector<GRNode *> path;
-        GRNode *n = node;
+        GRNode *n = best_end_node;
         while (n->parent != nullptr)
         {
           //for every node chance of improvement is inverse proportional to it's best edge quality
@@ -513,7 +553,8 @@ namespace upg
           } 
         }
 
-        logerr("improving node %d with chance %f", i_node_id, qualities[i_node_id]);
+        logerr("improving node %d(path %d) with chance %f", i_node_id, best_end_node->id, qualities[i_node_id]);
+        //print_reconstruction_graph(ctx, *(ctx.root));
         new_node = path[i_node_id];
       }
 
@@ -554,7 +595,7 @@ namespace upg
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
-    auto res = GR_agent_stochastic_returns(ctx, 5);
+    auto res = GR_agent_stochastic_returns(ctx, 10, 5);
     print_reconstruction_graph(ctx, *(ctx.root));
 
     return {res};
