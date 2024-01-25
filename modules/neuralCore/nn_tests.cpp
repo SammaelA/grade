@@ -407,6 +407,44 @@ void test_1_tensor_processor()
       printf("FAILED %f >= %f\n", diff, 0.01f);
   }
 
+  void test_9_softmax()
+  {
+    printf("TEST 9. SOFTMAX FUNCTION\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken input = TensorToken(3, 2);
+
+      TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
+      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 
+                                              max_val.total_size(), input.total_size()/max_val.total_size(), 1, 0);
+      output = TensorToken::exp(output);
+      TensorToken sum = output.sum(input.Dim-1);
+      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 
+                                           sum.total_size(), output.total_size()/sum.total_size(), 1, 0);
+
+      tc.input(input, "A");
+      tc.output(res, "A");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1, 2, 2, -1, -3, 2};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("A", A.data(), A.size());
+    //printf("%f %f %f %f %f %f\n", A[0], A[1], A[2], A[3], A[4], A[5]);
+
+    printf("  9.1. %-64s", "Correct result ");
+    if (abs(A[0] - 0.155362f) < 1e-6 && abs(A[1] - 0.422319f) < 1e-6 && abs(A[5] - 0.946499f) < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
+    
+  }
+
   void perform_tests()
   {
     printf("NEURAL CORE CPU TESTS\n");
@@ -418,6 +456,7 @@ void test_1_tensor_processor()
     test_6_linear_regression_train();
     test_7_SIREN_image();
     test_8_SIREN_SDF();
+    test_9_softmax();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -429,5 +468,6 @@ void test_1_tensor_processor()
     test_6_linear_regression_train();
     test_7_SIREN_image();
     test_8_SIREN_SDF();
+    test_9_softmax();
   }
 }

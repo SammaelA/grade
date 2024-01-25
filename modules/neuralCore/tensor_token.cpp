@@ -88,7 +88,7 @@ namespace nn
     for (int i = 0; i < other.Dim; i++)
     {
       if (sizes[i] != other.sizes[i])
-        printf("TensorToken: check failed %u != %u\n", sizes[i], other.sizes[i]);
+        printf("TensorToken: Dim %d check failed %u != %u\n", i, sizes[i], other.sizes[i]);
       assert(sizes[i] == other.sizes[i]);
     }
   }
