@@ -98,14 +98,16 @@ public:
   virtual void copyKernelFloatCmd(uint32_t length);
   
   virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
-  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
+  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void minCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void expCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
   virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
   virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
   virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
-  virtual void addCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
+  virtual void addCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);
   virtual void outer_p_addCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
@@ -114,8 +116,10 @@ public:
   virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
   virtual void set_inputCmd(const float* data_in, unsigned offset, unsigned size);
-  virtual void divCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
-  virtual void subCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C);
+  virtual void divCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void subCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void sinCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void maxCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);

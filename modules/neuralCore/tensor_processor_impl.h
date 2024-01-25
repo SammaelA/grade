@@ -26,10 +26,14 @@ protected:
   virtual void CommitDeviceData() {}                                                         // will be overriden in generated class
   virtual void GetExecutionTime(const char *a_funcName, float a_out[4]) { a_out[0] = 0.0f; } // will be overriden in generated class
   virtual void __attribute__((noinline)) kernel1D_fill(float *data, unsigned steps, Variable A, float val); // A = val
-  virtual void __attribute__((noinline)) kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A + B
-  virtual void __attribute__((noinline)) kernel2D_mul(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A * B
-  virtual void __attribute__((noinline)) kernel2D_sub(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A - B
-  virtual void __attribute__((noinline)) kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A + B
+  virtual void __attribute__((noinline)) kernel2D_mul(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel2D_sub(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel2D_div(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
   virtual void __attribute__((noinline)) kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
   virtual void __attribute__((noinline)) kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C);                     // C = pow(A, B)
   virtual void __attribute__((noinline)) kernel1D_sin(float *data, unsigned steps, Variable A, Variable B);                                 // B = sin(A)

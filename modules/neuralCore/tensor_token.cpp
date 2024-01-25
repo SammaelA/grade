@@ -93,10 +93,25 @@ namespace nn
     }
   }
 
+  void TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
+                          unsigned steps, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step)
+  {
+    assert(TensorProgram::cmd_properties[cmd].cls == TensorProgram::CmdClass::ARITHMETICS);
+    tp->add_command(cmd, A.id, B.id, C.id, steps, step_size, B_outer_step, B_inner_step);
+  }
+
+  TensorToken TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
+                                 unsigned steps, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step)
+  {
+    TensorToken res(A.sizes);
+    g_2op(cmd, A, B, res, steps, step_size, B_outer_step, B_inner_step);
+    return res;
+  }
+
   TensorToken &TensorToken::operator+=(const TensorToken &other)
   {
     check_dimensions_for_arithmetics(other);
-    tp->add_command(TensorProgram::ADD, id, other.id, id);
+    g_2op(TensorProgram::ADD, *this, other, *this, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return *this;
   }
 
@@ -104,14 +119,14 @@ namespace nn
   {
     check_dimensions_for_arithmetics(other);
     TensorToken res(sizes);
-    tp->add_command(TensorProgram::ADD, id, other.id, res.id);
+    g_2op(TensorProgram::ADD, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return res;
   }
 
   TensorToken &TensorToken::operator*=(const TensorToken &other)
   {
     check_dimensions_for_arithmetics(other);
-    tp->add_command(TensorProgram::MUL, id, other.id, id);
+    g_2op(TensorProgram::MUL, *this, other, *this, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return *this;
   }
 
@@ -119,14 +134,14 @@ namespace nn
   {
     check_dimensions_for_arithmetics(other);
     TensorToken res(sizes);
-    tp->add_command(TensorProgram::MUL, id, other.id, res.id);
+    g_2op(TensorProgram::MUL, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return res;
   }
 
   TensorToken &TensorToken::operator-=(const TensorToken &other)
   {
     check_dimensions_for_arithmetics(other);
-    tp->add_command(TensorProgram::SUB, id, other.id, id);
+    g_2op(TensorProgram::SUB, *this, other, *this, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return *this;
   }
 
@@ -134,14 +149,14 @@ namespace nn
   {
     check_dimensions_for_arithmetics(other);
     TensorToken res(sizes);
-    tp->add_command(TensorProgram::SUB, id, other.id, res.id);
+    g_2op(TensorProgram::SUB, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return res;
   }
 
   TensorToken &TensorToken::operator/=(const TensorToken &other)
   {
     check_dimensions_for_arithmetics(other);
-    tp->add_command(TensorProgram::DIV, id, other.id, id);
+    g_2op(TensorProgram::DIV, *this, other, *this, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return *this;
   }
 
@@ -149,7 +164,7 @@ namespace nn
   {
     check_dimensions_for_arithmetics(other);
     TensorToken res(sizes);
-    tp->add_command(TensorProgram::DIV, id, other.id, res.id);
+    g_2op(TensorProgram::DIV, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 0, 1);
     return res;
   }
 

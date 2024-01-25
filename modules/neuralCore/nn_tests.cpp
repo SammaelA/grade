@@ -65,10 +65,10 @@ void test_1_tensor_processor()
     vars[2] = {0,6,1, {0,0,0,0}};//c
     vars[3] = {0,6,1, {0,0,0,0}};//s
     std::vector<TensorProgram::Command> commands(4);
-    commands[0] = {TensorProgram::ADD, {0, 1, 0, 0, 0, 0}}; //A = A + B
-    commands[1] = {TensorProgram::ADD, {0, 2, 0, 0, 0, 0}}; //A = A + c
-    commands[2] = {TensorProgram::SUM, {0, 0, 3, 0, 0, 0}}; //s = sum(A)
-    commands[3] = {TensorProgram::DIV, {0, 2, 0, 0, 0, 0}}; //A = A/c
+    commands[0] = {TensorProgram::ADD, {0, 1, 0, 1, 3, 0, 1, 0}}; //A = A + B
+    commands[1] = {TensorProgram::ADD, {0, 2, 0, 3, 1, 0, 1, 0}}; //A = A + c
+    commands[2] = {TensorProgram::SUM, {0, 0, 3, 0, 0, 0, 0, 0}}; //s = sum(A)
+    commands[3] = {TensorProgram::DIV, {0, 2, 0, 3, 1, 0, 1, 0}}; //A = A/s
 
     TensorProgram p;
     p.commands = commands;

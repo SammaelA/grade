@@ -99,7 +99,12 @@ namespace nn
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t);
     void fill(float val);
 
-    //ariphmetic
+    static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
+                      unsigned step, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step);
+    static TensorToken g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
+                             unsigned step, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step);
+    
+    //arithmetics
     TensorToken &operator+=(const TensorToken &other);
     TensorToken operator+(const TensorToken &other) const;
     TensorToken &operator*=(const TensorToken &other);

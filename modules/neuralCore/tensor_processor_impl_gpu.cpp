@@ -106,7 +106,8 @@ void TensorProcessorImpl_GPU::cosCmd(float *data, unsigned steps, Variable A, Va
  
 }
 
-void TensorProcessorImpl_GPU::mulCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::mulCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 32;
   uint32_t blockSizeY = 8;
@@ -114,6 +115,8 @@ void TensorProcessorImpl_GPU::mulCmd(float *data, unsigned steps, unsigned step_
 
   struct KernelArgsPC
   {
+    unsigned int m_B_outer_step; 
+    unsigned int m_B_inner_step; 
     Variable m_A; 
     Variable m_B; 
     Variable m_C; 
@@ -131,6 +134,8 @@ void TensorProcessorImpl_GPU::mulCmd(float *data, unsigned steps, unsigned step_
   pcData.m_sizeY  = steps;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_B_outer_step = B_outer_step; 
+  pcData.m_B_inner_step = B_inner_step; 
   pcData.m_A = A; 
   pcData.m_B = B; 
   pcData.m_C = C; 
@@ -356,7 +361,8 @@ void TensorProcessorImpl_GPU::osumCmd(float *data, unsigned steps, unsigned step
  
 }
 
-void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 32;
   uint32_t blockSizeY = 8;
@@ -364,6 +370,8 @@ void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned step_
 
   struct KernelArgsPC
   {
+    unsigned int m_B_outer_step; 
+    unsigned int m_B_inner_step; 
     Variable m_A; 
     Variable m_B; 
     Variable m_C; 
@@ -381,6 +389,8 @@ void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned step_
   pcData.m_sizeY  = steps;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_B_outer_step = B_outer_step; 
+  pcData.m_B_inner_step = B_inner_step; 
   pcData.m_A = A; 
   pcData.m_B = B; 
   pcData.m_C = C; 
@@ -604,7 +614,8 @@ void TensorProcessorImpl_GPU::set_inputCmd(const float* data_in, unsigned offset
  
 }
 
-void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 32;
   uint32_t blockSizeY = 8;
@@ -612,6 +623,8 @@ void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned step_
 
   struct KernelArgsPC
   {
+    unsigned int m_B_outer_step; 
+    unsigned int m_B_inner_step; 
     Variable m_A; 
     Variable m_B; 
     Variable m_C; 
@@ -629,6 +642,8 @@ void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned step_
   pcData.m_sizeY  = steps;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_B_outer_step = B_outer_step; 
+  pcData.m_B_inner_step = B_inner_step; 
   pcData.m_A = A; 
   pcData.m_B = B; 
   pcData.m_C = C; 
@@ -640,7 +655,8 @@ void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned step_
  
 }
 
-void TensorProcessorImpl_GPU::subCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::subCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 32;
   uint32_t blockSizeY = 8;
@@ -648,6 +664,8 @@ void TensorProcessorImpl_GPU::subCmd(float *data, unsigned steps, unsigned step_
 
   struct KernelArgsPC
   {
+    unsigned int m_B_outer_step; 
+    unsigned int m_B_inner_step; 
     Variable m_A; 
     Variable m_B; 
     Variable m_C; 
@@ -665,6 +683,8 @@ void TensorProcessorImpl_GPU::subCmd(float *data, unsigned steps, unsigned step_
   pcData.m_sizeY  = steps;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_B_outer_step = B_outer_step; 
+  pcData.m_B_inner_step = B_inner_step; 
   pcData.m_A = A; 
   pcData.m_B = B; 
   pcData.m_C = C; 
@@ -931,22 +951,22 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       break;
     case nn::TensorProgram::ADD:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
-  addCmd(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+  addCmd(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
     case nn::TensorProgram::MUL:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mulLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
-  mulCmd(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+  mulCmd(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
     case nn::TensorProgram::SUB:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, subLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
-  subCmd(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+  subCmd(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
     case nn::TensorProgram::DIV:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, divLayout, 0, 1, &m_allGeneratedDS[2], 0, nullptr);
-  divCmd(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+  divCmd(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
     case nn::TensorProgram::EXP:

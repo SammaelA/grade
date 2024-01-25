@@ -38,16 +38,16 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::NOOP:
       break;
     case nn::TensorProgram::ADD:
-      kernel2D_add(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_add(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
       break;
     case nn::TensorProgram::MUL:
-      kernel2D_mul(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_mul(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
       break;
     case nn::TensorProgram::SUB:
-      kernel2D_sub(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_sub(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
       break;
     case nn::TensorProgram::DIV:
-      kernel2D_div(memory.data(), A.total_size / B.total_size, B.total_size, A, B, C);
+      kernel2D_div(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
       break;
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory.data(), A.total_size, A, C);
@@ -176,29 +176,33 @@ void TensorProcessorImpl::kernel1D_fill(float *data, unsigned steps, Variable A,
   }
 }
 
-void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A + B
+void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
     for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] + data[B.offset + j];
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] + data[B.offset + i * B_outer_step + B_inner_step * j];
 }
-void TensorProcessorImpl::kernel2D_mul(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A * B
+void TensorProcessorImpl::kernel2D_mul(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
     for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] * data[B.offset + j];
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] * data[B.offset + i * B_outer_step + B_inner_step * j];
 }
-void TensorProcessorImpl::kernel2D_sub(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A * B
+void TensorProcessorImpl::kernel2D_sub(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
     for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] - data[B.offset + j];
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] - data[B.offset + i * B_outer_step + B_inner_step * j];
 }
-void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A / B
+void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
     for (unsigned j = 0; j < step_size; j++)
-      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] / data[B.offset + j];
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] / data[B.offset + i * B_outer_step + B_inner_step * j];
 }
 void TensorProcessorImpl::kernel1D_exp(float *data, unsigned steps, Variable A, Variable B) // B = exp(A)
 {

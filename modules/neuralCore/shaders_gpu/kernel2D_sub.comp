@@ -13,6 +13,8 @@ layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
 layout( push_constant ) uniform kernelArgs
 {
+  uint B_outer_step;
+  uint B_inner_step;
   Variable A;
   Variable B;
   Variable C;
@@ -34,7 +36,7 @@ void main()
     ///////////////////////////////////////////////////////////////// prolog
   if(runThisThread)
   {
-  data[kgenArgs.C.offset + i * kgenArgs.step_size + j] = data[kgenArgs.A.offset + i * kgenArgs.step_size + j] - data[kgenArgs.B.offset + j];
+  data[kgenArgs.C.offset + i * kgenArgs.step_size + j] = data[kgenArgs.A.offset + i * kgenArgs.step_size + j] - data[kgenArgs.B.offset + i * kgenArgs.B_outer_step + kgenArgs.B_inner_step * j];
   }
 }
 

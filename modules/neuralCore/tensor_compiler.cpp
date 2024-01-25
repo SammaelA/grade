@@ -110,7 +110,7 @@ namespace nn
       if (commands[i].type == TensorProgram::NOOP)
         continue;
       new_commands.push_back({commands[i].type, {var_remap[commands[i].args[0]], var_remap[commands[i].args[1]], var_remap[commands[i].args[2]], 
-                                                 commands[i].args[3], commands[i].args[4], commands[i].args[5]}});
+                                                 commands[i].args[3], commands[i].args[4], commands[i].args[5], commands[i].args[6], commands[i].args[7]}});
     }
     commands = new_commands;
 
@@ -620,7 +620,8 @@ namespace nn
       for (auto &cmd : commands)
       {
         const char *cmd_name = TensorProgram::cmd_properties[cmd.type].name.c_str();
-        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],cmd.args[4],cmd.args[5]);
+        printf("Cmd %2u: %-8s %2u %2u %2u - %3u %3u %3u %3u %3u\n", cid, cmd_name, cmd.args[0],cmd.args[1],cmd.args[2],cmd.args[3],
+                                                                    cmd.args[4],cmd.args[5],cmd.args[6],cmd.args[7]);
         cid++;
       }
     }
