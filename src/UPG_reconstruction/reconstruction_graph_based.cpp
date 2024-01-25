@@ -49,6 +49,7 @@ namespace upg
   {
     float distance_base_thr = 0.01f;
     float distance_fine_thr = 0.002f;
+    int max_number_of_primitives = 16;
   };
 
   struct GROptimizationContext
@@ -180,6 +181,7 @@ namespace upg
 
   UPGStructure get_structure_known_structure(const GROptimizationContext &ctx, const GRNode &node)
   {
+    assert(ctx.target_structure_parts.size() > 0);
     UPGStructure part_structure;
     auto &part = ctx.target_structure_parts[node.depth];
     for (int j=part.s_range.first; j<part.s_range.second; j++)
@@ -189,8 +191,13 @@ namespace upg
   }
   UPGStructure get_random_structure(const GROptimizationContext &ctx, const GRNode &node)
   {
-    logerr("get_random_structure is not implemented!");
-    return UPGStructure();
+    std::vector<UPGStructure> available_primitives = {{{SdfNode::MOVE, SdfNode::SPHERE}},
+                                                      {{SdfNode::MOVE, SdfNode::BOX}},
+                                                      {{SdfNode::MOVE, SdfNode::ROUNDED_BOX}},
+                                                      {{SdfNode::MOVE, SdfNode::CYLINDER}},
+                                                      {{SdfNode::MOVE, SdfNode::CONE}},
+                                                      {{SdfNode::MOVE, SdfNode::PRISM}}};
+    return available_primitives[urandi(0, available_primitives.size())];
   }
 
   glm::vec3 get_position_min_distance(const GRNode &node, int tries = 25)
@@ -263,7 +270,7 @@ namespace upg
 
   GRPrimitive create_start_primitive(const GROptimizationContext &ctx, const GRNode &node)
   {
-    UPGStructure structure = get_structure_known_structure(ctx, node);
+    UPGStructure structure = get_random_structure(ctx, node);
     glm::vec3 initial_pos = get_position_min_distance(node);
     UPGParametersRaw parameters = get_initial_parameters_random(node, structure, initial_pos);
 
@@ -432,7 +439,7 @@ namespace upg
     GRNode *final_node = nullptr;
     GRNode *node = ctx.root.get();
 
-    int max_depth = ctx.target_structure_parts.size();
+    int max_depth = ctx.settings.max_number_of_primitives;
     int max_steps = 10000;
 
     while (node->depth < max_depth && steps < max_steps)
@@ -472,11 +479,11 @@ namespace upg
     UPGReconstructionResult best_result;
     GRNode *best_end_node = nullptr;
     GRNode *node = ctx.root.get();
-    int max_depth = ctx.target_structure_parts.size();
+    int max_depth = ctx.settings.max_number_of_primitives;
     int total_nodes = 0;
     int paths = 0;
 
-    while (paths < path_limit && best_quality < (1-1e-6))
+    while (paths < path_limit && best_quality < (1-1e-5))
     {
       GRNode *new_node = node;
 
@@ -572,11 +579,12 @@ namespace upg
 
     ctx.settings.distance_base_thr = 0.01f;
     ctx.settings.distance_fine_thr = 0.002f;
+    ctx.settings.max_number_of_primitives = ctx.target_structure.s.empty() ? 16 : ctx.target_structure_parts.size();
 
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
-    auto res = GR_agent_stochastic_returns(ctx, 15, 15);
+    auto res = GR_agent_stochastic_returns(ctx, 25, 25);
     print_reconstruction_graph(ctx, *(ctx.root));
 
     return {res};
