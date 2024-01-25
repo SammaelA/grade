@@ -666,34 +666,34 @@ namespace upg
     SdfNode *node = NULL;
     switch(num)
     {
-      case 1: 
+      case SdfNode::SPHERE: 
         node = new SphereSdfNode(id);
         break;
-      case 2:
+      case SdfNode::MOVE:
         node = new MoveSdfNode(id);
         break;
-      case 3:
+      case SdfNode::OR:
         node = new OrSdfNode(id);
         break;
-      case 4:
+      case SdfNode::BOX:
         node = new BoxSdNode(id);
         break;
-      case 5:
+      case SdfNode::CYLINDER:
         node = new CylinderSdNode(id);
         break;
-      case 6:
+      case SdfNode::ROUNDED_BOX:
         node = new RoundBoxSdNode(id);
         break;
-      case 7:
+      case SdfNode::PRISM:
         node = new Prism(id);
         break;
-      case 8:
+      case SdfNode::CONE:
         node = new Cone(id);
         break;
-      case 9:
+      case SdfNode::AND:
         node = new AndSdfNode(id);
         break;
-      case 10:
+      case SdfNode::SUBTRACT:
         node = new SubtractSdfNode(id);
         break;
       default:

@@ -534,7 +534,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
       int32_t S = 1;
       while (num>= S && ((num & S) == 0))
       {
-        structure_inv.push_back(3); //merge node id
+        structure_inv.push_back(SdfNode::OR); //merge node id
         S = S << 1;
       }
       num++;
@@ -542,7 +542,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     int32_t S = 1;
     while (num>= S && ((num & S) == 0))
     {
-      structure_inv.push_back(3); //merge node id
+      structure_inv.push_back(SdfNode::OR); //merge node id
       S = S << 1;
     }
 

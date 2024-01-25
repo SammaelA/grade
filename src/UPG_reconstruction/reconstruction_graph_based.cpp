@@ -400,7 +400,7 @@ namespace upg
     for (int i=0;i<primitives.size();i++)
     {
       if (i != primitives.size()-1)
-        res.structure.s.push_back(3);
+        res.structure.s.push_back(SdfNode::OR);
       for (auto &s : primitives[i].structure.s)
         res.structure.s.push_back(s);
       for (auto &p : primitives[i].parameters.p)

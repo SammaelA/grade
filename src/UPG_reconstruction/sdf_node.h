@@ -8,11 +8,23 @@ namespace upg
 {
   class SdfNode
   {
-  protected:
-    unsigned ID;
-    std::string name;
-    std::span<const float> p;
   public:
+    enum NodeType
+    {
+      UNDEFINED,
+      SPHERE,
+      MOVE,
+      OR,
+      BOX,
+      CYLINDER,
+      ROUNDED_BOX,
+      PRISM,
+      CONE,
+      AND,
+      SUBTRACT,
+      NODE_TYPES_COUNT
+    };
+
     SdfNode(unsigned id) { ID = id; }
     virtual ~SdfNode() = default;
     unsigned get_ID() const { return ID; }
@@ -27,6 +39,10 @@ namespace upg
     virtual std::vector<const SdfNode *> get_children() const = 0;
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
     virtual AABB get_bbox() const = 0;
+  protected:
+    unsigned ID;
+    std::string name;
+    std::span<const float> p;
   };
 
   class ProceduralSdf
