@@ -34,6 +34,8 @@ namespace nn
 
       SUM,      // C = sum(A)
       O_SUM,    // C = sum(A)
+      MIN,      // C = min(A)
+      MAX,      // C = max(A)
 
       MATMUL_T, // C = AxB
       TRANSP,   // C = transpose(A)

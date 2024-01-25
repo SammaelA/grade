@@ -118,6 +118,8 @@ namespace nn
     //aggregation
     TensorToken sum(int Dims = -1) const;
     TensorToken outer_sum() const;
+    TensorToken min(int Dims = -1) const;
+    TensorToken max(int Dims = -1) const;
 
     //linear algebra operations
     TensorToken transpose() const;

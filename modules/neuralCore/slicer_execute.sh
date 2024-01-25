@@ -5,6 +5,6 @@ cd /home/sammael/grade/modules/neuralCore
 rm -r ../../shaders_gpu
 mkdir ../../shaders_gpu
 cd shaders_gpu
-#bash build.sh removed - some shaders have to be fixed manually!
+bash build.sh
 find -name "*.spv" | xargs cp --parents -t ../../../shaders_gpu
 cd ..

@@ -184,6 +184,43 @@ namespace nn
     return res;
   }
 
+
+  TensorToken TensorToken::min(int Dims) const
+  {
+    if (Dim == 0) // min of scalar is this scalar itself
+      return *this;
+    if (Dims == -1)
+      Dims = Dim;
+    assert(Dims > 0);
+    assert(Dims <= Dim);
+    unsigned res_Dim = Dim - Dims; // remaining dimensions
+    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    for (int i = 0; i < res_Dim; i++)
+      res_sizes[i] = sizes[i + Dims];
+
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::MIN, id, 0, res.id);
+    return res;
+  }
+
+  TensorToken TensorToken::max(int Dims) const
+  {
+    if (Dim == 0) // max of scalar is this scalar itself
+      return *this;
+    if (Dims == -1)
+      Dims = Dim;
+    assert(Dims > 0);
+    assert(Dims <= Dim);
+    unsigned res_Dim = Dim - Dims; // remaining dimensions
+    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    for (int i = 0; i < res_Dim; i++)
+      res_sizes[i] = sizes[i + Dims];
+
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::MAX, id, 0, res.id);
+    return res;
+  }
+
   TensorToken TensorToken::transpose() const
   {
     assert(Dim > 1);

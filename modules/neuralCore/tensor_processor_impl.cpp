@@ -68,6 +68,12 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::O_SUM:
       kernel1D_osum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
+    case nn::TensorProgram::MIN:
+      kernel1D_min(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
+      break;
+    case nn::TensorProgram::MAX:
+      kernel1D_max(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
+      break;
     case nn::TensorProgram::MATMUL_T:
       kernel2D_matmul_transposed(memory.data(), A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
       break;
@@ -162,7 +168,10 @@ void TensorProcessorImpl::kernel1D_copy(float *data, unsigned steps, unsigned fr
 void TensorProcessorImpl::kernel1D_fill(float *data, unsigned steps, Variable A, float val)
 {
   for (unsigned i = 0; i < steps; i++) 
-    data[A.offset + i] = val;
+  {
+    float tmp = val;
+    data[A.offset + i] = tmp;
+  }
 }
 
 void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C) // C = A + B
@@ -230,6 +239,24 @@ void TensorProcessorImpl::kernel1D_osum(float *data, unsigned steps, unsigned st
     data[B.offset + i] = 0;
     for (unsigned j = 0; j < step_size; j++)
       data[B.offset + i] += data[A.offset + j * steps + i];
+  }
+}
+void TensorProcessorImpl::kernel1D_min(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    data[B.offset + i] = data[A.offset + i * step_size + 0];
+    for (unsigned j = 0; j < step_size; j++)
+      data[B.offset + i] = data[A.offset + i * step_size + j] < data[B.offset + i] ? data[A.offset + i * step_size + j] : data[B.offset + i];
+  }
+}
+void TensorProcessorImpl::kernel1D_max(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    data[B.offset + i] = data[A.offset + i * step_size + 0];
+    for (unsigned j = 0; j < step_size; j++)
+      data[B.offset + i] = data[A.offset + i * step_size + j] > data[B.offset + i] ? data[A.offset + i * step_size + j] : data[B.offset + i];
   }
 }
 
