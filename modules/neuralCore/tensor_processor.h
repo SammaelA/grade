@@ -75,7 +75,7 @@ namespace nn
     struct Command
     {
       CommandType type;
-      unsigned args[6];
+      unsigned args[8];
     };
 
     struct Variable

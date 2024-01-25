@@ -627,9 +627,10 @@ namespace nn
     return pr;
   }
 
-  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, unsigned arg0, unsigned arg1, unsigned arg2)
+  void TensorCompiler::add_command(TensorProgram::CommandType type, unsigned A, unsigned B, unsigned C, 
+                                   unsigned arg0, unsigned arg1, unsigned arg2, unsigned arg3, unsigned arg4)
   {
-    commands.push_back({type, {A, B, C, arg0, arg1, arg2}});
+    commands.push_back({type, {A, B, C, arg0, arg1, arg2, arg3, arg4}});
     //printf("%s add command %u %u %u %u %u %u (%d %d) -> (%d %d)\n", TensorProgram::cmd_properties[type].name.c_str(),
     //A, B, C, arg0, arg1, arg2, vars[A].sizes[0], vars[A].sizes[1], vars[C].sizes[0], vars[C].sizes[1]);
   }

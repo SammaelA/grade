@@ -922,6 +922,8 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
     unsigned arg0 = program.commands[i].args[3];
     unsigned arg1 = program.commands[i].args[4];
     unsigned arg2 = program.commands[i].args[5];
+    unsigned arg3 = program.commands[i].args[6];
+    unsigned arg4 = program.commands[i].args[7];
 
     switch (program.commands[i].type)
     {

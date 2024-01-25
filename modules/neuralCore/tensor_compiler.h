@@ -45,7 +45,8 @@ namespace nn
     unsigned add_var(const TensorToken &t);
     void ftt(unsigned id, float val);
     void add_command(TensorProgram::CommandType type, unsigned A    = 0, unsigned B    = 0, unsigned C    = 0, 
-                                                      unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0);
+                                                      unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0,
+                                                      unsigned arg3 = 0, unsigned arg4 = 0);
     void compactify();
     void remove_noop();
     void calculate_variable_usage_intervals();
