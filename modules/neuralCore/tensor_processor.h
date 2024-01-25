@@ -41,6 +41,7 @@ namespace nn
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
       OUTER_PS, // C = sum(outer_product(A, B)) *
+      SMAX_D,   
 
       URAND,    // C = random_float_uniform(A, B)
       

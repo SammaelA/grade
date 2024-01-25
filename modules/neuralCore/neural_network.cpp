@@ -282,6 +282,11 @@ namespace nn
       l = (diff*diff).sum()/(float)(l.total_size());
       dLoss_dOutput = diff*2.0f;
     }
+    else if (loss == Loss::CrossEntropy)
+    {
+      l = (target_output * TensorToken::log(output + 1e-15f) * (-1.0f)).sum()/(float)(l.total_size());
+      dLoss_dOutput = (target_output * (-1.0f)) / (output + 1e-15f);
+    }
 
     for (int i=layers.size()-1;i>0;i--)
       dLoss_dOutput = layers[i]->backward(all_outputs[i-1], all_outputs[i], dLoss_dOutput);

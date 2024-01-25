@@ -89,6 +89,8 @@ namespace nn
     void check_dimensions_for_arithmetics(const TensorToken &other) const;
     TensorToken reshape(std::vector<unsigned> new_shape) const;
     TensorToken flatten() const;
+    static void issue_command(TensorProgram::CommandType type, const TensorToken &A, const TensorToken &B, const TensorToken &C, 
+                              unsigned arg0 = 0, unsigned arg1 = 0, unsigned arg2 = 0, unsigned arg3 = 0, unsigned arg4 = 0);
 
     //data manipulation
     TensorToken get(unsigned n) const;

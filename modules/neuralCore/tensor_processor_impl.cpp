@@ -104,6 +104,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       //}
     }
       break;
+    case nn::TensorProgram::SMAX_D:
+      kernel1D_smax_diff(memory.data(), A.sizes[A.Dim-1], A.total_size/A.sizes[A.Dim-1], A, B, C);
+      break;
     case nn::TensorProgram::URAND:
     {
       float from = memory.data()[A.offset];
@@ -307,6 +310,38 @@ void TensorProcessorImpl::kernel2D_outer_p_add(float *data, unsigned steps, unsi
       data[C.offset + i*B_len + j] = 0;
       for (unsigned step = 0; step < steps; step++)
         data[C.offset + i*B_len + j] += data[A.offset + step*A_len + i]*data[B.offset + step*B_len + j];
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel1D_smax_diff(float *data, unsigned steps, unsigned step_size, 
+                                             Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput)
+{
+      // dLoss_dInput = dloss_dOutput * dOutput/dInput = (dOutput/dInput)^T * dloss_dOutput
+      //(dOutput/dInput)_ij =  output_i*(1-output_i)   if i==j
+      //                     =  -output_i*output_j      if i!=j
+      // dOutput/dInput)^T = dOutput/dInput
+      //
+      //for (IndexType i = 0; i < input.total_size; i++)
+      //{
+      //  dLoss_dInput.get(i) = 0;
+      //  for (IndexType j = 0; j < i; j++)
+      //    dLoss_dInput.get(i) += -output.get(i) * output.get(j) * dLoss_dOutput.get(j);
+      //  dLoss_dInput.get(i) += output.get(i) * (1 - output.get(i)) * dLoss_dOutput.get(i);
+      //  for (IndexType j = i + 1; j < input.total_size; j++)
+      //    dLoss_dInput.get(i) += -output.get(i) * output.get(j) * dLoss_dOutput.get(j);
+      //}
+  for (unsigned step = 0; step < steps; step++)
+  {
+    for (unsigned i = 0; i < step_size; i++)
+    {
+      unsigned o = _output.offset + step*step_size;
+      data[dLoss_dInput.offset + step*step_size + i] = 0;
+      for (unsigned j = 0; j < i; j++)
+        data[dLoss_dInput.offset + step*step_size + i] += -data[o+i]*data[o+j]*data[dLoss_dOutput.offset + step*step_size + j];
+      data[dLoss_dInput.offset + step*step_size + i] += data[o+i]*(1-data[o+i])*data[dLoss_dOutput.offset + step*step_size + i];
+      for (unsigned j = i+1; j < step_size; j++)
+        data[dLoss_dInput.offset + step*step_size + i] += -data[o+i]*data[o+j]*data[dLoss_dOutput.offset + step*step_size + j];
     }
   }
 }

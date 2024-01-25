@@ -38,6 +38,7 @@ namespace nn
     {TRANSP   , "TRANSP"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
     {OUTER_PS , "OUTER_PS" , ALGEBRA       , SELF_APPLICABLE_NO },
+    {SMAX_D   , "SMAX_D"   , ALGEBRA       , SELF_APPLICABLE_NO },
 
     {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
   };

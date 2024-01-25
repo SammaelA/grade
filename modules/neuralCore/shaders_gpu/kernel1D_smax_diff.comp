@@ -1,0 +1,51 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "common_gpu.h"
+
+layout(binding = 0, set = 0) buffer data0 { float data[]; }; //
+layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data ubo; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint step_size;
+  Variable _output;
+  Variable dLoss_dOutput;
+  Variable dLoss_dInput;
+  uint iNumElementsX; 
+  uint steps; 
+  uint iNumElementsZ; 
+  uint tFlagsMask;    
+} kgenArgs;
+
+
+void main()
+{
+  bool runThisThread = true;
+  ///////////////////////////////////////////////////////////////// prolog
+  const uint step = uint(gl_GlobalInvocationID[0]); 
+  if(step >= kgenArgs.iNumElementsX + 0)
+    runThisThread = false;
+    ///////////////////////////////////////////////////////////////// prolog
+  if(runThisThread)
+  {
+  
+    for (uint i = 0; i < kgenArgs.step_size; i++)
+    {
+      uint o = kgenArgs._output.offset + step*kgenArgs.step_size;
+      data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.step_size + i] = 0;
+      for (uint j = 0; j < i; j++)
+        data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.step_size + i] += -data[o+i]*data[o+j]*data[kgenArgs.dLoss_dOutput.offset + step*kgenArgs.step_size + j];
+      data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.step_size + i] += data[o+i]*(1-data[o+i])*data[kgenArgs.dLoss_dOutput.offset + step*kgenArgs.step_size + i];
+      for (uint j = i+1; j < kgenArgs.step_size; j++)
+        data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.step_size + i] += -data[o+i]*data[o+j]*data[kgenArgs.dLoss_dOutput.offset + step*kgenArgs.step_size + j];
+    }
+  
+  }
+}
+

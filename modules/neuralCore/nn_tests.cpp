@@ -445,6 +445,47 @@ void test_1_tensor_processor()
     
   }
 
+  void test_10_simple_classifier()
+  {
+    printf("TEST 10. SIMPLE CLASSIFICATION\n");
+    int sz = 1000;
+    int dim = 2;
+    std::vector<float> X(dim*sz,0);
+    std::vector<float> res(2*sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X[dim*i + j] = 2*((double)rand())/RAND_MAX - 1;
+        s += X[dim*i + j];
+      }
+      res[2*i+0] = s > 0;
+      res[2*i+1] = s <= 0;
+    }
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X, res, 512, 500, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
+
+    std::vector<float> y(2*sz,0);
+    nn2.evaluate(X, y);
+    float diff = 0.0f;
+    //for (int i=0;i<2*sz;i++)
+    //{
+    //  printf("(%f %f)\n", y[i], res[i]);
+    //  diff += (y[i]>0.5) != (res[i]>0.5);
+    //}
+    float error_rate = diff/sz;
+    printf(" 10.1. %-64s", "Error rate <1% ");
+    if (error_rate < 0.01f)
+      printf("PASSED\n");
+    else
+      printf("FAILED\n");
+  }
+
   void perform_tests()
   {
     printf("NEURAL CORE CPU TESTS\n");
@@ -457,6 +498,7 @@ void test_1_tensor_processor()
     test_7_SIREN_image();
     test_8_SIREN_SDF();
     test_9_softmax();
+    test_10_simple_classifier();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -469,5 +511,6 @@ void test_1_tensor_processor()
     test_7_SIREN_image();
     test_8_SIREN_SDF();
     test_9_softmax();
+    test_10_simple_classifier();
   }
 }

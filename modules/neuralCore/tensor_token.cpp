@@ -372,6 +372,12 @@ namespace nn
     return reshape({size});
   }
 
+  void TensorToken::issue_command(TensorProgram::CommandType type, const TensorToken &A, const TensorToken &B, const TensorToken &C, 
+                                  unsigned arg0, unsigned arg1, unsigned arg2, unsigned arg3, unsigned arg4)
+  {
+    tp->add_command(type, A.id, B.id, C.id, arg0, arg1, arg2, arg3, arg4);
+  }
+
   void TensorToken::fill(float val)
   {
     tp->add_command(TensorProgram::FILL, 0, 0, id, *((unsigned *)(&val)));

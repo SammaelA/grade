@@ -103,7 +103,6 @@ public:
   virtual void minCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void expCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
-  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
   virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
   virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void addCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
@@ -125,6 +124,9 @@ public:
   virtual void maxCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void outer_productCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                       Variable A, Variable B, Variable C);
+  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
+  virtual void smax_diffCmd(float *data, unsigned steps, unsigned step_size, 
+                                             Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput);
   
   struct MemLoc
   {
@@ -224,11 +226,6 @@ protected:
   VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatetransposeDSLayout();
   virtual void InitKernel_transpose(const char* a_filePath);
-  VkPipelineLayout      fillLayout   = VK_NULL_HANDLE;
-  VkPipeline            fillPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout fillDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatefillDSLayout();
-  virtual void InitKernel_fill(const char* a_filePath);
   VkPipelineLayout      copyLayout   = VK_NULL_HANDLE;
   VkPipeline            copyPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout copyDSLayout = VK_NULL_HANDLE;
@@ -304,6 +301,16 @@ protected:
   VkDescriptorSetLayout outer_productDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createouter_productDSLayout();
   virtual void InitKernel_outer_product(const char* a_filePath);
+  VkPipelineLayout      fillLayout   = VK_NULL_HANDLE;
+  VkPipeline            fillPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout fillDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatefillDSLayout();
+  virtual void InitKernel_fill(const char* a_filePath);
+  VkPipelineLayout      smax_diffLayout   = VK_NULL_HANDLE;
+  VkPipeline            smax_diffPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout smax_diffDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createsmax_diffDSLayout();
+  virtual void InitKernel_smax_diff(const char* a_filePath);
 
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
@@ -315,7 +322,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[13];
+  VkDescriptorSet  m_allGeneratedDS[14];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

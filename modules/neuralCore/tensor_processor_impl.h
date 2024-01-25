@@ -52,6 +52,7 @@ protected:
   virtual void __attribute__((noinline)) kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
   virtual void __attribute__((noinline)) kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_smax_diff(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); 
 
   virtual void __attribute__((noinline)) kernel1D_set_input(const float* data_in, unsigned offset, unsigned a_size);
   virtual void __attribute__((noinline)) kernel1D_get_output(float* data_out, unsigned offset, unsigned a_size);

@@ -57,6 +57,33 @@ namespace nn
     virtual std::string get_name() override { return "Sin"; }
   };
 
+  class SoftMaxLayer : public Layer
+  {
+  public:
+    SoftMaxLayer(){ }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
+      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 
+                                              max_val.total_size(), input.total_size()/max_val.total_size(), 1, 0);
+      output = TensorToken::exp(output);
+      TensorToken sum = output.sum(input.Dim-1);
+      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 
+                                           sum.total_size(), output.total_size()/sum.total_size(), 1, 0);
+      return res;
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      //return dLoss_dOutput * TensorToken::cos(input*mult) * mult;
+      TensorToken dLoss_dInput(input.sizes);
+      TensorToken::issue_command(TensorProgram::SMAX_D, output, dLoss_dOutput, dLoss_dInput);
+      return dLoss_dInput;
+    }
+    virtual std::string get_name() override { return "SoftMax"; }
+  };
+
   class NeuralNetwork
   {
   public:
