@@ -200,6 +200,15 @@ namespace upg
     return desc;
   }
 
+  SceneDesc scene_chair()
+  {
+    SceneDesc desc;
+    desc.first.s = {3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
+    desc.second.p = {0,0.0,0, 0.5,0.05,0.5, 0,0.5,-0.45, 0.5,0.5,0.05,
+                     0.4,-0.3,0.4, 0.3,0.05,  -0.4,-0.3,0.4, 0.3,0.05,  0.4,-0.3,-0.4, 0.3,0.05,  -0.4,-0.3,-0.4, 0.3,0.05};
+    return desc;    
+  }
+
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
   {
     srand(time(NULL));
@@ -207,13 +216,14 @@ namespace upg
     //scenes["1 Sphere"] = scene_1_sphere();
     //scenes["8 Spheres"] = scene_8_spheres();
     //scenes["1 Box"] = scene_1_box();
-    scenes["8 Bubbles"] = scene_bubbles(4, 2);
+    //scenes["8 Bubbles"] = scene_bubbles(4, 2);
     //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
     //scenes["1 Box"] = scene_1_box();
     //scenes["2 Boxes"] = scene_2_boxes();
     //scenes["4 Boxes"] = scene_4_boxes();
     //scenes["8 Boxes"] = scene_8_boxes();
+    scenes["Chair"] = scene_chair();
 
     int max_iters = 200'000;
     int tries = 1;
@@ -310,6 +320,7 @@ namespace upg
     scenes["8 Bubbles"] = scene_bubbles(4, 2);
     scenes["32 Bubbles"] = scene_bubbles(8, 4);
     scenes["8 Rounded Boxes"] = scene_8_rboxes();
+    scenes["Chair"] = scene_chair();
 
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);
