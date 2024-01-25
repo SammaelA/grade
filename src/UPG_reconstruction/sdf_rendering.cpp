@@ -72,7 +72,7 @@ namespace upg
   Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert)
   {
     AABB sdf_bbox = sdf.root->get_bbox();
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
+    glm::mat4 projInv = glm::inverse(glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
     //set light somewhere to the side 
     glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
