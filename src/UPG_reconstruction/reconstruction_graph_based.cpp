@@ -119,7 +119,7 @@ namespace upg
       else if (node.edges[a].end && node.edges[b].end)
         return node.edges[a].end->id < node.edges[b].end->id;
       else
-        return node.edges[a].fine_quality > node.edges[b].fine_quality;
+        return node.edges[a].opt_quality > node.edges[b].opt_quality;
     });
 
     lines.back() += get_edge_string(node.edges[indices[0]]);
@@ -396,35 +396,16 @@ namespace upg
       res.parameters = primitives[0].parameters;
       return res;
     }
-    std::vector<uint16_t> structure_inv;
-    std::vector<float> params_inv;
-    uint32_t num = 1;
-    for (auto &pr : primitives)
-    {
-      for (int i=pr.structure.s.size()-1;i>=0;i--)
-        structure_inv.push_back(pr.structure.s[i]);
-      for (int i=pr.parameters.p.size()-1;i>=0;i--)
-        params_inv.push_back(pr.parameters.p[i]);      
-      int32_t S = 1;
-      while (num>= S && ((num & S) == 0))
-      {
-        structure_inv.push_back(3); //merge node id
-        S = S << 1;
-      }
-      num++;
-    }
-    int32_t S = 1;
-    while (num>= S && ((num & S) == 0))
-    {
-      structure_inv.push_back(3); //merge node id
-      S = S << 1;
-    }
-
     UPGReconstructionResult res;
-    for (int i=0;i<structure_inv.size();i++)
-      res.structure.s.push_back(structure_inv[structure_inv.size()-i-1]);
-    for (int i=0;i<params_inv.size();i++)
-      res.parameters.p.push_back(params_inv[params_inv.size()-i-1]);
+    for (int i=0;i<primitives.size();i++)
+    {
+      if (i != primitives.size()-1)
+        res.structure.s.push_back(3);
+      for (auto &s : primitives[i].structure.s)
+        res.structure.s.push_back(s);
+      for (auto &p : primitives[i].parameters.p)
+        res.parameters.p.push_back(p);
+    }
     debug("res structure {");
     for (auto &s : res.structure.s)
       debug("%d ",(int)s);
@@ -495,7 +476,7 @@ namespace upg
     int total_nodes = 0;
     int paths = 0;
 
-    while (paths < path_limit)
+    while (paths < path_limit && best_quality < (1-1e-6))
     {
       GRNode *new_node = node;
 
@@ -595,7 +576,7 @@ namespace upg
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
-    auto res = GR_agent_stochastic_returns(ctx, 10, 5);
+    auto res = GR_agent_stochastic_returns(ctx, 15, 15);
     print_reconstruction_graph(ctx, *(ctx.root));
 
     return {res};
