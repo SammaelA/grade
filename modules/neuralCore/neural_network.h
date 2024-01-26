@@ -76,12 +76,28 @@ namespace nn
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
-      //return dLoss_dOutput * TensorToken::cos(input*mult) * mult;
       TensorToken dLoss_dInput(input.sizes);
       TensorToken::issue_command(TensorProgram::SMAX_D, output, dLoss_dOutput, dLoss_dInput);
       return dLoss_dInput;
     }
     virtual std::string get_name() override { return "SoftMax"; }
+  };
+
+  class ReLULayer : public Layer
+  {
+  public:
+    ReLULayer(){ }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      return TensorToken::g_2op(TensorProgram::WHERE, input, input, 1, input.total_size(), 0, 1);
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      return TensorToken::g_2op(TensorProgram::WHERE, dLoss_dOutput, input, 1, input.total_size(), 0, 1);
+    }
+    virtual std::string get_name() override { return "ReLU"; }
   };
 
   class NeuralNetwork

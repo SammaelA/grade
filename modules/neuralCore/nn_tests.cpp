@@ -473,17 +473,73 @@ void test_1_tensor_processor()
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X, y);
     float diff = 0.0f;
-    //for (int i=0;i<2*sz;i++)
-    //{
-    //  printf("(%f %f)\n", y[i], res[i]);
-    //  diff += (y[i]>0.5) != (res[i]>0.5);
-    //}
+    for (int i=0;i<2*sz;i++)
+    {
+     // printf("(%f %f)\n", y[i], res[i]);
+      diff += (y[i]>0.5) != (res[i]>0.5);
+    }
     float error_rate = diff/sz;
     printf(" 10.1. %-64s", "Error rate <1% ");
     if (error_rate < 0.01f)
       printf("PASSED\n");
     else
-      printf("FAILED\n");
+      printf("FAILED, error rate %f\n", error_rate);
+  }
+
+  void test_11_ReLU_classifier()
+  {
+    printf("TEST 11. CLASSIFICATION WITH RELU\n");
+    int sz = 25000;
+    int dim = 10;
+    std::vector<float> X(dim*sz,0);
+    std::vector<float> res(2*sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X[dim*i + j] = 2*((double)rand())/RAND_MAX - 1;
+        s += X[dim*i + j];
+      }
+      res[2*i+0] = s > 0;
+      res[2*i+1] = s <= 0;
+    }
+
+    std::vector<float> X_test(dim*sz,0);
+    std::vector<float> res_test(2*sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X_test[dim*i + j] = 2*((double)rand())/RAND_MAX - 1;
+        s += X_test[dim*i + j];
+      }
+      res_test[2*i+0] = s > 0;
+      res_test[2*i+1] = s <= 0;
+    }
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X, res, 256, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f, true);
+
+    std::vector<float> y(2*sz,0);
+    nn2.evaluate(X_test, y);
+    float diff = 0.0f;
+    for (int i=0;i<2*sz;i++)
+      diff += (y[i]>0.5) != (res_test[i]>0.5);
+
+    float error_rate = diff/sz;
+    printf(" 10.1. %-64s", "Error rate <3% ");
+    if (error_rate < 0.03f)
+      printf("PASSED\n");
+    else
+      printf("FAILED, error rate %f\n", error_rate);
   }
 
   void perform_tests()
@@ -499,6 +555,7 @@ void test_1_tensor_processor()
     test_8_SIREN_SDF();
     test_9_softmax();
     test_10_simple_classifier();
+    test_11_ReLU_classifier();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -512,5 +569,6 @@ void test_1_tensor_processor()
     test_8_SIREN_SDF();
     test_9_softmax();
     test_10_simple_classifier();
+    test_11_ReLU_classifier();
   }
 }
