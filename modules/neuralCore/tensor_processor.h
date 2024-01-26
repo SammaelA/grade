@@ -25,12 +25,22 @@ namespace nn
       SUB,      // C = A-B
       MUL,      // C = A*B
       DIV,      // C = A/B
+      GREATER,  // C = A > B
+      LESS,     // C = A < B
+      EQUAL,    // C = A == B (precisely)
+      GE,       // C = A >= B
+      LE,       // C = A <= B
+      NE,       // C = A != B (precisely)
+      OR,       // C = A>0 || B>0
+      AND,      // C = A>0 && B>0
+      WHERE,    // C = B>0 ? A : 0 (elementwise)
 
       EXP,      // C = exp(A)
       POW,      // C = A^B (B is 1-element tensor)
       SIN,      // C = sin(A)
       COS,      // C = cos(A)
       LOG,      // C = log(A)
+      NOT,      // C = A > 0 ? 0 : 1 (elementwise)
 
       SUM,      // C = sum(A)
       O_SUM,    // C = sum(A)

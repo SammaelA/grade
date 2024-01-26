@@ -120,48 +120,68 @@ TensorProcessorImpl_GPU::~TensorProcessorImpl_GPU()
   for(size_t i=0;i<m_allCreatedPipelineLayouts.size();i++)
     vkDestroyPipelineLayout(device, m_allCreatedPipelineLayouts[i], nullptr);
 
-  vkDestroyDescriptorSetLayout(device, cosDSLayout, nullptr);
-  cosDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, mulDSLayout, nullptr);
-  mulDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, minDSLayout, nullptr);
-  minDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, sumDSLayout, nullptr);
+  sumDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, logDSLayout, nullptr);
+  logDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, powDSLayout, nullptr);
+  powDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, expDSLayout, nullptr);
   expDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, transposeDSLayout, nullptr);
-  transposeDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, subDSLayout, nullptr);
+  subDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, notDSLayout, nullptr);
+  notDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, maxDSLayout, nullptr);
+  maxDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, get_outputDSLayout, nullptr);
+  get_outputDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, matmul_transposedDSLayout, nullptr);
+  matmul_transposedDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, copyDSLayout, nullptr);
   copyDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, sinDSLayout, nullptr);
+  sinDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, osumDSLayout, nullptr);
   osumDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, addDSLayout, nullptr);
   addDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, matmul_transposedDSLayout, nullptr);
-  matmul_transposedDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, outer_p_addDSLayout, nullptr);
-  outer_p_addDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, powDSLayout, nullptr);
-  powDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, logDSLayout, nullptr);
-  logDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, get_outputDSLayout, nullptr);
-  get_outputDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, set_inputDSLayout, nullptr);
-  set_inputDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, divDSLayout, nullptr);
-  divDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, subDSLayout, nullptr);
-  subDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, sumDSLayout, nullptr);
-  sumDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, sinDSLayout, nullptr);
-  sinDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, maxDSLayout, nullptr);
-  maxDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, outer_productDSLayout, nullptr);
-  outer_productDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, greater_equalDSLayout, nullptr);
+  greater_equalDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, fillDSLayout, nullptr);
   fillDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, cosDSLayout, nullptr);
+  cosDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, mulDSLayout, nullptr);
+  mulDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, logical_orDSLayout, nullptr);
+  logical_orDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, not_equalDSLayout, nullptr);
+  not_equalDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, less_equalDSLayout, nullptr);
+  less_equalDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, transposeDSLayout, nullptr);
+  transposeDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, divDSLayout, nullptr);
+  divDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, lessDSLayout, nullptr);
+  lessDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, greaterDSLayout, nullptr);
+  greaterDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, whereDSLayout, nullptr);
+  whereDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, minDSLayout, nullptr);
+  minDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, set_inputDSLayout, nullptr);
+  set_inputDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, outer_productDSLayout, nullptr);
+  outer_productDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, logical_andDSLayout, nullptr);
+  logical_andDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, equalDSLayout, nullptr);
+  equalDSLayout = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(device, outer_p_addDSLayout, nullptr);
+  outer_p_addDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, smax_diffDSLayout, nullptr);
   smax_diffDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorPool(device, m_dsPool, NULL); m_dsPool = VK_NULL_HANDLE;
@@ -179,28 +199,28 @@ void TensorProcessorImpl_GPU::InitHelpers()
 }
 
 
-void TensorProcessorImpl_GPU::InitKernel_cos(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_sum(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_cos.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_sum.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  cosDSLayout = CreatecosDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, cosDSLayout, &cosLayout, &cosPipeline);
+  sumDSLayout = CreatesumDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, sumDSLayout, &sumLayout, &sumPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_mul(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_log(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_mul.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_log.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  mulDSLayout = CreatemulDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, mulDSLayout, &mulLayout, &mulPipeline);
+  logDSLayout = CreatelogDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, logDSLayout, &logLayout, &logPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_min(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_pow(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_min.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_pow.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  minDSLayout = CreateminDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, minDSLayout, &minLayout, &minPipeline);
+  powDSLayout = CreatepowDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, powDSLayout, &powLayout, &powPipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_exp(const char* a_filePath)
@@ -211,12 +231,44 @@ void TensorProcessorImpl_GPU::InitKernel_exp(const char* a_filePath)
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, expDSLayout, &expLayout, &expPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_transpose(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_sub(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_transpose.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_sub.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  transposeDSLayout = CreatetransposeDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, transposeDSLayout, &transposeLayout, &transposePipeline);
+  subDSLayout = CreatesubDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, subDSLayout, &subLayout, &subPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_not(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_not.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  notDSLayout = CreatenotDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, notDSLayout, &notLayout, &notPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_max(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_max.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  maxDSLayout = CreatemaxDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, maxDSLayout, &maxLayout, &maxPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_get_output(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_get_output.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  get_outputDSLayout = Createget_outputDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, get_outputDSLayout, &get_outputLayout, &get_outputPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_matmul_transposed(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_matmul_transposed.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  matmul_transposedDSLayout = Creatematmul_transposedDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, matmul_transposedDSLayout, &matmul_transposedLayout, &matmul_transposedPipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_copy(const char* a_filePath)
@@ -225,6 +277,14 @@ void TensorProcessorImpl_GPU::InitKernel_copy(const char* a_filePath)
   const VkSpecializationInfo* kspec = nullptr;
   copyDSLayout = CreatecopyDSLayout();
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, copyDSLayout, &copyLayout, &copyPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_sin(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_sin.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  sinDSLayout = CreatesinDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, sinDSLayout, &sinLayout, &sinPipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_osum(const char* a_filePath)
@@ -243,52 +303,68 @@ void TensorProcessorImpl_GPU::InitKernel_add(const char* a_filePath)
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, addDSLayout, &addLayout, &addPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_matmul_transposed(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_greater_equal(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_matmul_transposed.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_greater_equal.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  matmul_transposedDSLayout = Creatematmul_transposedDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, matmul_transposedDSLayout, &matmul_transposedLayout, &matmul_transposedPipeline);
+  greater_equalDSLayout = Creategreater_equalDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, greater_equalDSLayout, &greater_equalLayout, &greater_equalPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_outer_p_add(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_fill(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_outer_p_add.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_fill.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  outer_p_addDSLayout = Createouter_p_addDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, outer_p_addDSLayout, &outer_p_addLayout, &outer_p_addPipeline);
+  fillDSLayout = CreatefillDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, fillDSLayout, &fillLayout, &fillPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_pow(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_cos(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_pow.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_cos.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  powDSLayout = CreatepowDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, powDSLayout, &powLayout, &powPipeline);
+  cosDSLayout = CreatecosDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, cosDSLayout, &cosLayout, &cosPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_log(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_mul(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_log.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_mul.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  logDSLayout = CreatelogDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, logDSLayout, &logLayout, &logPipeline);
+  mulDSLayout = CreatemulDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, mulDSLayout, &mulLayout, &mulPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_get_output(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_logical_or(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_get_output.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_logical_or.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  get_outputDSLayout = Createget_outputDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, get_outputDSLayout, &get_outputLayout, &get_outputPipeline);
+  logical_orDSLayout = Createlogical_orDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, logical_orDSLayout, &logical_orLayout, &logical_orPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_set_input(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_not_equal(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_set_input.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_not_equal.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  set_inputDSLayout = Createset_inputDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, set_inputDSLayout, &set_inputLayout, &set_inputPipeline);
+  not_equalDSLayout = Createnot_equalDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, not_equalDSLayout, &not_equalLayout, &not_equalPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_less_equal(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_less_equal.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  less_equalDSLayout = Createless_equalDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, less_equalDSLayout, &less_equalLayout, &less_equalPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_transpose(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_transpose.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  transposeDSLayout = CreatetransposeDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, transposeDSLayout, &transposeLayout, &transposePipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_div(const char* a_filePath)
@@ -299,36 +375,44 @@ void TensorProcessorImpl_GPU::InitKernel_div(const char* a_filePath)
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, divDSLayout, &divLayout, &divPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_sub(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_less(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_sub.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_less.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  subDSLayout = CreatesubDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, subDSLayout, &subLayout, &subPipeline);
+  lessDSLayout = CreatelessDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, lessDSLayout, &lessLayout, &lessPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_sum(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_greater(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_sum.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_greater.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  sumDSLayout = CreatesumDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, sumDSLayout, &sumLayout, &sumPipeline);
+  greaterDSLayout = CreategreaterDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, greaterDSLayout, &greaterLayout, &greaterPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_sin(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_where(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_sin.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_where.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  sinDSLayout = CreatesinDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, sinDSLayout, &sinLayout, &sinPipeline);
+  whereDSLayout = CreatewhereDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, whereDSLayout, &whereLayout, &wherePipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_max(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_min(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_max.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_min.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  maxDSLayout = CreatemaxDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, maxDSLayout, &maxLayout, &maxPipeline);
+  minDSLayout = CreateminDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, minDSLayout, &minLayout, &minPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_set_input(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_set_input.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  set_inputDSLayout = Createset_inputDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, set_inputDSLayout, &set_inputLayout, &set_inputPipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_outer_product(const char* a_filePath)
@@ -339,12 +423,28 @@ void TensorProcessorImpl_GPU::InitKernel_outer_product(const char* a_filePath)
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, outer_productDSLayout, &outer_productLayout, &outer_productPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_fill(const char* a_filePath)
+void TensorProcessorImpl_GPU::InitKernel_logical_and(const char* a_filePath)
 {
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_fill.comp.spv"); 
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_logical_and.comp.spv"); 
   const VkSpecializationInfo* kspec = nullptr;
-  fillDSLayout = CreatefillDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, fillDSLayout, &fillLayout, &fillPipeline);
+  logical_andDSLayout = Createlogical_andDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, logical_andDSLayout, &logical_andLayout, &logical_andPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_equal(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_equal.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  equalDSLayout = CreateequalDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, equalDSLayout, &equalLayout, &equalPipeline);
+}
+
+void TensorProcessorImpl_GPU::InitKernel_outer_p_add(const char* a_filePath)
+{
+  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_outer_p_add.comp.spv"); 
+  const VkSpecializationInfo* kspec = nullptr;
+  outer_p_addDSLayout = Createouter_p_addDSLayout();
+  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, outer_p_addDSLayout, &outer_p_addLayout, &outer_p_addPipeline);
 }
 
 void TensorProcessorImpl_GPU::InitKernel_smax_diff(const char* a_filePath)
@@ -358,27 +458,37 @@ void TensorProcessorImpl_GPU::InitKernel_smax_diff(const char* a_filePath)
 
 void TensorProcessorImpl_GPU::InitKernels(const char* a_filePath)
 {
-  InitKernel_cos(a_filePath);
-  InitKernel_mul(a_filePath);
-  InitKernel_min(a_filePath);
+  InitKernel_sum(a_filePath);
+  InitKernel_log(a_filePath);
+  InitKernel_pow(a_filePath);
   InitKernel_exp(a_filePath);
-  InitKernel_transpose(a_filePath);
+  InitKernel_sub(a_filePath);
+  InitKernel_not(a_filePath);
+  InitKernel_max(a_filePath);
+  InitKernel_get_output(a_filePath);
+  InitKernel_matmul_transposed(a_filePath);
   InitKernel_copy(a_filePath);
+  InitKernel_sin(a_filePath);
   InitKernel_osum(a_filePath);
   InitKernel_add(a_filePath);
-  InitKernel_matmul_transposed(a_filePath);
-  InitKernel_outer_p_add(a_filePath);
-  InitKernel_pow(a_filePath);
-  InitKernel_log(a_filePath);
-  InitKernel_get_output(a_filePath);
-  InitKernel_set_input(a_filePath);
-  InitKernel_div(a_filePath);
-  InitKernel_sub(a_filePath);
-  InitKernel_sum(a_filePath);
-  InitKernel_sin(a_filePath);
-  InitKernel_max(a_filePath);
-  InitKernel_outer_product(a_filePath);
+  InitKernel_greater_equal(a_filePath);
   InitKernel_fill(a_filePath);
+  InitKernel_cos(a_filePath);
+  InitKernel_mul(a_filePath);
+  InitKernel_logical_or(a_filePath);
+  InitKernel_not_equal(a_filePath);
+  InitKernel_less_equal(a_filePath);
+  InitKernel_transpose(a_filePath);
+  InitKernel_div(a_filePath);
+  InitKernel_less(a_filePath);
+  InitKernel_greater(a_filePath);
+  InitKernel_where(a_filePath);
+  InitKernel_min(a_filePath);
+  InitKernel_set_input(a_filePath);
+  InitKernel_outer_product(a_filePath);
+  InitKernel_logical_and(a_filePath);
+  InitKernel_equal(a_filePath);
+  InitKernel_outer_p_add(a_filePath);
   InitKernel_smax_diff(a_filePath);
 }
 

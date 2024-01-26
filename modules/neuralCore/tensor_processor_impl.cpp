@@ -49,6 +49,33 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::DIV:
       kernel2D_div(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
       break;
+    case nn::TensorProgram::GREATER:
+      kernel2D_greater(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::LESS:
+      kernel2D_less(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::EQUAL:
+      kernel2D_equal(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::GE:
+      kernel2D_greater_equal(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::LE:
+      kernel2D_less_equal(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::NE:
+      kernel2D_not_equal(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::OR:
+      kernel2D_logical_or(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::AND:
+      kernel2D_logical_and(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;
+    case nn::TensorProgram::WHERE:
+      kernel2D_where(memory.data(), arg0, arg1, arg2, arg3, A, B, C);
+      break;      
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory.data(), A.total_size, A, C);
       break;
@@ -63,6 +90,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       break;
     case nn::TensorProgram::LOG:
       kernel1D_log(memory.data(), A.total_size, A, C);
+      break;
+    case nn::TensorProgram::NOT:
+      kernel1D_not(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::SUM:
       kernel1D_sum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
@@ -207,6 +237,71 @@ void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned ste
     for (unsigned j = 0; j < step_size; j++)
       data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] / data[B.offset + i * B_outer_step + B_inner_step * j];
 }
+
+void TensorProcessorImpl::kernel2D_greater(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                           unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] > data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_less(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                        unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] < data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                         unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] == data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                                 unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] >= data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                              unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] <= data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                             unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[A.offset + i * step_size + j] != data[B.offset + i * B_outer_step + B_inner_step * j] ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                              unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = (data[A.offset + i * step_size + j] > 0 || data[B.offset + i * B_outer_step + B_inner_step * j] > 0) ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                               unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = (data[A.offset + i * step_size + j] > 0 && data[B.offset + i * B_outer_step + B_inner_step * j] > 0) ? 1.0f : 0.0f;
+}
+void TensorProcessorImpl::kernel2D_where(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                         unsigned B_inner_step, Variable A, Variable B, Variable C)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < step_size; j++)
+      data[C.offset + i * step_size + j] = data[B.offset + i * B_outer_step + B_inner_step * j] > 0 ? data[A.offset + i * step_size + j] : 0.0f;
+}
+
 void TensorProcessorImpl::kernel1D_exp(float *data, unsigned steps, Variable A, Variable B) // B = exp(A)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -232,6 +327,12 @@ void TensorProcessorImpl::kernel1D_log(float *data, unsigned steps, Variable A, 
   for (unsigned i = 0; i < steps; i++)
     data[B.offset + i] = log2(data[A.offset + i])*0.69314718056f; //slicer's libraries don't have log for some reason
 }
+void TensorProcessorImpl::kernel1D_not(float *data, unsigned steps, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+    data[B.offset + i] = data[A.offset + i] > 0 ? 0.0f : 1.0f;
+}
+
 void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
   for (unsigned i = 0; i < steps; i++)

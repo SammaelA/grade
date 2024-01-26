@@ -34,11 +34,32 @@ protected:
                                                       unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A - B
   virtual void __attribute__((noinline)) kernel2D_div(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                                       unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_greater(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_less(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel2D_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel2D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel2D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel2D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel2D_where(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                                      unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A / B
+                                                        
   virtual void __attribute__((noinline)) kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
   virtual void __attribute__((noinline)) kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C);                     // C = pow(A, B)
   virtual void __attribute__((noinline)) kernel1D_sin(float *data, unsigned steps, Variable A, Variable B);                                 // B = sin(A)
   virtual void __attribute__((noinline)) kernel1D_cos(float *data, unsigned steps, Variable A, Variable B);                                 // B = cos(A)
   virtual void __attribute__((noinline)) kernel1D_log(float *data, unsigned steps, Variable A, Variable B);                                 // B = log(A)
+  virtual void __attribute__((noinline)) kernel1D_not(float *data, unsigned steps, Variable A, Variable B);
+   
   virtual void __attribute__((noinline)) kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
   virtual void __attribute__((noinline)) kernel1D_osum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
   virtual void __attribute__((noinline)) kernel1D_min(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
