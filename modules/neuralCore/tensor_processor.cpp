@@ -48,7 +48,6 @@ namespace nn
     {MATMUL_T , "MATMUL_T" , ALGEBRA       , SELF_APPLICABLE_NO },
     {TRANSP   , "TRANSP"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
-    {OUTER_PS , "OUTER_PS" , ALGEBRA       , SELF_APPLICABLE_NO },
     {SMAX_D   , "SMAX_D"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {CONV_2D  , "CONV_2D"  , ALGEBRA       , SELF_APPLICABLE_NO },
 

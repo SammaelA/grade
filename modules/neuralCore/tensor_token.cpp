@@ -428,39 +428,7 @@ namespace nn
     return res;
   }
 
-  TensorToken TensorToken::vector_outer_product_sum(const TensorToken &A, const TensorToken &B)
-  {
-    assert(A.Dim >= 1);
-    assert(A.Dim < TensorCompiler::MAX_DIM);
-    assert(B.Dim == A.Dim);
-    for (int i = 1; i < A.Dim; i++)
-      assert(A.sizes[i] == B.sizes[i]);
-
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
-    res_sizes[0] = B.sizes[0];
-    res_sizes[1] = A.sizes[0];
-
-    TensorToken res(res_sizes);
-    tp->add_command(TensorProgram::OUTER_PS, A.id, B.id, res.id);
-    return res;
-  }
-
   TensorToken TensorToken::mat_mul_t(const TensorToken &A, const TensorToken &B)
-  {
-    assert(A.Dim == 2);
-    assert(B.Dim == 2);
-    assert(A.sizes[0] == B.sizes[0]);
-
-    unsigned res_Dim = 2;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
-    res_sizes[0] = A.sizes[1];
-    res_sizes[1] = B.sizes[1];
-    TensorToken res(res_sizes);
-    tp->add_command(TensorProgram::MATMUL_T, A.id, B.id, res.id);
-    return res;
-  }
-
-  TensorToken TensorToken::mat_vec_mul(const TensorToken &A, const TensorToken &B)
   {
     assert(A.Dim == 2);
     assert(B.Dim >= 1);

@@ -180,8 +180,6 @@ TensorProcessorImpl_GPU::~TensorProcessorImpl_GPU()
   logical_andDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, equalDSLayout, nullptr);
   equalDSLayout = VK_NULL_HANDLE;
-  vkDestroyDescriptorSetLayout(device, outer_p_addDSLayout, nullptr);
-  outer_p_addDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, smax_diffDSLayout, nullptr);
   smax_diffDSLayout = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(device, logDSLayout, nullptr);
@@ -443,14 +441,6 @@ void TensorProcessorImpl_GPU::InitKernel_equal(const char* a_filePath)
   MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, equalDSLayout, &equalLayout, &equalPipeline);
 }
 
-void TensorProcessorImpl_GPU::InitKernel_outer_p_add(const char* a_filePath)
-{
-  std::string shaderPath = AlterShaderPath("shaders_gpu/kernel2D_outer_p_add.comp.spv"); 
-  const VkSpecializationInfo* kspec = nullptr;
-  outer_p_addDSLayout = Createouter_p_addDSLayout();
-  MakeComputePipelineAndLayout(shaderPath.c_str(), "main", kspec, outer_p_addDSLayout, &outer_p_addLayout, &outer_p_addPipeline);
-}
-
 void TensorProcessorImpl_GPU::InitKernel_smax_diff(const char* a_filePath)
 {
   std::string shaderPath = AlterShaderPath("shaders_gpu/kernel1D_smax_diff.comp.spv"); 
@@ -508,7 +498,6 @@ void TensorProcessorImpl_GPU::InitKernels(const char* a_filePath)
   InitKernel_outer_product(a_filePath);
   InitKernel_logical_and(a_filePath);
   InitKernel_equal(a_filePath);
-  InitKernel_outer_p_add(a_filePath);
   InitKernel_smax_diff(a_filePath);
   InitKernel_log(a_filePath);
   InitKernel_conv2d(a_filePath);

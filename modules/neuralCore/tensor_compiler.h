@@ -133,9 +133,7 @@ namespace nn
     //linear algebra operations
     TensorToken transpose() const;
     static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B);
-    static TensorToken vector_outer_product_sum(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B);
-    static TensorToken mat_vec_mul(const TensorToken &A, const TensorToken &B);
     static TensorToken conv2D(const TensorToken &A, const TensorToken &kernel, unsigned stride = 1);
 
     unsigned id = 0;

@@ -143,7 +143,7 @@ void test_1_tensor_processor()
       TensorToken R1 = B.get({0, 2});
       TensorToken R2 = TensorToken::mat_mul_t(A, R1);
       TensorToken R3 = B.get(2);
-      TensorToken R4 = TensorToken::mat_vec_mul(A, R3);
+      TensorToken R4 = TensorToken::mat_mul_t(A, R3);
       TensorToken R5 = A.transpose();
       TensorToken O = TensorToken::vector_outer_product(A, B.get({0,2}));
       TensorToken R6 = O.get(0);
@@ -236,7 +236,7 @@ void test_1_tensor_processor()
         TensorToken rm = TensorToken(2, 2);
         for (int j=0;j<2;j++)
         {
-          rm.set(j, TensorToken::mat_vec_mul(A, Xm.get(j)));
+          rm.set(j, TensorToken::mat_mul_t(A, Xm.get(j)));
         }
         r.set(i, rm);
       }

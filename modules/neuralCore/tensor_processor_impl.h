@@ -74,8 +74,6 @@ protected:
                                           Variable A, Variable B, Variable C);                                // C = A * (B)^T
   virtual void __attribute__((noinline)) kernel2D_outer_product(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
-  virtual void __attribute__((noinline)) kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
-                                         Variable A, Variable B, Variable C);
   virtual void __attribute__((noinline)) kernel1D_smax_diff(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); 
   virtual void __attribute__((noinline)) kernel3D_conv2d(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
                                                          int out_channels, Variable A, Variable B, Variable C); 

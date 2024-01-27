@@ -21,20 +21,17 @@ namespace nn
 
   TensorToken DenseLayer::forward(const TensorToken &in)
   {
-    return TensorToken::mat_vec_mul(weights[0], in) + weights[1];
+    return TensorToken::mat_mul_t(weights[0], in) + weights[1];
   }
 
   TensorToken DenseLayer::backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput)
   {
-    TensorToken At = weights[0].transpose();
-    TensorToken dLoss_dInput = TensorToken::mat_vec_mul(At, dLoss_dOutput);
-    TensorToken batch_size = (float)(input.sizes[input.Dim-1]);
+    float batch_size = (float)(input.sizes[1]);
 
-    //dLoss_dWeights[0] = TensorToken::vector_outer_product(dLoss_dOutput, input).outer_sum()/batch_size;
-    dLoss_dWeights[0] = (TensorToken::vector_outer_product_sum(dLoss_dOutput, input).flatten())/batch_size;
+    dLoss_dWeights[0] = (TensorToken::mat_mul_t(input.transpose(), dLoss_dOutput.transpose()).flatten())/batch_size;
     dLoss_dWeights[1] = dLoss_dOutput.outer_sum()/batch_size;
 
-    return dLoss_dInput;
+    return TensorToken::mat_mul_t(weights[0].transpose(), dLoss_dOutput);
   }
 
   unsigned total_size(const std::vector<unsigned> &sizes)

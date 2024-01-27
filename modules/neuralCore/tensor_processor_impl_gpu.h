@@ -143,8 +143,6 @@ public:
                                                unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                          unsigned B_inner_step, Variable A, Variable B, Variable C);
-  virtual void outer_p_addCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
-                                         Variable A, Variable B, Variable C);
   virtual void smax_diffCmd(float *data, unsigned steps, unsigned step_size, 
                                              Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput);
   virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
@@ -374,11 +372,6 @@ protected:
   VkDescriptorSetLayout equalDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateequalDSLayout();
   virtual void InitKernel_equal(const char* a_filePath);
-  VkPipelineLayout      outer_p_addLayout   = VK_NULL_HANDLE;
-  VkPipeline            outer_p_addPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout outer_p_addDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Createouter_p_addDSLayout();
-  virtual void InitKernel_outer_p_add(const char* a_filePath);
   VkPipelineLayout      smax_diffLayout   = VK_NULL_HANDLE;
   VkPipeline            smax_diffPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout smax_diffDSLayout = VK_NULL_HANDLE;
@@ -405,7 +398,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[17];
+  VkDescriptorSet  m_allGeneratedDS[16];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

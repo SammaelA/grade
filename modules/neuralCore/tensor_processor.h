@@ -48,10 +48,9 @@ namespace nn
       MIN,      // C = min(A)
       MAX,      // C = max(A)
 
-      MATMUL_T, // C = AxB
+      MATMUL_T, // C = Ax(B^T)
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
-      OUTER_PS, // C = sum(outer_product(A, B)) *
       SMAX_D,   // derivative of softmax function. It's complicated enough to have a separate command for it
       CONV_2D,  //convolution with arbitrary number of channels and filters. Borders are ignored
 
