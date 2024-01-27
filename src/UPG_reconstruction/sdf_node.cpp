@@ -1,5 +1,7 @@
 #include "sdf_node.h"
 #include <stdio.h>
+#include "generation.h"
+#include "autodiff/autodiff.h"
 
 float __enzyme_autodiff(...);
 
@@ -441,6 +443,140 @@ namespace upg
     }
   };
 
+  glm::mat3 get_any_rot_mat(glm::vec3 axis, float angle)
+  {
+    glm::vec3 ax = axis / glm::length(axis);
+    float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
+    glm::vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
+    glm::vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
+    glm::vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
+    return glm::mat3(e1, e2, e3);
+  }
+
+  void RotateSdfNode_apply(const my_float *in, my_float *out)
+  {
+    glm::vec3 ax = {in[0], in[1], in[2]};
+    glm::mat3 matr = get_any_rot_mat(ax, in[3]);
+    glm::vec3 v = {in[4], in[5], in[6]};
+    v = matr * v;
+    out[0] = v.x;
+    out[1] = v.y;
+    out[2] = v.z;
+  }
+
+  class RotateSdfNode : public OneChildSdfNode
+  {
+    static constexpr int AXIS_X = 0;
+    static constexpr int AXIS_Y = 1;
+    static constexpr int AXIS_Z = 2;
+    static constexpr int ANGLE = 3;
+  public:
+    RotateSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Rotate"; }
+    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const override
+    {
+      int offset;
+      float d = 0;
+      if (ddist_dp)
+      {
+        //[<prev_params>,ddist/dmove_params,<child_params>]
+        offset = ddist_dp->size();
+        ddist_dp->resize(offset + 4);
+      }
+      
+
+      if (ddist_dp)
+      {
+        // f(p,x,y) = g(h(p,y),x)
+        // df/dp = dg/d1 * dh/dp
+        // df/dx = dg/dx
+        // df/dy = dg/d1 * dh/dy
+        // g = child->get_distance()
+        // h(pos, move) = matr * pos
+
+        std::vector<float> x;
+        x.insert(x.end(), p.begin(), p.end());
+        x.push_back(pos.x);
+        x.push_back(pos.y);
+        x.push_back(pos.z);
+        upg::UniversalGenJacobian tmp;
+        tmp.resize(3, 7);
+        std::vector<float> y(3);
+        ENZYME_EVALUATE_WITH_DIFF(RotateSdfNode_apply, 7, 3, x.data(), y.data(), tmp.data());
+        glm::vec3 ps = {y[0], y[1], y[2]};
+        d = child->get_distance(ps, ddist_dp, ddist_dpos);
+
+        float X = (*ddist_dpos)[0], Y = (*ddist_dpos)[1], Z = (*ddist_dpos)[2];
+
+        //(*ddist_dpos)[0]=(*ddist_dpos)[0]*e1.x+(*ddist_dpos)[1]*e2.x+(*ddist_dpos)[2]*e3.x;
+        //(*ddist_dpos)[1]=(*ddist_dpos)[0]*e1.y+(*ddist_dpos)[1]*e2.y+(*ddist_dpos)[2]*e3.y;
+        //(*ddist_dpos)[2]=(*ddist_dpos)[0]*e1.z+(*ddist_dpos)[1]*e2.z+(*ddist_dpos)[2]*e3.z;
+
+        (*ddist_dp)[offset+0] = tmp.at(0, 0) * X + tmp.at(0, 1) * Y + tmp.at(0, 2) * Z;
+        (*ddist_dp)[offset+1] = tmp.at(1, 0) * X + tmp.at(1, 1) * Y + tmp.at(1, 2) * Z;
+        (*ddist_dp)[offset+2] = tmp.at(2, 0) * X + tmp.at(2, 1) * Y + tmp.at(2, 2) * Z;
+        (*ddist_dp)[offset+3] = tmp.at(3, 0) * X + tmp.at(3, 1) * Y + tmp.at(3, 2) * Z;
+
+        (*ddist_dpos)[0] = X * tmp.at(4, 0) + Y * tmp.at(4, 1) + Z * tmp.at(4, 2);
+        (*ddist_dpos)[1] = X * tmp.at(5, 0) + Y * tmp.at(5, 1) + Z * tmp.at(5, 2);
+        (*ddist_dpos)[2] = X * tmp.at(6, 0) + Y * tmp.at(6, 1) + Z * tmp.at(6, 2);
+      }
+      else
+      {
+        std::vector<float> x;
+        x.insert(x.end(), p.begin(), p.end());
+        x.push_back(pos.x);
+        x.push_back(pos.y);
+        x.push_back(pos.z);
+        std::vector<float> y(3);
+        RotateSdfNode_apply(x.data(), y.data());
+        glm::vec3 ps = {y[0], y[1], y[2]};
+        d = child->get_distance(ps, ddist_dp, ddist_dpos);
+      }
+
+      return d;
+    }
+    virtual unsigned param_cnt() const override { return 4; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({1,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
+      params.push_back({0,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
+      params.push_back({0,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      std::vector<float> y(3 * 8);
+      for (int i = 0; i < 8; ++i)
+      {
+        std::vector<float> x;
+        x.insert(x.end(), p.begin(), p.end());
+        if (i % 2) x.push_back(ch_bbox.min_pos.x);
+        else x.push_back(ch_bbox.max_pos.x);
+        if ((i / 2) % 2) x.push_back(ch_bbox.min_pos.y);
+        else x.push_back(ch_bbox.max_pos.y);
+        if ((i / 4) % 2) x.push_back(ch_bbox.min_pos.z);
+        else x.push_back(ch_bbox.max_pos.z);
+        RotateSdfNode_apply(x.data(), y.data()+3*i);
+      }
+      ch_bbox.min_pos = {y[0], y[1], y[2]};
+      ch_bbox.max_pos = {y[0], y[1], y[2]};
+      for (int i = 1; i < 8; ++i)
+      {
+        if (y[i * 3] > ch_bbox.max_pos.x) ch_bbox.max_pos.x = y[i * 3];
+        if (y[i * 3] < ch_bbox.min_pos.x) ch_bbox.min_pos.x = y[i * 3];
+        if (y[i * 3 + 1] > ch_bbox.max_pos.y) ch_bbox.max_pos.y = y[i * 3 + 1];
+        if (y[i * 3 + 1] < ch_bbox.min_pos.y) ch_bbox.min_pos.y = y[i * 3 + 1];
+        if (y[i * 3 + 2] > ch_bbox.max_pos.z) ch_bbox.max_pos.z = y[i * 3 + 2];
+        if (y[i * 3 + 2] < ch_bbox.min_pos.z) ch_bbox.min_pos.z = y[i * 3 + 2];
+      }
+      return AABB(ch_bbox.min_pos, ch_bbox.max_pos);
+    }
+  };
+
   class OrSdfNode : public TwoChildSdfNode
   {
   public:
@@ -695,6 +831,9 @@ namespace upg
         break;
       case SdfNode::SUBTRACT:
         node = new SubtractSdfNode(id);
+        break;
+      case SdfNode::ROTATE:
+        node = new RotateSdfNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);
