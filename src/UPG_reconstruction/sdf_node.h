@@ -22,6 +22,7 @@ namespace upg
       CONE,
       AND,
       SUBTRACT,
+      ROTATE,
       NODE_TYPES_COUNT
     };
 
