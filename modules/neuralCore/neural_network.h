@@ -100,6 +100,48 @@ namespace nn
     virtual std::string get_name() override { return "ReLU"; }
   };
 
+  class TanhLayer : public Layer
+  {
+  public:
+    TanhLayer(){ }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      TensorToken ex = TensorToken::exp(input);
+      TensorToken ex2 = ex*ex;
+      return (ex2 - 1.0f)/(ex2 + 1.0f); //tanh(x)
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      //output = tanh(x)
+      //dtanh(x) = 1 - tanh(x)^2 
+      return dLoss_dOutput*(output*output*(-1.0f) + 1.0f);
+    }
+    virtual std::string get_name() override { return "Tanh"; }
+  };
+
+  class SigmoidLayer : public Layer
+  {
+  public:
+    SigmoidLayer(){ }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      TensorToken one(input.sizes);
+      one.fill(1.0f);
+      return one/(TensorToken::exp(input*(-1.0f)) + 1.0f); //sigmoid(x)
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      //output = sigmoid(x)
+      //dsigmoid(x) = sigmoid(x)*(1-sigmoid(x))
+      return dLoss_dOutput*(output*(output*(-1.0f) + 1.0f));
+    }
+    virtual std::string get_name() override { return "Sigmoid"; }
+  };
+
   class NeuralNetwork
   {
   public:
