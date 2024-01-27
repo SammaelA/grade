@@ -146,6 +146,23 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
         memory.data()[C.offset + i] = from + ((double)rand()/RAND_MAX)*(to-from);
     }
       break;
+    case nn::TensorProgram::PAD:
+      kernel1D_pad(memory.data(), arg0, arg1, arg2, arg3, A, C);
+      break;
+    case nn::TensorProgram::CONV_2D:
+    {
+      int in_channels = B.sizes[2] > 0 ? B.sizes[2] : 1;
+      int out_channels = B.sizes[3] > 0 ? B.sizes[3] : 1;
+      int images = A.total_size/(A.sizes[0]*A.sizes[1]*in_channels);
+      int steps = images * out_channels;
+      int x_steps = C.sizes[0];
+      int y_steps = C.sizes[1];
+      int stride = arg0;
+
+      kernel1D_fill(memory.data(), C.total_size, C, 0.0f);
+      kernel3D_conv2d(memory.data(), steps,x_steps, y_steps, stride, in_channels, out_channels, A, B, C);
+    }
+      break;
     default:
       break;
     }
@@ -199,13 +216,26 @@ void TensorProcessorImpl::kernel1D_copy(float *data, unsigned steps, unsigned fr
   for (unsigned i = 0; i < steps; i++) 
     data[B.offset + to + i] = 1.0f*data[A.offset + from + i];
 }
-
 void TensorProcessorImpl::kernel1D_fill(float *data, unsigned steps, Variable A, float val)
 {
   for (unsigned i = 0; i < steps; i++) 
   {
     float tmp = val;
     data[A.offset + i] = tmp;
+  }
+}
+void TensorProcessorImpl::kernel1D_pad(float *data, unsigned steps, unsigned step_size, unsigned left_pad, unsigned right_pad, 
+                                       Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    unsigned B_step_size = step_size + left_pad + right_pad;
+    for (unsigned j = 0; j < left_pad; j++)
+      data[B.offset + i * B_step_size + j] = 0;
+    for (unsigned j = 0; j < step_size; j++)
+      data[B.offset + i * B_step_size + left_pad + j] = data[A.offset + i * step_size + j];
+    for (unsigned j = 0; j < right_pad; j++)
+      data[B.offset + i * B_step_size + left_pad + step_size + j] = 0;
   }
 }
 
@@ -443,6 +473,37 @@ void TensorProcessorImpl::kernel1D_smax_diff(float *data, unsigned steps, unsign
       data[dLoss_dInput.offset + step*step_size + i] += data[o+i]*(1-data[o+i])*data[dLoss_dOutput.offset + step*step_size + i];
       for (unsigned j = i+1; j < step_size; j++)
         data[dLoss_dInput.offset + step*step_size + i] += -data[o+i]*data[o+j]*data[dLoss_dOutput.offset + step*step_size + j];
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_conv2d(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
+                                          int out_channels, Variable A, Variable kernel, Variable res)
+{
+  //test nothing, assume that all sizes are valid and res is filled with zeros
+  for (int step = 0; step < steps; step++)
+  {
+    for (int y = 0; y < y_steps; y++)
+    {
+      for (int x = 0; x < x_steps; x++)
+      {
+        int image_n = step / out_channels;
+        int out_ch = step % out_channels;
+        int kw = (int)(kernel.sizes[0])/2; //e.g. 1 for 3x3 and 2 for 5x5
+        int kh = (int)(kernel.sizes[1])/2;
+        int res_offset = (int)res.offset + (image_n * out_channels + out_ch) * x_steps * y_steps;
+
+        for (int in_ch = 0; in_ch < in_channels; in_ch++)
+        {
+          int A_offset = (int)A.offset + (image_n * in_channels + in_ch) * (int)(A.sizes[0] * A.sizes[1]);
+          int k_offset = (int)kernel.offset + (out_ch * in_channels + in_ch) * (2 * kh + 1) * (2 * kw + 1);
+          for (int dy = -kh; dy <= kh; dy++)
+            for (int dx = -kw; dx <= kw; dx++)
+              data[res_offset + x_steps * y + x] += data[k_offset + (dy + kh) * (2 * kw + 1) + (dx + kw)] * data[A_offset + (stride * y + kh + dy) * ((int)A.sizes[0]) + (stride * x + kw + dx)];
+          // printf("%u %u %u %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*(2*kw+1) + (dx+kw) - kernel.offset,
+          // A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, data[k_offset + (dy+kh)*(2*kw+1) + (dx+kw)], data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)]);
+        }
+      }
     }
   }
 }

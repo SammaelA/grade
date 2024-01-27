@@ -20,6 +20,7 @@ namespace nn
       MOV,      // memcpy(C,A, sizeof(float)*A.total_size)
       FILL,     // fill(C, as_float(arg0))
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
+      PAD,      // padding along the given axis
 
       ADD,      // C = A+B
       SUB,      // C = A-B
@@ -51,7 +52,8 @@ namespace nn
       TRANSP,   // C = transpose(A)
       OUTER_P,  // C = outer_product(A, B)
       OUTER_PS, // C = sum(outer_product(A, B)) *
-      SMAX_D,   
+      SMAX_D,   // derivative of softmax function. It's complicated enough to have a separate command for it
+      CONV_2D,  //convolution with arbitrary number of channels and filters. Borders are ignored
 
       URAND,    // C = random_float_uniform(A, B)
       

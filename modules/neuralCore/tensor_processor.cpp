@@ -17,6 +17,7 @@ namespace nn
     {MOV      , "MOV"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {FILL     , "FILL"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {COPY     , "COPY"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+    {PAD      , "PAD"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
 
     {ADD      , "ADD"      , ARITHMETICS   , SELF_APPLICABLE_YES},
     {SUB      , "SUB"      , ARITHMETICS   , SELF_APPLICABLE_YES},
@@ -49,6 +50,7 @@ namespace nn
     {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
     {OUTER_PS , "OUTER_PS" , ALGEBRA       , SELF_APPLICABLE_NO },
     {SMAX_D   , "SMAX_D"   , ALGEBRA       , SELF_APPLICABLE_NO },
+    {CONV_2D  , "CONV_2D"  , ALGEBRA       , SELF_APPLICABLE_NO },
 
     {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
   };

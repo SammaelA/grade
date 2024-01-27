@@ -26,6 +26,10 @@ protected:
   virtual void CommitDeviceData() {}                                                         // will be overriden in generated class
   virtual void GetExecutionTime(const char *a_funcName, float a_out[4]) { a_out[0] = 0.0f; } // will be overriden in generated class
   virtual void __attribute__((noinline)) kernel1D_fill(float *data, unsigned steps, Variable A, float val); // A = val
+  virtual void __attribute__((noinline)) kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_pad(float *data, unsigned steps, unsigned step_size, unsigned left_pad, unsigned right_pad, 
+                                                      Variable A, Variable B); 
+
   virtual void __attribute__((noinline)) kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                                       unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A + B
   virtual void __attribute__((noinline)) kernel2D_mul(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
@@ -72,8 +76,9 @@ protected:
                                          Variable A, Variable B, Variable C);
   virtual void __attribute__((noinline)) kernel2D_outer_p_add(float *data, unsigned step, unsigned A_len, unsigned B_len, 
                                          Variable A, Variable B, Variable C);
-  virtual void __attribute__((noinline)) kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B); 
   virtual void __attribute__((noinline)) kernel1D_smax_diff(float *data, unsigned steps, unsigned step_size, Variable A, Variable B, Variable C); 
+  virtual void __attribute__((noinline)) kernel3D_conv2d(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
+                                                         int out_channels, Variable A, Variable B, Variable C); 
 
   virtual void __attribute__((noinline)) kernel1D_set_input(const float* data_in, unsigned offset, unsigned a_size);
   virtual void __attribute__((noinline)) kernel1D_get_output(float* data_out, unsigned offset, unsigned a_size);

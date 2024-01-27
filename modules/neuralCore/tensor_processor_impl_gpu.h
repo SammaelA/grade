@@ -98,33 +98,32 @@ public:
   virtual void copyKernelFloatCmd(uint32_t length);
   
   virtual void sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
-  virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void powCmd(float *data, unsigned steps, Variable A, Variable B, Variable C);
   virtual void expCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void subCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                        unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void notCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void maxCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
-  virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
-  virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
-                                          Variable A, Variable B, Variable C);
-  virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
-  virtual void sinCmd(float *data, unsigned steps, Variable A, Variable B);
-  virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
-  virtual void addCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
-                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
-  virtual void greater_equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
-                                                 unsigned B_inner_step, Variable A, Variable B, Variable C);
-  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
-  virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
-  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
-                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void logical_orCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                               unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void not_equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                              unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void less_equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                               unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
+  virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
+  virtual void sinCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
+  virtual void addCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void padCmd(float *data, unsigned steps, unsigned step_size, unsigned left_pad, unsigned right_pad, 
+                                       Variable A, Variable B);
+  virtual void greater_equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
+                                                 unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void fillCmd(float *data, unsigned steps, Variable A, float val);
+  virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void mulCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
+                                       unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
   virtual void divCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                        unsigned B_inner_step, Variable A, Variable B, Variable C);
@@ -134,6 +133,8 @@ public:
                                            unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void whereCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                          unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
+                                          Variable A, Variable B, Variable C);
   virtual void minCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void set_inputCmd(const float* data_in, unsigned offset, unsigned size);
   virtual void outer_productCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
@@ -146,6 +147,9 @@ public:
                                          Variable A, Variable B, Variable C);
   virtual void smax_diffCmd(float *data, unsigned steps, unsigned step_size, 
                                              Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput);
+  virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
+  virtual void conv2dCmd(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
+                                          int out_channels, Variable A, Variable kernel, Variable res);
   
   struct MemLoc
   {
@@ -225,11 +229,6 @@ protected:
   VkDescriptorSetLayout sumDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatesumDSLayout();
   virtual void InitKernel_sum(const char* a_filePath);
-  VkPipelineLayout      logLayout   = VK_NULL_HANDLE;
-  VkPipeline            logPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout logDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatelogDSLayout();
-  virtual void InitKernel_log(const char* a_filePath);
   VkPipelineLayout      powLayout   = VK_NULL_HANDLE;
   VkPipeline            powPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout powDSLayout = VK_NULL_HANDLE;
@@ -255,16 +254,26 @@ protected:
   VkDescriptorSetLayout maxDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatemaxDSLayout();
   virtual void InitKernel_max(const char* a_filePath);
+  VkPipelineLayout      logical_orLayout   = VK_NULL_HANDLE;
+  VkPipeline            logical_orPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout logical_orDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createlogical_orDSLayout();
+  virtual void InitKernel_logical_or(const char* a_filePath);
+  VkPipelineLayout      not_equalLayout   = VK_NULL_HANDLE;
+  VkPipeline            not_equalPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout not_equalDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createnot_equalDSLayout();
+  virtual void InitKernel_not_equal(const char* a_filePath);
+  VkPipelineLayout      less_equalLayout   = VK_NULL_HANDLE;
+  VkPipeline            less_equalPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout less_equalDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createless_equalDSLayout();
+  virtual void InitKernel_less_equal(const char* a_filePath);
   VkPipelineLayout      get_outputLayout   = VK_NULL_HANDLE;
   VkPipeline            get_outputPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout get_outputDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createget_outputDSLayout();
   virtual void InitKernel_get_output(const char* a_filePath);
-  VkPipelineLayout      matmul_transposedLayout   = VK_NULL_HANDLE;
-  VkPipeline            matmul_transposedPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout matmul_transposedDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Creatematmul_transposedDSLayout();
-  virtual void InitKernel_matmul_transposed(const char* a_filePath);
   VkPipelineLayout      copyLayout   = VK_NULL_HANDLE;
   VkPipeline            copyPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout copyDSLayout = VK_NULL_HANDLE;
@@ -285,6 +294,11 @@ protected:
   VkDescriptorSetLayout addDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreateaddDSLayout();
   virtual void InitKernel_add(const char* a_filePath);
+  VkPipelineLayout      padLayout   = VK_NULL_HANDLE;
+  VkPipeline            padPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout padDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatepadDSLayout();
+  virtual void InitKernel_pad(const char* a_filePath);
   VkPipelineLayout      greater_equalLayout   = VK_NULL_HANDLE;
   VkPipeline            greater_equalPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout greater_equalDSLayout = VK_NULL_HANDLE;
@@ -305,21 +319,6 @@ protected:
   VkDescriptorSetLayout mulDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatemulDSLayout();
   virtual void InitKernel_mul(const char* a_filePath);
-  VkPipelineLayout      logical_orLayout   = VK_NULL_HANDLE;
-  VkPipeline            logical_orPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout logical_orDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Createlogical_orDSLayout();
-  virtual void InitKernel_logical_or(const char* a_filePath);
-  VkPipelineLayout      not_equalLayout   = VK_NULL_HANDLE;
-  VkPipeline            not_equalPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout not_equalDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Createnot_equalDSLayout();
-  virtual void InitKernel_not_equal(const char* a_filePath);
-  VkPipelineLayout      less_equalLayout   = VK_NULL_HANDLE;
-  VkPipeline            less_equalPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout less_equalDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Createless_equalDSLayout();
-  virtual void InitKernel_less_equal(const char* a_filePath);
   VkPipelineLayout      transposeLayout   = VK_NULL_HANDLE;
   VkPipeline            transposePipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
@@ -345,6 +344,11 @@ protected:
   VkDescriptorSetLayout whereDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatewhereDSLayout();
   virtual void InitKernel_where(const char* a_filePath);
+  VkPipelineLayout      matmul_transposedLayout   = VK_NULL_HANDLE;
+  VkPipeline            matmul_transposedPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout matmul_transposedDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Creatematmul_transposedDSLayout();
+  virtual void InitKernel_matmul_transposed(const char* a_filePath);
   VkPipelineLayout      minLayout   = VK_NULL_HANDLE;
   VkPipeline            minPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout minDSLayout = VK_NULL_HANDLE;
@@ -380,6 +384,16 @@ protected:
   VkDescriptorSetLayout smax_diffDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createsmax_diffDSLayout();
   virtual void InitKernel_smax_diff(const char* a_filePath);
+  VkPipelineLayout      logLayout   = VK_NULL_HANDLE;
+  VkPipeline            logPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout logDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatelogDSLayout();
+  virtual void InitKernel_log(const char* a_filePath);
+  VkPipelineLayout      conv2dLayout   = VK_NULL_HANDLE;
+  VkPipeline            conv2dPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout conv2dDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createconv2dDSLayout();
+  virtual void InitKernel_conv2d(const char* a_filePath);
 
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
@@ -391,7 +405,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[14];
+  VkDescriptorSet  m_allGeneratedDS[17];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

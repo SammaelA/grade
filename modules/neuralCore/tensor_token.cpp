@@ -391,6 +391,23 @@ namespace nn
     tp->add_command(TensorProgram::FILL, 0, 0, id, *((unsigned *)(&val)));
   }
 
+  TensorToken TensorToken::add_padding(unsigned left_pad, unsigned right_pad, int pad_Dim)
+  {
+    assert(Dim > pad_Dim);
+    unsigned pad_mult = 1;
+    for (int i=0;i<pad_Dim;i++)
+      pad_mult *= sizes[i];
+    
+    unsigned res_sizes[TensorCompiler::MAX_DIM];
+    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+      res_sizes[i] = sizes[i];
+    res_sizes[pad_Dim] = sizes[pad_Dim] + left_pad + right_pad;
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::PAD, id, 0, res.id, total_size()/(pad_mult*sizes[pad_Dim]), 
+                    pad_mult*sizes[pad_Dim], pad_mult*left_pad, pad_mult*right_pad);
+    return res;
+  }
+
   TensorToken TensorToken::vector_outer_product(const TensorToken &A, const TensorToken &B)
   {
     assert(A.Dim >= 1);
@@ -492,6 +509,52 @@ namespace nn
   {
     TensorToken res(A.sizes);
     tp->add_command(TensorProgram::LOG, A.id, 0, res.id);
+    return res;
+  }
+
+  /*
+  if kernel.Dim = 2 (HxW) then A is treated as an array of matrices (NxiHxiW) and conv2D returns an array (NxoHxoW) 
+  if kernel.Dim = 3 (KxHxW) then A is treated as an array of K-channel images (NxKxiHxiW) and conv2D returns an array of matrices (NxoHxoW) 
+  if kernel.Dim = 4 (LxKxHxW) then A is treated as an array of K-channel images (NxKxiHxiW) and conv2D returns an array of L-channel images (NxLxoHxoW)
+  in all cases N=0 is allowed, which reduces Dim of result by 1 (i.e. (iHxiW) -> (oHxoW))
+  padding is not applied, borders are ignored 
+  */
+  TensorToken TensorToken::conv2D(const TensorToken &A, const TensorToken &kernel, unsigned stride)
+  {
+    assert(stride > 0);
+    assert(kernel.Dim >= 2 && kernel.Dim <= 4);
+    if (kernel.Dim == 2)
+      assert(A.Dim >= 2);
+    else
+    {
+      assert(A.Dim >= 3);
+      assert(A.sizes[2] == kernel.sizes[2]); //number of channels
+    }
+    unsigned oW = (A.sizes[0] - kernel.sizes[0])/stride + 1;
+    unsigned oH = (A.sizes[1] - kernel.sizes[1])/stride + 1;
+
+    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0,0,0,0};
+    res_sizes[0] = oW;
+    res_sizes[1] = oH;
+    if (kernel.Dim == 2)
+    {
+      for (int i=2;i<TensorCompiler::MAX_DIM;i++)
+        res_sizes[i] = A.sizes[i];
+    }
+    else if (kernel.Dim == 3)
+    {
+      for (int i=3;i<TensorCompiler::MAX_DIM;i++)
+        res_sizes[i-1] = A.sizes[i];
+    }
+    else //if (kernel.Dim == 4)
+    {
+      res_sizes[2] = kernel.sizes[3];
+      for (int i=3;i<TensorCompiler::MAX_DIM;i++)
+        res_sizes[i] = A.sizes[i];
+    }
+
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::CONV_2D, A.id, kernel.id, res.id, stride);
     return res;
   }
   

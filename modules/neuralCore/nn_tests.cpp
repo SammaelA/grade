@@ -526,7 +526,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 256, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f, true);
+    nn2.train(X, res, 256, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X_test, y);
@@ -604,7 +604,7 @@ void test_1_tensor_processor()
 
     for (int k=0;k<10;k++)
     {
-      printf(" 12.%2d. %-64s", k+1,(reference[k].first+" correct ").c_str());
+      printf(" 12.%2d. %-63s", k+1,(reference[k].first+" correct ").c_str());
       float diff = 0.0f;
       for (int i=0;i<6;i++)
         diff += abs(reference[k].second[i] - res[6*k + i]);
@@ -615,10 +615,320 @@ void test_1_tensor_processor()
     }
   }
 
+  void test_13_padding()
+  {
+    printf("TEST 13. PADDING\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3, 2);
+      TensorToken PadX = A.add_padding(1, 2, 0);
+      TensorToken PadY = A.add_padding(2, 1, 1);
+      TensorToken PadXY = A.add_padding(2, 0, 0).add_padding(2, 0, 1);
+      tc.input(A, "A");
+      tc.output(PadX, "PadX");
+      tc.output(PadY, "PadY");
+      tc.output(PadXY, "PadXY");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1,2,3,4,5,6};
+    std::vector<float> PadX(2*6, 0.0f), PadX_ref = {0,1,2,3,0,0,
+                                                    0,4,5,6,0,0};
+    std::vector<float> PadY(5*3, 0.0f), PadY_ref = {0,0,0,
+                                                    0,0,0,
+                                                    1,2,3,
+                                                    4,5,6,
+                                                    0,0,0};
+    std::vector<float> PadXY(4*5, 0.0f), PadXY_ref = {0,0,0,0,0,
+                                                      0,0,0,0,0,
+                                                      0,0,1,2,3,
+                                                      0,0,4,5,6,};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("PadX", PadX.data(), PadX.size());
+    TensorProcessor::get_output("PadY", PadY.data(), PadY.size());
+    TensorProcessor::get_output("PadXY", PadXY.data(), PadXY.size());
+
+    {
+    float diff = 0.0f;
+    for (int i=0;i<PadX.size();i++)
+      diff += abs(PadX[i] - PadX_ref[i]);
+    
+    printf(" 13.1. %-64s","X padding");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<PadY.size();i++)
+      diff += abs(PadY[i] - PadY_ref[i]);
+    
+    printf(" 13.2. %-64s","Y padding");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<PadXY.size();i++)
+      diff += abs(PadXY[i] - PadXY_ref[i]);
+    
+    printf(" 13.3. %-64s","X and Y padding");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+  }
+
+  void test_14_conv2D()
+  {
+    printf("TEST 14. 2D CONVOLUTION\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(5,5);
+      TensorToken B = TensorToken(5,5,2,3);
+      TensorToken B_kernel = TensorToken(3,3,2,2);
+      TensorToken dx_kernel = TensorToken(3,1);
+      TensorToken dy_kernel = TensorToken(1,3);
+      TensorToken R1 = TensorToken::conv2D(A, dx_kernel);
+      TensorToken R2 = TensorToken::conv2D(A, dy_kernel);
+      TensorToken sum_kernel = TensorToken(3,3);
+      TensorToken R3 = TensorToken::conv2D(A, sum_kernel, 2);
+      TensorToken R4 = TensorToken::conv2D(B, B_kernel);
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.input(dx_kernel, "dx_kernel");
+      tc.input(dy_kernel, "dy_kernel");
+      tc.input(sum_kernel, "sum_kernel");
+      tc.input(B_kernel, "B_kernel");
+      tc.output(R1, "R1");
+      tc.output(R2, "R2");
+      tc.output(R3, "R3");
+      tc.output(R4, "R4");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {0 +0,0 +1,0 +4,0 +9,0 +16,
+                            1 +0,1 +1,1 +4,1 +9,1 +16,
+                            4 +0,4 +1,4 +4,4 +9,4 +16,
+                            9 +0,9 +1,9 +4,9 +9,9 +16,
+                            16+0,16+1,16+4,16+9,16+16,};
+    std::vector<float> B = {0, 1, 4, 9, 16,
+                            0, 1, 4, 9, 16,
+                            0, 1, 4, 9, 16,
+                            0, 1, 4, 9, 16,
+                            0, 1, 4, 9, 16,
+                            
+                            0, 0, 0, 0, 0,
+                            1, 1, 1, 1, 1,
+                            4, 4, 4, 4, 4,
+                            9, 9, 9, 9, 9,
+                            16,16,16,16,16,
+                            
+                            
+                            -0, -1, -4, -9, -16,
+                            -0, -1, -4, -9, -16,
+                            -0, -1, -4, -9, -16,
+                            -0, -1, -4, -9, -16,
+                            -0, -1, -4, -9, -16,
+                            
+                            -0, -0, -0, -0, -0,
+                            -1, -1, -1, -1, -1,
+                            -4, -4, -4, -4, -4,
+                            -9, -9, -9, -9, -9,
+                            -16,-16,-16,-16,-16,
+
+
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1,
+                            1,1,1,1,1};
+    
+    std::vector<float> B_kernel = {0,0,0,-1,0,1,0,0,0,  0,0,0,-1,0,1,0,0,0,
+                                   0,-1,0,0,0,0,0,1,0,  0,-1,0,0,0,0,0,1,0};
+
+    std::vector<float> k1 = {-1,0,1};
+    std::vector<float> k2 = {1,1,1,
+                             1,1,1,
+                             1,1,1};
+    std::vector<float> R1(15, 0.0f), R1_ref = {4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000,};
+    std::vector<float> R2(15, 0.0f), R2_ref = {4.000000, 4.000000, 4.000000, 4.000000, 4.000000, 8.000000, 8.000000, 8.000000, 8.000000, 8.000000, 12.000000, 12.000000, 12.000000, 12.000000, 12.000000,};
+    std::vector<float> R3(4, 0.0f), R3_ref = {30.000000, 102.000000, 102.000000, 174.000000,};
+    std::vector<float> R4(3*3*2*3, 0.0f), R4_ref = {4,8,12, 4,8,12, 4,8,12, 
+                                                    4,4,4, 8,8,8, 12,12,12, 
+                                                    -4,-8,-12, -4,-8,-12, -4,-8,-12, 
+                                                    -4,-4,-4, -8,-8,-8, -12,-12,-12, 
+                                                    0,0,0, 0,0,0, 0,0,0, 
+                                                    0,0,0, 0,0,0, 0,0,0, };
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::set_input("dx_kernel", k1.data(), k1.size());
+    TensorProcessor::set_input("dy_kernel", k1.data(), k1.size());
+    TensorProcessor::set_input("sum_kernel", k2.data(), k2.size());
+    TensorProcessor::set_input("B_kernel", B_kernel.data(), B_kernel.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("R1", R1.data(), R1.size());
+    TensorProcessor::get_output("R2", R2.data(), R2.size());
+    TensorProcessor::get_output("R3", R3.data(), R3.size());
+    TensorProcessor::get_output("R4", R4.data(), R4.size());
+
+    /*
+    for (auto &v : R1)
+      printf("%f, ", v);
+    printf("\n");
+    for (auto &v : R2)
+      printf("%f, ", v);
+    printf("\n");
+    for (auto &v : R3)
+      printf("%f, ", v);
+    printf("\n");    
+    for (auto &v : R4)
+      printf("%f, ", v);
+    printf("\n");*/
+
+
+    {
+    float diff = 0.0f;
+    for (int i=0;i<R1.size();i++)
+      diff += abs(R1[i] - R1_ref[i]);
+    
+    printf(" 14.1. %-64s","kernel X");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<R2.size();i++)
+      diff += abs(R2[i] - R2_ref[i]);
+    
+    printf(" 14.2. %-64s","kernel Y");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<R3.size();i++)
+      diff += abs(R3[i] - R3_ref[i]);
+    
+    printf(" 14.3. %-64s","kernel with stride > 1");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<R4.size();i++)
+      diff += abs(R4[i] - R4_ref[i]);
+    
+    printf(" 14.4. %-64s","multi-layered kernel");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+  }
+
+  void test_15_conv2D_blur()
+  {
+    printf("TEST 15. BLUR WITH 2D CONVOLUTION\n");
+
+    std::vector<float> image_data, pixel_data, image_data_grayscale;
+    int width=0, height=0;
+    read_image_rgb("1a.png", image_data, width, height);
+    assert(width*height > 0);
+    int pixel_count = image_data.size()/3;
+    pixel_data.resize(2*pixel_count, 0);
+    image_data_grayscale.resize(pixel_count, 0);
+    for (int i=0;i<height;i++)
+    {
+      for (int j=0;j<width;j++)
+      {
+        pixel_data[2*(i*width + j) + 0] = 2*(float)j/width-1;
+        pixel_data[2*(i*width + j) + 1] = 2*(float)i/height-1;
+        image_data_grayscale[i*width + j] = 0.2126 * image_data[3*(i*width + j)+0] + 
+                                            0.7152 * image_data[3*(i*width + j)+1] + 
+                                            0.0722 * image_data[3*(i*width + j)+2];
+        image_data_grayscale[i*width + j] = 2*(image_data_grayscale[i*width + j]) - 1;
+      }
+    }
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken image = TensorToken(width, height);
+      TensorToken blur_kernel = TensorToken(11,11);
+      TensorToken blurred_image = TensorToken::conv2D(image.add_padding(5,5,0).add_padding(5,5,1), blur_kernel);
+      tc.input(image, "image");
+      tc.input(blur_kernel, "blur_kernel");
+      tc.output(blurred_image, "blurred_image");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> blur_kernel(11*11, 1.0/(11*11));
+    std::vector<float> image_data_res(pixel_count, 0);
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("image", image_data_grayscale.data(), image_data_grayscale.size());
+    TensorProcessor::set_input("blur_kernel", blur_kernel.data(), blur_kernel.size());
+    auto t_prev = std::chrono::steady_clock::now();
+    TensorProcessor::execute();
+    auto t_now = std::chrono::steady_clock::now();
+    float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
+    TensorProcessor::get_output("blurred_image", image_data_res.data(), image_data_res.size());
+
+
+    for (int i=0;i<height;i++)
+    {
+      for (int j=0;j<width;j++)
+      {
+        image_data[3*(i*width + j)+0] = image_data_res[i*width+j];
+        image_data[3*(i*width + j)+1] = image_data_res[i*width+j];
+        image_data[3*(i*width + j)+2] = image_data_res[i*width+j];
+      }
+    }
+    write_image_rgb("1a_blurred.png", image_data, width, height);
+    
+    for (int i=0;i<height;i++)
+    {
+      for (int j=0;j<width;j++)
+      {
+        image_data[3*(i*width + j)+0] = image_data_grayscale[i*width+j];
+        image_data[3*(i*width + j)+1] = image_data_grayscale[i*width+j];
+        image_data[3*(i*width + j)+2] = image_data_grayscale[i*width+j];
+      }
+    }
+    write_image_rgb("1a_gray.png", image_data, width, height);
+    
+    printf(" 15.1. blur took %4.1f ms                                               ", ms);
+    printf("PASSED\n");
+  }
+
   void perform_tests()
   {
-    test_12_logic_operations();
-    return;
     printf("NEURAL CORE CPU TESTS\n");
     test_1_tensor_processor();
     test_2_tensor_tokens();
@@ -632,6 +942,9 @@ void test_1_tensor_processor()
     test_10_simple_classifier();
     test_11_ReLU_classifier();
     test_12_logic_operations();
+    test_13_padding();
+    test_14_conv2D();
+    test_15_conv2D_blur();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -647,5 +960,8 @@ void test_1_tensor_processor()
     test_10_simple_classifier();
     test_11_ReLU_classifier();
     test_12_logic_operations();
+    test_13_padding();
+    test_14_conv2D();
+    test_15_conv2D_blur();
   }
 }

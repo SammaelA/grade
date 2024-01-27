@@ -14,7 +14,7 @@ namespace nn
     constexpr static int MAX_DIM = 4;
 
     void start_program();
-    TensorProgram finish_program(bool print_program = true);
+    TensorProgram finish_program(bool print_program = false);
     void input(const TensorToken &t, std::string name);
     void output(const TensorToken &t, std::string name);
     void inout(const TensorToken &t, std::string name);
@@ -100,6 +100,7 @@ namespace nn
     void copy_to(std::pair<unsigned, unsigned> to_range, const TensorToken &t, std::pair<unsigned, unsigned> from_range);
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t);
     void fill(float val);
+    TensorToken add_padding(unsigned left_pad, unsigned right_pad, int Dim = 0);
 
     static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
                       unsigned step, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step);
@@ -135,6 +136,7 @@ namespace nn
     static TensorToken vector_outer_product_sum(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_vec_mul(const TensorToken &A, const TensorToken &B);
+    static TensorToken conv2D(const TensorToken &A, const TensorToken &kernel, unsigned stride = 1);
 
     unsigned id = 0;
     unsigned Dim = 0;
