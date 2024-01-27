@@ -103,6 +103,14 @@ namespace nn
   TensorToken TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
                                  unsigned steps, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step)
   {
+    if (steps == ~1)
+      steps = A.total_size()/B.total_size();
+    if (step_size == ~1)
+      step_size = B.total_size();
+    if (B_outer_step == ~1)
+      B_outer_step = 0;
+    if (B_inner_step == ~1)
+      B_inner_step = 1;
     TensorToken res(A.sizes);
     g_2op(cmd, A, B, res, steps, step_size, B_outer_step, B_inner_step);
     return res;

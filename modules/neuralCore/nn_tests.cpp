@@ -542,8 +542,83 @@ void test_1_tensor_processor()
       printf("FAILED, error rate %f\n", error_rate);
   }
 
+  void test_12_logic_operations()
+  {
+    printf("TEST 12. LOGIC OPERATIONS\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3, 2);
+      TensorToken B = TensorToken(3);
+      TensorToken R1 = TensorToken::g_2op(TensorProgram::GE, A, 0.0f);
+      TensorToken R2 = TensorToken::g_2op(TensorProgram::WHERE, A, R1);
+      TensorToken R3 = TensorToken::g_2op(TensorProgram::GREATER, A, B);
+      TensorToken R4 = TensorToken::g_2op(TensorProgram::LESS, A, B);
+      TensorToken R5 = TensorToken::g_2op(TensorProgram::GE, A, B);
+      TensorToken R6 = TensorToken::g_2op(TensorProgram::LE, A, B);
+      TensorToken R7 = TensorToken::g_2op(TensorProgram::EQUAL, A, B);
+      TensorToken R8 = TensorToken::g_2op(TensorProgram::NE, A, B);
+      TensorToken R9 = TensorToken::g_2op(TensorProgram::AND, R5, R6);
+      TensorToken R10= TensorToken::g_2op(TensorProgram::OR, R3, R4);
+
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.output(R1, "R1");
+      tc.output(R2, "R2");
+      tc.output(R3, "R3");
+      tc.output(R4, "R4");
+      tc.output(R5, "R5");
+      tc.output(R6, "R6");
+      tc.output(R7, "R7");
+      tc.output(R8, "R8");
+      tc.output(R9, "R9");
+      tc.output(R10,"R10");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1,2,0, -1,-3,2};
+    std::vector<float> B = {0,2,3};
+    std::vector<float> res(6*10, 0.0f);
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::execute();
+    for (int i=0;i<10;i++)
+      TensorProcessor::get_output("R"+std::to_string(i+1), res.data()+i*6, 6);
+  
+    std::vector<std::pair<std::string, std::vector<float>>> reference = 
+    {
+      {{"R1"}, {1,1,1,0,0,1}},
+      {{"R2"}, {1,2,0,0,0,2}}, 
+      {{"R3"}, {1,0,0,0,0,0}}, 
+      {{"R4"}, {0,0,1,1,1,1}}, 
+      {{"R5"}, {1,1,0,0,0,0}}, 
+      {{"R6"}, {0,1,1,1,1,1}},
+      {{"R7"}, {0,1,0,0,0,0}}, 
+      {{"R8"}, {1,0,1,1,1,1}}, 
+      {{"R9"}, {0,1,0,0,0,0}},
+      {{"R10"},{1,0,1,1,1,1}}
+    };
+
+    for (int k=0;k<10;k++)
+    {
+      printf(" 12.%2d. %-64s", k+1,(reference[k].first+" correct ").c_str());
+      float diff = 0.0f;
+      for (int i=0;i<6;i++)
+        diff += abs(reference[k].second[i] - res[6*k + i]);
+      if (diff < 1e-6)
+        printf("PASSED\n");
+      else
+        printf("FAILED\n");
+    }
+  }
+
   void perform_tests()
   {
+    test_12_logic_operations();
+    return;
     printf("NEURAL CORE CPU TESTS\n");
     test_1_tensor_processor();
     test_2_tensor_tokens();
@@ -556,6 +631,7 @@ void test_1_tensor_processor()
     test_9_softmax();
     test_10_simple_classifier();
     test_11_ReLU_classifier();
+    test_12_logic_operations();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -570,5 +646,6 @@ void test_1_tensor_processor()
     test_9_softmax();
     test_10_simple_classifier();
     test_11_ReLU_classifier();
+    test_12_logic_operations();
   }
 }
