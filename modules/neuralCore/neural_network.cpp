@@ -28,7 +28,7 @@ namespace nn
   {
     float batch_size = (float)(input.sizes[1]);
 
-    dLoss_dWeights[0] = (TensorToken::mat_mul_t(input.transpose(), dLoss_dOutput.transpose()).flatten())/batch_size;
+    dLoss_dWeights[0] = TensorToken::mat_mul_t(input.transpose(), dLoss_dOutput.transpose())/batch_size;
     dLoss_dWeights[1] = dLoss_dOutput.outer_sum()/batch_size;
 
     return TensorToken::mat_mul_t(dLoss_dOutput, weights[0]);
