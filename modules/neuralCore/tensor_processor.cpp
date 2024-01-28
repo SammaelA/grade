@@ -18,6 +18,7 @@ namespace nn
     {FILL     , "FILL"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {COPY     , "COPY"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {PAD      , "PAD"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+    {FLIP     , "FLIP"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
 
     {ADD      , "ADD"      , ARITHMETICS   , SELF_APPLICABLE_YES},
     {SUB      , "SUB"      , ARITHMETICS   , SELF_APPLICABLE_YES},

@@ -119,7 +119,13 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_copy(memory.data(), arg2, arg0, arg1, A, C);
       break;
     case nn::TensorProgram::TRANSP:
-      kernel2D_transpose(memory.data(), A.total_size/(A.sizes[0]*A.sizes[1]), A.sizes[0], A.sizes[1], A, C);
+    {
+      unsigned transp_dim = arg0;
+      unsigned group_size = 1;
+      for (unsigned d=0;d<transp_dim;d++)
+        group_size *= A.sizes[i];
+      kernel2D_transpose(memory.data(), A.total_size/(A.sizes[transp_dim]*A.sizes[transp_dim+1]*group_size), A.sizes[transp_dim], A.sizes[transp_dim+1], group_size, A, C);
+    }
       break;
     case nn::TensorProgram::OUTER_P:
       kernel2D_outer_product(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
@@ -151,6 +157,17 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
 
       kernel1D_fill(memory.data(), C.total_size, C, 0.0f);
       kernel3D_conv2d(memory.data(), steps,x_steps, y_steps, stride, in_channels, out_channels, A, B, C);
+    }
+      break;
+    case nn::TensorProgram::FLIP:
+    {
+      unsigned flip_dim = arg0;
+      unsigned group_size = 1;
+      for (unsigned d=0;d<flip_dim;d++)
+        group_size *= A.sizes[i];
+      unsigned flip_size = A.sizes[flip_dim];
+      unsigned steps = A.total_size/(flip_size*group_size);
+      kernel1D_flip(memory.data(), steps, flip_size, group_size, A, C);
     }
       break;
     default:
@@ -227,6 +244,13 @@ void TensorProcessorImpl::kernel1D_pad(float *data, unsigned steps, unsigned ste
     for (unsigned j = 0; j < right_pad; j++)
       data[B.offset + i * B_step_size + left_pad + step_size + j] = 0;
   }
+}
+void TensorProcessorImpl::kernel1D_flip(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+    for (unsigned j = 0; j < flip_size; j++)
+      for (unsigned k = 0; k < group_size; k++)
+        data[B.offset + i*flip_size*group_size + j*flip_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*flip_size + k];
 }
 
 void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
@@ -390,12 +414,13 @@ void TensorProcessorImpl::kernel1D_max(float *data, unsigned steps, unsigned ste
   }
 }
 
-void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B)
+void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B)
 {
   for (unsigned s = 0; s < steps; s++)
     for (unsigned i = 0; i < row_len; i++)
       for (unsigned j = 0; j < col_len; j++)
-        data[B.offset + s*col_len*row_len + i*col_len + j] = data[A.offset + s*col_len*row_len + j*row_len + i];
+        for (unsigned k = 0; k < group_size; k++)
+          data[B.offset + (s*col_len*row_len + i*col_len + j)*group_size + k] = data[A.offset + (s*col_len*row_len + j*row_len + i)*group_size + k];
 }
 
 void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 

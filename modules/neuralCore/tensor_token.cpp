@@ -244,18 +244,17 @@ namespace nn
     return res;
   }
 
-  TensorToken TensorToken::transpose() const
+  TensorToken TensorToken::transpose(unsigned transp_dim) const
   {
     assert(Dim > 1);
-    unsigned res_Dim = Dim;
+    assert(transp_dim+1 < Dim);
     unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
-    res_sizes[0] = sizes[1];
-    res_sizes[1] = sizes[0];
-    for (int i = 2; i < res_Dim; i++)
+    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
       res_sizes[i] = sizes[i];
-
+    res_sizes[transp_dim] = sizes[transp_dim+1];
+    res_sizes[transp_dim+1] = sizes[transp_dim];
     TensorToken res(res_sizes);
-    tp->add_command(TensorProgram::TRANSP, id, 0, res.id);
+    tp->add_command(TensorProgram::TRANSP, id, 0, res.id, transp_dim);
     return res;
   }
 
@@ -405,6 +404,17 @@ namespace nn
     TensorToken res(res_sizes);
     tp->add_command(TensorProgram::PAD, id, 0, res.id, total_size()/(pad_mult*sizes[pad_Dim]), 
                     pad_mult*sizes[pad_Dim], pad_mult*left_pad, pad_mult*right_pad);
+    return res;
+  }
+
+  TensorToken TensorToken::flip(unsigned axis)
+  {
+    assert(Dim > axis);
+    unsigned res_sizes[TensorCompiler::MAX_DIM];
+    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+      res_sizes[i] = sizes[i];
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::FLIP, id, 0, res.id, axis);
     return res;
   }
 

@@ -101,6 +101,7 @@ namespace nn
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t);
     void fill(float val);
     TensorToken add_padding(unsigned left_pad, unsigned right_pad, int Dim = 0);
+    TensorToken flip(unsigned axis);
 
     static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
                       unsigned step, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step);
@@ -131,7 +132,7 @@ namespace nn
     TensorToken max(int Dims = -1) const;
 
     //linear algebra operations
-    TensorToken transpose() const;
+    TensorToken transpose(unsigned transp_dim = 0) const; //swaps (transp_dim) and (transp_dim+1)
     static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B);
     static TensorToken conv2D(const TensorToken &A, const TensorToken &kernel, unsigned stride = 1);

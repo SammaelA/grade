@@ -110,7 +110,6 @@ public:
                                              unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void less_equalCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                               unsigned B_inner_step, Variable A, Variable B, Variable C);
-  virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
   virtual void copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B);
   virtual void sinCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
@@ -124,7 +123,8 @@ public:
   virtual void cosCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void mulCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                        unsigned B_inner_step, Variable A, Variable B, Variable C);
-  virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B);
+  virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
+  virtual void flipCmd(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B);
   virtual void divCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                        unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void lessCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
@@ -133,6 +133,7 @@ public:
                                            unsigned B_inner_step, Variable A, Variable B, Variable C);
   virtual void whereCmd(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step,
                                          unsigned B_inner_step, Variable A, Variable B, Variable C);
+  virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B);
   virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);
   virtual void minCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
@@ -267,11 +268,6 @@ protected:
   VkDescriptorSetLayout less_equalDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createless_equalDSLayout();
   virtual void InitKernel_less_equal(const char* a_filePath);
-  VkPipelineLayout      get_outputLayout   = VK_NULL_HANDLE;
-  VkPipeline            get_outputPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout get_outputDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout Createget_outputDSLayout();
-  virtual void InitKernel_get_output(const char* a_filePath);
   VkPipelineLayout      copyLayout   = VK_NULL_HANDLE;
   VkPipeline            copyPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout copyDSLayout = VK_NULL_HANDLE;
@@ -317,11 +313,16 @@ protected:
   VkDescriptorSetLayout mulDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatemulDSLayout();
   virtual void InitKernel_mul(const char* a_filePath);
-  VkPipelineLayout      transposeLayout   = VK_NULL_HANDLE;
-  VkPipeline            transposePipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreatetransposeDSLayout();
-  virtual void InitKernel_transpose(const char* a_filePath);
+  VkPipelineLayout      get_outputLayout   = VK_NULL_HANDLE;
+  VkPipeline            get_outputPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout get_outputDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createget_outputDSLayout();
+  virtual void InitKernel_get_output(const char* a_filePath);
+  VkPipelineLayout      flipLayout   = VK_NULL_HANDLE;
+  VkPipeline            flipPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout flipDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreateflipDSLayout();
+  virtual void InitKernel_flip(const char* a_filePath);
   VkPipelineLayout      divLayout   = VK_NULL_HANDLE;
   VkPipeline            divPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout divDSLayout = VK_NULL_HANDLE;
@@ -342,6 +343,11 @@ protected:
   VkDescriptorSetLayout whereDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout CreatewhereDSLayout();
   virtual void InitKernel_where(const char* a_filePath);
+  VkPipelineLayout      transposeLayout   = VK_NULL_HANDLE;
+  VkPipeline            transposePipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout transposeDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreatetransposeDSLayout();
+  virtual void InitKernel_transpose(const char* a_filePath);
   VkPipelineLayout      matmul_transposedLayout   = VK_NULL_HANDLE;
   VkPipeline            matmul_transposedPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout matmul_transposedDSLayout = VK_NULL_HANDLE;
@@ -398,7 +404,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[16];
+  VkDescriptorSet  m_allGeneratedDS[17];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

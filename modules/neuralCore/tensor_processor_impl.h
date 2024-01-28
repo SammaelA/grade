@@ -29,6 +29,7 @@ protected:
   virtual void __attribute__((noinline)) kernel1D_copy(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B); 
   virtual void __attribute__((noinline)) kernel1D_pad(float *data, unsigned steps, unsigned step_size, unsigned left_pad, unsigned right_pad, 
                                                       Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_flip(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B); 
 
   virtual void __attribute__((noinline)) kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 
                                                       unsigned B_inner_step, Variable A, Variable B, Variable C); // C = A + B
@@ -69,7 +70,7 @@ protected:
   virtual void __attribute__((noinline)) kernel1D_min(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
   virtual void __attribute__((noinline)) kernel1D_max(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
 
-  virtual void __attribute__((noinline)) kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, Variable A, Variable B); // B = (A)^T
+  virtual void __attribute__((noinline)) kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B); // B = (A)^T
   virtual void __attribute__((noinline)) kernel2D_matmul_transposed(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);                                // C = A * (B)^T
   virtual void __attribute__((noinline)) kernel2D_outer_product(float *data, unsigned steps, unsigned A_len, unsigned B_len, 

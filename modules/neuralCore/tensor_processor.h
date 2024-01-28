@@ -21,6 +21,7 @@ namespace nn
       FILL,     // fill(C, as_float(arg0))
       COPY,     // memcpy(C+arg1, A+arg0, sizeof(float)*arg2)
       PAD,      // padding along the given axis
+      FLIP,     //reverse order of values along the given axis
 
       ADD,      // C = A+B
       SUB,      // C = A-B
