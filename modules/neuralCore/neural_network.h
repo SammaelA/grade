@@ -121,6 +121,74 @@ namespace nn
     virtual std::string get_name() override { return "Tanh"; }
   };
 
+  class Conv2DLayer : public Layer
+  {
+    unsigned kernel_size = 3;
+  public:
+    Conv2DLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch,
+                unsigned output_x, unsigned output_y, unsigned output_ch,
+                unsigned _kernel_size)
+    {
+      assert(_kernel_size%2);
+      input_shape = {input_x, input_y, input_ch};
+      output_shape = {output_x, output_y, output_ch};
+      kernel_size = _kernel_size;
+    }
+    virtual void init() override 
+    {
+      weights.clear();
+
+      weights.push_back(TensorToken(kernel_size, kernel_size, input_shape[2], output_shape[2])); // kernel
+      //weights.push_back(TensorToken(output_shape[2]));                 // bias
+
+      dLoss_dWeights.resize(weights.size());
+    };
+    virtual int parameters_count() override { return input_shape[2]*output_shape[2]*kernel_size*kernel_size;/* + output_shape[2];*/ };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      unsigned pad = (kernel_size-1)/2;
+      TensorToken pad_input = (pad > 0) ? input.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : input;
+      TensorToken conv = TensorToken::conv2D(pad_input, weights[0]);
+      return conv;
+      //return TensorToken::g_2op(TensorProgram::ADD, TensorToken::conv2D(input, weights[0]), weights[1], input.sizes[3], input.total_size(), 0, 1);
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      unsigned pad = (kernel_size-1)/2;
+      float batch_size = (float)(input.sizes[input.Dim-1]);
+      TensorToken X = input.flip(0).flip(1);
+      TensorToken pad_X = (pad > 0) ? X.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : X;
+      dLoss_dWeights[0] = TensorToken::conv2D(pad_X.transpose(2), dLoss_dOutput.transpose(2)).transpose(2) / batch_size;
+
+      unsigned i_pad = kernel_size - pad - 1;
+      TensorToken pad_dLoss_dOutput = (i_pad > 0) ? dLoss_dOutput.add_padding(i_pad, i_pad, 0).add_padding(i_pad, i_pad, 1) : dLoss_dOutput;
+
+      return TensorToken::conv2D(pad_dLoss_dOutput, weights[0].flip(0).flip(1).transpose(2));
+    }
+    virtual std::string get_name() override { return "Conv2DLayer"; }
+  };
+
+  class FlattenLayer : public Layer
+  {
+  public:
+    FlattenLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch)
+    {
+      input_shape = {input_x, input_y, input_ch};
+      output_shape = {input_x*input_y*input_ch};
+    }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      return input.reshape({(unsigned)output_shape[0], input.sizes[input.Dim-1]});
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      return dLoss_dOutput.reshape({input.sizes[0], input.sizes[1], input.sizes[2], input.sizes[3]});
+    }
+    virtual std::string get_name() override { return "Flatten"; }
+  };
+
   class SigmoidLayer : public Layer
   {
   public:

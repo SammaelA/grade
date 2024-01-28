@@ -123,7 +123,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       unsigned transp_dim = arg0;
       unsigned group_size = 1;
       for (unsigned d=0;d<transp_dim;d++)
-        group_size *= A.sizes[i];
+        group_size *= A.sizes[d];
       kernel2D_transpose(memory.data(), A.total_size/(A.sizes[transp_dim]*A.sizes[transp_dim+1]*group_size), A.sizes[transp_dim], A.sizes[transp_dim+1], group_size, A, C);
     }
       break;
@@ -164,7 +164,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       unsigned flip_dim = arg0;
       unsigned group_size = 1;
       for (unsigned d=0;d<flip_dim;d++)
-        group_size *= A.sizes[i];
+        group_size *= A.sizes[d];
       unsigned flip_size = A.sizes[flip_dim];
       unsigned steps = A.total_size/(flip_size*group_size);
       kernel1D_flip(memory.data(), steps, flip_size, group_size, A, C);
@@ -181,6 +181,10 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       printf("]\n");
     }
     #endif
+    //  printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
+    //  for (int k=0;k<C.total_size;k++)
+    //    printf("%f ", memory[C.offset+k]);
+    //  printf("]\n");
 
     auto t2 = std::chrono::high_resolution_clock::now();
     float total_time_us = 1e-3 * std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
@@ -250,7 +254,7 @@ void TensorProcessorImpl::kernel1D_flip(float *data, unsigned steps, unsigned fl
   for (unsigned i = 0; i < steps; i++)
     for (unsigned j = 0; j < flip_size; j++)
       for (unsigned k = 0; k < group_size; k++)
-        data[B.offset + i*flip_size*group_size + j*flip_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*flip_size + k];
+        data[B.offset + i*flip_size*group_size + j*group_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*group_size + k];
 }
 
 void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned B_outer_step, 

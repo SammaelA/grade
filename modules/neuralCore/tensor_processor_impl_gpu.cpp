@@ -1616,7 +1616,7 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       unsigned transp_dim = arg0;
       unsigned group_size = 1;
       for (unsigned d=0;d<transp_dim;d++)
-        group_size *= A.sizes[i];
+        group_size *= A.sizes[d];
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, transposeLayout, 0, 1, &m_allGeneratedDS[10], 0, nullptr);
   transposeCmd(memory.data(), A.total_size/(A.sizes[transp_dim]*A.sizes[transp_dim+1]*group_size), A.sizes[transp_dim], A.sizes[transp_dim+1], group_size, A, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
@@ -1669,7 +1669,7 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       unsigned flip_dim = arg0;
       unsigned group_size = 1;
       for (unsigned d=0;d<flip_dim;d++)
-        group_size *= A.sizes[i];
+        group_size *= A.sizes[d];
       unsigned flip_size = A.sizes[flip_dim];
       unsigned steps = A.total_size/(flip_size*group_size);
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, flipLayout, 0, 1, &m_allGeneratedDS[16], 0, nullptr);
@@ -1688,6 +1688,10 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       printf("]\n");
     }
     #endif
+    //  printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
+    //  for (int k=0;k<C.total_size;k++)
+    //    printf("%f ", memory[C.offset+k]);
+    //  printf("]\n");
 
     auto t2 = std::chrono::high_resolution_clock::now();
     float total_time_us = 1e-3 * std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();

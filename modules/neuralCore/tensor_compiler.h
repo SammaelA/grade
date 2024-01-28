@@ -100,8 +100,8 @@ namespace nn
     void copy_to(std::pair<unsigned, unsigned> to_range, const TensorToken &t, std::pair<unsigned, unsigned> from_range);
     void set(std::pair<unsigned, unsigned> range, const TensorToken &t);
     void fill(float val);
-    TensorToken add_padding(unsigned left_pad, unsigned right_pad, int Dim = 0);
-    TensorToken flip(unsigned axis);
+    TensorToken add_padding(unsigned left_pad, unsigned right_pad, int Dim = 0) const;
+    TensorToken flip(unsigned axis) const;
 
     static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
                       unsigned step, unsigned step_size, unsigned B_outer_step, unsigned B_inner_step);

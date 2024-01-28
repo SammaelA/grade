@@ -36,7 +36,7 @@ void main()
   {
   for (uint j = 0; j < kgenArgs.flip_size; j++)
       for (uint k = 0; k < kgenArgs.group_size; k++)
-        data[kgenArgs.B.offset + i*kgenArgs.flip_size*kgenArgs.group_size + j*kgenArgs.flip_size + k] = data[kgenArgs.A.offset + i*kgenArgs.flip_size*kgenArgs.group_size + (kgenArgs.flip_size-j-1)*kgenArgs.flip_size + k];
+        data[kgenArgs.B.offset + i*kgenArgs.flip_size*kgenArgs.group_size + j*kgenArgs.group_size + k] = data[kgenArgs.A.offset + i*kgenArgs.flip_size*kgenArgs.group_size + (kgenArgs.flip_size-j-1)*kgenArgs.group_size + k];
   }
 }
 

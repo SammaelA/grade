@@ -390,7 +390,7 @@ namespace nn
     tp->add_command(TensorProgram::FILL, 0, 0, id, *((unsigned *)(&val)));
   }
 
-  TensorToken TensorToken::add_padding(unsigned left_pad, unsigned right_pad, int pad_Dim)
+  TensorToken TensorToken::add_padding(unsigned left_pad, unsigned right_pad, int pad_Dim) const
   {
     assert(Dim > pad_Dim);
     unsigned pad_mult = 1;
@@ -407,7 +407,7 @@ namespace nn
     return res;
   }
 
-  TensorToken TensorToken::flip(unsigned axis)
+  TensorToken TensorToken::flip(unsigned axis) const
   {
     assert(Dim > axis);
     unsigned res_sizes[TensorCompiler::MAX_DIM];

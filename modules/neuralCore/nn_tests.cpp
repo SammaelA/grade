@@ -927,6 +927,66 @@ void test_1_tensor_processor()
     printf("PASSED\n");
   }
 
+  void test_16_Conv2D_forward()
+  {
+    printf("TEST 16. CONV_2D FORWARD PASS\n");
+    std::vector<float> X = {2 ,5 ,10, 
+                            5 ,8 ,13,
+                            10,13,18};
+    std::vector<float> w = {0,-1,0,0,0,0,0,1,0, 0,0,0,-1,0,1,0,0,0};
+    std::vector<float> r(18, 0.0f);
+    std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 3,3,2, 3));
+    nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
+    nn2.initialize_with_weights(w.data());
+    nn2.evaluate(X, r);
+
+    float diff = 0.0f;
+    for (int i=0;i<r_ref.size();i++)
+      diff += std::abs(r[i] - r_ref[i]);
+    
+    printf(" 16.1. %-64s", "Correct result ");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED\n");
+
+    //for (auto &v : r)
+    //  printf("%f, ", v);
+    //printf("\n");
+  }
+
+  void test_17_Conv2D_backward()
+  {
+    printf("TEST 17. CONV_2D BACKWARD PASS\n");
+    std::vector<float> X = {2 ,5 ,10, 
+                            5 ,8 ,13,
+                            10,13,18};
+    std::vector<float> w = {0,-1,0,0,0,0,0,1,0, 0,0,0,-1,0,1,0,0,0};
+    std::vector<float> r(18, 0.0f);
+    std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 3,3,4, 3), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 3,3,2, 3), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
+    nn2.train(X, r_ref, 1, 1500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.evaluate(X, r);
+    //for (auto &v : r)
+    //  printf("%f, ", v);
+    //printf("\n");
+    
+    float diff = 0.0f;
+    for (int i=0;i<r_ref.size();i++)
+      diff += std::abs(r[i] - r_ref[i]);
+    
+    printf(" 17.1. %-64s", "Correct result ");
+    if (diff < 1e-4)
+      printf("PASSED\n");
+    else
+      printf("FAILED\n");
+  }
+
   void perform_tests()
   {
     printf("NEURAL CORE CPU TESTS\n");
@@ -945,6 +1005,8 @@ void test_1_tensor_processor()
     test_13_padding();
     test_14_conv2D();
     test_15_conv2D_blur();
+    test_16_Conv2D_forward();
+    test_17_Conv2D_backward();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -963,5 +1025,7 @@ void test_1_tensor_processor()
     test_13_padding();
     test_14_conv2D();
     test_15_conv2D_blur();
+    test_16_Conv2D_forward();
+    test_17_Conv2D_backward();
   }
 }
