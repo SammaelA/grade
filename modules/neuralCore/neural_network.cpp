@@ -13,7 +13,7 @@ namespace nn
   {
     weights.clear();
 
-    weights.push_back(TensorToken(input_shape[0], output_shape[0])); // A
+    weights.push_back(TensorToken(output_shape[0], input_shape[0])); // A
     weights.push_back(TensorToken(output_shape[0]));                 // b
 
     dLoss_dWeights.resize(weights.size());
@@ -21,7 +21,7 @@ namespace nn
 
   TensorToken DenseLayer::forward(const TensorToken &in)
   {
-    return TensorToken::mat_mul_t(weights[0], in) + weights[1];
+    return TensorToken::mat_mul_t(in, weights[0].transpose()) + weights[1];
   }
 
   TensorToken DenseLayer::backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput)
@@ -31,7 +31,7 @@ namespace nn
     dLoss_dWeights[0] = (TensorToken::mat_mul_t(input.transpose(), dLoss_dOutput.transpose()).flatten())/batch_size;
     dLoss_dWeights[1] = dLoss_dOutput.outer_sum()/batch_size;
 
-    return TensorToken::mat_mul_t(weights[0].transpose(), dLoss_dOutput);
+    return TensorToken::mat_mul_t(dLoss_dOutput, weights[0]);
   }
 
   unsigned total_size(const std::vector<unsigned> &sizes)

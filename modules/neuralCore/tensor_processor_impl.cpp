@@ -107,7 +107,7 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_max(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
-      kernel2D_matmul_transposed(memory.data(), A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
+      kernel2D_matmul_transposed(memory.data(), A.sizes[0], A.sizes[1], B.Dim == 2 ? B.sizes[1] : 1, A, B, C);
       break;
     case nn::TensorProgram::MOV:
       kernel1D_copy(memory.data(), A.total_size, 0, 0, A, C);
@@ -401,13 +401,13 @@ void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsign
 void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < B_col_len; i++)
+  for (unsigned i = 0; i < A_col_len; i++)
   {
-    for (unsigned j = 0; j < A_col_len; j++)
+    for (unsigned j = 0; j < B_col_len; j++)
     {
-      data[C.offset + i*A_col_len + j] = 0;
+      data[C.offset + i*B_col_len + j] = 0;
       for (unsigned k = 0; k < A_row_len; k++)
-        data[C.offset + i*A_col_len + j] += data[A.offset + j*A_row_len + k]*data[B.offset + i*A_row_len + k];
+        data[C.offset + i*B_col_len + j] += data[A.offset + i*A_row_len + k]*data[B.offset + j*A_row_len + k];
     }
   }
 }

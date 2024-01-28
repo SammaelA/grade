@@ -1003,12 +1003,12 @@ void TensorProcessorImpl_GPU::matmul_transposedCmd(float *data, unsigned A_row_l
     uint32_t m_tFlags;
   } pcData;
   
-  uint32_t sizeX  = uint32_t(A_col_len);
-  uint32_t sizeY  = uint32_t(B_col_len);
+  uint32_t sizeX  = uint32_t(B_col_len);
+  uint32_t sizeY  = uint32_t(A_col_len);
   uint32_t sizeZ  = uint32_t(1);
   
-  pcData.m_sizeX  = A_col_len;
-  pcData.m_sizeY  = B_col_len;
+  pcData.m_sizeX  = B_col_len;
+  pcData.m_sizeY  = A_col_len;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
   pcData.m_A_row_len = A_row_len; 
@@ -1553,7 +1553,7 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       break;
     case nn::TensorProgram::MATMUL_T:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, matmul_transposedLayout, 0, 1, &m_allGeneratedDS[6], 0, nullptr);
-  matmul_transposedCmd(memory.data(), A.sizes[0], A.sizes[1], std::max(1u, C.sizes[1]), A, B, C);
+  matmul_transposedCmd(memory.data(), A.sizes[0], A.sizes[1], B.Dim == 2 ? B.sizes[1] : 1, A, B, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
     case nn::TensorProgram::MOV:

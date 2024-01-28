@@ -17,8 +17,8 @@ layout( push_constant ) uniform kernelArgs
   Variable A;
   Variable B;
   Variable C;
-  uint A_col_len; 
   uint B_col_len; 
+  uint A_col_len; 
   uint iNumElementsZ; 
   uint tFlagsMask;    
 } kgenArgs;
@@ -30,15 +30,15 @@ void main()
   ///////////////////////////////////////////////////////////////// prolog
   const uint j = uint(gl_GlobalInvocationID[0]); 
   const uint i = uint(gl_GlobalInvocationID[1]); 
-  if(j >= kgenArgs.A_col_len + 0 || i >= kgenArgs.B_col_len + 0)
+  if(j >= kgenArgs.B_col_len + 0 || i >= kgenArgs.A_col_len + 0)
     runThisThread = false;
     ///////////////////////////////////////////////////////////////// prolog
   if(runThisThread)
   {
   
-      data[kgenArgs.C.offset + i*kgenArgs.A_col_len + j] = 0;
+      data[kgenArgs.C.offset + i*kgenArgs.B_col_len + j] = 0;
       for (uint k = 0; k < kgenArgs.A_row_len; k++)
-        data[kgenArgs.C.offset + i*kgenArgs.A_col_len + j] += data[kgenArgs.A.offset + j*kgenArgs.A_row_len + k]*data[kgenArgs.B.offset + i*kgenArgs.A_row_len + k];
+        data[kgenArgs.C.offset + i*kgenArgs.B_col_len + j] += data[kgenArgs.A.offset + i*kgenArgs.A_row_len + k]*data[kgenArgs.B.offset + j*kgenArgs.A_row_len + k];
     
   }
 }
