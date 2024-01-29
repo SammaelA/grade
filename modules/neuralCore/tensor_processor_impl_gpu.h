@@ -124,7 +124,6 @@ public:
   virtual void mulCmd(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C);
   virtual void get_outputCmd(float* data_out, unsigned offset, unsigned size);
-  virtual void flipCmd(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B);
   virtual void divCmd(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C);
   virtual void lessCmd(float *data, unsigned steps, unsigned step_size, unsigned group_size,
@@ -136,6 +135,8 @@ public:
   virtual void transposeCmd(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B);
   virtual void matmul_transposedCmd(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C);
+  virtual void max_poolCmd(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y, 
+                                            Variable A, Variable res);
   virtual void minCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);
   virtual void set_inputCmd(const float* data_in, unsigned offset, unsigned size);
   virtual void outer_productCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
@@ -149,6 +150,9 @@ public:
   virtual void logCmd(float *data, unsigned steps, Variable A, Variable B);
   virtual void conv2dCmd(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
                                           int out_channels, Variable A, Variable kernel, Variable res);
+  virtual void flipCmd(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B);
+  virtual void max_pool_diffCmd(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y,
+                                                 Variable A, Variable dLoss_dOutput, Variable dLoss_dInput);
   
   struct MemLoc
   {
@@ -318,11 +322,6 @@ protected:
   VkDescriptorSetLayout get_outputDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createget_outputDSLayout();
   virtual void InitKernel_get_output(const char* a_filePath);
-  VkPipelineLayout      flipLayout   = VK_NULL_HANDLE;
-  VkPipeline            flipPipeline = VK_NULL_HANDLE; 
-  VkDescriptorSetLayout flipDSLayout = VK_NULL_HANDLE;
-  VkDescriptorSetLayout CreateflipDSLayout();
-  virtual void InitKernel_flip(const char* a_filePath);
   VkPipelineLayout      divLayout   = VK_NULL_HANDLE;
   VkPipeline            divPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout divDSLayout = VK_NULL_HANDLE;
@@ -353,6 +352,11 @@ protected:
   VkDescriptorSetLayout matmul_transposedDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Creatematmul_transposedDSLayout();
   virtual void InitKernel_matmul_transposed(const char* a_filePath);
+  VkPipelineLayout      max_poolLayout   = VK_NULL_HANDLE;
+  VkPipeline            max_poolPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout max_poolDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createmax_poolDSLayout();
+  virtual void InitKernel_max_pool(const char* a_filePath);
   VkPipelineLayout      minLayout   = VK_NULL_HANDLE;
   VkPipeline            minPipeline = VK_NULL_HANDLE; 
   VkDescriptorSetLayout minDSLayout = VK_NULL_HANDLE;
@@ -393,6 +397,16 @@ protected:
   VkDescriptorSetLayout conv2dDSLayout = VK_NULL_HANDLE;
   VkDescriptorSetLayout Createconv2dDSLayout();
   virtual void InitKernel_conv2d(const char* a_filePath);
+  VkPipelineLayout      flipLayout   = VK_NULL_HANDLE;
+  VkPipeline            flipPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout flipDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout CreateflipDSLayout();
+  virtual void InitKernel_flip(const char* a_filePath);
+  VkPipelineLayout      max_pool_diffLayout   = VK_NULL_HANDLE;
+  VkPipeline            max_pool_diffPipeline = VK_NULL_HANDLE; 
+  VkDescriptorSetLayout max_pool_diffDSLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout Createmax_pool_diffDSLayout();
+  virtual void InitKernel_max_pool_diff(const char* a_filePath);
 
 
   virtual VkBufferUsageFlags GetAdditionalFlagsForUBO() const;
@@ -404,7 +418,7 @@ protected:
   VkDescriptorSetLayout CreatecopyKernelFloatDSLayout();
 
   VkDescriptorPool m_dsPool = VK_NULL_HANDLE;
-  VkDescriptorSet  m_allGeneratedDS[17];
+  VkDescriptorSet  m_allGeneratedDS[19];
 
   TensorProcessorImpl_GPU_UBO_Data m_uboData;
   

@@ -170,6 +170,22 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_flip(memory.data(), steps, flip_size, group_size, A, C);
     }
       break;
+    case nn::TensorProgram::MPOOL:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]);
+      kernel3D_max_pool(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, window_x, window_y, A, C);
+    }
+      break;
+    case nn::TensorProgram::MPOOL_D:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]);
+      kernel3D_max_pool_diff(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, window_x, window_y, A, B, C);
+    }
+      break;
     default:
       break;
     }
@@ -521,6 +537,64 @@ void TensorProcessorImpl::kernel3D_conv2d(float *data, int steps, int x_steps, i
           // printf("%u %u %u %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*(2*kw+1) + (dx+kw) - kernel.offset,
           // A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, data[k_offset + (dy+kh)*(2*kw+1) + (dx+kw)], data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)]);
         }
+      }
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_max_pool(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y, 
+                                            Variable A, Variable res)
+{
+  for (int step = 0; step < steps; step++)
+  {
+    for (int y = 0; y < y_steps; y++)
+    {
+      for (int x = 0; x < x_steps; x++)
+      {
+        float max_val = data[A.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+0)*x_steps + x*window_x + 0];
+        for (int wy=0;wy<window_y;wy++)
+        {
+          for (int wx=0;wx<window_x;wx++)
+          {
+            float val = data[A.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+wy)*x_steps*window_x + x*window_x + wx];
+            if (val > max_val)
+              max_val = val;
+          }
+        }
+        data[res.offset + step*x_steps*y_steps + y*x_steps + x] = max_val;
+      }
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_max_pool_diff(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y,
+                                                 Variable A, Variable dLoss_dOutput, Variable dLoss_dInput)
+{
+  for (int step = 0; step < steps; step++)
+  {
+    for (int y = 0; y < y_steps; y++)
+    {
+      for (int x = 0; x < x_steps; x++)
+      {
+        float max_val = data[A.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+0)*x_steps*window_x + x*window_x + 0];
+        int max_wy = 0;
+        int max_wx = 0;
+        for (int wy=0;wy<window_y;wy++)
+        {
+          for (int wx=0;wx<window_x;wx++)
+          {
+            data[dLoss_dInput.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+wy)*x_steps*window_x + x*window_x + wx] = 0;
+            float val = data[A.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+wy)*x_steps*window_x + x*window_x + wx];
+            if (val > max_val)
+            {
+              max_val = val;
+              max_wx = wx;
+              max_wy = wy;
+            }
+          }
+        }
+        data[dLoss_dInput.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+max_wy)*x_steps*window_x + x*window_x + max_wx] = 
+            data[dLoss_dOutput.offset + step*x_steps*y_steps + y*x_steps + x];
       }
     }
   }

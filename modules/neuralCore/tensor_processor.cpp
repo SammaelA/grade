@@ -51,6 +51,8 @@ namespace nn
     {OUTER_P  , "OUTER_P"  , ALGEBRA       , SELF_APPLICABLE_NO },
     {SMAX_D   , "SMAX_D"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {CONV_2D  , "CONV_2D"  , ALGEBRA       , SELF_APPLICABLE_NO },
+    {MPOOL    ,  "MPOOL"   , ALGEBRA       , SELF_APPLICABLE_NO },
+    {MPOOL_D  , "MPOOL_D"  , ALGEBRA       , SELF_APPLICABLE_NO },
 
     {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
   };

@@ -1,0 +1,54 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "common_gpu.h"
+
+layout(binding = 0, set = 0) buffer data0 { float data[]; }; //
+layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data ubo; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  int window_x;
+  int window_y;
+  Variable A;
+  Variable res;
+  int y_steps; 
+  int steps; 
+  int x_steps; 
+  uint tFlagsMask;    
+} kgenArgs;
+
+
+void main()
+{
+  bool runThisThread = true;
+  ///////////////////////////////////////////////////////////////// prolog
+  const int y = int(gl_GlobalInvocationID[0]); 
+  const int step = int(gl_GlobalInvocationID[1]); 
+  const int x = int(gl_GlobalInvocationID[2]); 
+  if(y >= kgenArgs.y_steps + 0 || step >= kgenArgs.steps + 0 || x >= kgenArgs.x_steps + 0)
+    runThisThread = false;
+    ///////////////////////////////////////////////////////////////// prolog
+  if(runThisThread)
+  {
+  
+        float max_val = data[kgenArgs.A.offset + step*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.y_steps*kgenArgs.window_y + (y*kgenArgs.window_y+0)*kgenArgs.x_steps + x*kgenArgs.window_x + 0];
+        for (int wy=0;wy<kgenArgs.window_y;wy++)
+        {
+          for (int wx=0;wx<kgenArgs.window_x;wx++)
+          {
+            float val = data[kgenArgs.A.offset + step*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.y_steps*kgenArgs.window_y + (y*kgenArgs.window_y+wy)*kgenArgs.x_steps*kgenArgs.window_x + x*kgenArgs.window_x + uint(wx)];
+            if (val > max_val)
+              max_val = val;
+          }
+        }
+        data[kgenArgs.res.offset + step*kgenArgs.x_steps*kgenArgs.y_steps + y*kgenArgs.x_steps + uint(x)] = max_val;
+      
+  }
+}
+

@@ -1015,6 +1015,75 @@ void test_1_tensor_processor()
       printf("FAILED\n");
   }
 
+  void test_19_max_pooling()
+  {
+    printf("TEST 19. MAX POOLING\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(4, 4);
+      TensorToken B = TensorToken(2, 2);
+      TensorToken::issue_command(TensorProgram::MPOOL, A, A, B, 2, 2);
+      TensorToken dOut = TensorToken(2, 2);
+      TensorToken dIn = TensorToken(4, 4);
+      TensorToken::issue_command(TensorProgram::MPOOL_D, A, dOut, dIn, 2, 2);
+      tc.input(A, "A");
+      tc.input(dOut, "dOut");
+      tc.output(B, "B");
+      tc.output(dIn, "dIn");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1,0, -2,-1,
+                            0,0, -3,-4,
+
+                            3,4,  6, 7,
+                            7,0,  8, 9};
+    std::vector<float> dOut = {1,2,3,4};
+    std::vector<float> B(2*2, 0.0f), B_ref = {1,-1,7,9};
+    std::vector<float> dIn(4*4, 0.0f), dIn_ref = {1,0, 0,2,
+                                                  0,0, 0,0,
+
+                                                  0,0, 0,0,
+                                                  3,0, 0,4};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("dOut", dOut.data(), dOut.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("B", B.data(), B.size());
+    TensorProcessor::get_output("dIn", dIn.data(), dIn.size());
+    //for (auto &v : B)
+    //  printf("%f, ", v);
+    //printf("\n");
+    //for (auto &v : dIn)
+    //  printf("%f, ", v);
+    //printf("\n");
+    {
+    float diff = 0.0f;
+    for (int i=0;i<B.size();i++)
+      diff += abs(B[i] - B_ref[i]);
+    
+    printf(" 19.1. %-64s","forward pass");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<dIn.size();i++)
+      diff += abs(dIn[i] - dIn_ref[i]);
+    
+    printf(" 19.2. %-64s","backward pass");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1037,6 +1106,7 @@ void test_1_tensor_processor()
     test_16_conv2D_forward();
     test_17_conv2D_backward();
     test_18_conv2D_no_padding();
+    test_19_max_pooling();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -1058,5 +1128,6 @@ void test_1_tensor_processor()
     test_16_conv2D_forward();
     test_17_conv2D_backward();
     test_18_conv2D_no_padding();
+    test_19_max_pooling();
   }
 }

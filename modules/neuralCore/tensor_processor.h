@@ -54,6 +54,8 @@ namespace nn
       OUTER_P,  // C = outer_product(A, B)
       SMAX_D,   // derivative of softmax function. It's complicated enough to have a separate command for it
       CONV_2D,  //convolution with arbitrary number of channels and filters. Borders are ignored
+      MPOOL,    // C = max pooling(A) with arbitrary window size
+      MPOOL_D,  // derivative of max pooling
 
       URAND,    // C = random_float_uniform(A, B)
       
