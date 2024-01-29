@@ -120,7 +120,7 @@ namespace nn
     
     for (auto &l : layers)
       total_params += l->parameters_count();
-    weights.resize(total_params);
+    weights.resize(total_params, 0.0f);
 
     int offset = 0;
     for (int i=0;i<layers.size();i++)

@@ -931,11 +931,11 @@ void test_1_tensor_processor()
     std::vector<float> X = {2 ,5 ,10, 
                             5 ,8 ,13,
                             10,13,18};
-    std::vector<float> w = {0,-1,0,0,0,0,0,1,0, 0,0,0,-1,0,1,0,0,0};
+    std::vector<float> w = {0,-1,0,0,0,0,0,1,0, 0,0,0,-1,0,1,0,0,0, 0,0};
     std::vector<float> r(18, 0.0f);
     std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2, 3, Conv2DLayer::SAME));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2, 3, Conv2DLayer::SAME, true));
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
     nn2.initialize_with_weights(w.data());
     nn2.evaluate(X, r);

@@ -130,13 +130,15 @@ namespace nn
     };
     unsigned kernel_size = 3;
     Padding padding = NO_PAD;
+    bool use_bias = false;
   public:
     Conv2DLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch, 
-                unsigned output_channels, unsigned _kernel_size = 3, Padding _padding = NO_PAD)
+                unsigned output_channels, unsigned _kernel_size = 3, Padding _padding = NO_PAD, bool _use_bias = false)
     {
       assert(_kernel_size%2);
       kernel_size = _kernel_size;
       padding = _padding;
+      use_bias = _use_bias;
       input_shape = {input_x, input_y, input_ch};
       if (padding == NO_PAD)
         output_shape = {input_x - (kernel_size-1)/2, input_y - (kernel_size-1)/2, output_channels};
@@ -148,17 +150,18 @@ namespace nn
       weights.clear();
 
       weights.push_back(TensorToken(kernel_size, kernel_size, input_shape[2], output_shape[2])); // kernel
-      //weights.push_back(TensorToken(output_shape[2]));                 // bias
+      if (use_bias)
+        weights.push_back(TensorToken(output_shape[2]));                 // bias
 
       dLoss_dWeights.resize(weights.size());
     };
-    virtual int parameters_count() override { return input_shape[2]*output_shape[2]*kernel_size*kernel_size;/* + output_shape[2];*/ };
+    virtual int parameters_count() override { return input_shape[2]*output_shape[2]*kernel_size*kernel_size + use_bias*output_shape[2]; };
     virtual TensorToken forward(const TensorToken &input) override
     {
       unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
       TensorToken pad_input = (pad > 0) ? input.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : input;
       TensorToken conv = TensorToken::conv2D(pad_input, weights[0]);
-      return conv;
+      return use_bias ? TensorToken::g_2op(TensorProgram::ADD, conv, weights[1], 2) : conv;
       //return TensorToken::g_2op(TensorProgram::ADD, TensorToken::conv2D(input, weights[0]), weights[1], input.sizes[3], input.total_size(), 0, 1);
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
@@ -168,6 +171,8 @@ namespace nn
       TensorToken X = input.flip(0).flip(1);
       TensorToken pad_X = (pad > 0) ? X.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : X;
       dLoss_dWeights[0] = TensorToken::conv2D(pad_X.transpose(2), dLoss_dOutput.transpose(2)).transpose(2) / batch_size;
+      if (use_bias)
+        dLoss_dWeights[1] = dLoss_dOutput.sum(2).outer_sum() / batch_size;
 
       unsigned i_pad = kernel_size - pad - 1;
       TensorToken pad_dLoss_dOutput = (i_pad > 0) ? dLoss_dOutput.add_padding(i_pad, i_pad, 0).add_padding(i_pad, i_pad, 1) : dLoss_dOutput;
