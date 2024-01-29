@@ -6,6 +6,7 @@
 #include <cmath>
 #include <memory>
 #include <functional>
+#include <tuple>
 
 namespace nn
 {
@@ -123,16 +124,26 @@ namespace nn
 
   class Conv2DLayer : public Layer
   {
-    unsigned kernel_size = 3;
   public:
-    Conv2DLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch,
-                unsigned output_x, unsigned output_y, unsigned output_ch,
-                unsigned _kernel_size)
+    enum Padding
+    {
+      NO_PAD,
+      SAME,
+    };
+    unsigned kernel_size = 3;
+    Padding padding = NO_PAD;
+  public:
+    Conv2DLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch, 
+                unsigned output_channels, unsigned _kernel_size = 3, Padding _padding = NO_PAD)
     {
       assert(_kernel_size%2);
-      input_shape = {input_x, input_y, input_ch};
-      output_shape = {output_x, output_y, output_ch};
       kernel_size = _kernel_size;
+      padding = _padding;
+      input_shape = {input_x, input_y, input_ch};
+      if (padding == NO_PAD)
+        output_shape = {input_x - (kernel_size-1)/2, input_y - (kernel_size-1)/2, output_channels};
+      else
+        output_shape = {input_x, input_y, output_channels};
     }
     virtual void init() override 
     {
@@ -146,7 +157,7 @@ namespace nn
     virtual int parameters_count() override { return input_shape[2]*output_shape[2]*kernel_size*kernel_size;/* + output_shape[2];*/ };
     virtual TensorToken forward(const TensorToken &input) override
     {
-      unsigned pad = (kernel_size-1)/2;
+      unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
       TensorToken pad_input = (pad > 0) ? input.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : input;
       TensorToken conv = TensorToken::conv2D(pad_input, weights[0]);
       return conv;
@@ -154,7 +165,7 @@ namespace nn
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
-      unsigned pad = (kernel_size-1)/2;
+      unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
       float batch_size = (float)(input.sizes[input.Dim-1]);
       TensorToken X = input.flip(0).flip(1);
       TensorToken pad_X = (pad > 0) ? X.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : X;
