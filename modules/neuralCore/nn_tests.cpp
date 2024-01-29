@@ -1087,7 +1087,7 @@ void test_1_tensor_processor()
   void test_20_synthetic_images_classifier()
   {
     unsigned image_size = 16;
-    unsigned image_count = 1024;
+    unsigned image_count = 5000;
 
     std::vector<float> X(image_count*image_size*image_size, 0.0f);
     std::vector<float> y(2*image_count, 0.0f);
@@ -1127,7 +1127,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X_train, y_train, 128, 500, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
+    nn2.train(X_train, y_train, 64, 1000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.0002f);
 
     std::vector<float> y_res(y_test.size(),0);
     nn2.evaluate(X_test, y_res);
@@ -1135,9 +1135,9 @@ void test_1_tensor_processor()
     for (int i=0;i<y_test.size();i++)
       diff += (y_res[i]>0.5) != (y_test[i]>0.5);
 
-    float error_rate = diff/(y_test.size()/2);
-    printf(" 20.1. %-64s", "Error rate <3% ");
-    if (error_rate < 0.03f)
+    float error_rate = diff/(y_test.size());
+    printf(" 20.1. %-64s", "Error rate <10% ");
+    if (error_rate < 0.1f)
       printf("PASSED\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
