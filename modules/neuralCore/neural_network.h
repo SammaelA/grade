@@ -67,12 +67,10 @@ namespace nn
     virtual TensorToken forward(const TensorToken &input) override
     {
       TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
-      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 
-                                              max_val.total_size(), input.total_size()/max_val.total_size(), 1, 0);
+      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 1);
       output = TensorToken::exp(output);
       TensorToken sum = output.sum(input.Dim-1);
-      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 
-                                           sum.total_size(), output.total_size()/sum.total_size(), 1, 0);
+      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 1);
       return res;
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
@@ -92,11 +90,11 @@ namespace nn
     virtual int parameters_count() override { return 0; };
     virtual TensorToken forward(const TensorToken &input) override
     {
-      return TensorToken::g_2op(TensorProgram::WHERE, input, input, 1, input.total_size(), 0, 1);
+      return TensorToken::g_2op(TensorProgram::WHERE, input, input); //input[i] > 0 ? input[i] : 0
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
-      return TensorToken::g_2op(TensorProgram::WHERE, dLoss_dOutput, input, 1, input.total_size(), 0, 1);
+      return TensorToken::g_2op(TensorProgram::WHERE, dLoss_dOutput, input);//input[i] > 0 ? dLoss_dOutput[i] : 0
     }
     virtual std::string get_name() override { return "ReLU"; }
   };

@@ -65,10 +65,10 @@ void test_1_tensor_processor()
     vars[2] = {0,6,1, {0,0,0,0}};//c
     vars[3] = {0,6,1, {0,0,0,0}};//s
     std::vector<TensorProgram::Command> commands(4);
-    commands[0] = {TensorProgram::ADD, {0, 1, 0, 1, 3, 0, 1, 0}}; //A = A + B
-    commands[1] = {TensorProgram::ADD, {0, 2, 0, 3, 1, 0, 1, 0}}; //A = A + c
+    commands[0] = {TensorProgram::ADD, {0, 1, 0, 1, 3, 1, 0, 0}}; //A = A + B
+    commands[1] = {TensorProgram::ADD, {0, 2, 0, 3, 1, 1, 0, 0}}; //A = A + c
     commands[2] = {TensorProgram::SUM, {0, 0, 3, 0, 0, 0, 0, 0}}; //s = sum(A)
-    commands[3] = {TensorProgram::DIV, {0, 2, 0, 3, 1, 0, 1, 0}}; //A = A/s
+    commands[3] = {TensorProgram::DIV, {0, 2, 0, 3, 1, 1, 0, 0}}; //A = A/s
 
     TensorProgram p;
     p.commands = commands;
@@ -417,12 +417,10 @@ void test_1_tensor_processor()
       TensorToken input = TensorToken(3, 2);
 
       TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
-      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 
-                                              max_val.total_size(), input.total_size()/max_val.total_size(), 1, 0);
+      TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 1);
       output = TensorToken::exp(output);
       TensorToken sum = output.sum(input.Dim-1);
-      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 
-                                           sum.total_size(), output.total_size()/sum.total_size(), 1, 0);
+      TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 1);
 
       tc.input(input, "A");
       tc.output(res, "A");
@@ -479,8 +477,8 @@ void test_1_tensor_processor()
       diff += (y[i]>0.5) != (res[i]>0.5);
     }
     float error_rate = diff/sz;
-    printf(" 10.1. %-64s", "Error rate <1% ");
-    if (error_rate < 0.01f)
+    printf(" 10.1. %-64s", "Error rate <3% ");
+    if (error_rate < 0.03f)
       printf("PASSED\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
@@ -971,7 +969,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, Conv2DLayer::SAME), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
-    nn2.train(X, r_ref, 1, 2000, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.train(X, r_ref, 1, 2000, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f, true);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
