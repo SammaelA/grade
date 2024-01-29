@@ -1084,6 +1084,65 @@ void test_1_tensor_processor()
     }
   }
 
+  void test_20_synthetic_images_classifier()
+  {
+    unsigned image_size = 16;
+    unsigned image_count = 1024;
+
+    std::vector<float> X(image_count*image_size*image_size, 0.0f);
+    std::vector<float> y(2*image_count, 0.0f);
+
+    for (int i=0;i<image_count;i++)
+    {
+      int type = rand()%2;
+      int line = rand()%image_size;
+      y[2*i + type] = 1;
+
+      if (type == 0) //horizontal line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + line*image_size + j] = 1.0f;
+      }
+      else //vertical line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + j*image_size + line] = 1.0f;
+      }
+    }
+
+    int train_sz = 0.9*image_count;
+    std::vector<float> X_train = std::vector<float>(X.begin(), X.begin() + train_sz*image_size*image_size);
+    std::vector<float> X_test  = std::vector<float>(X.begin() + train_sz*image_size*image_size, X.end());
+    std::vector<float> y_train = std::vector<float>(y.begin(), y.begin() + train_sz*2);
+    std::vector<float> y_test  = std::vector<float>(y.begin() + train_sz*2, y.end());
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
+    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X_train, y_train, 128, 500, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
+
+    std::vector<float> y_res(y_test.size(),0);
+    nn2.evaluate(X_test, y_res);
+    float diff = 0.0f;
+    for (int i=0;i<y_test.size();i++)
+      diff += (y_res[i]>0.5) != (y_test[i]>0.5);
+
+    float error_rate = diff/(y_test.size()/2);
+    printf(" 20.1. %-64s", "Error rate <3% ");
+    if (error_rate < 0.03f)
+      printf("PASSED\n");
+    else
+      printf("FAILED, error rate %f\n", error_rate);
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1107,6 +1166,7 @@ void test_1_tensor_processor()
     test_17_conv2D_backward();
     test_18_conv2D_no_padding();
     test_19_max_pooling();
+    test_20_synthetic_images_classifier();
 
     printf("NEURAL CORE GPU TESTS\n");
     TensorProcessor::init("GPU");
@@ -1129,5 +1189,6 @@ void test_1_tensor_processor()
     test_17_conv2D_backward();
     test_18_conv2D_no_padding();
     test_19_max_pooling();
+    test_20_synthetic_images_classifier();
   }
 }
