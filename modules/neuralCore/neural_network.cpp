@@ -5,6 +5,7 @@
 #include <fstream>
 #include <chrono>
 #include <cstring>
+#include <random>
 
 constexpr bool DEBUG = false;
 namespace nn
@@ -63,6 +64,16 @@ namespace nn
     float d = mx - mn;
     for (int i = 0; i < size; i++)
       data[i] = d * (((double)rand()) / RAND_MAX) + mn;
+  }
+
+  void Glorot_normal_initialization(float *data, int size, int fan_in, int fan_out)
+  {
+    double stddev = sqrt(2.0f/(fan_in+fan_out));
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::normal_distribution distr{0.0, stddev};
+    for (int i = 0; i < size; i++)
+      data[i] = distr(gen);
   }
 
   void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer)
@@ -131,6 +142,9 @@ namespace nn
           break;
         case SIREN:
           SIREN_initialization(weights.data()+offset, size, fan_in, fan_out);
+          break;
+        case GLOROT_NORMAL:
+          Glorot_normal_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
         default:
           break;

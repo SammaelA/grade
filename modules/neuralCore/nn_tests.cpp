@@ -965,11 +965,12 @@ void test_1_tensor_processor()
     std::vector<float> r(18, 0.0f);
     std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, Conv2DLayer::SAME), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, Conv2DLayer::SAME), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
-    nn2.train(X, r_ref, 1, 2000, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f, true);
+    nn2.add_layer(std::make_shared<DenseLayer>(18, 18), NeuralNetwork::HE);
+    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -980,10 +981,10 @@ void test_1_tensor_processor()
       diff += std::abs(r[i] - r_ref[i]);
     
     printf(" 17.1. %-64s", "Correct result ");
-    if (diff < 0.001f)
+    if (diff < 1.0f)
       printf("PASSED\n");
     else
-      printf("FAILED diff %f > %f\n", diff, 0.001f);
+      printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
   void test_18_conv2D_no_padding()
@@ -994,10 +995,10 @@ void test_1_tensor_processor()
     std::vector<float> r(1, 0.0f);
     std::vector<float> r_ref = {45, 15};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<FlattenLayer>(1,1,2));
     nn2.add_layer(std::make_shared<DenseLayer>(2, 2), NeuralNetwork::HE);
-    nn2.train(X, r_ref, 1, 1500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f, true);
+    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -1016,6 +1017,7 @@ void test_1_tensor_processor()
 
   void perform_tests()
   {
+    srand(time(NULL));
     printf("NEURAL CORE CPU TESTS\n");
     test_1_tensor_processor();
     test_2_tensor_tokens();

@@ -236,7 +236,8 @@ namespace nn
     {
       ZERO,
       HE,
-      SIREN
+      SIREN,
+      GLOROT_NORMAL
     };
 
     void add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer = ZERO);
