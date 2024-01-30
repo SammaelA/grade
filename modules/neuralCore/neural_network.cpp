@@ -51,7 +51,7 @@ namespace nn
   void he_initialization(float *data, int size, int fan_in, int fan_out)
   {
     float mn = -sqrt(6.0 / fan_in);
-    float mx = sqrt(6.0 / fan_out);
+    float mx = sqrt(6.0 / fan_in);
     float d = mx - mn;
     for (int i = 0; i < size; i++)
       data[i] = d * (((double)rand()) / RAND_MAX) + mn;

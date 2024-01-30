@@ -69,7 +69,7 @@ namespace nn
       TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
       TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 1);
       output = TensorToken::exp(output);
-      TensorToken sum = output.sum(input.Dim-1);
+      TensorToken sum = output.sum(input.Dim-1) + 1e-15f;
       TensorToken res = TensorToken::g_2op(TensorProgram::DIV, output, sum, 1);
       return res;
     }
