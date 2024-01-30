@@ -421,6 +421,7 @@ void TensorProcessorImpl::kernel1D_sum(float *data, unsigned steps, unsigned ste
 }
 void TensorProcessorImpl::kernel1D_osum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
+  #pragma omp parallel for
   for (unsigned i = 0; i < steps; i++)
   {
     data[B.offset + i] = 0;
@@ -459,6 +460,7 @@ void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsign
 void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
                                           Variable A, Variable B, Variable C)
 {
+  #pragma omp parallel for
   for (unsigned i = 0; i < A_col_len; i++)
   {
     for (unsigned j = 0; j < B_col_len; j++)
