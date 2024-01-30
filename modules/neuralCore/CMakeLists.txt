@@ -60,6 +60,7 @@ set(SRC
       tensor_token.cpp
       siren.cpp
       nn_tests.cpp
+      dataset.cpp
       
       standalone_tests.cpp)  
 

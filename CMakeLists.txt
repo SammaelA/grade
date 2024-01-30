@@ -136,7 +136,8 @@ endif()
                                  modules/neuralCore/neural_network.cpp
                                  modules/neuralCore/tensor_token.cpp
                                  modules/neuralCore/siren.cpp
-                                 modules/neuralCore/nn_tests.cpp)
+                                 modules/neuralCore/nn_tests.cpp
+                                 modules/neuralCore/dataset.cpp)
 #else()
 #endif()
 
