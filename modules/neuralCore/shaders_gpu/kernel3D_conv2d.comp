@@ -45,6 +45,7 @@ void main()
         int kh = int((kgenArgs.kernel.sizes[1]))/2;
         int res_offset = int(kgenArgs.res.offset) + (image_n * kgenArgs.out_channels + out_ch) * kgenArgs.x_steps * kgenArgs.y_steps;
 
+        data[res_offset + kgenArgs.x_steps * y + x] = 0;
         for (int in_ch = 0; in_ch < kgenArgs.in_channels; in_ch++)
         {
           int A_offset = int(kgenArgs.A.offset) + (image_n * kgenArgs.in_channels + in_ch) * int((kgenArgs.A.sizes[0] * kgenArgs.A.sizes[1]));

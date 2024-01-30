@@ -10,6 +10,8 @@ int _stat_execution_times;
 void TensorProcessorImpl::process(const nn::TensorProgram &program)
 {
   unsigned data_size = memory.size();
+  unsigned constexpr maxWorkGroupSizeY = (1<<16) - 1;
+  unsigned constexpr maxWorkGroupSizeZ = (1<<16) - 1;
   #if DEBUG
   {
     printf("data [");
@@ -38,43 +40,43 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::NOOP:
       break;
     case nn::TensorProgram::ADD:
-      kernel2D_add(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_add(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::MUL:
-      kernel2D_mul(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_mul(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::SUB:
-      kernel2D_sub(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_sub(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::DIV:
-      kernel2D_div(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_div(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::GREATER:
-      kernel2D_greater(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_greater(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::LESS:
-      kernel2D_less(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_less(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::EQUAL:
-      kernel2D_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_equal(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::GE:
-      kernel2D_greater_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_greater_equal(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::LE:
-      kernel2D_less_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_less_equal(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::NE:
-      kernel2D_not_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_not_equal(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::OR:
-      kernel2D_logical_or(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_logical_or(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::AND:
-      kernel2D_logical_and(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_logical_and(memory.data(), arg0, arg1, arg2, A, B, C);
       break;
     case nn::TensorProgram::WHERE:
-      kernel2D_where(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_where(memory.data(), arg0, arg1, arg2, A, B, C);
       break;      
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory.data(), A.total_size, A, C);
@@ -107,7 +109,11 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_max(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
-      kernel2D_matmul_transposed(memory.data(), A.sizes[0], A.sizes[1], B.Dim == 2 ? B.sizes[1] : 1, A, B, C);
+      #if DEBUG
+      if (B.Dim == 2 && B.sizes[1] > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MATMUL_T workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", B.sizes[1]);
+      #endif
+      kernel2D_matmul_transposed(memory.data(), A.sizes[1], B.Dim == 2 ? B.sizes[1] : 1, A.sizes[0], A, B, C);
       break;
     case nn::TensorProgram::MOV:
       kernel1D_copy(memory.data(), A.total_size, 0, 0, A, C);
@@ -124,11 +130,26 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       unsigned group_size = 1;
       for (unsigned d=0;d<transp_dim;d++)
         group_size *= A.sizes[d];
-      kernel2D_transpose(memory.data(), A.total_size/(A.sizes[transp_dim]*A.sizes[transp_dim+1]*group_size), A.sizes[transp_dim], A.sizes[transp_dim+1], group_size, A, C);
+      unsigned steps = A.total_size/(A.sizes[transp_dim]*A.sizes[transp_dim+1]*group_size);
+      unsigned row_len = A.sizes[transp_dim];
+      unsigned col_len = A.sizes[transp_dim+1];
+      #if DEBUG
+      if (row_len > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: TRANSP workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", row_len);
+      if (col_len > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: TRANSP workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", col_len);
+      #endif
+      kernel3D_transpose(memory.data(), steps, row_len, col_len, group_size, A, C);
     }
       break;
     case nn::TensorProgram::OUTER_P:
-      kernel2D_outer_product(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
+      #if DEBUG
+      if (A.sizes[0] > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: OUTER_P workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]);
+      if (B.sizes[0] > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: OUTER_P workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", B.sizes[0]);
+      #endif
+      kernel3D_outer_product(memory.data(), A.total_size/A.sizes[0], A.sizes[0], B.sizes[0], A, B, C);
       break;
     case nn::TensorProgram::SMAX_D:
       kernel1D_smax_diff(memory.data(), A.sizes[A.Dim-1], A.total_size/A.sizes[A.Dim-1], A, B, C);
@@ -154,9 +175,13 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       int x_steps = C.sizes[0];
       int y_steps = C.sizes[1];
       int stride = arg0;
-
-      kernel1D_fill(memory.data(), C.total_size, C, 0.0f);
-      kernel3D_conv2d(memory.data(), steps,x_steps, y_steps, stride, in_channels, out_channels, A, B, C);
+      #if DEBUG
+      if (x_steps > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: CONV_2D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", x_steps);
+      if (y_steps > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: CONV_2D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", y_steps);
+      #endif
+      kernel3D_conv2d(memory.data(), steps, x_steps, y_steps, stride, in_channels, out_channels, A, B, C);
     }
       break;
     case nn::TensorProgram::FLIP:
@@ -175,6 +200,12 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       unsigned window_x = arg0;
       unsigned window_y = arg1;
       unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
       kernel3D_max_pool(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, window_x, window_y, A, C);
     }
       break;
@@ -183,6 +214,12 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       unsigned window_x = arg0;
       unsigned window_y = arg1;
       unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
       kernel3D_max_pool_diff(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, window_x, window_y, A, B, C);
     }
       break;
@@ -273,7 +310,7 @@ void TensorProcessorImpl::kernel1D_flip(float *data, unsigned steps, unsigned fl
         data[B.offset + i*flip_size*group_size + j*group_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*group_size + k];
 }
 
-void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_add(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
@@ -281,7 +318,7 @@ void TensorProcessorImpl::kernel2D_add(float *data, unsigned steps, unsigned ste
       for (unsigned k = 0; k < group_size; k++)
         data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] + data[B.offset + j];
 }
-void TensorProcessorImpl::kernel2D_mul(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_mul(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
@@ -289,7 +326,7 @@ void TensorProcessorImpl::kernel2D_mul(float *data, unsigned steps, unsigned ste
       for (unsigned k = 0; k < group_size; k++)
         data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] * data[B.offset + j];
 }
-void TensorProcessorImpl::kernel2D_sub(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_sub(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
@@ -297,7 +334,7 @@ void TensorProcessorImpl::kernel2D_sub(float *data, unsigned steps, unsigned ste
       for (unsigned k = 0; k < group_size; k++)
         data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] - data[B.offset + j];
 }
-void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_div(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
   for (unsigned i = 0; i < steps; i++)
@@ -306,7 +343,7 @@ void TensorProcessorImpl::kernel2D_div(float *data, unsigned steps, unsigned ste
         data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] / data[B.offset + j];
 }
 
-void TensorProcessorImpl::kernel2D_greater(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_greater(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                            Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -314,7 +351,7 @@ void TensorProcessorImpl::kernel2D_greater(float *data, unsigned steps, unsigned
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] > data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_less(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_less(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                         Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -322,7 +359,7 @@ void TensorProcessorImpl::kernel2D_less(float *data, unsigned steps, unsigned st
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] < data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                          Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -330,7 +367,7 @@ void TensorProcessorImpl::kernel2D_equal(float *data, unsigned steps, unsigned s
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] == data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                                  Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -338,7 +375,7 @@ void TensorProcessorImpl::kernel2D_greater_equal(float *data, unsigned steps, un
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] >= data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                               Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -346,7 +383,7 @@ void TensorProcessorImpl::kernel2D_less_equal(float *data, unsigned steps, unsig
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] <= data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                              Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -354,7 +391,7 @@ void TensorProcessorImpl::kernel2D_not_equal(float *data, unsigned steps, unsign
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] != data[B.offset + j] ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                               Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -362,7 +399,7 @@ void TensorProcessorImpl::kernel2D_logical_or(float *data, unsigned steps, unsig
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = (data[A.offset + i*step_size*group_size + j*group_size + k] > 0 || data[B.offset + j] > 0) ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                                Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -370,7 +407,7 @@ void TensorProcessorImpl::kernel2D_logical_and(float *data, unsigned steps, unsi
       for (unsigned k = 0; k < group_size; k++)
       data[C.offset + i*step_size*group_size + j*group_size + k] = (data[A.offset + i*step_size*group_size + j*group_size + k] > 0 && data[B.offset + j] > 0) ? 1.0f : 0.0f;
 }
-void TensorProcessorImpl::kernel2D_where(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_where(float *data, unsigned steps, unsigned step_size, unsigned group_size,
                                          Variable A, Variable B, Variable C)
 {
   for (unsigned i = 0; i < steps; i++)
@@ -448,7 +485,7 @@ void TensorProcessorImpl::kernel1D_max(float *data, unsigned steps, unsigned ste
   }
 }
 
-void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B)
+void TensorProcessorImpl::kernel3D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B)
 {
   for (unsigned s = 0; s < steps; s++)
     for (unsigned i = 0; i < row_len; i++)
@@ -457,8 +494,8 @@ void TensorProcessorImpl::kernel2D_transpose(float *data, unsigned steps, unsign
           data[B.offset + (s*col_len*row_len + i*col_len + j)*group_size + k] = data[A.offset + (s*col_len*row_len + j*row_len + i)*group_size + k];
 }
 
-void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_row_len, unsigned A_col_len, unsigned B_col_len, 
-                                          Variable A, Variable B, Variable C)
+void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_col_len, unsigned B_col_len, 
+                                                     unsigned A_row_len, Variable A, Variable B, Variable C)
 {
   #pragma omp parallel for
   for (unsigned i = 0; i < A_col_len; i++)
@@ -472,7 +509,7 @@ void TensorProcessorImpl::kernel2D_matmul_transposed(float *data, unsigned A_row
   }
 }
 
-void TensorProcessorImpl::kernel2D_outer_product(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
+void TensorProcessorImpl::kernel3D_outer_product(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                       Variable A, Variable B, Variable C)
 {
   for (unsigned s = 0; s < steps; s++)
@@ -529,6 +566,7 @@ void TensorProcessorImpl::kernel3D_conv2d(float *data, int steps, int x_steps, i
         int kh = (int)(kernel.sizes[1])/2;
         int res_offset = (int)res.offset + (image_n * out_channels + out_ch) * x_steps * y_steps;
 
+        data[res_offset + x_steps * y + x] = 0;
         for (int in_ch = 0; in_ch < in_channels; in_ch++)
         {
           int A_offset = (int)A.offset + (image_n * in_channels + in_ch) * (int)(A.sizes[0] * A.sizes[1]);

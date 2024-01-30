@@ -9,17 +9,16 @@ layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data u
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout( push_constant ) uniform kernelArgs
 {
-  uint group_size;
   Variable A;
   Variable B;
   Variable C;
-  uint step_size; 
+  uint A_len; 
   uint steps; 
-  uint iNumElementsZ; 
+  uint B_len; 
   uint tFlagsMask;    
 } kgenArgs;
 
@@ -28,15 +27,15 @@ void main()
 {
   bool runThisThread = true;
   ///////////////////////////////////////////////////////////////// prolog
-  const uint j = uint(gl_GlobalInvocationID[0]); 
-  const uint i = uint(gl_GlobalInvocationID[1]); 
-  if(j >= kgenArgs.step_size + 0 || i >= kgenArgs.steps + 0)
+  const uint i = uint(gl_GlobalInvocationID[0]); 
+  const uint s = uint(gl_GlobalInvocationID[1]); 
+  const uint j = uint(gl_GlobalInvocationID[2]); 
+  if(i >= kgenArgs.A_len + 0 || s >= kgenArgs.steps + 0 || j >= kgenArgs.B_len + 0)
     runThisThread = false;
     ///////////////////////////////////////////////////////////////// prolog
   if(runThisThread)
   {
-  for (uint k = 0; k < kgenArgs.group_size; k++)
-      data[kgenArgs.C.offset + i*kgenArgs.step_size*kgenArgs.group_size + j*kgenArgs.group_size + k] = (data[kgenArgs.A.offset + i*kgenArgs.step_size*kgenArgs.group_size + j*kgenArgs.group_size + k] > 0 && data[kgenArgs.B.offset + j] > 0) ? 1.0f : 0.0f;
+  data[kgenArgs.C.offset + s*kgenArgs.A_len*kgenArgs.B_len + i*kgenArgs.B_len + j] = data[kgenArgs.A.offset + s*kgenArgs.A_len + i]*data[kgenArgs.B.offset + s*kgenArgs.B_len + j];
   }
 }
 
