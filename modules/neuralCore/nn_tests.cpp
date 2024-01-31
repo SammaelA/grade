@@ -17,6 +17,7 @@
 #include "tensor_compiler.h"
 #include "neural_network.h"
 #include "siren.h"
+#include "dataset.h"
 
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -1143,8 +1144,108 @@ void test_1_tensor_processor()
       printf("FAILED, error rate %f\n", error_rate);
   }
 
+  void test_21_CIFAR10()
+  {
+    Dataset dataset;
+    read_CIFAR10_dataset("../../resources/cifar-10-dataset", &dataset);
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<FlattenLayer>(32,32,3));
+    nn2.add_layer(std::make_shared<DenseLayer>(32*32*3, 190), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(190, 190), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(190, 10), NeuralNetwork::HE);
+    //nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    /*
+    nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 32, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(32, 32, 32));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,32, 64), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 64));
+    nn2.add_layer(std::make_shared<FlattenLayer>(7,7,64));
+    nn2.add_layer(std::make_shared<DenseLayer>(7*7*64, 200), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());*/
+    nn2.train(dataset.test_data, dataset.test_labels, 256, 100, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.001f, true);
+
+    std::vector<float> y_res(dataset.test_labels.size(),0);
+    nn2.evaluate(dataset.test_data, y_res);
+    float acc = 0.0f;
+    float cnt = 0.0f;
+    for (int i=0;i<dataset.test_labels.size()/50;i+=10)
+    {
+      int max_pos = 0;
+      int ref_max_pos = 0;
+      for (int j=0;j<10;j++)
+      {
+        if (y_res[i+j] > y_res[i+max_pos])
+          max_pos = j;
+        if (dataset.test_labels[i+j] > dataset.test_labels[i+ref_max_pos])
+          ref_max_pos = j;
+      }
+
+      printf("label %d, res [", ref_max_pos);
+      for (int j=0;j<10;j++)
+        printf("%.3f ", y_res[i+j]);
+      printf("]\n");
+
+      acc += (max_pos == ref_max_pos);
+      cnt++;
+    }
+    printf("accuracy %f\n", acc/cnt);
+    /*
+    float error_rate = diff/(dataset.test_labels.size());
+    printf(" 21.1. %-64s", "Error rate <10% ");
+    if (error_rate < 0.1f)
+      printf("PASSED\n");
+    else
+      printf("FAILED, error rate %f\n", error_rate);
+    */
+  }
+
+  void test_22_arithmetics_benchmark()
+  {
+    printf("TEST 22. ARITHMETICS BENCHMARK\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(64000, 100);
+      TensorToken B = TensorToken(64000);
+      for (int i=0;i<100;i++)
+      A = A * B;
+      tc.inout(A, "A");
+      tc.input(B, "B");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A(100*64000, 1.5f);
+    std::vector<float> B(64000, 1.0f);
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    auto t_prev = std::chrono::steady_clock::now();
+    TensorProcessor::execute();
+    auto t_now = std::chrono::steady_clock::now();
+    float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
+    printf(" 22.1. operation took %4.1f ms                                          ", ms);
+    printf("PASSED\n");
+  }
+
   void perform_tests()
   {
+    //TensorProcessor::init("GPU");
+    //test_1_tensor_processor();
+    //test_22_arithmetics_benchmark();
+    //return;
+    //srand(time(NULL));
+    //test_21_CIFAR10();
+    //return;
     srand(time(NULL));
     printf("NEURAL CORE CPU TESTS\n");
     test_1_tensor_processor();

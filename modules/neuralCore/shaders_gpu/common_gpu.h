@@ -23,6 +23,7 @@
 #define half4 f16vec4
 bool  isfinite(float x)            { return !isinf(x); }
 float copysign(float mag, float s) { return abs(mag)*sign(s); }
+const uint AGroupSize = 256;
 struct Variable
     {
       uint Dim;

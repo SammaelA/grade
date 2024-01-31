@@ -17,6 +17,7 @@ public:
 
 protected:
   std::vector<float> memory;
+  constexpr static unsigned AGroupSize = 256;
 
   virtual void allocate_memory(unsigned size);
   virtual void set_input(const float* in __attribute__((size("size"))), unsigned offset, unsigned size);
@@ -31,32 +32,32 @@ protected:
                                                       Variable A, Variable B); 
   virtual void __attribute__((noinline)) kernel1D_flip(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B); 
 
-  virtual void __attribute__((noinline)) kernel1D_add(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A + B
-  virtual void __attribute__((noinline)) kernel1D_mul(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A * B
-  virtual void __attribute__((noinline)) kernel1D_sub(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A - B
-  virtual void __attribute__((noinline)) kernel1D_div(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
-  virtual void __attribute__((noinline)) kernel1D_greater(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
-  virtual void __attribute__((noinline)) kernel1D_less(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A * B
-  virtual void __attribute__((noinline)) kernel1D_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A - B
-  virtual void __attribute__((noinline)) kernel1D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
-  virtual void __attribute__((noinline)) kernel1D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
-  virtual void __attribute__((noinline)) kernel1D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A * B
-  virtual void __attribute__((noinline)) kernel1D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A - B
-  virtual void __attribute__((noinline)) kernel1D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
-  virtual void __attribute__((noinline)) kernel1D_where(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
-                                                      Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_add(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A + B
+  virtual void __attribute__((noinline)) kernel1D_mul(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel1D_sub(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel1D_div(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_greater(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_less(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel1D_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel1D_greater_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_less_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_not_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A * B
+  virtual void __attribute__((noinline)) kernel1D_logical_or(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A - B
+  virtual void __attribute__((noinline)) kernel1D_logical_and(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_where(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
                                                         
   virtual void __attribute__((noinline)) kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
   virtual void __attribute__((noinline)) kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C);                     // C = pow(A, B)

@@ -40,43 +40,43 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::NOOP:
       break;
     case nn::TensorProgram::ADD:
-      kernel1D_add(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_add(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::MUL:
-      kernel1D_mul(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_mul(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::SUB:
-      kernel1D_sub(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_sub(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::DIV:
-      kernel1D_div(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_div(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::GREATER:
-      kernel1D_greater(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_greater(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::LESS:
-      kernel1D_less(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_less(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::EQUAL:
-      kernel1D_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_equal(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::GE:
-      kernel1D_greater_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_greater_equal(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::LE:
-      kernel1D_less_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_less_equal(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::NE:
-      kernel1D_not_equal(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_not_equal(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::OR:
-      kernel1D_logical_or(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_logical_or(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::AND:
-      kernel1D_logical_and(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_logical_and(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;
     case nn::TensorProgram::WHERE:
-      kernel1D_where(memory.data(), arg0, arg1, arg2, A, B, C);
+      kernel1D_where(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;      
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory.data(), A.total_size, A, C);
@@ -310,110 +310,214 @@ void TensorProcessorImpl::kernel1D_flip(float *data, unsigned steps, unsigned fl
         data[B.offset + i*flip_size*group_size + j*group_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*group_size + k];
 }
 
-void TensorProcessorImpl::kernel1D_add(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_add(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-        data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] + data[B.offset + j];
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] + data[B.offset + Bi];
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_mul(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_mul(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                        Variable A, Variable B, Variable C) // C = A * B
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-        data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] * data[B.offset + j];
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] * data[B.offset + Bi];
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_sub(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_sub(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-        data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] - data[B.offset + j];
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] - data[B.offset + Bi];
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_div(float *data, unsigned steps, unsigned step_size, unsigned group_size, 
+void TensorProcessorImpl::kernel1D_div(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
                                        Variable A, Variable B, Variable C) // C = A * B
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-        data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] / data[B.offset + j];
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] / data[B.offset + Bi];
+    }
+  }
 }
 
-void TensorProcessorImpl::kernel1D_greater(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_greater(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                            Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] > data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] > data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_less(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_less(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                         Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] < data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] < data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                          Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] == data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai]  == data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_greater_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_greater_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                                  Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] >= data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] >= data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_less_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_less_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                               Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] <= data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] <= data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_not_equal(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_not_equal(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                              Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[A.offset + i*step_size*group_size + j*group_size + k] != data[B.offset + j] ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] != data[B.offset + Bi] ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_logical_or(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_logical_or(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                               Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = (data[A.offset + i*step_size*group_size + j*group_size + k] > 0 || data[B.offset + j] > 0) ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] > 0 || data[B.offset + Bi] > 0 ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_logical_and(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_logical_and(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                                Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = (data[A.offset + i*step_size*group_size + j*group_size + k] > 0 && data[B.offset + j] > 0) ? 1.0f : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[A.offset + Ai] > 0 && data[B.offset + Bi] > 0 ? 1.0f : 0.0f;
+    }
+  }
 }
-void TensorProcessorImpl::kernel1D_where(float *data, unsigned steps, unsigned step_size, unsigned group_size,
+void TensorProcessorImpl::kernel1D_where(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                          Variable A, Variable B, Variable C)
 {
-  for (unsigned i = 0; i < steps; i++)
-    for (unsigned j = 0; j < step_size; j++)
-      for (unsigned k = 0; k < group_size; k++)
-      data[C.offset + i*step_size*group_size + j*group_size + k] = data[B.offset + j] > 0 ? data[A.offset + i*step_size*group_size + j*group_size + k] : 0.0f;
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = data[B.offset + Bi] > 0 ? data[A.offset + Ai] : 0.0f;
+    }
+  }
 }
 
 void TensorProcessorImpl::kernel1D_exp(float *data, unsigned steps, Variable A, Variable B) // B = exp(A)
