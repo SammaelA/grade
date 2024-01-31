@@ -336,7 +336,7 @@ namespace nn
     TensorToken Vh = V / (one - TensorToken::pow(beta_1, iter + one));
     S = S*beta_2 + grad*grad*(one - beta_2);
     TensorToken Sh = S / (one - TensorToken::pow(beta_2, iter + one));
-    w -= (Vh*lr)/(TensorToken::pow(Sh, 0.5f) + eps);
+    w -= (Vh*lr)/(TensorToken::sqrt(Sh) + eps);
     
     compiler.output(l, "loss");
     if (DEBUG)

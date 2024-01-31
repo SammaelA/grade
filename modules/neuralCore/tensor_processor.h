@@ -36,9 +36,12 @@ namespace nn
       OR,       // C = A>0 || B>0
       AND,      // C = A>0 && B>0
       WHERE,    // C = B>0 ? A : 0 (elementwise)
+      MIN,      // C = min(A, B)
+      MAX,      // C = min(A, B)
+      POW,      // C = A^B
 
       EXP,      // C = exp(A)
-      POW,      // C = A^B (B is 1-element tensor)
+      SQRT,     // C = sqrt(A)
       SIN,      // C = sin(A)
       COS,      // C = cos(A)
       LOG,      // C = log(A)

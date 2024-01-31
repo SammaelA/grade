@@ -78,11 +78,20 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::WHERE:
       kernel1D_where(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
       break;      
+    case nn::TensorProgram::MIN:
+      kernel1D_min(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
+      break;     
+    case nn::TensorProgram::MAX:
+      kernel1D_max(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
+      break;     
+    case nn::TensorProgram::POW:
+      kernel1D_pow(memory.data(), (arg0*arg1*arg2+AGroupSize-1)/AGroupSize, arg0*arg1*arg2, arg1, arg2, arg3 == 0 ? ~0u : 0u, A, B, C);
+      break;     
     case nn::TensorProgram::EXP:
       kernel1D_exp(memory.data(), A.total_size, A, C);
       break;
-    case nn::TensorProgram::POW:
-      kernel1D_pow(memory.data(), A.total_size, A, B, C);
+    case nn::TensorProgram::SQRT:
+      kernel1D_sqrt(memory.data(), A.total_size, A, C);
       break;
     case nn::TensorProgram::SIN:
       kernel1D_sin(memory.data(), A.total_size, A, C);
@@ -103,10 +112,10 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_osum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MINIMUM:
-      kernel1D_min(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
+      kernel1D_minimum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MAXIMUM:
-      kernel1D_max(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
+      kernel1D_maximum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:
       #if DEBUG
@@ -519,16 +528,64 @@ void TensorProcessorImpl::kernel1D_where(float *data, unsigned steps, unsigned t
     }
   }
 }
+void TensorProcessorImpl::kernel1D_min(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                       Variable A, Variable B, Variable C)
+{
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = std::min(data[A.offset + Ai], data[B.offset + Bi]);
+    }
+  }
+}
+void TensorProcessorImpl::kernel1D_max(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                       Variable A, Variable B, Variable C)
+{
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = std::max(data[A.offset + Ai], data[B.offset + Bi]);
+    }
+  }
+}
+void TensorProcessorImpl::kernel1D_pow(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                       Variable A, Variable B, Variable C)
+{
+  #pragma omp parallel for
+  for (unsigned s1 = 0; s1 < steps; s1++)
+  {
+    for (unsigned s2 = 0; s2 < std::min(AGroupSize, total_size-s1*AGroupSize); s2++)
+    {
+    unsigned s = s1*AGroupSize + s2;
+    unsigned Ai = Ai_mul & s;
+    unsigned Bi = s / group_size % step_size;
+    unsigned Ci = s;
+    data[C.offset + Ci] = std::pow(data[A.offset + Ai], data[B.offset + Bi]);
+    }
+  }
+}
 
 void TensorProcessorImpl::kernel1D_exp(float *data, unsigned steps, Variable A, Variable B) // B = exp(A)
 {
   for (unsigned i = 0; i < steps; i++)
     data[B.offset + i] = std::exp(data[A.offset + i]);
 }
-void TensorProcessorImpl::kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C)
+void TensorProcessorImpl::kernel1D_sqrt(float *data, unsigned steps, Variable A, Variable B)
 {
   for (unsigned i = 0; i < steps; i++)
-    data[C.offset + i] = std::pow(data[A.offset + i], data[B.offset]);
+    data[B.offset + i] = std::sqrt(data[A.offset + i]);
 }
 void TensorProcessorImpl::kernel1D_sin(float *data, unsigned steps, Variable A, Variable B)
 {
@@ -570,7 +627,7 @@ void TensorProcessorImpl::kernel1D_osum(float *data, unsigned steps, unsigned st
       data[B.offset + i] += data[A.offset + j * steps + i];
   }
 }
-void TensorProcessorImpl::kernel1D_min(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
+void TensorProcessorImpl::kernel1D_minimum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
   for (unsigned i = 0; i < steps; i++)
   {
@@ -579,7 +636,7 @@ void TensorProcessorImpl::kernel1D_min(float *data, unsigned steps, unsigned ste
       data[B.offset + i] = data[A.offset + i * step_size + j] < data[B.offset + i] ? data[A.offset + i * step_size + j] : data[B.offset + i];
   }
 }
-void TensorProcessorImpl::kernel1D_max(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
+void TensorProcessorImpl::kernel1D_maximum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B) // B = sum(A)
 {
   for (unsigned i = 0; i < steps; i++)
   {

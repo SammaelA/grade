@@ -456,9 +456,9 @@ namespace nn
 
   TensorToken TensorToken::pow(const TensorToken &A, const TensorToken &B)
   {
-    assert(B.total_size() == 1);
+    A.check_dimensions_for_arithmetics(B);
     TensorToken res(A.sizes);
-    tp->add_command(TensorProgram::POW, A.id, B.id, res.id);
+    g_2op(TensorProgram::POW, A, B, res, A.total_size()/B.total_size(), B.total_size(), 1);
     return res;
   }
 
@@ -487,6 +487,13 @@ namespace nn
   {
     TensorToken res(A.sizes);
     tp->add_command(TensorProgram::LOG, A.id, 0, res.id);
+    return res;
+  }
+
+  TensorToken TensorToken::sqrt(const TensorToken &A)
+  {
+    TensorToken res(A.sizes);
+    tp->add_command(TensorProgram::SQRT, A.id, 0, res.id);
     return res;
   }
 

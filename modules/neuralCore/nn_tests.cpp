@@ -971,7 +971,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
     nn2.add_layer(std::make_shared<DenseLayer>(18, 18), NeuralNetwork::HE);
-    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.001f);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);

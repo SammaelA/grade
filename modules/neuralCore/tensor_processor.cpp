@@ -33,9 +33,12 @@ namespace nn
     {OR       , "OR"       , ARITHMETICS   , SELF_APPLICABLE_YES},
     {AND      , "AND"      , ARITHMETICS   , SELF_APPLICABLE_YES},
     {WHERE    , "WHERE"    , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {MIN      , "MIN"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {MAX      , "MAX"      , ARITHMETICS   , SELF_APPLICABLE_YES},
+    {POW      , "POW"      , ARITHMETICS   , SELF_APPLICABLE_YES},
 
     {EXP      , "EXP"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
-    {POW      , "POW"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
+    {SQRT     , "SQRT"     , ELEMENTWISE   , SELF_APPLICABLE_YES},
     {SIN      , "SIN"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
     {COS      , "COS"      , ELEMENTWISE   , SELF_APPLICABLE_YES},
     {LOG      , "LOG"      , ELEMENTWISE   , SELF_APPLICABLE_YES},

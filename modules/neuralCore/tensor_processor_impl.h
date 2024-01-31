@@ -58,18 +58,24 @@ protected:
                                                       unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
   virtual void __attribute__((noinline)) kernel1D_where(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
                                                       unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
-                                                        
-  virtual void __attribute__((noinline)) kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
-  virtual void __attribute__((noinline)) kernel1D_pow(float *data, unsigned steps, Variable A, Variable B, Variable C);                     // C = pow(A, B)
-  virtual void __attribute__((noinline)) kernel1D_sin(float *data, unsigned steps, Variable A, Variable B);                                 // B = sin(A)
-  virtual void __attribute__((noinline)) kernel1D_cos(float *data, unsigned steps, Variable A, Variable B);                                 // B = cos(A)
-  virtual void __attribute__((noinline)) kernel1D_log(float *data, unsigned steps, Variable A, Variable B);                                 // B = log(A)
-  virtual void __attribute__((noinline)) kernel1D_not(float *data, unsigned steps, Variable A, Variable B);
+  virtual void __attribute__((noinline)) kernel1D_min(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+  virtual void __attribute__((noinline)) kernel1D_max(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B                                                                                                      
+  virtual void __attribute__((noinline)) kernel1D_pow(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
+                                                      unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A / B
+
+  virtual void __attribute__((noinline))  kernel1D_exp(float *data, unsigned steps, Variable A, Variable B);                                 // B = exp(A)
+  virtual void __attribute__((noinline)) kernel1D_sqrt(float *data, unsigned steps, Variable A, Variable B);                                 // B = sqrt(A)
+  virtual void __attribute__((noinline))  kernel1D_sin(float *data, unsigned steps, Variable A, Variable B);                                 // B = sin(A)
+  virtual void __attribute__((noinline))  kernel1D_cos(float *data, unsigned steps, Variable A, Variable B);                                 // B = cos(A)
+  virtual void __attribute__((noinline))  kernel1D_log(float *data, unsigned steps, Variable A, Variable B);                                 // B = log(A)
+  virtual void __attribute__((noinline))  kernel1D_not(float *data, unsigned steps, Variable A, Variable B);
    
   virtual void __attribute__((noinline)) kernel1D_sum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
   virtual void __attribute__((noinline)) kernel1D_osum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B);             // B = sum(A)
-  virtual void __attribute__((noinline)) kernel1D_min(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
-  virtual void __attribute__((noinline)) kernel1D_max(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_minimum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_maximum(float *data, unsigned steps, unsigned step_size, Variable A, Variable B); 
 
   virtual void __attribute__((noinline)) kernel3D_transpose(float *data, unsigned steps, unsigned row_len, unsigned col_len, unsigned group_size, Variable A, Variable B); // B = (A)^T
   virtual void __attribute__((noinline)) kernel2D_matmul_transposed(float *data, unsigned A_col_len, unsigned B_col_len, 
