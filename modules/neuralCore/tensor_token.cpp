@@ -80,7 +80,7 @@ namespace nn
 
   void TensorToken::check_dimensions_for_arithmetics(const TensorToken &other) const
   {
-    if (other.total_size() == 1)
+    if (total_size() == 1 || other.total_size() == 1)
       return;
     if (Dim < other.Dim)
       printf("TensorToken: check failed %u < %u\n", Dim, other.Dim);
@@ -97,7 +97,10 @@ namespace nn
                           unsigned steps, unsigned step_size, unsigned group_size)
   {
     assert(TensorProgram::cmd_properties[cmd].cls == TensorProgram::CmdClass::ARITHMETICS);
-    tp->add_command(cmd, A.id, B.id, C.id, steps, step_size, group_size);
+    if (A.total_size() == 1)
+      tp->add_command(cmd, A.id, B.id, C.id, 1, B.total_size(), 1, 1);
+    else
+      tp->add_command(cmd, A.id, B.id, C.id, steps, step_size, group_size, 0);
   }
 
   TensorToken TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
@@ -124,7 +127,7 @@ namespace nn
   TensorToken TensorToken::operator+(const TensorToken &other) const
   {
     check_dimensions_for_arithmetics(other);
-    TensorToken res(sizes);
+    TensorToken res(total_size() == 1 ? other.sizes : sizes);
     g_2op(TensorProgram::ADD, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 1);
     return res;
   }
@@ -139,7 +142,7 @@ namespace nn
   TensorToken TensorToken::operator*(const TensorToken &other) const
   {
     check_dimensions_for_arithmetics(other);
-    TensorToken res(sizes);
+    TensorToken res(total_size() == 1 ? other.sizes : sizes);
     g_2op(TensorProgram::MUL, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 1);
     return res;
   }
@@ -154,7 +157,7 @@ namespace nn
   TensorToken TensorToken::operator-(const TensorToken &other) const
   {
     check_dimensions_for_arithmetics(other);
-    TensorToken res(sizes);
+    TensorToken res(total_size() == 1 ? other.sizes : sizes);
     g_2op(TensorProgram::SUB, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 1);
     return res;
   }
@@ -169,7 +172,7 @@ namespace nn
   TensorToken TensorToken::operator/(const TensorToken &other) const
   {
     check_dimensions_for_arithmetics(other);
-    TensorToken res(sizes);
+    TensorToken res(total_size() == 1 ? other.sizes : sizes);
     g_2op(TensorProgram::DIV, *this, other, res, this->total_size()/other.total_size(), other.total_size(), 1);
     return res;
   }

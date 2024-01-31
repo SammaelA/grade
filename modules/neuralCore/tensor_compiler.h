@@ -111,12 +111,16 @@ namespace nn
     //arithmetics
     TensorToken &operator+=(const TensorToken &other);
     TensorToken operator+(const TensorToken &other) const;
+    friend TensorToken operator+(float A, const TensorToken &B) { return TensorToken(A) + B; }
     TensorToken &operator*=(const TensorToken &other);
     TensorToken operator*(const TensorToken &other) const;
+    friend TensorToken operator*(float A, const TensorToken &B) { return TensorToken(A) * B; }
     TensorToken &operator-=(const TensorToken &other);
     TensorToken operator-(const TensorToken &other) const;
+    friend TensorToken operator-(float A, const TensorToken &B) { return TensorToken(A) - B; }
     TensorToken &operator/=(const TensorToken &other);
     TensorToken operator/(const TensorToken &other) const;
+    friend TensorToken operator/(float A, const TensorToken &B) { return TensorToken(A) / B; }
 
     static TensorToken pow(const TensorToken &A, const TensorToken &B);
 

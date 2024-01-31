@@ -1087,6 +1087,7 @@ void test_1_tensor_processor()
 
   void test_20_synthetic_images_classifier()
   {
+    printf("TEST 20. SYNTHETIC IMAGES CLASSIFIER\n");
     unsigned image_size = 16;
     unsigned image_count = 5000;
 
@@ -1170,7 +1171,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(200, 10), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());*/
-    nn2.train(dataset.test_data, dataset.test_labels, 256, 100, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.001f, true);
+    nn2.train(dataset.test_data, dataset.test_labels, 256, 2000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.001f, true);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);

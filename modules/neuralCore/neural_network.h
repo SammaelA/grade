@@ -115,7 +115,7 @@ namespace nn
     {
       //output = tanh(x)
       //dtanh(x) = 1 - tanh(x)^2 
-      return dLoss_dOutput*(output*output*(-1.0f) + 1.0f);
+      return dLoss_dOutput*(1.0f - output*output);
     }
     virtual std::string get_name() override { return "Tanh"; }
   };
@@ -213,13 +213,13 @@ namespace nn
     {
       TensorToken one(input.sizes);
       one.fill(1.0f);
-      return one/(TensorToken::exp(input*(-1.0f)) + 1.0f); //sigmoid(x)
+      return one/(1.0f + TensorToken::exp(-1.0f*input)); //sigmoid(x)
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
       //output = sigmoid(x)
       //dsigmoid(x) = sigmoid(x)*(1-sigmoid(x))
-      return dLoss_dOutput*(output*(output*(-1.0f) + 1.0f));
+      return dLoss_dOutput*(output*(1.0f - output));
     }
     virtual std::string get_name() override { return "Sigmoid"; }
   };

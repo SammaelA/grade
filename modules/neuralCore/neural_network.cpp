@@ -291,12 +291,13 @@ namespace nn
     {
       TensorToken diff = output - target_output;
       l = (diff*diff).sum()/(float)(l.total_size());
-      dLoss_dOutput = diff*2.0f;
+      dLoss_dOutput = 2.0f*diff;
     }
     else if (loss == Loss::CrossEntropy)
     {
-      l = (target_output * TensorToken::log(output + 1e-15f) * (-1.0f)).sum()/(float)(l.total_size());
-      dLoss_dOutput = (target_output * (-1.0f)) / (output + 1e-15f);
+      TensorToken mo = -1.0f*target_output;
+      l = (mo * TensorToken::log(output + 1e-15f)).sum()/(float)(l.total_size());
+      dLoss_dOutput = mo / (output + 1e-15f);
     }
 
     for (int i=layers.size()-1;i>0;i--)
@@ -319,24 +320,15 @@ namespace nn
     TensorToken V = TensorToken(total_params); compiler.inout(V, "V");
     TensorToken S = TensorToken(total_params); compiler.inout(S, "S");
     TensorToken iter = TensorToken(1); compiler.input(iter, "iter");
-    TensorToken beta_1 = 0.9f;
-    TensorToken beta_2 = 0.999f;
-    TensorToken eps = 1e-7f;
-    TensorToken one = 1.0f;
-    /*      for (int i = 0; i < params_count; i++)
-      {
-        float g = grad_ptr[i];
-        V[i] = beta_1 * V[i] + (1 - beta_1) * g;
-        float Vh = V[i] / (1 - pow(beta_1, iter + 1));
-        S[i] = beta_2 * S[i] + (1 - beta_2) * g * g;
-        float Sh = S[i] / (1 - pow(beta_2, iter + 1));
-        params_ptr[i] -= lr * Vh / (sqrt(Sh) + eps);
-      }*/
-    V = V*beta_1 + grad*(one - beta_1);
-    TensorToken Vh = V / (one - TensorToken::pow(beta_1, iter + one));
-    S = S*beta_2 + grad*grad*(one - beta_2);
-    TensorToken Sh = S / (one - TensorToken::pow(beta_2, iter + one));
-    w -= (Vh*lr)/(TensorToken::sqrt(Sh) + eps);
+    float beta_1 = 0.9f;
+    float beta_2 = 0.999f;
+    float eps = 1e-7f;
+
+    V = beta_1*V + (1.0f - beta_1)*grad;
+    TensorToken Vh = V / (1.0f - TensorToken::pow(beta_1, iter + 1.0f));
+    S = beta_2*S + (1.0f - beta_2)*grad*grad;
+    TensorToken Sh = S / (1.0f - TensorToken::pow(beta_2, iter + 1.0f));
+    w -= lr*Vh/(TensorToken::sqrt(Sh) + eps);
     
     compiler.output(l, "loss");
     if (DEBUG)
