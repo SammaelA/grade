@@ -66,7 +66,7 @@ namespace nn
     virtual int parameters_count() override { return 0; };
     virtual TensorToken forward(const TensorToken &input) override
     {
-      TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
+      TensorToken max_val = input.maximum(input.Dim-1) + 1e-15f;
       TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 1);
       output = TensorToken::exp(output);
       TensorToken sum = output.sum(input.Dim-1) + 1e-15f;

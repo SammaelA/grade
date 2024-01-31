@@ -206,7 +206,7 @@ namespace nn
   }
 
 
-  TensorToken TensorToken::min(int Dims) const
+  TensorToken TensorToken::minimum(int Dims) const
   {
     if (Dim == 0) // min of scalar is this scalar itself
       return *this;
@@ -220,11 +220,11 @@ namespace nn
       res_sizes[i] = sizes[i + Dims];
 
     TensorToken res(res_sizes);
-    tp->add_command(TensorProgram::MIN, id, 0, res.id);
+    tp->add_command(TensorProgram::MINIMUM, id, 0, res.id);
     return res;
   }
 
-  TensorToken TensorToken::max(int Dims) const
+  TensorToken TensorToken::maximum(int Dims) const
   {
     if (Dim == 0) // max of scalar is this scalar itself
       return *this;
@@ -238,7 +238,7 @@ namespace nn
       res_sizes[i] = sizes[i + Dims];
 
     TensorToken res(res_sizes);
-    tp->add_command(TensorProgram::MAX, id, 0, res.id);
+    tp->add_command(TensorProgram::MAXIMUM, id, 0, res.id);
     return res;
   }
 

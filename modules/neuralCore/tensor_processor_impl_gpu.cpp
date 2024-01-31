@@ -1711,12 +1711,12 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
   osumCmd(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
-    case nn::TensorProgram::MIN:
+    case nn::TensorProgram::MINIMUM:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, minLayout, 0, 1, &m_allGeneratedDS[5], 0, nullptr);
   minCmd(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
-    case nn::TensorProgram::MAX:
+    case nn::TensorProgram::MAXIMUM:
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, maxLayout, 0, 1, &m_allGeneratedDS[5], 0, nullptr);
   maxCmd(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);

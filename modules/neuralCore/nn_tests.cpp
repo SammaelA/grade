@@ -417,7 +417,7 @@ void test_1_tensor_processor()
       tc.start_program();
       TensorToken input = TensorToken(3, 2);
 
-      TensorToken max_val = input.max(input.Dim-1) + 1e-15f;
+      TensorToken max_val = input.maximum(input.Dim-1) + 1e-15f;
       TensorToken output = TensorToken::g_2op(TensorProgram::SUB, input, max_val, 1);
       output = TensorToken::exp(output);
       TensorToken sum = output.sum(input.Dim-1);
@@ -1247,7 +1247,9 @@ void test_1_tensor_processor()
     //test_21_CIFAR10();
     //return;
     srand(time(NULL));
-    printf("NEURAL CORE CPU TESTS\n");
+
+    TensorProcessor::init("GPU");
+    printf("NEURAL CORE GPU TESTS\n");
     test_1_tensor_processor();
     test_2_tensor_tokens();
     test_3_tensor_operations();
@@ -1269,8 +1271,8 @@ void test_1_tensor_processor()
     test_19_max_pooling();
     test_20_synthetic_images_classifier();
 
-    printf("NEURAL CORE GPU TESTS\n");
-    TensorProcessor::init("GPU");
+    printf("NEURAL CORE CPU TESTS\n");
+    TensorProcessor::init("CPU");
     test_1_tensor_processor();
     test_2_tensor_tokens();
     test_3_tensor_operations();

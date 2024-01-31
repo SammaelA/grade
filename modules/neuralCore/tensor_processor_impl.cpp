@@ -102,10 +102,10 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::O_SUM:
       kernel1D_osum(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
-    case nn::TensorProgram::MIN:
+    case nn::TensorProgram::MINIMUM:
       kernel1D_min(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
-    case nn::TensorProgram::MAX:
+    case nn::TensorProgram::MAXIMUM:
       kernel1D_max(memory.data(), C.total_size, A.total_size / C.total_size, A, C);
       break;
     case nn::TensorProgram::MATMUL_T:

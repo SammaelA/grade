@@ -43,8 +43,8 @@ namespace nn
 
     {SUM      , "SUM"      , REDUCTION     , SELF_APPLICABLE_NO },
     {O_SUM    , "O_SUM"    , REDUCTION     , SELF_APPLICABLE_NO },
-    {MIN      , "MIN"      , REDUCTION     , SELF_APPLICABLE_NO },
-    {MAX      , "MAX"      , REDUCTION     , SELF_APPLICABLE_NO },
+    {MINIMUM  , "MINIMUM"  , REDUCTION     , SELF_APPLICABLE_NO },
+    {MAXIMUM  , "MAXIMUM"  , REDUCTION     , SELF_APPLICABLE_NO },
 
     {MATMUL_T , "MATMUL_T" , ALGEBRA       , SELF_APPLICABLE_NO },
     {TRANSP   , "TRANSP"   , ALGEBRA       , SELF_APPLICABLE_NO },
