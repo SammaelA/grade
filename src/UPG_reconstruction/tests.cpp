@@ -2598,6 +2598,59 @@ fail: debug("FAILED\n");
     }
   }
 
+  //TEST 35 ROTATED BOX SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void test_35()
+  {
+    srand(time(NULL));
+    debug("TEST 35. ROTATED BOX SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0.2,-0.1,0, 1,0,0,0.7, 0.3,0.8,0.3}
+            structure:arr = {2,11,4}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1,-0.15,-0.1, 0.9,-1.1,1.1,0.65, 0.2,0.9,0.27}    
+            structure:arr = {2,11,4} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+    
+    debug(" 35.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 35.2. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("PASSED\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -2617,7 +2670,7 @@ fail: debug("FAILED\n");
       test_16, test_17, test_18, test_19, test_20,
       test_21, test_22, test_23, test_24, test_25, 
       test_26, test_27, test_28, test_29, test_30,
-      test_31, test_32, test_33, test_34
+      test_31, test_32, test_33, test_34, test_35
     };
 
     if (tests.size() == 1 && tests[0] == -1)
