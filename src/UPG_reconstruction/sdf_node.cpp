@@ -443,33 +443,30 @@ namespace upg
     }
   };
 
-  glm::mat3 get_any_rot_mat(glm::vec3 axis, float angle)
+  void get_any_rot_mat_to_vec(my_float x, my_float y, my_float z, float angle, my_float *out)
   {
-    glm::vec3 ax = axis / glm::length(axis);
-    float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
+    float c = cos(angle), s = sin(angle);
     glm::vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
     glm::vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
     glm::vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
-    return glm::mat3(e1, e2, e3);
+    out[0] = e1.x * x + e1.y * y + e1.z * z;
+    out[1] = e2.x * x + e2.y * y + e2.z * z;
+    out[2] = e3.x * x + e3.y * y + e3.z * z;
   }
 
   void RotateSdfNode_apply(const my_float *in, my_float *out)
   {
-    glm::vec3 ax = {in[0], in[1], in[2]};
-    glm::mat3 matr = get_any_rot_mat(ax, in[3]);
-    glm::vec3 v = {in[4], in[5], in[6]};
-    v = matr * v;
-    out[0] = v.x;
-    out[1] = v.y;
-    out[2] = v.z;
+    out[0] = in[3];
+    out[1] = in[4];
+    out[2] = in[5];
+    get_any_rot_mat_to_vec(cos(in[0]) * cos(in[1]), sin(in[0]) * cos(in[1]), sin(in[1]), in[2], out);
   }
 
   class RotateSdfNode : public OneChildSdfNode
   {
-    static constexpr int AXIS_X = 0;
-    static constexpr int AXIS_Y = 1;
-    static constexpr int AXIS_Z = 2;
-    static constexpr int ANGLE = 3;
+    static constexpr int AXIS_ANG_XY = 0;
+    static constexpr int AXIS_ANG_Z = 1;
+    static constexpr int ANGLE = 2;
   public:
     RotateSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Rotate"; }
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
@@ -536,14 +533,13 @@ namespace upg
 
       return d;
     }
-    virtual unsigned param_cnt() const override { return 4; }
+    virtual unsigned param_cnt() const override { return 3; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
       std::vector<ParametersDescription::Param> params;
-      params.push_back({1,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_x"});
-      params.push_back({0,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_y"});
-      params.push_back({0,-1,1, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
-      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_axis_z"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_xy"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_z"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
       return params;
     }
     virtual AABB get_bbox() const override
