@@ -13,6 +13,7 @@ namespace upg
     //ReferencePointsGrid grid;
     std::vector<glm::vec3> a_points;
     std::vector<float> a_distances;
+    int active_points_count = 0;
 
     std::vector<float> ddist_dparams, ddist_dpos;
     std::vector<double> ddist_dparams_sum;
@@ -23,6 +24,8 @@ namespace upg
     float beta_p_inv;
     float reg_q;
     int samples;
+
+    unsigned long seed = 0ul;
 
   public:
     bool verbose = false;
@@ -41,6 +44,15 @@ namespace upg
       ddist_dparams.resize(max_parameters);
       ddist_dparams_sum.resize(max_parameters);
       ddist_dpos = {0,0,0};
+      active_points_count = a_points.size();
+      seed = rand();
+    }
+
+    //fast and multiprocessing-safe random for stochastic gradient descent
+    unsigned next_index()
+    {
+      seed = seed * 1103515245 + 12345;
+      return((unsigned)(seed/65536) % active_points_count);
     }
 
     void set_hyperparameters(float _beta = 0.1, float _p = 2, int _samples = 512, float _reg_q = 1e6)
@@ -73,6 +85,7 @@ namespace upg
       }
       a_points = active_points;
       a_distances = active_distances;
+      active_points_count = a_points.size();
 
 /*
       unsigned active_left = 0;
@@ -126,7 +139,7 @@ namespace upg
       
       if (dist < 0)
       {
-        double loss = dist*dist;
+        double loss = reg_q*dist*dist;
         if constexpr (is_differentiable)
         {
           for (int i = 0; i < ddist_dparams_sum.size(); i++)
@@ -146,19 +159,19 @@ namespace upg
       
       double total_loss = 0;
       int Na=1;
-      if (samples < 0.75*a_points.size())
+      if (samples < 0.75*active_points_count)
       {
         Na = samples;
         for (int i=0;i<samples;i++)
         {
-          int index = rand() % a_points.size();
+          int index = next_index();
           total_loss += main_loss_func<is_differentiable>(sdf, a_points[index], a_distances[index]);
         }
       }
       else
       {
-        Na = a_points.size();
-        for (int i=0;i<a_points.size();i++)
+        Na = active_points_count;
+        for (int i=0;i<active_points_count;i++)
           total_loss += main_loss_func<is_differentiable>(sdf, a_points[i], a_distances[i]);
       }
 
@@ -176,7 +189,7 @@ namespace upg
         Ns = samples;
         for (int i=0;i<samples;i++)
         {
-          int index = rand() % points.size();
+          int index = next_index();
           total_loss_r += reg_loss_func<is_differentiable>(sdf, points[index], distances[index]);
         }
       }

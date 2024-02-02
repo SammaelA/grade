@@ -48,6 +48,7 @@ namespace upg
   class UPGOptimizableFunction
   {
   public:
+    virtual ~UPGOptimizableFunction() {};
     static std::vector<float> opt_params_to_gen_params(const OptParams &params, const ParametersDescription &pd,
                                                        std::vector<float> *out_scene_params = nullptr)
     {
@@ -155,6 +156,8 @@ namespace upg
                                                                        const Block &settings, const UPGStructure &_structure);
   std::shared_ptr<UPGOptimizer> get_optimizer_iterative_fitting(UPGOptimizableFunction *_func, 
                                                                 const Block &settings, const UPGStructure &_structure);
+  std::shared_ptr<UPGOptimizer> get_optimizer_multistep_adam(UPGOptimizableFunction *_func, 
+                                                             const Block &settings, const UPGReconstructionResult &start_params);
 
   std::shared_ptr<UPGOptimizer> optimization_test_stand(UPGOptimizableFunction *_func, const Block &settings, 
                                                         const UPGStructure &_structure, const UPGParametersRaw &_params);
