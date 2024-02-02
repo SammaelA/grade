@@ -2610,7 +2610,7 @@ fail: debug("FAILED\n");
     input {
         synthetic_reference {
             points_count:i = 50000
-            params:arr = {0.2,-0.1,0, 1,0,0,0.7, 0.3,0.8,0.3}
+            params:arr = {0.2,-0.1,0, 0,0,0.7, 0.3,0.8,0.3}
             structure:arr = {2,11,4}
         } 
     }
@@ -2619,7 +2619,7 @@ fail: debug("FAILED\n");
     }
     optimization {
         start {
-            params:arr = {0.1,-0.15,-0.1, 0.9,-1.1,1.1,0.65, 0.2,0.9,0.27}    
+            params:arr = {0.1,-0.15,-0.1, 0.05,0.025,0.65, 0.2,0.9,0.27}    
             structure:arr = {2,11,4} 
         }
         step_0 {

@@ -449,9 +449,10 @@ namespace upg
     glm::vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
     glm::vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
     glm::vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
-    out[0] = e1.x * x + e1.y * y + e1.z * z;
-    out[1] = e2.x * x + e2.y * y + e2.z * z;
-    out[2] = e3.x * x + e3.y * y + e3.z * z;
+    float tmp0 = out[0], tmp1 = out[1], tmp2 = out[2];
+    out[0] = e1.x * tmp0 + e1.y * tmp1 + e1.z * tmp2;
+    out[1] = e2.x * tmp0 + e2.y * tmp1 + e2.z * tmp2;
+    out[2] = e3.x * tmp0 + e3.y * tmp1 + e3.z * tmp2;
   }
 
   void RotateSdfNode_apply(const my_float *in, my_float *out)
@@ -549,13 +550,13 @@ namespace upg
       {
         std::vector<float> x;
         x.insert(x.end(), p.begin(), p.end());
-        if (i % 2) x.push_back(ch_bbox.min_pos.x);
+        if (i % 2 == 0) x.push_back(ch_bbox.min_pos.x);
         else x.push_back(ch_bbox.max_pos.x);
-        if ((i / 2) % 2) x.push_back(ch_bbox.min_pos.y);
+        if ((i / 2) % 2 == 0) x.push_back(ch_bbox.min_pos.y);
         else x.push_back(ch_bbox.max_pos.y);
-        if ((i / 4) % 2) x.push_back(ch_bbox.min_pos.z);
+        if ((i / 4) % 2 == 0) x.push_back(ch_bbox.min_pos.z);
         else x.push_back(ch_bbox.max_pos.z);
-        RotateSdfNode_apply(x.data(), y.data()+3*i);
+        RotateSdfNode_apply(x.data(), &y.data()[3*i]);
       }
       ch_bbox.min_pos = {y[0], y[1], y[2]};
       ch_bbox.max_pos = {y[0], y[1], y[2]};
