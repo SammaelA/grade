@@ -641,6 +641,38 @@ namespace nsdf
     }
   }
 
+  void test_complex_model()
+  {
+    AABB bbox({-1,-1,-1},{1,1,1});
+
+    CameraSettings cam;
+    cam.origin = glm::vec3(0,0,3);
+    cam.target = glm::vec3(0,0,0);
+    cam.up = glm::vec3(0,1,0);
+    CameraSettings cam1 = cam; cam1.origin = glm::vec3(0,3*sin(0),3*cos(0));
+    CameraSettings cam2 = cam; cam2.origin = glm::vec3(0,3*sin(2*PI/3),3*cos(2*PI/3));
+    CameraSettings cam3 = cam; cam3.origin = glm::vec3(0,3*sin(4*PI/3),3*cos(4*PI/3));
+
+    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
+
+    std::vector<float> points, distances;
+    Model *m = model_loader::load_model_from_obj_directly("/home/sammael/grade_resources/Huawei_models/h1_norm.obj");
+    model_loader::normalize_model(m);
+    model_to_point_cloud(m, 100000, bbox, &points, &distances);
+    delete m;
+
+    nn::Siren network(nn::Siren::Type::SDF, 5, 512);
+    network.train(points, distances, 1024, 5000, true);
+    Texture t;
+    t = render_neural_sdf(network, bbox, cam1, 512, 512, 1, true, light_dir);
+    engine::textureManager->save_png(t, "detail_nSDF_cam1");
+    t = render_neural_sdf(network, bbox, cam2, 512, 512, 1, true, light_dir);
+    engine::textureManager->save_png(t, "detail_nSDF_cam2");
+    t = render_neural_sdf(network, bbox, cam3, 512, 512, 1, true, light_dir);
+    engine::textureManager->save_png(t, "detail_nSDF_cam3");
+  }
+
   void neural_SDF_test()
   {
     nn::TensorProcessor::init("GPU");

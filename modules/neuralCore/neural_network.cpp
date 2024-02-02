@@ -290,13 +290,13 @@ namespace nn
     if (loss == Loss::MSE)
     {
       TensorToken diff = output - target_output;
-      l = (diff*diff).sum()/(float)(l.total_size());
+      l = (diff*diff).sum()/(float)(output.total_size());
       dLoss_dOutput = 2.0f*diff;
     }
     else if (loss == Loss::CrossEntropy)
     {
       TensorToken mo = -1.0f*target_output;
-      l = (mo * TensorToken::log(output + 1e-15f)).sum()/(float)(l.total_size());
+      l = (mo * TensorToken::log(output + 1e-15f)).sum()/(float)(batch_size);
       dLoss_dOutput = mo / (output + 1e-15f);
     }
 
@@ -381,6 +381,7 @@ namespace nn
     TensorProcessor::set_input("V", V.data(), V.size());
     TensorProcessor::set_input("S", S.data(), S.size());
 
+    float av_loss = 0;
     for (int it=0;it<iterations;it++)
     {
       for (int i=0;i<batch_size;i++)
@@ -397,8 +398,12 @@ namespace nn
       TensorProcessor::execute();
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
+      av_loss += loss;
       if (verbose && it % 100 == 0)
-        printf("[%d/%d] Loss = %f\n", it, iterations, loss);
+      {
+        printf("[%d/%d] Loss = %f %f\n", it, iterations, loss, av_loss/100);
+        av_loss = 0;
+      }
 
       if (DEBUG)
       {

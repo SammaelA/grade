@@ -129,19 +129,22 @@ namespace nn
       SAME,
     };
     unsigned kernel_size = 3;
+    unsigned stride = 1;
     Padding padding = NO_PAD;
     bool use_bias = false;
   public:
     Conv2DLayer(unsigned input_x,  unsigned input_y,  unsigned input_ch, 
-                unsigned output_channels, unsigned _kernel_size = 3, Padding _padding = NO_PAD, bool _use_bias = false)
+                unsigned output_channels, unsigned _kernel_size = 3, unsigned _stride = 1, Padding _padding = NO_PAD, bool _use_bias = false)
     {
       assert(_kernel_size%2);
+      assert(_stride == 1 || _padding == NO_PAD);
       kernel_size = _kernel_size;
+      stride = _stride;
       padding = _padding;
       use_bias = _use_bias;
       input_shape = {input_x, input_y, input_ch};
       if (padding == NO_PAD)
-        output_shape = {input_x - (kernel_size-1)/2, input_y - (kernel_size-1)/2, output_channels};
+        output_shape = {(input_x - kernel_size)/stride + 1, (input_y - kernel_size)/stride + 1, output_channels};
       else
         output_shape = {input_x, input_y, output_channels};
     }
@@ -160,22 +163,30 @@ namespace nn
     {
       unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
       TensorToken pad_input = (pad > 0) ? input.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : input;
-      TensorToken conv = TensorToken::conv2D(pad_input, weights[0]);
+      TensorToken conv = TensorToken::conv2D(pad_input, weights[0], stride);
       return use_bias ? TensorToken::g_2op(TensorProgram::ADD, conv, weights[1], 2) : conv;
       //return TensorToken::g_2op(TensorProgram::ADD, TensorToken::conv2D(input, weights[0]), weights[1], input.sizes[3], input.total_size(), 0, 1);
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
+      unsigned OD_sizes[TensorCompiler::MAX_DIM];
+      for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+        OD_sizes[i] = dLoss_dOutput.sizes[i];
+      OD_sizes[0] = (dLoss_dOutput.sizes[0]-1)*stride + 1;
+      OD_sizes[1] = (dLoss_dOutput.sizes[1]-1)*stride + 1;
+      TensorToken dLoss_dOutput_dilated = (stride == 1) ? dLoss_dOutput : TensorToken(OD_sizes);
+      if (stride > 1)
+        TensorToken::issue_command(TensorProgram::DILATE, dLoss_dOutput, dLoss_dOutput, dLoss_dOutput_dilated, stride-1, stride-1);
       unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
       float batch_size = (float)(input.sizes[input.Dim-1]);
       TensorToken X = input.flip(0).flip(1);
       TensorToken pad_X = (pad > 0) ? X.add_padding(pad, pad, 0).add_padding(pad, pad, 1) : X;
-      dLoss_dWeights[0] = TensorToken::conv2D(pad_X.transpose(2), dLoss_dOutput.transpose(2)).transpose(2) / batch_size;
+      dLoss_dWeights[0] = TensorToken::conv2D(pad_X.transpose(2), dLoss_dOutput_dilated.transpose(2)).transpose(2) / batch_size;
       if (use_bias)
-        dLoss_dWeights[1] = dLoss_dOutput.sum(2).outer_sum() / batch_size;
+        dLoss_dWeights[1] = dLoss_dOutput.sum(2).outer_sum() / batch_size;//dilation won't change result here
 
       unsigned i_pad = kernel_size - pad - 1;
-      TensorToken pad_dLoss_dOutput = (i_pad > 0) ? dLoss_dOutput.add_padding(i_pad, i_pad, 0).add_padding(i_pad, i_pad, 1) : dLoss_dOutput;
+      TensorToken pad_dLoss_dOutput = (i_pad > 0) ? dLoss_dOutput_dilated.add_padding(i_pad, i_pad, 0).add_padding(i_pad, i_pad, 1) : dLoss_dOutput_dilated;
 
       return TensorToken::conv2D(pad_dLoss_dOutput, weights[0].flip(0).flip(1).transpose(2));
     }

@@ -1,0 +1,55 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "common_gpu.h"
+
+layout(binding = 0, set = 0) buffer data0 { float data[]; }; //
+layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data ubo; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  uint x_size;
+  uint x_dilate;
+  uint y_size;
+  uint y_dilate;
+  uint z_size;
+  uint z_dilate;
+  Variable A;
+  Variable B;
+  uint iNumElementsX; 
+  uint steps; 
+  uint iNumElementsZ; 
+  uint tFlagsMask;    
+} kgenArgs;
+
+
+void main()
+{
+  bool runThisThread = true;
+  ///////////////////////////////////////////////////////////////// prolog
+  const uint i = uint(gl_GlobalInvocationID[0]); 
+  if(i >= kgenArgs.iNumElementsX + 0)
+    runThisThread = false;
+    ///////////////////////////////////////////////////////////////// prolog
+  if(runThisThread)
+  {
+  
+    uint x = i % kgenArgs.x_size;
+    uint y = i/kgenArgs.x_size%kgenArgs.y_size;
+    uint z = i/(kgenArgs.x_size*kgenArgs.y_size) % kgenArgs.z_size;
+    uint S = i/(kgenArgs.x_size*kgenArgs.y_size*kgenArgs.z_size);
+
+    uint new_x_size = kgenArgs.x_size + (kgenArgs.x_size-1)*kgenArgs.x_dilate;
+    uint new_y_size = kgenArgs.y_size + (kgenArgs.y_size-1)*kgenArgs.y_dilate;
+    uint new_z_size = kgenArgs.z_size + (kgenArgs.z_size-1)*kgenArgs.z_dilate;
+    uint B_off = S*new_x_size*new_y_size*new_z_size + z*(kgenArgs.z_dilate+1)*new_x_size*new_y_size + y*(kgenArgs.y_dilate+1)*new_x_size + x*(kgenArgs.x_dilate+1);
+    data[kgenArgs.B.offset + B_off] = data[kgenArgs.A.offset + i];
+  
+  }
+}
+

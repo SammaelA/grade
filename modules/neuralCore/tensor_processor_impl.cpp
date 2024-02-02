@@ -232,6 +232,10 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel3D_max_pool_diff(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, window_x, window_y, A, B, C);
     }
       break;
+    case nn::TensorProgram::DILATE:
+      kernel1D_fill(memory.data(), C.total_size, C, 0.0f);
+      kernel1D_dilate(memory.data(), A.total_size, A.sizes[0], arg0, A.Dim>1?A.sizes[1]:1, arg1, A.Dim>2?A.sizes[2]:1, arg2, A, C);
+      break;
     default:
       break;
     }
@@ -317,6 +321,23 @@ void TensorProcessorImpl::kernel1D_flip(float *data, unsigned steps, unsigned fl
     for (unsigned j = 0; j < flip_size; j++)
       for (unsigned k = 0; k < group_size; k++)
         data[B.offset + i*flip_size*group_size + j*group_size + k] = data[A.offset + i*flip_size*group_size + (flip_size-j-1)*group_size + k];
+}
+void TensorProcessorImpl::kernel1D_dilate(float *data, unsigned steps, unsigned x_size, unsigned x_dilate, unsigned y_size, unsigned y_dilate,
+                                          unsigned z_size, unsigned z_dilate, Variable A, Variable B)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    unsigned x = i % x_size;
+    unsigned y = i/x_size%y_size;
+    unsigned z = i/(x_size*y_size) % z_size;
+    unsigned S = i/(x_size*y_size*z_size);
+
+    unsigned new_x_size = x_size + (x_size-1)*x_dilate;
+    unsigned new_y_size = y_size + (y_size-1)*y_dilate;
+    unsigned new_z_size = z_size + (z_size-1)*z_dilate;
+    unsigned B_off = S*new_x_size*new_y_size*new_z_size + z*(z_dilate+1)*new_x_size*new_y_size + y*(y_dilate+1)*new_x_size + x*(x_dilate+1);
+    data[B.offset + B_off] = data[A.offset + i];
+  }
 }
 
 void TensorProcessorImpl::kernel1D_add(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 

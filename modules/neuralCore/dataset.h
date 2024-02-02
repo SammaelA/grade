@@ -17,5 +17,7 @@ namespace nn
     unsigned test_elements = 0;
   };
 
+  void train_test_split(Dataset *dataset, float test_fraction = 0.1);
   void read_CIFAR10_dataset(std::string path, Dataset *out_dataset);
+  void read_MNIST_dataset(std::string path, Dataset *out_dataset);
 }

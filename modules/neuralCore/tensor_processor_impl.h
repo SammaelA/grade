@@ -31,6 +31,8 @@ protected:
   virtual void __attribute__((noinline)) kernel1D_pad(float *data, unsigned steps, unsigned step_size, unsigned left_pad, unsigned right_pad, 
                                                       Variable A, Variable B); 
   virtual void __attribute__((noinline)) kernel1D_flip(float *data, unsigned steps, unsigned flip_size, unsigned group_size, Variable A, Variable B); 
+  virtual void __attribute__((noinline)) kernel1D_dilate(float *data, unsigned steps, unsigned x_size, unsigned x_dilate, unsigned y_size, unsigned y_dilate,
+                                                         unsigned z_size, unsigned z_dilate, Variable A, Variable B); 
 
   virtual void __attribute__((noinline)) kernel1D_add(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, 
                                                       unsigned Ai_mul, Variable A, Variable B, Variable C); // C = A + B

@@ -279,7 +279,7 @@ namespace upg
 
   void set_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfCompare &opt_func)
   {
-    opt_func.set_hyperparameters(ctx.settings.distance_base_thr, 2.0f, 2048, 100);
+    opt_func.set_hyperparameters(ctx.settings.distance_base_thr, 2.0f, 512, 100);
   }
 
   void set_fine_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfCompare &opt_func)
@@ -363,34 +363,46 @@ namespace upg
     edge.end->primitives.push_back(edge.fine_prim);
   }
 
-  void opt_step(const GROptimizationContext &ctx, GRNode &node)
+  void opt_step(const GROptimizationContext &ctx, GRNode &node, int tries = 1)
   {
-    //get start parameters
-    GRPrimitive start_primitive = create_start_primitive(ctx, node);
-
-    //optimize 
-    UPGReconstructionResult start_p;
-    start_p.structure = start_primitive.structure;
-    start_p.parameters = start_primitive.parameters;
-
     set_opt_hyperparameters(ctx, node.opt_func);
-    std::shared_ptr<UPGOptimizer> optimizer = get_optimizer_adam(&(node.opt_func), ctx.opt_settings_blk, start_p);
-    optimizer->optimize();
-    auto partial_result = optimizer->get_best_results()[0];
-    //logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
-    //                            partial_result.parameters.p[2], partial_result.parameters.p[3]);
-  
-    //calculate edge quality
-    float result_quality = estimate_positioning_quality(partial_result, node.opt_func, ctx.settings.distance_fine_thr);
-    logerr("Q = %f", result_quality);
+    int offset = node.edges.size();
+    node.edges.resize(offset+tries);
+    
+    std::vector<FieldSdfCompare> opt_funcs;
+    std::vector<GRPrimitive> start_primitives;
+    for (int i=0;i<tries;i++)
+    {
+      opt_funcs.emplace_back(node.opt_func);
+      start_primitives.push_back(create_start_primitive(ctx, node));
+    }
 
-    //create new edge
-    GREdge new_edge;
-    new_edge.start = &node;
-    new_edge.start_prim = start_primitive;
-    new_edge.opt_prim = GRPrimitive{partial_result.structure, partial_result.parameters};
-    new_edge.opt_quality = result_quality;
-    node.edges.push_back(new_edge);
+    #pragma omp parallel for 
+    for (int i=0;i<tries;i++)
+    {
+      //optimize 
+      UPGReconstructionResult start_p;
+      start_p.structure = start_primitives[i].structure;
+      start_p.parameters = start_primitives[i].parameters;
+
+      std::shared_ptr<UPGOptimizer> optimizer = get_optimizer_multistep_adam(&(opt_funcs[i]), ctx.opt_settings_blk, start_p);
+      optimizer->optimize();
+      auto partial_result = optimizer->get_best_results()[0];
+      //logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
+      //                            partial_result.parameters.p[2], partial_result.parameters.p[3]);
+    
+      //calculate edge quality
+      float result_quality = estimate_positioning_quality(partial_result, opt_funcs[i], ctx.settings.distance_fine_thr);
+      logerr("%d Q = %f", i, result_quality);
+
+      //create new edge
+      GREdge new_edge;
+      new_edge.start = &node;
+      new_edge.start_prim = start_primitives[i];
+      new_edge.opt_prim = GRPrimitive{partial_result.structure, partial_result.parameters};
+      new_edge.opt_quality = result_quality;
+      node.edges[offset+i] = new_edge;
+    }
   }
 
   UPGReconstructionResult merge_primitives(const std::vector<GRPrimitive> &primitives)
@@ -490,8 +502,7 @@ namespace upg
       //pick best and go deeper
       if (node->depth < max_depth)
       {
-        for (int k=0;k<tries_per_step;k++)
-          opt_step(ctx, *node);
+        opt_step(ctx, *node, tries_per_step);
         int best_pos = 0;
         for (int i=0;i<node->edges.size();i++)
         {
@@ -571,7 +582,10 @@ namespace upg
 
     ctx.opt_settings_blk.set_int("iterations", 1000);
     ctx.opt_settings_blk.set_bool("verbose", false);
-    ctx.opt_settings_blk.set_double("learning_rate", 0.005f);
+    ctx.opt_settings_blk.set_double("learning_rate", 0.01f);
+    ctx.opt_settings_blk.set_vec3("step_params_0", glm::vec3( 100,  0.01,   1e9));
+    ctx.opt_settings_blk.set_vec3("step_params_1", glm::vec3( 500,  0.01,  0.00));
+    ctx.opt_settings_blk.set_vec3("step_params_2", glm::vec3(1000, 0.005, -0.01));
 
     ctx.fine_opt_settings_blk.set_int("iterations", 200);
     ctx.fine_opt_settings_blk.set_bool("verbose", false);
