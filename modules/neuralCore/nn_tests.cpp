@@ -936,7 +936,7 @@ void test_1_tensor_processor()
     std::vector<float> r(18, 0.0f);
     std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2, 3, Conv2DLayer::SAME, true));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2, 3, 1, Conv2DLayer::SAME, true));
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
     nn2.initialize_with_weights(w.data());
     nn2.evaluate(X, r);
@@ -966,9 +966,9 @@ void test_1_tensor_processor()
     std::vector<float> r(18, 0.0f);
     std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, 1, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, 1, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
     nn2.add_layer(std::make_shared<DenseLayer>(18, 18), NeuralNetwork::HE);
     nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.001f);
@@ -1173,7 +1173,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(200, 10), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());*/
-    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.0001f, true);
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.0001f);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);
@@ -1228,7 +1228,7 @@ void test_1_tensor_processor()
     TensorProcessor::execute();
     auto t_now = std::chrono::steady_clock::now();
     float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
-    printf(" 22.1. operation took %4.1f ms                                          ", ms);
+    printf(" 22.1. operation took %6.1f ms                                        ", ms);
     printf("PASSED\n");
   }
 
@@ -1284,6 +1284,103 @@ void test_1_tensor_processor()
       printf("FAILED, error rate %f\n", error_rate);
   }
 
+  void test_24_dilation()
+  {
+    printf("TEST 24. DILATION\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3, 2);
+      TensorToken B = TensorToken(3, 3);
+      TensorToken A_res = TensorToken(7, 2);
+      TensorToken B_res = TensorToken(5, 7);
+      TensorToken::issue_command(TensorProgram::DILATE, A, A, A_res, 2);
+      TensorToken::issue_command(TensorProgram::DILATE, B, B, B_res, 1, 2);
+
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.output(A_res, "A_res");
+      tc.output(B_res, "B_res");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1,2,3,4,5,6}, A_res(14), A_ref = {1,0,0,2,0,0,3, 4,0,0,5,0,0,6};
+    std::vector<float> B = {1,2,3,4,5,6,7,8,9}, B_res(35), B_ref = {1,0,2,0,3,
+                                                                    0,0,0,0,0,
+                                                                    0,0,0,0,0,
+                                                                    4,0,5,0,6,
+                                                                    0,0,0,0,0,
+                                                                    0,0,0,0,0,
+                                                                    7,0,8,0,9};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("A_res", A_res.data(), A_res.size());
+    TensorProcessor::get_output("B_res", B_res.data(), B_res.size());
+    //for (auto &v : A_res)
+    //  printf("%f, ", v);
+    //printf("\n");
+    //for (auto &v : B_res)
+    //  printf("%f, ", v); q
+    //printf("\n");
+    {
+    float diff = 0.0f;
+    for (int i=0;i<A_res.size();i++)
+      diff += abs(A_res[i] - A_ref[i]);
+    
+    printf(" 24.1. %-64s","1D dilation");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<B_res.size();i++)
+      diff += abs(B_res[i] - B_ref[i]);
+    
+    printf(" 24.2. %-64s","2D dilation");
+    if (diff < 1e-6)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }    
+  }
+
+  void test_25_conv2D_stride()
+  {
+    printf("TEST 25. CONV_2D STRIDE\n");
+    std::vector<float> X = { 1, 1,0,-1,-1,
+                             1, 1,0,-1,-1,
+                             0, 0,0, 0, 0,
+                            -1,-1,0, 1, 1,
+                            -1,-1,0, 1, 1,};
+    std::vector<float> r(8, 0.0f);
+    std::vector<float> r_ref = {1,-1,-1,1, -1,1,1,-1};
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(5,5,1, 2, 3, 2), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<FlattenLayer>(2,2,2));
+    nn2.add_layer(std::make_shared<DenseLayer>(8, 8), NeuralNetwork::HE);
+    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.001f);
+    nn2.evaluate(X, r);
+    //for (auto &v : r)
+    //  printf("%f, ", v);
+    //printf("\n");
+    
+    float diff = 0.0f;
+    for (int i=0;i<r_ref.size();i++)
+      diff += std::abs(r[i] - r_ref[i]);
+    
+    printf(" 25.1. %-64s", "Correct result ");
+    if (diff < 1.0f)
+      printf("PASSED\n");
+    else
+      printf("FAILED diff %f > %f\n", diff, 1.0f);
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1313,6 +1410,8 @@ void test_1_tensor_processor()
     test_21_MNIST();
     test_22_arithmetics_benchmark();
     //test_23_CIFAR10(); very long test
+    test_24_dilation();
+    test_25_conv2D_stride();
 
 
     printf("NEURAL CORE CPU TESTS\n");
