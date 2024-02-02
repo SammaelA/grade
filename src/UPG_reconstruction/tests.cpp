@@ -2564,13 +2564,13 @@ fail: debug("FAILED\n");
     {
     int pcnt = rot_box.desc.get_total_params_count();
     debug(" 34.1. %-64s", "SDF instances are created with expected number of parameters ");
-    if (pcnt == 7)
+    if (pcnt == 6)
       debug("PASSED\n");
     else
       debug("FAILED %d\n", pcnt);
     }
     {
-      std::vector<float> params = {1, 0, 0, PI/4, 1, 1, 1};
+      std::vector<float> params = {0, 0, PI/4, 1, 1, 1};
       ProceduralSdf sdf = rot_box.generate(params);
       std::vector<float> ddist,dpos = {0,0,0};
       std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
