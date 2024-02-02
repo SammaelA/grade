@@ -478,7 +478,7 @@ namespace upg
       {
         //[<prev_params>,ddist/dmove_params,<child_params>]
         offset = ddist_dp->size();
-        ddist_dp->resize(offset + 4);
+        ddist_dp->resize(offset + 3);
       }
       
 
@@ -497,9 +497,9 @@ namespace upg
         x.push_back(pos.y);
         x.push_back(pos.z);
         upg::UniversalGenJacobian tmp;
-        tmp.resize(3, 7);
+        tmp.resize(3, 6);
         std::vector<float> y(3);
-        ENZYME_EVALUATE_WITH_DIFF(RotateSdfNode_apply, 7, 3, x.data(), y.data(), tmp.data());
+        ENZYME_EVALUATE_WITH_DIFF(RotateSdfNode_apply, 6, 3, x.data(), y.data(), tmp.data());
         glm::vec3 ps = {y[0], y[1], y[2]};
         d = child->get_distance(ps, ddist_dp, ddist_dpos);
 
@@ -512,7 +512,6 @@ namespace upg
         (*ddist_dp)[offset+0] = tmp.at(0, 0) * X + tmp.at(0, 1) * Y + tmp.at(0, 2) * Z;
         (*ddist_dp)[offset+1] = tmp.at(1, 0) * X + tmp.at(1, 1) * Y + tmp.at(1, 2) * Z;
         (*ddist_dp)[offset+2] = tmp.at(2, 0) * X + tmp.at(2, 1) * Y + tmp.at(2, 2) * Z;
-        (*ddist_dp)[offset+3] = tmp.at(3, 0) * X + tmp.at(3, 1) * Y + tmp.at(3, 2) * Z;
 
         (*ddist_dpos)[0] = X * tmp.at(4, 0) + Y * tmp.at(4, 1) + Z * tmp.at(4, 2);
         (*ddist_dpos)[1] = X * tmp.at(5, 0) + Y * tmp.at(5, 1) + Z * tmp.at(5, 2);
