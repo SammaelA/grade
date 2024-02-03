@@ -443,24 +443,21 @@ namespace upg
     }
   };
 
-  void get_any_rot_mat_to_vec(my_float x, my_float y, my_float z, float angle, my_float *out)
+  void RotateSdfNode_apply(const float *in, float *out)
   {
-    float c = cos(angle), s = sin(angle);
-    glm::vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
-    glm::vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
-    glm::vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
-    float tmp0 = out[0], tmp1 = out[1], tmp2 = out[2];
-    out[0] = e1.x * tmp0 + e1.y * tmp1 + e1.z * tmp2;
-    out[1] = e2.x * tmp0 + e2.y * tmp1 + e2.z * tmp2;
-    out[2] = e3.x * tmp0 + e3.y * tmp1 + e3.z * tmp2;
-  }
+    float x = cosf(in[0]) * cosf(in[1]);
+    float y = sinf(in[0]) * cosf(in[1]);
+    float z = sinf(in[1]);
+    float angle = in[2];
+    float pos_x = in[3];
+    float pos_y = in[4];
+    float pos_z = in[5];
+    float c = cosf(angle);
+    float s = sinf(angle);
 
-  void RotateSdfNode_apply(const my_float *in, my_float *out)
-  {
-    out[0] = in[3];
-    out[1] = in[4];
-    out[2] = in[5];
-    get_any_rot_mat_to_vec(cos(in[0]) * cos(in[1]), sin(in[0]) * cos(in[1]), sin(in[1]), in[2], out);
+    out[0] = (c + (1 - c) * x * x)     * pos_x + ((1 - c) * x * y + s * z) * pos_y + ((1 - c) * x * z - s * y) * pos_z;
+    out[1] = ((1 - c) * x * y - s * z) * pos_x + (c + (1 - c) * y * y)     * pos_y + ((1 - c) * y * z + s * x) * pos_z;
+    out[2] = ((1 - c) * x * z + s * y) * pos_x + ((1 - c) * z * y - s * x) * pos_y + (c + (1 - c) * z * z)     * pos_z;
   }
 
   class RotateSdfNode : public OneChildSdfNode
@@ -514,9 +511,9 @@ namespace upg
         (*ddist_dp)[offset+1] = tmp.at(1, 0) * X + tmp.at(1, 1) * Y + tmp.at(1, 2) * Z;
         (*ddist_dp)[offset+2] = tmp.at(2, 0) * X + tmp.at(2, 1) * Y + tmp.at(2, 2) * Z;
 
-        (*ddist_dpos)[0] = X * tmp.at(4, 0) + Y * tmp.at(4, 1) + Z * tmp.at(4, 2);
-        (*ddist_dpos)[1] = X * tmp.at(5, 0) + Y * tmp.at(5, 1) + Z * tmp.at(5, 2);
-        (*ddist_dpos)[2] = X * tmp.at(6, 0) + Y * tmp.at(6, 1) + Z * tmp.at(6, 2);
+        (*ddist_dpos)[0] = X * tmp.at(3, 0) + Y * tmp.at(3, 1) + Z * tmp.at(3, 2);
+        (*ddist_dpos)[1] = X * tmp.at(4, 0) + Y * tmp.at(4, 1) + Z * tmp.at(4, 2);
+        (*ddist_dpos)[2] = X * tmp.at(5, 0) + Y * tmp.at(5, 1) + Z * tmp.at(5, 2);
       }
       else
       {
@@ -788,7 +785,7 @@ namespace upg
     int offset = 0;
     for (auto &nptr : all_nodes)
     {
-      nptr->set_param_span(std::span<my_float>(all_params.data() + offset, nptr->param_cnt()));
+      nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()));
       offset += nptr->param_cnt();
     }
   }
