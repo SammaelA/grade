@@ -219,10 +219,10 @@ namespace upg
     //scenes["8 Bubbles"] = scene_bubbles(4, 2);
     //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
-    scenes["1 Box"] = scene_1_box();
-    scenes["2 Boxes"] = scene_2_boxes();
-    scenes["4 Boxes"] = scene_4_boxes();
-    scenes["8 Boxes"] = scene_8_boxes();
+    //scenes["1 Box"] = scene_1_box();
+    //scenes["2 Boxes"] = scene_2_boxes();
+    //scenes["4 Boxes"] = scene_4_boxes();
+    //scenes["8 Boxes"] = scene_8_boxes();
     scenes["Chair"] = scene_chair();
 
     int max_iters = 200'000;

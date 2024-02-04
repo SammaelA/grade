@@ -850,7 +850,7 @@ namespace upg
   int get_node_param_count(int node_id)
   {
     // how many parameters each node has. It should be done differently, but now it's just testing
-    std::vector<int> node_param_counts = {0, 1, 3, 0, 3, 2, 4, 2, 3, 0, 0, 4};
+    std::vector<int> node_param_counts = {0, 1, 3, 0, 3, 2, 4, 2, 3, 0, 0, 3};
     assert(node_id >= 0 && node_id < node_param_counts.size());
     return node_param_counts[node_id];
   }

@@ -9,6 +9,12 @@
 namespace upg
 {
   static int id_counter = 0;
+  static float time_base_opt = 0;
+  static float time_est_q = 0;
+  static float time_fine_opt = 0;
+  static float time_all = 0;
+  static float time_search_and_select = 0;
+  static float time_debug = 0;
   
   struct GRPrimitive
   {
@@ -334,6 +340,7 @@ namespace upg
 
   void activate_node_on_edge(const GROptimizationContext &ctx, GREdge &edge)
   {
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     //fine optimization step 
     UPGReconstructionResult start_p;
     start_p.structure = edge.opt_prim.structure;
@@ -361,6 +368,8 @@ namespace upg
     edge.end->quality = edge.fine_quality;
     edge.end->primitives = edge.start->primitives;
     edge.end->primitives.push_back(edge.fine_prim);
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+      time_fine_opt += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   }
 
   void opt_step(const GROptimizationContext &ctx, GRNode &node, int tries = 1)
@@ -377,7 +386,7 @@ namespace upg
       start_primitives.push_back(create_start_primitive(ctx, node));
     }
 
-    #pragma omp parallel for 
+    //#pragma omp parallel for 
     for (int i=0;i<tries;i++)
     {
       //optimize 
@@ -385,12 +394,16 @@ namespace upg
       start_p.structure = start_primitives[i].structure;
       start_p.parameters = start_primitives[i].parameters;
 
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
       std::shared_ptr<UPGOptimizer> optimizer = get_optimizer_multistep_adam(&(opt_funcs[i]), ctx.opt_settings_blk, start_p);
       optimizer->optimize();
       auto partial_result = optimizer->get_best_results()[0];
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+      time_base_opt += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       //logerr("res = %f %f %f %f", partial_result.parameters.p[0], partial_result.parameters.p[1],
       //                            partial_result.parameters.p[2], partial_result.parameters.p[3]);
-    
+
+std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();  
       //calculate edge quality
       float result_quality = estimate_positioning_quality(partial_result, opt_funcs[i], ctx.settings.distance_fine_thr);
       logerr("%d Q = %f", i, result_quality);
@@ -402,6 +415,8 @@ namespace upg
       new_edge.opt_prim = GRPrimitive{partial_result.structure, partial_result.parameters};
       new_edge.opt_quality = result_quality;
       node.edges[offset+i] = new_edge;
+std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+      time_est_q += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
     }
   }
 
@@ -434,6 +449,7 @@ namespace upg
 
   void debug_render_node(const GRNode *n, int id)
   {
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     SdfGenInstance gen(n->primitives.back().structure);
     ProceduralSdf sdf = gen.generate(n->primitives.back().parameters.p);
     CameraSettings camera;
@@ -442,6 +458,8 @@ namespace upg
     camera.up = glm::vec3(0, 1, 0);
     Texture t = render_sdf(sdf, camera, 512, 512, 4);
     engine::textureManager->save_png(t, "sdf_node_" + std::to_string(id));
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+      time_debug += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   }
 
   UPGReconstructionResult GR_agent_N_greedy(GROptimizationContext &ctx, int N_tries = 25)
@@ -495,7 +513,7 @@ namespace upg
     int total_nodes = 0;
     int paths = 0;
 
-    while (paths < path_limit && best_quality < (1-1e-5))
+    while (paths < path_limit /*&& best_quality < (1-1e-5)*/)
     {
       GRNode *new_node = node;
 
@@ -516,6 +534,7 @@ namespace upg
       }
       else //we found some solution. Remember it if it's the best and go to some previous node to improve later
       {
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         UPGReconstructionResult res = merge_primitives(node->primitives);
         float solution_quality = estimate_solution_quality_MAE(res, node->opt_func);
         node->quality = solution_quality;
@@ -555,6 +574,8 @@ namespace upg
         logerr("improving node %d(path %d) with chance %f", i_node_id, best_end_node->id, qualities[i_node_id]);
         //print_reconstruction_graph(ctx, *(ctx.root));
         new_node = path[i_node_id];
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+      time_search_and_select += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
       }
 
       if (node != new_node && new_node->depth > 0)
@@ -598,8 +619,19 @@ namespace upg
     ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
     ctx.root->depth = 0;
 
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     auto res = GR_agent_stochastic_returns(ctx, 25, 25);
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    time_all += 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     print_reconstruction_graph(ctx, *(ctx.root));
+
+    /*static float time_base_opt = 0;
+    static float time_est_q = 0;
+    static float time_fine_opt = 0;
+    static float time_all = 0;
+    static float time_search_and_select = 0;
+    static float time_debug = 0*/
+    logerr("TIME %f %f %f %f %f %f", time_base_opt, time_est_q, time_fine_opt, time_search_and_select, time_debug, time_all);
 
     return {res};
   }
