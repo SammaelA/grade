@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstring>
 #include <random>
+#include <algorithm>
 
 constexpr bool DEBUG = false;
 namespace nn
@@ -476,6 +477,21 @@ namespace nn
     TensorProcessor::get_output("W", weights.data(), weights.size());
   }
 
+  void get_confusion_matrix(const float *output, const float *output_ref, int samples, float threshold, float out_confusion_matrix[4])
+  {
+    for (int i=0;i<4;i++)
+      out_confusion_matrix[i]=0;
+    for (int i=0;i<samples;i++)
+    {
+      out_confusion_matrix[0] += output_ref[2*i+0] >= threshold && output[2*i+0] >= threshold; //true  positive
+      out_confusion_matrix[1] += output_ref[2*i+0] < threshold  && output[2*i+0] >= threshold; //false positive
+      out_confusion_matrix[2] += output_ref[2*i+0] >= threshold && output[2*i+0] < threshold;  //false negative
+      out_confusion_matrix[3] += output_ref[2*i+0] < threshold  && output[2*i+0] < threshold;  //true  negative
+    }
+    for (int i=0;i<4;i++)
+      out_confusion_matrix[i] /= samples;
+  }
+
   float NeuralNetwork::calculate_metric(const float *output, const float *output_ref, int samples, Metric metric)
   {
     unsigned output_size = total_size(layers.back()->output_shape);
@@ -519,6 +535,67 @@ namespace nn
           right_answers += 1;
       }
       return right_answers/(float)samples;
+    }
+    else
+    {
+      //metrics for binary classification
+      assert(output_size == 2);
+      float confusion_matrix[4];
+      get_confusion_matrix(output, output_ref, samples, 0.5, confusion_matrix);
+      //printf("conf %f %f %f %f\n", confusion_matrix[0], confusion_matrix[1], confusion_matrix[2], confusion_matrix[3]);
+      if (metric == Metric::Precision)
+        return confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[1]);
+      else if (metric == Metric::Recall)
+        return confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2]);
+      else if (metric == Metric::AUC_ROC)
+      {
+        constexpr unsigned steps = 1000;
+        std::vector<std::pair<float, float>> tpr_fpr(steps+2);
+        tpr_fpr[0] = {0,0};
+        for (int i=0;i<steps;i++)
+        {
+          get_confusion_matrix(output, output_ref, samples, i/(float)steps, confusion_matrix);
+          tpr_fpr[i+1] = std::pair<float, float>(confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2] + 1e-9), 
+                                                 confusion_matrix[1]/(confusion_matrix[1]+confusion_matrix[3] + 1e-9));
+        }
+        tpr_fpr[steps+1] = {1,1};
+
+        std::sort(tpr_fpr.begin(), tpr_fpr.end(), [](std::pair<float, float> a, std::pair<float, float> b)-> bool { 
+          return a.second==b.second ? a.first<b.first : a.second<b.second;});
+
+        float auc_roc = 0;
+        for (int i=0;i<=steps;i++)
+        {
+          auc_roc += 0.5*(tpr_fpr[i+1].first + tpr_fpr[i].first)*(tpr_fpr[i+1].second-tpr_fpr[i].second);
+          //printf("%f %f %f\n", tpr_fpr[i].first, tpr_fpr[i].second, auc_roc);
+        }
+        
+        return auc_roc;
+      }
+      else if (metric == Metric::AUC_PR)
+      {
+        constexpr unsigned steps = 1000;
+        std::vector<std::pair<float, float>> rec_pr(steps+2);
+        rec_pr[0] = {0,1};
+        for (int i=0;i<steps;i++)
+        {
+          get_confusion_matrix(output, output_ref, samples, i/(float)steps, confusion_matrix);
+          rec_pr[i+1] = std::pair<float, float>(confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2] + 1e-9), 
+                                                 confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[1] + 1e-9));
+        }
+        rec_pr[steps+1] = {1,0};
+
+        std::sort(rec_pr.begin(), rec_pr.end(), [](std::pair<float, float> a, std::pair<float, float> b)-> bool { return a.second<b.second;});
+
+        float auc_pr = 0;
+        for (int i=0;i<=steps;i++)
+        {
+          auc_pr += 0.5*(rec_pr[i+1].first + rec_pr[i].first)*(rec_pr[i+1].second-rec_pr[i].second);
+          //printf("%f %f %f\n", rec_pr[i].first, rec_pr[i].second, auc_pr);
+        }
+        
+        return auc_pr;
+      }
     }
     return 0;
   }

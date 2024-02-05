@@ -1381,6 +1381,92 @@ void test_1_tensor_processor()
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
+  void test_26_binary_classification_metrics()
+  {
+    printf("TEST 26. BINARY CLASSIFICATION METRICS\n");
+    unsigned image_size = 16;
+    unsigned image_count = 5000;
+
+    std::vector<float> X(image_count*image_size*image_size, 0.0f);
+    std::vector<float> y(2*image_count, 0.0f);
+
+    for (int i=0;i<image_count;i++)
+    {
+      int type = rand()%2;
+      int line = rand()%image_size;
+      y[2*i + type] = 1;
+
+      if (type == 0) //horizontal line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + line*image_size + j] = 1.0f;
+      }
+      else //vertical line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + j*image_size + line] = 1.0f;
+      }
+    }
+
+    int train_sz = 0.9*image_count;
+    std::vector<float> X_train = std::vector<float>(X.begin(), X.begin() + train_sz*image_size*image_size);
+    std::vector<float> X_test  = std::vector<float>(X.begin() + train_sz*image_size*image_size, X.end());
+    std::vector<float> y_train = std::vector<float>(y.begin(), y.begin() + train_sz*2);
+    std::vector<float> y_test  = std::vector<float>(y.begin() + train_sz*2, y.end());
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
+    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X_train, y_train, 64, 1000, OptimizerAdam(0.0002f), Loss::CrossEntropy);
+
+    std::vector<float> y_res(y_test.size(),0);
+    nn2.evaluate(X_test, y_res);
+
+    float acc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Accuracy);
+    float pr = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Precision);
+    float recall = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Recall);
+    float auc_roc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_ROC);
+    float auc_pr = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_PR);
+
+    printf(" 26.1. %-64s", "High accuracy");
+    if (acc > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, accuracy %f\n", acc);
+
+    printf(" 26.2. %-64s", "High precision");
+    if (pr > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, precision %f\n", pr);
+  
+    printf(" 26.3. %-64s", "High recall");
+    if (recall > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, recall %f\n", recall);
+      
+    printf(" 26.4. %-64s", "High AUC ROC");
+    if (auc_roc > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, AUC ROC %f\n", auc_roc);
+      
+    printf(" 26.5. %-64s", "High AUC PR");
+    if (auc_pr > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, AUC PR %f\n", auc_pr);
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1412,6 +1498,7 @@ void test_1_tensor_processor()
     //test_23_CIFAR10(); very long test
     test_24_dilation();
     test_25_conv2D_stride();
+    test_26_binary_classification_metrics();
 
 
     printf("NEURAL CORE CPU TESTS\n");
