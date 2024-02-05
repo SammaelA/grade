@@ -71,7 +71,7 @@ namespace nn
     double stddev = sqrt(2.0f/(fan_in+fan_out));
     std::random_device rd{};
     std::mt19937 gen{rd()};
-    std::normal_distribution distr{0.0, stddev};
+    std::normal_distribution<double> distr{0.0, stddev};
     for (int i = 0; i < size; i++)
       data[i] = distr(gen);
   }
@@ -339,10 +339,15 @@ namespace nn
   void NeuralNetwork::evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples)
   {
     unsigned input_size = total_size(layers[0]->input_shape);
-    unsigned output_size = total_size(layers.back()->output_shape);
-
     if (samples < 0)
       samples = input_data.size()/input_size;
+    evaluate(input_data.data(), output_data.data(), samples);
+  }
+
+  void NeuralNetwork::evaluate(const float *input_data, float *output_labels, int samples)
+  {
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned output_size = total_size(layers.back()->output_shape);
 
     unsigned batches = (samples + batch_size_evaluate - 1)/batch_size_evaluate;
     
@@ -351,44 +356,56 @@ namespace nn
     
     for (int i=0;i<batches;i++)
     {
-      TensorProcessor::set_input("In", input_data.data() + i*batch_size_evaluate*input_size, samples*input_size - i*batch_size_evaluate*input_size);
+      TensorProcessor::set_input("In", input_data + i*batch_size_evaluate*input_size, samples*input_size - i*batch_size_evaluate*input_size);
       TensorProcessor::execute();
-      TensorProcessor::get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, samples*output_size - i*batch_size_evaluate*output_size);
+      TensorProcessor::get_output("Out", output_labels + i*batch_size_evaluate*output_size, samples*output_size - i*batch_size_evaluate*output_size);
     }
   }
 
   void NeuralNetwork::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
                              int batch_size, int iterations, Opt optimizer, Loss loss, float lr, bool verbose)
   {
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned count = inputs.size()/input_size;
+    train(inputs.data(), outputs.data(), count, batch_size, ceil(batch_size*iterations/(float)count), false, optimizer, loss, lr, Metric::Accuracy, verbose);
+  }
+
+  void NeuralNetwork::train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation, Opt optimizer, 
+                            Loss loss, float learning_rate, Metric metric, bool verbose)
+  {
     initialize();
 
-    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, lr);
+    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, learning_rate);
 
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned output_size = total_size(layers.back()->output_shape);
-    unsigned count = inputs.size()/input_size;
-    assert(inputs.size() % input_size == 0);
-    assert(outputs.size() % output_size == 0);
-    assert(count == outputs.size() / output_size);
+    float validation_frac = use_validation ? 0.1f : 0.0f;
+    unsigned valid_count = samples*validation_frac;
+    unsigned count = samples - valid_count;
+    unsigned iters_per_epoch = std::max(1u, count/batch_size);
+    unsigned iterations = epochs * iters_per_epoch;
 
     std::vector<float> V(total_params, 0);
     std::vector<float> S(total_params, 0);
     std::vector<float> in_batch(input_size*batch_size);
     std::vector<float> out_batch(output_size*batch_size);
+    std::vector<float> validation_labels(output_size*valid_count);
     float iter = 0;
     TensorProcessor::set_program(train_prog);
     TensorProcessor::set_input("W", weights.data(), weights.size());
     TensorProcessor::set_input("V", V.data(), V.size());
     TensorProcessor::set_input("S", S.data(), S.size());
 
+    if (verbose)
+      printf("started training %u iterations %d epochs\n", iterations, epochs);
     float av_loss = 0;
     for (int it=0;it<iterations;it++)
     {
       for (int i=0;i<batch_size;i++)
       {
         unsigned b_id = rand()%count;
-        memcpy(in_batch.data() + i*input_size, inputs.data() + b_id*input_size, sizeof(float)*input_size);
-        memcpy(out_batch.data() + i*output_size, outputs.data() + b_id*output_size, sizeof(float)*output_size);
+        memcpy(in_batch.data() + i*input_size, data + b_id*input_size, sizeof(float)*input_size);
+        memcpy(out_batch.data() + i*output_size, labels + b_id*output_size, sizeof(float)*output_size);
       }
 
       iter = it;
@@ -399,9 +416,23 @@ namespace nn
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
       av_loss += loss;
-      if (verbose && it % 100 == 0)
+      if (verbose && it % iters_per_epoch == 0)
       {
-        printf("[%d/%d] Loss = %f %f\n", it, iterations, loss, av_loss/100);
+        if (use_validation)
+        {
+          TensorProcessor::get_output("W", weights.data(), weights.size());
+          TensorProcessor::get_output("V", V.data(), V.size());
+          TensorProcessor::get_output("S", S.data(), S.size());
+          evaluate(data + count*input_size, validation_labels.data(), valid_count);
+          TensorProcessor::set_program(train_prog);
+          TensorProcessor::set_input("W", weights.data(), weights.size());
+          TensorProcessor::set_input("V", V.data(), V.size());
+          TensorProcessor::set_input("S", S.data(), S.size());
+          printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch,
+                                                    calculate_metric(validation_labels.data(), labels + count*output_size, valid_count, metric));
+        }
+        else
+          printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch);
         av_loss = 0;
       }
 
@@ -424,4 +455,50 @@ namespace nn
     TensorProcessor::get_output("W", weights.data(), weights.size());
   }
 
+  float NeuralNetwork::calculate_metric(const float *output, const float *output_ref, int samples, Metric metric)
+  {
+    unsigned output_size = total_size(layers.back()->output_shape);
+    if (metric == Metric::MSE || metric == Metric::MAE)
+    {
+      //regression metrics
+      double res = 0;
+      if (metric == Metric::MSE)
+      {
+        #pragma omp parallel for reduction(+:res)
+        for (int i=0;i<output_size*samples;i++)
+          res += (output[i] - output_ref[i])*(output[i] - output_ref[i]);
+      }
+      else if (metric == Metric::MAE)
+      {
+        #pragma omp parallel for reduction(+:res)
+        for (int i=0;i<output_size*samples;i++)
+          res += abs(output[i] - output_ref[i]);        
+      }
+      return res/(output_size*samples);
+    }
+    else if (metric == Metric::Accuracy)
+    {
+      float thr = 0;
+      int right_answers = 0;
+
+      #pragma omp parallel for reduction(+:right_answers)
+      for (int i=0;i<samples;i++)
+      {
+        int ref_class = 0;
+        for (int j=0;j<output_size;j++)
+          if (output_ref[i*output_size + j] > output_ref[i*output_size + ref_class])
+            ref_class = j;
+        
+        int pred_class = 0;
+        for (int j=0;j<output_size;j++)
+          if (output[i*output_size + j] > output[i*output_size + pred_class])
+            pred_class = j;
+        
+        if (ref_class == pred_class)
+          right_answers += 1;
+      }
+      return right_answers/(float)samples;
+    }
+    return 0;
+  }
 }

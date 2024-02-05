@@ -287,6 +287,16 @@ namespace nn
       SIREN,
       GLOROT_NORMAL
     };
+    enum class Metric
+    {
+      MSE,
+      MAE,
+      Accuracy,
+      Precision,
+      Recall,
+      AUC_ROC,
+      AUC_PR
+    };
 
     void add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer = ZERO);
     void set_batch_size_for_evaluate(int size);
@@ -300,11 +310,12 @@ namespace nn
     TensorProgram get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
                int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f, bool verbose = false);
+    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Opt optimizer = Opt::Adam, 
+               Loss loss = Loss::CrossEntropy, float learning_rate = 0.01f, Metric metric = Metric::Accuracy, bool verbose = false);
     void get_evaluate_prog();
     void evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples = -1);
-    //float test(const TensorView &input, const TensorView &target_output, Loss loss);
-    //float calculate_loss(Loss loss, const TensorView &values, const TensorView &target_values, TensorView dLoss_dValues);
-    //float calculate_score(Loss loss, const TensorView &values, const TensorView &target_values);
+    void evaluate(const float *input_data, float *output_labels, int samples);
+    float calculate_metric(const float *output, const float *output_ref, int samples, Metric metric);
     NeuralNetwork(){};
     NeuralNetwork(const NeuralNetwork &other) = delete;
     NeuralNetwork &operator=(const NeuralNetwork &other) = delete;

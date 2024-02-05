@@ -272,7 +272,7 @@ void test_1_tensor_processor()
   void test_6_linear_regression_train()
   {
     printf("TEST 6. LINEAR REGRESSION\n");
-    int sz = 1000;
+    int sz = 1024;
     int dim = 32;
     std::vector<float> X(dim*sz,0);
     std::vector<float> res(sz,0);
@@ -290,7 +290,8 @@ void test_1_tensor_processor()
     NeuralNetwork nn2;
     nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
     nn2.add_layer(std::make_shared<DenseLayer>(64, 1), NeuralNetwork::HE);
-    nn2.train(X, res, 512, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    //nn2.train(X, res, 512, 512, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.train(X.data(), res.data(), sz, 512, 512, true, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f, NeuralNetwork::Metric::MAE);
 
     std::vector<float> y(sz,0);
     nn2.evaluate(X, y);
@@ -302,7 +303,7 @@ void test_1_tensor_processor()
     if (diff < 1e-6)
       printf("PASSED\n");
     else
-      printf("FAILED\n");
+      printf("FAILED %f > %f\n", diff, 1e-6);
   }
 
   void test_7_SIREN_image()

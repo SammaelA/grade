@@ -128,7 +128,7 @@ namespace nn
     //transfers data to input tensor with <name>
     //if <data_size> less that tensor size, remaining part is padded with zeros
     //all inputs should be set before execution
-    static void set_input(const std::string &name, float * const data, unsigned data_size);
+    static void set_input(const std::string &name, const float * const data, unsigned data_size);
     //transfers data from output tensor with <name> to given address
     //if <data_size> less that tensor size, only this part is tranfered
     static void get_output(const std::string &name, float *data, unsigned data_size);

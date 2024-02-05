@@ -107,7 +107,7 @@ namespace nn
   
   }
 
-  void TensorProcessor::set_input(const std::string &name, float * const data, unsigned data_size)
+  void TensorProcessor::set_input(const std::string &name, const float * const data, unsigned data_size)
   {
     if (proc->input_prepared.find(name) == proc->input_prepared.end())
     {
