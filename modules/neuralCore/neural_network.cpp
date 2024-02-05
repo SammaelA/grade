@@ -76,7 +76,7 @@ namespace nn
       data[i] = distr(gen);
   }
 
-  void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer)
+  void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, Initializer initializer)
   {
     layers.push_back(layer);
     initializers.push_back(initializer);
@@ -134,16 +134,16 @@ namespace nn
 
       switch (initializers[i])
       {
-        case ZERO:
+        case Initializer::Zero:
           zero_initialization(weights.data()+offset, size);
           break;
-        case HE:
+        case Initializer::He:
           he_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
-        case SIREN:
+        case Initializer::Siren:
           SIREN_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
-        case GLOROT_NORMAL:
+        case Initializer::GlorotNormal:
           Glorot_normal_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
         default:
@@ -252,7 +252,7 @@ namespace nn
     evaluate_prog = compiler.finish_program();
   }
 
-  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr)
+  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Optimizer optimizer, Loss loss, float lr)
   {
     TensorCompiler compiler;
     compiler.start_program();
@@ -363,14 +363,14 @@ namespace nn
   }
 
   void NeuralNetwork::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                             int batch_size, int iterations, Opt optimizer, Loss loss, float lr, bool verbose)
+                             int batch_size, int iterations, Optimizer optimizer, Loss loss, float lr, bool verbose)
   {
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned count = inputs.size()/input_size;
     train(inputs.data(), outputs.data(), count, batch_size, ceil(batch_size*iterations/(float)count), false, optimizer, loss, lr, Metric::Accuracy, verbose);
   }
 
-  void NeuralNetwork::train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation, Opt optimizer, 
+  void NeuralNetwork::train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation, Optimizer optimizer, 
                             Loss loss, float learning_rate, Metric metric, bool verbose)
   {
     initialize();
@@ -485,7 +485,7 @@ namespace nn
       {
         #pragma omp parallel for reduction(+:res)
         for (int i=0;i<output_size*samples;i++)
-          res += abs(output[i] - output_ref[i]);        
+          res += std::abs(output[i] - output_ref[i]);        
       }
       return res/(output_size*samples);
     }
