@@ -91,7 +91,7 @@ void test_1_tensor_processor()
 
     printf("  1.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.25f) < 1e-6 && abs(A[1] - 0.25f) < 1e-6 && abs(A[2] - 0.5f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
@@ -127,7 +127,7 @@ void test_1_tensor_processor()
 
     printf("  2.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.25f) < 1e-6 && abs(A[1] - 0.25f) < 1e-6 && abs(A[2] - 0.5f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
@@ -199,7 +199,7 @@ void test_1_tensor_processor()
       for (int i=0;i<9;i++)
         diff += abs(reference[k].second[i] - res[9*k + i]);
       if (diff < 1e-6)
-        printf("PASSED\n");
+        printf("passed\n");
       else
         printf("FAILED\n");
     }
@@ -217,7 +217,7 @@ void test_1_tensor_processor()
     nn2.evaluate(X, r);
     printf("  4.1. %-64s", "Correct result ");
     if (abs(r[0] - 0.01f) < 1e-6 && abs(r[1] - 2.01f) < 1e-6 && abs(r[2] - 4.01f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", r[0], r[1], r[2], 0.01f, 2.01f, 4.01f);
   }
@@ -264,7 +264,7 @@ void test_1_tensor_processor()
     
     printf("  5.1. %-64s", "Correct result ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
   }
@@ -301,7 +301,7 @@ void test_1_tensor_processor()
     diff /= sz;
     printf("  6.1. %-64s", "Perfect optimization ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f > %f\n", diff, 1e-6);
   }
@@ -362,7 +362,7 @@ void test_1_tensor_processor()
     
     printf("  7.1. %-64s", "Decent image optimization ");
     if (diff < 0.25f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.25f);
   }
@@ -404,7 +404,7 @@ void test_1_tensor_processor()
     
     printf("  8.1. %-64s", "Good simple SDF optimization ");
     if (diff < 0.01f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.01f);
   }
@@ -439,7 +439,7 @@ void test_1_tensor_processor()
 
     printf("  9.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.155362f) < 1e-6 && abs(A[1] - 0.422319f) < 1e-6 && abs(A[5] - 0.946499f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
     
@@ -481,7 +481,7 @@ void test_1_tensor_processor()
     float error_rate = diff/sz;
     printf(" 10.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -537,7 +537,7 @@ void test_1_tensor_processor()
     float error_rate = diff/sz;
     printf(" 10.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -609,7 +609,7 @@ void test_1_tensor_processor()
       for (int i=0;i<6;i++)
         diff += abs(reference[k].second[i] - res[6*k + i]);
       if (diff < 1e-6)
-        printf("PASSED\n");
+        printf("passed\n");
       else
         printf("FAILED\n");
     }
@@ -660,7 +660,7 @@ void test_1_tensor_processor()
     
     printf(" 13.1. %-64s","X padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -671,7 +671,7 @@ void test_1_tensor_processor()
     
     printf(" 13.2. %-64s","Y padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -682,7 +682,7 @@ void test_1_tensor_processor()
     
     printf(" 13.3. %-64s","X and Y padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -813,7 +813,7 @@ void test_1_tensor_processor()
     
     printf(" 14.1. %-64s","kernel X");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -824,7 +824,7 @@ void test_1_tensor_processor()
     
     printf(" 14.2. %-64s","kernel Y");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -835,7 +835,7 @@ void test_1_tensor_processor()
     
     printf(" 14.3. %-64s","kernel with stride > 1");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -846,7 +846,7 @@ void test_1_tensor_processor()
     
     printf(" 14.4. %-64s","multi-layered kernel");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -924,7 +924,7 @@ void test_1_tensor_processor()
     write_image_rgb("1a_gray.png", image_data, width, height);
     
     printf(" 15.1. blur took %4.1f ms                                               ", ms);
-    printf("PASSED\n");
+    printf("passed\n");
   }
 
   void test_16_conv2D_forward()
@@ -948,7 +948,7 @@ void test_1_tensor_processor()
     
     printf(" 16.1. %-64s", "Correct result ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
 
@@ -984,7 +984,7 @@ void test_1_tensor_processor()
     
     printf(" 17.1. %-64s", "Correct result ");
     if (diff < 1.0f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
@@ -1012,7 +1012,7 @@ void test_1_tensor_processor()
     
     printf(" 18.1. %-64s", "Correct result ");
     if (diff < 1e-4)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
   }
@@ -1069,7 +1069,7 @@ void test_1_tensor_processor()
     
     printf(" 19.1. %-64s","forward pass");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1080,7 +1080,7 @@ void test_1_tensor_processor()
     
     printf(" 19.2. %-64s","backward pass");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1141,7 +1141,7 @@ void test_1_tensor_processor()
     float error_rate = diff/(y_test.size());
     printf(" 20.1. %-64s", "Error rate <10% ");
     if (error_rate < 0.1f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1198,7 +1198,7 @@ void test_1_tensor_processor()
     float error_rate = 1 - acc/cnt;
     printf(" 21.1. %-64s", "Error rate <5% ");
     if (error_rate < 0.1f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1230,7 +1230,7 @@ void test_1_tensor_processor()
     auto t_now = std::chrono::steady_clock::now();
     float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
     printf(" 22.1. operation took %6.1f ms                                        ", ms);
-    printf("PASSED\n");
+    printf("passed\n");
   }
 
   void test_23_CIFAR10()
@@ -1280,7 +1280,7 @@ void test_1_tensor_processor()
     float error_rate = 1 - acc/cnt;
     printf(" 23.1. %-64s", "Error rate <60% ");
     if (error_rate < 0.6f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1334,7 +1334,7 @@ void test_1_tensor_processor()
     
     printf(" 24.1. %-64s","1D dilation");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1345,7 +1345,7 @@ void test_1_tensor_processor()
     
     printf(" 24.2. %-64s","2D dilation");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }    
@@ -1377,7 +1377,7 @@ void test_1_tensor_processor()
     
     printf(" 25.1. %-64s", "Correct result ");
     if (diff < 1.0f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
