@@ -24,8 +24,7 @@ namespace nn
   void Siren::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
                     int batch_size, int iterations, bool verbose)
   {
-    NeuralNetwork::train(inputs, outputs, batch_size, iterations, 
-                         Optimizer::Adam, Loss::MSE, 0.00002f, verbose);
+    NeuralNetwork::train(inputs, outputs, batch_size, iterations, OptimizerAdam(0.00002f), Loss::MSE, verbose);
   }
 
   float Siren::get(float x, float y)

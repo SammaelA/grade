@@ -290,7 +290,7 @@ void test_1_tensor_processor()
     NeuralNetwork nn2;
     nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
     nn2.add_layer(std::make_shared<DenseLayer>(64, 1), Initializer::He);
-    nn2.train(X.data(), res.data(), sz, 512, 512, true, Optimizer::Adam, Loss::MSE, 0.01f, Metric::MAE);
+    nn2.train(X.data(), res.data(), sz, 512, 512, true, OptimizerAdam(0.01f), Loss::MSE, Metric::MAE);
 
     std::vector<float> y(sz,0);
     nn2.evaluate(X, y);
@@ -337,7 +337,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<DenseLayer>(64, 64), Initializer::Siren);
     nn2.add_layer(std::make_shared<SinLayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(64,  1), Initializer::Siren);
-    nn2.train(pixel_data, image_data_grayscale, 1000, 2500, Optimizer::Adam, Loss::MSE, 0.0001f);
+    nn2.train(pixel_data, image_data_grayscale, 1000, 2500, OptimizerAdam(0.0001f), Loss::MSE);
 
     std::vector<float> image_data_res(pixel_count, 0);
     nn2.evaluate(pixel_data, image_data_res);
@@ -467,7 +467,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 512, 500, Optimizer::Adam, Loss::CrossEntropy, 0.01f);
+    nn2.train(X, res, 512, 500, OptimizerAdam(0.01f), Loss::CrossEntropy);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X, y);
@@ -525,7 +525,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 256, 5000, Optimizer::Adam, Loss::CrossEntropy, 0.01f);
+    nn2.train(X, res, 256, 5000, OptimizerAdam(0.01f), Loss::CrossEntropy);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X_test, y);
@@ -971,7 +971,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, 1, Conv2DLayer::SAME), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
     nn2.add_layer(std::make_shared<DenseLayer>(18, 18), Initializer::He);
-    nn2.train(X, r_ref, 1, 500, Optimizer::Adam, Loss::MSE, 0.001f);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.001f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -999,7 +999,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(1,1,2));
     nn2.add_layer(std::make_shared<DenseLayer>(2, 2), Initializer::He);
-    nn2.train(X, r_ref, 1, 500, Optimizer::Adam, Loss::MSE, 0.01f);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.01f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -1129,7 +1129,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X_train, y_train, 64, 1000, Optimizer::Adam, Loss::CrossEntropy, 0.0002f);
+    nn2.train(X_train, y_train, 64, 1000, OptimizerAdam(0.0002f), Loss::CrossEntropy);
 
     std::vector<float> y_res(y_test.size(),0);
     nn2.evaluate(X_test, y_res);
@@ -1173,7 +1173,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(200, 10), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());*/
-    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, Optimizer::Adam, Loss::CrossEntropy, 0.0001f);
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, OptimizerAdam(0.0001f), Loss::CrossEntropy);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);
@@ -1255,7 +1255,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<DenseLayer>(512, 10), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(dataset.train_data, dataset.train_labels, 128, 25000, Optimizer::Adam, Loss::CrossEntropy, 0.001f);
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 25000, OptimizerAdam(0.001f), Loss::CrossEntropy);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);
@@ -1364,7 +1364,7 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<Conv2DLayer>(5,5,1, 2, 3, 2), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(2,2,2));
     nn2.add_layer(std::make_shared<DenseLayer>(8, 8), Initializer::He);
-    nn2.train(X, r_ref, 1, 500, Optimizer::Adam, Loss::MSE, 0.001f);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.001f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);

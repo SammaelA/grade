@@ -252,7 +252,7 @@ namespace nn
     evaluate_prog = compiler.finish_program();
   }
 
-  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Optimizer optimizer, Loss loss, float lr)
+  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Optimizer optimizer, Loss loss)
   {
     TensorCompiler compiler;
     compiler.start_program();
@@ -320,15 +320,23 @@ namespace nn
     TensorToken V = TensorToken(total_params); compiler.inout(V, "V");
     TensorToken S = TensorToken(total_params); compiler.inout(S, "S");
     TensorToken iter = TensorToken(1); compiler.input(iter, "iter");
-    float beta_1 = 0.9f;
-    float beta_2 = 0.999f;
-    float eps = 1e-7f;
 
-    V = beta_1*V + (1.0f - beta_1)*grad;
-    TensorToken Vh = V / (1.0f - TensorToken::pow(beta_1, iter + 1.0f));
-    S = beta_2*S + (1.0f - beta_2)*grad*grad;
-    TensorToken Sh = S / (1.0f - TensorToken::pow(beta_2, iter + 1.0f));
-    w -= lr*Vh/(TensorToken::sqrt(Sh) + eps);
+    if (std::holds_alternative<OptimizerGD>(optimizer))
+    {
+      OptimizerGD opt = std::get<OptimizerGD>(optimizer);
+
+      w -= opt.learning_rate*grad;
+    }
+    else if (std::holds_alternative<OptimizerAdam>(optimizer))
+    {
+      OptimizerAdam opt = std::get<OptimizerAdam>(optimizer);
+
+      V = opt.beta_1*V + (1.0f - opt.beta_1)*grad;
+      TensorToken Vh = V / (1.0f - TensorToken::pow(opt.beta_1, iter + 1.0f));
+      S = opt.beta_2*S + (1.0f - opt.beta_2)*grad*grad;
+      TensorToken Sh = S / (1.0f - TensorToken::pow(opt.beta_2, iter + 1.0f));
+      w -= opt.learning_rate*Vh/(TensorToken::sqrt(Sh) + opt.eps);
+    }
     
     compiler.output(l, "loss");
     if (DEBUG)
@@ -363,19 +371,19 @@ namespace nn
   }
 
   void NeuralNetwork::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                             int batch_size, int iterations, Optimizer optimizer, Loss loss, float lr, bool verbose)
+                             int batch_size, int iterations, Optimizer optimizer, Loss loss, bool verbose)
   {
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned count = inputs.size()/input_size;
-    train(inputs.data(), outputs.data(), count, batch_size, ceil(batch_size*iterations/(float)count), false, optimizer, loss, lr, Metric::Accuracy, verbose);
+    train(inputs.data(), outputs.data(), count, batch_size, ceil(batch_size*iterations/(float)count), false, optimizer, loss, Metric::Accuracy, verbose);
   }
 
   void NeuralNetwork::train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation, Optimizer optimizer, 
-                            Loss loss, float learning_rate, Metric metric, bool verbose)
+                            Loss loss, Metric metric, bool verbose)
   {
     initialize();
 
-    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, learning_rate);
+    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss);
 
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned output_size = total_size(layers.back()->output_shape);

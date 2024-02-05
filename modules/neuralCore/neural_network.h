@@ -7,6 +7,7 @@
 #include <memory>
 #include <functional>
 #include <tuple>
+#include <variant>
 
 namespace nn
 {
@@ -267,11 +268,29 @@ namespace nn
     virtual std::string get_name() override { return "MaxPooling"; }
   };
 
-  enum class Optimizer
+  struct OptimizerGD
   {
-    GradientDescent,
-    Adam
+    explicit OptimizerGD(float _lr = 0.01) { learning_rate = _lr; }
+    float learning_rate;
   };
+
+  struct OptimizerAdam
+  {
+    explicit OptimizerAdam(float _lr = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8) 
+    { 
+      learning_rate = _lr; 
+      beta_1 = _beta_1;
+      beta_2 = _beta_2;
+      eps = _eps;
+    }
+    float learning_rate;
+    float beta_1;
+    float beta_2;
+    float eps;
+  };
+
+  using Optimizer = std::variant<OptimizerGD, OptimizerAdam>;
+
   enum class Loss
   {
     MSE,
@@ -307,11 +326,11 @@ namespace nn
     void save_weights_to_file(std::string filename);
     void set_arch_to_file(std::string filename);
     void print_info();
-    TensorProgram get_train_prog(int batch_size, Optimizer optimizer, Loss loss, float lr);
+    TensorProgram get_train_prog(int batch_size, Optimizer optimizer, Loss loss);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-               int batch_size, int iterations, Optimizer optimizer, Loss loss, float lr = 0.1f, bool verbose = false);
-    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Optimizer optimizer = Optimizer::Adam, 
-               Loss loss = Loss::CrossEntropy, float learning_rate = 0.01f, Metric metric = Metric::Accuracy, bool verbose = false);
+               int batch_size, int iterations, Optimizer optimizer, Loss loss, bool verbose = false);
+    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Optimizer optimizer = OptimizerAdam(0.01f), 
+               Loss loss = Loss::CrossEntropy, Metric metric = Metric::Accuracy, bool verbose = false);
     void get_evaluate_prog();
     void evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples = -1);
     void evaluate(const float *input_data, float *output_labels, int samples);
