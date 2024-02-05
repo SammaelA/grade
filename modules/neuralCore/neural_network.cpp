@@ -390,6 +390,10 @@ namespace nn
     std::vector<float> in_batch(input_size*batch_size);
     std::vector<float> out_batch(output_size*batch_size);
     std::vector<float> validation_labels(output_size*valid_count);
+
+    std::vector<float> best_weights = weights;
+    float best_metric = (metric == Metric::MSE || metric == Metric::MAE) ? 1e9 : -1e9;
+
     float iter = 0;
     TensorProcessor::set_program(train_prog);
     TensorProcessor::set_input("W", weights.data(), weights.size());
@@ -416,7 +420,7 @@ namespace nn
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
       av_loss += loss;
-      if (verbose && it % iters_per_epoch == 0)
+      if (it % iters_per_epoch == 0)
       {
         if (use_validation)
         {
@@ -428,10 +432,19 @@ namespace nn
           TensorProcessor::set_input("W", weights.data(), weights.size());
           TensorProcessor::set_input("V", V.data(), V.size());
           TensorProcessor::set_input("S", S.data(), S.size());
-          printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch,
-                                                    calculate_metric(validation_labels.data(), labels + count*output_size, valid_count, metric));
+
+          float m = calculate_metric(validation_labels.data(), labels + count*output_size, valid_count, metric);
+          if (( (metric == Metric::MSE || metric == Metric::MAE) && m <= best_metric) ||
+              (!(metric == Metric::MSE || metric == Metric::MAE) && m >= best_metric))
+          {
+            best_metric = m;
+            memcpy(best_weights.data(), weights.data(), sizeof(float)*weights.size());
+          }
+
+          if (verbose)
+            printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch, m);
         }
-        else
+        else if (verbose)
           printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch);
         av_loss = 0;
       }
