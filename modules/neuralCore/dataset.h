@@ -17,7 +17,12 @@ namespace nn
     unsigned test_elements = 0;
   };
 
+  //save and load already prepared dataset to/from binary file
+  void save_dataset(std::string path, const Dataset *dataset);
+  void load_dataset(std::string path, Dataset *out_dataset);
   void train_test_split(Dataset *dataset, float test_fraction = 0.1);
+
+  //read datasets from their specific binary formats
   void read_CIFAR10_dataset(std::string path, Dataset *out_dataset);
   void read_MNIST_dataset(std::string path, Dataset *out_dataset);
 }

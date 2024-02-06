@@ -128,4 +128,75 @@ namespace nn
     dataset->test_data = test_data;
     dataset->test_labels = test_labels;
   }
+
+  void save_dataset(std::string path, const Dataset *dataset)
+  {
+    /*    std::vector<float> train_data;
+    std::vector<float> train_labels;
+    std::vector<float> test_data;
+    std::vector<float> test_labels;
+
+    std::vector<unsigned> element_size;
+    unsigned label_size = 1;
+    unsigned train_elements = 0;
+    unsigned test_elements = 0;*/
+    assert(dataset->element_size.size() > 0 && dataset->element_size.size() <= 8);
+    std::size_t metadata[16] = {dataset->train_data.size(), dataset->train_labels.size(), dataset->test_data.size(), dataset->test_labels.size(),
+                                dataset->label_size       , dataset->train_elements     , dataset->test_elements   , 0u,
+                                0u,0u,0u,0u,0u,0u,0u,0u,};
+    for (int i=8;i<16;i++)
+      metadata[i] = 0;
+    for (int i=0;i<dataset->element_size.size();i++)
+      metadata[8+i] = dataset->element_size[i];
+  
+    std::ofstream in(path, std::ios_base::binary);
+    assert(in.is_open());
+
+    in.write(reinterpret_cast<char*>(metadata), sizeof(metadata));
+
+    if (dataset->train_data.size() > 0)
+      in.write(reinterpret_cast<const char*>(dataset->train_data.data()), sizeof(float)*dataset->train_data.size());
+    if (dataset->train_labels.size() > 0)
+      in.write(reinterpret_cast<const char*>(dataset->train_labels.data()), sizeof(float)*dataset->train_labels.size());
+    if (dataset->test_data.size() > 0)
+      in.write(reinterpret_cast<const char*>(dataset->test_data.data()), sizeof(float)*dataset->test_data.size());
+    if (dataset->test_labels.size() > 0)
+      in.write(reinterpret_cast<const char*>(dataset->test_labels.data()), sizeof(float)*dataset->test_labels.size());
+    
+    in.close();
+  }
+
+  void load_dataset(std::string path, Dataset *out_dataset)
+  {
+    std::size_t metadata[16] = {0u,0u,0u,0u,0u,0u,0u,0u, 0u,0u,0u,0u,0u,0u,0u,0u,};
+    std::ifstream in(path, std::ios_base::binary);
+    assert(in.is_open());
+    in.read(reinterpret_cast<char*>(metadata), sizeof(metadata));
+
+    out_dataset->train_data.resize(metadata[0]);
+    out_dataset->train_labels.resize(metadata[1]);
+    out_dataset->test_data.resize(metadata[2]);
+    out_dataset->test_labels.resize(metadata[3]);
+    out_dataset->label_size = metadata[4];
+    out_dataset->train_elements = metadata[5];
+    out_dataset->test_elements = metadata[6];
+
+    unsigned i=8;
+    while (i<16 && metadata[i])
+    {
+      out_dataset->element_size.push_back(metadata[i]);
+      i++;
+    }
+
+    if (out_dataset->train_data.size() > 0)
+      in.read(reinterpret_cast<char*>(out_dataset->train_data.data()), sizeof(float)*out_dataset->train_data.size());
+    if (out_dataset->train_labels.size() > 0)
+      in.read(reinterpret_cast<char*>(out_dataset->train_labels.data()), sizeof(float)*out_dataset->train_labels.size());
+    if (out_dataset->test_data.size() > 0)
+      in.read(reinterpret_cast<char*>(out_dataset->test_data.data()), sizeof(float)*out_dataset->test_data.size());
+    if (out_dataset->test_labels.size() > 0)
+      in.read(reinterpret_cast<char*>(out_dataset->test_labels.data()), sizeof(float)*out_dataset->test_labels.size());
+
+    in.close();
+  }
 }
