@@ -44,6 +44,23 @@ namespace nn
     return total_sz;
   }
 
+  std::string time_pretty_str(float t_ms)
+  {
+    char str[16];
+    float t_s = t_ms/1000;
+    float t_m = t_s/60;
+    float t_h = t_m/60;
+    if (t_ms < 1000)
+      snprintf(str, 16, "%.1f ms", t_ms);
+    else if (t_s < 60)
+      snprintf(str, 16, "%.1f s", t_s);
+    else if (t_m < 60)
+      snprintf(str, 16, "%.1f m", t_m);
+    else
+      snprintf(str, 16, "%.1f h", t_h);
+    return std::string(str);
+  }
+
   void zero_initialization(float *data, int size)
   {
     std::fill_n(data, size, 0.0f);
@@ -413,6 +430,8 @@ namespace nn
     if (verbose)
       printf("started training %u iterations %d epochs\n", iterations, epochs);
     float av_loss = 0;
+    auto t_prev = std::chrono::steady_clock::now();
+
     for (int it=0;it<iterations;it++)
     {
       for (int i=0;i<batch_size;i++)
@@ -430,7 +449,7 @@ namespace nn
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
       av_loss += loss;
-      if (it % iters_per_validation == 0)
+      if (it > 0 && it % iters_per_validation == 0)
       {
         if (use_validation)
         {
@@ -452,10 +471,17 @@ namespace nn
           }
 
           if (verbose)
-            printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation, m);
+            printf("[%d/%d] Loss = %f Metric = %f ", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation, m);
         }
         else if (verbose)
-          printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation);
+          printf("[%d/%d] Loss = %f ", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation);
+        
+        auto t = std::chrono::steady_clock::now();               
+        double ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t - t_prev).count();
+        t_prev = t;
+        if (verbose)
+          printf("%s/epoch, ETA: %s\n", time_pretty_str(ms).c_str(), time_pretty_str(ms*epochs*(1-it/(float)iterations)).c_str());
+
         av_loss = 0;
       }
 
