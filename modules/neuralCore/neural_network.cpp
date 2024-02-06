@@ -393,6 +393,7 @@ namespace nn
     unsigned count = samples - valid_count;
     unsigned iters_per_epoch = std::max(1u, count/batch_size);
     unsigned iterations = epochs * iters_per_epoch;
+    unsigned iters_per_validation = std::max(100u, iters_per_epoch);
 
     std::vector<float> V(total_params, 0);
     std::vector<float> S(total_params, 0);
@@ -429,7 +430,7 @@ namespace nn
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
       av_loss += loss;
-      if (it % iters_per_epoch == 0)
+      if (it % iters_per_validation == 0)
       {
         if (use_validation)
         {
@@ -451,10 +452,10 @@ namespace nn
           }
 
           if (verbose)
-            printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch, m);
+            printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation, m);
         }
         else if (verbose)
-          printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_epoch);
+          printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation);
         av_loss = 0;
       }
 
