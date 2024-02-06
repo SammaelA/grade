@@ -10,6 +10,7 @@
 #include <chrono>
 #include "neural_SDF/neural_sdf.h"
 #include "neuralCore/neural_network.h"
+#include "neuralCore/dataset.h"
 
 namespace upg
 {
@@ -311,11 +312,11 @@ namespace upg
     */
   }
 
-  void voxNet_test()
+  void voxNet_create_dataset(int size)
   {
-    unsigned samples = 32;
+    unsigned samples = 16;
     unsigned vox_size = 32;
-    unsigned models_count = 256;
+    unsigned models_count = size;
     std::vector<float> voxels(vox_size*vox_size*vox_size*models_count, 0.0f);
     std::vector<float> labels(2*models_count, 0.0f);
 
@@ -330,15 +331,17 @@ namespace upg
       UPGParametersRaw p;
       if (urand() < 0.5)
       {
-        s.s = {SdfNode::MOVE, SdfNode::SPHERE};
-        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6)};
+        s.s = {SdfNode::OR, SdfNode::MOVE, SdfNode::SPHERE, SdfNode::MOVE, SdfNode::BOX};
+        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),
+               (float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
         labels[2*mod + 0] = 1;
         labels[2*mod + 1] = 0;
       }
       else
       {
-        s.s = {SdfNode::MOVE, SdfNode::BOX};
-        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
+        s.s = {SdfNode::MOVE, SdfNode::BOX, SdfNode::MOVE, SdfNode::BOX};
+        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6),
+               (float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
         labels[2*mod + 0] = 0;
         labels[2*mod + 1] = 1;
       }
@@ -370,7 +373,25 @@ namespace upg
         //debugnl();
       }
       //debug("####\n");
+      if (mod % 100 == 0)
+        debug("generating %d/%d\n", mod, models_count);
     }
+
+    nn::Dataset dataset;
+    dataset.train_data = voxels;
+    dataset.train_labels = labels;
+    dataset.train_elements = models_count;
+    dataset.label_size = 2;
+    dataset.element_size = {vox_size, vox_size, vox_size};
+
+    nn::save_dataset("saves/voxNet2D_test_dataset.bin", &dataset);
+  }
+
+  void voxNet2D_test()
+  {
+    
+    nn::Dataset dataset;
+    nn::load_dataset("saves/voxNet2D_test_dataset.bin", &dataset);
 
     nn::TensorProcessor::init("GPU");
     nn::NeuralNetwork net;
@@ -387,7 +408,8 @@ namespace upg
     net.add_layer(std::make_shared<nn::ReLULayer>());
     net.add_layer(std::make_shared<nn::DenseLayer>(512, 2), nn::Initializer::He);
     net.add_layer(std::make_shared<nn::SoftMaxLayer>());
-    net.train(voxels.data(), labels.data(), models_count, 64, 500, true, nn::OptimizerAdam(0.001f), nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
+    net.train(dataset.train_data.data(), dataset.train_labels.data(), dataset.train_elements, 64, 500, true, nn::OptimizerAdam(0.001f), 
+              nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
   }
 
   void benchmark_sdf_rendering(int image_size, int spp)
@@ -425,6 +447,9 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
+    voxNet_create_dataset(5000);
+    //voxNet2D_test();
+    //return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);
