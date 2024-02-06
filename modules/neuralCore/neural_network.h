@@ -7,6 +7,7 @@
 #include <memory>
 #include <functional>
 #include <tuple>
+#include <variant>
 
 namespace nn
 {
@@ -267,28 +268,56 @@ namespace nn
     virtual std::string get_name() override { return "MaxPooling"; }
   };
 
+  struct OptimizerGD
+  {
+    explicit OptimizerGD(float _lr = 0.01) { learning_rate = _lr; }
+    float learning_rate;
+  };
+
+  struct OptimizerAdam
+  {
+    explicit OptimizerAdam(float _lr = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8) 
+    { 
+      learning_rate = _lr; 
+      beta_1 = _beta_1;
+      beta_2 = _beta_2;
+      eps = _eps;
+    }
+    float learning_rate;
+    float beta_1;
+    float beta_2;
+    float eps;
+  };
+
+  using Optimizer = std::variant<OptimizerGD, OptimizerAdam>;
+
+  enum class Loss
+  {
+    MSE,
+    CrossEntropy
+  };
+  enum class Initializer
+  {
+    Zero,
+    He,
+    Siren,
+    GlorotNormal
+  };
+  enum class Metric
+  {
+    MSE,
+    MAE,
+    Accuracy,
+    Precision,
+    Recall,
+    AUC_ROC,
+    AUC_PR
+  };
+
   class NeuralNetwork
   {
   public:
-    enum Opt
-    {
-      GD,
-      Adam
-    };
-    enum Loss
-    {
-      MSE,
-      CrossEntropy
-    };
-    enum WeightsInitializer
-    {
-      ZERO,
-      HE,
-      SIREN,
-      GLOROT_NORMAL
-    };
-
-    void add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer = ZERO);
+    void add_layer(std::shared_ptr<Layer> layer, Initializer initializer = Initializer::Zero);
     void set_batch_size_for_evaluate(int size);
     bool check_validity();
     void initialize();
@@ -297,14 +326,15 @@ namespace nn
     void save_weights_to_file(std::string filename);
     void set_arch_to_file(std::string filename);
     void print_info();
-    TensorProgram get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr);
+    TensorProgram get_train_prog(int batch_size, Optimizer optimizer, Loss loss);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-               int batch_size, int iterations, Opt optimizer, Loss loss, float lr = 0.1f, bool verbose = false);
+               int batch_size, int iterations, Optimizer optimizer, Loss loss, bool verbose = false);
+    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Optimizer optimizer = OptimizerAdam(0.01f), 
+               Loss loss = Loss::CrossEntropy, Metric metric = Metric::Accuracy, bool verbose = false);
     void get_evaluate_prog();
     void evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples = -1);
-    //float test(const TensorView &input, const TensorView &target_output, Loss loss);
-    //float calculate_loss(Loss loss, const TensorView &values, const TensorView &target_values, TensorView dLoss_dValues);
-    //float calculate_score(Loss loss, const TensorView &values, const TensorView &target_values);
+    void evaluate(const float *input_data, float *output_labels, int samples);
+    float calculate_metric(const float *output, const float *output_ref, int samples, Metric metric);
     NeuralNetwork(){};
     NeuralNetwork(const NeuralNetwork &other) = delete;
     NeuralNetwork &operator=(const NeuralNetwork &other) = delete;
@@ -313,7 +343,7 @@ namespace nn
     bool initialized = false;
     unsigned batch_size_evaluate = 256;
     std::vector<std::shared_ptr<Layer>> layers;
-    std::vector<WeightsInitializer> initializers;
+    std::vector<Initializer> initializers;
     std::vector<float> weights;
     unsigned total_params = 0;
     TensorProgram evaluate_prog;

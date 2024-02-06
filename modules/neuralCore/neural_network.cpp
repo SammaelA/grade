@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstring>
 #include <random>
+#include <algorithm>
 
 constexpr bool DEBUG = false;
 namespace nn
@@ -71,12 +72,12 @@ namespace nn
     double stddev = sqrt(2.0f/(fan_in+fan_out));
     std::random_device rd{};
     std::mt19937 gen{rd()};
-    std::normal_distribution distr{0.0, stddev};
+    std::normal_distribution<double> distr{0.0, stddev};
     for (int i = 0; i < size; i++)
       data[i] = distr(gen);
   }
 
-  void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, WeightsInitializer initializer)
+  void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, Initializer initializer)
   {
     layers.push_back(layer);
     initializers.push_back(initializer);
@@ -134,16 +135,16 @@ namespace nn
 
       switch (initializers[i])
       {
-        case ZERO:
+        case Initializer::Zero:
           zero_initialization(weights.data()+offset, size);
           break;
-        case HE:
+        case Initializer::He:
           he_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
-        case SIREN:
+        case Initializer::Siren:
           SIREN_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
-        case GLOROT_NORMAL:
+        case Initializer::GlorotNormal:
           Glorot_normal_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
         default:
@@ -252,7 +253,7 @@ namespace nn
     evaluate_prog = compiler.finish_program();
   }
 
-  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Opt optimizer, Loss loss, float lr)
+  TensorProgram NeuralNetwork::get_train_prog(int batch_size, Optimizer optimizer, Loss loss)
   {
     TensorCompiler compiler;
     compiler.start_program();
@@ -320,15 +321,23 @@ namespace nn
     TensorToken V = TensorToken(total_params); compiler.inout(V, "V");
     TensorToken S = TensorToken(total_params); compiler.inout(S, "S");
     TensorToken iter = TensorToken(1); compiler.input(iter, "iter");
-    float beta_1 = 0.9f;
-    float beta_2 = 0.999f;
-    float eps = 1e-7f;
 
-    V = beta_1*V + (1.0f - beta_1)*grad;
-    TensorToken Vh = V / (1.0f - TensorToken::pow(beta_1, iter + 1.0f));
-    S = beta_2*S + (1.0f - beta_2)*grad*grad;
-    TensorToken Sh = S / (1.0f - TensorToken::pow(beta_2, iter + 1.0f));
-    w -= lr*Vh/(TensorToken::sqrt(Sh) + eps);
+    if (std::holds_alternative<OptimizerGD>(optimizer))
+    {
+      OptimizerGD opt = std::get<OptimizerGD>(optimizer);
+
+      w -= opt.learning_rate*grad;
+    }
+    else if (std::holds_alternative<OptimizerAdam>(optimizer))
+    {
+      OptimizerAdam opt = std::get<OptimizerAdam>(optimizer);
+
+      V = opt.beta_1*V + (1.0f - opt.beta_1)*grad;
+      TensorToken Vh = V / (1.0f - TensorToken::pow(opt.beta_1, iter + 1.0f));
+      S = opt.beta_2*S + (1.0f - opt.beta_2)*grad*grad;
+      TensorToken Sh = S / (1.0f - TensorToken::pow(opt.beta_2, iter + 1.0f));
+      w -= opt.learning_rate*Vh/(TensorToken::sqrt(Sh) + opt.eps);
+    }
     
     compiler.output(l, "loss");
     if (DEBUG)
@@ -339,10 +348,15 @@ namespace nn
   void NeuralNetwork::evaluate(std::vector<float> &input_data, std::vector<float> &output_data, int samples)
   {
     unsigned input_size = total_size(layers[0]->input_shape);
-    unsigned output_size = total_size(layers.back()->output_shape);
-
     if (samples < 0)
       samples = input_data.size()/input_size;
+    evaluate(input_data.data(), output_data.data(), samples);
+  }
+
+  void NeuralNetwork::evaluate(const float *input_data, float *output_labels, int samples)
+  {
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned output_size = total_size(layers.back()->output_shape);
 
     unsigned batches = (samples + batch_size_evaluate - 1)/batch_size_evaluate;
     
@@ -351,44 +365,61 @@ namespace nn
     
     for (int i=0;i<batches;i++)
     {
-      TensorProcessor::set_input("In", input_data.data() + i*batch_size_evaluate*input_size, samples*input_size - i*batch_size_evaluate*input_size);
+      TensorProcessor::set_input("In", input_data + i*batch_size_evaluate*input_size, samples*input_size - i*batch_size_evaluate*input_size);
       TensorProcessor::execute();
-      TensorProcessor::get_output("Out", output_data.data() + i*batch_size_evaluate*output_size, samples*output_size - i*batch_size_evaluate*output_size);
+      TensorProcessor::get_output("Out", output_labels + i*batch_size_evaluate*output_size, samples*output_size - i*batch_size_evaluate*output_size);
     }
   }
 
   void NeuralNetwork::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
-                             int batch_size, int iterations, Opt optimizer, Loss loss, float lr, bool verbose)
+                             int batch_size, int iterations, Optimizer optimizer, Loss loss, bool verbose)
+  {
+    unsigned input_size = total_size(layers[0]->input_shape);
+    unsigned count = inputs.size()/input_size;
+    train(inputs.data(), outputs.data(), count, batch_size, ceil(batch_size*iterations/(float)count), false, optimizer, loss, Metric::Accuracy, verbose);
+  }
+
+  void NeuralNetwork::train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation, Optimizer optimizer, 
+                            Loss loss, Metric metric, bool verbose)
   {
     initialize();
 
-    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss, lr);
+    TensorProgram train_prog = get_train_prog(batch_size, optimizer, loss);
 
     unsigned input_size = total_size(layers[0]->input_shape);
     unsigned output_size = total_size(layers.back()->output_shape);
-    unsigned count = inputs.size()/input_size;
-    assert(inputs.size() % input_size == 0);
-    assert(outputs.size() % output_size == 0);
-    assert(count == outputs.size() / output_size);
+    float validation_frac = use_validation ? 0.1f : 0.0f;
+    unsigned valid_count = samples*validation_frac;
+    unsigned count = samples - valid_count;
+    unsigned iters_per_epoch = std::max(1u, count/batch_size);
+    unsigned iterations = epochs * iters_per_epoch;
+    unsigned iters_per_validation = std::max(100u, iters_per_epoch);
 
     std::vector<float> V(total_params, 0);
     std::vector<float> S(total_params, 0);
     std::vector<float> in_batch(input_size*batch_size);
     std::vector<float> out_batch(output_size*batch_size);
+    std::vector<float> validation_labels(output_size*valid_count);
+
+    std::vector<float> best_weights = weights;
+    float best_metric = (metric == Metric::MSE || metric == Metric::MAE) ? 1e9 : -1e9;
+
     float iter = 0;
     TensorProcessor::set_program(train_prog);
     TensorProcessor::set_input("W", weights.data(), weights.size());
     TensorProcessor::set_input("V", V.data(), V.size());
     TensorProcessor::set_input("S", S.data(), S.size());
 
+    if (verbose)
+      printf("started training %u iterations %d epochs\n", iterations, epochs);
     float av_loss = 0;
     for (int it=0;it<iterations;it++)
     {
       for (int i=0;i<batch_size;i++)
       {
         unsigned b_id = rand()%count;
-        memcpy(in_batch.data() + i*input_size, inputs.data() + b_id*input_size, sizeof(float)*input_size);
-        memcpy(out_batch.data() + i*output_size, outputs.data() + b_id*output_size, sizeof(float)*output_size);
+        memcpy(in_batch.data() + i*input_size, data + b_id*input_size, sizeof(float)*input_size);
+        memcpy(out_batch.data() + i*output_size, labels + b_id*output_size, sizeof(float)*output_size);
       }
 
       iter = it;
@@ -399,9 +430,32 @@ namespace nn
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);
       av_loss += loss;
-      if (verbose && it % 100 == 0)
+      if (it % iters_per_validation == 0)
       {
-        printf("[%d/%d] Loss = %f %f\n", it, iterations, loss, av_loss/100);
+        if (use_validation)
+        {
+          TensorProcessor::get_output("W", weights.data(), weights.size());
+          TensorProcessor::get_output("V", V.data(), V.size());
+          TensorProcessor::get_output("S", S.data(), S.size());
+          evaluate(data + count*input_size, validation_labels.data(), valid_count);
+          TensorProcessor::set_program(train_prog);
+          TensorProcessor::set_input("W", weights.data(), weights.size());
+          TensorProcessor::set_input("V", V.data(), V.size());
+          TensorProcessor::set_input("S", S.data(), S.size());
+
+          float m = calculate_metric(validation_labels.data(), labels + count*output_size, valid_count, metric);
+          if (( (metric == Metric::MSE || metric == Metric::MAE) && m <= best_metric) ||
+              (!(metric == Metric::MSE || metric == Metric::MAE) && m >= best_metric))
+          {
+            best_metric = m;
+            memcpy(best_weights.data(), weights.data(), sizeof(float)*weights.size());
+          }
+
+          if (verbose)
+            printf("[%d/%d] Loss = %f Metric = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation, m);
+        }
+        else if (verbose)
+          printf("[%d/%d] Loss = %f\n", it/iters_per_epoch, iterations/iters_per_epoch, av_loss/iters_per_validation);
         av_loss = 0;
       }
 
@@ -424,4 +478,126 @@ namespace nn
     TensorProcessor::get_output("W", weights.data(), weights.size());
   }
 
+  void get_confusion_matrix(const float *output, const float *output_ref, int samples, float threshold, float out_confusion_matrix[4])
+  {
+    for (int i=0;i<4;i++)
+      out_confusion_matrix[i]=0;
+    for (int i=0;i<samples;i++)
+    {
+      out_confusion_matrix[0] += output_ref[2*i+0] >= threshold && output[2*i+0] >= threshold; //true  positive
+      out_confusion_matrix[1] += output_ref[2*i+0] < threshold  && output[2*i+0] >= threshold; //false positive
+      out_confusion_matrix[2] += output_ref[2*i+0] >= threshold && output[2*i+0] < threshold;  //false negative
+      out_confusion_matrix[3] += output_ref[2*i+0] < threshold  && output[2*i+0] < threshold;  //true  negative
+    }
+    for (int i=0;i<4;i++)
+      out_confusion_matrix[i] /= samples;
+  }
+
+  float NeuralNetwork::calculate_metric(const float *output, const float *output_ref, int samples, Metric metric)
+  {
+    unsigned output_size = total_size(layers.back()->output_shape);
+    if (metric == Metric::MSE || metric == Metric::MAE)
+    {
+      //regression metrics
+      double res = 0;
+      if (metric == Metric::MSE)
+      {
+        #pragma omp parallel for reduction(+:res)
+        for (int i=0;i<output_size*samples;i++)
+          res += (output[i] - output_ref[i])*(output[i] - output_ref[i]);
+      }
+      else if (metric == Metric::MAE)
+      {
+        #pragma omp parallel for reduction(+:res)
+        for (int i=0;i<output_size*samples;i++)
+          res += std::abs(output[i] - output_ref[i]);        
+      }
+      return res/(output_size*samples);
+    }
+    else if (metric == Metric::Accuracy)
+    {
+      float thr = 0;
+      int right_answers = 0;
+
+      #pragma omp parallel for reduction(+:right_answers)
+      for (int i=0;i<samples;i++)
+      {
+        int ref_class = 0;
+        for (int j=0;j<output_size;j++)
+          if (output_ref[i*output_size + j] > output_ref[i*output_size + ref_class])
+            ref_class = j;
+        
+        int pred_class = 0;
+        for (int j=0;j<output_size;j++)
+          if (output[i*output_size + j] > output[i*output_size + pred_class])
+            pred_class = j;
+        
+        if (ref_class == pred_class)
+          right_answers += 1;
+      }
+      return right_answers/(float)samples;
+    }
+    else
+    {
+      //metrics for binary classification
+      assert(output_size == 2);
+      float confusion_matrix[4];
+      get_confusion_matrix(output, output_ref, samples, 0.5, confusion_matrix);
+      //printf("conf %f %f %f %f\n", confusion_matrix[0], confusion_matrix[1], confusion_matrix[2], confusion_matrix[3]);
+      if (metric == Metric::Precision)
+        return confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[1]);
+      else if (metric == Metric::Recall)
+        return confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2]);
+      else if (metric == Metric::AUC_ROC)
+      {
+        constexpr unsigned steps = 1000;
+        std::vector<std::pair<float, float>> tpr_fpr(steps+2);
+        tpr_fpr[0] = {0,0};
+        for (int i=0;i<steps;i++)
+        {
+          get_confusion_matrix(output, output_ref, samples, i/(float)steps, confusion_matrix);
+          tpr_fpr[i+1] = std::pair<float, float>(confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2] + 1e-9), 
+                                                 confusion_matrix[1]/(confusion_matrix[1]+confusion_matrix[3] + 1e-9));
+        }
+        tpr_fpr[steps+1] = {1,1};
+
+        std::sort(tpr_fpr.begin(), tpr_fpr.end(), [](std::pair<float, float> a, std::pair<float, float> b)-> bool { 
+          return a.second==b.second ? a.first<b.first : a.second<b.second;});
+
+        float auc_roc = 0;
+        for (int i=0;i<=steps;i++)
+        {
+          auc_roc += 0.5*(tpr_fpr[i+1].first + tpr_fpr[i].first)*(tpr_fpr[i+1].second-tpr_fpr[i].second);
+          //printf("%f %f %f\n", tpr_fpr[i].first, tpr_fpr[i].second, auc_roc);
+        }
+        
+        return auc_roc;
+      }
+      else if (metric == Metric::AUC_PR)
+      {
+        constexpr unsigned steps = 1000;
+        std::vector<std::pair<float, float>> rec_pr(steps+2);
+        rec_pr[0] = {0,1};
+        for (int i=0;i<steps;i++)
+        {
+          get_confusion_matrix(output, output_ref, samples, i/(float)steps, confusion_matrix);
+          rec_pr[i+1] = std::pair<float, float>(confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[2] + 1e-9), 
+                                                 confusion_matrix[0]/(confusion_matrix[0]+confusion_matrix[1] + 1e-9));
+        }
+        rec_pr[steps+1] = {1,0};
+
+        std::sort(rec_pr.begin(), rec_pr.end(), [](std::pair<float, float> a, std::pair<float, float> b)-> bool { return a.second<b.second;});
+
+        float auc_pr = 0;
+        for (int i=0;i<=steps;i++)
+        {
+          auc_pr += 0.5*(rec_pr[i+1].first + rec_pr[i].first)*(rec_pr[i+1].second-rec_pr[i].second);
+          //printf("%f %f %f\n", rec_pr[i].first, rec_pr[i].second, auc_pr);
+        }
+        
+        return auc_pr;
+      }
+    }
+    return 0;
+  }
 }

@@ -9,6 +9,7 @@
 #include <functional>
 #include <chrono>
 #include "neural_SDF/neural_sdf.h"
+#include "neuralCore/neural_network.h"
 
 namespace upg
 {
@@ -219,10 +220,10 @@ namespace upg
     //scenes["8 Bubbles"] = scene_bubbles(4, 2);
     //scenes["32 Bubbles"] = scene_bubbles(8, 4);
     //scenes["8 Rounded Boxes"] = scene_8_rboxes();
-    scenes["1 Box"] = scene_1_box();
-    scenes["2 Boxes"] = scene_2_boxes();
-    scenes["4 Boxes"] = scene_4_boxes();
-    scenes["8 Boxes"] = scene_8_boxes();
+    //scenes["1 Box"] = scene_1_box();
+    //scenes["2 Boxes"] = scene_2_boxes();
+    //scenes["4 Boxes"] = scene_4_boxes();
+    //scenes["8 Boxes"] = scene_8_boxes();
     scenes["Chair"] = scene_chair();
 
     int max_iters = 200'000;
@@ -308,6 +309,85 @@ namespace upg
     Texture t = render_neural_sdf(network, bbox, camera, 256, 256, 9, true);
     engine::textureManager->save_png(t, "NN demo");
     */
+  }
+
+  void voxNet_test()
+  {
+    unsigned samples = 32;
+    unsigned vox_size = 32;
+    unsigned models_count = 256;
+    std::vector<float> voxels(vox_size*vox_size*vox_size*models_count, 0.0f);
+    std::vector<float> labels(2*models_count, 0.0f);
+
+    CameraSettings camera;
+    camera.origin = glm::vec3(0,0,3);
+    camera.target = glm::vec3(0,0,0);
+    camera.up = glm::vec3(0,1,0);
+
+    for (int mod=0;mod<models_count;mod++)
+    {
+      UPGStructure s;
+      UPGParametersRaw p;
+      if (urand() < 0.5)
+      {
+        s.s = {SdfNode::MOVE, SdfNode::SPHERE};
+        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6)};
+        labels[2*mod + 0] = 1;
+        labels[2*mod + 1] = 0;
+      }
+      else
+      {
+        s.s = {SdfNode::MOVE, SdfNode::BOX};
+        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
+        labels[2*mod + 0] = 0;
+        labels[2*mod + 1] = 1;
+      }
+      SdfGenInstance gen(s);
+      ProceduralSdf sdf = gen.generate(p.p);
+
+      //Texture t = render_sdf(sdf, camera, 256, 256, 4, true);
+      //engine::textureManager->save_png(t, "dataset_image_"+std::to_string(mod));
+
+      for (int i=0;i<vox_size;i++)
+      {
+        for (int j=0;j<vox_size;j++)
+        {
+          for (int k=0;k<vox_size;k++)
+          {
+            voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] = 0;
+            for (int s=0;s<samples;s++)
+            {
+              glm::vec3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
+              p = 2.0f*p - 1.0f;
+              voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] += sdf.get_distance(p) < 0;
+            }
+            voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] /= samples;
+            //debug("%.2f ", voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k]);
+          }
+          //debugnl();
+        }
+        //debugnl();
+        //debugnl();
+      }
+      //debug("####\n");
+    }
+
+    nn::TensorProcessor::init("GPU");
+    nn::NeuralNetwork net;
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(32,32,32, 64, 5), nn::Initializer::GlorotNormal);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(28, 28, 64));
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(14,14,64, 64), nn::Initializer::GlorotNormal);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(12, 12, 64));
+    net.add_layer(std::make_shared<nn::FlattenLayer>(6,6,64));
+    net.add_layer(std::make_shared<nn::DenseLayer>(6*6*64, 512), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    net.add_layer(std::make_shared<nn::DenseLayer>(512, 512), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    net.add_layer(std::make_shared<nn::DenseLayer>(512, 2), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::SoftMaxLayer>());
+    net.train(voxels.data(), labels.data(), models_count, 64, 500, true, nn::OptimizerAdam(0.001f), nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
   }
 
   void benchmark_sdf_rendering(int image_size, int spp)

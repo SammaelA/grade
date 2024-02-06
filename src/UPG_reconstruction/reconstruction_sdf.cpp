@@ -992,7 +992,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
       PointCloudRenderer renderer;
       Texture tp = renderer.render(reference.points, camera.get_viewProj(), 1024, 1024, {1,0,0}, 0.2);
-      engine::textureManager->save_png(tp, "result_points");
+      //engine::textureManager->save_png(tp, "result_points");
     }
 
     return opt_res;

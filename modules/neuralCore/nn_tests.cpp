@@ -91,7 +91,7 @@ void test_1_tensor_processor()
 
     printf("  1.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.25f) < 1e-6 && abs(A[1] - 0.25f) < 1e-6 && abs(A[2] - 0.5f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
@@ -127,7 +127,7 @@ void test_1_tensor_processor()
 
     printf("  2.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.25f) < 1e-6 && abs(A[1] - 0.25f) < 1e-6 && abs(A[2] - 0.5f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
@@ -199,7 +199,7 @@ void test_1_tensor_processor()
       for (int i=0;i<9;i++)
         diff += abs(reference[k].second[i] - res[9*k + i]);
       if (diff < 1e-6)
-        printf("PASSED\n");
+        printf("passed\n");
       else
         printf("FAILED\n");
     }
@@ -217,7 +217,7 @@ void test_1_tensor_processor()
     nn2.evaluate(X, r);
     printf("  4.1. %-64s", "Correct result ");
     if (abs(r[0] - 0.01f) < 1e-6 && abs(r[1] - 2.01f) < 1e-6 && abs(r[2] - 4.01f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", r[0], r[1], r[2], 0.01f, 2.01f, 4.01f);
   }
@@ -264,7 +264,7 @@ void test_1_tensor_processor()
     
     printf("  5.1. %-64s", "Correct result ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
   }
@@ -272,7 +272,7 @@ void test_1_tensor_processor()
   void test_6_linear_regression_train()
   {
     printf("TEST 6. LINEAR REGRESSION\n");
-    int sz = 1000;
+    int sz = 1024;
     int dim = 32;
     std::vector<float> X(dim*sz,0);
     std::vector<float> res(sz,0);
@@ -288,9 +288,9 @@ void test_1_tensor_processor()
     }
 
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 1), NeuralNetwork::HE);
-    nn2.train(X, res, 512, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 1), Initializer::He);
+    nn2.train(X.data(), res.data(), sz, 512, 512, true, OptimizerAdam(0.01f), Loss::MSE, Metric::MAE);
 
     std::vector<float> y(sz,0);
     nn2.evaluate(X, y);
@@ -300,9 +300,9 @@ void test_1_tensor_processor()
     diff /= sz;
     printf("  6.1. %-64s", "Perfect optimization ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
-      printf("FAILED\n");
+      printf("FAILED %f > %f\n", diff, 1e-6);
   }
 
   void test_7_SIREN_image()
@@ -330,14 +330,14 @@ void test_1_tensor_processor()
 
     NeuralNetwork nn2;
     nn2.set_batch_size_for_evaluate(2048);
-    nn2.add_layer(std::make_shared<DenseLayer>( 2, 64), NeuralNetwork::SIREN);
+    nn2.add_layer(std::make_shared<DenseLayer>( 2, 64), Initializer::Siren);
     nn2.add_layer(std::make_shared<SinLayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), NeuralNetwork::SIREN);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), Initializer::Siren);
     nn2.add_layer(std::make_shared<SinLayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), NeuralNetwork::SIREN);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), Initializer::Siren);
     nn2.add_layer(std::make_shared<SinLayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64,  1), NeuralNetwork::SIREN);
-    nn2.train(pixel_data, image_data_grayscale, 1000, 2500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.0001f);
+    nn2.add_layer(std::make_shared<DenseLayer>(64,  1), Initializer::Siren);
+    nn2.train(pixel_data, image_data_grayscale, 1000, 2500, OptimizerAdam(0.0001f), Loss::MSE);
 
     std::vector<float> image_data_res(pixel_count, 0);
     nn2.evaluate(pixel_data, image_data_res);
@@ -361,7 +361,7 @@ void test_1_tensor_processor()
     
     printf("  7.1. %-64s", "Decent image optimization ");
     if (diff < 0.25f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.25f);
   }
@@ -403,7 +403,7 @@ void test_1_tensor_processor()
     
     printf("  8.1. %-64s", "Good simple SDF optimization ");
     if (diff < 0.01f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.01f);
   }
@@ -438,7 +438,7 @@ void test_1_tensor_processor()
 
     printf("  9.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.155362f) < 1e-6 && abs(A[1] - 0.422319f) < 1e-6 && abs(A[5] - 0.946499f) < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
     
@@ -464,10 +464,10 @@ void test_1_tensor_processor()
     }
 
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 512, 500, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
+    nn2.train(X, res, 512, 500, OptimizerAdam(0.01f), Loss::CrossEntropy);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X, y);
@@ -480,7 +480,7 @@ void test_1_tensor_processor()
     float error_rate = diff/sz;
     printf(" 10.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -519,13 +519,13 @@ void test_1_tensor_processor()
     }
 
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 256, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.01f);
+    nn2.train(X, res, 256, 5000, OptimizerAdam(0.01f), Loss::CrossEntropy);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X_test, y);
@@ -536,7 +536,7 @@ void test_1_tensor_processor()
     float error_rate = diff/sz;
     printf(" 10.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -608,7 +608,7 @@ void test_1_tensor_processor()
       for (int i=0;i<6;i++)
         diff += abs(reference[k].second[i] - res[6*k + i]);
       if (diff < 1e-6)
-        printf("PASSED\n");
+        printf("passed\n");
       else
         printf("FAILED\n");
     }
@@ -659,7 +659,7 @@ void test_1_tensor_processor()
     
     printf(" 13.1. %-64s","X padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -670,7 +670,7 @@ void test_1_tensor_processor()
     
     printf(" 13.2. %-64s","Y padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -681,7 +681,7 @@ void test_1_tensor_processor()
     
     printf(" 13.3. %-64s","X and Y padding");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -812,7 +812,7 @@ void test_1_tensor_processor()
     
     printf(" 14.1. %-64s","kernel X");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -823,7 +823,7 @@ void test_1_tensor_processor()
     
     printf(" 14.2. %-64s","kernel Y");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -834,7 +834,7 @@ void test_1_tensor_processor()
     
     printf(" 14.3. %-64s","kernel with stride > 1");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -845,7 +845,7 @@ void test_1_tensor_processor()
     
     printf(" 14.4. %-64s","multi-layered kernel");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -923,7 +923,7 @@ void test_1_tensor_processor()
     write_image_rgb("1a_gray.png", image_data, width, height);
     
     printf(" 15.1. blur took %4.1f ms                                               ", ms);
-    printf("PASSED\n");
+    printf("passed\n");
   }
 
   void test_16_conv2D_forward()
@@ -947,7 +947,7 @@ void test_1_tensor_processor()
     
     printf(" 16.1. %-64s", "Correct result ");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
 
@@ -966,12 +966,12 @@ void test_1_tensor_processor()
     std::vector<float> r(18, 0.0f);
     std::vector<float> r_ref = {5, 8, 13, 8, 8, 8, -5, -8, -13, 5, 8, -5, 8, 8, -8, 13, 8, -13,};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, 1, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 4, 3, 1, Conv2DLayer::SAME), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, 1, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,4, 2, 3, 1, Conv2DLayer::SAME), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(3,3,2));
-    nn2.add_layer(std::make_shared<DenseLayer>(18, 18), NeuralNetwork::HE);
-    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.001f);
+    nn2.add_layer(std::make_shared<DenseLayer>(18, 18), Initializer::He);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.001f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -983,7 +983,7 @@ void test_1_tensor_processor()
     
     printf(" 17.1. %-64s", "Correct result ");
     if (diff < 1.0f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
@@ -996,10 +996,10 @@ void test_1_tensor_processor()
     std::vector<float> r(1, 0.0f);
     std::vector<float> r_ref = {45, 15};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(3,3,1, 2), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(1,1,2));
-    nn2.add_layer(std::make_shared<DenseLayer>(2, 2), NeuralNetwork::HE);
-    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.01f);
+    nn2.add_layer(std::make_shared<DenseLayer>(2, 2), Initializer::He);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.01f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -1011,7 +1011,7 @@ void test_1_tensor_processor()
     
     printf(" 18.1. %-64s", "Correct result ");
     if (diff < 1e-4)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED\n");
   }
@@ -1068,7 +1068,7 @@ void test_1_tensor_processor()
     
     printf(" 19.1. %-64s","forward pass");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1079,7 +1079,7 @@ void test_1_tensor_processor()
     
     printf(" 19.2. %-64s","backward pass");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1119,17 +1119,17 @@ void test_1_tensor_processor()
     std::vector<float> y_test  = std::vector<float>(y.begin() + train_sz*2, y.end());
 
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
-    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
-    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X_train, y_train, 64, 1000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.0002f);
+    nn2.train(X_train, y_train, 64, 1000, OptimizerAdam(0.0002f), Loss::CrossEntropy);
 
     std::vector<float> y_res(y_test.size(),0);
     nn2.evaluate(X_test, y_res);
@@ -1140,7 +1140,7 @@ void test_1_tensor_processor()
     float error_rate = diff/(y_test.size());
     printf(" 20.1. %-64s", "Error rate <10% ");
     if (error_rate < 0.1f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1154,26 +1154,26 @@ void test_1_tensor_processor()
 
     NeuralNetwork nn2;
     nn2.add_layer(std::make_shared<FlattenLayer>(28,28,1));
-    nn2.add_layer(std::make_shared<DenseLayer>(28*28*1, 200), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(28*28*1, 200), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(200, 200), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 200), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), Initializer::He);
     //nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
     /*
-    nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 32, 3, Conv2DLayer::SAME), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 32, 3, Conv2DLayer::SAME), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<MaxPoolingLayer>(32, 32, 32));
-    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,32, 64), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,32, 64), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 64));
     nn2.add_layer(std::make_shared<FlattenLayer>(7,7,64));
-    nn2.add_layer(std::make_shared<DenseLayer>(7*7*64, 200), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(7*7*64, 200), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());*/
-    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.0001f);
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 5000, OptimizerAdam(0.0001f), Loss::CrossEntropy);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);
@@ -1197,7 +1197,7 @@ void test_1_tensor_processor()
     float error_rate = 1 - acc/cnt;
     printf(" 21.1. %-64s", "Error rate <5% ");
     if (error_rate < 0.1f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1229,7 +1229,7 @@ void test_1_tensor_processor()
     auto t_now = std::chrono::steady_clock::now();
     float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
     printf(" 22.1. operation took %6.1f ms                                        ", ms);
-    printf("PASSED\n");
+    printf("passed\n");
   }
 
   void test_23_CIFAR10()
@@ -1240,22 +1240,22 @@ void test_1_tensor_processor()
     train_test_split(&dataset, 0.1);
 
     NeuralNetwork nn2;
-    //nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 32, 5), NeuralNetwork::GLOROT_NORMAL);
+    //nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 32, 5), Initializer::GlorotNormal);
     //nn2.add_layer(std::make_shared<ReLULayer>());
     //nn2.add_layer(std::make_shared<MaxPoolingLayer>(28, 28, 32));
-    //nn2.add_layer(std::make_shared<Conv2DLayer>(14,14,32, 32), NeuralNetwork::GLOROT_NORMAL);
+    //nn2.add_layer(std::make_shared<Conv2DLayer>(14,14,32, 32), Initializer::GlorotNormal);
     //nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 8, 5), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(32,32,3, 8, 5), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
     nn2.add_layer(std::make_shared<MaxPoolingLayer>(28, 28, 8));
     nn2.add_layer(std::make_shared<FlattenLayer>(14,14,8));
-    nn2.add_layer(std::make_shared<DenseLayer>(14*14*8, 512), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(14*14*8, 512), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(512, 512), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(512, 512), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<DenseLayer>(512, 10), NeuralNetwork::HE);
+    nn2.add_layer(std::make_shared<DenseLayer>(512, 10), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(dataset.train_data, dataset.train_labels, 128, 25000, NeuralNetwork::Adam, NeuralNetwork::CrossEntropy, 0.001f);
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 25000, OptimizerAdam(0.001f), Loss::CrossEntropy);
 
     std::vector<float> y_res(dataset.test_labels.size(),0);
     nn2.evaluate(dataset.test_data, y_res);
@@ -1279,7 +1279,7 @@ void test_1_tensor_processor()
     float error_rate = 1 - acc/cnt;
     printf(" 23.1. %-64s", "Error rate <60% ");
     if (error_rate < 0.6f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
@@ -1333,7 +1333,7 @@ void test_1_tensor_processor()
     
     printf(" 24.1. %-64s","1D dilation");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }
@@ -1344,7 +1344,7 @@ void test_1_tensor_processor()
     
     printf(" 24.2. %-64s","2D dilation");
     if (diff < 1e-6)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }    
@@ -1361,10 +1361,10 @@ void test_1_tensor_processor()
     std::vector<float> r(8, 0.0f);
     std::vector<float> r_ref = {1,-1,-1,1, -1,1,1,-1};
     NeuralNetwork nn2;
-    nn2.add_layer(std::make_shared<Conv2DLayer>(5,5,1, 2, 3, 2), NeuralNetwork::GLOROT_NORMAL);
+    nn2.add_layer(std::make_shared<Conv2DLayer>(5,5,1, 2, 3, 2), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(2,2,2));
-    nn2.add_layer(std::make_shared<DenseLayer>(8, 8), NeuralNetwork::HE);
-    nn2.train(X, r_ref, 1, 500, NeuralNetwork::Adam, NeuralNetwork::MSE, 0.001f);
+    nn2.add_layer(std::make_shared<DenseLayer>(8, 8), Initializer::He);
+    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.001f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -1376,9 +1376,95 @@ void test_1_tensor_processor()
     
     printf(" 25.1. %-64s", "Correct result ");
     if (diff < 1.0f)
-      printf("PASSED\n");
+      printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
+  }
+
+  void test_26_binary_classification_metrics()
+  {
+    printf("TEST 26. BINARY CLASSIFICATION METRICS\n");
+    unsigned image_size = 16;
+    unsigned image_count = 5000;
+
+    std::vector<float> X(image_count*image_size*image_size, 0.0f);
+    std::vector<float> y(2*image_count, 0.0f);
+
+    for (int i=0;i<image_count;i++)
+    {
+      int type = rand()%2;
+      int line = rand()%image_size;
+      y[2*i + type] = 1;
+
+      if (type == 0) //horizontal line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + line*image_size + j] = 1.0f;
+      }
+      else //vertical line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + j*image_size + line] = 1.0f;
+      }
+    }
+
+    int train_sz = 0.9*image_count;
+    std::vector<float> X_train = std::vector<float>(X.begin(), X.begin() + train_sz*image_size*image_size);
+    std::vector<float> X_test  = std::vector<float>(X.begin() + train_sz*image_size*image_size, X.end());
+    std::vector<float> y_train = std::vector<float>(y.begin(), y.begin() + train_sz*2);
+    std::vector<float> y_test  = std::vector<float>(y.begin() + train_sz*2, y.end());
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
+    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X_train, y_train, 64, 1000, OptimizerAdam(0.0002f), Loss::CrossEntropy);
+
+    std::vector<float> y_res(y_test.size(),0);
+    nn2.evaluate(X_test, y_res);
+
+    float acc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Accuracy);
+    float pr = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Precision);
+    float recall = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Recall);
+    float auc_roc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_ROC);
+    float auc_pr = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_PR);
+
+    printf(" 26.1. %-64s", "High accuracy");
+    if (acc > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, accuracy %f\n", acc);
+
+    printf(" 26.2. %-64s", "High precision");
+    if (pr > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, precision %f\n", pr);
+  
+    printf(" 26.3. %-64s", "High recall");
+    if (recall > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, recall %f\n", recall);
+      
+    printf(" 26.4. %-64s", "High AUC ROC");
+    if (auc_roc > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, AUC ROC %f\n", auc_roc);
+      
+    printf(" 26.5. %-64s", "High AUC PR");
+    if (auc_pr > 0.95)
+      printf("passed\n");
+    else
+      printf("FAILED, AUC PR %f\n", auc_pr);
   }
 
   void perform_tests()
@@ -1412,6 +1498,7 @@ void test_1_tensor_processor()
     //test_23_CIFAR10(); very long test
     test_24_dilation();
     test_25_conv2D_stride();
+    test_26_binary_classification_metrics();
 
 
     printf("NEURAL CORE CPU TESTS\n");

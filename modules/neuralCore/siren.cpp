@@ -23,21 +23,20 @@ namespace nn
     point.resize(input_dim);
     distance.resize(1);
 
-    add_layer(std::make_shared<DenseLayer>(input_dim, layer_size), WeightsInitializer::SIREN);
+    add_layer(std::make_shared<DenseLayer>(input_dim, layer_size), Initializer::Siren);
     for (int i=0;i<hidden_layers-1;i++)
     {
       add_layer(std::make_shared<SinLayer>());
-      add_layer(std::make_shared<DenseLayer>(layer_size, layer_size), WeightsInitializer::SIREN);
+      add_layer(std::make_shared<DenseLayer>(layer_size, layer_size), Initializer::Siren);
     }
     add_layer(std::make_shared<SinLayer>());
-    add_layer(std::make_shared<DenseLayer>(layer_size, 1), WeightsInitializer::SIREN);
+    add_layer(std::make_shared<DenseLayer>(layer_size, 1), Initializer::Siren);
   }
 
   void Siren::train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
                     int batch_size, int iterations, bool verbose)
   {
-    NeuralNetwork::train(inputs, outputs, batch_size, iterations, 
-                          NeuralNetwork::Opt::Adam, NeuralNetwork::Loss::MSE, 0.00002f, verbose);
+    NeuralNetwork::train(inputs, outputs, batch_size, iterations, OptimizerAdam(0.00002f), Loss::MSE, verbose);
   }
 
   float Siren::get(float x, float y)
