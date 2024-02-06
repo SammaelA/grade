@@ -7,7 +7,19 @@ namespace nn
   {
     assert(hidden_layers > 0);
     assert(layer_size > 3);
-    unsigned input_dim = (type==Type::Image) ? 2 : 3;
+    unsigned input_dim = 3;
+    switch (type)
+    {
+      case Type::Image:
+        input_dim = 2;
+        break;
+      case Type::SDF:
+        input_dim = 3;
+        break;
+      case Type::Gen_SDF_32124:
+        input_dim = 3+3+1+3+3;
+        break;
+    }
     point.resize(input_dim);
     distance.resize(1);
 

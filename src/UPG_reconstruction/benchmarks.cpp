@@ -348,7 +348,9 @@ namespace upg
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);
-    else 
+    else if (name == "nsdf")
+      nsdf::neural_SDF_test();
+    else
       benchmark_sdf_complex_optimization();
   }
 }
