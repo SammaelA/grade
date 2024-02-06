@@ -411,6 +411,8 @@ namespace nsdf
   Texture render_neural_sdf(nn::Siren &sdf, AABB bbox, const CameraSettings &camera, 
                             int image_w, int image_h, int spp, bool lambert, glm::vec3 light_dir)
   {
+    sdf.set_batch_size_for_evaluate(4096);
+
     glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
     glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
     AABB inflated_bbox = AABB(center - 1.1f*size, center + 1.1f*size);
@@ -525,6 +527,7 @@ namespace nsdf
       }
       iteration++;
       points_left = new_points_left;
+      //logerr("iteration %d, points left %d/%d", iteration, points_left, index);
     }
 
     if (!lambert)
