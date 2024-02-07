@@ -6,14 +6,24 @@
 #include "gui.h"
 #include "generation/metainfo_manager.h"
 #include "input_handler.h"
+#include <csignal>
 
 MetainfoManager *metainfoManager = nullptr;
 CommandBuffer<InputCommands> *inputCmdBuffer = nullptr;
 CommandBuffer<GenerationCommands> *genCmdBuffer = nullptr;
 CommandBuffer<RenderCommands> *renderCmdBuffer = nullptr;
 
+void defaultSignalHandler(int signum)
+{
+  logerr("Interrupt signal received. Closing the program");
+  exit(signum);  
+}
+
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, defaultSignalHandler);  
+    signal(SIGTSTP, defaultSignalHandler); 
+
     AppContext appContext;
     View view;
     view.lineWidth = 1.0f;
