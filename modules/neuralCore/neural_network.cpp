@@ -338,12 +338,13 @@ namespace nn
     TensorToken V = TensorToken(total_params); compiler.inout(V, "V");
     TensorToken S = TensorToken(total_params); compiler.inout(S, "S");
     TensorToken iter = TensorToken(1); compiler.input(iter, "iter");
+    TensorToken learning_rate = TensorToken(1); compiler.input(learning_rate, "learning_rate");
 
     if (std::holds_alternative<OptimizerGD>(optimizer))
     {
       OptimizerGD opt = std::get<OptimizerGD>(optimizer);
 
-      w -= opt.learning_rate*grad;
+      w -= learning_rate*grad;
     }
     else if (std::holds_alternative<OptimizerAdam>(optimizer))
     {
@@ -353,21 +354,21 @@ namespace nn
       TensorToken Vh = V / (1.0f - TensorToken::pow(opt.beta_1, iter + 1.0f));
       S = opt.beta_2*S + (1.0f - opt.beta_2)*grad*grad;
       TensorToken Sh = S / (1.0f - TensorToken::pow(opt.beta_2, iter + 1.0f));
-      w -= opt.learning_rate*Vh/(TensorToken::sqrt(Sh) + opt.eps);
+      w -= learning_rate*Vh/(TensorToken::sqrt(Sh) + opt.eps);
     }
     else if (std::holds_alternative<OptimizerRMSProp>(optimizer)) 
     {
       OptimizerRMSProp opt = std::get<OptimizerRMSProp>(optimizer);
 
       S = opt.beta*S + (1.0f - opt.beta)*grad*grad;
-      w -= opt.learning_rate*grad/(TensorToken::sqrt(S) + opt.eps);
+      w -= learning_rate*grad/(TensorToken::sqrt(S) + opt.eps);
     }
     else if (std::holds_alternative<OptimizerMomentum>(optimizer)) 
     {
       OptimizerMomentum opt = std::get<OptimizerMomentum>(optimizer);
 
       V = opt.momentum*S + (1.0f - opt.momentum)*grad;
-      w -= opt.learning_rate*V;      
+      w -= learning_rate*V;      
     }
     
     compiler.output(l, "loss");
@@ -426,6 +427,38 @@ namespace nn
     unsigned iterations = epochs * iters_per_epoch;
     unsigned iters_per_validation = std::max(100u, iters_per_epoch);
 
+    float start_learning_rate = 0;
+    float end_learning_rate = 0;
+    if (std::holds_alternative<OptimizerGD>(optimizer))
+    {
+      OptimizerGD opt = std::get<OptimizerGD>(optimizer);
+      start_learning_rate = opt.learning_rate;
+      end_learning_rate = opt.learning_rate;
+    }
+    else if (std::holds_alternative<OptimizerAdam>(optimizer))
+    {
+      OptimizerAdam opt = std::get<OptimizerAdam>(optimizer);
+      start_learning_rate = opt.learning_rate;
+      end_learning_rate = opt.minimum_learning_rate;
+    }
+    else if (std::holds_alternative<OptimizerRMSProp>(optimizer)) 
+    {
+      OptimizerRMSProp opt = std::get<OptimizerRMSProp>(optimizer);
+      start_learning_rate = opt.learning_rate;
+      end_learning_rate = opt.minimum_learning_rate;
+    }
+    else if (std::holds_alternative<OptimizerMomentum>(optimizer)) 
+    {
+      OptimizerMomentum opt = std::get<OptimizerMomentum>(optimizer);
+      start_learning_rate = opt.learning_rate;
+      end_learning_rate = opt.learning_rate;    
+    }
+    else
+    {
+      printf("NeuralNetwork: unknown optimizer!!!\n");
+      assert(false);
+    }
+
     std::vector<float> V(total_params, 0);
     std::vector<float> S(total_params, 0);
     std::vector<float> in_batch(input_size*batch_size);
@@ -435,7 +468,6 @@ namespace nn
     std::vector<float> best_weights = weights;
     float best_metric = (metric == Metric::MSE || metric == Metric::MAE) ? 1e9 : -1e9;
 
-    float iter = 0;
     TensorProcessor::set_program(train_prog);
     TensorProcessor::set_input("W", weights.data(), weights.size());
     TensorProcessor::set_input("V", V.data(), V.size());
@@ -455,10 +487,13 @@ namespace nn
         memcpy(out_batch.data() + i*output_size, labels + b_id*output_size, sizeof(float)*output_size);
       }
 
-      iter = it;
+      float iter = it;
+      float r = it/(float)iterations;
+      float learning_rate = (1-r)*start_learning_rate + r*end_learning_rate;
       TensorProcessor::set_input("In", in_batch.data(), in_batch.size());
       TensorProcessor::set_input("Out", out_batch.data(), out_batch.size());
       TensorProcessor::set_input("iter", &iter, 1);
+      TensorProcessor::set_input("learning_rate", &learning_rate, 1);
       TensorProcessor::execute();
       float loss = -1;
       TensorProcessor::get_output("loss", &loss, 1);

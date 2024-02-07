@@ -276,14 +276,17 @@ namespace nn
 
   struct OptimizerAdam
   {
-    explicit OptimizerAdam(float _lr = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8) 
+    explicit OptimizerAdam(float _lr = 0.01, float _beta_1 = 0.9, float _beta_2 = 0.999, float _eps = 1e-8,
+                           bool lr_decay = false, float _min_lr = 0.0) 
     { 
       learning_rate = _lr; 
       beta_1 = _beta_1;
       beta_2 = _beta_2;
       eps = _eps;
+      minimum_learning_rate = lr_decay ? _min_lr : _lr;
     }
     float learning_rate;
+    float minimum_learning_rate;
     float beta_1;
     float beta_2;
     float eps;
@@ -291,13 +294,16 @@ namespace nn
 
   struct OptimizerRMSProp
   {
-    explicit OptimizerRMSProp(float _learning_rate = 0.01, float _beta = 0.999, float _eps = 1e-8)
+    explicit OptimizerRMSProp(float _learning_rate = 0.01, float _beta = 0.999, float _eps = 1e-8,
+                              bool lr_decay = false, float _min_lr = 0.0)
     {
       learning_rate = _learning_rate;
       beta = _beta;
       eps = _eps;
+      minimum_learning_rate = lr_decay ? _min_lr : _learning_rate;
     }
     float learning_rate;
+    float minimum_learning_rate;
     float beta; //smoothing constant for squared gradients
     float eps;
   };
