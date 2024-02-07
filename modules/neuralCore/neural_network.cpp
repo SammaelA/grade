@@ -355,6 +355,13 @@ namespace nn
       TensorToken Sh = S / (1.0f - TensorToken::pow(opt.beta_2, iter + 1.0f));
       w -= opt.learning_rate*Vh/(TensorToken::sqrt(Sh) + opt.eps);
     }
+    else if (std::holds_alternative<OptimizerRMSProp>(optimizer)) 
+    {
+      OptimizerRMSProp opt = std::get<OptimizerRMSProp>(optimizer);
+
+      S = opt.beta*S + (1.0f - opt.beta)*grad*grad;
+      w -= opt.learning_rate*grad/(TensorToken::sqrt(S) + opt.eps);
+    }
     
     compiler.output(l, "loss");
     if (DEBUG)

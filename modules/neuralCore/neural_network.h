@@ -289,7 +289,20 @@ namespace nn
     float eps;
   };
 
-  using Optimizer = std::variant<OptimizerGD, OptimizerAdam>;
+  struct OptimizerRMSProp
+  {
+    explicit OptimizerRMSProp(float _learning_rate = 0.01, float _beta = 0.999, float _eps = 1e-8)
+    {
+      learning_rate = _learning_rate;
+      beta = _beta;
+      eps = _eps;
+    }
+    float learning_rate;
+    float beta; //smoothing constant for squared gradients
+    float eps;
+  };
+
+  using Optimizer = std::variant<OptimizerGD, OptimizerAdam, OptimizerRMSProp>;
 
   enum class Loss
   {
