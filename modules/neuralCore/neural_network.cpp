@@ -362,6 +362,13 @@ namespace nn
       S = opt.beta*S + (1.0f - opt.beta)*grad*grad;
       w -= opt.learning_rate*grad/(TensorToken::sqrt(S) + opt.eps);
     }
+    else if (std::holds_alternative<OptimizerMomentum>(optimizer)) 
+    {
+      OptimizerMomentum opt = std::get<OptimizerMomentum>(optimizer);
+
+      V = opt.momentum*S + (1.0f - opt.momentum)*grad;
+      w -= opt.learning_rate*V;      
+    }
     
     compiler.output(l, "loss");
     if (DEBUG)
