@@ -9,7 +9,8 @@ namespace nn
     enum class Type
     {
       Image,
-      SDF
+      SDF,
+      Gen_SDF_32124
     };
 
     Siren(Type type, int hidden_layers, int layer_size);

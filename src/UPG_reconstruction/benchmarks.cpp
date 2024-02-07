@@ -453,7 +453,15 @@ namespace upg
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);
-    else 
+    else if (name == "nsdf")
+      nsdf::neural_SDF_test();
+    else if (name == "vox_net")
+    {
+      //voxNet_create_dataset(5000);
+      voxNet2D_test();
+      return;      
+    }
+    else
       benchmark_sdf_complex_optimization();
   }
 }
