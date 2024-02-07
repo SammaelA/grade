@@ -447,9 +447,6 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    voxNet_create_dataset(5000);
-    //voxNet2D_test();
-    //return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 1);

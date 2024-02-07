@@ -412,7 +412,6 @@ namespace nsdf
   void create_point_and_params_cloud_32124(int count_params, int count_points, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
     upg::SdfGenInstance gen({std::vector<uint16_t>{3, 2, 1, 2, 4}});
-    gen.set_scene_bbox(bbox);
     unsigned int sz = 3 + gen.desc.get_total_params_count();
     points->resize(sz*count_params*count_points);
     distances->resize(count_params*count_points);
@@ -848,6 +847,7 @@ namespace nsdf
   void task_3_create_references()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
+    upg::SdfGenInstance::set_scene_bbox(bbox);
 
     CameraSettings cam;
     cam.origin = glm::vec3(0,0,3);
