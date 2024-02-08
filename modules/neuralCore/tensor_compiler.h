@@ -102,6 +102,7 @@ namespace nn
     void fill(float val);
     TensorToken add_padding(unsigned left_pad, unsigned right_pad, int Dim = 0) const;
     TensorToken flip(unsigned axis) const;
+    void random(unsigned seed = 0u); // fills tensor with values, uniformly distributed in [0,1]
 
     static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
                       unsigned steps, unsigned step_size, unsigned group_size);

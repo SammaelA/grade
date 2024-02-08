@@ -20,6 +20,7 @@ namespace nn
     {PAD      , "PAD"      , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {FLIP     , "FLIP"     , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
     {DILATE   , "DILATE"   , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
+    {URAND    , "URAND"    , MEM_MANAGEMENT, SELF_APPLICABLE_NO },
 
     {ADD      , "ADD"      , ARITHMETICS   , SELF_APPLICABLE_YES},
     {SUB      , "SUB"      , ARITHMETICS   , SELF_APPLICABLE_YES},
@@ -57,8 +58,6 @@ namespace nn
     {CONV_2D  , "CONV_2D"  , ALGEBRA       , SELF_APPLICABLE_NO },
     {MPOOL    ,  "MPOOL"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {MPOOL_D  , "MPOOL_D"  , ALGEBRA       , SELF_APPLICABLE_NO },
-
-    {URAND    , "URAND"    , OTHER         , SELF_APPLICABLE_NO },
   };
 
   std::unique_ptr<TensorProcessor> proc;

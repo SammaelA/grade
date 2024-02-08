@@ -23,6 +23,7 @@ namespace nn
       PAD,      // padding along the given axis
       FLIP,     // reverse order of values along the given axis
       DILATE,   // put some zero values between values from input tensor
+      URAND,    // fills tensor with values, uniformly distributed in [0,1]
 
       ADD,      // C = A+B
       SUB,      // C = A-B
@@ -60,8 +61,6 @@ namespace nn
       CONV_2D,  //convolution with arbitrary number of channels and filters. Borders are ignored
       MPOOL,    // C = max pooling(A) with arbitrary window size
       MPOOL_D,  // derivative of max pooling
-
-      URAND,    // C = random_float_uniform(A, B)
       
       CMD_COUNT
     };

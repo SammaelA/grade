@@ -1,5 +1,4 @@
 #!/bin/sh
-glslangValidator -V kernel1D_logical_and.comp -o kernel1D_logical_and.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_cos.comp -o kernel1D_cos.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_sin.comp -o kernel1D_sin.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_osum.comp -o kernel1D_osum.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
@@ -16,18 +15,20 @@ glslangValidator -V kernel1D_dilate.comp -o kernel1D_dilate.comp.spv -DGLSL -I..
 glslangValidator -V kernel1D_where.comp -o kernel1D_where.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_add.comp -o kernel1D_add.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel3D_outer_product.comp -o kernel3D_outer_product.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_logical_and.comp -o kernel1D_logical_and.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_sum.comp -o kernel1D_sum.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_not.comp -o kernel1D_not.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_fill.comp -o kernel1D_fill.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_get_output.comp -o kernel1D_get_output.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
-glslangValidator -V kernel1D_mul.comp -o kernel1D_mul.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_urand.comp -o kernel1D_urand.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_sub.comp -o kernel1D_sub.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_mul.comp -o kernel1D_mul.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_less.comp -o kernel1D_less.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
+glslangValidator -V kernel1D_greater_equal.comp -o kernel1D_greater_equal.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_set_input.comp -o kernel1D_set_input.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_equal.comp -o kernel1D_equal.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_max.comp -o kernel1D_max.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_div.comp -o kernel1D_div.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
-glslangValidator -V kernel1D_greater_equal.comp -o kernel1D_greater_equal.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
-glslangValidator -V kernel1D_less.comp -o kernel1D_less.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
-glslangValidator -V kernel1D_not.comp -o kernel1D_not.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
-glslangValidator -V kernel1D_sum.comp -o kernel1D_sum.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_minimum.comp -o kernel1D_minimum.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_maximum.comp -o kernel1D_maximum.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 
 glslangValidator -V kernel1D_flip.comp -o kernel1D_flip.comp.spv -DGLSL -I.. -I/home/sammael/kernel_slicer/TINYSTL -I/home/sammael/kernel_slicer/apps/LiteMathAux -I/home/sammael/kernel_slicer/apps/LiteMath 

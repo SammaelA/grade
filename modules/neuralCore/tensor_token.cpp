@@ -427,6 +427,11 @@ namespace nn
     return res;
   }
 
+  void TensorToken::random(unsigned seed)
+  {
+    tp->add_command(TensorProgram::URAND, 0, 0, id, seed);
+  }
+
   TensorToken TensorToken::vector_outer_product(const TensorToken &A, const TensorToken &B)
   {
     assert(A.Dim >= 1);

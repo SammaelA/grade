@@ -163,15 +163,6 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::SMAX_D:
       kernel1D_smax_diff(memory.data(), A.sizes[A.Dim-1], A.total_size/A.sizes[A.Dim-1], A, B, C);
       break;
-    case nn::TensorProgram::URAND:
-    {
-      float from = memory.data()[A.offset];
-      float to = memory.data()[B.offset];
-      //TODO: GPU-compatible random
-      for (unsigned i = 0; i < C.total_size; i++)
-        memory.data()[C.offset + i] = from + ((double)rand()/RAND_MAX)*(to-from);
-    }
-      break;
     case nn::TensorProgram::PAD:
       kernel1D_pad(memory.data(), arg0, arg1, arg2, arg3, A, C);
       break;
@@ -235,6 +226,9 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::DILATE:
       kernel1D_fill(memory.data(), C.total_size, C, 0.0f);
       kernel1D_dilate(memory.data(), A.total_size, A.sizes[0], arg0, A.Dim>1?A.sizes[1]:1, arg1, A.Dim>2?A.sizes[2]:1, arg2, A, C);
+      break;
+    case nn::TensorProgram::URAND:
+      kernel1D_urand(memory.data(), C.total_size, C, arg0 == 0 ? rand() : arg0);
       break;
     default:
       break;
@@ -337,6 +331,15 @@ void TensorProcessorImpl::kernel1D_dilate(float *data, unsigned steps, unsigned 
     unsigned new_z_size = z_size + (z_size-1)*z_dilate;
     unsigned B_off = S*new_x_size*new_y_size*new_z_size + z*(z_dilate+1)*new_x_size*new_y_size + y*(y_dilate+1)*new_x_size + x*(x_dilate+1);
     data[B.offset + B_off] = data[A.offset + i];
+  }
+}
+void TensorProcessorImpl::kernel1D_urand(float *data, unsigned steps, Variable A, unsigned seed)
+{
+  for (unsigned i = 0; i < steps; i++)
+  {
+    unsigned n = seed + i;
+    n = (n << 13) ^ n; 
+    data[A.offset + i] = float((n * (n*n*15731+789221) + 1376312589) & 0x3fffffff) / float(0x3fffffff);
   }
 }
 

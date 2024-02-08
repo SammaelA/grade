@@ -1527,6 +1527,58 @@ void test_1_tensor_processor()
       printf("FAILED, accuracy %f\n", acc);
   }
 
+  void test_28_random()
+  {
+    srand(time(NULL));
+    printf("TEST 28. RANDOM\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(3, 3);
+      A.random(1u); //should be the same each iteration
+      TensorToken B = TensorToken(100000);
+      B.random(); //should change each iteration
+      tc.output(A, "A_res");
+      tc.output(B, "B_res");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A_res(9), A_ref = {0.22637305, 0.70636714, 0.25718519, 0.41423926, 0.71294135, 0.68870342, 0.87693751, 0.81305557, 0.03246965};
+    std::vector<float> B_res(10000);
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::execute();
+    TensorProcessor::get_output("A_res", A_res.data(), A_res.size());
+    TensorProcessor::get_output("B_res", B_res.data(), B_res.size());
+    {
+    float diff = 0.0f;
+    for (int i=0;i<A_res.size();i++)
+      diff += abs(A_res[i] - A_ref[i]);
+    
+    printf(" 28.1. %-64s","Same seed gives same result");
+    if (diff < 1e-6)
+      printf("passed\n");
+    else
+      printf("FAILED\n");
+    }
+    {
+    float mean = 0.0f;
+    for (int i=0;i<B_res.size();i++)
+      mean += B_res[i];
+    mean /= B_res.size();
+    float variance = 0.0;
+    for (int i=0;i<B_res.size();i++)
+      variance += (B_res[i] - mean)*(B_res[i] - mean);
+    variance = variance/B_res.size();
+    printf(" 28.2. %-64s","Correct mean and variance");
+    if (abs(mean-0.5) < 0.01 && abs(variance-1.0/12) < 0.01)
+      printf("passed\n");
+    else
+      printf("FAILED mean %f variance %f\n", mean, variance);
+    }     
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1560,7 +1612,7 @@ void test_1_tensor_processor()
     test_25_conv2D_stride();
     test_26_binary_classification_metrics();
     test_27_batch_normalization();
-
+    test_28_random();
 
     printf("NEURAL CORE CPU TESTS\n");
     TensorProcessor::init("CPU");
@@ -1584,5 +1636,6 @@ void test_1_tensor_processor()
     test_18_conv2D_no_padding();
     test_19_max_pooling();
     test_20_synthetic_images_classifier();
+    test_28_random();
   }
 }
