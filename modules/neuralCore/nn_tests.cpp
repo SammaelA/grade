@@ -1579,6 +1579,52 @@ void test_1_tensor_processor()
     }     
   }
 
+  void test_29_dropout()
+  {
+    printf("TEST 29. DROPOUT\n");
+    Dataset dataset;
+    read_MNIST_dataset("../../resources/MNIST-dataset", &dataset);
+    train_test_split(&dataset, 0.1);
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<FlattenLayer>(28,28,1));
+    nn2.add_layer(std::make_shared<DenseLayer>(28*28*1, 200), Initializer::He);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DropoutLayer>(0.2));
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 200), Initializer::He);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(200, 10), Initializer::He);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+
+    nn2.train(dataset.train_data, dataset.train_labels, 128, 10000, OptimizerAdam(0.001f), Loss::CrossEntropy);
+
+    std::vector<float> y_res(dataset.test_labels.size(),0);
+    nn2.evaluate(dataset.test_data, y_res);
+    float acc = 0.0f;
+    float cnt = 0.0f;
+    for (int i=0;i<dataset.test_labels.size();i+=10)
+    {
+      int max_pos = 0;
+      int ref_max_pos = 0;
+      for (int j=0;j<10;j++)
+      {
+        if (y_res[i+j] > y_res[i+max_pos])
+          max_pos = j;
+        if (dataset.test_labels[i+j] > dataset.test_labels[i+ref_max_pos])
+          ref_max_pos = j;
+      }
+
+      acc += (max_pos == ref_max_pos);
+      cnt++;
+    }
+    float error_rate = 1 - acc/cnt;
+    printf(" 29.1. %-64s", "Error rate <10% ");
+    if (error_rate < 0.1f)
+      printf("passed %f\n",error_rate);
+    else
+      printf("FAILED, error rate %f\n", error_rate);
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1613,6 +1659,7 @@ void test_1_tensor_processor()
     test_26_binary_classification_metrics();
     test_27_batch_normalization();
     test_28_random();
+    test_29_dropout();
 
     printf("NEURAL CORE CPU TESTS\n");
     TensorProcessor::init("CPU");

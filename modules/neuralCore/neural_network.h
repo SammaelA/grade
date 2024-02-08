@@ -359,6 +359,46 @@ namespace nn
     virtual std::string get_name() override { return "BatchNorm"; }
   };
 
+  class DropoutLayer : public Layer
+  {
+    float rate = 0.0;
+    std::vector<TensorToken> cache;
+  public:
+    DropoutLayer(float _rate)
+    {
+      assert(_rate > 0 && _rate < 1);
+      rate = _rate;
+    }
+    virtual void init() override 
+    {
+      cache.clear();
+      cache.resize(1);
+    };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      if (training_mode)
+      {
+        TensorToken rnd(input.sizes[0]);
+        rnd.random();
+        cache[0] = TensorToken::g_2op(TensorProgram::LESS, rnd, rate) * (1.0f/(1.0f-rate)); //dropout mask
+        return TensorToken::g_2op(TensorProgram::MUL, input, cache[0]);
+      }
+      else 
+        return input;
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      if (training_mode)
+      {
+        return TensorToken::g_2op(TensorProgram::MUL, dLoss_dOutput, cache[0]);
+      }
+      else
+        return dLoss_dOutput;
+    }
+    virtual std::string get_name() override { return "Dropout"; }
+  };
+
   struct OptimizerGD
   {
     explicit OptimizerGD(float _lr = 0.01) { learning_rate = _lr; }
