@@ -104,7 +104,9 @@ namespace nn
     TensorToken flip(unsigned axis) const;
 
     static void g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B, const TensorToken &C,
-                      unsigned step, unsigned step_size, unsigned group_size);
+                      unsigned steps, unsigned step_size, unsigned group_size);
+    static TensorToken g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
+                             unsigned steps, unsigned step_size, unsigned group_size);
     static TensorToken g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
                              unsigned start_dim = 0);
     

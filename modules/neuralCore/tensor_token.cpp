@@ -62,7 +62,7 @@ namespace nn
     //reassigning tensor token. It means that the same variable will have another tensor_id
     if (!same_size)
     {
-      assert(!(tp->vars[id].is_input && tp->vars[id].is_output)); //it wil mess up your input/output declarations!
+      assert(!(tp->vars[id].is_input || tp->vars[id].is_output)); //it wil mess up your input/output declarations!
       id = tp->add_var(*this);
       //printf("TensorToken warning: reassigning tensor with different size. It will create new id for the same variable. Mind your step!\n");
     }
@@ -101,6 +101,14 @@ namespace nn
       tp->add_command(cmd, A.id, B.id, C.id, 1, B.total_size(), 1, 1);
     else
       tp->add_command(cmd, A.id, B.id, C.id, steps, step_size, group_size, 0);
+  }
+
+  TensorToken TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
+                                 unsigned steps, unsigned step_size, unsigned group_size)
+  {
+    TensorToken res(A.sizes);
+    g_2op(cmd, A, B, res, steps, step_size, group_size);
+    return res;
   }
 
   TensorToken TensorToken::g_2op(TensorProgram::CommandType cmd, const TensorToken &A, const TensorToken &B,
