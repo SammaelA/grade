@@ -11,6 +11,7 @@
 #include "neural_SDF/neural_sdf.h"
 #include "neuralCore/neural_network.h"
 #include "neuralCore/dataset.h"
+#include "sdf_grid.h"
 
 namespace upg
 {
@@ -485,6 +486,50 @@ namespace upg
               nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
   }
 
+  void sdf_grid_test()
+  {
+    SceneDesc scene = scene_chair();
+    SdfGenInstance gen(scene.first);
+    ProceduralSdf sdf = gen.generate(scene.second.p);
+
+    unsigned vox_size = 64;
+    unsigned samples = 16;
+    std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
+    AABB bbox = sdf.root->get_bbox().expand(1.1f);
+    GridSdfNode grid(0, vox_size, bbox);
+    grid.set_param_span(data);
+    for (int i=0;i<vox_size;i++)
+    {
+      for (int j=0;j<vox_size;j++)
+      {
+        for (int k=0;k<vox_size;k++)
+        {
+          float d = 0.0;
+          for (int s=0;s<samples;s++)
+          {
+            glm::vec3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
+            p = bbox.size()*p + bbox.min_pos;
+            d += sdf.get_distance(p);
+          }
+          grid.set_voxel(glm::uvec3(k,j,i), d/samples);
+        }
+      }
+    }
+
+    int steps = 8;
+    ProceduralSdf g_sdf;
+    g_sdf.root = &grid;
+    for (int i=0;i<steps;i++)
+    {
+      CameraSettings camera;
+      camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(g_sdf, camera, 256, 256, 16, false);
+      engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
+    }
+  }
+
   void benchmark_sdf_rendering(int image_size, int spp)
   {
     std::map<std::string, SceneDesc> scenes;
@@ -528,8 +573,11 @@ namespace upg
     else if (name == "vox_net")
     {
       //voxNet_create_dataset(2500);
-      voxNet2D_test();
-      return;      
+      voxNet2D_test(); 
+    }
+    else if (name == "grid")
+    {
+      sdf_grid_test();
     }
     else
       benchmark_sdf_complex_optimization();

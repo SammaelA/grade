@@ -46,6 +46,15 @@ namespace upg
     std::span<const float> p;
   };
 
+  class PrimitiveSdfNode : public SdfNode
+  {
+  public:
+    PrimitiveSdfNode(unsigned id) : SdfNode(id) {}
+    virtual bool add_child(SdfNode *node) override { return false; }
+    virtual unsigned child_cnt() const override { return 0; }
+    virtual std::vector<const SdfNode *> get_children() const override { return {}; }
+  };
+
   class ProceduralSdf
   {
   public:

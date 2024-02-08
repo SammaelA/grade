@@ -8,15 +8,6 @@ float __enzyme_autodiff(...);
 namespace upg
 {
   AABB SdfGenInstance::scene_bbox;
-  class PrimitiveSdfNode : public SdfNode
-  {
-  public:
-    PrimitiveSdfNode(unsigned id) : SdfNode(id) {}
-    virtual bool add_child(SdfNode *node) override { return false; }
-    virtual unsigned child_cnt() const override { return 0; }
-    virtual std::vector<const SdfNode *> get_children() const override { return {}; }
-  };
-
   static constexpr int MAX_PARAMS = 256;
 
   #define GET_DISTANCE_WITH_DIFF(func)                       \
