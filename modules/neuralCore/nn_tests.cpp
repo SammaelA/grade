@@ -1503,11 +1503,11 @@ void test_1_tensor_processor()
     NeuralNetwork nn2;
     nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<BatchNorm>(), Initializer::BatchNorm);
+    nn2.add_layer(std::make_shared<BatchNormLayer>(), Initializer::BatchNorm);
     nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
     nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<ReLULayer>());
-    nn2.add_layer(std::make_shared<BatchNorm>(), Initializer::BatchNorm);
+    nn2.add_layer(std::make_shared<BatchNormLayer>(), Initializer::BatchNorm);
     nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
     nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), Initializer::He);
     nn2.add_layer(std::make_shared<ReLULayer>());

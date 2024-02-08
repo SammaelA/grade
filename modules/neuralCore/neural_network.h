@@ -17,6 +17,7 @@ namespace nn
     std::vector<unsigned> input_shape, output_shape;
     std::vector<TensorToken> weights;
     std::vector<TensorToken> dLoss_dWeights;
+    bool training_mode = false;
 
     virtual ~Layer() {};
     virtual void init() {};
@@ -268,11 +269,11 @@ namespace nn
     virtual std::string get_name() override { return "MaxPooling"; }
   };
 
-  class BatchNorm : public Layer
+  class BatchNormLayer : public Layer
   {
     std::vector<TensorToken> cache;
   public:
-    BatchNorm() {}
+    BatchNormLayer() {}
     virtual void init() override 
     {
       weights.clear();

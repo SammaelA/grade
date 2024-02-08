@@ -174,7 +174,7 @@ namespace nn
           Glorot_normal_initialization(weights.data()+offset, size, fan_in, fan_out);
           break;
         case Initializer::BatchNorm:
-          assert(dynamic_cast<BatchNorm*>(layers[i].get()));
+          assert(dynamic_cast<BatchNormLayer*>(layers[i].get()));
           BatchNorm_initialization(weights.data()+offset, size);
           break;
         default:
@@ -250,6 +250,9 @@ namespace nn
 
   void NeuralNetwork::get_evaluate_prog()
   {
+    for (auto &l : layers)
+      l->training_mode = true;
+
     TensorCompiler compiler;
     compiler.start_program();
     auto i_shape = layers[0]->input_shape;
@@ -285,6 +288,9 @@ namespace nn
 
   TensorProgram NeuralNetwork::get_train_prog(int batch_size, Optimizer optimizer, Loss loss)
   {
+    for (auto &l : layers)
+      l->training_mode = true;
+
     TensorCompiler compiler;
     compiler.start_program();
     auto i_shape = layers[0]->input_shape;
