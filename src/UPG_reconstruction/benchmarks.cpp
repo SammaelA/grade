@@ -312,9 +312,40 @@ namespace upg
     */
   }
 
+  void add_circle(UPGStructure &s, UPGParametersRaw &p)
+  {
+    s.s.push_back(SdfNode::SPHERE);
+    p.p.push_back((float)urand(0.3, 0.6));
+  }
+
+  void add_box(UPGStructure &s, UPGParametersRaw &p)
+  {
+    s.s.push_back(SdfNode::BOX);
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));    
+  }
+
+  void add_cylinder(UPGStructure &s, UPGParametersRaw &p)
+  {
+    s.s.push_back(SdfNode::CYLINDER);
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));    
+  }
+
+  void add_r_box(UPGStructure &s, UPGParametersRaw &p)
+  {
+    s.s.push_back(SdfNode::ROUNDED_BOX);
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));
+    p.p.push_back((float)urand(0.3, 0.6));  
+    p.p.push_back((float)urand(0.01, 0.3));   
+  }
+
   void voxNet_create_dataset(int size)
   {
-    unsigned samples = 16;
+    unsigned samples = 8;
     unsigned vox_size = 32;
     unsigned models_count = size;
     std::vector<float> voxels(vox_size*vox_size*vox_size*models_count, 0.0f);
@@ -325,26 +356,54 @@ namespace upg
     camera.target = glm::vec3(0,0,0);
     camera.up = glm::vec3(0,1,0);
 
+    #pragma omp parallel for
     for (int mod=0;mod<models_count;mod++)
     {
       UPGStructure s;
       UPGParametersRaw p;
-      if (urand() < 0.5)
+
+      bool have_sphere = false;
+      int cnt = urand(1.1, 9.9);
+      for (int i=0; i<cnt; i++)
       {
-        s.s = {SdfNode::OR, SdfNode::MOVE, SdfNode::SPHERE, SdfNode::MOVE, SdfNode::BOX};
-        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),
-               (float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
+        if (i != cnt-1)
+          s.s.push_back(SdfNode::OR);
+        
+        s.s.push_back(SdfNode::MOVE);
+        p.p.push_back((float)urand(-0.5, 0.5));
+        p.p.push_back((float)urand(-0.5, 0.5));
+        p.p.push_back((float)urand(-0.5, 0.5));
+
+        s.s.push_back(SdfNode::ROTATE);
+        p.p.push_back((float)urand(-PI, PI));
+        p.p.push_back((float)urand(-PI, PI));
+        p.p.push_back((float)urand(-PI, PI));
+
+        float r = urand();
+        if (r < 0.15)
+        {
+          have_sphere = true;
+          add_circle(s, p);
+        }
+        else if (r < 0.3)
+          add_cylinder(s, p);
+        else if (r < 0.45)
+          add_r_box(s, p);
+        else 
+          add_box(s, p);
+      }
+
+      if (have_sphere)
+      {
         labels[2*mod + 0] = 1;
         labels[2*mod + 1] = 0;
       }
       else
       {
-        s.s = {SdfNode::MOVE, SdfNode::BOX, SdfNode::MOVE, SdfNode::BOX};
-        p.p = {(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6),
-               (float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),(float)urand(-0.4, 0.4),  (float)urand(0.3, 0.6),(float)urand(0.3, 0.6),(float)urand(0.3, 0.6)};
         labels[2*mod + 0] = 0;
         labels[2*mod + 1] = 1;
       }
+
       SdfGenInstance gen(s);
       ProceduralSdf sdf = gen.generate(p.p);
 
@@ -362,7 +421,19 @@ namespace upg
             {
               glm::vec3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
               p = 2.0f*p - 1.0f;
-              voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] += sdf.get_distance(p) < 0;
+              float d = sdf.get_distance(p);
+              if (d > 2.0/vox_size)
+              {
+                voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] = 0;
+                break;
+              }
+              else if (d < -2.0/vox_size)
+              {
+                voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] = samples;
+                break;
+              } 
+              else
+                voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] += sdf.get_distance(p) < 0;
             }
             voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] /= samples;
             //debug("%.2f ", voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k]);
@@ -384,14 +455,16 @@ namespace upg
     dataset.label_size = 2;
     dataset.element_size = {vox_size, vox_size, vox_size};
 
-    nn::save_dataset("saves/voxNet2D_test_dataset.bin", &dataset);
+    nn::save_dataset("saves/voxNet2D_diverse_dataset.bin", &dataset);
   }
 
   void voxNet2D_test()
   {
     
     nn::Dataset dataset;
-    nn::load_dataset("saves/voxNet2D_test_dataset.bin", &dataset);
+    nn::load_dataset("saves/voxNet2D_diverse_dataset.bin", &dataset);
+    for (int i=0;i<dataset.train_elements;i++)
+      logerr("label %d %f %f", i, dataset.train_labels[2*i+0], dataset.train_labels[2*i+1]);
 
     nn::TensorProcessor::init("GPU");
     nn::NeuralNetwork net;
@@ -454,7 +527,7 @@ namespace upg
       nsdf::neural_SDF_test();
     else if (name == "vox_net")
     {
-      //voxNet_create_dataset(5000);
+      //voxNet_create_dataset(2500);
       voxNet2D_test();
       return;      
     }
