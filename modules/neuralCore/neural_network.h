@@ -268,6 +268,96 @@ namespace nn
     virtual std::string get_name() override { return "MaxPooling"; }
   };
 
+  class BatchNorm : public Layer
+  {
+    std::vector<TensorToken> cache;
+  public:
+    BatchNorm() {}
+    virtual void init() override 
+    {
+      weights.clear();
+      dLoss_dWeights.clear();
+      cache.clear();
+
+
+      if (input_shape.size() == 3)
+      {
+        //batch normalization for convolutional layer B x C x h x w
+        weights.push_back(TensorToken(input_shape[2])); // gamma
+        weights.push_back(TensorToken(input_shape[2])); // beta
+      }
+      else
+      {
+        //some other layer, 
+        assert(false);
+      }
+
+      dLoss_dWeights.resize(weights.size());
+      cache.resize(2);
+    };
+    virtual int parameters_count() override 
+    { 
+      if (input_shape.size() == 3)
+        return 2*input_shape[2]; 
+      else
+        assert(false);
+      return 0;
+    };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      TensorToken Xc(input.sizes), output(input.sizes), stddev(weights[0].sizes), Xn(input.sizes);
+
+      if (input_shape.size() == 3)
+      {
+        unsigned batches = input.sizes[3];
+        unsigned channels = input.sizes[2];
+        unsigned sz = input.total_size()/(batches*channels);
+        float av_mul = channels/(float)input.total_size();
+        TensorToken average = input.sum(2).outer_sum() * av_mul;
+        TensorToken::g_2op(TensorProgram::SUB, input, average, Xc, batches, channels, sz); //X centered
+        stddev = TensorToken::sqrt((Xc * Xc).sum(2).outer_sum() * av_mul) + 1e-5f;
+        TensorToken::g_2op(TensorProgram::DIV, Xc, stddev, Xn, batches, channels, sz); //X normalized
+        TensorToken::g_2op(TensorProgram::MUL, Xn, weights[0], output, batches, channels, sz); //Xn*gamma
+        TensorToken::g_2op(TensorProgram::ADD, output, weights[1], output, batches, channels, sz); //Xn*gamma + beta
+      
+        cache[0] = Xn;
+        cache[1] = stddev;
+        return output;
+      }
+      else
+        assert(false);
+      return TensorToken();
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      //https://stats.stackexchange.com/questions/328242/matrix-form-of-backpropagation-with-batch-normalization
+      TensorToken dLoss_dInput(input.sizes);
+
+      if (input_shape.size() == 3)
+      {
+        unsigned batches = input.sizes[3];
+        unsigned channels = input.sizes[2];
+        unsigned sz = input.total_size()/(batches*channels);
+        float av_mul = channels/(float)input.total_size();
+        dLoss_dWeights[0] = (dLoss_dOutput*cache[0]).sum(2).outer_sum(); //dgamma
+        dLoss_dWeights[1] = (dLoss_dOutput).sum(2).outer_sum(); //dbeta
+
+        TensorToken t1 = TensorToken::g_2op(TensorProgram::SUB, dLoss_dOutput, 
+                                            dLoss_dOutput.sum(2).outer_sum() * av_mul, batches, channels, sz);
+        TensorToken t2 = TensorToken::g_2op(TensorProgram::MUL, cache[0], dLoss_dWeights[0] * av_mul, batches, channels, sz);
+
+        dLoss_dInput = TensorToken::g_2op(TensorProgram::MUL, t1-t2, weights[0] / cache[1], batches, channels, sz);
+
+        return dLoss_dInput;
+      }
+      else
+        assert(false);
+
+      return dLoss_dInput;
+    }
+    virtual std::string get_name() override { return "BatchNorm"; }
+  };
+
   struct OptimizerGD
   {
     explicit OptimizerGD(float _lr = 0.01) { learning_rate = _lr; }
@@ -331,7 +421,8 @@ namespace nn
     Zero,
     He,
     Siren,
-    GlorotNormal
+    GlorotNormal,
+    BatchNorm
   };
   enum class Metric
   {

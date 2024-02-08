@@ -94,6 +94,15 @@ namespace nn
       data[i] = distr(gen);
   }
 
+  void BatchNorm_initialization(float *data, int size)
+  {
+    assert(size % 2 == 0);
+    for (int i = 0; i < size/2; i++)
+      data[i] = 1;
+    for (int i = size/2; i < size; i++)
+      data[i] = 0;
+  }
+
   void NeuralNetwork::add_layer(std::shared_ptr<Layer> layer, Initializer initializer)
   {
     layers.push_back(layer);
@@ -163,6 +172,10 @@ namespace nn
           break;
         case Initializer::GlorotNormal:
           Glorot_normal_initialization(weights.data()+offset, size, fan_in, fan_out);
+          break;
+        case Initializer::BatchNorm:
+          assert(dynamic_cast<BatchNorm*>(layers[i].get()));
+          BatchNorm_initialization(weights.data()+offset, size);
           break;
         default:
           break;

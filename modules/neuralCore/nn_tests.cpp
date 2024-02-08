@@ -1467,6 +1467,66 @@ void test_1_tensor_processor()
       printf("FAILED, AUC PR %f\n", auc_pr);
   }
 
+  void test_27_batch_normalization()
+  {
+    printf("TEST 27. BATCH NORMALIZATION\n");
+    unsigned image_size = 16;
+    unsigned image_count = 5000;
+
+    std::vector<float> X(image_count*image_size*image_size, 0.0f);
+    std::vector<float> y(2*image_count, 0.0f);
+
+    for (int i=0;i<image_count;i++)
+    {
+      int type = rand()%2;
+      int line = rand()%image_size;
+      y[2*i + type] = 1;
+
+      if (type == 0) //horizontal line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + line*image_size + j] = 1.0f;
+      }
+      else //vertical line
+      {
+        for (int j=0;j<image_size;j++)
+          X[i*image_size*image_size + j*image_size + line] = 1.0f;
+      }
+    }
+
+    int train_sz = 0.9*image_count;
+    std::vector<float> X_train = std::vector<float>(X.begin(), X.begin() + train_sz*image_size*image_size);
+    std::vector<float> X_test  = std::vector<float>(X.begin() + train_sz*image_size*image_size, X.end());
+    std::vector<float> y_train = std::vector<float>(y.begin(), y.begin() + train_sz*2);
+    std::vector<float> y_test  = std::vector<float>(y.begin() + train_sz*2, y.end());
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv2DLayer>(16,16,1, 8), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<BatchNorm>(), Initializer::BatchNorm);
+    nn2.add_layer(std::make_shared<MaxPoolingLayer>(14, 14, 8));
+    nn2.add_layer(std::make_shared<Conv2DLayer>(7,7,8, 16), Initializer::GlorotNormal);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<BatchNorm>(), Initializer::BatchNorm);
+    nn2.add_layer(std::make_shared<FlattenLayer>(5,5,16));
+    nn2.add_layer(std::make_shared<DenseLayer>(5*5*16, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<ReLULayer>());
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X_train.data(), y_train.data(), train_sz, 64, 2, true, OptimizerAdam(0.001f), Loss::CrossEntropy, 
+              Metric::Accuracy);
+
+
+    std::vector<float> y_res(y_test.size(),0);
+    nn2.evaluate(X_test, y_res);
+    float acc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Accuracy);
+    printf(" 27.1. %-64s", "Accuracy > 95% ");
+    if (acc > 0.95f)
+      printf("passed\n");
+    else
+      printf("FAILED, accuracy %f\n", acc);
+  }
+
   void perform_tests()
   {
     srand(time(NULL));
@@ -1499,6 +1559,7 @@ void test_1_tensor_processor()
     test_24_dilation();
     test_25_conv2D_stride();
     test_26_binary_classification_metrics();
+    test_27_batch_normalization();
 
 
     printf("NEURAL CORE CPU TESTS\n");
