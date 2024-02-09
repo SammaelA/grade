@@ -12,6 +12,7 @@
 #include "neuralCore/neural_network.h"
 #include "neuralCore/dataset.h"
 #include "sdf_grid.h"
+#include "optimization.h"
 
 namespace upg
 {
@@ -486,6 +487,76 @@ namespace upg
               nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
   }
 
+/*
+  class GridSdfRenderAndCompare : public UPGOptimizableFunction
+  {
+  public:
+    GridSdfRenderAndCompare(const ProceduralSdf &_reference, const AABB &_bbox, unsigned _samples, GridSdfNode *_grid):
+    reference(_reference),
+    bbox(_bbox),
+    samples(_samples),
+    grid(_grid)
+    {
+      ddist_dpos  = std::vector<float>(3*samples);
+    }
+
+    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
+                           const OptParams &params, std::span<float> out_grad) override
+    {
+      std::fill_n(out_grad.begin(), out_grad.size(), 0.0);
+      if (out_grad.size() > ddist_dp.size())
+        ddist_dp.resize(out_grad.size());
+
+      double total_loss = 0.0;
+      for (int i=0;i<samples;i++)
+      {
+        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+                                urand(bbox.min_pos.y, bbox.max_pos.y),
+                                urand(bbox.min_pos.z, bbox.max_pos.z));
+
+        std::fill_n(ddist_dp.begin(), out_grad.size(), 0.0);
+        float d = grid->get_distance(p, &ddist_dp, &ddist_dpos) - reference.get_distance(p);
+        total_loss += d*d;
+        for (int j=0;j<out_grad.size();j++)
+          out_grad[j] += 2*d*ddist_dp[j] / samples;
+      }
+
+      return total_loss/samples;
+    }
+
+    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
+    {
+      double total_loss = 0.0;
+      for (int i=0;i<samples;i++)
+      {
+        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+                                urand(bbox.min_pos.y, bbox.max_pos.y),
+                                urand(bbox.min_pos.z, bbox.max_pos.z));
+
+        float d = grid->get_distance(p) - reference.get_distance(p);
+        total_loss += d*d;
+      }
+
+      return total_loss/samples;
+    }
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
+    {
+      return ((SdfGenInstance*)gen)->desc;
+    }
+    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
+    {
+      return std::make_shared<SdfGenInstance>(structure);
+    }
+  private:
+
+    unsigned samples = 1024;
+    std::vector<float> ddist_dp;
+    std::vector<float> ddist_dpos;
+    const ProceduralSdf reference;
+    GridSdfNode *grid;
+    AABB bbox;
+  };
+*/
   void sdf_grid_test()
   {
     SceneDesc scene = scene_chair();
@@ -493,9 +564,9 @@ namespace upg
     ProceduralSdf sdf = gen.generate(scene.second.p);
 
     unsigned vox_size = 64;
-    unsigned samples = 16;
+    unsigned samples = 1;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
-    AABB bbox = sdf.root->get_bbox().expand(1.1f);
+    AABB bbox = sdf.root->get_bbox().expand(1.25f);
     GridSdfNode grid(0, vox_size, bbox);
     grid.set_param_span(data);
     for (int i=0;i<vox_size;i++)
@@ -507,7 +578,7 @@ namespace upg
           float d = 0.0;
           for (int s=0;s<samples;s++)
           {
-            glm::vec3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
+            glm::vec3 p = {(k+0.5)/vox_size, (j+0.5)/vox_size, (i+0.5)/vox_size};
             p = bbox.size()*p + bbox.min_pos;
             d += sdf.get_distance(p);
           }
@@ -516,7 +587,7 @@ namespace upg
       }
     }
 
-    int steps = 8;
+    int steps = 16;
     ProceduralSdf g_sdf;
     g_sdf.root = &grid;
     for (int i=0;i<steps;i++)
@@ -525,7 +596,7 @@ namespace upg
       camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
       camera.target = glm::vec3(0,0,0);
       camera.up = glm::vec3(0,1,0);
-      Texture t = render_sdf(g_sdf, camera, 256, 256, 16, false);
+      Texture t = render_sdf(g_sdf, camera, 512, 512, 16, true);
       engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
     }
   }
