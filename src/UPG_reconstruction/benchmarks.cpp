@@ -563,12 +563,14 @@ namespace upg
     SdfGenInstance gen(scene.first);
     ProceduralSdf sdf = gen.generate(scene.second.p);
 
-    unsigned vox_size = 64;
+    unsigned vox_size = 32;
     unsigned samples = 1;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
     AABB bbox = sdf.root->get_bbox().expand(1.25f);
     GridSdfNode grid(0, vox_size, bbox);
     grid.set_param_span(data);
+
+    /*
     for (int i=0;i<vox_size;i++)
     {
       for (int j=0;j<vox_size;j++)
@@ -584,6 +586,59 @@ namespace upg
           }
           grid.set_voxel(glm::uvec3(k,j,i), d/samples);
         }
+      }
+    }
+    */
+    {
+      unsigned params_cnt = vox_size*vox_size*vox_size;
+      std::vector<float> ddist_dpos(3, 0.0f);
+      std::vector<float> ddist_dp(params_cnt, 0.0f);
+      std::vector<float> x_grad(params_cnt, 0.0f);
+      std::vector<float> V(params_cnt, 0.0f);
+      std::vector<float> S(params_cnt, 0.0f);
+      std::vector<float> &X = data;
+      float alpha = 0.01;
+      float beta_1 = 0.9;
+      float beta_2 = 0.999;
+      float eps = 1e-8;
+      bool verbose = true;
+
+      unsigned samples = params_cnt;
+      unsigned iterations = 300;
+      
+      for (int iter=0; iter< iterations; iter++)
+      {
+        std::fill_n(x_grad.begin(), x_grad.size(), 0.0f);
+        double total_loss = 0.0;
+        for (int i=0;i<samples;i++)
+        {
+          int x = i % vox_size;
+          int y = i / vox_size % vox_size;
+          int z = i / (vox_size*vox_size);
+          glm::vec3 p = {(x+urand())/vox_size, (y+urand())/vox_size, (z+urand())/vox_size};
+          p = bbox.size()*p + bbox.min_pos;
+
+          std::fill_n(ddist_dp.begin(), ddist_dp.size(), 0.0);
+          float d = grid.get_distance(p, &ddist_dp, &ddist_dpos) - sdf.get_distance(p);
+          total_loss += d*d;
+          for (int j=0;j<ddist_dp.size();j++)
+            x_grad[j] += 2*d*ddist_dp[j] / samples;
+        }
+        float val = total_loss/samples;
+        //debug("grad  [");
+        for (int i=0;i<params_cnt;i++)
+        {
+          //debug("%f ",x_grad[i]);
+          float g = x_grad[i];
+          V[i] = beta_1 * V[i] + (1-beta_1)*g;
+          float Vh = V[i] / (1 - pow(beta_1, iter+1)); 
+          S[i] = beta_2 * S[i] + (1-beta_2)*g*g;
+          float Sh = S[i] / (1 - pow(beta_2, iter+1)); 
+          X[i] -= alpha*Vh/(sqrt(Sh) + eps);
+        }
+        //debug("]\n");
+        if ((iter % 5 == 0) && verbose)
+          debug("Adam iter %3d  val = %.8f\n", iter, val);
       }
     }
 
