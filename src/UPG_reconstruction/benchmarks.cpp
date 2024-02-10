@@ -651,7 +651,7 @@ namespace upg
       camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
       camera.target = glm::vec3(0,0,0);
       camera.up = glm::vec3(0,1,0);
-      Texture t = render_sdf(g_sdf, camera, 512, 512, 16, true);
+      Texture t = render_sdf(g_sdf, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
     }
   }
@@ -680,7 +680,7 @@ namespace upg
       SdfGenInstance gen(scene.second.first);
       ProceduralSdf sdf = gen.generate(scene.second.second.p);
       t1 = std::chrono::steady_clock::now();
-      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, true);
+      Texture t = render_sdf(sdf, camera, image_size, image_size, spp, SDFRenderMode::LAMBERT);
       t2 = std::chrono::steady_clock::now();
       float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
       debug("%s rendered in %.1f s. %d kRays/s\n", scene.first.c_str(), 1e-3*time_ms, (int)((image_size*image_size*spp)/time_ms));

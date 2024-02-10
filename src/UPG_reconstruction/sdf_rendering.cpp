@@ -69,7 +69,26 @@ namespace upg
     return parts_info;
   }
 
-  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, bool lambert)
+  Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
+  {
+    unsigned char *data = new unsigned char[4*image_w*image_h];
+    std::vector<float> res(image_w*image_h, 0);
+    render_sdf_to_array(res, sdf, camera, image_w, image_h, spp, mode);
+  
+    for (int i=0;i<res.size(); i++)
+    {
+      data[4*i+0] = 255*CLAMP(res[i],0,1);
+      data[4*i+1] = 255*CLAMP(res[i],0,1);
+      data[4*i+2] = 255*CLAMP(res[i],0,1);
+      data[4*i+3] = 255;
+    }
+
+    Texture t = engine::textureManager->create_texture(image_w, image_h, GL_RGBA8, 1, data, GL_RGBA);
+    delete[] data;
+    return t;
+  }
+
+  void render_sdf_to_array(std::span<float> out_array, const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
   {
     AABB sdf_bbox = sdf.root->get_bbox();
     glm::mat4 projInv = glm::inverse(glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
@@ -77,7 +96,6 @@ namespace upg
     //set light somewhere to the side 
     glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
     int spp_a = MAX(1,floor(sqrtf(spp)));
-    unsigned char *data = new unsigned char[4*image_w*image_h];
 
     #pragma omp parallel for
     for (int yi=0;yi<image_h;yi++)
@@ -86,7 +104,7 @@ namespace upg
       std::vector<float> ddist_dpos = {0,0,0};
       for (int xi=0;xi<image_w;xi++)
       {
-        glm::vec3 color = {0,0,0};
+        float color = 0;
         for (int yp=0;yp<spp_a;yp++)
         {
           for (int xp=0;xp<spp_a;xp++)
@@ -98,7 +116,9 @@ namespace upg
             
             if (sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
             {
-              if (lambert)
+              if (mode == SDFRenderMode::MASK)
+                color += 1;
+              else if (mode == SDFRenderMode::LAMBERT)
               {
                 constexpr float h = 0.001;
                 cur_grad.clear();
@@ -106,23 +126,25 @@ namespace upg
                 float ddy = (sdf.get_distance(p0 + glm::vec3(0,h,0)) - sdf.get_distance(p0 + glm::vec3(0,-h,0)))/(2*h);
                 float ddz = (sdf.get_distance(p0 + glm::vec3(0,0,h)) - sdf.get_distance(p0 + glm::vec3(0,0,-h)))/(2*h);
                 glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
-                color += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
+                color += MAX(0.1f, dot(n, light_dir));
               }
-              else
-                color += glm::vec3(1,1,1);
+              else if (mode == SDFRenderMode::DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                float d = (1/z - 1/camera.z_near)/(1/camera.z_far - 1/camera.z_near);
+                color += d;
+              }
+              else if (mode == SDFRenderMode::LINEAR_DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                color += (z - camera.z_near)/(camera.z_far - camera.z_near);
+              }
             }
           }
         }
-        data[4*(yi*image_w+xi)+0] = 255*(color.x/SQR(spp_a));
-        data[4*(yi*image_w+xi)+1] = 255*(color.y/SQR(spp_a));
-        data[4*(yi*image_w+xi)+2] = 255*(color.z/SQR(spp_a));
-        data[4*(yi*image_w+xi)+3] = 255;
+        out_array[yi*image_w+xi] = color/SQR(spp_a);
       }
     }
-
-    Texture t = engine::textureManager->create_texture(image_w, image_h, GL_RGBA8, 1, data, GL_RGBA);
-    delete[] data;
-    return t;
   }
 
   void sdf_to_outer_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 
@@ -282,8 +304,8 @@ namespace upg
     float mse = 0.0;
     for (auto &cam : cameras)
     {
-      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4, false);
-      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4, false);
+      Texture t1 = render_sdf(reference_sdf, cam, image_size, image_size, 4, SDFRenderMode::MASK);
+      Texture t2 = render_sdf(sdf, cam, image_size, image_size, 4, SDFRenderMode::MASK);
       mse += ImageMetric::get(t1, t2);
     }
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
