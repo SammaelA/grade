@@ -8,6 +8,7 @@ struct CameraSettings
   float fov_rad = 3.14159265f / 3;
   float z_near = 0.1f;
   float z_far = 100.0f;
+  bool orthographic = false;
   
   glm::mat4 get_view() const
   {
@@ -16,7 +17,9 @@ struct CameraSettings
   glm::mat4 get_proj() const
   {
     glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
-    glm::mat4 projection = glm::perspective(fov_rad, 1.0f, z_near, z_far);
+    glm::mat4 projection = orthographic ?
+                           glm::ortho(-0.5f*(z_far-z_near), 0.5f*(z_far-z_near), -0.5f*(z_far-z_near), 0.5f*(z_far-z_near), z_near, z_far) :
+                           glm::perspective(fov_rad, 1.0f, z_near, z_far);
     return y_swap*projection;
   }
   glm::mat4 get_viewProj() const
