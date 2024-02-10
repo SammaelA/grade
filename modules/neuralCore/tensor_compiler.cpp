@@ -597,8 +597,9 @@ namespace nn
       for (unsigned vid = 0; vid < vars.size(); vid++)
       {
         auto &var = vars[vid];
-        printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
-              var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
+        printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, 
+               var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3], var.sizes[4], var.sizes[5],
+               var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
         if (var.is_alias)
         {
           printf("alias of %2u [%2u %2u]", var.alias_master_id, var.alias_range_from, var.alias_range_to);

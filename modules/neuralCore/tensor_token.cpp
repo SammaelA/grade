@@ -19,24 +19,42 @@ namespace nn
   }
   TensorToken::TensorToken(const std::vector<unsigned> &shape)
   {
-    assert(shape.size() <= TensorCompiler::MAX_DIM);
+    assert(shape.size() <= TensorProgram::MAX_DIM);
     Dim = shape.size();
     for (int i = 0; i < Dim; i++)
       sizes[i] = shape[i];
     id = tp->add_var(*this);
   }
-  TensorToken::TensorToken(const unsigned _sizes[TensorCompiler::MAX_DIM]) : TensorToken(_sizes[0], _sizes[1], _sizes[2], _sizes[3])
+  TensorToken::TensorToken(const unsigned _sizes[TensorProgram::MAX_DIM]) : 
+               TensorToken(_sizes[0], _sizes[1], _sizes[2], _sizes[3], 
+                           _sizes[4], _sizes[5], _sizes[6], _sizes[7])
   {
   }
-  TensorToken::TensorToken(int sz_0, int sz_1, int sz_2, int sz_3) : TensorToken((unsigned)sz_0, (unsigned)sz_1, (unsigned)sz_2, (unsigned)sz_3) {}
-  TensorToken::TensorToken(unsigned sz_0, unsigned sz_1, unsigned sz_2, unsigned sz_3)
+  TensorToken::TensorToken(int sz_0, int sz_1, int sz_2, int sz_3, int sz_4, int sz_5, int sz_6, int sz_7) : 
+               TensorToken((unsigned)sz_0, (unsigned)sz_1, (unsigned)sz_2, (unsigned)sz_3,
+                           (unsigned)sz_4, (unsigned)sz_5, (unsigned)sz_6, (unsigned)sz_7) {}
+  TensorToken::TensorToken(unsigned sz_0, unsigned sz_1, unsigned sz_2, unsigned sz_3, unsigned sz_4, 
+                           unsigned sz_5, unsigned sz_6, unsigned sz_7)
   {
-    static_assert(TensorCompiler::MAX_DIM == 4);
-    Dim = sz_0 == 0 ? 0 : (sz_1 == 0 ? 1 : (sz_2 == 0 ? 2 : (sz_3 == 0 ? 3 : 4)));
+    static_assert(TensorProgram::MAX_DIM == 8);
+
     sizes[0] = sz_0;
     sizes[1] = sz_1;
     sizes[2] = sz_2;
     sizes[3] = sz_3;
+    sizes[4] = sz_4;
+    sizes[5] = sz_5;
+    sizes[6] = sz_6;
+    sizes[7] = sz_7;
+    Dim = 8;
+    for (int i=0;i<8;i++)
+    {
+      if (sizes[i] == 0)
+      {
+        Dim = i;
+        break;
+      }
+    }
     id = tp->add_var(*this);
   }
   TensorToken::TensorToken(const TensorToken &other)
@@ -56,7 +74,7 @@ namespace nn
         same_size = same_size && (sizes[i] == other.sizes[i]);
     }
     Dim = other.Dim;
-    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+    for (int i = 0; i < TensorProgram::MAX_DIM; i++)
       sizes[i] = other.sizes[i];
     
     //reassigning tensor token. It means that the same variable will have another tensor_id
@@ -194,7 +212,7 @@ namespace nn
     assert(Dims > 0);
     assert(Dims <= Dim);
     unsigned res_Dim = Dim - Dims; // remaining dimensions
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < res_Dim; i++)
       res_sizes[i] = sizes[i + Dims];
 
@@ -208,7 +226,7 @@ namespace nn
     if (Dim == 0) // sum of scalar is this scalar itself
       return *this;
     unsigned res_Dim = 1;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     res_sizes[0] = total_size() / sizes[Dim - 1];
 
     TensorToken res(res_sizes);
@@ -226,7 +244,7 @@ namespace nn
     assert(Dims > 0);
     assert(Dims <= Dim);
     unsigned res_Dim = Dim - Dims; // remaining dimensions
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < res_Dim; i++)
       res_sizes[i] = sizes[i + Dims];
 
@@ -244,7 +262,7 @@ namespace nn
     assert(Dims > 0);
     assert(Dims <= Dim);
     unsigned res_Dim = Dim - Dims; // remaining dimensions
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < res_Dim; i++)
       res_sizes[i] = sizes[i + Dims];
 
@@ -257,8 +275,8 @@ namespace nn
   {
     assert(Dim > 1);
     assert(transp_dim+1 < Dim);
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
-    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < TensorProgram::MAX_DIM; i++)
       res_sizes[i] = sizes[i];
     res_sizes[transp_dim] = sizes[transp_dim+1];
     res_sizes[transp_dim+1] = sizes[transp_dim];
@@ -274,7 +292,7 @@ namespace nn
 
     unsigned res_size = 1;
     unsigned res_Dim = Dim - 1;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < res_Dim; i++)
     {
       res_sizes[i] = sizes[i];
@@ -296,7 +314,7 @@ namespace nn
 
     unsigned res_size = 1;
     unsigned res_Dim = Dim;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < Dim - 1; i++)
     {
       res_sizes[i] = sizes[i];
@@ -368,10 +386,10 @@ namespace nn
       size *= sizes[i];
 
     assert(new_size == size);
-    assert(new_shape.size() <= TensorCompiler::MAX_DIM);
+    assert(new_shape.size() <= TensorProgram::MAX_DIM);
 
     unsigned res_Dim = new_shape.size();
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < new_shape.size(); i++)
       res_sizes[i] = new_shape[i];
 
@@ -406,8 +424,8 @@ namespace nn
     for (int i=0;i<pad_Dim;i++)
       pad_mult *= sizes[i];
     
-    unsigned res_sizes[TensorCompiler::MAX_DIM];
-    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+    unsigned res_sizes[TensorProgram::MAX_DIM];
+    for (int i = 0; i < TensorProgram::MAX_DIM; i++)
       res_sizes[i] = sizes[i];
     res_sizes[pad_Dim] = sizes[pad_Dim] + left_pad + right_pad;
     TensorToken res(res_sizes);
@@ -419,8 +437,8 @@ namespace nn
   TensorToken TensorToken::flip(unsigned axis) const
   {
     assert(Dim > axis);
-    unsigned res_sizes[TensorCompiler::MAX_DIM];
-    for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+    unsigned res_sizes[TensorProgram::MAX_DIM];
+    for (int i = 0; i < TensorProgram::MAX_DIM; i++)
       res_sizes[i] = sizes[i];
     TensorToken res(res_sizes);
     tp->add_command(TensorProgram::FLIP, id, 0, res.id, axis);
@@ -435,13 +453,13 @@ namespace nn
   TensorToken TensorToken::vector_outer_product(const TensorToken &A, const TensorToken &B)
   {
     assert(A.Dim >= 1);
-    assert(A.Dim < TensorCompiler::MAX_DIM);
+    assert(A.Dim < TensorProgram::MAX_DIM);
     assert(B.Dim == A.Dim);
     for (int i = 1; i < A.Dim; i++)
       assert(A.sizes[i] == B.sizes[i]);
 
     unsigned res_Dim = A.Dim + 1;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0, 0, 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0, 0, 0, 0, 0, 0, 0, 0};
     res_sizes[0] = B.sizes[0];
     res_sizes[1] = A.sizes[0];
     for (int i = 2; i < res_Dim; i++)
@@ -459,7 +477,7 @@ namespace nn
     assert(A.sizes[0] == B.sizes[0]);
 
     unsigned res_Dim = B.Dim;
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {B.sizes[1], A.sizes[1], 0, 0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {B.sizes[1], A.sizes[1], 0, 0};
     if (B.Dim == 1)
     {
       res_sizes[0] = A.sizes[1];
@@ -534,23 +552,23 @@ namespace nn
     unsigned oW = (A.sizes[0] - kernel.sizes[0])/stride + 1;
     unsigned oH = (A.sizes[1] - kernel.sizes[1])/stride + 1;
 
-    unsigned res_sizes[TensorCompiler::MAX_DIM] = {0,0,0,0};
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0,0,0,0};
     res_sizes[0] = oW;
     res_sizes[1] = oH;
     if (kernel.Dim == 2)
     {
-      for (int i=2;i<TensorCompiler::MAX_DIM;i++)
+      for (int i=2;i<TensorProgram::MAX_DIM;i++)
         res_sizes[i] = A.sizes[i];
     }
     else if (kernel.Dim == 3)
     {
-      for (int i=3;i<TensorCompiler::MAX_DIM;i++)
+      for (int i=3;i<TensorProgram::MAX_DIM;i++)
         res_sizes[i-1] = A.sizes[i];
     }
     else //if (kernel.Dim == 4)
     {
       res_sizes[2] = kernel.sizes[3];
-      for (int i=3;i<TensorCompiler::MAX_DIM;i++)
+      for (int i=3;i<TensorProgram::MAX_DIM;i++)
         res_sizes[i] = A.sizes[i];
     }
 

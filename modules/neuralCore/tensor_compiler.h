@@ -11,7 +11,6 @@ namespace nn
   {
   public:
     friend struct TensorToken;
-    constexpr static int MAX_DIM = 4;
 
     void start_program();
     TensorProgram finish_program(bool print_program = false);
@@ -25,7 +24,7 @@ namespace nn
       unsigned Dim;
       unsigned offset;
       unsigned total_size;
-      unsigned sizes[4];
+      unsigned sizes[TensorProgram::MAX_DIM];
 
       unsigned cmd_start;
       unsigned cmd_end;
@@ -78,9 +77,11 @@ namespace nn
     TensorToken();
     TensorToken(float val);
     TensorToken(const std::vector<unsigned> &shape);
-    TensorToken(const unsigned _sizes[TensorCompiler::MAX_DIM]);
-    explicit TensorToken(int sz_0, int sz_1 = 0, int sz_2 = 0, int sz_3 = 0);
-    explicit TensorToken(unsigned sz_0, unsigned sz_1 = 0, unsigned sz_2 = 0, unsigned sz_3 = 0);
+    TensorToken(const unsigned _sizes[TensorProgram::MAX_DIM]);
+    explicit TensorToken(int sz_0, int sz_1 = 0, int sz_2 = 0, int sz_3 = 0,
+                         int sz_4 = 0, int sz_5 = 0, int sz_6 = 0, int sz_7 = 0);
+    explicit TensorToken(unsigned sz_0, unsigned sz_1 = 0, unsigned sz_2 = 0, unsigned sz_3 = 0,
+                         unsigned sz_4 = 0, unsigned sz_5 = 0, unsigned sz_6 = 0, unsigned sz_7 = 0);
     TensorToken(const TensorToken &other);
     TensorToken &operator=(const TensorToken &other);
 
@@ -148,6 +149,6 @@ namespace nn
 
     unsigned id = 0;
     unsigned Dim = 0;
-    unsigned sizes[TensorCompiler::MAX_DIM] = {0};
+    unsigned sizes[TensorProgram::MAX_DIM] = {0};
   };
 }
