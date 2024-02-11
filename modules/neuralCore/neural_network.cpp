@@ -548,7 +548,7 @@ namespace nn
         double ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t - t_prev).count()/iters_per_validation;
         t_prev = t;
         if (verbose)
-          printf("%s/epoch, ETA: %s\n", time_pretty_str(ms/iters_per_epoch).c_str(), time_pretty_str(ms*(iterations-it)).c_str());
+          printf("%s/epoch, ETA: %s\n", time_pretty_str(ms*iters_per_epoch).c_str(), time_pretty_str(ms*(iterations-it)).c_str());
 
         av_loss = 0;
       }
