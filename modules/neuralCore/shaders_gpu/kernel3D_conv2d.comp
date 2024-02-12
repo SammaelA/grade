@@ -43,18 +43,28 @@ void main()
         int out_ch = step % kgenArgs.out_channels;
         int kw = int((kgenArgs.kernel.sizes[0]))/2; //e.g. 1 for 3x3 and 2 for 5x5
         int kh = int((kgenArgs.kernel.sizes[1]))/2;
+        int kw2 = int((kgenArgs.kernel.sizes[0]));
+        int kh2 = int((kgenArgs.kernel.sizes[1]));
         int res_offset = int(kgenArgs.res.offset) + (image_n * kgenArgs.out_channels + out_ch) * kgenArgs.x_steps * kgenArgs.y_steps;
 
         data[res_offset + kgenArgs.x_steps * y + x] = 0;
         for (int in_ch = 0; in_ch < kgenArgs.in_channels; in_ch++)
         {
           int A_offset = int(kgenArgs.A.offset) + (image_n * kgenArgs.in_channels + in_ch) * int((kgenArgs.A.sizes[0] * kgenArgs.A.sizes[1]));
-          int k_offset = int(kgenArgs.kernel.offset) + (out_ch * kgenArgs.in_channels + in_ch) * (2 * kh + 1) * (2 * kw + 1);
-          for (int dy = -kh; dy <= kh; dy++)
-            for (int dx = -kw; dx <= kw; dx++)
-              data[res_offset + kgenArgs.x_steps * y + x] += data[k_offset + (dy + kh) * (2 * kw + 1) + (dx + kw)] * data[A_offset + (kgenArgs.stride * y + kh + dy) * (int(kgenArgs.A.sizes[0])) + (kgenArgs.stride * x + kw + dx)];
-          // printf("%u %u %u %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*(2*kw+1) + (dx+kw) - kernel.offset,
-          // A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, data[k_offset + (dy+kh)*(2*kw+1) + (dx+kw)], data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)]);
+          int k_offset = int(kgenArgs.kernel.offset) + (out_ch * kgenArgs.in_channels + in_ch) * kh2 * kw2;
+          for (int dy = -kh; dy < kh2 - kh; dy++)
+            for (int dx = -kw; dx < kw2 - kw; dx++)
+            {
+              float t = data[k_offset + (dy + kh) * kw2 + (dx + kw)] * data[A_offset + (kgenArgs.stride * y + kh + dy) * (int(kgenArgs.A.sizes[0])) + (kgenArgs.stride * x + kw + dx)];
+          /*if (t != t || std::abs(data[res_offset + x_steps * y + x]) > 1e9)
+           printf("%u %u %u %f %f %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*kw2 + (dx+kw) - kernel.offset,
+           A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, 
+           data[k_offset + (dy+kh)*kw2 + (dx+kw)],
+           data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)],
+           data[res_offset + x_steps * y + x],
+           t);*/
+          data[res_offset + kgenArgs.x_steps * y + x] += t;
+            }
         }
       
   }

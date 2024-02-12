@@ -95,6 +95,7 @@ namespace visualizer
     blk.set_double("camera.z_near", camera.z_near);
     blk.set_double("camera.z_far", camera.z_far);
     blk.set_double("camera.fov_rad", camera.fov_rad);
+    blk.set_bool("camera.orthographic", camera.orthographic);
   }
 
   CameraSettings load_camera_settings(const Block &blk)
@@ -107,6 +108,7 @@ namespace visualizer
     camera.z_near = blk.get_double("camera.z_near", camera.z_near);
     camera.z_far = blk.get_double("camera.z_far", camera.z_far);
     camera.fov_rad = blk.get_double("camera.fov_rad", camera.fov_rad);
+    camera.orthographic = blk.get_bool("camera.orthographic", camera.orthographic);
 
     return camera;
   }

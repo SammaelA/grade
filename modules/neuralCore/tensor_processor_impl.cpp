@@ -241,10 +241,23 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       printf("]\n");
     }
     #endif
-    //  printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
-    //  for (int k=0;k<C.total_size;k++)
-    //    printf("%f ", memory[C.offset+k]);
-    //  printf("]\n");
+    /*
+    printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
+    bool has_nan = false;
+    long double min = 1e15;
+    long double max = -1e15;
+    long double a = 0.0;
+    long double aa = 0.0;
+    for (int k=0;k<C.total_size;k++)
+    {
+      min = std::min(min, (long double)memory[C.offset+k]);
+      max = std::max(max, (long double)memory[C.offset+k]);
+      a += memory[C.offset+k];
+      aa += std::abs(memory[C.offset+k]);
+      if (memory[C.offset+k] != memory[C.offset+k])
+        has_nan = true;
+    }
+    printf("min max av abs_av has_nan %f %f %f %f %d]\n",(float)min, (float)max,(float)a/C.total_size,(float)aa/C.total_size,(int)has_nan);*/
 
     auto t2 = std::chrono::high_resolution_clock::now();
     float total_time_us = 1e-3 * std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
@@ -749,18 +762,21 @@ void TensorProcessorImpl::kernel3D_conv2d(float *data, int steps, int x_steps, i
         int out_ch = step % out_channels;
         int kw = (int)(kernel.sizes[0])/2; //e.g. 1 for 3x3 and 2 for 5x5
         int kh = (int)(kernel.sizes[1])/2;
+        int kw2 = (int)(kernel.sizes[0]);
+        int kh2 = (int)(kernel.sizes[1]);
         int res_offset = (int)res.offset + (image_n * out_channels + out_ch) * x_steps * y_steps;
 
         data[res_offset + x_steps * y + x] = 0;
         for (int in_ch = 0; in_ch < in_channels; in_ch++)
         {
           int A_offset = (int)A.offset + (image_n * in_channels + in_ch) * (int)(A.sizes[0] * A.sizes[1]);
-          int k_offset = (int)kernel.offset + (out_ch * in_channels + in_ch) * (2 * kh + 1) * (2 * kw + 1);
-          for (int dy = -kh; dy <= kh; dy++)
-            for (int dx = -kw; dx <= kw; dx++)
-              data[res_offset + x_steps * y + x] += data[k_offset + (dy + kh) * (2 * kw + 1) + (dx + kw)] * data[A_offset + (stride * y + kh + dy) * ((int)A.sizes[0]) + (stride * x + kw + dx)];
-          // printf("%u %u %u %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*(2*kw+1) + (dx+kw) - kernel.offset,
-          // A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, data[k_offset + (dy+kh)*(2*kw+1) + (dx+kw)], data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)]);
+          int k_offset = (int)kernel.offset + (out_ch * in_channels + in_ch) * kh2 * kw2;
+          for (int dy = -kh; dy < kh2 - kh; dy++)
+            for (int dx = -kw; dx < kw2 - kw; dx++)
+            {
+              float t = data[k_offset + (dy + kh) * kw2 + (dx + kw)] * data[A_offset + (stride * y + kh + dy) * ((int)A.sizes[0]) + (stride * x + kw + dx)];
+            data[res_offset + x_steps * y + x] += t;
+            }
         }
       }
     }

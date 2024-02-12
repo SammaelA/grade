@@ -22,6 +22,11 @@ namespace nn
   void load_dataset(std::string path, Dataset *out_dataset);
   void train_test_split(Dataset *dataset, float test_fraction = 0.1);
 
+  //labels are trated as one-hot encoded class marks
+  //this function duplicates entries of rare classes
+  //and checks if all classes exist in dataset
+  void rebalance_classes(Dataset *out_dataset);
+
   //read datasets from their specific binary formats
   void read_CIFAR10_dataset(std::string path, Dataset *out_dataset);
   void read_MNIST_dataset(std::string path, Dataset *out_dataset);

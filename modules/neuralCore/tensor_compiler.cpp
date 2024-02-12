@@ -1,6 +1,8 @@
 #include "tensor_compiler.h"
 #include <string>
 #include <cstring>
+#include <map>
+#include <algorithm>
 
 namespace nn
 {
@@ -551,7 +553,7 @@ namespace nn
     remove_noop();
   }
 
-  unsigned TensorCompiler::calculate_memory_layout()
+  unsigned TensorCompiler::calculate_memory_layout_naive()
   {
     unsigned total_memory = 0;
     for (auto &var : vars)
@@ -568,10 +570,182 @@ namespace nn
     return total_memory;
   }
 
+  void TensorCompiler::calculate_variable_usage_interval_with_aliases(unsigned v_id)
+  {
+    for (auto &a_id : vars[v_id].aliases)
+    {
+      calculate_variable_usage_interval_with_aliases(a_id);
+      fu[v_id] = std::min(fu[a_id], fu[v_id]);
+      fm[v_id] = std::min(fm[a_id], fm[v_id]);
+
+      lu[v_id] = std::max(lu[a_id], lu[v_id]);
+      lm[v_id] = std::max(lm[a_id], lm[v_id]);
+    }
+  }
+
+  struct Chunk
+  {
+    unsigned t_start = 0;
+    unsigned t_end = 0;
+    unsigned offset = 0;
+    unsigned size = 0;
+    unsigned rnd = 0;
+    unsigned var_id = 0;
+  };
+
+  unsigned TensorCompiler::calculate_memory_layout_interval_coloring()
+  {
+    /*
+    Relatively simple and unefficient approach to find optimal memory layout
+    It is based on Greedy Interval Coloring Algorithm
+    see https://homepages.gac.edu/~sskulrat/Courses/2015F-375/lectures/g2.pdf 
+    It is optimal if all chunks of memory are the same size but gurantees
+    nothing othrwise (in our case)
+    In most neural networks I tested this method can reduce memory requirements 
+    by 15-35%
+    */
+    unsigned total_memory = 0;
+    for (auto &var : vars)
+    {
+      if (var.is_alias == false)
+      {
+        var.offset = total_memory;
+        total_memory += var.total_size;
+        for (auto &aid : var.aliases)
+          vars[aid].offset = var.offset + vars[aid].alias_range_from;
+      }
+    }
+    calculate_variable_usage_intervals();
+    std::vector<Chunk> chunks;
+    for (int i=0;i<vars.size();i++)
+    {
+      if (vars[i].is_alias == false && vars[i].total_size > 0)
+      {
+        calculate_variable_usage_interval_with_aliases(i);
+        chunks.push_back(Chunk{std::min(fu[i],fm[i]), std::max(lu[i], lm[i]) + 1u, 0u, vars[i].total_size, (unsigned)i , (unsigned)i});
+        //printf("R%u [%u %u] size %u\n", (unsigned)(i), chunks.back().t_start, chunks.back().t_end, chunks.back().size);
+      }
+    }
+
+    std::vector<std::map<unsigned, unsigned>> regions(commands.size()+1); //regions[i][offset] = free_size, size = 0 means last region
+    for (int i=0;i<regions.size();i++)
+      regions[i][0] = total_memory;
+
+    std::sort(chunks.begin(), chunks.end(), [&](const Chunk & a, const Chunk & b) -> bool 
+            {    
+              if (a.t_start != b.t_start)
+                return a.t_start < b.t_start;
+              else if (a.t_end != b.t_end)
+                return a.t_end > b.t_end;
+              else
+                return a.rnd < b.rnd;
+            });
+
+    for (int i=0;i<chunks.size();i++)
+    {
+      /*
+      printf("Chunk %u(%u) [%u %u] size %u\n", (unsigned)(i), chunks[i].var_id, chunks[i].t_start, chunks[i].t_end, chunks[i].size);
+      int r = 0;
+      for (auto &R : regions)
+      {
+        printf("region %d size %d:", r, (int)R.size()); 
+        for (auto &p : R)
+          printf("(%u %u)", p.first, p.second);
+        printf("\n");
+        r++;
+      }
+      */
+
+      bool found_fit_region = false; 
+      std::vector<unsigned> fit_starts;
+      for (auto &p : regions[chunks[i].t_start])
+      {
+        if (p.second < chunks[i].size)
+          continue;
+
+        //printf("region%u [%u %u] is candidate for placement\n", chunks[i].t_start, p.first, p.second);
+        fit_starts = {p.first};
+        bool fit_all = true;
+        for (int r = chunks[i].t_start + 1; r < chunks[i].t_end; r++)
+        {
+          bool r_fit = false;
+          // find region in this time that can fit this chunk
+          for (auto &next_p : regions[r])
+          {
+            //printf("region%u [%u %u] is ??? for placement\n", r, next_p.first, next_p.second);
+            if (next_p.first <= p.first && next_p.first + next_p.second >= p.first + chunks[i].size)
+            {
+              //printf("region%u [%u %u] is ok for placement\n", r, next_p.first, next_p.second);
+              r_fit = true;
+              fit_starts.push_back(next_p.first);
+              break;
+            }
+          }
+          if (!r_fit)
+          {
+            fit_all = false;
+            break;
+          }
+        }
+        
+        if (!fit_all)
+          continue;
+
+        found_fit_region = true;
+      }
+
+      assert(found_fit_region);
+
+      chunks[i].offset = fit_starts[0];
+
+      //update regions
+      for (int r = chunks[i].t_start; r < chunks[i].t_end; r++)
+      {
+        unsigned start = fit_starts[r-chunks[i].t_start];
+        unsigned size = regions[r].at(start);
+        if (chunks[i].offset > start)
+          regions[r].at(start) = chunks[i].offset - start;
+        else
+          regions[r].erase(start);
+        if (chunks[i].offset + chunks[i].size < start + size)
+          regions[r][chunks[i].offset + chunks[i].size] = start + size - (chunks[i].offset + chunks[i].size);
+      }
+    }
+
+    //for (int i=0;i<chunks.size();i++)
+    //  printf("Chunk %u [%u %u] size %u offset %u\n", (unsigned)(i), chunks[i].t_start, chunks[i].t_end, chunks[i].size, chunks[i].offset);
+
+    //printf("####\n");
+    //for (int i=0;i<vars.size();i++)
+    //  if (vars[i].is_alias == false)
+    //    printf("var%d [%u %u]\n", i, vars[i].offset, vars[i].offset + vars[i].total_size);
+
+
+    unsigned comp_memory = 0;
+    for (auto &ch : chunks)
+    {
+      auto &var = vars[ch.var_id];
+      //printf("%u offset %u %u\n", ch.var_id, var.total_size, var.offset);
+      var.offset = ch.offset;
+      comp_memory = std::max(comp_memory, var.offset + var.total_size);
+      for (auto &aid : var.aliases)
+        vars[aid].offset = var.offset + vars[aid].alias_range_from;
+    }
+
+    //printf("####\n");
+    //for (int i=0;i<vars.size();i++)
+    //  if (vars[i].is_alias == false)
+    //    printf("var%d [%u %u]\n", i, vars[i].offset, vars[i].offset + vars[i].total_size);
+
+    //printf("memory %u/%u\n",comp_memory, total_memory);
+
+    return comp_memory;
+  }
+
   TensorProgram TensorCompiler::finish_program(bool print_program)
   {
     optimize_program();
-    unsigned total_memory_req = calculate_memory_layout();
+    unsigned total_memory_req = calculate_memory_layout_interval_coloring();
 
     TensorProgram pr;
     pr.commands = commands;
@@ -597,8 +771,9 @@ namespace nn
       for (unsigned vid = 0; vid < vars.size(); vid++)
       {
         auto &var = vars[vid];
-        printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3],
-              var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
+        printf("V%-2u:[%5u] %u %5u [%3u %3u %3u %3u %3u %3u] %s %s ", vid, var.offset, var.Dim, var.total_size, 
+               var.sizes[0], var.sizes[1], var.sizes[2], var.sizes[3], var.sizes[4], var.sizes[5],
+               var.is_input ? " input" : "      ", var.is_output ? "output" : "      ");
         if (var.is_alias)
         {
           printf("alias of %2u [%2u %2u]", var.alias_master_id, var.alias_range_from, var.alias_range_to);

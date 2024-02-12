@@ -171,8 +171,8 @@ namespace nn
     }
     virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
     {
-      unsigned OD_sizes[TensorCompiler::MAX_DIM];
-      for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+      unsigned OD_sizes[TensorProgram::MAX_DIM];
+      for (int i = 0; i < TensorProgram::MAX_DIM; i++)
         OD_sizes[i] = dLoss_dOutput.sizes[i];
       OD_sizes[0] = (dLoss_dOutput.sizes[0]-1)*stride + 1;
       OD_sizes[1] = (dLoss_dOutput.sizes[1]-1)*stride + 1;
@@ -251,8 +251,8 @@ namespace nn
     virtual int parameters_count() override { return 0; };
     virtual TensorToken forward(const TensorToken &input) override
     {
-      unsigned output_sizes[TensorCompiler::MAX_DIM];
-      for (int i = 0; i < TensorCompiler::MAX_DIM; i++)
+      unsigned output_sizes[TensorProgram::MAX_DIM];
+      for (int i = 0; i < TensorProgram::MAX_DIM; i++)
         output_sizes[i] = input.sizes[i];
       output_sizes[0] = output_shape[0];
       output_sizes[1] = output_shape[1];

@@ -2104,10 +2104,23 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       printf("]\n");
     }
     #endif
-    //  printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
-    //  for (int k=0;k<C.total_size;k++)
-    //    printf("%f ", memory[C.offset+k]);
-    //  printf("]\n");
+    /*
+    printf("cmd %d %s, C = [", i, nn::TensorProgram::cmd_properties[program.commands[i].type].name.c_str());
+    bool has_nan = false;
+    long double min = 1e15;
+    long double max = -1e15;
+    long double a = 0.0;
+    long double aa = 0.0;
+    for (int k=0;k<C.total_size;k++)
+    {
+      min = std::min(min, (long double)memory[C.offset+k]);
+      max = std::max(max, (long double)memory[C.offset+k]);
+      a += memory[C.offset+k];
+      aa += std::abs(memory[C.offset+k]);
+      if (memory[C.offset+k] != memory[C.offset+k])
+        has_nan = true;
+    }
+    printf("min max av abs_av has_nan %f %f %f %f %d]\n",(float)min, (float)max,(float)a/C.total_size,(float)aa/C.total_size,(int)has_nan);*/
 
     auto t2 = std::chrono::high_resolution_clock::now();
     float total_time_us = 1e-3 * std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();

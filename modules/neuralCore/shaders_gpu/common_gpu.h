@@ -29,7 +29,7 @@ struct Variable
       uint Dim;
       uint offset;
       uint total_size;
-      uint sizes[4];
+      uint sizes[8]; //MAX_DIM
     };
 
 #ifndef SKIP_UBO_INCLUDE

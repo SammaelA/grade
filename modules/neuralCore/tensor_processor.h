@@ -10,6 +10,10 @@ namespace nn
 {
   struct TensorProgram
   {
+    constexpr static unsigned MAX_DIM = 8;
+    constexpr static unsigned CMD_ARGS = 8;
+    constexpr static unsigned CONSTS_VAR_ID = 1;
+
     //each command is [type, A, B, C, arg0, arg1, arg2]
     //A,B - input variables
     //C - output variable
@@ -93,7 +97,7 @@ namespace nn
     struct Command
     {
       CommandType type;
-      unsigned args[8];
+      unsigned args[8]; //CMD_ARGS
     };
 
     struct Variable
@@ -101,10 +105,8 @@ namespace nn
       unsigned Dim;
       unsigned offset;
       unsigned total_size;
-      unsigned sizes[4];
+      unsigned sizes[8]; //MAX_DIM
     };
-
-    constexpr static unsigned CONSTS_VAR_ID = 1;
 
     static std::vector<CmdProperties> cmd_properties;
 
