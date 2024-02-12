@@ -199,4 +199,74 @@ namespace nn
 
     in.close();
   }
+
+  void rebalance_classes(Dataset *out_dataset)
+  {
+    assert(out_dataset->test_elements == 0);
+    unsigned N = out_dataset->train_elements;
+    unsigned C = out_dataset->label_size;
+    std::vector<unsigned> counts(C, 0);
+    for (int i=0;i<N;i++)
+    {
+      for (int j=0;j<C;j++)
+      {
+        if (out_dataset->train_labels[i*C + j] > 0.5)
+        {
+          counts[j]++;
+          break;
+        }
+      }
+    }
+
+    unsigned max_count = counts[0];
+    for (int j=0;j<C;j++)
+      max_count = std::max(max_count, counts[j]);
+    
+    unsigned total_elements_to_add = 0;
+    std::vector<unsigned> add_counts(C, 0);
+    for (int j=0;j<C;j++)
+    {
+      if (counts[j] == 0)
+      {
+        printf("Dataset ERROR: There are 0 objects of class %u in dataset!\n",j);
+        return;
+      }
+      else if (10*counts[j] < max_count)
+        printf("Dataset Warning: class %u is very rare in dataset. Rebalance may lead to overfitting later\n",j);
+      //printf("class %u: %u/%u\n", j, counts[j], N);
+      add_counts[j] = max_count - counts[j];
+      total_elements_to_add += add_counts[j];
+    }
+
+    unsigned e_sz = out_dataset->train_data.size()/N;
+    out_dataset->train_data.resize(e_sz*(N + total_elements_to_add));
+    out_dataset->train_labels.resize(C*(N + total_elements_to_add));
+    out_dataset->train_elements = N + total_elements_to_add;
+
+    unsigned offset = N;
+    while (total_elements_to_add > 0)
+    {
+      unsigned id = rand()%N;
+
+      unsigned cl = 0;
+      for (int j=0;j<C;j++)
+      {
+        if (out_dataset->train_labels[id*C + j] > 0.5)
+        {
+          cl = j;
+          break;
+        }
+      }
+
+      if (add_counts[cl] > 0)
+      {
+        //oversampling
+        std::copy_n(out_dataset->train_data.begin() + e_sz*id, e_sz, out_dataset->train_data.begin() + e_sz*offset);
+        std::copy_n(out_dataset->train_labels.begin() + C*id, C, out_dataset->train_labels.begin() + C*offset);
+        add_counts[cl]--;
+        total_elements_to_add--;
+        offset++;
+      }
+    }
+  }
 }
