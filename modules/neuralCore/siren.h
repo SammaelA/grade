@@ -10,7 +10,8 @@ namespace nn
     {
       Image,
       SDF,
-      Gen_SDF_32124
+      Gen_SDF_32124,
+      Chair
     };
 
     Siren(Type type, int hidden_layers, int layer_size);

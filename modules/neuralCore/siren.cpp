@@ -19,6 +19,9 @@ namespace nn
       case Type::Gen_SDF_32124:
         input_dim = 3+3+1+3+3;
         break;
+      case Type::Chair:
+        input_dim = 3+6;
+        break;
     }
     point.resize(input_dim);
     distance.resize(1);

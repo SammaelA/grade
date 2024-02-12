@@ -409,6 +409,67 @@ namespace nsdf
     }
   }
 
+  void create_real_params_from_chair_depended(std::vector<float> chair, std::vector<float> *params)
+  {
+    params->push_back(0);//first box to sit
+    params->push_back(-chair[3]);
+    params->push_back(0);
+    params->push_back(chair[4]);
+    params->push_back(chair[3]);
+    params->push_back(chair[2]);
+
+    params->push_back(chair[3] - chair[4]);//second another box
+    params->push_back(-chair[5]);
+    params->push_back(0);
+    params->push_back(chair[3]);
+    params->push_back(chair[5]);
+    params->push_back(chair[2]);
+
+    for (int j = 0; j < 4; ++j)//legs
+    {
+      float mult1 = 1, mult2 = 1;
+      if (j % 2 != 0) mult1 = -1;
+      if (j / 2 != 0) mult2 = -1;
+      params->push_back((chair[4] - chair[0]) * mult1);
+      params->push_back(chair[1]);
+      params->push_back((chair[2] - chair[0]) * mult2);
+      params->push_back(chair[1]);
+      params->push_back(chair[0]);
+    }
+  }
+
+  void create_point_and_params_cloud_chair(int count_params, int count_points, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
+  {
+    upg::SdfGenInstance gen({std::vector<uint16_t>{3, 3, 2, 4, 2, 4, 3, 3, 2, 5, 2, 5, 3, 2, 5, 2, 5}});
+    unsigned int sz = 3 + 6;
+    points->resize(sz*count_params*count_points);
+    distances->resize(count_params*count_points);
+    for (int i=0;i<count_params;i++)
+    {
+      std::vector<float> params = {}, par = {};//3mov 3box 3mov 3box 3mov 2cyl 3mov 2cyl 3mov 2cyl 3mov 2cyl
+      params.push_back(urand(0.001, 0.4));//radius
+      params.push_back(urand(0.001, 0.5));//height1
+      params.push_back(urand(0.001, 1));//width
+      params.push_back(urand(0.001, 0.3));//thick
+      params.push_back(urand(0.001, 1));//length
+      params.push_back(urand(0.001, 0.5));//height2
+
+      create_real_params_from_chair_depended(params, &par);
+      upg::ProceduralSdf sdf = gen.generate(par);
+      for (int j = 0; j < count_points; ++j)
+      {
+        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+                                urand(bbox.min_pos.y, bbox.max_pos.y),
+                                urand(bbox.min_pos.z, bbox.max_pos.z));
+        (*points)[sz*i*count_points+sz*j+0] = p.x;
+        (*points)[sz*i*count_points+sz*j+1] = p.y;
+        (*points)[sz*i*count_points+sz*j+2] = p.z;
+        for (int k = 0; k < params.size(); ++k) (*points)[sz*i*count_points+sz*j+3+k] = params[k];
+        (*distances)[i*count_points+j] = sdf.get_distance(p);
+      }
+    }
+  }
+
   void create_point_and_params_cloud_32124(int count_params, int count_points, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
     upg::SdfGenInstance gen({std::vector<uint16_t>{3, 2, 1, 2, 4}});
@@ -423,10 +484,10 @@ namespace nsdf
         for (auto &pr : par.second.p)
         {
           params.push_back(urand(pr.min_val, pr.max_val));
-          debug("%f, %f\n", pr.min_val, pr.max_val);
+          //debug("%f, %f\n", pr.min_val, pr.max_val);
         }
       }
-      debug("\n");
+      //debug("\n");
       for (int j = 0; j < count_points; ++j)
       {
         glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
@@ -907,6 +968,69 @@ namespace nsdf
     }
   }
 
+  void task_4_chair()
+  {
+    AABB bbox({-1,-1,-1},{1,1,1});
+    upg::SdfGenInstance::set_scene_bbox(bbox);
+
+    CameraSettings cam;
+    cam.origin = glm::vec3(0,0,3);
+    cam.target = glm::vec3(0,0,0);
+    cam.up = glm::vec3(0,1,0);
+
+    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
+    l.to_file("saves/task3_references/light.txt");
+
+    CameraSettings cam1 = cam;
+    cam1.origin = glm::vec3(3*sin(0),0,3*cos(0));
+    convert(cam1).to_file("saves/task3_references/cam1.txt");
+
+    CameraSettings cam2 = cam;
+    cam2.origin = glm::vec3(3*sin(2*PI/3),0,3*cos(2*PI/3));
+    convert(cam2).to_file("saves/task3_references/cam2.txt");
+
+    CameraSettings cam3 = cam;
+    cam3.origin = glm::vec3(3*sin(4*PI/3),0,3*cos(4*PI/3));
+    convert(cam3).to_file("saves/task3_references/cam3.txt");
+
+    {
+      std::vector<float> points_and_params, distances;
+      //create_point_and_params_cloud_1(1, 100000000, bbox, &points_and_params, &distances);
+      //save_points_cloud("saves/task2_references/sdf1_points.bin", points, distances);
+      nn::Siren network(nn::Siren::Type::Chair, 5, 256);
+      debug("START TRAIN\n");
+      create_point_and_params_cloud_chair(100000, 100, bbox, &points_and_params, &distances);
+      network.train(points_and_params, distances, 512, 80000, true);
+      debug("END TRAIN\n");
+      network.save_weights_to_file("saves/task3_references/sdf_and_params_weights.bin");
+      network.set_arch_to_file("saves/task3_references/sdf_and_params_arch.txt");
+      debug("END SAVE WEIGHTS\n");
+      //std::vector<float> estimated_distances = distances;
+      //network.evaluate(points_and_params, estimated_distances);
+      //save_points_cloud("saves/task2_references/sdf1_test.bin", points, estimated_distances);
+      //debug("END EVALUATE\n");
+      nn::Siren network2(nn::Siren::Type::Chair, 5, 256);
+      network2.initialize_from_file("saves/task3_references/sdf_and_params_weights.bin");
+      //std::vector<float> p = {0, 0, 0, 0.2, 0, 0, -0.2, 0.2};
+      //std::vector<float> out = {0.2, 0};
+      //std::vector<float> out2 = {0.2, 0};
+      //network2.evaluate(p, out2);
+      //debug("OUTS %f, %f - %f, %f", out[0], out2[0], out[1], out2[1]);
+      debug("START RENDER 1\n");
+      Texture t;
+      t = render_neural_sdf_with_params(network2, {0.2, 0.4, 0.5, 0.05, 0.7, 0.4}, bbox, cam1, 256, 256, 1, true, light_dir);
+      engine::textureManager->save_png(t, "task3_references/sdf_and_params_cam1_reference");
+      debug("START RENDER 2\n");
+      t = render_neural_sdf_with_params(network2, {0.2, 0.4, 0.5, 0.05, 0.7, 0.4}, bbox, cam2, 256, 256, 1, true, light_dir);
+      engine::textureManager->save_png(t, "task3_references/sdf_and_params_cam2_reference");
+      debug("START RENDER 3\n");
+      t = render_neural_sdf_with_params(network2, {0.2, 0.4, 0.5, 0.05, 0.7, 0.4}, bbox, cam3, 256, 256, 1, true, light_dir);
+      engine::textureManager->save_png(t, "task3_references/sdf_and_params_cam3_reference");
+      debug("END RENDER\n");
+    }
+  }
+
   void test_complex_model()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
@@ -944,6 +1068,7 @@ namespace nsdf
     nn::TensorProcessor::init("GPU");
     //task_1_create_references();
     //task_2_create_references();
-    task_3_create_references();
+    //task_3_create_references();
+    task_4_chair();
   }
 }
