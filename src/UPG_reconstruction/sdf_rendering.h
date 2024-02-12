@@ -11,7 +11,8 @@ namespace upg
     MASK,
     LAMBERT,
     DEPTH,
-    LINEAR_DEPTH
+    LINEAR_DEPTH,
+    INVERSE_LINEAR_DEPTH
   };
   AABB get_point_cloud_bbox(const std::vector<glm::vec3> &points);
   void sdf_to_point_cloud(const ProceduralSdf &sdf, int points_count, std::vector<glm::vec3> *points, 

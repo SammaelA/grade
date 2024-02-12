@@ -510,6 +510,7 @@ namespace upg
       cameras[i].orthographic = true;
     }
 
+    #pragma omp parallel for
     for (int mod=0;mod<models_count;mod++)
     {
       UPGStructure s;
@@ -563,10 +564,13 @@ namespace upg
       for (int i=0;i<layers;i++)
       {
         std::span<float> im = std::span<float>(images.data()+image_size*image_size*layers*mod + image_size*image_size*i, image_size*image_size);
-        render_sdf_to_array(im, sdf, cameras[i], image_size, image_size, 4, SDFRenderMode::LINEAR_DEPTH);
+        render_sdf_to_array(im, sdf, cameras[i], image_size, image_size, 4, SDFRenderMode::INVERSE_LINEAR_DEPTH);
       
-        //Texture t = render_sdf(sdf, cameras[i], image_size, image_size, 9, SDFRenderMode::LINEAR_DEPTH);
-        //engine::textureManager->save_png(t, "2.5D_dataset_image_"+std::to_string(mod)+"_view_"+std::to_string(i));
+        if (mod < 0)
+        {
+          Texture t = render_sdf(sdf, cameras[i], image_size, image_size, 9, SDFRenderMode::INVERSE_LINEAR_DEPTH);
+          engine::textureManager->save_png(t, "2.5D_dataset_image_"+std::to_string(mod)+"_view_"+std::to_string(i));
+        }
       }
       if (mod % 100 == 0)
         debug("generating %d/%d\n", mod, models_count);
@@ -609,6 +613,7 @@ namespace upg
 
     nn::TensorProcessor::init("GPU");
     nn::NeuralNetwork net;
+/*
     net.add_layer(std::make_shared<nn::Conv2DLayer>(64,64,8, 8, 5), nn::Initializer::GlorotNormal);
     net.add_layer(std::make_shared<nn::ReLULayer>());
     //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
@@ -627,18 +632,38 @@ namespace upg
     net.add_layer(std::make_shared<nn::FlattenLayer>(6,6,16));
 
     net.add_layer(std::make_shared<nn::DenseLayer>(6*6*16, 256), nn::Initializer::He);
-    //net.add_layer(std::make_shared<nn::DropoutLayer>(0.3));
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(256, 256), nn::Initializer::He);
     net.add_layer(std::make_shared<nn::ReLULayer>());
 
     net.add_layer(std::make_shared<nn::DenseLayer>(256, 128), nn::Initializer::He);
-    //net.add_layer(std::make_shared<nn::DropoutLayer>(0.3));
     net.add_layer(std::make_shared<nn::ReLULayer>());
 
     net.add_layer(std::make_shared<nn::DenseLayer>(128, 2), nn::Initializer::He);
     net.add_layer(std::make_shared<nn::SoftMaxLayer>());
-    net.train(dataset.train_data.data(), dataset.train_labels.data(), 2000, 100, 250, true,
+*/
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(64,64,8,8), nn::Initializer::GlorotNormal);
+    //net.add_layer(std::make_shared<nn::ReLULayer>());
+    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(62, 62, 8));
+
+    net.add_layer(std::make_shared<nn::FlattenLayer>(31,31,8));
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(31*31*8, 512), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(512, 256), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(256, 128), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(128, 2), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::SoftMaxLayer>());
+    net.train(dataset.train_data.data(), dataset.train_labels.data(), dataset.train_elements, 100, 250, true,
               nn::OptimizerRMSProp(1e-3f, 0.999, 1e-6, true), 
-              nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
+              nn::Loss::CrossEntropy, nn::Metric::Recall, true);
   }
 
 /*
@@ -854,7 +879,7 @@ namespace upg
     {
       //voxNet_create_dataset(2500);
       //voxNet2D_test(); 
-      //CNN_2_5D_create_dataset(2500);
+      //CNN_2_5D_create_dataset(2000);
       CNN_2_5D_test();
     }
     else if (name == "grid")

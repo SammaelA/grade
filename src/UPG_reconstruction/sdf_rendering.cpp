@@ -139,6 +139,11 @@ namespace upg
                 float z = glm::length(p0 - camera.origin);
                 color += (z - camera.z_near)/(camera.z_far - camera.z_near);
               }
+              else if (mode == SDFRenderMode::INVERSE_LINEAR_DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                color += 1 - (z - camera.z_near)/(camera.z_far - camera.z_near);
+              }
             }
           }
         }
