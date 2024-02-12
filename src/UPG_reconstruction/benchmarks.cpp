@@ -487,6 +487,160 @@ namespace upg
               nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
   }
 
+  void CNN_2_5D_create_dataset(int size)
+  {
+    unsigned samples = 8;
+    unsigned image_size = 64;
+    unsigned layers = 8;
+    unsigned models_count = size;
+    std::vector<float> images(image_size*image_size*layers*models_count, 0.0f);
+    std::vector<float> labels(2*models_count, 0.0f);
+
+    std::vector<CameraSettings> cameras(layers);
+    for (int i=0;i<layers;i++)
+    {
+      float phi = urand(0, 2*PI);
+      float psi = urand(-PI/2, PI/2);
+      float d = 4;
+      cameras[i].origin = glm::vec3(d*cos(phi)*cos(psi), d*sin(psi), d*sin(phi)*cos(psi));
+      cameras[i].target = glm::vec3(0,0,0);
+      cameras[i].up = glm::vec3(-d*cos(phi)*sin(psi), d*cos(psi), -d*sin(phi)*sin(psi));
+      cameras[i].z_near = 1;
+      cameras[i].z_far = 7;
+      cameras[i].orthographic = true;
+    }
+
+    for (int mod=0;mod<models_count;mod++)
+    {
+      UPGStructure s;
+      UPGParametersRaw p;
+
+      bool have_sphere = false;
+      int cnt = urand(1.1, 5.9);
+      for (int i=0; i<cnt; i++)
+      {
+        if (i != cnt-1)
+          s.s.push_back(SdfNode::OR);
+        
+        s.s.push_back(SdfNode::MOVE);
+        p.p.push_back((float)urand(-0.5, 0.5));
+        p.p.push_back((float)urand(-0.5, 0.5));
+        p.p.push_back((float)urand(-0.5, 0.5));
+
+        s.s.push_back(SdfNode::ROTATE);
+        p.p.push_back((float)urand(-PI, PI));
+        p.p.push_back((float)urand(-PI, PI));
+        p.p.push_back((float)urand(-PI, PI));
+
+        float r = urand();
+        if (r < 0.2)
+        {
+          have_sphere = true;
+          add_circle(s, p);
+        }
+        else if (r < 0.3)
+          add_cylinder(s, p);
+        else if (r < 0.45)
+          add_r_box(s, p);
+        else 
+          add_box(s, p);
+      }
+
+      if (have_sphere)
+      {
+        labels[2*mod + 0] = 1;
+        labels[2*mod + 1] = 0;
+      }
+      else
+      {
+        labels[2*mod + 0] = 0;
+        labels[2*mod + 1] = 1;
+      }
+
+      SdfGenInstance gen(s);
+      ProceduralSdf sdf = gen.generate(p.p);
+
+      for (int i=0;i<layers;i++)
+      {
+        std::span<float> im = std::span<float>(images.data()+image_size*image_size*layers*mod + image_size*image_size*i, image_size*image_size);
+        render_sdf_to_array(im, sdf, cameras[i], image_size, image_size, 4, SDFRenderMode::LINEAR_DEPTH);
+      
+        //Texture t = render_sdf(sdf, cameras[i], image_size, image_size, 9, SDFRenderMode::LINEAR_DEPTH);
+        //engine::textureManager->save_png(t, "2.5D_dataset_image_"+std::to_string(mod)+"_view_"+std::to_string(i));
+      }
+      if (mod % 100 == 0)
+        debug("generating %d/%d\n", mod, models_count);
+    }
+
+    nn::Dataset dataset;
+    dataset.train_data = images;
+    dataset.train_labels = labels;
+    dataset.train_elements = models_count;
+    dataset.label_size = 2;
+    dataset.element_size = {image_size, image_size, layers};
+
+    nn::save_dataset("saves/CNN_2.5D_dataset.bin", &dataset);
+  }
+  
+  void CNN_2_5D_test()
+  {
+    
+    nn::Dataset dataset;
+    nn::load_dataset("saves/CNN_2.5D_dataset.bin", &dataset);
+
+    /*
+    for (int i=0;i<100*64*64*8;i+=64*64*8)
+    {
+      for (int j=0;j<64;j+=2)
+      {
+        debug("[");
+        for (int k=0;k<64;k+=2)
+        {
+          debug("%.2f ", dataset.train_data[i + 64*j + k]);
+        }   
+        debug("]\n");     
+      }
+      debug("\n\n");
+    }
+    return;
+    */
+    //for (int i=0;i<dataset.train_elements;i++)
+    //  logerr("label %d %f %f", i, dataset.train_labels[2*i+0], dataset.train_labels[2*i+1]);
+
+    nn::TensorProcessor::init("GPU");
+    nn::NeuralNetwork net;
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(64,64,8, 8, 5), nn::Initializer::GlorotNormal);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(60, 60, 8));
+
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(30,30,8, 16), nn::Initializer::GlorotNormal);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(28, 28, 16));
+
+    net.add_layer(std::make_shared<nn::Conv2DLayer>(14,14,16, 16), nn::Initializer::GlorotNormal);
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
+    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(12, 12, 16));
+
+    net.add_layer(std::make_shared<nn::FlattenLayer>(6,6,16));
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(6*6*16, 256), nn::Initializer::He);
+    //net.add_layer(std::make_shared<nn::DropoutLayer>(0.3));
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(256, 128), nn::Initializer::He);
+    //net.add_layer(std::make_shared<nn::DropoutLayer>(0.3));
+    net.add_layer(std::make_shared<nn::ReLULayer>());
+
+    net.add_layer(std::make_shared<nn::DenseLayer>(128, 2), nn::Initializer::He);
+    net.add_layer(std::make_shared<nn::SoftMaxLayer>());
+    net.train(dataset.train_data.data(), dataset.train_labels.data(), 2000, 100, 250, true,
+              nn::OptimizerRMSProp(1e-3f, 0.999, 1e-6, true), 
+              nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
+  }
+
 /*
   class GridSdfRenderAndCompare : public UPGOptimizableFunction
   {
@@ -699,7 +853,9 @@ namespace upg
     else if (name == "vox_net")
     {
       //voxNet_create_dataset(2500);
-      voxNet2D_test(); 
+      //voxNet2D_test(); 
+      //CNN_2_5D_create_dataset(2500);
+      CNN_2_5D_test();
     }
     else if (name == "grid")
     {
