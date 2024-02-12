@@ -49,6 +49,7 @@ namespace nn
     void compactify();
     void remove_noop();
     void calculate_variable_usage_intervals();
+    void calculate_variable_usage_interval_with_aliases(unsigned v_id);
     void replace_output_var(unsigned old_id, unsigned new_id);
     void reset_alias_rec(unsigned alias_id, unsigned master_id, unsigned base_offset);
     void set_alias(unsigned alias_id, unsigned master_id, unsigned from, unsigned to);
@@ -57,7 +58,8 @@ namespace nn
     bool optimize_self_applicable_commands();
     void optimize_copy_to_aliases();
     void optimize_program();
-    unsigned calculate_memory_layout();
+    unsigned calculate_memory_layout_naive();
+    unsigned calculate_memory_layout_interval_coloring();
 
     std::vector<Variable> vars;
     std::vector<TensorProgram::Command> commands;
