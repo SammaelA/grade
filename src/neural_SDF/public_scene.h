@@ -18,9 +18,10 @@ namespace nsdf
         fprintf(stderr, "failed to open/create file %s. Errno %d\n",filename, (int)errno);
         return false;
       }
-      fprintf(f, "spheres count = %d\n", (int)scene_data.size()/4);
-      for (int i=0;i<scene_data.size();i+=4)
-        fprintf(f, "pos = (%f, %f, %f), radius = %f\n", scene_data[i],scene_data[i+1],scene_data[i+2],scene_data[i+3]);
+      fprintf(f, "primitives count = %d\n", (int)scene_data.size()/7);
+      for (int i=0;i<scene_data.size();i+=7)
+        fprintf(f, "type = %f, pos = (%f, %f, %f), size = (%f, %f, %f)\n", scene_data[i],scene_data[i+1],scene_data[i+2],scene_data[i+3],
+                                                                           scene_data[i+4],scene_data[i+5],scene_data[i+6]);
 
       int res = fclose(f);
       if (res != 0)
@@ -40,10 +41,11 @@ namespace nsdf
         return false;
       }
       int spheres_count = 0;
-      fscanf(f, "spheres count = %d\n", &spheres_count);
-      scene_data.resize(4*spheres_count, 0);
-      for (int i=0;i<scene_data.size();i+=4)
-        fscanf(f, "pos = (%f, %f, %f), radius = %f\n", &(scene_data[i]),&(scene_data[i+1]),&(scene_data[i+2]),&(scene_data[i+3]));
+      fscanf(f, "primitives count = %d\n", &spheres_count);
+      scene_data.resize(7*spheres_count, 0);
+      for (int i=0;i<scene_data.size();i+=7)
+        fscanf(f, "type = %f, pos = (%f, %f, %f), size = (%f, %f, %f)\n", &(scene_data[i]),&(scene_data[i+1]),&(scene_data[i+2]),&(scene_data[i+3]),&(scene_data[i+4]),
+                                                       &(scene_data[i+5]),&(scene_data[i+6]));
 
       int res = fclose(f);
       if (res != 0)
