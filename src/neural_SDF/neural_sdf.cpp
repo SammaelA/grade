@@ -32,7 +32,7 @@ namespace nsdf
     float d = sdBox(p);
     glm::vec3 res = glm::vec3(d, 1.0f, 0.0f);
 
-    int Iterations = 2;
+    int Iterations = 4;
     float s = 1.0f;
     for (int m = 0; m < Iterations; m++)
     {
@@ -174,7 +174,7 @@ namespace nsdf
         min_v = min(min_v, glm::vec3(-1,-1,-1)*p.scale + p.shift);
         max_v = max(max_v, glm::vec3( 1, 1, 1)*p.scale + p.shift);
       }
-      return AABB(min_v,max_v);
+      return AABB(min_v,max_v).expand(1.25f);
     }
 
     std::vector<Primitive> primitives;
@@ -221,11 +221,18 @@ namespace nsdf
     return d <= EPS;
   }
 
+  enum ColorMode
+  {
+    GRAY,
+    SINPOS,
+    NORMALS
+  };
+
   Texture render_primitive_sdf(const PrimitiveSDF &sdf, const CameraSettings &camera, glm::vec3 light_dir,
-                               int image_w, int image_h, int spp, bool lambert, bool ao = false)
+                               int image_w, int image_h, int spp, ColorMode color_mode, bool ao = false, bool soft_shadows = false)
   {
     AABB sdf_bbox = sdf.get_bbox();
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
+    glm::mat4 projInv = glm::inverse(camera.get_proj(false));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
     //set light somewhere to the side 
     int spp_a = MAX(1,floor(sqrtf(spp)));
@@ -248,38 +255,79 @@ namespace nsdf
             
             if (primitive_sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
             {
-              if (lambert)
+              constexpr float h = 0.001;
+              float ddx = (sdf.get_distance(p0 + glm::vec3(h, 0, 0)) - sdf.get_distance(p0 + glm::vec3(-h, 0, 0))) / (2 * h);
+              float ddy = (sdf.get_distance(p0 + glm::vec3(0, h, 0)) - sdf.get_distance(p0 + glm::vec3(0, -h, 0))) / (2 * h);
+              float ddz = (sdf.get_distance(p0 + glm::vec3(0, 0, h)) - sdf.get_distance(p0 + glm::vec3(0, 0, -h))) / (2 * h);
+              glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
+              float shadow = primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + 10.0f * h * light_dir, light_dir);
+              if (soft_shadows)
               {
-                constexpr float h = 0.001;
-                float ddx = (sdf.get_distance(p0 + glm::vec3(h,0,0)) - sdf.get_distance(p0 + glm::vec3(-h,0,0)))/(2*h);
-                float ddy = (sdf.get_distance(p0 + glm::vec3(0,h,0)) - sdf.get_distance(p0 + glm::vec3(0,-h,0)))/(2*h);
-                float ddz = (sdf.get_distance(p0 + glm::vec3(0,0,h)) - sdf.get_distance(p0 + glm::vec3(0,0,-h)))/(2*h);
-                glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
-                float shadow = primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + h*light_dir, light_dir) &&
-                               primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 - h*light_dir, light_dir);
-                float l_val = (1 - shadow);
-                float ao_value = 0.0f;
-                if (ao)
+                unsigned steps = 64;
+                float res = 1.0f;
+                float t = h;
+                for (int i=0;i<steps;i++)    
                 {
-                  unsigned rays = 8;
-                  unsigned hits = 0;
-                  glm::vec3 t1 = glm::cross(n, abs(l_val) > 0.99 ? glm::vec3(-light_dir.y, light_dir.x, light_dir.z) :
-                                                                   glm::vec3(light_dir.x, light_dir.y, light_dir.z));
-                  glm::vec3 t2 = glm::cross(n, t1);
-
-                  for (int i=0;i<rays;i++)
+                  glm::vec3 p = p0 + t*light_dir;
+                  if (!sdf_bbox.contains(p))
+                    break;
+                  float d = sdf.get_distance(p);
+                  if (d < 1e-6)
                   {
-                    float phi = urand(-PI, PI);
-                    float psi = urand(0, PI/2);
-                    glm::vec3 ray = cos(phi)*cos(psi)*t1 + sin(psi)*n + sin(phi)*cos(psi)*t2;
-                    hits += primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + h*n, ray);
+                    res = 0.0f;
+                    break;
                   }
-                  ao_value = hits/(float)rays;
-                }
-                color += glm::fract(glm::max(p0.y, 0.0f));// * MAX(0.1f, l_val) * (1.0f - ao_value);
+                  res = fminf(res, 10*d/t);
+                  t += d;
+                }   
+                shadow = 1.0f - fminf(res, 1.0f);     
               }
-              else
-                color += glm::vec3(1,1,1);
+              
+              float l_val = (1 - shadow) * glm::dot(n, light_dir);
+              
+              float ao_value = 0.0f;
+              if (ao)
+              {
+                unsigned rays = 16;
+                unsigned hits = 0;
+                float step_size = 0.01;
+                /* slow but correct ao
+                glm::vec3 t1 = glm::cross(n, abs(l_val) > 0.99 ? glm::vec3(-light_dir.y, light_dir.x, light_dir.z) : glm::vec3(light_dir.x, light_dir.y, light_dir.z));
+                glm::vec3 t2 = glm::cross(n, t1);
+
+                for (int i = 0; i < rays; i++)
+                {
+                  float phi = urand(-PI, PI);
+                  float psi = urand(0, PI / 2);
+                  glm::vec3 ray = cos(phi) * cos(psi) * t1 + sin(psi) * n + sin(phi) * cos(psi) * t2;
+                  hits += primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + h * n, ray);
+                }
+                ao_value = hits / (float)rays;
+                */
+                //Distance Field Ambient Occlusion https://zephyrl.github.io/SDF/
+                for (int i = 1; i <= rays; i++)
+                {
+                  float dist = step_size*i;
+                  float i_intensity = 0.33f/rays;
+                  ao_value += fmaxf((dist - sdf.get_distance(p0 + dist*n))/dist, 0.0f)*i_intensity;
+                }
+                ao_value = std::min(1.0f, ao_value);
+              }
+              float l = MAX(0.1f, l_val) * (1.0f - ao_value);
+              switch (color_mode)
+              {
+              case GRAY:
+                color += l*glm::vec3(1, 1, 1);
+                break;
+              case SINPOS:
+                color += l*glm::abs(glm::vec3(sin(8*PI*p0.x), sin(8*PI*p0.y), sin(8*PI*p0.z)));
+                break;
+              case NORMALS:
+                color += l*glm::abs(n);
+                break;              
+              default:
+                break;
+              }
             }
           }
         }
@@ -298,28 +346,28 @@ namespace nsdf
   void task_1_create_references()
   {
     CameraSettings cam;
-    cam.origin = glm::vec3(0,0,3);
+    cam.origin = glm::vec3(0,3,3);
     cam.target = glm::vec3(0,0,0);
     cam.up = glm::vec3(0,1,0);
 
-    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    glm::vec3 light_dir = normalize(glm::vec3(0.7,0.8,0.5));
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
     l.to_file("saves/task1_references/light.txt");
 
     CameraSettings cam1 = cam;
-    cam1.origin = glm::vec3(0,3*sin(0),3*cos(0));
+    cam1.origin = glm::vec3(2*sin(0),2,2*cos(0));
     convert(cam1).to_file("saves/task1_references/cam1.txt");
 
     CameraSettings cam2 = cam;
-    cam2.origin = glm::vec3(0,3*sin(2*PI/3),3*cos(2*PI/3));
+    cam2.origin = glm::vec3(2*sin(2*PI/3),2,2*cos(2*PI/3));
     convert(cam2).to_file("saves/task1_references/cam2.txt");
 
     CameraSettings cam3 = cam;
-    cam3.origin = glm::vec3(0,3*sin(4*PI/3),3*cos(4*PI/3));
+    cam3.origin = glm::vec3(2*sin(4*PI/3),2,2*cos(4*PI/3));
     convert(cam3).to_file("saves/task1_references/cam3.txt");
 
     PrimitiveSDF sdf1;
-    sdf1.primitives.push_back(Primitive(REC_TETRAHEDRON, {0,0,0},{0.7,0.7,0.7}));
+    sdf1.primitives.push_back(Primitive(MANDELBULB, {0,0,0},{0.7,0.7,0.7}));
 
     {
       PrimitiveSDFScene psdf;
@@ -346,9 +394,8 @@ namespace nsdf
     }
     
     PrimitiveSDF sdf2;
-    sdf2.primitives.push_back(Primitive(BOX, {0,0.3f,0.4f},{0.4,0.4,0.4}));
-    sdf2.primitives.push_back(Primitive(SPONGE, {-0.3f,0,0.1f},{0.3,0.3,0.3}));
-    sdf2.primitives.push_back(Primitive(BOX, {0,-0.2f,0.0f},{0.25,0.25,0.25}));
+    sdf2.primitives.push_back(Primitive(SPONGE, {0,0.6,0},{0.6,0.6,0.6}));
+    sdf2.primitives.push_back(Primitive(BOX, {0,-5,0.0f},{5,5,5}));
 
     {
       PrimitiveSDFScene psdf;
@@ -374,44 +421,46 @@ namespace nsdf
                                        glm::vec3(psdf.scene_data[7*i+4], psdf.scene_data[7*i+5], psdf.scene_data[7*i+6]));
     }
 
+    PrimitiveSDF sdf3;
+    sdf3.primitives.push_back(Primitive(SPHERE, {0.9,0.3,0.9},{0.1,0.1,0.1}));
+    sdf3.primitives.push_back(Primitive(SPHERE, {0.76,0.3,0.35},{0.1,0.1,0.1}));
+    sdf3.primitives.push_back(Primitive(SPHERE, {0.54,0.3,0.19},{0.1,0.1,0.1}));
+    sdf3.primitives.push_back(Primitive(SPHERE, {0.32,0.3,0.57},{0.1,0.1,0.1}));
+    sdf3.primitives.push_back(Primitive(SPHERE, {0.5,0.35,0.79},{0.15,0.15,0.15}));
+    sdf3.primitives.push_back(Primitive(BOX, {0,-0.8,0},{1,1,1}));
+    sdf3.primitives.push_back(Primitive(BOX, {0,-5,0.0f},{5,5,5}));
+
     Texture t;
 
-    int steps = 16;
-    for (int i=0;i<steps;i++)
-    {
-      CameraSettings tc = cam;
-      tc.origin = glm::vec3(3*cos(2*PI*i/steps), -2, 3*sin(2*PI*i/steps));
-      t = render_primitive_sdf(sdf2, tc, light_dir, 512, 512, 4, true);
-      engine::textureManager->save_png(t, "task1_references/sdf1_turntable_"+std::to_string(i));
-    }
-    
-    t = render_primitive_sdf(sdf1, cam1, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam1_reference");
-    t = render_primitive_sdf(sdf1, cam2, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam2_reference");
-    t = render_primitive_sdf(sdf1, cam3, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam3_reference");
+    //int steps = 16;
+    //for (int i=0;i<steps;i++)
+    //{
+    //  CameraSettings tc = cam;
+    //  tc.origin = glm::vec3(3*cos(2*PI*i/steps), 2, 3*sin(2*PI*i/steps));
+    //  t = render_primitive_sdf(sdf2, tc, light_dir, 1024, 1024, 16, GRAY, true, true);
+    //  engine::textureManager->save_png(t, "task1_references/sdf1_turntable_"+std::to_string(i));
+    //}
 
-    t = render_primitive_sdf(sdf2, cam1, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam1_reference");
-    t = render_primitive_sdf(sdf2, cam2, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam2_reference");
-    t = render_primitive_sdf(sdf2, cam3, light_dir, 512, 512, 9, false);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam3_reference");
-  
-    t = render_primitive_sdf(sdf1, cam1, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam1_lambert_reference");
-    t = render_primitive_sdf(sdf1, cam2, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam2_lambert_reference");
-    t = render_primitive_sdf(sdf1, cam3, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf1_cam3_lambert_reference");
+    t = render_primitive_sdf(sdf1, cam1, light_dir, 2048, 2048, 32, NORMALS);
+    engine::textureManager->save_png(t, "task1_references/ref_1");
+    t = render_primitive_sdf(sdf1, cam1, light_dir, 2048, 2048, 32, GRAY);
+    engine::textureManager->save_png(t, "task1_references/ref_2");
+    t = render_primitive_sdf(sdf1, cam1, light_dir, 2048, 2048, 32, SINPOS);
+    engine::textureManager->save_png(t, "task1_references/ref_3");
 
-    t = render_primitive_sdf(sdf2, cam1, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam1_lambert_reference");
-    t = render_primitive_sdf(sdf2, cam2, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam2_lambert_reference");
-    t = render_primitive_sdf(sdf2, cam3, light_dir, 512, 512, 9, true);
-    engine::textureManager->save_png(t, "task1_references/sdf2_cam3_lambert_reference");
+    t = render_primitive_sdf(sdf2, cam1, light_dir, 2048, 2048, 32, GRAY);
+    engine::textureManager->save_png(t, "task1_references/ref_4");
+    t = render_primitive_sdf(sdf2, cam1, light_dir, 2048, 2048, 32, GRAY, true);
+    engine::textureManager->save_png(t, "task1_references/ref_5");
+    t = render_primitive_sdf(sdf2, cam1, light_dir, 2048, 2048, 32, GRAY, true, true);
+    engine::textureManager->save_png(t, "task1_references/ref_6");
+
+    t = render_primitive_sdf(sdf3, cam1, light_dir, 2048, 2048, 32, GRAY);
+    engine::textureManager->save_png(t, "task1_references/ref_7");
+    t = render_primitive_sdf(sdf3, cam1, light_dir, 2048, 2048, 32, GRAY, true);
+    engine::textureManager->save_png(t, "task1_references/ref_8");
+    t = render_primitive_sdf(sdf3, cam1, light_dir, 2048, 2048, 32, GRAY, true, true);
+    engine::textureManager->save_png(t, "task1_references/ref_9");
   }
 
   void load_points_cloud(std::string filename, std::vector<float> *points, std::vector<float> *distances)
