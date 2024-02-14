@@ -14,17 +14,20 @@ struct CameraSettings
   {
     return glm::lookAt(origin, target, up);
   }
-  glm::mat4 get_proj() const
+  glm::mat4 get_proj(bool use_y_swap = true) const
   {
     glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
     glm::mat4 projection = orthographic ?
                            glm::ortho(-0.5f*(z_far-z_near), 0.5f*(z_far-z_near), -0.5f*(z_far-z_near), 0.5f*(z_far-z_near), z_near, z_far) :
                            glm::perspective(fov_rad, 1.0f, z_near, z_far);
-    return y_swap*projection;
+    if (use_y_swap)
+      return y_swap*projection;
+    else
+      return projection;
   }
-  glm::mat4 get_viewProj() const
+  glm::mat4 get_viewProj(bool use_y_swap = true) const
   {
-    return get_proj()*get_view();
+    return get_proj(use_y_swap)*get_view();
   }
 };
 
