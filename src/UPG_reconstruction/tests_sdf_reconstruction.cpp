@@ -15,9 +15,9 @@ namespace upg
   //an putting derivative is right (root,left,right) order
   void sdf_test_1()
   {
-    SdfGenInstance one_circle({std::vector<uint16_t>{1}});
-    SdfGenInstance moved_circle({std::vector<uint16_t>{2,1}});
-    SdfGenInstance two_circles({std::vector<uint16_t>{3,2,1,2,1}});
+    ProceduralSdf one_circle({std::vector<uint16_t>{1}});
+    ProceduralSdf moved_circle({std::vector<uint16_t>{2,1}});
+    ProceduralSdf two_circles({std::vector<uint16_t>{3,2,1,2,1}});
 
     debug("TEST 1. SDF NODES\n");
     {
@@ -32,11 +32,11 @@ namespace upg
     }
     {
       std::vector<float> params = {0.5};
-      ProceduralSdf sdf = one_circle.generate(params);
+      one_circle.set_parameters(params);
       std::vector<float> ddist,dpos = {0,0,0};
       std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
-      float d1 = sdf.get_distance({0,1,0},&ddist,&dpos);
-      float d2 = sdf.get_distance({1,0,0});
+      float d1 = one_circle.get_distance({0,1,0},&ddist,&dpos);
+      float d2 = one_circle.get_distance({1,0,0});
 
       debug("  1.2. %-64s", "Distance to circle correct");
       if (abs(d1 - (0.5)) < 1e-6 && abs(d2 - (0.5)) < 1e-6)
@@ -1005,7 +1005,7 @@ namespace upg
 
   void sdf_test_15()
   {
-    SdfGenInstance rot_box({std::vector<uint16_t>{11, 4}});
+    ProceduralSdf rot_box({std::vector<uint16_t>{11, 4}});
 
     debug("TEST 15. SDF ROTATION NODE\n");
     {
@@ -1018,12 +1018,12 @@ namespace upg
     }
     {
       std::vector<float> params = {0, 0, PI/4, 1, 1, 1};
-      ProceduralSdf sdf = rot_box.generate(params);
+      rot_box.set_parameters(params);
       std::vector<float> ddist,dpos = {0,0,0};
       std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
-      float d1 = sdf.get_distance({0,sqrt(2),0},&ddist,&dpos);
-      float d2 = sdf.get_distance({0,sqrt(0.5),sqrt(0.5)});
-      float d3 = sdf.get_distance({1,0.5,0.5});
+      float d1 = rot_box.get_distance({0,sqrt(2),0},&ddist,&dpos);
+      float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
+      float d3 = rot_box.get_distance({1,0.5,0.5});
 
       debug(" 15.2. %-64s", "Distance to box correct");
       if (abs(d1) < 1e-6 && abs(d2) < 1e-6 && abs(d3) < 1e-6)

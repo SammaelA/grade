@@ -5,7 +5,7 @@
     perform_tests_mesh_reconstruction:b = false
     tests_mesh_reconstruction:arr = {}
 
-    perform_tests_sdf_reconstruction:b = false
+    perform_tests_sdf_reconstruction:b = true
     tests_sdf_reconstruction:arr = {}
 
     perform_tests_tensor_processor:b = false
@@ -14,8 +14,8 @@
     perform_tests_tensor_processor_GPU:b = false
     tests_tensor_processor_GPU:arr = {}
 
-    perform_tests_neural_networks:b = true
-    tests_neural_networks:arr = {10}
+    perform_tests_neural_networks:b = false
+    tests_neural_networks:arr = {}
 
     perform_tests_common:b = false
     tests_common:arr = {}

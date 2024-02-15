@@ -308,7 +308,7 @@ namespace upg
 
     virtual void optimize(int iters = -1) override
     {
-      assert(dynamic_cast<SdfGenInstance*>(gen.get())); //currently not working with meshes
+      assert(dynamic_cast<ProceduralSdf*>(gen.get())); //currently not working with meshes
 
       if (is_test_stand)
         optimization_test_stand(iters);

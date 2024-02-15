@@ -362,8 +362,8 @@ namespace upg
 
   float estimate_positioning_quality(const UPGReconstructionResult &res, const FieldSdfCompare &opt_func, float threshold)
   {
-    SdfGenInstance gen(res.structure);
-    ProceduralSdf sdf = gen.generate(res.parameters.p);
+    ProceduralSdf sdf(res.structure);
+    sdf.set_parameters(res.parameters.p);
 
     int inside_count = 0;
     int apr_count = 0;
@@ -394,8 +394,9 @@ namespace upg
 
   float estimate_solution_quality_MAE(const UPGReconstructionResult &res, const FieldSdfCompare &opt_func)
   {
-    SdfGenInstance gen(res.structure);
-    ProceduralSdf sdf = gen.generate(res.parameters.p);
+    ProceduralSdf sdf(res.structure);
+    sdf.set_parameters(res.parameters.p);
+
     double AE = 0;
     for (int i=0;i<opt_func.points.size();i++)
     {
@@ -425,8 +426,8 @@ std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     edge.fine_quality = estimate_positioning_quality(partial_result, edge.start->opt_func, ctx.settings.distance_fine_thr);
 
     //create new node with less active points
-    SdfGenInstance gen(partial_result.structure);
-    ProceduralSdf sdf = gen.generate(partial_result.parameters.p);
+    ProceduralSdf sdf(partial_result.structure);
+    sdf.set_parameters(partial_result.parameters.p);
 
     edge.end.reset(new GRNode(edge.start->opt_func));
     edge.end->opt_func.remove_inactive_points(sdf, 0.001f); 
@@ -520,8 +521,8 @@ std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   void debug_render_node(const GRNode *n, int id)
   {
 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    SdfGenInstance gen(n->primitives.back().structure);
-    ProceduralSdf sdf = gen.generate(n->primitives.back().parameters.p);
+    ProceduralSdf sdf(n->primitives.back().structure);
+    sdf.set_parameters(n->primitives.back().parameters.p);
     CameraSettings camera;
     camera.origin = glm::vec3(0, 0, 3);
     camera.target = glm::vec3(0, 0, 0);

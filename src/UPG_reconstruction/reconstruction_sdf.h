@@ -314,7 +314,8 @@ namespace upg
     {
       assert(a_points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
 
       return sample_random<true>(sdf, samples, out_grad);
@@ -324,18 +325,19 @@ namespace upg
     {
       assert(a_points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
       return sample_random<false>(sdf, samples);
     }
 
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
-      return ((SdfGenInstance*)gen)->desc;
+      return ((ProceduralSdf*)gen)->desc;
     }
 
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
     {
-      return std::make_shared<SdfGenInstance>(structure);
+      return std::make_shared<ProceduralSdf>(structure);
     }
   };
 }

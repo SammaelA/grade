@@ -252,7 +252,7 @@ namespace upg
     }
     virtual void optimize(int iters = -1) override
     {
-      if (part_based_memetic && dynamic_cast<SdfGenInstance*>(gen.get()))
+      if (part_based_memetic && dynamic_cast<ProceduralSdf*>(gen.get()))
         optimize_part_based(iters);
       else
         optimize_memetic(iters);

@@ -7,7 +7,7 @@ float __enzyme_autodiff(...);
 
 namespace upg
 {
-  AABB SdfGenInstance::scene_bbox;
+  AABB ProceduralSdf::scene_bbox;
   static constexpr int MAX_PARAMS = 256;
 
   #define GET_DISTANCE_WITH_DIFF(func)                       \
@@ -707,7 +707,7 @@ namespace upg
     }
   };
 
-  ProceduralSdf SdfGenInstance::generate(std::span<const float> parameters)
+  void ProceduralSdf::set_parameters(std::span<const float> parameters)
   {
     for (int i = 0; i < all_params.size(); ++i)
     {
@@ -720,14 +720,13 @@ namespace upg
         all_params[i] = 0;
       }
     }
-    return ProceduralSdf(root, structure, all_nodes);
   }
 
-  SdfGenInstance::SdfGenInstance(const UPGStructure &structure)
+  ProceduralSdf::ProceduralSdf(const UPGStructure &structure)
   {
     recreate(structure);
   }
-  void SdfGenInstance::recreate(const UPGStructure &_structure)
+  void ProceduralSdf::recreate(const UPGStructure &_structure)
   {
     structure = _structure;
     all_params.clear();

@@ -662,7 +662,7 @@ namespace nsdf
 
   void create_point_and_params_cloud_chair(int count_params, int count_points, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
-    upg::SdfGenInstance gen({std::vector<uint16_t>{3, 3, 2, 4, 2, 4, 3, 3, 2, 5, 2, 5, 3, 2, 5, 2, 5}});
+    upg::ProceduralSdf sdf({std::vector<uint16_t>{3, 3, 2, 4, 2, 4, 3, 3, 2, 5, 2, 5, 3, 2, 5, 2, 5}});
     unsigned int sz = 3 + 6;
     points->resize(sz*count_params*count_points);
     distances->resize(count_params*count_points);
@@ -677,7 +677,7 @@ namespace nsdf
       params.push_back(urand(0.001, 0.5));//height2
 
       create_real_params_from_chair_depended(params, &par);
-      upg::ProceduralSdf sdf = gen.generate(par);
+      sdf.set_parameters(par);
       for (int j = 0; j < count_points; ++j)
       {
         glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
@@ -694,14 +694,14 @@ namespace nsdf
 
   void create_point_and_params_cloud_32124(int count_params, int count_points, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
-    upg::SdfGenInstance gen({std::vector<uint16_t>{3, 2, 1, 2, 4}});
-    unsigned int sz = 3 + gen.desc.get_total_params_count();
+    upg::ProceduralSdf sdf({std::vector<uint16_t>{3, 2, 1, 2, 4}});
+    unsigned int sz = 3 + sdf.desc.get_total_params_count();
     points->resize(sz*count_params*count_points);
     distances->resize(count_params*count_points);
     for (int i=0;i<count_params;i++)
     {
       std::vector<float> params = {};
-      for (auto &par : gen.desc.get_block_params())
+      for (auto &par : sdf.desc.get_block_params())
       {
         for (auto &pr : par.second.p)
         {
@@ -715,7 +715,7 @@ namespace nsdf
         glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
                                 urand(bbox.min_pos.y, bbox.max_pos.y),
                                 urand(bbox.min_pos.z, bbox.max_pos.z));
-        upg::ProceduralSdf sdf = gen.generate(params);
+        sdf.set_parameters(params);
         (*points)[sz*i*count_points+sz*j+0] = p.x;
         (*points)[sz*i*count_points+sz*j+1] = p.y;
         (*points)[sz*i*count_points+sz*j+2] = p.z;
@@ -1130,7 +1130,7 @@ namespace nsdf
   void task_3_create_references()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
-    upg::SdfGenInstance::set_scene_bbox(bbox);
+    upg::ProceduralSdf::set_scene_bbox(bbox);
 
     CameraSettings cam;
     cam.origin = glm::vec3(0,0,3);
@@ -1193,7 +1193,7 @@ namespace nsdf
   void task_4_chair()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
-    upg::SdfGenInstance::set_scene_bbox(bbox);
+    upg::ProceduralSdf::set_scene_bbox(bbox);
 
     CameraSettings cam;
     cam.origin = glm::vec3(0,0,3);

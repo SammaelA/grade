@@ -21,6 +21,6 @@ namespace upg
                                     std::vector<float> *distances);
   void render_sdf_to_array(std::span<float> out_array, const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode);
   Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode = SDFRenderMode::LAMBERT);
-  float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf);
-  float get_sdf_similarity_MSE(ProceduralSdf reference_sdf, ProceduralSdf sdf);
+  float get_sdf_image_based_quality(const ProceduralSdf &reference_sdf, const ProceduralSdf &sdf);
+  float get_sdf_similarity_MSE(const ProceduralSdf &reference_sdf, const ProceduralSdf &sdf);
 }

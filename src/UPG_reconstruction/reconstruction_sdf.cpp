@@ -36,8 +36,8 @@ namespace upg
       reference.is_synthetic = true;
       synthetic_reference->get_arr("structure", reference.structure.s);
       synthetic_reference->get_arr("params", reference.parameters.p);
-      SdfGenInstance gen(reference.structure);
-      ProceduralSdf sdf = gen.generate(reference.parameters.p);
+      ProceduralSdf sdf(reference.structure);
+      sdf.set_parameters(reference.parameters.p);
 
       int points = synthetic_reference->get_int("points_count", 10000);
       sdf_to_point_cloud(sdf, points, &(reference.points), &(reference.outside_points));
@@ -112,7 +112,8 @@ namespace upg
     {
       assert(reference.points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
 
       std::vector<float> cur_grad;
@@ -169,7 +170,8 @@ namespace upg
     {
       assert(reference.points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
 
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
@@ -195,11 +197,11 @@ namespace upg
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
-      return ((SdfGenInstance*)gen)->desc;
+      return ((ProceduralSdf*)gen)->desc;
     }
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
     {
-      return std::make_shared<SdfGenInstance>(structure);
+      return std::make_shared<ProceduralSdf>(structure);
     }
 
     virtual float estimate_positioning_quality(const UPGStructure &structure,
@@ -211,8 +213,8 @@ namespace upg
     part_structure.s = std::vector<uint16_t>(structure.s.begin() + part.s_range.first, structure.s.begin() + part.s_range.second);
     std::span<const float> part_parameters(parameters.data() + part.p_range.first, parameters.data() + part.p_range.second);
 
-    SdfGenInstance gen(part_structure);
-    ProceduralSdf sdf = gen.generate(part_parameters);
+    ProceduralSdf sdf(part_structure);
+    sdf.set_parameters(part_parameters);
 
     double quality = 0, q1 = 0, q2 = 0;
     float denom = normal_pdf(0,0,border_sigma);
@@ -266,7 +268,8 @@ namespace upg
     {
       assert(surface_points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
 
       std::vector<float> cur_grad;
@@ -340,7 +343,8 @@ namespace upg
     {
       assert(surface_points.size() > 0);
       std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
-      ProceduralSdf sdf = ((SdfGenInstance*)gen)->generate(gen_params);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
 
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
@@ -377,11 +381,11 @@ namespace upg
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
-      return ((SdfGenInstance*)gen)->desc;
+      return ((ProceduralSdf*)gen)->desc;
     }
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
     {
-      return std::make_shared<SdfGenInstance>(structure);
+      return std::make_shared<ProceduralSdf>(structure);
     }
   };
 
@@ -668,8 +672,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
       part_results.push_back(partial_result);
 
-      SdfGenInstance gen(partial_result.structure);
-      ProceduralSdf sdf = gen.generate(partial_result.parameters.p);
+      ProceduralSdf sdf(partial_result.structure);
+      sdf.set_parameters(partial_result.parameters.p);
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
       camera.target = glm::vec3(0,0,0);
@@ -737,8 +741,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
   float estimate_positioning_quality(UPGReconstructionResult &res, FieldSdfCompare &opt_func, float threshold)
   {
-    SdfGenInstance gen(res.structure);
-    ProceduralSdf sdf = gen.generate(res.parameters.p);
+    ProceduralSdf sdf(res.structure);
+    sdf.set_parameters(res.parameters.p);
 
     int inside_count = 0;
     int apr_count = 0;
@@ -842,8 +846,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
       part_results.push_back(best_part_result);
 
-      SdfGenInstance gen(best_part_result.structure);
-      ProceduralSdf sdf = gen.generate(best_part_result.parameters.p);
+      ProceduralSdf sdf(best_part_result.structure);
+      sdf.set_parameters(best_part_result.parameters.p);
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
       camera.target = glm::vec3(0,0,0);
@@ -908,8 +912,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
       part_results.push_back(partial_result);
 
-      SdfGenInstance gen(partial_result.structure);
-      ProceduralSdf sdf = gen.generate(partial_result.parameters.p);
+      ProceduralSdf sdf(partial_result.structure);
+      sdf.set_parameters(partial_result.parameters.p);
       CameraSettings camera;
       camera.origin = glm::vec3(0,0,3);
       camera.target = glm::vec3(0,0,0);
@@ -937,7 +941,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
     //get ReconstructionReference - all info about the object that we want to reconstruct
     PointCloudReference reference = get_point_cloud_reference(*input_blk);
-    SdfGenInstance::set_scene_bbox(get_point_cloud_bbox(reference.points));
+    ProceduralSdf::set_scene_bbox(get_point_cloud_bbox(reference.points));
 
     //get start parameters for optimization. They are required for Adam and other local optimizers
     //and have to be set manually
@@ -965,21 +969,21 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
     for (auto &result : opt_res)
     {
-      SdfGenInstance gen(result.structure);
-      ProceduralSdf sdf = gen.generate(result.parameters.p);
+      ProceduralSdf sdf(result.structure);
+      sdf.set_parameters(result.parameters.p);
 
       result.quality_ir = result.loss_optimizer;
 
       if (reference.is_synthetic && res_blk->get_bool("check_model_quality"))
       {
-        SdfGenInstance reference_gen(reference.structure);
-        ProceduralSdf reference_sdf = reference_gen.generate(reference.parameters.p);
+        ProceduralSdf reference_sdf(reference.structure);
+        reference_sdf.set_parameters(reference.parameters.p);
         result.quality_ir = get_sdf_similarity_MSE(reference_sdf, sdf);
       }
       if (reference.is_synthetic && res_blk->get_bool("check_image_quality"))
       {
-        SdfGenInstance reference_gen(reference.structure);
-        ProceduralSdf reference_sdf = reference_gen.generate(reference.parameters.p);
+        ProceduralSdf reference_sdf(reference.structure);
+        reference_sdf.set_parameters(reference.parameters.p);
         result.quality_synt = get_sdf_image_based_quality(reference_sdf, sdf);
       }
 

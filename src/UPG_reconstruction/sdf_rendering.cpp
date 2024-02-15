@@ -290,7 +290,7 @@ namespace upg
     return AABB(minv, maxv);
   }
 
-  float get_sdf_image_based_quality(ProceduralSdf reference_sdf, ProceduralSdf sdf)
+  float get_sdf_image_based_quality(const ProceduralSdf &reference_sdf, const ProceduralSdf &sdf)
   {
     int image_size = 512;
     int points_count = 1000;
@@ -316,7 +316,7 @@ namespace upg
     return -10*log10(MAX(1e-9f,mse/cameras.size()));
   }
 
-  float get_sdf_similarity_MSE(ProceduralSdf reference_sdf, ProceduralSdf sdf)
+  float get_sdf_similarity_MSE(const ProceduralSdf &reference_sdf, const ProceduralSdf &sdf)
   {
     int points = 50000;
     AABB bbox = AABB(min(reference_sdf.root->get_bbox().min_pos, sdf.root->get_bbox().min_pos),

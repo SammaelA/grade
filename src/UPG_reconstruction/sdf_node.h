@@ -55,28 +55,7 @@ namespace upg
     virtual std::vector<const SdfNode *> get_children() const override { return {}; }
   };
 
-  class ProceduralSdf
-  {
-  public:
-    ProceduralSdf() = default;
-    ProceduralSdf(const SdfNode *_root, const UPGStructure &_structure,
-                std::span<const std::unique_ptr<SdfNode>> _all_nodes):
-      all_nodes(_all_nodes)
-    {
-      root = _root;
-      structure = _structure;
-    }
-    float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const
-    {
-      return root->get_distance(pos, ddist_dp, ddist_dpos);
-    }
-    const SdfNode *root = nullptr;
-    const std::span<const std::unique_ptr<SdfNode>> all_nodes;
-    UPGStructure structure;
-  };
-
-  class SdfGenInstance : public UniversalGenInstance
+  class ProceduralSdf : public UniversalGenInstance
   {
   public:
     //to better perform optimization on different scales, we should better
@@ -84,12 +63,21 @@ namespace upg
     //BBox affects only ParametersDescription, not the generation itself.
     static void set_scene_bbox(AABB bbox) {scene_bbox = bbox;}
 
-    SdfGenInstance(const UPGStructure &structure);
+    ProceduralSdf(const UPGStructure &structure);
     virtual void recreate(const UPGStructure &structure) override;
-    ProceduralSdf generate(std::span<const float> parameters);
+    void set_parameters(std::span<const float> parameters);
     ParametersDescription desc;
 
-  private:
+    float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                               std::vector<float> *ddist_dpos = nullptr) const
+    {
+      return root->get_distance(pos, ddist_dp, ddist_dpos);
+    }
+    AABB get_bbox() const
+    {
+      return root->get_bbox();
+    }
+  //private:
     std::vector<std::unique_ptr<SdfNode>> all_nodes;
     SdfNode *root;
     //spans from inputParams points to this container

@@ -286,8 +286,8 @@ namespace upg
     unsigned count = 25000;
 
     SceneDesc scene = scene_4_boxes();
-    SdfGenInstance gen(scene.first);
-    ProceduralSdf sdf = gen.generate(scene.second.p);
+    ProceduralSdf sdf(scene.first);
+    sdf.set_parameters(scene.second.p);
     std::vector<glm::vec3> positions;
     std::vector<float> distances;
     sdf_to_point_cloud_with_dist(sdf, count, &positions, &distances);
@@ -406,8 +406,8 @@ namespace upg
         labels[2*mod + 1] = 1;
       }
 
-      SdfGenInstance gen(s);
-      ProceduralSdf sdf = gen.generate(p.p);
+      ProceduralSdf sdf(s);
+      sdf.set_parameters(p.p);
 
       //Texture t = render_sdf(sdf, camera, 256, 256, 4, true);
       //engine::textureManager->save_png(t, "dataset_image_"+std::to_string(mod));
@@ -558,8 +558,8 @@ namespace upg
         labels[2*mod + 1] = 1;
       }
 
-      SdfGenInstance gen(s);
-      ProceduralSdf sdf = gen.generate(p.p);
+      ProceduralSdf sdf(s);
+      sdf.set_parameters(p.p);
 
       for (int i=0;i<layers;i++)
       {
@@ -720,11 +720,11 @@ namespace upg
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
-      return ((SdfGenInstance*)gen)->desc;
+      return ((ProceduralSdf*)gen)->desc;
     }
     virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
     {
-      return std::make_shared<SdfGenInstance>(structure);
+      return std::make_shared<ProceduralSdf>(structure);
     }
   private:
 
@@ -739,13 +739,13 @@ namespace upg
   void sdf_grid_test()
   {
     SceneDesc scene = scene_chair();
-    SdfGenInstance gen(scene.first);
-    ProceduralSdf sdf = gen.generate(scene.second.p);
+    ProceduralSdf sdf(scene.first);
+    sdf.set_parameters(scene.second.p);
 
     unsigned vox_size = 32;
     unsigned samples = 1;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
-    AABB bbox = sdf.root->get_bbox().expand(1.25f);
+    AABB bbox = sdf.get_bbox().expand(1.25f);
     GridSdfNode grid(0, vox_size, bbox);
     grid.set_param_span(data);
 
@@ -822,7 +822,7 @@ namespace upg
     }
 
     int steps = 16;
-    ProceduralSdf g_sdf;
+    ProceduralSdf g_sdf(scene.first);
     g_sdf.root = &grid;
     for (int i=0;i<steps;i++)
     {
@@ -856,8 +856,8 @@ namespace upg
 
     for (auto &scene : scenes)
     {
-      SdfGenInstance gen(scene.second.first);
-      ProceduralSdf sdf = gen.generate(scene.second.second.p);
+      ProceduralSdf sdf(scene.second.first);
+      sdf.set_parameters(scene.second.second.p);
       t1 = std::chrono::steady_clock::now();
       Texture t = render_sdf(sdf, camera, image_size, image_size, spp, SDFRenderMode::LAMBERT);
       t2 = std::chrono::steady_clock::now();
