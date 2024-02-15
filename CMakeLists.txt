@@ -182,6 +182,8 @@ if (MODULE_VULKAN)
   set(MODULES_SRC ${MODULES_SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
 
   set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} ${FREEIMAGE_LIBRARIES} OpenMP::OpenMP_CXX volk dl)
+else()
+  message("Module VULKAN               OFF")
 endif()
 
 #####################################################################################################################################################

@@ -7,6 +7,9 @@
 #include "save_utils/serialization.h"
 #include "hydra/hydra_scene_exporter.h"
 #include "UPG_reconstruction/upg.h"
+#include "neuralCore/nn_tests.h"
+#include "common_tests.h"
+
 #include <fstream>
 BOOST_CLASS_EXPORT(BranchClusteringDataImpostor);
 
@@ -587,7 +590,41 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
     }
       break;
     case GC_UPG_TESTS:
-      upg::perform_tests(cmd.args);
+    {
+      std::vector<int> t1,t2,t3,t4,t5,t6;
+      bool a1 = cmd.args.get_bool("perform_tests_mesh_reconstruction");
+      cmd.args.get_arr("tests_mesh_reconstruction", t1);
+
+      bool a2 = cmd.args.get_bool("perform_tests_sdf_reconstruction");
+      cmd.args.get_arr("tests_sdf_reconstruction", t2);
+
+      bool a3 = cmd.args.get_bool("perform_tests_tensor_processor");
+      cmd.args.get_arr("tests_tensor_processor", t3);
+
+      bool a4 = cmd.args.get_bool("perform_tests_tensor_processor_GPU");
+      cmd.args.get_arr("tests_tensor_processor_GPU", t4);
+
+      bool a5 = cmd.args.get_bool("perform_tests_neural_networks");
+      cmd.args.get_arr("tests_neural_networks", t5);
+
+      bool a6 = cmd.args.get_bool("perform_tests_common");
+      cmd.args.get_arr("tests_common", t6);
+
+      nn::base_path = "modules/neuralCore/";
+
+      if (a1)
+        upg::perform_tests_mesh_reconstruction(t1);
+      if (a2)
+        upg::perform_tests_sdf_reconstruction(t2);   
+      if (a3)
+        nn::perform_tests_tensor_processor(t3);
+      if (a4)
+        nn::perform_tests_tensor_processor_GPU(t4);
+      if (a5)
+        nn::perform_tests_neural_networks(t5);  
+      if (a6)
+        perform_tests_common(t6);  
+    }
       break;
     case GC_UPG_BENCHMARK:
       upg::perform_benchmarks(cmd.args);

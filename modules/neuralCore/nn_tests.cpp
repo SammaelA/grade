@@ -24,10 +24,12 @@
 
 namespace nn
 {
+  std::string base_path = "";
+
   void read_image_rgb(std::string path, std::vector<float> &image_data, int &width, int &height)
   {
     int channels;
-    unsigned char *imgData = stbi_load(path.c_str(), &width, &height, &channels, 0);
+    unsigned char *imgData = stbi_load((base_path+path).c_str(), &width, &height, &channels, 0);
 
     image_data.resize(3*width*height, 0);
     for (int i=0;i<height;i++)
@@ -50,12 +52,12 @@ namespace nn
     for (int i=0;i<3*width*height;i++)
       data[i] = std::max(0, std::min(255, (int)(255*image_data[i])));
     
-    stbi_write_png(path.c_str(), width, height, 3, data, 3*width);
+    stbi_write_png((base_path+path).c_str(), width, height, 3, data, 3*width);
 
     delete[] data;
   }
 
-void test_1_tensor_processor()
+void tp_test_1_tensor_processor()
   {
     printf("TEST 1. BASIC TENSOR PROGRAMS PROCESSING\n");
 
@@ -96,7 +98,7 @@ void test_1_tensor_processor()
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
 
-  void test_2_tensor_tokens()
+  void tp_test_2_tensor_tokens()
   {
     printf("TEST 2. BASIC TENSOR PROGRAMS COMPILING\n");
 
@@ -132,7 +134,7 @@ void test_1_tensor_processor()
       printf("FAILED %f %f %f != %f %f %f\n", A[0], A[1], A[2], 0.25f, 0.25f, 0.5f);
   }
 
-  void test_3_tensor_operations()
+  void tp_test_3_tensor_operations()
   {
     printf("TEST 3. VARIOUS TENSOR COMMANDS\n");
 
@@ -205,9 +207,9 @@ void test_1_tensor_processor()
     }
   }
 
-  void test_4_linear_regression()
+  void nn_test_1_linear_regression()
   {
-    printf("TEST 4. LINEAR REGRESSION EVALUATION\n");
+    printf("TEST 1. LINEAR REGRESSION EVALUATION\n");
     std::vector<float> X = {1,2,3, 1,3,2, 1,4,1};
     std::vector<float> w = {1,1,-1,0.01};
     std::vector<float> r = {0,0,0};
@@ -215,16 +217,16 @@ void test_1_tensor_processor()
     nn2.add_layer(std::make_shared<DenseLayer>(3, 1));
     nn2.initialize_with_weights(w.data());
     nn2.evaluate(X, r);
-    printf("  4.1. %-64s", "Correct result ");
+    printf("  1.1. %-64s", "Correct result ");
     if (abs(r[0] - 0.01f) < 1e-6 && abs(r[1] - 2.01f) < 1e-6 && abs(r[2] - 4.01f) < 1e-6)
       printf("passed\n");
     else
       printf("FAILED %f %f %f != %f %f %f\n", r[0], r[1], r[2], 0.01f, 2.01f, 4.01f);
   }
 
-  void test_5_aliases()
+  void tp_test_4_aliases()
   {
-    printf("TEST 5. ALIASES\n");
+    printf("TEST 4. ALIASES\n");
     TensorCompiler tc;
     {
       tc.start_program();
@@ -262,16 +264,16 @@ void test_1_tensor_processor()
     for (int i=0;i<ref.size();i++)
       diff += std::abs(r[i] - ref[i]);
     
-    printf("  5.1. %-64s", "Correct result ");
+    printf("  4.1. %-64s", "Correct result ");
     if (diff < 1e-6)
       printf("passed\n");
     else
       printf("FAILED\n");
   }
 
-  void test_6_linear_regression_train()
+  void nn_test_2_linear_regression_train()
   {
-    printf("TEST 6. LINEAR REGRESSION\n");
+    printf("TEST 2. LINEAR REGRESSION\n");
     int sz = 1024;
     int dim = 32;
     std::vector<float> X(dim*sz,0);
@@ -298,16 +300,16 @@ void test_1_tensor_processor()
     for (int i=0;i<sz;i++)
       diff += abs(y[i]-res[i]);
     diff /= sz;
-    printf("  6.1. %-64s", "Perfect optimization ");
+    printf("  2.1. %-64s", "Perfect optimization ");
     if (diff < 1e-6)
       printf("passed\n");
     else
       printf("FAILED %f > %f\n", diff, 1e-6);
   }
 
-  void test_7_SIREN_image()
+  void nn_test_3_SIREN_image()
   {
-    printf("TEST 7. SIREN 2D\n");
+    printf("TEST 3. SIREN 2D\n");
     std::vector<float> image_data, pixel_data, image_data_grayscale;
     int width=0, height=0;
     read_image_rgb("1a.png", image_data, width, height);
@@ -359,16 +361,16 @@ void test_1_tensor_processor()
       diff += abs(image_data_res[i] - image_data_grayscale[i]);
     diff /= image_data_res.size();
     
-    printf("  7.1. %-64s", "Decent image optimization ");
+    printf("  3.1. %-64s", "Decent image optimization ");
     if (diff < 0.25f)
       printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.25f);
   }
 
-  void test_8_SIREN_SDF()
+  void nn_test_4_SIREN_SDF()
   {
-    printf("TEST 8. SIREN 3D\n");
+    printf("TEST 4. SIREN 3D\n");
     auto circle_sdf = [](float x, float y, float z) -> float
     {
       return std::sqrt(x*x+y*y+z*z) - 0.75;
@@ -401,16 +403,16 @@ void test_1_tensor_processor()
       diff += abs(predicted_distances[i] - distances[i]);
     diff /= predicted_distances.size();
     
-    printf("  8.1. %-64s", "Good simple SDF optimization ");
+    printf("  4.1. %-64s", "Good simple SDF optimization ");
     if (diff < 0.01f)
       printf("passed\n");
     else
       printf("FAILED %f >= %f\n", diff, 0.01f);
   }
 
-  void test_9_softmax()
+  void tp_test_5_softmax()
   {
-    printf("TEST 9. SOFTMAX FUNCTION\n");
+    printf("TEST 5. SOFTMAX FUNCTION\n");
 
     TensorCompiler tc;
     {
@@ -436,7 +438,7 @@ void test_1_tensor_processor()
     TensorProcessor::get_output("A", A.data(), A.size());
     //printf("%f %f %f %f %f %f\n", A[0], A[1], A[2], A[3], A[4], A[5]);
 
-    printf("  9.1. %-64s", "Correct result ");
+    printf("  5.1. %-64s", "Correct result ");
     if (abs(A[0] - 0.155362f) < 1e-6 && abs(A[1] - 0.422319f) < 1e-6 && abs(A[5] - 0.946499f) < 1e-6)
       printf("passed\n");
     else
@@ -444,9 +446,9 @@ void test_1_tensor_processor()
     
   }
 
-  void test_10_simple_classifier()
+  void nn_test_5_simple_classifier()
   {
-    printf("TEST 10. SIMPLE CLASSIFICATION\n");
+    printf("TEST 5. SIMPLE CLASSIFICATION\n");
     int sz = 1000;
     int dim = 2;
     std::vector<float> X(dim*sz,0);
@@ -478,16 +480,16 @@ void test_1_tensor_processor()
       diff += (y[i]>0.5) != (res[i]>0.5);
     }
     float error_rate = diff/sz;
-    printf(" 10.1. %-64s", "Error rate <3% ");
+    printf("  5.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
       printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void test_11_ReLU_classifier()
+  void nn_test_16_ReLU_classifier()
   {
-    printf("TEST 11. CLASSIFICATION WITH RELU\n");
+    printf("TEST 16. CLASSIFICATION WITH RELU\n");
     int sz = 25000;
     int dim = 10;
     std::vector<float> X(dim*sz,0);
@@ -534,16 +536,16 @@ void test_1_tensor_processor()
       diff += (y[i]>0.5) != (res_test[i]>0.5);
 
     float error_rate = diff/sz;
-    printf(" 10.1. %-64s", "Error rate <3% ");
+    printf(" 16.1. %-64s", "Error rate <3% ");
     if (error_rate < 0.03f)
       printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void test_12_logic_operations()
+  void tp_test_6_logic_operations()
   {
-    printf("TEST 12. LOGIC OPERATIONS\n");
+    printf("TEST 6. LOGIC OPERATIONS\n");
 
     TensorCompiler tc;
     {
@@ -603,7 +605,7 @@ void test_1_tensor_processor()
 
     for (int k=0;k<10;k++)
     {
-      printf(" 12.%2d. %-63s", k+1,(reference[k].first+" correct ").c_str());
+      printf("  6.%2d. %-63s", k+1,(reference[k].first+" correct ").c_str());
       float diff = 0.0f;
       for (int i=0;i<6;i++)
         diff += abs(reference[k].second[i] - res[6*k + i]);
@@ -614,9 +616,9 @@ void test_1_tensor_processor()
     }
   }
 
-  void test_13_padding()
+  void tp_test_7_padding()
   {
-    printf("TEST 13. PADDING\n");
+    printf("TEST 7. PADDING\n");
 
     TensorCompiler tc;
     {
@@ -657,7 +659,7 @@ void test_1_tensor_processor()
     for (int i=0;i<PadX.size();i++)
       diff += abs(PadX[i] - PadX_ref[i]);
     
-    printf(" 13.1. %-64s","X padding");
+    printf("  7.1. %-64s","X padding");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -668,7 +670,7 @@ void test_1_tensor_processor()
     for (int i=0;i<PadY.size();i++)
       diff += abs(PadY[i] - PadY_ref[i]);
     
-    printf(" 13.2. %-64s","Y padding");
+    printf("  7.2. %-64s","Y padding");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -679,7 +681,7 @@ void test_1_tensor_processor()
     for (int i=0;i<PadXY.size();i++)
       diff += abs(PadXY[i] - PadXY_ref[i]);
     
-    printf(" 13.3. %-64s","X and Y padding");
+    printf("  7.3. %-64s","X and Y padding");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -687,9 +689,9 @@ void test_1_tensor_processor()
     }
   }
 
-  void test_14_conv2D()
+  void tp_test_8_conv2D()
   {
-    printf("TEST 14. 2D CONVOLUTION\n");
+    printf("TEST 8. 2D CONVOLUTION\n");
 
     TensorCompiler tc;
     {
@@ -810,7 +812,7 @@ void test_1_tensor_processor()
     for (int i=0;i<R1.size();i++)
       diff += abs(R1[i] - R1_ref[i]);
     
-    printf(" 14.1. %-64s","kernel X");
+    printf("  8.1. %-64s","kernel X");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -821,7 +823,7 @@ void test_1_tensor_processor()
     for (int i=0;i<R2.size();i++)
       diff += abs(R2[i] - R2_ref[i]);
     
-    printf(" 14.2. %-64s","kernel Y");
+    printf("  8.2. %-64s","kernel Y");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -832,7 +834,7 @@ void test_1_tensor_processor()
     for (int i=0;i<R3.size();i++)
       diff += abs(R3[i] - R3_ref[i]);
     
-    printf(" 14.3. %-64s","kernel with stride > 1");
+    printf("  8.3. %-64s","kernel with stride > 1");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -843,7 +845,7 @@ void test_1_tensor_processor()
     for (int i=0;i<R4.size();i++)
       diff += abs(R4[i] - R4_ref[i]);
     
-    printf(" 14.4. %-64s","multi-layered kernel");
+    printf("  8.4. %-64s","multi-layered kernel");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -851,9 +853,9 @@ void test_1_tensor_processor()
     }
   }
 
-  void test_15_conv2D_blur()
+  void tp_test_9_conv2D_blur()
   {
-    printf("TEST 15. BLUR WITH 2D CONVOLUTION\n");
+    printf("TEST 9. BLUR WITH 2D CONVOLUTION\n");
 
     std::vector<float> image_data, pixel_data, image_data_grayscale;
     int width=0, height=0;
@@ -922,13 +924,13 @@ void test_1_tensor_processor()
     }
     write_image_rgb("1a_gray.png", image_data, width, height);
     
-    printf(" 15.1. blur took %4.1f ms                                               ", ms);
+    printf("  9.1. blur took %4.1f ms                                               ", ms);
     printf("passed\n");
   }
 
-  void test_16_conv2D_forward()
+  void nn_test_6_conv2D_forward()
   {
-    printf("TEST 16. CONV_2D FORWARD PASS\n");
+    printf("TEST 6. CONV_2D FORWARD PASS\n");
     std::vector<float> X = {2 ,5 ,10, 
                             5 ,8 ,13,
                             10,13,18};
@@ -945,7 +947,7 @@ void test_1_tensor_processor()
     for (int i=0;i<r_ref.size();i++)
       diff += std::abs(r[i] - r_ref[i]);
     
-    printf(" 16.1. %-64s", "Correct result ");
+    printf("  6.1. %-64s", "Correct result ");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -956,9 +958,9 @@ void test_1_tensor_processor()
     //printf("\n");
   }
 
-  void test_17_conv2D_backward()
+  void nn_test_7_conv2D_backward()
   {
-    printf("TEST 17. CONV_2D BACKWARD PASS\n");
+    printf("TEST 7. CONV_2D BACKWARD PASS\n");
     std::vector<float> X = {2 ,5 ,10, 
                             5 ,8 ,13,
                             10,13,18};
@@ -981,16 +983,16 @@ void test_1_tensor_processor()
     for (int i=0;i<r_ref.size();i++)
       diff += std::abs(r[i] - r_ref[i]);
     
-    printf(" 17.1. %-64s", "Correct result ");
+    printf("  7.1. %-64s", "Correct result ");
     if (diff < 1.0f)
       printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
-  void test_18_conv2D_no_padding()
+  void nn_test_8_conv2D_no_padding()
   {
-    printf("TEST 18. CONV_2D NO PADDING\n");
+    printf("TEST 8. CONV_2D NO PADDING\n");
     std::vector<float> X = {1,2,3,4,5,6,7,8,9};
     std::vector<float> w = {0,-1,0,0,0,0,0,1,0, 0,0,0,-1,0,1,0,0,0};
     std::vector<float> r(1, 0.0f);
@@ -1009,16 +1011,16 @@ void test_1_tensor_processor()
     for (int i=0;i<r_ref.size();i++)
       diff += std::abs(r[i] - r_ref[i]);
     
-    printf(" 18.1. %-64s", "Correct result ");
+    printf("  8.1. %-64s", "Correct result ");
     if (diff < 1e-4)
       printf("passed\n");
     else
       printf("FAILED\n");
   }
 
-  void test_19_max_pooling()
+  void tp_test_11_max_pooling()
   {
-    printf("TEST 19. MAX POOLING\n");
+    printf("TEST 11. MAX POOLING\n");
 
     TensorCompiler tc;
     {
@@ -1066,7 +1068,7 @@ void test_1_tensor_processor()
     for (int i=0;i<B.size();i++)
       diff += abs(B[i] - B_ref[i]);
     
-    printf(" 19.1. %-64s","forward pass");
+    printf(" 11.1. %-64s","forward pass");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -1077,7 +1079,7 @@ void test_1_tensor_processor()
     for (int i=0;i<dIn.size();i++)
       diff += abs(dIn[i] - dIn_ref[i]);
     
-    printf(" 19.2. %-64s","backward pass");
+    printf(" 11.2. %-64s","backward pass");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -1085,9 +1087,9 @@ void test_1_tensor_processor()
     }
   }
 
-  void test_20_synthetic_images_classifier()
+  void nn_test_9_synthetic_images_classifier()
   {
-    printf("TEST 20. SYNTHETIC IMAGES CLASSIFIER\n");
+    printf("TEST 9. SYNTHETIC IMAGES CLASSIFIER\n");
     unsigned image_size = 16;
     unsigned image_count = 5000;
 
@@ -1138,18 +1140,18 @@ void test_1_tensor_processor()
       diff += (y_res[i]>0.5) != (y_test[i]>0.5);
 
     float error_rate = diff/(y_test.size());
-    printf(" 20.1. %-64s", "Error rate <10% ");
+    printf("  9.1. %-64s", "Error rate <10% ");
     if (error_rate < 0.1f)
       printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void test_21_MNIST()
+  void nn_test_10_MNIST()
   {
-    printf("TEST 21. FULLY CONNECTED NN TRAINING ON MNIST DATASET\n");
+    printf("TEST 10. FULLY CONNECTED NN TRAINING ON MNIST DATASET\n");
     Dataset dataset;
-    read_MNIST_dataset("../../resources/MNIST-dataset", &dataset);
+    read_MNIST_dataset(base_path + std::string("../../resources/MNIST-dataset"), &dataset);
     train_test_split(&dataset, 0.1);
 
     NeuralNetwork nn2;
@@ -1195,16 +1197,16 @@ void test_1_tensor_processor()
       cnt++;
     }
     float error_rate = 1 - acc/cnt;
-    printf(" 21.1. %-64s", "Error rate <5% ");
+    printf(" 10.1. %-64s", "Error rate <5% ");
     if (error_rate < 0.1f)
       printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void test_22_arithmetics_benchmark()
+  void tp_test_12_arithmetics_benchmark()
   {
-    printf("TEST 22. ARITHMETICS BENCHMARK\n");
+    printf("TEST 12. ARITHMETICS BENCHMARK\n");
 
     TensorCompiler tc;
     {
@@ -1228,13 +1230,15 @@ void test_1_tensor_processor()
     TensorProcessor::execute();
     auto t_now = std::chrono::steady_clock::now();
     float ms = 0.001*std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_prev).count();
-    printf(" 22.1. operation took %6.1f ms                                        ", ms);
+    printf(" 12.1. operation took %6.1f ms                                        ", ms);
     printf("passed\n");
   }
 
-  void test_23_CIFAR10()
+  void nn_test_11_CIFAR10()
   {
-    printf("TEST 23. CONVOLUTIONAL NN TRAINING ON CIFAR10 DATASET\n");
+    printf("TEST 11. CONVOLUTIONAL NN TRAINING ON CIFAR10 DATASET\n");
+    printf("TEMPORARY DISABLED. test takes too long\n");
+    return;
     Dataset dataset;
     read_CIFAR10_dataset("../../resources/cifar-10-dataset", &dataset);
     train_test_split(&dataset, 0.1);
@@ -1277,16 +1281,16 @@ void test_1_tensor_processor()
       cnt++;
     }
     float error_rate = 1 - acc/cnt;
-    printf(" 23.1. %-64s", "Error rate <60% ");
+    printf(" 11.1. %-64s", "Error rate <60% ");
     if (error_rate < 0.6f)
       printf("passed\n");
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void test_24_dilation()
+  void tp_test_13_dilation()
   {
-    printf("TEST 24. DILATION\n");
+    printf("TEST 13. DILATION\n");
 
     TensorCompiler tc;
     {
@@ -1331,7 +1335,7 @@ void test_1_tensor_processor()
     for (int i=0;i<A_res.size();i++)
       diff += abs(A_res[i] - A_ref[i]);
     
-    printf(" 24.1. %-64s","1D dilation");
+    printf(" 13.1. %-64s","1D dilation");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -1342,7 +1346,7 @@ void test_1_tensor_processor()
     for (int i=0;i<B_res.size();i++)
       diff += abs(B_res[i] - B_ref[i]);
     
-    printf(" 24.2. %-64s","2D dilation");
+    printf(" 13.2. %-64s","2D dilation");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -1350,9 +1354,9 @@ void test_1_tensor_processor()
     }    
   }
 
-  void test_25_conv2D_stride()
+  void nn_test_12_conv2D_stride()
   {
-    printf("TEST 25. CONV_2D STRIDE\n");
+    printf("TEST 12. CONV_2D STRIDE\n");
     std::vector<float> X = { 1, 1,0,-1,-1,
                              1, 1,0,-1,-1,
                              0, 0,0, 0, 0,
@@ -1374,16 +1378,16 @@ void test_1_tensor_processor()
     for (int i=0;i<r_ref.size();i++)
       diff += std::abs(r[i] - r_ref[i]);
     
-    printf(" 25.1. %-64s", "Correct result ");
+    printf(" 12.1. %-64s", "Correct result ");
     if (diff < 1.0f)
       printf("passed\n");
     else
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
-  void test_26_binary_classification_metrics()
+  void nn_test_13_binary_classification_metrics()
   {
-    printf("TEST 26. BINARY CLASSIFICATION METRICS\n");
+    printf("TEST 13. BINARY CLASSIFICATION METRICS\n");
     unsigned image_size = 16;
     unsigned image_count = 5000;
 
@@ -1436,40 +1440,40 @@ void test_1_tensor_processor()
     float auc_roc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_ROC);
     float auc_pr = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::AUC_PR);
 
-    printf(" 26.1. %-64s", "High accuracy");
+    printf(" 13.1. %-64s", "High accuracy");
     if (acc > 0.95)
       printf("passed\n");
     else
       printf("FAILED, accuracy %f\n", acc);
 
-    printf(" 26.2. %-64s", "High precision");
+    printf(" 13.2. %-64s", "High precision");
     if (pr > 0.95)
       printf("passed\n");
     else
       printf("FAILED, precision %f\n", pr);
   
-    printf(" 26.3. %-64s", "High recall");
+    printf(" 13.3. %-64s", "High recall");
     if (recall > 0.95)
       printf("passed\n");
     else
       printf("FAILED, recall %f\n", recall);
       
-    printf(" 26.4. %-64s", "High AUC ROC");
+    printf(" 13.4. %-64s", "High AUC ROC");
     if (auc_roc > 0.95)
       printf("passed\n");
     else
       printf("FAILED, AUC ROC %f\n", auc_roc);
       
-    printf(" 26.5. %-64s", "High AUC PR");
+    printf(" 13.5. %-64s", "High AUC PR");
     if (auc_pr > 0.95)
       printf("passed\n");
     else
       printf("FAILED, AUC PR %f\n", auc_pr);
   }
 
-  void test_27_batch_normalization()
+  void nn_test_14_batch_normalization()
   {
-    printf("TEST 27. BATCH NORMALIZATION\n");
+    printf("TEST 14. BATCH NORMALIZATION\n");
     unsigned image_size = 16;
     unsigned image_count = 5000;
 
@@ -1520,17 +1524,17 @@ void test_1_tensor_processor()
     std::vector<float> y_res(y_test.size(),0);
     nn2.evaluate(X_test, y_res);
     float acc = nn2.calculate_metric(y_res.data(), y_test.data(), y_test.size()/2, Metric::Accuracy);
-    printf(" 27.1. %-64s", "Accuracy > 95% ");
+    printf(" 14.1. %-64s", "Accuracy > 95% ");
     if (acc > 0.95f)
       printf("passed\n");
     else
       printf("FAILED, accuracy %f\n", acc);
   }
 
-  void test_28_random()
+  void tp_test_10_random()
   {
     srand(time(NULL));
-    printf("TEST 28. RANDOM\n");
+    printf("TEST 10. RANDOM\n");
 
     TensorCompiler tc;
     {
@@ -1556,7 +1560,7 @@ void test_1_tensor_processor()
     for (int i=0;i<A_res.size();i++)
       diff += abs(A_res[i] - A_ref[i]);
     
-    printf(" 28.1. %-64s","Same seed gives same result");
+    printf(" 10.1. %-64s","Same seed gives same result");
     if (diff < 1e-6)
       printf("passed\n");
     else
@@ -1571,7 +1575,7 @@ void test_1_tensor_processor()
     for (int i=0;i<B_res.size();i++)
       variance += (B_res[i] - mean)*(B_res[i] - mean);
     variance = variance/B_res.size();
-    printf(" 28.2. %-64s","Correct mean and variance");
+    printf(" 10.2. %-64s","Correct mean and variance");
     if (abs(mean-0.5) < 0.01 && abs(variance-1.0/12) < 0.01)
       printf("passed\n");
     else
@@ -1579,9 +1583,9 @@ void test_1_tensor_processor()
     }     
   }
 
-  void test_29_dropout()
+  void nn_test_15_dropout()
   {
-    printf("TEST 29. DROPOUT\n");
+    printf("TEST 15. DROPOUT\n");
     Dataset dataset;
     read_MNIST_dataset("../../resources/MNIST-dataset", &dataset);
     train_test_split(&dataset, 0.1);
@@ -1618,71 +1622,161 @@ void test_1_tensor_processor()
       cnt++;
     }
     float error_rate = 1 - acc/cnt;
-    printf(" 29.1. %-64s", "Error rate <10% ");
+    printf(" 15.1. %-64s", "Error rate <10% ");
     if (error_rate < 0.1f)
       printf("passed %f\n",error_rate);
     else
       printf("FAILED, error rate %f\n", error_rate);
   }
 
-  void perform_tests()
+  void perform_tests_tensor_processor(const std::vector<int> &test_ids)
   {
     srand(time(NULL));
+    std::vector<int> tests = test_ids;
+
+    std::vector<std::function<void(void)>> test_functions = {
+      tp_test_1_tensor_processor,  
+      tp_test_2_tensor_tokens,
+      tp_test_3_tensor_operations,
+      tp_test_4_aliases,
+      tp_test_5_softmax,
+      tp_test_6_logic_operations,
+      tp_test_7_padding,
+      tp_test_8_conv2D,
+      tp_test_9_conv2D_blur,
+      tp_test_10_random,
+      tp_test_11_max_pooling,
+      tp_test_12_arithmetics_benchmark,
+      tp_test_13_dilation
+    };
+
+    if (tests.empty())
+    {
+      tests.resize(test_functions.size());
+      for (int i=0;i<test_functions.size();i++)
+        tests[i] = i+1;
+    }
+
+    TensorProcessor::init("CPU");
+
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\nTENSOR PROCESSOR TESTS\n");
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\n");
+    
+    for (int i : tests)
+    {
+      assert(i > 0 && i <= test_functions.size());
+      test_functions[i-1]();
+    }
+  }
+
+  void perform_tests_tensor_processor_GPU(const std::vector<int> &test_ids)
+  {
+#if defined(USE_GPU)
+    srand(time(NULL));
+    std::vector<int> tests = test_ids;
+
+    std::vector<std::function<void(void)>> test_functions = {
+      tp_test_1_tensor_processor,  
+      tp_test_2_tensor_tokens,
+      tp_test_3_tensor_operations,
+      tp_test_4_aliases,
+      tp_test_5_softmax,
+      tp_test_6_logic_operations,
+      tp_test_7_padding,
+      tp_test_8_conv2D,
+      tp_test_9_conv2D_blur,
+      tp_test_10_random,
+      tp_test_11_max_pooling,
+      tp_test_12_arithmetics_benchmark,
+      tp_test_13_dilation
+    };
+
+    if (tests.empty())
+    {
+      tests.resize(test_functions.size());
+      for (int i=0;i<test_functions.size();i++)
+        tests[i] = i+1;
+    }
 
     TensorProcessor::init("GPU");
-    printf("NEURAL CORE GPU TESTS\n");
-    test_1_tensor_processor();
-    test_2_tensor_tokens();
-    test_3_tensor_operations();
-    test_4_linear_regression();
-    test_5_aliases();
-    test_6_linear_regression_train();
-    test_7_SIREN_image();
-    test_8_SIREN_SDF();
-    test_9_softmax();
-    test_10_simple_classifier();
-    test_11_ReLU_classifier();
-    test_12_logic_operations();
-    test_13_padding();
-    test_14_conv2D();
-    test_15_conv2D_blur();
-    test_16_conv2D_forward();
-    test_17_conv2D_backward();
-    test_18_conv2D_no_padding();
-    test_19_max_pooling();
-    test_20_synthetic_images_classifier();
-    test_21_MNIST();
-    test_22_arithmetics_benchmark();
-    //test_23_CIFAR10(); very long test
-    test_24_dilation();
-    test_25_conv2D_stride();
-    test_26_binary_classification_metrics();
-    test_27_batch_normalization();
-    test_28_random();
-    test_29_dropout();
 
-    printf("NEURAL CORE CPU TESTS\n");
-    TensorProcessor::init("CPU");
-    test_1_tensor_processor();
-    test_2_tensor_tokens();
-    test_3_tensor_operations();
-    test_4_linear_regression();
-    test_5_aliases();
-    test_6_linear_regression_train();
-    test_7_SIREN_image();
-    test_8_SIREN_SDF();
-    test_9_softmax();
-    test_10_simple_classifier();
-    test_11_ReLU_classifier();
-    test_12_logic_operations();
-    test_13_padding();
-    test_14_conv2D();
-    test_15_conv2D_blur();
-    test_16_conv2D_forward();
-    test_17_conv2D_backward();
-    test_18_conv2D_no_padding();
-    test_19_max_pooling();
-    test_20_synthetic_images_classifier();
-    test_28_random();
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\nGPU TENSOR PROCESSOR TESTS\n");
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\n");
+    
+    for (int i : tests)
+    {
+      assert(i > 0 && i <= test_functions.size());
+      test_functions[i-1]();
+    }
+#else
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\nGPU TENSOR PROCESSOR TESTS: GPU is not supported. Enable VULKAN module\n");
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\n");
+#endif
+  }
+
+  void perform_tests_neural_networks(const std::vector<int> &test_ids)
+  {
+    srand(time(NULL));
+    std::vector<int> tests = test_ids;
+
+    std::vector<std::function<void(void)>> test_functions = {
+      nn_test_1_linear_regression,
+      nn_test_2_linear_regression_train,
+      nn_test_3_SIREN_image,
+      nn_test_4_SIREN_SDF,
+      nn_test_5_simple_classifier,
+      nn_test_6_conv2D_forward,
+      nn_test_7_conv2D_backward,
+      nn_test_8_conv2D_no_padding,
+      nn_test_9_synthetic_images_classifier,
+      nn_test_10_MNIST,
+      nn_test_11_CIFAR10,
+      nn_test_12_conv2D_stride,
+      nn_test_13_binary_classification_metrics,
+      nn_test_14_batch_normalization,
+      nn_test_15_dropout,
+      nn_test_16_ReLU_classifier
+    };
+
+    if (tests.empty())
+    {
+      tests.resize(test_functions.size());
+      for (int i=0;i<test_functions.size();i++)
+        tests[i] = i+1;
+    }
+    
+    TensorProcessor::init("GPU");
+
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\nNEURAL NETWORKS TESTS\n");
+    for (int i=0;i<80;i++)
+      printf("#");
+    printf("\n");
+    
+    for (int i : tests)
+    {
+      assert(i > 0 && i <= test_functions.size());
+      test_functions[i-1]();
+    }
+  }
+
+  void perform_tests()
+  {
+    perform_tests_tensor_processor({});
+    perform_tests_tensor_processor_GPU({});
+    perform_tests_neural_networks({});
   }
 }

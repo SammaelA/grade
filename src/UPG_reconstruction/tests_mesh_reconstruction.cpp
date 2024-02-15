@@ -9,11 +9,10 @@
 
 namespace upg
 {
-
   //TEST 1 ONE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 80+ PSNR)
-  void test_1()
+  void mesh_test_1()
   {
     srand(0);
     debug("TEST 1. ONE TRIANGLE SINGLE-VIEW RECONSTRUCTION\n");
@@ -64,37 +63,37 @@ namespace upg
 
     debug("  1.1. %-64s", "ReconstructionResult size ");
     if (res.size() == 1)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
     debug("  1.2. %-64s", "Preserved structure ");
     if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == 1)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
     
     debug("  1.3. %-64s", "Preserved parameters count ");
     if (res[0].parameters.p.size() == 9)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
     
     debug("  1.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug("  1.5. %-64s", "Perfect one-view PSNR ");
     if (res[0].quality_ir > 80)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 80);
 
     debug("  1.6. %-64s", "Adequate turntable PSNR ");
     if (res[0].quality_synt > 10)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 10);
 
@@ -102,14 +101,14 @@ namespace upg
     bool cm_res = create_model(res[0].structure, res[0].parameters, mod);
     debug("  1.7. %-64s", "Reconstructed model can be created ");
     if (cm_res)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
 
     debug("  1.8. %-64s", "Reconstructed model is valid ");
     if (mod.materials.size() == 1 && mod.models.size() == 1 && mod.models[0] && mod.models[0]->positions.size() == 3*3 && 
         mod.models[0]->normals.size() == 3*3 && mod.models[0]->colors.size() == 4*3)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %d %d %d %d %d %d\n", mod.materials.size() == 1, mod.models.size() == 1, mod.models[0], 
             mod.models[0] ? (mod.models[0]->positions.size() == 3*3) : 0, 
@@ -120,7 +119,7 @@ namespace upg
   //TEST 2 ONE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_2()
+  void mesh_test_2()
   {
     srand(0);
     debug("TEST 2. ONE TRIANGLE MULTI-VIEW RECONSTRUCTION\n");
@@ -199,19 +198,19 @@ namespace upg
 
     debug("  2.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug("  2.2. %-64s", "Extremely high PSNR on given views ");
     if (res[0].quality_ir > 50)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 50);
 
     debug("  2.3. %-64s", "Extremely high turntable PSNR ");
     if (res[0].quality_synt > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
@@ -219,7 +218,7 @@ namespace upg
   //TEST 3 ONE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_3()
+  void mesh_test_3()
   {
     srand(0);
     debug("TEST 3. ONE TRIANGLE RECONSTRUCTION FROM MASK\n");
@@ -271,37 +270,37 @@ namespace upg
 
     debug("  3.1. %-64s", "ReconstructionResult size ");
     if (res.size() == 1)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
     debug("  3.2. %-64s", "Preserved structure ");
     if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == 1)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
     
     debug("  3.3. %-64s", "Preserved parameters count ");
     if (res[0].parameters.p.size() == 9)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
     
     debug("  3.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug("  3.5. %-64s", "Perfect one-view PSNR ");
     if (res[0].quality_ir > 80)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 80);
   }
 
   //image metrics
-  void test_4()
+  void mesh_test_4()
   {
     srand(0);
     debug("TEST 4. IMAGE METRICS\n");
@@ -310,34 +309,34 @@ namespace upg
     float mae = ImageMetric::get(t, t, ImageMetric::MAE);
     debug("  4.1. %-64s", "MAE ");
     if (mae < 1e-6)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n",mae, 1e-6);
     
     float mse = ImageMetric::get(t, t, ImageMetric::MSE);
     debug("  4.2. %-64s", "MSE ");
     if (mse < 1e-6)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n",mse, 1e-6);
 
     float psnr = ImageMetric::get(t, t, ImageMetric::PSNR);
     debug("  4.3. %-64s", "PSNR ");
     if (psnr > 90 - 1e-6)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n",psnr, 90 - 1e-6);
     
     float iou = ImageMetric::get(t, t, ImageMetric::IOU);
     debug("  4.4. %-64s", "IOU ");
     if (iou > 1 - 1e-6)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n",iou, 1 - 1e-6);
   }
 
   //hydra visualization of reconstructed model
-  void test_5()
+  void mesh_test_5()
   {
     srand(0);
     debug("TEST 5. HYDRA VISUALIZATION OF RECONSTRUCTION RESULTS\n");
@@ -438,19 +437,19 @@ namespace upg
 
     debug("  5.1. %-64s", "Images rendered ");
     if (same_size)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED\n");
     
     debug("  5.2. %-64s", "Reference images match ");
     if (min_psnr_ref > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n",min_psnr_ref, 40);
     
     debug("  5.3. %-64s", "Result images match ");
     if (min_psnr_res > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n",min_psnr_res, 40);
   }
@@ -460,7 +459,7 @@ namespace upg
   //and starting parameters identical to reference. Save result to obj.
   //Assure that it saved exactly the same model as input one and got
   //perfect metrics for reconstruction
-  void test_6()
+  void mesh_test_6()
   {
     srand(0);
     debug("TEST 6. PARAMETERS PRESERVATION + OBJ SAVING\n");
@@ -514,19 +513,19 @@ namespace upg
     
     debug("  6.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug("  6.2. %-64s", "Perfect one-view PSNR ");
     if (res[0].quality_ir > 80.0)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 80.0);
 
     debug("  6.3. %-64s", "Perfect turntable PSNR ");
     if (res[0].quality_synt > 80.0)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
 
@@ -548,7 +547,7 @@ namespace upg
     m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reconstructed_model.obj");
     debug("  6.4. %-64s", "Reconstructed model saved to obj file ");
     if (m)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED\n");
     bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
@@ -556,7 +555,7 @@ namespace upg
     bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
     debug("  6.5. %-64s", "Reconstructed model preserved ");
     if (pos_match && norm_match && tc_match)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED %d(sz %d, %d) %d %d\n", pos_match, m->positions.size(), ref_positions.size(), norm_match, tc_match);  
     delete m;
@@ -565,7 +564,7 @@ namespace upg
     m = model_loader::load_model_from_obj_directly("saves/tests/test_6/reference_model.obj");
     debug("  6.6. %-64s", "Reference model saved to obj file ");
     if (m)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED\n");
     bool pos_match = m && (m->positions.size() == ref_positions.size()) && match(m->positions, ref_positions);
@@ -573,7 +572,7 @@ namespace upg
     bool tc_match = m && (m->colors.size() == ref_tc.size()) && match(m->colors, ref_tc);
     debug("  6.7. %-64s", "Reference model preserved ");
     if (pos_match && norm_match && tc_match)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED %d %d %d\n", pos_match, norm_match, tc_match);  
     delete m;
@@ -581,7 +580,7 @@ namespace upg
   }
 
   //TEST 7 USING OBJ REFERENCE MODEL
-  void test_7()
+  void mesh_test_7()
   {
     srand(0);
     debug("TEST 7. USING OBJ REFERENCE MODEL\n");
@@ -634,19 +633,19 @@ namespace upg
     
     debug("  7.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug("  7.2. %-64s", "Perfect one-view PSNR ");
     if (res[0].quality_ir > 80.0)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 80.0);
 
     debug("  7.3. %-64s", "Perfect turntable PSNR ");
     if (res[0].quality_synt > 80.0)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
 
@@ -666,7 +665,7 @@ namespace upg
     m_ref = model_loader::load_model_from_obj_directly("saves/tests/test_7_ref/reconstructed_model.obj");
     debug("  7.4. %-64s", "Reconstructed model saved to obj file ");
     if (m)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED\n");
     bool pos_match = m && (m->positions.size() == m_ref->positions.size()) && match(m->positions, m_ref->positions);
@@ -674,7 +673,7 @@ namespace upg
     bool tc_match = m && (m->colors.size() == m_ref->colors.size()) && match(m->colors, m_ref->colors);
     debug("  7.5. %-64s", "Reconstructed model preserved ");
     if (pos_match && norm_match && tc_match)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED %d(sz %d, %d) %d %d\n", pos_match, m->positions.size(), m_ref->positions.size(), norm_match, tc_match);  
     delete m;
@@ -685,7 +684,7 @@ namespace upg
     m_ref = model_loader::load_model_from_obj_directly("saves/tests/test_7_ref/reference_model.obj");
     debug("  7.6. %-64s", "Reference model saved to obj file ");
     if (m)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED\n");
     bool pos_match = m && (m->positions.size() == m_ref->positions.size()) && match(m->positions, m_ref->positions);
@@ -693,7 +692,7 @@ namespace upg
     bool tc_match = m && (m->colors.size() == m_ref->colors.size()) && match(m->colors, m_ref->colors);
     debug("  7.7. %-64s", "Reference model preserved ");
     if (pos_match && norm_match && tc_match)
-      debug("PASSED\n");
+      debug("passed\n");
     else 
       debug("FAILED %d %d %d\n", pos_match, norm_match, tc_match);  
     delete m;
@@ -701,7 +700,7 @@ namespace upg
     }
   }
 
-  void test_8()
+  void mesh_test_8()
   {
     srand(0);
     debug("TEST 8. SIMPLE TRIANGLE SHIFTING GEN TREE\n");
@@ -720,7 +719,7 @@ namespace upg
     debug("  8.1. %-64s", "Creating model from params and structure ");
     if ((res = create_model_from_block(settings_blk, m)))
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -742,7 +741,7 @@ namespace upg
     }
     if (res)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -750,7 +749,7 @@ namespace upg
     }
   }
 
-  void test_9()
+  void mesh_test_9()
   {
     srand(0);
     debug("TEST 9. SIMPLE TRIANGLE SCALING GEN TREE\n");
@@ -769,7 +768,7 @@ namespace upg
     debug("  9.1. %-64s", "Creating model from params and structure ");
     if ((res = create_model_from_block(settings_blk, m)))
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -791,7 +790,7 @@ namespace upg
     }
     if (res)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -799,7 +798,7 @@ namespace upg
     }
   }
 
-  void test_10()
+  void mesh_test_10()
   {
     srand(0);
     debug("TEST 10. SIMPLE TRIANGLE ROTATING GEN TREE\n");//180 graduses
@@ -817,7 +816,7 @@ namespace upg
     debug(" 10.1. %-64s", "Creating model from params and structure ");
     if ((res = create_model_from_block(settings_blk, m)))
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -839,7 +838,7 @@ namespace upg
     }
     if (res)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -847,7 +846,7 @@ namespace upg
     }
   }
 
-  void test_11()
+  void mesh_test_11()
   {
     srand(0);
     debug("TEST 11. COMPLEX TRIANGLE ROTATING GEN TREE\n");
@@ -865,7 +864,7 @@ namespace upg
     debug(" 11.1. %-64s", "Creating model from params and structure ");
     if ((res = create_model_from_block(settings_blk, m)))
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -886,7 +885,7 @@ namespace upg
     }
     if (res)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -894,7 +893,7 @@ namespace upg
     }
   }
 
-  void test_12()
+  void mesh_test_12()
   {
     srand(0);
     debug("TEST 12. COMPLEX GEN TREE\n");
@@ -911,7 +910,7 @@ namespace upg
     debug(" 12.1. %-64s", "Creating model from params and structure ");
     if ((res = create_model_from_block(settings_blk, m)))
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -924,7 +923,7 @@ namespace upg
     res = (p.size() == 18);
     if (res)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -932,7 +931,7 @@ namespace upg
     }
   }
 
-  void test_13()
+  void mesh_test_13()
   {
     debug("TEST 13. TREE JACOBIAN CALCULATION\n");
 
@@ -948,7 +947,7 @@ namespace upg
     debug(" 13.1. %-64s", "Model and jacobian created, have right size ");
     if (mesh.pos.size() == 9 && jac.get_xn() == 9 && jac.get_yn() == 15)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -981,7 +980,7 @@ namespace upg
     debug(" 13.2. %-64s", "Jacobian is correct ");
     if (diff < 1e-7)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -992,7 +991,7 @@ namespace upg
   //TEST 14 MOVE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_14()
+  void mesh_test_14()
   {
     srand(0);
     debug("TEST 14. MOVE TRIANGLE RECONSTRUCTION\n");
@@ -1071,19 +1070,19 @@ namespace upg
 
     debug(" 14.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug(" 14.2. %-64s", "Extremely high PSNR on given views ");
     if (res[0].quality_ir > 50)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 50);
 
     debug(" 14.3. %-64s", "Extremely high turntable PSNR ");
     if (res[0].quality_synt > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
@@ -1091,7 +1090,7 @@ namespace upg
   //TEST 15 SCALE TRIANGLE RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_15()
+  void mesh_test_15()
   {
     srand(0);
     debug("TEST 15. SCALE TRIANGLE RECONSTRUCTION\n");
@@ -1170,24 +1169,24 @@ namespace upg
 
     debug(" 15.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug(" 15.2. %-64s", "Extremely high PSNR on given views ");
     if (res[0].quality_ir > 50)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 50);
 
     debug(" 15.3. %-64s", "Extremely high turntable PSNR ");
     if (res[0].quality_synt > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
-  void test_16()
+  void mesh_test_16()
   {
     debug("TEST 16. STACKED CUBES MODEL AND JACOBIAN\n");
 
@@ -1203,7 +1202,7 @@ namespace upg
     debug(" 16.1. %-64s", "Model and jacobian created, have right size ");
     if (mesh.pos.size() == 3*6*2*3*3 && jac.get_xn() == mesh.pos.size() && jac.get_yn() == params.p.size())
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -1254,7 +1253,7 @@ namespace upg
       diff += abs(mesh.pos[i] - reference_model[i]);
     debug(" 16.2. %-64s", "Model is correct ");
     if (diff < 1e-6)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", diff, 1e-6);
 
@@ -1295,7 +1294,7 @@ namespace upg
       }
     }
     if (true)
-      debug("PASSED\n");
+      debug("passed\n");
     else
 fail: debug("FAILED\n");
   }
@@ -1303,7 +1302,7 @@ fail: debug("FAILED\n");
   //TEST 17 STACKED CUBES RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_17()
+  void mesh_test_17()
   {
     srand(0);
     debug("TEST 17. STACKED CUBES RECONSTRUCTION\n");
@@ -1382,24 +1381,24 @@ fail: debug("FAILED\n");
 
     debug(" 17.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug(" 17.2. %-64s", "Extremely high PSNR on given views ");
     if (res[0].quality_ir > 50)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 50);
 
     debug(" 17.3. %-64s", "Extremely high turntable PSNR ");
     if (res[0].quality_synt > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
-  void test_18()
+  void mesh_test_18()
   {
     debug("TEST 18. ROTATE JACOBIAN CALCULATION\n");
 
@@ -1415,7 +1414,7 @@ fail: debug("FAILED\n");
     debug(" 18.1. %-64s", "Model and jacobian created, have right size ");
     if (mesh.pos.size() == 9 && jac.get_xn() == 9 && jac.get_yn() == 13)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -1447,7 +1446,7 @@ fail: debug("FAILED\n");
     debug(" 18.2. %-64s", "Jacobian is correct ");
     if (diff < 1e-7)
     {
-      debug("PASSED\n");
+      debug("passed\n");
     }
     else
     {
@@ -1458,10 +1457,12 @@ fail: debug("FAILED\n");
   //TEST 19 STACKED CUBES RECONSTRUCTION
   //It uses Memetic+adam optimizer with no initial parameters set
   //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_19()
+  void mesh_test_19()
   {
     srand(0);
     debug("TEST 19. STACKED CUBES RECONSTRUCTION WITH MEMETIC\n");
+    debug("TEMPORARY DISABLED\n");
+    return;
     std::string settings = R""""(
     {
     input {
@@ -1545,1145 +1546,53 @@ fail: debug("FAILED\n");
 
     debug(" 19.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
 
     debug(" 19.2. %-64s", "Extremely high PSNR on given views ");
     if (res[0].quality_ir > 50)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_ir, 50);
 
     debug(" 19.3. %-64s", "Extremely high turntable PSNR ");
     if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  //TEST 20 SDF NODES
-  //tests the most basic SDF nodes functions
-  //such as distance, merging and moving nodes
-  //an putting derivative is right (root,left,right) order
-  void test_20()
-  {
-    SdfGenInstance one_circle({std::vector<uint16_t>{1}});
-    SdfGenInstance moved_circle({std::vector<uint16_t>{2,1}});
-    SdfGenInstance two_circles({std::vector<uint16_t>{3,2,1,2,1}});
-
-    debug("TEST 20. SDF NODES\n");
-    {
-    int pcnt_1 = one_circle.desc.get_total_params_count();
-    int pcnt_2 = moved_circle.desc.get_total_params_count();
-    int pcnt_3 = two_circles.desc.get_total_params_count();
-    debug(" 20.1. %-64s", "SDF instances are created with expected number of parameters ");
-    if (pcnt_1 == 1 && pcnt_2 == 4 && pcnt_3 == 8)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d %d %d\n", pcnt_1, pcnt_2, pcnt_3);
-    }
-    {
-      std::vector<float> params = {0.5};
-      ProceduralSdf sdf = one_circle.generate(params);
-      std::vector<float> ddist,dpos = {0,0,0};
-      std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
-      float d1 = sdf.get_distance({0,1,0},&ddist,&dpos);
-      float d2 = sdf.get_distance({1,0,0});
-
-      debug(" 20.2. %-64s", "Distance to circle correct");
-      if (abs(d1 - (0.5)) < 1e-6 && abs(d2 - (0.5)) < 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED %f %f\n", d1, d2);
-      
-      float dist_1=0,dist_2=0;
-      for (int i=0;i<std::min(ddist.size(), ddist_ref.size());i++)
-        dist_1 += std::abs(ddist[i]-ddist_ref[i]);
-      for (int i=0;i<std::min(dpos.size(), dpos_ref.size());i++)
-        dist_2 += std::abs(dpos[i]-dpos_ref[i]);
-      
-      debug(" 20.3. %-64s", "Derivatives correct");
-      if (ddist.size() == 1 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED %d %d %d %d\n", ddist.size() == 1, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);
-    }
-  }
-
-    //TEST 21 SPHERE SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_21()
-  {
-    srand(0);
-    debug("TEST 21. SPHERE SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0,0,0,1}
-            structure:arr = {2,1}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,0.2,-0.1,0.7}    
-            structure:arr = {2,1} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 21.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 21.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 21.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 4)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 21.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 21.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  //TEST 22 SPHERES SDF RECONSTRUCTION MEMETIC
-  void test_22()
-  {
-    srand(0);
-    debug("TEST 22. SPHERES SDF RECONSTRUCTION MEMETIC\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.6,0.6,0.6,0.5, -0.6,0.6,0.6,0.5, 0.6,-0.6,0.6,0.5, -0.6,-0.6,0.6,0.5, 
-                          0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
-            structure:arr = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            //params:arr = {0.5,0.1,-0.1,0.5, -0.5,0.06,-0.09,0.54, 0.1,-0.66,-0.09,0.45, 0.1,0.57,0,0.51}
-            params:arr = {0.6,0.6,0.6,0.5, -0.6,0.6,0.6,0.5, 0.6,-0.6,0.6,0.5, -0.6,-0.6,0.6,0.5, 
-                          0.6,0,0,0.5, -0.6,0,0,0.5, 0,-0.6,0,0.5, 0,0.6,0,0.5}
-            structure:arr = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1}
-        }
-        step_0 {
-            optimizer_name:s = "memetic"
-            verbose:b = false
-        }
-        step_1 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 22.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    bool str_eq = true;
-    std::vector<uint16_t> ref_struct = {3,3,3,2,1,2,1,3,2,1,2,1,3,3,2,1,2,1,3,2,1,2,1};
-    for (int i=0;i<std::min(res[0].structure.s.size(), ref_struct.size());i++)
-       str_eq = str_eq && (res[0].structure.s[i] == ref_struct[i]);
-    debug(" 22.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == ref_struct.size() && str_eq)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 22.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 4*8)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 22.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 22.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  //TEST 23 BOX SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_23()
-  {
-    srand(time(NULL));
-    debug("TEST 23. BOX SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0,0.5,0.5,0.5}
-            structure:arr = {2,4}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1,0.41,0.43,0.61}    
-            structure:arr = {2,4} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 23.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 23.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 4)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 23.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 6)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 23.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 23.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
+      debug("passed\n");
     else
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
 
-  //TEST 24 COMPLEX DETAIL RECONSTRUCTION MEMETIC
-  void test_24()
+  void perform_tests_mesh_reconstruction(const std::vector<int> &test_ids)
   {
-    srand(time(NULL));
-    debug("TEST 24. COMPLEX DETAIL RECONSTRUCTION MEMETIC\n");
-    debug("TEMPORARY DISABLED\n");
-    return;
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-        } 
-    }
-    generator {
+    std::vector<int> tests = test_ids;
 
-    }
-    optimization {
-        start {
-        }
-        step_0 {
-            optimizer_name:s = "memetic"
-            iterations:i = 100
-            verbose:b = false
-        }
-        step_1 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-
-    int cnt_x = 8;
-    int cnt_z = 4;
-    glm::vec3 p0(-1,1.2, 0.5);
-    glm::vec3 p1(1, 1, -0.5);
-    
-    float base_r = std::min(abs(p1.x-p0.x)/(cnt_x+1), abs(p1.z-p0.z)/(cnt_z+1));
-
-    std::vector<uint16_t> structure_inv;
-    std::vector<float> params_inv;
-    uint32_t num = 1;
-    for (int i=0;i<cnt_z;i++)
-    {
-      for (int j=0;j<cnt_x;j++)
-      {
-        glm::vec3 p = glm::vec3(p0.x + (j+1+urand(-0.5,0.5))*(p1.x-p0.x)/(cnt_x+1), 
-                                p1.y,
-                                p0.z + (i+1+urand(-0.5,0.5))*(p1.z-p0.z)/(cnt_z+1));
-        float rnd = urand(0.5,1);
-        float r = rnd*base_r;
-        structure_inv.push_back(1);
-        structure_inv.push_back(2);
-        params_inv.push_back(r);
-        params_inv.push_back(p.x);
-        params_inv.push_back(p.y);
-        params_inv.push_back(p.z);
-
-        uint32_t S = 1;
-        while (num>= S && ((num & S) == 0))
-        {
-          structure_inv.push_back(3);
-          S = S << 1;
-        }
-        num++;
-      }
-    }
-
-    structure_inv.push_back(4);
-    structure_inv.push_back(2);
-    structure_inv.push_back(3);
-    params_inv.push_back(0.5*abs(p0.x-p1.x));
-    params_inv.push_back(0.5*abs(p0.y-p1.y));
-    params_inv.push_back(0.5*abs(p0.z-p1.z));
-    params_inv.push_back(0.5*(p0.x+p1.x));
-    params_inv.push_back(0.5*(p0.y+p1.y));
-    params_inv.push_back(0.5*(p0.z+p1.z));
-
-    std::vector<uint16_t> structure = structure_inv;
-    std::vector<float> params = params_inv;
-    for (int i=0;i<structure.size();i++)
-      structure[i] = structure_inv[structure.size()-i-1];
-    for (int i=0;i<params.size();i++)
-      params[i] = params_inv[params.size()-i-1];
-
-    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("structure", structure);
-    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("params", params);
-    settings_blk.get_block("optimization")->get_block("start")->set_arr("structure", structure);
-
-    //return;
-    auto res = reconstruct_sdf(settings_blk);
-    
-    debug(" 24.1. %-64s", "Low optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-  }
-
-//TEST 25 ROTATING BODY RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly (like 90 PSNR)
-  void test_25()
-  {
-    srand(0);
-    debug("TEST 25. ROTATING BODY MULTI-VIEW RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            reference_image_w:i = 512
-            reference_image_h:i = 512
-            params:arr = {0.2, 0.21, 0.23, 0.26, 0.3, 0.35, 0.41, 0.48}
-            structure:arr = {7}
-        } 
-        view_0 {
-            camera.origin:p3 = 2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_1 {
-            camera.origin:p3 = 2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_2 {
-            camera.origin:p3 = -2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_3 {
-            camera.origin:p3 = -2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.4, 0.4}
-            structure:arr = {7}
-        }
-        step_0 {
-            render_w:i = 512
-            render_h:i = 512
-            iterations:i = 1000
-            verbose:b = false
-            save_intermediate_images:b = false
-            learning_rate:r = 0.003
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct(settings_blk);
-
-    debug(" 25.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-
-    debug(" 25.2. %-64s", "Extremely high PSNR on given views ");
-    if (res[0].quality_ir > 50)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
-
-    debug(" 25.3. %-64s", "Extremely high turntable PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  //TEST 26 ROUND BOX SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_26()
-  {
-    srand(time(NULL));
-    debug("TEST 26. ROUND BOX SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0,0.5,0.5,0.5, 0.1}
-            structure:arr = {2,6}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1,0.41,0.43,0.61, 0.1}    
-            structure:arr = {2,6} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 26.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 26.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 6)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 26.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 7)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 26.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 26.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_27()
-  {
-    srand(time(NULL));
-    debug("TEST 27. PRISM SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0,0.5,0.5}
-            structure:arr = {2,7}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1,0.41,0.43}    
-            structure:arr = {2,7} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 27.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 27.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 7)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 27.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 5)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 27.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 27.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_28()
-  {
-    srand(time(NULL));
-    debug("TEST 28. CYLINDER SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0,0.5,0.5}
-            structure:arr = {2,5}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1,0.41,0.43}    
-            structure:arr = {2,5} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 28.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 28.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 5)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 28.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 5)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 28.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 28.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_29()
-  {
-    srand(time(NULL));
-    debug("TEST 29. CONE SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0,0.5,0.5,1}
-            structure:arr = {2,8}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1,0.51,0.43,1.07}    
-            structure:arr = {2,8} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 29.1. %-64s", "ReconstructionResult size ");
-    if (res.size() == 1)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d != %d\n", res.size(), 1);
-    
-    debug(" 29.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 8)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 29.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 6)
-      debug("PASSED\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 29.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 29.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-
-  //TEST 30 INTERSECTION SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_30()
-  {
-    srand(time(NULL));
-    debug("TEST 30. INTERSECTION SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0,0,0,0.6,0.3,0.6,  0,0,0,0.5}
-            structure:arr = {9, 2,4, 2,1}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {-0.08, 0.1, 0.1, 0.53, 0.27, 0.67, 0.11, 0.08, -0.09, 0.51}    
-            structure:arr = {9, 2,4, 2,1}
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 30.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 30.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  //TEST 31 SUBTRACT SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_31()
-  {
-    srand(time(NULL));
-    debug("TEST 31. SUBTRACT SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0,1,0,0.6,0.3,0.6,  0,1,0,0.5}
-            structure:arr = {10, 2,4, 2,1}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {-0.08, 0.91, 0.1, 0.53, 0.27, 0.67, 0.11, 0.98, -0.09, 0.51}    
-            structure:arr = {10, 2,4, 2,1}
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-
-    debug(" 31.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 31.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_32()
-  {
-    srand(0);
-    debug("TEST 32. COMPLEX MULTI-ROTATION\n");
-    std::string settings = R""""(
-    {
-    params:arr = {1, 0, 0, 0, 1, 1, 0,0,0, 1,0,0, 0,1,-1}    
-    structure:arr = {9, 1} 
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    ComplexModel m;
-    bool res;
-    debug(" 32.1. %-64s", "Creating model from params and structure ");
-    if ((res = create_model_from_block(settings_blk, m)))
-    {
-      debug("PASSED\n");
-    }
-    else
-    {
-      debug("FAILED %d\n", res);
-      return;
-    }
-    debug(" 32.2. %-64s", "Compare results and expectations ");
-    Model *model = m.models[0];
-    std::vector<float> p = model->positions;
-    res = (p.size() == 9 * MESH_REPEATS);
-    if (res)
-    {
-      debug("PASSED\n");
-    }
-    else
-    {
-      debug("FAILED %d != %d\n", p.size(), 9 * MESH_REPEATS);
-    }
-  }
-
-  void test_33()
-  {
-    srand(0);
-    debug("TEST 33. PRISM MULTI-VIEW RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            reference_image_w:i = 512
-            reference_image_h:i = 512
-            params:arr = {0.23, 0.26, 0.3, 0.35, 0.41, 0.2}
-            structure:arr = {13}
-        } 
-        view_0 {
-            camera.origin:p3 = 2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_1 {
-            camera.origin:p3 = 2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_2 {
-            camera.origin:p3 = -2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_3 {
-            camera.origin:p3 = -2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1, 0.1, 0.3, 0.3, 0.25, 0.15}
-            structure:arr = {13}
-        }
-        step_0 {
-            render_w:i = 512
-            render_h:i = 512
-            iterations:i = 1000
-            verbose:b = false
-            save_intermediate_images:b = false
-            learning_rate:r = 0.003
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct(settings_blk);
-
-    debug(" 33.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-
-    debug(" 33.2. %-64s", "Extremely high PSNR on given views ");
-    if (res[0].quality_ir > 50)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
-
-    debug(" 33.3. %-64s", "Extremely high turntable PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_34()
-  {
-    SdfGenInstance rot_box({std::vector<uint16_t>{11, 4}});
-
-    debug("TEST 34. SDF ROTATION NODE\n");
-    {
-    int pcnt = rot_box.desc.get_total_params_count();
-    debug(" 34.1. %-64s", "SDF instances are created with expected number of parameters ");
-    if (pcnt == 6)
-      debug("PASSED\n");
-    else
-      debug("FAILED %d\n", pcnt);
-    }
-    {
-      std::vector<float> params = {0, 0, PI/4, 1, 1, 1};
-      ProceduralSdf sdf = rot_box.generate(params);
-      std::vector<float> ddist,dpos = {0,0,0};
-      std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
-      float d1 = sdf.get_distance({0,sqrt(2),0},&ddist,&dpos);
-      float d2 = sdf.get_distance({0,sqrt(0.5),sqrt(0.5)});
-      float d3 = sdf.get_distance({1,0.5,0.5});
-
-      debug(" 34.2. %-64s", "Distance to box correct");
-      if (abs(d1) < 1e-6 && abs(d2) < 1e-6 && abs(d3) < 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED %f %f %f\n", d1, d2, d3);
-      
-      /*float dist_1=0,dist_2=0;
-      for (int i=0;i<std::min(ddist.size(), ddist_ref.size());i++)
-        dist_1 += std::abs(ddist[i]-ddist_ref[i]);
-      for (int i=0;i<std::min(dpos.size(), dpos_ref.size());i++)
-        dist_2 += std::abs(dpos[i]-dpos_ref[i]);
-      
-      debug(" 20.3. %-64s", "Derivatives correct");
-      if (ddist.size() == 1 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
-        debug("PASSED\n");
-      else
-        debug("FAILED %d %d %d %d\n", ddist.size() == 1, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);*/
-    }
-  }
-
-  //TEST 35 ROTATED BOX SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void test_35()
-  {
-    srand(time(NULL));
-    debug("TEST 35. ROTATED BOX SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0, 0,0,0.7, 0.3,0.8,0.3}
-            structure:arr = {2,11,4}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1, 0.05,0.025,0.65, 0.2,0.9,0.27}    
-            structure:arr = {2,11,4} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-    
-    debug(" 35.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 35.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("PASSED\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void perform_tests(const Block &blk)
-  {
-
-    Block *tests_blk = blk.get_block("tests");
-    if (!tests_blk)
-    {
-      logerr("UPG Tests: tests block should exist in configuration");
-      return;
-    }
-
-    std::vector<int> tests;
-    tests_blk->get_arr("tests_num", tests);
     std::vector<std::function<void(void)>> test_functions = {
-      test_1,  test_2,  test_3,  test_4,  test_5,
-      test_6,  test_7,  test_8,  test_9,  test_10,
-      test_11, test_12, test_13, test_14, test_15,
-      test_16, test_17, test_18, test_19, test_20,
-      test_21, test_22, test_23, test_24, test_25, 
-      test_26, test_27, test_28, test_29, test_30,
-      test_31, test_32, test_33, test_34, test_35
+      mesh_test_1,  mesh_test_2,  mesh_test_3,  mesh_test_4,  mesh_test_5,
+      mesh_test_6,  mesh_test_7,  mesh_test_8,  mesh_test_9,  mesh_test_10,
+      mesh_test_11, mesh_test_12, mesh_test_13, mesh_test_14, mesh_test_15,
+      mesh_test_16, mesh_test_17, mesh_test_18, mesh_test_19
     };
 
-    if (tests.size() == 1 && tests[0] == -1)
+    if (tests.empty())
     {
       tests.resize(test_functions.size());
       for (int i=0;i<test_functions.size();i++)
         tests[i] = i+1;
     }
 
+    for (int i=0;i<80;i++)
+      debug("#");
+    debug("\nMESH RECONSTRUCTION TESTS\n");
+    for (int i=0;i<80;i++)
+      debug("#");
+    debug("\n");
+    
     for (int i : tests)
     {
       assert(i > 0 && i <= test_functions.size());
       test_functions[i-1]();
     }
   }
-};
+}

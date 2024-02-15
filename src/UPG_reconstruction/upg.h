@@ -35,5 +35,7 @@ namespace upg
                     ComplexModel &out_mod);
 
   void perform_tests(const Block &blk);
+  void perform_tests_mesh_reconstruction(const std::vector<int> &test_ids);
+  void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids);
   void perform_benchmarks(const Block &blk);
 };

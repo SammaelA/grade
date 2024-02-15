@@ -1,7 +1,24 @@
 {
   cmd {
     cmd_name:s = "IC_UPG_TESTS"
-    tests {tests_num:arr = {34, 35}}
+
+    perform_tests_mesh_reconstruction:b = false
+    tests_mesh_reconstruction:arr = {}
+
+    perform_tests_sdf_reconstruction:b = false
+    tests_sdf_reconstruction:arr = {}
+
+    perform_tests_tensor_processor:b = false
+    tests_tensor_processor:arr = {}
+
+    perform_tests_tensor_processor_GPU:b = false
+    tests_tensor_processor_GPU:arr = {}
+
+    perform_tests_neural_networks:b = true
+    tests_neural_networks:arr = {10}
+
+    perform_tests_common:b = false
+    tests_common:arr = {}
   }
   cmd {cmd_name:s = "IC_EXIT"}
 }
