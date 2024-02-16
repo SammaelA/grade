@@ -97,7 +97,7 @@ namespace upg
     glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
     int spp_a = MAX(1,floor(sqrtf(spp)));
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int yi=0;yi<image_h;yi++)
     {
       std::vector<float> cur_grad;

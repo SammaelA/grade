@@ -33,6 +33,30 @@ namespace upg
     return func(p_args);                                     \
   }
 
+#define GET_DISTANCE_WITH_DIFF_BATCH(func, p_cnt)                            \
+  {                                                                          \
+    float p_args[3+p_cnt];                                                   \
+    float d_p[3+p_cnt] = {0};                                                \
+    for (int i = 0; i < batch_size; i++)                                     \
+    {                                                                        \
+      p_args[0] = positions[3 * i + 0];                                      \
+      p_args[1] = positions[3 * i + 1];                                      \
+      p_args[2] = positions[3 * i + 2];                                      \
+      for (int j = 0; j < p_cnt; j++)                                        \
+        p_args[3 + j] = p[j];                                                \
+      if (ddist_dparams)                                                     \
+      {                                                                      \
+        __enzyme_autodiff(func, p_args, d_p);                                \
+        for (int j = 0; j < p_cnt; j++)                                      \
+          ddist_dparams[p_offset * batch_size + p_cnt * i + j] = d_p[3 + j]; \
+        ddist_dpos[3 * i + 0] = d_p[0];                                      \
+        ddist_dpos[3 * i + 1] = d_p[1];                                      \
+        ddist_dpos[3 * i + 2] = d_p[2];                                      \
+      }                                                                      \
+      distances[i] = func(p_args);                                           \
+    }                                                                        \
+  }
+
   class OneChildSdfNode : public SdfNode
   {
   protected:
@@ -101,6 +125,33 @@ namespace upg
       GET_DISTANCE_WITH_DIFF(diff_sphere_sdf);
     }
 
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      //printf("Ppos %f %f %f\n",positions[3*0+0], positions[3*0+1], positions[3*0+2]);
+      for (int i=0;i<batch_size;i++)
+        distances[i] = sqrtf(positions[3*i+0]*positions[3*i+0] + positions[3*i+1]*positions[3*i+1] + positions[3*i+2]*positions[3*i+2]) - p[RADIUS];
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+          ddist_dparams[p_offset*batch_size + 1*i] = -1;
+      }
+      if (ddist_dpos)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          ddist_dpos[3*i+0] = positions[3*i+0]/std::max(1e-9f,distances[i]);
+          ddist_dpos[3*i+1] = positions[3*i+1]/std::max(1e-9f,distances[i]);
+          ddist_dpos[3*i+2] = positions[3*i+2]/std::max(1e-9f,distances[i]);
+        }
+      }
+    }
+
     virtual unsigned param_cnt() const override { return 1; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
@@ -147,6 +198,16 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       GET_DISTANCE_WITH_DIFF(diff_box_sdf);
+    }
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_box_sdf, 3)                                   
     }
 
     virtual unsigned param_cnt() const override { return 3; }
@@ -199,6 +260,16 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       GET_DISTANCE_WITH_DIFF(diff_round_box_sdf);
+    }
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_round_box_sdf, 4)                                   
     }
 
     virtual unsigned param_cnt() const override { return 4; }
@@ -255,6 +326,17 @@ namespace upg
       GET_DISTANCE_WITH_DIFF(diff_cylinder_sdf);
     }
 
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_cylinder_sdf, 2)                                   
+    }
+
     virtual unsigned param_cnt() const override { return 2; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
@@ -297,6 +379,17 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       GET_DISTANCE_WITH_DIFF(diff_prism_sdf);
+    }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_prism_sdf, 2)                                   
     }
 
     virtual unsigned param_cnt() const override { return 2; }
@@ -355,6 +448,17 @@ namespace upg
                                std::vector<float> *ddist_dpos = nullptr) const override
     {
       GET_DISTANCE_WITH_DIFF(diff_cone_sdf);
+    }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_cone_sdf, 3)                                   
     }
 
     virtual unsigned param_cnt() const override { return 3; }
@@ -417,6 +521,35 @@ namespace upg
 
       return d;
     }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      if (stack->size() - stack_head < 3*batch_size)
+        stack->resize(stack_head + 3*batch_size);
+      for (int i=0;i<batch_size;i++)
+      {
+        (*stack)[stack_head + 3*i+0] = positions[3*i+0] - p[MOVE_X];
+        (*stack)[stack_head + 3*i+1] = positions[3*i+1] - p[MOVE_Y];
+        (*stack)[stack_head + 3*i+2] = positions[3*i+2] - p[MOVE_Z];
+      }
+      child->get_distance_batch(batch_size, stack->data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          ddist_dparams[p_offset*batch_size + 3*i+0] = -ddist_dpos[3*i+0];
+          ddist_dparams[p_offset*batch_size + 3*i+1] = -ddist_dpos[3*i+1];
+          ddist_dparams[p_offset*batch_size + 3*i+2] = -ddist_dpos[3*i+2];
+        }
+      }
+    }
+
     virtual unsigned param_cnt() const override { return 3; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
@@ -449,6 +582,24 @@ namespace upg
     out[0] = (c + (1 - c) * x * x)     * pos_x + ((1 - c) * x * y + s * z) * pos_y + ((1 - c) * x * z - s * y) * pos_z;
     out[1] = ((1 - c) * x * y - s * z) * pos_x + (c + (1 - c) * y * y)     * pos_y + ((1 - c) * y * z + s * x) * pos_z;
     out[2] = ((1 - c) * x * z + s * y) * pos_x + ((1 - c) * z * y - s * x) * pos_y + (c + (1 - c) * z * z)     * pos_z;
+  }
+
+  void get_rotate_mat(const float *in, float *out)
+  {
+    float x = cosf(in[0]) * cosf(in[1]);
+    float y = sinf(in[0]) * cosf(in[1]);
+    float z = sinf(in[1]);
+    float c = cosf(in[2]);
+    float s = sinf(in[2]);
+    out[0] = (c + (1 - c) * x * x);
+    out[1] = ((1 - c) * x * y + s * z);
+    out[2] = ((1 - c) * x * z - s * y);
+    out[3] = ((1 - c) * x * y - s * z);
+    out[4] = (c + (1 - c) * y * y);
+    out[5] = ((1 - c) * y * z + s * x);
+    out[6] = ((1 - c) * x * z + s * y);
+    out[7] = ((1 - c) * z * y - s * x);
+    out[8] = (c + (1 - c) * z * z);
   }
 
   class RotateSdfNode : public OneChildSdfNode
@@ -521,6 +672,54 @@ namespace upg
 
       return d;
     }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> * stack,
+                                    unsigned     stack_head) const override
+    {
+      float rot[9];
+      float rot_jac[27];
+      if (ddist_dparams)
+      {
+        ENZYME_EVALUATE_WITH_DIFF(get_rotate_mat, 3, 9, p.data(), rot, rot_jac);
+      }
+      else
+        get_rotate_mat(p.data(), rot);
+      
+      if (stack->size() - stack_head < 3*batch_size)
+        stack->resize(stack_head + 3*batch_size);
+      for (int i=0;i<batch_size;i++)
+      {
+        (*stack)[stack_head + 3*i+0] = rot[3*0+0]*positions[3*i+0] + rot[3*0+1]*positions[3*i+1] + rot[3*0+2]*positions[3*i+2];
+        (*stack)[stack_head + 3*i+1] = rot[3*1+0]*positions[3*i+0] + rot[3*1+1]*positions[3*i+1] + rot[3*1+2]*positions[3*i+2];
+        (*stack)[stack_head + 3*i+2] = rot[3*2+0]*positions[3*i+0] + rot[3*2+1]*positions[3*i+1] + rot[3*2+2]*positions[3*i+2];
+      }
+
+      child->get_distance_batch(batch_size, stack->data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          float darg_dp[3*3];
+          for (int j=0;j<9;j++)
+            darg_dp[j] = rot_jac[3*j+0]*positions[3*i+0] + rot_jac[3*j+1]*positions[3*i+1] + rot_jac[3*j+2]*positions[3*i+2];
+          
+          for (int j=0;j<3;j++)
+            ddist_dparams[p_offset*batch_size + 3*i+j] = ddist_dpos[3*i+0]*darg_dp[3*j+0] + ddist_dpos[3*i+1]*darg_dp[3*j+1] + ddist_dpos[3*i+2]*darg_dp[3*j+2];
+
+          float dp[3] = {ddist_dpos[3*i+0], ddist_dpos[3*i+1], ddist_dpos[3*i+2]};
+
+          for (int j=0;j<3;j++)
+            ddist_dpos[3*i+j] = dp[0]*rot[3*0+j] + dp[1]*rot[3*1+j] + dp[2]*rot[3*2+j];                             
+        }
+      }
+    }
+
     virtual unsigned param_cnt() const override { return 3; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
@@ -722,10 +921,75 @@ namespace upg
     }
   }
 
+  void ProceduralSdf::get_distance_batch(unsigned batch_size, float *const positions, float *distances,
+                                         float * ddist_dparams, float * ddist_dpos) const
+  {
+    if (ddist_dparams_transp.size() < batch_size*all_params.size())
+      ddist_dparams_transp.resize(batch_size*all_params.size());
+
+    root->get_distance_batch(batch_size, positions, distances, ddist_dparams ? ddist_dparams_transp.data() : nullptr, ddist_dpos, &stack, 0);
+    if (ddist_dparams)
+    {
+      for (auto &n : all_nodes)
+      {
+        unsigned p_cnt = n->param_cnt();
+        unsigned p_off = n->p_offset;
+        if (p_cnt > 0)
+        {
+          for (int i=0;i<batch_size;i++)
+            for (int j=0;j<p_cnt;j++)
+            {
+              //printf("%d %d %u %d %u\n",i,j,batch_size,(int)all_params.size(), p_off);
+              ddist_dparams[i*all_params.size() + p_off + j] = ddist_dparams_transp[batch_size*p_off + i*p_cnt + j];
+            }
+        }
+      }
+    }
+  }
+
+  float ProceduralSdf::get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp, 
+                                    std::vector<float> *ddist_dpos) const
+  {
+    //return root->get_distance(pos, ddist_dp, ddist_dpos);
+    unsigned batch_size = 1;
+    if (ddist_dparams_transp.size() < batch_size*all_params.size())
+      ddist_dparams_transp.resize(batch_size*all_params.size());
+    float d = 1e7;
+    root->get_distance_batch(1, (float*)(&pos), &d, ddist_dp ?   ddist_dparams_transp.data() : nullptr, 
+                                                    ddist_dpos ? ddist_dpos->data() : nullptr, &stack, 0);
+
+    if (ddist_dp)
+    {
+      ddist_dp->resize(batch_size*all_params.size());
+      for (auto &n : all_nodes)
+      {
+        unsigned p_cnt = n->param_cnt();
+        unsigned p_off = n->p_offset;
+        if (p_cnt > 0)
+        {
+          for (int i=0;i<batch_size;i++)
+            for (int j=0;j<p_cnt;j++)
+              (*ddist_dp)[i*all_params.size() + p_off + j] = ddist_dparams_transp[batch_size*p_off + i*p_cnt + j];
+        }
+      }
+    }
+    //float dorg = root->get_distance(pos, nullptr, nullptr);
+    //if (d != dorg)
+    //printf("d dorg %f %f %lu (%f %f %f)\n",d,dorg,(uint64_t)ddist_dp,pos.x, pos.y, pos.z);
+    return d;
+  }
+
   ProceduralSdf::ProceduralSdf(const UPGStructure &structure)
   {
     recreate(structure);
   }
+
+  ProceduralSdf::ProceduralSdf(const ProceduralSdf &sdf)
+  {
+    recreate(sdf.structure);
+    set_parameters(sdf.all_params);
+  }
+
   void ProceduralSdf::recreate(const UPGStructure &_structure)
   {
     structure = _structure;
@@ -775,7 +1039,7 @@ namespace upg
     int offset = 0;
     for (auto &nptr : all_nodes)
     {
-      nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()));
+      nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()), offset);
       offset += nptr->param_cnt();
     }
   }

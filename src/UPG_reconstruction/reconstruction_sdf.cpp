@@ -8,6 +8,7 @@
 #include "graphics_utils/render_point_cloud.h"
 #include "common_utils/distribution.h"
 #include "reconstruction_graph_based.h"
+#include <chrono>
 
 namespace upg
 {
@@ -116,10 +117,70 @@ namespace upg
       sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
 
+      if (positions.size() < 3*max_batch_size)
+        positions = std::vector<float>(3*max_batch_size,0);
+      if (distances.size() < max_batch_size)
+        distances = std::vector<float>(max_batch_size,0);
+      if (dparams.size() < gen_params.size()*max_batch_size)
+        dparams = std::vector<float>(gen_params.size()*max_batch_size,0);
+      if (dpositions.size() < 3*max_batch_size)
+        dpositions = std::vector<float>(3*max_batch_size,0);
+
+      unsigned batch_size = 256;
+      unsigned param_count = gen_params.size();
+      std::vector<double> out_grad_d(param_count, 0);
+      double loss = 0;
+      double reg_loss = 0;
+
+      //main step - minimize SDF values on surface
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.points.size();
+        positions[3*i+0] = reference.points[index].x;
+        positions[3*i+1] = reference.points[index].y;
+        positions[3*i+2] = reference.points[index].z;
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), dparams.data(), dpositions.data());
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        for (int j=0;j<param_count;j++)
+          out_grad_d[j] += 2*d*dparams[i*param_count + j];
+        loss += d*d;
+      }
+
+      //regularization - penalty for outside points with sdf < 0
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.outside_points.size();
+        positions[3*i+0] = reference.outside_points[index].x;
+        positions[3*i+1] = reference.outside_points[index].y;
+        positions[3*i+2] = reference.outside_points[index].z;
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), dparams.data(), dpositions.data());
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        if (d < 0)
+        {
+          for (int j=0;j<param_count;j++)
+            out_grad_d[j] += (d > 0 ? 2 : 4)*d*dparams[i*param_count + j];
+          reg_loss += d*d;
+        }
+      }
+
+      for (int i=0;i<gen_params.size();i++)
+        out_grad[i] = out_grad_d[i]/(2*batch_size);
+      
+      return loss/batch_size + reg_loss/batch_size;
+
       std::vector<float> cur_grad;
       std::vector<float> dpos_dparams = {0,0,0};
       cur_grad.reserve(gen_params.size());
-      std::vector<double> out_grad_d(gen_params.size(), 0);
 
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
@@ -236,6 +297,8 @@ namespace upg
   }
   private:
     const PointCloudReference &reference;
+    unsigned max_batch_size = 256;
+    std::vector<float> positions, distances, dparams, dpositions;
   };
 
   class ConstructiveSdfCompare : public UPGOptimizableFunction
@@ -957,6 +1020,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     //to be some sort of Genetic Algorithm and others - Adam optimizers for fine-tuning the params
     int step_n = 0;
     std::vector<UPGReconstructionResult> opt_res = {start_params};
+    auto t1 = std::chrono::steady_clock::now();
     while (opt_blk->get_block("step_"+std::to_string(step_n)))
     {
       Block *step_blk = opt_blk->get_block("step_"+std::to_string(step_n));
@@ -966,6 +1030,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
         opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;
     }
+    auto t2 = std::chrono::steady_clock::now();
+    float t_ms = 0.001f*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    logerr("reconstruction took %.3f s",t_ms/1000);
 
     for (auto &result : opt_res)
     {

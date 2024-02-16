@@ -6,6 +6,7 @@
 
 namespace upg
 {
+  class ProceduralSdf;
   class SdfNode
   {
   public:
@@ -26,14 +27,30 @@ namespace upg
       NODE_TYPES_COUNT
     };
 
+    friend class ProceduralSdf;
+
     SdfNode(unsigned id) { ID = id; }
     virtual ~SdfNode() = default;
     unsigned get_ID() const { return ID; }
     std::string get_node_name() const { return name; }
-    void set_param_span(std::span<my_float> s) { p = s; }
+    void set_param_span(std::span<my_float> s, unsigned offset) 
+    { 
+      p = s; 
+      p_offset = offset;
+    }
 
     virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const = 0;
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,     //3*batch_size: p0.x, p0.y, p0.z, p1.x, ...
+                                    float *      distances,     //batch_size
+                                    float *      ddist_dparams, //Nparams*batch_size, one array for all nodes
+                                    float *      ddist_dpos,    //3*batch_size: ddist_p0.x, ddist_p0.y, ddist_p0.z, ddist_p1.x, ...
+                            std::vector<float> * stack,         //resizable chunk of memory for temporary data (should only grow in size)
+                                    unsigned     stack_head) const   //current position of stack head (0 initially, grows up)
+    {
+      logerr("NOT IMPLEMENTED");
+    }
     virtual bool add_child(SdfNode *node) = 0;// returns the availability of free space
     virtual unsigned param_cnt() const = 0;
     virtual unsigned child_cnt() const = 0;
@@ -42,6 +59,7 @@ namespace upg
     virtual AABB get_bbox() const = 0;
   protected:
     unsigned ID;
+    unsigned p_offset = 0;
     std::string name;
     std::span<const float> p;
   };
@@ -64,15 +82,18 @@ namespace upg
     static void set_scene_bbox(AABB bbox) {scene_bbox = bbox;}
 
     ProceduralSdf(const UPGStructure &structure);
+    ProceduralSdf(const ProceduralSdf &sdf);
     virtual void recreate(const UPGStructure &structure) override;
     void set_parameters(std::span<const float> parameters);
     ParametersDescription desc;
 
     float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const
-    {
-      return root->get_distance(pos, ddist_dp, ddist_dpos);
-    }
+                               std::vector<float> *ddist_dpos = nullptr) const;
+    void get_distance_batch(unsigned     batch_size,
+                            float *const positions,     //3*batch_size: p0.x, p0.y, p0.z, p1.x, ...
+                            float *      distances,     //batch_size
+                            float *      ddist_dparams, //Nparams*batch_size, one array for all nodes
+                            float *      ddist_dpos) const;//3*batch_size: ddist_p0.x, ddist_p0.y, ddist_p0.z, ddist_p1.x, ...
     AABB get_bbox() const
     {
       return root->get_bbox();
@@ -83,7 +104,9 @@ namespace upg
     //spans from inputParams points to this container
     //put raw parameters list here to generate
     //DO NOT change size of this vector
-    std::vector<my_float> all_params;
+    std::vector<float> all_params;
+    mutable std::vector<float> stack;
+    mutable std::vector<float> ddist_dparams_transp;
     UPGStructure structure;
 
     static AABB scene_bbox;
