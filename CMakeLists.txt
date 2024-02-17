@@ -148,7 +148,6 @@ if (MODULE_VULKAN)
   list(APPEND CMAKE_MODULE_PATH "modules/neuralCore/")
   set(SLICER_DIR "/home/sammael/kernel_slicer" CACHE STRING "Custom diff render location")
   
-  find_package(OpenMP)
   find_package(Vulkan)
   find_package(FreeImage REQUIRED)
 
