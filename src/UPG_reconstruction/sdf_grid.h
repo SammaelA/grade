@@ -23,8 +23,8 @@ namespace upg
     std::string get_node_name() const { return name; }
     void set_param_span(std::span<const float> s) { p = s; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override;
+    float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+                       std::vector<float> *ddist_dpos = nullptr) const;
     virtual unsigned param_cnt() const override { return grid_size*grid_size*grid_size; } 
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override;
     virtual AABB get_bbox() const override { return bbox; };

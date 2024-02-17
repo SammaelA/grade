@@ -164,7 +164,7 @@ namespace upg
 
       for (unsigned i=0;i<batch_size;i++)
       {
-        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        double d = distances[i];
         if (d < 0)
         {
           for (int j=0;j<param_count;j++)
@@ -175,7 +175,15 @@ namespace upg
 
       for (int i=0;i<gen_params.size();i++)
         out_grad[i] = out_grad_d[i]/(2*batch_size);
-      
+      /* debug("params1 [");
+      for (int i=0;i<gen_params.size();i++)
+        debug("%f ",params[i]);
+      debug("]\n");
+      debug("grad1 [");
+      for (int i=0;i<gen_params.size();i++)
+        debug("%f ",out_grad[i]);
+      debug("]\n");  */   
+
       return loss/batch_size + reg_loss/batch_size;
 
       std::vector<float> cur_grad;
@@ -234,6 +242,53 @@ namespace upg
       ProceduralSdf &sdf = *((ProceduralSdf*)gen);
       sdf.set_parameters(gen_params);
 
+      if (positions.size() < 3*max_batch_size)
+        positions = std::vector<float>(3*max_batch_size,0);
+      if (distances.size() < max_batch_size)
+        distances = std::vector<float>(max_batch_size,0);
+
+      unsigned batch_size = 256;
+      unsigned param_count = gen_params.size();
+      double loss = 0;
+      double reg_loss = 0;
+
+      //main step - minimize SDF values on surface
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.points.size();
+        positions[3*i+0] = reference.points[index].x;
+        positions[3*i+1] = reference.points[index].y;
+        positions[3*i+2] = reference.points[index].z;
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), nullptr, nullptr);
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        loss += d*d;
+      }
+
+      //regularization - penalty for outside points with sdf < 0
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.outside_points.size();
+        positions[3*i+0] = reference.outside_points[index].x;
+        positions[3*i+1] = reference.outside_points[index].y;
+        positions[3*i+2] = reference.outside_points[index].z;
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), nullptr, nullptr);
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = distances[i];
+        if (d < 0)
+          reg_loss += d*d;
+      } 
+      //logerr("loss %f %f\n",(float)loss/batch_size, (float)reg_loss/batch_size);
+      return loss/batch_size + reg_loss/batch_size;
+
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
       {
@@ -290,14 +345,14 @@ namespace upg
     }
     quality /= reference.points.size();
 
-    logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
-    logerr("quality %f (%f %f)", (float)quality, (float)q1, (float)q2);
+    //logerr("part [%d %d][%d %d]", (int)part.s_range.first, (int)part.s_range.second, part.p_range.first, part.p_range.second);
+    //logerr("quality %f (%f %f)", (float)quality, (float)q1, (float)q2);
 
     return quality;
   }
   private:
     const PointCloudReference &reference;
-    unsigned max_batch_size = 256;
+    unsigned max_batch_size = 1024;
     std::vector<float> positions, distances, dparams, dpositions;
   };
 

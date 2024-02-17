@@ -7,31 +7,7 @@ float __enzyme_autodiff(...);
 
 namespace upg
 {
-  AABB ProceduralSdf::scene_bbox;
-  static constexpr int MAX_PARAMS = 256;
-
-  #define GET_DISTANCE_WITH_DIFF(func)                       \
-  {                                                          \
-    float p_args[MAX_PARAMS];                                \
-    p_args[0] = pos.x;                                       \
-    p_args[1] = pos.y;                                       \
-    p_args[2] = pos.z;                                       \
-    for (int i = 0; i < param_cnt(); i++)                    \
-      p_args[3 + i] = p[i];                                  \
-    if (ddist_dp)                                            \
-    {                                                        \
-      float d_p[MAX_PARAMS] = {0};                           \
-      float d = __enzyme_autodiff((void *)func, p_args, d_p);\
-      int offset = ddist_dp->size();                         \
-      ddist_dp->resize(offset + param_cnt());                \
-      for (int i = 0; i < param_cnt(); i++)                  \
-        (*ddist_dp)[offset + i] = d_p[3 + i];                \
-      (*ddist_dpos)[0] = d_p[0];                             \
-      (*ddist_dpos)[1] = d_p[1];                             \
-      (*ddist_dpos)[2] = d_p[2];                             \
-    }                                                        \
-    return func(p_args);                                     \
-  }
+AABB ProceduralSdf::scene_bbox;
 
 #define GET_DISTANCE_WITH_DIFF_BATCH(func, p_cnt)                            \
   {                                                                          \
@@ -119,18 +95,12 @@ namespace upg
   public:
     SphereSdfNode(unsigned id) : PrimitiveSdfNode(id) { name = "Sphere"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_sphere_sdf);
-    }
-
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       //printf("Ppos %f %f %f\n",positions[3*0+0], positions[3*0+1], positions[3*0+2]);
@@ -145,9 +115,9 @@ namespace upg
       {
         for (int i=0;i<batch_size;i++)
         {
-          ddist_dpos[3*i+0] = positions[3*i+0]/std::max(1e-9f,distances[i]);
-          ddist_dpos[3*i+1] = positions[3*i+1]/std::max(1e-9f,distances[i]);
-          ddist_dpos[3*i+2] = positions[3*i+2]/std::max(1e-9f,distances[i]);
+          ddist_dpos[3*i+0] = positions[3*i+0]/std::max(1e-9f,distances[i]+p[RADIUS]);
+          ddist_dpos[3*i+1] = positions[3*i+1]/std::max(1e-9f,distances[i]+p[RADIUS]);
+          ddist_dpos[3*i+2] = positions[3*i+2]/std::max(1e-9f,distances[i]+p[RADIUS]);
         }
       }
     }
@@ -194,17 +164,12 @@ namespace upg
   public:
     BoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Box"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_box_sdf);
-    }
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       GET_DISTANCE_WITH_DIFF_BATCH(diff_box_sdf, 3)                                   
@@ -256,17 +221,12 @@ namespace upg
   public:
     RoundBoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "RoundBox"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_round_box_sdf);
-    }
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       GET_DISTANCE_WITH_DIFF_BATCH(diff_round_box_sdf, 4)                                   
@@ -320,18 +280,12 @@ namespace upg
   public:
     CylinderSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Cylinder"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_cylinder_sdf);
-    }
-
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       GET_DISTANCE_WITH_DIFF_BATCH(diff_cylinder_sdf, 2)                                   
@@ -375,18 +329,12 @@ namespace upg
   public:
     Prism(unsigned id) : PrimitiveSdfNode(id) { name = "Prism"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_prism_sdf);
-    }
-
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       GET_DISTANCE_WITH_DIFF_BATCH(diff_prism_sdf, 2)                                   
@@ -444,18 +392,12 @@ namespace upg
   public:
     Cone(unsigned id) : PrimitiveSdfNode(id) { name = "Cone"; }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      GET_DISTANCE_WITH_DIFF(diff_cone_sdf);
-    }
-
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       GET_DISTANCE_WITH_DIFF_BATCH(diff_cone_sdf, 3)                                   
@@ -489,56 +431,24 @@ namespace upg
     static constexpr int MOVE_Z = 2;
   public:
     MoveSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Move"; }
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      int offset;
-      if (ddist_dp)
-      {
-        //[<prev_params>,ddist/dmove_params,<child_params>]
-        offset = ddist_dp->size();
-        ddist_dp->resize(offset + 3);
-      }
-      float d = child->get_distance(pos - glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]), ddist_dp, ddist_dpos);
-
-      if (ddist_dp)
-      {
-        // f(p,x,y) = g(h(p,y),x)
-        // df/dp = dg/d1 * dh/dp
-        // df/dx = dg/dx
-        // df/dy = dg/d1 * dh/dy
-        // g = child->get_distance()
-        // h(pos, move) = pos - move
-
-        (*ddist_dp)[offset+0] = -(*ddist_dpos)[0];
-        (*ddist_dp)[offset+1] = -(*ddist_dpos)[1];
-        (*ddist_dp)[offset+2] = -(*ddist_dpos)[2];
-
-        //(*ddist_dpos)[0] = (*ddist_dpos)[0];
-        //(*ddist_dpos)[1] = (*ddist_dpos)[1];
-        //(*ddist_dpos)[2] = (*ddist_dpos)[2];
-      }
-
-      return d;
-    }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
-      if (stack->size() - stack_head < 3*batch_size)
-        stack->resize(stack_head + 3*batch_size);
+      if (stack.size() - stack_head < 3*batch_size)
+        assert(false);
       for (int i=0;i<batch_size;i++)
       {
-        (*stack)[stack_head + 3*i+0] = positions[3*i+0] - p[MOVE_X];
-        (*stack)[stack_head + 3*i+1] = positions[3*i+1] - p[MOVE_Y];
-        (*stack)[stack_head + 3*i+2] = positions[3*i+2] - p[MOVE_Z];
+        stack[stack_head + 3*i+0] = positions[3*i+0] - p[MOVE_X];
+        stack[stack_head + 3*i+1] = positions[3*i+1] - p[MOVE_Y];
+        stack[stack_head + 3*i+2] = positions[3*i+2] - p[MOVE_Z];
       }
-      child->get_distance_batch(batch_size, stack->data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
       if (ddist_dparams)
       {
         for (int i=0;i<batch_size;i++)
@@ -609,76 +519,13 @@ namespace upg
     static constexpr int ANGLE = 2;
   public:
     RotateSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Rotate"; }
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
-    {
-      int offset;
-      float d = 0;
-      if (ddist_dp)
-      {
-        //[<prev_params>,ddist/dmove_params,<child_params>]
-        offset = ddist_dp->size();
-        ddist_dp->resize(offset + 3);
-      }
-      
-
-      if (ddist_dp)
-      {
-        // f(p,x,y) = g(h(p,y),x)
-        // df/dp = dg/d1 * dh/dp
-        // df/dx = dg/dx
-        // df/dy = dg/d1 * dh/dy
-        // g = child->get_distance()
-        // h(pos, move) = matr * pos
-
-        std::vector<float> x;
-        x.insert(x.end(), p.begin(), p.end());
-        x.push_back(pos.x);
-        x.push_back(pos.y);
-        x.push_back(pos.z);
-        upg::UniversalGenJacobian tmp;
-        tmp.resize(3, 6);
-        std::vector<float> y(3);
-        ENZYME_EVALUATE_WITH_DIFF(RotateSdfNode_apply, 6, 3, x.data(), y.data(), tmp.data());
-        glm::vec3 ps = {y[0], y[1], y[2]};
-        d = child->get_distance(ps, ddist_dp, ddist_dpos);
-
-        float X = (*ddist_dpos)[0], Y = (*ddist_dpos)[1], Z = (*ddist_dpos)[2];
-
-        //(*ddist_dpos)[0]=(*ddist_dpos)[0]*e1.x+(*ddist_dpos)[1]*e2.x+(*ddist_dpos)[2]*e3.x;
-        //(*ddist_dpos)[1]=(*ddist_dpos)[0]*e1.y+(*ddist_dpos)[1]*e2.y+(*ddist_dpos)[2]*e3.y;
-        //(*ddist_dpos)[2]=(*ddist_dpos)[0]*e1.z+(*ddist_dpos)[1]*e2.z+(*ddist_dpos)[2]*e3.z;
-
-        (*ddist_dp)[offset+0] = tmp.at(0, 0) * X + tmp.at(0, 1) * Y + tmp.at(0, 2) * Z;
-        (*ddist_dp)[offset+1] = tmp.at(1, 0) * X + tmp.at(1, 1) * Y + tmp.at(1, 2) * Z;
-        (*ddist_dp)[offset+2] = tmp.at(2, 0) * X + tmp.at(2, 1) * Y + tmp.at(2, 2) * Z;
-
-        (*ddist_dpos)[0] = X * tmp.at(3, 0) + Y * tmp.at(3, 1) + Z * tmp.at(3, 2);
-        (*ddist_dpos)[1] = X * tmp.at(4, 0) + Y * tmp.at(4, 1) + Z * tmp.at(4, 2);
-        (*ddist_dpos)[2] = X * tmp.at(5, 0) + Y * tmp.at(5, 1) + Z * tmp.at(5, 2);
-      }
-      else
-      {
-        std::vector<float> x;
-        x.insert(x.end(), p.begin(), p.end());
-        x.push_back(pos.x);
-        x.push_back(pos.y);
-        x.push_back(pos.z);
-        std::vector<float> y(3);
-        RotateSdfNode_apply(x.data(), y.data());
-        glm::vec3 ps = {y[0], y[1], y[2]};
-        d = child->get_distance(ps, ddist_dp, ddist_dpos);
-      }
-
-      return d;
-    }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
                                     float *      distances,
                                     float *      ddist_dparams,
                                     float *      ddist_dpos,
-                            std::vector<float> * stack,
+                            std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
       float rot[9];
@@ -690,16 +537,16 @@ namespace upg
       else
         get_rotate_mat(p.data(), rot);
       
-      if (stack->size() - stack_head < 3*batch_size)
-        stack->resize(stack_head + 3*batch_size);
+      if (stack.size() - stack_head < 3*batch_size)
+        assert(false);
       for (int i=0;i<batch_size;i++)
       {
-        (*stack)[stack_head + 3*i+0] = rot[3*0+0]*positions[3*i+0] + rot[3*0+1]*positions[3*i+1] + rot[3*0+2]*positions[3*i+2];
-        (*stack)[stack_head + 3*i+1] = rot[3*1+0]*positions[3*i+0] + rot[3*1+1]*positions[3*i+1] + rot[3*1+2]*positions[3*i+2];
-        (*stack)[stack_head + 3*i+2] = rot[3*2+0]*positions[3*i+0] + rot[3*2+1]*positions[3*i+1] + rot[3*2+2]*positions[3*i+2];
+        stack[stack_head + 3*i+0] = rot[3*0+0]*positions[3*i+0] + rot[3*0+1]*positions[3*i+1] + rot[3*0+2]*positions[3*i+2];
+        stack[stack_head + 3*i+1] = rot[3*1+0]*positions[3*i+0] + rot[3*1+1]*positions[3*i+1] + rot[3*1+2]*positions[3*i+2];
+        stack[stack_head + 3*i+2] = rot[3*2+0]*positions[3*i+0] + rot[3*2+1]*positions[3*i+1] + rot[3*2+2]*positions[3*i+2];
       }
 
-      child->get_distance_batch(batch_size, stack->data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
       
       if (ddist_dparams)
       {
@@ -764,39 +611,67 @@ namespace upg
   {
   public:
     OrSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "Or"; }
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
+    
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
     {
-      std::vector<float> ddist_dpos1 = {0,0,0};
-      std::vector<float> ddist_dpos2 = {0,0,0};
+      unsigned d1_head = stack_head;
+      unsigned d2_head = d1_head + batch_size;
+      unsigned pos1_head = d2_head + batch_size;
+      unsigned pos2_head = pos1_head + (ddist_dpos!=nullptr)*3*batch_size;
+      unsigned child_head = pos2_head + (ddist_dpos!=nullptr)*3*batch_size;
 
-      int offset_left = ddist_dp ? ddist_dp->size() : 0;
-      float d1 = left->get_distance(pos, ddist_dp, &ddist_dpos1);
-      int offset_right = ddist_dp ? ddist_dp->size() : 0;
-      float d2 = right->get_distance(pos, ddist_dp, &ddist_dpos2);
-      int offset_next = ddist_dp ? ddist_dp->size() : 0;
+      if (stack.size() < child_head)
+        assert(false);
 
-      if (ddist_dp)
+      left->get_distance_batch(batch_size, positions, stack.data() + d1_head, ddist_dparams, 
+                               stack.data() + pos1_head, stack, child_head);                            
+
+      right->get_distance_batch(batch_size, positions, stack.data() + d2_head, ddist_dparams, 
+                                stack.data() + pos2_head, stack, child_head);
+    
+      for (int i=0;i<batch_size;i++)
       {
-        //d(p,x,y) = min(d1(p,x), d2(p,y))
-        
-        if (d1 < d2)
+        distances[i] = std::min(stack[d1_head + i], stack[d2_head + i]);
+      }
+      
+      if (ddist_dparams)
+      {
+        unsigned pcnt_1 = left->subgraph_param_cnt;
+        unsigned pcnt_2 = right->subgraph_param_cnt;
+
+        for (int i=0;i<batch_size;i++)
         {
-          for (int i=offset_right;i<offset_next;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = ddist_dpos1[i];
-        }
-        else
-        {
-          for (int i=offset_left;i<offset_right;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = ddist_dpos2[i];
+          if (stack[d1_head + i] < stack[d2_head + i])
+          {
+            for (auto *cn : right->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+          }
+          else
+          {
+            for (auto *cn : left->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+          }
         }
       }
+      if (ddist_dpos)
+      {
+        for (int i=0;i<batch_size;i++)
+          for (int j=0;j<3;j++)
+            ddist_dpos[3*i + j] = stack[d1_head + i] < stack[d2_head + i] ? stack[pos1_head + 3*i+j] : stack[pos2_head + 3*i+j];
+      }
 
-      return std::min(d1,d2);
     }
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
@@ -812,40 +687,70 @@ namespace upg
   {
   public:
     AndSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "And"; }
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
+
+    
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
     {
-      std::vector<float> ddist_dpos1 = {0,0,0};
-      std::vector<float> ddist_dpos2 = {0,0,0};
+      unsigned d1_head = stack_head;
+      unsigned d2_head = d1_head + batch_size;
+      unsigned pos1_head = d2_head + batch_size;
+      unsigned pos2_head = pos1_head + (ddist_dpos!=nullptr)*3*batch_size;
+      unsigned child_head = pos2_head + (ddist_dpos!=nullptr)*3*batch_size;
 
-      int offset_left = ddist_dp ? ddist_dp->size() : 0;
-      float d1 = left->get_distance(pos, ddist_dp, &ddist_dpos1);
-      int offset_right = ddist_dp ? ddist_dp->size() : 0;
-      float d2 = right->get_distance(pos, ddist_dp, &ddist_dpos2);
-      int offset_next = ddist_dp ? ddist_dp->size() : 0;
+      if (stack.size() < child_head)
+        assert(false);
 
-      if (ddist_dp)
+      left->get_distance_batch(batch_size, positions, stack.data() + d1_head, ddist_dparams, 
+                               stack.data() + pos1_head, stack, child_head);                            
+
+      right->get_distance_batch(batch_size, positions, stack.data() + d2_head, ddist_dparams, 
+                                stack.data() + pos2_head, stack, child_head);
+    
+      for (int i=0;i<batch_size;i++)
       {
-        //d(p,x,y) = max(d1(p,x), d2(p,y))
-        
-        if (d1 > d2)
+        distances[i] = std::max(stack[d1_head + i], stack[d2_head + i]);
+      }
+      
+      if (ddist_dparams)
+      {
+        unsigned pcnt_1 = left->subgraph_param_cnt;
+        unsigned pcnt_2 = right->subgraph_param_cnt;
+
+        for (int i=0;i<batch_size;i++)
         {
-          for (int i=offset_right;i<offset_next;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = ddist_dpos1[i];
-        }
-        else
-        {
-          for (int i=offset_left;i<offset_right;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = ddist_dpos2[i];
+          if (stack[d1_head + i] > stack[d2_head + i])
+          {
+            for (auto *cn : right->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+          }
+          else
+          {
+            for (auto *cn : left->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+          }
         }
       }
+      if (ddist_dpos)
+      {
+        for (int i=0;i<batch_size;i++)
+          for (int j=0;j<3;j++)
+            ddist_dpos[3*i + j] = stack[d1_head + i] > stack[d2_head + i] ? stack[pos1_head + 3*i+j] : stack[pos2_head + 3*i+j];
+      }
 
-      return std::max(d1,d2);
     }
+
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
     virtual AABB get_bbox() const override
@@ -860,43 +765,74 @@ namespace upg
   {
   public:
     SubtractSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "Subtract"; }
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const override
+    
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
     {
-      std::vector<float> ddist_dpos1 = {0,0,0};
-      std::vector<float> ddist_dpos2 = {0,0,0};
+      unsigned d1_head = stack_head;
+      unsigned d2_head = d1_head + batch_size;
+      unsigned pos1_head = d2_head + batch_size;
+      unsigned pos2_head = pos1_head + (ddist_dpos!=nullptr)*3*batch_size;
+      unsigned child_head = pos2_head + (ddist_dpos!=nullptr)*3*batch_size;
 
-      int offset_left = ddist_dp ? ddist_dp->size() : 0;
-      float d1 = left->get_distance(pos, ddist_dp, &ddist_dpos1);
-      int offset_right = ddist_dp ? ddist_dp->size() : 0;
-      float d2 = right->get_distance(pos, ddist_dp, &ddist_dpos2);
-      int offset_next = ddist_dp ? ddist_dp->size() : 0;
+      if (stack.size() < child_head)
+        assert(false);
 
-      if (ddist_dp)
+      left->get_distance_batch(batch_size, positions, stack.data() + d1_head, ddist_dparams, 
+                               stack.data() + pos1_head, stack, child_head);                            
+
+      right->get_distance_batch(batch_size, positions, stack.data() + d2_head, ddist_dparams, 
+                                stack.data() + pos2_head, stack, child_head);
+    
+      for (int i=0;i<batch_size;i++)
       {
-        //Node1 - Node2
-        //d(p,x,y) = max(d1(p,x), -d2(p,y))
-        
-        if (d1 > -d2)
+        distances[i] = std::max(stack[d1_head + i], -stack[d2_head + i]);
+      }
+      
+      if (ddist_dparams)
+      {
+        unsigned pcnt_1 = left->subgraph_param_cnt;
+        unsigned pcnt_2 = right->subgraph_param_cnt;
+
+        for (int i=0;i<batch_size;i++)
         {
-          for (int i=offset_right;i<offset_next;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = ddist_dpos1[i];
-        }
-        else
-        {
-          for (int i=offset_left;i<offset_right;i++)
-            (*ddist_dp)[i] = 0;
-          for (int i=offset_right;i<offset_next;i++)
-            (*ddist_dp)[i] *= -1;
-          for (int i=0;i<3;i++)
-            (*ddist_dpos)[i] = -ddist_dpos2[i];
+          if (stack[d1_head + i] > -stack[d2_head + i])
+          {
+            for (auto *cn : right->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+          }
+          else
+          {
+            for (auto *cn : left->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+            }
+            for (auto *cn : right->subgraph)
+            {
+              for (int j=0;j<cn->param_cnt();j++)
+                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] *= -1;
+            }
+          }
         }
       }
+      if (ddist_dpos)
+      {
+        for (int i=0;i<batch_size;i++)
+          for (int j=0;j<3;j++)
+            ddist_dpos[3*i + j] = stack[d1_head + i] > -stack[d2_head + i] ? stack[pos1_head + 3*i+j] : -stack[pos2_head + 3*i+j];
+      }
 
-      return std::max(d1,-d2);
     }
+
     virtual unsigned param_cnt() const override { return 0; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override { return {}; }
     virtual AABB get_bbox() const override
@@ -926,8 +862,12 @@ namespace upg
   {
     if (ddist_dparams_transp.size() < batch_size*all_params.size())
       ddist_dparams_transp.resize(batch_size*all_params.size());
+    
+    unsigned max_stack_size = batch_size*256*(1 + log2(all_nodes.size())); //TODO: calculate it somehow else
+    if (stack.size() < max_stack_size)
+      stack.resize(max_stack_size, 0.0f);
 
-    root->get_distance_batch(batch_size, positions, distances, ddist_dparams ? ddist_dparams_transp.data() : nullptr, ddist_dpos, &stack, 0);
+    root->get_distance_batch(batch_size, positions, distances, ddist_dparams ? ddist_dparams_transp.data() : nullptr, ddist_dpos, stack, 0);
     if (ddist_dparams)
     {
       for (auto &n : all_nodes)
@@ -954,9 +894,14 @@ namespace upg
     unsigned batch_size = 1;
     if (ddist_dparams_transp.size() < batch_size*all_params.size())
       ddist_dparams_transp.resize(batch_size*all_params.size());
+    
+    unsigned max_stack_size = batch_size*64*(1 + log2(all_nodes.size())); //TODO: calculate it somehow else
+    if (stack.size() < max_stack_size)
+      stack.resize(max_stack_size, 0.0f);
+
     float d = 1e7;
     root->get_distance_batch(1, (float*)(&pos), &d, ddist_dp ?   ddist_dparams_transp.data() : nullptr, 
-                                                    ddist_dpos ? ddist_dpos->data() : nullptr, &stack, 0);
+                                                    ddist_dpos ? ddist_dpos->data() : nullptr, stack, 0);
 
     if (ddist_dp)
     {
@@ -988,6 +933,19 @@ namespace upg
   {
     recreate(sdf.structure);
     set_parameters(sdf.all_params);
+  }
+
+  void set_subgraph_params_cnt_rec(SdfNode *node)
+  {
+    unsigned cnt = node->param_cnt();
+    for (auto *c : node->get_children())
+    {
+      set_subgraph_params_cnt_rec((SdfNode *)c);
+      node->subgraph.insert(node->subgraph.end(), c->subgraph.begin(), c->subgraph.end());
+      cnt += c->subgraph_param_cnt;
+    }
+    node->subgraph_param_cnt = cnt;
+    node->subgraph.push_back(node);
   }
 
   void ProceduralSdf::recreate(const UPGStructure &_structure)
@@ -1042,6 +1000,8 @@ namespace upg
       nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()), offset);
       offset += nptr->param_cnt();
     }
+
+    set_subgraph_params_cnt_rec(root);
   }
 
   SdfNode *sdf_node_by_node_type_id(uint16_t num, unsigned id)
@@ -1160,8 +1120,8 @@ namespace upg
     parse_node_rec(structure, parts, true, 0);
     if (parts.empty())
       parts.push_back(UPGPart({0, (int)structure.s.size()}, {0, total_param_count(structure)}, get_position_index(structure, 0, 0)));
-    for (auto &g : parts)
-      logerr("part [%d %d][%d %d] %d", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second, g.position_index);
+    //for (auto &g : parts)
+    //  logerr("part [%d %d][%d %d] %d", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second, g.position_index);
     return parts;
   }
 }

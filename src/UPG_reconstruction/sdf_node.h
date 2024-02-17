@@ -39,14 +39,12 @@ namespace upg
       p_offset = offset;
     }
 
-    virtual float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
-                               std::vector<float> *ddist_dpos = nullptr) const = 0;
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,     //3*batch_size: p0.x, p0.y, p0.z, p1.x, ...
                                     float *      distances,     //batch_size
                                     float *      ddist_dparams, //Nparams*batch_size, one array for all nodes
                                     float *      ddist_dpos,    //3*batch_size: ddist_p0.x, ddist_p0.y, ddist_p0.z, ddist_p1.x, ...
-                            std::vector<float> * stack,         //resizable chunk of memory for temporary data (should only grow in size)
+                            std::vector<float> & stack,         //resizable chunk of memory for temporary data (should only grow in size)
                                     unsigned     stack_head) const   //current position of stack head (0 initially, grows up)
     {
       logerr("NOT IMPLEMENTED");
@@ -57,9 +55,11 @@ namespace upg
     virtual std::vector<const SdfNode *> get_children() const = 0;
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
     virtual AABB get_bbox() const = 0;
-  protected:
+  //protected:
     unsigned ID;
     unsigned p_offset = 0;
+    unsigned subgraph_param_cnt = 0;
+    std::vector<SdfNode *> subgraph;
     std::string name;
     std::span<const float> p;
   };
