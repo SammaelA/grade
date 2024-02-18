@@ -23,6 +23,7 @@ namespace upg
       AND,
       SUBTRACT,
       ROTATE,
+      CHAIR,
       NODE_TYPES_COUNT
     };
 

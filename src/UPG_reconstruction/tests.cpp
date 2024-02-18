@@ -2651,6 +2651,48 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  void test_36()
+  {
+    debug("TEST 36. SDF CHAIR NODE\n");
+    SdfGenInstance chair({std::vector<uint16_t>{12}});
+    {
+      int pcnt = chair.desc.get_total_params_count();
+      debug(" 34.1. %-64s", "SDF instances are created with expected number of parameters ");
+      if (pcnt == 6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %d\n", pcnt);
+    }
+    {
+      std::vector<float> params = {0.2, 1, 0.8, 0.1, 0.8, 1.5};
+      ProceduralSdf sdf = chair.generate(params);
+      std::vector<float> ddist,dpos = {0,0,0};
+      debug(" 34.2. %-64s", "distances getting ");
+      float d1 = sdf.get_distance({0,sqrt(2),0},&ddist,&dpos);
+      float d2 = sdf.get_distance({0,sqrt(0.5),sqrt(0.5)});
+      float d3 = sdf.get_distance({1,0.5,0.5});
+      debug("PASSED\n");
+
+      /*debug(" 34.2. %-64s", "Distance to box correct");
+      if (abs(d1) < 1e-6 && abs(d2) < 1e-6 && abs(d3) < 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %f %f %f\n", d1, d2, d3);*/
+      
+      /*float dist_1=0,dist_2=0;
+      for (int i=0;i<std::min(ddist.size(), ddist_ref.size());i++)
+        dist_1 += std::abs(ddist[i]-ddist_ref[i]);
+      for (int i=0;i<std::min(dpos.size(), dpos_ref.size());i++)
+        dist_2 += std::abs(dpos[i]-dpos_ref[i]);
+      
+      debug(" 20.3. %-64s", "Derivatives correct");
+      if (ddist.size() == 1 && dist_1 < 1e-6 && dpos.size() == 3 && dist_2 < 1e-6)
+        debug("PASSED\n");
+      else
+        debug("FAILED %d %d %d %d\n", ddist.size() == 1, dist_1 < 1e-6, dpos.size() == 3, dist_2 < 1e-6);*/
+    }
+  }
+
   void perform_tests(const Block &blk)
   {
 
@@ -2670,7 +2712,8 @@ fail: debug("FAILED\n");
       test_16, test_17, test_18, test_19, test_20,
       test_21, test_22, test_23, test_24, test_25, 
       test_26, test_27, test_28, test_29, test_30,
-      test_31, test_32, test_33, test_34, test_35
+      test_31, test_32, test_33, test_34, test_35,
+      test_36
     };
 
     if (tests.size() == 1 && tests[0] == -1)
