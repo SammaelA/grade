@@ -20,6 +20,7 @@ namespace upg
     MUTABLE_FLOAT,
     MUTABLE_INT,
     MUTABLE_BOOL,
+    ARRAY,
     CONST
   };
   struct ParametersDescription
@@ -31,6 +32,7 @@ namespace upg
       float max_val;
       ParameterType type;
       std::string name;
+      unsigned count = 1; //can be > 1 only for arrays
     };
     struct ParamBlock
     {
@@ -39,7 +41,11 @@ namespace upg
     };
     void add_parameters(unsigned node_id, const std::string &node_name, const std::vector<Param> &params)
     {
-      total_params_count += params.size();
+      for (auto &p : params)
+      {
+        total_params_count += p.count;
+        _has_constants = _has_constants || p.type == ParameterType::CONST;
+      }
       block_params[node_id] = {params, node_name};
     }
     void remove_parameters(unsigned node_id)
@@ -47,8 +53,16 @@ namespace upg
       auto it = block_params.find(node_id);
       if (it != block_params.end())
       {
-        total_params_count -= it->second.p.size();
+        for (auto &p : it->second.p)
+          total_params_count -= p.count;
         block_params.erase(node_id);
+      }
+
+      _has_constants = false;
+      for (const auto &bl : block_params)
+      {
+        for (auto &p : bl.second.p)
+          _has_constants = _has_constants || p.type == ParameterType::CONST;
       }
     }
     void add(const ParametersDescription &desc)
@@ -61,29 +75,34 @@ namespace upg
           logerr("ParameterDescription: trying to merge with description that has the same parameters block %d", p.first);
       }
       total_params_count += desc.total_params_count;
+      _has_constants = _has_constants || desc._has_constants;
     }
     void print_info() const
     {
+      int total_params_types = 0;
       int total_params = 0;
       int diff_params = 0;
       int mutable_params = 0;
       int const_params = 0;
+      int array_params = 0;
       
       for (const auto &b : block_params)
       {
         for (const auto &p : b.second.p)
         {
-          total_params++;
+          total_params_types++;
+          total_params += p.count;
           diff_params += (p.type == ParameterType::DIFFERENTIABLE);
           const_params += (p.type == ParameterType::CONST);
           mutable_params += (p.type == ParameterType::MUTABLE_BOOL ||
                              p.type == ParameterType::MUTABLE_INT  ||
                              p.type == ParameterType::MUTABLE_FLOAT);
+          array_params += (p.type == ParameterType::ARRAY);
         }
       }
       debug("=============================\n");
       debug("Parameter description info:\n");
-      debug("Total parameters: %d\n", total_params);
+      debug("Total parameters: %d (%d)\n", total_params_types, total_params);
       debug("Differentiable parameters: %d\n", diff_params);
       debug("Mutable parameters: %d\n", mutable_params);
       debug("Const parameters: %d\n", const_params);
@@ -112,6 +131,9 @@ namespace upg
           case ParameterType::CONST :
             debug("    c : %8.4f   %s\n", p.value, p.name.c_str());
             break;
+          case ParameterType::ARRAY :
+            debug("  arr : in [%8.4f, %8.4f)x%d   %s\n", p.min_val, p.max_val, p.count, p.name.c_str());
+            break;
           default:
             break;
           }
@@ -131,8 +153,13 @@ namespace upg
     {
       return total_params_count;
     }
+    bool has_constants() const
+    {
+      return _has_constants;
+    }
   private:
     int total_params_count = 0;
+    bool _has_constants = false;//if PD does not have constant parameters, optimizer can directly copy opt params to gen params => be faster
     std::map<unsigned, ParamBlock> block_params;
   };
 

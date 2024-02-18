@@ -33,7 +33,6 @@ namespace upg
     {
       data = std::vector<float>(p.begin(), p.end());
     }
-  private:
     std::vector<float> data;
   };
 
@@ -70,9 +69,12 @@ namespace upg
           }
           else
           {
-            float v = CLAMP(params[i], par.min_val, par.max_val);
-            p_v.push_back(v);
-            i++;
+            for (int j=0;j<par.count;j++)
+            {
+              float v = CLAMP(params[i], par.min_val, par.max_val);
+              p_v.push_back(v);
+              i++;
+            }
           }
         }
       }
@@ -94,8 +96,11 @@ namespace upg
         for (auto &par : p.second.p)
         {
           if (par.type != ParameterType::CONST)
-            non_const_params.push_back(params[p_id]);
-          p_id++;
+          {
+            for (int i=0;i<par.count;i++)
+              non_const_params.push_back(params[p_id+i]);
+          }
+          p_id+=par.count;
         }
       }
 

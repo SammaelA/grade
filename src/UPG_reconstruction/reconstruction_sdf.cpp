@@ -112,7 +112,12 @@ namespace upg
                            const OptParams &params, std::span<float> out_grad) override
     {
       assert(reference.points.size() > 0);
-      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      //if we don't have constant parameters opt_params and gen_params are exact same vector
+      //and there is no need to copy them
+      std::vector<float> explicit_gen_params;
+      if (pd.has_constants())
+        explicit_gen_params = opt_params_to_gen_params(params, pd);
+      const std::vector<float> &gen_params = pd.has_constants() ? explicit_gen_params : params.data;
       ProceduralSdf &sdf = *((ProceduralSdf*)gen);
       sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
@@ -238,7 +243,12 @@ namespace upg
     virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
     {
       assert(reference.points.size() > 0);
-      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      //if we don't have constant parameters opt_params and gen_params are exact same vector
+      //and there is no need to copy them
+      std::vector<float> explicit_gen_params;
+      if (pd.has_constants())
+        explicit_gen_params = opt_params_to_gen_params(params, pd);
+      const std::vector<float> &gen_params = pd.has_constants() ? explicit_gen_params : params.data;
       ProceduralSdf &sdf = *((ProceduralSdf*)gen);
       sdf.set_parameters(gen_params);
 
