@@ -26,6 +26,7 @@ namespace upg
       ROTATE,
       GRID,
       NEURAL,
+      SCALE,
       NODE_TYPES_COUNT
     };
 

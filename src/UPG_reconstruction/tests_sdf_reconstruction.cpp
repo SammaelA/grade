@@ -281,18 +281,20 @@ namespace upg
   }
 
 
-  //TEST 5 COMPLEX DETAIL RECONSTRUCTION MEMETIC
+  //TEST 5 SCALED BOX SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
   void sdf_test_5()
   {
     srand(time(NULL));
-    debug("TEST 5. COMPLEX DETAIL RECONSTRUCTION MEMETIC\n");
-    debug("TEMPORARY DISABLED\n");
-    return;
+    debug("TEST 5. SCALED BOX SDF RECONSTRUCTION\n");
     std::string settings = R""""(
     {
     input {
         synthetic_reference {
             points_count:i = 50000
+            params:arr = {0.2,-0.1,0, 0.5, 1,1,1}
+            structure:arr = {2,14,4}
         } 
     }
     generator {
@@ -300,13 +302,10 @@ namespace upg
     }
     optimization {
         start {
+            params:arr = {0.1,-0.15,-0.1,0.41, 1,1,1}    
+            structure:arr = {2,14,4} 
         }
         step_0 {
-            optimizer_name:s = "memetic"
-            iterations:i = 100
-            verbose:b = false
-        }
-        step_1 {
             learning_rate:r = 0.003
             iterations:i = 1000
             verbose:b = false
@@ -320,72 +319,19 @@ namespace upg
       )"""";
     Block settings_blk;
     load_block_from_string(settings, settings_blk);
-
-    int cnt_x = 8;
-    int cnt_z = 4;
-    glm::vec3 p0(-1,1.2, 0.5);
-    glm::vec3 p1(1, 1, -0.5);
-    
-    float base_r = std::min(abs(p1.x-p0.x)/(cnt_x+1), abs(p1.z-p0.z)/(cnt_z+1));
-
-    std::vector<uint16_t> structure_inv;
-    std::vector<float> params_inv;
-    uint32_t num = 1;
-    for (int i=0;i<cnt_z;i++)
-    {
-      for (int j=0;j<cnt_x;j++)
-      {
-        glm::vec3 p = glm::vec3(p0.x + (j+1+urand(-0.5,0.5))*(p1.x-p0.x)/(cnt_x+1), 
-                                p1.y,
-                                p0.z + (i+1+urand(-0.5,0.5))*(p1.z-p0.z)/(cnt_z+1));
-        float rnd = urand(0.5,1);
-        float r = rnd*base_r;
-        structure_inv.push_back(1);
-        structure_inv.push_back(2);
-        params_inv.push_back(r);
-        params_inv.push_back(p.x);
-        params_inv.push_back(p.y);
-        params_inv.push_back(p.z);
-
-        uint32_t S = 1;
-        while (num>= S && ((num & S) == 0))
-        {
-          structure_inv.push_back(3);
-          S = S << 1;
-        }
-        num++;
-      }
-    }
-
-    structure_inv.push_back(4);
-    structure_inv.push_back(2);
-    structure_inv.push_back(3);
-    params_inv.push_back(0.5*abs(p0.x-p1.x));
-    params_inv.push_back(0.5*abs(p0.y-p1.y));
-    params_inv.push_back(0.5*abs(p0.z-p1.z));
-    params_inv.push_back(0.5*(p0.x+p1.x));
-    params_inv.push_back(0.5*(p0.y+p1.y));
-    params_inv.push_back(0.5*(p0.z+p1.z));
-
-    std::vector<uint16_t> structure = structure_inv;
-    std::vector<float> params = params_inv;
-    for (int i=0;i<structure.size();i++)
-      structure[i] = structure_inv[structure.size()-i-1];
-    for (int i=0;i<params.size();i++)
-      params[i] = params_inv[params.size()-i-1];
-
-    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("structure", structure);
-    settings_blk.get_block("input")->get_block("synthetic_reference")->set_arr("params", params);
-    settings_blk.get_block("optimization")->get_block("start")->set_arr("structure", structure);
-
-    //return;
     auto res = reconstruct_sdf(settings_blk);
     
-    debug("  5.1. %-64s", "Low optimization loss ");
+    debug("  5.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug("  5.2. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
   //TEST 6 ROTATING BODY RECONSTRUCTION

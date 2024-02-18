@@ -843,6 +843,58 @@ AABB ProceduralSdf::scene_bbox;
     }
   };
 
+  class ScaleSdfNode : public OneChildSdfNode
+  {
+    static constexpr int SCALE = 0;
+  public:
+    ScaleSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Scale"; }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      if (stack.size() - stack_head < 3*batch_size)
+        assert(false);
+      float si = 1/p[SCALE];
+      for (int i=0;i<batch_size;i++)
+      {
+        stack[stack_head + 3*i+0] = si*positions[3*i+0];
+        stack[stack_head + 3*i+1] = si*positions[3*i+1];
+        stack[stack_head + 3*i+2] = si*positions[3*i+2];
+      }
+      child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          ddist_dparams[p_offset*batch_size + 3*i+0] = distances[i] - si*(positions[3*i+0]*ddist_dpos[3*i+0] + 
+            positions[3*i+1]*ddist_dpos[3*i+1] + positions[3*i+2]*ddist_dpos[3*i+2]);
+        }
+      }
+
+      for (int i=0;i<batch_size;i++)
+        distances[i] *= p[SCALE];
+    }
+
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({1,0.01, 10, ParameterType::DIFFERENTIABLE, "scale"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      return AABB(p[SCALE]*ch_bbox.min_pos, p[SCALE]*ch_bbox.max_pos);
+    }
+  };
+
   void ProceduralSdf::set_parameters(std::span<const float> parameters)
   {
     for (int i = 0; i < all_params.size(); ++i)
@@ -1045,6 +1097,9 @@ AABB ProceduralSdf::scene_bbox;
         break;
       case SdfNode::GRID:
         node = new GridSdfNode(id, 32, AABB({-1,-1,-1},{1,1,1}));
+        break;
+      case SdfNode::SCALE:
+        node = new ScaleSdfNode(id);
         break;
       default:
         logerr("invalid node_id %u\n",id);

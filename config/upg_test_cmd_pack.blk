@@ -6,7 +6,7 @@
     tests_mesh_reconstruction:arr = {}
 
     perform_tests_sdf_reconstruction:b = true
-    tests_sdf_reconstruction:arr = {}
+    tests_sdf_reconstruction:arr = {5}
 
     perform_tests_tensor_processor:b = false
     tests_tensor_processor:arr = {}
