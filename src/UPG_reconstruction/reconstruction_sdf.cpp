@@ -190,54 +190,6 @@ namespace upg
       debug("]\n");  */   
 
       return loss/batch_size + reg_loss/batch_size;
-
-      std::vector<float> cur_grad;
-      std::vector<float> dpos_dparams = {0,0,0};
-      cur_grad.reserve(gen_params.size());
-
-      //main step - minimize SDF values on surface
-      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
-      {
-        const glm::vec3 &p = reference.points[index];
-        cur_grad.clear();
-        double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
-        d = glm::sign(d)*std::min(0.03, abs(d));
-        for (int i=0;i<gen_params.size();i++)
-          out_grad_d[i] += 2*d*cur_grad[i];
-        return d*d;
-      }, reference.points.size(), 256, 1024, 10);
-
-      //regularization - penalty for outside points with sdf < 0
-      auto p2 = sum_with_adaptive_batching([&](int index) -> double 
-      {
-        const glm::vec3 &p = reference.outside_points[index];
-        cur_grad.clear();
-        double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
-        if (d < 0)
-        {
-          for (int i=0;i<gen_params.size();i++)
-            out_grad_d[i] += (d > 0 ? 2 : 4)*d*cur_grad[i];
-          return d*d;
-        }
-        else
-          return 0;
-      }, reference.outside_points.size(), 128, 1024, 0.1);
-
-      /*
-      debug("params [");
-      for (int i=0;i<gen_params.size();i++)
-        debug("%f ",params[i]);
-      debug("]\n");
-      debug("grad [");
-      for (int i=0;i<gen_params.size();i++)
-        debug("%f ",out_grad[i]);
-      debug("]\n");
-      */
-      
-      for (int i=0;i<gen_params.size();i++)
-        out_grad[i] = out_grad_d[i]/(p1.first+p2.first);
-      
-      return p1.second/p1.first + p2.second/p2.first;
     }
 
     virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
@@ -298,28 +250,6 @@ namespace upg
       } 
       //logerr("loss %f %f\n",(float)loss/batch_size, (float)reg_loss/batch_size);
       return loss/batch_size + reg_loss/batch_size;
-
-      //main step - minimize SDF values on surface
-      auto p1 = sum_with_adaptive_batching([&](int index) -> double 
-      {
-        const glm::vec3 &p = reference.points[index];
-        double d = sdf.get_distance(p);
-        d = glm::sign(d)*std::min(0.03, abs(d));
-        return d*d;
-      }, reference.points.size(), 256, 1024, 10);
-
-      //regularization - penalty for outside points with sdf < 0
-      auto p2 = sum_with_adaptive_batching([&](int index) -> double 
-      {
-        const glm::vec3 &p = reference.outside_points[index];
-        double d = sdf.get_distance(p);
-        if (d < 0)
-          return d*d;
-        else
-          return 0;
-      }, reference.outside_points.size(), 128, 1024, 0.1);
-
-      return p1.second/p1.first + p2.second/p2.first;
     }
     virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
     {
