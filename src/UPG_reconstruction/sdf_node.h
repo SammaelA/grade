@@ -24,6 +24,8 @@ namespace upg
       AND,
       SUBTRACT,
       ROTATE,
+      GRID,
+      NEURAL,
       NODE_TYPES_COUNT
     };
 

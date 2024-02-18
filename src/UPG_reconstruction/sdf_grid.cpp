@@ -2,8 +2,30 @@
 
 namespace upg
 {
-  float GridSdfNode::get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp,
-                                  std::vector<float> *ddist_dpos) const
+  void GridSdfNode::get_distance_batch(unsigned     batch_size,
+                                       float *const positions,    
+                                       float *      distances,
+                                       float *      ddist_dparams,
+                                       float *      ddist_dpos,
+                               std::vector<float> & stack,
+                                       unsigned     stack_head) const
+  {
+    if (ddist_dparams)
+    {
+      for (int i=0;i<batch_size;i++)
+        distances[i] = get_distance(glm::vec3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), 
+                                    std::span<float>(ddist_dparams + batch_size*p_offset + i*param_cnt(), param_cnt()),
+                                    std::span<float>(ddist_dpos + 3*i, 3));
+    }
+    else
+    {
+      for (int i=0;i<batch_size;i++)
+        distances[i] = get_distance(glm::vec3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), std::span<float>(), std::span<float>()); 
+    }
+  }
+
+  float GridSdfNode::get_distance(const glm::vec3 &pos, std::span<float> ddist_dp, 
+                                  std::span<float> ddist_dpos) const
   {
     glm::vec3 vox_f = grid_size_f*glm::min(glm::max((pos-bbox.min_pos)/bbox_size, 0.0f), 1.0f-1e-5f);
     glm::uvec3 vox_u = vox_f;
@@ -17,11 +39,11 @@ namespace upg
       float qy = (1 - dp.y + j*(2*dp.y-1));\
       float qz = (1 - dp.z + k*(2*dp.z-1));\
       res += p[id(i,j,k)]*qx*qy*qz;\
-      if (ddist_dp){\
-        (*ddist_dp)[id(i,j,k)] += qx*qy*qz;\
-        (*ddist_dpos)[0] += p[id(i,j,k)]*qy*qz * (2*i-1);\
-        (*ddist_dpos)[1] += p[id(i,j,k)]*qx*qz * (2*j-1);\
-        (*ddist_dpos)[2] += p[id(i,j,k)]*qx*qy * (2*k-1);\
+      if (ddist_dp.data()){\
+        ddist_dp[id(i,j,k)] += qx*qy*qz;\
+        ddist_dpos[0] += p[id(i,j,k)]*qy*qz * (2*i-1);\
+        ddist_dpos[1] += p[id(i,j,k)]*qx*qz * (2*j-1);\
+        ddist_dpos[2] += p[id(i,j,k)]*qx*qy * (2*k-1);\
       }\
     }
     if (vox_u.x<grid_size-1 && vox_u.y<grid_size-1 && vox_u.z<grid_size-1)
@@ -38,8 +60,8 @@ namespace upg
     else
     {  
       res += p[id(0,0,0)];
-      if (ddist_dp)
-        (*ddist_dp)[id(0,0,0)] += 1;
+      if (ddist_dp.data())
+        ddist_dp[id(0,0,0)] += 1;
 
       //no dependency on position on edges
       //(*ddist_dpos)[0] += 0;
@@ -47,12 +69,15 @@ namespace upg
       //(*ddist_dpos)[2] += 0;
     }
 
+    //printf("dist %f\n",res);
 
     return res;
   }
   std::vector<ParametersDescription::Param> GridSdfNode::get_parameters_block(AABB scene_bbox) const
   {
-    return {};
+    std::vector<ParametersDescription::Param> params;
+    params.push_back({1,-1.0f,1.0f, ParameterType::ARRAY, "data", grid_size*grid_size*grid_size});
+    return params;
   }
   void GridSdfNode::set_voxel(const glm::uvec3 &vox, float distance)
   {

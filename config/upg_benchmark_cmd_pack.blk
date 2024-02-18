@@ -1,7 +1,7 @@
 {
   cmd {
     cmd_name:s = "IC_UPG_BENCHMARK"
-    name:s = "nsdf"
+    name:s = "grid"
   }
   cmd {cmd_name:s = "IC_EXIT"}
 }

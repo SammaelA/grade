@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "generation.h"
 #include "autodiff/autodiff.h"
+#include "sdf_grid.h"
 
 float __enzyme_autodiff(...);
 
@@ -1041,6 +1042,9 @@ AABB ProceduralSdf::scene_bbox;
         break;
       case SdfNode::ROTATE:
         node = new RotateSdfNode(id);
+        break;
+      case SdfNode::GRID:
+        node = new GridSdfNode(id, 32, AABB({-1,-1,-1},{1,1,1}));
         break;
       default:
         logerr("invalid node_id %u\n",id);

@@ -208,7 +208,7 @@ namespace upg
   {
     SceneDesc desc;
     desc.first.s = {3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
-    desc.second.p = {0,0.0,0, 0.5,0.05,0.5, 0,0.5,-0.45, 0.5,0.5,0.05,
+    desc.second.p = {0,0.0,0, 0.5,0.05,0.5, 0,0.45,-0.45, 0.5,0.45,0.05,
                      0.4,-0.3,0.4, 0.3,0.05,  -0.4,-0.3,0.4, 0.3,0.05,  0.4,-0.3,-0.4, 0.3,0.05,  -0.4,-0.3,-0.4, 0.3,0.05};
     return desc;    
   }
@@ -743,31 +743,34 @@ namespace upg
     sdf.set_parameters(scene.second.p);
 
     unsigned vox_size = 32;
-    unsigned samples = 1;
+    unsigned samples = 4;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
-    AABB bbox = sdf.get_bbox().expand(1.25f);
+    AABB bbox = AABB({-1,-1,-1},{1,1,1});
     GridSdfNode grid(0, vox_size, bbox);
-    grid.set_param_span(data);
+    grid.set_param_span(data, 0);
 
-    /*
-    for (int i=0;i<vox_size;i++)
+    bool direct = true;
+    if (direct)
     {
-      for (int j=0;j<vox_size;j++)
+      for (int i=0;i<vox_size;i++)
       {
-        for (int k=0;k<vox_size;k++)
+        for (int j=0;j<vox_size;j++)
         {
-          float d = 0.0;
-          for (int s=0;s<samples;s++)
+          for (int k=0;k<vox_size;k++)
           {
-            glm::vec3 p = {(k+0.5)/vox_size, (j+0.5)/vox_size, (i+0.5)/vox_size};
-            p = bbox.size()*p + bbox.min_pos;
-            d += sdf.get_distance(p);
+            float d = 0.0;
+            for (int s=0;s<samples;s++)
+            {
+              glm::vec3 p = {(k+0.5)/vox_size, (j+0.5)/vox_size, (i+0.5)/vox_size};
+              p = bbox.size()*p + bbox.min_pos;
+              d += sdf.get_distance(p);
+            }
+            grid.set_voxel(glm::uvec3(k,j,i), d/samples);
           }
-          grid.set_voxel(glm::uvec3(k,j,i), d/samples);
         }
       }
     }
-    */
+    else
     {
       unsigned params_cnt = vox_size*vox_size*vox_size;
       std::vector<float> ddist_dpos(3, 0.0f);
@@ -798,7 +801,7 @@ namespace upg
           p = bbox.size()*p + bbox.min_pos;
 
           std::fill_n(ddist_dp.begin(), ddist_dp.size(), 0.0);
-          float d = grid.get_distance(p, &ddist_dp, &ddist_dpos) - sdf.get_distance(p);
+          float d = grid.get_distance(p, ddist_dp, ddist_dpos) - sdf.get_distance(p);
           total_loss += d*d;
           for (int j=0;j<ddist_dp.size();j++)
             x_grad[j] += 2*d*ddist_dp[j] / samples;
@@ -821,9 +824,9 @@ namespace upg
       }
     }
 
-    int steps = 16;
-    ProceduralSdf g_sdf(scene.first);
-    g_sdf.root = &grid;
+    int steps = 15;
+    ProceduralSdf g_sdf({{SdfNode::GRID}});
+    g_sdf.set_parameters(data);
     for (int i=0;i<steps;i++)
     {
       CameraSettings camera;

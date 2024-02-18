@@ -133,7 +133,7 @@ namespace upg
   void render_sdf_to_array_batched(std::span<float> out_array, const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, 
                                    int spp, SDFRenderMode mode)
   {
-    constexpr unsigned max_threads = 16;
+    constexpr unsigned max_threads = 1; //for some reason multithreading is actually slower
     std::vector<ProceduralSdf> sdfs;
     for (int i=0;i<max_threads;i++)
       sdfs.emplace_back(sdf);
