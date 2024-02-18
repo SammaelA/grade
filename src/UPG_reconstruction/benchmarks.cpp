@@ -213,6 +213,14 @@ namespace upg
     return desc;    
   }
 
+  SceneDesc scene_subtraction()
+  {
+    SceneDesc desc;
+    desc.first.s = {SdfNode::SUBTRACT, SdfNode::MOVE, SdfNode::SPHERE, SdfNode::MOVE, SdfNode::SPHERE};
+    desc.second.p = {0,0,0,0.6, 0.5,0.0,0.5,0.4};
+    return desc;    
+  }
+
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
   {
     srand(time(NULL));
@@ -849,6 +857,7 @@ namespace upg
     scenes["32 Bubbles"] = scene_bubbles(8, 4);
     scenes["8 Rounded Boxes"] = scene_8_rboxes();
     scenes["Chair"] = scene_chair();
+    scenes["Subtraction"] = scene_subtraction();
 
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);
@@ -875,7 +884,7 @@ namespace upg
   {
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
-      benchmark_sdf_rendering(512, 1);
+      benchmark_sdf_rendering(512, 16);
     else if (name == "nsdf")
       nsdf::neural_SDF_test();
     else if (name == "vox_net")

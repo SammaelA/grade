@@ -141,7 +141,7 @@ namespace upg
     AABB bbox = sdf.get_bbox();
     AABB inflated_bbox = bbox.expand(1.1f);
 
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
+    glm::mat4 projInv = glm::inverse(camera.get_proj(false));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
     glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
 
