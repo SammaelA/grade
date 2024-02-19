@@ -1,6 +1,7 @@
 #include "sdf_node.h"
 #include <stdio.h>
 #include "generation.h"
+#include "param_node.h"
 #include "autodiff/autodiff.h"
 #include "sdf_grid.h"
 
@@ -32,6 +33,19 @@ AABB ProceduralSdf::scene_bbox;
       }                                                                      \
       distances[i] = func(p_args);                                           \
     }                                                                        \
+  }
+
+  void set_subgraph_params_cnt_rec(SdfNode *node)
+  {
+    unsigned cnt = node->param_cnt();
+    for (auto *c : node->get_children())
+    {
+      set_subgraph_params_cnt_rec((SdfNode *)c);
+      node->subgraph.insert(node->subgraph.end(), c->subgraph.begin(), c->subgraph.end());
+      cnt += c->subgraph_param_cnt;
+    }
+    node->subgraph_param_cnt = cnt;
+    node->subgraph.push_back(node);
   }
 
   class OneChildSdfNode : public SdfNode
@@ -83,6 +97,246 @@ AABB ProceduralSdf::scene_bbox;
     }
   };
 
+  class NullSdfNode : public OneChildSdfNode
+  {
+  protected:
+    mutable int childs_params_start = 0, childs_params_end = 0;
+    float *global_ddist_dparams = nullptr;
+  public:
+    NullSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Null"; }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      childs_params_start = p_offset;
+      child->get_distance_batch(batch_size, positions, distances, global_ddist_dparams, ddist_dpos, stack, stack_head);
+      childs_params_end = p_offset + subgraph_param_cnt;
+    }
+
+    std::pair <int, int> get_child_param_idxs()
+    {
+      return std::pair<int, int> {childs_params_start, childs_params_end};
+    } 
+    void set_global_ddist_dparams(float *ptr)
+    {
+      global_ddist_dparams = ptr;
+    }
+    virtual unsigned param_cnt() const override { return 0; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      return {};
+    }
+    virtual AABB get_bbox() const override
+    {
+      return child->get_bbox();
+    }
+  };
+
+  class AbstractComplexSdfNode : public SdfNode
+  {
+  protected:
+    std::vector<const SdfNode *> childs;
+    std::vector<NullSdfNode *> null_nodes;
+    std::vector<std::unique_ptr<SdfNode>> inside_nodes;
+    SdfNode *root;
+    std::vector<my_float> all_params;
+    ParamGenInstance param_inst;
+    unsigned input_size;
+    unsigned output_param_size() const
+    {
+      unsigned res = 0;
+      for (int i = 0; i < structure.s.size(); ++i)
+      {
+        unsigned n = 0;
+        if (i < structure.s.size())
+        {
+          n = structure.s[i];
+        }
+        if (n != 0)
+        {
+          SdfNode *node = sdf_node_by_node_type_id(n, i);
+          res += node->param_cnt();
+          delete node;
+        }
+      }
+      return res;
+    }
+    UPGStructure structure;
+    std::vector<std::vector<float>> param_structure;
+    SdfNode *sdf_node_by_node_type_id_in_complex(uint16_t num, unsigned id)
+    {
+      if (num == SdfNode::UNDEFINED)
+      {
+        NullSdfNode *node = NULL;
+        node = new NullSdfNode(id);
+        null_nodes.push_back(node);
+        return node;
+      }
+      return sdf_node_by_node_type_id(num, id);
+    }
+
+    void create(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size)
+    {
+      param_inst.recreate(p_s, in_size, output_param_size());
+      all_params.clear();
+      inside_nodes.clear();
+      std::vector<SdfNode *> nodes;
+      std::vector<std::pair<SdfNode *, unsigned>> param_startings;
+      int i = 0;
+      do
+      {
+        unsigned n = 0;
+        if (i < s.s.size())
+        {
+          n = s.s[i];
+        }
+        SdfNode *node = sdf_node_by_node_type_id_in_complex(n, i);
+        inside_nodes.push_back(std::unique_ptr<SdfNode>(node));
+        param_startings.push_back({node, all_params.size()});
+        all_params.resize(all_params.size() + node->param_cnt());
+        if (i == 0)
+        {
+          root = node;
+          if (node->child_cnt() > 0 && n != SdfNode::UNDEFINED)
+          {
+            nodes.push_back(node);
+          }
+        }
+        else
+        {
+          SdfNode *last = nodes[nodes.size() - 1];
+          
+          if (!last->add_child(node))
+          {
+            nodes.pop_back();
+          }
+          if (node->child_cnt() > 0 && n != SdfNode::UNDEFINED)
+          {
+            nodes.push_back(node);
+          }
+        }
+        ++i;
+      } while (nodes.size() > 0);
+      int offset = 0;
+      for (auto &nptr : inside_nodes)
+      {
+        nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()), offset);
+        offset += nptr->param_cnt();
+      }
+    }
+
+
+  public:
+    AbstractComplexSdfNode(unsigned id, std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : SdfNode(id), param_inst({}, 0, 0)
+    {
+      childs = {};
+      param_structure = p_s;
+      structure = s;
+      input_size = in_size;
+      create(p_s, s, in_size);
+    }
+    bool add_child(SdfNode *node) override 
+    {
+      if (child_cnt() > childs.size())
+        {
+          null_nodes[childs.size()]->add_child(node);
+          childs.push_back(node);
+        }
+        return child_cnt() > childs.size();
+    }
+    std::vector<const SdfNode *> get_children() const override
+    {
+      return childs;
+    }
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      for (auto *n : null_nodes)
+        n->set_global_ddist_dparams(ddist_dparams);
+/*
+      ParamGenInstance inst(param_structure, input_size, output_param_size());
+      ParamsGraph param_graph = inst.get_graph(p);
+      std::vector<float> pars, jac;
+      if (ddist_dpos != nullptr) pars = param_graph.get_params(&jac);
+      else pars = param_graph.get_params();
+
+      std::vector<int> param_pairs_idxs = {0};
+      if (ddist_dpos != nullptr)
+      {
+        param_pairs_idxs.push_back(ddist_dpos->size());
+      }
+      float distance = root->get_distance(pos, ddist_dp, ddist_dpos);
+      if (ddist_dpos != nullptr)
+      {
+        for (int i = 0; i < null_nodes.size(); ++i)
+        {
+          auto tmp = null_nodes[i]->get_child_param_idxs();
+          param_pairs_idxs.push_back(tmp.first);
+          param_pairs_idxs.push_back(tmp.second);
+        }
+      }
+      if (ddist_dpos != nullptr)
+      {
+        param_pairs_idxs.push_back(ddist_dpos->size());
+      }
+      std::vector<float> buf(0), inside(0);
+      if (ddist_dpos != nullptr)
+      {
+        for (int i = 0; i < param_pairs_idxs.size() - 1; ++i)
+        {
+          if (i % 2)
+          {
+            for (int j = param_pairs_idxs[i]; j < param_pairs_idxs[i + 1]; ++j)
+            {
+              buf.push_back((*ddist_dpos)[j]);
+            }
+          }
+          else
+          {
+            for (int j = param_pairs_idxs[i]; j < param_pairs_idxs[i + 1]; ++j)
+            {
+              inside.push_back((*ddist_dpos)[j]);
+            }
+          }
+        }
+        
+        std::vector <float> new_ddist_part(jac.size() / inside.size());
+        int new_size = jac.size() / inside.size();
+        for (int i = 0; i < inside.size(); ++i)
+        {
+          for (int j = 0; j < new_size; ++j)
+          {
+            if (i == 0)
+            {
+              new_ddist_part[j] = 0;
+            }
+            new_ddist_part[j] += jac[i * new_size + j] * inside[i];
+          }
+        }
+        buf.insert(buf.end(), new_ddist_part.begin(), new_ddist_part.end());
+        ddist_dpos->clear();
+        for (int i = 0; i < buf.size(); ++i)
+        {
+          ddist_dpos->push_back(buf[i]);
+      }
+      return distance;
+*/
+    }
+    virtual AABB get_bbox() const override
+    {
+      return root->get_bbox();
+    }
+  };
 
   inline float 
   diff_sphere_sdf(float params[4]) 
@@ -895,6 +1149,69 @@ AABB ProceduralSdf::scene_bbox;
     }
   };
 
+  //test start
+  class ChairSdfNode : public AbstractComplexSdfNode
+  {
+  public:
+    ChairSdfNode(unsigned id) : AbstractComplexSdfNode(id, param_structure(), structure(), 6) { name = "chair"; }//last param is param_cnt
+    virtual unsigned child_cnt() const override
+    {
+      return 0;
+    }
+    virtual unsigned param_cnt() const override
+    {
+      return 6;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "leg_radius"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "leg_height"});
+      params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "chair_width"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "chair_thickness"});
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "chair_length"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "chair_height"});
+
+      return params;
+    }
+  protected:
+    std::vector<std::vector<float>> param_structure() const
+    {
+      return {{6, ParamNode::CONST, 0}, {7, ParamNode::NEG}, {6},
+              {4, ParamNode::PRIMITIVE, 4}, {3, ParamNode::PRIMITIVE, 3}, {2, ParamNode::PRIMITIVE, 2},
+
+              {8, ParamNode::SUB}, {9, ParamNode::NEG}, {6},
+              {3}, {5, ParamNode::PRIMITIVE, 5}, {2},
+
+              {10, ParamNode::SUB}, {1, ParamNode::PRIMITIVE, 1}, {11, ParamNode::SUB},
+              {1}, {0, ParamNode::PRIMITIVE, 0},
+
+              {12, ParamNode::NEG}, {1}, {11},
+              {1}, {0},
+              
+              {10}, {1}, {13, ParamNode::NEG},
+              {1}, {0},
+              
+              {12}, {1}, {13},
+              {1}, {0},
+              
+              {3},
+              {3}, {4},
+              {5},
+              {4}, {0},
+              {2}, {0},
+              {10},
+              {11}};
+    }
+    UPGStructure structure() const
+    {
+      return {{SdfNode::OR, SdfNode::OR, SdfNode::MOVE, SdfNode::BOX, SdfNode::MOVE, SdfNode::BOX, SdfNode::OR, SdfNode::OR, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::OR, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::MOVE, SdfNode::CYLINDER}};;
+    }
+  };
+  //test end
+
   void ProceduralSdf::set_parameters(std::span<const float> parameters)
   {
     for (int i = 0; i < all_params.size(); ++i)
@@ -986,19 +1303,6 @@ AABB ProceduralSdf::scene_bbox;
   {
     recreate(sdf.structure);
     set_parameters(sdf.all_params);
-  }
-
-  void set_subgraph_params_cnt_rec(SdfNode *node)
-  {
-    unsigned cnt = node->param_cnt();
-    for (auto *c : node->get_children())
-    {
-      set_subgraph_params_cnt_rec((SdfNode *)c);
-      node->subgraph.insert(node->subgraph.end(), c->subgraph.begin(), c->subgraph.end());
-      cnt += c->subgraph_param_cnt;
-    }
-    node->subgraph_param_cnt = cnt;
-    node->subgraph.push_back(node);
   }
 
   void ProceduralSdf::recreate(const UPGStructure &_structure)
@@ -1094,6 +1398,9 @@ AABB ProceduralSdf::scene_bbox;
         break;
       case SdfNode::ROTATE:
         node = new RotateSdfNode(id);
+        break;
+      case SdfNode::CHAIR:
+        node = new ChairSdfNode(id);
         break;
       case SdfNode::GRID:
         node = new GridSdfNode(id, 32, AABB({-1,-1,-1},{1,1,1}));

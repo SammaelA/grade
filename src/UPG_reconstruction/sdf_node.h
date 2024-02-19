@@ -24,6 +24,7 @@ namespace upg
       AND,
       SUBTRACT,
       ROTATE,
+      CHAIR,
       GRID,
       NEURAL,
       SCALE,
