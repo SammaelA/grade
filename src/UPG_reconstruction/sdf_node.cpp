@@ -706,11 +706,12 @@ AABB ProceduralSdf::scene_bbox;
       child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
       if (ddist_dparams)
       {
+        unsigned cnt = param_cnt();
         for (int i=0;i<batch_size;i++)
         {
-          ddist_dparams[p_offset*batch_size + 3*i+0] = -ddist_dpos[3*i+0];
-          ddist_dparams[p_offset*batch_size + 3*i+1] = -ddist_dpos[3*i+1];
-          ddist_dparams[p_offset*batch_size + 3*i+2] = -ddist_dpos[3*i+2];
+          ddist_dparams[p_offset*batch_size + cnt*i+0] = -ddist_dpos[cnt*i+0];
+          ddist_dparams[p_offset*batch_size + cnt*i+1] = -ddist_dpos[cnt*i+1];
+          ddist_dparams[p_offset*batch_size + cnt*i+2] = -ddist_dpos[cnt*i+2];
         }
       }
     }
