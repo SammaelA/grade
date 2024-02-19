@@ -334,74 +334,34 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
-  //TEST 6 ROTATING BODY RECONSTRUCTION
+  //TEST 6 ROTATED BOX SDF RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly (like 90 PSNR)
+  //Reconstruction should perform perfectly
   void sdf_test_6()
   {
-    srand(0);
-    debug("TEST 6. ROTATING BODY MULTI-VIEW RECONSTRUCTION\n");
+    srand(time(NULL));
+    debug("TEST 6. ROTATED BOX SDF RECONSTRUCTION\n");
     std::string settings = R""""(
     {
     input {
         synthetic_reference {
-            reference_image_w:i = 512
-            reference_image_h:i = 512
-            params:arr = {0.2, 0.21, 0.23, 0.26, 0.3, 0.35, 0.41, 0.48}
-            structure:arr = {7}
+            points_count:i = 50000
+            params:arr = {0.2,-0.1,0, 0,0,0.7, 0.3,0.8,0.3}
+            structure:arr = {2,11,4}
         } 
-        view_0 {
-            camera.origin:p3 = 2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_1 {
-            camera.origin:p3 = 2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_2 {
-            camera.origin:p3 = -2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_3 {
-            camera.origin:p3 = -2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
     }
     generator {
 
     }
     optimization {
         start {
-            params:arr = {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.4, 0.4}
-            structure:arr = {7}
+            params:arr = {0.1,-0.15,-0.1, 0.05,0.025,0.65, 0.2,0.9,0.27}    
+            structure:arr = {2,11,4} 
         }
         step_0 {
-            render_w:i = 512
-            render_h:i = 512
+            learning_rate:r = 0.003
             iterations:i = 1000
             verbose:b = false
-            save_intermediate_images:b = false
-            learning_rate:r = 0.003
         }
     }
     results {
@@ -412,21 +372,15 @@ namespace upg
       )"""";
     Block settings_blk;
     load_block_from_string(settings, settings_blk);
-    auto res = reconstruct(settings_blk);
-
+    auto res = reconstruct_sdf(settings_blk);
+    
     debug("  6.1. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-
-    debug("  6.2. %-64s", "Extremely high PSNR on given views ");
-    if (res[0].quality_ir > 50)
-      debug("passed\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
-
-    debug("  6.3. %-64s", "Extremely high turntable PSNR ");
+    
+    debug("  6.2. %-64s", "Perfect multi-view PSNR ");
     if (res[0].quality_synt > 40)
       debug("passed\n");
     else
@@ -817,146 +771,12 @@ namespace upg
 
   void sdf_test_13()
   {
-    srand(0);
-    debug("TEST 13. COMPLEX MULTI-ROTATION\n");
-    std::string settings = R""""(
-    {
-    params:arr = {1, 0, 0, 0, 1, 1, 0,0,0, 1,0,0, 0,1,-1}    
-    structure:arr = {9, 1} 
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    ComplexModel m;
-    bool res;
-    debug(" 13.1. %-64s", "Creating model from params and structure ");
-    if ((res = create_model_from_block(settings_blk, m)))
-    {
-      debug("passed\n");
-    }
-    else
-    {
-      debug("FAILED %d\n", res);
-      return;
-    }
-    debug(" 13.2. %-64s", "Compare results and expectations ");
-    Model *model = m.models[0];
-    std::vector<float> p = model->positions;
-    res = (p.size() == 9 * MESH_REPEATS);
-    if (res)
-    {
-      debug("passed\n");
-    }
-    else
-    {
-      debug("FAILED %d != %d\n", p.size(), 9 * MESH_REPEATS);
-    }
-  }
-
-  void sdf_test_14()
-  {
-    srand(0);
-    debug("TEST 14. PRISM MULTI-VIEW RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            reference_image_w:i = 512
-            reference_image_h:i = 512
-            params:arr = {0.23, 0.26, 0.3, 0.35, 0.41, 0.2}
-            structure:arr = {13}
-        } 
-        view_0 {
-            camera.origin:p3 = 2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_1 {
-            camera.origin:p3 = 2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_2 {
-            camera.origin:p3 = -2.000000, 0.500000, 2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-        view_3 {
-            camera.origin:p3 = -2.000000, -0.500000, -2.000000
-            camera.target:p3 = 0.000000, 0.000000, 0.000000
-            camera.up:p3 = 0.000000, 1.000000, 0.000000
-            camera.z_near:r = 0.100000
-            camera.z_far:r = 100.000000
-            camera.fov_rad:r = 1.00000
-            camera.fixed:b = true
-        }
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1, 0.1, 0.3, 0.3, 0.25, 0.15}
-            structure:arr = {13}
-        }
-        step_0 {
-            render_w:i = 512
-            render_h:i = 512
-            iterations:i = 1000
-            verbose:b = false
-            save_intermediate_images:b = false
-            learning_rate:r = 0.003
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct(settings_blk);
-
-    debug(" 14.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("passed\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-
-    debug(" 14.2. %-64s", "Extremely high PSNR on given views ");
-    if (res[0].quality_ir > 50)
-      debug("passed\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
-
-    debug(" 14.3. %-64s", "Extremely high turntable PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("passed\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void sdf_test_15()
-  {
     ProceduralSdf rot_box({std::vector<uint16_t>{11, 4}});
 
-    debug("TEST 15. SDF ROTATION NODE\n");
+    debug("TEST 13. SDF ROTATION NODE\n");
     {
     int pcnt = rot_box.desc.get_total_params_count();
-    debug(" 15.1. %-64s", "SDF instances are created with expected number of parameters ");
+    debug(" 13.1. %-64s", "SDF instances are created with expected number of parameters ");
     if (pcnt == 6)
       debug("passed\n");
     else
@@ -971,7 +791,7 @@ namespace upg
       float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
       float d3 = rot_box.get_distance({1,0.5,0.5});
 
-      debug(" 15.2. %-64s", "Distance to box correct");
+      debug(" 13.2. %-64s", "Distance to box correct");
       if (abs(d1) < 1e-6 && abs(d2) < 1e-6 && abs(d3) < 1e-6)
         debug("passed\n");
       else
@@ -979,66 +799,13 @@ namespace upg
     }
   }
 
-  //TEST 16 ROTATED BOX SDF RECONSTRUCTION
-  //It uses Adam optimizer with initial state close to target one
-  //Reconstruction should perform perfectly
-  void sdf_test_16()
+  void test_14()
   {
-    srand(time(NULL));
-    debug("TEST 16. ROTATED BOX SDF RECONSTRUCTION\n");
-    std::string settings = R""""(
-    {
-    input {
-        synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0.2,-0.1,0, 0,0,0.7, 0.3,0.8,0.3}
-            structure:arr = {2,11,4}
-        } 
-    }
-    generator {
-
-    }
-    optimization {
-        start {
-            params:arr = {0.1,-0.15,-0.1, 0.05,0.025,0.65, 0.2,0.9,0.27}    
-            structure:arr = {2,11,4} 
-        }
-        step_0 {
-            learning_rate:r = 0.003
-            iterations:i = 1000
-            verbose:b = false
-        }
-    }
-    results {
-        check_image_quality:b = true
-        check_model_quality:b = true
-    }
-    }
-      )"""";
-    Block settings_blk;
-    load_block_from_string(settings, settings_blk);
-    auto res = reconstruct_sdf(settings_blk);
-    
-    debug(" 16.1. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("passed\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 16.2. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("passed\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
-  }
-
-  void test_36()
-  {
-    debug("TEST 36. SDF CHAIR NODE\n");
+    debug("TEST 14. SDF CHAIR NODE\n");
     ProceduralSdf chair({std::vector<uint16_t>{SdfNodeType::CHAIR}});
     {
       int pcnt = chair.desc.get_total_params_count();
-      debug(" 34.1. %-64s", "SDF instances are created with expected number of parameters ");
+      debug(" 14.1. %-64s", "SDF instances are created with expected number of parameters ");
       if (pcnt == 6)
         debug("PASSED\n");
       else
@@ -1048,7 +815,7 @@ namespace upg
       std::vector<float> params = {0.2, 1, 0.8, 0.1, 0.8, 1.5};
       chair.set_parameters(params);
       std::vector<float> ddist,dpos = {0,0,0};
-      debug(" 34.2. %-64s", "distances getting ");
+      debug(" 14.2. %-64s", "distances getting ");
       float d1 = chair.get_distance({0,sqrt(2),0},&ddist,&dpos);
       float d2 = chair.get_distance({0,sqrt(0.5),sqrt(0.5)});
       float d3 = chair.get_distance({1,0.5,0.5});
@@ -1081,8 +848,7 @@ namespace upg
     std::vector<std::function<void(void)>> test_functions = {
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
-      sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_14, sdf_test_15,
-      sdf_test_16
+      sdf_test_11, sdf_test_12, sdf_test_13,
     };
 
     if (tests.empty())

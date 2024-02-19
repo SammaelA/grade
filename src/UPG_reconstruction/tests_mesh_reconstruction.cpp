@@ -1563,6 +1563,238 @@ fail: debug("FAILED\n");
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  //TEST 20 ROTATING BODY RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly (like 90 PSNR)
+  void mesh_test_20()
+  {
+    srand(0);
+    debug("TEST 20. ROTATING BODY MULTI-VIEW RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0.2, 0.21, 0.23, 0.26, 0.3, 0.35, 0.41, 0.48}
+            structure:arr = {7}
+        } 
+        view_0 {
+            camera.origin:p3 = 2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.4, 0.4}
+            structure:arr = {7}
+        }
+        step_0 {
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 1000
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 20.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 20.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 20.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
+
+  void mesh_test_21()
+  {
+    srand(0);
+    debug("TEST 21. COMPLEX MULTI-ROTATION\n");
+    std::string settings = R""""(
+    {
+    params:arr = {1, 0, 0, 0, 1, 1, 0,0,0, 1,0,0, 0,1,-1}    
+    structure:arr = {9, 1} 
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    ComplexModel m;
+    bool res;
+    debug(" 21.1. %-64s", "Creating model from params and structure ");
+    if ((res = create_model_from_block(settings_blk, m)))
+    {
+      debug("passed\n");
+    }
+    else
+    {
+      debug("FAILED %d\n", res);
+      return;
+    }
+    debug(" 21.2. %-64s", "Compare results and expectations ");
+    Model *model = m.models[0];
+    std::vector<float> p = model->positions;
+    res = (p.size() == 9 * MESH_REPEATS);
+    if (res)
+    {
+      debug("passed\n");
+    }
+    else
+    {
+      debug("FAILED %d != %d\n", p.size(), 9 * MESH_REPEATS);
+    }
+  }
+
+    void mesh_test_22()
+  {
+    srand(0);
+    debug("TEST 22. PRISM MULTI-VIEW RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            reference_image_w:i = 512
+            reference_image_h:i = 512
+            params:arr = {0.23, 0.26, 0.3, 0.35, 0.41, 0.2}
+            structure:arr = {13}
+        } 
+        view_0 {
+            camera.origin:p3 = 2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_1 {
+            camera.origin:p3 = 2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_2 {
+            camera.origin:p3 = -2.000000, 0.500000, 2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+        view_3 {
+            camera.origin:p3 = -2.000000, -0.500000, -2.000000
+            camera.target:p3 = 0.000000, 0.000000, 0.000000
+            camera.up:p3 = 0.000000, 1.000000, 0.000000
+            camera.z_near:r = 0.100000
+            camera.z_far:r = 100.000000
+            camera.fov_rad:r = 1.00000
+            camera.fixed:b = true
+        }
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1, 0.1, 0.3, 0.3, 0.25, 0.15}
+            structure:arr = {13}
+        }
+        step_0 {
+            render_w:i = 512
+            render_h:i = 512
+            iterations:i = 1000
+            verbose:b = false
+            save_intermediate_images:b = false
+            learning_rate:r = 0.003
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct(settings_blk);
+
+    debug(" 22.1. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+
+    debug(" 22.2. %-64s", "Extremely high PSNR on given views ");
+    if (res[0].quality_ir > 50)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 50);
+
+    debug(" 22.3. %-64s", "Extremely high turntable PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+  }
 
   void perform_tests_mesh_reconstruction(const std::vector<int> &test_ids)
   {
@@ -1572,7 +1804,8 @@ fail: debug("FAILED\n");
       mesh_test_1,  mesh_test_2,  mesh_test_3,  mesh_test_4,  mesh_test_5,
       mesh_test_6,  mesh_test_7,  mesh_test_8,  mesh_test_9,  mesh_test_10,
       mesh_test_11, mesh_test_12, mesh_test_13, mesh_test_14, mesh_test_15,
-      mesh_test_16, mesh_test_17, mesh_test_18, mesh_test_19
+      mesh_test_16, mesh_test_17, mesh_test_18, mesh_test_19, mesh_test_20,
+      mesh_test_21, mesh_test_22
     };
 
     if (tests.empty())
