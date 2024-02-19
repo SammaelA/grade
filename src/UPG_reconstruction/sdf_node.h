@@ -71,10 +71,8 @@ namespace upg
                                     float *      ddist_dparams, //Nparams*batch_size, one array for all nodes
                                     float *      ddist_dpos,    //3*batch_size: ddist_p0.x, ddist_p0.y, ddist_p0.z, ddist_p1.x, ...
                             std::vector<float> & stack,         //resizable chunk of memory for temporary data (should only grow in size)
-                                    unsigned     stack_head) const   //current position of stack head (0 initially, grows up)
-    {
-      logerr("NOT IMPLEMENTED");
-    }
+                                    unsigned     stack_head) const = 0;//current position of stack head (0 initially, grows up)
+
     virtual bool add_child(SdfNode *node) = 0;// returns the availability of free space
     virtual unsigned param_cnt() const = 0;
     virtual unsigned child_cnt() const = 0;

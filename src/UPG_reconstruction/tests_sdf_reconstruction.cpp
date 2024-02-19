@@ -294,7 +294,7 @@ namespace upg
         synthetic_reference {
             points_count:i = 50000
             params:arr = {0.2,-0.1,0, 0.5, 1,1,1}
-            structure:arr = {2,14,4}
+            structure:arr = {2,12,4}
         } 
     }
     generator {
@@ -303,7 +303,7 @@ namespace upg
     optimization {
         start {
             params:arr = {0.1,-0.15,-0.1,0.41, 1,1,1}    
-            structure:arr = {2,14,4} 
+            structure:arr = {2,12,4} 
         }
         step_0 {
             learning_rate:r = 0.003
