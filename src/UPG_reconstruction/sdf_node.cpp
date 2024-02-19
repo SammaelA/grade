@@ -9,7 +9,7 @@ float __enzyme_autodiff(...);
 
 namespace upg
 {
-  AABB ProceduralSdf::scene_bbox;
+  AABB ProceduralSdf::scene_bbox = AABB({-1,-1,-1},{1,1,1});
   extern std::vector<SdfNodeProperties> node_properties;
 
 
@@ -146,7 +146,7 @@ namespace upg
     std::vector<NullSdfNode *> null_nodes;
     std::vector<std::unique_ptr<SdfNode>> inside_nodes;
     SdfNode *root;
-    std::vector<my_float> all_params;
+    std::vector<float> all_params;
     ParamGenInstance param_inst;
     unsigned input_size;
     unsigned output_param_size() const

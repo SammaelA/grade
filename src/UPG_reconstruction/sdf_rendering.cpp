@@ -279,7 +279,7 @@ namespace upg
     assert(points != nullptr);
     float r = 10000;
 
-    AABB sdf_bbox = sdf.root->get_bbox();
+    AABB sdf_bbox = sdf.get_bbox();
     *points = {};
     points->reserve(points_count);
     for (int i=0;i<points_count;i++)
@@ -297,7 +297,7 @@ namespace upg
 
     if (outside_points)
     {
-      AABB bbox = sdf.root->get_bbox();
+      AABB bbox = sdf.get_bbox();
       AABB inflated_bbox = AABB(bbox.min_pos - glm::vec3(0.01,0.01,0.01), bbox.max_pos + glm::vec3(0.01,0.01,0.01));
       
       *outside_points = {};
@@ -321,7 +321,7 @@ namespace upg
     *distances = {};
     distances->resize(points_count);
     
-    AABB bbox = sdf.root->get_bbox();
+    AABB bbox = sdf.get_bbox();
     glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
     glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
     AABB inflated_bbox = AABB(center - 2.0f*size, center + 2.0f*size);
@@ -348,7 +348,7 @@ namespace upg
     assert(points != nullptr);
     float r = 10000;
 
-    AABB sdf_bbox = sdf.root->get_bbox();
+    AABB sdf_bbox = sdf.get_bbox();
     *points = {};
     points->reserve(points_count);
 
@@ -437,8 +437,8 @@ namespace upg
   float get_sdf_similarity_MSE(const ProceduralSdf &reference_sdf, const ProceduralSdf &sdf)
   {
     int points = 50000;
-    AABB bbox = AABB(min(reference_sdf.root->get_bbox().min_pos, sdf.root->get_bbox().min_pos),
-                     max(reference_sdf.root->get_bbox().max_pos, sdf.root->get_bbox().max_pos));
+    AABB bbox = AABB(min(reference_sdf.get_bbox().min_pos, sdf.get_bbox().min_pos),
+                     max(reference_sdf.get_bbox().max_pos, sdf.get_bbox().max_pos));
     double dist_sum = 0;
     for (int i=0;i<points;i++)
     {

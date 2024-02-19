@@ -3,7 +3,6 @@
 #include "graphics_utils/image_metrics.h"
 #include "graphics_utils/modeling.h"
 #include "generation.h"
-#include "sdf_node.h"
 #include <unistd.h>
 #include <functional>
 

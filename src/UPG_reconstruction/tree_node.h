@@ -24,7 +24,7 @@ namespace upg
     {
       return name;
     }
-    void set_param_span(std::span<my_float> s)
+    void set_param_span(std::span<float> s)
     {
       p = s;
     }

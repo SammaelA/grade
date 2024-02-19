@@ -44,7 +44,7 @@ namespace upg
     virtual unsigned param_cnt() const = 0;
     virtual unsigned source_cnt() const = 0;
     virtual std::vector<const ParamNode *> get_sources() { return sources; }
-    void set_param_span(std::span<my_float> s) { in_p = s; }
+    void set_param_span(std::span<float> s) { in_p = s; }
   protected:
     unsigned ID;
     std::string name;
@@ -112,7 +112,7 @@ namespace upg
     std::vector<std::unique_ptr<ParamNode>> all_nodes;
     std::vector<ParamNode *> roots;
     
-    std::vector<my_float> all_params;
+    std::vector<float> all_params;
     std::vector<std::vector<float>> structure;//{ {ID, type, params}, {ID, type, params}, {ID//if this id already in structure}, ...}
   };
 

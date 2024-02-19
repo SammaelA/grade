@@ -74,7 +74,7 @@ namespace upg
     int offset = 0;
     for (auto &nptr : all_nodes)
     {
-      nptr->set_param_span(std::span<my_float>(all_params.data() + offset, nptr->param_cnt()));
+      nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()));
       offset += nptr->param_cnt();
     }
   }

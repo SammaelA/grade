@@ -59,7 +59,7 @@ namespace upg
     SdfNode() = default;
     virtual ~SdfNode() = default;
     std::string get_node_name() const { return name; }
-    void set_param_span(std::span<my_float> s, unsigned offset) 
+    void set_param_span(std::span<float> s, unsigned offset) 
     { 
       p = s; 
       p_offset = offset;

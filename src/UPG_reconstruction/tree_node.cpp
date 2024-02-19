@@ -13,7 +13,7 @@ namespace upg
   vec3 norm(upg::vec3 v);
   void add_rect(upg::vec3 point, upg::vec3 v1, upg::vec3 v2, UniversalGenMesh &mesh);
   void add_tri(upg::vec3 point, upg::vec3 v1, upg::vec3 v2, UniversalGenMesh &mesh);
-  mat43 get_any_rot_mat(upg::vec3 axis, my_float angle);
+  mat43 get_any_rot_mat(upg::vec3 axis, float angle);
 
   upg::vec3 norm(upg::vec3 v1, upg::vec3 v2)//right and up -> at screen
   {
@@ -25,10 +25,10 @@ namespace upg
     return dgen::normalize_with_default(v, upg::vec3(1,0,0));
   }
 
-  upg::mat43 get_any_rot_mat(upg::vec3 axis, my_float angle)
+  upg::mat43 get_any_rot_mat(upg::vec3 axis, float angle)
   {
     vec3 ax = normalize_unsafe(axis);
-    my_float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
+    float c = cos(angle), s = sin(angle), x = ax.x, y = ax.y, z = ax.z;
     vec3 e1 = {c + (1 - c) * x * x, (1 - c) * x * y + s * z, (1 - c) * x * z - s * y};
     vec3 e2 = {(1 - c) * x * y - s * z, c + (1 - c) * y * y, (1 - c) * y * z + s * x};
     vec3 e3 = {(1 - c) * x * z + s * y, (1 - c) * z * y - s * x, c + (1 - c) * z * z};
@@ -89,13 +89,13 @@ namespace upg
     }
   };
 
-  void FreeTriangleNode_apply(const my_float *in, my_float *out)
+  void FreeTriangleNode_apply(const float *in, float *out)
   {
     for (int i=0;i<9;i++)
       out[i] = in[i];
   }
 
-  void TriPrismNode_apply(const my_float *in, my_float *out)
+  void TriPrismNode_apply(const float *in, float *out)
   {
     out[0] = in[0];
     out[1] = 0;
@@ -140,7 +140,7 @@ namespace upg
     }
   }
 
-  void RotateNode_apply(const my_float *in, my_float *out)
+  void RotateNode_apply(const float *in, float *out)
   {
     vec3 ax = {in[0], in[1], in[2]};
     mat43 matr = get_any_rot_mat(ax, in[3]);
@@ -151,17 +151,17 @@ namespace upg
     out[2] = v.z;
   }
 
-  void ComplexRotateNode_apply(const my_float *in, my_float *out)
+  void ComplexRotateNode_apply(const float *in, float *out)
   {
     for (int i=0;i<3;i++)
       out[i] = in[7 + i] - in[4 + i];
-    my_float data[7] = {in[0], in[1], in[2], in[3], out[0], out[1], out[2]};
+    float data[7] = {in[0], in[1], in[2], in[3], out[0], out[1], out[2]};
     RotateNode_apply(data, out);
     for (int i=0;i<3;i++)
       out[i] += in[4 + i];
   }
 
-  void ComplexRotateRepeatNode_apply(const my_float *in, my_float *out)
+  void ComplexRotateRepeatNode_apply(const float *in, float *out)
   {
     for (int i=0;i<3;i++)
     {
@@ -169,21 +169,21 @@ namespace upg
     }
     for (int j = 1; j < MESH_REPEATS; ++j)
     {
-      my_float data[10] = {in[0], in[1], in[2], 2.0 * PI * (my_float)j / (my_float)MESH_REPEATS, in[3], in[4], in[5], in[6], in[7], in[8]};
+      float data[10] = {in[0], in[1], in[2], 2.0 * PI * (float)j / (float)MESH_REPEATS, in[3], in[4], in[5], in[6], in[7], in[8]};
       ComplexRotateNode_apply(data, out + j * 3);
     }
   }
 
-  void SpinNode_8_apply(const my_float *in, my_float *out)
+  void SpinNode_8_apply(const float *in, float *out)
   {
-    my_float y = 1;
+    float y = 1;
     for (int i = 1; i < 8; ++i)
     {
       int j = 0;
-      for (my_float ang = 1; ang <= SPINS; ++ang)
+      for (float ang = 1; ang <= SPINS; ++ang)
       {
-        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
-        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
+        float angle = ang * 2.0 * M_PI / float(SPINS);
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 1] = (y - 1)/8;
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
@@ -280,7 +280,7 @@ namespace upg
     SpinNode_8(unsigned id) : PrimitiveNode(id) { name = "Spin_8"; }
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      my_float data[8];
+      float data[8];
       for (int i = 0; i < 8; ++i)
       {
         data[i] = p[i];
@@ -318,7 +318,7 @@ namespace upg
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       //creating for example sphere
-      my_float data[8], j = 0;
+      float data[8], j = 0;
       for (int i = 0; i < 8; ++i)
       {
         data[i] = sqrt(abs(49.0 / 256.0 - pow(j / 8.0 - 7.0 / 16.0, 2)));
@@ -350,7 +350,7 @@ namespace upg
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       //creating for example cone
-      my_float data[8], j = 7;
+      float data[8], j = 7;
       for (int i = 0; i < 8; ++i)
       {
         data[i] = j / 16.0;
@@ -362,8 +362,8 @@ namespace upg
       SpinNode_8_apply(data, mesh.pos.data());
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
-        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
+        float angle = ang * 2.0 * M_PI / float(SPINS);
         add_tri({0, 0, 0}, {cos(angle) * 7.0 / 16.0, 0, sin(angle) * 7.0 / 16.0}, {cos(prev_angle) * 7.0 / 16.0, 0, sin(prev_angle) * 7.0 / 16.0}, mesh);
       }
       if (out_jac)
@@ -388,7 +388,7 @@ namespace upg
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
       //creating for example cylinder
-      my_float data[8];
+      float data[8];
       for (int i = 0; i < 8; ++i)
       {
         data[i] = 0.5;
@@ -399,14 +399,14 @@ namespace upg
       SpinNode_8_apply(data, mesh.pos.data());
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
-        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
+        float angle = ang * 2.0 * M_PI / float(SPINS);
         add_tri({0, 7.0 / 8.0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
       }
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        my_float prev_angle = (ang - 1) * 2.0 * M_PI / my_float(SPINS);
-        my_float angle = ang * 2.0 * M_PI / my_float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
+        float angle = ang * 2.0 * M_PI / float(SPINS);
         add_tri({0, 0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
       }
       if (out_jac)
@@ -656,10 +656,10 @@ namespace upg
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      /*my_float axis_x = p.get();
-      my_float axis_y = p.get();
-      my_float axis_z = p.get();
-      my_float angle = p.get();*/
+      /*float axis_x = p.get();
+      float axis_y = p.get();
+      float axis_z = p.get();
+      float angle = p.get();*/
       UniversalGenJacobian child_jac;
       UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
       //applying rotating
@@ -672,7 +672,7 @@ namespace upg
         G.resize(child_jac.get_xn(),child_jac.get_xn());
         for (int i = 0; i < mesh.pos.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(mesh.pos[i]);
           x.push_back(mesh.pos[i + 1]);
@@ -714,7 +714,7 @@ namespace upg
       {
         for (int i = 0; i < mesh.pos.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(mesh.pos[i]);
           x.push_back(mesh.pos[i + 1]);
@@ -763,10 +763,10 @@ namespace upg
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      /*my_float axis_x = p.get();
-      my_float axis_y = p.get();
-      my_float axis_z = p.get();
-      my_float angle = p.get();*/
+      /*float axis_x = p.get();
+      float axis_y = p.get();
+      float axis_z = p.get();
+      float angle = p.get();*/
       UniversalGenJacobian child_jac;
       UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
       //applying rotating
@@ -779,7 +779,7 @@ namespace upg
         G.resize(child_jac.get_xn(),child_jac.get_xn());
         for (int i = 0; i < mesh.pos.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(mesh.pos[i]);
           x.push_back(mesh.pos[i + 1]);
@@ -821,7 +821,7 @@ namespace upg
       {
         for (int i = 0; i < mesh.pos.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(mesh.pos[i]);
           x.push_back(mesh.pos[i + 1]);
@@ -873,10 +873,10 @@ namespace upg
 
     UniversalGenMesh  apply(UniversalGenJacobian *out_jac) override
     {
-      /*my_float axis_x = p.get();
-      my_float axis_y = p.get();
-      my_float axis_z = p.get();
-      my_float angle = p.get();*/
+      /*float axis_x = p.get();
+      float axis_y = p.get();
+      float axis_z = p.get();
+      float angle = p.get();*/
       UniversalGenJacobian child_jac;
       UniversalGenMesh mesh = child->apply(out_jac ? &child_jac : nullptr);
       //applying rotating
@@ -886,7 +886,7 @@ namespace upg
       {
         matr[q] = get_any_rot_mat(ax, 2 * PI * q / MESH_REPEATS);
       }
-      std::vector<my_float> old_mesh;
+      std::vector<float> old_mesh;
       old_mesh.insert(old_mesh.end(), mesh.pos.begin(), mesh.pos.end());
       mesh.pos.resize(mesh.pos.size() * MESH_REPEATS);
       if (out_jac)
@@ -896,14 +896,14 @@ namespace upg
         G.resize(child_jac.get_xn() * MESH_REPEATS,child_jac.get_xn());
         for (int i = 0; i < old_mesh.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(old_mesh[i]);
           x.push_back(old_mesh[i + 1]);
           x.push_back(old_mesh[i + 2]);
           UniversalGenJacobian tmp;
           tmp.resize(3 * MESH_REPEATS, 9);
-          std::vector <my_float> data(3 * MESH_REPEATS);
+          std::vector <float> data(3 * MESH_REPEATS);
           ENZYME_EVALUATE_WITH_DIFF(ComplexRotateRepeatNode_apply, 9, 3 * MESH_REPEATS, x.data(), data.data(), tmp.data());
           for (int a = 0; a < MESH_REPEATS; ++a)
           {
@@ -949,13 +949,13 @@ namespace upg
       {
         for (int i = 0; i < old_mesh.size(); i += 3)
         {
-          std::vector<my_float> x;
+          std::vector<float> x;
           x.insert(x.end(), p.begin(), p.end());
           x.push_back(old_mesh[i]);
           x.push_back(old_mesh[i + 1]);
           x.push_back(old_mesh[i + 2]);
 
-          std::vector <my_float> data(3 * MESH_REPEATS);
+          std::vector <float> data(3 * MESH_REPEATS);
           ComplexRotateRepeatNode_apply(x.data(), data.data());
           for (int a = 0; a < MESH_REPEATS; ++a)
           {

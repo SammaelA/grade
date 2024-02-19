@@ -5,7 +5,7 @@ extern int enzyme_dup;
 extern float __enzyme_v[1024];
 
 //expected 
-//void F(my_float *in, my_float *out) - free function
+//void F(float *in, float *out) - free function
 //int input size, int output_size, float *input, float *output, float *jac
 #define ENZYME_EVALUATE_WITH_DIFF(F, input_size, output_size, input, output, jac) \
 { \

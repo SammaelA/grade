@@ -6,12 +6,10 @@
 #include "upg.h"
 namespace upg
 {
-  typedef float my_float;
-
-  typedef dgen::g_vec2<my_float> vec2;
-  typedef dgen::g_vec3<my_float> vec3;
-  typedef dgen::g_vec4<my_float> vec4;
-  typedef dgen::g_mat43<my_float> mat43;
+  typedef dgen::g_vec2<float> vec2;
+  typedef dgen::g_vec3<float> vec3;
+  typedef dgen::g_vec4<float> vec4;
+  typedef dgen::g_mat43<float> mat43;
 
   enum class ParameterType
   {

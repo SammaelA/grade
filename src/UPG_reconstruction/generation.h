@@ -74,6 +74,6 @@ namespace upg
     //spans from inputParams points to this container
     //put raw parameters list here to generate
     //DO NOT change size of this vector
-    std::vector<my_float> all_params;
+    std::vector<float> all_params;
   };
 }
