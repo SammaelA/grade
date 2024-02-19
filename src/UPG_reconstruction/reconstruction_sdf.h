@@ -17,6 +17,8 @@ namespace upg
 
     std::vector<float> ddist_dparams, ddist_dpos;
     std::vector<double> ddist_dparams_sum;
+    std::vector<float> distances_batch, a_distances_batch;
+    std::vector<glm::vec3> batch;
 
     float beta;
     float p;
@@ -41,11 +43,11 @@ namespace upg
     {
       a_points = _points;
       a_distances = _distances;
-      ddist_dparams.resize(max_parameters);
-      ddist_dparams_sum.resize(max_parameters);
-      ddist_dpos = {0,0,0};
       active_points_count = a_points.size();
       seed = rand();
+      distances_batch.resize(_distances.size());
+      a_distances_batch.resize(_distances.size());
+      batch.resize(_distances.size());
     }
 
     //fast and multiprocessing-safe random for stochastic gradient descent
@@ -67,11 +69,14 @@ namespace upg
 
     void remove_inactive_points(ProceduralSdf &sdf, float threshold = 0.001f)
     {
+      sdf.get_distance_batch(a_points.size(), (float*)a_points.data(), distances_batch.data(), nullptr, nullptr);
       std::vector<glm::vec3> active_points;
+      active_points.reserve(a_points.size());
       std::vector<float> active_distances;
+      active_distances.reserve(a_points.size());
       for (int i=0;i<a_points.size();i++)
       {
-        if (abs(sdf.get_distance(a_points[i]) - a_distances[i]) >= threshold)
+        if (abs(distances_batch[i] - a_distances[i]) >= threshold)
         {
           active_points.push_back(a_points[i]);
           active_distances.push_back(a_distances[i]);
@@ -110,11 +115,9 @@ namespace upg
     }
 
     template <bool is_differentiable>
-    double main_loss_func(const ProceduralSdf &sdf, const glm::vec3 &point, float target_dist)
+    double main_loss_func(float sdf_dist, float target_dist, float *sample_ddist_dparams)
     {
-      ddist_dparams.clear();
-      double dist = sdf.get_distance(point, &ddist_dparams, &ddist_dpos) - target_dist;
-
+      float dist = sdf_dist - target_dist;
       // loss function, value in range (0, 1]
       double dist_p = pow(abs(dist), p);
       double dist_p_inv = 1 / dist_p;
@@ -125,16 +128,15 @@ namespace upg
         double dist_inv = 1 / MAX(abs(dist), 1e-12);
         double dloss_ddist = abs(dist) >= beta ? (0.5 * beta_p * p * (dist_p_inv * dist_inv) * glm::sign(dist)) : (0.5 * beta_p_inv * (dist_p * dist_inv) * glm::sign(dist));
         for (int i = 0; i < ddist_dparams_sum.size(); i++)
-          ddist_dparams_sum[i] += dloss_ddist * ddist_dparams[i];
+          ddist_dparams_sum[i] += dloss_ddist * sample_ddist_dparams[i];
       }
       return loss;
     }
 
     template <bool is_differentiable>
-    double reg_loss_func(const ProceduralSdf &sdf, const glm::vec3 &point, float target_dist)
+    double reg_loss_func(float sdf_dist, float target_dist, float *sample_ddist_dparams)
     {
-      ddist_dparams.clear();
-      double dist = sdf.get_distance(point, &ddist_dparams, &ddist_dpos) - target_dist;
+      float dist = sdf_dist - target_dist;
       dist = glm::sign(dist)*MAX(0.05, abs(dist));
       
       if (dist < 0)
@@ -143,7 +145,7 @@ namespace upg
         if constexpr (is_differentiable)
         {
           for (int i = 0; i < ddist_dparams_sum.size(); i++)
-            ddist_dparams_sum[i] += 2*reg_q*dist*ddist_dparams[i];
+            ddist_dparams_sum[i] += 2*reg_q*dist*sample_ddist_dparams[i];
         }
         return loss;
       }
@@ -154,8 +156,10 @@ namespace upg
     template <bool is_differentiable>
     float sample_random(const ProceduralSdf &sdf, int samples, std::span<float> out_grad = {})
     {
+      int param_cnt = out_grad.size();
+
       if constexpr (is_differentiable)
-        ddist_dparams_sum = std::vector<double>(out_grad.size(), 0);
+        ddist_dparams_sum = std::vector<double>(param_cnt, 0);
       
       double total_loss = 0;
       int Na=1;
@@ -165,50 +169,38 @@ namespace upg
         for (int i=0;i<samples;i++)
         {
           int index = next_index();
-          total_loss += main_loss_func<is_differentiable>(sdf, a_points[index], a_distances[index]);
+          batch[i] = a_points[index];
+          a_distances_batch[i] = a_distances[index];
         }
       }
       else
       {
         Na = active_points_count;
-        for (int i=0;i<active_points_count;i++)
-          total_loss += main_loss_func<is_differentiable>(sdf, a_points[i], a_distances[i]);
+        batch = a_points;
+        a_distances_batch = a_distances;
       }
 
+      sdf.get_distance_batch(Na, (float*)batch.data(), distances_batch.data(), 
+                             is_differentiable ? ddist_dparams.data() : nullptr,
+                             is_differentiable ? ddist_dpos.data() : nullptr);
+                             
+      for (int i=0;i<Na;i++)
+        total_loss += main_loss_func<is_differentiable>(distances_batch[i],a_distances_batch[i],
+                                                        is_differentiable ? ddist_dparams.data() + i*param_cnt : nullptr);
+      
       if constexpr (is_differentiable)
       {
-        for (int i=0;i<out_grad.size();i++)
+        for (int i=0;i<param_cnt;i++)
           out_grad[i] = ddist_dparams_sum[i]/Na;
-        ddist_dparams_sum = std::vector<double>(out_grad.size(), 0);
+        ddist_dparams_sum = std::vector<double>(param_cnt, 0);
       }
 
       double total_loss_r = 0;
-      int Ns = 1;
-      if (samples < 0.75*points.size())
-      {
-        Ns = samples;
-        for (int i=0;i<samples;i++)
-        {
-          int index = next_index();
-          total_loss_r += reg_loss_func<is_differentiable>(sdf, points[index], distances[index]);
-        }
-      }
-      else
-      {
-        Ns = points.size();
-        for (int i=0;i<points.size();i++)
-          total_loss_r += reg_loss_func<is_differentiable>(sdf, points[i], distances[i]);
-      }
-      if constexpr (is_differentiable)
-      {
-        for (int i=0;i<out_grad.size();i++)
-          out_grad[i] += ddist_dparams_sum[i]/Ns;
-      }
+      for (int i=0;i<Na;i++)
+        total_loss_r += reg_loss_func<is_differentiable>(distances_batch[i],a_distances_batch[i],
+                                                         is_differentiable ? ddist_dparams.data() + i*param_cnt : nullptr);
       
-      if (verbose)
-        logerr("loss %lg %lg", total_loss, total_loss_r);
-
-      return total_loss/Na + total_loss_r/Ns;
+      return total_loss/Na + total_loss_r/Na;
     }
 
 /*
@@ -317,6 +309,12 @@ namespace upg
       ProceduralSdf &sdf = *((ProceduralSdf*)gen);
       sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
+      if (ddist_dparams.size() < samples*gen_params.size())
+        ddist_dparams.resize(samples*gen_params.size());
+      if (ddist_dparams_sum.size() < gen_params.size())
+        ddist_dparams_sum.resize(gen_params.size());
+      if (ddist_dpos.size() < 3*samples)
+        ddist_dpos.resize(3*samples);
 
       return sample_random<true>(sdf, samples, out_grad);
     }
