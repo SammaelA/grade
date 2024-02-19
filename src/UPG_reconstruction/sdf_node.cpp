@@ -24,6 +24,8 @@ namespace upg
       p_args[2] = positions[3 * i + 2];                                      \
       for (int j = 0; j < p_cnt; j++)                                        \
         p_args[3 + j] = p[j];                                                \
+      for (int j = 0; j < 3+p_cnt; j++)                                      \
+        d_p[j] = 0;                                                          \
       if (ddist_dparams)                                                     \
       {                                                                      \
         __enzyme_autodiff(func, p_args, d_p);                                \
