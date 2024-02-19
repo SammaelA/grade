@@ -3,14 +3,14 @@
 #include "generation_common.h"
 #include "common_utils/bbox.h"
 #include <memory>
+#include <functional>
 
 namespace upg
 {
-  class ProceduralSdf;
-  class SdfNode
+  class SdfNode;
+  struct SdfNodeType
   {
-  public:
-    enum NodeType
+    enum Type
     {
       UNDEFINED,
       SPHERE,
@@ -24,18 +24,40 @@ namespace upg
       AND,
       SUBTRACT,
       ROTATE,
+      SCALE,
       CHAIR,
       GRID,
       NEURAL,
-      SCALE,
       NODE_TYPES_COUNT
     };
+  };
 
+  static constexpr int VARIABLE_PARAM_COUNT = -1;
+  static constexpr int VARIABLE_CHILD_COUNT = -1;
+
+  struct SdfNodeProperties
+  {
+    SdfNodeType::Type type;
+    std::string name;
+    int param_count;
+    int children;
+    std::function<SdfNode *()> default_constructor;
+  };
+
+  const SdfNodeProperties &get_sdf_node_properties(uint16_t id);
+  const SdfNodeProperties &get_sdf_node_properties(SdfNodeType::Type type);
+  
+  SdfNode *create_node(uint16_t id);
+  SdfNode *create_node(SdfNodeType::Type type);
+
+  class ProceduralSdf;
+  class SdfNode
+  {
+  public:
     friend class ProceduralSdf;
 
-    SdfNode(unsigned id) { ID = id; }
+    SdfNode() = default;
     virtual ~SdfNode() = default;
-    unsigned get_ID() const { return ID; }
     std::string get_node_name() const { return name; }
     void set_param_span(std::span<my_float> s, unsigned offset) 
     { 
@@ -60,7 +82,6 @@ namespace upg
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
     virtual AABB get_bbox() const = 0;
   //protected:
-    unsigned ID;
     unsigned p_offset = 0;
     unsigned subgraph_param_cnt = 0;
     std::vector<SdfNode *> subgraph;
@@ -71,7 +92,7 @@ namespace upg
   class PrimitiveSdfNode : public SdfNode
   {
   public:
-    PrimitiveSdfNode(unsigned id) : SdfNode(id) {}
+    PrimitiveSdfNode() : SdfNode() {}
     virtual bool add_child(SdfNode *node) override { return false; }
     virtual unsigned child_cnt() const override { return 0; }
     virtual std::vector<const SdfNode *> get_children() const override { return {}; }
@@ -116,6 +137,5 @@ namespace upg
     static AABB scene_bbox;
   };
 
-  SdfNode *sdf_node_by_node_type_id(uint16_t num, unsigned id);
   std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure);
 }

@@ -50,28 +50,6 @@ namespace upg
     return d <= EPS;
   }
 
-  struct SDFPartInfo
-  {
-    UPGPart part;
-    AABB bbox;
-    const SdfNode *part_root;
-  };
-
-  std::vector<SDFPartInfo> get_sdf_parts_info(const ProceduralSdf &sdf)
-  {
-    auto parts = get_sdf_parts(sdf.structure);
-    std::vector<SDFPartInfo> parts_info(parts.size());
-
-    for (int i=0;i<parts.size();i++)
-    {
-      parts_info[i].part = parts[i];
-      parts_info[i].part_root = sdf.all_nodes[parts_info[i].part.s_range.first].get();
-      parts_info[i].bbox = parts_info[i].part_root->get_bbox();
-    }
-
-    return parts_info;
-  }
-
   Texture render_sdf(const ProceduralSdf &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
   {
     unsigned char *data = new unsigned char[4*image_w*image_h];

@@ -9,7 +9,9 @@ float __enzyme_autodiff(...);
 
 namespace upg
 {
-AABB ProceduralSdf::scene_bbox;
+  AABB ProceduralSdf::scene_bbox;
+  extern std::vector<SdfNodeProperties> node_properties;
+
 
 #define GET_DISTANCE_WITH_DIFF_BATCH(func, p_cnt)                            \
   {                                                                          \
@@ -53,7 +55,7 @@ AABB ProceduralSdf::scene_bbox;
   protected:
     SdfNode *child;
   public:
-    OneChildSdfNode(unsigned id) : SdfNode(id) { child = NULL; }
+    OneChildSdfNode() : SdfNode() { child = NULL; }
     unsigned child_cnt() const override { return 1; }
     bool add_child(SdfNode *node) override 
     {
@@ -73,7 +75,7 @@ AABB ProceduralSdf::scene_bbox;
     SdfNode *left;
     SdfNode *right;
   public:
-    TwoChildSdfNode(unsigned id) : SdfNode(id) { left = NULL; right = NULL; }
+    TwoChildSdfNode() : SdfNode() { left = NULL; right = NULL; }
     unsigned child_cnt() const override
     {
       return 2;
@@ -103,7 +105,7 @@ AABB ProceduralSdf::scene_bbox;
     mutable int childs_params_start = 0, childs_params_end = 0;
     float *global_ddist_dparams = nullptr;
   public:
-    NullSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Null"; }
+    NullSdfNode() : OneChildSdfNode() { name = "Null"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -159,7 +161,7 @@ AABB ProceduralSdf::scene_bbox;
         }
         if (n != 0)
         {
-          SdfNode *node = sdf_node_by_node_type_id(n, i);
+          SdfNode *node = create_node(n);
           res += node->param_cnt();
           delete node;
         }
@@ -168,16 +170,16 @@ AABB ProceduralSdf::scene_bbox;
     }
     UPGStructure structure;
     std::vector<std::vector<float>> param_structure;
-    SdfNode *sdf_node_by_node_type_id_in_complex(uint16_t num, unsigned id)
+    SdfNode *create_node_inside_complex_node(uint16_t num)
     {
-      if (num == SdfNode::UNDEFINED)
+      if (num == SdfNodeType::UNDEFINED)
       {
         NullSdfNode *node = NULL;
-        node = new NullSdfNode(id);
+        node = new NullSdfNode();
         null_nodes.push_back(node);
         return node;
       }
-      return sdf_node_by_node_type_id(num, id);
+      return create_node(num);
     }
 
     void create(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size)
@@ -195,14 +197,14 @@ AABB ProceduralSdf::scene_bbox;
         {
           n = s.s[i];
         }
-        SdfNode *node = sdf_node_by_node_type_id_in_complex(n, i);
+        SdfNode *node = create_node_inside_complex_node(n);
         inside_nodes.push_back(std::unique_ptr<SdfNode>(node));
         param_startings.push_back({node, all_params.size()});
         all_params.resize(all_params.size() + node->param_cnt());
         if (i == 0)
         {
           root = node;
-          if (node->child_cnt() > 0 && n != SdfNode::UNDEFINED)
+          if (node->child_cnt() > 0 && n != SdfNodeType::UNDEFINED)
           {
             nodes.push_back(node);
           }
@@ -215,7 +217,7 @@ AABB ProceduralSdf::scene_bbox;
           {
             nodes.pop_back();
           }
-          if (node->child_cnt() > 0 && n != SdfNode::UNDEFINED)
+          if (node->child_cnt() > 0 && n != SdfNodeType::UNDEFINED)
           {
             nodes.push_back(node);
           }
@@ -232,7 +234,9 @@ AABB ProceduralSdf::scene_bbox;
 
 
   public:
-    AbstractComplexSdfNode(unsigned id, std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : SdfNode(id), param_inst({}, 0, 0)
+    AbstractComplexSdfNode(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : 
+      SdfNode(), 
+      param_inst({}, 0, 0)
     {
       childs = {};
       param_structure = p_s;
@@ -348,7 +352,7 @@ AABB ProceduralSdf::scene_bbox;
   {
     static constexpr int RADIUS = 0;
   public:
-    SphereSdfNode(unsigned id) : PrimitiveSdfNode(id) { name = "Sphere"; }
+    SphereSdfNode() : PrimitiveSdfNode() { name = "Sphere"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -417,7 +421,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int SIZE_Z = 2;
 
   public:
-    BoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Box"; }
+    BoxSdNode() : PrimitiveSdfNode() { name = "Box"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -474,7 +478,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int RADIUS = 3;
 
   public:
-    RoundBoxSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "RoundBox"; }
+    RoundBoxSdNode() : PrimitiveSdfNode() { name = "RoundBox"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -533,7 +537,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int RADIUS = 1;
 
   public:
-    CylinderSdNode(unsigned id) : PrimitiveSdfNode(id) { name = "Cylinder"; }
+    CylinderSdNode() : PrimitiveSdfNode() { name = "Cylinder"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -582,7 +586,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int H2 = 1;
 
   public:
-    Prism(unsigned id) : PrimitiveSdfNode(id) { name = "Prism"; }
+    Prism() : PrimitiveSdfNode() { name = "Prism"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -645,7 +649,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int HEIGHT = 2;
 
   public:
-    Cone(unsigned id) : PrimitiveSdfNode(id) { name = "Cone"; }
+    Cone() : PrimitiveSdfNode() { name = "Cone"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -685,7 +689,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int MOVE_Y = 1;
     static constexpr int MOVE_Z = 2;
   public:
-    MoveSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Move"; }
+    MoveSdfNode() : OneChildSdfNode() { name = "Move"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -774,7 +778,7 @@ AABB ProceduralSdf::scene_bbox;
     static constexpr int AXIS_ANG_Z = 1;
     static constexpr int ANGLE = 2;
   public:
-    RotateSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Rotate"; }
+    RotateSdfNode() : OneChildSdfNode() { name = "Rotate"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -866,7 +870,7 @@ AABB ProceduralSdf::scene_bbox;
   class OrSdfNode : public TwoChildSdfNode
   {
   public:
-    OrSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "Or"; }
+    OrSdfNode() : TwoChildSdfNode() { name = "Or"; }
     
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -942,7 +946,7 @@ AABB ProceduralSdf::scene_bbox;
   class AndSdfNode : public TwoChildSdfNode
   {
   public:
-    AndSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "And"; }
+    AndSdfNode() : TwoChildSdfNode() { name = "And"; }
 
     
     virtual void get_distance_batch(unsigned     batch_size,
@@ -1020,7 +1024,7 @@ AABB ProceduralSdf::scene_bbox;
   class SubtractSdfNode : public TwoChildSdfNode
   {
   public:
-    SubtractSdfNode(unsigned id) : TwoChildSdfNode(id) { name = "Subtract"; }
+    SubtractSdfNode() : TwoChildSdfNode() { name = "Subtract"; }
     
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1102,7 +1106,7 @@ AABB ProceduralSdf::scene_bbox;
   {
     static constexpr int SCALE = 0;
   public:
-    ScaleSdfNode(unsigned id) : OneChildSdfNode(id) { name = "Scale"; }
+    ScaleSdfNode() : OneChildSdfNode() { name = "Scale"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1154,7 +1158,7 @@ AABB ProceduralSdf::scene_bbox;
   class ChairSdfNode : public AbstractComplexSdfNode
   {
   public:
-    ChairSdfNode(unsigned id) : AbstractComplexSdfNode(id, param_structure(), structure(), 6) { name = "chair"; }//last param is param_cnt
+    ChairSdfNode() : AbstractComplexSdfNode(param_structure(), structure(), 6) { name = "chair"; }//last param is param_cnt
     virtual unsigned child_cnt() const override
     {
       return 0;
@@ -1208,7 +1212,10 @@ AABB ProceduralSdf::scene_bbox;
     }
     UPGStructure structure() const
     {
-      return {{SdfNode::OR, SdfNode::OR, SdfNode::MOVE, SdfNode::BOX, SdfNode::MOVE, SdfNode::BOX, SdfNode::OR, SdfNode::OR, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::OR, SdfNode::MOVE, SdfNode::CYLINDER, SdfNode::MOVE, SdfNode::CYLINDER}};;
+      return {{SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::BOX, SdfNodeType::MOVE, 
+               SdfNodeType::BOX, SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER,
+               SdfNodeType::MOVE, SdfNodeType::CYLINDER, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER, 
+               SdfNodeType::MOVE, SdfNodeType::CYLINDER}};;
     }
   };
   //test end
@@ -1322,9 +1329,9 @@ AABB ProceduralSdf::scene_bbox;
       {
         n = structure.s[i];
       }
-      SdfNode *node = sdf_node_by_node_type_id(n, i);
+      SdfNode *node = create_node(n);
       all_nodes.push_back(std::unique_ptr<SdfNode>(node));
-      desc.add_parameters(node->get_ID(), node->get_node_name(), node->get_parameters_block(scene_bbox));
+      desc.add_parameters(i, node->get_node_name(), node->get_parameters_block(scene_bbox));
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       
@@ -1362,90 +1369,62 @@ AABB ProceduralSdf::scene_bbox;
     set_subgraph_params_cnt_rec(root);
   }
 
-  SdfNode *sdf_node_by_node_type_id(uint16_t num, unsigned id)
+  std::vector<SdfNodeProperties> node_properties = 
   {
-    SdfNode *node = NULL;
-    switch(num)
-    {
-      case SdfNode::SPHERE: 
-        node = new SphereSdfNode(id);
-        break;
-      case SdfNode::MOVE:
-        node = new MoveSdfNode(id);
-        break;
-      case SdfNode::OR:
-        node = new OrSdfNode(id);
-        break;
-      case SdfNode::BOX:
-        node = new BoxSdNode(id);
-        break;
-      case SdfNode::CYLINDER:
-        node = new CylinderSdNode(id);
-        break;
-      case SdfNode::ROUNDED_BOX:
-        node = new RoundBoxSdNode(id);
-        break;
-      case SdfNode::PRISM:
-        node = new Prism(id);
-        break;
-      case SdfNode::CONE:
-        node = new Cone(id);
-        break;
-      case SdfNode::AND:
-        node = new AndSdfNode(id);
-        break;
-      case SdfNode::SUBTRACT:
-        node = new SubtractSdfNode(id);
-        break;
-      case SdfNode::ROTATE:
-        node = new RotateSdfNode(id);
-        break;
-      case SdfNode::CHAIR:
-        node = new ChairSdfNode(id);
-        break;
-      case SdfNode::GRID:
-        node = new GridSdfNode(id, 32, AABB({-1,-1,-1},{1,1,1}));
-        break;
-      case SdfNode::SCALE:
-        node = new ScaleSdfNode(id);
-        break;
-      default:
-        logerr("invalid node_id %u\n",id);
-        node = nullptr;
-        break;
-    }
-    return node;
+    {SdfNodeType::UNDEFINED  , "UNDEFINED"  , 0, 0, nullptr},
+    {SdfNodeType::SPHERE     , "Sphere"     , 1, 0, {[]() -> SdfNode* {return new SphereSdfNode;}}},
+    {SdfNodeType::MOVE       , "Move"       , 3, 1, {[]() -> SdfNode* {return new MoveSdfNode;}}},
+    {SdfNodeType::OR         , "Or"         , 0, 2, {[]() -> SdfNode* {return new OrSdfNode;}}},
+    {SdfNodeType::BOX        , "Box"        , 3, 0, {[]() -> SdfNode* {return new BoxSdNode;}}},
+    {SdfNodeType::CYLINDER   , "Cylinder"   , 2, 0, {[]() -> SdfNode* {return new CylinderSdNode;}}},
+    {SdfNodeType::ROUNDED_BOX, "Rounded Box", 4, 0, {[]() -> SdfNode* {return new RoundBoxSdNode;}}},
+    {SdfNodeType::PRISM      , "Prism"      , 3, 0, {[]() -> SdfNode* {return new Prism;}}},
+    {SdfNodeType::CONE       , "Cone"       , 4, 0, {[]() -> SdfNode* {return new Cone;}}},
+    {SdfNodeType::AND        , "And"        , 0, 2, {[]() -> SdfNode* {return new AndSdfNode;}}},
+    {SdfNodeType::SUBTRACT   , "Subtract"   , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
+    {SdfNodeType::ROTATE     , "Rotate"     , 4, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
+    {SdfNodeType::SCALE      , "Scale"      , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
+    {SdfNodeType::CHAIR      , "Chair"      , VARIABLE_PARAM_COUNT, VARIABLE_CHILD_COUNT, nullptr},
+    {SdfNodeType::GRID       , "Grid"       , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32, AABB({-1,-1,-1},{1,1,1}));}}},
+    {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, nullptr},
+  };
+
+  const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
+  {
+    assert(type < SdfNodeType::NODE_TYPES_COUNT);
+    assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
+    return node_properties[type];
   }
 
-  constexpr int merge_node_num = 3;
-  constexpr int move_node_num  = 2;
-
-  int get_node_power(int node_id)
+  const SdfNodeProperties &get_sdf_node_properties(SdfNodeType::Type type)
   {
-    // how many children each node has. It should be done differently, but now it's just testing
-    std::vector<int> node_powers = {0, 0, 1, 2, 0, 0, 0, 0, 0, 2, 2, 1};
-    assert(node_id >= 0 && node_id < node_powers.size());
-    return node_powers[node_id];
+    assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
+    return node_properties[(int)type];
   }
 
-  int get_node_param_count(int node_id)
+  SdfNode *create_node(SdfNodeType::Type type)
   {
-    // how many parameters each node has. It should be done differently, but now it's just testing
-    std::vector<int> node_param_counts = {0, 1, 3, 0, 3, 2, 4, 2, 3, 0, 0, 3};
-    assert(node_id >= 0 && node_id < node_param_counts.size());
-    return node_param_counts[node_id];
+    assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
+    return node_properties[(int)type].default_constructor();
+  }
+
+  SdfNode *create_node(uint16_t type)
+  {
+    assert(type < SdfNodeType::NODE_TYPES_COUNT);
+    assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
+    return node_properties[type].default_constructor();
   }
 
   int get_position_index(const UPGStructure &structure, int start, int p_start)
   {
     int pi = p_start;
     int si = start;
-    while (si < structure.s.size() && get_node_power(structure.s[si]) == 1)
+    while (si < structure.s.size() && get_sdf_node_properties(structure.s[si]).children == 1)
     {
-      if (structure.s[si] == move_node_num)
+      if (structure.s[si] == SdfNodeType::MOVE)
         return pi;
       si++;
-      pi += get_node_param_count(structure.s[si]);
+      pi += get_sdf_node_properties(structure.s[si]).param_count;
     }
     return -1;
   }
@@ -1453,19 +1432,19 @@ AABB ProceduralSdf::scene_bbox;
   int parse_node_rec(const UPGStructure &structure, std::vector<UPGPart> &parts, bool merge_level, int start)
   {
 
-    bool is_merge = merge_level && (structure.s[start] == merge_node_num);
-    int power = get_node_power(structure.s[start]);
+    bool is_merge = merge_level && (structure.s[start] == SdfNodeType::OR);
+    int power = get_sdf_node_properties(structure.s[start]).children;
     int pos = start + 1;
 
     for (int i = 0; i < power; i++)
     {
       int fin_pos = parse_node_rec(structure, parts, is_merge, pos);
-      if (is_merge && structure.s[pos] != merge_node_num)
+      if (is_merge && structure.s[pos] != SdfNodeType::OR)
       {
         int p_st = parts.empty() ? 0 : parts.back().p_range.second;
         int p_cnt = 0;
         for (int p = pos; p < fin_pos; p++)
-          p_cnt += get_node_param_count(structure.s[p]);
+          p_cnt += get_sdf_node_properties(structure.s[p]).param_count;
         parts.push_back(UPGPart({pos, fin_pos}, {p_st, p_st + p_cnt}, get_position_index(structure, pos, p_st)));
       }
       pos = fin_pos;
@@ -1477,12 +1456,18 @@ AABB ProceduralSdf::scene_bbox;
   {
     int cnt = 0;
     for (auto &node_id : structure.s)
-      cnt += get_node_param_count(node_id);
+      cnt += get_sdf_node_properties(node_id).param_count;
     return cnt;
   }
 
   std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure)
   {
+    //this works only if number of parameters and childer for each node is determined by its structure
+    for (auto &s : structure.s)
+    {
+      assert(get_sdf_node_properties(s).param_count != VARIABLE_PARAM_COUNT);
+      assert(get_sdf_node_properties(s).children != VARIABLE_CHILD_COUNT);
+    }
     std::vector<UPGPart> parts;
     parse_node_rec(structure, parts, true, 0);
     if (parts.empty())

@@ -198,12 +198,12 @@ namespace upg
   }
   UPGStructure get_random_structure(const GROptimizationContext &ctx, const GRNode &node)
   {
-    std::vector<UPGStructure> available_primitives = {{{SdfNode::MOVE, SdfNode::SPHERE}},
-                                                      {{SdfNode::MOVE, SdfNode::BOX}},
-                                                      {{SdfNode::MOVE, SdfNode::ROUNDED_BOX}},
-                                                      {{SdfNode::MOVE, SdfNode::CYLINDER}},
-                                                      {{SdfNode::MOVE, SdfNode::CONE}},
-                                                      {{SdfNode::MOVE, SdfNode::PRISM}}};
+    std::vector<UPGStructure> available_primitives = {{{SdfNodeType::MOVE, SdfNodeType::SPHERE}},
+                                                      {{SdfNodeType::MOVE, SdfNodeType::BOX}},
+                                                      {{SdfNodeType::MOVE, SdfNodeType::ROUNDED_BOX}},
+                                                      {{SdfNodeType::MOVE, SdfNodeType::CYLINDER}},
+                                                      {{SdfNodeType::MOVE, SdfNodeType::CONE}},
+                                                      {{SdfNodeType::MOVE, SdfNodeType::PRISM}}};
     return available_primitives[urandi(0, available_primitives.size())];
   }
   UPGStructure get_structure_oracle(const GROptimizationContext &ctx, const GRNode &node, float error_chance)
@@ -505,7 +505,7 @@ std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     for (int i=0;i<primitives.size();i++)
     {
       if (i != primitives.size()-1)
-        res.structure.s.push_back(SdfNode::OR);
+        res.structure.s.push_back(SdfNodeType::OR);
       for (auto &s : primitives[i].structure.s)
         res.structure.s.push_back(s);
       for (auto &p : primitives[i].parameters.p)

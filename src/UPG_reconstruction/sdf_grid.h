@@ -10,7 +10,7 @@ namespace upg
   class GridSdfNode : public PrimitiveSdfNode
   {
   public:
-    GridSdfNode(unsigned id, unsigned _grid_size, const AABB &region_bbox) : PrimitiveSdfNode(id)
+    GridSdfNode(unsigned _grid_size, const AABB &region_bbox) : PrimitiveSdfNode()
     { 
       grid_size = _grid_size;
       bbox = region_bbox;

@@ -1035,7 +1035,7 @@ namespace upg
   void test_36()
   {
     debug("TEST 36. SDF CHAIR NODE\n");
-    ProceduralSdf chair({std::vector<uint16_t>{SdfNode::CHAIR}});
+    ProceduralSdf chair({std::vector<uint16_t>{SdfNodeType::CHAIR}});
     {
       int pcnt = chair.desc.get_total_params_count();
       debug(" 34.1. %-64s", "SDF instances are created with expected number of parameters ");

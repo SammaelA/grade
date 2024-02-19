@@ -216,7 +216,7 @@ namespace upg
   SceneDesc scene_subtraction()
   {
     SceneDesc desc;
-    desc.first.s = {SdfNode::SUBTRACT, SdfNode::MOVE, SdfNode::SPHERE, SdfNode::MOVE, SdfNode::SPHERE};
+    desc.first.s = {SdfNodeType::SUBTRACT, SdfNodeType::MOVE, SdfNodeType::SPHERE, SdfNodeType::MOVE, SdfNodeType::SPHERE};
     desc.second.p = {0,0,0,0.6, 0.5,0.0,0.5,0.4};
     return desc;    
   }
@@ -324,13 +324,13 @@ namespace upg
 
   void add_circle(UPGStructure &s, UPGParametersRaw &p)
   {
-    s.s.push_back(SdfNode::SPHERE);
+    s.s.push_back(SdfNodeType::SPHERE);
     p.p.push_back((float)urand(0.3, 0.6));
   }
 
   void add_box(UPGStructure &s, UPGParametersRaw &p)
   {
-    s.s.push_back(SdfNode::BOX);
+    s.s.push_back(SdfNodeType::BOX);
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));    
@@ -338,7 +338,7 @@ namespace upg
 
   void add_cylinder(UPGStructure &s, UPGParametersRaw &p)
   {
-    s.s.push_back(SdfNode::CYLINDER);
+    s.s.push_back(SdfNodeType::CYLINDER);
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));    
@@ -346,7 +346,7 @@ namespace upg
 
   void add_r_box(UPGStructure &s, UPGParametersRaw &p)
   {
-    s.s.push_back(SdfNode::ROUNDED_BOX);
+    s.s.push_back(SdfNodeType::ROUNDED_BOX);
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));
     p.p.push_back((float)urand(0.3, 0.6));  
@@ -377,14 +377,14 @@ namespace upg
       for (int i=0; i<cnt; i++)
       {
         if (i != cnt-1)
-          s.s.push_back(SdfNode::OR);
+          s.s.push_back(SdfNodeType::OR);
         
-        s.s.push_back(SdfNode::MOVE);
+        s.s.push_back(SdfNodeType::MOVE);
         p.p.push_back((float)urand(-0.5, 0.5));
         p.p.push_back((float)urand(-0.5, 0.5));
         p.p.push_back((float)urand(-0.5, 0.5));
 
-        s.s.push_back(SdfNode::ROTATE);
+        s.s.push_back(SdfNodeType::ROTATE);
         p.p.push_back((float)urand(-PI, PI));
         p.p.push_back((float)urand(-PI, PI));
         p.p.push_back((float)urand(-PI, PI));
@@ -529,14 +529,14 @@ namespace upg
       for (int i=0; i<cnt; i++)
       {
         if (i != cnt-1)
-          s.s.push_back(SdfNode::OR);
+          s.s.push_back(SdfNodeType::OR);
         
-        s.s.push_back(SdfNode::MOVE);
+        s.s.push_back(SdfNodeType::MOVE);
         p.p.push_back((float)urand(-0.5, 0.5));
         p.p.push_back((float)urand(-0.5, 0.5));
         p.p.push_back((float)urand(-0.5, 0.5));
 
-        s.s.push_back(SdfNode::ROTATE);
+        s.s.push_back(SdfNodeType::ROTATE);
         p.p.push_back((float)urand(-PI, PI));
         p.p.push_back((float)urand(-PI, PI));
         p.p.push_back((float)urand(-PI, PI));
@@ -754,7 +754,7 @@ namespace upg
     unsigned samples = 4;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
     AABB bbox = AABB({-1,-1,-1},{1,1,1});
-    GridSdfNode grid(0, vox_size, bbox);
+    GridSdfNode grid(vox_size, bbox);
     grid.set_param_span(data, 0);
 
     bool direct = true;
@@ -833,7 +833,7 @@ namespace upg
     }
 
     int steps = 15;
-    ProceduralSdf g_sdf({{SdfNode::GRID}});
+    ProceduralSdf g_sdf({{SdfNodeType::GRID}});
     g_sdf.set_parameters(data);
     for (int i=0;i<steps;i++)
     {
