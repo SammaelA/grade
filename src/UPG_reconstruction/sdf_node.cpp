@@ -414,14 +414,14 @@ namespace upg
     return d1 + d2;
   }
 
-  class BoxSdNode : public PrimitiveSdfNode
+  class BoxSdfNode : public PrimitiveSdfNode
   {
     static constexpr int SIZE_X = 0;
     static constexpr int SIZE_Y = 1;
     static constexpr int SIZE_Z = 2;
 
   public:
-    BoxSdNode() : PrimitiveSdfNode() { name = "Box"; }
+    BoxSdfNode() : PrimitiveSdfNode() { name = "Box"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -470,7 +470,7 @@ namespace upg
     return d1 + d2 - params[6];
   }
 
-  class RoundBoxSdNode : public PrimitiveSdfNode
+  class RoundBoxSdfNode : public PrimitiveSdfNode
   {
     static constexpr int SIZE_X = 0;
     static constexpr int SIZE_Y = 1;
@@ -478,7 +478,7 @@ namespace upg
     static constexpr int RADIUS = 3;
 
   public:
-    RoundBoxSdNode() : PrimitiveSdfNode() { name = "RoundBox"; }
+    RoundBoxSdfNode() : PrimitiveSdfNode() { name = "RoundBox"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -531,13 +531,13 @@ namespace upg
     return d1 + d2;
   }
 
-  class CylinderSdNode : public PrimitiveSdfNode
+  class CylinderSdfNode : public PrimitiveSdfNode
   {
     static constexpr int HEIGHT = 0;
     static constexpr int RADIUS = 1;
 
   public:
-    CylinderSdNode() : PrimitiveSdfNode() { name = "Cylinder"; }
+    CylinderSdfNode() : PrimitiveSdfNode() { name = "Cylinder"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -580,13 +580,13 @@ namespace upg
     return d;
   }
 
-  class Prism : public PrimitiveSdfNode
+  class PrismSdfNode : public PrimitiveSdfNode
   {
     static constexpr int H1 = 0;
     static constexpr int H2 = 1;
 
   public:
-    Prism() : PrimitiveSdfNode() { name = "Prism"; }
+    PrismSdfNode() : PrimitiveSdfNode() { name = "Prism"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -642,14 +642,14 @@ namespace upg
     return d;
   }
 
-  class Cone : public PrimitiveSdfNode
+  class ConeSdfNode : public PrimitiveSdfNode
   {
     static constexpr int C1 = 0;
     static constexpr int C2 = 1;
     static constexpr int HEIGHT = 2;
 
   public:
-    Cone() : PrimitiveSdfNode() { name = "Cone"; }
+    ConeSdfNode() : PrimitiveSdfNode() { name = "Cone"; }
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1375,11 +1375,11 @@ namespace upg
     {SdfNodeType::SPHERE     , "Sphere"     , 1, 0, {[]() -> SdfNode* {return new SphereSdfNode;}}},
     {SdfNodeType::MOVE       , "Move"       , 3, 1, {[]() -> SdfNode* {return new MoveSdfNode;}}},
     {SdfNodeType::OR         , "Or"         , 0, 2, {[]() -> SdfNode* {return new OrSdfNode;}}},
-    {SdfNodeType::BOX        , "Box"        , 3, 0, {[]() -> SdfNode* {return new BoxSdNode;}}},
-    {SdfNodeType::CYLINDER   , "Cylinder"   , 2, 0, {[]() -> SdfNode* {return new CylinderSdNode;}}},
-    {SdfNodeType::ROUNDED_BOX, "Rounded Box", 4, 0, {[]() -> SdfNode* {return new RoundBoxSdNode;}}},
-    {SdfNodeType::PRISM      , "Prism"      , 3, 0, {[]() -> SdfNode* {return new Prism;}}},
-    {SdfNodeType::CONE       , "Cone"       , 4, 0, {[]() -> SdfNode* {return new Cone;}}},
+    {SdfNodeType::BOX        , "Box"        , 3, 0, {[]() -> SdfNode* {return new BoxSdfNode;}}},
+    {SdfNodeType::CYLINDER   , "Cylinder"   , 2, 0, {[]() -> SdfNode* {return new CylinderSdfNode;}}},
+    {SdfNodeType::ROUNDED_BOX, "Rounded Box", 4, 0, {[]() -> SdfNode* {return new RoundBoxSdfNode;}}},
+    {SdfNodeType::PRISM      , "Prism"      , 3, 0, {[]() -> SdfNode* {return new PrismSdfNode;}}},
+    {SdfNodeType::CONE       , "Cone"       , 4, 0, {[]() -> SdfNode* {return new ConeSdfNode;}}},
     {SdfNodeType::AND        , "And"        , 0, 2, {[]() -> SdfNode* {return new AndSdfNode;}}},
     {SdfNodeType::SUBTRACT   , "Subtract"   , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
     {SdfNodeType::ROTATE     , "Rotate"     , 4, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
