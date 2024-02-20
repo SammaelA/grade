@@ -35,16 +35,15 @@ namespace upg
       sdf.set_parameters(gen_params);
       assert(gen_params.size() == out_grad.size());
 
-      if (positions.size() < 3*max_batch_size)
-        positions = std::vector<float>(3*max_batch_size,0);
-      if (distances.size() < max_batch_size)
-        distances = std::vector<float>(max_batch_size,0);
-      if (dparams.size() < gen_params.size()*max_batch_size)
-        dparams = std::vector<float>(gen_params.size()*max_batch_size,0);
-      if (dpositions.size() < 3*max_batch_size)
-        dpositions = std::vector<float>(3*max_batch_size,0);
+      if (positions.size() < 3*batch_size)
+        positions = std::vector<float>(3*batch_size,0);
+      if (distances.size() < batch_size)
+        distances = std::vector<float>(batch_size,0);
+      if (dparams.size() < gen_params.size()*batch_size)
+        dparams = std::vector<float>(gen_params.size()*batch_size,0);
+      if (dpositions.size() < 3*batch_size)
+        dpositions = std::vector<float>(3*batch_size,0);
 
-      unsigned batch_size = 256;
       unsigned param_count = gen_params.size();
       std::vector<double> out_grad_d(param_count, 0);
       double loss = 0;
@@ -117,12 +116,11 @@ namespace upg
       ProceduralSdf &sdf = *((ProceduralSdf*)gen);
       sdf.set_parameters(gen_params);
 
-      if (positions.size() < 3*max_batch_size)
-        positions = std::vector<float>(3*max_batch_size,0);
-      if (distances.size() < max_batch_size)
-        distances = std::vector<float>(max_batch_size,0);
+      if (positions.size() < 3*batch_size)
+        positions = std::vector<float>(3*batch_size,0);
+      if (distances.size() < batch_size)
+        distances = std::vector<float>(batch_size,0);
 
-      unsigned batch_size = 256;
       unsigned param_count = gen_params.size();
       double loss = 0;
       double reg_loss = 0;
@@ -205,14 +203,169 @@ namespace upg
   }
   private:
     const PointCloudReference &reference;
-    unsigned max_batch_size = 1024;
+    unsigned batch_size = 256;
     std::vector<float> positions, distances, dparams, dpositions;
+  };
+
+  class FieldSdfLoss : public UPGOptimizableFunction
+  {
+  private:
+    const PointCloudReference &reference;
+    unsigned batch_size = 512;
+    std::vector<float> positions, distances, dparams, dpositions, ref_distances;
+  public:
+    FieldSdfLoss(const PointCloudReference &_reference, const Block &optimization_blk):
+    reference(_reference)
+    {
+      
+    }
+
+    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
+                           const OptParams &params, std::span<float> out_grad) override
+    {
+      //set parameters to ProceduralSdf
+      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
+      
+      //check of reference and input data are ok
+      assert(reference.d_points.size() > 0);  
+      assert(reference.d_points.size() == reference.d_distances.size());    
+      assert(gen_params.size() == out_grad.size());
+
+      //resize temporary vectors if needed
+      if (positions.size() < 3*batch_size)
+        positions = std::vector<float>(3*batch_size,0);
+      if (distances.size() < batch_size)
+        distances = std::vector<float>(batch_size,0);
+      if (ref_distances.size() < batch_size)
+        ref_distances = std::vector<float>(batch_size,0);
+      if (dparams.size() < gen_params.size()*batch_size)
+        dparams = std::vector<float>(gen_params.size()*batch_size,0);
+      if (dpositions.size() < 3*batch_size)
+        dpositions = std::vector<float>(3*batch_size,0);
+
+      unsigned param_count = gen_params.size();
+      std::vector<double> out_grad_d(param_count, 0);
+      double loss = 0;
+      double reg_loss = 0;
+
+      //main step - minimize SDF values on surface
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.d_points.size();
+        positions[3*i+0] = reference.d_points[index].x;
+        positions[3*i+1] = reference.d_points[index].y;
+        positions[3*i+2] = reference.d_points[index].z;
+        ref_distances[i] = reference.d_distances[index];
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), dparams.data(), dpositions.data());
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = distances[i] - ref_distances[i];
+        for (int j=0;j<param_count;j++)
+          out_grad_d[j] += 2*d*dparams[i*param_count + j];
+        loss += d*d;
+      }
+
+      for (int i=0;i<gen_params.size();i++)
+        out_grad[i] = out_grad_d[i]/batch_size;
+
+      /*
+      debug("params1 [");
+      for (int i=0;i<gen_params.size();i++)
+        debug("%f ",params[i]);
+      debug("]\n");
+      debug("grad1 [");
+      for (int i=0;i<gen_params.size();i++)
+        debug("%f ",out_grad[i]);
+      debug("]\n");  
+      */
+     
+      return loss/batch_size;
+    }
+
+    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
+    {
+      //set parameters to ProceduralSdf
+      std::vector<float> gen_params = opt_params_to_gen_params(params, pd);
+      ProceduralSdf &sdf = *((ProceduralSdf*)gen);
+      sdf.set_parameters(gen_params);
+      
+      //check of reference and input data are ok
+      assert(reference.d_points.size() > 0);  
+      assert(reference.d_points.size() == reference.d_distances.size());    
+
+      //resize temporary vectors if needed
+      if (positions.size() < 3*batch_size)
+        positions = std::vector<float>(3*batch_size,0);
+      if (distances.size() < batch_size)
+        distances = std::vector<float>(batch_size,0);
+      if (ref_distances.size() < batch_size)
+        ref_distances = std::vector<float>(batch_size,0);
+
+      unsigned param_count = gen_params.size();
+      std::vector<double> out_grad_d(param_count, 0);
+      double loss = 0;
+      double reg_loss = 0;
+
+      //main step - minimize SDF values on surface
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        unsigned index = rand() % reference.d_points.size();
+        positions[3*i+0] = reference.d_points[index].x;
+        positions[3*i+1] = reference.d_points[index].y;
+        positions[3*i+2] = reference.d_points[index].z;
+        ref_distances[i] = reference.d_distances[index];
+      }
+
+      sdf.get_distance_batch(batch_size, positions.data(), distances.data(), nullptr, nullptr);
+
+      for (unsigned i=0;i<batch_size;i++)
+      {
+        double d = distances[i] - ref_distances[i];
+        loss += d*d;
+      }
+
+      return loss/batch_size;
+    }
+
+    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
+    {
+      return ((ProceduralSdf*)gen)->desc;
+    }
+
+    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
+    {
+      return std::make_shared<ProceduralSdf>(structure);
+    }
+
+    virtual float estimate_positioning_quality(const UPGStructure &structure,
+                                               const UPGPart &part, std::span<const float> parameters,
+                                               float border_sigma,
+                                               float inner_point_penalty) const override
+  {
+    logerr("FieldSdfLoss should not be used for constructive reconstruction!");
+    return 0;
+  }
   };
 
   std::vector<UPGReconstructionResult> simple_reconstruction_step(Block *step_blk, PointCloudReference &reference,
                                                                   const std::vector<UPGReconstructionResult> &prev_step_res)
   {
     PointCloudSdfLoss opt_func(reference, *step_blk);
+    std::shared_ptr<UPGOptimizer> optimizer = get_optimizer(step_blk->get_string("optimizer_name", "adam"), &opt_func, step_blk,
+                                                            prev_step_res[0], prev_step_res[0].structure);
+    optimizer->optimize();
+    return optimizer->get_best_results();
+  }
+
+  std::vector<UPGReconstructionResult> simple_field_reconstruction_step(Block *step_blk, PointCloudReference &reference,
+                                                                        const std::vector<UPGReconstructionResult> &prev_step_res)
+  {
+    FieldSdfLoss opt_func(reference, *step_blk);
     std::shared_ptr<UPGOptimizer> optimizer = get_optimizer(step_blk->get_string("optimizer_name", "adam"), &opt_func, step_blk,
                                                             prev_step_res[0], prev_step_res[0].structure);
     optimizer->optimize();
@@ -263,6 +416,8 @@ namespace upg
         opt_res = constructive_reconstruction_step(step_blk, reference, opt_res);
       else if (step_blk->get_bool("graph_based"))
         opt_res = reconstruction_graph_based(step_blk, reference.d_points, reference.d_distances);
+      else if (step_blk->get_bool("field"))
+        opt_res = simple_field_reconstruction_step(step_blk, reference, opt_res);
       else
         opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;
