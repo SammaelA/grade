@@ -1,11 +1,29 @@
 #pragma once
+#include <vector>
+#include <memory>
 #include "upg.h"
 #include "sdf_node.h"
 #include "optimization.h"
 
 namespace upg
 {
-  class FieldSdfCompare : public UPGOptimizableFunction
+  struct PointCloudReference
+  {
+    std::vector<glm::vec3> points;
+    std::vector<glm::vec3> outside_points;
+
+    std::vector<glm::vec3> d_points;
+    std::vector<float> d_distances;
+
+    bool is_synthetic = false;
+    UPGStructure structure;//can be set manually to make reconstruction simplier
+    UPGParametersRaw parameters;//empty if not synthetic reference
+  };
+
+  PointCloudReference get_point_cloud_reference(const Block &input_blk);
+  float normal_pdf(float x, float x0, float sigma);
+
+  class FieldSdfLossConstructive : public UPGOptimizableFunction
   {
   public:
     const std::vector<glm::vec3> &points;
@@ -32,7 +50,7 @@ namespace upg
   public:
     bool verbose = false;
 
-    FieldSdfCompare(const std::vector<glm::vec3> &_points,
+    FieldSdfLossConstructive(const std::vector<glm::vec3> &_points,
                     const std::vector<float> &_distances,
                     unsigned grid_cells_count = 16*16*16,
                     unsigned max_parameters = 1024):

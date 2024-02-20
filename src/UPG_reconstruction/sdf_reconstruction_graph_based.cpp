@@ -1,4 +1,6 @@
-#include "reconstruction_graph_based.h"
+#include "sdf_reconstruction_common.h"
+#include "sdf_node.h"
+#include "generation_common.h"
 #include "sdf_rendering.h"
 #include "common_utils/bbox.h"
 #include "common_utils/distribution.h"
@@ -25,12 +27,12 @@ namespace upg
   struct GREdge;
   struct GRNode
   {
-    GRNode(const FieldSdfCompare &_opt_func):
+    GRNode(const FieldSdfLossConstructive &_opt_func):
       opt_func(_opt_func)
     {
       id = id_counter++;
     }
-    FieldSdfCompare opt_func;
+    FieldSdfLossConstructive opt_func;
     std::vector<GRPrimitive> primitives;
     std::vector<GREdge> edges;
     GRNode *parent = nullptr;
@@ -350,17 +352,17 @@ namespace upg
       return get_initial_parameters_random(ctx, node, structure, initial_pos);
   }
 
-  void set_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfCompare &opt_func)
+  void set_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfLossConstructive &opt_func)
   {
     opt_func.set_hyperparameters(ctx.settings.distance_base_thr, 2.0f, 512, 100);
   }
 
-  void set_fine_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfCompare &opt_func)
+  void set_fine_opt_hyperparameters(const GROptimizationContext &ctx, FieldSdfLossConstructive &opt_func)
   {
     opt_func.set_hyperparameters(ctx.settings.distance_fine_thr, 2.0f, opt_func.a_points.size(), 100);
   }
 
-  float estimate_positioning_quality(const UPGReconstructionResult &res, const FieldSdfCompare &opt_func, float threshold)
+  float estimate_positioning_quality(const UPGReconstructionResult &res, const FieldSdfLossConstructive &opt_func, float threshold)
   {
     ProceduralSdf sdf(res.structure);
     sdf.set_parameters(res.parameters.p);
@@ -392,7 +394,7 @@ namespace upg
     return ((float)(inside_apr_count - 100*swallowed_points)/inside_count);
   }
 
-  float estimate_solution_quality_MAE(const UPGReconstructionResult &res, const FieldSdfCompare &opt_func)
+  float estimate_solution_quality_MAE(const UPGReconstructionResult &res, const FieldSdfLossConstructive &opt_func)
   {
     ProceduralSdf sdf(res.structure);
     sdf.set_parameters(res.parameters.p);
@@ -446,7 +448,7 @@ std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     int offset = node.edges.size();
     node.edges.resize(offset+tries);
     
-    std::vector<FieldSdfCompare> opt_funcs;
+    std::vector<FieldSdfLossConstructive> opt_funcs;
     std::vector<GRPrimitive> start_primitives;
     for (int i=0;i<tries;i++)
     {
@@ -827,7 +829,7 @@ std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     ctx.settings.distance_fine_thr = 0.002f;
     ctx.settings.max_number_of_primitives = ctx.target_structure.s.empty() ? 16 : ctx.target_structure_parts.size();
 
-    ctx.root.reset(new GRNode(FieldSdfCompare(points, distances)));
+    ctx.root.reset(new GRNode(FieldSdfLossConstructive(points, distances)));
     ctx.root->depth = 0;
 
 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

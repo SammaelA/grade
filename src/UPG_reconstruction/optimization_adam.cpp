@@ -2,6 +2,31 @@
 
 namespace upg
 {
+
+  std::shared_ptr<UPGOptimizer> get_optimizer(const std::string &optimizer_name,
+                                              UPGOptimizableFunction *opt_func,
+                                              Block *step_blk,
+                                              UPGReconstructionResult start_params,
+                                              UPGStructure structure)
+  {
+    std::shared_ptr<UPGOptimizer> optimizer;
+    if (optimizer_name == "adam")
+      optimizer = get_optimizer_adam(opt_func, *step_blk, start_params);
+    else if (optimizer_name == "memetic")
+      optimizer = get_optimizer_memetic(opt_func, *step_blk, structure);
+    else if (optimizer_name == "CHC")
+      optimizer = get_optimizer_CHC(opt_func, *step_blk, structure);
+    else if (optimizer_name == "particle_swarm")
+      optimizer = get_optimizer_particle_swarm(opt_func, *step_blk, structure);
+    else if (optimizer_name == "CC")
+      optimizer = get_optimizer_CC(opt_func, *step_blk, structure);
+    else if (optimizer_name == "DE")
+      optimizer = get_optimizer_differentiable_evolution(opt_func, *step_blk, structure);
+    else if (optimizer_name == "iterative_fitting")
+      optimizer = get_optimizer_iterative_fitting(opt_func, *step_blk, structure);
+    return optimizer;
+  }
+
   class UPGOptimizerAdam : public UPGOptimizer
   {
   public:

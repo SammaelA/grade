@@ -674,76 +674,6 @@ namespace upg
               nn::Loss::CrossEntropy, nn::Metric::Recall, true);
   }
 
-/*
-  class GridSdfRenderAndCompare : public UPGOptimizableFunction
-  {
-  public:
-    GridSdfRenderAndCompare(const ProceduralSdf &_reference, const AABB &_bbox, unsigned _samples, GridSdfNode *_grid):
-    reference(_reference),
-    bbox(_bbox),
-    samples(_samples),
-    grid(_grid)
-    {
-      ddist_dpos  = std::vector<float>(3*samples);
-    }
-
-    virtual float f_grad_f(UniversalGenInstance *gen, const ParametersDescription &pd,
-                           const OptParams &params, std::span<float> out_grad) override
-    {
-      std::fill_n(out_grad.begin(), out_grad.size(), 0.0);
-      if (out_grad.size() > ddist_dp.size())
-        ddist_dp.resize(out_grad.size());
-
-      double total_loss = 0.0;
-      for (int i=0;i<samples;i++)
-      {
-        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
-                                urand(bbox.min_pos.y, bbox.max_pos.y),
-                                urand(bbox.min_pos.z, bbox.max_pos.z));
-
-        std::fill_n(ddist_dp.begin(), out_grad.size(), 0.0);
-        float d = grid->get_distance(p, &ddist_dp, &ddist_dpos) - reference.get_distance(p);
-        total_loss += d*d;
-        for (int j=0;j<out_grad.size();j++)
-          out_grad[j] += 2*d*ddist_dp[j] / samples;
-      }
-
-      return total_loss/samples;
-    }
-
-    virtual float f_no_grad(UniversalGenInstance *gen, const ParametersDescription &pd, const OptParams &params) override
-    {
-      double total_loss = 0.0;
-      for (int i=0;i<samples;i++)
-      {
-        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
-                                urand(bbox.min_pos.y, bbox.max_pos.y),
-                                urand(bbox.min_pos.z, bbox.max_pos.z));
-
-        float d = grid->get_distance(p) - reference.get_distance(p);
-        total_loss += d*d;
-      }
-
-      return total_loss/samples;
-    }
-    virtual ParametersDescription get_full_parameters_description(const UniversalGenInstance *gen) const override
-    {
-      return ((ProceduralSdf*)gen)->desc;
-    }
-    virtual std::shared_ptr<UniversalGenInstance> get_generator(const UPGStructure &structure) const override
-    {
-      return std::make_shared<ProceduralSdf>(structure);
-    }
-  private:
-
-    unsigned samples = 1024;
-    std::vector<float> ddist_dp;
-    std::vector<float> ddist_dpos;
-    const ProceduralSdf reference;
-    GridSdfNode *grid;
-    AABB bbox;
-  };
-*/
   void sdf_grid_test()
   {
     SceneDesc scene = scene_chair();
@@ -757,7 +687,7 @@ namespace upg
     GridSdfNode grid(vox_size, bbox);
     grid.set_param_span(data, 0);
 
-    bool direct = true;
+    bool direct = false;
     if (direct)
     {
       for (int i=0;i<vox_size;i++)

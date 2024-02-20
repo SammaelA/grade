@@ -164,6 +164,12 @@ namespace upg
   std::shared_ptr<UPGOptimizer> get_optimizer_multistep_adam(UPGOptimizableFunction *_func, 
                                                              const Block &settings, const UPGReconstructionResult &start_params);
 
+  std::shared_ptr<UPGOptimizer> get_optimizer(const std::string &optimizer_name,
+                                              UPGOptimizableFunction *opt_func,
+                                              Block *step_blk,
+                                              UPGReconstructionResult start_params = UPGReconstructionResult(),
+                                              UPGStructure structure = UPGStructure());
+
   std::shared_ptr<UPGOptimizer> optimization_test_stand(UPGOptimizableFunction *_func, const Block &settings, 
                                                         const UPGStructure &_structure, const UPGParametersRaw &_params);
 }
