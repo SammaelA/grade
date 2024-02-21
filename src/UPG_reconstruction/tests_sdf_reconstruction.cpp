@@ -895,10 +895,64 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 30.0f);
   }
 
+  //TEST 16 NEURAL SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
   void sdf_test_16()
   {
     srand(0);
-    debug("TEST 16. CHAIR SDF RECONSTRUCTION\n");
+    debug("TEST 16. NEURAL SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0,0,0,0.8}
+            structure:arr = {2,1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1,0.2,-0.1,0.7}    
+            structure:arr = {2,1} 
+        }
+        step_0 {
+            neural:b = true
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = false
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 16.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 16.2. %-64s", "Good reconstruction quality ");
+    if (res[0].quality_ir > 0.0002f)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 0.0002f);
+  }
+
+  void sdf_test_17()
+  {
+    srand(0);
+    debug("TEST 17. CHAIR SDF RECONSTRUCTION\n");
     std::string settings = R""""(
     {
     input {
@@ -913,7 +967,7 @@ namespace upg
     }
     optimization {
         start {
-            params:arr = {0.2, 0.17, 0.44, 0.12, 0.33, 0.67}    
+            params:arr = {0.2, 0.13, 0.33, 0.17, 0.31, 0.78}    
             structure:arr = {13} 
         }
         step_0 {
@@ -932,31 +986,31 @@ namespace upg
     load_block_from_string(settings, settings_blk);
     auto res = reconstruct_sdf(settings_blk);
 
-    debug("  16.1. %-64s", "ReconstructionResult size ");
+    debug("  17.1. %-64s", "ReconstructionResult size ");
     if (res.size() == 1)
       debug("passed\n");
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
-    debug("  16.2. %-64s", "Preserved structure ");
+    debug("  17.2. %-64s", "Preserved structure ");
     if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == SdfNodeType::CHAIR)
       debug("passed\n");
     else
       debug("FAILED\n");
     
-    debug("  16.3. %-64s", "Preserved parameters count ");
+    debug("  17.3. %-64s", "Preserved parameters count ");
     if (res[0].parameters.p.size() == 6)
       debug("passed\n");
     else
       debug("FAILED\n");
     
-    debug("  16.4. %-64s", "Perfect optimization loss ");
+    debug("  17.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
-    debug("  16.5. %-64s", "Perfect multi-view PSNR ");
+    debug("  17.5. %-64s", "Perfect multi-view PSNR ");
     if (res[0].quality_synt > 40)
       debug("passed\n");
     else
@@ -970,8 +1024,8 @@ namespace upg
     std::vector<std::function<void(void)>> test_functions = {
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
-      sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_14, sdf_test_15,
-      sdf_test_16
+      sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
+      sdf_test_16, sdf_test_17
     };
 
     if (tests.empty())

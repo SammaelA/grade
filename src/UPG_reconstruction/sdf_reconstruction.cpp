@@ -9,6 +9,8 @@
 #include "common_utils/distribution.h"
 #include "sdf_reconstruction_common.h"
 #include "sdf_grid.h"
+#include "neuralCore/siren.h"
+#include "neural_SDF/neural_sdf.h"
 #include <chrono>
 
 namespace upg
@@ -535,6 +537,45 @@ namespace upg
     return {res};
   }
 
+  std::vector<UPGReconstructionResult> neural_sdf_reconstruction(PointCloudReference &reference)
+  {
+    /*    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Optimizer optimizer = OptimizerAdam(0.01f), 
+               Loss loss = Loss::CrossEntropy, Metric metric = Metric::Accuracy, bool verbose = false);*/
+      //nn::TensorProcessor::init("GPU");
+      nn::Siren network(nn::Siren::Type::SDF, 2, 32);
+      unsigned points = reference.d_distances.size();
+      std::vector<float> positions(3*reference.d_distances.size(), 0);
+      for (int i=0;i<points;i++)
+      {
+        positions[3*i+0] = reference.d_points[i].x;
+        positions[3*i+1] = reference.d_points[i].y;
+        positions[3*i+2] = reference.d_points[i].z;
+      }
+      AABB bbox = get_point_cloud_bbox(reference.d_points);
+
+      network.train(positions, reference.d_distances, 512, 10000, false);
+
+      UPGReconstructionResult res;
+      res.structure = {{SdfNodeType::NEURAL}};
+      res.parameters = {network.get_weights()};
+      res.loss_optimizer = 0.0f;
+
+      /*int steps = 15;
+      ProceduralSdf g_sdf(res.structure);
+      g_sdf.set_parameters(res.parameters.p);
+      for (int i=0;i<steps;i++)
+      {
+        CameraSettings camera;
+        camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+        camera.target = glm::vec3(0,0,0);
+        camera.up = glm::vec3(0,1,0);
+        Texture t = render_sdf(g_sdf, camera, 256,256,1);
+        engine::textureManager->save_png(t, "image_neural_"+std::to_string(i));
+      }*/
+
+      return {res};
+  }
+
   std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<glm::vec3> &points,
                                                                   const std::vector<float> &distances);
   std::vector<UPGReconstructionResult> constructive_reconstruction_step(Block *step_blk, PointCloudReference &reference,
@@ -583,6 +624,8 @@ namespace upg
         opt_res = simple_field_reconstruction_step(step_blk, reference, opt_res);
       else if (step_blk->get_bool("grid"))
         opt_res = sdf_grid_reconstruction(reference);
+      else if (step_blk->get_bool("neural"))
+        opt_res = neural_sdf_reconstruction(reference);      
       else
         opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;
