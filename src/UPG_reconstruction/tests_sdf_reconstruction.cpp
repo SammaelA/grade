@@ -895,6 +895,60 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 30.0f);
   }
 
+  //TEST 16 NEURAL SDF RECONSTRUCTION
+  //It uses Adam optimizer with initial state close to target one
+  //Reconstruction should perform perfectly
+  void sdf_test_16()
+  {
+    srand(0);
+    debug("TEST 16. NEURAL SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0,0,0,0.8}
+            structure:arr = {2,1}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1,0.2,-0.1,0.7}    
+            structure:arr = {2,1} 
+        }
+        step_0 {
+            neural:b = true
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = false
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 16.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 16.2. %-64s", "Good reconstruction quality ");
+    if (res[0].quality_ir > 0.0002f)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_ir, 0.0002f);
+  }
+
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -903,6 +957,7 @@ namespace upg
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
       sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
+      sdf_test_16,
     };
 
     if (tests.empty())

@@ -4,6 +4,7 @@
 #include "param_node.h"
 #include "autodiff/autodiff.h"
 #include "sdf_grid.h"
+#include "sdf_neural.h"
 
 float __enzyme_autodiff(...);
 
@@ -1388,7 +1389,7 @@ namespace upg
     {SdfNodeType::SCALE      , "Scale"      , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
     {SdfNodeType::CHAIR      , "Chair"      , VARIABLE_PARAM_COUNT, VARIABLE_CHILD_COUNT, nullptr},
     {SdfNodeType::GRID       , "Grid"       , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32, AABB({-1,-1,-1},{1,1,1}));}}},
-    {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, nullptr},
+    {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(2, 32, AABB({-1,-1,-1},{1,1,1}));}}},
   };
 
   const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
