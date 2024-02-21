@@ -39,7 +39,7 @@ namespace upg
     }                                                                        \
   }
 
-  void set_subgraph_params_cnt_rec(SdfNode *node)
+  /*void set_subgraph_params_cnt_rec(SdfNode *node)
   {
     unsigned cnt = node->param_cnt();
     for (auto *c : node->get_children())
@@ -50,7 +50,7 @@ namespace upg
     }
     node->subgraph_param_cnt = cnt;
     node->subgraph.push_back(node);
-  }
+  }*/
 
   class OneChildSdfNode : public SdfNode
   {
@@ -120,8 +120,31 @@ namespace upg
       childs_params_start = p_offset;
       child->get_distance_batch(batch_size, positions, distances, global_ddist_dparams, ddist_dpos, stack, stack_head);
       childs_params_end = p_offset + subgraph_param_cnt;
+      if (ddist_dparams)
+      {
+        for (int i = 0; i < batch_size; ++i)
+        {
+          for (int j = 0; j < subgraph_param_cnt; ++j)
+          {
+            ddist_dparams[batch_size * p_offset + i * subgraph_param_cnt + j] = 
+            global_ddist_dparams[batch_size * child->p_offset + i * subgraph_param_cnt + j];//check
+          }
+        }
+      }
     }
 
+    virtual void set_subgraph_params_cnt_rec() const override
+    {
+      unsigned cnt = param_cnt();
+      for (auto *c : get_children())
+      {
+        subgraph.insert(subgraph.end(), c->subgraph.begin(), c->subgraph.end());
+        cnt += c->subgraph_param_cnt;
+      }
+      subgraph_param_cnt = cnt;
+      subgraph.push_back(this);
+    }
+    virtual void set_params_for_complex_nodes() const override {}
     std::pair <int, int> get_child_param_idxs()
     {
       return std::pair<int, int> {childs_params_start, childs_params_end};
@@ -143,32 +166,54 @@ namespace upg
 
   class AbstractComplexSdfNode : public SdfNode
   {
+  private:
+    unsigned output_param_size(UPGStructure s) const
+    {
+      unsigned res = 0;
+      for (int i = 0; i < s.s.size(); ++i)
+      {
+        unsigned n = s.s[i];
+        if (n != 0 && node_properties[n].param_count > 0)
+        {
+          res += node_properties[n].param_count;
+        }
+      }
+      return res;
+    }
   protected:
     std::vector<const SdfNode *> childs;
     std::vector<NullSdfNode *> null_nodes;
     std::vector<std::unique_ptr<SdfNode>> inside_nodes;
     SdfNode *root;
-    std::vector<float> all_params;
-    ParamGenInstance param_inst;
+    mutable std::vector<float> all_params;
+    mutable ParamsGraph p_g;
     unsigned input_size;
+    mutable std::vector<float> jac;
     unsigned output_param_size() const
     {
       unsigned res = 0;
       for (int i = 0; i < structure.s.size(); ++i)
       {
-        unsigned n = 0;
-        if (i < structure.s.size())
+        unsigned n = structure.s[i];
+        if (n != 0 && node_properties[n].param_count > 0)
         {
-          n = structure.s[i];
-        }
-        if (n != 0)
-        {
-          SdfNode *node = create_node(n);
-          res += node->param_cnt();
-          delete node;
+          res += node_properties[n].param_count;
         }
       }
       return res;
+    }
+    virtual void set_subgraph_params_cnt_rec() const override
+    {
+      unsigned cnt = param_cnt();
+      for (auto *c : get_children())
+      {
+        c->set_subgraph_params_cnt_rec();
+        subgraph.insert(subgraph.end(), c->subgraph.begin(), c->subgraph.end());
+        cnt += c->subgraph_param_cnt;
+      }
+      subgraph_param_cnt = cnt;
+      subgraph.push_back(this);
+      root->set_subgraph_params_cnt_rec();
     }
     UPGStructure structure;
     std::vector<std::vector<float>> param_structure;
@@ -186,7 +231,6 @@ namespace upg
 
     void create(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size)
     {
-      param_inst.recreate(p_s, in_size, output_param_size());
       all_params.clear();
       inside_nodes.clear();
       std::vector<SdfNode *> nodes;
@@ -237,13 +281,13 @@ namespace upg
 
   public:
     AbstractComplexSdfNode(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : 
-      SdfNode(), 
-      param_inst({}, 0, 0)
+      SdfNode(), p_g(p_s, in_size, output_param_size(s))
     {
       childs = {};
       param_structure = p_s;
       structure = s;
       input_size = in_size;
+      jac.resize(input_size * output_param_size());
       create(p_s, s, in_size);
     }
     bool add_child(SdfNode *node) override 
@@ -254,6 +298,16 @@ namespace upg
           childs.push_back(node);
         }
         return child_cnt() > childs.size();
+    }
+    virtual void set_params_for_complex_nodes() const override
+    {
+      for (auto i : get_children())
+      {
+        i->set_params_for_complex_nodes();
+      }
+      p_g.get_graph(p);
+      p_g.get_params(all_params, input_size, jac.data());
+      root->set_params_for_complex_nodes();
     }
     std::vector<const SdfNode *> get_children() const override
     {
@@ -269,6 +323,75 @@ namespace upg
     {
       for (auto *n : null_nodes)
         n->set_global_ddist_dparams(ddist_dparams);
+
+      float *local_ddist_dparams = nullptr;
+      unsigned local_head = stack_head;
+      if (ddist_dparams)
+      {
+        local_ddist_dparams = stack.data() + stack_head;
+        local_head += root->subgraph_param_cnt * batch_size;
+      }
+      root->get_distance_batch(batch_size, positions, distances, local_ddist_dparams, ddist_dpos, stack, local_head);
+      if (ddist_dparams)
+      {
+        unsigned param_pairs_idxs[(child_cnt() + 1) * 2];
+        unsigned buf_param_size = 0;
+        param_pairs_idxs[0] = 0;
+        for (int i = 0; i < child_cnt(); ++i)
+        {
+          auto tmp = null_nodes[i]->get_child_param_idxs();
+          param_pairs_idxs[i * 2 + 1] = tmp.first;
+          param_pairs_idxs[i * 2 + 2] = tmp.second;
+          //buf_param_size += param_pairs_idxs[i * 2 + 1] - param_pairs_idxs[i * 2];
+        }
+        param_pairs_idxs[(child_cnt()) * 2 + 1] = root->subgraph_param_cnt;
+        //buf_param_size += param_pairs_idxs[(child_cnt()) * 2 + 1] - param_pairs_idxs[(child_cnt()) * 2];
+        unsigned idx = 0;
+        float *buf = stack.data() + local_head;
+        for (int i = 0; i < batch_size; ++i)
+        {
+          for (int j = 0; j < child_cnt() + 1; ++j)
+          {
+            buf_param_size = param_pairs_idxs[j * 2 + 1] - param_pairs_idxs[j * 2];
+            for (int k = param_pairs_idxs[j * 2]; k < param_pairs_idxs[j * 2 + 1]; ++k)
+            {
+              buf[idx] = local_ddist_dparams[batch_size * param_pairs_idxs[j * 2] + i * buf_param_size + k];//check
+              ++idx;
+            }
+            if (j != 0)
+            {
+              for (int k = 0; k < childs[j - 1]->subgraph_param_cnt; ++k)
+              {
+                ddist_dparams[childs[j - 1]->p_offset * batch_size + i * childs[j - 1]->subgraph_param_cnt + k] = 
+                local_ddist_dparams[null_nodes[j - 1]->p_offset * batch_size + i * null_nodes[j - 1]->subgraph_param_cnt + k];//check
+              }
+            }
+          }
+        }
+        for (int i = 0; i < batch_size; ++i)
+        {
+          for (int j = 0; j < param_cnt(); ++j)
+          {
+            ddist_dparams[batch_size * p_offset + i * param_cnt() + j] = 0;
+          }
+        }
+        unsigned off = 0;
+        for (auto &k : inside_nodes)
+        {
+          for (int i = 0; i < batch_size; ++i)
+          {
+            for (int u = 0; u < k->param_cnt(); ++u)
+            {
+              for (int j = 0; j < param_cnt(); ++j)
+              {
+                ddist_dparams[batch_size * p_offset + i * param_cnt() + j] += 
+                buf[batch_size * k->p_offset + i * k->param_cnt() + u] * jac[input_size * (off + u) + j];
+              }
+            }
+          }
+          off += k->param_cnt();
+        }
+      }
 /*
       ParamGenInstance inst(param_structure, input_size, output_param_size());
       ParamsGraph param_graph = inst.get_graph(p);
@@ -896,7 +1019,6 @@ namespace upg
 
       right->get_distance_batch(batch_size, positions, stack.data() + d2_head, ddist_dparams, 
                                 stack.data() + pos2_head, stack, child_head);
-    
       for (int i=0;i<batch_size;i++)
       {
         distances[i] = std::min(stack[d1_head + i], stack[d2_head + i]);
@@ -1186,31 +1308,30 @@ namespace upg
   protected:
     std::vector<std::vector<float>> param_structure() const
     {
-      return {{6, ParamNode::CONST, 0}, {7, ParamNode::NEG}, {6},
-              {4, ParamNode::PRIMITIVE, 4}, {3, ParamNode::PRIMITIVE, 3}, {2, ParamNode::PRIMITIVE, 2},
+      return {{6, ParamNode::CONST, 0}, {3, ParamNode::PRIMITIVE, 3}, {6},
+              {4, ParamNode::PRIMITIVE, 4}, {3}, {2, ParamNode::PRIMITIVE, 2},
 
-              {8, ParamNode::SUB}, {9, ParamNode::NEG}, {6},
-              {3}, {5, ParamNode::PRIMITIVE, 5}, {2},
+              {7, ParamNode::SUB}, {5, ParamNode::PRIMITIVE, 5}, {6},
+              {3}, {5}, {2},
 
-              {10, ParamNode::SUB}, {1, ParamNode::PRIMITIVE, 1}, {11, ParamNode::SUB},
-              {1}, {0, ParamNode::PRIMITIVE, 0},
+              {8, ParamNode::SUB}, {9, ParamNode::NEG}, {10, ParamNode::SUB},
+              {1, ParamNode::PRIMITIVE, 1}, {0, ParamNode::PRIMITIVE, 0},
 
-              {12, ParamNode::NEG}, {1}, {11},
+              {11, ParamNode::NEG}, {9}, {10},
               {1}, {0},
               
-              {10}, {1}, {13, ParamNode::NEG},
+              {8}, {9}, {12, ParamNode::NEG},
               {1}, {0},
               
-              {12}, {1}, {13},
+              {11}, {9}, {12},
               {1}, {0},
               
-              {3},
-              {3}, {4},
-              {5},
-              {4}, {0},
-              {2}, {0},
-              {10},
-              {11}};
+              {3}, {4},//7
+              {4}, {0},//8
+              {1},//9
+              {2}, {0},//10
+              {8},//11
+              {10}};//12
     }
     UPGStructure structure() const
     {
@@ -1235,6 +1356,8 @@ namespace upg
         all_params[i] = 0;
       }
     }
+    root->set_params_for_complex_nodes();
+    //add complex checking
   }
 
   void ProceduralSdf::get_distance_batch(unsigned batch_size, float *const positions, float *distances,
@@ -1275,7 +1398,7 @@ namespace upg
     if (ddist_dparams_transp.size() < batch_size*all_params.size())
       ddist_dparams_transp.resize(batch_size*all_params.size());
     
-    unsigned max_stack_size = batch_size*64*(1 + log2(all_nodes.size())); //TODO: calculate it somehow else
+    unsigned max_stack_size = batch_size*64*(1 + log2(all_nodes.size())) + 1000; //TODO: calculate it somehow else
     if (stack.size() < max_stack_size)
       stack.resize(max_stack_size, 0.0f);
 
@@ -1368,7 +1491,7 @@ namespace upg
       offset += nptr->param_cnt();
     }
 
-    set_subgraph_params_cnt_rec(root);
+    root->set_subgraph_params_cnt_rec();
   }
 
   std::vector<SdfNodeProperties> node_properties = 
@@ -1386,7 +1509,7 @@ namespace upg
     {SdfNodeType::SUBTRACT   , "Subtract"   , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
     {SdfNodeType::ROTATE     , "Rotate"     , 4, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
     {SdfNodeType::SCALE      , "Scale"      , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
-    {SdfNodeType::CHAIR      , "Chair"      , VARIABLE_PARAM_COUNT, VARIABLE_CHILD_COUNT, nullptr},
+    {SdfNodeType::CHAIR      , "Chair"      , 6, 0, {[]() -> SdfNode* {return new ChairSdfNode;}}},
     {SdfNodeType::GRID       , "Grid"       , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32, AABB({-1,-1,-1},{1,1,1}));}}},
     {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, nullptr},
   };

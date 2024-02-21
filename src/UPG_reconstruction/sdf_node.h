@@ -64,7 +64,25 @@ namespace upg
       p = s; 
       p_offset = offset;
     }
-
+    virtual void set_subgraph_params_cnt_rec() const
+    {
+      unsigned cnt = param_cnt();
+      for (auto *c : get_children())
+      {
+        c->set_subgraph_params_cnt_rec();
+        subgraph.insert(subgraph.end(), c->subgraph.begin(), c->subgraph.end());
+        cnt += c->subgraph_param_cnt;
+      }
+      subgraph_param_cnt = cnt;
+      subgraph.push_back(this);
+    }
+    virtual void set_params_for_complex_nodes() const
+    {
+      for (auto i : get_children())
+      {
+        i->set_params_for_complex_nodes();
+      }
+    }
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,     //3*batch_size: p0.x, p0.y, p0.z, p1.x, ...
                                     float *      distances,     //batch_size
@@ -81,8 +99,8 @@ namespace upg
     virtual AABB get_bbox() const = 0;
   //protected:
     unsigned p_offset = 0;
-    unsigned subgraph_param_cnt = 0;
-    std::vector<SdfNode *> subgraph;
+    mutable unsigned subgraph_param_cnt = 0;
+    mutable std::vector<const SdfNode *> subgraph;
     std::string name;
     std::span<const float> p;
   };
@@ -133,6 +151,7 @@ namespace upg
     UPGStructure structure;
 
     static AABB scene_bbox;
+    
   };
 
   std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure);

@@ -28,7 +28,7 @@ namespace upg
     unsigned get_ID() const { return ID; }
     std::string get_node_name() const { return name; }
 
-    virtual float get_res(std::vector<float> *jac) const = 0;
+    virtual float get_res(float *jac) const = 0;
     bool add_source(ParamNode *node)// returns the availability of free space
     {
         if (source_cnt() > sources.size())
@@ -53,10 +53,9 @@ namespace upg
     std::span <const float> in_p;
   };
 
-  class ParamsGraph
+  /*class ParamsGraph
   {
   public:
-    ParamsGraph() {}
     ParamsGraph(const ParamsGraph& p): all_nodes(p.all_nodes)
     {
       roots = p.roots;
@@ -72,48 +71,48 @@ namespace upg
       }
       structure = _structure;
     }
-    std::vector<float> get_params(std::vector<float> *jac = nullptr) const
+    void get_params(std::vector<float> &res_params, unsigned input_size, float *jac = nullptr) const
     {
-      std::vector<float> res_params;
-      if (jac)
-      {
-        jac->clear();
-      }
       for (int i = 0; i < roots.size(); ++i)
       {
-        std::vector <float> *addr = NULL;
-        std::vector <float> jac_part;
+        float *addr = NULL;
         if (jac)
         {
-          addr = &jac_part;
+          addr = jac + input_size * i;
         }
-        res_params.push_back(roots[i]->get_res(addr));
-        if (jac)
-        {
-          jac->insert(jac->end(), jac_part.begin(), jac_part.end());
-        }
+        res_params[i] = roots[i]->get_res(addr);
       }
-      return res_params;
     }
     std::vector<ParamNode *> roots;
     std::vector<std::vector<float>> structure;
   private:
     std::span<const std::unique_ptr<ParamNode>> all_nodes;
-  };
+  };*/
 
-  class ParamGenInstance
+  class ParamsGraph
   {
   public:
-    ParamGenInstance(std::vector<std::vector<float>> structure, unsigned in, unsigned out);
+    ParamsGraph(std::vector<std::vector<float>> structure, unsigned in, unsigned out);
     void recreate(std::vector<std::vector<float>> &structure, unsigned in, unsigned out);
-    ParamsGraph get_graph(std::span<const float> parameters);
-
+    void get_graph(std::span<const float> parameters);
+    void get_params(std::vector<float> &res_params, unsigned input_size, float *jac = nullptr) const
+    {
+      for (int i = 0; i < roots.size(); ++i)
+      {
+        float *addr = NULL;
+        if (jac)
+        {
+          addr = jac + input_size * i;
+        }
+        res_params[i] = roots[i]->get_res(addr);
+      }
+    }
+    std::vector<ParamNode *> roots;
+    std::vector<std::vector<float>> structure;//{ {ID, type, params}, {ID, type, params}, {ID//if this id already in structure}, ...}
   private:
     std::vector<std::unique_ptr<ParamNode>> all_nodes;
-    std::vector<ParamNode *> roots;
     
     std::vector<float> all_params;
-    std::vector<std::vector<float>> structure;//{ {ID, type, params}, {ID, type, params}, {ID//if this id already in structure}, ...}
   };
 
   ParamNode *param_node_by_node_type_id(unsigned id, uint16_t num, std::vector <float> p);

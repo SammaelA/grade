@@ -213,6 +213,14 @@ namespace upg
     return desc;    
   }
 
+  SceneDesc scene_complex_chair()
+  {
+    SceneDesc desc;
+    desc.first.s = {SdfNodeType::CHAIR};
+    desc.second.p = {0.05, 0.3, 0.5, 0.05, 0.5, 0.5};
+    return desc;    
+  }
+
   SceneDesc scene_subtraction()
   {
     SceneDesc desc;
@@ -787,6 +795,7 @@ namespace upg
     scenes["32 Bubbles"] = scene_bubbles(8, 4);
     scenes["8 Rounded Boxes"] = scene_8_rboxes();
     scenes["Chair"] = scene_chair();
+    scenes["Complex Chair"] = scene_complex_chair();
     scenes["Subtraction"] = scene_subtraction();
 
     CameraSettings camera;

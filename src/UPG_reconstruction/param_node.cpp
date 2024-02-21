@@ -6,11 +6,11 @@
 
 namespace upg
 {
-  ParamGenInstance::ParamGenInstance(std::vector<std::vector<float>> structure, unsigned in, unsigned out)
+  ParamsGraph::ParamsGraph(std::vector<std::vector<float>> structure, unsigned in, unsigned out)
   {
     recreate(structure, in, out);
   }
-  void ParamGenInstance::recreate(std::vector<std::vector<float>> &structure, unsigned in, unsigned out)
+  void ParamsGraph::recreate(std::vector<std::vector<float>> &structure, unsigned in, unsigned out)
   {
     this->structure = structure;
     all_params.clear();
@@ -66,7 +66,7 @@ namespace upg
     }
   }
 
-  ParamsGraph ParamGenInstance::get_graph(std::span<const float> parameters)
+  void ParamsGraph::get_graph(std::span<const float> parameters)
   {
     for (int i = 0; i < all_params.size(); ++i)
     {
@@ -79,8 +79,6 @@ namespace upg
         all_params[i] = 0;
       }
     }
-    ParamsGraph graph(roots, structure, all_nodes);
-    return graph;
   }
 
   class PrimitiveParamNode : public ParamNode
@@ -90,14 +88,13 @@ namespace upg
     PrimitiveParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "input param"; }
     virtual unsigned source_cnt() const override { return 0; }
     virtual unsigned param_cnt() const override { return 1; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
-        for (unsigned i = 0; i < jac->size(); ++i)
+        for (unsigned i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = (i == (unsigned)param[PARAM_IDX]) ? 1 : 0;
+          jac[i] = (i == (unsigned)param[PARAM_IDX]) ? 1 : 0;
         }
       }
       return in_p[(unsigned)param[PARAM_IDX]];
@@ -111,14 +108,13 @@ namespace upg
     ConstParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "const"; }
     virtual unsigned source_cnt() const override { return 0; }
     virtual unsigned param_cnt() const override { return 1; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
-        for (int i = 0; i < jac->size(); ++i)
+        for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
         }
       }
       return param[CONST_COEFF];
@@ -136,11 +132,10 @@ namespace upg
     AddParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "add"; }
     virtual unsigned source_cnt() const override { return 2; }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, 2);
         float ans;
@@ -148,15 +143,16 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         ENZYME_EVALUATE_WITH_DIFF(AddParamNode_apply, 2, 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -183,11 +179,10 @@ namespace upg
     SubParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "sub"; }
     virtual unsigned source_cnt() const override { return 2; }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -195,15 +190,16 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         ENZYME_EVALUATE_WITH_DIFF(SubParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -230,11 +226,10 @@ namespace upg
     MultParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "mult"; }
     virtual unsigned source_cnt() const override { return 2; }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -242,15 +237,16 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         ENZYME_EVALUATE_WITH_DIFF(MultParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -277,11 +273,10 @@ namespace upg
     DivParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "div"; }
     virtual unsigned source_cnt() const override { return 2; }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -289,15 +284,16 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         ENZYME_EVALUATE_WITH_DIFF(DivParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -320,11 +316,10 @@ namespace upg
     IncParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "inc"; }
     virtual unsigned source_cnt() const override { return 1; }
     virtual unsigned param_cnt() const override { return 1; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -332,16 +327,17 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         x.push_back(param[INC_COEFF]);
         ENZYME_EVALUATE_WITH_DIFF(AddParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -365,11 +361,10 @@ namespace upg
     CMultParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "mult"; }
     virtual unsigned source_cnt() const override { return 1; }
     virtual unsigned param_cnt() const override { return 1; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -377,16 +372,17 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         x.push_back(param[MULT_COEFF]);
         ENZYME_EVALUATE_WITH_DIFF(MultParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
@@ -414,11 +410,10 @@ namespace upg
     NegParamNode(unsigned id, std::vector<float> p) : ParamNode(id, p) { param = p; sources = {}; name = "div"; }
     virtual unsigned source_cnt() const override { return 1; }
     virtual unsigned param_cnt() const override { return 0; }
-    virtual float get_res(std::vector<float> *jac) const override
+    virtual float get_res(float *jac) const override
     {
       if (jac != NULL)
       {
-        jac->resize(in_p.size());
         upg::UniversalGenJacobian tmp;
         tmp.resize(1, source_cnt());
         float ans;
@@ -426,15 +421,16 @@ namespace upg
         std::vector<std::vector<float>> jacs(source_cnt());
         for (int i = 0; i < source_cnt(); ++i)
         {
-          x.push_back(sources[i]->get_res(&jacs[i]));
+          jacs[i].resize(in_p.size());
+          x.push_back(sources[i]->get_res(jacs[i].data()));
         }
         ENZYME_EVALUATE_WITH_DIFF(NegParamNode_apply, source_cnt(), 1, x.data(), &ans, tmp.data());
         for (int i = 0; i < in_p.size(); ++i)
         {
-          (*jac)[i] = 0;
+          jac[i] = 0;
           for (int j = 0; j < source_cnt(); ++j)
           {
-            (*jac)[i] += tmp.at(j, 0) * jacs[j][i];
+            jac[i] += tmp.at(j, 0) * jacs[j][i];
           }
         }
         return ans;
