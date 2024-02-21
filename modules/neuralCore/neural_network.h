@@ -488,6 +488,8 @@ namespace nn
     void save_weights_to_file(std::string filename);
     void set_arch_to_file(std::string filename);
     void print_info();
+    unsigned params_count() const { return total_params; }
+    const std::vector<float> &get_weights() const { return weights; }
     TensorProgram get_train_prog(int batch_size, Optimizer optimizer, Loss loss);
     void train(const std::vector<float> &inputs /*[input_size, count]*/, const std::vector<float> &outputs /*[output_size, count]*/,
                int batch_size, int iterations, Optimizer optimizer, Loss loss, bool verbose = false);
