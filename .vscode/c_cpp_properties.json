@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/third_party/**",
+                "${workspaceFolder}/common_src/**",
+                "${workspaceFolder}/modules/**",
+                "${workspaceFolder}/../diff_render/diffrender_tutorials/src/**",
+                "${workspaceFolder}/../diff_render/diffrender_tutorials/common_src/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++-12",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
