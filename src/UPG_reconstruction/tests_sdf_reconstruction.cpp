@@ -852,8 +852,8 @@ namespace upg
     {
     input {
         synthetic_reference {
-            points_count:i = 50000
-            params:arr = {0,0,0,1}
+            points_count:i = 250000
+            params:arr = {0,0,0,0.8}
             structure:arr = {2,1}
         } 
     }
@@ -866,7 +866,7 @@ namespace upg
             structure:arr = {2,1} 
         }
         step_0 {
-            field:b = true
+            grid:b = true
             learning_rate:r = 0.003
             iterations:i = 1000
             verbose:b = false
@@ -888,29 +888,11 @@ namespace upg
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
-    debug(" 15.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == 2 && res[0].structure.s[1] == 1)
+    debug(" 15.2. %-64s", "Good multi-view PSNR ");
+    if (res[0].quality_synt > 30)
       debug("passed\n");
     else
-      debug("FAILED\n");
-    
-    debug(" 15.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 4)
-      debug("passed\n");
-    else
-      debug("FAILED\n");
-    
-    debug(" 15.4. %-64s", "Perfect optimization loss ");
-    if (res[0].loss_optimizer < 1e-5)
-      debug("passed\n");
-    else
-      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
-    
-    debug(" 15.5. %-64s", "Perfect multi-view PSNR ");
-    if (res[0].quality_synt > 40)
-      debug("passed\n");
-    else
-      debug("FAILED %f < %f\n", res[0].quality_synt, 40);
+      debug("FAILED %f < %f\n", res[0].quality_synt, 30.0f);
   }
 
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)

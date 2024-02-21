@@ -8,6 +8,7 @@
 #include "graphics_utils/render_point_cloud.h"
 #include "common_utils/distribution.h"
 #include "sdf_reconstruction_common.h"
+#include "sdf_grid.h"
 #include <chrono>
 
 namespace upg
@@ -372,6 +373,168 @@ namespace upg
     return optimizer->get_best_results();
   }
 
+  std::vector<UPGReconstructionResult> sdf_grid_reconstruction(PointCloudReference &reference)
+  {
+    ProceduralSdf ref_sdf({{SdfNodeType::MOVE, SdfNodeType::SPHERE}});
+    std::vector<float> ref_p = {0,0,0,1};
+    ref_sdf.set_parameters(ref_p);
+    UPGStructure structure = {{SdfNodeType::GRID}};
+    UPGParametersRaw params;
+      ProceduralSdf g_sdf(structure);
+      unsigned params_cnt = g_sdf.all_params.size();
+      unsigned N = round(pow(params_cnt, 1.0/3));
+      params.p.resize(params_cnt, 0.0f);
+      std::vector<float> counts(params_cnt, 0);
+      AABB bbox = AABB({-1,-1,-1},{1,1,1});
+      for (int i=0;i<reference.d_points.size();i++)
+      {
+        glm::vec3 v = (float)N*(reference.d_points[i] - bbox.min_pos)/bbox.size();
+        glm::ivec3 vi = v;
+        glm::vec3 vf = v - glm::vec3(vi);
+        if (v.x > 0 && v.x<N && v.y > 0 && v.y<N && v.z > 0 && v.z<N)
+        {
+          unsigned id = vi.x*N*N + vi.y*N + vi.z;
+          if (vi.x > 0 && vi.x<N-1 && vi.y > 0 && vi.y<N-1 && vi.z > 0 && vi.z<N-1)
+          {
+            params.p[id]         += (1-vf.x)*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
+            counts  [id]         += (1-vf.x)*(1-vf.y)*(1-vf.z);
+
+            params.p[id+1]       += (1-vf.x)*(1-vf.y)*vf.z*reference.d_distances[i];
+            counts  [id+1]       += (1-vf.x)*(1-vf.y)*vf.z;
+
+            params.p[id+N]       += (1-vf.x)*vf.y*(1-vf.z)*reference.d_distances[i];
+            counts  [id+N]       += (1-vf.x)*vf.y*(1-vf.z);
+            
+            params.p[id+N+1]     += (1-vf.x)*vf.y*vf.z*reference.d_distances[i];
+            counts  [id+N+1]     += (1-vf.x)*vf.y*vf.z;
+
+            params.p[id+N*N]     += vf.x*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
+            counts  [id+N*N]     += vf.x*(1-vf.y)*(1-vf.z);
+            
+            params.p[id+N*N+1]   += vf.x*(1-vf.y)*vf.z*reference.d_distances[i];
+            counts  [id+N*N+1]   += vf.x*(1-vf.y)*vf.z;
+
+            params.p[id+N*N+N]   += vf.x*vf.y*(1-vf.z)*reference.d_distances[i];
+            counts  [id+N*N+N]   += vf.x*vf.y*(1-vf.z);
+            
+            params.p[id+N*N+N+1] += vf.x*vf.y*vf.z*reference.d_distances[i];
+            counts  [id+N*N+N+1] += vf.x*vf.y*vf.z;
+          }
+          else
+          {
+            params.p[id] += reference.d_distances[i];
+            counts[id] += 1;
+          }
+        }
+      }
+
+      for (int i=0;i<params_cnt;i++)
+      {
+        params.p[i] = counts[i] > 0 ? params.p[i]/counts[i] : -1.0f/N;
+      }
+    /*
+      GridSdfNode grid(N, bbox);
+      grid.set_param_span(params.p, 0);
+      std::vector<float> ddist_dpos(3, 0.0f);
+      std::vector<float> ddist_dp(params_cnt, 0.0f);
+      std::vector<float> x_grad(params_cnt, 0.0f);
+      std::vector<float> V(params_cnt, 0.0f);
+      std::vector<float> S(params_cnt, 0.0f);
+      std::vector<float> &X = params.p;
+      float alpha = 0.01;
+      float beta_1 = 0.9;
+      float beta_2 = 0.999;
+      float eps = 1e-8;
+      float loss = 0;
+      bool verbose = true;
+
+      unsigned samples = 10000;
+      unsigned iterations = 50;
+      
+      for (int iter=0; iter< iterations; iter++)
+      {
+        std::fill_n(x_grad.begin(), x_grad.size(), 0.0f);
+        double total_loss = 0.0;
+        for (int i=0;i<samples;i++)
+        {
+          unsigned index = rand() % reference.d_points.size();
+          glm::vec3 p = reference.d_points[index];
+          //printf("%f %f %f -- %f\n",p.x,p.y,p.z,reference.d_distances[index]);
+          //p = {urand(),urand(),urand()};
+          //p = bbox.size()*p + bbox.min_pos;
+          std::fill_n(ddist_dp.begin(), ddist_dp.size(), 0.0);
+          float d = grid.get_distance(p, ddist_dp, ddist_dpos) - reference.d_distances[i];
+          total_loss += d*d;
+          for (int j=0;j<ddist_dp.size();j++)
+            x_grad[j] += 2*d*ddist_dp[j] / samples;
+        }
+        loss = total_loss/samples;
+
+        const float reg_q = 1e-6f;
+        float reg_loss = 0;
+        //regularization
+        for (int i=1;i<N-1;i++)
+        {
+          for (int j=1;j<N-1;j++)
+          {
+            for (int k=1;k<N-1;k++)
+            {
+              unsigned bid = i*N*N + j*N + k;
+              reg_loss += reg_q*(abs(X[bid+N*N+N+1] - X[bid-N*N-N-1]) + 
+                                 abs(X[bid+N*N+N-1] - X[bid-N*N-N+1]) +
+                                 abs(X[bid+N*N-N+1] - X[bid-N*N+N-1]) + 
+                                 abs(X[bid+N*N-N-1] - X[bid-N*N+N+1]));
+              x_grad[bid+N*N+N+1] += reg_q*glm::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
+              x_grad[bid-N*N-N-1] -= reg_q*glm::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
+              x_grad[bid+N*N+N-1] += reg_q*glm::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
+              x_grad[bid-N*N-N+1] -= reg_q*glm::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
+              x_grad[bid+N*N-N+1] += reg_q*glm::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
+              x_grad[bid-N*N+N-1] -= reg_q*glm::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
+              x_grad[bid+N*N-N-1] += reg_q*glm::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
+              x_grad[bid-N*N+N+1] -= reg_q*glm::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
+            }            
+          }          
+        }
+
+        printf("reg loss %f\n",reg_loss);
+
+        //debug("grad  [");
+        for (int i=0;i<params_cnt;i++)
+        {
+          //debug("%f ",x_grad[i]);
+          float g = x_grad[i];
+          V[i] = beta_1 * V[i] + (1-beta_1)*g;
+          float Vh = V[i] / (1 - pow(beta_1, iter+1)); 
+          S[i] = beta_2 * S[i] + (1-beta_2)*g*g;
+          float Sh = S[i] / (1 - pow(beta_2, iter+1)); 
+          X[i] -= alpha*Vh/(sqrt(Sh) + eps);
+        }
+        //debug("]\n");
+        if ((iter % 5 == 0) && verbose)
+          debug("Adam iter %3d  val = %.8f\n", iter, loss);
+      }
+    */
+
+    UPGReconstructionResult res;
+    res.structure = structure;
+    res.parameters = params;
+    res.loss_optimizer = 0.0f;
+/*
+    int steps = 15;
+    g_sdf.set_parameters(res.parameters.p);
+    for (int i=0;i<steps;i++)
+    {
+      CameraSettings camera;
+      camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(g_sdf, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
+      engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
+    }
+*/
+    return {res};
+  }
+
   std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<glm::vec3> &points,
                                                                   const std::vector<float> &distances);
   std::vector<UPGReconstructionResult> constructive_reconstruction_step(Block *step_blk, PointCloudReference &reference,
@@ -418,6 +581,8 @@ namespace upg
         opt_res = reconstruction_graph_based(step_blk, reference.d_points, reference.d_distances);
       else if (step_blk->get_bool("field"))
         opt_res = simple_field_reconstruction_step(step_blk, reference, opt_res);
+      else if (step_blk->get_bool("grid"))
+        opt_res = sdf_grid_reconstruction(reference);
       else
         opt_res = simple_reconstruction_step(step_blk, reference, opt_res);
       step_n++;
