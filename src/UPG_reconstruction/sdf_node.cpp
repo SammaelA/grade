@@ -145,7 +145,7 @@ namespace upg
       subgraph_param_cnt = cnt;
       subgraph.push_back(this);
     }
-    virtual void set_params_for_complex_nodes() const override {}
+    virtual void on_params_change() const override {}
     std::pair <int, int> get_child_param_idxs()
     {
       return std::pair<int, int> {childs_params_start, childs_params_end};
@@ -300,15 +300,15 @@ namespace upg
         }
         return child_cnt() > childs.size();
     }
-    virtual void set_params_for_complex_nodes() const override
+    virtual void on_params_change() const override
     {
       for (auto i : get_children())
       {
-        i->set_params_for_complex_nodes();
+        i->on_params_change();
       }
       p_g.get_graph(p);
       p_g.get_params(all_params, input_size, jac.data());
-      root->set_params_for_complex_nodes();
+      root->on_params_change();
     }
     std::vector<const SdfNode *> get_children() const override
     {
@@ -1357,7 +1357,7 @@ namespace upg
         all_params[i] = 0;
       }
     }
-    root->set_params_for_complex_nodes();
+    root->on_params_change();
     //add complex checking
   }
 

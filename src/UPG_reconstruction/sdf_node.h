@@ -76,11 +76,15 @@ namespace upg
       subgraph_param_cnt = cnt;
       subgraph.push_back(this);
     }
-    virtual void set_params_for_complex_nodes() const
+
+    //method is called every time when node's parameters 
+    //are changed. Some nodes overrides it to pre-calculate 
+    //some values that depend on parameters
+    virtual void on_params_change() const
     {
       for (auto i : get_children())
       {
-        i->set_params_for_complex_nodes();
+        i->on_params_change();
       }
     }
     virtual void get_distance_batch(unsigned     batch_size,

@@ -18,7 +18,7 @@ namespace upg
       network.initialize();
       network.set_batch_size_for_evaluate(base_batch_size);
       params_count = network.params_count();
-      bbox = region_bbox.expand(1/1.1f);
+      bbox = region_bbox;
       name = "Neural";
     }
     virtual ~NeuralSdfNode() = default;
@@ -31,11 +31,6 @@ namespace upg
                             std::vector<float> & stack,
                                     unsigned     stack_head) const override
     {
-      if (!weights_set)
-      {
-        weights_set = true;
-        network.initialize_with_weights(p.data());
-      }
       if (ddist_dparams == nullptr && ddist_dpos == nullptr)
         network.evaluate(positions, distances, batch_size);
       else
@@ -50,12 +45,15 @@ namespace upg
       return params;
     }
     virtual AABB get_bbox() const override { return bbox; };
+    virtual void on_params_change() const override
+    {
+      network.initialize_with_weights(p.data());
+    }
   protected:
 
     unsigned params_count;
     unsigned base_batch_size = 1024;
     mutable nn::Siren network;
-    mutable bool weights_set = false;
     AABB bbox;
   };
 }
