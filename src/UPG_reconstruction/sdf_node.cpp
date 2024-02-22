@@ -324,7 +324,7 @@ namespace upg
     {
       for (auto *n : null_nodes)
         n->set_global_ddist_dparams(ddist_dparams);
-
+      
       float *local_ddist_dparams = nullptr;
       unsigned local_head = stack_head;
       if (ddist_dparams)
@@ -464,7 +464,7 @@ namespace upg
     }
     virtual AABB get_bbox() const override
     {
-      return root->get_bbox();
+      return root->get_bbox().expand(1.25f);//check render problem
     }
   };
 
@@ -1342,6 +1342,45 @@ namespace upg
                SdfNodeType::MOVE, SdfNodeType::CYLINDER}};;
     }
   };
+
+  class ComplexRotateSdfNode : public AbstractComplexSdfNode
+  {
+  public:
+    ComplexRotateSdfNode() : AbstractComplexSdfNode(param_structure(), structure(), 6) { name = "Complex Rot"; }//last param is param_cnt
+    virtual unsigned child_cnt() const override
+    {
+      return 1;
+    }
+    virtual unsigned param_cnt() const override
+    {
+      return 6;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_xy"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_z"});
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
+      params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "rot_point_x"});
+      params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "rot_point_y"});
+      params.push_back({0,scene_bbox.min_pos.z,scene_bbox.max_pos.z, ParameterType::DIFFERENTIABLE, "rot_point_z"});
+      return params;
+    }
+  protected:
+    std::vector<std::vector<float>> param_structure() const
+    {
+      return {{6, ParamNode::NEG}, {7, ParamNode::NEG}, {8, ParamNode::NEG},
+              {0, ParamNode::PRIMITIVE, 0}, {1, ParamNode::PRIMITIVE, 1}, {2, ParamNode::PRIMITIVE, 2},
+              {3, ParamNode::PRIMITIVE, 3}, {4, ParamNode::PRIMITIVE, 4}, {5, ParamNode::PRIMITIVE, 5},
+              {3}, {4}, {5}};
+    }
+    UPGStructure structure() const
+    {
+      return {{SdfNodeType::MOVE, SdfNodeType::ROTATE, SdfNodeType::MOVE, SdfNodeType::UNDEFINED}};
+    }
+  };
   //test end
 
   void ProceduralSdf::set_parameters(std::span<const float> parameters)
@@ -1508,9 +1547,10 @@ namespace upg
     {SdfNodeType::CONE       , "Cone"       , 4, 0, {[]() -> SdfNode* {return new ConeSdfNode;}}},
     {SdfNodeType::AND        , "And"        , 0, 2, {[]() -> SdfNode* {return new AndSdfNode;}}},
     {SdfNodeType::SUBTRACT   , "Subtract"   , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
-    {SdfNodeType::ROTATE     , "Rotate"     , 4, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
+    {SdfNodeType::ROTATE     , "Rotate"     , 3, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
     {SdfNodeType::SCALE      , "Scale"      , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
     {SdfNodeType::CHAIR      , "Chair"      , 6, 0, {[]() -> SdfNode* {return new ChairSdfNode;}}},
+    {SdfNodeType::CROTATE    , "Complex Rot", 6, 1, {[]() -> SdfNode* {return new ComplexRotateSdfNode;}}},
     {SdfNodeType::GRID       , "Grid"       , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32);}}},
     {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(2, 32);}}},
   };

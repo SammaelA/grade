@@ -216,8 +216,8 @@ namespace upg
   SceneDesc scene_complex_chair()
   {
     SceneDesc desc;
-    desc.first.s = {SdfNodeType::CHAIR};
-    desc.second.p = {0.05, 0.3, 0.5, 0.05, 0.5, 0.5};
+    desc.first.s = {SdfNodeType::CROTATE, SdfNodeType::CHAIR};
+    desc.second.p = {1, 0, 1, 0.15, 0.15, 0.15, 0.05, 0.3, 0.5, 0.05, 0.5, 0.5};
     return desc;    
   }
 

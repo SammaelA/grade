@@ -26,6 +26,7 @@ namespace upg
       ROTATE,
       SCALE,
       CHAIR,
+      CROTATE,
       GRID,
       NEURAL,
       NODE_TYPES_COUNT
