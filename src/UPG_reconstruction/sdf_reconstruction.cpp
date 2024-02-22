@@ -375,10 +375,10 @@ namespace upg
     return optimizer->get_best_results();
   }
 
-  std::vector<UPGReconstructionResult> sdf_grid_reconstruction(PointCloudReference &reference)
+  std::vector<UPGReconstructionResult> sdf_grid_reconstruction(PointCloudReference &reference, uint16_t grid_node_type)
   {
     UPGParametersRaw params;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID}});
+      ProceduralSdf g_sdf({{grid_node_type}});
       unsigned voxels_cnt = g_sdf.all_params.size();
       unsigned N = round(pow(voxels_cnt, 1.0/3));
       unsigned p_offset = 3+1;//move and scale params
@@ -443,7 +443,7 @@ namespace upg
 
       for (int i=0;i<voxels_cnt;i++)
       {
-        voxels[i] = counts[i] > 0 ? voxels[i]/counts[i] : -1.0f/N;
+        voxels[i] = counts[i] > 0 ? voxels[i]/counts[i] : 1.0f/N;
       }
     /*
       GridSdfNode grid(N, bbox);
@@ -529,9 +529,14 @@ namespace upg
     */
 
     UPGReconstructionResult res;
-    res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, SdfNodeType::GRID}};
+    res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, grid_node_type}};
     res.parameters = params;
     res.loss_optimizer = 0.0f;
+
+    //debug("params ");
+    //for (auto &p : res.parameters.p)
+    //  debug("%f ", p);
+    //debug("\n");
 /*
     int steps = 15;
     g_sdf.set_parameters(res.parameters.p);
@@ -574,7 +579,7 @@ namespace upg
       network.train(positions, reference.d_distances, 512, 10000, false);
 
       UPGReconstructionResult res;
-      res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, SdfNodeType::NEURAL}};
+      res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, SdfNodeType::NEURAL_SMALL}};
       res.parameters.p = std::vector<float>(network.get_weights().size() + 3 + 1);
       res.parameters.p[0] = bbox_center.x;//shift
       res.parameters.p[1] = bbox_center.y;
@@ -646,7 +651,7 @@ namespace upg
       else if (step_blk->get_bool("field"))
         opt_res = simple_field_reconstruction_step(step_blk, reference, opt_res);
       else if (step_blk->get_bool("grid"))
-        opt_res = sdf_grid_reconstruction(reference);
+        opt_res = sdf_grid_reconstruction(reference, step_blk->get_int("grid_node_type", (int)SdfNodeType::GRID_32));
       else if (step_blk->get_bool("neural"))
         opt_res = neural_sdf_reconstruction(reference);      
       else
