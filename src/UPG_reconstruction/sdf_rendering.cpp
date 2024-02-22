@@ -124,7 +124,7 @@ namespace upg
 
     glm::mat4 projInv = glm::inverse(camera.get_proj(false));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
-    glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
+    glm::vec3 light_dir = normalize(glm::vec3(1,1,1));
 
     int spp_a = MAX(1,floor(sqrtf(spp)));
     float mult = 1.0f/(spp_a*spp_a);
