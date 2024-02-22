@@ -27,7 +27,8 @@ namespace upg
   float GridSdfNode::get_distance(const glm::vec3 &pos, std::span<float> ddist_dp, 
                                   std::span<float> ddist_dpos) const
   {
-    glm::vec3 vox_f = grid_size_f*glm::min(glm::max((pos-bbox.min_pos)/bbox_size, 0.0f), 1.0f-1e-5f);
+    //bbox for grid is a unit cube
+    glm::vec3 vox_f = grid_size_f*glm::min(glm::max((pos-glm::vec3(-1,-1,-1))/bbox_size, 0.0f), 1.0f-1e-5f);
     glm::uvec3 vox_u = vox_f;
     glm::vec3 dp = vox_f - glm::vec3(vox_u);
 
@@ -85,7 +86,8 @@ namespace upg
   }
   void GridSdfNode::set_voxel(const glm::vec3 &pos, float distance)
   {
-    glm::uvec3 vox = grid_size_f*glm::min(glm::max((pos-bbox.min_pos)/bbox_size, 0.0f), 1.0f);
+    //bbox for grid is a unit cube
+    glm::uvec3 vox = grid_size_f*glm::min(glm::max((pos-glm::vec3(-1,-1,-1))/bbox_size, 0.0f), 1.0f);
     *((float*)p.data() + vox.z*grid_size*grid_size + vox.y*grid_size + vox.x) = distance;
   }
 }

@@ -11,14 +11,13 @@ namespace upg
   class NeuralSdfNode : public PrimitiveSdfNode
   {
   public:
-    NeuralSdfNode(unsigned hidden_layers, unsigned layer_size, const AABB &region_bbox) : 
+    NeuralSdfNode(unsigned hidden_layers, unsigned layer_size) : 
     PrimitiveSdfNode(),
     network(nn::Siren::Type::SDF, hidden_layers, layer_size)
     { 
       network.initialize();
       network.set_batch_size_for_evaluate(base_batch_size);
       params_count = network.params_count();
-      bbox = region_bbox;
       name = "Neural";
     }
     virtual ~NeuralSdfNode() = default;
@@ -44,7 +43,8 @@ namespace upg
       params.push_back({1,-1.0f,1.0f, ParameterType::ARRAY, "data", params_count});
       return params;
     }
-    virtual AABB get_bbox() const override { return bbox; };
+    //neural SDF is always set in a unit cube and transformed by other nodes if needed
+    virtual AABB get_bbox() const override { return AABB({-1,-1,-1},{1,1,1}); }
     virtual void on_params_change() const override
     {
       network.initialize_with_weights(p.data());
@@ -54,6 +54,5 @@ namespace upg
     unsigned params_count;
     unsigned base_batch_size = 1024;
     mutable nn::Siren network;
-    AABB bbox;
   };
 }
