@@ -841,19 +841,19 @@ namespace upg
     }
   }
 
-  //TEST 15 FIELD-BASED SPHERE SDF RECONSTRUCTION
+  //TEST 15 GRID SDF RECONSTRUCTION
   //It uses Adam optimizer with initial state close to target one
   //Reconstruction should perform perfectly
   void sdf_test_15()
   {
     srand(0);
-    debug("TEST 15. FIELD-BASED SPHERE SDF RECONSTRUCTION\n");
+    debug("TEST 15. GRID SDF RECONSTRUCTION\n");
     std::string settings = R""""(
     {
     input {
         synthetic_reference {
             points_count:i = 250000
-            params:arr = {0,0,0,0.8}
+            params:arr = {0.1,0.3,0,0.5}
             structure:arr = {2,1}
         } 
     }
@@ -862,13 +862,9 @@ namespace upg
     }
     optimization {
         start {
-            params:arr = {0.1,0.2,-0.1,0.7}    
-            structure:arr = {2,1} 
         }
         step_0 {
             grid:b = true
-            learning_rate:r = 0.003
-            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -907,7 +903,7 @@ namespace upg
     input {
         synthetic_reference {
             points_count:i = 50000
-            params:arr = {0,0,0,0.8}
+            params:arr = {0.25,0.5,0,0.5}
             structure:arr = {2,1}
         } 
     }
@@ -916,13 +912,10 @@ namespace upg
     }
     optimization {
         start {
-            params:arr = {0.1,0.2,-0.1,0.7}    
-            structure:arr = {2,1} 
+
         }
         step_0 {
             neural:b = true
-            learning_rate:r = 0.003
-            iterations:i = 1000
             verbose:b = false
         }
     }
@@ -943,10 +936,10 @@ namespace upg
       debug("FAILED %d != %d\n", res.size(), 1);
     
     debug(" 16.2. %-64s", "Good reconstruction quality ");
-    if (res[0].quality_ir > 0.0002f)
+    if (res[0].quality_ir < 0.0002f)
       debug("passed\n");
     else
-      debug("FAILED %f < %f\n", res[0].quality_ir, 0.0002f);
+      debug("FAILED %f > %f\n", res[0].quality_ir, 0.0002f);
   }
 
   void sdf_test_17()

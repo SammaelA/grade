@@ -377,17 +377,28 @@ namespace upg
 
   std::vector<UPGReconstructionResult> sdf_grid_reconstruction(PointCloudReference &reference)
   {
-    ProceduralSdf ref_sdf({{SdfNodeType::MOVE, SdfNodeType::SPHERE}});
-    std::vector<float> ref_p = {0,0,0,1};
-    ref_sdf.set_parameters(ref_p);
-    UPGStructure structure = {{SdfNodeType::GRID}};
     UPGParametersRaw params;
-      ProceduralSdf g_sdf(structure);
-      unsigned params_cnt = g_sdf.all_params.size();
-      unsigned N = round(pow(params_cnt, 1.0/3));
-      params.p.resize(params_cnt, 0.0f);
-      std::vector<float> counts(params_cnt, 0);
-      AABB bbox = AABB({-1,-1,-1},{1,1,1});
+      ProceduralSdf g_sdf({{SdfNodeType::GRID}});
+      unsigned voxels_cnt = g_sdf.all_params.size();
+      unsigned N = round(pow(voxels_cnt, 1.0/3));
+      unsigned p_offset = 3+1;//move and scale params
+      params.p.resize(voxels_cnt+p_offset, 0.0f);
+      std::vector<float> counts(voxels_cnt, 0);
+      float *voxels = params.p.data() + p_offset;
+
+      //bbox must be square, as grid is expected the have same
+      //number of voxels by each dimension and we can only
+      //scale SDF by one number in every dimention.
+      //we calculate scale and shift for grid transform
+      AABB bbox = get_point_cloud_bbox(reference.d_points);
+      float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
+      glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+      bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s));
+      params.p[0] = bbox_center.x; //shift
+      params.p[1] = bbox_center.y;
+      params.p[2] = bbox_center.z;
+      params.p[3] = max_s;         //scale
+      
       for (int i=0;i<reference.d_points.size();i++)
       {
         glm::vec3 v = (float)N*(reference.d_points[i] - bbox.min_pos)/bbox.size();
@@ -398,51 +409,51 @@ namespace upg
           unsigned id = vi.x*N*N + vi.y*N + vi.z;
           if (vi.x > 0 && vi.x<N-1 && vi.y > 0 && vi.y<N-1 && vi.z > 0 && vi.z<N-1)
           {
-            params.p[id]         += (1-vf.x)*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
-            counts  [id]         += (1-vf.x)*(1-vf.y)*(1-vf.z);
+            voxels[id]         += (1-vf.x)*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
+            counts[id]         += (1-vf.x)*(1-vf.y)*(1-vf.z);
 
-            params.p[id+1]       += (1-vf.x)*(1-vf.y)*vf.z*reference.d_distances[i];
-            counts  [id+1]       += (1-vf.x)*(1-vf.y)*vf.z;
+            voxels[id+1]       += (1-vf.x)*(1-vf.y)*vf.z*reference.d_distances[i];
+            counts[id+1]       += (1-vf.x)*(1-vf.y)*vf.z;
 
-            params.p[id+N]       += (1-vf.x)*vf.y*(1-vf.z)*reference.d_distances[i];
-            counts  [id+N]       += (1-vf.x)*vf.y*(1-vf.z);
+            voxels[id+N]       += (1-vf.x)*vf.y*(1-vf.z)*reference.d_distances[i];
+            counts[id+N]       += (1-vf.x)*vf.y*(1-vf.z);
             
-            params.p[id+N+1]     += (1-vf.x)*vf.y*vf.z*reference.d_distances[i];
-            counts  [id+N+1]     += (1-vf.x)*vf.y*vf.z;
+            voxels[id+N+1]     += (1-vf.x)*vf.y*vf.z*reference.d_distances[i];
+            counts[id+N+1]     += (1-vf.x)*vf.y*vf.z;
 
-            params.p[id+N*N]     += vf.x*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
-            counts  [id+N*N]     += vf.x*(1-vf.y)*(1-vf.z);
+            voxels[id+N*N]     += vf.x*(1-vf.y)*(1-vf.z)*reference.d_distances[i];
+            counts[id+N*N]     += vf.x*(1-vf.y)*(1-vf.z);
             
-            params.p[id+N*N+1]   += vf.x*(1-vf.y)*vf.z*reference.d_distances[i];
-            counts  [id+N*N+1]   += vf.x*(1-vf.y)*vf.z;
+            voxels[id+N*N+1]   += vf.x*(1-vf.y)*vf.z*reference.d_distances[i];
+            counts[id+N*N+1]   += vf.x*(1-vf.y)*vf.z;
 
-            params.p[id+N*N+N]   += vf.x*vf.y*(1-vf.z)*reference.d_distances[i];
-            counts  [id+N*N+N]   += vf.x*vf.y*(1-vf.z);
+            voxels[id+N*N+N]   += vf.x*vf.y*(1-vf.z)*reference.d_distances[i];
+            counts[id+N*N+N]   += vf.x*vf.y*(1-vf.z);
             
-            params.p[id+N*N+N+1] += vf.x*vf.y*vf.z*reference.d_distances[i];
-            counts  [id+N*N+N+1] += vf.x*vf.y*vf.z;
+            voxels[id+N*N+N+1] += vf.x*vf.y*vf.z*reference.d_distances[i];
+            counts[id+N*N+N+1] += vf.x*vf.y*vf.z;
           }
           else
           {
-            params.p[id] += reference.d_distances[i];
+            voxels[id] += reference.d_distances[i];
             counts[id] += 1;
           }
         }
       }
 
-      for (int i=0;i<params_cnt;i++)
+      for (int i=0;i<voxels_cnt;i++)
       {
-        params.p[i] = counts[i] > 0 ? params.p[i]/counts[i] : -1.0f/N;
+        voxels[i] = counts[i] > 0 ? voxels[i]/counts[i] : -1.0f/N;
       }
     /*
       GridSdfNode grid(N, bbox);
-      grid.set_param_span(params.p, 0);
+      grid.set_param_span(voxels, 0);
       std::vector<float> ddist_dpos(3, 0.0f);
       std::vector<float> ddist_dp(params_cnt, 0.0f);
       std::vector<float> x_grad(params_cnt, 0.0f);
       std::vector<float> V(params_cnt, 0.0f);
       std::vector<float> S(params_cnt, 0.0f);
-      std::vector<float> &X = params.p;
+      std::vector<float> &X = voxels;
       float alpha = 0.01;
       float beta_1 = 0.9;
       float beta_2 = 0.999;
@@ -518,7 +529,7 @@ namespace upg
     */
 
     UPGReconstructionResult res;
-    res.structure = structure;
+    res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, SdfNodeType::GRID}};
     res.parameters = params;
     res.loss_optimizer = 0.0f;
 /*
@@ -539,25 +550,37 @@ namespace upg
 
   std::vector<UPGReconstructionResult> neural_sdf_reconstruction(PointCloudReference &reference)
   {
-    /*    void train(const float *data, const float *labels, int samples, int batch_size, int epochs, bool use_validation = false, Optimizer optimizer = OptimizerAdam(0.01f), 
-               Loss loss = Loss::CrossEntropy, Metric metric = Metric::Accuracy, bool verbose = false);*/
+
       //nn::TensorProcessor::init("GPU");
       nn::Siren network(nn::Siren::Type::SDF, 2, 32);
       unsigned points = reference.d_distances.size();
+
+
+      //Calculate scale and shift for neural_sdf transform
+      //and move all points to the unit cube
+      AABB bbox = get_point_cloud_bbox(reference.d_points);
+      float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
+      glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+      bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s));
+
       std::vector<float> positions(3*reference.d_distances.size(), 0);
       for (int i=0;i<points;i++)
       {
-        positions[3*i+0] = reference.d_points[i].x;
-        positions[3*i+1] = reference.d_points[i].y;
-        positions[3*i+2] = reference.d_points[i].z;
+        positions[3*i+0] = (reference.d_points[i].x - bbox_center.x)/max_s;
+        positions[3*i+1] = (reference.d_points[i].y - bbox_center.y)/max_s;
+        positions[3*i+2] = (reference.d_points[i].z - bbox_center.z)/max_s;
       }
-      AABB bbox = get_point_cloud_bbox(reference.d_points);
 
       network.train(positions, reference.d_distances, 512, 10000, false);
 
       UPGReconstructionResult res;
-      res.structure = {{SdfNodeType::NEURAL}};
-      res.parameters = {network.get_weights()};
+      res.structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, SdfNodeType::NEURAL}};
+      res.parameters.p = std::vector<float>(network.get_weights().size() + 3 + 1);
+      res.parameters.p[0] = bbox_center.x;//shift
+      res.parameters.p[1] = bbox_center.y;
+      res.parameters.p[2] = bbox_center.z;
+      res.parameters.p[3] = max_s;        //scale   
+      res.parameters.p.insert(res.parameters.p.begin()+4, network.get_weights().begin(), network.get_weights().end());   
       res.loss_optimizer = 0.0f;
 
       /*int steps = 15;
