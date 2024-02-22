@@ -986,31 +986,31 @@ namespace upg
     load_block_from_string(settings, settings_blk);
     auto res = reconstruct_sdf(settings_blk);
 
-    debug("  17.1. %-64s", "ReconstructionResult size ");
+    debug(" 17.1. %-64s", "ReconstructionResult size ");
     if (res.size() == 1)
       debug("passed\n");
     else
       debug("FAILED %d != %d\n", res.size(), 1);
     
-    debug("  17.2. %-64s", "Preserved structure ");
+    debug(" 17.2. %-64s", "Preserved structure ");
     if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == SdfNodeType::CHAIR)
       debug("passed\n");
     else
       debug("FAILED\n");
     
-    debug("  17.3. %-64s", "Preserved parameters count ");
+    debug(" 17.3. %-64s", "Preserved parameters count ");
     if (res[0].parameters.p.size() == 6)
       debug("passed\n");
     else
       debug("FAILED\n");
     
-    debug("  17.4. %-64s", "Perfect optimization loss ");
+    debug(" 17.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("passed\n");
     else
       debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
     
-    debug("  17.5. %-64s", "Perfect multi-view PSNR ");
+    debug(" 17.5. %-64s", "Perfect multi-view PSNR ");
     if (res[0].quality_synt > 40)
       debug("passed\n");
     else
