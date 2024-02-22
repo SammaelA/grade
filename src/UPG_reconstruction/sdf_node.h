@@ -36,6 +36,7 @@ namespace upg
       NEURAL_MEDIUM,
       NEURAL_LARGE,
       NEURAL_HUGE,
+      CROTATE,
       NODE_TYPES_COUNT
     };
   };

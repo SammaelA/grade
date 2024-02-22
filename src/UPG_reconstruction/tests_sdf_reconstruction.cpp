@@ -1010,6 +1010,74 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 40);
   }
 
+  void sdf_test_18()
+  {
+    srand(0);
+    debug("TEST 18. ROTATED CHAIR SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {1, 0.5, 1, 0.15, -0.15, 0, 0.05, 0.3, 0.5, 0.05, 0.5, 0.5}
+            structure:arr = {14, 13}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {1.1, 0.02, 0.67, 0.02, -0.27, 0.1, 0.2, 0.13, 0.33, 0.17, 0.31, 0.68}    
+            structure:arr = {14, 13} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 18.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 18.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == SdfNodeType::CROTATE && res[0].structure.s[1] == SdfNodeType::CHAIR)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 18.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 12)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 18.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 18.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
+  }
+
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -1018,7 +1086,7 @@ namespace upg
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
       sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
-      sdf_test_16, sdf_test_17
+      sdf_test_16, sdf_test_17, sdf_test_18
     };
 
     if (tests.empty())
