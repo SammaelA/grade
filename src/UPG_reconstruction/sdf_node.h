@@ -26,6 +26,7 @@ namespace upg
       ROTATE,
       SCALE,
       CHAIR,
+      CROTATE,
       GRID_16,
       GRID_32,
       GRID_64,
@@ -36,7 +37,6 @@ namespace upg
       NEURAL_MEDIUM,
       NEURAL_LARGE,
       NEURAL_HUGE,
-      CROTATE,
       NODE_TYPES_COUNT
     };
   };
