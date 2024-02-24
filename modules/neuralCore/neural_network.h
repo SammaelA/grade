@@ -101,6 +101,26 @@ namespace nn
     virtual std::string get_name() override { return "ReLU"; }
   };
 
+  class LeakyReLULayer : public Layer
+  {
+    float negative_slope;
+  public:
+    LeakyReLULayer(float _negative_slope = 0.01){ negative_slope = _negative_slope; }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      return (1.0f + negative_slope)*TensorToken::g_2op(TensorProgram::WHERE, input, input) -
+             negative_slope*input; //input[i] > 0 ? input[i] : 0
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      return (1.0f + negative_slope)*TensorToken::g_2op(TensorProgram::WHERE, dLoss_dOutput, input) -
+             negative_slope*dLoss_dOutput;//input[i] > 0 ? dLoss_dOutput[i] : 0
+    }
+    virtual std::string get_name() override { return "Leaky ReLU"; }
+  };
+
   class TanhLayer : public Layer
   {
   public:

@@ -1629,6 +1629,62 @@ void tp_test_1_tensor_processor()
       printf("FAILED, error rate %f\n", error_rate);
   }
 
+  void nn_test_17_Leaky_ReLU_classifier()
+  {
+    printf("TEST 17. CLASSIFICATION WITH Leaky RELU\n");
+    int sz = 25000;
+    int dim = 10;
+    std::vector<float> X(dim*sz,0);
+    std::vector<float> res(2*sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X[dim*i + j] = 2*((double)rand())/RAND_MAX - 1;
+        s += X[dim*i + j];
+      }
+      res[2*i+0] = s > 0;
+      res[2*i+1] = s <= 0;
+    }
+
+    std::vector<float> X_test(dim*sz,0);
+    std::vector<float> res_test(2*sz,0);
+    for (int i=0;i<sz;i++)
+    {
+      float s = 0;
+      for (int j=0;j<dim;j++)
+      {
+        X_test[dim*i + j] = 2*((double)rand())/RAND_MAX - 1;
+        s += X_test[dim*i + j];
+      }
+      res_test[2*i+0] = s > 0;
+      res_test[2*i+1] = s <= 0;
+    }
+
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<DenseLayer>(dim, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<LeakyReLULayer>(0.01f));
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 64), Initializer::He);
+    nn2.add_layer(std::make_shared<LeakyReLULayer>(0.01f));
+    nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
+    nn2.add_layer(std::make_shared<SoftMaxLayer>());
+    nn2.train(X, res, 256, 5000, OptimizerAdam(0.01f), Loss::CrossEntropy, true);
+
+    std::vector<float> y(2*sz,0);
+    nn2.evaluate(X_test, y);
+    float diff = 0.0f;
+    for (int i=0;i<2*sz;i++)
+      diff += (y[i]>0.5) != (res_test[i]>0.5);
+
+    float error_rate = diff/sz;
+    printf(" 16.1. %-64s", "Error rate <3% ");
+    if (error_rate < 0.03f)
+      printf("passed\n");
+    else
+      printf("FAILED, error rate %f\n", error_rate);
+  }
+
   void perform_tests_tensor_processor(const std::vector<int> &test_ids)
   {
     srand(time(NULL));
@@ -1747,7 +1803,8 @@ void tp_test_1_tensor_processor()
       nn_test_13_binary_classification_metrics,
       nn_test_14_batch_normalization,
       nn_test_15_dropout,
-      nn_test_16_ReLU_classifier
+      nn_test_16_ReLU_classifier,
+      nn_test_17_Leaky_ReLU_classifier
     };
 
     if (tests.empty())
