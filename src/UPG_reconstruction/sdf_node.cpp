@@ -1255,7 +1255,7 @@ namespace upg
       if (ddist_dparams)
       {
         for (int i=0;i<batch_size;i++)
-        {
+        {//why 3*i in ddist_dparams?
           ddist_dparams[p_offset*batch_size + 3*i+0] = distances[i] - si*(positions[3*i+0]*ddist_dpos[3*i+0] + 
             positions[3*i+1]*ddist_dpos[3*i+1] + positions[3*i+2]*ddist_dpos[3*i+2]);
         }
@@ -1276,6 +1276,43 @@ namespace upg
     {
       AABB ch_bbox = child->get_bbox();
       return AABB(p[SCALE]*ch_bbox.min_pos, p[SCALE]*ch_bbox.max_pos);
+    }
+  };
+
+  class RoundSdfNode : public OneChildSdfNode
+  {
+    static constexpr int ROUND = 0;
+  public:
+    RoundSdfNode() : OneChildSdfNode() { name = "Round"; }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      child->get_distance_batch(batch_size, positions, distances, ddist_dparams, ddist_dpos, stack, stack_head);
+
+      for (int i=0;i<batch_size;i++)
+      {
+        distances[i] -= p[ROUND];
+        if (ddist_dparams) ddist_dparams[p_offset * batch_size + i] = -1;
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0,0, 10, ParameterType::DIFFERENTIABLE, "round"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      return AABB(ch_bbox.min_pos - p[ROUND], ch_bbox.max_pos + p[ROUND]);
     }
   };
 
@@ -1551,6 +1588,7 @@ namespace upg
     {SdfNodeType::SCALE      , "Scale"      , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
     {SdfNodeType::CHAIR      , "Chair"      , 6, 0, {[]() -> SdfNode* {return new ChairSdfNode;}}},
     {SdfNodeType::CROTATE    , "Complex Rot", 6, 1, {[]() -> SdfNode* {return new ComplexRotateSdfNode;}}},
+    {SdfNodeType::ROUND      , "Round"      , 1, 1, {[]() -> SdfNode* {return new RoundSdfNode;}}},
     {SdfNodeType::GRID       , "Grid"       , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32);}}},
     {SdfNodeType::NEURAL     , "Neural"     , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(2, 32);}}},
   };
