@@ -1584,7 +1584,7 @@ namespace upg
     {SdfNodeType::CONE         , "Cone"         , 4, 0, {[]() -> SdfNode* {return new ConeSdfNode;}}},
     {SdfNodeType::AND          , "And"          , 0, 2, {[]() -> SdfNode* {return new AndSdfNode;}}},
     {SdfNodeType::SUBTRACT     , "Subtract"     , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
-    {SdfNodeType::ROTATE       , "Rotate"       , 4, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
+    {SdfNodeType::ROTATE       , "Rotate"       , 3, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
     {SdfNodeType::SCALE        , "Scale"        , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
     {SdfNodeType::CHAIR        , "Chair"        , 6, 0, {[]() -> SdfNode* {return new ChairSdfNode;}}},
     {SdfNodeType::CROTATE      , "Complex Rot"  , 6, 1, {[]() -> SdfNode* {return new ComplexRotateSdfNode;}}},
