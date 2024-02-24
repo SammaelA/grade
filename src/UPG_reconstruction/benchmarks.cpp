@@ -208,8 +208,8 @@ namespace upg
   {
     SceneDesc desc;
     desc.first.s = {3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
-    desc.second.p = {0,0.0,0, 0.5,0.05,0.5, 0,0.45,-0.45, 0.5,0.45,0.05,
-                     0.4,-0.3,0.4, 0.3,0.05,  -0.4,-0.3,0.4, 0.3,0.05,  0.4,-0.3,-0.4, 0.3,0.05,  -0.4,-0.3,-0.4, 0.3,0.05};
+    desc.second.p = {0,0.0,0, 0.5,0.07,0.5, 0,0.45,-0.45, 0.5,0.45,0.07,
+                     0.4,-0.3,0.4, 0.3,0.07,  -0.4,-0.3,0.4, 0.3,0.07,  0.4,-0.3,-0.4, 0.3,0.07,  -0.4,-0.3,-0.4, 0.3,0.07};
     return desc;    
   }
 
@@ -771,7 +771,7 @@ namespace upg
     }
 
     int steps = 15;
-    ProceduralSdf g_sdf({{SdfNodeType::GRID}});
+    ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
     g_sdf.set_parameters(data);
     for (int i=0;i<steps;i++)
     {
@@ -781,6 +781,75 @@ namespace upg
       camera.up = glm::vec3(0,1,0);
       Texture t = render_sdf(g_sdf, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
+    }
+  }
+
+  void primitive_SDF_to_grid(ProceduralSdf &sdf, const AABB &bbox, float *grid, unsigned vox_size,
+                             unsigned samples)
+  {
+    int offset = 0;
+    for (int i = 0; i < vox_size; i++)
+    {
+      for (int j = 0; j < vox_size; j++)
+      {
+        for (int k = 0; k < vox_size; k++)
+        {
+          glm::vec3 p = {(k + 0.5) / vox_size, (j + 0.5) / vox_size, (i + 0.5) / vox_size};
+          p = bbox.size() * p + bbox.min_pos;
+          float d = sdf.get_distance(p);
+          grid[offset] = d;
+          offset++;
+        }
+      }
+    }
+  }
+
+  void grid_demonstrate_different_sizes()
+  {
+    auto scene = scene_chair();
+    ProceduralSdf reference_sdf(scene.first);
+    reference_sdf.set_parameters(scene.second.p);
+    AABB bbox = reference_sdf.get_bbox();
+    float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
+    glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+    bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s)).expand(1.1f);
+
+    std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64, SdfNodeType::GRID_128};
+    std::vector<uint16_t> grid_sizes = {16,32,64,128,256};
+    std::vector<uint16_t> full_structure;
+    std::vector<float> full_params;
+    std::vector<glm::vec3> moves = {glm::vec3(-2.4,0,0), glm::vec3(-0.8,0,0), glm::vec3(0.8,0,0), glm::vec3(2.4,0,0)};
+
+    for (int i=0;i<grid_types.size();i++)
+    {
+      UPGStructure structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, grid_types[i]}};
+      std::vector<float> parameters(4 + grid_sizes[i]*grid_sizes[i]*grid_sizes[i], 0.0f);
+
+      primitive_SDF_to_grid(reference_sdf, bbox, parameters.data()+4, grid_sizes[i], 1);
+
+      parameters[0] = moves[i].x;
+      parameters[1] = moves[i].y;
+      parameters[2] = moves[i].z;
+      parameters[3] = 1;
+      if (i!=grid_types.size()-1)
+        full_structure.push_back(SdfNodeType::OR);
+      full_structure.insert(full_structure.end(), structure.s.begin(), structure.s.end());
+      full_params.insert(full_params.end(), parameters.begin(), parameters.end());
+    }
+
+    ProceduralSdf sdf({full_structure});
+    sdf.set_parameters(full_params);
+    full_params.clear();
+
+    unsigned steps = 15;
+    for (int i=0;i<steps;i++)
+    {
+      CameraSettings camera;
+      camera.origin = glm::vec3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
+      camera.target = glm::vec3(0,0,0);
+      camera.up = glm::vec3(0,1,0);
+      Texture t = render_sdf(sdf, camera, 2048, 2048, 16, SDFRenderMode::LAMBERT);
+      engine::textureManager->save_png(t, "Grid SDFs demo "+std::to_string(i));
     }
   }
 

@@ -80,14 +80,14 @@ namespace upg
     }
   }
 
-  void evaluate(const std::vector<ProceduralSdf> &sdfs, std::span<float> positions, std::span<float> distances, unsigned count)
+  void evaluate(const ProceduralSdf *sdfs, unsigned max_threads, std::span<float> positions, std::span<float> distances, unsigned count)
   {
     assert(positions.size() >= 3*count);
     assert(distances.size() >= count);
 
     unsigned batch_size = 512;
     unsigned batches = (count+batch_size-1)/batch_size;
-    unsigned num_threads = MIN(sdfs.size(), batches/10 + 1); //do not spawn too many tiny threads
+    unsigned num_threads = MIN(max_threads, batches/10 + 1); //do not spawn too many tiny threads
 
     unsigned batches_per_thread = (batches+num_threads-1)/num_threads;
 
@@ -113,15 +113,18 @@ namespace upg
   {
     constexpr unsigned max_threads = 1; //for some reason multithreading is actually slower
     std::vector<ProceduralSdf> sdfs;
-    for (int i=0;i<max_threads;i++)
-      sdfs.emplace_back(sdf);
+    if (max_threads > 1)
+    {
+      for (int i=0;i<max_threads;i++)
+        sdfs.emplace_back(sdf);
+    }
 
     AABB bbox = sdf.get_bbox();
     AABB inflated_bbox = bbox.expand(1.1f);
 
     glm::mat4 projInv = glm::inverse(camera.get_proj(false));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
-    glm::vec3 light_dir = normalize(camera.origin + glm::vec3(camera.origin.z, camera.origin.y, camera.origin.x) - camera.target);
+    glm::vec3 light_dir = normalize(glm::vec3(1,1,1));
 
     int spp_a = MAX(1,floor(sqrtf(spp)));
     float mult = 1.0f/(spp_a*spp_a);
@@ -178,7 +181,7 @@ namespace upg
     int iteration = 0;
     while (iteration < max_steps && points_left > 0)
     {
-      evaluate(sdfs, points, distances, points_left);
+      evaluate(sdfs.empty() ? &sdf : sdfs.data(), max_threads, points, distances, points_left);
 
       int new_points_left = points_left;
       int free_pos = 0;
@@ -253,7 +256,7 @@ namespace upg
 
     if (mode == SDFRenderMode::LAMBERT)
     {
-      evaluate(sdfs, fd_points, fd_distances, 6*points_found);
+      evaluate(sdfs.empty() ? &sdf : sdfs.data(), max_threads, fd_points, fd_distances, 6*points_found);
       for (int i=0;i<points_found;i++)
       {
         float ddx = (fd_distances[6*i+0] - fd_distances[6*i+1])/(2*h);

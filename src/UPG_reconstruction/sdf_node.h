@@ -28,8 +28,16 @@ namespace upg
       CHAIR,
       CROTATE,
       ROUND,
-      GRID,
-      NEURAL,
+      GRID_16,
+      GRID_32,
+      GRID_64,
+      GRID_128,
+      GRID_256,
+      NEURAL_TINY,
+      NEURAL_SMALL,
+      NEURAL_MEDIUM,
+      NEURAL_LARGE,
+      NEURAL_HUGE,
       NODE_TYPES_COUNT
     };
   };
