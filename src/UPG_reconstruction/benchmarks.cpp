@@ -813,12 +813,16 @@ namespace upg
     float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
     glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
     bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s)).expand(1.1f);
+    bbox = AABB({-1,-1,-1},{1,1,1});
 
     std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64, SdfNodeType::GRID_128};
     std::vector<uint16_t> grid_sizes = {16,32,64,128,256};
-    std::vector<uint16_t> full_structure;
-    std::vector<float> full_params;
-    std::vector<glm::vec3> moves = {glm::vec3(-2.4,0,0), glm::vec3(-0.8,0,0), glm::vec3(0.8,0,0), glm::vec3(2.4,0,0)};
+    std::vector<uint16_t> full_structure = {3, 2, 3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
+    std::vector<float> full_params = {3,0,0,
+                                      0,0.0,0, 0.5,0.07,0.5, 0,0.45,-0.45, 0.5,0.45,0.07,
+                                      0.4,-0.3,0.4, 0.3,0.07,  -0.4,-0.3,0.4, 0.3,0.07,  
+                                      0.4,-0.3,-0.4, 0.3,0.07,  -0.4,-0.3,-0.4, 0.3,0.07};
+    std::vector<glm::vec3> moves = {glm::vec3(-3,0,0), glm::vec3(-1.5,0,0), glm::vec3(0,0,0), glm::vec3(1.5,0,0)};
 
     for (int i=0;i<grid_types.size();i++)
     {
@@ -848,7 +852,7 @@ namespace upg
       camera.origin = glm::vec3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
       camera.target = glm::vec3(0,0,0);
       camera.up = glm::vec3(0,1,0);
-      Texture t = render_sdf(sdf, camera, 2048, 2048, 16, SDFRenderMode::LAMBERT);
+      Texture t = render_sdf(sdf, camera, 2048, 2048, 9, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "Grid SDFs demo "+std::to_string(i));
     }
   }
