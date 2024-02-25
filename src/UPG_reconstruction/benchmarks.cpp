@@ -599,71 +599,13 @@ namespace upg
     dataset.label_size = 2;
     dataset.element_size = {image_size, image_size, layers};
 
-    nn::save_dataset("saves/CNN_2.5D_dataset.bin", &dataset);
+    nn::save_dataset("saves/CNN_2.5D_dataset_25000.bin", &dataset);
   }
   
-  void CNN_2_5D_test()
+  void CNN_2_5D_get_net(nn::NeuralNetwork &net)
   {
-    
-    nn::Dataset dataset;
-    nn::load_dataset("saves/CNN_2.5D_dataset.bin", &dataset);
-
-    /*
-    for (int i=0;i<100*64*64*8;i+=64*64*8)
-    {
-      for (int j=0;j<64;j+=2)
-      {
-        debug("[");
-        for (int k=0;k<64;k+=2)
-        {
-          debug("%.2f ", dataset.train_data[i + 64*j + k]);
-        }   
-        debug("]\n");     
-      }
-      debug("\n\n");
-    }
-    return;
-    */
-    //for (int i=0;i<dataset.train_elements;i++)
-    //  logerr("label %d %f %f", i, dataset.train_labels[2*i+0], dataset.train_labels[2*i+1]);
-
-    nn::TensorProcessor::init("GPU");
-    nn::NeuralNetwork net;
-/*
-    net.add_layer(std::make_shared<nn::Conv2DLayer>(64,64,8, 8, 5), nn::Initializer::GlorotNormal);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
-    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(60, 60, 8));
-
-    net.add_layer(std::make_shared<nn::Conv2DLayer>(30,30,8, 16), nn::Initializer::GlorotNormal);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
-    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(28, 28, 16));
-
-    net.add_layer(std::make_shared<nn::Conv2DLayer>(14,14,16, 16), nn::Initializer::GlorotNormal);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
-    net.add_layer(std::make_shared<nn::MaxPoolingLayer>(12, 12, 16));
-
-    net.add_layer(std::make_shared<nn::FlattenLayer>(6,6,16));
-
-    net.add_layer(std::make_shared<nn::DenseLayer>(6*6*16, 256), nn::Initializer::He);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-
-    net.add_layer(std::make_shared<nn::DenseLayer>(256, 256), nn::Initializer::He);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-
-    net.add_layer(std::make_shared<nn::DenseLayer>(256, 128), nn::Initializer::He);
-    net.add_layer(std::make_shared<nn::ReLULayer>());
-
-    net.add_layer(std::make_shared<nn::DenseLayer>(128, 2), nn::Initializer::He);
-    net.add_layer(std::make_shared<nn::SoftMaxLayer>());
-*/
     net.add_layer(std::make_shared<nn::Conv2DLayer>(64,64,8,8), nn::Initializer::GlorotNormal);
-    //net.add_layer(std::make_shared<nn::ReLULayer>());
-    //net.add_layer(std::make_shared<nn::BatchNormLayer>(), nn::Initializer::BatchNorm);
     net.add_layer(std::make_shared<nn::MaxPoolingLayer>(62, 62, 8));
-
     net.add_layer(std::make_shared<nn::FlattenLayer>(31,31,8));
 
     net.add_layer(std::make_shared<nn::DenseLayer>(31*31*8, 512), nn::Initializer::He);
@@ -677,9 +619,39 @@ namespace upg
 
     net.add_layer(std::make_shared<nn::DenseLayer>(128, 2), nn::Initializer::He);
     net.add_layer(std::make_shared<nn::SoftMaxLayer>());
-    net.train(dataset.train_data.data(), dataset.train_labels.data(), dataset.train_elements, 100, 250, true,
-              nn::OptimizerRMSProp(1e-3f, 0.999, 1e-6, true), 
-              nn::Loss::CrossEntropy, nn::Metric::Recall, true);
+  }
+
+  void CNN_2_5D_train()
+  {
+    nn::Dataset dataset;
+    nn::load_dataset("saves/CNN_2.5D_dataset_25000.bin", &dataset);
+    nn::rebalance_classes(&dataset);
+
+    nn::TensorProcessor::init("GPU");
+    nn::NeuralNetwork net;
+    CNN_2_5D_get_net(net);
+
+    net.train(dataset.train_data.data(), dataset.train_labels.data(), dataset.train_elements, 100, 50, true,
+              nn::OptimizerRMSProp(3e-4f, 0.999, 1e-6, true), 
+              nn::Loss::CrossEntropy, nn::Metric::Accuracy, true);
+    net.save_weights_to_file("./saves/CNN_2.5D_4p_weights.bin");
+  }
+
+  void CNN_2_5D_test()
+  {
+    nn::Dataset dataset;
+    nn::load_dataset("saves/CNN_2.5D_dataset_10000.bin", &dataset);
+
+    nn::TensorProcessor::init("GPU");
+    nn::NeuralNetwork net;
+    CNN_2_5D_get_net(net);
+    net.initialize_from_file("./saves/CNN_2.5D_4p_weights.bin");
+
+    std::vector<float> out_labels(dataset.train_labels.size(), 0.0f);
+
+    net.evaluate(dataset.train_data.data(), out_labels.data(), dataset.train_elements);
+    float acc = net.calculate_metric(out_labels.data(), dataset.train_labels.data(), dataset.train_elements, nn::Metric::Accuracy);
+    logerr("CNN_2_5D_train Accuracy: %f (%u elements)\n", acc, dataset.train_elements);
   }
 
   void sdf_grid_test()
@@ -903,7 +875,8 @@ namespace upg
     {
       //voxNet_create_dataset(2500);
       //voxNet2D_test(); 
-      //CNN_2_5D_create_dataset(2000);
+      //CNN_2_5D_create_dataset(25000);
+      //CNN_2_5D_train();
       CNN_2_5D_test();
     }
     else if (name == "grid")
