@@ -63,7 +63,7 @@ void main()
                 {
                   float t = data[k_offset + (dz+kd)*kh2*kw2 + (dy+kh)*kw2 + (dx+kw)] * 
                             data[A_offset + (kgenArgs.stride*z+kd+dz)*int((kgenArgs.A.sizes[0]*kgenArgs.A.sizes[1])) + (kgenArgs.stride*y+kh+dy)*(int(kgenArgs.A.sizes[0])) + (kgenArgs.stride*x+kw+dx)];
-                  data[res_offset + kgenArgs.x_steps * y + x] += t;
+                  data[res_offset + kgenArgs.x_steps*kgenArgs.y_steps*z + kgenArgs.x_steps*y + x] += t;
                 }
           }
         }

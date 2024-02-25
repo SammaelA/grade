@@ -2151,9 +2151,9 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
       int stride = arg0;
       #if DEBUG
       if (x_steps > maxWorkGroupSizeY)
-        fprintf(stderr, "TensorProgram: CONV_2D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", x_steps);
+        fprintf(stderr, "TensorProgram: CONV_3D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", x_steps);
       if (y_steps > maxWorkGroupSizeZ)
-        fprintf(stderr, "TensorProgram: CONV_2D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", y_steps);
+        fprintf(stderr, "TensorProgram: CONV_3D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", y_steps);
       #endif
       vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, conv3dLayout, 0, 1, &m_allGeneratedDS[20], 0, nullptr);
   conv3dCmd(memory.data(), steps, x_steps, y_steps, z_steps, stride, in_channels, out_channels, A, B, C);
