@@ -1790,7 +1790,59 @@ void tp_test_1_tensor_processor()
     else
       printf("FAILED diff %f >= %f\n", diff, 1e-6f);
     }   
- 
+  }
+
+  void nn_test_18_conv3D_backward()
+  {
+    printf("TEST 18. CONV_3D BACKWARD PASS\n");
+    std::vector<float> X = { 1, 0, 2, 0, 3,
+                             0, 0, 0, 0, 0,
+                             4, 0, 5, 0, 6,
+                             0, 0, 0, 0, 0,
+                             7, 0, 8, 0, 9,
+
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+
+                            10, 0,11, 0,12,
+                             0, 0, 0, 0, 0,
+                            13, 0,14, 0,15,
+                             0, 0, 0, 0, 0,
+                            16, 0,17, 0,18,
+
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+
+                            19, 0,20, 0,21,
+                             0, 0, 0, 0, 0,
+                            22, 0,23, 0,24,
+                             0, 0, 0, 0, 0,
+                            25, 0,26, 0,27,};
+    std::vector<float> r(27, 0.0f);
+    std::vector<float> r_ref = {60, 0, 68, 0, 19, 0, 84, 0, 92, 0, 25, 0, 27, 0, 29, 0, 31, 0, 132, 0, 140, 0, 37, 0, 156, 0, 164};
+    NeuralNetwork nn2;
+    nn2.add_layer(std::make_shared<Conv3DLayer>(5,5,5,1,1), Initializer::GlorotNormal);
+    nn2.train(X, r_ref, 1, 5000, OptimizerAdam(0.005f), Loss::MSE, false);
+    nn2.evaluate(X, r);
+    //for (auto &v : r)
+    //  printf("%f, ", v);
+    //printf("\n");
+  
+    float diff = 0.0f;
+    for (int i=0;i<r_ref.size();i++)
+      diff += std::abs(r[i] - r_ref[i]);
+    
+    printf(" 18.1. %-64s", "Correct result ");
+    if (diff < 1.0f)
+      printf("passed\n");
+    else
+      printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
   void perform_tests_tensor_processor(const std::vector<int> &test_ids)
@@ -1914,7 +1966,8 @@ void tp_test_1_tensor_processor()
       nn_test_14_batch_normalization,
       nn_test_15_dropout,
       nn_test_16_ReLU_classifier,
-      nn_test_17_Leaky_ReLU_classifier
+      nn_test_17_Leaky_ReLU_classifier,
+      nn_test_18_conv3D_backward,
     };
 
     if (tests.empty())

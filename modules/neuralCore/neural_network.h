@@ -215,6 +215,80 @@ namespace nn
     virtual std::string get_name() override { return "Conv2DLayer"; }
   };
 
+  class Conv3DLayer : public Layer
+  {
+  public:
+    enum Padding
+    {
+      NO_PAD,
+      SAME,
+    };
+    unsigned kernel_size = 3;
+    unsigned stride = 1;
+    Padding padding = NO_PAD;
+    bool use_bias = false;
+  public:
+    Conv3DLayer(unsigned input_x,  unsigned input_y,  unsigned input_z, unsigned input_ch, 
+                unsigned output_channels, unsigned _kernel_size = 3, unsigned _stride = 1, Padding _padding = NO_PAD, bool _use_bias = false)
+    {
+      assert(_kernel_size%2);
+      assert(_stride == 1 || _padding == NO_PAD);
+      kernel_size = _kernel_size;
+      stride = _stride;
+      padding = _padding;
+      use_bias = _use_bias;
+      input_shape = {input_x, input_y, input_z, input_ch};
+      if (padding == NO_PAD)
+        output_shape = {(input_x - kernel_size)/stride + 1, (input_y - kernel_size)/stride + 1, (input_z - kernel_size)/stride + 1, output_channels};
+      else
+        output_shape = {input_x, input_y, input_z, output_channels};
+    }
+    virtual void init() override 
+    {
+      weights.clear();
+
+      weights.push_back(TensorToken(kernel_size, kernel_size, kernel_size, input_shape[3], output_shape[3])); // kernel
+      if (use_bias)
+        weights.push_back(TensorToken(output_shape[3]));                 // bias
+
+      dLoss_dWeights.resize(weights.size());
+    };
+    virtual int parameters_count() override { return input_shape[3]*output_shape[3]*kernel_size*kernel_size*kernel_size + use_bias*output_shape[3]; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
+      TensorToken pad_input = (pad > 0) ? input.add_padding(pad, pad, 0).add_padding(pad, pad, 1).add_padding(pad, pad, 2) : input;
+      TensorToken conv = TensorToken::conv3D(pad_input, weights[0], stride);
+      return use_bias ? TensorToken::g_2op(TensorProgram::ADD, conv, weights[1], 3) : conv;
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      unsigned OD_sizes[TensorProgram::MAX_DIM];
+      for (int i = 0; i < TensorProgram::MAX_DIM; i++)
+        OD_sizes[i] = dLoss_dOutput.sizes[i];
+      OD_sizes[0] = (dLoss_dOutput.sizes[0]-1)*stride + 1;
+      OD_sizes[1] = (dLoss_dOutput.sizes[1]-1)*stride + 1;
+      OD_sizes[2] = (dLoss_dOutput.sizes[2]-1)*stride + 1;
+      TensorToken dLoss_dOutput_dilated = (stride == 1) ? dLoss_dOutput : TensorToken(OD_sizes);
+      if (stride > 1)
+        TensorToken::issue_command(TensorProgram::DILATE, dLoss_dOutput, dLoss_dOutput, dLoss_dOutput_dilated, stride-1, stride-1, stride-1);
+      unsigned pad = padding == NO_PAD ? 0 : (kernel_size-1)/2;
+      float batch_size = (float)(input.sizes[input.Dim-1]);
+      TensorToken X = input.flip(0).flip(1).flip(2);
+      TensorToken pad_X = (pad > 0) ? X.add_padding(pad, pad, 0).add_padding(pad, pad, 1).add_padding(pad, pad, 2) : X;
+      dLoss_dWeights[0] = TensorToken::conv3D(pad_X.transpose(3), dLoss_dOutput_dilated.transpose(3)).transpose(3) / batch_size;
+      if (use_bias)
+        dLoss_dWeights[1] = dLoss_dOutput.sum(3).outer_sum() / batch_size;//dilation won't change result here
+
+      unsigned i_pad = kernel_size - pad - 1;
+      TensorToken pad_dLoss_dOutput = (i_pad > 0) ? dLoss_dOutput_dilated.add_padding(i_pad, i_pad, 0).add_padding(i_pad, i_pad, 1).add_padding(i_pad, i_pad, 2) : 
+                                                    dLoss_dOutput_dilated;
+
+      return TensorToken::conv3D(pad_dLoss_dOutput, weights[0].flip(0).flip(1).flip(2).transpose(3));
+    }
+    virtual std::string get_name() override { return "Conv3DLayer"; }
+  };
+
   class FlattenLayer : public Layer
   {
   public:

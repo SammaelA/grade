@@ -587,7 +587,7 @@ namespace nn
   TensorToken TensorToken::conv3D(const TensorToken &A, const TensorToken &kernel, unsigned stride)
   {
     assert(stride > 0);
-    assert(kernel.Dim >= 3 && kernel.Dim <= 4);
+    assert(kernel.Dim >= 3 && kernel.Dim <= 5);
     if (kernel.Dim == 3)
       assert(A.Dim >= 3);
     else
