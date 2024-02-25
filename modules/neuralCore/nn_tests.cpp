@@ -1368,7 +1368,7 @@ void tp_test_1_tensor_processor()
     nn2.add_layer(std::make_shared<Conv2DLayer>(5,5,1, 2, 3, 2), Initializer::GlorotNormal);
     nn2.add_layer(std::make_shared<FlattenLayer>(2,2,2));
     nn2.add_layer(std::make_shared<DenseLayer>(8, 8), Initializer::He);
-    nn2.train(X, r_ref, 1, 500, OptimizerAdam(0.001f), Loss::MSE);
+    nn2.train(X, r_ref, 1, 1000, OptimizerAdam(0.001f), Loss::MSE);
     nn2.evaluate(X, r);
     //for (auto &v : r)
     //  printf("%f, ", v);
@@ -1587,7 +1587,7 @@ void tp_test_1_tensor_processor()
   {
     printf("TEST 15. DROPOUT\n");
     Dataset dataset;
-    read_MNIST_dataset("../../resources/MNIST-dataset", &dataset);
+    read_MNIST_dataset(base_path + "../../resources/MNIST-dataset", &dataset);
     train_test_split(&dataset, 0.1);
 
     NeuralNetwork nn2;
@@ -1669,7 +1669,7 @@ void tp_test_1_tensor_processor()
     nn2.add_layer(std::make_shared<LeakyReLULayer>(0.01f));
     nn2.add_layer(std::make_shared<DenseLayer>(64, 2), Initializer::He);
     nn2.add_layer(std::make_shared<SoftMaxLayer>());
-    nn2.train(X, res, 256, 5000, OptimizerAdam(0.01f), Loss::CrossEntropy, true);
+    nn2.train(X, res, 256, 5000, OptimizerAdam(0.01f), Loss::CrossEntropy);
 
     std::vector<float> y(2*sz,0);
     nn2.evaluate(X_test, y);

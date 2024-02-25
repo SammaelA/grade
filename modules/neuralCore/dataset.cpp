@@ -14,7 +14,11 @@ namespace nn
     
     std::vector<unsigned char> raw_data(images*(image_size+1), 0);
     std::ifstream in(filename, std::ios_base::binary);
-    assert(in.is_open());
+    if (!in.is_open())
+    {
+      printf("file not found %s\n",filename.c_str());
+      assert(false);
+    }
     in.read(reinterpret_cast<char*>(raw_data.data()), raw_data.size());
     in.close();
 
@@ -57,7 +61,11 @@ namespace nn
     
     std::vector<unsigned char> raw_data(images*image_size, 0);
     std::ifstream in(filename, std::ios_base::binary);
-    assert(in.is_open());
+    if (!in.is_open())
+    {
+      printf("file not found %s\n",filename.c_str());
+      assert(false);
+    }
     in.read(reinterpret_cast<char*>(raw_data.data()), raw_data.size());
     in.close();
 
@@ -150,7 +158,11 @@ namespace nn
       metadata[8+i] = dataset->element_size[i];
   
     std::ofstream in(path, std::ios_base::binary);
-    assert(in.is_open());
+    if (!in.is_open())
+    {
+      printf("file not found %s\n",path.c_str());
+      assert(false);
+    }
 
     in.write(reinterpret_cast<char*>(metadata), sizeof(metadata));
 
@@ -170,7 +182,11 @@ namespace nn
   {
     std::size_t metadata[16] = {0u,0u,0u,0u,0u,0u,0u,0u, 0u,0u,0u,0u,0u,0u,0u,0u,};
     std::ifstream in(path, std::ios_base::binary);
-    assert(in.is_open());
+    if (!in.is_open())
+    {
+      printf("file not found %s\n",path.c_str());
+      assert(false);
+    }
     in.read(reinterpret_cast<char*>(metadata), sizeof(metadata));
 
     out_dataset->train_data.resize(metadata[0]);
