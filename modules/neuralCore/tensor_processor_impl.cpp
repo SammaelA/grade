@@ -230,7 +230,6 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
     case nn::TensorProgram::URAND:
       kernel1D_urand(memory.data(), C.total_size, C, arg0 == 0 ? rand() : arg0);
       break;
-    default:
     case nn::TensorProgram::CONV_3D:
     {
       int in_channels = B.sizes[3] > 0 ? B.sizes[3] : 1;
@@ -250,6 +249,37 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel3D_conv3d(memory.data(), steps, x_steps, y_steps, z_steps, stride, in_channels, out_channels, A, B, C);
     }
       break;
+    case nn::TensorProgram::MPOOL_3D:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned window_z = arg2;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]*A.sizes[2]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
+      kernel3D_max_pool_3D(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, A.sizes[2]/window_z, window_x, window_y, window_z, A, C);
+    }
+      break;
+    case nn::TensorProgram::MPOOL_3D_D:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned window_z = arg2;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]*A.sizes[2]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
+      kernel3D_max_pool_3D_diff(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, A.sizes[2]/window_z, window_x, window_y, window_z, A, B, C);
+    }
+      break;
+    default:
       break;
     }
     #if DEBUG
@@ -897,6 +927,85 @@ void TensorProcessorImpl::kernel3D_max_pool_diff(float *data, int steps, int x_s
         }
         data[dLoss_dInput.offset + step*x_steps*window_x*y_steps*window_y + (y*window_y+max_wy)*x_steps*window_x + x*window_x + max_wx] = 
             data[dLoss_dOutput.offset + step*x_steps*y_steps + y*x_steps + x];
+      }
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_max_pool_3D(float *data, int steps, int x_steps, int y_steps, int z_steps, 
+                                               int window_x, int window_y, int window_z, Variable A, Variable res)
+{
+  for (int step = 0; step < steps; step++)
+  {
+    for (int z = 0; z < z_steps; z++)
+    {
+      for (int y = 0; y < y_steps; y++)
+      {
+        for (int x = 0; x < x_steps; x++)
+        {
+          unsigned offset = A.offset + step*x_steps*window_x*y_steps*window_y*z_steps*window_z;
+          float max_val = data[offset + (z*window_z+0)*y_steps*x_steps*window_x*window_y + (y*window_y+0)*x_steps*window_x + x*window_x + 0];
+          for (int wz=0;wz<window_z;wz++)
+          {
+            for (int wy=0;wy<window_y;wy++)
+            {
+              for (int wx=0;wx<window_x;wx++)
+              {
+                float val = data[offset + (z*window_z+wz)*y_steps*x_steps*window_x*window_y + (y*window_y+wy)*x_steps*window_x + x*window_x + wx];
+                if (val > max_val)
+                  max_val = val;
+              }
+            }
+          }
+          data[res.offset + step*x_steps*y_steps*z_steps + z*y_steps*x_steps + y*x_steps + x] = max_val;
+        }
+      }
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_max_pool_3D_diff(float *data, int steps, int x_steps, int y_steps, int z_steps, 
+                                                    int window_x, int window_y, int window_z, 
+                                                    Variable A, Variable dLoss_dOutput, Variable dLoss_dInput)
+{
+  for (int step = 0; step < steps; step++)
+  {
+    for (int z = 0; z < z_steps; z++)
+    {
+      for (int y = 0; y < y_steps; y++)
+      {
+        for (int x = 0; x < x_steps; x++)
+        {
+          unsigned offset = A.offset + step*x_steps*window_x*y_steps*window_y*z_steps*window_z;
+          float max_val = data[offset + (z*window_z+0)*y_steps*x_steps*window_x*window_y + (y*window_y+0)*x_steps*window_x + x*window_x + 0];
+          int max_wz = 0;
+          int max_wy = 0;
+          int max_wx = 0;
+          for (int wz=0;wz<window_z;wz++)
+          {
+            for (int wy=0;wy<window_y;wy++)
+            {
+              for (int wx=0;wx<window_x;wx++)
+              {
+                data[dLoss_dInput.offset + step*x_steps*window_x*y_steps*window_y*z_steps*window_z + 
+                    (z*window_z+wz)*y_steps*window_y*x_steps*window_x +
+                    (y*window_y+wy)*x_steps*window_x + x*window_x + wx] = 0;
+                float val = data[offset + (z*window_z+wz)*y_steps*x_steps*window_x*window_y + (y*window_y+wy)*x_steps*window_x + x*window_x + wx];
+                if (val > max_val)
+                {
+                  max_val = val;
+                  max_wx = wx;
+                  max_wy = wy;
+                  max_wz = wz;
+                }
+              }
+            }
+          }
+          data[dLoss_dInput.offset + step*x_steps*window_x*y_steps*window_y*z_steps*window_z + 
+               (z*window_z+max_wz)*y_steps*window_y*x_steps*window_x +
+               (y*window_y+max_wy)*x_steps*window_x + x*window_x + max_wx] = 
+              data[dLoss_dOutput.offset + step*x_steps*y_steps*z_steps + z*y_steps*x_steps + y*x_steps + x];
+        }
       }
     }
   }

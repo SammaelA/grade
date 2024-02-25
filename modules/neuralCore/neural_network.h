@@ -363,6 +363,39 @@ namespace nn
     virtual std::string get_name() override { return "MaxPooling"; }
   };
 
+  class MaxPooling3DLayer : public Layer
+  {
+    unsigned window_size = 2;
+  public:
+    MaxPooling3DLayer(unsigned input_x, unsigned input_y, unsigned input_z, unsigned input_ch, unsigned _window_size = 2)
+    {
+      window_size = _window_size;
+      input_shape = {input_x, input_y, input_z, input_ch};
+      output_shape = {input_x/window_size, input_y/window_size, input_z/window_size, input_ch};
+    }
+    virtual void init() override { };
+    virtual int parameters_count() override { return 0; };
+    virtual TensorToken forward(const TensorToken &input) override
+    {
+      unsigned output_sizes[TensorProgram::MAX_DIM];
+      for (int i = 0; i < TensorProgram::MAX_DIM; i++)
+        output_sizes[i] = input.sizes[i];
+      output_sizes[0] = output_shape[0];
+      output_sizes[1] = output_shape[1];
+      output_sizes[2] = output_shape[2];
+      TensorToken output(output_sizes);
+      TensorToken::issue_command(TensorProgram::MPOOL_3D, input, input, output, window_size, window_size, window_size);
+      return output;
+    }
+    virtual TensorToken backward(const TensorToken &input, const TensorToken &output, const TensorToken &dLoss_dOutput) override
+    {
+      TensorToken dLoss_dInput(input.sizes);
+      TensorToken::issue_command(TensorProgram::MPOOL_3D_D, input, dLoss_dOutput, dLoss_dInput, window_size, window_size, window_size);
+      return dLoss_dInput;
+    }
+    virtual std::string get_name() override { return "MaxPooling3D"; }
+  };
+
   class BatchNormLayer : public Layer
   {
     std::vector<TensorToken> cache;

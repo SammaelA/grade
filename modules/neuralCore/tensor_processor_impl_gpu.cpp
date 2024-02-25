@@ -72,74 +72,6 @@ void TensorProcessorImpl_GPU::UpdateTextureMembers(std::shared_ptr<vk_utils::ICo
 { 
 }
 
-void TensorProcessorImpl_GPU::sinCmd(float *data, unsigned steps, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, sinLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sinPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::expCmd(float *data, unsigned steps, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, expLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, expPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
 void TensorProcessorImpl_GPU::cosCmd(float *data, unsigned steps, Variable A, Variable B)
 {
   uint32_t blockSizeX = 256;
@@ -174,7 +106,7 @@ void TensorProcessorImpl_GPU::cosCmd(float *data, unsigned steps, Variable A, Va
  
 }
 
-void TensorProcessorImpl_GPU::logCmd(float *data, unsigned steps, Variable A, Variable B)
+void TensorProcessorImpl_GPU::sinCmd(float *data, unsigned steps, Variable A, Variable B)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -201,9 +133,120 @@ void TensorProcessorImpl_GPU::logCmd(float *data, unsigned steps, Variable A, Va
   pcData.m_A = A; 
   pcData.m_B = B; 
 
-  vkCmdPushConstants(m_currCmdBuffer, logLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, sinLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sinPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::urandCmd(float *data, unsigned steps, Variable A, unsigned seed)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    Variable m_A; 
+    unsigned int m_seed; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_A = A; 
+  pcData.m_seed = seed; 
+
+  vkCmdPushConstants(m_currCmdBuffer, urandLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, urandPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::set_inputCmd(const float* data_in, unsigned offset, unsigned size)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_offset; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(size);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = size;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_offset = offset; 
+
+  vkCmdPushConstants(m_currCmdBuffer, set_inputLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, set_inputPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::equalCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                         Variable A, Variable B, Variable C)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_total_size; 
+    unsigned int m_step_size; 
+    unsigned int m_group_size; 
+    unsigned int m_Ai_mul; 
+    Variable m_A; 
+    Variable m_B; 
+    Variable m_C; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_total_size = total_size; 
+  pcData.m_step_size = step_size; 
+  pcData.m_group_size = group_size; 
+  pcData.m_Ai_mul = Ai_mul; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+  pcData.m_C = C; 
+
+  vkCmdPushConstants(m_currCmdBuffer, equalLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, equalPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -253,6 +296,85 @@ void TensorProcessorImpl_GPU::minCmd(float *data, unsigned steps, unsigned total
  
 }
 
+void TensorProcessorImpl_GPU::logCmd(float *data, unsigned steps, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, logLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::logical_orCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                              Variable A, Variable B, Variable C)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_total_size; 
+    unsigned int m_step_size; 
+    unsigned int m_group_size; 
+    unsigned int m_Ai_mul; 
+    Variable m_A; 
+    Variable m_B; 
+    Variable m_C; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_total_size = total_size; 
+  pcData.m_step_size = step_size; 
+  pcData.m_group_size = group_size; 
+  pcData.m_Ai_mul = Ai_mul; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+  pcData.m_C = C; 
+
+  vkCmdPushConstants(m_currCmdBuffer, logical_orLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logical_orPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
 void TensorProcessorImpl_GPU::not_equalCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                              Variable A, Variable B, Variable C)
 {
@@ -294,6 +416,40 @@ void TensorProcessorImpl_GPU::not_equalCmd(float *data, unsigned steps, unsigned
   vkCmdPushConstants(m_currCmdBuffer, not_equalLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, not_equalPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::sqrtCmd(float *data, unsigned steps, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, sqrtLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sqrtPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -343,85 +499,6 @@ void TensorProcessorImpl_GPU::maxCmd(float *data, unsigned steps, unsigned total
  
 }
 
-void TensorProcessorImpl_GPU::greaterCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                           Variable A, Variable B, Variable C)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_total_size; 
-    unsigned int m_step_size; 
-    unsigned int m_group_size; 
-    unsigned int m_Ai_mul; 
-    Variable m_A; 
-    Variable m_B; 
-    Variable m_C; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_total_size = total_size; 
-  pcData.m_step_size = step_size; 
-  pcData.m_group_size = group_size; 
-  pcData.m_Ai_mul = Ai_mul; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-  pcData.m_C = C; 
-
-  vkCmdPushConstants(m_currCmdBuffer, greaterLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, greaterPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::sqrtCmd(float *data, unsigned steps, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, sqrtLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sqrtPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
 void TensorProcessorImpl_GPU::powCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
                                        Variable A, Variable B, Variable C)
 {
@@ -467,8 +544,8 @@ void TensorProcessorImpl_GPU::powCmd(float *data, unsigned steps, unsigned total
  
 }
 
-void TensorProcessorImpl_GPU::less_equalCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                              Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::greaterCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                           Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -505,43 +582,9 @@ void TensorProcessorImpl_GPU::less_equalCmd(float *data, unsigned steps, unsigne
   pcData.m_B = B; 
   pcData.m_C = C; 
 
-  vkCmdPushConstants(m_currCmdBuffer, less_equalLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, greaterLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, less_equalPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::urandCmd(float *data, unsigned steps, Variable A, unsigned seed)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    Variable m_A; 
-    unsigned int m_seed; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_A = A; 
-  pcData.m_seed = seed; 
-
-  vkCmdPushConstants(m_currCmdBuffer, urandLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, urandPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, greaterPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -593,51 +636,6 @@ void TensorProcessorImpl_GPU::dilateCmd(float *data, unsigned steps, unsigned x_
  
 }
 
-void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
-                                       Variable A, Variable B, Variable C)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_total_size; 
-    unsigned int m_step_size; 
-    unsigned int m_group_size; 
-    unsigned int m_Ai_mul; 
-    Variable m_A; 
-    Variable m_B; 
-    Variable m_C; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_total_size = total_size; 
-  pcData.m_step_size = step_size; 
-  pcData.m_group_size = group_size; 
-  pcData.m_Ai_mul = Ai_mul; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-  pcData.m_C = C; 
-
-  vkCmdPushConstants(m_currCmdBuffer, addLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
 void TensorProcessorImpl_GPU::outer_productCmd(float *data, unsigned steps, unsigned A_len, unsigned B_len, 
                                       Variable A, Variable B, Variable C)
 {
@@ -671,40 +669,6 @@ void TensorProcessorImpl_GPU::outer_productCmd(float *data, unsigned steps, unsi
   vkCmdPushConstants(m_currCmdBuffer, outer_productLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, outer_productPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::notCmd(float *data, unsigned steps, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, notLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, notPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -750,6 +714,178 @@ void TensorProcessorImpl_GPU::padCmd(float *data, unsigned steps, unsigned step_
  
 }
 
+void TensorProcessorImpl_GPU::lessCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                        Variable A, Variable B, Variable C)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_total_size; 
+    unsigned int m_step_size; 
+    unsigned int m_group_size; 
+    unsigned int m_Ai_mul; 
+    Variable m_A; 
+    Variable m_B; 
+    Variable m_C; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_total_size = total_size; 
+  pcData.m_step_size = step_size; 
+  pcData.m_group_size = group_size; 
+  pcData.m_Ai_mul = Ai_mul; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+  pcData.m_C = C; 
+
+  vkCmdPushConstants(m_currCmdBuffer, lessLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, lessPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::max_pool_3D_diffCmd(float *data, int steps, int x_steps, int y_steps, int z_steps, 
+                                                    int window_x, int window_y, int window_z, 
+                                                    Variable A, Variable dLoss_dOutput, Variable dLoss_dInput)
+{
+  uint32_t blockSizeX = 8;
+  uint32_t blockSizeY = 8;
+  uint32_t blockSizeZ = 8;
+
+  struct KernelArgsPC
+  {
+    int m_x_steps; 
+    int m_window_x; 
+    int m_window_y; 
+    int m_window_z; 
+    Variable m_A; 
+    Variable m_dLoss_dOutput; 
+    Variable m_dLoss_dInput; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(z_steps);
+  uint32_t sizeY  = uint32_t(steps);
+  uint32_t sizeZ  = uint32_t(y_steps);
+  
+  pcData.m_sizeX  = z_steps;
+  pcData.m_sizeY  = steps;
+  pcData.m_sizeZ  = y_steps;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_x_steps = x_steps; 
+  pcData.m_window_x = window_x; 
+  pcData.m_window_y = window_y; 
+  pcData.m_window_z = window_z; 
+  pcData.m_A = A; 
+  pcData.m_dLoss_dOutput = dLoss_dOutput; 
+  pcData.m_dLoss_dInput = dLoss_dInput; 
+
+  vkCmdPushConstants(m_currCmdBuffer, max_pool_3D_diffLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_pool_3D_diffPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::less_equalCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                              Variable A, Variable B, Variable C)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_total_size; 
+    unsigned int m_step_size; 
+    unsigned int m_group_size; 
+    unsigned int m_Ai_mul; 
+    Variable m_A; 
+    Variable m_B; 
+    Variable m_C; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_total_size = total_size; 
+  pcData.m_step_size = step_size; 
+  pcData.m_group_size = group_size; 
+  pcData.m_Ai_mul = Ai_mul; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+  pcData.m_C = C; 
+
+  vkCmdPushConstants(m_currCmdBuffer, less_equalLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, less_equalPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_step_size; 
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_step_size = step_size; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, sumLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sumPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
 void TensorProcessorImpl_GPU::copyCmd(float *data, unsigned steps, unsigned from, unsigned to, Variable A, Variable B)
 {
   uint32_t blockSizeX = 256;
@@ -788,6 +924,110 @@ void TensorProcessorImpl_GPU::copyCmd(float *data, unsigned steps, unsigned from
  
 }
 
+void TensorProcessorImpl_GPU::osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_step_size; 
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_step_size = step_size; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, osumLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, osumPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::notCmd(float *data, unsigned steps, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, notLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, notPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::expCmd(float *data, unsigned steps, Variable A, Variable B)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    Variable m_A; 
+    Variable m_B; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+
+  vkCmdPushConstants(m_currCmdBuffer, expLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, expPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
 void TensorProcessorImpl_GPU::fillCmd(float *data, unsigned steps, Variable A, float val)
 {
   uint32_t blockSizeX = 256;
@@ -818,6 +1058,83 @@ void TensorProcessorImpl_GPU::fillCmd(float *data, unsigned steps, Variable A, f
   vkCmdPushConstants(m_currCmdBuffer, fillLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, fillPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::get_outputCmd(float* data_out, unsigned offset, unsigned size)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_offset; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(size);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = size;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_offset = offset; 
+
+  vkCmdPushConstants(m_currCmdBuffer, get_outputLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, get_outputPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::logical_andCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                               Variable A, Variable B, Variable C)
+{
+  uint32_t blockSizeX = 256;
+  uint32_t blockSizeY = 1;
+  uint32_t blockSizeZ = 1;
+
+  struct KernelArgsPC
+  {
+    unsigned int m_total_size; 
+    unsigned int m_step_size; 
+    unsigned int m_group_size; 
+    unsigned int m_Ai_mul; 
+    Variable m_A; 
+    Variable m_B; 
+    Variable m_C; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(steps);
+  uint32_t sizeY  = uint32_t(1);
+  uint32_t sizeZ  = uint32_t(1);
+  
+  pcData.m_sizeX  = steps;
+  pcData.m_sizeY  = 1;
+  pcData.m_sizeZ  = 1;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_total_size = total_size; 
+  pcData.m_step_size = step_size; 
+  pcData.m_group_size = group_size; 
+  pcData.m_Ai_mul = Ai_mul; 
+  pcData.m_A = A; 
+  pcData.m_B = B; 
+  pcData.m_C = C; 
+
+  vkCmdPushConstants(m_currCmdBuffer, logical_andLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logical_andPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -905,8 +1222,8 @@ void TensorProcessorImpl_GPU::subCmd(float *data, unsigned steps, unsigned total
  
 }
 
-void TensorProcessorImpl_GPU::whereCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                         Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::addCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
+                                       Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -943,9 +1260,9 @@ void TensorProcessorImpl_GPU::whereCmd(float *data, unsigned steps, unsigned tot
   pcData.m_B = B; 
   pcData.m_C = C; 
 
-  vkCmdPushConstants(m_currCmdBuffer, whereLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, addLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, wherePipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -1040,44 +1357,8 @@ void TensorProcessorImpl_GPU::greater_equalCmd(float *data, unsigned steps, unsi
  
 }
 
-void TensorProcessorImpl_GPU::osumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_step_size; 
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_step_size = step_size; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, osumLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, osumPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::equalCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                         Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
+                                       Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -1114,9 +1395,9 @@ void TensorProcessorImpl_GPU::equalCmd(float *data, unsigned steps, unsigned tot
   pcData.m_B = B; 
   pcData.m_C = C; 
 
-  vkCmdPushConstants(m_currCmdBuffer, equalLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, divLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, equalPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, divPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -1153,6 +1434,49 @@ void TensorProcessorImpl_GPU::minimumCmd(float *data, unsigned steps, unsigned s
   vkCmdPushConstants(m_currCmdBuffer, minimumLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, minimumPipeline);
+  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
+ 
+}
+
+void TensorProcessorImpl_GPU::max_pool_3DCmd(float *data, int steps, int x_steps, int y_steps, int z_steps, 
+                                               int window_x, int window_y, int window_z, Variable A, Variable res)
+{
+  uint32_t blockSizeX = 8;
+  uint32_t blockSizeY = 8;
+  uint32_t blockSizeZ = 8;
+
+  struct KernelArgsPC
+  {
+    int m_x_steps; 
+    int m_window_x; 
+    int m_window_y; 
+    int m_window_z; 
+    Variable m_A; 
+    Variable m_res; 
+    uint32_t m_sizeX;
+    uint32_t m_sizeY;
+    uint32_t m_sizeZ;
+    uint32_t m_tFlags;
+  } pcData;
+  
+  uint32_t sizeX  = uint32_t(z_steps);
+  uint32_t sizeY  = uint32_t(steps);
+  uint32_t sizeZ  = uint32_t(y_steps);
+  
+  pcData.m_sizeX  = z_steps;
+  pcData.m_sizeY  = steps;
+  pcData.m_sizeZ  = y_steps;
+  pcData.m_tFlags = m_currThreadFlags;
+  pcData.m_x_steps = x_steps; 
+  pcData.m_window_x = window_x; 
+  pcData.m_window_y = window_y; 
+  pcData.m_window_z = window_z; 
+  pcData.m_A = A; 
+  pcData.m_res = res; 
+
+  vkCmdPushConstants(m_currCmdBuffer, max_pool_3DLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_pool_3DPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -1229,83 +1553,6 @@ void TensorProcessorImpl_GPU::transposeCmd(float *data, unsigned steps, unsigned
  
 }
 
-void TensorProcessorImpl_GPU::logical_andCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                               Variable A, Variable B, Variable C)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_total_size; 
-    unsigned int m_step_size; 
-    unsigned int m_group_size; 
-    unsigned int m_Ai_mul; 
-    Variable m_A; 
-    Variable m_B; 
-    Variable m_C; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_total_size = total_size; 
-  pcData.m_step_size = step_size; 
-  pcData.m_group_size = group_size; 
-  pcData.m_Ai_mul = Ai_mul; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-  pcData.m_C = C; 
-
-  vkCmdPushConstants(m_currCmdBuffer, logical_andLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logical_andPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::get_outputCmd(float* data_out, unsigned offset, unsigned size)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_offset; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(size);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = size;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_offset = offset; 
-
-  vkCmdPushConstants(m_currCmdBuffer, get_outputLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, get_outputPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
 void TensorProcessorImpl_GPU::matmul_transposedCmd(float *data, unsigned A_col_len, unsigned B_col_len, 
                                                      unsigned A_row_len, Variable A, Variable B, Variable C)
 {
@@ -1345,40 +1592,47 @@ void TensorProcessorImpl_GPU::matmul_transposedCmd(float *data, unsigned A_col_l
  
 }
 
-void TensorProcessorImpl_GPU::set_inputCmd(const float* data_in, unsigned offset, unsigned size)
+void TensorProcessorImpl_GPU::max_poolCmd(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y, 
+                                            Variable A, Variable res)
 {
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
+  uint32_t blockSizeX = 8;
+  uint32_t blockSizeY = 8;
+  uint32_t blockSizeZ = 8;
 
   struct KernelArgsPC
   {
-    unsigned int m_offset; 
+    int m_window_x; 
+    int m_window_y; 
+    Variable m_A; 
+    Variable m_res; 
     uint32_t m_sizeX;
     uint32_t m_sizeY;
     uint32_t m_sizeZ;
     uint32_t m_tFlags;
   } pcData;
   
-  uint32_t sizeX  = uint32_t(size);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
+  uint32_t sizeX  = uint32_t(y_steps);
+  uint32_t sizeY  = uint32_t(steps);
+  uint32_t sizeZ  = uint32_t(x_steps);
   
-  pcData.m_sizeX  = size;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
+  pcData.m_sizeX  = y_steps;
+  pcData.m_sizeY  = steps;
+  pcData.m_sizeZ  = x_steps;
   pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_offset = offset; 
+  pcData.m_window_x = window_x; 
+  pcData.m_window_y = window_y; 
+  pcData.m_A = A; 
+  pcData.m_res = res; 
 
-  vkCmdPushConstants(m_currCmdBuffer, set_inputLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, max_poolLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, set_inputPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_poolPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
 
-void TensorProcessorImpl_GPU::lessCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                        Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::whereCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
+                                         Variable A, Variable B, Variable C)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -1415,15 +1669,15 @@ void TensorProcessorImpl_GPU::lessCmd(float *data, unsigned steps, unsigned tota
   pcData.m_B = B; 
   pcData.m_C = C; 
 
-  vkCmdPushConstants(m_currCmdBuffer, lessLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, whereLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, lessPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, wherePipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
 
-void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul, 
-                                       Variable A, Variable B, Variable C)
+void TensorProcessorImpl_GPU::smax_diffCmd(float *data, unsigned steps, unsigned step_size, 
+                                             Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput)
 {
   uint32_t blockSizeX = 256;
   uint32_t blockSizeY = 1;
@@ -1431,13 +1685,10 @@ void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned total
 
   struct KernelArgsPC
   {
-    unsigned int m_total_size; 
     unsigned int m_step_size; 
-    unsigned int m_group_size; 
-    unsigned int m_Ai_mul; 
-    Variable m_A; 
-    Variable m_B; 
-    Variable m_C; 
+    Variable m__output; 
+    Variable m_dLoss_dOutput; 
+    Variable m_dLoss_dInput; 
     uint32_t m_sizeX;
     uint32_t m_sizeY;
     uint32_t m_sizeZ;
@@ -1452,17 +1703,14 @@ void TensorProcessorImpl_GPU::divCmd(float *data, unsigned steps, unsigned total
   pcData.m_sizeY  = 1;
   pcData.m_sizeZ  = 1;
   pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_total_size = total_size; 
   pcData.m_step_size = step_size; 
-  pcData.m_group_size = group_size; 
-  pcData.m_Ai_mul = Ai_mul; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-  pcData.m_C = C; 
+  pcData.m__output = _output; 
+  pcData.m_dLoss_dOutput = dLoss_dOutput; 
+  pcData.m_dLoss_dInput = dLoss_dInput; 
 
-  vkCmdPushConstants(m_currCmdBuffer, divLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
+  vkCmdPushConstants(m_currCmdBuffer, smax_diffLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, divPipeline);
+  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, smax_diffPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -1512,120 +1760,6 @@ void TensorProcessorImpl_GPU::conv3dCmd(float *data, int steps, int x_steps, int
  
 }
 
-void TensorProcessorImpl_GPU::sumCmd(float *data, unsigned steps, unsigned step_size, Variable A, Variable B)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_step_size; 
-    Variable m_A; 
-    Variable m_B; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_step_size = step_size; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-
-  vkCmdPushConstants(m_currCmdBuffer, sumLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, sumPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::max_poolCmd(float *data, int steps, int x_steps, int y_steps, int window_x, int window_y, 
-                                            Variable A, Variable res)
-{
-  uint32_t blockSizeX = 8;
-  uint32_t blockSizeY = 8;
-  uint32_t blockSizeZ = 8;
-
-  struct KernelArgsPC
-  {
-    int m_window_x; 
-    int m_window_y; 
-    Variable m_A; 
-    Variable m_res; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(y_steps);
-  uint32_t sizeY  = uint32_t(steps);
-  uint32_t sizeZ  = uint32_t(x_steps);
-  
-  pcData.m_sizeX  = y_steps;
-  pcData.m_sizeY  = steps;
-  pcData.m_sizeZ  = x_steps;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_window_x = window_x; 
-  pcData.m_window_y = window_y; 
-  pcData.m_A = A; 
-  pcData.m_res = res; 
-
-  vkCmdPushConstants(m_currCmdBuffer, max_poolLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_poolPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::smax_diffCmd(float *data, unsigned steps, unsigned step_size, 
-                                             Variable _output, Variable dLoss_dOutput, Variable dLoss_dInput)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_step_size; 
-    Variable m__output; 
-    Variable m_dLoss_dOutput; 
-    Variable m_dLoss_dInput; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_step_size = step_size; 
-  pcData.m__output = _output; 
-  pcData.m_dLoss_dOutput = dLoss_dOutput; 
-  pcData.m_dLoss_dInput = dLoss_dInput; 
-
-  vkCmdPushConstants(m_currCmdBuffer, smax_diffLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, smax_diffPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
 void TensorProcessorImpl_GPU::conv2dCmd(float *data, int steps, int x_steps, int y_steps, int stride, int in_channels, 
                                           int out_channels, Variable A, Variable kernel, Variable res)
 {
@@ -1665,51 +1799,6 @@ void TensorProcessorImpl_GPU::conv2dCmd(float *data, int steps, int x_steps, int
   vkCmdPushConstants(m_currCmdBuffer, conv2dLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
   
   vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, conv2dPipeline);
-  vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
- 
-}
-
-void TensorProcessorImpl_GPU::logical_orCmd(float *data, unsigned steps, unsigned total_size, unsigned step_size, unsigned group_size, unsigned Ai_mul,
-                                              Variable A, Variable B, Variable C)
-{
-  uint32_t blockSizeX = 256;
-  uint32_t blockSizeY = 1;
-  uint32_t blockSizeZ = 1;
-
-  struct KernelArgsPC
-  {
-    unsigned int m_total_size; 
-    unsigned int m_step_size; 
-    unsigned int m_group_size; 
-    unsigned int m_Ai_mul; 
-    Variable m_A; 
-    Variable m_B; 
-    Variable m_C; 
-    uint32_t m_sizeX;
-    uint32_t m_sizeY;
-    uint32_t m_sizeZ;
-    uint32_t m_tFlags;
-  } pcData;
-  
-  uint32_t sizeX  = uint32_t(steps);
-  uint32_t sizeY  = uint32_t(1);
-  uint32_t sizeZ  = uint32_t(1);
-  
-  pcData.m_sizeX  = steps;
-  pcData.m_sizeY  = 1;
-  pcData.m_sizeZ  = 1;
-  pcData.m_tFlags = m_currThreadFlags;
-  pcData.m_total_size = total_size; 
-  pcData.m_step_size = step_size; 
-  pcData.m_group_size = group_size; 
-  pcData.m_Ai_mul = Ai_mul; 
-  pcData.m_A = A; 
-  pcData.m_B = B; 
-  pcData.m_C = C; 
-
-  vkCmdPushConstants(m_currCmdBuffer, logical_orLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(KernelArgsPC), &pcData);
-  
-  vkCmdBindPipeline(m_currCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, logical_orPipeline);
   vkCmdDispatch    (m_currCmdBuffer, (sizeX + blockSizeX - 1) / blockSizeX, (sizeY + blockSizeY - 1) / blockSizeY, (sizeZ + blockSizeZ - 1) / blockSizeZ);
  
 }
@@ -2138,7 +2227,6 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
   urandCmd(memory.data(), C.total_size, C, arg0 == 0 ? rand() : arg0);
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
       break;
-    default:
     case nn::TensorProgram::CONV_3D:
     {
       int in_channels = B.sizes[3] > 0 ? B.sizes[3] : 1;
@@ -2160,6 +2248,41 @@ void TensorProcessorImpl_GPU::processCmd(VkCommandBuffer a_commandBuffer, const 
   vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
     }
       break;
+    case nn::TensorProgram::MPOOL_3D:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned window_z = arg2;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]*A.sizes[2]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
+      vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_pool_3DLayout, 0, 1, &m_allGeneratedDS[21], 0, nullptr);
+  max_pool_3DCmd(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, A.sizes[2]/window_z, window_x, window_y, window_z, A, C);
+  vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
+    }
+      break;
+    case nn::TensorProgram::MPOOL_3D_D:
+    {
+      unsigned window_x = arg0;
+      unsigned window_y = arg1;
+      unsigned window_z = arg2;
+      unsigned steps = A.total_size/(A.sizes[0]*A.sizes[1]*A.sizes[2]);
+      #if DEBUG
+      if (A.sizes[0]/window_x > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[0]/window_x);
+      if (A.sizes[1]/window_y > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: MPOOL_D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", A.sizes[1]/window_y);
+      #endif
+      vkCmdBindDescriptorSets(a_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, max_pool_3D_diffLayout, 0, 1, &m_allGeneratedDS[22], 0, nullptr);
+  max_pool_3D_diffCmd(memory.data(), steps, A.sizes[0]/window_x, A.sizes[1]/window_y, A.sizes[2]/window_z, window_x, window_y, window_z, A, B, C);
+  vkCmdPipelineBarrier(m_currCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
+    }
+      break;
+    default:
       break;
     }
     #if DEBUG

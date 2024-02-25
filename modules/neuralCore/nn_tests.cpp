@@ -1702,7 +1702,7 @@ void tp_test_1_tensor_processor()
       tc.output(res_1, "res_1");
       tc.output(res_2, "res_2");
     }
-    TensorProgram p = tc.finish_program(true);
+    TensorProgram p = tc.finish_program();
 
     std::vector<float> A = { 1, 0, 2, 0, 3,
                              0, 0, 0, 0, 0,
@@ -1845,6 +1845,87 @@ void tp_test_1_tensor_processor()
       printf("FAILED diff %f > %f\n", diff, 1.0f);
   }
 
+  void tp_test_15_max_pooling_3D()
+  {
+    printf("TEST 15. MAX POOLING 3D\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(4, 4, 2);
+      TensorToken B = TensorToken(2, 2, 1);
+      TensorToken::issue_command(TensorProgram::MPOOL_3D, A, A, B, 2, 2, 2);
+      TensorToken dOut = TensorToken(2, 2, 1);
+      TensorToken dIn = TensorToken(4, 4, 2);
+      TensorToken::issue_command(TensorProgram::MPOOL_3D_D, A, dOut, dIn, 2, 2, 2);
+      tc.input(A, "A");
+      tc.input(dOut, "dOut");
+      tc.output(B, "B");
+      tc.output(dIn, "dIn");
+    }
+    TensorProgram p = tc.finish_program();
+
+    std::vector<float> A = {1,0, -5,-6,
+                            0,0, -7,-8,
+
+                            3,4,  6, 7,
+                            7,0,  8, 9,
+                              
+                            1,0, -2,-1,
+                            0,0, -3,-4,
+
+                            3,4,  6, 7,
+                            0,0,  9, 9};
+    std::vector<float> dOut = {1,2,3,4};
+    std::vector<float> B(2*2, 0.0f), B_ref = {1,-1,7,9};
+    std::vector<float> dIn(4*4*2, 0.0f), dIn_ref = {1,0, 0,0,
+                                                    0,0, 0,0,
+
+                                                    0,0, 0,0,
+                                                    3,0, 0,4,
+                                                    
+                                                    0,0, 0,2,
+                                                    0,0, 0,0,
+
+                                                    0,0, 0,0,
+                                                    0,0, 0,0};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("dOut", dOut.data(), dOut.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("B", B.data(), B.size());
+    TensorProcessor::get_output("dIn", dIn.data(), dIn.size());
+    //for (auto &v : B)
+    //  printf("%f, ", v);
+    //printf("\n");
+    //for (auto &v : dIn)
+    //  printf("%f, ", v);
+    //printf("\n");
+    {
+    float diff = 0.0f;
+    for (int i=0;i<B.size();i++)
+      diff += abs(B[i] - B_ref[i]);
+    
+    printf(" 15.1. %-64s","forward pass");
+    if (diff < 1e-6)
+      printf("passed\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<dIn.size();i++)
+      diff += abs(dIn[i] - dIn_ref[i]);
+    
+    printf(" 15.2. %-64s","backward pass");
+    if (diff < 1e-6)
+      printf("passed\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+  }
+
   void perform_tests_tensor_processor(const std::vector<int> &test_ids)
   {
     srand(time(NULL));
@@ -1865,6 +1946,7 @@ void tp_test_1_tensor_processor()
       tp_test_12_arithmetics_benchmark,
       tp_test_13_dilation,
       tp_test_14_conv3D,
+      tp_test_15_max_pooling_3D,
     };
 
     if (tests.empty())
@@ -1911,6 +1993,7 @@ void tp_test_1_tensor_processor()
       tp_test_12_arithmetics_benchmark,
       tp_test_13_dilation,
       tp_test_14_conv3D,
+      tp_test_15_max_pooling_3D,
     };
 
     if (tests.empty())

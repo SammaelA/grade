@@ -65,7 +65,10 @@ namespace nn
       CONV_2D,  //convolution with arbitrary number of channels and filters. Borders are ignored
       MPOOL,    // C = max pooling(A) with arbitrary window size
       MPOOL_D,  // derivative of max pooling
-      CONV_3D,
+      CONV_3D,  //convolution with arbitrary number of channels and filters. Borders are ignored
+      MPOOL_3D, // C = 3D max pooling(A) with arbitrary window size
+      MPOOL_3D_D,// derivative of 3D max pooling
+
       
       CMD_COUNT
     };

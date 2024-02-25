@@ -1,0 +1,78 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "common_gpu.h"
+
+layout(binding = 0, set = 0) buffer data0 { float data[]; }; //
+layout(binding = 1, set = 0) buffer dataUBO { TensorProcessorImpl_GPU_UBO_Data ubo; };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout( push_constant ) uniform kernelArgs
+{
+  int x_steps;
+  int window_x;
+  int window_y;
+  int window_z;
+  Variable A;
+  Variable dLoss_dOutput;
+  Variable dLoss_dInput;
+  int z_steps; 
+  int steps; 
+  int y_steps; 
+  uint tFlagsMask;    
+} kgenArgs;
+
+
+void main()
+{
+  bool runThisThread = true;
+  ///////////////////////////////////////////////////////////////// prolog
+  const int z = int(gl_GlobalInvocationID[0]); 
+  const int step = int(gl_GlobalInvocationID[1]); 
+  const int y = int(gl_GlobalInvocationID[2]); 
+  if(z >= kgenArgs.z_steps + 0 || step >= kgenArgs.steps + 0 || y >= kgenArgs.y_steps + 0)
+    runThisThread = false;
+    ///////////////////////////////////////////////////////////////// prolog
+  if(runThisThread)
+  {
+  
+        for (int x = 0; x < kgenArgs.x_steps; x++)
+        {
+          uint offset = kgenArgs.A.offset + step*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.y_steps*kgenArgs.window_y*kgenArgs.z_steps*kgenArgs.window_z;
+          float max_val = data[offset + (z*kgenArgs.window_z+0)*kgenArgs.y_steps*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.window_y + (y*kgenArgs.window_y+0)*kgenArgs.x_steps*kgenArgs.window_x + x*kgenArgs.window_x + 0];
+          int max_wz = 0;
+          int max_wy = 0;
+          int max_wx = 0;
+          for (int wz=0;wz<kgenArgs.window_z;wz++)
+          {
+            for (int wy=0;wy<kgenArgs.window_y;wy++)
+            {
+              for (int wx=0;wx<kgenArgs.window_x;wx++)
+              {
+                data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.y_steps*kgenArgs.window_y*kgenArgs.z_steps*kgenArgs.window_z + 
+                    (z*kgenArgs.window_z+wz)*kgenArgs.y_steps*kgenArgs.window_y*kgenArgs.x_steps*kgenArgs.window_x +
+                    (y*kgenArgs.window_y+wy)*kgenArgs.x_steps*kgenArgs.window_x + x*kgenArgs.window_x + uint(wx)] = 0;
+                float val = data[offset + (z*kgenArgs.window_z+wz)*kgenArgs.y_steps*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.window_y + (y*kgenArgs.window_y+wy)*kgenArgs.x_steps*kgenArgs.window_x + x*kgenArgs.window_x + uint(wx)];
+                if (val > max_val)
+                {
+                  max_val = val;
+                  max_wx = wx;
+                  max_wy = wy;
+                  max_wz = wz;
+                }
+              }
+            }
+          }
+          data[kgenArgs.dLoss_dInput.offset + step*kgenArgs.x_steps*kgenArgs.window_x*kgenArgs.y_steps*kgenArgs.window_y*kgenArgs.z_steps*kgenArgs.window_z + 
+               (z*kgenArgs.window_z+max_wz)*kgenArgs.y_steps*kgenArgs.window_y*kgenArgs.x_steps*kgenArgs.window_x +
+               (y*kgenArgs.window_y+max_wy)*kgenArgs.x_steps*kgenArgs.window_x + x*kgenArgs.window_x + uint(max_wx)] = 
+              data[kgenArgs.dLoss_dOutput.offset + step*kgenArgs.x_steps*kgenArgs.y_steps*kgenArgs.z_steps + z*kgenArgs.y_steps*kgenArgs.x_steps + y*kgenArgs.x_steps + uint(x)];
+        }
+      
+  }
+}
+
