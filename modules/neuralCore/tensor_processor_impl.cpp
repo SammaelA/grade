@@ -231,6 +231,25 @@ void TensorProcessorImpl::process(const nn::TensorProgram &program)
       kernel1D_urand(memory.data(), C.total_size, C, arg0 == 0 ? rand() : arg0);
       break;
     default:
+    case nn::TensorProgram::CONV_3D:
+    {
+      int in_channels = B.sizes[3] > 0 ? B.sizes[3] : 1;
+      int out_channels = B.sizes[4] > 0 ? B.sizes[4] : 1;
+      int images = A.total_size/(A.sizes[0]*A.sizes[1]*A.sizes[2]*in_channels);
+      int steps = images * out_channels;
+      int x_steps = C.sizes[0];
+      int y_steps = C.sizes[1];
+      int z_steps = C.sizes[2];
+      int stride = arg0;
+      #if DEBUG
+      if (x_steps > maxWorkGroupSizeY)
+        fprintf(stderr, "TensorProgram: CONV_3D workgroup Y size (%u) exceeds limit. Program won't execute correctly!\n", x_steps);
+      if (y_steps > maxWorkGroupSizeZ)
+        fprintf(stderr, "TensorProgram: CONV_3D workgroup Z size (%u) exceeds limit. Program won't execute correctly!\n", y_steps);
+      #endif
+      kernel3D_conv3d(memory.data(), steps, x_steps, y_steps, z_steps, stride, in_channels, out_channels, A, B, C);
+    }
+      break;
       break;
     }
     #if DEBUG
@@ -777,6 +796,48 @@ void TensorProcessorImpl::kernel3D_conv2d(float *data, int steps, int x_steps, i
               float t = data[k_offset + (dy + kh) * kw2 + (dx + kw)] * data[A_offset + (stride * y + kh + dy) * ((int)A.sizes[0]) + (stride * x + kw + dx)];
             data[res_offset + x_steps * y + x] += t;
             }
+        }
+      }
+    }
+  }
+}
+
+void TensorProcessorImpl::kernel3D_conv3d(float *data, int steps, int x_steps, int y_steps, int z_steps, int stride, 
+                                          int in_channels, int out_channels, Variable A, Variable kernel, Variable res)
+{
+  //test nothing, assume that all sizes are valid and res is filled with zeros
+  for (int step = 0; step < steps; step++)
+  {
+    for (int z = 0; z < z_steps; z++)
+    {
+      for (int y = 0; y < y_steps; y++)
+      {
+        for (int x = 0; x < x_steps; x++)
+        {
+          int image_n = step / out_channels;
+          int out_ch = step % out_channels;
+          int kw = (int)(kernel.sizes[0])/2; //e.g. 1 for 3x3 and 2 for 5x5
+          int kh = (int)(kernel.sizes[1])/2;
+          int kd = (int)(kernel.sizes[2])/2;
+          int kw2 = (int)(kernel.sizes[0]);
+          int kh2 = (int)(kernel.sizes[1]);
+          int kd2 = (int)(kernel.sizes[2]);
+          int res_offset = (int)res.offset + (image_n * out_channels + out_ch) * x_steps * y_steps * z_steps;
+
+          data[res_offset + x_steps*y_steps*z + x_steps*y + x] = 0;
+          for (int in_ch = 0; in_ch < in_channels; in_ch++)
+          {
+            int A_offset = (int)A.offset + (image_n * in_channels + in_ch) * (int)(A.sizes[0] * A.sizes[1] * A.sizes[2]);
+            int k_offset = (int)kernel.offset + (out_ch * in_channels + in_ch) * kh2 * kw2 * kd2;
+            for (int dz = -kd; dz < kd2 - kd; dz++)
+              for (int dy = -kh; dy < kh2 - kh; dy++)
+                for (int dx = -kw; dx < kw2 - kw; dx++)
+                {
+                  float t = data[k_offset + (dz+kd)*kh2*kw2 + (dy+kh)*kw2 + (dx+kw)] * 
+                            data[A_offset + (stride*z+kd+dz)*(int)(A.sizes[0]*A.sizes[1]) + (stride*y+kh+dy)*((int)A.sizes[0]) + (stride*x+kw+dx)];
+                  data[res_offset + x_steps*y_steps*z + x_steps*y + x] += t;
+                }
+          }
         }
       }
     }

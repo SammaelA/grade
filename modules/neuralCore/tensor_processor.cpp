@@ -58,6 +58,7 @@ namespace nn
     {CONV_2D  , "CONV_2D"  , ALGEBRA       , SELF_APPLICABLE_NO },
     {MPOOL    ,  "MPOOL"   , ALGEBRA       , SELF_APPLICABLE_NO },
     {MPOOL_D  , "MPOOL_D"  , ALGEBRA       , SELF_APPLICABLE_NO },
+    {CONV_3D  , "CONV_3D"  , ALGEBRA       , SELF_APPLICABLE_NO },
   };
 
   std::unique_ptr<TensorProcessor> proc;

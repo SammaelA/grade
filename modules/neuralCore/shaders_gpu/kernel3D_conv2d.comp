@@ -56,14 +56,7 @@ void main()
             for (int dx = -kw; dx < kw2 - kw; dx++)
             {
               float t = data[k_offset + (dy + kh) * kw2 + (dx + kw)] * data[A_offset + (kgenArgs.stride * y + kh + dy) * (int(kgenArgs.A.sizes[0])) + (kgenArgs.stride * x + kw + dx)];
-          /*if (t != t || std::abs(data[res_offset + x_steps * y + x]) > 1e9)
-           printf("%u %u %u %f %f %f %f\n", res_offset + x_steps*y + x - res.offset, k_offset + (dy+kh)*kw2 + (dx+kw) - kernel.offset,
-           A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx) - A.offset, 
-           data[k_offset + (dy+kh)*kw2 + (dx+kw)],
-           data[A_offset + (stride*y + kh + dy)*A.sizes[0] + (stride*x + kw + dx)],
-           data[res_offset + x_steps * y + x],
-           t);*/
-          data[res_offset + kgenArgs.x_steps * y + x] += t;
+            data[res_offset + kgenArgs.x_steps * y + x] += t;
             }
         }
       

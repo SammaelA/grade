@@ -148,6 +148,7 @@ namespace nn
     static TensorToken vector_outer_product(const TensorToken &A, const TensorToken &B);
     static TensorToken mat_mul_t(const TensorToken &A, const TensorToken &B);
     static TensorToken conv2D(const TensorToken &A, const TensorToken &kernel, unsigned stride = 1);
+    static TensorToken conv3D(const TensorToken &A, const TensorToken &kernel, unsigned stride = 1);
 
     unsigned id = 0;
     unsigned Dim = 0;

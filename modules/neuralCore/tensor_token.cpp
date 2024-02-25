@@ -577,4 +577,52 @@ namespace nn
     return res;
   }
   
+  /*
+  if kernel.Dim = 3 (DxHxW) then A is treated as an array of 3D tensors (NxiDxiHxiW) and conv3D returns an array (NxoDxoHxoW) 
+  if kernel.Dim = 4 (KxDxHxW) then A is treated as an array of K-channel voxel grids (NxKxiDxiHxiW) and conv3D returns an array of 3D tensors (NxxoDoHxoW) 
+  if kernel.Dim = 5 (LxKxDxHxW) then A is treated as an array of K-channel voxel grids (NxKxiDxiHxiW) and conv3D returns an array of L-channel voxel grids (NxLxoDxoHxoW)
+  in all cases N=0 is allowed, which reduces Dim of result by 1 (i.e. (iDxiHxiW) -> (oDxoHxoW))
+  padding is not applied, borders are ignored 
+  */
+  TensorToken TensorToken::conv3D(const TensorToken &A, const TensorToken &kernel, unsigned stride)
+  {
+    assert(stride > 0);
+    assert(kernel.Dim >= 3 && kernel.Dim <= 4);
+    if (kernel.Dim == 3)
+      assert(A.Dim >= 3);
+    else
+    {
+      assert(A.Dim >= 4);
+      assert(A.sizes[3] == kernel.sizes[3]); //number of channels
+    }
+    unsigned oW = (A.sizes[0] - kernel.sizes[0])/stride + 1;
+    unsigned oH = (A.sizes[1] - kernel.sizes[1])/stride + 1;
+    unsigned oD = (A.sizes[2] - kernel.sizes[2])/stride + 1;
+
+    unsigned res_sizes[TensorProgram::MAX_DIM] = {0,0,0,0,0,0,0,0};
+    res_sizes[0] = oW;
+    res_sizes[1] = oH;
+    res_sizes[2] = oD;
+    if (kernel.Dim == 3)
+    {
+      for (int i=3;i<TensorProgram::MAX_DIM;i++)
+        res_sizes[i] = A.sizes[i];
+    }
+    else if (kernel.Dim == 4)
+    {
+      for (int i=4;i<TensorProgram::MAX_DIM;i++)
+        res_sizes[i-1] = A.sizes[i];
+    }
+    else //if (kernel.Dim == 5)
+    {
+      res_sizes[3] = kernel.sizes[4];
+      for (int i=4;i<TensorProgram::MAX_DIM;i++)
+        res_sizes[i] = A.sizes[i];
+    }
+
+    TensorToken res(res_sizes);
+    tp->add_command(TensorProgram::CONV_3D, A.id, kernel.id, res.id, stride);
+    return res;
+  }
+
 }

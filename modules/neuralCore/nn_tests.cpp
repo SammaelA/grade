@@ -769,9 +769,9 @@ void tp_test_1_tensor_processor()
     std::vector<float> k2 = {1,1,1,
                              1,1,1,
                              1,1,1};
-    std::vector<float> R1(15, 0.0f), R1_ref = {4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000, 4.000000, 8.000000, 12.000000,};
-    std::vector<float> R2(15, 0.0f), R2_ref = {4.000000, 4.000000, 4.000000, 4.000000, 4.000000, 8.000000, 8.000000, 8.000000, 8.000000, 8.000000, 12.000000, 12.000000, 12.000000, 12.000000, 12.000000,};
-    std::vector<float> R3(4, 0.0f), R3_ref = {30.000000, 102.000000, 102.000000, 174.000000,};
+    std::vector<float> R1(15, 0.0f), R1_ref = {4, 8, 12, 4, 8, 12, 4, 8, 12, 4, 8, 12, 4, 8, 12,};
+    std::vector<float> R2(15, 0.0f), R2_ref = {4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 12, 12, 12, 12, 12,};
+    std::vector<float> R3(4, 0.0f), R3_ref = {30, 102, 102, 174,};
     std::vector<float> R4(3*3*2*3, 0.0f), R4_ref = {4,8,12, 4,8,12, 4,8,12, 
                                                     4,4,4, 8,8,8, 12,12,12, 
                                                     -4,-8,-12, -4,-8,-12, -4,-8,-12, 
@@ -1685,6 +1685,114 @@ void tp_test_1_tensor_processor()
       printf("FAILED, error rate %f\n", error_rate);
   }
 
+  void tp_test_14_conv3D()
+  {
+    printf("TEST 14. 3D convolution\n");
+
+    TensorCompiler tc;
+    {
+      tc.start_program();
+      TensorToken A = TensorToken(5,5,5);
+      TensorToken B = TensorToken(3,3,3);
+      TensorToken res_1 = TensorToken::conv3D(A, B);
+      TensorToken res_2 = TensorToken::conv3D(A, B, 2);
+
+      tc.input(A, "A");
+      tc.input(B, "B");
+      tc.output(res_1, "res_1");
+      tc.output(res_2, "res_2");
+    }
+    TensorProgram p = tc.finish_program(true);
+
+    std::vector<float> A = { 1, 0, 2, 0, 3,
+                             0, 0, 0, 0, 0,
+                             4, 0, 5, 0, 6,
+                             0, 0, 0, 0, 0,
+                             7, 0, 8, 0, 9,
+
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+
+                            10, 0,11, 0,12,
+                             0, 0, 0, 0, 0,
+                            13, 0,14, 0,15,
+                             0, 0, 0, 0, 0,
+                            16, 0,17, 0,18,
+
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0,
+
+                            19, 0,20, 0,21,
+                             0, 0, 0, 0, 0,
+                            22, 0,23, 0,24,
+                             0, 0, 0, 0, 0,
+                            25, 0,26, 0,27,};
+
+    //A.resize(125*2);
+    //for (int i=0;i<125;i++)
+    //  A[i+125] = -A[i];
+
+    std::vector<float> B = {1,0,1,
+                            0,1,0,
+                            1,0,1,
+                            
+                            0,1,0,
+                            1,0,1,
+                            0,1,0,
+
+                            1,0,1,
+                            0,1,0,
+                            1,0,1,};
+
+    std::vector<float> res_1(27, 0.0f);
+    std::vector<float> res_1_ref = {60, 0, 68, 0, 19, 0, 84, 0, 92, 0, 25, 0, 27, 0, 29, 0, 31, 0, 132, 0, 140, 0, 37, 0, 156, 0, 164};
+    std::vector<float> res_2(8, 0.0f);
+    std::vector<float> res_2_ref = {60, 68, 84, 92, 132, 140, 156, 164};
+
+    TensorProcessor::set_program(p);
+    TensorProcessor::set_input("A", A.data(), A.size());
+    TensorProcessor::set_input("B", B.data(), B.size());
+    TensorProcessor::execute();
+    TensorProcessor::get_output("res_1", res_1.data(), res_1.size());
+    TensorProcessor::get_output("res_2", res_2.data(), res_2.size());
+    //for (auto &v : res_1)
+    //  printf("%f, ", v);
+    //printf("\n");
+    //for (auto &v : res_2)
+    //  printf("%f, ", v);
+    //printf("\n");
+
+    {
+    float diff = 0.0f;
+    for (int i=0;i<res_1.size();i++)
+      diff += abs(res_1[i] - res_1_ref[i]);
+    
+    printf(" 14.1. %-64s","stride = 1");
+    if (diff < 1e-6)
+      printf("passed\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }
+    {
+    float diff = 0.0f;
+    for (int i=0;i<res_2.size();i++)
+      diff += abs(res_2[i] - res_2_ref[i]);
+    
+    printf(" 14.2. %-64s","stride = 2");
+    if (diff < 1e-6)
+      printf("passed\n");
+    else
+      printf("FAILED diff %f >= %f\n", diff, 1e-6f);
+    }   
+ 
+  }
+
   void perform_tests_tensor_processor(const std::vector<int> &test_ids)
   {
     srand(time(NULL));
@@ -1703,7 +1811,8 @@ void tp_test_1_tensor_processor()
       tp_test_10_random,
       tp_test_11_max_pooling,
       tp_test_12_arithmetics_benchmark,
-      tp_test_13_dilation
+      tp_test_13_dilation,
+      tp_test_14_conv3D,
     };
 
     if (tests.empty())
@@ -1748,7 +1857,8 @@ void tp_test_1_tensor_processor()
       tp_test_10_random,
       tp_test_11_max_pooling,
       tp_test_12_arithmetics_benchmark,
-      tp_test_13_dilation
+      tp_test_13_dilation,
+      tp_test_14_conv3D,
     };
 
     if (tests.empty())
