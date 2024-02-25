@@ -218,17 +218,17 @@ namespace upg
             {
               float z = glm::length(p0 - camera.origin);
               float d = (1 / z - 1 / camera.z_near) / (1 / camera.z_far - 1 / camera.z_near);
-              out_array[pixel_indices[i]] += d;
+              out_array[pixel_indices[i]] += mult*d;
             }
             else if (mode == SDFRenderMode::LINEAR_DEPTH)
             {
               float z = glm::length(p0 - camera.origin);
-              out_array[pixel_indices[i]] += (z - camera.z_near) / (camera.z_far - camera.z_near);
+              out_array[pixel_indices[i]] += mult*((z - camera.z_near) / (camera.z_far - camera.z_near));
             }
             else if (mode == SDFRenderMode::INVERSE_LINEAR_DEPTH)
             {
               float z = glm::length(p0 - camera.origin);
-              out_array[pixel_indices[i]] += 1 - (z - camera.z_near) / (camera.z_far - camera.z_near);
+              out_array[pixel_indices[i]] += mult*(1 - (z - camera.z_near) / (camera.z_far - camera.z_near));
             }
             points_found++;
         }
