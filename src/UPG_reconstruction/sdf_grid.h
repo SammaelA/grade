@@ -10,11 +10,10 @@ namespace upg
   class GridSdfNode : public PrimitiveSdfNode
   {
   public:
-    GridSdfNode(unsigned _grid_size) : PrimitiveSdfNode()
+    GridSdfNode(const SdfNodeType::Type &_type, unsigned _grid_size) : PrimitiveSdfNode(_type)
     { 
       grid_size = _grid_size;
       grid_size_f = grid_size;
-      name = "Grid";
     }
     virtual ~GridSdfNode() = default;
 

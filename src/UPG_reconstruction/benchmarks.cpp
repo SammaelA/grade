@@ -665,7 +665,7 @@ namespace upg
     unsigned samples = 4;
     std::vector<float> data(vox_size*vox_size*vox_size, 0.0f);
     AABB bbox = AABB({-1,-1,-1},{1,1,1});
-    GridSdfNode grid(vox_size);
+    GridSdfNode grid(SdfNodeType::GRID_32, vox_size);
     grid.set_param_span(data, 0);
 
     bool direct = false;

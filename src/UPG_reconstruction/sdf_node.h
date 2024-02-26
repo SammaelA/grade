@@ -51,7 +51,7 @@ namespace upg
     std::string name;
     int param_count;
     int children;
-    std::function<SdfNode *()> default_constructor;
+    std::function<SdfNode *(SdfNodeType::Type)> default_constructor;
   };
 
   const SdfNodeProperties &get_sdf_node_properties(uint16_t id);
@@ -66,9 +66,12 @@ namespace upg
   public:
     friend class ProceduralSdf;
 
-    SdfNode() = default;
+    SdfNode(const SdfNodeType::Type &_type):
+      type(_type)
+    {
+
+    }
     virtual ~SdfNode() = default;
-    std::string get_node_name() const { return name; }
     void set_param_span(std::span<float> s, unsigned offset) 
     { 
       p = s; 
@@ -111,18 +114,19 @@ namespace upg
     virtual std::vector<const SdfNode *> get_children() const = 0;
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const = 0;
     virtual AABB get_bbox() const = 0;
+    SdfNodeType::Type get_type() const { return type; }
   //protected:
     unsigned p_offset = 0;
     mutable unsigned subgraph_param_cnt = 0;
     mutable std::vector<const SdfNode *> subgraph;
-    std::string name;
     std::span<const float> p;
+    SdfNodeType::Type type = SdfNodeType::UNDEFINED;
   };
 
   class PrimitiveSdfNode : public SdfNode
   {
   public:
-    PrimitiveSdfNode() : SdfNode() {}
+    PrimitiveSdfNode(const SdfNodeType::Type &_type) : SdfNode(_type) {}
     virtual bool add_child(SdfNode *node) override { return false; }
     virtual unsigned child_cnt() const override { return 0; }
     virtual std::vector<const SdfNode *> get_children() const override { return {}; }

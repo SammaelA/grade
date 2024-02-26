@@ -11,14 +11,13 @@ namespace upg
   class NeuralSdfNode : public PrimitiveSdfNode
   {
   public:
-    NeuralSdfNode(unsigned hidden_layers, unsigned layer_size) : 
-    PrimitiveSdfNode(),
+    NeuralSdfNode(const SdfNodeType::Type &_type, unsigned hidden_layers, unsigned layer_size) : 
+    PrimitiveSdfNode(_type),
     network(nn::Siren::Type::SDF, hidden_layers, layer_size)
     { 
       network.initialize();
       network.set_batch_size_for_evaluate(base_batch_size);
       params_count = network.params_count();
-      name = "Neural";
     }
     virtual ~NeuralSdfNode() = default;
 

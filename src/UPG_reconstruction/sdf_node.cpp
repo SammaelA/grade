@@ -58,7 +58,7 @@ namespace upg
   protected:
     SdfNode *child;
   public:
-    OneChildSdfNode() : SdfNode() { child = NULL; }
+    OneChildSdfNode(const SdfNodeType::Type &_type) : SdfNode(_type) { child = NULL; }
     unsigned child_cnt() const override { return 1; }
     bool add_child(SdfNode *node) override 
     {
@@ -78,7 +78,7 @@ namespace upg
     SdfNode *left;
     SdfNode *right;
   public:
-    TwoChildSdfNode() : SdfNode() { left = NULL; right = NULL; }
+    TwoChildSdfNode(const SdfNodeType::Type &_type) : SdfNode(_type) { left = NULL; right = NULL; }
     unsigned child_cnt() const override
     {
       return 2;
@@ -108,7 +108,7 @@ namespace upg
     mutable int childs_params_start = 0, childs_params_end = 0;
     float *global_ddist_dparams = nullptr;
   public:
-    NullSdfNode() : OneChildSdfNode() { name = "Null"; }
+    NullSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -223,7 +223,7 @@ namespace upg
       if (num == SdfNodeType::UNDEFINED)
       {
         NullSdfNode *node = NULL;
-        node = new NullSdfNode();
+        node = new NullSdfNode(SdfNodeType::UNDEFINED);
         null_nodes.push_back(node);
         return node;
       }
@@ -281,8 +281,8 @@ namespace upg
 
 
   public:
-    AbstractComplexSdfNode(std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : 
-      SdfNode(), p_g(p_s, in_size, output_param_size(s))
+    AbstractComplexSdfNode(const SdfNodeType::Type &_type, std::vector<std::vector<float>> p_s, UPGStructure s, unsigned in_size) : 
+      SdfNode(_type), p_g(p_s, in_size, output_param_size(s))
     {
       childs = {};
       param_structure = p_s;
@@ -478,7 +478,7 @@ namespace upg
   {
     static constexpr int RADIUS = 0;
   public:
-    SphereSdfNode() : PrimitiveSdfNode() { name = "Sphere"; }
+    SphereSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -547,7 +547,7 @@ namespace upg
     static constexpr int SIZE_Z = 2;
 
   public:
-    BoxSdfNode() : PrimitiveSdfNode() { name = "Box"; }
+    BoxSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -604,7 +604,7 @@ namespace upg
     static constexpr int RADIUS = 3;
 
   public:
-    RoundBoxSdfNode() : PrimitiveSdfNode() { name = "RoundBox"; }
+    RoundBoxSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -663,7 +663,7 @@ namespace upg
     static constexpr int RADIUS = 1;
 
   public:
-    CylinderSdfNode() : PrimitiveSdfNode() { name = "Cylinder"; }
+    CylinderSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -712,7 +712,7 @@ namespace upg
     static constexpr int H2 = 1;
 
   public:
-    PrismSdfNode() : PrimitiveSdfNode() { name = "Prism"; }
+    PrismSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -775,7 +775,7 @@ namespace upg
     static constexpr int HEIGHT = 2;
 
   public:
-    ConeSdfNode() : PrimitiveSdfNode() { name = "Cone"; }
+    ConeSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -815,7 +815,7 @@ namespace upg
     static constexpr int MOVE_Y = 1;
     static constexpr int MOVE_Z = 2;
   public:
-    MoveSdfNode() : OneChildSdfNode() { name = "Move"; }
+    MoveSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -904,7 +904,7 @@ namespace upg
     static constexpr int AXIS_ANG_Z = 1;
     static constexpr int ANGLE = 2;
   public:
-    RotateSdfNode() : OneChildSdfNode() { name = "Rotate"; }
+    RotateSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -996,7 +996,7 @@ namespace upg
   class OrSdfNode : public TwoChildSdfNode
   {
   public:
-    OrSdfNode() : TwoChildSdfNode() { name = "Or"; }
+    OrSdfNode(const SdfNodeType::Type &_type) : TwoChildSdfNode(_type) {}
     
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1071,7 +1071,7 @@ namespace upg
   class AndSdfNode : public TwoChildSdfNode
   {
   public:
-    AndSdfNode() : TwoChildSdfNode() { name = "And"; }
+    AndSdfNode(const SdfNodeType::Type &_type) : TwoChildSdfNode(_type) {}
 
     
     virtual void get_distance_batch(unsigned     batch_size,
@@ -1149,7 +1149,7 @@ namespace upg
   class SubtractSdfNode : public TwoChildSdfNode
   {
   public:
-    SubtractSdfNode() : TwoChildSdfNode() { name = "Subtract"; }
+    SubtractSdfNode(const SdfNodeType::Type &_type) : TwoChildSdfNode(_type) {}
     
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1231,7 +1231,7 @@ namespace upg
   {
     static constexpr int SCALE = 0;
   public:
-    ScaleSdfNode() : OneChildSdfNode() { name = "Scale"; }
+    ScaleSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1283,7 +1283,7 @@ namespace upg
   {
     static constexpr int ROUND = 0;
   public:
-    RoundSdfNode() : OneChildSdfNode() { name = "Round"; }
+    RoundSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
 
     virtual void get_distance_batch(unsigned     batch_size,
                                     float *const positions,
@@ -1320,7 +1320,8 @@ namespace upg
   class ChairSdfNode : public AbstractComplexSdfNode
   {
   public:
-    ChairSdfNode() : AbstractComplexSdfNode(param_structure(), structure(), 6) { name = "chair"; }//last param is param_cnt
+    ChairSdfNode(const SdfNodeType::Type &_type) : 
+      AbstractComplexSdfNode(_type, param_structure(), structure(), 6) {}//last param is param_cnt
     virtual unsigned child_cnt() const override
     {
       return 0;
@@ -1383,7 +1384,8 @@ namespace upg
   class ComplexRotateSdfNode : public AbstractComplexSdfNode
   {
   public:
-    ComplexRotateSdfNode() : AbstractComplexSdfNode(param_structure(), structure(), 6) { name = "Complex Rot"; }//last param is param_cnt
+    ComplexRotateSdfNode(const SdfNodeType::Type &_type) :
+      AbstractComplexSdfNode(_type, param_structure(), structure(), 6) {}//last param is param_cnt
     virtual unsigned child_cnt() const override
     {
       return 1;
@@ -1533,7 +1535,7 @@ namespace upg
       }
       SdfNode *node = create_node(n);
       all_nodes.push_back(std::unique_ptr<SdfNode>(node));
-      desc.add_parameters(i, node->get_node_name(), node->get_parameters_block(scene_bbox));
+      desc.add_parameters(i, node_properties[node->get_type()].name, node->get_parameters_block(scene_bbox));
       param_startings.push_back({node, all_params.size()});
       all_params.resize(all_params.size() + node->param_cnt());
       
@@ -1574,31 +1576,31 @@ namespace upg
   std::vector<SdfNodeProperties> node_properties = 
   {
     {SdfNodeType::UNDEFINED    , "UNDEFINED"    , 0, 0, nullptr},
-    {SdfNodeType::SPHERE       , "Sphere"       , 1, 0, {[]() -> SdfNode* {return new SphereSdfNode;}}},
-    {SdfNodeType::MOVE         , "Move"         , 3, 1, {[]() -> SdfNode* {return new MoveSdfNode;}}},
-    {SdfNodeType::OR           , "Or"           , 0, 2, {[]() -> SdfNode* {return new OrSdfNode;}}},
-    {SdfNodeType::BOX          , "Box"          , 3, 0, {[]() -> SdfNode* {return new BoxSdfNode;}}},
-    {SdfNodeType::CYLINDER     , "Cylinder"     , 2, 0, {[]() -> SdfNode* {return new CylinderSdfNode;}}},
-    {SdfNodeType::ROUNDED_BOX  , "Rounded Box"  , 4, 0, {[]() -> SdfNode* {return new RoundBoxSdfNode;}}},
-    {SdfNodeType::PRISM        , "Prism"        , 3, 0, {[]() -> SdfNode* {return new PrismSdfNode;}}},
-    {SdfNodeType::CONE         , "Cone"         , 4, 0, {[]() -> SdfNode* {return new ConeSdfNode;}}},
-    {SdfNodeType::AND          , "And"          , 0, 2, {[]() -> SdfNode* {return new AndSdfNode;}}},
-    {SdfNodeType::SUBTRACT     , "Subtract"     , 0, 2, {[]() -> SdfNode* {return new SubtractSdfNode;}}},
-    {SdfNodeType::ROTATE       , "Rotate"       , 3, 1, {[]() -> SdfNode* {return new RotateSdfNode;}}},
-    {SdfNodeType::SCALE        , "Scale"        , 1, 1, {[]() -> SdfNode* {return new ScaleSdfNode;}}},
-    {SdfNodeType::CHAIR        , "Chair"        , 6, 0, {[]() -> SdfNode* {return new ChairSdfNode;}}},
-    {SdfNodeType::CROTATE      , "Complex Rot"  , 6, 1, {[]() -> SdfNode* {return new ComplexRotateSdfNode;}}},
-    {SdfNodeType::ROUND        , "Round"        , 1, 1, {[]() -> SdfNode* {return new RoundSdfNode;}}},
-    {SdfNodeType::GRID_16      , "Grid_16"      , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(16);}}},
-    {SdfNodeType::GRID_32      , "Grid_32"      , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(32);}}},
-    {SdfNodeType::GRID_64      , "Grid_64"      , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(64);}}},
-    {SdfNodeType::GRID_128     , "Grid_128"     , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(128);}}},
-    {SdfNodeType::GRID_256     , "Grid_256"     , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new GridSdfNode(256);}}},
-    {SdfNodeType::NEURAL_TINY  , "Neural Tiny"  , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(2, 16);}}},
-    {SdfNodeType::NEURAL_SMALL , "Neural Small" , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(2, 32);}}},
-    {SdfNodeType::NEURAL_MEDIUM, "Neural Medium", VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(3, 64);}}},
-    {SdfNodeType::NEURAL_LARGE , "Neural Large" , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(4, 80);}}},
-    {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , VARIABLE_PARAM_COUNT, 0, {[]() -> SdfNode* {return new NeuralSdfNode(5, 128);}}},
+    {SdfNodeType::SPHERE       , "Sphere"       , 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new SphereSdfNode(t);}}},
+    {SdfNodeType::MOVE         , "Move"         , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new MoveSdfNode(t);}}},
+    {SdfNodeType::OR           , "Or"           , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new OrSdfNode(t);}}},
+    {SdfNodeType::BOX          , "Box"          , 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new BoxSdfNode(t);}}},
+    {SdfNodeType::CYLINDER     , "Cylinder"     , 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new CylinderSdfNode(t);}}},
+    {SdfNodeType::ROUNDED_BOX  , "Rounded Box"  , 4, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundBoxSdfNode(t);}}},
+    {SdfNodeType::PRISM        , "Prism"        , 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new PrismSdfNode(t);}}},
+    {SdfNodeType::CONE         , "Cone"         , 4, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ConeSdfNode(t);}}},
+    {SdfNodeType::AND          , "And"          , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new AndSdfNode(t);}}},
+    {SdfNodeType::SUBTRACT     , "Subtract"     , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new SubtractSdfNode(t);}}},
+    {SdfNodeType::ROTATE       , "Rotate"       , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RotateSdfNode(t);}}},
+    {SdfNodeType::SCALE        , "Scale"        , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ScaleSdfNode(t);}}},
+    {SdfNodeType::CHAIR        , "Chair"        , 6, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ChairSdfNode(t);}}},
+    {SdfNodeType::CROTATE      , "Complex Rot"  , 6, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotateSdfNode(t);}}},
+    {SdfNodeType::ROUND        , "Round"        , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundSdfNode(t);}}},
+    {SdfNodeType::GRID_16      , "Grid_16"      , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
+    {SdfNodeType::GRID_32      , "Grid_32"      , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
+    {SdfNodeType::GRID_64      , "Grid_64"      , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},
+    {SdfNodeType::GRID_128     , "Grid_128"     , 128*128*128, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 128);}}},
+    {SdfNodeType::GRID_256     , "Grid_256"     , 256*256*256, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 256);}}},
+    {SdfNodeType::NEURAL_TINY  , "Neural Tiny"  , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 16);}}},
+    {SdfNodeType::NEURAL_SMALL , "Neural Small" , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 32);}}},
+    {SdfNodeType::NEURAL_MEDIUM, "Neural Medium", VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 3, 64);}}},
+    {SdfNodeType::NEURAL_LARGE , "Neural Large" , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 4, 80);}}},
+    {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 5, 128);}}},
   };
 
   const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
@@ -1617,14 +1619,14 @@ namespace upg
   SdfNode *create_node(SdfNodeType::Type type)
   {
     assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
-    return node_properties[(int)type].default_constructor();
+    return node_properties[(int)type].default_constructor(type);
   }
 
   SdfNode *create_node(uint16_t type)
   {
     assert(type < SdfNodeType::NODE_TYPES_COUNT);
     assert(node_properties.size() == SdfNodeType::NODE_TYPES_COUNT);
-    return node_properties[type].default_constructor();
+    return node_properties[type].default_constructor((SdfNodeType::Type)type);
   }
 
   int get_position_index(const UPGStructure &structure, int start, int p_start)
