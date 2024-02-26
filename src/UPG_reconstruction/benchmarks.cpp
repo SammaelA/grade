@@ -13,6 +13,7 @@
 #include "neuralCore/dataset.h"
 #include "sdf_grid.h"
 #include "optimization.h"
+#include "density_field_process.h"
 
 namespace upg
 {
@@ -882,6 +883,13 @@ namespace upg
     else if (name == "grid")
     {
       sdf_grid_test();
+    }
+    else if (name == "density_field")
+    {
+      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      auto model = dgen::load_obj(obj_path);
+      
+      df::pipeline(model);
     }
     else
       benchmark_sdf_complex_optimization();
