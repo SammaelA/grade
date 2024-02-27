@@ -42,6 +42,17 @@ namespace upg
     };
   };
 
+  enum class SdfNodeClass
+  {
+    PRIMITIVE,
+    TRANSFORM,
+    COMBINE,
+    COMPLEX,
+    GRID,
+    NEURAL,
+    OTHER
+  };
+
   static constexpr int VARIABLE_PARAM_COUNT = -1;
   static constexpr int VARIABLE_CHILD_COUNT = -1;
 
@@ -49,6 +60,7 @@ namespace upg
   {
     SdfNodeType::Type type;
     std::string name;
+    SdfNodeClass node_class;
     int param_count;
     int children;
     std::function<SdfNode *(SdfNodeType::Type)> default_constructor;
