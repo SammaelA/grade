@@ -1,0 +1,7 @@
+{
+  cmd {
+    cmd_name:s = "IC_UPG_BENCHMARK"
+    name:s = "density_field"
+  }
+  cmd {cmd_name:s = "IC_EXIT"}
+}

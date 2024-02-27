@@ -4,29 +4,38 @@
 #include <string>
 #include <iostream>
 #include <ctime>
-
-#define samplePointsCount 10
-#define density_dim 128
+#include <vector>
 
 namespace df
 {
+    //? Maybe this structure is not necessary
     struct Voxel 
     {
-        float size = 0;
-        glm::vec3 samplingPoints[samplePointsCount];
-        size_t inside_count = 0;
+        std::vector<glm::vec3> samplingPoints;
         float density = 0;
     };
 
     struct VoxelGrid 
     {
-        Voxel *voxels;
-        size_t dimension = density_dim;
-        glm::vec3 bounds[2] = { glm::vec3(-5.f,-5.f,-5.f), glm::vec3(5.f, 5.f, 5.f) };
+        //? Maybe this array is not necessary
+        //? std::vector<Voxel> voxels;
+        size_t dimension;
+        size_t samplePointsCount;
+        glm::vec3 bounds[2];
+
+        //  Init Voxel Grid using dimension size, sample points count and grid bounds
+        VoxelGrid(size_t dim, size_t samplePointsCount, glm::vec3 bounds[2])
+        {
+            this->dimension = dim;
+            this->samplePointsCount = samplePointsCount;
+            this->bounds[0] = bounds[0];
+            this->bounds[1] = bounds[1];
+        };
     };
 
-    float* create_density_field(const std::vector<float>& model);
-    void erase(float* density, float trashold = 0);
-    void create_sdf(float* density);
+    std::vector<float> create_density_field(const std::vector<float>& model, const VoxelGrid& grid);
+    void erase(std::vector<float>& density, const VoxelGrid& grid, const float& trashold = 0);
+    void create_sdf(const std::vector<float>& density, const VoxelGrid& grid);
     float* pipeline(const std::vector<float>& model);
+    glm::vec3 closest_point_triangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c);
 };
