@@ -522,6 +522,60 @@ namespace upg
     }
   };
 
+  inline float 
+  diff_circle_sdf(float params[4]) 
+  {
+    return std::max(1e-9f, sqrt(params[0] * params[0] + params[1] * params[1])) - params[3];
+  }
+    
+  class Circle2DSdfNode : public PrimitiveSdfNode
+  {
+    static constexpr int RADIUS = 0;
+  public:
+    Circle2DSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      //printf("Ppos %f %f %f\n",positions[3*0+0], positions[3*0+1], positions[3*0+2]);
+      for (int i=0;i<batch_size;i++)
+        distances[i] = sqrtf(positions[3*i+0]*positions[3*i+0] + positions[3*i+1]*positions[3*i+1]) - p[RADIUS];
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+          ddist_dparams[p_offset*batch_size + 1*i] = -1;
+      }
+      if (ddist_dpos)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          ddist_dpos[3*i+0] = positions[3*i+0]/std::max(1e-9f,distances[i]+p[RADIUS]);
+          ddist_dpos[3*i+1] = positions[3*i+1]/std::max(1e-9f,distances[i]+p[RADIUS]);
+          ddist_dpos[3*i+2] = 0;
+        }
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      float max_r = 0.5*length(scene_bbox.max_pos-scene_bbox.min_pos);
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({1,0.01f*max_r,max_r, ParameterType::DIFFERENTIABLE, "radius"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      float r = p[RADIUS];
+      return AABB({-r,-r,-0.001}, {r,r,0.001});
+    }
+  };
+
   inline float
   diff_box_sdf(float params[6])
   {
@@ -575,6 +629,58 @@ namespace upg
     virtual AABB get_bbox() const override
     {
       return AABB({-p[SIZE_X], -p[SIZE_Y], -p[SIZE_Z]}, {p[SIZE_X], p[SIZE_Y], p[SIZE_Z]});
+    }
+  };
+
+  inline float
+  diff_quad_sdf(float params[5])
+  {
+    float q[2], max_q[2];
+    q[0] = abs(params[0]) - params[3];
+    q[1] = abs(params[1]) - params[4];
+
+    max_q[0] = std::max(q[0], 0.f);
+    max_q[1] = std::max(q[1], 0.f);
+
+    float d1 = std::sqrt(std::pow(max_q[0], 2) + std::pow(max_q[1], 2));
+    float d2 = std::min(std::max(q[0],q[1]), 0.f);
+
+    return d1 + d2;
+  }
+
+  class Quad2DSdfNode : public PrimitiveSdfNode
+  {
+    static constexpr int SIZE_X = 0;
+    static constexpr int SIZE_Y = 1;
+
+  public:
+    Quad2DSdfNode(const SdfNodeType::Type &_type) : PrimitiveSdfNode(_type) {}
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      GET_DISTANCE_WITH_DIFF_BATCH(diff_quad_sdf, 2)                                   
+    }
+
+    virtual unsigned param_cnt() const override { return 2; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
+      params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
+
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      return AABB({-p[SIZE_X], -p[SIZE_Y], -0.001}, {p[SIZE_X], p[SIZE_Y], 0.001});
     }
   };
 
@@ -806,6 +912,90 @@ namespace upg
       float r = max_s*p[HEIGHT];
       //I have no idea what the exact formula look like
       return AABB({-r, -p[HEIGHT], -r}, {r, 0, r});
+    }
+  };
+
+  class ExtrusionSdfNode : public OneChildSdfNode
+  {
+    static constexpr int HEIGHT = 0;
+  public:
+    ExtrusionSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      child->get_distance_batch(batch_size, positions, distances, ddist_dparams, ddist_dpos, stack, stack_head);
+      for (int i = 0; i < batch_size; ++i)
+      {
+        float sec = abs(positions[i * 3 + 2]) - p[HEIGHT];
+        if (distances[i] < 0 && distances[i] < sec)
+        {
+          distances[i] = sec;
+          if (ddist_dparams)
+          {
+            ddist_dparams[batch_size * p_offset + i] = -1;
+            ddist_dpos[3 * i + 0] = 0;
+            ddist_dpos[3 * i + 1] = 0;
+            ddist_dpos[3 * i + 2] = 1;
+            if (positions[i * 3 + 2] < 0)
+            {
+              ddist_dpos[3 * i + 2] = -1;
+            }
+            for (auto *cn : child->subgraph)
+            {
+              for (int j = 0; j < cn->param_cnt(); j++)
+                ddist_dparams[batch_size * cn->p_offset + i * cn->param_cnt() + j] = 0;
+            }
+          }
+        }
+        else if (distances[i] > 0 && sec > 0)
+        {
+          float res = sqrt(distances[i] * distances[i] + sec * sec);
+          if (ddist_dparams)
+          {
+            ddist_dparams[batch_size * p_offset + i] = (ddist_dparams[batch_size * p_offset + i] * distances[i] - sec) / res;
+            if (positions[i * 3 + 2] < 0)
+            {
+              ddist_dpos[3 * i + 2] = (ddist_dpos[3 * i + 2] * distances[i] + sec) / res;
+            }
+            else
+            {
+              ddist_dpos[3 * i + 2] = (ddist_dpos[3 * i + 2] * distances[i] - sec) / res;
+            }
+            for (auto *cn : child->subgraph)
+            {
+              for (int j = 0; j < cn->param_cnt(); j++)
+                ddist_dparams[batch_size * cn->p_offset + i * cn->param_cnt() + j] *= distances[i] / res;
+            }
+          }
+          distances[i] = res;
+        }
+        else
+        {
+          if (ddist_dparams)
+          {
+            ddist_dparams[batch_size * p_offset + i] = 0;
+          }
+        }
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0,scene_bbox.min_pos.z,scene_bbox.max_pos.z, ParameterType::DIFFERENTIABLE, "height"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      return AABB({ch_bbox.min_pos.x, ch_bbox.min_pos.y, -p[HEIGHT]}, {ch_bbox.max_pos.x, ch_bbox.max_pos.y, p[HEIGHT]});
     }
   };
 
@@ -1591,6 +1781,9 @@ namespace upg
     {SdfNodeType::CHAIR        , "Chair"        , SdfNodeClass::COMPLEX  , 6, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ChairSdfNode(t);}}},
     {SdfNodeType::CROTATE      , "Complex Rot"  , SdfNodeClass::COMPLEX  , 6, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotateSdfNode(t);}}},
     {SdfNodeType::ROUND        , "Round"        , SdfNodeClass::TRANSFORM, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundSdfNode(t);}}},
+    {SdfNodeType::CIRCLE       , "Circle"       , SdfNodeClass::OTHER    , 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Circle2DSdfNode(t);}}},
+    {SdfNodeType::QUAD         , "Quad"         , SdfNodeClass::OTHER    , 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Quad2DSdfNode(t);}}},
+    {SdfNodeType::EXTRUSION    , "Extrusion"    , SdfNodeClass::OTHER    , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ExtrusionSdfNode(t);}}},
     {SdfNodeType::GRID_16      , "Grid_16"      , SdfNodeClass::GRID     , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
     {SdfNodeType::GRID_32      , "Grid_32"      , SdfNodeClass::GRID     , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
     {SdfNodeType::GRID_64      , "Grid_64"      , SdfNodeClass::GRID     , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},

@@ -222,6 +222,14 @@ namespace upg
     return desc;    
   }
 
+  SceneDesc scene_extrusion()
+  {
+    SceneDesc desc;
+    desc.first.s = {SdfNodeType::ROTATE, SdfNodeType::EXTRUSION, SdfNodeType::CIRCLE};
+    desc.second.p = {0.0, 0.0, 1.0, 0.7, 0.5};
+    return desc;    
+  }
+
   SceneDesc scene_subtraction()
   {
     SceneDesc desc;
@@ -843,6 +851,7 @@ namespace upg
     scenes["Chair"] = scene_chair();
     scenes["Complex Chair"] = scene_complex_chair();
     scenes["Subtraction"] = scene_subtraction();
+    scenes["Extrusion"] = scene_extrusion();
 
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);
