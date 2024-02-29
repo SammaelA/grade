@@ -452,4 +452,176 @@ namespace upg
     }
     return dist_sum/points;
   }
+
+  float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 pos)
+  {
+    pos = prim.transform * glm::vec4(pos, 1.0f);
+
+    switch (prim.type)
+    {
+    case SdfNodeType::SPHERE:
+    {
+      float r = sdf.parameters[prim.params_offset + 0];
+      //logerr("sphere %f %f %f - %f",pos.x, pos.y, pos.z, r);
+      return length(pos) - r;
+    }
+    case SdfNodeType::BOX:
+    {
+      glm::vec3 size(sdf.parameters[prim.params_offset + 0],
+                     sdf.parameters[prim.params_offset + 1],
+                     sdf.parameters[prim.params_offset + 2]);
+      //logerr("box %f %f %f - %f %f %f",pos.x, pos.y, pos.z, size.x, size.y, size.z);
+      glm::vec3 q = abs(pos) - size;
+      return length(max(q,0.0f)) + std::min(std::max(q.x,std::max(q.y,q.z)),0.0f);
+    }    
+    case SdfNodeType::CYLINDER:
+    {
+      float h = sdf.parameters[prim.params_offset + 0];
+      float r = sdf.parameters[prim.params_offset + 1];
+      glm::vec2 d = abs(glm::vec2(sqrt(pos.x*pos.x + pos.z*pos.z),pos.y)) - glm::vec2(r,h);
+      return std::min(std::max(d.x,d.y),0.0f) + glm::length(max(d,0.0f));
+    }
+    default:
+      logerr("unknown type %u", prim.type);
+      assert(false);
+      break;
+    }
+    return -1000;
+  }
+
+  float get_dist(const SdfScene &sdf, glm::vec3 p)
+  {
+    float d = 1e6;
+    for (auto &conj : sdf.conjunctions)
+    {
+      float conj_d = -1e6;
+      for (unsigned pid = conj.offset; pid < conj.offset + conj.size; pid++)
+      {
+        float prim_d = dist_prim(sdf, sdf.objects[pid], p);
+        //logerr("prim %f", prim_d);
+        conj_d = std::max(conj_d, sdf.objects[pid].complement ? -prim_d : prim_d);
+      }
+      //logerr("%f %f\n", d, conj_d);
+      d = std::min(d, conj_d);
+    }
+    //logerr("\n");
+    return d;
+  }
+
+  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &start_pos, const glm::vec3 &dir, 
+                          glm::vec3 *surface_pos = nullptr)
+  {
+    constexpr float EPS = 3*1e-6;
+    glm::vec3 p0 = start_pos;
+    if (!sdf_bbox.contains(p0))
+    {
+      float t = 0;
+      if (sdf_bbox.intersects(start_pos, dir, &t))
+        p0 = start_pos + t*dir;
+      else //ray won't intersect SDF
+        return false;
+    }
+    int iter = 0;
+    float d = get_dist(sdf, p0);
+    while (iter < 1000 && d > EPS && d < 1e6)
+    {
+      p0 += d * dir;
+      d = get_dist(sdf, p0);
+      iter++;
+    }
+    if (surface_pos)
+      *surface_pos = p0;
+    //logerr("st %d (%f %f %f)", iter, p0.x, p0.y, p0.z);
+    return d <= EPS;
+  }
+
+  Texture render_sdf(const SdfScene &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
+  {
+    unsigned char *data = new unsigned char[4*image_w*image_h];
+    std::vector<float> res(image_w*image_h, 0);
+    render_sdf_to_array(res, sdf, camera, image_w, image_h, spp, mode);
+  
+    for (int i=0;i<res.size(); i++)
+    {
+      data[4*i+0] = 255*CLAMP(res[i],0,1);
+      data[4*i+1] = 255*CLAMP(res[i],0,1);
+      data[4*i+2] = 255*CLAMP(res[i],0,1);
+      data[4*i+3] = 255;
+    }
+
+    Texture t = engine::textureManager->create_texture(image_w, image_h, GL_RGBA8, 1, data, GL_RGBA);
+    delete[] data;
+    return t;
+  }
+
+  void render_sdf_to_array(std::span<float> out_array, const SdfScene &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
+  {
+    assert(sdf.conjunctions.size()>0 && sdf.objects.size()>0);
+    AABB sdf_bbox = sdf.objects[0].bbox;
+    for (auto &obj : sdf.objects)
+    {
+      sdf_bbox.min_pos = min(sdf_bbox.min_pos, obj.bbox.min_pos);
+      sdf_bbox.max_pos = max(sdf_bbox.max_pos, obj.bbox.max_pos);
+    }
+    ///sdf_bbox = AABB({-5,-5,-5},{5,5,5});
+    glm::mat4 projInv = glm::inverse(glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
+    glm::mat4 viewInv = glm::inverse(camera.get_view());
+    //set light somewhere to the side 
+    glm::vec3 light_dir = normalize(glm::vec3(1,1,1));
+    int spp_a = MAX(1,floor(sqrtf(spp)));
+
+    //#pragma omp parallel for
+    for (int yi=0;yi<image_h;yi++)
+    {
+      std::vector<float> cur_grad;
+      std::vector<float> ddist_dpos = {0,0,0};
+      for (int xi=0;xi<image_w;xi++)
+      {
+        float color = 0;
+        for (int yp=0;yp<spp_a;yp++)
+        {
+          for (int xp=0;xp<spp_a;xp++)
+          {
+            float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
+            float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
+            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
+            glm::vec3 p0;
+            
+            if (sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
+            {
+              if (mode == SDFRenderMode::MASK)
+                color += 1;
+              else if (mode == SDFRenderMode::LAMBERT)
+              {
+                constexpr float h = 0.001;
+                cur_grad.clear();
+                float ddx = (get_dist(sdf, p0 + glm::vec3(h,0,0)) - get_dist(sdf, p0 + glm::vec3(-h,0,0)))/(2*h);
+                float ddy = (get_dist(sdf, p0 + glm::vec3(0,h,0)) - get_dist(sdf, p0 + glm::vec3(0,-h,0)))/(2*h);
+                float ddz = (get_dist(sdf, p0 + glm::vec3(0,0,h)) - get_dist(sdf, p0 + glm::vec3(0,0,-h)))/(2*h);
+                glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
+                color += MAX(0.1f, dot(n, light_dir));
+              }
+              else if (mode == SDFRenderMode::DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                float d = (1/z - 1/camera.z_near)/(1/camera.z_far - 1/camera.z_near);
+                color += d;
+              }
+              else if (mode == SDFRenderMode::LINEAR_DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                color += (z - camera.z_near)/(camera.z_far - camera.z_near);
+              }
+              else if (mode == SDFRenderMode::INVERSE_LINEAR_DEPTH)
+              {
+                float z = glm::length(p0 - camera.origin);
+                color += 1 - (z - camera.z_near)/(camera.z_far - camera.z_near);
+              }
+            }
+          }
+        }
+        out_array[yi*image_w+xi] = color/SQR(spp_a);
+      }
+    }
+  }
 }
