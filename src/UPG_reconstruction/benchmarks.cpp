@@ -14,6 +14,7 @@
 #include "sdf_grid.h"
 #include "optimization.h"
 #include "density_field_process.h"
+#include "sdf_scene.h"
 
 namespace upg
 {
@@ -236,6 +237,24 @@ namespace upg
     desc.first.s = {SdfNodeType::SUBTRACT, SdfNodeType::MOVE, SdfNodeType::SPHERE, SdfNodeType::MOVE, SdfNodeType::SPHERE};
     desc.second.p = {0,0,0,0.6, 0.5,0.0,0.5,0.4};
     return desc;    
+  }
+
+  SceneDesc scene_CSG_1()
+  {
+    SceneDesc desc;
+    desc.first.s = {SdfNodeType::SCALE, SdfNodeType::ROTATE,
+                    SdfNodeType::SUBTRACT, 
+                    SdfNodeType::AND, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::BOX, SdfNodeType::MOVE, SdfNodeType::BOX,
+                                      SdfNodeType::MOVE, SdfNodeType::SPHERE,
+                    SdfNodeType::AND, SdfNodeType::MOVE, SdfNodeType::CYLINDER,
+                                      SdfNodeType::MOVE, SdfNodeType::BOX};
+    desc.second.p = {0.5, PI/2,0,-PI/6,
+                    -1,1.5  ,0, 1,1.5,0.5,
+                     1.5,1  ,0, 1.5,1,0.5,
+                     0  ,0  ,0, 3,
+                     0,0.5,0.5, 2,0.5,
+                    -1  ,1  ,0, 0.75,1,3};
+    return desc;       
   }
 
   std::vector<UPGReconstructionResult> benchmark_for_optimizer(std::string optimizer_name, bool fixed_structure)
@@ -872,6 +891,26 @@ namespace upg
       engine::textureManager->save_png(t, scene.first+" demo");
     }
 
+  }
+
+  void sdf_scene_test()
+  {
+    SceneDesc s = scene_CSG_1();
+    SdfScene scene = create_sdf_scene(s.first, s.second);
+
+    CameraSettings camera;
+    camera.origin = glm::vec3(0,0,3);
+    camera.target = glm::vec3(0,0,0);
+    camera.up = glm::vec3(0,1,0);
+
+    std::chrono::steady_clock::time_point t1, t2;
+
+    t1 = std::chrono::steady_clock::now();
+    Texture t = render_sdf(scene, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
+    t2 = std::chrono::steady_clock::now();
+    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    debug("%s rendered in %.1f s. %d kRays/s\n", "SDF Scene", 1e-3 * time_ms, (int)((512 * 512 * 16) / time_ms));
+    engine::textureManager->save_png(t, "SDF Scene demo");
   }
 
   void perform_benchmarks(const Block &blk)
