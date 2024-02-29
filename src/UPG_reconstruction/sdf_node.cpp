@@ -1053,23 +1053,6 @@ namespace upg
     }
   };
 
-  void RotateSdfNode_apply(const float *in, float *out)
-  {
-    float x = cosf(in[0]) * cosf(in[1]);
-    float y = sinf(in[0]) * cosf(in[1]);
-    float z = sinf(in[1]);
-    float angle = in[2];
-    float pos_x = in[3];
-    float pos_y = in[4];
-    float pos_z = in[5];
-    float c = cosf(angle);
-    float s = sinf(angle);
-
-    out[0] = (c + (1 - c) * x * x)     * pos_x + ((1 - c) * x * y + s * z) * pos_y + ((1 - c) * x * z - s * y) * pos_z;
-    out[1] = ((1 - c) * x * y - s * z) * pos_x + (c + (1 - c) * y * y)     * pos_y + ((1 - c) * y * z + s * x) * pos_z;
-    out[2] = ((1 - c) * x * z + s * y) * pos_x + ((1 - c) * z * y - s * x) * pos_y + (c + (1 - c) * z * z)     * pos_z;
-  }
-
   void get_rotate_mat(const float *in, float *out)
   {
     float x = cosf(in[0]) * cosf(in[1]);
@@ -1155,30 +1138,35 @@ namespace upg
     virtual AABB get_bbox() const override
     {
       AABB ch_bbox = child->get_bbox();
-      std::vector<float> y(3 * 8);
+
+      float rot[9];
+      std::vector<float> inv_params = {p[0], p[1], -p[2]}; //rotate along the same axis but opposite direction to get invert rotation
+
+      get_rotate_mat(inv_params.data(), rot);
+
+      glm::vec3 p_min(1e9,1e9,1e9);
+      glm::vec3 p_max(-1e9,-1e9,-1e9);
       for (int i = 0; i < 8; ++i)
       {
         std::vector<float> x;
-        x.insert(x.end(), p.begin(), p.end());
         if (i % 2 == 0) x.push_back(ch_bbox.min_pos.x);
         else x.push_back(ch_bbox.max_pos.x);
         if ((i / 2) % 2 == 0) x.push_back(ch_bbox.min_pos.y);
         else x.push_back(ch_bbox.max_pos.y);
         if ((i / 4) % 2 == 0) x.push_back(ch_bbox.min_pos.z);
         else x.push_back(ch_bbox.max_pos.z);
-        RotateSdfNode_apply(x.data(), &y.data()[3*i]);
+        
+        glm::vec3 p_tr;
+        p_tr.x = rot[3*0+0]*x[0] + rot[3*0+1]*x[1] + rot[3*0+2]*x[2];
+        p_tr.y = rot[3*1+0]*x[0] + rot[3*1+1]*x[1] + rot[3*1+2]*x[2];
+        p_tr.z = rot[3*2+0]*x[0] + rot[3*2+1]*x[1] + rot[3*2+2]*x[2];
+
+        p_min = glm::min(p_min, p_tr);
+        p_max = glm::max(p_max, p_tr);
       }
-      ch_bbox.min_pos = {y[0], y[1], y[2]};
-      ch_bbox.max_pos = {y[0], y[1], y[2]};
-      for (int i = 1; i < 8; ++i)
-      {
-        if (y[i * 3] > ch_bbox.max_pos.x) ch_bbox.max_pos.x = y[i * 3];
-        if (y[i * 3] < ch_bbox.min_pos.x) ch_bbox.min_pos.x = y[i * 3];
-        if (y[i * 3 + 1] > ch_bbox.max_pos.y) ch_bbox.max_pos.y = y[i * 3 + 1];
-        if (y[i * 3 + 1] < ch_bbox.min_pos.y) ch_bbox.min_pos.y = y[i * 3 + 1];
-        if (y[i * 3 + 2] > ch_bbox.max_pos.z) ch_bbox.max_pos.z = y[i * 3 + 2];
-        if (y[i * 3 + 2] < ch_bbox.min_pos.z) ch_bbox.min_pos.z = y[i * 3 + 2];
-      }
+      ch_bbox.min_pos = p_min;
+      ch_bbox.max_pos = p_max;
+
       return AABB(ch_bbox.min_pos, ch_bbox.max_pos);
     }
   };
