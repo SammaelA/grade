@@ -511,7 +511,7 @@ namespace upg
   bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &pos, const glm::vec3 &dir, 
                           glm::vec3 *surface_pos = nullptr)
   {
-    constexpr float EPS = 3*1e-6;
+    constexpr float EPS = 1e-5;
     float t = 0;
     float tFar = 1e4;
     if (!sdf_bbox.contains(pos))
@@ -523,7 +523,7 @@ namespace upg
     float d = get_dist(sdf, pos + t*dir);
     while (iter < 1000 && d > EPS && t < tFar)
     {
-      t += d;
+      t += d + EPS;
       d = get_dist(sdf, pos + t*dir);
       iter++;
     }
