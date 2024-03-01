@@ -453,9 +453,9 @@ namespace upg
     return dist_sum/points;
   }
 
-  float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 pos)
+  float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 p)
   {
-    pos = prim.transform * glm::vec4(pos, 1.0f);
+    glm::vec3 pos = prim.transform * glm::vec4(p, 1.0f);
 
     switch (prim.type)
     {
@@ -470,7 +470,7 @@ namespace upg
       glm::vec3 size(sdf.parameters[prim.params_offset + 0],
                      sdf.parameters[prim.params_offset + 1],
                      sdf.parameters[prim.params_offset + 2]);
-      //logerr("box %f %f %f - %f %f %f",pos.x, pos.y, pos.z, size.x, size.y, size.z);
+      //logerr("box %f %f %f - %f %f %f - %f %f %f",p.x, p.y, p.z, pos.x, pos.y, pos.z, size.x, size.y, size.z);
       glm::vec3 q = abs(pos) - size;
       return length(max(q,0.0f)) + std::min(std::max(q.x,std::max(q.y,q.z)),0.0f);
     }    
@@ -497,7 +497,7 @@ namespace upg
       float conj_d = -1e6;
       for (unsigned pid = conj.offset; pid < conj.offset + conj.size; pid++)
       {
-        float prim_d = dist_prim(sdf, sdf.objects[pid], p);
+        float prim_d = sdf.objects[pid].distance_mult*dist_prim(sdf, sdf.objects[pid], p) + sdf.objects[pid].distance_add;
         //logerr("prim %f", prim_d);
         conj_d = std::max(conj_d, sdf.objects[pid].complement ? -prim_d : prim_d);
       }
