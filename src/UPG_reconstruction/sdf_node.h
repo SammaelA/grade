@@ -31,6 +31,10 @@ namespace upg
       CIRCLE,
       QUAD,
       EXTRUSION,
+      SCALE2D,
+      MOVE2D,
+      ROTATE2D,
+      CROTATE2D,
       GRID_16,
       GRID_32,
       GRID_64,
@@ -53,6 +57,8 @@ namespace upg
     COMPLEX,
     GRID,
     NEURAL,
+    TRANSFORM2D,
+    PRIMITIVE2D,
     OTHER
   };
 

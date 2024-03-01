@@ -136,7 +136,7 @@ namespace upg
 
     virtual void set_subgraph_params_cnt_rec() const override
     {
-      unsigned cnt = param_cnt();
+      unsigned cnt = /*param_cnt();*/node_properties[this->get_type()].param_count;
       for (auto *c : get_children())
       {
         subgraph.insert(subgraph.end(), c->subgraph.begin(), c->subgraph.end());
@@ -205,7 +205,7 @@ namespace upg
     }
     virtual void set_subgraph_params_cnt_rec() const override
     {
-      unsigned cnt = param_cnt();
+      unsigned cnt = node_properties[this->get_type()].param_count;
       for (auto *c : get_children())
       {
         c->set_subgraph_params_cnt_rec();
@@ -247,7 +247,7 @@ namespace upg
         SdfNode *node = create_node_inside_complex_node(n);
         inside_nodes.push_back(std::unique_ptr<SdfNode>(node));
         param_startings.push_back({node, all_params.size()});
-        all_params.resize(all_params.size() + node->param_cnt());
+        all_params.resize(all_params.size() + node_properties[node->get_type()].param_count);
         if (i == 0)
         {
           root = node;
@@ -274,8 +274,8 @@ namespace upg
       int offset = 0;
       for (auto &nptr : inside_nodes)
       {
-        nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()), offset);
-        offset += nptr->param_cnt();
+        nptr->set_param_span(std::span<float>(all_params.data() + offset, node_properties[nptr->get_type()].param_count), offset);
+        offset += node_properties[nptr->get_type()].param_count;
       }
     }
 
@@ -371,9 +371,9 @@ namespace upg
         }
         for (int i = 0; i < batch_size; ++i)
         {
-          for (int j = 0; j < param_cnt(); ++j)
+          for (int j = 0; j < node_properties[this->get_type()].param_count; ++j)
           {
-            ddist_dparams[batch_size * p_offset + i * param_cnt() + j] = 0;
+            ddist_dparams[batch_size * p_offset + i * node_properties[this->get_type()].param_count + j] = 0;
           }
         }
         unsigned off = 0;
@@ -381,16 +381,16 @@ namespace upg
         {
           for (int i = 0; i < batch_size; ++i)
           {
-            for (int u = 0; u < k->param_cnt(); ++u)
+            for (int u = 0; u < node_properties[k->get_type()].param_count; ++u)
             {
-              for (int j = 0; j < param_cnt(); ++j)
+              for (int j = 0; j < node_properties[this->get_type()].param_count; ++j)
               {
-                ddist_dparams[batch_size * p_offset + i * param_cnt() + j] += 
-                buf[batch_size * k->p_offset + i * k->param_cnt() + u] * jac[input_size * (off + u) + j];
+                ddist_dparams[batch_size * p_offset + i * node_properties[this->get_type()].param_count + j] += 
+                buf[batch_size * k->p_offset + i * node_properties[k->get_type()].param_count + u] * jac[input_size * (off + u) + j];
               }
             }
           }
-          off += k->param_cnt();
+          off += node_properties[k->get_type()].param_count;
         }
       }
 /*
@@ -948,8 +948,8 @@ namespace upg
             }
             for (auto *cn : child->subgraph)
             {
-              for (int j = 0; j < cn->param_cnt(); j++)
-                ddist_dparams[batch_size * cn->p_offset + i * cn->param_cnt() + j] = 0;
+              for (int j = 0; j < node_properties[cn->get_type()].param_count; j++)
+                ddist_dparams[batch_size * cn->p_offset + i * node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
         }
@@ -969,8 +969,8 @@ namespace upg
             }
             for (auto *cn : child->subgraph)
             {
-              for (int j = 0; j < cn->param_cnt(); j++)
-                ddist_dparams[batch_size * cn->p_offset + i * cn->param_cnt() + j] *= distances[i] / res;
+              for (int j = 0; j < node_properties[cn->get_type()].param_count; j++)
+                ddist_dparams[batch_size * cn->p_offset + i * node_properties[cn->get_type()].param_count + j] *= distances[i] / res;
             }
           }
           distances[i] = res;
@@ -1026,7 +1026,7 @@ namespace upg
       child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
       if (ddist_dparams)
       {
-        unsigned cnt = param_cnt();
+        unsigned cnt = node_properties[this->get_type()].param_count;
         for (int i=0;i<batch_size;i++)
         {
           ddist_dparams[p_offset*batch_size + cnt*i+0] = -ddist_dpos[cnt*i+0];
@@ -1049,6 +1049,56 @@ namespace upg
     {
       AABB ch_bbox = child->get_bbox();
       glm::vec3 sh = glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]);
+      return AABB(ch_bbox.min_pos+sh, ch_bbox.max_pos+sh);
+    }
+  };
+
+  class Move2DSdfNode : public OneChildSdfNode
+  {
+    static constexpr int MOVE_X = 0;
+    static constexpr int MOVE_Y = 1;
+  public:
+    Move2DSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      if (stack.size() - stack_head < 3*batch_size)
+        assert(false);
+      for (int i=0;i<batch_size;i++)
+      {
+        stack[stack_head + 3*i+0] = positions[3*i+0] - p[MOVE_X];
+        stack[stack_head + 3*i+1] = positions[3*i+1] - p[MOVE_Y];
+      }
+      child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      if (ddist_dparams)
+      {
+        unsigned cnt = node_properties[this->get_type()].param_count;
+        for (int i=0;i<batch_size;i++)
+        {
+          ddist_dparams[p_offset*batch_size + cnt*i+0] = -ddist_dpos[cnt*i+0];
+          ddist_dparams[p_offset*batch_size + cnt*i+1] = -ddist_dpos[cnt*i+1];
+        }
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 2; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "move_x"});
+      params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "move_y"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+      glm::vec3 sh = glm::vec3(p[MOVE_X], p[MOVE_Y], 0);
       return AABB(ch_bbox.min_pos+sh, ch_bbox.max_pos+sh);
     }
   };
@@ -1171,6 +1221,108 @@ namespace upg
     }
   };
 
+  void get_rotate2D_mat(const float *in, float *out)
+  {
+    float c = cosf(in[0]);
+    float s = sinf(in[0]);
+    out[0] = c;
+    out[1] = -s;
+    out[2] = s;
+    out[3] = c;
+  }
+
+  class Rotate2DSdfNode : public OneChildSdfNode
+  {
+    static constexpr int ANGLE = 0;
+  public:
+    Rotate2DSdfNode(const SdfNodeType::Type &_type) : OneChildSdfNode(_type) {}
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      float rot[4];
+      float rot_jac[4];
+      if (ddist_dparams)
+      {
+        ENZYME_EVALUATE_WITH_DIFF(get_rotate2D_mat, 1, 4, p.data(), rot, rot_jac);
+      }
+      else
+        get_rotate2D_mat(p.data(), rot);
+      
+      if (stack.size() - stack_head < 3*batch_size)
+        assert(false);
+      for (int i=0;i<batch_size;i++)
+      {
+        stack[stack_head + 3*i+0] = rot[2*0+0]*positions[3*i+0] + rot[2*0+1]*positions[3*i+1];
+        stack[stack_head + 3*i+1] = rot[2*1+0]*positions[3*i+0] + rot[2*1+1]*positions[3*i+1];
+        stack[stack_head + 3*i+2] = positions[3*i+2];
+      }
+
+      child->get_distance_batch(batch_size, stack.data() + stack_head, distances, ddist_dparams, ddist_dpos, stack, stack_head + 3*batch_size);
+      
+      if (ddist_dparams)
+      {
+        for (int i=0;i<batch_size;i++)
+        {
+          float darg_dp[2*1];
+          for (int j=0;j<2;j++)
+            darg_dp[j] = rot_jac[2*j+0]*positions[3*i+0] + rot_jac[2*j+1]*positions[3*i+1];
+          
+          ddist_dparams[p_offset*batch_size + i] = ddist_dpos[3*i+0]*darg_dp[0] + ddist_dpos[3*i+1]*darg_dp[1];
+
+          float dp[2] = {ddist_dpos[3*i+0], ddist_dpos[3*i+1]};
+
+          for (int j=0;j<2;j++)
+            ddist_dpos[3*i+j] = dp[0]*rot[2*0+j] + dp[1]*rot[2*1+j];                             
+        }
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      AABB ch_bbox = child->get_bbox();
+
+      float rot[4];
+      std::vector<float> inv_params = {-p[0]}; //rotate along the same axis but opposite direction to get invert rotation
+
+      get_rotate2D_mat(inv_params.data(), rot);
+
+      glm::vec2 p_min(1e9,1e9);
+      glm::vec2 p_max(-1e9,-1e9);
+      for (int i = 0; i < 8; ++i)
+      {
+        std::vector<float> x;
+        if (i % 2 == 0) x.push_back(ch_bbox.min_pos.x);
+        else x.push_back(ch_bbox.max_pos.x);
+        if ((i / 2) % 2 == 0) x.push_back(ch_bbox.min_pos.y);
+        else x.push_back(ch_bbox.max_pos.y);
+        
+        glm::vec2 p_tr;
+        p_tr.x = rot[2*0+0]*x[0] + rot[2*0+1]*x[1];
+        p_tr.y = rot[2*1+0]*x[0] + rot[2*1+1]*x[1];
+
+        p_min = glm::min(p_min, p_tr);
+        p_max = glm::max(p_max, p_tr);
+      }
+      ch_bbox.min_pos = glm::vec3({p_min.x, p_min.y, ch_bbox.min_pos.z});
+      ch_bbox.max_pos = glm::vec3({p_max.x, p_max.y, ch_bbox.max_pos.z});
+
+      return AABB(ch_bbox.min_pos, ch_bbox.max_pos);
+    }
+  };
+
   class OrSdfNode : public TwoChildSdfNode
   {
   public:
@@ -1214,16 +1366,16 @@ namespace upg
           {
             for (auto *cn : right->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
           else
           {
             for (auto *cn : left->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
         }
@@ -1291,16 +1443,16 @@ namespace upg
           {
             for (auto *cn : right->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
           else
           {
             for (auto *cn : left->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
         }
@@ -1368,21 +1520,21 @@ namespace upg
           {
             for (auto *cn : right->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
           }
           else
           {
             for (auto *cn : left->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] = 0;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] = 0;
             }
             for (auto *cn : right->subgraph)
             {
-              for (int j=0;j<cn->param_cnt();j++)
-                ddist_dparams[batch_size*cn->p_offset + i*cn->param_cnt() + j] *= -1;
+              for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+                ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] *= -1;
             }
           }
         }
@@ -1598,6 +1750,42 @@ namespace upg
       return {{SdfNodeType::MOVE, SdfNodeType::ROTATE, SdfNodeType::MOVE, SdfNodeType::UNDEFINED}};
     }
   };
+
+  class ComplexRotate2DSdfNode : public AbstractComplexSdfNode
+  {
+  public:
+    ComplexRotate2DSdfNode(const SdfNodeType::Type &_type) :
+      AbstractComplexSdfNode(_type, param_structure(), structure(), 4) {}//last param is param_cnt
+    virtual unsigned child_cnt() const override
+    {
+      return 1;
+    }
+    virtual unsigned param_cnt() const override
+    {
+      return 3;
+    }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      std::vector<ParametersDescription::Param> params;
+      
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
+      params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "rot_point_x"});
+      params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "rot_point_y"});
+      return params;
+    }
+  protected:
+    std::vector<std::vector<float>> param_structure() const
+    {
+      return {{3, ParamNode::NEG}, {4, ParamNode::NEG},
+              {0, ParamNode::PRIMITIVE, 0}, {1, ParamNode::PRIMITIVE, 1}, {2, ParamNode::PRIMITIVE, 2},
+              {1}, {2}};
+    }
+    UPGStructure structure() const
+    {
+      return {{SdfNodeType::MOVE2D, SdfNodeType::ROTATE2D, SdfNodeType::MOVE2D, SdfNodeType::UNDEFINED}};
+    }
+  };
   //test end
 
   void ProceduralSdf::set_parameters(std::span<const float> parameters)
@@ -1632,7 +1820,7 @@ namespace upg
     {
       for (auto &n : all_nodes)
       {
-        unsigned p_cnt = n->param_cnt();
+        unsigned p_cnt = node_properties[n->get_type()].param_count;
         unsigned p_off = n->p_offset;
         if (p_cnt > 0)
         {
@@ -1668,7 +1856,7 @@ namespace upg
       ddist_dp->resize(batch_size*all_params.size());
       for (auto &n : all_nodes)
       {
-        unsigned p_cnt = n->param_cnt();
+        unsigned p_cnt = node_properties[n->get_type()].param_count;
         unsigned p_off = n->p_offset;
         if (p_cnt > 0)
         {
@@ -1715,7 +1903,7 @@ namespace upg
       all_nodes.push_back(std::unique_ptr<SdfNode>(node));
       desc.add_parameters(i, node_properties[node->get_type()].name, node->get_parameters_block(scene_bbox));
       param_startings.push_back({node, all_params.size()});
-      all_params.resize(all_params.size() + node->param_cnt());
+      all_params.resize(all_params.size() + node_properties[node->get_type()].param_count);
       
       if (i == 0)
       {
@@ -1744,8 +1932,8 @@ namespace upg
     int offset = 0;
     for (auto &nptr : all_nodes)
     {
-      nptr->set_param_span(std::span<float>(all_params.data() + offset, nptr->param_cnt()), offset);
-      offset += nptr->param_cnt();
+      nptr->set_param_span(std::span<float>(all_params.data() + offset, node_properties[nptr->get_type()].param_count), offset);
+      offset += node_properties[nptr->get_type()].param_count;
     }
 
     root->set_subgraph_params_cnt_rec();
@@ -1753,35 +1941,39 @@ namespace upg
 
   std::vector<SdfNodeProperties> node_properties = 
   {
-    {SdfNodeType::UNDEFINED    , "UNDEFINED"    , SdfNodeClass::OTHER    , 0, 0, nullptr},
-    {SdfNodeType::SPHERE       , "Sphere"       , SdfNodeClass::PRIMITIVE, 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new SphereSdfNode(t);}}},
-    {SdfNodeType::MOVE         , "Move"         , SdfNodeClass::TRANSFORM, 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new MoveSdfNode(t);}}},
-    {SdfNodeType::OR           , "Or"           , SdfNodeClass::COMBINE  , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new OrSdfNode(t);}}},
-    {SdfNodeType::BOX          , "Box"          , SdfNodeClass::PRIMITIVE, 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new BoxSdfNode(t);}}},
-    {SdfNodeType::CYLINDER     , "Cylinder"     , SdfNodeClass::PRIMITIVE, 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new CylinderSdfNode(t);}}},
-    {SdfNodeType::ROUNDED_BOX  , "Rounded Box"  , SdfNodeClass::PRIMITIVE, 4, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundBoxSdfNode(t);}}},
-    {SdfNodeType::PRISM        , "Prism"        , SdfNodeClass::PRIMITIVE, 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new PrismSdfNode(t);}}},
-    {SdfNodeType::CONE         , "Cone"         , SdfNodeClass::PRIMITIVE, 4, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ConeSdfNode(t);}}},
-    {SdfNodeType::AND          , "And"          , SdfNodeClass::COMBINE  , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new AndSdfNode(t);}}},
-    {SdfNodeType::SUBTRACT     , "Subtract"     , SdfNodeClass::COMBINE  , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new SubtractSdfNode(t);}}},
-    {SdfNodeType::ROTATE       , "Rotate"       , SdfNodeClass::TRANSFORM, 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RotateSdfNode(t);}}},
-    {SdfNodeType::SCALE        , "Scale"        , SdfNodeClass::TRANSFORM, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ScaleSdfNode(t);}}},
-    {SdfNodeType::CHAIR        , "Chair"        , SdfNodeClass::COMPLEX  , 6, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ChairSdfNode(t);}}},
-    {SdfNodeType::CROTATE      , "Complex Rot"  , SdfNodeClass::COMPLEX  , 6, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotateSdfNode(t);}}},
-    {SdfNodeType::ROUND        , "Round"        , SdfNodeClass::TRANSFORM, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundSdfNode(t);}}},
-    {SdfNodeType::CIRCLE       , "Circle"       , SdfNodeClass::OTHER    , 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Circle2DSdfNode(t);}}},
-    {SdfNodeType::QUAD         , "Quad"         , SdfNodeClass::OTHER    , 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Quad2DSdfNode(t);}}},
-    {SdfNodeType::EXTRUSION    , "Extrusion"    , SdfNodeClass::OTHER    , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ExtrusionSdfNode(t);}}},
-    {SdfNodeType::GRID_16      , "Grid_16"      , SdfNodeClass::GRID     , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
-    {SdfNodeType::GRID_32      , "Grid_32"      , SdfNodeClass::GRID     , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
-    {SdfNodeType::GRID_64      , "Grid_64"      , SdfNodeClass::GRID     , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},
-    {SdfNodeType::GRID_128     , "Grid_128"     , SdfNodeClass::GRID     , 128*128*128, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 128);}}},
-    {SdfNodeType::GRID_256     , "Grid_256"     , SdfNodeClass::GRID     , 256*256*256, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 256);}}},
-    {SdfNodeType::NEURAL_TINY  , "Neural Tiny"  , SdfNodeClass::NEURAL   , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 16);}}},
-    {SdfNodeType::NEURAL_SMALL , "Neural Small" , SdfNodeClass::NEURAL   , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 32);}}},
-    {SdfNodeType::NEURAL_MEDIUM, "Neural Medium", SdfNodeClass::NEURAL   , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 3, 64);}}},
-    {SdfNodeType::NEURAL_LARGE , "Neural Large" , SdfNodeClass::NEURAL   , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 4, 80);}}},
-    {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , SdfNodeClass::NEURAL   , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 5, 128);}}},
+    {SdfNodeType::UNDEFINED    , "UNDEFINED"    , SdfNodeClass::OTHER      , 0, 0, nullptr},
+    {SdfNodeType::SPHERE       , "Sphere"       , SdfNodeClass::PRIMITIVE  , 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new SphereSdfNode(t);}}},
+    {SdfNodeType::MOVE         , "Move"         , SdfNodeClass::TRANSFORM  , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new MoveSdfNode(t);}}},
+    {SdfNodeType::OR           , "Or"           , SdfNodeClass::COMBINE    , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new OrSdfNode(t);}}},
+    {SdfNodeType::BOX          , "Box"          , SdfNodeClass::PRIMITIVE  , 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new BoxSdfNode(t);}}},
+    {SdfNodeType::CYLINDER     , "Cylinder"     , SdfNodeClass::PRIMITIVE  , 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new CylinderSdfNode(t);}}},
+    {SdfNodeType::ROUNDED_BOX  , "Rounded Box"  , SdfNodeClass::PRIMITIVE  , 4, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundBoxSdfNode(t);}}},
+    {SdfNodeType::PRISM        , "Prism"        , SdfNodeClass::PRIMITIVE  , 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new PrismSdfNode(t);}}},
+    {SdfNodeType::CONE         , "Cone"         , SdfNodeClass::PRIMITIVE  , 3, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ConeSdfNode(t);}}},
+    {SdfNodeType::AND          , "And"          , SdfNodeClass::COMBINE    , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new AndSdfNode(t);}}},
+    {SdfNodeType::SUBTRACT     , "Subtract"     , SdfNodeClass::COMBINE    , 0, 2, {[](SdfNodeType::Type t) -> SdfNode* {return new SubtractSdfNode(t);}}},
+    {SdfNodeType::ROTATE       , "Rotate"       , SdfNodeClass::TRANSFORM  , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RotateSdfNode(t);}}},
+    {SdfNodeType::SCALE        , "Scale"        , SdfNodeClass::TRANSFORM  , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ScaleSdfNode(t);}}},
+    {SdfNodeType::CHAIR        , "Chair"        , SdfNodeClass::COMPLEX    , 6, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new ChairSdfNode(t);}}},
+    {SdfNodeType::CROTATE      , "Complex Rot"  , SdfNodeClass::COMPLEX    , 6, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotateSdfNode(t);}}},
+    {SdfNodeType::ROUND        , "Round"        , SdfNodeClass::TRANSFORM  , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new RoundSdfNode(t);}}},
+    {SdfNodeType::CIRCLE       , "Circle"       , SdfNodeClass::PRIMITIVE2D, 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Circle2DSdfNode(t);}}},
+    {SdfNodeType::QUAD         , "Quad"         , SdfNodeClass::PRIMITIVE2D, 2, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Quad2DSdfNode(t);}}},
+    {SdfNodeType::EXTRUSION    , "Extrusion"    , SdfNodeClass::OTHER      , 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ExtrusionSdfNode(t);}}},
+    {SdfNodeType::SCALE2D      , "Scale2D"      , SdfNodeClass::TRANSFORM2D, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ScaleSdfNode(t);}}},
+    {SdfNodeType::MOVE2D       , "Move2D"       , SdfNodeClass::TRANSFORM2D, 2, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new Move2DSdfNode(t);}}},
+    {SdfNodeType::ROTATE2D     , "Rotate2D"     , SdfNodeClass::TRANSFORM2D, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new Rotate2DSdfNode(t);}}},
+    {SdfNodeType::CROTATE2D    , "Complex Rot2D", SdfNodeClass::COMPLEX    , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotate2DSdfNode(t);}}},
+    {SdfNodeType::GRID_16      , "Grid_16"      , SdfNodeClass::GRID       , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
+    {SdfNodeType::GRID_32      , "Grid_32"      , SdfNodeClass::GRID       , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
+    {SdfNodeType::GRID_64      , "Grid_64"      , SdfNodeClass::GRID       , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},
+    {SdfNodeType::GRID_128     , "Grid_128"     , SdfNodeClass::GRID       , 128*128*128, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 128);}}},
+    {SdfNodeType::GRID_256     , "Grid_256"     , SdfNodeClass::GRID       , 256*256*256, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 256);}}},
+    {SdfNodeType::NEURAL_TINY  , "Neural Tiny"  , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 16);}}},
+    {SdfNodeType::NEURAL_SMALL , "Neural Small" , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 2, 32);}}},
+    {SdfNodeType::NEURAL_MEDIUM, "Neural Medium", SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 3, 64);}}},
+    {SdfNodeType::NEURAL_LARGE , "Neural Large" , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 4, 80);}}},
+    {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 5, 128);}}},
   };
 
   const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
