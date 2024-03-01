@@ -65,7 +65,7 @@ struct AABB
       return AABB(center()-0.5f*ratio*size(), center()+0.5f*ratio*size());
     }
 
-    inline bool contains(glm::vec3 &p) const
+    inline bool contains(const glm::vec3 &p) const
     {
         return (p.x >= min_pos.x) && (p.x < max_pos.x) &&
                (p.y >= min_pos.y) && (p.y < max_pos.y) &&
@@ -80,7 +80,7 @@ struct AABB
                (aabb.min_pos.z <= max_pos.z) &&
                (aabb.max_pos.z >= min_pos.z);
     }
-    inline bool intersects(const glm::vec3 &origin, const glm::vec3 &dir, float *t_near = nullptr) const
+    inline bool intersects(const glm::vec3 &origin, const glm::vec3 &dir, float *t_near = nullptr, float *t_far = nullptr) const
     {
         glm::vec3 safe_dir = glm::sign(dir)*glm::max(glm::vec3(1e-9f),glm::abs(dir));
         glm::vec3 tMin = (min_pos - origin)/safe_dir;
@@ -92,6 +92,8 @@ struct AABB
 
         if (t_near)
           *t_near = tNear;
+        if (t_far)
+          *t_far = tFar;
 
         return tNear <= tFar;
     }

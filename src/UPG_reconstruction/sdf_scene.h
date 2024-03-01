@@ -19,6 +19,7 @@ namespace upg
   {
     unsigned offset; //in objects vector
     unsigned size;
+    AABB bbox;
   };
   struct SdfScene
   {

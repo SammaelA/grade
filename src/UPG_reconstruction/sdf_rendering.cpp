@@ -508,31 +508,38 @@ namespace upg
     return d;
   }
 
-  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &start_pos, const glm::vec3 &dir, 
+  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &pos, const glm::vec3 &dir, 
                           glm::vec3 *surface_pos = nullptr)
   {
     constexpr float EPS = 3*1e-6;
-    glm::vec3 p0 = start_pos;
-    if (!sdf_bbox.contains(p0))
+    float t = 0;
+    float tFar = 1e4;
+    if (!sdf_bbox.contains(pos))
     {
-      float t = 0;
-      if (sdf_bbox.intersects(start_pos, dir, &t))
-        p0 = start_pos + t*dir;
-      else //ray won't intersect SDF
+      if (!sdf_bbox.intersects(pos, dir, &t, &tFar))
         return false;
     }
     int iter = 0;
-    float d = get_dist(sdf, p0);
-    while (iter < 1000 && d > EPS && d < 1e6)
+    float d = get_dist(sdf, pos + t*dir);
+    while (iter < 1000 && d > EPS && t < tFar)
     {
-      p0 += d * dir;
-      d = get_dist(sdf, p0);
+      t += d;
+      d = get_dist(sdf, pos + t*dir);
       iter++;
     }
     if (surface_pos)
-      *surface_pos = p0;
+      *surface_pos = pos + t*dir;
     //logerr("st %d (%f %f %f)", iter, p0.x, p0.y, p0.z);
     return d <= EPS;
+  }
+
+  float render_bbox(const AABB &bbox, glm::vec3 p, float line_q)
+  {
+    glm::vec3 pb = (p-bbox.min_pos)/bbox.size();
+    glm::vec3 pc1 = max(abs(1.0f - line_q*pb), 0.0f);
+    glm::vec3 pc2 = max(abs(1.0f - line_q*(1.0f-pb)), 0.0f);
+    glm::vec3 pm = max(pc1, pc2);
+    return std::max(pm.x, std::max(pm.y, pm.z));
   }
 
   Texture render_sdf(const SdfScene &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
@@ -557,11 +564,42 @@ namespace upg
   void render_sdf_to_array(std::span<float> out_array, const SdfScene &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
   {
     assert(sdf.conjunctions.size()>0 && sdf.objects.size()>0);
-    AABB sdf_bbox = sdf.objects[0].bbox;
-    for (auto &obj : sdf.objects)
+    AABB sdf_bbox = sdf.conjunctions[0].bbox;
+    for (auto &obj : sdf.conjunctions)
     {
       sdf_bbox.min_pos = min(sdf_bbox.min_pos, obj.bbox.min_pos);
       sdf_bbox.max_pos = max(sdf_bbox.max_pos, obj.bbox.max_pos);
+    }
+    std::vector<glm::vec3> edges =
+    {
+      {0,0,0},{0,0,1},
+      {0,0,0},{0,1,0},
+      {0,0,0},{1,0,0},
+      {0,0,1},{0,1,1},
+
+      {0,0,1},{1,0,1},
+      {0,1,0},{0,1,1},
+      {0,1,0},{1,1,0},
+      {0,1,1},{1,1,1},
+
+      {1,0,0},{1,1,0},
+      {1,0,0},{1,0,1},
+      {1,0,1},{1,1,1},
+      {1,1,0},{1,1,1},
+    };
+    std::vector<AABB> boxes = {sdf_bbox};
+    for (auto &obj : sdf.conjunctions)
+     boxes.push_back(obj.bbox);
+    std::vector<AABB> debug_lines;
+    float th = 0.01;
+    for (auto &box : boxes)
+    {
+      for (int i=0;i<edges.size();i+=2)
+      {
+        glm::vec3 p1 = edges[i]*box.min_pos + (1.0f-edges[i])*box.max_pos;
+        glm::vec3 p2 = edges[i+1]*box.min_pos + (1.0f-edges[i+1])*box.max_pos;
+        debug_lines.push_back(AABB(min(p1,p2)-th,max(p1,p2)+th));
+      }
     }
     ///sdf_bbox = AABB({-5,-5,-5},{5,5,5});
     glm::mat4 projInv = glm::inverse(glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
@@ -570,7 +608,7 @@ namespace upg
     glm::vec3 light_dir = normalize(glm::vec3(1,1,1));
     int spp_a = MAX(1,floor(sqrtf(spp)));
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (int yi=0;yi<image_h;yi++)
     {
       std::vector<float> cur_grad;
@@ -586,8 +624,22 @@ namespace upg
             float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
             glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
             glm::vec3 p0;
+
+            bool debug_box_found = false;
+            if (false)
+            {
+            for (auto &box : debug_lines)
+            {
+              if (box.intersects(camera.origin, dir))
+              {
+                debug_box_found = true;
+                color += 1;
+                break;
+              }
+            }
+            }
             
-            if (sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
+            if (!debug_box_found && sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
             {
               if (mode == SDFRenderMode::MASK)
                 color += 1;

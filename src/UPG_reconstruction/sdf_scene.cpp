@@ -288,9 +288,10 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
     glm::vec3 p_max(-1e9,-1e9,-1e9);
     for (unsigned i=0;i<8;i++)
     {
-      glm::vec3 idx = glm::vec3(i&4>>2,i&2>>1,i&1);
+      glm::vec3 idx = glm::vec3((i&4)>>2,(i&2)>>1,i&1);
+      //printf("idx %f %f %f\n",idx.x, idx.y, idx.z);
       glm::vec3 corner = itr*glm::vec4(idx*bbox.min_pos + (glm::vec3(1,1,1)-idx)*bbox.max_pos, 1.0f);
-      logerr("corner %f %f %f", corner.x, corner.y, corner.z);
+      //logerr("corner %f %f %f", corner.x, corner.y, corner.z);
       //corner = itr*glm::vec4(1,1,1,1);
       p_min = min(p_min, corner);
       p_max = max(p_max, corner);
@@ -325,7 +326,9 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       logerr("Conjuction %u",id);
       std::vector<std::pair<unsigned, bool>> literal_node_ids;
       get_literal_nodes(nodes, literal_node_ids, id, false);
-      scene.conjunctions.push_back({(unsigned)scene.objects.size(), (unsigned)literal_node_ids.size()});
+      scene.conjunctions.push_back({(unsigned)scene.objects.size(), (unsigned)literal_node_ids.size(), AABB()});
+
+      AABB bbox({-1e6,-1e6,-1e6},{1e6,1e6,1e6});
       for (auto &p : literal_node_ids)
       {
         SdfObject &base_obj = basic_objects[nodes[p.first].literal_id];
@@ -338,11 +341,18 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
         scene.objects.back().bbox = transform_bbox(base_obj.bbox, base_obj.transform);
         scene.objects.back().transform = base_obj.transform;
         scene.objects.back().complement = p.second;
+
+        if (!p.second)
+        {
+          bbox = bbox.intersect_bbox(scene.objects.back().bbox);
+        }
+
         logerr("%u (prim %d) %s", p.first, nodes[p.first].literal_id, p.second ? "COMPLEMENT" : "");
         logerr("transform (%f %f %f)(%f %f %f)", 
                scene.objects.back().bbox.min_pos.x, scene.objects.back().bbox.min_pos.y, scene.objects.back().bbox.min_pos.z,
                scene.objects.back().bbox.max_pos.x, scene.objects.back().bbox.max_pos.y, scene.objects.back().bbox.max_pos.z);
       }
+      scene.conjunctions.back().bbox = bbox;
       logerr("Conjuction %u END",id);
     }
 
