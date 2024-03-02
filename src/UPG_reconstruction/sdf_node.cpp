@@ -1707,7 +1707,7 @@ namespace upg
       return {{SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::BOX, SdfNodeType::MOVE, 
                SdfNodeType::BOX, SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER,
                SdfNodeType::MOVE, SdfNodeType::CYLINDER, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER, 
-               SdfNodeType::MOVE, SdfNodeType::CYLINDER}};;
+               SdfNodeType::MOVE, SdfNodeType::CYLINDER}};
     }
   };
 
@@ -1976,6 +1976,19 @@ namespace upg
     {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 5, 128);}}},
   };
 
+  std::map<SdfNodeType::Type, UPGStructure> complex_nodes_structure = 
+  {
+    {SdfNodeType::CHAIR,
+             {{SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::BOX, SdfNodeType::MOVE, 
+               SdfNodeType::BOX, SdfNodeType::OR, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER,
+               SdfNodeType::MOVE, SdfNodeType::CYLINDER, SdfNodeType::OR, SdfNodeType::MOVE, SdfNodeType::CYLINDER, 
+               SdfNodeType::MOVE, SdfNodeType::CYLINDER}}},
+    {SdfNodeType::CROTATE,
+             {{SdfNodeType::MOVE, SdfNodeType::ROTATE, SdfNodeType::MOVE, SdfNodeType::UNDEFINED}}},
+    {SdfNodeType::CROTATE2D,
+             {{SdfNodeType::MOVE2D, SdfNodeType::ROTATE2D, SdfNodeType::MOVE2D, SdfNodeType::UNDEFINED}}}
+  };
+
   const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
   {
     assert(type < SdfNodeType::NODE_TYPES_COUNT);
@@ -2062,5 +2075,114 @@ namespace upg
     //for (auto &g : parts)
     //  logerr("part [%d %d][%d %d] %d", (int)g.s_range.first, (int)g.s_range.second, g.p_range.first, g.p_range.second, g.position_index);
     return parts;
+  }
+
+  int end_of_child(const UPGStructure &structure, int start)//returns -1 if it has not end
+  {
+    int i = start;
+    int child_cnt = 1;
+    while (i < structure.s.size())
+    {
+      child_cnt += node_properties[structure.s[i]].children - 1;
+      ++i;
+      if (child_cnt == 0)
+      {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  bool is_child_correct(const UPGStructure &structure, int start, bool is_2D)
+  {
+    if (node_properties[structure.s[start]].type == SdfNodeType::UNDEFINED) return false;
+    unsigned child_cnt = node_properties[structure.s[start]].children;
+    int last = start + 1, buffer = 0;
+    while (child_cnt)
+    {
+      buffer = end_of_child(structure, last);
+      if (buffer == -1) return false;
+      if (is_child_correct(structure, last, is_2D || node_properties[structure.s[start]].type == SdfNodeType::EXTRUSION))
+      {
+        last = buffer;
+      }
+      else
+      {
+        return false;
+      }
+      --child_cnt;
+    }
+    if (is_2D && 
+        node_properties[structure.s[start]].node_class != SdfNodeClass::TRANSFORM2D && 
+        node_properties[structure.s[start]].node_class != SdfNodeClass::PRIMITIVE2D &&
+        node_properties[structure.s[start]].node_class != SdfNodeClass::COMBINE) return false;
+    return true;
+  }
+
+  int find_default(const UPGStructure &structure, int start)
+  {
+    int i;
+    for (i = start; i < structure.s.size(); ++i)
+    {
+      if (node_properties[structure.s[i]].type == SdfNodeType::UNDEFINED) return i;
+    }
+    return structure.s.size();
+  }
+
+  bool is_struct_correct(const UPGStructure &structure)
+  {
+    UPGStructure s = structure;
+    for (int i = 0; i < s.s.size(); ++i)//open complex node in global structure
+    {
+      if (node_properties[s.s[i]].node_class == SdfNodeClass::COMPLEX)
+      {
+        std::vector<int> child_starts;
+        child_starts.clear();
+        child_starts.push_back(i+1);
+        for (int j = 0; j < node_properties[s.s[i]].children; ++j)
+        {
+          child_starts.push_back(end_of_child(s, child_starts[child_starts.size() - 1]));
+          if (child_starts[child_starts.size() - 1] == -1) return false;
+        }
+        UPGStructure tmp = complex_nodes_structure[node_properties[s.s[i]].type];
+        std::vector<int> next_default;
+        next_default.clear();
+        next_default.push_back(-1);
+        for (int j = 0; j < node_properties[s.s[i]].children + 1; ++j)
+        {
+          next_default.push_back(find_default(tmp, next_default[next_default.size() - 1] + 1));
+          if (next_default[next_default.size() - 1] == next_default[next_default.size() - 2]) return false;
+        }
+        for (int j = child_starts.size() - 1; j >= 0; --j)
+        {
+          s.s.insert(std::next(s.s.begin(), child_starts[j]), std::next(tmp.s.begin(), next_default[j] + 1), std::next(tmp.s.begin(), next_default[j + 1]));
+        }
+        s.s.erase(s.s.begin() + i);
+        --i;
+      }
+    }
+    
+    if (s.s.size() > 0)//check correct of global tree
+    {
+      if (node_properties[s.s[0]].type == SdfNodeType::UNDEFINED) return false;
+      unsigned child_cnt = node_properties[s.s[0]].children;
+      int last = 1, buffer = 0;
+      while (child_cnt)
+      {
+        buffer = end_of_child(s, last);
+        if (buffer == -1) return false;
+        if (is_child_correct(s, last, node_properties[s.s[0]].type == SdfNodeType::EXTRUSION))
+        {
+          last = buffer;
+        }
+        else
+        {
+          return false;
+        }
+        --child_cnt;
+      }
+      return last == s.s.size();
+    }
+    return false;
   }
 }

@@ -1146,6 +1146,80 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
   }
 
+  void sdf_test_20()
+  {
+    debug("TEST 20. STRUCTURE CHECKING\n");
+    UPGStructure S = {std::vector<uint16_t>{SdfNodeType::SPHERE}};
+    debug(" 20.1. %-64s", "sphere");
+    if (is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    S = {std::vector<uint16_t>{SdfNodeType::ROUND, SdfNodeType::CROTATE, SdfNodeType::MOVE, SdfNodeType::CHAIR}};
+    debug(" 20.2. %-64s", "complex structure");
+    if (is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::AND, SdfNodeType::SUBTRACT, 
+                               SdfNodeType::BOX, SdfNodeType::SPHERE, SdfNodeType::CONE, 
+                               SdfNodeType::AND, SdfNodeType::CYLINDER, SdfNodeType::ROUNDED_BOX}};
+    debug(" 20.3. %-64s", "ramified structure");
+    if (is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::EXTRUSION, SdfNodeType::AND, 
+                               SdfNodeType::ROTATE2D, SdfNodeType::MOVE2D, SdfNodeType::CIRCLE, 
+                               SdfNodeType::CROTATE2D, SdfNodeType::SCALE2D, SdfNodeType::QUAD, 
+                               SdfNodeType::ROTATE, SdfNodeType::CHAIR}};
+    debug(" 20.4. %-64s", "Extrusion 2D or 3D structure");
+    if (is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::AND, SdfNodeType::SUBTRACT, 
+                               SdfNodeType::BOX, SdfNodeType::SPHERE, SdfNodeType::CONE, 
+                               SdfNodeType::AND, SdfNodeType::UNDEFINED, SdfNodeType::CYLINDER, SdfNodeType::ROUNDED_BOX}};
+    debug(" 20.5. %-64s", "structure with undefined");
+    if (!is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::AND, SdfNodeType::SUBTRACT, 
+                               SdfNodeType::BOX, SdfNodeType::CONE, 
+                               SdfNodeType::AND, SdfNodeType::CYLINDER, SdfNodeType::ROUNDED_BOX}};
+    debug(" 20.6. %-64s", "not complete structure");
+    if (!is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+    
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::AND, SdfNodeType::SUBTRACT, 
+                               SdfNodeType::BOX, SdfNodeType::CONE, SdfNodeType::ROUNDED_BOX, 
+                               SdfNodeType::AND, SdfNodeType::CYLINDER, SdfNodeType::CROTATE}};
+    debug(" 20.7. %-64s", "not complete structure v2");
+    if (!is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+
+    S = {std::vector<uint16_t>{SdfNodeType::OR, SdfNodeType::AND, SdfNodeType::SUBTRACT, 
+                               SdfNodeType::BOX, SdfNodeType::CONE, SdfNodeType::ROUNDED_BOX, 
+                               SdfNodeType::AND, SdfNodeType::CYLINDER, SdfNodeType::CROTATE, 
+                               SdfNodeType::CHAIR, SdfNodeType::EXTRUSION, SdfNodeType::CIRCLE}};
+    debug(" 20.8. %-64s", "too big structure");
+    if (!is_struct_correct(S))
+      debug("PASSED\n");
+    else
+      debug("FAILED\n");
+  }
+
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -1154,7 +1228,7 @@ namespace upg
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
       sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
-      sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19
+      sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19, sdf_test_20
     };
 
     if (tests.empty())

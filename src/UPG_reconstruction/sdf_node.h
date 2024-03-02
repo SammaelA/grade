@@ -194,4 +194,5 @@ namespace upg
   };
 
   std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure);
+  bool is_struct_correct(const UPGStructure &structure);
 }
