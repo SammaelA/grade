@@ -1,6 +1,7 @@
 #pragma once
 #include "upg.h"
 #include "common_utils/bbox.h"
+#include <string>
 
 namespace upg
 {
@@ -29,4 +30,6 @@ namespace upg
   };
 
   SdfScene create_sdf_scene(const UPGStructure &structure, const UPGParametersRaw &params);
+  void save_sdf_scene(const SdfScene &scene, const std::string &path);
+  void load_sdf_scene(SdfScene &scene, const std::string &path);
 }

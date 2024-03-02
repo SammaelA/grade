@@ -896,7 +896,12 @@ namespace upg
   void sdf_scene_test()
   {
     SceneDesc s = scene_CSG_1();
-    SdfScene scene = create_sdf_scene(s.first, s.second);
+    {
+      SdfScene scene = create_sdf_scene(s.first, s.second);
+      save_sdf_scene(scene, "saves/test_scene.bin");
+    }
+    SdfScene scene;
+    load_sdf_scene(scene, "saves/test_scene.bin");
 
     CameraSettings camera;
     camera.origin = glm::vec3(0,0,3);

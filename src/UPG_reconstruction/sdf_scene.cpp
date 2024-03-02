@@ -1,5 +1,6 @@
 #include "sdf_scene.h"
 #include "sdf_node.h"
+#include <fstream>
 
 namespace upg
 {
@@ -368,5 +369,47 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
     printf("\n");
 
     return scene;
+  }
+
+  void save_sdf_scene(const SdfScene &scene, const std::string &path)
+  {
+    std::ofstream fs(path, std::ios::binary); 
+    unsigned c_count = scene.conjunctions.size();
+    unsigned o_count = scene.objects.size();
+    unsigned p_count = scene.parameters.size();
+
+    fs.write((const char *)(&c_count), sizeof(unsigned));
+    fs.write((const char *)(&o_count), sizeof(unsigned));
+    fs.write((const char *)(&p_count), sizeof(unsigned));
+
+    fs.write((const char *)scene.conjunctions.data(), c_count*sizeof(SdfConjunction));
+    fs.write((const char *)scene.objects.data(), o_count*sizeof(SdfObject));
+    fs.write((const char *)scene.parameters.data(), p_count*sizeof(float));
+    fs.flush();
+    fs.close();
+  }
+
+  void load_sdf_scene(SdfScene &scene, const std::string &path)
+  {
+    std::ifstream fs(path, std::ios::binary); 
+    unsigned c_count = 0;
+    unsigned o_count = 0;
+    unsigned p_count = 0;
+
+    fs.read((char *)(&c_count), sizeof(unsigned));
+    fs.read((char *)(&o_count), sizeof(unsigned));
+    fs.read((char *)(&p_count), sizeof(unsigned));
+
+    assert(c_count > 0);
+    assert(o_count > 0);
+    assert(p_count > 0);
+    scene.conjunctions.resize(c_count);
+    scene.objects.resize(o_count);
+    scene.parameters.resize(p_count);
+
+    fs.read((char *)scene.conjunctions.data(), c_count*sizeof(SdfConjunction));
+    fs.read((char *)scene.objects.data(), o_count*sizeof(SdfObject));
+    fs.read((char *)scene.parameters.data(), p_count*sizeof(float));
+    fs.close();
   }
 }
