@@ -56,7 +56,6 @@ df::create_density_field(const std::vector<float>& model, const VoxelGrid& grid)
     std::vector<float> density_field(grid.dimension * grid.dimension * grid.dimension, 0);
     
     glm::vec3 gridSize = grid.bounds[1] - grid.bounds[0];
-    size_t numVoxels = grid.dimension * grid.dimension * grid.dimension;
     glm::vec3 voxelSize = gridSize / (float)grid.dimension;
 
     for (int xi = 0; xi < grid.dimension; xi++)
@@ -73,14 +72,17 @@ df::create_density_field(const std::vector<float>& model, const VoxelGrid& grid)
                 
                 for (int point_ind = 0; point_ind < grid.samplePointsCount; point_ind++)
                 {
-                    glm::vec3 samplingPoint = glm::vec3(0 + (voxelSize.x - 0) * rand() / (float)RAND_MAX,
-                                                                0 + (voxelSize.y - 0) * rand() / (float)RAND_MAX,
-                                                                0 + (voxelSize.z - 0) * rand() / (float)RAND_MAX);
+                    glm::vec3 samplingPoint = glm::vec3(
+                        0 + (voxelSize.x - 0) * rand() / (float)RAND_MAX,
+                        0 + (voxelSize.y - 0) * rand() / (float)RAND_MAX,
+                        0 + (voxelSize.z - 0) * rand() / (float)RAND_MAX
+                    );
 
                     //  check if point is inside
                     
-                    glm::vec3 shortest_distance_vec;
+                    glm::vec3 shortest_distance_vec_to_tr;
                     glm::vec3 norm_to_nearest_tr;
+                    
                     float shortest_distance = 10000.f;
 
                     for (int i = 0; i < model.size(); i += 3*FLOAT_PER_VERTEX)
@@ -99,14 +101,16 @@ df::create_density_field(const std::vector<float>& model, const VoxelGrid& grid)
                         if (distance < shortest_distance)
                         {
                             shortest_distance = distance;
-                            shortest_distance_vec = voxelCoord + samplingPoint - point_on_tr;
-                            norm_to_nearest_tr = glm::vec3(model[i + 0 * FLOAT_PER_VERTEX + 3],
+                            shortest_distance_vec_to_tr = voxelCoord + samplingPoint - point_on_tr;
+                            norm_to_nearest_tr = glm::vec3(
+                                model[i + 0 * FLOAT_PER_VERTEX + 3],
                                 model[i + 0 * FLOAT_PER_VERTEX + 3 + 1],
-                                model[i + 0 * FLOAT_PER_VERTEX + 3 + 2]);
+                                model[i + 0 * FLOAT_PER_VERTEX + 3 + 2]
+                            );
                         }
                     }
 
-                    if (glm::dot(shortest_distance_vec, norm_to_nearest_tr) < 0)
+                    if (glm::dot(shortest_distance_vec_to_tr, norm_to_nearest_tr) < 0)
                     {
                         inside_points_count++;
                     }
@@ -133,15 +137,68 @@ df::erase(std::vector<float>& density, const VoxelGrid& grid, const float& trash
     }
 }
 
-void 
+std::vector<float> 
 df::create_sdf(const std::vector<float>& density, const VoxelGrid& grid)
 {
+    std::vector<glm::vec3> voxel_border_center_coords;
+    glm::vec3 gridSize = grid.bounds[1] - grid.bounds[0];
+    glm::vec3 voxelSize = gridSize / (float)grid.dimension;
 
+    std::vector<float> sdf_model(grid.dimension * grid.dimension * grid.dimension, 0);
+
+    //  Collect all voxels' centers that are border of future sdf model
+    for (int x = 0; x < grid.dimension; x++)
+    {
+        for (int y = 0; y < grid.dimension; y++)
+        {
+            for (int z = 0; z < grid.dimension; z++)
+            {
+                if (density[(z * grid.dimension + y) * grid.dimension + x] > 0 && 
+                    density[(z * grid.dimension + y) * grid.dimension + x] < 1)
+                {
+                    glm::vec3 voxelCenterCoord = glm::vec3(x, y, z) * voxelSize + grid.bounds[0] + voxelSize / 2.f;
+                    voxel_border_center_coords.push_back(voxelCenterCoord);
+                }
+            }   
+        }
+    }
+
+    //  Calculate distance between current voxel's center and the nearest border voxel's center from voxel_border_center_coords
+    for (int x = 0; x < grid.dimension; x++)
+    {
+        for (int y = 0; y < grid.dimension; y++)
+        {
+            for (int z = 0; z < grid.dimension; z++)
+            {
+                if (density[(z * grid.dimension + y) * grid.dimension + x] > 0 && density[(z * grid.dimension + y) * grid.dimension + x] < 1)
+                {
+                    sdf_model[(z * grid.dimension + y) * grid.dimension + x] = 0;
+                }
+                else 
+                {
+                    float shortest_distance = 10000.f, distance = 0;
+                    glm::vec3 voxelCenterCoord = glm::vec3(x, y, z) * voxelSize + grid.bounds[0] + voxelSize / 2.f;
+
+                    for (const glm::vec3 &borderVoxelCenterCoord: voxel_border_center_coords)
+                    {
+                        distance = glm::distance(voxelCenterCoord, borderVoxelCenterCoord);
+                        shortest_distance = (distance < shortest_distance) ? distance : shortest_distance;
+                    }
+
+                    sdf_model[(z * grid.dimension + y) * grid.dimension + x] = 
+                        (density[(z * grid.dimension + y) * grid.dimension + x] > 0) ? -1 * shortest_distance : shortest_distance;
+                }
+            }   
+        }
+    }
+
+    return sdf_model;
 }
 
-float*
+std::vector<float>
 df::pipeline(const std::vector<float>& model)
 {
+    std::vector<float> sdf_model;
     //  First step
     glm::vec3 bounds[2] = {glm::vec3(-1.2f,-1.2f,-1.2f), glm::vec3(1.2f, 1.2f, 1.2f)};
     VoxelGrid grid(64, 5, bounds);
@@ -152,7 +209,7 @@ df::pipeline(const std::vector<float>& model)
     df::erase(density, grid, 0.5);
 
     //  Third
-    df::create_sdf(density, grid);
+    sdf_model = df::create_sdf(density, grid);
 
-    return nullptr;
+    return sdf_model;
 }
