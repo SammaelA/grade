@@ -1,6 +1,7 @@
 #include "sdf_scene_convert.h"
 #include "sdf_node.h"
 #include "LiteMath_conv.h"
+#include <map>
 
 namespace upg
 {
@@ -12,6 +13,14 @@ namespace upg
     bool is_literal;
     int literal_id = -1;
   };
+
+  static std::map<SdfNodeType::Type, SdfPrimitiveType> primitive_type_remap = 
+  {
+    {SdfNodeType::SPHERE, SdfPrimitiveType::SPHERE},
+    {SdfNodeType::BOX, SdfPrimitiveType::BOX},
+    {SdfNodeType::CYLINDER, SdfPrimitiveType::CYLINDER},
+  };
+
   void get_transform_rec(const SdfNode *node, 
                          std::vector<LogicNode> &nodes, 
                          std::vector<float> &parameters,
@@ -26,7 +35,7 @@ namespace upg
     case SdfNodeClass::PRIMITIVE:
     {
       objects.emplace_back();
-      objects.back().type = node->type;
+      objects.back().type = primitive_type_remap.at(node->type);
       objects.back().bbox = conv(node->get_bbox());
       objects.back().distance_add = distance_add;
       objects.back().distance_mult = distance_mult;
