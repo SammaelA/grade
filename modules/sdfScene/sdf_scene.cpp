@@ -1,44 +1,52 @@
-#include <fstream>
 #include "sdf_scene.h"
+#include <cassert>
+#include <fstream>
 
+using namespace LiteMath;
 
-  float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 p)
+  float dist_prim(const SdfScene &sdf, const SdfObject &prim, float3 p)
   {
-    glm::vec3 pos = prim.transform * glm::vec4(p, 1.0f);
+    float3 pos = prim.transform * p;
+    //printf("%f %f %f -- %f %f %f\n", p.x, p.y, p.z, pos.x, pos.y, pos.z);
+    //printf("%f %f %f %f\n %f %f %f %f\n %f %f %f %f\n %f %f %f %f\n", 
+    //       prim.transform(0, 0), prim.transform(0, 1), prim.transform(0, 2), prim.transform(0, 3),
+    //       prim.transform(1, 0), prim.transform(1, 1), prim.transform(1, 2), prim.transform(1, 3),
+    //       prim.transform(2, 0), prim.transform(2, 1), prim.transform(2, 2), prim.transform(2, 3),
+    //       prim.transform(3, 0), prim.transform(3, 1), prim.transform(3, 2), prim.transform(3, 3));
 
     switch (prim.type)
     {
     case 1:
     {
       float r = sdf.parameters[prim.params_offset + 0];
-      //logerr("sphere %f %f %f - %f",pos.x, pos.y, pos.z, r);
+      //fprintf(stderr, "sphere %f %f %f - %f",pos.x, pos.y, pos.z, r);
       return length(pos) - r;
     }
     case 4:
     {
-      glm::vec3 size(sdf.parameters[prim.params_offset + 0],
+      float3 size(sdf.parameters[prim.params_offset + 0],
                      sdf.parameters[prim.params_offset + 1],
                      sdf.parameters[prim.params_offset + 2]);
-      //logerr("box %f %f %f - %f %f %f - %f %f %f",p.x, p.y, p.z, pos.x, pos.y, pos.z, size.x, size.y, size.z);
-      glm::vec3 q = abs(pos) - size;
-      return length(max(q,0.0f)) + std::min(std::max(q.x,std::max(q.y,q.z)),0.0f);
+      //fprintf(stderr, "box %f %f %f - %f %f %f - %f %f %f",p.x, p.y, p.z, pos.x, pos.y, pos.z, size.x, size.y, size.z);
+      float3 q = abs(pos) - size;
+      return length(max(q,float3(0.0f))) + min(max(q.x,max(q.y,q.z)),0.0f);
     }    
     case 5:
     {
       float h = sdf.parameters[prim.params_offset + 0];
       float r = sdf.parameters[prim.params_offset + 1];
-      glm::vec2 d = abs(glm::vec2(sqrt(pos.x*pos.x + pos.z*pos.z),pos.y)) - glm::vec2(r,h);
-      return std::min(std::max(d.x,d.y),0.0f) + glm::length(max(d,0.0f));
+      float2 d = abs(float2(sqrt(pos.x*pos.x + pos.z*pos.z),pos.y)) - float2(r,h);
+      return min(max(d.x,d.y),0.0f) + length(max(d,float2(0.0f)));
     }
     default:
-      logerr("unknown type %u", prim.type);
+      fprintf(stderr, "unknown type %u", prim.type);
       assert(false);
       break;
     }
     return -1000;
   }
 
-  float get_dist(const SdfScene &sdf, glm::vec3 p)
+  float get_dist(const SdfScene &sdf, float3 p)
   {
     float d = 1e6;
     for (auto &conj : sdf.conjunctions)
@@ -47,18 +55,18 @@
       for (unsigned pid = conj.offset; pid < conj.offset + conj.size; pid++)
       {
         float prim_d = sdf.objects[pid].distance_mult*dist_prim(sdf, sdf.objects[pid], p) + sdf.objects[pid].distance_add;
-        //logerr("prim %f", prim_d);
-        conj_d = std::max(conj_d, sdf.objects[pid].complement ? -prim_d : prim_d);
+        //fprintf(stderr, "prim %f", prim_d);
+        conj_d = max(conj_d, sdf.objects[pid].complement ? -prim_d : prim_d);
       }
-      //logerr("%f %f\n", d, conj_d);
-      d = std::min(d, conj_d);
+      //fprintf(stderr, "%f %f\n", d, conj_d);
+      d = min(d, conj_d);
     }
-    //logerr("\n");
+    //fprintf(stderr, "\n");
     return d;
   }
 
-  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &pos, const glm::vec3 &dir, 
-                          glm::vec3 *surface_pos)
+  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const float3 &pos, const float3 &dir, 
+                          float3 *surface_pos)
   {
     constexpr float EPS = 1e-5;
     float t = 0;
@@ -78,7 +86,7 @@
     }
     if (surface_pos)
       *surface_pos = pos + t*dir;
-    //logerr("st %d (%f %f %f)", iter, p0.x, p0.y, p0.z);
+    //fprintf(stderr, "st %d (%f %f %f)", iter, p0.x, p0.y, p0.z);
     return d <= EPS;
   }
 

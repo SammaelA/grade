@@ -3,6 +3,7 @@
 #include "tinyEngine/engine.h"
 #include "common_utils/distribution.h"
 #include "preprocessing.h"
+#include "LiteMath_conv.h"
 #include <chrono>
 #include <omp.h>
 #include <thread>
@@ -484,11 +485,11 @@ namespace upg
   void render_sdf_to_array(std::span<float> out_array, const SdfScene &sdf, const CameraSettings &camera, int image_w, int image_h, int spp, SDFRenderMode mode)
   {
     assert(sdf.conjunctions.size()>0 && sdf.objects.size()>0);
-    AABB sdf_bbox = sdf.conjunctions[0].bbox;
+    AABB sdf_bbox = conv(sdf.conjunctions[0].bbox);
     for (auto &obj : sdf.conjunctions)
     {
-      sdf_bbox.min_pos = min(sdf_bbox.min_pos, obj.bbox.min_pos);
-      sdf_bbox.max_pos = max(sdf_bbox.max_pos, obj.bbox.max_pos);
+      sdf_bbox.min_pos = min(sdf_bbox.min_pos, conv(obj.bbox.min_pos));
+      sdf_bbox.max_pos = max(sdf_bbox.max_pos, conv(obj.bbox.max_pos));
     }
     std::vector<glm::vec3> edges =
     {
@@ -509,7 +510,7 @@ namespace upg
     };
     std::vector<AABB> boxes = {sdf_bbox};
     for (auto &obj : sdf.conjunctions)
-     boxes.push_back(obj.bbox);
+     boxes.push_back(conv(obj.bbox));
     std::vector<AABB> debug_lines;
     float th = 0.01;
     for (auto &box : boxes)
@@ -559,17 +560,19 @@ namespace upg
             }
             }
             
-            if (!debug_box_found && sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
+            LiteMath::float3 lmp0;
+            if (!debug_box_found && sdf_sphere_tracing(sdf, conv(sdf_bbox), conv(camera.origin), conv(dir), &lmp0))
             {
+              p0 = conv(lmp0);
               if (mode == SDFRenderMode::MASK)
                 color += 1;
               else if (mode == SDFRenderMode::LAMBERT)
               {
                 constexpr float h = 0.001;
                 cur_grad.clear();
-                float ddx = (get_dist(sdf, p0 + glm::vec3(h,0,0)) - get_dist(sdf, p0 + glm::vec3(-h,0,0)))/(2*h);
-                float ddy = (get_dist(sdf, p0 + glm::vec3(0,h,0)) - get_dist(sdf, p0 + glm::vec3(0,-h,0)))/(2*h);
-                float ddz = (get_dist(sdf, p0 + glm::vec3(0,0,h)) - get_dist(sdf, p0 + glm::vec3(0,0,-h)))/(2*h);
+                float ddx = (get_dist(sdf, lmp0 + LiteMath::float3(h,0,0)) - get_dist(sdf, lmp0 + LiteMath::float3(-h,0,0)))/(2*h);
+                float ddy = (get_dist(sdf, lmp0 + LiteMath::float3(0,h,0)) - get_dist(sdf, lmp0 + LiteMath::float3(0,-h,0)))/(2*h);
+                float ddz = (get_dist(sdf, lmp0 + LiteMath::float3(0,0,h)) - get_dist(sdf, lmp0 + LiteMath::float3(0,0,-h)))/(2*h);
                 glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
                 color += MAX(0.1f, dot(n, light_dir));
               }

@@ -1,5 +1,6 @@
 #include "sdf_scene_convert.h"
 #include "sdf_node.h"
+#include "LiteMath_conv.h"
 
 namespace upg
 {
@@ -26,12 +27,15 @@ namespace upg
     {
       objects.emplace_back();
       objects.back().type = node->type;
-      objects.back().bbox = node->get_bbox();
+      objects.back().bbox = conv(node->get_bbox());
       objects.back().distance_add = distance_add;
       objects.back().distance_mult = distance_mult;
       objects.back().params_count = param_cnt;
       objects.back().params_offset = parameters.size();
-      objects.back().transform = transform;
+      objects.back().transform = LiteMath::float4x4(transform[0][0], transform[1][0], transform[2][0], transform[3][0],
+                                                    transform[0][1], transform[1][1], transform[2][1], transform[3][1],
+                                                    transform[0][2], transform[1][2], transform[2][2], transform[3][2],
+                                                    transform[0][3], transform[1][3], transform[2][3], transform[3][3]);
 
       parameters.insert(parameters.end(), node->p.begin(), node->p.end());
 
@@ -281,22 +285,22 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       assert(false);
   }
 
-  AABB transform_bbox(AABB bbox, glm::mat4 transform)
+  LiteMath::AABB transform_bbox(LiteMath::AABB bbox, LiteMath::float4x4 transform)
   {
-    glm::mat4 itr = glm::inverse(transform);
-    glm::vec3 p_min(1e9,1e9,1e9);
-    glm::vec3 p_max(-1e9,-1e9,-1e9);
+    LiteMath::float4x4 itr = LiteMath::inverse4x4(transform);
+    LiteMath::float3 p_min(1e9,1e9,1e9);
+    LiteMath::float3 p_max(-1e9,-1e9,-1e9);
     for (unsigned i=0;i<8;i++)
     {
-      glm::vec3 idx = glm::vec3((i&4)>>2,(i&2)>>1,i&1);
+      LiteMath::float3 idx = LiteMath::float3((i&4)>>2,(i&2)>>1,i&1);
       //printf("idx %f %f %f\n",idx.x, idx.y, idx.z);
-      glm::vec3 corner = itr*glm::vec4(idx*bbox.min_pos + (glm::vec3(1,1,1)-idx)*bbox.max_pos, 1.0f);
+      LiteMath::float3 corner = itr*(idx*bbox.min_pos + (LiteMath::float3(1,1,1)-idx)*bbox.max_pos);
       //logerr("corner %f %f %f", corner.x, corner.y, corner.z);
       //corner = itr*glm::vec4(1,1,1,1);
       p_min = min(p_min, corner);
       p_max = max(p_max, corner);
     }
-    return AABB(p_min, p_max);
+    return LiteMath::AABB(p_min, p_max);
   }
 
   SdfScene create_sdf_scene(const UPGStructure &structure, const UPGParametersRaw &params)
@@ -326,9 +330,9 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       logerr("Conjuction %u",id);
       std::vector<std::pair<unsigned, bool>> literal_node_ids;
       get_literal_nodes(nodes, literal_node_ids, id, false);
-      scene.conjunctions.push_back({(unsigned)scene.objects.size(), (unsigned)literal_node_ids.size(), AABB()});
+      scene.conjunctions.push_back({(unsigned)scene.objects.size(), (unsigned)literal_node_ids.size(), LiteMath::AABB()});
 
-      AABB bbox({-1e6,-1e6,-1e6},{1e6,1e6,1e6});
+      LiteMath::AABB bbox({-1e6,-1e6,-1e6},{1e6,1e6,1e6});
       for (auto &p : literal_node_ids)
       {
         SdfObject &base_obj = basic_objects[nodes[p.first].literal_id];

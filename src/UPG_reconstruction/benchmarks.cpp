@@ -920,6 +920,8 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
+    sdf_scene_test();
+    return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);
