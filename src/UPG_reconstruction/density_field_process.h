@@ -23,7 +23,7 @@ namespace df
         size_t samplePointsCount;
         glm::vec3 bounds[2];
 
-        //  Init Voxel Grid using dimension size, sample points count and grid bounds
+        //?  Init Voxel Grid using dimension size, sample points count and grid bounds
         VoxelGrid(size_t dim, size_t samplePointsCount, glm::vec3 bounds[2])
         {
             this->dimension = dim;
@@ -35,7 +35,7 @@ namespace df
 
     std::vector<float> create_density_field(const std::vector<float>& model, const VoxelGrid& grid);
     void erase(std::vector<float>& density, const VoxelGrid& grid, const float& trashold = 0);
-    void create_sdf(const std::vector<float>& density, const VoxelGrid& grid);
-    float* pipeline(const std::vector<float>& model);
+    std::vector<float> create_sdf(const std::vector<float>& density, const VoxelGrid& grid);
+    std::vector<float> pipeline(const std::vector<float>& model);
     glm::vec3 closest_point_triangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c);
 };
