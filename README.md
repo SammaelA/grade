@@ -25,13 +25,14 @@ Boost \
 
 Initialize git submodules \
 `git submodules init` \
-`git submodules update`
+`git submodules update --remote`
 
 Cmake with options what to build \
 `cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON`
 
 ## List of modules
 `MODULE_NN` - neural networks on CPU (no external dependencies) \
+`MODULE_SDF_SCENE` - interface to interact with SDF scene (no external dependencies) \
 `MODULE_VULKAN` - neural networks on GPU with Vulkan (requires MODULE_NN) \
 `MODULE_ENZYME` - Enzyme autodiff \
 `MODULE_DR` - Differentiable renderer (requires MODULE_ENZYME) \
