@@ -18,6 +18,7 @@ option(MODULE_ENZYME "use Enzyme automatic differentiation tool" OFF)
 option(MODULE_DR "include Custom differentiable render in project" OFF)
 option(MODULE_NN "include neural networks module in project" ON)
 option(MODULE_VULKAN "include GPU support for neural networks" OFF)
+option(MODULE_SDF_SCENE "include SDF scene module in project" ON)
 
 #common dependencies for all projects
 find_package(SDL2 REQUIRED)
@@ -44,7 +45,7 @@ set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -std=c++17 -g -O3 -pthread -Wall -Wno-u
 #prepare common lists of options to use it when building targets
 set(COMMON_LINKER_FLAGS "-lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem")
 file(GLOB_RECURSE COMMON_SRC RELATIVE ${CMAKE_SOURCE_DIR} "third_party/*.cpp" "common_src/*.cpp" "third_party/*.c" "common_src/*.c")
-set(COMMON_INCLUDE_DIRS "common_src", "third_party", "dependencies/SDL2", "dependencies/glm-0.9.9-a2")
+set(COMMON_INCLUDE_DIRS "common_src", "third_party", "dependencies", "dependencies/SDL2", "dependencies/glm-0.9.9-a2")
 set(COMMON_LIBRARIES ${OPENGL_LIBRARY} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARY} ${GLEW_LIBRARIES}
                      ${SDL2_TTF_LIBRARY} ${SDL2_MIXER_LIBRARY} 
                      boost_serialization boost_system boost_filesystem
@@ -184,6 +185,14 @@ if (MODULE_VULKAN)
 else()
   message("Module VULKAN               OFF")
 endif()
+
+#####################################################################################################################################################
+
+#if (MODULE_SDF_SCENE)
+message("Module SDF_SCENE            ON")
+set(MODULES_SRC ${MODULES_SRC} modules/sdfScene/sdf_scene.cpp)
+#else()
+#endif()
 
 #####################################################################################################################################################
 #####################################################################################################################################################

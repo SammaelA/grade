@@ -1,8 +1,7 @@
 #include <fstream>
 #include "sdf_scene.h"
 
-namespace upg
-{
+
   float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 p)
   {
     glm::vec3 pos = prim.transform * glm::vec4(p, 1.0f);
@@ -124,4 +123,3 @@ namespace upg
     fs.read((char *)scene.parameters.data(), p_count*sizeof(float));
     fs.close();
   }
-}

@@ -1,6 +1,6 @@
 #pragma once
 #include "upg.h"
-#include "sdf_scene.h"
+#include "sdfScene/sdf_scene.h"
 
 namespace upg
 {

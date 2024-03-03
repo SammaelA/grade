@@ -1,10 +1,9 @@
 #pragma once
-#include "upg.h"
 #include "common_utils/bbox.h"
+#include "LiteMath/LiteMath.h"
 #include <string>
+#include <vector>
 
-namespace upg
-{
   struct SdfObject
   {
     unsigned type;
@@ -38,4 +37,3 @@ namespace upg
   //save/load scene
   void save_sdf_scene(const SdfScene &scene, const std::string &path);
   void load_sdf_scene(SdfScene &scene, const std::string &path);
-}
