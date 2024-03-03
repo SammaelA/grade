@@ -1220,6 +1220,177 @@ namespace upg
       debug("FAILED\n");
   }
 
+  void sdf_test_21()
+  {
+    srand(0);
+    debug("TEST 21. EXTRUSION SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0.4, 0.7}
+            structure:arr = {18, 16}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.25, 1.0}    
+            structure:arr = {18, 16} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 21.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 21.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == SdfNodeType::EXTRUSION && res[0].structure.s[1] == SdfNodeType::CIRCLE)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 21.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 2)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 21.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 21.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
+  }
+
+  void sdf_test_22()
+  {
+    srand(0);
+    debug("TEST 22. EXTRUSED WIND ROSE SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}
+            structure:arr = {23}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.09, 0.21, 0.31, 0.39, 0.49, 0.61, 0.71, 0.81}    
+            structure:arr = {23} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+
+    //ProceduralSdf rot_box({std::vector<uint16_t>{23}});
+
+    //debug("TEST 13. SDF ROTATION NODE\n");
+    //{
+    //int pcnt = rot_box.desc.get_total_params_count();
+    //debug(" 13.1. %-64s", "SDF instances are created with expected number of parameters ");
+    //if (pcnt == 6)
+    //  debug("passed\n");
+    //else
+    //  debug("FAILED %d\n", pcnt);
+    //}
+    //{
+      /*std::vector<float> params = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+      rot_box.set_parameters(params);
+      std::vector<float> ddist,dpos = {0,0,0};
+      std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
+      float d1 = rot_box.get_distance({0.100001,0.0,0},&ddist,&dpos);
+      //float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
+      //float d3 = rot_box.get_distance({1,0.5,0.5});
+      debug("%f %f %f - %f %f %f %f %f %f %f %f : %f\n", dpos[0], dpos[1], dpos[2], ddist[0], ddist[1], ddist[2], ddist[3], 
+      ddist[4], ddist[5], ddist[6], ddist[7], d1);
+
+      d1 = rot_box.get_distance({0.10001,-0.4,0},&ddist,&dpos);
+      //float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
+      //float d3 = rot_box.get_distance({1,0.5,0.5});
+      debug("%f %f %f - %f %f %f %f %f %f %f %f : %f\n", dpos[0], dpos[1], dpos[2], ddist[0], ddist[1], ddist[2], ddist[3], 
+      ddist[4], ddist[5], ddist[6], ddist[7], d1);*/
+      
+    //}
+
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 22.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 22.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 1 /*&& res[0].structure.s[0] == SdfNodeType::EXTRUSION*/ && res[0].structure.s[0] == SdfNodeType::POLY8)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 22.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 8)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    for (int i = 0; i < res[0].parameters.p.size(); ++i)
+    {
+      debug("%f ", res[0].parameters.p[i]);
+    }
+    debug("\n");
+    debug(" 22.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 22.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
+  }
+
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -1228,7 +1399,8 @@ namespace upg
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
       sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
-      sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19, sdf_test_20
+      sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19, sdf_test_20,
+      sdf_test_21, sdf_test_22
     };
 
     if (tests.empty())

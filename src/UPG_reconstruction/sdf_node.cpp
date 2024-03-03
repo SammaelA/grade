@@ -684,6 +684,168 @@ namespace upg
     }
   };
 
+  void get_koeff_for_wind_rose(const float *in, float *out)
+  {
+    float cos1 = cosf(in[4]), sin1 = sinf(in[4]);
+    float cos2 = cosf(in[5]), sin2 = sinf(in[5]);
+    float ex = in[3] * cos2 - in[2] * cos1;
+    float ey = in[3] * sin2 - in[2] * cos1;
+    float vx = in[0] - cos1 * in[2];
+    float vy = in[1] - sin1 * in[2];
+    out[0] = (vx * ex + vy * ey) / (ex * ex + ey * ey);
+  }
+
+  class NWindRose2DSdfNode : public PrimitiveSdfNode
+  {
+  private:
+    unsigned N;
+  public:
+    NWindRose2DSdfNode(const SdfNodeType::Type &_type, unsigned n) : PrimitiveSdfNode(_type) { N = n; }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      for (int i = 0; i < batch_size; ++i)
+      {
+        vec2 xy = {positions[i * 3 + 0], positions[i * 3 + 1]};
+        int sgn = 0, number = 0, koeff_buf = 0;
+        vec2 dir_buf = {0, 0}, e_buf = {0, 0};
+        float dist = 0;
+        float jac[4] = {}, tmp[6] = {}, data[6] = {};
+        data[0] = xy.x;
+        data[1] = xy.y;
+        for (int j = 0; j < N; ++j)
+        {
+          int j2 = (j + 1) % N;
+          data[2] = p[j];
+          data[3] = p[j2];
+          data[4] = 2 * PI * j / N;
+          data[5] = 2 * PI * j2 / N;
+          vec2 poly1 = {cosf(2 * PI * j / N) * p[j], sin(2 * PI * j / N) * p[j]}, poly2 = {cosf(2 * PI * j2 / N) * p[j2], sin(2 * PI * j2 / N) * p[j2]};
+          vec2 e = poly2 - poly1, v1 = xy - poly1, v2 = xy - poly2;
+          float koeff = 0;//(v1.x * e.x + v1.y * e.y) / (e.x * e.x + e.y * e.y);
+          if (ddist_dparams)
+          {
+            ENZYME_EVALUATE_WITH_DIFF(get_koeff_for_wind_rose, 6, 1, data, &koeff, tmp);
+          }
+          else
+          {
+            get_koeff_for_wind_rose(data, &koeff);
+          }
+          if (koeff < 0) 
+          {
+            koeff = 0;
+            if (ddist_dparams)
+              for (int g = 0; g < 6; ++g)
+                tmp[g] = 0;
+          }
+          else if (koeff > 1) 
+          {
+            koeff = 1;
+            if (ddist_dparams)
+              for (int g = 0; g < 6; ++g)
+                tmp[g] = 0;
+          }
+          vec2 dir = v1 - e * koeff;
+          if (number == j || dist > dir.x * dir.x + dir.y * dir.y)
+          {
+            dist = dir.x * dir.x + dir.y * dir.y;
+            number = j;
+            koeff_buf = koeff;
+            dir_buf = dir;
+            e_buf = e;
+            if (ddist_dparams)
+              for (int g = 0; g < 4; ++g)
+                jac[g] = tmp[g];
+          }
+          if (v1.y <= 0 && v2.y > 0 && e.x * v1.y - e.y * v1.x > 0) sgn += 1;
+          else if (v1.y > 0 && v2.y <= 0 && e.x * v1.y - e.y * v1.x < 0) sgn -= 1;
+        }
+        if (sgn == 0) sgn = 1;
+        else sgn = -1;
+        distances[i] = std::sqrt(dist) * sgn;
+        if (ddist_dparams)
+        {
+          if (dist > 0)
+          {
+            if (p[0] < 0.15) debug("%f %f -- ", xy.x, xy.y);
+            for (int j = 0; j < N; ++j)
+            {
+              if (p[0] < 0.15) debug("%f ", p[j]);
+            }
+            if (p[0] < 0.15) debug("\n");
+            int number2 = (number + 1) % N;
+            ddist_dpos[i * 3 + 0] = (dir_buf.x * (1 - e_buf.x * jac[0]) - dir_buf.y * (e_buf.y * jac[0])) / distances[i];
+            ddist_dpos[i * 3 + 1] = (-dir_buf.x * (e_buf.x * jac[1]) + dir_buf.y * (1 - e_buf.y * jac[1])) / distances[i];
+            ddist_dpos[i * 3 + 2] = 0;
+            if (p[0] < 0.15) debug("%f %f %f - ", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1], ddist_dpos[i * 3 + 2]);
+            for (int j = 0; j < N; ++j)
+            {
+              if (j == number)
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 
+                    (dir_buf.x * (-cosf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.x * jac[2]) + 
+                     dir_buf.y * (-sinf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.y * jac[2])) / distances[i];
+              }
+              else if (j == number2)
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 
+                    (dir_buf.x * (-cosf(2 * PI * j / N) * koeff_buf - e_buf.x * jac[3]) + 
+                     dir_buf.y * (-sinf(2 * PI * j / N) * koeff_buf - e_buf.y * jac[3])) / distances[i];
+              }
+              else
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 0;
+              }
+              if (p[0] < 0.15) debug("%f ", ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j]);
+            }
+            if (p[0] < 0.15) debug(": %f", distances[i]);
+            if (p[0] < 0.15) debug("\n");
+          }
+          else
+          {
+            debug("AAA\n");
+            ddist_dpos[i * 3 + 0] = 0;
+            ddist_dpos[i * 3 + 1] = 0;
+            ddist_dpos[i * 3 + 2] = 0;
+            for (int j = 0; j < N; ++j)
+            {
+              ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 0;
+            }
+          }
+        }
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return N; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      float max_r = 0.5*length(scene_bbox.max_pos-scene_bbox.min_pos);
+      std::vector<ParametersDescription::Param> params;
+      for (int i = 0; i < N; ++i)
+        params.push_back({1,0.01f*max_r,max_r, ParameterType::DIFFERENTIABLE, "radius_" + std::to_string(i)});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      float r = 0;
+      for (int i = 0; i < N; ++i)
+        if (r < p[i]) r = p[i];
+      return AABB({-r,-r,-0.001}, {r,r,0.001});
+    }
+  };
+
+  class Wind8Rose2DSdfNode : public NWindRose2DSdfNode
+  {
+  public:
+    Wind8Rose2DSdfNode(const SdfNodeType::Type &_type) : NWindRose2DSdfNode(_type, 8) {}
+  };
+
   inline float
   diff_round_box_sdf(float params[7])
   {
@@ -1964,6 +2126,7 @@ namespace upg
     {SdfNodeType::MOVE2D       , "Move2D"       , SdfNodeClass::TRANSFORM2D, 2, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new Move2DSdfNode(t);}}},
     {SdfNodeType::ROTATE2D     , "Rotate2D"     , SdfNodeClass::TRANSFORM2D, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new Rotate2DSdfNode(t);}}},
     {SdfNodeType::CROTATE2D    , "Complex Rot2D", SdfNodeClass::COMPLEX    , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotate2DSdfNode(t);}}},
+    {SdfNodeType::POLY8        , "Polygon 8"    , SdfNodeClass::PRIMITIVE2D, 8, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Wind8Rose2DSdfNode(t);}}},
     {SdfNodeType::GRID_16      , "Grid_16"      , SdfNodeClass::GRID       , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
     {SdfNodeType::GRID_32      , "Grid_32"      , SdfNodeClass::GRID       , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
     {SdfNodeType::GRID_64      , "Grid_64"      , SdfNodeClass::GRID       , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},

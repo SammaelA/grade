@@ -35,6 +35,7 @@ namespace upg
       MOVE2D,
       ROTATE2D,
       CROTATE2D,
+      POLY8,
       GRID_16,
       GRID_32,
       GRID_64,
