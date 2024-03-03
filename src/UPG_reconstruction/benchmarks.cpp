@@ -14,7 +14,7 @@
 #include "sdf_grid.h"
 #include "optimization.h"
 #include "density_field_process.h"
-#include "sdf_scene.h"
+#include "sdf_scene_convert.h"
 
 namespace upg
 {

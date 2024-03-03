@@ -29,7 +29,13 @@ namespace upg
     std::vector<SdfConjunction> conjunctions;
   };
 
-  SdfScene create_sdf_scene(const UPGStructure &structure, const UPGParametersRaw &params);
+  //evaluating and rendering
+  float dist_prim(const SdfScene &sdf, const SdfObject &prim, glm::vec3 p);
+  float get_dist(const SdfScene &sdf, glm::vec3 p);
+  bool sdf_sphere_tracing(const SdfScene &sdf, const AABB &sdf_bbox, const glm::vec3 &pos, const glm::vec3 &dir, 
+                          glm::vec3 *surface_pos = nullptr);
+
+  //save/load scene
   void save_sdf_scene(const SdfScene &scene, const std::string &path);
   void load_sdf_scene(SdfScene &scene, const std::string &path);
 }
