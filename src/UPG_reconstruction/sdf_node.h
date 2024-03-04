@@ -160,7 +160,6 @@ namespace upg
     //to better perform optimization on different scales, we should better
     //determine the size of scene we are working on.
     //BBox affects only ParametersDescription, not the generation itself.
-    static void set_scene_bbox(AABB bbox) {scene_bbox = bbox;}
 
     ProceduralSdf(const UPGStructure &structure);
     ProceduralSdf(const ProceduralSdf &sdf);
@@ -190,7 +189,7 @@ namespace upg
     mutable std::vector<float> ddist_dparams_transp;
     UPGStructure structure;
 
-    static AABB scene_bbox;
+    static const AABB scene_bbox;
     
   };
 

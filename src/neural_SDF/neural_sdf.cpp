@@ -1130,7 +1130,6 @@ namespace nsdf
   void task_3_create_references()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
-    upg::ProceduralSdf::set_scene_bbox(bbox);
 
     CameraSettings cam;
     cam.origin = glm::vec3(0,0,3);
@@ -1193,7 +1192,6 @@ namespace nsdf
   void task_4_chair()
   {
     AABB bbox({-1,-1,-1},{1,1,1});
-    upg::ProceduralSdf::set_scene_bbox(bbox);
 
     CameraSettings cam;
     cam.origin = glm::vec3(0,0,3);

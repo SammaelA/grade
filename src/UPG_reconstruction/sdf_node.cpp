@@ -10,7 +10,7 @@ float __enzyme_autodiff(...);
 
 namespace upg
 {
-  AABB ProceduralSdf::scene_bbox = AABB({-1,-1,-1},{1,1,1});
+  const AABB ProceduralSdf::scene_bbox = AABB({-1,-1,-1},{1,1,1});
   extern std::vector<SdfNodeProperties> node_properties;
 
 
@@ -773,17 +773,17 @@ namespace upg
         {
           if (dist > 0)
           {
-            if (p[0] < 0.15) debug("%f %f -- ", xy.x, xy.y);
+            //if (p[0] < 0.15) debug("%f %f -- ", xy.x, xy.y);
             for (int j = 0; j < N; ++j)
             {
-              if (p[0] < 0.15) debug("%f ", p[j]);
+              //if (p[0] < 0.15) debug("%f ", p[j]);
             }
-            if (p[0] < 0.15) debug("\n");
+            //if (p[0] < 0.15) debug("\n");
             int number2 = (number + 1) % N;
             ddist_dpos[i * 3 + 0] = (dir_buf.x * (1 - e_buf.x * jac[0]) - dir_buf.y * (e_buf.y * jac[0])) / distances[i];
             ddist_dpos[i * 3 + 1] = (-dir_buf.x * (e_buf.x * jac[1]) + dir_buf.y * (1 - e_buf.y * jac[1])) / distances[i];
             ddist_dpos[i * 3 + 2] = 0;
-            if (p[0] < 0.15) debug("%f %f %f - ", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1], ddist_dpos[i * 3 + 2]);
+            //if (p[0] < 0.15) debug("%f %f %f - ", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1], ddist_dpos[i * 3 + 2]);
             for (int j = 0; j < N; ++j)
             {
               if (j == number)
@@ -802,10 +802,10 @@ namespace upg
               {
                 ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 0;
               }
-              if (p[0] < 0.15) debug("%f ", ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j]);
+              //if (p[0] < 0.15) debug("%f ", ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j]);
             }
-            if (p[0] < 0.15) debug(": %f", distances[i]);
-            if (p[0] < 0.15) debug("\n");
+            //if (p[0] < 0.15) debug(": %f", distances[i]);
+            //if (p[0] < 0.15) debug("\n");
           }
           else
           {
@@ -1964,6 +1964,9 @@ namespace upg
       }
     }
     root->on_params_change();
+    //for (int i = 0; i < all_params.size(); ++i)
+    //  printf("%f ", all_params[i]);
+    //printf("\n");
     //add complex checking
   }
 

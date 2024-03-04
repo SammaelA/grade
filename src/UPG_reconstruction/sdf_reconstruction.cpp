@@ -624,8 +624,8 @@ namespace upg
 
     //get ReconstructionReference - all info about the object that we want to reconstruct
     PointCloudReference reference = get_point_cloud_reference(*input_blk);
-    ProceduralSdf::set_scene_bbox(get_point_cloud_bbox(reference.points));
-
+    //TODO: transform points to fit into unit cube
+    
     //get start parameters for optimization. They are required for Adam and other local optimizers
     //and have to be set manually
     UPGReconstructionResult start_params;

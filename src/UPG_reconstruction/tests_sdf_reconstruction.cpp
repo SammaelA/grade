@@ -1312,11 +1312,11 @@ namespace upg
         step_0 {
             learning_rate:r = 0.003
             iterations:i = 1000
-            verbose:b = false
+            verbose:b = true
         }
     }
     results {
-        check_image_quality:b = true
+        check_image_quality:b = false
         check_model_quality:b = true
     }
     }
@@ -1354,6 +1354,7 @@ namespace upg
 
     Block settings_blk;
     load_block_from_string(settings, settings_blk);
+    printf("SETTINGS = %s\n",settings.c_str());
     auto res = reconstruct_sdf(settings_blk);
 
     debug(" 22.1. %-64s", "ReconstructionResult size ");
