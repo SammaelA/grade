@@ -893,6 +893,12 @@ namespace upg
 
   }
 
+  std::vector<LiteMath::AABB> get_bbox_list(const SdfScene &sdf, const SdfObject &prim, int size)
+  {
+    //todo
+    return {};
+  }
+
   void sdf_scene_test()
   {
     SceneDesc s = scene_CSG_1();
