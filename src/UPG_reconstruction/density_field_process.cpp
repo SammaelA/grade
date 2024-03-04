@@ -201,7 +201,7 @@ df::pipeline(const std::vector<float>& model)
     std::vector<float> sdf_model;
     //  First step
     glm::vec3 bounds[2] = {glm::vec3(-1.2f,-1.2f,-1.2f), glm::vec3(1.2f, 1.2f, 1.2f)};
-    VoxelGrid grid(64, 5, bounds);
+    VoxelGrid grid(32, 5, bounds);
 
     std::vector<float> density = df::create_density_field(model, grid);
 

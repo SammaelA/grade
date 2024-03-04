@@ -942,7 +942,19 @@ namespace upg
       std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
       auto model = dgen::load_obj(obj_path);
       
-      df::pipeline(model);
+      std::vector<float> sdf_model = df::pipeline(model);
+      int steps = 15;
+      ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
+      g_sdf.set_parameters(sdf_model);
+      for (int i=0;i<steps;i++)
+      {
+        CameraSettings camera;
+        camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+        camera.target = glm::vec3(0,0,0);
+        camera.up = glm::vec3(0,1,0);
+        Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
+        engine::textureManager->save_png(t, "reconstructed_image_grid_"+std::to_string(i));
+      }
     }
     else
       benchmark_sdf_complex_optimization();
