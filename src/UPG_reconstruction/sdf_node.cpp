@@ -689,7 +689,7 @@ namespace upg
     float cos1 = cosf(in[4]), sin1 = sinf(in[4]);
     float cos2 = cosf(in[5]), sin2 = sinf(in[5]);
     float ex = in[3] * cos2 - in[2] * cos1;
-    float ey = in[3] * sin2 - in[2] * cos1;
+    float ey = in[3] * sin2 - in[2] * sin1;
     float vx = in[0] - cos1 * in[2];
     float vy = in[1] - sin1 * in[2];
     out[0] = (vx * ex + vy * ey) / (ex * ex + ey * ey);
@@ -713,7 +713,8 @@ namespace upg
       for (int i = 0; i < batch_size; ++i)
       {
         vec2 xy = {positions[i * 3 + 0], positions[i * 3 + 1]};
-        int sgn = 0, number = 0, koeff_buf = 0;
+        int sgn = 0, number = 0;
+        float koeff_buf = 0;
         vec2 dir_buf = {0, 0}, e_buf = {0, 0};
         float dist = 0;
         float jac[4] = {}, tmp[6] = {}, data[6] = {};
@@ -771,19 +772,12 @@ namespace upg
         distances[i] = std::sqrt(dist) * sgn;
         if (ddist_dparams)
         {
-          if (dist > 0)
+          if (dist > 1e-15)
           {
-            //if (p[0] < 0.15) debug("%f %f -- ", xy.x, xy.y);
-            for (int j = 0; j < N; ++j)
-            {
-              //if (p[0] < 0.15) debug("%f ", p[j]);
-            }
-            //if (p[0] < 0.15) debug("\n");
             int number2 = (number + 1) % N;
             ddist_dpos[i * 3 + 0] = (dir_buf.x * (1 - e_buf.x * jac[0]) - dir_buf.y * (e_buf.y * jac[0])) / distances[i];
             ddist_dpos[i * 3 + 1] = (-dir_buf.x * (e_buf.x * jac[1]) + dir_buf.y * (1 - e_buf.y * jac[1])) / distances[i];
             ddist_dpos[i * 3 + 2] = 0;
-            //if (p[0] < 0.15) debug("%f %f %f - ", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1], ddist_dpos[i * 3 + 2]);
             for (int j = 0; j < N; ++j)
             {
               if (j == number)
@@ -791,6 +785,14 @@ namespace upg
                 ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 
                     (dir_buf.x * (-cosf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.x * jac[2]) + 
                      dir_buf.y * (-sinf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.y * jac[2])) / distances[i];
+                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug("%f %f\n", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1]);
+                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug("-- %f %f - %f --- %f %f --\n", xy.x, xy.y, ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j], koeff_buf, jac[2]);
+                //for (int h = 0; h < N; ++h)
+                //{
+                  //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug(" - %f", p[h]);
+                //}
+                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0 && checking) debug(" ==");
+                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug(" %d %d -\n", sgn, number);
               }
               else if (j == number2)
               {
@@ -809,7 +811,7 @@ namespace upg
           }
           else
           {
-            debug("AAA\n");
+            //debug("AAA\n");
             ddist_dpos[i * 3 + 0] = 0;
             ddist_dpos[i * 3 + 1] = 0;
             ddist_dpos[i * 3 + 2] = 0;
@@ -819,6 +821,7 @@ namespace upg
             }
           }
         }
+        //distances[i] *= sgn;
       }
     }
 

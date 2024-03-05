@@ -1297,8 +1297,8 @@ namespace upg
     input {
         synthetic_reference {
             points_count:i = 50000
-            params:arr = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}
-            structure:arr = {23}
+            params:arr = {0.45, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}
+            structure:arr = {18, 23}
         } 
     }
     generator {
@@ -1306,55 +1306,24 @@ namespace upg
     }
     optimization {
         start {
-            params:arr = {0.09, 0.21, 0.31, 0.39, 0.49, 0.61, 0.71, 0.81}    
-            structure:arr = {23} 
+            params:arr = {0.44, 0.09, 0.21, 0.31, 0.39, 0.49, 0.61, 0.71, 0.81}    
+            structure:arr = {18, 23} 
         }
         step_0 {
             learning_rate:r = 0.003
             iterations:i = 1000
-            verbose:b = true
+            verbose:b = false
         }
     }
     results {
-        check_image_quality:b = false
+        check_image_quality:b = true
         check_model_quality:b = true
     }
     }
       )"""";
 
-    //ProceduralSdf rot_box({std::vector<uint16_t>{23}});
-
-    //debug("TEST 13. SDF ROTATION NODE\n");
-    //{
-    //int pcnt = rot_box.desc.get_total_params_count();
-    //debug(" 13.1. %-64s", "SDF instances are created with expected number of parameters ");
-    //if (pcnt == 6)
-    //  debug("passed\n");
-    //else
-    //  debug("FAILED %d\n", pcnt);
-    //}
-    //{
-      /*std::vector<float> params = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
-      rot_box.set_parameters(params);
-      std::vector<float> ddist,dpos = {0,0,0};
-      std::vector<float> ddist_ref = {-1}, dpos_ref = {0,1,0};
-      float d1 = rot_box.get_distance({0.100001,0.0,0},&ddist,&dpos);
-      //float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
-      //float d3 = rot_box.get_distance({1,0.5,0.5});
-      debug("%f %f %f - %f %f %f %f %f %f %f %f : %f\n", dpos[0], dpos[1], dpos[2], ddist[0], ddist[1], ddist[2], ddist[3], 
-      ddist[4], ddist[5], ddist[6], ddist[7], d1);
-
-      d1 = rot_box.get_distance({0.10001,-0.4,0},&ddist,&dpos);
-      //float d2 = rot_box.get_distance({0,sqrt(0.5),sqrt(0.5)});
-      //float d3 = rot_box.get_distance({1,0.5,0.5});
-      debug("%f %f %f - %f %f %f %f %f %f %f %f : %f\n", dpos[0], dpos[1], dpos[2], ddist[0], ddist[1], ddist[2], ddist[3], 
-      ddist[4], ddist[5], ddist[6], ddist[7], d1);*/
-      
-    //}
-
     Block settings_blk;
     load_block_from_string(settings, settings_blk);
-    printf("SETTINGS = %s\n",settings.c_str());
     auto res = reconstruct_sdf(settings_blk);
 
     debug(" 22.1. %-64s", "ReconstructionResult size ");
@@ -1364,21 +1333,16 @@ namespace upg
       debug("FAILED %d != %d\n", res.size(), 1);
     
     debug(" 22.2. %-64s", "Preserved structure ");
-    if (res[0].structure.s.size() == 1 /*&& res[0].structure.s[0] == SdfNodeType::EXTRUSION*/ && res[0].structure.s[0] == SdfNodeType::POLY8)
+    if (res[0].structure.s.size() == 2 && res[0].structure.s[0] == SdfNodeType::EXTRUSION && res[0].structure.s[1] == SdfNodeType::POLY8)
       debug("passed\n");
     else
       debug("FAILED\n");
     
     debug(" 22.3. %-64s", "Preserved parameters count ");
-    if (res[0].parameters.p.size() == 8)
+    if (res[0].parameters.p.size() == 9)
       debug("passed\n");
     else
       debug("FAILED\n");
-    for (int i = 0; i < res[0].parameters.p.size(); ++i)
-    {
-      debug("%f ", res[0].parameters.p[i]);
-    }
-    debug("\n");
     debug(" 22.4. %-64s", "Perfect optimization loss ");
     if (res[0].loss_optimizer < 1e-5)
       debug("passed\n");
