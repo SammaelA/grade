@@ -195,4 +195,5 @@ namespace upg
 
   std::vector<UPGPart> get_sdf_parts(const UPGStructure &structure);
   bool is_struct_correct(const UPGStructure &structure);
+  std::pair<UPGStructure, std::vector<float>> get_params_and_structure_without_complex(UPGStructure structure, std::vector<float> params);
 }

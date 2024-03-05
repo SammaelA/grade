@@ -1218,6 +1218,9 @@ namespace upg
       debug("PASSED\n");
     else
       debug("FAILED\n");
+    
+    //S = {std::vector<uint16_t>{SdfNodeType::CROTATE, SdfNodeType::ROUND, SdfNodeType::CHAIR}};
+    //auto A = get_params_and_structure_without_complex(S, {1, 1, 1, 2, 2, 2, 4, 3, 3, 3, 3, 3, 3});
   }
 
   void sdf_test_21()

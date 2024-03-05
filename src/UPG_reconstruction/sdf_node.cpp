@@ -785,14 +785,6 @@ namespace upg
                 ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 
                     (dir_buf.x * (-cosf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.x * jac[2]) + 
                      dir_buf.y * (-sinf(2 * PI * j / N) * (1 - koeff_buf) - e_buf.y * jac[2])) / distances[i];
-                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug("%f %f\n", ddist_dpos[i * 3 + 0], ddist_dpos[i * 3 + 1]);
-                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug("-- %f %f - %f --- %f %f --\n", xy.x, xy.y, ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j], koeff_buf, jac[2]);
-                //for (int h = 0; h < N; ++h)
-                //{
-                  //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug(" - %f", p[h]);
-                //}
-                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0 && checking) debug(" ==");
-                //if (ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] > 0) debug(" %d %d -\n", sgn, number);
               }
               else if (j == number2)
               {
@@ -804,14 +796,10 @@ namespace upg
               {
                 ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 0;
               }
-              //if (p[0] < 0.15) debug("%f ", ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j]);
             }
-            //if (p[0] < 0.15) debug(": %f", distances[i]);
-            //if (p[0] < 0.15) debug("\n");
           }
           else
           {
-            //debug("AAA\n");
             ddist_dpos[i * 3 + 0] = 0;
             ddist_dpos[i * 3 + 1] = 0;
             ddist_dpos[i * 3 + 2] = 0;
@@ -821,7 +809,6 @@ namespace upg
             }
           }
         }
-        //distances[i] *= sgn;
       }
     }
 
@@ -2158,6 +2145,44 @@ namespace upg
              {{SdfNodeType::MOVE2D, SdfNodeType::ROTATE2D, SdfNodeType::MOVE2D, SdfNodeType::UNDEFINED}}}
   };
 
+  std::map<SdfNodeType::Type, std::vector<std::vector<float>>> complex_nodes_param_structure = 
+  {
+    {SdfNodeType::CHAIR,
+             {{6, ParamNode::CONST, 0}, {3, ParamNode::PRIMITIVE, 3}, {6},
+              {4, ParamNode::PRIMITIVE, 4}, {3}, {2, ParamNode::PRIMITIVE, 2},
+
+              {7, ParamNode::SUB}, {5, ParamNode::PRIMITIVE, 5}, {6},
+              {3}, {5}, {2},
+
+              {8, ParamNode::SUB}, {9, ParamNode::NEG}, {10, ParamNode::SUB},
+              {1, ParamNode::PRIMITIVE, 1}, {0, ParamNode::PRIMITIVE, 0},
+
+              {11, ParamNode::NEG}, {9}, {10},
+              {1}, {0},
+              
+              {8}, {9}, {12, ParamNode::NEG},
+              {1}, {0},
+              
+              {11}, {9}, {12},
+              {1}, {0},
+              
+              {3}, {4},//7
+              {4}, {0},//8
+              {1},//9
+              {2}, {0},//10
+              {8},//11
+              {10}}},//12
+    {SdfNodeType::CROTATE,
+             {{6, ParamNode::NEG}, {7, ParamNode::NEG}, {8, ParamNode::NEG},
+              {0, ParamNode::PRIMITIVE, 0}, {1, ParamNode::PRIMITIVE, 1}, {2, ParamNode::PRIMITIVE, 2},
+              {3, ParamNode::PRIMITIVE, 3}, {4, ParamNode::PRIMITIVE, 4}, {5, ParamNode::PRIMITIVE, 5},
+              {3}, {4}, {5}}},
+    {SdfNodeType::CROTATE2D,
+             {{3, ParamNode::NEG}, {4, ParamNode::NEG},
+              {0, ParamNode::PRIMITIVE, 0}, {1, ParamNode::PRIMITIVE, 1}, {2, ParamNode::PRIMITIVE, 2},
+              {1}, {2}}}
+  };
+
   const SdfNodeProperties &get_sdf_node_properties(uint16_t type)
   {
     assert(type < SdfNodeType::NODE_TYPES_COUNT);
@@ -2298,7 +2323,7 @@ namespace upg
     return structure.s.size();
   }
 
-  bool is_struct_correct(const UPGStructure &structure)
+  std::pair<UPGStructure, bool> get_structure_without_complex(UPGStructure structure)
   {
     UPGStructure s = structure;
     for (int i = 0; i < s.s.size(); ++i)//open complex node in global structure
@@ -2311,7 +2336,7 @@ namespace upg
         for (int j = 0; j < node_properties[s.s[i]].children; ++j)
         {
           child_starts.push_back(end_of_child(s, child_starts[child_starts.size() - 1]));
-          if (child_starts[child_starts.size() - 1] == -1) return false;
+          if (child_starts[child_starts.size() - 1] == -1) return {{}, false};
         }
         UPGStructure tmp = complex_nodes_structure[node_properties[s.s[i]].type];
         std::vector<int> next_default;
@@ -2320,7 +2345,7 @@ namespace upg
         for (int j = 0; j < node_properties[s.s[i]].children + 1; ++j)
         {
           next_default.push_back(find_default(tmp, next_default[next_default.size() - 1] + 1));
-          if (next_default[next_default.size() - 1] == next_default[next_default.size() - 2]) return false;
+          if (next_default[next_default.size() - 1] == next_default[next_default.size() - 2]) return {{}, false};
         }
         for (int j = child_starts.size() - 1; j >= 0; --j)
         {
@@ -2330,6 +2355,12 @@ namespace upg
         --i;
       }
     }
+    return {s, true};
+  }
+
+  bool is_struct_correct(const UPGStructure &structure)
+  {
+    UPGStructure s = get_structure_without_complex(structure).first;
     
     if (s.s.size() > 0)//check correct of global tree
     {
@@ -2353,5 +2384,85 @@ namespace upg
       return last == s.s.size();
     }
     return false;
+  }
+
+  std::pair<UPGStructure, std::vector<float>> get_params_and_structure_without_complex(UPGStructure structure, std::vector<float> params)
+  {
+    UPGStructure s = structure;
+    std::vector<float> p = params;
+    std::vector<float> complex_params;
+    std::vector<float> buf;
+    int param_idx = 0;
+    for (int i = 0; i < s.s.size(); ++i)//open complex node in global structure
+    {
+      if (node_properties[s.s[i]].node_class == SdfNodeClass::COMPLEX)
+      {
+        std::vector<int> child_starts;
+        child_starts.clear();
+        child_starts.push_back(i+1);
+        for (int j = 0; j < node_properties[s.s[i]].children; ++j)
+        {
+          child_starts.push_back(end_of_child(s, child_starts[child_starts.size() - 1]));
+        }
+
+
+        UPGStructure tmp = complex_nodes_structure[node_properties[s.s[i]].type];
+        unsigned res = 0;
+        for (int j = 0; j < tmp.s.size(); ++j)
+        {
+          unsigned n = tmp.s[j];
+          if (n != 0 && node_properties[n].param_count > 0)
+          {
+            res += node_properties[n].param_count;
+          }
+        }
+        ParamsGraph p_g(complex_nodes_param_structure[node_properties[s.s[i]].type], node_properties[s.s[i]].param_count, res);
+        buf.resize(node_properties[s.s[i]].param_count);
+        for (int j = 0; j < node_properties[s.s[i]].param_count; ++j)
+        {
+          buf[j] = p[j + param_idx];
+        }
+        p_g.get_graph(buf);
+        complex_params.resize(res);
+        p_g.get_params(complex_params, node_properties[s.s[i]].param_count);
+
+
+        std::vector<int> next_default;
+        next_default.clear();
+        next_default.push_back(-1);
+        for (int j = 0; j < node_properties[s.s[i]].children + 1; ++j)
+        {
+          next_default.push_back(find_default(tmp, next_default[next_default.size() - 1] + 1));
+        }
+        p.erase(p.begin() + param_idx, p.begin() + param_idx + node_properties[s.s[i]].param_count);
+        int p_off = 0, out_off = 0;
+
+        for (int j = 0; j < child_starts.size(); ++j)
+        {
+          for (int k = next_default[j] + 1; k < next_default[j + 1]; ++k)
+          {
+            p.insert(std::next(p.begin(), param_idx + p_off + out_off), std::next(complex_params.begin(), p_off), std::next(complex_params.begin(), p_off + node_properties[tmp.s[k]].param_count));
+            p_off += node_properties[tmp.s[k]].param_count;
+          }
+          if (j != child_starts.size() - 1)
+            for (int k = child_starts[j]; k < child_starts[j + 1]; ++k)
+            {
+              out_off += node_properties[s.s[k]].param_count;
+            }
+        }
+
+        for (int j = child_starts.size() - 1; j >= 0; --j)
+        {
+          s.s.insert(std::next(s.s.begin(), child_starts[j]), std::next(tmp.s.begin(), next_default[j] + 1), std::next(tmp.s.begin(), next_default[j + 1]));
+        }
+        s.s.erase(s.s.begin() + i);
+        --i;
+      }
+      else
+      {
+        param_idx += node_properties[s.s[i]].param_count;
+      }
+    }
+    return {s, p};
   }
 }
