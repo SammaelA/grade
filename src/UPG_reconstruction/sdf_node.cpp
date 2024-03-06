@@ -836,6 +836,195 @@ namespace upg
     Wind8Rose2DSdfNode(const SdfNodeType::Type &_type) : NWindRose2DSdfNode(_type, 8) {}
   };
 
+  void get_koeff_for_spline(const float *in, float *out)
+  {
+    float ex = in[6] - in[3];
+    float ey = in[7] - in[4];
+    float ez = in[8] - in[5];
+    float vx = in[0] - in[3];
+    float vy = in[1] - in[4];
+    float vz = in[2] - in[5];
+    out[0] = (vx * ex + vy * ey + vz * ez) / (ex * ex + ey * ey + ez * ez);
+  }
+
+  class NSplineSdfNode : public PrimitiveSdfNode
+  {
+  private:
+    unsigned N;
+  public:
+    NSplineSdfNode(const SdfNodeType::Type &_type, unsigned n) : PrimitiveSdfNode(_type) { N = n; }
+
+    virtual void get_distance_batch(unsigned     batch_size,
+                                    float *const positions,
+                                    float *      distances,
+                                    float *      ddist_dparams,
+                                    float *      ddist_dpos,
+                            std::vector<float> & stack,
+                                    unsigned     stack_head) const override
+    {
+      for (int i = 0; i < batch_size; ++i)
+      {
+        vec3 xyz = {positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]};
+        int number = 0;
+        float koeff_buf = 0;
+        vec3 dir_buf = {0, 0, 0}, e_buf = {0, 0, 0};
+        float dist = 0;
+        float jac[9] = {}, tmp[9] = {}, data[9] = {};
+        data[0] = xyz.x;
+        data[1] = xyz.y;
+        data[2] = xyz.z;
+        for (int j = 0; j < N - 1; ++j)
+        {
+          int j2 = j + 1;
+          data[3] = p[3 * j + 0];
+          data[4] = p[3 * j + 1];
+          data[5] = p[3 * j + 2];
+          data[6] = p[3 * j2 + 0];
+          data[7] = p[3 * j2 + 1];
+          data[8] = p[3 * j2 + 2];
+          vec3 poly1 = {p[3 * j + 0], p[3 * j + 1], p[3 * j + 2]}, poly2 = {p[3 * j2 + 0], p[3 * j2 + 1], p[3 * j2 + 2]};
+          vec3 e = poly2 - poly1, v1 = xyz - poly1;
+          float koeff = 0;//(v1.x * e.x + v1.y * e.y + v1.z * e.z) / (e.x * e.x + e.y * e.y + e.z * e.z);
+          if (ddist_dparams)
+          {
+            ENZYME_EVALUATE_WITH_DIFF(get_koeff_for_spline, 9, 1, data, &koeff, tmp);
+          }
+          else
+          {
+            get_koeff_for_spline(data, &koeff);
+          }
+          if (koeff < 0) 
+          {
+            koeff = 0;
+            if (ddist_dparams)
+              for (int g = 0; g < 9; ++g)
+                tmp[g] = 0;
+          }
+          else if (koeff > 1) 
+          {
+            koeff = 1;
+            if (ddist_dparams)
+              for (int g = 0; g < 9; ++g)
+                tmp[g] = 0;
+          }
+          vec3 dir = v1 - e * koeff;
+          if (number == j || dist > dir.x * dir.x + dir.y * dir.y + dir.z * dir.z)
+          {
+            dist = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+            number = j;
+            koeff_buf = koeff;
+            dir_buf = dir;
+            e_buf = e;
+            if (ddist_dparams)
+              for (int g = 0; g < 9; ++g)
+                jac[g] = tmp[g];
+          }
+        }
+        distances[i] = std::sqrt(dist);
+        if (ddist_dparams)
+        {
+          ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * N] = -1;
+          if (dist > 1e-15)
+          {
+            int number2 = number + 1;
+            ddist_dpos[i * 3 + 0] = (dir_buf.x * (1 - e_buf.x * jac[0]) -
+                                     dir_buf.y * (e_buf.y * jac[0]) - 
+                                     dir_buf.z * (e_buf.z * jac[0])) / distances[i];
+            ddist_dpos[i * 3 + 1] = (-dir_buf.x * (e_buf.x * jac[1]) +
+                                     dir_buf.y * (1 - e_buf.y * jac[1]) - 
+                                     dir_buf.z * (e_buf.z * jac[1])) / distances[i];
+            ddist_dpos[i * 3 + 2] = (-dir_buf.x * (e_buf.x * jac[2]) -
+                                     dir_buf.y * (e_buf.y * jac[2]) + 
+                                     dir_buf.z * (1 - e_buf.z * jac[2])) / distances[i];
+            for (int j = 0; j < N; ++j)
+            {
+              if (j == number)
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 0] = 
+                    (dir_buf.x * (-(1 - koeff_buf) - e_buf.x * jac[3]) + 
+                     dir_buf.y * (-e_buf.y * jac[3]) + 
+                     dir_buf.z * (-e_buf.z * jac[3])) / distances[i];
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 1] = 
+                    (dir_buf.x * (-e_buf.x * jac[4]) + 
+                     dir_buf.y * (-(1 - koeff_buf) - e_buf.y * jac[4]) + 
+                     dir_buf.z * (-e_buf.z * jac[4])) / distances[i];
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 2] = 
+                    (dir_buf.x * (-e_buf.x * jac[5]) + 
+                     dir_buf.y * (-e_buf.y * jac[5]) + 
+                     dir_buf.z * (-(1 - koeff_buf) - e_buf.z * jac[5])) / distances[i];
+              }
+              else if (j == number2)
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 0] = 
+                    (dir_buf.x * (-koeff_buf - e_buf.x * jac[6]) + 
+                     dir_buf.y * (-e_buf.y * jac[6]) + 
+                     dir_buf.z * (-e_buf.z * jac[6])) / distances[i];
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 1] = 
+                    (dir_buf.x * (-e_buf.x * jac[7]) + 
+                     dir_buf.y * (-koeff_buf - e_buf.y * jac[7]) + 
+                     dir_buf.z * (-e_buf.z * jac[7])) / distances[i];
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 2] = 
+                    (dir_buf.x * (-e_buf.x * jac[8]) + 
+                     dir_buf.y * (-e_buf.y * jac[8]) + 
+                     dir_buf.z * (-koeff_buf - e_buf.z * jac[8])) / distances[i];
+              }
+              else
+              {
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 0] = 0;
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 1] = 0;
+                ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + 3 * j + 2] = 0;
+              }
+            }
+          }
+          else
+          {
+            ddist_dpos[i * 3 + 0] = 0;
+            ddist_dpos[i * 3 + 1] = 0;
+            ddist_dpos[i * 3 + 2] = 0;
+            for (int j = 0; j < 3 * N; ++j)
+            {
+              ddist_dparams[p_offset * batch_size + i * node_properties[get_type()].param_count + j] = 0;
+            }
+          }
+        }
+        distances[i] -= p[3 * N];
+      }
+    }
+
+    virtual unsigned param_cnt() const override { return 3 * N + 1; }
+    virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
+    {
+      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float max_r = 0.5 * length(size);
+      std::vector<ParametersDescription::Param> params;
+      for (int i = 0; i < N; ++i)
+      {
+        params.push_back({0,-size.x,size.x, ParameterType::DIFFERENTIABLE, "radius_x_" + std::to_string(i)});
+        params.push_back({0,-size.y,size.y, ParameterType::DIFFERENTIABLE, "radius_y_" + std::to_string(i)});
+        params.push_back({0,-size.z,size.z, ParameterType::DIFFERENTIABLE, "radius_z_" + std::to_string(i)});
+      }
+      params.push_back({0.1,0.001f * max_r,max_r, ParameterType::DIFFERENTIABLE, "thickness"});
+      return params;
+    }
+    virtual AABB get_bbox() const override
+    {
+      vec3 r = {0, 0, 0};
+      for (int i = 0; i < N; ++i)
+      {
+        if (r.x < abs(p[3 * i + 0])) r.x = p[3 * i + 0];
+        if (r.y < abs(p[3 * i + 1])) r.y = p[3 * i + 1];
+        if (r.z < abs(p[3 * i + 2])) r.z = p[3 * i + 2];
+      }
+      return AABB({-r.x-p[3*N],-r.y-p[3*N],-r.z-p[3*N]}, {r.x+p[3*N],r.y+p[3*N],r.z+p[3*N]});
+    }
+  };
+
+  class Spline8SdfNode : public NSplineSdfNode
+  {
+  public:
+    Spline8SdfNode(const SdfNodeType::Type &_type) : NSplineSdfNode(_type, 8) {}
+  };
+
   inline float
   diff_round_box_sdf(float params[7])
   {
@@ -2120,6 +2309,7 @@ namespace upg
     {SdfNodeType::ROTATE2D     , "Rotate2D"     , SdfNodeClass::TRANSFORM2D, 1, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new Rotate2DSdfNode(t);}}},
     {SdfNodeType::CROTATE2D    , "Complex Rot2D", SdfNodeClass::COMPLEX    , 3, 1, {[](SdfNodeType::Type t) -> SdfNode* {return new ComplexRotate2DSdfNode(t);}}},
     {SdfNodeType::POLY8        , "Polygon 8"    , SdfNodeClass::PRIMITIVE2D, 8, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Wind8Rose2DSdfNode(t);}}},
+    {SdfNodeType::SPLINE8        , "Spline 8"    , SdfNodeClass::PRIMITIVE2D, 25, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new Spline8SdfNode(t);}}},
     {SdfNodeType::GRID_16      , "Grid_16"      , SdfNodeClass::GRID       , 16*16*16, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 16);}}},
     {SdfNodeType::GRID_32      , "Grid_32"      , SdfNodeClass::GRID       , 32*32*32, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 32);}}},
     {SdfNodeType::GRID_64      , "Grid_64"      , SdfNodeClass::GRID       , 64*64*64, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new GridSdfNode(t, 64);}}},

@@ -1359,6 +1359,74 @@ namespace upg
       debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
   }
 
+  void sdf_test_23()
+  {
+    srand(0);
+    debug("TEST 23. SPLINE SDF RECONSTRUCTION\n");
+    std::string settings = R""""(
+    {
+    input {
+        synthetic_reference {
+            points_count:i = 50000
+            params:arr = {0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0.2}
+            structure:arr = {24}
+        } 
+    }
+    generator {
+
+    }
+    optimization {
+        start {
+            params:arr = {0.1, 0.1, 0.1, 0.1, 0, 1.05, 0.1, 1.1, 1.1, -0.05, 1, 0.1, 1.1, 1.1, 0.1, 1.1, 1.1, 0.9, 1.1, 0.1, 1.1, 1.1, -0.1, 0.1, 0.11}   
+            structure:arr = {24} 
+        }
+        step_0 {
+            learning_rate:r = 0.003
+            iterations:i = 1000
+            verbose:b = false
+        }
+    }
+    results {
+        check_image_quality:b = true
+        check_model_quality:b = true
+    }
+    }
+      )"""";
+
+    Block settings_blk;
+    load_block_from_string(settings, settings_blk);
+    auto res = reconstruct_sdf(settings_blk);
+
+    debug(" 23.1. %-64s", "ReconstructionResult size ");
+    if (res.size() == 1)
+      debug("passed\n");
+    else
+      debug("FAILED %d != %d\n", res.size(), 1);
+    
+    debug(" 23.2. %-64s", "Preserved structure ");
+    if (res[0].structure.s.size() == 1 && res[0].structure.s[0] == SdfNodeType::SPLINE8)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    
+    debug(" 23.3. %-64s", "Preserved parameters count ");
+    if (res[0].parameters.p.size() == 25)
+      debug("passed\n");
+    else
+      debug("FAILED\n");
+    debug(" 23.4. %-64s", "Perfect optimization loss ");
+    if (res[0].loss_optimizer < 1e-5)
+      debug("passed\n");
+    else
+      debug("FAILED %f > %f\n", res[0].loss_optimizer, 1e-5);
+    
+    debug(" 23.5. %-64s", "Perfect multi-view PSNR ");
+    if (res[0].quality_synt > 40)
+      debug("passed\n");
+    else
+      debug("FAILED %f < %f\n", res[0].quality_synt, 40.0);
+  }
+
   void perform_tests_sdf_reconstruction(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -1368,7 +1436,7 @@ namespace upg
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
       sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
       sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19, sdf_test_20,
-      sdf_test_21, sdf_test_22
+      sdf_test_21, sdf_test_22, sdf_test_23
     };
 
     if (tests.empty())
