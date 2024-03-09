@@ -570,9 +570,9 @@ namespace upg
               {
                 constexpr float h = 0.001;
                 cur_grad.clear();
-                float ddx = (get_dist(sdf, lmp0 + LiteMath::float3(h,0,0)) - get_dist(sdf, lmp0 + LiteMath::float3(-h,0,0)))/(2*h);
-                float ddy = (get_dist(sdf, lmp0 + LiteMath::float3(0,h,0)) - get_dist(sdf, lmp0 + LiteMath::float3(0,-h,0)))/(2*h);
-                float ddz = (get_dist(sdf, lmp0 + LiteMath::float3(0,0,h)) - get_dist(sdf, lmp0 + LiteMath::float3(0,0,-h)))/(2*h);
+                float ddx = (eval_dist_scene(sdf, lmp0 + LiteMath::float3(h,0,0)) - eval_dist_scene(sdf, lmp0 + LiteMath::float3(-h,0,0)))/(2*h);
+                float ddy = (eval_dist_scene(sdf, lmp0 + LiteMath::float3(0,h,0)) - eval_dist_scene(sdf, lmp0 + LiteMath::float3(0,-h,0)))/(2*h);
+                float ddz = (eval_dist_scene(sdf, lmp0 + LiteMath::float3(0,0,h)) - eval_dist_scene(sdf, lmp0 + LiteMath::float3(0,0,-h)))/(2*h);
                 glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
                 color += MAX(0.1f, dot(n, light_dir));
               }
