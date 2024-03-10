@@ -21,7 +21,9 @@
 #include "graphics_utils/unsharp_masking.h"
 #include "graphics_utils/image_arithmetic.h"
 #include "graphics_utils/simple_model_utils.h"
+#if USE_OPEN_CV
 #include <opencv2/opencv.hpp>
+#endif
 #include "compare.h"
 #include "diff_render.h"
 #include "custom_diff_render.h"
@@ -1042,6 +1044,7 @@ namespace dopt
         engine::textureManager->save_png_directly(comp, save_dir+"reconstructed_tex_complemented.png");
         engine::textureManager->save_png_directly(mask_complemented, save_dir+"reconstructed_mask_complemented.png");       
 
+#if USE_OPEN_CV
         cv::Mat image, mask, image_inpainted;
         image = cv::imread(save_dir+"reconstructed_tex_complemented.png");
         mask = cv::imread(save_dir+"reconstructed_mask_complemented.png", cv::ImreadModes::IMREAD_GRAYSCALE);
@@ -1051,9 +1054,8 @@ namespace dopt
 
         cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
         cv::imwrite(save_dir+"reconstructed_tex_complemented.png", image_inpainted);
-
         sleep(1);
-
+#endif
         auto model_quality = dgen::ModelQuality(false, 3);
         if (generator.name == "buildings_2")
           model_quality = dgen::ModelQuality(false, 0);

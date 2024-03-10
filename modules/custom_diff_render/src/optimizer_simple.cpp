@@ -1,6 +1,6 @@
 #include "optimizer.h"
 #include "utils.h"
-#include "scene.h"
+#include "../common_src/scene.h"
 
 #include <cassert>
 #include <iomanip>

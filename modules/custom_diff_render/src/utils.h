@@ -3,7 +3,7 @@
 #include <memory>
 #include <stdarg.h>
 #include "common_utils/LiteMath_ext.h"
-#include "Image2d.h"
+#include "LiteMath/Image2d.h"
 namespace diff_render
 {
 using LiteMath::float2;

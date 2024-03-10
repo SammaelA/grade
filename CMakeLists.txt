@@ -6,6 +6,7 @@ message("Building project")
 #some examples how to use this file
 #cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=ON  -DMODULE_DR=ON  -DCLANG_VERSION=14
 #cmake CMakeLists.txt -Wno-dev -DTREE_PROJECT=ON -DMODULE_ENZYME=OFF -DMODULE_DR=OFF -DMODULE_VULKAN=ON
+#cmake CMakeLists.txt -Wno-dev -DDIFF_RECONSTRUCTION=ON -DMODULE_ENZYME=ON -DUSE_CUSTOM_DIFF_RENDER=ON -DDR_SRC=/home/sammael/grade/modules/custom_diff_render
 #a list of available options
 option(USE_CUSTOM_DIFF_RENDER "Use custom differentiable renderer" OFF)
 option(TREE_PROJECT "Build Tree Project" OFF)
@@ -239,7 +240,7 @@ endif()
 
 if (DIFF_RECONSTRUCTION)
 
-  find_package(OpenCV REQUIRED PATHS dependencies/opencv/build)
+  #find_package(OpenCV REQUIRED PATHS dependencies/opencv/build)
 
   set(RT_EMBREE_LIBS "")
   set(OMP_LIBS "")
@@ -259,21 +260,22 @@ if (DIFF_RECONSTRUCTION)
     include_directories(${DR_SRC}/external/embree/include)
 
     find_package(Threads REQUIRED)
+    find_library(EMBREE_LIB embree3 dependencies/embree)
     link_directories(${DR_SRC}/external/embree/lib)
-    set(RT_EMBREE_LIBS embree3 tbb)
+    set(RT_EMBREE_LIBS ${EMBREE_LIB} tbb)
 
     set(DR_SOURCE_RT
     "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
     "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
     "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
 
-    set(OMP_LIBS "")
-    if(OpenMP_CXX_FOUND)
+    #set(OMP_LIBS "")
+    #if(OpenMP_CXX_FOUND)
       add_definitions(-DUSE_OMP)
       include_directories(${AUX_OMP_INC})
       link_directories(${AUX_OMP_LIB})
       set(OMP_LIBS OpenMP::OpenMP_CXX)
-    endif()
+    #endif()
 
     file(GLOB_RECURSE DR_SOURCE RELATIVE ${CMAKE_SOURCE_DIR} "${DR_SRC}/src/*.cpp" "${DR_SRC}/common_src/*.cpp")
 
@@ -285,18 +287,18 @@ if (DIFF_RECONSTRUCTION)
   add_executable(dr ${DRec_SRC} ${COMMON_SRC} ${DR_SOURCE} ${DR_SOURCE_RT})
   set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${COMMON_LINKER_FLAGS}")
   target_include_directories(dr PUBLIC ${COMMON_INCLUDE_DIRS} "diff_reconstruction" 
-                            "/usr/include/python3.8" "dependencies/python" 
+                            "/usr/include/python3.10" "dependencies/python" 
                             ${OpenCV_INCLUDE_DIRS})
 
   target_link_libraries(dr 
                          "${COMMON_LIBRARIES}"
-                          /usr/lib/x86_64-linux-gnu/libpython3.8.so
+                          /usr/lib/x86_64-linux-gnu/libpython3.10.so
                           ${OpenCV_LIBS}
                           ${OMP_LIBS} 
                           ${RT_EMBREE_LIBS})
 
   if(USE_CUSTOM_DIFF_RENDER)
-    set(ENZYME_FLAGS "-fplugin=${DR_SRC}/external/enzyme/enzyme/build/Enzyme/ClangEnzyme-${CLANG_VERSION}.so")
+    set(ENZYME_FLAGS "-fplugin=dependencies/enzyme/ClangEnzyme-${CLANG_VERSION}.so")
     message(${ENZYME_FLAGS})
     target_compile_options(dr PUBLIC ${ENZYME_FLAGS})
   else()

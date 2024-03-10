@@ -4,7 +4,7 @@
 #include <cassert>
 
 #include "CrossRT.h"
-#include "embree3/rtcore.h"
+#include "embree/include/embree3/rtcore.h"
 
 class EmbreeRT : public ISceneObject
 {

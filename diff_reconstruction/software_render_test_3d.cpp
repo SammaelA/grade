@@ -529,8 +529,8 @@ namespace voxelization
     {
       for (int phi = 0; phi < phi_cnt; phi++)
       {
-        float phi_f = 2*M_PI*phi/(float)phi_cnt;
-        float psi_f = M_PI*psi/(float)psi_cnt - 0.5*M_PI;
+        float phi_f = 2*LiteMath::M_PI*phi/(float)phi_cnt;
+        float psi_f = LiteMath::M_PI*psi/(float)psi_cnt - 0.5*LiteMath::M_PI;
         camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
         render_reference_image(camera, test_image, image_w, image_h);
         save_image(test_image, "saves/3d_render/reference_image_"+std::to_string(psi)+"_"+std::to_string(phi)+".png");
@@ -565,7 +565,7 @@ namespace voxelization
     
     for (float t=0;t<=1;t+=0.02)
     {
-      camera.origin = vec3(50*sin(2*M_PI*t), 0, 50*cos(2*M_PI*t));
+      camera.origin = vec3(50*sin(2*LiteMath::M_PI*t), 0, 50*cos(2*LiteMath::M_PI*t));
       render_3d_scene(voxel_array, camera, test_image, image_w, image_h, camera.z_far, 256, 1);
       save_image(test_image, "saves/3d_render/test_image.png");
       //save_image(test_image, "saves/3d_render/test_image_"+std::to_string(n)+".png");
@@ -612,8 +612,8 @@ namespace voxelization
         CameraSettings camera;
         camera.target = vec3(0, 0, 0);
         camera.up = vec3(0, 1, 0);
-        float phi_f = 2*M_PI*phi/(float)phi_cnt;
-        float psi_f = M_PI*psi/(float)psi_cnt - 0.5*M_PI;
+        float phi_f = 2*LiteMath::M_PI*phi/(float)phi_cnt;
+        float psi_f = LiteMath::M_PI*psi/(float)psi_cnt - 0.5*LiteMath::M_PI;
         camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
 
         images.emplace_back(image_w, image_h);
@@ -673,8 +673,8 @@ namespace voxelization
         CameraSettings camera;
         camera.target = vec3(0, 0, 0);
         camera.up = vec3(0, 1, 0);
-        float phi_f = 2*M_PI*phi/(float)phi_cnt;
-        float psi_f = 0.5*M_PI*psi/(float)psi_cnt;
+        float phi_f = 2*LiteMath::M_PI*phi/(float)phi_cnt;
+        float psi_f = 0.5*LiteMath::M_PI*psi/(float)psi_cnt;
         camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
 
         render_reference_image_cup(camera, image_w, image_h, "saves/3d_render/cup_test.png", m);
@@ -710,7 +710,7 @@ namespace voxelization
     
     for (float t=0;t<=1;t+=0.02)
     {
-      camera.origin = vec3(dist*sin(2*M_PI*t), 0, dist*cos(2*M_PI*t));
+      camera.origin = vec3(dist*sin(2*LiteMath::M_PI*t), 0, dist*cos(2*LiteMath::M_PI*t));
       render_3d_scene(voxel_array, camera, test_image, image_w, image_h, 25, 100, 4);
       save_image(test_image, "saves/3d_render/test_image.png");
       save_image(test_image, "saves/3d_render/test_image_"+std::to_string(n)+".png");
@@ -737,8 +737,8 @@ namespace voxelization
         CameraSettings camera;
         camera.target = vec3(0, 0, 0);
         camera.up = vec3(0, 1, 0);
-        float phi_f = 2*M_PI*phi/(float)phi_cnt;
-        float psi_f = M_PI*psi/(float)psi_cnt - 0.5*M_PI;
+        float phi_f = 2*LiteMath::M_PI*phi/(float)phi_cnt;
+        float psi_f = LiteMath::M_PI*psi/(float)psi_cnt - 0.5*LiteMath::M_PI;
         camera.origin = dist*vec3(cos(psi_f)*sin(phi_f), sin(psi_f), cos(psi_f)*cos(phi_f));
 
         images.emplace_back(image_w, image_h);
@@ -791,7 +791,7 @@ namespace voxelization
     int n = 0;
     for (float t=0;t<=1;t+=0.1)
     {
-      camera.origin = vec3(dist*sin(2*M_PI*t), 0, dist*cos(2*M_PI*t));
+      camera.origin = vec3(dist*sin(2*LiteMath::M_PI*t), 0, dist*cos(2*LiteMath::M_PI*t));
       render_3d_scene(voxel_array, camera, im, 512, 512, 25, 256, 4);
       save_image(im, "saves/3d_render/test_image_"+std::to_string(n)+".png");
       n++;

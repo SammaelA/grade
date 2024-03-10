@@ -7,9 +7,9 @@
 #include <cassert> 
 
 #include "common_utils/LiteMath_ext.h"
-#include "Image2d.h"
+#include "LiteMath/Image2d.h"
 #include "utils.h"
-#include "scene.h"
+#include "../common_src/scene.h"
 namespace diff_render
 {
 enum class SHADING_MODEL {UNDEFINED = 0,

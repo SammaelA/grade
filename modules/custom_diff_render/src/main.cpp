@@ -14,7 +14,7 @@
 
 #include "dmesh.h"
 #include "functions.h"
-#include "raytrace.h"
+#include "../raytrace_src/raytrace.h"
 
 #include "optimizer.h"
 #include "scenes.h"
@@ -24,7 +24,7 @@
 
 #include "utils.h"
 #include "fin_diff.h"
-#include "Image2d.h"
+#include "LiteMath/Image2d.h"
 #include "tests.h"
 //#include "enzyme.h"
 #include <chrono>

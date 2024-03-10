@@ -7,7 +7,7 @@
 #include "common_utils/LiteMath_ext.h"
 #include <chrono>
 #include "drender.h"
-#include "Image2d.h"
+#include "LiteMath/Image2d.h"
 
 class HalfGPUCustomDiffRender : public IDiffRender
 {

@@ -554,7 +554,7 @@ bool export_internal(std::string directory, Scene &scene, Block &export_settings
     if (need_terrain)
       hrMeshInstance(scnRef, terrainModel, mind.L());
     hrLightInstance(scnRef, skyLight, mind.L());
-    auto mres = hlm::mul(hlm::rotate4x4Z(M_PI/6), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
+    auto mres = hlm::mul(hlm::rotate4x4Z(LiteMath::M_PI/6), hlm::translate4x4({0.0f, 3000.0f, 0.0f}));
     hrLightInstance(scnRef, directLight, mres.L());
 
     for (int i=0; i< instancedModels.size();i++)

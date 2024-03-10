@@ -4,7 +4,7 @@
 #include <cstring> 
 #include <cassert> 
 #include <map>
-#include "utils.h"
+#include "../src/utils.h"
 #include "common_utils/LiteMath_ext.h"
 
 namespace diff_render

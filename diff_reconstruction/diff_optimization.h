@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 
+#define USE_OPEN_CV 0
+
 struct Block;
 class MitsubaInterface;
 namespace dopt

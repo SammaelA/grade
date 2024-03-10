@@ -110,8 +110,8 @@ void Tester::test_base_derivatives()
 {
   ::std::vector<CamInfo> cameras;
   float4x4 mProj = LiteMath::perspectiveMatrix(45.0f, sensor_w/sensor_h, 0.1f, 100.0f);
-  float rot_y = (2*M_PI)/cam_num;
-  float rot_x = (M_PI_2)/cam_num;
+  float rot_y = (2*LiteMath::M_PI)/cam_num;
+  float rot_x = (LiteMath::M_PI/2)/cam_num;
   int st = cam_num/2;
   for(int i=0;i<cam_num;i++)
   {
@@ -298,7 +298,7 @@ void Tester::test_2_8_instancing()
                       ::std::vector<float4x4> initial_transforms;
                       ::std::vector<float4x4>  target_transforms;
                       int tr = 2;
-                      float rot = (2*M_PI)/tr;
+                      float rot = (2*LiteMath::M_PI)/tr;
                       for (int i=0;i<tr;i++)
                       {
                         initial_transforms.push_back(LiteMath::scale4x4({0.5,0.5,0.5})*LiteMath::translate4x4({2.5f*(1-i),0.5f,0.0f}));

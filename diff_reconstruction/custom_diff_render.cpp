@@ -7,8 +7,8 @@
 #include <chrono>
 
 #ifdef USE_CUSTOM_DIFF_RENDER
-#include "drender.h"
-#include "Image2d.h"
+#include "../modules/custom_diff_render/src/drender.h"
+#include "LiteMath/Image2d.h"
 class CustomDiffRender : public IDiffRender
 {
 public:

@@ -1,7 +1,7 @@
 #pragma once
-#include "scene.h"
+#include "../common_src/scene.h"
 #include "dmesh.h"
-#include "camera.h"
+#include "../common_src/camera.h"
 #include "utils.h"
 namespace diff_render
 {

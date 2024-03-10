@@ -1,5 +1,5 @@
 #pragma once
-#include "raytrace.h"
+#include "../raytrace_src/raytrace.h"
 namespace diff_render
 {
 static inline void VertexShader(const CamInfo& u, float vx, float vy, float vz, 

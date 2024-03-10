@@ -2,10 +2,10 @@
   cmd {
     cmd_name:s = "IC_UPG_TESTS"
 
-    perform_tests_mesh_reconstruction:b = false
+    perform_tests_mesh_reconstruction:b = true
     tests_mesh_reconstruction:arr = {}
 
-    perform_tests_sdf_reconstruction:b = false
+    perform_tests_sdf_reconstruction:b = true
     tests_sdf_reconstruction:arr = {5}
 
     perform_tests_tensor_processor:b = true

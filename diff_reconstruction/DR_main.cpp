@@ -31,7 +31,7 @@
 #include "obj_utils.h"
 #include "graphics_utils/simple_model_utils.h"
 #include "compare.h"
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 #include "custom_diff_render.h"
 #include "common_utils/blk.h"
 #include "graphics_utils/render_wireframe.h"
@@ -337,6 +337,8 @@ int main(int argc, char **argv)
 
       Texture res = BilateralFilter::perform(comp, 4, 0.5);
       Texture sharped = UnsharpMasking::perform(res, 1, 0.2);
+      
+#if USE_OPEN_CV
       cv::Mat image, mask, image_inpainted;
       image = cv::imread("saves/cup_14/reconstructed_tex_complemented_1.png");
       mask = cv::imread("saves/cup_14/reconstructed_mask_complemented_1.png", cv::ImreadModes::IMREAD_GRAYSCALE);
@@ -351,6 +353,7 @@ int main(int argc, char **argv)
       cv::inpaint(image, mask, image_inpainted, 16, cv::INPAINT_TELEA);
       cv::imwrite("saves/cup_14/reconstructed_tex_raw_3.png", image_inpainted);
       //image.at(0,0)
+#endif
 
       //cv::imshow("Display Image", image);
       //cv::waitKey(0);

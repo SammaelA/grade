@@ -3,7 +3,7 @@
 #include "common_utils/LiteMath_ext.h"
 #include "dmesh.h"
 #include "dmodels.h"
-#include "raytrace.h"
+#include "../raytrace_src/raytrace.h"
 #include "virtual_drender.h"
 
 #if DEBUG_RENDER
@@ -13,7 +13,7 @@ constexpr static int  MAXTHREADS    = 14;
 #endif
 
 #include "myomp.h"
-#include "qmc.h"
+#include "../common_src/qmc.h"
 #include <vector>
 #include <set>
 #include <memory>

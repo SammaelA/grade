@@ -1,5 +1,5 @@
 #include "common_utils/LiteMath_ext.h"
-#include "Image2d.h"
+#include "LiteMath/Image2d.h"
 #define USE_STB_IMAGE
 #ifdef USE_STB_IMAGE
   #ifndef USE_CUSTOM_DIFF_RENDER
