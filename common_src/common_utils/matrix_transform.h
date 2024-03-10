@@ -33,22 +33,6 @@ namespace LiteMath
     v1[3][2] = 0;
     v1[3][3] = 1;
 
-    glm::mat4 v2 = glm::eulerAngleXYZ(x_angle, y_angle, z_angle);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("eulerAngleXYZ PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("eulerAngleXYZ diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
     return v1;
   }
 
@@ -99,24 +83,7 @@ namespace LiteMath
   //LookAt matrix is right-handed by default
   static inline glm::mat4 lookAt(const glm::vec3 & eye, const glm::vec3 & center, const glm::vec3 & up)
   {
-    glm::mat4 v1 = lookAtRH(eye, center, up);
-    glm::mat4 v2 = glm::lookAt(eye, center, up);
-    
-    static bool first = true;
-    if (first)
-    {
-      printf("lookAt PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("lookAt diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return lookAtRH(eye, center, up);
   }
 
   //perspective projection with right-handed coordinate system to unit cube [-1,1]^3
@@ -142,24 +109,7 @@ namespace LiteMath
   //perspective projection
   static inline glm::mat4 perspective(float fovy, float aspect, float zNear, float zFar)
   {
-    glm::mat4 v1 = perspectiveRH_NO(fovy, aspect, zNear, zFar);
-    glm::mat4 v2 = glm::perspective(fovy, aspect, zNear, zFar);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("perspective PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("perspective diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return perspectiveRH_NO(fovy, aspect, zNear, zFar);
   }
 
   //orthographic projection with right-handed coordinate system to unit cube [-1,1]^3
@@ -178,24 +128,7 @@ namespace LiteMath
   //orthographic projection
   static inline glm::mat4 ortho(float left, float right, float bottom, float top, float zNear, float zFar)
 	{
-    glm::mat4 v1 = orthoRH_NO(left, right, bottom, top, zNear, zFar);
-    glm::mat4 v2 = glm::ortho(left, right, bottom, top, zNear, zFar);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("ortho PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("ortho diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return orthoRH_NO(left, right, bottom, top, zNear, zFar);
   }
 
   static inline glm::mat4 rotate(const glm::mat4 &m, float angle, const glm::vec3 &v)
@@ -226,48 +159,14 @@ namespace LiteMath
 		Result[2] = m[0] * Rotate[2][0] + m[1] * Rotate[2][1] + m[2] * Rotate[2][2];
 		Result[3] = m[3];
 		
-    glm::mat4 v1 = Result;
-    glm::mat4 v2 = glm::rotate(m, angle, v);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("rotate PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("rotate diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return Result;
 	}
 
   static inline glm::mat4 translate(glm::mat4 const& m, glm::vec3 const& v)
 	{
 		glm::mat4 Result(m);
 		Result[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
-    glm::mat4 v1 = Result;
-    glm::mat4 v2 = glm::translate(m, v);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("translate PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("translate diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return Result;
 	}
 
   static inline glm::mat4 scale(glm::mat4 const& m, glm::vec3 const& v)
@@ -277,23 +176,6 @@ namespace LiteMath
 		Result[1] = m[1] * v[1];
 		Result[2] = m[2] * v[2];
 		Result[3] = m[3];
-    glm::mat4 v1 = Result;
-    glm::mat4 v2 = glm::scale(m, v);
-
-    static bool first = true;
-    if (first)
-    {
-      printf("scale PASSED\n");
-      first = false;
-    }
-    for (int i=0;i<4;i++)
-    {
-      for (int j=0;j<4;j++)
-      {
-        if(v1[i][j] != v2[i][j])
-          printf("scale diff %f %f\n", v1[i][j], v2[i][j]);
-      }
-    }
-    return v1;
+    return Result;
 	}
 }
