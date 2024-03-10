@@ -102,7 +102,7 @@ namespace dgen
 
   std::vector<float> get_cube()
   {
-    Box b = Box(glm::vec3(0,0,0), glm::vec3(1,0,0), glm::vec3(0,1,0), glm::vec3(0,0,1));
+    Box b = Box(float3(0,0,0), float3(1,0,0), float3(0,1,0), float3(0,0,1));
     Mesh m;
     visualizer::box_to_model(&b, &m);
 

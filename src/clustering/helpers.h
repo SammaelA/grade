@@ -7,7 +7,7 @@
 #include "common_utils/blk.h"
 #include "tree_utils/billboard_cloud.h"
 
-glm::vec3 canonical_bbox();
+float3 canonical_bbox();
 bool get_dedicated_bbox(Branch *branch, BBox &bbox);
 void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, float scale);
 void set_occlusion(Branch *b, LightVoxelsCube *light);

@@ -4,10 +4,6 @@
 #include "rendering_SSBO_structs.h"
 #include "grove_renderer.h"
 
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
-
 ImpostorRenderer::~ImpostorRenderer()
 {
     #define DELBUF(a) if (a) { delete_buffer((a)); a = 0;}
@@ -48,10 +44,10 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
     for (Impostor &imp : data->impostors)
     {
         offsets.push_back(s_verts.size()/8);
-        std::vector<glm::vec3> tcs = imp.top_slice.get_tc(data->atlas);
+        std::vector<float3> tcs = imp.top_slice.get_tc(data->atlas);
         for (int i = 0;i<MIN(imp.top_slice.positions.size(),tcs.size());i++)
         {
-            vec3 &pos = imp.top_slice.positions[i];
+            float3 &pos = imp.top_slice.positions[i];
             
             s_verts.push_back(pos.x);
             s_verts.push_back(pos.y);
@@ -68,7 +64,7 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
             tcs = b.get_tc(data->atlas);
             for (int i = 0;i<MIN(b.positions.size(),tcs.size());i++)
             {
-                vec3 &pos = b.positions[i];
+                float3 &pos = b.positions[i];
 
                 s_verts.push_back(pos.x);
                 s_verts.push_back(pos.y);
@@ -103,7 +99,7 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
         dat.slice_count = (it->slices.size());
         dat.slice_offset = offsets[i];
         dat.slice_verts = it->slices[0].positions.size();
-        dat.imp_center = glm::vec4(it->bcyl.center,1);
+        dat.imp_center = to_float4(it->bcyl.center,1);
         imp_data_buffer.push_back(dat);
         it++;
     }
@@ -116,9 +112,9 @@ impostorRendererInstancing({"impostor_render_instancing.vs", "impostor_render_in
 
 
 }
-void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light,
-                              glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                              glm::vec4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
+void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, float4x4 &projection, float4x4 &view, DirectedLight &light,
+                              float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
+                              float4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
 {
     if (to_shadow)//we do not render impostors to shadow
         return;
@@ -136,7 +132,7 @@ void ImpostorRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, gl
     impostorRendererInstancing.uniform("camera_pos", camera_pos);
     impostorRendererInstancing.uniform("screen_size", screen_size);
     impostorRendererInstancing.texture("noise", engine::textureManager->get("noise"));
-    impostorRendererInstancing.uniform("hor_vert_transition_thr", glm::vec2(hth,vth));
+    impostorRendererInstancing.uniform("hor_vert_transition_thr", float2(hth,vth));
     impostorRendererInstancing.uniform("delta",0.5f);
     impostorRendererInstancing.uniform("type_id",(uint)mdrd.type_id);
     impostorRendererInstancing.uniform("vertex_id_offset",mdrd.base_vertex_id);

@@ -35,7 +35,7 @@ public:
     BillboardCloudRaw();
     ~BillboardCloudRaw();
 
-    static BBox get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c);
+    static BBox get_bbox(Branch *branch, float3 a, float3 b, float3 c);
     static BBox get_minimal_bbox(Branch *b);
     static BBox get_minimal_bbox_fixed_dirs(Branch *branch);
 
@@ -56,9 +56,9 @@ protected:
     {
         Branch *b;
         BBox min_bbox;
-        glm::vec3 base_joint;
+        float3 base_joint;
         int parent;
-        BillboardBox(Branch *_b, BBox &_bbox, glm::vec3 _base_joint, int par = -1) : min_bbox(_bbox)
+        BillboardBox(Branch *_b, BBox &_bbox, float3 _base_joint, int par = -1) : min_bbox(_bbox)
         {
             b = _b;
             base_joint = _base_joint;
@@ -84,10 +84,10 @@ protected:
     void create_billboard(const TreeTypeData &ttd, Branch *b, BBox &min_box, int id, Billboard &bill, 
                           float leaf_scale, float wood_scale = 1,
                           bool monochrome = false, int level_from = 0, int level_to = 1000);
-    static void update_bbox(Branch *branch, glm::mat4 &rot, glm::vec4 &mn, glm::vec4 &mx);
-    glm::mat4 get_viewproj(BBox &b);
+    static void update_bbox(Branch *branch, float4x4 &rot, float4 &mn, float4 &mx);
+    float4x4 get_viewproj(BBox &b);
     static bool BPD_comp(BranchProjectionData &a, BranchProjectionData &b);
-    float projection_error_rec(Branch *b, glm::vec3 &n, float d);
+    float projection_error_rec(Branch *b, float3 &n, float d);
     int billboard_count = 256;
     bool ready = false;
     int quality;

@@ -13,7 +13,7 @@ public:
   ~Cubemap();
   void loadCubemap(std::vector<std::string> faces);
   Texture &get_tex() { return tex; }
-  void render(glm::mat4 &projection, glm::mat4 &view, Camera &camera);
+  void render(float4x4 &projection, float4x4 &view, Camera &camera);
 
 private:
   int width, height;

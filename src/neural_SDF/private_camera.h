@@ -15,9 +15,9 @@ namespace nsdf
   }
   CameraSettings convert(const Camera &cam)
   {
-    CameraSettings c{ glm::vec3(cam.pos_x, cam.pos_y, cam.pos_z),
-                      glm::vec3(cam.target_x, cam.target_y, cam.target_z),
-                      glm::vec3(cam.up_x, cam.up_y, cam.up_z),
+    CameraSettings c{ float3(cam.pos_x, cam.pos_y, cam.pos_z),
+                      float3(cam.target_x, cam.target_y, cam.target_z),
+                      float3(cam.up_x, cam.up_y, cam.up_z),
                       cam.fov_rad,
                       cam.z_near,
                       cam.z_far};

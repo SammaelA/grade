@@ -2,7 +2,7 @@
 #include "tinyEngine/engine.h"
 #include "tinyEngine/postfx.h"
 
-Texture ImageResizer::resize(Texture t, int new_w, int new_h, Type type, glm::vec4 base_color)
+Texture ImageResizer::resize(Texture t, int new_w, int new_h, Type type, float4 base_color)
 {
   assert(t.type == GL_TEXTURE_2D);
   float w = t.get_W();

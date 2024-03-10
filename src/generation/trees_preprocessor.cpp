@@ -1,6 +1,6 @@
 #include "trees_preprocessor.h"
 
-using namespace glm;
+
 
 void TreePreprocessor::preprocess_tree(Tree &t, Block &preprocessing_params)
 {
@@ -51,12 +51,12 @@ void TreePreprocessor::simplify_branch_rec(Tree &t, Branch *b, int max_merge_n)
         next_sit++;
         it++;
         float last_r = sit->rel_r_begin;
-        vec3 last_dir = normalize(sit->end - sit->begin);
+        float3 last_dir = normalize(sit->end - sit->begin);
 
         while (it != b->joints.end() && sit != b->segments.end())
         {
             bool useful = false;
-            vec3 dir = last_dir;
+            float3 dir = last_dir;
             if (next_sit != b->segments.end())
                 dir = normalize(next_sit->end - sit->begin);
             if (!it->childBranches.empty() || it->leaf) //has child branches

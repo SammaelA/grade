@@ -30,7 +30,7 @@ namespace upg
 
     //render model silhouette
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::mat4 viewProj = camera.get_viewProj();
+    float4x4 viewProj = camera.get_viewProj();
     render_silhouette.use();
     render_silhouette.uniform("viewProj", viewProj);
     for (auto &m : model.models)
@@ -219,9 +219,9 @@ namespace upg
         psi = - psi;
       
       cameras.push_back(orig_camera);
-      glm::vec3 view_dir = -glm::vec3(cos(psi)*sin(phi), sin(psi), cos(psi)*cos(phi));
-      glm::vec3 tangent = glm::normalize(glm::cross(view_dir, orig_camera.up));
-      glm::vec3 new_up = glm::normalize(glm::cross(view_dir, tangent));
+      float3 view_dir = -float3(cos(psi)*sin(phi), sin(psi), cos(psi)*cos(phi));
+      float3 tangent = normalize(cross(view_dir, orig_camera.up));
+      float3 new_up = normalize(cross(view_dir, tangent));
       cameras.back().up = new_up;
       cameras.back().origin = cameras.back().target -distance*view_dir;
     }
@@ -256,10 +256,10 @@ namespace upg
   void render_model_turntable(const Block &hydra_settings, const ComplexModel &model)
   {
     Scene scene;
-    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap = new Heightmap(float3(0, 0, 0), float2(100, 100), 10);
     scene.heightmap->fill_const(0);
     scene.instanced_models.emplace_back();
-    scene.instanced_models[0].instances = {glm::mat4(1.0f)};
+    scene.instanced_models[0].instances = {float4x4()};
     scene.instanced_models[0].model = model;
     Block export_settings;
     hydra::prepare_hydra_export_settings_block(hydra_settings, export_settings);

@@ -13,11 +13,11 @@ public:
   {
     bool out_of_array = true;
     std::array<float, 8> Qs;
-    std::array<glm::ivec3, 8> tcs;
+    std::array<int3, 8> tcs;
     std::array<VoxelType, 8> values;
   };
   VoxelArray() = default;
-  VoxelArray(glm::vec3 _p0, glm::vec3 _p1, glm::ivec3 _vox_count, VoxelType _default_value,
+  VoxelArray(float3 _p0, float3 _p1, int3 _vox_count, VoxelType _default_value,
              VoxelType *external_data = nullptr)
   {
     p0 = _p0;
@@ -29,7 +29,7 @@ public:
     assert(vox_count.x > 0 && vox_count.y > 0 && vox_count.z > 0);
 
     sz = p1 - p0;
-    voxel_size = glm::vec3(sz.x / vox_count.x, sz.y / vox_count.y, sz.z / vox_count.z);
+    voxel_size = float3(sz.x / vox_count.x, sz.y / vox_count.y, sz.z / vox_count.z);
     total_vox_count = vox_count.x * vox_count.y * vox_count.z;
 
     if (external_data)
@@ -49,16 +49,16 @@ public:
       delete data;
   }
 
-  VoxelType get(glm::vec3 pos)
+  VoxelType get(float3 pos)
   {
-    glm::ivec3 voxel = pos_to_v(pos);
+    int3 voxel = pos_to_v(pos);
     if (in_array(voxel))
       return data[v_to_i(voxel)];
     else
       return default_value;
   };
 
-  inline VoxelType get_direct(glm::ivec3 voxel)
+  inline VoxelType get_direct(int3 voxel)
   {
     return data[v_to_i(voxel)];
   };
@@ -68,17 +68,17 @@ public:
   };
 
 
-  VoxelType get_trilinear(glm::vec3 pos)
+  VoxelType get_trilinear(float3 pos)
   {
-    glm::vec3 fv = (pos - p0) / voxel_size - glm::vec3(0.5);
-    glm::ivec3 voxel = glm::ivec3(fv);
-    glm::vec3 dp(fv.x - voxel.x, fv.y - voxel.y, fv.z - voxel.z);
+    float3 fv = (pos - p0) / voxel_size - float3(0.5);
+    int3 voxel = int3(fv);
+    float3 dp(fv.x - voxel.x, fv.y - voxel.y, fv.z - voxel.z);
     int x = voxel.x;
     int y = voxel.y;
     int z = voxel.z;
 
     bool in_1 = in_array(voxel);
-    bool in_2 = in_array(voxel + glm::ivec3(1,1,1));
+    bool in_2 = in_array(voxel + int3(1,1,1));
 
     if (in_1 && in_2)
     {
@@ -115,19 +115,19 @@ public:
       return default_value;
     }
   }
-  void set(glm::vec3 pos, const VoxelType &value)
+  void set(float3 pos, const VoxelType &value)
   {
-    glm::ivec3 voxel = pos_to_v(pos);
+    int3 voxel = pos_to_v(pos);
     if (in_array(voxel))
       data[v_to_i(voxel)] = value;
   };
-  void set_circle(glm::vec3 pos, float r, const VoxelType &value)
+  void set_circle(float3 pos, float r, const VoxelType &value)
   {
-    glm::ivec3 bbox_p0 = pos_to_v(pos + glm::vec3(-r));
+    int3 bbox_p0 = pos_to_v(pos + float3(-r));
     bbox_p0.x = voxelization::clamp(bbox_p0.x, 0, vox_count.x - 1);
     bbox_p0.y = voxelization::clamp(bbox_p0.y, 0, vox_count.y - 1);
     bbox_p0.z = voxelization::clamp(bbox_p0.z, 0, vox_count.z - 1);
-    glm::ivec3 bbox_p1 = pos_to_v(pos + glm::vec3(r));
+    int3 bbox_p1 = pos_to_v(pos + float3(r));
     bbox_p1.x = voxelization::clamp(bbox_p1.x, 0, vox_count.x - 1);
     bbox_p1.y = voxelization::clamp(bbox_p1.y, 0, vox_count.y - 1);
     bbox_p1.z = voxelization::clamp(bbox_p1.z, 0, vox_count.z - 1);
@@ -138,8 +138,8 @@ public:
       {
         for (unsigned i = bbox_p0.x; i <= bbox_p1.x; i++)
         {
-          glm::vec3 p = v_to_pos(i, j, k) - pos;
-          if (glm::dot(p, p) <= r * r)
+          float3 p = v_to_pos(i, j, k) - pos;
+          if (dot(p, p) <= r * r)
             data[v_to_i(i, j, k)] = value;
         }
       }
@@ -176,24 +176,24 @@ public:
   }
 
 private:
-  inline glm::ivec3 pos_to_v(glm::vec3 pos)
+  inline int3 pos_to_v(float3 pos)
   {
-    return glm::ivec3((pos - p0) / voxel_size);
+    return int3((pos - p0) / voxel_size);
   }
-  inline glm::vec3 v_to_pos(glm::ivec3 voxel)
+  inline float3 v_to_pos(int3 voxel)
   {
     return v_to_pos(voxel.x, voxel.y, voxel.z);
   }
-  inline glm::vec3 v_to_pos(unsigned vx, unsigned vy, unsigned vz)
+  inline float3 v_to_pos(unsigned vx, unsigned vy, unsigned vz)
   {
-    return p0 + voxel_size * glm::vec3(vx + 0.5, vy + 0.5, vz + 0.5);
+    return p0 + voxel_size * float3(vx + 0.5, vy + 0.5, vz + 0.5);
   }
-  inline bool in_array(glm::ivec3 voxel)
+  inline bool in_array(int3 voxel)
   {
     return voxel.x >= 0 && voxel.y >= 0 && voxel.z >= 0 &&
            voxel.x < vox_count.x && voxel.y < vox_count.y && voxel.z < vox_count.z;
   }
-  inline unsigned v_to_i(glm::ivec3 voxel)
+  inline unsigned v_to_i(int3 voxel)
   {
     return v_to_i(voxel.x, voxel.y, voxel.z);
   }
@@ -210,14 +210,14 @@ private:
 
   VoxelType *data = nullptr;
   VoxelType default_value;
-  glm::vec3 p0, p1, sz;     // corners of bounding box of voxel array
-  glm::ivec3 vox_count;     // size of array in voxels i.e. (64,64,64)
-  glm::vec3 voxel_size;     // size of each voxel
+  float3 p0, p1, sz;     // corners of bounding box of voxel array
+  int3 vox_count;     // size of array in voxels i.e. (64,64,64)
+  float3 voxel_size;     // size of each voxel
   unsigned total_vox_count; // number of all voxels in array
   bool has_external_data = false;
 };
 
 namespace voxelization
 {
-  void render_test_3d(VoxelArray <glm::vec4> v);
+  void render_test_3d(VoxelArray <float4> v);
 }

@@ -104,11 +104,11 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
                 str += "\"camera\" :"+ std::to_string(b.camera);
                 first = false;
             }
-            if (b.mesh >= 0 && b.transform != glm::mat4(1.0f))
+            if (b.mesh >= 0)
             {
-                glm::mat4 tr = b.transform;
+                float4x4 tr = b.transform;
                 //tr *= LiteMath::translate(tr, b.translation);
-                tr = LiteMath::scale(glm::mat4(1.0f),b.scale)*tr;
+                tr = LiteMath::scale(float4x4(),b.scale)*tr;
                 if (!first)
                 {
                     str +=",\n";
@@ -118,7 +118,7 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
                 {
                     for (int k =0;k<4;k++)
                     {
-                        str += std::to_string(tr[j][k]);
+                        str += std::to_string(tr(k,j));
                         if (j < 3 || k < 3)
                             str += ", ";
                     }
@@ -126,7 +126,7 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
                 str += "]";
                 first = false;
             }
-            if (b.mesh >= 0 && b.rotation != glm::vec4(0,0,0,1) && b.transform == glm::mat4(1.0f))
+            if (b.mesh >= 0)
             {
                 if (!first)
                 {
@@ -136,7 +136,7 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
                        std::to_string(b.rotation.z) + ", " + std::to_string(b.rotation.w) + "]";
                 first = false;
             }
-            if (b.mesh >= 0 && b.translation != glm::vec3(0,0,0) && b.transform == glm::mat4(1.0f))
+            if (b.mesh >= 0)
             {
                 if (!first)
                 {
@@ -146,7 +146,7 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
                        std::to_string(b.translation.z) + "]";
                 first = false;
             }
-            if (b.mesh >= 0 && b.scale != glm::vec3(1,1,1) && b.transform == glm::mat4(1.0f))
+            if (b.mesh >= 0)
             {
                 if (!first)
                 {

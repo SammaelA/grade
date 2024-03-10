@@ -18,7 +18,7 @@ BranchWithData::~BranchWithData()
 
 void voxelize_branch(Branch *b, LightVoxelsCube *light, int level_to);
 BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationParams,
-                               Branch *_original, int levels, int _id, glm::mat4 _transform, float _r_transform)
+                               Branch *_original, int levels, int _id, float4x4 _transform, float _r_transform)
 {
     original = _original;
     id = _id;
@@ -26,31 +26,31 @@ BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationP
     r_transform = _r_transform;
     b = branchHeap.new_branch();
     b->deep_copy(original, branchHeap, &leafHeap);
-    auto tr = glm::inverse(transform);
+    auto tr = LiteMath::inverse4x4(transform);
     b->transform(tr, _r_transform);
     for (int i = 0; i < levels; i++)
         joint_counts.push_back(0);
     if (b)
         calc_joints_count(b, joint_counts);
 
-    glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-    glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), 2 * PI / clusterizationParams.bwd_rotations, axis);
+    float3 axis = b->joints.back().pos - b->joints.front().pos;
+    float4x4 rot = LiteMath::rotate(float4x4(), 2 * PI / clusterizationParams.bwd_rotations, axis);
 
     for (int i = 0; i < clusterizationParams.bwd_rotations; i++)
     {
         b->transform(rot);
 
         leavesDensity.push_back(new LightVoxelsCube(
-            glm::vec3(0.5f * canonical_bbox().x, 0, 0),
-            glm::vec3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
+            float3(0.5f * canonical_bbox().x, 0, 0),
+            float3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
             1 / clusterizationParams.voxels_size_mult));
 
         set_occlusion(b, leavesDensity.back());
         if (clusterizationParams.voxelized_structure)
         {
             voxelizedStructures.push_back(new LightVoxelsCube(
-                glm::vec3(0.5f * canonical_bbox().x, 0, 0),
-                glm::vec3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
+                float3(0.5f * canonical_bbox().x, 0, 0),
+                float3(0.5f * canonical_bbox().x, canonical_bbox().y, canonical_bbox().z),
                 1 / clusterizationParams.structure_voxels_size_mult));
 
             voxelize_original_branch(b, voxelizedStructures.back(), 1, 1);

@@ -48,11 +48,11 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
     LeafHeap leafHeap;
     Branch *b = branchHeap.new_branch();
     b->deep_copy(base, branchHeap, &leafHeap);
-    auto tr = glm::inverse(data.transform); 
+    auto tr = LiteMath::inverse4x4(data.transform); 
     b->transform(tr, data.r_transform);
 
-    glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-    glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), 2 * PI / isParams.hash_count, axis);
+    float3 axis = b->joints.back().pos - b->joints.front().pos;
+    float4x4 rot = LiteMath::rotate(float4x4(), 2 * PI / isParams.hash_count, axis);
 
     for (int i = 0; i < isParams.hash_count; i++)
     {
@@ -62,8 +62,8 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
             int cells = isParams.EV_hasing_cells;
             int sz = 0.5*(sz_per_cell*cells - 1);
             auto *l = new LightVoxelsCube(
-                            glm::vec3(0.5f*canonical_bbox().x,0,0),
-                            glm::ivec3(sz,sz,sz),
+                            float3(0.5f*canonical_bbox().x,0,0),
+                            int3(sz,sz,sz),
                             0.5f*canonical_bbox().x/sz);
             
             branchHash->hashes.emplace_back();
@@ -73,8 +73,8 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
             if (isParams.voxelized_structure)
             {
                 auto *vb = new LightVoxelsCube(
-                                glm::vec3(0.5f*canonical_bbox().x,0,0),
-                                glm::ivec3(sz,sz,sz),
+                                float3(0.5f*canonical_bbox().x,0,0),
+                                int3(sz,sz,sz),
                                 0.5f*canonical_bbox().x/sz);
                 
                 branchHash->hashes.back().start_points.push_back(branchHash->hashes.back().data.size());

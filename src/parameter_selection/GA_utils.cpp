@@ -1,5 +1,5 @@
 #include "GA_utils.h"
-using namespace glm;
+
 void DebugGraph::add_node(Node n)
 {
     nodes.push_back(n);
@@ -18,8 +18,8 @@ void DebugGraph::clear()
 
 void DebugGraph::save_as_image(std::string name, int pix_x, int pix_y)
 {
-    vec2 min_coord = vec2(1e9,1e9);
-    vec2 max_coord = vec2(-1e9,-1e9);
+    float2 min_coord = float2(1e9,1e9);
+    float2 max_coord = float2(-1e9,-1e9);
 
     for (auto &n : nodes)
     {
@@ -30,11 +30,11 @@ void DebugGraph::save_as_image(std::string name, int pix_x, int pix_y)
     } 
     if (length(max_coord - min_coord) < 1e-6)
         return;
-    vec2 center = 0.5f*(max_coord + min_coord);
-    vec2 sz_2 = 0.5f*(max_coord - min_coord);
+    float2 center = 0.5f*(max_coord + min_coord);
+    float2 sz_2 = 0.5f*(max_coord - min_coord);
     min_coord = center - 1.2f*sz_2;
     max_coord = center + 1.2f*sz_2;
-    vec2 sz = (max_coord - min_coord);
+    float2 sz = (max_coord - min_coord);
     int pr_x = pix_y/sz.y * sz.x;
     int pr_y = pix_x/sz.x *sz.y;
     pix_x = MAX(pix_x, pr_x);
@@ -43,30 +43,30 @@ void DebugGraph::save_as_image(std::string name, int pix_x, int pix_y)
     unsigned char *image = new unsigned char[4*pix_x*pix_y];
     unsigned char def[4] = {0,0,0,255};
     std::fill_n((int32_t *)image, pix_x*pix_y, *((int32_t*)def));
-    vec2 sizes = vec2(pix_x, pix_y);
+    float2 sizes = float2(pix_x, pix_y);
 
     for (Edge &e : edges)
     {
         Node &n1 = nodes[e.node_from];
         Node &n2 = nodes[e.node_to];
-        ivec2 pix_n1 = ivec2(sizes*(n1.pos - min_coord)/(max_coord - min_coord));
-        ivec2 pix_n2 = ivec2(sizes*(n2.pos - min_coord)/(max_coord - min_coord));
-        vec3 line;//A,B,C in Ax + By + C = 0
+        int2 pix_n1 = int2(sizes*(n1.pos - min_coord)/(max_coord - min_coord));
+        int2 pix_n2 = int2(sizes*(n2.pos - min_coord)/(max_coord - min_coord));
+        float3 line;//A,B,C in Ax + By + C = 0
         if (pix_n1.x == pix_n2.x)
         {
             if (pix_n1.y == pix_n2.y)
                 continue;
             else
             {
-                line = vec3(1, 0, pix_n1.x);
+                line = float3(1, 0, pix_n1.x);
             }
         }
         else
         {
-            line = vec3(pix_n2.y - pix_n1.y, -(pix_n2.x - pix_n1.x),-pix_n1.x*(pix_n2.y - pix_n1.y) + pix_n1.y*(pix_n2.x - pix_n1.x));
+            line = float3(pix_n2.y - pix_n1.y, -(pix_n2.x - pix_n1.x),-pix_n1.x*(pix_n2.y - pix_n1.y) + pix_n1.y*(pix_n2.x - pix_n1.x));
         }
         float ld = 1/sqrt(SQR(line.x) + SQR(line.y));
-        glm::vec2 th = sizes*e.thickness/(max_coord - min_coord);
+        float2 th = sizes*e.thickness/(max_coord - min_coord);
         for (int y = MIN(pix_n1.y, pix_n2.y); y <= MAX(pix_n1.y, pix_n2.y);y++)
         {
             for (int x = MIN(pix_n1.x, pix_n2.x); x <= MAX(pix_n1.x, pix_n2.x);x++)
@@ -85,9 +85,9 @@ void DebugGraph::save_as_image(std::string name, int pix_x, int pix_y)
     }
     for (Node &n : nodes)
     {
-        ivec2 pix_pos = ivec2(sizes*(n.pos - min_coord)/(max_coord - min_coord));
-        ivec2 pix_r = max(vec2(1,1), n.radius* sizes/(max_coord - min_coord));
-        vec2 pix_ir2 = vec2(1.0f/SQR(pix_r.x), 1.0f/SQR(pix_r.y));
+        int2 pix_pos = int2(sizes*(n.pos - min_coord)/(max_coord - min_coord));
+        int2 pix_r = to_int2(max(float2(1,1), n.radius* sizes/(max_coord - min_coord)));
+        float2 pix_ir2 = float2(1.0f/SQR(pix_r.x), 1.0f/SQR(pix_r.y));
 
         for (int y = MAX(0, pix_pos.y - pix_r.y); y < MIN(pix_y, pix_pos.y + pix_r.y); y++)
         {

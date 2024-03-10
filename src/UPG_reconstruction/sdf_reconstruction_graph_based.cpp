@@ -67,7 +67,7 @@ namespace upg
     Block fine_opt_settings_blk;
     
     std::shared_ptr<GRNode> root;
-    std::vector<glm::vec3> target_points;
+    std::vector<float3> target_points;
     std::vector<float> target_distances;
     UPGStructure target_structure; //can be empty, it means we should find proper structure during optimization
     UPGParametersRaw target_parameters; //usually empty, is used only for testing purposes by so-called Oracles
@@ -216,9 +216,9 @@ namespace upg
       return get_structure_known_structure(ctx, node);
   }
 
-  glm::vec3 get_position_min_distance(const GROptimizationContext &ctx, const GRNode &node, int tries = 25)
+  float3 get_position_min_distance(const GROptimizationContext &ctx, const GRNode &node, int tries = 25)
   {
-    glm::vec3 best_pos;
+    float3 best_pos;
     float best_dist = 1e6;
     for (int k = 0; k < tries; k++)
     {
@@ -232,19 +232,19 @@ namespace upg
     return best_pos;
   }
 
-  glm::ivec3 get_pos_ids(const GRNode &node, const UPGStructure &structure)
+  int3 get_pos_ids(const GRNode &node, const UPGStructure &structure)
   {
     auto gen = node.opt_func.get_generator(structure);
     auto pd = node.opt_func.get_full_parameters_description(gen.get());
 
-    glm::ivec3 pos_ids(-1,-1,-1);
-    std::vector<glm::vec2> borders;
+    int3 pos_ids(-1,-1,-1);
+    std::vector<float2> borders;
     for (const auto &p : pd.get_block_params())
     {
       for (const auto &param_info : p.second.p)
       {
         if (param_info.type != ParameterType::CONST)
-          borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+          borders.push_back(float2(param_info.min_val, param_info.max_val));
         if (param_info.name=="move_x")
         {
           assert(pos_ids.x == -1);
@@ -266,44 +266,44 @@ namespace upg
     return pos_ids;
   }
 
-  std::vector<glm::vec2> get_borders(const GRNode &node, const UPGStructure &structure)
+  std::vector<float2> get_borders(const GRNode &node, const UPGStructure &structure)
   {
     auto gen = node.opt_func.get_generator(structure);
     auto pd = node.opt_func.get_full_parameters_description(gen.get());
 
-    std::vector<glm::vec2> borders;
+    std::vector<float2> borders;
     for (const auto &p : pd.get_block_params())
     {
       for (const auto &param_info : p.second.p)
       {
         if (param_info.type != ParameterType::CONST)
-          borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+          borders.push_back(float2(param_info.min_val, param_info.max_val));
       }
     }
     return borders;
   }
 
   UPGParametersRaw get_initial_parameters_known_parameters(const GROptimizationContext &ctx, const GRNode &node, const UPGStructure &structure,
-                                                           glm::vec3 initial_pos);
-  glm::vec3 get_position_oracle(const GROptimizationContext &ctx, const GRNode &node, float error_std_dev)
+                                                           float3 initial_pos);
+  float3 get_position_oracle(const GROptimizationContext &ctx, const GRNode &node, float error_std_dev)
   {
     Normal norm(0, error_std_dev);
 
     UPGStructure ref_s = get_structure_known_structure(ctx, node);
     UPGParametersRaw ref_p = get_initial_parameters_known_parameters(ctx, node, ref_s, {0,0,0});
-    glm::ivec3 pos_ids = get_pos_ids(node, ref_s);
+    int3 pos_ids = get_pos_ids(node, ref_s);
 
-    glm::vec3 p(ref_p.p[pos_ids.x] + norm.get(), ref_p.p[pos_ids.y] + norm.get(), ref_p.p[pos_ids.z] + norm.get());
+    float3 p(ref_p.p[pos_ids.x] + norm.get(), ref_p.p[pos_ids.y] + norm.get(), ref_p.p[pos_ids.z] + norm.get());
     //logerr("pos = %f %f %f", p.x, p.y, p.z);
     return p;
   }
 
   UPGParametersRaw get_initial_parameters_random(const GROptimizationContext &ctx, const GRNode &node, const UPGStructure &structure, 
-                                                 glm::vec3 initial_pos)
+                                                 float3 initial_pos)
   {
     UPGParametersRaw res;
-    glm::ivec3 pos_ids = get_pos_ids(node, structure);
-    std::vector<glm::vec2> borders = get_borders(node, structure);
+    int3 pos_ids = get_pos_ids(node, structure);
+    std::vector<float2> borders = get_borders(node, structure);
     res.p.resize(borders.size());
     float range = 0.5;
 
@@ -324,7 +324,7 @@ namespace upg
   }
 
   UPGParametersRaw get_initial_parameters_known_parameters(const GROptimizationContext &ctx, const GRNode &node, const UPGStructure &structure,
-                                                           glm::vec3 initial_pos)
+                                                           float3 initial_pos)
   {
     UPGStructure ref_s = get_structure_known_structure(ctx, node);
     bool same_structure = structure.s.size() == ref_s.s.size();
@@ -454,7 +454,7 @@ std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     {
       opt_funcs.emplace_back(node.opt_func);
       UPGStructure structure = get_structure_oracle(ctx, node, 0.0);
-      glm::vec3 initial_pos = get_position_oracle(ctx, node, 0.0);
+      float3 initial_pos = get_position_oracle(ctx, node, 0.0);
       UPGParametersRaw parameters = get_initial_parameters_random(ctx, node, structure, initial_pos);
       start_primitives.push_back({structure, parameters});
     }
@@ -526,9 +526,9 @@ std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     ProceduralSdf sdf(n->primitives.back().structure);
     sdf.set_parameters(n->primitives.back().parameters.p);
     CameraSettings camera;
-    camera.origin = glm::vec3(0, 0, 3);
-    camera.target = glm::vec3(0, 0, 0);
-    camera.up = glm::vec3(0, 1, 0);
+    camera.origin = float3(0, 0, 3);
+    camera.target = float3(0, 0, 0);
+    camera.up = float3(0, 1, 0);
     Texture t = render_sdf(sdf, camera, 512, 512, 4);
     engine::textureManager->save_png(t, "sdf_node_" + std::to_string(id));
 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -801,7 +801,7 @@ std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     return best_result;
   }
 
-  std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<glm::vec3> &points,
+  std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<float3> &points,
                                                                   const std::vector<float> &distances)
   {
     GROptimizationContext ctx;
@@ -817,9 +817,9 @@ std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     ctx.opt_settings_blk.set_int("iterations", 1000);
     ctx.opt_settings_blk.set_bool("verbose", false);
     ctx.opt_settings_blk.set_double("learning_rate", 0.01f);
-    ctx.opt_settings_blk.set_vec3("step_params_0", glm::vec3( 100,  0.01,   1e9));
-    ctx.opt_settings_blk.set_vec3("step_params_1", glm::vec3( 500,  0.01,  0.00));
-    ctx.opt_settings_blk.set_vec3("step_params_2", glm::vec3(1000, 0.005, -0.01));
+    ctx.opt_settings_blk.set_vec3("step_params_0", float3( 100,  0.01,   1e9));
+    ctx.opt_settings_blk.set_vec3("step_params_1", float3( 500,  0.01,  0.00));
+    ctx.opt_settings_blk.set_vec3("step_params_2", float3(1000, 0.005, -0.01));
 
     ctx.fine_opt_settings_blk.set_int("iterations", 200);
     ctx.fine_opt_settings_blk.set_bool("verbose", false);

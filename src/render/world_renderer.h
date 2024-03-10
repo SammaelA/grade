@@ -67,7 +67,7 @@ private:
     int forced_LOD = -1;
     GroveRendererDebugParams groveRendererDebugParams;
     bool regenerate_shadows = true;
-    glm::mat4 projection, projectionNoJitter;
+    float4x4 projection, projectionNoJitter;
 
     ShadowMap shadowMap;
     DefferedTarget defferedTarget;

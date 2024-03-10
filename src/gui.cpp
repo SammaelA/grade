@@ -147,10 +147,10 @@ void GUI::blk_modification_interface(Block *b, const std::string &title)
           std::string n1 = std::string(name)+"[1]";
           std::string n2 = std::string(name)+"[2]";
           std::string n3 = std::string(name)+"[3]";
-          ImGui::InputFloat4(n0.c_str(), &(val.m4[0].x));
-          ImGui::InputFloat4(n1.c_str(), &(val.m4[1].x));
-          ImGui::InputFloat4(n2.c_str(), &(val.m4[2].x));
-          ImGui::InputFloat4(n3.c_str(), &(val.m4[3].x));
+          ImGui::InputFloat4(n0.c_str(), &(val.m4(0,0)));
+          ImGui::InputFloat4(n1.c_str(), &(val.m4(0,1)));
+          ImGui::InputFloat4(n2.c_str(), &(val.m4(0,2)));
+          ImGui::InputFloat4(n3.c_str(), &(val.m4(0,3)));
         }
         break;
         case Block::ValueType::STRING:
@@ -550,7 +550,7 @@ void GUI::render_model_creation_info()
   ImGui::SliderAngle("Rotate Z", &angle_z);
   ImGui::SliderFloat("Scale", &scale, 1, 1000);
   ImGui::Checkbox("On terrain", &on_terrain);
-  appCtx.cur_obj_angles = glm::vec3(angle_x, angle_y, angle_z);
+  appCtx.cur_obj_angles = float3(angle_x, angle_y, angle_z);
   appCtx.cur_obj_scale = scale;
   appCtx.cur_object_on_terrain = on_terrain;
   bool b_update = ImGui::Button("Update objects list");
@@ -631,8 +631,8 @@ void GUI::render_hydra_toolbar()
   }
   {
     appCtx.camera.pos = settings.get_vec3("camera_pos");
-    appCtx.camera.front = glm::normalize(settings.get_vec3("camera_look_at") - appCtx.camera.pos);
-    appCtx.camera.up = glm::normalize(settings.get_vec3("camera_up"));
+    appCtx.camera.front = normalize(settings.get_vec3("camera_look_at") - appCtx.camera.pos);
+    appCtx.camera.up = normalize(settings.get_vec3("camera_up"));
   }
 }
 

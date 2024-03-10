@@ -45,11 +45,11 @@ struct GrassInstanceData
 {   
     friend class boost::serialization::access;
 
-    glm::vec3 pos;
+    float3 pos;
     float size;
     float rot_y;
     GrassInstanceData() {};
-    GrassInstanceData(glm::vec3 _pos, float _size, float _rot_y)
+    GrassInstanceData(float3 _pos, float _size, float _rot_y)
     {
         pos = _pos;
         size = _size;

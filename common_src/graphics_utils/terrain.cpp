@@ -7,29 +7,29 @@
 #include "third_party/stb_image.h"
 #include "tinyEngine/image.h"
 
-    Heightmap::Heightmap(glm::vec3 pos, glm::vec2 size, float cell_size):
+    Heightmap::Heightmap(float3 pos, float2 size, float cell_size):
     Field_2d(pos, size, cell_size)
     {
 
     }
-    Heightmap::Heightmap(glm::vec3 _pos, int _w, int _h):
+    Heightmap::Heightmap(float3 _pos, int _w, int _h):
     Field_2d(_pos, _w, _h)
     {
 
     }
 
-    float Heightmap::get_height_simple(glm::vec3 position)
+    float Heightmap::get_height_simple(float3 position)
     {
         return get_bilinear(position);
     }
 
-    float Heightmap::get_height(glm::vec3 position)
+    float Heightmap::get_height(float3 position)
     {
         position.y = 0;
         if (!data)
             return base_val;
-        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
-        glm::ivec2 ps = glm::ivec2(rp.x > 0 ? rp.x : rp.x-1, rp.y > 0 ? rp.y : rp.y-1);
+        float2 rp = float2(position.x - pos.x, position.z - pos.z)/cell_size;
+        int2 ps = int2(rp.x > 0 ? rp.x : rp.x-1, rp.y > 0 ? rp.y : rp.y-1);
         float dx = rp.x - ps.x;
         float dy = rp.y - ps.y;
         int rdx = round(dx);
@@ -37,14 +37,14 @@
         float h2 = get(ps.x + 1, ps.y + 1);
         float h3 = get(ps.x + rdx, ps.y + 1 - rdx);
 
-        glm::vec3 p1 = pos + cell_size*glm::vec3(ps.x, 0, ps.y);
+        float3 p1 = pos + cell_size*float3(ps.x, 0, ps.y);
         p1.y = 0;
-        glm::vec3 p2 = pos + cell_size*glm::vec3(ps.x + 1, 0, ps.y + 1);
+        float3 p2 = pos + cell_size*float3(ps.x + 1, 0, ps.y + 1);
         p2.y = 0;
-        glm::vec3 p3 = pos + cell_size*glm::vec3(ps.x + rdx, 0, ps.y + 1 - rdx);
+        float3 p3 = pos + cell_size*float3(ps.x + rdx, 0, ps.y + 1 - rdx);
         p3.y = 0;
 
-        glm::vec3 barycent = Barycentric(position, p1, p2, p3);
+        float3 barycent = Barycentric(position, p1, p2, p3);
 
         return barycent.x*h1 + barycent.y*h2 + barycent.z*h3;
     }
@@ -66,8 +66,8 @@
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec2 rp = glm::vec2(image_w*((float)(i + w)/(2*w + 1)), image_h*((float)(j + h)/(2*h + 1)));
-                glm::ivec2 ps = rp;
+                float2 rp = float2(image_w*((float)(i + w)/(2*w + 1)), image_h*((float)(j + h)/(2*h + 1)));
+                int2 ps = to_int2(rp);
                 #define GET_F(a,b) (image_data[channels * (CLAMP(b,0,image_h-1) * image_w + CLAMP(a,0,image_w-1)) + 0]/255.0)
                 float dx = rp.x - ps.x;
                 float dy = rp.y - ps.y;
@@ -80,7 +80,7 @@
         }
         stbi_image_free(image_data);
     }
-    glm::vec2 Heightmap::get_grad(glm::vec3 position)
+    float2 Heightmap::get_grad(float3 position)
     {
         return get_grad_bilinear(position);
     }
@@ -88,13 +88,13 @@
     HeightmapTex::HeightmapTex(Heightmap &heightmap, int w, int h)
     {
         float pres = 1;
-        glm::vec3 center = glm::vec3(0,0,0);
+        float3 center = float3(0,0,0);
         float *data = safe_new<float>(w*h, "heightmap_data");
         for (int i=0;i<w;i++)
         {
             for (int j=-0;j<h;j++)
             {
-                glm::vec3 pos = center + glm::vec3((i - w/2)*pres,0,(j- w/2)*pres);
+                float3 pos = center + float3((i - w/2)*pres,0,(j- w/2)*pres);
                 data[i*h + j] = (1e-3)*heightmap.get_height(pos);
             }
         }

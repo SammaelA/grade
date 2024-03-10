@@ -13,24 +13,24 @@ namespace upg
     if (ddist_dparams)
     {
       for (int i=0;i<batch_size;i++)
-        distances[i] = get_distance(glm::vec3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), 
+        distances[i] = get_distance(float3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), 
                                     std::span<float>(ddist_dparams + batch_size*p_offset + i*param_cnt(), param_cnt()),
                                     std::span<float>(ddist_dpos + 3*i, 3));
     }
     else
     {
       for (int i=0;i<batch_size;i++)
-        distances[i] = get_distance(glm::vec3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), std::span<float>(), std::span<float>()); 
+        distances[i] = get_distance(float3(positions[3*i+0], positions[3*i+1], positions[3*i+2]), std::span<float>(), std::span<float>()); 
     }
   }
 
-  float GridSdfNode::get_distance(const glm::vec3 &pos, std::span<float> ddist_dp, 
+  float GridSdfNode::get_distance(const float3 &pos, std::span<float> ddist_dp, 
                                   std::span<float> ddist_dpos) const
   {
     //bbox for grid is a unit cube
-    glm::vec3 vox_f = grid_size_f*glm::min(glm::max((pos-glm::vec3(-1,-1,-1))/bbox_size, 0.0f), 1.0f-1e-5f);
-    glm::uvec3 vox_u = vox_f;
-    glm::vec3 dp = vox_f - glm::vec3(vox_u);
+    float3 vox_f = grid_size_f*LiteMath::min(LiteMath::max((pos-float3(-1,-1,-1))/bbox_size, 0.0f), 1.0f-1e-5f);
+    uint3 vox_u = uint3(vox_f);
+    float3 dp = vox_f - float3(vox_u);
 
     float res = 0.0;
     
@@ -80,14 +80,14 @@ namespace upg
     params.push_back({1,-1.0f,1.0f, ParameterType::ARRAY, "data", grid_size*grid_size*grid_size});
     return params;
   }
-  void GridSdfNode::set_voxel(const glm::uvec3 &vox, float distance)
+  void GridSdfNode::set_voxel(const uint3 &vox, float distance)
   {
     *((float*)p.data() + vox.z*grid_size*grid_size + vox.y*grid_size + vox.x) = distance;
   }
-  void GridSdfNode::set_voxel(const glm::vec3 &pos, float distance)
+  void GridSdfNode::set_voxel(const float3 &pos, float distance)
   {
     //bbox for grid is a unit cube
-    glm::uvec3 vox = grid_size_f*glm::min(glm::max((pos-glm::vec3(-1,-1,-1))/bbox_size, 0.0f), 1.0f);
+    uint3 vox = uint3(grid_size_f*LiteMath::min(LiteMath::max((pos-float3(-1,-1,-1))/bbox_size, 0.0f), 1.0f));
     *((float*)p.data() + vox.z*grid_size*grid_size + vox.y*grid_size + vox.x) = distance;
   }
 }

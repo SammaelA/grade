@@ -34,7 +34,7 @@ void InputHandler::handle_input(Event &event)
   float ny = event.mouse.y;
   float xoffset = nx - ctx.mousePos.x;
   float yoffset = ctx.mousePos.y - ny;
-  ctx.mousePos = glm::vec2(nx, ny);
+  ctx.mousePos = float2(nx, ny);
   if (event.active[SDLK_LALT] || event.click[SDL_BUTTON_MIDDLE] || ctx.free_camera)
   {
     xoffset *= sensitivity;
@@ -47,18 +47,18 @@ void InputHandler::handle_input(Event &event)
       ctx.camera.pitch = 89.0f;
     if (ctx.camera.pitch < -89.0f)
       ctx.camera.pitch = -89.0f;
-    glm::vec3 front;
+    float3 front;
     front.x = cos(LiteMath::to_radians(ctx.camera.yaw)) * cos(LiteMath::to_radians(ctx.camera.pitch));
     front.y = sin(LiteMath::to_radians(ctx.camera.pitch));
     front.z = sin(LiteMath::to_radians(ctx.camera.yaw)) * cos(LiteMath::to_radians(ctx.camera.pitch));
-    ctx.camera.front = glm::normalize(front);
+    ctx.camera.front = normalize(front);
   }
 
   if (event.active[SDLK_LALT])
     ctx.camera.pos += mouse_scroll_speed*(event.mouseWheel.y + 0.0f)*ctx.camera.front;
 
   //Pause Toggle
-  glm::vec3 cameraPerp = glm::normalize(glm::cross(ctx.camera.front, ctx.camera.up));
+  float3 cameraPerp = normalize(cross(ctx.camera.front, ctx.camera.up));
   if (event.active[SDLK_t])
   {
     logerr("camera pos %f,%f,%f",ctx.camera.pos.x,ctx.camera.pos.y,ctx.camera.pos.z);
@@ -106,8 +106,8 @@ void InputHandler::handle_input(Event &event)
   if (event.active[SDLK_o])
   {
     Block b;
-    glm::mat4 transform = LiteMath::scale(LiteMath::translate(glm::mat4(1.0f), glm::vec3(ctx.mouseWorldPosType)), glm::vec3(ctx.cur_obj_scale));
-    glm::mat4 transform2 = LiteMath::eulerAngleXYZ(ctx.cur_obj_angles.x, ctx.cur_obj_angles.y, ctx.cur_obj_angles.z);
+    float4x4 transform = LiteMath::scale(LiteMath::translate(float4x4(), to_float3(ctx.mouseWorldPosType)), float3(ctx.cur_obj_scale));
+    float4x4 transform2 = LiteMath::eulerAngleXYZ(ctx.cur_obj_angles.x, ctx.cur_obj_angles.y, ctx.cur_obj_angles.z);
     transform = transform*transform2;
     b.set_string("name", ctx.active_object_name);
     b.set_bool("on_terrain", ctx.cur_object_on_terrain);
@@ -126,7 +126,7 @@ void InputHandler::handle_input(Event &event)
     if (event.click[SDL_BUTTON_LEFT] && SceneGenHelper::is_terrain(ctx.mouseWorldPosType))
     {
       Block b;
-      b.set_vec3("pos", glm::vec3(ctx.mouseWorldPosType));
+      b.set_vec3("pos", to_float3(ctx.mouseWorldPosType));
       b.set_double("outer_radius", ctx.biome_brush_size);
       b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
       b.set_int("id", ctx.biome_brush);
@@ -136,7 +136,7 @@ void InputHandler::handle_input(Event &event)
     else if (event.click[SDL_BUTTON_RIGHT] && SceneGenHelper::is_terrain(ctx.mouseWorldPosType))
     {
       Block b;
-      b.set_vec3("pos", glm::vec3(ctx.mouseWorldPosType));
+      b.set_vec3("pos", to_float3(ctx.mouseWorldPosType));
       b.set_double("outer_radius", ctx.biome_brush_size);
       b.set_double("inner_radius", 0.6*ctx.biome_brush_size);
       b.set_int("id", -1);
@@ -148,8 +148,8 @@ void InputHandler::handle_input(Event &event)
   {
     if (event.click[SDL_BUTTON_RIGHT])
     {
-      glm::vec2 pos_xz = glm::vec2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
-      glm::ivec2 c_ij = (pos_xz - genCtx.start_pos)/genCtx.cell_size;
+      float2 pos_xz = float2(ctx.mouseWorldPosType.x, ctx.mouseWorldPosType.z);
+      int2 c_ij = to_int2((pos_xz - genCtx.start_pos)/genCtx.cell_size);
       int cell_id = c_ij.x*genCtx.cells_y + c_ij.y;
       if (cell_id >= 0 && cell_id < genCtx.cells.size())
       {

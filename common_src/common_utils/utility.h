@@ -36,16 +36,16 @@ template<typename T> inline T SQR(T x) { return x * x; }
 
 
 void debugnl();
-void debug(const char *__restrict __fmt, glm::vec2 vec);
-void debugl(uint level, const char *__restrict __fmt, glm::vec2 vec);
-void debug(const char *__restrict __fmt, glm::vec3 vec);
-void debugl(uint level, const char *__restrict __fmt, glm::vec3 vec);
-void debug(const char *__restrict __fmt, glm::vec4 vec);
-void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec);
+void debug(const char *__restrict __fmt, float2 vec);
+void debugl(uint level, const char *__restrict __fmt, float2 vec);
+void debug(const char *__restrict __fmt, float3 vec);
+void debugl(uint level, const char *__restrict __fmt, float3 vec);
+void debug(const char *__restrict __fmt, float4 vec);
+void debugl(uint level, const char *__restrict __fmt, float4 vec);
 void debugl(uint level, const char *__restrict __fmt, ...);
 void debug(const char *__restrict __fmt, ...);
 void logerr(const char *__restrict __fmt, ...);
-std::string print_mat4x4(glm::mat4 mat);
+std::string print_mat4x4(float4x4 mat);
 struct AllocData
 {
     long active_allocs = 0;

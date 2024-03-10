@@ -32,9 +32,9 @@ namespace upg
       sdf_to_point_cloud_with_dist(sdf, 2*points, &(reference.d_points), &(reference.d_distances));
 
       CameraSettings camera;
-      camera.origin = glm::vec3(0,0,3);
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(0,0,3);
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 16);
       engine::textureManager->save_png(t, "reference_sdf");
     }

@@ -154,9 +154,9 @@ double *DiscreteGeneral::get_series(unsigned size)
 {
   return nullptr;
 }
-glm::vec3 rand_dir()
+float3 rand_dir()
 {
-    glm::vec3 dir;
+    float3 dir;
     dir.x = urand(-1,1);
     dir.y = urand(-1,1);
     dir.z = urand(-1,1);

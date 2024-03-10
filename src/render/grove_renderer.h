@@ -51,8 +51,8 @@ public:
         float max_dist;
     };
     int get_max_LOD() {return MIN(4,LODs.size() - 1);}
-    void render(int lod, glm::mat4 &projection, glm::mat4 &view, Camera &camera, glm::vec2 screen_size, DirectedLight &light, 
-                GroveRendererDebugParams dbgpar, glm::mat4 &shadow_tr, GLuint shadow_tex, bool to_shadow = false);
+    void render(int lod, float4x4 &projection, float4x4 &view, Camera &camera, float2 screen_size, DirectedLight &light, 
+                GroveRendererDebugParams dbgpar, float4x4 &shadow_tr, GLuint shadow_tex, bool to_shadow = false);
     GroveRenderer(const GrovePacked *_source, AABB2D scene_bbox, const std::vector<TreeTypeData> &types, 
                   int LODs_count, std::vector<float> &max_distances, bool print_perf, Precision precision);
     ~GroveRenderer();
@@ -70,7 +70,7 @@ private:
         int y_cells;
         float x_size;
         float y_size;
-        glm::vec3 start_pos;
+        float3 start_pos;
     };
     void add_instance_model(LOD &lod, GrovePacked *source, InstancedBranch &branch, int up_to_level, bool need_leaves = false);
     void IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &lods, std::vector<InstanceData> &instances,

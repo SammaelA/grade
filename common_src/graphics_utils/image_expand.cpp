@@ -50,7 +50,7 @@ Texture ImgExp::ImgExpanding(Texture image, int res_size, float color_thr, float
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-  get_borders.uniform("size", glm::vec2(w, h));
+  get_borders.uniform("size", float2(w, h));
   get_borders.texture("mask", mask);
   
   glDispatchCompute(1, 1, 1);
@@ -70,7 +70,7 @@ Texture ImgExp::ImgExpanding(Texture image, int res_size, float color_thr, float
 
   float real_w = (arr[1] - arr[0]);
   float real_h = (arr[3] - arr[2]);
-  glm::vec4 tex_transform(arr[0]/(float)w, arr[2]/(float)h, real_w/w, real_h/h);
+  float4 tex_transform(arr[0]/(float)w, arr[2]/(float)h, real_w/w, real_h/h);
 
   float border = 0.05;
   float sz_x = real_w > real_h ? 1 : real_w/real_h;

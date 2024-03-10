@@ -65,7 +65,7 @@ namespace upg
 
       for (unsigned i=0;i<batch_size;i++)
       {
-        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        double d = LiteMath::sign(distances[i])*std::min(0.03f, abs(distances[i]));
         for (int j=0;j<param_count;j++)
           out_grad_d[j] += 2*d*dparams[i*param_count + j];
         loss += d*d;
@@ -141,7 +141,7 @@ namespace upg
 
       for (unsigned i=0;i<batch_size;i++)
       {
-        double d = glm::sign(distances[i])*std::min(0.03f, abs(distances[i]));
+        double d = LiteMath::sign(distances[i])*std::min(0.03f, abs(distances[i]));
         loss += d*d;
       }
 
@@ -392,8 +392,8 @@ namespace upg
       //we calculate scale and shift for grid transform
       AABB bbox = get_point_cloud_bbox(reference.d_points);
       float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
-      glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
-      bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s));
+      float3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+      bbox = AABB(bbox_center - float3(max_s), bbox_center + float3(max_s));
       params.p[0] = bbox_center.x; //shift
       params.p[1] = bbox_center.y;
       params.p[2] = bbox_center.z;
@@ -401,9 +401,9 @@ namespace upg
       
       for (int i=0;i<reference.d_points.size();i++)
       {
-        glm::vec3 v = (float)N*(reference.d_points[i] - bbox.min_pos)/bbox.size();
-        glm::ivec3 vi = v;
-        glm::vec3 vf = v - glm::vec3(vi);
+        float3 v = (float)N*(reference.d_points[i] - bbox.min_pos)/bbox.size();
+        int3 vi = to_int3(v);
+        float3 vf = v - float3(vi);
         if (v.x > 0 && v.x<N && v.y > 0 && v.y<N && v.z > 0 && v.z<N)
         {
           unsigned id = vi.x*N*N + vi.y*N + vi.z;
@@ -471,7 +471,7 @@ namespace upg
         for (int i=0;i<samples;i++)
         {
           unsigned index = rand() % reference.d_points.size();
-          glm::vec3 p = reference.d_points[index];
+          float3 p = reference.d_points[index];
           //printf("%f %f %f -- %f\n",p.x,p.y,p.z,reference.d_distances[index]);
           //p = {urand(),urand(),urand()};
           //p = bbox.size()*p + bbox.min_pos;
@@ -497,14 +497,14 @@ namespace upg
                                  abs(X[bid+N*N+N-1] - X[bid-N*N-N+1]) +
                                  abs(X[bid+N*N-N+1] - X[bid-N*N+N-1]) + 
                                  abs(X[bid+N*N-N-1] - X[bid-N*N+N+1]));
-              x_grad[bid+N*N+N+1] += reg_q*glm::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
-              x_grad[bid-N*N-N-1] -= reg_q*glm::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
-              x_grad[bid+N*N+N-1] += reg_q*glm::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
-              x_grad[bid-N*N-N+1] -= reg_q*glm::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
-              x_grad[bid+N*N-N+1] += reg_q*glm::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
-              x_grad[bid-N*N+N-1] -= reg_q*glm::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
-              x_grad[bid+N*N-N-1] += reg_q*glm::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
-              x_grad[bid-N*N+N+1] -= reg_q*glm::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
+              x_grad[bid+N*N+N+1] += reg_q*LiteMath::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
+              x_grad[bid-N*N-N-1] -= reg_q*LiteMath::sign(X[bid+N*N+N+1] - X[bid-N*N-N-1]);
+              x_grad[bid+N*N+N-1] += reg_q*LiteMath::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
+              x_grad[bid-N*N-N+1] -= reg_q*LiteMath::sign(X[bid+N*N+N-1] - X[bid-N*N-N+1]);
+              x_grad[bid+N*N-N+1] += reg_q*LiteMath::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
+              x_grad[bid-N*N+N-1] -= reg_q*LiteMath::sign(X[bid+N*N-N+1] - X[bid-N*N+N-1]);
+              x_grad[bid+N*N-N-1] += reg_q*LiteMath::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
+              x_grad[bid-N*N+N+1] -= reg_q*LiteMath::sign(X[bid+N*N-N-1] - X[bid-N*N+N+1]);
             }            
           }          
         }
@@ -543,9 +543,9 @@ namespace upg
     for (int i=0;i<steps;i++)
     {
       CameraSettings camera;
-      camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(g_sdf, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
     }
@@ -565,8 +565,8 @@ namespace upg
       //and move all points to the unit cube
       AABB bbox = get_point_cloud_bbox(reference.d_points);
       float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
-      glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
-      bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s));
+      float3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+      bbox = AABB(bbox_center - float3(max_s), bbox_center + float3(max_s));
 
       std::vector<float> positions(3*reference.d_distances.size(), 0);
       for (int i=0;i<points;i++)
@@ -594,9 +594,9 @@ namespace upg
       for (int i=0;i<steps;i++)
       {
         CameraSettings camera;
-        camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-        camera.target = glm::vec3(0,0,0);
-        camera.up = glm::vec3(0,1,0);
+        camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+        camera.target = float3(0,0,0);
+        camera.up = float3(0,1,0);
         Texture t = render_sdf(g_sdf, camera, 256,256,1);
         engine::textureManager->save_png(t, "image_neural_"+std::to_string(i));
       }*/
@@ -604,7 +604,7 @@ namespace upg
       return {res};
   }
 
-  std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<glm::vec3> &points,
+  std::vector<UPGReconstructionResult> reconstruction_graph_based(Block *step_blk, const std::vector<float3> &points,
                                                                   const std::vector<float> &distances);
   std::vector<UPGReconstructionResult> constructive_reconstruction_step(Block *step_blk, PointCloudReference &reference,
                                                                         const std::vector<UPGReconstructionResult> &prev_step_res);
@@ -683,9 +683,9 @@ namespace upg
       }
 
       CameraSettings camera;
-      camera.origin = glm::vec3(0,0,3);
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(0,0,3);
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 16);
       engine::textureManager->save_png(t, "result_sdf");
 

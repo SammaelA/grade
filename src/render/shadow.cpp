@@ -11,7 +11,7 @@
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
         shadow_camera.pos = 1500.f*light.dir;
         shadow_camera.front =  -shadow_camera.pos;
-        shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
+        shadow_camera.up = float3( 0.0f, 1.0f,  0.0f);
         view = shadow_camera.camera();
         float near_plane = 100, far_plane = 2000;
         projection = LiteMath::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, near_plane, far_plane); 
@@ -19,7 +19,7 @@
         viewproj = projection * view;
 
     }
-    glm::mat4 &ShadowMap::get_transform()
+    float4x4 &ShadowMap::get_transform()
     {   
         return viewproj;
     }
@@ -123,7 +123,7 @@
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTex);
         postFx->get_shader().uniform("pass",0);
-        postFx->get_shader().uniform("tex_size_inv",glm::vec2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
+        postFx->get_shader().uniform("tex_size_inv",float2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
         postFx->render();
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
@@ -131,7 +131,7 @@
         postFx->use();
         postFx->get_shader().texture("tex",VSMdepthTexTemp);
         postFx->get_shader().uniform("pass",1);
-        postFx->get_shader().uniform("tex_size_inv",glm::vec2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
+        postFx->get_shader().uniform("tex_size_inv",float2(0.1/SHADOW_WIDTH, 0.1/SHADOW_HEIGHT));
         postFx->render();
 
         glEnable(GL_DEPTH_TEST);

@@ -35,8 +35,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
     int sz = real_branches.size();
     float *results = new float[2*SQR(sz)];
     int slices_cnt = sz*tasks_cnt_per_impostor;
-    glm::uvec4 *slices_info = new glm::uvec4[slices_cnt];
-    glm::vec4 *branches_sizes = new glm::vec4[sz];
+    uint4 *slices_info = new uint4[slices_cnt];
+    float4 *branches_sizes = new float4[sz];
     
     int gpu_impostor_start_mip = get_default_block().get_int("gpu_impostor_start_mip", 4);
     gpu_impostor_start_mip = settings.get_int("gpu_impostor_start_mip", gpu_impostor_start_mip);
@@ -50,7 +50,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
         atlas.gen_mipmaps("mipmap_render_average.fs");
         for (int i = 0; i < sz; i++)
         {
-            branches_sizes[i] = glm::vec4(real_branches[i]->sizes,sqrt(SQR(real_branches[i]->sizes.y) + SQR(real_branches[i]->sizes.z)));
+            branches_sizes[i] = to_float4(real_branches[i]->sizes, sqrt(SQR(real_branches[i]->sizes.y) + SQR(real_branches[i]->sizes.z)));
         }
     }
     
@@ -66,7 +66,7 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
     }
 
     ProgressBar pb_buffers = ProgressBar("GPU impostor clustering prepare buffers",3,"buffers");
-        glm::ivec4 sizes = atlas.get_sizes();
+        int4 sizes = atlas.get_sizes();
         int layers = atlas.layers_count();
 
         results_buf = create_buffer();
@@ -75,13 +75,13 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
 
         slices_info_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slices_info_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info, GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint4)*slices_cnt, slices_info, GL_STATIC_DRAW);
 
         if (gpu_impostor_use_mips)
         {
             branches_sizes_buf = create_buffer();
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, branches_sizes_buf);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*sz, branches_sizes, GL_STATIC_DRAW);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4)*sz, branches_sizes, GL_STATIC_DRAW);
         }
 
         delete[] slices_info;
@@ -188,8 +188,8 @@ IntermediateClusteringData *GPUImpostorClusteringHelper::prepare_intermediate_da
                 if (!gpu_impostor_use_mips)
                 {
                     #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
-                    glm::vec3 &s1 = real_branches[i]->sizes;
-                    glm::vec3 &s2 = real_branches[j]->sizes;
+                    float3 &s1 = real_branches[i]->sizes;
+                    float3 &s2 = real_branches[j]->sizes;
                     float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
                                             SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
                     min_av_dist += dist_discriminator - 1;

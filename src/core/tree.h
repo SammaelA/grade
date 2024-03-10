@@ -23,8 +23,8 @@ struct Segment
 {
     friend class boost::serialization::access;
 
-    glm::vec3 begin;
-    glm::vec3 end;
+    float3 begin;
+    float3 end;
     float rel_r_begin;
     float rel_r_end;
     std::vector<float> mults;
@@ -45,7 +45,7 @@ struct Joint
     friend class boost::serialization::access;
 
     Leaf *leaf = nullptr;
-    glm::vec3 pos;
+    float3 pos;
     std::list<Branch *> childBranches;
     short mark_A;
 
@@ -87,14 +87,14 @@ struct Branch
     short level;
     std::list<Segment> segments;
     std::list<Joint> joints;
-    glm::vec4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
-    glm::vec3 center_par;
-    glm::vec3 center_self;
+    float4 plane_coef;//plane ax+by+cz+d = 0 len(a,b,c) = 1
+    float3 center_par;
+    float3 center_self;
     int mark_A;
     int mark_B;
     void deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
     void norecursive_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap = nullptr);
-    void transform(glm::mat4 &trans_matrix, float r_transform = 1.0);
+    void transform(float4x4 &trans_matrix, float r_transform = 1.0);
     void pack(PackedBranch &branch);
     void mark_dead();
     static float get_r_mult(float phi, std::vector<float> &mults);
@@ -121,8 +121,8 @@ struct Leaf
 {
     friend class boost::serialization::access;
 
-    glm::vec3 pos;
-    std::vector<glm::vec3> edges;
+    float3 pos;
+    std::vector<float3> edges;
     ushort type;
 
     private:
@@ -241,7 +241,7 @@ struct Tree
 {
     std::vector<BranchHeap *> branchHeaps;
     LeafHeap *leaves = nullptr;
-    glm::vec3 pos = glm::vec3(0,0,0);
+    float3 pos = float3(0,0,0);
     Branch *root= nullptr;
     uint id = 0;
     const TreeTypeData *type = nullptr;

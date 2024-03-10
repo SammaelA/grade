@@ -16,34 +16,34 @@
 
 namespace nsdf
 {
-  float sdSphere(glm::vec3 p)
+  float sdSphere(float3 p)
   {
-    return glm::length(p) - 1.0f;
+    return length(p) - 1.0f;
   }
 
-  float sdBox(glm::vec3 p)
+  float sdBox(float3 p)
   {
-    glm::vec3 q = abs(p) - glm::vec3(1.0f);
-    return length(glm::max(q, 0.0f)) + glm::min(glm::max(q.x, glm::max(q.y, q.z)), 0.0f);
+    float3 q = abs(p) - float3(1.0f);
+    return length(LiteMath::max(q, 0.0f)) + LiteMath::min(LiteMath::max(q.x, LiteMath::max(q.y, q.z)), 0.0f);
   }
 
-  float sdMengerSponge(glm::vec3 p)
+  float sdMengerSponge(float3 p)
   {
     float d = sdBox(p);
-    glm::vec3 res = glm::vec3(d, 1.0f, 0.0f);
+    float3 res = float3(d, 1.0f, 0.0f);
 
     int Iterations = 4;
     float s = 1.0f;
     for (int m = 0; m < Iterations; m++)
     {
-      glm::vec3 a = mod(p * s, 2.0f) - 1.0f;
+      float3 a = mod(p * s, float3(2.0f)) - 1.0f;
       s *= 3.0f;
-      glm::vec3 r = abs(1.0f - 3.0f * abs(a));
+      float3 r = abs(1.0f - 3.0f * abs(a));
 
-      float da = glm::max(r.x, r.y);
-      float db = glm::max(r.y, r.z);
-      float dc = glm::max(r.z, r.x);
-      float c = (glm::min(da, glm::min(db, dc)) - 1.0f) / s;
+      float da = LiteMath::max(r.x, r.y);
+      float db = LiteMath::max(r.y, r.z);
+      float dc = LiteMath::max(r.z, r.x);
+      float c = (LiteMath::min(da, LiteMath::min(db, dc)) - 1.0f) / s;
 
       d = std::max(d, c);
     }
@@ -51,13 +51,13 @@ namespace nsdf
     return d;
   }
 
-  float sdMandelbulb(glm::vec3 pos) 
+  float sdMandelbulb(float3 pos) 
   {
     int Iterations = 4;
     float Power = 8;
     float Bailout = 1.15;
 
-    glm::vec3 z = pos;
+    float3 z = pos;
     float dr = 1.0;
     float r = 0.0;
     for (int i = 0; i < Iterations ; i++) 
@@ -76,22 +76,22 @@ namespace nsdf
       phi = phi*Power;
       
       // convert back to cartesian coordinates
-      z = zr*glm::vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
+      z = zr*float3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
       z+=pos;
     }
     return 0.5*log(r)*r/dr;
   }
 
-  float sdRecursiveTetrahedron(glm::vec3 z)
+  float sdRecursiveTetrahedron(float3 z)
   {
     int Iterations = 6;
     float Scale = 2.0f;
     float Or = 0.01;
-    glm::vec3 a1 = glm::vec3( 1, 1, 1);
-    glm::vec3 a2 = glm::vec3(-1,-1, 1);
-    glm::vec3 a3 = glm::vec3( 1,-1,-1);
-    glm::vec3 a4 = glm::vec3(-1, 1,-1);
-    glm::vec3 c;
+    float3 a1 = float3( 1, 1, 1);
+    float3 a2 = float3(-1,-1, 1);
+    float3 a3 = float3( 1,-1,-1);
+    float3 a4 = float3(-1, 1,-1);
+    float3 c;
     int n = 0;
     float dist, d;
     while (n < Iterations) {
@@ -117,24 +117,24 @@ namespace nsdf
     struct Primitive
     {
       Primitive() {};
-      Primitive(PrimitiveType _t, glm::vec3 _shift, glm::vec3 _scale):
+      Primitive(PrimitiveType _t, float3 _shift, float3 _scale):
       type(_t),
       shift(_shift),
       scale(_scale) {}
 
       PrimitiveType type;
-      glm::vec3 shift = glm::vec3(0,0,0);
-      glm::vec3 scale = glm::vec3(1,1,1);
+      float3 shift = float3(0,0,0);
+      float3 scale = float3(1,1,1);
     };
 
   struct PrimitiveSDF
   {
-    float get_distance(glm::vec3 pos) const
+    float get_distance(float3 pos) const
     {
       float dist = 1e9;
       for (auto &p : primitives)
       {
-        glm::vec3 pt = (pos-p.shift)/p.scale;
+        float3 pt = (pos-p.shift)/p.scale;
         float d = 1e9;
         switch (p.type)
         {
@@ -167,12 +167,12 @@ namespace nsdf
       if (primitives.empty())
         return AABB({-1,-1,-1},{1,1,1});
       
-      glm::vec3 min_v(1e9,1e9,1e9);
-      glm::vec3 max_v(-1e9,-1e9,-1e9);
+      float3 min_v(1e9,1e9,1e9);
+      float3 max_v(-1e9,-1e9,-1e9);
       for (auto &p : primitives)
       {
-        min_v = min(min_v, glm::vec3(-1,-1,-1)*p.scale + p.shift);
-        max_v = max(max_v, glm::vec3( 1, 1, 1)*p.scale + p.shift);
+        min_v = min(min_v, float3(-1,-1,-1)*p.scale + p.shift);
+        max_v = max(max_v, float3( 1, 1, 1)*p.scale + p.shift);
       }
       return AABB(min_v,max_v).expand(1.25f);
     }
@@ -180,26 +180,26 @@ namespace nsdf
     std::vector<Primitive> primitives;
   };
 
-  inline glm::vec3 EyeRayDirNormalized(float x/*in [0,1]*/, float y/*in [0,1]*/, glm::mat4 projInv)
+  inline float3 EyeRayDirNormalized(float x/*in [0,1]*/, float y/*in [0,1]*/, float4x4 projInv)
   {
-    glm::vec4 pos = glm::vec4(2.0f*x - 1.0f, -2.0f*y + 1.0f, 0.0f, 1.0f);
+    float4 pos = float4(2.0f*x - 1.0f, -2.0f*y + 1.0f, 0.0f, 1.0f);
     pos = projInv * pos;
     pos /= pos.w;
-    return glm::normalize(glm::vec3(pos));
+    return normalize(to_float3(pos));
   }
 
-  inline glm::vec3 transformRay(glm::vec3 ray, glm::mat4 viewInv)
+  inline float3 transformRay(float3 ray, float4x4 viewInv)
   {
-    glm::vec3 p1 = glm::vec3(viewInv*glm::vec4(0,0,0,1));
-    glm::vec3 p2 = glm::vec3(viewInv*glm::vec4(ray.x,ray.y,ray.z,1));
-    return glm::normalize(p2-p1);
+    float3 p1 = to_float3(viewInv*float4(0,0,0,1));
+    float3 p2 = to_float3(viewInv*float4(ray.x,ray.y,ray.z,1));
+    return normalize(p2-p1);
   }
 
   //intersects SDF with ray start_pos + t*dir. Returns if ray intersected with SDF and optionally - point of intersection
-  bool primitive_sdf_sphere_tracing(const PrimitiveSDF &sdf, const AABB &sdf_bbox, const glm::vec3 &start_pos, const glm::vec3 &dir, glm::vec3 *surface_pos = nullptr)
+  bool primitive_sdf_sphere_tracing(const PrimitiveSDF &sdf, const AABB &sdf_bbox, const float3 &start_pos, const float3 &dir, float3 *surface_pos = nullptr)
   {
     constexpr float EPS = 3*1e-6;
-    glm::vec3 p0 = start_pos;
+    float3 p0 = start_pos;
     if (!sdf_bbox.contains(p0))
     {
       float t = 0;
@@ -228,12 +228,12 @@ namespace nsdf
     NORMALS
   };
 
-  Texture render_primitive_sdf(const PrimitiveSDF &sdf, const CameraSettings &camera, glm::vec3 light_dir,
+  Texture render_primitive_sdf(const PrimitiveSDF &sdf, const CameraSettings &camera, float3 light_dir,
                                int image_w, int image_h, int spp, ColorMode color_mode, bool ao = false, bool soft_shadows = false)
   {
     AABB sdf_bbox = sdf.get_bbox();
-    glm::mat4 projInv = glm::inverse(camera.get_proj(false));
-    glm::mat4 viewInv = glm::inverse(camera.get_view());
+    float4x4 projInv = LiteMath::inverse4x4(camera.get_proj(false));
+    float4x4 viewInv = LiteMath::inverse4x4(camera.get_view());
     //set light somewhere to the side 
     int spp_a = MAX(1,floor(sqrtf(spp)));
     unsigned char *data = new unsigned char[4*image_w*image_h];
@@ -243,23 +243,23 @@ namespace nsdf
     {
       for (int xi=0;xi<image_w;xi++)
       {
-        glm::vec3 color = {0,0,0};
+        float3 color = {0,0,0};
         for (int yp=0;yp<spp_a;yp++)
         {
           for (int xp=0;xp<spp_a;xp++)
           {
             float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
             float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
-            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
-            glm::vec3 p0;
+            float3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
+            float3 p0;
             
             if (primitive_sdf_sphere_tracing(sdf, sdf_bbox, camera.origin, dir, &p0))
             {
               constexpr float h = 0.001;
-              float ddx = (sdf.get_distance(p0 + glm::vec3(h, 0, 0)) - sdf.get_distance(p0 + glm::vec3(-h, 0, 0))) / (2 * h);
-              float ddy = (sdf.get_distance(p0 + glm::vec3(0, h, 0)) - sdf.get_distance(p0 + glm::vec3(0, -h, 0))) / (2 * h);
-              float ddz = (sdf.get_distance(p0 + glm::vec3(0, 0, h)) - sdf.get_distance(p0 + glm::vec3(0, 0, -h))) / (2 * h);
-              glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
+              float ddx = (sdf.get_distance(p0 + float3(h, 0, 0)) - sdf.get_distance(p0 + float3(-h, 0, 0))) / (2 * h);
+              float ddy = (sdf.get_distance(p0 + float3(0, h, 0)) - sdf.get_distance(p0 + float3(0, -h, 0))) / (2 * h);
+              float ddz = (sdf.get_distance(p0 + float3(0, 0, h)) - sdf.get_distance(p0 + float3(0, 0, -h))) / (2 * h);
+              float3 n = normalize(float3(ddx, ddy, ddz));
               float shadow = primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + 10.0f * h * light_dir, light_dir);
               if (soft_shadows)
               {
@@ -268,7 +268,7 @@ namespace nsdf
                 float t = h;
                 for (int i=0;i<steps;i++)    
                 {
-                  glm::vec3 p = p0 + t*light_dir;
+                  float3 p = p0 + t*light_dir;
                   if (!sdf_bbox.contains(p))
                     break;
                   float d = sdf.get_distance(p);
@@ -283,7 +283,7 @@ namespace nsdf
                 shadow = 1.0f - fminf(res, 1.0f);     
               }
               
-              float l_val = (1 - shadow) * glm::dot(n, light_dir);
+              float l_val = (1 - shadow) * dot(n, light_dir);
               
               float ao_value = 0.0f;
               if (ao)
@@ -292,14 +292,14 @@ namespace nsdf
                 unsigned hits = 0;
                 float step_size = 0.01;
                 /* slow but correct ao
-                glm::vec3 t1 = glm::cross(n, abs(l_val) > 0.99 ? glm::vec3(-light_dir.y, light_dir.x, light_dir.z) : glm::vec3(light_dir.x, light_dir.y, light_dir.z));
-                glm::vec3 t2 = glm::cross(n, t1);
+                float3 t1 = cross(n, abs(l_val) > 0.99 ? float3(-light_dir.y, light_dir.x, light_dir.z) : float3(light_dir.x, light_dir.y, light_dir.z));
+                float3 t2 = cross(n, t1);
 
                 for (int i = 0; i < rays; i++)
                 {
                   float phi = urand(-PI, PI);
                   float psi = urand(0, PI / 2);
-                  glm::vec3 ray = cos(phi) * cos(psi) * t1 + sin(psi) * n + sin(phi) * cos(psi) * t2;
+                  float3 ray = cos(phi) * cos(psi) * t1 + sin(psi) * n + sin(phi) * cos(psi) * t2;
                   hits += primitive_sdf_sphere_tracing(sdf, sdf_bbox, p0 + h * n, ray);
                 }
                 ao_value = hits / (float)rays;
@@ -317,13 +317,13 @@ namespace nsdf
               switch (color_mode)
               {
               case GRAY:
-                color += l*glm::vec3(1, 1, 1);
+                color += l*float3(1, 1, 1);
                 break;
               case SINPOS:
-                color += l*glm::abs(glm::vec3(sin(8*PI*p0.x), sin(8*PI*p0.y), sin(8*PI*p0.z)));
+                color += l*LiteMath::abs(float3(sin(8*PI*p0.x), sin(8*PI*p0.y), sin(8*PI*p0.z)));
                 break;
               case NORMALS:
-                color += l*glm::abs(n);
+                color += l*LiteMath::abs(n);
                 break;              
               default:
                 break;
@@ -346,24 +346,24 @@ namespace nsdf
   void task_1_create_references()
   {
     CameraSettings cam;
-    cam.origin = glm::vec3(0,3,3);
-    cam.target = glm::vec3(0,0,0);
-    cam.up = glm::vec3(0,1,0);
+    cam.origin = float3(0,3,3);
+    cam.target = float3(0,0,0);
+    cam.up = float3(0,1,0);
 
-    glm::vec3 light_dir = normalize(glm::vec3(0.7,0.8,0.5));
+    float3 light_dir = normalize(float3(0.7,0.8,0.5));
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
     l.to_file("saves/task1_references/light.txt");
 
     CameraSettings cam1 = cam;
-    cam1.origin = glm::vec3(2*sin(0),2,2*cos(0));
+    cam1.origin = float3(2*sin(0),2,2*cos(0));
     convert(cam1).to_file("saves/task1_references/cam1.txt");
 
     CameraSettings cam2 = cam;
-    cam2.origin = glm::vec3(2*sin(2*PI/3),2,2*cos(2*PI/3));
+    cam2.origin = float3(2*sin(2*PI/3),2,2*cos(2*PI/3));
     convert(cam2).to_file("saves/task1_references/cam2.txt");
 
     CameraSettings cam3 = cam;
-    cam3.origin = glm::vec3(2*sin(4*PI/3),2,2*cos(4*PI/3));
+    cam3.origin = float3(2*sin(4*PI/3),2,2*cos(4*PI/3));
     convert(cam3).to_file("saves/task1_references/cam3.txt");
 
     PrimitiveSDF sdf1;
@@ -389,8 +389,8 @@ namespace nsdf
       sdf1.primitives = std::vector<Primitive>(psdf.scene_data.size()/7);
       for (int i=0;i<sdf1.primitives.size();i++)
         sdf1.primitives[i] = Primitive((PrimitiveType)((int)psdf.scene_data[7*i+0]),
-                                       glm::vec3(psdf.scene_data[7*i+1], psdf.scene_data[7*i+2], psdf.scene_data[7*i+3]),
-                                       glm::vec3(psdf.scene_data[7*i+4], psdf.scene_data[7*i+5], psdf.scene_data[7*i+6]));
+                                       float3(psdf.scene_data[7*i+1], psdf.scene_data[7*i+2], psdf.scene_data[7*i+3]),
+                                       float3(psdf.scene_data[7*i+4], psdf.scene_data[7*i+5], psdf.scene_data[7*i+6]));
     }
     
     PrimitiveSDF sdf2;
@@ -417,8 +417,8 @@ namespace nsdf
       sdf2.primitives = std::vector<Primitive>(psdf.scene_data.size()/7);
       for (int i=0;i<sdf2.primitives.size();i++)
         sdf2.primitives[i] = Primitive((PrimitiveType)((int)psdf.scene_data[7*i+0]),
-                                       glm::vec3(psdf.scene_data[7*i+1], psdf.scene_data[7*i+2], psdf.scene_data[7*i+3]),
-                                       glm::vec3(psdf.scene_data[7*i+4], psdf.scene_data[7*i+5], psdf.scene_data[7*i+6]));
+                                       float3(psdf.scene_data[7*i+1], psdf.scene_data[7*i+2], psdf.scene_data[7*i+3]),
+                                       float3(psdf.scene_data[7*i+4], psdf.scene_data[7*i+5], psdf.scene_data[7*i+6]));
     }
 
     PrimitiveSDF sdf3;
@@ -436,7 +436,7 @@ namespace nsdf
     //for (int i=0;i<steps;i++)
     //{
     //  CameraSettings tc = cam;
-    //  tc.origin = glm::vec3(3*cos(2*PI*i/steps), 2, 3*sin(2*PI*i/steps));
+    //  tc.origin = float3(3*cos(2*PI*i/steps), 2, 3*sin(2*PI*i/steps));
     //  t = render_primitive_sdf(sdf2, tc, light_dir, 1024, 1024, 16, GRAY, true, true);
     //  engine::textureManager->save_png(t, "task1_references/sdf1_turntable_"+std::to_string(i));
     //}
@@ -489,23 +489,23 @@ namespace nsdf
     out.close();
   }
 
-  glm::vec3 closest_point_triangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+  float3 closest_point_triangle(const float3& p, const float3& a, const float3& b, const float3& c)
   {
     //implementation taken from Embree library
-    const glm::vec3 ab = b - a;
-    const glm::vec3 ac = c - a;
-    const glm::vec3 ap = p - a;
+    const float3 ab = b - a;
+    const float3 ac = c - a;
+    const float3 ap = p - a;
 
     const float d1 = dot(ab, ap);
     const float d2 = dot(ac, ap);
     if (d1 <= 0.f && d2 <= 0.f) return a; //#1
 
-    const glm::vec3 bp = p - b;
+    const float3 bp = p - b;
     const float d3 = dot(ab, bp);
     const float d4 = dot(ac, bp);
     if (d3 >= 0.f && d4 <= d3) return b; //#2
 
-    const glm::vec3 cp = p - c;
+    const float3 cp = p - c;
     const float d5 = dot(ab, cp);
     const float d6 = dot(ac, cp);
     if (d6 >= 0.f && d5 <= d6) return c; //#3
@@ -539,23 +539,23 @@ namespace nsdf
 
   void model_to_point_cloud(const Mesh *m, int count, AABB bbox, std::vector<float> *points, std::vector<float> *distances)
   {
-    std::vector<glm::vec3> face_normals(m->indices.size()/3);
+    std::vector<float3> face_normals(m->indices.size()/3);
     for (int i=0;i<m->indices.size();i+=3)
     {
-      glm::vec3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
-      glm::vec3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
-      glm::vec3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
-      face_normals[i/3] = glm::normalize(glm::cross(p1-p0, p2-p0));
+      float3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
+      float3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
+      float3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
+      face_normals[i/3] = normalize(cross(p1-p0, p2-p0));
     }
 
     //BVH bvh(m->positions, m->indices);
 
     points->resize(3*count);
     distances->resize(count);
-    std::vector<glm::vec3> surface_points(count);
+    std::vector<float3> surface_points(count);
     for (int j=0;j<count;j++)
     {
-      glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+      float3 p = float3(urand(bbox.min_pos.x, bbox.max_pos.x),
                               urand(bbox.min_pos.y, bbox.max_pos.y),
                               urand(bbox.min_pos.z, bbox.max_pos.z));
       (*points)[3*j+0] = p.x;
@@ -563,15 +563,15 @@ namespace nsdf
       (*points)[3*j+2] = p.z;
 
       float min_dist = 1e9;
-      glm::vec3 closest_pos(0,0,0);
-      glm::vec3 closest_norm(1,0,0);
+      float3 closest_pos(0,0,0);
+      float3 closest_norm(1,0,0);
       for (int i=0;i<m->indices.size();i+=3)
       {
-        glm::vec3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
-        glm::vec3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
-        glm::vec3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
+        float3 p0(m->positions[3*m->indices[i+0]+0], m->positions[3*m->indices[i+0]+1], m->positions[3*m->indices[i+0]+2]);
+        float3 p1(m->positions[3*m->indices[i+1]+0], m->positions[3*m->indices[i+1]+1], m->positions[3*m->indices[i+1]+2]);
+        float3 p2(m->positions[3*m->indices[i+2]+0], m->positions[3*m->indices[i+2]+1], m->positions[3*m->indices[i+2]+2]);
         
-        glm::vec3 tp = closest_point_triangle(p, p0, p1, p2);
+        float3 tp = closest_point_triangle(p, p0, p1, p2);
         float d = length(p-tp);
         if (d < min_dist)
         {
@@ -591,9 +591,9 @@ namespace nsdf
     for (int i=0;i<10;i++)
     {
       CameraSettings cam;
-      cam.origin = glm::vec3(3*sin(0.2*PI*i),0, 3*cos(0.2*PI*i));
-      cam.target = glm::vec3(0,0,0);
-      cam.up = glm::vec3(0,1,0);
+      cam.origin = float3(3*sin(0.2*PI*i),0, 3*cos(0.2*PI*i));
+      cam.target = float3(0,0,0);
+      cam.up = float3(0,1,0);
       PointCloudRenderer pcr;
       Texture t = pcr.render(surface_points, cam.get_viewProj(), 1024, 1024);
       engine::textureManager->save_png(t, "task2_references/point_cloud_"+std::to_string(i));
@@ -621,7 +621,7 @@ namespace nsdf
 
     for (int i=0;i<count;i++)
     {
-      glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+      float3 p = float3(urand(bbox.min_pos.x, bbox.max_pos.x),
                               urand(bbox.min_pos.y, bbox.max_pos.y),
                               urand(bbox.min_pos.z, bbox.max_pos.z));
       (*points)[3*i+0] = p.x;
@@ -680,7 +680,7 @@ namespace nsdf
       sdf.set_parameters(par);
       for (int j = 0; j < count_points; ++j)
       {
-        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+        float3 p = float3(urand(bbox.min_pos.x, bbox.max_pos.x),
                                 urand(bbox.min_pos.y, bbox.max_pos.y),
                                 urand(bbox.min_pos.z, bbox.max_pos.z));
         (*points)[sz*i*count_points+sz*j+0] = p.x;
@@ -712,7 +712,7 @@ namespace nsdf
       //debug("\n");
       for (int j = 0; j < count_points; ++j)
       {
-        glm::vec3 p = glm::vec3(urand(bbox.min_pos.x, bbox.max_pos.x),
+        float3 p = float3(urand(bbox.min_pos.x, bbox.max_pos.x),
                                 urand(bbox.min_pos.y, bbox.max_pos.y),
                                 urand(bbox.min_pos.z, bbox.max_pos.z));
         sdf.set_parameters(params);
@@ -739,22 +739,22 @@ namespace nsdf
   }
 
   Texture render_neural_sdf_with_params(nn::Siren &sdf, std::vector<float> params, AABB bbox, const CameraSettings &camera, 
-                            int image_w, int image_h, int spp, bool lambert, glm::vec3 light_dir)
+                            int image_w, int image_h, int spp, bool lambert, float3 light_dir)
   {
-    glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
-    glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
+    float3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
+    float3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
     AABB inflated_bbox = AABB(center - 1.1f*size, center + 1.1f*size);
 
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
-    glm::mat4 viewInv = glm::inverse(camera.get_view());
+    float4x4 projInv = LiteMath::inverse4x4(camera.get_proj());
+    float4x4 viewInv = LiteMath::inverse4x4(camera.get_view());
 
     int spp_a = MAX(1,floor(sqrtf(spp)));
     unsigned char *data = new unsigned char[4*image_w*image_h];
 
     std::vector<int> hits(image_w*image_h, 0); //one per pixel
-    std::vector<glm::vec3> colors(image_w*image_h, glm::vec3(0,0,0));
+    std::vector<float3> colors(image_w*image_h, float3(0,0,0));
     std::vector<int> pixel_indices(image_w*image_h*spp_a*spp_a);
-    std::vector<glm::vec3> dirs(image_w*image_h*spp_a*spp_a);
+    std::vector<float3> dirs(image_w*image_h*spp_a*spp_a);
     std::vector<float> points(3*image_w*image_h*spp_a*spp_a);
     std::vector<float> distances(image_w*image_h*spp_a*spp_a, 0);
     std::vector<float> fd_points, fd_distances, fd_pixel_indices;
@@ -776,8 +776,8 @@ namespace nsdf
           {
             float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
             float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
-            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
-            glm::vec3 p0 = camera.origin;
+            float3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
+            float3 p0 = camera.origin;
             float t = 0;
             if (bbox.contains(p0) || bbox.intersects(p0, dir, &t))
             {
@@ -812,7 +812,7 @@ namespace nsdf
       for (int i=0;i<points_left;i++)
       {
         float d = distances[i];
-        glm::vec3 p0 = glm::vec3(points[3*i+0], points[3*i+1], points[3*i+2]);
+        float3 p0 = float3(points[3*i+0], points[3*i+1], points[3*i+2]);
         if (!inflated_bbox.contains(p0))//ray went too far, no hit
         {
           distances[i] = 2e6;
@@ -861,7 +861,7 @@ namespace nsdf
     if (!lambert)
     {
       for (int i=0;i<image_w*image_h;i++)
-        colors[i] += glm::vec3(hits[i], hits[i], hits[i]);
+        colors[i] += float3(hits[i], hits[i], hits[i]);
     }
     else
     {
@@ -872,14 +872,14 @@ namespace nsdf
         float ddx = (fd_distances[6*i+0] - fd_distances[6*i+1])/(2*h);
         float ddy = (fd_distances[6*i+2] - fd_distances[6*i+3])/(2*h);
         float ddz = (fd_distances[6*i+4] - fd_distances[6*i+5])/(2*h);
-        glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
-        colors[fd_pixel_indices[i]] += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
+        float3 n = normalize(float3(ddx, ddy, ddz));
+        colors[fd_pixel_indices[i]] += float3(1,1,1) * MAX(0.1f, dot(n, light_dir));
       }
     }
 
     for (int i = 0; i < image_w * image_h; i++)
     {
-      glm::vec3 color = colors[i];
+      float3 color = colors[i];
       data[4 * i + 0] = 255 * (color.x / SQR(spp_a));
       data[4 * i + 1] = 255 * (color.y / SQR(spp_a));
       data[4 * i + 2] = 255 * (color.z / SQR(spp_a));
@@ -892,24 +892,24 @@ namespace nsdf
   }
 
   Texture render_neural_sdf(nn::Siren &sdf, AABB bbox, const CameraSettings &camera, 
-                            int image_w, int image_h, int spp, bool lambert, glm::vec3 light_dir)
+                            int image_w, int image_h, int spp, bool lambert, float3 light_dir)
   {
     sdf.set_batch_size_for_evaluate(4096);
 
-    glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
-    glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
+    float3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
+    float3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
     AABB inflated_bbox = AABB(center - 1.1f*size, center + 1.1f*size);
 
-    glm::mat4 projInv = glm::inverse(camera.get_proj());
-    glm::mat4 viewInv = glm::inverse(camera.get_view());
+    float4x4 projInv = LiteMath::inverse4x4(camera.get_proj());
+    float4x4 viewInv = LiteMath::inverse4x4(camera.get_view());
 
     int spp_a = MAX(1,floor(sqrtf(spp)));
     unsigned char *data = new unsigned char[4*image_w*image_h];
 
     std::vector<int> hits(image_w*image_h, 0); //one per pixel
-    std::vector<glm::vec3> colors(image_w*image_h, glm::vec3(0,0,0));
+    std::vector<float3> colors(image_w*image_h, float3(0,0,0));
     std::vector<int> pixel_indices(image_w*image_h*spp_a*spp_a);
-    std::vector<glm::vec3> dirs(image_w*image_h*spp_a*spp_a);
+    std::vector<float3> dirs(image_w*image_h*spp_a*spp_a);
     std::vector<float> points(3*image_w*image_h*spp_a*spp_a);
     std::vector<float> distances(image_w*image_h*spp_a*spp_a, 0);
     std::vector<float> fd_points, fd_distances, fd_pixel_indices;
@@ -931,8 +931,8 @@ namespace nsdf
           {
             float y = (float)(yi*spp_a+yp)/(image_h*spp_a);
             float x = (float)(xi*spp_a+xp)/(image_w*spp_a);
-            glm::vec3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
-            glm::vec3 p0 = camera.origin;
+            float3 dir = transformRay(EyeRayDirNormalized(x,y,projInv), viewInv);
+            float3 p0 = camera.origin;
             float t = 0;
             if (bbox.contains(p0) || bbox.intersects(p0, dir, &t))
             {
@@ -966,7 +966,7 @@ namespace nsdf
       for (int i=0;i<points_left;i++)
       {
         float d = distances[i];
-        glm::vec3 p0 = glm::vec3(points[3*i+0], points[3*i+1], points[3*i+2]);
+        float3 p0 = float3(points[3*i+0], points[3*i+1], points[3*i+2]);
         if (!inflated_bbox.contains(p0))//ray went too far, no hit
         {
           distances[i] = 2e6;
@@ -1016,7 +1016,7 @@ namespace nsdf
     if (!lambert)
     {
       for (int i=0;i<image_w*image_h;i++)
-        colors[i] += glm::vec3(hits[i], hits[i], hits[i]);
+        colors[i] += float3(hits[i], hits[i], hits[i]);
     }
     else
     {
@@ -1026,14 +1026,14 @@ namespace nsdf
         float ddx = (fd_distances[6*i+0] - fd_distances[6*i+1])/(2*h);
         float ddy = (fd_distances[6*i+2] - fd_distances[6*i+3])/(2*h);
         float ddz = (fd_distances[6*i+4] - fd_distances[6*i+5])/(2*h);
-        glm::vec3 n = glm::normalize(glm::vec3(ddx, ddy, ddz));
-        colors[fd_pixel_indices[i]] += glm::vec3(1,1,1) * MAX(0.1f, dot(n, light_dir));
+        float3 n = normalize(float3(ddx, ddy, ddz));
+        colors[fd_pixel_indices[i]] += float3(1,1,1) * MAX(0.1f, dot(n, light_dir));
       }
     }
 
     for (int i = 0; i < image_w * image_h; i++)
     {
-      glm::vec3 color = colors[i];
+      float3 color = colors[i];
       data[4 * i + 0] = 255 * (color.x / SQR(spp_a));
       data[4 * i + 1] = 255 * (color.y / SQR(spp_a));
       data[4 * i + 2] = 255 * (color.z / SQR(spp_a));
@@ -1050,24 +1050,24 @@ namespace nsdf
     AABB bbox({-1,-1,-1},{1,1,1});
 
     CameraSettings cam;
-    cam.origin = glm::vec3(0,0,3);
-    cam.target = glm::vec3(0,0,0);
-    cam.up = glm::vec3(0,1,0);
+    cam.origin = float3(0,0,3);
+    cam.target = float3(0,0,0);
+    cam.up = float3(0,1,0);
 
-    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    float3 light_dir = normalize(cam.origin + float3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
     l.to_file("saves/task2_references/light.txt");
 
     CameraSettings cam1 = cam;
-    cam1.origin = glm::vec3(0,3*sin(0),3*cos(0));
+    cam1.origin = float3(0,3*sin(0),3*cos(0));
     convert(cam1).to_file("saves/task2_references/cam1.txt");
 
     CameraSettings cam2 = cam;
-    cam2.origin = glm::vec3(0,3*sin(2*PI/3),3*cos(2*PI/3));
+    cam2.origin = float3(0,3*sin(2*PI/3),3*cos(2*PI/3));
     convert(cam2).to_file("saves/task2_references/cam2.txt");
 
     CameraSettings cam3 = cam;
-    cam3.origin = glm::vec3(0,3*sin(4*PI/3),3*cos(4*PI/3));
+    cam3.origin = float3(0,3*sin(4*PI/3),3*cos(4*PI/3));
     convert(cam3).to_file("saves/task2_references/cam3.txt");
 
     {
@@ -1132,24 +1132,24 @@ namespace nsdf
     AABB bbox({-1,-1,-1},{1,1,1});
 
     CameraSettings cam;
-    cam.origin = glm::vec3(0,0,3);
-    cam.target = glm::vec3(0,0,0);
-    cam.up = glm::vec3(0,1,0);
+    cam.origin = float3(0,0,3);
+    cam.target = float3(0,0,0);
+    cam.up = float3(0,1,0);
 
-    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    float3 light_dir = normalize(cam.origin + float3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
     l.to_file("saves/task3_references/light.txt");
 
     CameraSettings cam1 = cam;
-    cam1.origin = glm::vec3(0,3*sin(0),3*cos(0));
+    cam1.origin = float3(0,3*sin(0),3*cos(0));
     convert(cam1).to_file("saves/task3_references/cam1.txt");
 
     CameraSettings cam2 = cam;
-    cam2.origin = glm::vec3(0,3*sin(2*PI/3),3*cos(2*PI/3));
+    cam2.origin = float3(0,3*sin(2*PI/3),3*cos(2*PI/3));
     convert(cam2).to_file("saves/task3_references/cam2.txt");
 
     CameraSettings cam3 = cam;
-    cam3.origin = glm::vec3(0,3*sin(4*PI/3),3*cos(4*PI/3));
+    cam3.origin = float3(0,3*sin(4*PI/3),3*cos(4*PI/3));
     convert(cam3).to_file("saves/task3_references/cam3.txt");
 
     {
@@ -1194,24 +1194,24 @@ namespace nsdf
     AABB bbox({-1,-1,-1},{1,1,1});
 
     CameraSettings cam;
-    cam.origin = glm::vec3(0,0,3);
-    cam.target = glm::vec3(0,0,0);
-    cam.up = glm::vec3(0,1,0);
+    cam.origin = float3(0,0,3);
+    cam.target = float3(0,0,0);
+    cam.up = float3(0,1,0);
 
-    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    float3 light_dir = normalize(cam.origin + float3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
     l.to_file("saves/task3_references/light.txt");
 
     CameraSettings cam1 = cam;
-    cam1.origin = glm::vec3(3*sin(0),0,3*cos(0));
+    cam1.origin = float3(3*sin(0),0,3*cos(0));
     convert(cam1).to_file("saves/task3_references/cam1.txt");
 
     CameraSettings cam2 = cam;
-    cam2.origin = glm::vec3(3*sin(2*PI/3),0,3*cos(2*PI/3));
+    cam2.origin = float3(3*sin(2*PI/3),0,3*cos(2*PI/3));
     convert(cam2).to_file("saves/task3_references/cam2.txt");
 
     CameraSettings cam3 = cam;
-    cam3.origin = glm::vec3(3*sin(4*PI/3),0,3*cos(4*PI/3));
+    cam3.origin = float3(3*sin(4*PI/3),0,3*cos(4*PI/3));
     convert(cam3).to_file("saves/task3_references/cam3.txt");
 
     {
@@ -1256,14 +1256,14 @@ namespace nsdf
     AABB bbox({-1,-1,-1},{1,1,1});
 
     CameraSettings cam;
-    cam.origin = glm::vec3(0,0,3);
-    cam.target = glm::vec3(0,0,0);
-    cam.up = glm::vec3(0,1,0);
-    CameraSettings cam1 = cam; cam1.origin = glm::vec3(0,3*sin(0),3*cos(0));
-    CameraSettings cam2 = cam; cam2.origin = glm::vec3(0,3*sin(2*PI/3),3*cos(2*PI/3));
-    CameraSettings cam3 = cam; cam3.origin = glm::vec3(0,3*sin(4*PI/3),3*cos(4*PI/3));
+    cam.origin = float3(0,0,3);
+    cam.target = float3(0,0,0);
+    cam.up = float3(0,1,0);
+    CameraSettings cam1 = cam; cam1.origin = float3(0,3*sin(0),3*cos(0));
+    CameraSettings cam2 = cam; cam2.origin = float3(0,3*sin(2*PI/3),3*cos(2*PI/3));
+    CameraSettings cam3 = cam; cam3.origin = float3(0,3*sin(4*PI/3),3*cos(4*PI/3));
 
-    glm::vec3 light_dir = normalize(cam.origin + glm::vec3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
+    float3 light_dir = normalize(cam.origin + float3(cam.origin.z, cam.origin.y, cam.origin.x) - cam.target);
     DirectedLight l{light_dir.x, light_dir.y, light_dir.z, 1.0f};
 
     std::vector<float> points, distances;

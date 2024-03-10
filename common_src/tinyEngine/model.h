@@ -22,9 +22,9 @@ struct Mesh
 
 struct Material
 {
-  glm::vec3 Ka = glm::vec3(1, 1, 1); // Ambient Color
-  glm::vec3 Kd = glm::vec3(1, 1, 1); // Diffuse Color
-  glm::vec3 Ks = glm::vec3(1, 1, 1); // Specular Color
+  float3 Ka = float3(1, 1, 1); // Ambient Color
+  float3 Kd = float3(1, 1, 1); // Diffuse Color
+  float3 Ks = float3(1, 1, 1); // Specular Color
   float Ns = 32;                     // Specular Exponent
   float Ni = 1;                      // Optical Density
   float d = 1;                       // Dissolve
@@ -52,7 +52,7 @@ public:
   std::vector<GLuint> vbo;
   GLuint ibo;
   size_t SIZE = 4;
-  glm::mat4 model = glm::mat4(1.0);
+  float4x4 model = float4x4();
 
   int get_size() {return positions.size()/3;}
 

@@ -134,7 +134,7 @@ namespace upg
       int step_n = 0;
       while (settings.get_id("step_params_"+std::to_string(step_n)) >= 0)
       {
-        glm::vec3 s = settings.get_vec3("step_params_"+std::to_string(step_n));
+        float3 s = settings.get_vec3("step_params_"+std::to_string(step_n));
         steps.push_back({(int)s.x, s.y, s.z});
         step_n++;
       }

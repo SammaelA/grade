@@ -23,7 +23,7 @@ struct Scene
 
         std::string name;
         ComplexModel model;
-        std::vector<glm::mat4> instances;
+        std::vector<float4x4> instances;
         std::vector<AABB> bboxes;
         InstancedModel();
 

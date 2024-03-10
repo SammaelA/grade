@@ -3,21 +3,18 @@
 #include <atomic>
 #include <cmath>
 
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
 
-float declination(vec3 vec)
+float declination(float3 vec)
 {
     return LiteMath::to_degrees(atan2(sqrt(SQR(vec.x) + SQR(vec.y)), vec.z));
 }
 
-void vec_to_quat(LiteMath::quat &q, const vec3 vec, short axis, const short upflag)
+void vec_to_quat(LiteMath::quat &q, const float3 vec, short axis, const short upflag)
 {
   //it is taken from blender/python/mathutils/mathutils_Vector.c with mathutils vecs
-  //and quats replaced with glm ones
+  //and quats replaced with our own implementation
   const float eps = 1e-4f;
-  vec3 nor, tvec;
+  float3 nor, tvec;
   float angle, si, co, len;
 
   /* first set the quat to unit */
@@ -82,9 +79,9 @@ void vec_to_quat(LiteMath::quat &q, const vec3 vec, short axis, const short upfl
   q = LiteMath::angleAxis(acosf(co), nor);
   
   if (axis != upflag) {
-    glm::mat3x3 mat;
+    float3x3 mat;
     LiteMath::quat q2;
-    const vec3 &fp = mat[2];
+    float3 fp = float3(mat.row[0].z, mat.row[1].z, mat.row[2].z);
     mat = LiteMath::to_mat3(q);
 
     if (axis == 0) {
@@ -119,7 +116,7 @@ void vec_to_quat(LiteMath::quat &q, const vec3 vec, short axis, const short upfl
   }
 }
 
-LiteMath::quat to_track_quat_ZY(glm::vec3 vec)
+LiteMath::quat to_track_quat_ZY(float3 vec)
 {
     LiteMath::quat q;
     vec_to_quat(q, -vec, 2, 1);
@@ -157,7 +154,7 @@ void WeberPennGenerator::Tree::create_branches()
         level_curve.resolution_u = param.curve_res[level_depth];
         branch_curves.push_back(level_curve);
     }
-    std::vector<std::pair<vec3, float>> points;
+    std::vector<std::pair<float3, float>> points;
     if (param.branches[0] > 0)
         points_for_floor_split(points);
     
@@ -166,9 +163,9 @@ void WeberPennGenerator::Tree::create_branches()
         tree_scale = param.g_scale + random_uniform(-1, 1) * param.g_scale_v;
         tree_scale = MAX(tree_scale, 0.1*param.g_scale);
         CHTurtle turtle = CHTurtle();
-        turtle.pos = vec3(0,0,0);
-        turtle.dir = vec3(0,0,1);
-        turtle.right = vec3(1,0,0);
+        turtle.pos = float3(0,0,0);
+        turtle.dir = float3(0,0,1);
+        turtle.right = float3(1,0,0);
         if (param.branches[0] > 1)
         {
             //position randomly at base and rotate to face out
@@ -183,10 +180,10 @@ void WeberPennGenerator::Tree::create_branches()
         }
         branch_curves[0].splines.data.emplace_back();
         branch_curves[0].splines.data.back().resolution_u = 1;
-        branch_curves[0].splines.data.back().bezier_points[0].co = vec3(0,0,-0.1);
+        branch_curves[0].splines.data.back().bezier_points[0].co = float3(0,0,-0.1);
         branch_curves[0].splines.data.back().bezier_points[0].radius = 0.01;
         branch_curves[0].splines.data.back().bezier_points.emplace_back();
-        branch_curves[0].splines.data.back().bezier_points[1].co = vec3(0,0,0);
+        branch_curves[0].splines.data.back().bezier_points[1].co = float3(0,0,0);
         branch_curves[0].splines.data.back().bezier_points[1].radius = 0.01;
         stems.push_back(new Stem(0, branch_curves[0].splines.data.size()-1));
         root = stems.back();
@@ -318,10 +315,10 @@ void WeberPennGenerator::Tree::create_leaf_mesh()
     Leaf::get_shape(-param.blossom_shape, tree_scale / param.g_scale, param.blossom_scale, 1, base_blossom_shape);
     logerr("leaf sz %f %f %f %f ",tree_scale, param.g_scale,
                                            param.leaf_scale, param.leaf_scale_x);
-    std::vector<glm::vec3> leaf_verts;
+    std::vector<float3> leaf_verts;
     std::vector<std::vector<int>> leaf_faces;
     int leaf_index = 0;
-    std::vector<glm::vec3> blossom_verts;
+    std::vector<float3> blossom_verts;
     std::vector<std::vector<int>> blossom_faces;
     int blossom_index = 0;
     int counter = 0;
@@ -343,7 +340,7 @@ void WeberPennGenerator::Tree::create_leaf_mesh()
     //logerr("%d leaves added to mesh ", counter);
 }
 
-void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm::vec3, float>> &points)
+void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<float3, float>> &points)
 {
     points = {};
     tree_scale = param.g_scale + param.g_scale_v;
@@ -359,7 +356,7 @@ void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm:
             float dis = sqrt(random_uniform(0.01,1) * param.branches[0] / 2.5 * param.g_scale * param.ratio); 
             //angle random in circle
             float theta = random_uniform(0, 2 * PI);
-            vec3 pos = vec3(dis * cos(theta), dis * sin(theta), 0);
+            float3 pos = float3(dis * cos(theta), dis * sin(theta), 0);
             //test point against those already in array to ensure it will not intersect
             bool point_m_ok = true;
             for (auto &point : points)
@@ -373,7 +370,7 @@ void WeberPennGenerator::Tree::points_for_floor_split(std::vector<std::pair<glm:
             if (point_m_ok)
             {
                 point_ok = true;
-                points.push_back(std::pair<glm::vec3, float>(pos, theta));
+                points.push_back(std::pair<float3, float>(pos, theta));
             }
 
         }
@@ -517,10 +514,10 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
     }
 
     //calc helix parameters if needed
-    glm::vec3 hel_p_0 = glm::vec3(0,0,0);
-    glm::vec3 hel_p_1 = glm::vec3(0,0,0);
-    glm::vec3 hel_p_2 = glm::vec3(0,0,0);
-    glm::vec3 hel_axis = glm::vec3(1,0,0);
+    float3 hel_p_0 = float3(0,0,0);
+    float3 hel_p_1 = float3(0,0,0);
+    float3 hel_p_2 = float3(0,0,0);
+    float3 hel_axis = float3(1,0,0);
 
     if (param.curve_v[depth] < 0)
     {
@@ -532,7 +529,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         if (depth > 1)
             apply_tropism(turtle, param.tropism);
         else if (depth > 0)
-            apply_tropism(turtle, vec3(param.tropism[0], param.tropism[1], 0));
+            apply_tropism(turtle, float3(param.tropism[0], param.tropism[1], 0));
 
         calc_helix_points(turtle, hel_radius, hel_pitch, hel_p_0, hel_p_1, hel_p_2, hel_axis);
     }
@@ -554,7 +551,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
         if (param.curve_v[depth] < 0)
         {
             //negative curve_v so helix branch
-            glm::vec3 pos = turtle.pos;
+            float3 pos = turtle.pos;
             if (seg_ind == 0)
             {
                 new_point = &(spline(stem).bezier_points[0]);
@@ -562,7 +559,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                 new_point->handle_right = hel_p_0 + pos;
                 new_point->handle_left = pos;
                 turtle.pos = new_point->co;
-                turtle.dir = glm::normalize(new_point->handle_right);
+                turtle.dir = normalize(new_point->handle_right);
             }
             else
             {
@@ -586,20 +583,20 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                     Point &prev_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 2];
                     new_point->co = LiteMath::angleAxis((seg_ind - 1) * PI, hel_axis) * hel_p_2;
                     new_point->co += prev_point.co;
-                    glm::vec3 dif_p = LiteMath::angleAxis((seg_ind - 1) * PI, hel_axis) * (hel_p_2 - hel_p_1);
+                    float3 dif_p = LiteMath::angleAxis((seg_ind - 1) * PI, hel_axis) * (hel_p_2 - hel_p_1);
                     new_point->handle_left = new_point->co - dif_p;
                     new_point->handle_right = 2.0f * new_point->co - new_point->handle_left;
                 }
                 turtle.pos = new_point->co;
-                turtle.dir = glm::normalize(new_point->handle_right);
+                turtle.dir = normalize(new_point->handle_right);
                 if (stem.depth == 0)//TODO: remove me
-                   turtle.dir = glm::vec3(0,0,1); 
+                   turtle.dir = float3(0,0,1); 
             }
         }
         else
         {
             if (stem.depth == 0)//TODO: remove me
-                   turtle.dir = glm::vec3(0,0,1); 
+                   turtle.dir = float3(0,0,1); 
             //normal curved branch
             //get/make new point to be modified
             if (seg_ind != start)
@@ -773,9 +770,9 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                             }
                             else
                             {
-                                turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.dir;
+                                turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), float3(0, 0, 1))*turtle.dir;
                                 normalize(turtle.dir);
-                                turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.right;
+                                turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), float3(0, 0, 1))*turtle.right;
                                 normalize(turtle.right);
                             }
                         }
@@ -791,7 +788,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                     if (depth > 1)
                         apply_tropism(turtle, param.tropism);
                     else
-                        apply_tropism(turtle, vec3(param.tropism[0], param.tropism[1], 0));
+                        apply_tropism(turtle, float3(param.tropism[0], param.tropism[1], 0));
                 }
                 //increase point resolution at base of trunk and apply flaring effect
                 if (points_per_seg > 2)
@@ -873,10 +870,10 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
     }
 
     //calc helix parameters if needed
-    glm::vec3 hel_p_0 = glm::vec3(0,0,0);
-    glm::vec3 hel_p_1 = glm::vec3(0,0,0);
-    glm::vec3 hel_p_2 = glm::vec3(0,0,0);
-    glm::vec3 hel_axis = glm::vec3(1,0,0);
+    float3 hel_p_0 = float3(0,0,0);
+    float3 hel_p_1 = float3(0,0,0);
+    float3 hel_p_2 = float3(0,0,0);
+    float3 hel_axis = float3(1,0,0);
 
     if (param.curve_v[depth] < 0)
     {
@@ -888,12 +885,12 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
         if (depth > 1)
             apply_tropism(turtle, param.tropism);
         else
-            apply_tropism(turtle, vec3(param.tropism[0], param.tropism[1], 0));
+            apply_tropism(turtle, float3(param.tropism[0], param.tropism[1], 0));
 
         calc_helix_points(turtle, hel_radius, hel_pitch, hel_p_0, hel_p_1, hel_p_2, hel_axis);
     }
 
-    glm::vec3 previous_helix_point = glm::vec3(0,0,0);
+    float3 previous_helix_point = float3(0,0,0);
     for (int seg_ind = start; seg_ind< curve_res + 1;seg_ind++)
     {
         int remaining_segs = curve_res + 1 - seg_ind;
@@ -902,7 +899,7 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
         if (param.curve_v[depth] < 0)
         {
             //negative curve_v so helix branch
-            vec3 pos = turtle.pos;
+            float3 pos = turtle.pos;
             if (seg_ind == 0)
                 turtle.pos = pos;
             else
@@ -988,9 +985,9 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
                         }
                         else
                         {
-                            turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.dir;
+                            turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), float3(0, 0, 1)) * turtle.dir;
                             normalize(turtle.dir);
-                            turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.right;
+                            turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), float3(0, 0, 1)) * turtle.right;
                             normalize(turtle.right);
                         }
                     }
@@ -1006,7 +1003,7 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
                 if (depth > 1)
                     apply_tropism(turtle, param.tropism);
                 else
-                    apply_tropism(turtle, glm::vec3(param.tropism[0], param.tropism[1], 0));
+                    apply_tropism(turtle, float3(param.tropism[0], param.tropism[1], 0));
             }
         }
     }
@@ -1052,21 +1049,21 @@ float WeberPennGenerator::Tree::calc_branch_count(Stem &stem)
     return result / (1 - param.base_size[stem.depth]);
 }
 
-void WeberPennGenerator::Tree::apply_tropism(CHTurtle &turtle, glm::vec3 tropism_vector)
+void WeberPennGenerator::Tree::apply_tropism(CHTurtle &turtle, float3 tropism_vector)
 {
     //Apply tropism_vector to turtle direction
-    auto h_cross_t = glm::cross(turtle.dir, tropism_vector);
+    auto h_cross_t = cross(turtle.dir, tropism_vector);
     //calc angle to rotate by (from ABoP) multiply to achieve accurate results from WP attractionUp param
     float alpha = 10 * length(h_cross_t);
     normalize(h_cross_t);
     //rotate by angle about axis perpendicular to turtle direction and tropism vector
-    turtle.dir = glm::normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.dir);
-    turtle.right = glm::normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.right);
+    turtle.dir = normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.dir);
+    turtle.right = normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.right);
 }
 
 void WeberPennGenerator::Tree::calc_helix_points(CHTurtle &turtle, float rad, float pitch, 
-                                                 glm::vec3 &hel_p_0, glm::vec3 &hel_p_1, glm::vec3 &hel_p_2, 
-                                                 glm::vec3 &hel_axis)
+                                                 float3 &hel_p_0, float3 &hel_p_1, float3 &hel_p_2, 
+                                                 float3 &hel_axis)
 {
     //calculates required points to produce helix bezier curve with given radius and pitch in direction of turtle
     // alpha = radians(90)
@@ -1081,15 +1078,15 @@ void WeberPennGenerator::Tree::calc_helix_points(CHTurtle &turtle, float rad, fl
     // axis = Vector([0, 0, 1])
 
     // simplifies greatly for case inc_angle = 90
-    vec3 points[4] = {vec3(0, -rad, -pitch / 4),
-                           vec3((4 * rad) / 3, -rad, 0),
-                           vec3((4 * rad) / 3, rad, 0),
-                           vec3(0, rad, pitch / 4)};
+    float3 points[4] = {float3(0, -rad, -pitch / 4),
+                           float3((4 * rad) / 3, -rad, 0),
+                           float3((4 * rad) / 3, rad, 0),
+                           float3(0, rad, pitch / 4)};
 
     // align helix points to turtle direction and randomize rotation around axis
     auto trf = to_track_quat_ZY(turtle.dir);
     float spin_ang = random_uniform(0, 2 * PI);
-    auto rot_quat = LiteMath::angleAxis(LiteMath::to_radians(spin_ang), vec3(0, 0, 1));
+    auto rot_quat = LiteMath::angleAxis(LiteMath::to_radians(spin_ang), float3(0, 0, 1));
 
     for (auto &p :points)
     {
@@ -1326,10 +1323,10 @@ void WeberPennGenerator::Tree::make_clones(CHTurtle &turtle, int seg_ind, float 
 
         else
         {
-            auto quat = LiteMath::angleAxis(LiteMath::to_radians(eff_spr_angle), vec3(0, 0, 1));
+            auto quat = LiteMath::angleAxis(LiteMath::to_radians(eff_spr_angle), float3(0, 0, 1));
 
-            n_turtle.dir = glm::normalize(quat * n_turtle.dir);
-            n_turtle.right = glm::normalize(quat * n_turtle.right);
+            n_turtle.dir = normalize(quat * n_turtle.dir);
+            n_turtle.right = normalize(quat * n_turtle.right);
         }
         // create new clone branch and set up then recurse
         branch_curves[stem.depth].splines.data.emplace_back();
@@ -1397,7 +1394,7 @@ void WeberPennGenerator::Tree::increase_bezier_point_res(Stem &stem, int seg_ind
             {
                 curr_point->co = calc_point_on_bezier(offset, start_point, end_point);
                 // set handle to match direction of curve
-                vec3 tangent = normalize(calc_tangent_to_bezier(offset, start_point, end_point));
+                float3 tangent = normalize(calc_tangent_to_bezier(offset, start_point, end_point));
                 // and set the magnitude to match other control points
                 float dir_vec_mag = length(end_point.handle_left - end_point.co);
                 curr_point->handle_left = curr_point->co - tangent * dir_vec_mag;
@@ -1467,7 +1464,7 @@ float WeberPennGenerator::Tree::shape_ratio(int shape, float ratio)
     return result;
 }
 
-bool WeberPennGenerator::Tree::point_inside(glm::vec3 point)
+bool WeberPennGenerator::Tree::point_inside(float3 point)
 {
     // Check if point == inside pruning envelope, from WP 4.6
     // return point_in_cube(Vector([point.x, point.y, point.z - base_length]))
@@ -1550,18 +1547,18 @@ WeberPennGenerator::Tree::set_up_branch(CHTurtle &turtle, Stem &stem, BranchMode
         return res;
 }
 
-glm::vec3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &start_point, Point &end_point)
+float3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &start_point, Point &end_point)
 {
     //Evaluate Bezier curve at offset between bezier_spline_points start_point and end_point
     if (offset < 0 || offset > 1)
     {
         logerr("Offset out of range: %f not between 0 and 1", offset);
-        return vec3(0,0,0);
+        return float3(0,0,0);
     }
 
     float one_minus_offset = 1 - offset;
 
-    vec3 res = one_minus_offset*one_minus_offset*one_minus_offset * start_point.co + 
+    float3 res = one_minus_offset*one_minus_offset*one_minus_offset * start_point.co + 
               3 * one_minus_offset*one_minus_offset * offset * start_point.handle_right + 
               3 * one_minus_offset * offset*offset * end_point.handle_left + 
               offset*offset*offset * end_point.co;
@@ -1569,22 +1566,22 @@ glm::vec3 WeberPennGenerator::Tree::calc_point_on_bezier(float offset, Point &st
     return res;
 }
 
-glm::vec3 WeberPennGenerator::Tree::calc_tangent_to_bezier(float offset, Point &start_point, Point &end_point)
+float3 WeberPennGenerator::Tree::calc_tangent_to_bezier(float offset, Point &start_point, Point &end_point)
 {
     //Calculate tangent to Bezier curve at offset between bezier_spline_points start_point and end_point
     if (offset < 0 || offset > 1)
     {
         logerr("Offset out of range: %f not between 0 and 1", offset);
-        return vec3(1,0,0);
+        return float3(1,0,0);
     }
     if (length(start_point.co - end_point.co)<1e-6)
     {
-        return vec3(1,0,0);
+        return float3(1,0,0);
     }
     float one_minus_offset = 1 - offset;
-    vec3 start_handle_right = start_point.handle_right;
-    vec3 end_handle_left = end_point.handle_left;
-    vec3 res = 3 * one_minus_offset*one_minus_offset * (start_handle_right - start_point.co) + 
+    float3 start_handle_right = start_point.handle_right;
+    float3 end_handle_left = end_point.handle_left;
+    float3 res = 3 * one_minus_offset*one_minus_offset * (start_handle_right - start_point.co) + 
                6 * one_minus_offset * offset *(end_handle_left - start_handle_right) + 
                3 * offset*offset * (end_point.co - end_handle_left);
     
@@ -1597,22 +1594,22 @@ CHTurtle WeberPennGenerator::Tree::make_branch_dir_turtle(CHTurtle &turtle, bool
     //Create and setup the turtle for the direction of a new branch
 
     CHTurtle branch_dir_turtle = CHTurtle();
-    vec3 tangent = calc_tangent_to_bezier(offset, start_point, end_point);
+    float3 tangent = calc_tangent_to_bezier(offset, start_point, end_point);
     tangent = normalize(tangent);
     branch_dir_turtle.dir = tangent;
 
     if (helix)
     {
         //approximation to actual normal to preserve for helix
-        vec3 tan_d = normalize(calc_tangent_to_bezier(CLAMP(offset + 0.0001,0,1), start_point, end_point));
-        branch_dir_turtle.right = glm::cross(branch_dir_turtle.dir,tan_d);
+        float3 tan_d = normalize(calc_tangent_to_bezier(CLAMP(offset + 0.0001,0,1), start_point, end_point));
+        branch_dir_turtle.right = cross(branch_dir_turtle.dir,tan_d);
     }
     else
     {
         //generally curve lines in plane define by turtle.right, so is fair approximation to take new right as being
         //parallel to this, ie find the turtle up vector (in the plane) and cross with tangent (assumed in the plane)
         //to get the new direction - this doesn't hold for the helix
-        branch_dir_turtle.right = glm::cross(glm::cross(turtle.dir, turtle.right), branch_dir_turtle.dir);
+        branch_dir_turtle.right = cross(cross(turtle.dir, turtle.right), branch_dir_turtle.dir);
     }
     if (!std::isfinite(branch_dir_turtle.dir.x))
     {
@@ -1727,7 +1724,7 @@ WeberPennGenerator::Stem::Stem(Stem &other)
 
 }
 
-void WeberPennGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
+void WeberPennGenerator::plant_tree(float3 pos, const TreeTypeData *type)
 {
     types.push_back(type);
     positions.push_back(pos);
@@ -1742,7 +1739,7 @@ void WeberPennGenerator::finalize_generation(::Tree *trees_external, LightVoxels
     WeberPennParametersNative dummy_params;
     for (int i=0;i<types.size();i++)
     {
-        vec3 pos = positions[i];
+        float3 pos = positions[i];
         WeberPennParametersNative *params = dynamic_cast<WeberPennParametersNative *>(types[i]->get_params());
         if (!params)
         {
@@ -1780,8 +1777,8 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst)
     dst.root->level = 0;
     dst.root->dead = false;
     dst.root->center_self = dst.pos;
-    dst.root->center_par = vec3(0, 0, 0);
-    dst.root->plane_coef = vec4(1, 0, 0, -dst.pos.x);
+    dst.root->center_par = float3(0, 0, 0);
+    dst.root->plane_coef = float4(1, 0, 0, -dst.pos.x);
     dst.root->id = dst.id;
     
     convert(src, dst, src.root, dst.root);
@@ -1793,11 +1790,11 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
 {
     Spline &spline = src.branch_curves[src_br->depth].splines.data[src_br->spline_pos];
     float prev_r = 0;
-    vec3 prev_pos = vec3(0,0,0);
+    float3 prev_pos = float3(0,0,0);
     int same_cnt = 0;
     for (Point &p : spline.bezier_points)
     {
-        vec3 pos = dst.pos + 10.0f*vec3(p.co.x, p.co.z, -p.co.y);
+        float3 pos = dst.pos + 10.0f*float3(p.co.x, p.co.z, -p.co.y);
         if (length(pos - prev_pos) < 1e-4)
         {
             same_cnt++;
@@ -1826,7 +1823,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
         auto &j = dst_br->joints.back();
         j.pos = pos;
         prev_r = radius;
-        prev_pos = dst.pos + 10.0f*vec3(p.co.x, p.co.z, -p.co.y);
+        prev_pos = dst.pos + 10.0f*float3(p.co.x, p.co.z, -p.co.y);
     }
 
     for (int &l_ind : src_br->leaves)
@@ -1836,7 +1833,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             ::Leaf *l = dst.leaves->new_leaf();
             dst_br->joints.back().leaf = l;
         }
-        std::vector<glm::vec3> out_verts;
+        std::vector<float3> out_verts;
         std::vector<std::vector<int>> out_indicies;
 
         BaseLeafMesh base_leaf_shape;
@@ -1849,7 +1846,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             ::Leaf *l = dst_br->joints.back().leaf;
             for (auto &ind : v)
             {
-                vec3 pos = dst.pos + 10.0f*vec3(out_verts[ind].x, out_verts[ind].z, -out_verts[ind].y);
+                float3 pos = dst.pos + 10.0f*float3(out_verts[ind].x, out_verts[ind].z, -out_verts[ind].y);
                 l->edges.push_back(pos);
             }
             l->pos = l->edges[0];
@@ -1862,7 +1859,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
 
           float best_dist = 1000;
           Joint *best_joint = nullptr;
-          vec3 root_pos = vec3(0,0,0);
+          float3 root_pos = float3(0,0,0);
           int i=0;
           Spline &child_spline = src.branch_curves[s->depth].splines.data[s->spline_pos];
                       if (child_spline.bezier_points.empty())
@@ -1873,7 +1870,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
           } 
           for (auto &j : dst_br->joints) 
           {
-            glm::vec3 &init_p = spline.bezier_points[i].co;
+            float3 &init_p = spline.bezier_points[i].co;
             float len = length(init_p - child_spline.bezier_points[0].co);
             if (len < best_dist)
             {
@@ -1903,7 +1900,7 @@ void WeberPennGenerator::convert(Tree &src, ::Tree &dst, Stem *src_br, ::Branch 
             br->dead = false;
             br->center_self = best_joint->pos;
             br->center_par = dst_br->center_self;
-            br->plane_coef = vec4(1, 0, 0, -best_joint->pos.x);
+            br->plane_coef = float4(1, 0, 0, -best_joint->pos.x);
             br->id = dst.id; 
 
             best_joint->childBranches.push_back(br);

@@ -12,7 +12,7 @@ WireframeRenderer::~WireframeRenderer()
   delete_framebuffer(fbo);
 }
 
-Texture WireframeRenderer::render(Model &m, const glm::mat4 &viewProj, int w, int h)
+Texture WireframeRenderer::render(Model &m, const float4x4 &viewProj, int w, int h)
 {
   int prev_FBO = 0;
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
@@ -38,11 +38,11 @@ Texture WireframeRenderer::render(Model &m, const glm::mat4 &viewProj, int w, in
   wireframe_shader.use();
   wireframe_shader.uniform("viewProj", viewProj);
 
-  wireframe_shader.uniform("wireframe_color", glm::vec3(1,1,1));
+  wireframe_shader.uniform("wireframe_color", float3(1,1,1));
   m.render();
   
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  wireframe_shader.uniform("wireframe_color", glm::vec3(0,0,0));
+  wireframe_shader.uniform("wireframe_color", float3(0,0,0));
   m.render();
 
   glClearColor(0,0,0,0);

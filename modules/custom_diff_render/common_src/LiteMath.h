@@ -1676,7 +1676,7 @@ namespace LiteMath
   // Look At matrix creation
   // return the inverse view matrix
   //
-  static inline float4x4 lookAt(float3 eye, float3 center, float3 up)
+  static inline float4x4 lookAtRH(float3 eye, float3 center, float3 up)
   {
     float3 x, y, z; // basis; will make a rotation matrix
     z.x = eye.x - center.x;

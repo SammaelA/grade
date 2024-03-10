@@ -35,7 +35,7 @@ namespace upg
     LOG_UNIFORM
   };
 
-  Creature initialize_creature(const std::vector<glm::vec2> &borders, const std::vector<int> &position_indices,
+  Creature initialize_creature(const std::vector<float2> &borders, const std::vector<int> &position_indices,
                                InitStrategy init_strategy = InitStrategy::LOG_UNIFORM)
   {
     Creature c;
@@ -61,19 +61,19 @@ namespace upg
     // We are trying to spawn primitives far from each other
 
     int primitives_cnt = position_indices.size();
-    std::vector<glm::vec3> positions(primitives_cnt);
-    positions[0] = glm::vec3(urand(borders[position_indices[0] + 0].x, borders[position_indices[0] + 0].y),
+    std::vector<float3> positions(primitives_cnt);
+    positions[0] = float3(urand(borders[position_indices[0] + 0].x, borders[position_indices[0] + 0].y),
                              urand(borders[position_indices[0] + 1].x, borders[position_indices[0] + 1].y),
                              urand(borders[position_indices[0] + 2].x, borders[position_indices[0] + 2].y));
     for (int i = 1; i < primitives_cnt; i++)
     {
       int tries = 100;
       float best_dist = 0;
-      glm::vec3 best_pos = positions[0];
+      float3 best_pos = positions[0];
       for (int j = 0; j < tries; j++)
       {
         float d = 1e9;
-        glm::vec3 p = glm::vec3(urand(borders[position_indices[i] + 0].x, borders[position_indices[i] + 0].y),
+        float3 p = float3(urand(borders[position_indices[i] + 0].x, borders[position_indices[i] + 0].y),
                                 urand(borders[position_indices[i] + 1].x, borders[position_indices[i] + 1].y),
                                 urand(borders[position_indices[i] + 2].x, borders[position_indices[i] + 2].y));
         for (int k = 0; k < i; k++)
@@ -97,7 +97,7 @@ namespace upg
   }
 
   //simple mutation
-  void mutation(const std::vector<glm::vec2> &borders, OptParams &params, float mutation_chance, float mutation_power)
+  void mutation(const std::vector<float2> &borders, OptParams &params, float mutation_chance, float mutation_power)
   {
     Normal normal_gen = Normal(0, mutation_power);
 
@@ -331,7 +331,7 @@ namespace upg
         {
           if (param_info.type != ParameterType::CONST)
           {
-            borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+            borders.push_back(float2(param_info.min_val, param_info.max_val));
             gen_to_opt_indices.push_back(oi);
             opt_to_gen_indices.push_back(gi);
             oi++;
@@ -439,7 +439,7 @@ namespace upg
         {
           if (param_info.type != ParameterType::CONST)
           {
-            borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+            borders.push_back(float2(param_info.min_val, param_info.max_val));
           }
         }
       }
@@ -589,7 +589,7 @@ namespace upg
     bool is_test_stand = false;
 
     //info about structure of parameters
-    std::vector<glm::vec2> borders;      //size equals total size of OptParams vector
+    std::vector<float2> borders;      //size equals total size of OptParams vector
     std::vector<int> position_indices;   //indices in OptVector that represents positions of primitives (one for every non-fixed primitive)
     std::vector<int> gen_to_opt_indices; //-1 mean that this parameter is fixed and shouldn't be optimized
     std::vector<int> opt_to_gen_indices; //all elements >= 0
@@ -618,10 +618,10 @@ namespace upg
     class Oracle
     {
       std::vector<float> reference_params;
-      std::vector<glm::vec2> borders;
+      std::vector<float2> borders;
     public:
       Oracle() = default;
-      Oracle(std::vector<float> &_reference_params, const std::vector<glm::vec2> &_borders)
+      Oracle(std::vector<float> &_reference_params, const std::vector<float2> &_borders)
       {
         assert(_reference_params.size() == _borders.size());
         reference_params = _reference_params;
@@ -654,17 +654,17 @@ namespace upg
         }
 
         int primitives_cnt = borders.size()/6;
-        std::vector<glm::vec3> positions(primitives_cnt);
-        positions[0] = glm::vec3(urand(borders[0].x, borders[0].y), urand(borders[1].x, borders[1].y), urand(borders[2].x, borders[2].y));
+        std::vector<float3> positions(primitives_cnt);
+        positions[0] = float3(urand(borders[0].x, borders[0].y), urand(borders[1].x, borders[1].y), urand(borders[2].x, borders[2].y));
         for (int i=1;i<primitives_cnt;i++)
         {
           int tries = 100;
           float best_dist = 0;
-          glm::vec3 best_pos = positions[0];
+          float3 best_pos = positions[0];
           for (int j=0;j<tries;j++)
           {
             float d = 1e9;
-            glm::vec3 p = glm::vec3(urand(borders[0].x, borders[0].y), urand(borders[1].x, borders[1].y), urand(borders[2].x, borders[2].y));
+            float3 p = float3(urand(borders[0].x, borders[0].y), urand(borders[1].x, borders[1].y), urand(borders[2].x, borders[2].y));
             for (int k=0;k<i;k++)
               d = std::min(d, length(p-positions[k]));
             if (d > best_dist)
@@ -697,7 +697,7 @@ namespace upg
         {
           if (param_info.type != ParameterType::CONST)
           {
-            borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+            borders.push_back(float2(param_info.min_val, param_info.max_val));
           }
         }
       }

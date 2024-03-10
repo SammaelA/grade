@@ -38,38 +38,38 @@ namespace LiteMath
 		return conjugate(q) / dot(q, q);
 	}
 
-  static inline glm::vec3 operator*(quat const& q, glm::vec3 const& v)
+  static inline float3 operator*(quat const& q, float3 const& v)
 	{
-		glm::vec3 const QuatVector(q.x, q.y, q.z);
-		glm::vec3 const uv(glm::cross(QuatVector, v));
-		glm::vec3 const uuv(glm::cross(QuatVector, uv));
+		float3 const QuatVector(q.x, q.y, q.z);
+		float3 const uv(cross(QuatVector, v));
+		float3 const uuv(cross(QuatVector, uv));
 
 		return v + ((uv * q.w) + uuv) * 2.0f;
 	}
 
 
-	static inline glm::vec3 operator*(glm::vec3 const& v, quat const& q)
+	static inline float3 operator*(float3 const& v, quat const& q)
 	{
 		return inverse(q) * v;
 	}
 
-  static inline glm::vec3 rotate(quat const& q, glm::vec3 const& v)
+  static inline float3 rotate(quat const& q, float3 const& v)
 	{
 		return q * v;
 	}
 
-  static inline quat angleAxis(float angle, glm::vec3 const& v)
+  static inline quat angleAxis(float angle, float3 const& v)
 	{
 		float a = angle;
 		float s = sin(a * 0.5f);
-    glm::vec3 xyz = v * s;
+    float3 xyz = v * s;
 
-		return quat(xyz.x, xyz.y, xyz.z, glm::cos(a * 0.5f));
+		return quat(xyz.x, xyz.y, xyz.z, cos(a * 0.5f));
 	}
 
-  static inline glm::mat3x3 to_mat3(quat const& q)
+  static inline float3x3 to_mat3(quat const& q)
 	{
-		glm::mat3x3 Result(1.0f);
+		float3x3 Result;
 		float qxx(q.x * q.x);
 		float qyy(q.y * q.y);
 		float qzz(q.z * q.z);
@@ -80,17 +80,9 @@ namespace LiteMath
 		float qwy(q.w * q.y);
 		float qwz(q.w * q.z);
 
-		Result[0][0] = float(1) - float(2) * (qyy +  qzz);
-		Result[0][1] = float(2) * (qxy + qwz);
-		Result[0][2] = float(2) * (qxz - qwy);
-
-		Result[1][0] = float(2) * (qxy - qwz);
-		Result[1][1] = float(1) - float(2) * (qxx +  qzz);
-		Result[1][2] = float(2) * (qyz + qwx);
-
-		Result[2][0] = float(2) * (qxz + qwy);
-		Result[2][1] = float(2) * (qyz - qwx);
-		Result[2][2] = float(1) - float(2) * (qxx +  qyy);
+		Result.row[0] = float3(1.0f - 2.0f*(qyy +  qzz), 2.0f*(qxy + qwz)        , 2.0f*(qxz - qwy)        );
+    Result.row[1] = float3(2.0f*(qxy - qwz)        , 1.0f - 2.0f*(qxx +  qzz), 2.0f*(qyz + qwx)        );
+    Result.row[2] = float3(2.0f*(qxz + qwy)        , 2.0f*(qyz - qwx)        , 1.0f - 2.0f*(qxx +  qyy));
 		return Result;
 	}
 

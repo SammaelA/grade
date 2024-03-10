@@ -24,9 +24,9 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     LeafHeap lh;
     Branch *tmp_b = bh.new_branch();
     tmp_b->deep_copy(base, bh, &lh);
-    glm::mat4 tr = LiteMath::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 0, 1)) * glm::inverse(data.transform);
+    float4x4 tr = LiteMath::rotate(float4x4(), PI / 2, float3(0, 0, 1)) * LiteMath::inverse4x4(data.transform);
     //when we render impostor we assume that the main axis is y,
-    //while after glm::inverse(data.transform) the main axis is x
+    //while after LiteMath::inverse4x4(data.transform) the main axis is x
     tmp_b->transform(tr, 1);
 
     ClusterData cd;
@@ -36,10 +36,10 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     cd.IDA.tree_ids.push_back(0);
     cd.IDA.centers_par.push_back(tmp_b->center_par);
     cd.IDA.centers_self.push_back(tmp_b->center_self);
-    cd.IDA.transforms.push_back(glm::mat4(1.0f));
+    cd.IDA.transforms.push_back(float4x4());
     cd.ACDA.clustering_data.push_back(nullptr);
     
-    BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
+    BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,float3(1,0,0),float3(0,1,0),float3(0,0,1));
     ib.make_impostor(*tmp_b, ctx->types[base->type_id], imp, params, temp_atlas, bbox);
 }
 
@@ -53,7 +53,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor(Block &
     
     TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*isimParams.impostor_texture_size, isimParams.impostor_texture_size, 1);
     atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
-    atl.set_clear_color(glm::vec4(0, 0, 0, 0));
+    atl.set_clear_color(float4(0, 0, 0, 0));
     
     create_impostor_temp(settings, base, ctx, data, isimParams, atl, imp);
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(atl);
@@ -191,7 +191,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_impostor_dct(Blo
 
     TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices*isimParams.impostor_texture_size, isimParams.impostor_texture_size, 1);
     atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
-    atl.set_clear_color(glm::vec4(0, 0, 0, 0));
+    atl.set_clear_color(float4(0, 0, 0, 0));
 
     create_impostor_temp(settings, base, ctx, data, isimParams, atl, imp);
     TextureAtlasRawData rawAtlas = TextureAtlasRawData(atl);

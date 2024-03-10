@@ -9,14 +9,14 @@ public:
     bool create(int w, int h);
     void target();
 
-    void set_clear_color(glm::vec4 cl_color) {clear_color = cl_color;}
+    void set_clear_color(float4 cl_color) {clear_color = cl_color;}
     Texture &get_color(){ return colorTex;}
     Texture &get_normals(){ return normalsTex;}
     Texture &get_view_pos(){ return viewPosTex;}
     Texture &get_world_pos(){ return worldPosTex;}
-    glm::vec2 size(){ return glm::vec2(width,height);}
+    float2 size(){ return float2(width,height);}
 private:
-    glm::vec4 clear_color;
+    float4 clear_color;
     int width = 1, height = 1;
     GLuint frBuffer;
     Texture colorTex, normalsTex, viewPosTex, depthTex, worldPosTex;

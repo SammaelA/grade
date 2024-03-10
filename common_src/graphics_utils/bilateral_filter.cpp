@@ -16,7 +16,7 @@ Texture BilateralFilter::perform(Texture &t, float sigma_d, float sigma_r)
   glViewport(0, 0, w, h);
   filter.use();
   filter.get_shader().texture("tex",t);
-  filter.get_shader().uniform("tex_size", glm::vec2(w, h));
+  filter.get_shader().uniform("tex_size", float2(w, h));
   filter.get_shader().uniform("sigma_d",sigma_d);
   filter.get_shader().uniform("sigma_r",sigma_r);
   filter.render();

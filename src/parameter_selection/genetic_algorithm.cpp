@@ -63,7 +63,7 @@ void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
     }
     int sz = base_size * tries/ cur_tries;
     logerr("starting tree GA depth %d, size %d, tries %d", cur_depth, sz, sz*cur_tries/base_size);
-    TreeGA_stat = std::vector<glm::vec2>(cur_depth+1, glm::vec2(0,0));
+    TreeGA_stat = std::vector<float2>(cur_depth+1, float2(0,0));
     tree_GA_internal(cur_depth, sz, base_width, initial_types, result);
     logerr("tree GA stat:");
     for (auto &s : TreeGA_stat)
@@ -73,25 +73,25 @@ void GeneticAlgorithm::tree_GA(std::vector<std::vector<float>> &initial_types)
     population = result.pop;
 }
 
-float MM_func(glm::vec4 model, float x)
+float MM_func(float4 model, float x)
 {
     float x_p = model.z < 0  ? 1/(-model.z) : model.z;
     x = pow(x, x_p);
     return model.x*x/(model.y + x);
 }
 
-void MM_regression_grid(glm::vec4 model_start, glm::vec4 model_end, const std::vector<float> &values, 
-                        float &least_dist, glm::vec4 &best_model, int level)
+void MM_regression_grid(float4 model_start, float4 model_end, const std::vector<float> &values, 
+                        float &least_dist, float4 &best_model, int level)
 {
     int steps = 20;
-    glm::vec4 step = (model_end - model_start)/(float)steps;
+    float4 step = (model_end - model_start)/(float)steps;
     for (int i=0;i<steps;i++)
     {
         for (int j=0;j<steps;j++)
         {
             for (int k=0;k<steps;k++)
             {
-                glm::vec4 model = model_start + glm::vec4(step.x*(float)(i + 0.5), step.y*(float)(j+0.5),step.z*(float)(k+0.5),0);
+                float4 model = model_start + float4(step.x*(float)(i + 0.5), step.y*(float)(j+0.5),step.z*(float)(k+0.5),0);
                 float sq_dist = 0;
                 for (int x=0;x<values.size();x++)
                 {
@@ -115,12 +115,12 @@ void MM_regression_grid(glm::vec4 model_start, glm::vec4 model_end, const std::v
     }
 }
 
-glm::vec4 MM_regression(const std::vector<float> &values)
+float4 MM_regression(const std::vector<float> &values)
 {
     int steps = 100;
     float least_dist = 1e9;
-    glm::vec4 best_model = glm::vec4(0,0,0,0);
-    MM_regression_grid(glm::vec4(0,0,-5,0), glm::vec4(1,50,5,0), values, least_dist, best_model, 3);
+    float4 best_model = float4(0,0,0,0);
+    MM_regression_grid(float4(0,0,-5,0), float4(1,50,5,0), values, least_dist, best_model, 3);
 
     return best_model;
 }
@@ -210,12 +210,12 @@ void GeneticAlgorithm::tree_GA_internal(int depth, int iters, int width, std::ve
         values.push_back(best_metric_current);
         if (regression_test)
         {
-            glm::vec4 model = MM_regression(values);
+            float4 model = MM_regression(values);
             logerr("model %f %f %f %f", model.x, model.y, model.z);
             predictions.push_back(MM_func(model, cur_iters - 1));
         }
     }
-    glm::vec4 model = MM_regression(values);
+    float4 model = MM_regression(values);
 
     result.pop = population;
     result.best_value = 0;
@@ -403,7 +403,7 @@ bool GeneticAlgorithm::should_exit()
     || func_called >= exitConditions.function_calculated || best_metric_ever >= exitConditions.function_reached);
 }
 
-void add_all_ids(std::set<int> &ids, int id, std::vector<glm::ivec3> &all_births)
+void add_all_ids(std::set<int> &ids, int id, std::vector<int3> &all_births)
 {
     ids.emplace(id);
     for (auto &v : all_births)
@@ -451,9 +451,9 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, std::vec
     if (metaParams.debug_graph)
     {
         DebugGraph g_test;
-        g_test.add_node(DebugGraph::Node(glm::vec2(0,0), glm::vec3(1,0,0),0.1));
-        g_test.add_node(DebugGraph::Node(glm::vec2(-1,1), glm::vec3(0,1,0),0.15));
-        g_test.add_node(DebugGraph::Node(glm::vec2(1,1), glm::vec3(0,0,1),0.2));
+        g_test.add_node(DebugGraph::Node(float2(0,0), float3(1,0,0),0.1));
+        g_test.add_node(DebugGraph::Node(float2(-1,1), float3(0,1,0),0.15));
+        g_test.add_node(DebugGraph::Node(float2(1,1), float3(0,0,1),0.2));
         g_test.add_edge(DebugGraph::Edge(0,1,0.02));
         g_test.add_edge(DebugGraph::Edge(1,2,0.03));
         g_test.add_edge(DebugGraph::Edge(0,2,0.04));
@@ -466,7 +466,7 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, std::vec
         {
             int iter = p.first/1000;
             int n = p.first % 1000;
-            stat_g.add_node(DebugGraph::Node(glm::vec2(iter, 0.1*n), glm::vec3(1 - p.second, p.second, 0), 0.045));
+            stat_g.add_node(DebugGraph::Node(float2(iter, 0.1*n), float3(1 - p.second, p.second, 0), 0.045));
             pos_by_id.emplace(p.first, cnt);
             cnt++;
         }
@@ -477,10 +477,10 @@ void GeneticAlgorithm::prepare_best_params(std::vector<std::pair<float, std::vec
             DebugGraph stat_gn = stat_g;
             std::set<int> ids;
             add_all_ids(ids, c.id, stat.all_births);
-            glm::vec3 color = glm::vec3(n/4%2, n/2%2, n%2);
+            float3 color = float3(n/4%2, n/2%2, n%2);
             if (n % 8 == 0)
             {
-                color = glm::vec3(0.5, 0.5, 0.5);
+                color = float3(0.5, 0.5, 0.5);
             }
             for (auto &id : ids)
             {
@@ -932,7 +932,7 @@ void GeneticAlgorithm::make_child(Creature &A, Creature &B, Creature &C)
     C.sub_population_n = A.sub_population_n;
     if (metaParams.evolution_stat)
     {
-        stat.all_births.push_back(glm::ivec3(A.id, B.id, C.id));
+        stat.all_births.push_back(int3(A.id, B.id, C.id));
     }
 
     if (metaParams.n_ploid_genes == 1)

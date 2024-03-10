@@ -119,20 +119,20 @@ void OptSimple::OptUpdateScene(DScene &gradScene, Scene* scene)
         auto &tr = scene->get_transform_modify(mesh_id)[tr_n];
         d_tr = dmesh.transform_mat(tr_n);
 
-        tr[0][0] -= d_tr[0];
-        tr[0][1] -= d_tr[1];
-        tr[0][2] -= d_tr[2];
-        tr[0][3] -= d_tr[3];
+        tr(0,0) -= d_tr[0];
+        tr(1,0) -= d_tr[1];
+        tr(2,0) -= d_tr[2];
+        tr(3,0) -= d_tr[3];
 
-        tr[1][0] -= d_tr[4];
-        tr[1][1] -= d_tr[5];
-        tr[1][2] -= d_tr[6];
-        tr[1][3] -= d_tr[7];
+        tr(0,1) -= d_tr[4];
+        tr(1,1) -= d_tr[5];
+        tr(2,1) -= d_tr[6];
+        tr(3,1) -= d_tr[7];
 
-        tr[2][0] -= d_tr[8];
-        tr[2][1] -= d_tr[9];
-        tr[2][2] -= d_tr[10];
-        tr[2][3] -= d_tr[11];
+        tr(0,2) -= d_tr[8];
+        tr(1,2) -= d_tr[9];
+        tr(2,2) -= d_tr[10];
+        tr(3,2) -= d_tr[11];
       }
     }
     else

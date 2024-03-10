@@ -2,11 +2,11 @@
 #include "common_utils/distribution.h"
 #include "common_utils/parameter_save_load_defines.h"
 
-using namespace glm;
+
 
 #define NO_RANDOM_GEN 1
 
-void SimpliestTreeGenerator::plant_tree(glm::vec3 pos, const TreeTypeData *type)
+void SimpliestTreeGenerator::plant_tree(float3 pos, const TreeTypeData *type)
 {
     tree_positions.push_back(pos);
     types.push_back(type);
@@ -17,7 +17,7 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
     SimpliestTreeStructureParameters dummy_params;
     for (int i=0;i<tree_positions.size();i++)
     {
-        vec3 pos = tree_positions[i];
+        float3 pos = tree_positions[i];
         SimpliestTreeStructureParameters *params = dynamic_cast<SimpliestTreeStructureParameters *>(types[i]->get_params());
         if (!params)
         {
@@ -44,7 +44,7 @@ void SimpliestTreeGenerator::finalize_generation(::Tree *trees_external, LightVo
     types.clear();
 }
 
-void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStructureParameters &params)
+void SimpliestTreeGenerator::create_tree(Tree *tree, float3 pos, SimpliestTreeStructureParameters &params)
 {
     int leaves_tries = 0;
     int leaves_cnt = 0;
@@ -54,24 +54,24 @@ void SimpliestTreeGenerator::create_tree(Tree *tree, vec3 pos, SimpliestTreeStru
     tree->root->level = 0;
     tree->root->dead = false;
     tree->root->center_self = pos;
-    tree->root->center_par = vec3(0,0,0);
-    tree->root->plane_coef = vec4(1,0,0,-pos.x);
+    tree->root->center_par = float3(0,0,0);
+    tree->root->plane_coef = float4(1,0,0,-pos.x);
     tree->root->id = tree->id;
-    create_branch(tree, tree->root, pos, vec3(0,1,0), vec3(1,0,0), 0, params, leaves_tries, leaves_cnt);
+    create_branch(tree, tree->root, pos, float3(0,1,0), float3(1,0,0), 0, params, leaves_tries, leaves_cnt);
     //logerr("created simpliest tree with %d  %f", tree->leaves->leaves.size(), params.leaves_count);
 }
 
-void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, 
-                                           glm::vec3 normal, int level, 
+void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, float3 start_pos, float3 base_dir, 
+                                           float3 normal, int level, 
                                            SimpliestTreeStructureParameters &params, int &leaves_tries, int &leaves_cnt)
 {
     float seg_len = params.branch_len[level]/params.branch_count[level];
     float r0 = params.branch_r[level];
     float r1 = (level >= params.max_depth - 1) ? r0 : params.branch_r[level + 1];
-    vec2 dir_sum = vec2(0,0);
+    float2 dir_sum = float2(0,0);
     for (int i=0;i<=params.branch_count[level];i++)
     {
-        vec3 pos = start_pos + i*seg_len*base_dir;
+        float3 pos = start_pos + i*seg_len*base_dir;
         if (!branch->joints.empty())
         {
             branch->segments.emplace_back();
@@ -104,25 +104,25 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                 #if NO_RANDOM_GEN > 0
                     float psi = PI / 2;
                     float phi = (2 * PI * (i % 6)) / 6;
-                    vec3 z_axis = base_dir;
-                    vec3 y_axis = normalize(cross(z_axis, normal));
-                    vec3 x_axis = normalize(cross(y_axis, z_axis));
+                    float3 z_axis = base_dir;
+                    float3 y_axis = normalize(cross(z_axis, normal));
+                    float3 x_axis = normalize(cross(y_axis, z_axis));
 
                     float x = sin(psi) * sin(phi);
                     float y = sin(psi) * cos(phi);
                     float z = cos(psi);
 
-                    glm::vec3 rd1 = normalize(sin(psi) * sin(phi) * x_axis + sin(psi) * cos(phi) * y_axis + cos(psi) * z_axis);
-                    glm::vec3 rd2 = normalize(sin(psi) * cos(phi) * x_axis + sin(psi) * sin(phi) * y_axis + cos(psi) * z_axis);
+                    float3 rd1 = normalize(sin(psi) * sin(phi) * x_axis + sin(psi) * cos(phi) * y_axis + cos(psi) * z_axis);
+                    float3 rd2 = normalize(sin(psi) * cos(phi) * x_axis + sin(psi) * sin(phi) * y_axis + cos(psi) * z_axis);
                 #else
-                    glm::vec3 rd1 = rand_dir();
-                    glm::vec3 rd2 = rand_dir();
+                    float3 rd1 = rand_dir();
+                    float3 rd2 = rand_dir();
                 #endif
                 float sz = params.leaf_size;
-                glm::vec3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
-                glm::vec3 b = j.pos + 0.5f * sz * rd2;
-                glm::vec3 c = j.pos - 0.5f * sz * rd2;
-                glm::vec3 d = j.pos + sz * rd1 - 0.5f * sz * rd2;
+                float3 a = j.pos + sz * rd1 + 0.5f * sz * rd2;
+                float3 b = j.pos + 0.5f * sz * rd2;
+                float3 c = j.pos - 0.5f * sz * rd2;
+                float3 d = j.pos + sz * rd1 - 0.5f * sz * rd2;
                 l->edges.push_back(a);
                 l->edges.push_back(b);
                 l->edges.push_back(c);
@@ -142,10 +142,10 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                 ch_b->dead = false;
                 ch_b->center_self = j.pos;
                 ch_b->center_par = branch->center_self;
-                ch_b->plane_coef = vec4(1,0,0,-j.pos.x);
+                ch_b->plane_coef = float4(1,0,0,-j.pos.x);
                 ch_b->id = tree->id;
-                glm::vec3 nb_dir = base_dir;
-                glm::vec3 nb_norm = normal;
+                float3 nb_dir = base_dir;
+                float3 nb_norm = normal;
                 if (i != params.branch_count[level])
                 {
                     float psi = params.branch_angle[level];
@@ -156,19 +156,19 @@ void SimpliestTreeGenerator::create_branch(Tree *tree, Branch *branch, glm::vec3
                         float phi = 2*PI*urand();//random version
                     #endif
 
-                    vec3 z_axis = base_dir;
-                    vec3 y_axis = normalize(cross(z_axis, normal));
-                    vec3 x_axis = normalize(cross(y_axis, z_axis));
+                    float3 z_axis = base_dir;
+                    float3 y_axis = normalize(cross(z_axis, normal));
+                    float3 x_axis = normalize(cross(y_axis, z_axis));
 
                     float x = sin(psi)*sin(phi);
                     float y = sin(psi)*cos(phi);
                     float z = cos(psi);
                     
                     nb_dir = normalize(x*x_axis + y*y_axis + z*z_axis);
-                    float f = length(vec2(nb_dir.x, nb_dir.z));
-                    vec2 p_dir = f*normalize(vec2(nb_dir.x, nb_dir.z) - dir_sum);
-                    nb_dir = normalize(vec3(p_dir.x, nb_dir.y, p_dir.y));
-                    dir_sum += vec2(nb_dir.x, nb_dir.z);
+                    float f = length(float2(nb_dir.x, nb_dir.z));
+                    float2 p_dir = f*normalize(float2(nb_dir.x, nb_dir.z) - dir_sum);
+                    nb_dir = normalize(float3(p_dir.x, nb_dir.y, p_dir.y));
+                    dir_sum += float2(nb_dir.x, nb_dir.z);
                     nb_norm = normalize(cross(base_dir, nb_dir));
                 }
                 create_branch(tree, ch_b, j.pos, nb_dir, nb_norm, level+1, params, leaves_tries, leaves_cnt);

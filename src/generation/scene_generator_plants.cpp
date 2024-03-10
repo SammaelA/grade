@@ -65,8 +65,8 @@ namespace scene_gen
     }
     if (voxels_needed)
     {
-      glm::vec3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
-      glm::vec3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
+      float3 voxel_sz = 0.5f*(c.influence_bbox.max_pos - c.influence_bbox.min_pos);
+      float3 voxel_center = 0.5f*(c.influence_bbox.max_pos + c.influence_bbox.min_pos);
 
       //we need to make small light voxels cube (made from this one with voxels 5 times bigger) have exactly the same size
       //as the cell it belongs to
@@ -85,10 +85,10 @@ namespace scene_gen
   void create_cell_small_voxels(Cell &c, SceneGenerationContext &ctx)
   {
     float vox_scale = get_small_voxels_size(c);
-    glm::vec3 center = glm::vec3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
+    float3 center = float3(0.5f*(c.bbox.max_pos.x + c.bbox.min_pos.x), 
                                  0.5f*(c.influence_bbox.max_pos.y + c.influence_bbox.min_pos.y),
                                  0.5f*(c.bbox.max_pos.y + c.bbox.min_pos.y));
-    glm::vec3 size = glm::vec3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
+    float3 size = float3(0.5f*(c.bbox.max_pos.x - c.bbox.min_pos.x), 
                                0.5f*(c.influence_bbox.max_pos.y - c.influence_bbox.min_pos.y),
                                0.5f*(c.bbox.max_pos.y - c.bbox.min_pos.y));
     c.voxels_small = new LightVoxelsCube(center, size, vox_scale, 1, 2, 1);
@@ -142,10 +142,10 @@ namespace scene_gen
             auto &b = ctx.scene.grove.instancedCatalogue.get(br_id);
             if (b.joints.size() < 2)
               continue;
-            glm::vec3 prev_pos = tr * glm::vec4(b.joints[0].pos, 1);
+            float3 prev_pos = to_float3(tr * to_float4(b.joints[0].pos, 1));
             for (int i=1;i<b.joints.size();i++)
             {
-              glm::vec3 pos = tr * glm::vec4(b.joints[i].pos, 1);
+              float3 pos = to_float3(tr * to_float4(b.joints[i].pos, 1));
               float v = (1.0/3)*PI*length(pos - prev_pos)*size_mul_sq*
                       (b.joints[i-1].r*b.joints[i-1].r + b.joints[i-1].r*b.joints[i].r + b.joints[i].r*b.joints[i].r);
               voxels->set_occluder_simple(pos, -blm*v);
@@ -458,7 +458,7 @@ namespace scene_gen
     for (auto &id : cell_ids)
     {
       Cell &c = ctx.cells[id];
-        glm::vec2 cell_center = 0.5f * (c.bbox.max_pos + c.bbox.min_pos);
+        float2 cell_center = 0.5f * (c.bbox.max_pos + c.bbox.min_pos);
         int cnt_all = 0;
         for (auto &p : c.biome_stat)
           cnt_all += p.second;
@@ -470,7 +470,7 @@ namespace scene_gen
           if (fract < 0.01)
             continue;
           Biome &biome = metainfoManager->get_biome(p.first);
-          GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
+          GroveMask *biome_mask = new GroveMask(float3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
                                                 ctx.biome_map_pixel_size);
           ctx.biome_map.set_mask(*(biome_mask), p.first);
           for (int patch_id : c.grass_patches)
@@ -478,11 +478,11 @@ namespace scene_gen
             if (ctx.grass_patches[patch_id].biome_id == p.first)
             {
               auto &patch = ctx.grass_patches[patch_id];
-              std::function<float(glm::vec2 &)> patch_func = [&](glm::vec2 &po) -> float
+              std::function<float(float2 &)> patch_func = [&](float2 &po) -> float
               {
                 return patch.border.contains(po) ? 1 : 0;
               };
-              GroveMask *patch_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
+              GroveMask *patch_mask = new GroveMask(float3(cell_center.x, 0, cell_center.y), 0.5f * ctx.cell_size,
                                                     ctx.biome_map_pixel_size);
               patch_mask->fill_func(patch_func);
               patch_mask->mul(*biome_mask);
@@ -492,7 +492,7 @@ namespace scene_gen
             }
           }
 
-          std::function<float(glm::vec2 &, float)> func = [&](glm::vec2 &po, float occ) -> float
+          std::function<float(float2 &, float)> func = [&](float2 &po, float occ) -> float
           {
             float res = occ;
             for (int patch_id : c.grass_patches)
@@ -646,8 +646,8 @@ namespace scene_gen
       if (it != ctx.scene.grove.trees_by_global_id.end())
       {
         auto &t = ctx.scene.grove.compressedTrees[it->second];
-        glm::vec2 pos_xz = glm::vec2(t.pos.x, t.pos.z);
-        glm::ivec2 c_ij = (pos_xz - ctx.start_pos)/ctx.cell_size;
+        float2 pos_xz = float2(t.pos.x, t.pos.z);
+        int2 c_ij = to_int2((pos_xz - ctx.start_pos)/ctx.cell_size);
         int cell_id = c_ij.x*ctx.cells_y + c_ij.y;
         if (cell_id >= 0 && cell_id < ctx.cells.size())
         {
@@ -699,7 +699,7 @@ namespace scene_gen
         int type = ctx.biome_map.get(j, i);
         if (type >= 0 && type < patch_descs.size() && patch_descs[type].size() > 0)
         {
-          glm::vec2 pos = ctx.biome_map.borders().min_pos + ctx.biome_map_pixel_size * glm::vec2(j, i);
+          float2 pos = ctx.biome_map.borders().min_pos + ctx.biome_map_pixel_size * float2(j, i);
           float rnd = urand();
           int desc_n = 0;
           for (auto &p : patch_descs[type])
@@ -752,7 +752,7 @@ namespace scene_gen
     {
       for (int j = 0; j < ctx.cells_y; j++)
       {
-        glm::vec2 cell_center = ctx.start_pos + ctx.cell_size * glm::vec2(i + 0.5, j + 0.5);
+        float2 cell_center = ctx.start_pos + ctx.cell_size * float2(i + 0.5, j + 0.5);
         int id = i * ctx.cells_y + j;
         ctx.biome_map.get_stat(ctx.cells[id].biome_stat, ctx.cells[id].bbox);
         int cnt_all = 0;
@@ -777,10 +777,10 @@ namespace scene_gen
             {
               auto &patch = ctx.trees_patches[pn];
 
-              GroveMask *mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y),
+              GroveMask *mask = new GroveMask(float3(cell_center.x, 0, cell_center.y),
                                               0.5f * ctx.cell_size, ctx.biome_map_pixel_size);
 
-              std::function<float(glm::vec2 &)> func = [&](glm::vec2 &po) -> float
+              std::function<float(float2 &)> func = [&](float2 &po) -> float
               {
                 return patch.border.contains(po) ? 1 : 0;
               };
@@ -789,7 +789,7 @@ namespace scene_gen
                 mask->mul(*(ctx.cells[id].prototypes.back().biome_mask));
               else
               {
-                GroveMask *biome_mask = new GroveMask(glm::vec3(cell_center.x, 0, cell_center.y),
+                GroveMask *biome_mask = new GroveMask(float3(cell_center.x, 0, cell_center.y),
                                                       0.5f * ctx.cell_size, ctx.biome_map_pixel_size);
                 ctx.biome_map.set_mask(*biome_mask, p.first);
                 mask->mul(*(biome_mask));
@@ -798,7 +798,7 @@ namespace scene_gen
               GrovePrototype patch_prototype;
 
               int cells_cnt = 0;
-              std::function<void(glm::vec2 &, float)> reader = [&](glm::vec2 &po, float val)
+              std::function<void(float2 &, float)> reader = [&](float2 &po, float val)
               {
                 if (val > 0)
                   cells_cnt++;
@@ -838,7 +838,7 @@ namespace scene_gen
 
             if (fract < 0.95)
             {
-              prototype.biome_mask = new GroveMask(glm::vec3(prototype.pos.x, 0, prototype.pos.y), prototype.size, ctx.biome_map_pixel_size);
+              prototype.biome_mask = new GroveMask(float3(prototype.pos.x, 0, prototype.pos.y), prototype.size, ctx.biome_map_pixel_size);
               ctx.biome_map.set_mask(*(prototype.biome_mask), p.first);
             }
             if (prototype.trees_count > 0)
@@ -856,7 +856,7 @@ namespace scene_gen
     }
   }
 
-  Patch::Patch(glm::vec2 pos, Biome::PatchDesc &patchDesc, int _biome_id, int _patch_type_id)
+  Patch::Patch(float2 pos, Biome::PatchDesc &patchDesc, int _biome_id, int _patch_type_id)
   {
     Normal norm = Normal(0, 1);
     float r = patchDesc.size + patchDesc.size_std_dev*norm.get();

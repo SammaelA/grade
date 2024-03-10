@@ -63,7 +63,7 @@ void ParameterList::load_borders_from_blk(Block &b)
             auto it = ordinalParameters.find(b.get_name(i));
             if (it != ordinalParameters.end())
             {
-                glm::vec2 min_max = b.get_vec2(i, glm::vec2(it->second.val, it->second.val));
+                float2 min_max = b.get_vec2(i, float2(it->second.val, it->second.val));
                 it->second.min_val = min_max.x;
                 it->second.max_val = min_max.y;
             }
@@ -72,7 +72,7 @@ void ParameterList::load_borders_from_blk(Block &b)
                 auto it = continuousParameters.find(b.get_name(i));
                 if (it != continuousParameters.end())
                 {
-                    glm::vec2 min_max = b.get_vec2(i, glm::vec2(it->second.val, it->second.val));
+                    float2 min_max = b.get_vec2(i, float2(it->second.val, it->second.val));
                     it->second.min_val = min_max.x;
                     it->second.max_val = min_max.y;
                 }

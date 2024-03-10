@@ -69,8 +69,8 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
   glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = LiteMath::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
-  glm::mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
+  float4x4 projection = LiteMath::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
+  float4x4 view = LiteMath::lookAtRH(camera.origin, camera.target, camera.up);
 
   UV.use();
   UV.uniform("projection", projection);
@@ -84,14 +84,14 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, photo_transformed.texture, 0);
   glDisable(GL_DEPTH_TEST);
   photo_transform.use();
-  photo_transform.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
+  photo_transform.get_shader().uniform("tex_transform", float4(0, 1, 1, -1));
   photo_transform.get_shader().texture("tex", photo);
   photo_transform.render();
   
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   tex_get.use();
-  tex_get.uniform("tex_size", glm::vec2(w, h));
+  tex_get.uniform("tex_size", float2(w, h));
   tex_get.texture("uv", UV_tex);
   tex_get.texture("photo", photo_transformed);
   glBindImageTexture(2, t.texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
@@ -106,7 +106,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   glViewport(0, 0, tmp_tex1.get_W(), tmp_tex1.get_H());
   texture_postprocess.use();
   texture_postprocess.get_shader().texture("tex", t);
-  texture_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
+  texture_postprocess.get_shader().uniform("tex_size", float2(w, h));
   texture_postprocess.get_shader().uniform("radius", rec_od + 1);
   texture_postprocess.get_shader().uniform("alpha_thr", 0.1);
   texture_postprocess.render();
@@ -117,7 +117,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   glViewport(0, 0, tmp_tex2.get_W(), tmp_tex2.get_H());
   texture_postprocess.use();
   texture_postprocess.get_shader().texture("tex", tmp_tex1);
-  texture_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
+  texture_postprocess.get_shader().uniform("tex_size", float2(w, h));
   texture_postprocess.get_shader().uniform("radius", rec_od + 1);
   texture_postprocess.get_shader().uniform("alpha_thr", 0.3);
   texture_postprocess.render();
@@ -131,7 +131,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   max_filter.use();
   max_filter.get_shader().texture("tex", tmp_mask);
   max_filter.get_shader().uniform("radius", rec_od);
-  max_filter.get_shader().uniform("tex_size", glm::vec2(tmp_mask.get_W(), tmp_mask.get_H()));
+  max_filter.get_shader().uniform("tex_size", float2(tmp_mask.get_W(), tmp_mask.get_H()));
   max_filter.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -141,7 +141,7 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   min_filter.use();
   min_filter.get_shader().texture("tex", tmp_mask_2);
   min_filter.get_shader().uniform("radius", 4);
-  min_filter.get_shader().uniform("tex_size", glm::vec2(tmp_mask_2.get_W(), tmp_mask_2.get_H()));
+  min_filter.get_shader().uniform("tex_size", float2(tmp_mask_2.get_W(), tmp_mask_2.get_H()));
   min_filter.render();
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -204,7 +204,7 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sm_tex.texture, 0);
     glViewport(0, 0, W * w, H * h);
     copy.use();
-    copy.get_shader().uniform("tex_transform", glm::vec4(it.w0, it.h0, w, h));
+    copy.get_shader().uniform("tex_transform", float4(it.w0, it.h0, w, h));
     copy.get_shader().texture("tex", t);
     copy.render();
     
@@ -217,7 +217,7 @@ Texture ModelTex::symTexComplement(Texture tex, Texture mask, std::vector<tex_da
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mask1.texture, 0);
     glViewport(0, 0, W * w, H * h);
     copy.use();
-    copy.get_shader().uniform("tex_transform", glm::vec4(it.w0, it.h0, w, h));
+    copy.get_shader().uniform("tex_transform", float4(it.w0, it.h0, w, h));
     copy.get_shader().texture("tex", mask);
     copy.render();
 

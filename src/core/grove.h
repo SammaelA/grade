@@ -10,7 +10,7 @@ struct PackedLeaf
 {
     friend class boost::serialization::access;
 
-    std::vector<glm::vec3> edges;
+    std::vector<float3> edges;
 
 private:
     template<class Archive>
@@ -23,10 +23,10 @@ struct PackedJoint
 {
     friend class boost::serialization::access;
 
-    glm::vec3 pos;
+    float3 pos;
     float r;
     PackedJoint() { r = 0; }
-    PackedJoint(glm::vec3 &_pos, float _r)
+    PackedJoint(float3 &_pos, float _r)
     {
         pos = _pos;
         r = _r;
@@ -49,7 +49,7 @@ struct PackedBranch
     std::vector<std::vector<float>> r_mults;
     int level = 0;
     uint type_id = 0;
-    glm::vec4 plane_coef;
+    float4 plane_coef;
 
 private:
     template<class Archive>
@@ -148,7 +148,7 @@ struct CompressedTree
 
   friend class boost::serialization::access;
 
-  glm::vec3 pos;
+  float3 pos;
   std::vector<Node> LOD_roots;  //root node for every LOD that this tree has
   AABB bbox;
   int global_id;

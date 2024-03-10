@@ -248,7 +248,7 @@ namespace dopt
       }
       else
       {
-        glm::vec2 min_max = pb->get_vec2("values", glm::vec2(1e9, -1e9));
+        float2 min_max = pb->get_vec2("values", float2(1e9, -1e9));
         if (min_max.x > min_max.y)
           logerr("invalid parameter description\"%s\". It should have values:p2 with min and max values", blk.get_name(i).c_str());
         params_min.push_back(min_max.x);
@@ -855,7 +855,7 @@ namespace dopt
           model_quality = stage_blk->get_int("model_quality", 0);
           only_pos = false;
           //use only one camera to select material to make it faster
-          Texture reference_textured = ImageResizer::resize(references["textured_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture reference_textured = ImageResizer::resize(references["textured_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, float4(0,0,0,1));
 
           dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
           mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
@@ -864,7 +864,7 @@ namespace dopt
                                   has_fixed_cameras ? fixed_cameras[0] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)),
                                   get_camera_params(opt_result.best_params));
           Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-          Texture mask_reference = ImageResizer::resize(references["mask_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_reference = ImageResizer::resize(references["mask_0"], im_sz, im_sz, ImageResizer::Type::CENTERED, float4(0,0,0,1));
           Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
           ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
           engine::textureManager->save_png(mask_min, "reference_textured_mask");
@@ -949,7 +949,7 @@ namespace dopt
         for (int i=0;i<cameras_count;i++)
         {
           std::string reference_textured_name = "reference_textured_"+std::to_string(i);
-          Texture reference_textured = ImageResizer::resize(references["textured_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture reference_textured = ImageResizer::resize(references["textured_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, float4(0,0,0,1));
 
           dgen::DFModel cur_model = func.get(get_gen_params(opt_result.best_params), dgen::ModelQuality(false, model_quality));
           mi.init_scene_and_settings(MitsubaInterface::RenderSettings(im_sz, im_sz, 512, MitsubaInterface::LLVM, MitsubaInterface::SILHOUETTE),
@@ -958,7 +958,7 @@ namespace dopt
                                   has_fixed_cameras ? fixed_cameras[i] : MitsubaInterface::get_camera_from_scene_params(get_camera_params(opt_result.best_params)), 
                                   get_camera_params(opt_result.best_params));
           Texture mask_real = engine::textureManager->load_unnamed_tex("saves/ie_rsult3.png", 1);
-          Texture mask_reference = ImageResizer::resize(references["mask_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, glm::vec4(0,0,0,1));
+          Texture mask_reference = ImageResizer::resize(references["mask_"+std::to_string(i)], im_sz, im_sz, ImageResizer::Type::CENTERED, float4(0,0,0,1));
           Texture mask_min = engine::textureManager->create_texture(im_sz, im_sz);
           ImageArithmetics::minimum(mask_min, mask_real, mask_reference, 1, 1);
           engine::textureManager->save_png(mask_min, reference_textured_name+"_mask");

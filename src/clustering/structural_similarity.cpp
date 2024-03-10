@@ -109,7 +109,7 @@ IntermediateClusteringData *GPUSSClusteringHelper::prepare_intermediate_data(Blo
 namespace structsim
 {
     
-    using namespace glm;
+    
     int dist_calls;
     std::vector<std::pair<float, float>> optimization_quantiles = {
     {0.01, 0.7455902677},
@@ -177,9 +177,9 @@ bool dedicated_bbox(Branch *branch, BBox &bbox)
 {
     if (!branch || branch->segments.empty())
         return false;
-    vec3 a(0, 0, 0);
-    vec3 b(0, 0, 0);
-    vec3 c;
+    float3 a(0, 0, 0);
+    float3 b(0, 0, 0);
+    float3 c;
     a = normalize(branch->joints.back().pos - branch->joints.front().pos);
     for (Joint &j : branch->joints)
     {
@@ -189,7 +189,7 @@ bool dedicated_bbox(Branch *branch, BBox &bbox)
         }
     }
     if (length(cross(a, b)) < 0.01)
-        b = vec3(0, 1, 0);
+        b = float3(0, 1, 0);
     b = normalize(b - dot(a, b) * a);
     c = cross(a, b);
 
@@ -375,12 +375,12 @@ bool match_joints(Branch *b1, Branch *b2, std::vector<float> &matches, std::vect
     }
     return true;
 }
-void get_light(Branch *b, std::vector<float> &light, glm::mat4 &transform)
+void get_light(Branch *b, std::vector<float> &light, float4x4 &transform)
 {
     for (Joint &j : b->joints)
     {
-        glm::vec3 ps = transform*glm::vec4(j.pos,1.0f);
-        light[b->level] += current_light->get_occlusion(transform*glm::vec4(j.pos,1.0f));
+        float3 ps = to_float3(transform*to_float4(j.pos,1.0f));
+        light[b->level] += current_light->get_occlusion(to_float3(transform*to_float4(j.pos,1.0f)));
         for (Branch *br : j.childBranches)
         {
             get_light(br,light,transform);
@@ -405,8 +405,8 @@ Answer light_difference(BranchWithData &bwd1, BranchWithData &bwd2)
     std::vector<float> _l12(clusterizationParams.light_weights.size(),0);
     std::vector<float> _l21(clusterizationParams.light_weights.size(),0);
     std::vector<float> _l22(clusterizationParams.light_weights.size(),0);
-    glm::mat4 t1 = bwd1.transform; 
-    glm::mat4 t2 = bwd2.transform; 
+    float4x4 t1 = bwd1.transform; 
+    float4x4 t2 = bwd2.transform; 
     get_light(bwd1.b,_l11,t1);//real b1
     get_light(bwd2.b,_l22,t2);//real b2
     get_light(bwd1.b,_l12,t2);//b1 placed instead of b2
@@ -474,9 +474,9 @@ Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, floa
     float min_dist = fast_answer.from;
     float min_phi = 0;
     float base_step = 2 * PI / N;
-    vec3 axis = bwd1.b->joints.back().pos - bwd1.b->joints.front().pos;
+    float3 axis = bwd1.b->joints.back().pos - bwd1.b->joints.front().pos;
     logerr("axis = %f %f %f",axis.x,axis.y,axis.z);
-    mat4 rot = rotate(mat4(1.0f), base_step, axis);
+    float4x4 rot = rotate(float4x4(), base_step, axis);
     for (int i = 1; i <= N; i++)
     {
         bwd1.b->transform(rot);
@@ -488,17 +488,17 @@ Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, floa
             min_phi = i * base_step;
         }
     }
-    mat4 rot_to_base = rotate(mat4(1.0f), min_phi, axis);
+    float4x4 rot_to_base = rotate(float4x4(), min_phi, axis);
     for (int i = 0; i < iterations; i++)
     {
         base_step = 0.5 * base_step;
 
-        rot = rot_to_base * rotate(mat4(1.0f), base_step, axis);
+        rot = rot_to_base * rotate(float4x4(), base_step, axis);
         bwd1.b->transform(rot);
         bwd1.rot_angle = min_phi + base_step;
         float md_plus = dist_simple(bwd1, bwd2, min, max).from;
 
-        rot = rotate(mat4(1.0f), -2.0f * base_step, axis);
+        rot = rotate(float4x4(), -2.0f * base_step, axis);
         bwd1.b->transform(rot);
         bwd1.rot_angle = min_phi - base_step;
         float md_minus = dist_simple(bwd1, bwd2, min, max).from;
@@ -506,20 +506,20 @@ Answer dist_Nsection(BranchWithData &bwd1, BranchWithData &bwd2, float min, floa
         {
             min_dist = md_plus;
             min_phi += base_step;
-            rot_to_base = rotate(mat4(1.0f), 2.0f * base_step, axis);
+            rot_to_base = rotate(float4x4(), 2.0f * base_step, axis);
         }
         else if (md_minus < md_plus && md_minus < min_dist)
         {
             min_dist = md_minus;
             min_phi -= base_step;
-            rot_to_base = rotate(mat4(1.0f), 0.0f, axis);
+            rot_to_base = rotate(float4x4(), 0.0f, axis);
         }
         else
         {
-            rot_to_base = rotate(mat4(1.0f), 1.0f * base_step, axis);
+            rot_to_base = rotate(float4x4(), 1.0f * base_step, axis);
         }
     }
-    rot_to_base = rot_to_base * rotate(mat4(1.0f), -min_phi, axis);
+    rot_to_base = rot_to_base * rotate(float4x4(), -min_phi, axis);
     bwd1.b->transform(rot_to_base);
     if (data)
         data->rotation = min_phi;
@@ -538,8 +538,8 @@ Answer dist_trunc(BranchWithData &bwd1, BranchWithData &bwd2, float min, float m
         return Answer(true,0,0);
     auto it1 = b1->joints.begin();
     auto it2 = b2->joints.begin();
-    glm::vec3 prev1 = it1->pos;
-    glm::vec3 prev2 = it2->pos;
+    float3 prev1 = it1->pos;
+    float3 prev2 = it2->pos;
     it1++;
     it2++;
     float av_len = 0.5 * (length(b1->joints.back().pos - b1->joints.front().pos) + length(b2->joints.back().pos - b2->joints.front().pos));

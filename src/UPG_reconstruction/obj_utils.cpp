@@ -20,18 +20,18 @@ namespace dgen
 
     for (int i0=0;i0<model.size();i0+=3*FLOAT_PER_VERTEX)
     {
-      glm::vec3 p0 = glm::vec3(model[i0+0*FLOAT_PER_VERTEX], model[i0+0*FLOAT_PER_VERTEX+1], model[i0+0*FLOAT_PER_VERTEX+2]);
-      glm::vec3 p1 = glm::vec3(model[i0+1*FLOAT_PER_VERTEX], model[i0+1*FLOAT_PER_VERTEX+1], model[i0+1*FLOAT_PER_VERTEX+2]);
-      glm::vec3 p2 = glm::vec3(model[i0+2*FLOAT_PER_VERTEX], model[i0+2*FLOAT_PER_VERTEX+1], model[i0+2*FLOAT_PER_VERTEX+2]);
+      float3 p0 = float3(model[i0+0*FLOAT_PER_VERTEX], model[i0+0*FLOAT_PER_VERTEX+1], model[i0+0*FLOAT_PER_VERTEX+2]);
+      float3 p1 = float3(model[i0+1*FLOAT_PER_VERTEX], model[i0+1*FLOAT_PER_VERTEX+1], model[i0+1*FLOAT_PER_VERTEX+2]);
+      float3 p2 = float3(model[i0+2*FLOAT_PER_VERTEX], model[i0+2*FLOAT_PER_VERTEX+1], model[i0+2*FLOAT_PER_VERTEX+2]);
 
-      glm::vec3 v1 = p1 - p0;
-      glm::vec3 v2 = p2 - p0;
-      glm::vec3 n = cross(v1, v2);
+      float3 v1 = p1 - p0;
+      float3 v2 = p2 - p0;
+      float3 n = cross(v1, v2);
       float l = length(n);
       if (l < 1e-9)
       {
         std::cout << "set_face_normals: model has triangles with near-zero size\n";
-        n = glm::vec3(0,1,0);
+        n = float3(0,1,0);
       }
       else 
         n = n/l;

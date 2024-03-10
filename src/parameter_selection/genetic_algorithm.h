@@ -71,14 +71,14 @@ private:
     struct Stat
     {
         std::map<int, float> all_results;
-        std::vector<glm::ivec3> all_births;//mother, father, child
+        std::vector<int3> all_births;//mother, father, child
     } stat;
 
     struct PopulationBackup
     {
         std::vector<Creature> pop;
         float best_value = 0;
-        glm::vec4 model = glm::vec4(0,0,0,0);
+        float4 model = float4(0,0,0,0);
         float predicted_best_value = 0;
         int backup_uses = 0;
     };
@@ -96,7 +96,7 @@ private:
     std::vector<Creature> new_population;
     std::vector<Creature> heaven;
     std::vector<Creature> crio_camera;
-    std::vector<glm::vec2> TreeGA_stat;
+    std::vector<float2> TreeGA_stat;
 
     std::chrono::steady_clock::time_point t_start, iter_start;
     int current_population_size = 0;

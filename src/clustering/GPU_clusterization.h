@@ -2,7 +2,7 @@
 #include "structural_similarity.h"
 #include "../limits.h"
 #define uint unsigned //CPU
-#define uvec4 glm::uvec4 //CPU
+#define uvec4 uint4 //CPU
 
 #define CNT_bytes 8
 #define MAX_JOINTS 128
@@ -67,7 +67,7 @@ private:
         float light_weights[MAX_BRANCH_LEVELS];
         float r_weights[MAX_BRANCH_LEVELS];
     };
-    std::vector<glm::vec4> positions;
+    std::vector<float4> positions;
     float *all_voxels = nullptr;
     float *all_structure_voxels = nullptr;
     std::vector<float> joint_rs;
@@ -86,7 +86,7 @@ private:
     #define dd_dist(i,j) (dist_data[2*(i*branches_size + j)])
 
     //CPU-only data
-    std::vector<glm::mat4> rotates_transforms;
+    std::vector<float4x4> rotates_transforms;
 
     void fill_branch_data(BranchWithData &branch, bool voxels_needed, bool voxelized_structure);
     uint fill_branch_data(Branch *branch);
@@ -94,7 +94,7 @@ private:
     void calculate_distances(int hardness, bool cpu_only = false, bool cpu_check = false);
     void calculate_dist(int i, int j);
     void setup_buffers();
-    glm::vec2 calculate_dist_simple(int i, int j, int rot, float max_dist);
+    float2 calculate_dist_simple(int i, int j, int rot, float max_dist);
     float calculate_dist_structure(int i, int j, int rot, float max_dist);
     float calculate_dist_light(int i, int j, int rot, float max_dist);
     float calculate_dist_voxelized_structure(int i, int j, int rot, float max_dist);

@@ -4,9 +4,9 @@
 struct SimpleTreeStructureParameters : public ParameterSet
 {
     int max_depth = 4;
-    glm::vec4 segment_size = glm::vec4(3.0,1.5,0.5,0.5);
-    glm::vec4 segment_count = glm::vec4(15, 12, 10, 15);
-    glm::vec4 base_thickness = glm::vec4(2,1.4,0.6,0.4);
+    float4 segment_size = float4(3.0,1.5,0.5,0.5);
+    float4 segment_count = float4(15, 12, 10, 15);
+    float4 base_thickness = float4(2,1.4,0.6,0.4);
     float base_dir_mult = 5;
     float rand_dir_mult = 1;
     float    up_dir_mult = 1;
@@ -21,9 +21,9 @@ struct SimpleTreeStructureParameters : public ParameterSet
 
     
     virtual void save_load_define(SaveLoadMode mode, Block &b, ParameterList &list) override;
-    virtual glm::vec3 get_tree_max_size() override
+    virtual float3 get_tree_max_size() override
     {
-      return 2.0f*glm::vec3(segment_size[0]*segment_count[0]);
+      return 2.0f*float3(segment_size[0]*segment_count[0]);
     }
     virtual ParameterSet *copy() override
     { 
@@ -36,13 +36,13 @@ struct SimpleTreeStructureParameters : public ParameterSet
 class SimpleTreeGenerator : public AbstractTreeGenerator
 {
 public:
-    virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) override;
+    virtual void plant_tree(float3 pos, const TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
 private:
-    void create_tree(Tree *tree, glm::vec3 pos);
-    void create_branch(Tree *tree, Branch *branch, glm::vec3 start_pos, glm::vec3 base_dir, glm::vec3 normal, int level, 
+    void create_tree(Tree *tree, float3 pos);
+    void create_branch(Tree *tree, Branch *branch, float3 start_pos, float3 base_dir, float3 normal, int level, 
                        float base_r, float leaves_chance);
     SimpleTreeStructureParameters params;
-    std::vector<glm::vec3> tree_positions;
+    std::vector<float3> tree_positions;
     std::vector<const TreeTypeData *> types;
 };

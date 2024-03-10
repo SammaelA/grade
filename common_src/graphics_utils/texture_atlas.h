@@ -52,7 +52,7 @@ public:
     TextureAtlas(const TextureAtlas &a);
     TextureAtlas(int w, int h, int layers, int mip_levels = 5, bool need_normals = false);
     ~TextureAtlas();
-    void set_clear_color(glm::vec4 color)
+    void set_clear_color(float4 color)
     {
         clearColor = color;
     }
@@ -60,15 +60,15 @@ public:
     void set_grid(int w, int h, bool resizable = true);
     int add_tex();
     void remove_tex(int pos);
-    void process_tc(int num, glm::vec3 &tc) const;
-    glm::vec4 tc_transform(int num) const;
-    void pixel_offsets(int num, glm::ivec3 &tc) const;
-    void pixel_offsets(int num, glm::uvec4 &tc) const;
+    void process_tc(int num, float3 &tc) const;
+    float4 tc_transform(int num) const;
+    void pixel_offsets(int num, int3 &tc) const;
+    void pixel_offsets(int num, uint4 &tc) const;
     bool target(int num, int type);
     bool target_slice(int num, int type);
-    glm::mat4 tex_transform(int num) const;
-    glm::ivec4 get_sizes() const { return glm::ivec4(width, height, gridWN, gridHN); }
-    glm::ivec2 get_slice_size() const {return glm::ivec2(width/gridWN, height/gridHN); }
+    float4x4 tex_transform(int num) const;
+    int4 get_sizes() const { return int4(width, height, gridWN, gridHN); }
+    int2 get_slice_size() const {return int2(width/gridWN, height/gridHN); }
     bool clear();
     Texture &tex(int type);
     const Texture &color() const {return colorTex;}
@@ -94,7 +94,7 @@ public:
     bool isGrid = false;
     bool resizable = false;
     bool valid = false;
-    glm::vec4 clearColor;
+    float4 clearColor;
     GLuint fbo = 0;
     Texture colorTex;
     Texture normalTex;

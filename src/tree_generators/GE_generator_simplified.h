@@ -20,7 +20,7 @@ private:
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
                                               int max_growth_per_node);
-    virtual bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos,
-                               glm::vec3 dir, float angle,
-                               glm::vec3 &best_pos, float &best_occ) override;
+    virtual bool find_best_pos(LightVoxelsCube &voxels, float r, float3 pos,
+                               float3 dir, float angle,
+                               float3 &best_pos, float &best_occ) override;
 };

@@ -137,9 +137,9 @@ namespace upg
     static CameraSettings camera_from_params(const std::span<float> &p)
     {
       CameraSettings cam;
-      cam.origin = glm::vec3(p[0], p[1], p[2]);
-      cam.target = glm::vec3(p[3], p[4], p[5]);
-      cam.up     = glm::vec3(p[6], p[7], p[8]);
+      cam.origin = float3(p[0], p[1], p[2]);
+      cam.target = float3(p[3], p[4], p[5]);
+      cam.up     = float3(p[6], p[7], p[8]);
       cam.z_near = p[9];
       cam.z_far = p[10];
       cam.fov_rad = p[11];

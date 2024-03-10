@@ -63,11 +63,11 @@ public:
     AABB2D borders() const {return bbox;}
     int get_default_biome() const {return default_biome_id; }
     int get(int w, int h) const;
-    int get(glm::vec2 pos) const;
-    int get(glm::vec3 pos) const;
+    int get(float2 pos) const;
+    int get(float3 pos) const;
     
     void set_rect(AABB2D box, int id);
-    void set_round(glm::vec2 pos, float inner_r, float outer_r, int id);
+    void set_round(float2 pos, float inner_r, float outer_r, int id);
     void get_stat(std::vector<std::pair<int,int>> &stat, AABB2D bbox) const;
     void set_mask(GroveMask &mask, int biome_id);
     void save_as_image(std::string name = "biome_map_debug") const;

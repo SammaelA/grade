@@ -83,7 +83,7 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1.texture, 0);
       glViewport(0, 0, tex_w, tex_h);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glm::mat4 viewProj = cameras[i].get_viewProj();
+      float4x4 viewProj = cameras[i].get_viewProj();
       render_silhouette.use();
       render_silhouette.uniform("viewProj", viewProj);
       glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
@@ -92,7 +92,7 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
       glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2.texture, 0);
       diff_loss.use();
-      diff_loss.get_shader().uniform("tex_size", glm::vec2(tex_w, tex_h));
+      diff_loss.get_shader().uniform("tex_size", float2(tex_w, tex_h));
       diff_loss.get_shader().texture("tex", tex1);
       diff_loss.get_shader().texture("tex_reference", reference_textures[i]);
       diff_loss.render();
@@ -110,7 +110,7 @@ float NonDiffRender::render_and_compare_silhouette(const std::vector<float> &pos
       //calculate MSE per tile
       glMemoryBarrier(GL_ALL_BARRIER_BITS);
       diff_loss_sum.use();
-      diff_loss_sum.uniform("tex_size", glm::vec2(tex_w, tex_h));
+      diff_loss_sum.uniform("tex_size", float2(tex_w, tex_h));
       diff_loss_sum.texture("tex_diff", tex2);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, results_buf);
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*NUM_TILES*NUM_TILES, nullptr, GL_STREAM_READ);

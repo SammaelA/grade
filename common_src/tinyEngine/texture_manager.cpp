@@ -84,7 +84,7 @@ Shader copy({"copy.vs", "copy.fs"}, {"in_Position", "in_Tex"});
         bm.construct(_c_mip);
         mipMapRenderer.use();
         mipMapRenderer.texture("tex", ctex);
-        mipMapRenderer.uniform("screen_size", glm::vec4(w, h, 0, 0));
+        mipMapRenderer.uniform("screen_size", float4(w, h, 0, 0));
         glDisable(GL_DEPTH_TEST);
         bm.render(GL_TRIANGLES);
         glEnable(GL_DEPTH_TEST);

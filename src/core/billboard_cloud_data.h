@@ -11,9 +11,9 @@ struct InstanceDataArrays
 {
     friend class boost::serialization::access;
 
-    std::vector<glm::mat4> transforms;
-    std::vector<glm::vec3> centers_par;
-    std::vector<glm::vec3> centers_self;
+    std::vector<float4x4> transforms;
+    std::vector<float3> centers_par;
+    std::vector<float3> centers_self;
     std::vector<int> type_ids;
     std::vector<int> tree_ids;
 
@@ -44,11 +44,11 @@ struct InstanceDataArrays
 
         int id = -1;
         int branch_id = -1;
-        std::vector<glm::vec3> positions;
-        glm::vec4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
+        std::vector<float3> positions;
+        float4 planeCoef; //billboard is always a plane ax+by+cz+d = 0 len(a,b,c) = 1
         bool instancing;
         void to_model(Model *m, const TextureAtlas &atlas);
-        std::vector<glm::vec3> get_tc(const TextureAtlas &atlas);
+        std::vector<float3> get_tc(const TextureAtlas &atlas);
         Billboard(){};
         Billboard(const Billboard &b)
         {
@@ -65,7 +65,7 @@ struct InstanceDataArrays
             this->instancing = b.instancing;
             return *this;
         }
-        Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing = false);
+        Billboard(const BBox &box, int id, int branch_id, int type, float3 base_joint, bool _instancing = false);
       
     private:
       template<class Archive>
@@ -80,7 +80,7 @@ struct InstanceDataArrays
     };
 struct BillboardData
 {
-    glm::vec3 base_position;
+    float3 base_position;
     std::vector<Billboard> billboards;
     InstanceDataArrays IDA;
     int id = -1;
@@ -98,7 +98,7 @@ struct BCyl
 {
     friend class boost::serialization::access;
 
-    glm::vec3 center;
+    float3 center;
     float r;
     float h_2;//distance from center to base, h/2;
 

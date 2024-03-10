@@ -68,7 +68,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
           {
             Block rm_ids;
             //-1 in last field means that all objects of that type should be removed
-            rm_ids.add_ivec4("remove_mask", glm::ivec4(a, b, c, d));
+            rm_ids.add_ivec4("remove_mask", int4(a, b, c, d));
             genCmdBuffer->push(GC_REMOVE_BY_ID, rm_ids);
             genCmdBuffer->push(GC_UPDATE_GLOBAL_MASK);
             renderCmdBuffer->push(RC_UPDATE_OBJECTS);
@@ -101,16 +101,16 @@ void InputCmdExecutor::execute(int max_cmd_count)
     {
       if (!genCtx.inited)
         break;
-      glm::vec4 world_pos_type = cmd.args.get_vec4("world_pos_type");
+      float4 world_pos_type = cmd.args.get_vec4("world_pos_type");
       Block b;
-      glm::vec2 pos = glm::vec2(world_pos_type.x, world_pos_type.z);
+      float2 pos = float2(world_pos_type.x, world_pos_type.z);
       b.add_vec2("pos", pos);
       b.add_string("type_name", cmd.args.get_string("type_name"));
       genCmdBuffer->push(GC_PLANT_TREE, b);
 
       if (cmd.type == IC_PLANT_TREE_IMMEDIATE)
       {
-        glm::ivec2 c_ij = (pos - genCtx.start_pos) / genCtx.cell_size;
+        int2 c_ij = to_int2((pos - genCtx.start_pos) / genCtx.cell_size);
         int cell_id = c_ij.x * genCtx.cells_y + c_ij.y;
         Block cb;
         cb.add_int("cell_id", cell_id);
@@ -167,7 +167,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
         auto &c = genCtx.cells[cell_id];
         for (auto &t : genCtx.scene.grove.compressedTrees)
         {
-          if (c.bbox.contains(glm::vec2(t.pos.x, t.pos.z)))
+          if (c.bbox.contains(float2(t.pos.x, t.pos.z)))
             plants_ids_to_remove.push_back(t.global_id);
         }
       }
@@ -224,7 +224,7 @@ void InputCmdExecutor::execute(int max_cmd_count)
         {
           std::string type_name = "__tmp_"+std::to_string(i);
           Block b;
-          glm::vec4 pos = glm::vec4(100*i,0,0,1);
+          float4 pos = float4(100*i,0,0,1);
           b.add_vec4("world_pos_type", pos);
           b.add_string("type_name", type_name);
           inputCmdBuffer->push(IC_PLANT_TREE_IMMEDIATE, b);

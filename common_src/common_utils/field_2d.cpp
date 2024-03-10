@@ -2,14 +2,14 @@
 #include "common_utils/utility.h"
 #include "perlin.h"
 #include <vector>
-    void Field_2d::create(glm::vec3 pos, glm::vec2 size, float cell_size)
+    void Field_2d::create(float3 pos, float2 size, float cell_size)
     {
       create(pos, ceil(size.x/cell_size), ceil(size.y/cell_size));
       this->cell_size = cell_size;
       this->pos = pos;
       this->size = size;
     }
-    void Field_2d::create(glm::vec3 _pos, int _w, int _h)
+    void Field_2d::create(float3 _pos, int _w, int _h)
     {
       w = _w;
       h = _h;
@@ -32,12 +32,12 @@
         else
             return base_val;
     }
-    float Field_2d::get_bilinear(glm::vec2 position) const
+    float Field_2d::get_bilinear(float2 position) const
     {
         if (!data)
             return base_val;
-        glm::vec2 rp = glm::vec2(position.x - pos.x, position.y - pos.z)/cell_size;
-        glm::ivec2 ps = rp;
+        float2 rp = float2(position.x - pos.x, position.y - pos.z)/cell_size;
+        int2 ps = to_int2(rp);
         float dx = rp.x - ps.x;
         float dy = rp.y - ps.y;
         return (dx*get(ps.x, ps.y) + (1 - dx)*get(ps.x + 1, ps.y))*(1 - dy) + 
@@ -45,17 +45,17 @@
         
     }
 
-    float Field_2d::get_bilinear(glm::vec3 position) const
+    float Field_2d::get_bilinear(float3 position) const
     {
-        return get_bilinear(glm::vec2(position.x, position.z));
+        return get_bilinear(float2(position.x, position.z));
     }
 
-    void Field_2d::set(glm::vec3 position, float val)
+    void Field_2d::set(float3 position, float val)
     {
         if (!data)
             return;
-        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
-        glm::ivec2 ps = rp;
+        float2 rp = float2(position.x - pos.x, position.z - pos.z)/cell_size;
+        int2 ps = to_int2(rp);
         set(rp.x,rp.y,val);
     }
     void Field_2d::fill_const(float val)
@@ -66,40 +66,40 @@
         for (int i=0;i<(2*w + 1)*(2*h + 1);i++)
             data[i] = val;
     }
-    void Field_2d::fill_func(std::function<float(glm::vec2 &)> filler)
+    void Field_2d::fill_func(std::function<float(float2 &)> filler)
     {
         for (int i = -w;i<=w;i++)
         {
             for (int j=-h;j<=h;j++)
             {
-                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                 set(i,j,filler(ps));
             }
         }
     }
-    void Field_2d::fill_func(std::function<float(glm::vec2 &, float )> filler)
+    void Field_2d::fill_func(std::function<float(float2 &, float )> filler)
     {
         for (int i = -w;i<=w;i++)
         {
             for (int j=-h;j<=h;j++)
             {
-                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                 set(i,j,filler(ps, get(i,j)));
             }
         }
     }
-    void Field_2d::read_func(std::function<void(glm::vec2 &, float )> reader) const
+    void Field_2d::read_func(std::function<void(float2 &, float )> reader) const
     {
         for (int i = -w;i<=w;i++)
         {
             for (int j=-h;j<=h;j++)
             {
-                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                 reader(ps, get(i,j));
             }
         }
     }
-    void Field_2d::fill_perlin(float base, float min, float max, glm::ivec2 sh)
+    void Field_2d::fill_perlin(float base, float min, float max, int2 sh)
     {
         base_val = base;
         min_val = base;
@@ -116,7 +116,7 @@
             }
         }
     }
-    glm::vec2 Field_2d::get_grad(int x, int y) const
+    float2 Field_2d::get_grad(int x, int y) const
     {
         std::vector<std::vector<float>> sobel_x = {{-1,0,1},
                                                    {-2,0,2},
@@ -124,7 +124,7 @@
         std::vector<std::vector<float>> sobel_y = {{-1,-2,-1},
                                                    {0,0,0},
                                                    {1,2,1}};
-        glm::vec2 g = glm::vec2(0,0);
+        float2 g = float2(0,0);
         for (int i=-1;i<=1;i++)
         {
             for (int j=-1;j<=1;j++)
@@ -136,12 +136,12 @@
         }
         return g;
     }
-    glm::vec2 Field_2d::get_grad_bilinear(glm::vec3 position) const
+    float2 Field_2d::get_grad_bilinear(float3 position) const
     {
         if (!data)
-            return glm::vec2(0,0);
-        glm::vec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
-        glm::ivec2 ps = rp;
+            return float2(0,0);
+        float2 rp = float2(position.x - pos.x, position.z - pos.z)/cell_size;
+        int2 ps = to_int2(rp);
         float dx = rp.x - ps.x;
         float dy = rp.y - ps.y;
         return (dx*get_grad(ps.x, ps.y) + (1 - dx)*get_grad(ps.x + 1, ps.y))*(1 - dy) + 
@@ -173,9 +173,9 @@
             add(x,y,val);
         }
     }
-    glm::vec4 Field_2d::get_borders() const
+    float4 Field_2d::get_borders() const
     {
-        return glm::vec4(pos.x - size.x, pos.z - size.y, pos.x + size.x, pos.z + size.y);
+        return float4(pos.x - size.x, pos.z - size.y, pos.x + size.x, pos.z + size.y);
     }
     void Field_2d::print() const
     {
@@ -184,15 +184,15 @@
         {
             for (int j=-h;j<=h;j++)
             {
-                glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                 debug("(%f %f) = %f %d %d|",ps.x,ps.y,get(i,j),i,j);
             }
             debugnl();
         }
     }
 
-    void Field_2d::get_min_max_imprecise(glm::vec2 from, glm::vec2 to, float *min_v, float *max_v, 
-                                         glm::vec2 *min_pos, glm::vec2 *max_pos) const
+    void Field_2d::get_min_max_imprecise(float2 from, float2 to, float *min_v, float *max_v, 
+                                         float2 *min_pos, float2 *max_pos) const
     {
         if (!data)
         {
@@ -206,26 +206,26 @@
                 *max_pos = from;
             return;
         }
-        glm::vec2 mnp = (from - glm::vec2(pos.x,pos.y))/cell_size;
-        glm::vec2 mxp = (to - glm::vec2(pos.x,pos.y))/cell_size;
+        float2 mnp = (from - float2(pos.x,pos.y))/cell_size;
+        float2 mxp = (to - float2(pos.x,pos.y))/cell_size;
         
         float mn =  1e8;
         float mx =  -1e8;
-        glm::ivec2 mn_pos = glm::ivec2(-1,-1);
-        glm::ivec2 mx_pos = glm::ivec2(-1,-1);
+        int2 mn_pos = int2(-1,-1);
+        int2 mx_pos = int2(-1,-1);
         if (mnp.x < -w || mnp.y < -h)
         {
             mn = base_val;
             mx = base_val;
-            mn_pos = from;
-            mx_pos = from;
+            mn_pos = to_int2(from);
+            mx_pos = to_int2(from);
         }
         else if (mxp.x >= w || mxp.y >= h)
         {
             mn = base_val;
             mx = base_val;
-            mn_pos = glm::ivec2(w+1,h+1);
-            mx_pos = glm::ivec2(w+1,h+1);
+            mn_pos = int2(w+1,h+1);
+            mx_pos = int2(w+1,h+1);
         }
         for (int x = MAX(floor(mnp.x), -w);x<MIN(ceil(mxp.x),w);x++)
         {
@@ -235,12 +235,12 @@
                 if (val > mx)
                 {
                     mx = val;
-                    mx_pos = glm::ivec2(x,y);
+                    mx_pos = int2(x,y);
                 }
                 if (val < mn)
                 {
                     mn = val;
-                    mn_pos = glm::ivec2(x,y);
+                    mn_pos = int2(x,y);
                 }
             }
         }
@@ -251,21 +251,21 @@
             *max_v = mx;
         if (min_pos)
         {
-            if (mn_pos == glm::ivec2(-1,-1))
+            if (mn_pos.x == -1 && mn_pos.y == -1)
                 *min_pos = from;
-            else if (mn_pos == glm::ivec2(w + 1,h + 1))
+            else if (mn_pos.x == w+1 && mn_pos.y == h+1)
                 *min_pos = to;
             else 
-                *min_pos = glm::vec2(pos.x,pos.y) + cell_size*glm::vec2(mn_pos);
+                *min_pos = float2(pos.x,pos.y) + cell_size*float2(mn_pos);
         }
         if (max_pos)
         {
-            if (mx_pos == glm::ivec2(-1,-1))
+            if (mx_pos.x == -1 && mx_pos.y == -1)
                 *max_pos = from;
-            else if (mx_pos == glm::ivec2(w + 1,h + 1))
+            else if (mx_pos.x == w+1 && mx_pos.y == h+1)
                 *max_pos = to;
             else 
-                *max_pos = glm::vec2(pos.x,pos.y) + cell_size*glm::vec2(mx_pos);
+                *max_pos = float2(pos.x,pos.y) + cell_size*float2(mx_pos);
         }
     }
 
@@ -273,7 +273,9 @@
     {
         if (!field.data)
             return;
-        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        bool same_size = (pos.x == field.pos.x && pos.y == field.pos.y && pos.z == field.pos.z &&
+                          size.x == field.size.x && size.y == field.size.y && 
+                          w == field.w && h == field.h);
         if (!same_size && same_size_expected)
         {
             logerr("warning: Field_2d add same size and position for fields expected");
@@ -294,7 +296,7 @@
             {
                 for (int i = -w;i<=w;i++)
                 {
-                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                     set(i,j,get(i,j) + field.get_bilinear(ps));
                 }
             }
@@ -304,7 +306,9 @@
     {
         if (!field.data)
             return;
-        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        bool same_size = (pos.x == field.pos.x && pos.y == field.pos.y && pos.z == field.pos.z &&
+                          size.x == field.size.x && size.y == field.size.y && 
+                          w == field.w && h == field.h);
         if (!same_size && same_size_expected)
         {
             logerr("warning: Field_2d sub same size and position for fields expected");
@@ -325,7 +329,7 @@
             {
                 for (int i = -w;i<=w;i++)
                 {
-                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                     set(i,j,get(i,j) - field.get_bilinear(ps));
                 }
             }
@@ -335,7 +339,9 @@
     {
         if (!field.data)
             return;
-        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        bool same_size = (pos.x == field.pos.x && pos.y == field.pos.y && pos.z == field.pos.z &&
+                          size.x == field.size.x && size.y == field.size.y && 
+                          w == field.w && h == field.h);
         if (!same_size && same_size_expected)
         {
             logerr("warning: Field_2d mul same size and position for fields expected");
@@ -356,7 +362,7 @@
             {
                 for (int i = -w;i<=w;i++)
                 {
-                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                     set(i,j,get(i,j) * field.get_bilinear(ps));
                 }
             }
@@ -366,7 +372,9 @@
     {
         if (!field.data)
             return;
-        bool same_size = (pos == field.pos && size == field.size && w == field.w && h == field.h);
+        bool same_size = (pos.x == field.pos.x && pos.y == field.pos.y && pos.z == field.pos.z &&
+                          size.x == field.size.x && size.y == field.size.y && 
+                          w == field.w && h == field.h);
         if (!same_size && same_size_expected)
         {
             logerr("warning: Field_2d div same size and position for fields expected");
@@ -387,7 +395,7 @@
             {
                 for (int i = -w;i<=w;i++)
                 {
-                    glm::vec2 ps = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    float2 ps = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                     set(i,j,get(i,j) / field.get_bilinear(ps));
                 }
             }

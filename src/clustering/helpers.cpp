@@ -1,18 +1,18 @@
 #include "helpers.h"
 
-using namespace glm;
 
-glm::vec3 canonical_bbox()
+
+float3 canonical_bbox()
 {
-    return glm::vec3(100,50,50);
+    return float3(100,50,50);
 }
 bool get_dedicated_bbox(Branch *branch, BBox &bbox)
 {
     if (!branch || branch->segments.empty())
         return false;
-    vec3 a(0, 0, 0);
-    vec3 b(0, 0, 0);
-    vec3 c;
+    float3 a(0, 0, 0);
+    float3 b(0, 0, 0);
+    float3 c;
     a = normalize(branch->joints.back().pos - branch->joints.front().pos);
     for (Joint &j : branch->joints)
     {
@@ -22,9 +22,9 @@ bool get_dedicated_bbox(Branch *branch, BBox &bbox)
         }
     }
     if (length(cross(a, b)) < 0.01)
-        b = vec3(0, 1, 0);
+        b = float3(0, 1, 0);
     if (length(cross(a, b)) < 0.01)
-        b = vec3(0, 0, 1);
+        b = float3(0, 0, 1);
     b = normalize(b - dot(a, b) * a);
     c = cross(a, b);
 
@@ -33,11 +33,11 @@ bool get_dedicated_bbox(Branch *branch, BBox &bbox)
 }
 void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, float scale)
 {
-    glm::vec3 second_vec = glm::vec3(b->plane_coef.x,b->plane_coef.y,b->plane_coef.z);
+    float3 second_vec = float3(b->plane_coef.x,b->plane_coef.y,b->plane_coef.z);
     for (Segment &s : b->segments)
     {
-        glm::vec3 dir = s.end - s.begin;
-        glm::vec3 n = glm::normalize(glm::cross(dir, second_vec));
+        float3 dir = s.end - s.begin;
+        float3 n = normalize(cross(dir, second_vec));
         float len = length(dir);
         float v = (1/3.0)*PI*(SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end));
         float R = 0.5*scale*(s.rel_r_begin + s.rel_r_end);
@@ -50,8 +50,8 @@ void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, f
             float phi = urand(0, 2*PI);
             float h = urand(0, 1);
             float r = R*sqrtf(urand(0, 1));
-            glm::vec3 nr = LiteMath::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
-            glm::vec3 sample = s.begin + h*dir + r*nr;
+            float3 nr = to_float3(rotate(float4x4(),phi,dir)*to_float4(n,0));
+            float3 sample = s.begin + h*dir + r*nr;
             light->set_occluder_trilinear(sample, 25/samples);
         } 
     }

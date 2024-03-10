@@ -6,7 +6,7 @@ class GrassRenderer
 {
 public:
     GrassRenderer();
-    void render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+    void render(float4x4 &projection, float4x4 &view, float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
                 HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow = false);
 private:
     Texture grass_base;
@@ -23,7 +23,7 @@ class GrassRenderer2
 public:
     GrassRenderer2(const GrassPacked &data);
     ~GrassRenderer2();
-    void render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+    void render(float4x4 &projection, float4x4 &view, float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
                 HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow = false);
 private:
     Shader grass;

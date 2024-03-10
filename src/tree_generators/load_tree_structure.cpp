@@ -8,16 +8,16 @@ int tlb_ids = 0;
 int br_ids = 0;
 struct SJoint
 {
-    glm::vec3 pos;
+    float3 pos;
     float r;
     std::vector<int> child_splines;
     std::vector<int> child_leaves;
 };
 struct SLeaf
 {
-    glm::vec3 pos;
-    glm::vec3 dir;
-    glm::vec3 right;
+    float3 pos;
+    float3 dir;
+    float3 right;
 };
 struct Spline
 {
@@ -28,7 +28,7 @@ struct Spline
 struct SavedTree
 {
     int trunk_n  = 0;
-    glm::vec3 pos = glm::vec3(0,0,0);
+    float3 pos = float3(0,0,0);
     float scale = 1.0;
     std::vector<Spline> splines;
     std::vector<SLeaf> leaves;
@@ -43,8 +43,8 @@ void restore_graph(SavedTree &t)
     constexpr int sp_hash_sz = 10;
     constexpr float rel_eps = 1e-4;
 
-    glm::vec3 min_pos = glm::vec3(1e9, 1e9, 1e9);
-    glm::vec3 max_pos = glm::vec3(-1e9, -1e9, -1e9);
+    float3 min_pos = float3(1e9, 1e9, 1e9);
+    float3 max_pos = float3(-1e9, -1e9, -1e9);
 
     for (auto &s : t.splines)
     {
@@ -56,7 +56,7 @@ void restore_graph(SavedTree &t)
     }
     typedef std::list<std::pair<int,int>> hash_bucket;
     std::vector<hash_bucket> hash_table = std::vector<hash_bucket>(sp_hash_sz*sp_hash_sz*sp_hash_sz, hash_bucket());
-    //glm::vec3 grid_sz = 
+    //float3 grid_sz = 
     #define P(a,mn,mx) (CLAMP( (int)(((a-mn)/(mx-mn))*sp_hash_sz),0,sp_hash_sz - 1))
     #define HASH(pos, dx, dy, dz) (sp_hash_sz*sp_hash_sz*CLAMP(P((pos).x,min_pos.x,max_pos.x) + dx,0,sp_hash_sz - 1) + \
                                    sp_hash_sz*CLAMP(P((pos).y,min_pos.y,max_pos.y) + dy,0,sp_hash_sz - 1)+ \
@@ -81,7 +81,7 @@ void restore_graph(SavedTree &t)
         while (!found && radius <= 1)
         {
 
-            float min_dist = pow(100,radius) * rel_eps * glm::dot(max_pos - min_pos, max_pos - min_pos);
+            float min_dist = pow(100,radius) * rel_eps * dot(max_pos - min_pos, max_pos - min_pos);
             std::pair<int,int> min_pair = {-1,-1};
             for (int dx = -radius; dx <= radius; dx++)
             {
@@ -96,7 +96,7 @@ void restore_graph(SavedTree &t)
                                 continue;
                             auto &pos = t.splines[p.first].joints[p.second].pos;
                             auto &r = t.splines[p.first].joints[p.second].r;
-                            float d = glm::dot(pos - bp, pos - bp);
+                            float d = dot(pos - bp, pos - bp);
                             if (d < min_dist && r >= br)
                             {
                                 min_dist = d;
@@ -151,9 +151,9 @@ SavedTree dummy_tree()
     SavedTree st;
     st.splines.emplace_back();
     SJoint j1,j2;
-    j1.pos = glm::vec3(0,0,0);
+    j1.pos = float3(0,0,0);
     j1.r = 1;
-    j2.pos = glm::vec3(0, 10, 0);
+    j2.pos = float3(0, 10, 0);
     j2.r = 0.5;
     st.splines.back().joints = {j1, j2};
     st.splines.back().level = 0;
@@ -166,7 +166,7 @@ void load_tree(Block &blk, SavedTree &st)
     st.pos = blk.get_vec3("position", st.pos);
     st.on_heightmap = blk.get_bool("on_heightmap", st.on_heightmap);
     st.scale = blk.get_double("scale", st.scale);
-    glm::mat4 transform = LiteMath::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
+    float4x4 transform = LiteMath::rotate(LiteMath::scale(float4x4(), float3(st.scale)),-PI/2,float3(1,0,0));
 
     Block *splines_bl = blk.get_block("splines");
     if (!splines_bl)
@@ -186,7 +186,7 @@ void load_tree(Block &blk, SavedTree &st)
                 st.splines.emplace_back();
                 for (int j=0;j<spline_raw.size();j+=4)
                 {
-                    glm::vec3 pos = st.pos + glm::vec3(transform * glm::vec4(spline_raw[j], spline_raw[j+1], spline_raw[j+2], 1));
+                    float3 pos = st.pos + to_float3(transform * float4(spline_raw[j], spline_raw[j+1], spline_raw[j+2], 1));
                     float r = spline_raw[j+3] * st.scale;
                     st.splines.back().joints.push_back(
                     SJoint{pos, r, std::vector<int>(), std::vector<int>()});
@@ -203,13 +203,13 @@ void load_tree(Block &blk, SavedTree &st)
         for (int i=0;i<leaves_arr.size()-8;i+=9)
         {
             st.leaves.emplace_back();
-            st.leaves.back().pos = glm::vec3(leaves_arr[i],leaves_arr[i+1],leaves_arr[i+2]);
-            st.leaves.back().dir = glm::vec3(leaves_arr[i+3],leaves_arr[i+4],leaves_arr[i+5]);
-            st.leaves.back().right = glm::vec3(leaves_arr[i+6],leaves_arr[i+7],leaves_arr[i+8]);
+            st.leaves.back().pos = float3(leaves_arr[i],leaves_arr[i+1],leaves_arr[i+2]);
+            st.leaves.back().dir = float3(leaves_arr[i+3],leaves_arr[i+4],leaves_arr[i+5]);
+            st.leaves.back().right = float3(leaves_arr[i+6],leaves_arr[i+7],leaves_arr[i+8]);
 
-            st.leaves.back().pos = st.pos + glm::vec3(transform*glm::vec4(st.leaves.back().pos,1));
-            st.leaves.back().dir = glm::vec3(transform*glm::vec4(st.leaves.back().dir,0));
-            st.leaves.back().right = glm::vec3(transform*glm::vec4(st.leaves.back().right,0));
+            st.leaves.back().pos = st.pos + to_float3(transform*to_float4(st.leaves.back().pos,1));
+            st.leaves.back().dir = to_float3(transform*to_float4(st.leaves.back().dir,0));
+            st.leaves.back().right = to_float3(transform*to_float4(st.leaves.back().right,0));
         }
     }
     else
@@ -228,7 +228,7 @@ void load_tree(Block &blk, SavedTree &st)
     }
 }
 
-void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external_tree, glm::vec3 &parent_joint_pos)
+void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external_tree, float3 &parent_joint_pos)
 {
     #define EPS 1e-4
     br->level = level;
@@ -237,8 +237,8 @@ void convert(Spline &s, ::Branch *br, int level, SavedTree &st, ::Tree &external
     br_ids++;
     br->id = external_tree.id;
     br->center_self = s.joints[0].pos;
-    br->plane_coef = glm::vec4(1,0,0,br->center_self.x);
-    if (glm::length(parent_joint_pos - s.joints[0].pos) > 0.5*s.joints[0].r + EPS)
+    br->plane_coef = float4(1,0,0,br->center_self.x);
+    if (length(parent_joint_pos - s.joints[0].pos) > 0.5*s.joints[0].r + EPS)
     {
         br->joints.emplace_back();
         br->joints.back().leaf = nullptr;
@@ -318,9 +318,9 @@ void TreeLoaderBlk::load_tree(const TreeTypeData *type, ::Tree &tree_external, B
     logerr("converted tree %d joints loaded %d joint transformed",st.joints_count,st.joints_transformed);
 }
 
-void TreeLoaderBlk::plant_tree(glm::vec3 pos, const TreeTypeData *type)
+void TreeLoaderBlk::plant_tree(float3 pos, const TreeTypeData *type)
 {
-  tree_saplings.push_back(std::pair<glm::vec3, const TreeTypeData *>(pos, type));
+  tree_saplings.push_back(std::pair<float3, const TreeTypeData *>(pos, type));
 }
 
 void TreeLoaderBlk::finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels)

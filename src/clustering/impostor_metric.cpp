@@ -45,7 +45,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
 
         ictx->self_impostors_data->atlas = a;
         ictx->self_impostors_data->atlas.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
-        ictx->self_impostors_data->atlas.set_clear_color(glm::vec4(0, 0, 0, 0));
+        ictx->self_impostors_data->atlas.set_clear_color(float4(0, 0, 0, 0));
     }
     ImpostorBaker ib;
     ImpostorBaker::ImpostorGenerationParams params;
@@ -63,9 +63,9 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     LeafHeap lh;
     Branch *tmp_b = bh.new_branch();
     tmp_b->deep_copy(base, bh, &lh);
-    glm::mat4 tr = LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,0,1))*glm::inverse(data.transform);
+    float4x4 tr = LiteMath::rotate(float4x4(), PI/2, float3(0,0,1))*LiteMath::inverse4x4(data.transform);
     //when we render impostor we assume that the main axis is y,
-    //while after glm::inverse(data.transform) the main axis is x
+    //while after LiteMath::inverse4x4(data.transform) the main axis is x
     tmp_b->transform(tr, 1);
 
             ClusterData cd;
@@ -75,11 +75,11 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
             cd.IDA.tree_ids.push_back(0);
             cd.IDA.centers_par.push_back(tmp_b->center_par);
             cd.IDA.centers_self.push_back(tmp_b->center_self);
-            cd.IDA.transforms.push_back(glm::mat4(1.0f));
+            cd.IDA.transforms.push_back(float4x4());
             cd.ACDA.clustering_data.push_back(nullptr);
 
             ictx->self_impostors_data->impostors.emplace_back();
-            BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,glm::vec3(1,0,0),glm::vec3(0,1,0),glm::vec3(0,0,1));
+            BBox bbox = BillboardCloudRaw::get_bbox(tmp_b,float3(1,0,0),float3(0,1,0),float3(0,0,1));
             ib.make_impostor(*tmp_b, ictx->types[base->type_id], ictx->self_impostors_data->impostors.back(), params, 
                              ictx->self_impostors_data->atlas, bbox);
             id->self_impostor = ictx->self_impostors_data->impostors.end();
@@ -230,7 +230,7 @@ Answer ImpostorClusteringHelper::dist_impostor(BranchClusteringDataImpostor &bwd
 {
     if (!current_data->self_impostors_raw_atlas || !current_data->self_impostors_data)
         return Answer(true,1000,1000);
-    glm::ivec4 sizes = current_data->self_impostors_data->atlas.get_sizes();
+    int4 sizes = current_data->self_impostors_data->atlas.get_sizes();
     int w = sizes.x/sizes.z;
     int h = sizes.y/sizes.w; 
     
@@ -284,8 +284,8 @@ Answer ImpostorClusteringHelper::dist_impostor(BranchClusteringDataImpostor &bwd
 
     data->rotation = (2*PI*best_rot)/sz;
     #define SZ_DIFF(a,b) pow(MAX(1, MAX(a,b)/MIN(a,b) - isimParams.size_diff_tolerance), isimParams.size_diff_factor)
-    glm::vec3 &s1 = bwd1.sizes;
-    glm::vec3 &s2 = bwd2.sizes;
+    float3 &s1 = bwd1.sizes;
+    float3 &s2 = bwd2.sizes;
     float dist_discriminator = SZ_DIFF(s1.x, s2.x) *
                                SZ_DIFF(sqrt(SQR(s1.y) + SQR(s1.z)), sqrt(SQR(s2.y) + SQR(s2.z)));
      min_av_dist += dist_discriminator - 1;

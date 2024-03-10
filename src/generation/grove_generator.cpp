@@ -27,7 +27,7 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
     int trees_planted = 0;
     bool generating = true;
     Planter planter(&voxels, &hmap, &mask, prototype.biome_mask,
-                              glm::vec3(prototype.pos.x,0,prototype.pos.y), prototype.size,
+                              float3(prototype.pos.x,0,prototype.pos.y), prototype.size,
                               1,prototype.trees_count - prototype.preplanted_trees.size(),5);
     
     for (auto &p : prototype.preplanted_trees)
@@ -45,7 +45,7 @@ void GroveGenerator::prepare_patch(GrovePrototype &prototype,
     {
         if (trees_planted < prototype.trees_count)
         {
-            std::vector<glm::vec3> seeds = planter.get_saplings();
+            std::vector<float3> seeds = planter.get_saplings();
             
             if (!seeds.empty())
             {

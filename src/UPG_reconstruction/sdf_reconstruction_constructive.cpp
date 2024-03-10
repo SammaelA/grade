@@ -50,8 +50,8 @@ namespace upg
   class PointCloudSdfLossConstructive : public UPGOptimizableFunction
   {
   private:
-    std::vector<glm::vec3> surface_points;
-    std::vector<glm::vec3> outer_points;
+    std::vector<float3> surface_points;
+    std::vector<float3> outer_points;
     float beta;
     float p;
     float beta_p;
@@ -59,8 +59,8 @@ namespace upg
     float inner_fine;
 
   public:
-    PointCloudSdfLossConstructive(const std::vector<glm::vec3> &_surface_points,
-                           const std::vector<glm::vec3> &_outer_points,
+    PointCloudSdfLossConstructive(const std::vector<float3> &_surface_points,
+                           const std::vector<float3> &_outer_points,
                            float _beta = 0.1, float _p = 2, float _inner_fine = 1)
     {
       surface_points = _surface_points;
@@ -89,7 +89,7 @@ namespace upg
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
       {
-        const glm::vec3 &point = surface_points[index];
+        const float3 &point = surface_points[index];
         cur_grad.clear();
         double dist = sdf.get_distance(point, &cur_grad, &dpos_dparams);
 
@@ -98,7 +98,7 @@ namespace upg
         double dist_p = pow(abs(dist),p);
         double dist_p_inv = 1/dist_p;
         double loss = abs(dist) >= beta ? (1 - 0.5*beta_p*dist_p_inv) : (0.5*beta_p_inv*dist_p);
-        double dloss_ddist = abs(dist) >= beta ? (0.5*beta_p*p*(dist_p_inv*dist_inv)*glm::sign(dist)) : (0.5*beta_p_inv*(dist_p*dist_inv)*glm::sign(dist));
+        double dloss_ddist = abs(dist) >= beta ? (0.5*beta_p*p*(dist_p_inv*dist_inv)*LiteMath::sign(dist)) : (0.5*beta_p_inv*(dist_p*dist_inv)*LiteMath::sign(dist));
 
         //if (dist < -beta)
         //{
@@ -117,7 +117,7 @@ namespace upg
       {
         p2 = sum_with_adaptive_batching([&](int index) -> double 
         {
-          const glm::vec3 &p = outer_points[index];
+          const float3 &p = outer_points[index];
           cur_grad.clear();
           double d = sdf.get_distance(p, &cur_grad, &dpos_dparams);
           if (d < 0)
@@ -158,7 +158,7 @@ namespace upg
       //main step - minimize SDF values on surface
       auto p1 = sum_with_adaptive_batching([&](int index) -> double 
       {
-        const glm::vec3 &point = surface_points[index];
+        const float3 &point = surface_points[index];
         double dist = sdf.get_distance(point);
 
         //loss function, value in range (0, 1]
@@ -177,7 +177,7 @@ namespace upg
       {
         p2 = sum_with_adaptive_batching([&](int index) -> double 
         {
-          const glm::vec3 &p = outer_points[index];
+          const float3 &p = outer_points[index];
           double d = sdf.get_distance(p);
           if (d < 0)
             return inner_fine*d*d;
@@ -202,7 +202,7 @@ struct ReferencePointsGrid
 {
 public:
   ReferencePointsGrid() = default;
-  ReferencePointsGrid(const std::vector<glm::vec3> &_points, const std::vector<float> &_distances,
+  ReferencePointsGrid(const std::vector<float3> &_points, const std::vector<float> &_distances,
                       unsigned cells_count);
 
   struct Cell
@@ -213,32 +213,32 @@ public:
     AABB bbox;
   };
 
-  inline unsigned v_to_i(glm::uvec3 v)
+  inline unsigned v_to_i(uint3 v)
   {
     return v.x*grid_size.y*grid_size.z + v.y*grid_size.z + v.z;
   }
 
-  inline glm::uvec3 get_cell_id(glm::vec3 point)
+  inline uint3 get_cell_id(float3 point)
   {
-    glm::vec3 idf = (point-grid_box.min_pos)/cell_size;
-    return glm::uvec3(CLAMP(floor(idf.x), 0, grid_size.x-1),
+    float3 idf = (point-grid_box.min_pos)/cell_size;
+    return uint3(CLAMP(floor(idf.x), 0, grid_size.x-1),
                       CLAMP(floor(idf.y), 0, grid_size.y-1),
                       CLAMP(floor(idf.z), 0, grid_size.z-1));
   }
 
   //same size for all three arrays
-  std::vector<glm::vec3> points;
+  std::vector<float3> points;
   std::vector<float> distances;
   std::vector<bool> is_active;
 
   unsigned cells_count;
-  glm::uvec3 grid_size;
-  glm::vec3 cell_size;
+  uint3 grid_size;
+  float3 cell_size;
   AABB grid_box;
   std::vector<Cell> cells;
 };
 
-ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, const std::vector<float> &_distances,
+ReferencePointsGrid::ReferencePointsGrid(const std::vector<float3> &_points, const std::vector<float> &_distances,
                                          unsigned expected_cells_count)
 {
   assert(_points.size() > 0);
@@ -246,7 +246,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
   assert(expected_cells_count < 10'000'000); //too large grid may be result of some bug
 
   grid_box = get_point_cloud_bbox(_points);
-  glm::vec3 box_size = grid_box.max_pos - grid_box.min_pos;
+  float3 box_size = grid_box.max_pos - grid_box.min_pos;
   float min_size = MIN(box_size.x, MIN(box_size.y, box_size.z));
   float k_flt = pow(expected_cells_count/((box_size.x/min_size)*(box_size.y/min_size)*(box_size.z/min_size)), 1/3.0);
   if (min_size < 1e-4 || k_flt < 0.5)
@@ -255,8 +255,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
            box_size.x, box_size.y, box_size.z);
   }
 
-  grid_size = glm::uvec3(ceil(k_flt*(box_size.x/min_size)), ceil(k_flt*(box_size.y/min_size)), ceil(k_flt*(box_size.z/min_size)));
-  cell_size = box_size/glm::vec3(grid_size);
+  grid_size = uint3(ceil(k_flt*(box_size.x/min_size)), ceil(k_flt*(box_size.y/min_size)), ceil(k_flt*(box_size.z/min_size)));
+  cell_size = box_size/float3(grid_size);
   cells_count = grid_size.x*grid_size.y*grid_size.z;
   logerr("ReferencePointsGrid: %u cells (%u %u %u)", cells_count, grid_size.x, grid_size.y, grid_size.z);
   cells.resize(cells_count);
@@ -269,7 +269,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     point_lists[cid].push_back(i);
   }
 
-  points = std::vector<glm::vec3>(_points.size());
+  points = std::vector<float3>(_points.size());
   distances = std::vector<float>(_points.size());
   is_active = std::vector<bool>(_points.size(), true);
   //points = _points;
@@ -288,8 +288,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     cells[i].count = point_lists[i].size();
     cells[i].active_count = point_lists[i].size();
 
-    glm::uvec3 cell_id(i/(grid_size.y*grid_size.z), (i/grid_size.z)%grid_size.y, i%grid_size.z);
-    glm::vec3 pos = grid_box.min_pos + glm::vec3(cell_id)*cell_size;
+    uint3 cell_id(i/(grid_size.y*grid_size.z), (i/grid_size.z)%grid_size.y, i%grid_size.z);
+    float3 pos = grid_box.min_pos + float3(cell_id)*cell_size;
     cells[i].bbox = AABB(pos, pos+cell_size);
 
     //logerr("cell %u (off %u). %u points. bbox [%f %f %f]-[%f %f %f]", i, offset, cells[i].count, 
@@ -338,11 +338,11 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     return res;
   }
 
-  void reassign_point_types(std::vector<glm::vec3> &surface_points/*inout*/, std::vector<glm::vec3> &outer_points/*inout*/, 
+  void reassign_point_types(std::vector<float3> &surface_points/*inout*/, std::vector<float3> &outer_points/*inout*/, 
                             ProceduralSdf &sdf, float threshold = 0.001f)
   {
-    std::vector<glm::vec3> new_surface_points;
-    std::vector<glm::vec3> new_outer_points = outer_points;
+    std::vector<float3> new_surface_points;
+    std::vector<float3> new_outer_points = outer_points;
 
     float  beta = 0.01f;
     float  P = 2.0f;
@@ -355,7 +355,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     float out_beta = 0.0f;
     for (auto &p : surface_points)
     {
-      if (abs(0.5-length(p-glm::vec3(0.6,0.6,0.6))) < 1e-5) 
+      if (abs(0.5-length(p-float3(0.6,0.6,0.6))) < 1e-5) 
         target++;
       float dist = sdf.get_distance(p);
         double dist_inv = 1/MAX(abs(dist), 1e-12);
@@ -381,9 +381,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
     logerr("reassigned %d/%d points %d/%d surface points left", reassigned, target, (int)surface_points.size(), (int)(surface_points.size()+outer_points.size()));
   }
 
-  void remove_inactive_points(std::vector<glm::vec3> &points, std::vector<float> &distances, ProceduralSdf &sdf, float threshold = 0.001f)
+  void remove_inactive_points(std::vector<float3> &points, std::vector<float> &distances, ProceduralSdf &sdf, float threshold = 0.001f)
   {
-    std::vector<glm::vec3> active_points;
+    std::vector<float3> active_points;
     std::vector<float> active_distances;
     for (int i=0;i<points.size();i++)
     {
@@ -402,7 +402,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
                                                                  const std::vector<UPGReconstructionResult> &prev_step_res)
   {
     std::vector<UPGReconstructionResult> part_results;
-    std::vector<glm::vec3> active_points = reference.d_points;
+    std::vector<float3> active_points = reference.d_points;
     std::vector<float> active_distances = reference.d_distances;
 
     //step_blk->set_int("iterations", 1000);
@@ -451,9 +451,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
       ProceduralSdf sdf(partial_result.structure);
       sdf.set_parameters(partial_result.parameters.p);
       CameraSettings camera;
-      camera.origin = glm::vec3(0,0,3);
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(0,0,3);
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 4);
       engine::textureManager->save_png(t, "partial_sdf_"+std::to_string(i));
       opt_func.remove_inactive_points(sdf, 0.001f);
@@ -462,19 +462,19 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
   }
 
-  UPGReconstructionResult set_initial_parameters(const UPGStructure &structure, FieldSdfLossConstructive &func, glm::vec3 initial_pos)
+  UPGReconstructionResult set_initial_parameters(const UPGStructure &structure, FieldSdfLossConstructive &func, float3 initial_pos)
   {
     auto gen = func.get_generator(structure);
     auto pd = func.get_full_parameters_description(gen.get());
 
-    glm::ivec3 pos_ids(-1,-1,-1);
-    std::vector<glm::vec2> borders;
+    int3 pos_ids(-1,-1,-1);
+    std::vector<float2> borders;
     for (const auto &p : pd.get_block_params())
     {
       for (const auto &param_info : p.second.p)
       {
         if (param_info.type != ParameterType::CONST)
-          borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+          borders.push_back(float2(param_info.min_val, param_info.max_val));
         if (param_info.name=="move_x")
         {
           assert(pos_ids.x == -1);
@@ -579,7 +579,7 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
 
       for (int try_n=0;try_n<tries; try_n++)
       {
-        glm::vec3 best_pos;
+        float3 best_pos;
         float best_dist = 1e6;
         for (int k=0;k<15000;k++)
         {
@@ -625,9 +625,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
       ProceduralSdf sdf(best_part_result.structure);
       sdf.set_parameters(best_part_result.parameters.p);
       CameraSettings camera;
-      camera.origin = glm::vec3(0,0,3);
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(0,0,3);
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 4);
       engine::textureManager->save_png(t, "partial_sdf_"+std::to_string(i));
       opt_func.remove_inactive_points(sdf, 0.001f);
@@ -640,8 +640,8 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
                                                                         const std::vector<UPGReconstructionResult> &prev_step_res)
   {
     std::vector<UPGReconstructionResult> part_results;
-    std::vector<glm::vec3> surface_points = reference.points;
-    std::vector<glm::vec3> outer_points = reference.outside_points;
+    std::vector<float3> surface_points = reference.points;
+    std::vector<float3> outer_points = reference.outside_points;
 
     //step_blk->set_int("iterations", 1000);
     //step_blk->set_bool("verbose", true);
@@ -691,9 +691,9 @@ ReferencePointsGrid::ReferencePointsGrid(const std::vector<glm::vec3> &_points, 
       ProceduralSdf sdf(partial_result.structure);
       sdf.set_parameters(partial_result.parameters.p);
       CameraSettings camera;
-      camera.origin = glm::vec3(0,0,3);
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(0,0,3);
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 4);
       engine::textureManager->save_png(t, "partial_sdf_"+std::to_string(i));
       reassign_point_types(surface_points, outer_points, sdf);

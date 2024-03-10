@@ -1,7 +1,7 @@
 #include "planter.h"
 
 Planter::Planter(LightVoxelsCube *_voxels, Heightmap *_heightmap, GroveMask *_mask, GroveMask *_bm,
-                 glm::vec3 _center, glm::vec2 _size,
+                 float3 _center, float2 _size,
                  float base_density, int max_saplings, float _cell_size):
 density(_center, _size, _cell_size),
 occlusion(_center, _size, _cell_size)
@@ -13,7 +13,7 @@ occlusion(_center, _size, _cell_size)
     cell_size = _cell_size;
     mask = _mask;
     biome_mask = _bm;
-    glm::vec4 bord = heightmap->get_borders();//(min_pos,max_pos)
+    float4 bord = heightmap->get_borders();//(min_pos,max_pos)
     if (!voxels->empty())
     {
       AABB box = voxels->get_bbox();
@@ -44,16 +44,16 @@ occlusion(_center, _size, _cell_size)
     saplings_left = MIN(max_saplings, base_density*size.x*size.y);
 }
 
-std::vector<glm::vec3> Planter::get_saplings()
+std::vector<float3> Planter::get_saplings()
 {
     int cnt = saplings_left >= 2 ? saplings_left/2 : saplings_left;
-    std::vector<glm::vec3> saplings;
+    std::vector<float3> saplings;
     //спроецировать воксельный массив на occlusion
     if (voxels)
     {
-      std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) ->float
+      std::function<float(float2 &)> func = [&](float2 &p) ->float
       {
-          return voxels->get_occlusion_projection(glm::vec3(p.x,0,p.y));
+          return voxels->get_occlusion_projection(float3(p.x,0,p.y));
       };
       occlusion.fill_func(func);
     }
@@ -63,18 +63,18 @@ std::vector<glm::vec3> Planter::get_saplings()
         const int max_tries = 50;
         int tries = 0;
         float sum = 0;
-        std::vector<glm::vec3> points;
+        std::vector<float3> points;
         while (points.size() < max_points && tries < max_tries)
         {
             float x = center.x + urand(-1,1)*size.x;
             float y = center.z + urand(-1,1)*size.y;
-            glm::vec3 ps = glm::vec3(x,0,y);
+            float3 ps = float3(x,0,y);
             float occ = (1 /(1 + occlusion.get_bilinear(ps)))*density.get_bilinear(ps)*mask->get_bilinear(ps);
             if (biome_mask)
                 occ *= biome_mask->get_bilinear(ps);
             if (occ > 1e-4)
             {
-                points.push_back(glm::vec3(x,y,occ));
+                points.push_back(float3(x,y,occ));
                 sum += occ;
             }
             //logerr("occ is got %f %f %f",occlusion.get_bilinear(ps), density.get_bilinear(ps), mask->get_bilinear(ps));
@@ -92,7 +92,7 @@ std::vector<glm::vec3> Planter::get_saplings()
                 //logerr("p %f %f rnd %f %f",p.x,p.y,rnd,p.z);
                 if (rnd < p.z)
                 {
-                    glm::vec3 pos = glm::vec3(p.x,0,p.y);
+                    float3 pos = float3(p.x,0,p.y);
                     pos.y = heightmap->get_bilinear(pos);
                     saplings.push_back(pos);
                     saplings_planted.push_back(pos);

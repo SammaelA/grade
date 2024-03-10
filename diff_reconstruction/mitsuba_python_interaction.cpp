@@ -528,19 +528,19 @@ void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, Mode
   auto &rs = render_settings;
 
   //find center of model to adjust cameras
-  glm::vec3 center = glm::vec3(0,0,0);
+  float3 center = float3(0,0,0);
   for (int i=0;i<model.first.size();i+=ml.f_per_vert)
   {
-    center += glm::vec3(model.first[i + ml.pos], model.first[i + ml.pos + 1], model.first[i + ml.pos + 2]);
+    center += float3(model.first[i + ml.pos], model.first[i + ml.pos + 1], model.first[i + ml.pos + 2]);
   }
   center = center/(float)(model.first.size()/ml.f_per_vert);
-  float dist = glm::length(center - camera.origin);
+  float dist = length(center - camera.origin);
 
   Texture composite_tex = engine::textureManager->create_texture(rotations_x*rs.image_w, 2*rotations_y*rs.image_h);
   PostFx copy("copy.fs");
   int fbo = create_framebuffer();
 
-  auto render_to_tex = [&](glm::ivec2 offset)
+  auto render_to_tex = [&](int2 offset)
   {
     for (int i=0;i<rotations_x;i++)
     {
@@ -549,9 +549,9 @@ void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, Mode
         float phi = (2*PI*i)/rotations_x;
         float psi = (2*PI*j)/(rotations_y + 1);//no need for top view
 
-        glm::vec3 pos = dist*glm::vec3(cos(psi)*cos(phi), sin(psi), cos(psi)*sin(phi));
-        glm::vec3 right = glm::cross(pos, glm::vec3(0,1,0));
-        glm::vec3 up = glm::normalize(glm::cross(right, pos));
+        float3 pos = dist*float3(cos(psi)*cos(phi), sin(psi), cos(psi)*sin(phi));
+        float3 right = cross(pos, float3(0,1,0));
+        float3 up = normalize(cross(right, pos));
         CameraSettings cur_cam = camera;
         cur_cam.target = center;
         cur_cam.origin = center + pos;
@@ -580,11 +580,11 @@ void MitsubaInterface::render_multicam_demo(RenderSettings render_settings, Mode
   //Render with constant texture
   RenderSettings setting_monochrome(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::MONOCHROME_DEMO);
   init_scene_and_settings(setting_monochrome, model_info);
-  render_to_tex(glm::ivec2(0,0));
+  render_to_tex(int2(0,0));
 
   RenderSettings setting_textured(rs.image_w, rs.image_h, rs.samples_per_pixel, rs.mitsubaVar, RenderStyle::TEXTURED_DEMO);
   init_scene_and_settings(setting_textured, model_info);
-  render_to_tex(glm::ivec2(0,rotations_y*rs.image_h));
+  render_to_tex(int2(0,rotations_y*rs.image_h));
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -622,8 +622,8 @@ CameraSettings MitsubaInterface::get_camera_from_scene_params(const std::vector<
   float h1 = 1.5;
   camera.fov_rad = fov_rad;
   float h2 = h1 * tan((3.14159265f / 3) / 2) / tan(camera.fov_rad / 2);
-  camera.origin = glm::vec3(0, 0.5, h2);
-  camera.target = glm::vec3(0, 0.5, 0);
-  camera.up = glm::vec3(0, 1, 0);
+  camera.origin = float3(0, 0.5, h2);
+  camera.target = float3(0, 0.5, 0);
+  camera.up = float3(0, 1, 0);
   return camera;
 }

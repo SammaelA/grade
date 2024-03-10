@@ -29,7 +29,7 @@ public:
     {
         Model *m;
         ::Texture *t;
-        std::vector<glm::mat4> transforms;
+        std::vector<float4x4> transforms;
         int material_id = -1;
     };
     void add_model(Model *m);

@@ -63,9 +63,9 @@ BranchStat SyntheticTreeGenerator::get_branch_stat(ClusterData &cd)
             }
         }
         rots.push_back(0);//FIXME
-        glm::vec3 dir = b->joints.size() > 2 ? b->joints.back().pos - b->joints.front().pos : glm::vec3(1, 1, 1);
+        float3 dir = b->joints.size() > 2 ? b->joints.back().pos - b->joints.front().pos : float3(1, 1, 1);
         r_s.push_back(length(dir));
-        dir = glm::normalize(dir);
+        dir = normalize(dir);
         psi_s.push_back(acos(dir.y));
         if (abs(dir.x) < 1e-9)
             phi_s.push_back(dir.z > 0 ? PI / 2 : -PI / 2);
@@ -159,13 +159,13 @@ void SyntheticTreeGenerator::get_existance_stat(ClusterData &cd, std::vector<Dis
         branchExistanceStat.push_back(distibutionGenerator.get_discrete_general(values, weights));
     }
 }
-void SyntheticTreeGenerator::add_shadow(Branch *b, glm::mat4 &transform)
+void SyntheticTreeGenerator::add_shadow(Branch *b, float4x4 &transform)
 {
     if (!b)
         return;
     for (Joint &j : b->joints)
     {
-        glm::vec3 ps = transform*glm::vec4(j.pos,1);
+        float3 ps = transform*float4(j.pos,1);
         voxels->set_occluder(ps, powf(4 - b->level, 2));
         for (Branch *br : j.childBranches)
         {
@@ -273,14 +273,14 @@ void SyntheticTreeGenerator::synt_tree_to_real(SyntheticTree &synt, Tree &t)
         k++;
     }
 }
-glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, BranchStat &stat)
+float4x4 SyntheticTreeGenerator::get_transform(Branch *base, float3 pos, BranchStat &stat)
 {
-    glm::vec3 dir = base->joints.back().pos - base->joints.front().pos;
-    if (glm::length(dir) < 1e-4)
-        return glm::mat4(0);
+    float3 dir = base->joints.back().pos - base->joints.front().pos;
+    if (length(dir) < 1e-4)
+        return float4x4(0);
     float scale = stat.transformStat.r->get();
-    scale /= glm::length(dir);
-    dir = glm::normalize(dir);
+    scale /= length(dir);
+    dir = normalize(dir);
     float psi_s = stat.transformStat.psi->get() - acos(dir.y);
     float phi_s = stat.transformStat.phi->get();
     if (abs(dir.x) < 1e-9)
@@ -294,19 +294,19 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
         psi_s *= 0.2;
     }
     float self_rot = stat.transformStat.rot_angle->get();
-    glm::mat4 transf = LiteMath::translate(
+    float4x4 transf = LiteMath::translate(
         LiteMath::rotate(
             LiteMath::rotate(
                 LiteMath::rotate(
                     LiteMath::scale(
-                        LiteMath::translate(glm::mat4(1.0f), pos),
-                        glm::vec3(scale)),
+                        LiteMath::translate(float4x4(), pos),
+                        float3(scale)),
                     self_rot, dir),
-                phi_s, glm::vec3(0, 1, 0)),
-            psi_s, glm::vec3(1, 0, 0)),
+                phi_s, float3(0, 1, 0)),
+            psi_s, float3(1, 0, 0)),
         -(base->joints.front().pos));
-    glm::vec4 ps = glm::vec4(base->joints.front().pos, 1);
-    glm::vec4 p = transf * ps;
+    float4 ps = float4(base->joints.front().pos, 1);
+    float4 p = transf * ps;
     if (p.x != p.x || p.y != p.y || p.z != p.z)
     {
         logerr("matrix is NAN %f %f %f) pos = (%f %f %f) scale = %f, self_rot = %f, dir = (%f %f %f),phi_s = %f %f",
@@ -314,19 +314,19 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
     }
     return transf;
 }
-float calc_occ(Branch *b, glm::mat4 &transform, LightVoxelsCube *voxels, int max_level)
+float calc_occ(Branch *b, float4x4 &transform, LightVoxelsCube *voxels, int max_level)
 {
     if (!b || !voxels || b->level > max_level)
         return 0;
     if (b->level == max_level)
     {
-        glm::vec3 ps = transform * glm::vec4(b->joints.front().pos, 1);
+        float3 ps = transform * float4(b->joints.front().pos, 1);
         return voxels->get_occlusion(ps);
     }
     float occ = 0;
     for (Joint &j : b->joints)
     {
-        glm::vec3 ps = transform * glm::vec4(j.pos, 1);
+        float3 ps = transform * float4(j.pos, 1);
         occ += voxels->get_occlusion(ps);
         for (Branch *br : j.childBranches)
         {
@@ -335,14 +335,14 @@ float calc_occ(Branch *b, glm::mat4 &transform, LightVoxelsCube *voxels, int max
     }
     return occ;
 }
-float calc_occ_non_rec(Branch *b, glm::mat4 &transform, LightVoxelsCube *voxels)
+float calc_occ_non_rec(Branch *b, float4x4 &transform, LightVoxelsCube *voxels)
 {
     if (!b || !voxels)
         return 0;
     float occ = 0;
     for (Joint &j : b->joints)
     {
-        glm::vec3 ps = transform * glm::vec4(j.pos, 1);
+        float3 ps = transform * float4(j.pos, 1);
         occ += voxels->get_occlusion(ps);
     }
     return occ;
@@ -358,15 +358,15 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
     struct Bdata
     {
         int br_cl = -1;
-        glm::mat4 transform = glm::mat4(0);
+        float4x4 transform = float4x4(0);
         float occlusion = 1e9;
     };
     struct RootBdata
     {
         int br_cl = -1;
-        glm::mat4 transform = glm::mat4(0);
+        float4x4 transform = float4x4(0);
         float occlusion = 1e9;
-        glm::vec3 pos;
+        float3 pos;
     };
     RootBdata bd;
 
@@ -382,7 +382,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
             if (seeds.empty())
                 continue;
 
-            glm::vec3 pos = glm::vec3(seeds.front().pos.x, 0, seeds.front().pos.y);
+            float3 pos = float3(seeds.front().pos.x, 0, seeds.front().pos.y);
             pos.y = seeder.heightmap->get_height(pos);
             //pos.z += 200;
             int root_cl;
@@ -432,13 +432,13 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
         int synt_child_branches_count = 0;
         int root_cl = bd.br_cl;
         RootStat *root_stat = &(stat.rootStats[bd.br_cl]);
-        glm::vec3 root_pos = bd.pos;
+        float3 root_pos = bd.pos;
         for (Joint &base_j : trunks_clusters[root_cl].base->joints)
         {
             int chb_count = root_stat->branchExistanceStat[MIN(root_stat->branchExistanceStat.size(), i)]->get();
             if (i == trunks_clusters[root_cl].base->joints.size() - 1)
                 chb_count = MAX(1, chb_count);
-            glm::vec3 bpos = synt.trunk_instance_data.transforms.front() * glm::vec4(base_j.pos, 1);
+            float3 bpos = synt.trunk_instance_data.transforms.front() * float4(base_j.pos, 1);
             for (int j = 0; j < chb_count; j++)
             {
                 int child_branches_added = 0;
@@ -453,7 +453,7 @@ void SyntheticTreeGenerator::make_synt_tree(SyntheticTree &synt)
                     Branch *base = branches_clusters[br_cl].base;
                     auto b_stat = stat.branchStats[br_cl];
 
-                    glm::mat4 transform = get_transform(base, bpos, b_stat);
+                    float4x4 transform = get_transform(base, bpos, b_stat);
                     float occ = calc_occ(base,transform,voxels,2);
 
                     bdata.br_cl = br_cl;

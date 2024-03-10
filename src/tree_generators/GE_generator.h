@@ -14,7 +14,7 @@ class GETreeGenerator : public AbstractTreeGenerator
 {
 public:
     virtual bool iterate(LightVoxelsCube &voxels) override;
-    virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) override;
+    virtual void plant_tree(float3 pos, const TreeTypeData *type) override;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) override;
     virtual void set_seed(int _seed) override {gen = std::mt19937{_seed}; seed = _seed;}
     virtual bool use_voxels_for_generation() override {return true;}
@@ -43,9 +43,9 @@ protected:
         int total_joints = 0;//how many joint this branch has totally (with subbranches)
         int distance_from_trunk = 0;//how many segments between first joint of this branch and trunk
         float base_r;
-        glm::vec2 average_chb_dir = glm::vec2(0,0);
+        float2 average_chb_dir = float2(0,0);
         Branch(){};
-        Branch(int _level, glm::vec3 start_pos, int iteration, bool _can_be_removed)
+        Branch(int _level, float3 start_pos, int iteration, bool _can_be_removed)
         {
             can_be_removed = _can_be_removed;
             level = _level;
@@ -55,22 +55,22 @@ protected:
 
     struct Leaf
     {
-        glm::vec3 pos;
-        std::vector<glm::vec3> edges;
+        float3 pos;
+        std::vector<float3> edges;
     };
 
     struct Joint
     {
         int birth_time;
-        glm::vec3 pos;
+        float3 pos;
         float r;
         std::list<Branch> childBranches;
         Leaf leaf;//can be empty if edges.empty()
         float light = 0;
         float resource = 0;
         bool can_have_child_branches;
-        glm::vec2 distance_from_root = glm::vec2(0,0);//horizontal and vertical length of path from root
-        Joint(glm::vec3 _pos, int iteration, bool ch_b, float bonus_r = 0.0) 
+        float2 distance_from_root = float2(0,0);//horizontal and vertical length of path from root
+        Joint(float3 _pos, int iteration, bool ch_b, float bonus_r = 0.0) 
         {
             birth_time = iteration;
             pos = _pos; 
@@ -92,7 +92,7 @@ protected:
     };
     struct Tree
     {
-        glm::vec3 pos;
+        float3 pos;
         Branch root;
         int max_depth = 1;
         const TreeTypeData *type = nullptr;
@@ -104,13 +104,13 @@ protected:
     struct SpaceColonizationData
     {
     public:
-        void add(glm::vec3 pos);
+        void add(float3 pos);
         void prepare(LightVoxelsCube &voxels);
-        bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
-                           glm::vec3 &best_pos, float &best_occ);
-        void remove_close(glm::vec3 pos, float r);
+        bool find_best_pos(LightVoxelsCube &voxels, float r, float3 pos, float3 dir, float angle,
+                           float3 &best_pos, float &best_occ);
+        void remove_close(float3 pos, float r);
 
-        std::vector<glm::vec3> positions;
+        std::vector<float3> positions;
         Octree octree;
         bool active = true;
     };
@@ -128,9 +128,9 @@ protected:
         int joint_n;
         Branch *base_branch;
         GrowthType gType;
-        glm::vec3 prev_dir;
+        float3 prev_dir;
         float resource_left;
-        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, glm::vec3 pd, float res_left, int _joint_n)
+        GrowPoint(Joint *_j, Branch *_b, GrowthType _gt, float3 pd, float res_left, int _joint_n)
         {
             joint = _j;
             base_branch = _b;
@@ -148,7 +148,7 @@ protected:
     void convert(Tree &src, ::Tree &dst, Branch &b_src, ::Branch *b_dst);
 
     void calc_light(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params);
-    void calc_distance_from_root(Branch &b, const GETreeParameters &params, glm::vec2 start_distance);
+    void calc_distance_from_root(Branch &b, const GETreeParameters &params, float2 start_distance);
     void distribute_resource(Branch &b, const GETreeParameters &params, float res_mult);
     void prepare_nodes_and_space_colonization(Tree &t, Branch &b, const GETreeParameters &params, 
                                               std::vector<GrowPoint> &growth_points,
@@ -159,29 +159,29 @@ protected:
                     int max_growth_per_node);
     void remove_branches(Tree &t, Branch &b, const GETreeParameters &params, LightVoxelsCube &voxels);
     void recalculate_radii(Tree &t, Branch &b, const GETreeParameters &params);
-    void add_SPCol_points_solid_angle(glm::vec3 pos, glm::vec3 dir, float r_max, int cnt, float min_psi);
+    void add_SPCol_points_solid_angle(float3 pos, float3 dir, float r_max, int cnt, float min_psi);
     void set_occlusion(Branch &b, LightVoxelsCube &voxels, const GETreeParameters &params, float mul);
     void create_leaves(Branch &b, const GETreeParameters &params, int level_from, LightVoxelsCube &voxels);
     void set_occlusion_joint(Joint &j, float base_value, const GETreeParameters &params, LightVoxelsCube &voxels);
-    virtual bool find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos, glm::vec3 dir, float angle,
-                               glm::vec3 &best_pos, float &best_occ);
+    virtual bool find_best_pos(LightVoxelsCube &voxels, float r, float3 pos, float3 dir, float angle,
+                               float3 &best_pos, float &best_occ);
     inline float self_rand(double from = 0.0, double to = 1.0) 
     { 
         seed = seed * 1103515245 + 12345;
         float r =  ((unsigned int)(seed / 65536) % 32768) / 32768.0f;
         return from >= to ? from : from + r*(to - from);
     }
-    inline void cross_vecs(glm::vec3 a, glm::vec3 &b, glm::vec3 &c)
+    inline void cross_vecs(float3 a, float3 &b, float3 &c)
     {
-        b = glm::vec3(1, 0, 0);
+        b = float3(1, 0, 0);
         if (abs(dot(b - a, b - a)) > 1 - 1e-6)
-            b = glm::vec3(0, 0, 1);
-        b = glm::cross(a, b);
-        c = glm::cross(a, b);
+            b = float3(0, 0, 1);
+        b = cross(a, b);
+        c = cross(a, b);
     }
-    inline glm::vec3 tropism(float n, const GETreeParameters &params)
+    inline float3 tropism(float n, const GETreeParameters &params)
     {
-        glm::vec4 p = params.tropism_params;
+        float4 p = params.tropism_params;
         float trop = 0;
         if (p.y > 0)
             trop = p.x*(pow(abs(p.y - p.z*n), p.w));
@@ -189,13 +189,13 @@ protected:
             trop = p.x*(-p.y - pow(p.z*n,p.w));
         trop = CLAMP(trop, params.tropism_min_max.x, params.tropism_min_max.y);
         //float trop = params.tropism_params.x + params.tropism_params.y*abs(params.tropism_params.z + params.tropism_params.w*)
-        return glm::vec3(0, trop, 0);
+        return float3(0, trop, 0);
         //return vec3(0, MIN(pow(abs(1 - n/15), 3),1.5), 0);
-        return glm::vec3(0, MIN(1 - pow(n/25,5),1), 0);
-        return glm::vec3(0, 1 - SQR(n/20), 0);
-        return glm::vec3(0, SQR(1 - n/20), 0);
-        return glm::vec3(0, CLAMP(1.5 - 2*((float)n/params.max_joints_in_branch),-0.5,1),0);
-        return glm::vec3(0, MAX(0.5 - SQR(3 * n / params.Xm), -1), 0);
+        return float3(0, MIN(1 - pow(n/25,5),1), 0);
+        return float3(0, 1 - SQR(n/20), 0);
+        return float3(0, SQR(1 - n/20), 0);
+        return float3(0, CLAMP(1.5 - 2*((float)n/params.max_joints_in_branch),-0.5,1),0);
+        return float3(0, MAX(0.5 - SQR(3 * n / params.Xm), -1), 0);
     }
 
     //this data is reseted every iteration

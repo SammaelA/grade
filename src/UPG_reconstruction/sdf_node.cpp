@@ -619,7 +619,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
       params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "size_z"});
@@ -672,7 +672,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
 
@@ -994,7 +994,7 @@ namespace upg
     virtual unsigned param_cnt() const override { return 3 * N + 1; }
     virtual std::vector<ParametersDescription::Param> get_parameters_block(AABB scene_bbox) const override
     {
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       float max_r = 0.5 * length(size);
       std::vector<ParametersDescription::Param> params;
       for (int i = 0; i < N; ++i)
@@ -1272,7 +1272,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       float max_size = std::max(size.x, std::max(size.y, size.z));
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "size_x"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "size_y"});
@@ -1404,16 +1404,16 @@ namespace upg
     w[0] = sqrt(std::pow(params[0], 2) + std::pow(params[2], 2));
     w[1] = params[1];
 
-    a[0] = w[0] - q[0] * glm::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
-    a[1] = w[1] - q[1] * glm::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
+    a[0] = w[0] - q[0] * LiteMath::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
+    a[1] = w[1] - q[1] * LiteMath::clamp((w[0] * q[0] + w[1] * q[1]) / (q[0] * q[0] + q[1] * q[1]), 0.f, 1.f);
 
-    b[0] = w[0] - q[0] * glm::clamp(w[0] / q[0], 0.f, 1.f);
+    b[0] = w[0] - q[0] * LiteMath::clamp(w[0] / q[0], 0.f, 1.f);
     b[1] = w[1] - q[1];
 
-    float k = glm::sign(q[1]);
+    float k = LiteMath::sign(q[1]);
     float v = std::min(a[0] * a[0] + a[1] * a[1], b[0] * b[0] + b[1] * b[1]);
     float s = std::max(k * (w[0] * q[1] - w[1] * q[0]), k * (w[1] - q[1]));
-    float d = sqrt(v) * glm::sign(s);
+    float d = sqrt(v) * LiteMath::sign(s);
 
     return d;
   }
@@ -1443,7 +1443,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "c1"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "c2"});
       params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "height"});
@@ -1592,7 +1592,7 @@ namespace upg
     virtual AABB get_bbox() const override
     {
       AABB ch_bbox = child->get_bbox();
-      glm::vec3 sh = glm::vec3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]);
+      float3 sh = float3(p[MOVE_X], p[MOVE_Y], p[MOVE_Z]);
       return AABB(ch_bbox.min_pos+sh, ch_bbox.max_pos+sh);
     }
   };
@@ -1642,7 +1642,7 @@ namespace upg
     virtual AABB get_bbox() const override
     {
       AABB ch_bbox = child->get_bbox();
-      glm::vec3 sh = glm::vec3(p[MOVE_X], p[MOVE_Y], 0);
+      float3 sh = float3(p[MOVE_X], p[MOVE_Y], 0);
       return AABB(ch_bbox.min_pos+sh, ch_bbox.max_pos+sh);
     }
   };
@@ -1738,8 +1738,8 @@ namespace upg
 
       get_rotate_mat(inv_params.data(), rot);
 
-      glm::vec3 p_min(1e9,1e9,1e9);
-      glm::vec3 p_max(-1e9,-1e9,-1e9);
+      float3 p_min(1e9,1e9,1e9);
+      float3 p_max(-1e9,-1e9,-1e9);
       for (int i = 0; i < 8; ++i)
       {
         std::vector<float> x;
@@ -1750,13 +1750,13 @@ namespace upg
         if ((i / 4) % 2 == 0) x.push_back(ch_bbox.min_pos.z);
         else x.push_back(ch_bbox.max_pos.z);
         
-        glm::vec3 p_tr;
+        float3 p_tr;
         p_tr.x = rot[3*0+0]*x[0] + rot[3*0+1]*x[1] + rot[3*0+2]*x[2];
         p_tr.y = rot[3*1+0]*x[0] + rot[3*1+1]*x[1] + rot[3*1+2]*x[2];
         p_tr.z = rot[3*2+0]*x[0] + rot[3*2+1]*x[1] + rot[3*2+2]*x[2];
 
-        p_min = glm::min(p_min, p_tr);
-        p_max = glm::max(p_max, p_tr);
+        p_min = LiteMath::min(p_min, p_tr);
+        p_max = LiteMath::max(p_max, p_tr);
       }
       ch_bbox.min_pos = p_min;
       ch_bbox.max_pos = p_max;
@@ -1843,8 +1843,8 @@ namespace upg
 
       get_rotate2D_mat(inv_params.data(), rot);
 
-      glm::vec2 p_min(1e9,1e9);
-      glm::vec2 p_max(-1e9,-1e9);
+      float2 p_min(1e9,1e9);
+      float2 p_max(-1e9,-1e9);
       for (int i = 0; i < 8; ++i)
       {
         std::vector<float> x;
@@ -1853,15 +1853,15 @@ namespace upg
         if ((i / 2) % 2 == 0) x.push_back(ch_bbox.min_pos.y);
         else x.push_back(ch_bbox.max_pos.y);
         
-        glm::vec2 p_tr;
+        float2 p_tr;
         p_tr.x = rot[2*0+0]*x[0] + rot[2*0+1]*x[1];
         p_tr.y = rot[2*1+0]*x[0] + rot[2*1+1]*x[1];
 
-        p_min = glm::min(p_min, p_tr);
-        p_max = glm::max(p_max, p_tr);
+        p_min = LiteMath::min(p_min, p_tr);
+        p_max = LiteMath::max(p_max, p_tr);
       }
-      ch_bbox.min_pos = glm::vec3({p_min.x, p_min.y, ch_bbox.min_pos.z});
-      ch_bbox.max_pos = glm::vec3({p_max.x, p_max.y, ch_bbox.max_pos.z});
+      ch_bbox.min_pos = float3(p_min.x, p_min.y, ch_bbox.min_pos.z);
+      ch_bbox.max_pos = float3(p_max.x, p_max.y, ch_bbox.max_pos.z);
 
       return AABB(ch_bbox.min_pos, ch_bbox.max_pos);
     }
@@ -1938,7 +1938,7 @@ namespace upg
     {
       AABB b1 = left->get_bbox();
       AABB b2 = right->get_bbox();
-      return AABB(glm::min(b1.min_pos, b2.min_pos), glm::max(b1.max_pos, b2.max_pos));
+      return AABB(LiteMath::min(b1.min_pos, b2.min_pos), LiteMath::max(b1.max_pos, b2.max_pos));
     }
   };
 
@@ -2016,7 +2016,7 @@ namespace upg
     {
       AABB b1 = left->get_bbox();
       AABB b2 = right->get_bbox();
-      return AABB(glm::max(b1.min_pos, b2.min_pos), glm::min(b1.max_pos, b2.max_pos));
+      return AABB(LiteMath::max(b1.min_pos, b2.min_pos), LiteMath::min(b1.max_pos, b2.max_pos));
     }
   };
 
@@ -2208,7 +2208,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({5,0.01f*size.x,size.x, ParameterType::DIFFERENTIABLE, "leg_radius"});
       params.push_back({5,0.01f*size.y,size.y, ParameterType::DIFFERENTIABLE, "leg_height"});
       params.push_back({5,0.01f*size.z,size.z, ParameterType::DIFFERENTIABLE, "chair_width"});
@@ -2272,7 +2272,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_xy"});
       params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "axis_rot_ang_z"});
       params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
@@ -2312,7 +2312,7 @@ namespace upg
     {
       std::vector<ParametersDescription::Param> params;
       
-      glm::vec3 size = scene_bbox.max_pos-scene_bbox.min_pos;
+      float3 size = scene_bbox.max_pos-scene_bbox.min_pos;
       params.push_back({0,-2*PI,2*PI, ParameterType::DIFFERENTIABLE, "rot_angle"});
       params.push_back({0,scene_bbox.min_pos.x,scene_bbox.max_pos.x, ParameterType::DIFFERENTIABLE, "rot_point_x"});
       params.push_back({0,scene_bbox.min_pos.y,scene_bbox.max_pos.y, ParameterType::DIFFERENTIABLE, "rot_point_y"});
@@ -2382,7 +2382,7 @@ namespace upg
     }
   }
 
-  float ProceduralSdf::get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp, 
+  float ProceduralSdf::get_distance(const float3 &pos, std::vector<float> *ddist_dp, 
                                     std::vector<float> *ddist_dpos) const
   {
     //return root->get_distance(pos, ddist_dp, ddist_dpos);

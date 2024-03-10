@@ -1,7 +1,7 @@
 #include "billboard_cloud_renderer.h"
 #include "tinyEngine/engine.h"
 
-using namespace glm;
+
 
 BillboardCloudRenderer::BillboardCloudRenderer(const BillboardCloudData *_data):
 Countable(3),
@@ -44,9 +44,9 @@ BillboardCloudRenderer::~BillboardCloudRenderer()
        debugl(11,"instance %d deleted\n",i);
     }
 }
-void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light, 
-                                    glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                    glm::vec4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
+void BillboardCloudRenderer::render(MultiDrawRendDesc &mdrd, float4x4 &projection, float4x4 &view, DirectedLight &light, 
+                                    float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
+                                    float4 screen_size, bool to_shadow, GroveRendererDebugParams dbgpar)
 {
     if (to_shadow)
         return;

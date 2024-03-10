@@ -142,7 +142,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::VEC2;
             std::string val;
             bool ok = true;
-            v.v2 = glm::vec2(0, 0);
+            v.v2 = float2(0, 0);
 
             val = next_token(data, cur_pos);
             v.v2.x = std::stod(val);
@@ -167,7 +167,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::VEC3;
             std::string val;
             bool ok = true;
-            v.v3 = glm::vec3(0, 0, 0);
+            v.v3 = float3(0, 0, 0);
 
             val = next_token(data, cur_pos);
             v.v3.x = std::stod(val);
@@ -199,7 +199,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::VEC4;
             std::string val;
             bool ok = true;
-            v.v4 = glm::vec4(0, 0, 0, 0);
+            v.v4 = float4(0, 0, 0, 0);
 
             val = next_token(data, cur_pos);
             v.v4.x = std::stod(val);
@@ -239,7 +239,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::IVEC2;
             std::string val;
             bool ok = true;
-            v.iv2 = glm::vec2(0, 0);
+            v.iv2 = int2(0, 0);
 
             val = next_token(data, cur_pos);
             v.iv2.x = std::stoi(val);
@@ -264,7 +264,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::IVEC3;
             std::string val;
             bool ok = true;
-            v.iv3 = glm::vec3(0, 0, 0);
+            v.iv3 = int3(0, 0, 0);
 
             val = next_token(data, cur_pos);
             v.iv3.x = std::stoi(val);
@@ -296,7 +296,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             v.type = Block::ValueType::IVEC4;
             std::string val;
             bool ok = true;
-            v.iv4 = glm::vec4(0, 0, 0, 0);
+            v.iv4 = int4(0, 0, 0, 0);
 
             val = next_token(data, cur_pos);
             v.iv4.x = std::stoi(val);
@@ -334,7 +334,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
         else if (type == "m4")
         {
             v.type = Block::ValueType::MAT4;
-            v.m4 = glm::mat4(1.0f);
+            v.m4 = float4x4();
             std::string val;
             float mat[16];
             bool ok = true;
@@ -355,7 +355,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
             }
             if (ok)
             {
-                v.m4 = glm::mat4(mat[0], mat[4], mat[8], mat[12],
+                v.m4 = float4x4(mat[0], mat[4], mat[8], mat[12],
                                  mat[1], mat[5], mat[9], mat[13],
                                  mat[2], mat[6], mat[10], mat[14],
                                  mat[3], mat[7], mat[11], mat[15]);
@@ -577,31 +577,31 @@ double Block::get_double(int id, double base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::DOUBLE) ? values[id].d : base_val;
 }
-glm::vec2 Block::get_vec2(int id, glm::vec2 base_val) const
+float2 Block::get_vec2(int id, float2 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC2) ? values[id].v2 : base_val;
 }
-glm::vec3 Block::get_vec3(int id, glm::vec3 base_val) const
+float3 Block::get_vec3(int id, float3 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC3) ? values[id].v3 : base_val;
 }
-glm::vec4 Block::get_vec4(int id, glm::vec4 base_val) const
+float4 Block::get_vec4(int id, float4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::VEC4) ? values[id].v4 : base_val;
 }
-glm::ivec2 Block::get_ivec2(int id, glm::ivec2 base_val) const
+int2 Block::get_ivec2(int id, int2 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC2) ? values[id].iv2 : base_val;
 }
-glm::ivec3 Block::get_ivec3(int id, glm::ivec3 base_val) const
+int3 Block::get_ivec3(int id, int3 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC3) ? values[id].iv3 : base_val;
 }
-glm::ivec4 Block::get_ivec4(int id, glm::ivec4 base_val) const
+int4 Block::get_ivec4(int id, int4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::IVEC4) ? values[id].iv4 : base_val;
 }
-glm::mat4 Block::get_mat4(int id, glm::mat4 base_val) const
+float4x4 Block::get_mat4(int id, float4x4 base_val) const
 {
     return (id >= 0 && id < size() && values[id].type == Block::ValueType::MAT4) ? values[id].m4 : base_val;
 }
@@ -738,31 +738,31 @@ double Block::get_double(const std::string name, double base_val) const
 {
     return get_double(get_id(name), base_val);
 }
-glm::vec2 Block::get_vec2(const std::string name, glm::vec2 base_val) const
+float2 Block::get_vec2(const std::string name, float2 base_val) const
 {
     return get_vec2(get_id(name), base_val);
 }
-glm::vec3 Block::get_vec3(const std::string name, glm::vec3 base_val) const
+float3 Block::get_vec3(const std::string name, float3 base_val) const
 {
     return get_vec3(get_id(name), base_val);
 }
-glm::vec4 Block::get_vec4(const std::string name, glm::vec4 base_val) const
+float4 Block::get_vec4(const std::string name, float4 base_val) const
 {
     return get_vec4(get_id(name), base_val);
 }
-glm::ivec2 Block::get_ivec2(const std::string name, glm::ivec2 base_val) const
+int2 Block::get_ivec2(const std::string name, int2 base_val) const
 {
     return get_ivec2(get_id(name), base_val);
 }
-glm::ivec3 Block::get_ivec3(const std::string name, glm::ivec3 base_val) const
+int3 Block::get_ivec3(const std::string name, int3 base_val) const
 {
     return get_ivec3(get_id(name), base_val);
 }
-glm::ivec4 Block::get_ivec4(const std::string name, glm::ivec4 base_val) const
+int4 Block::get_ivec4(const std::string name, int4 base_val) const
 {
     return get_ivec4(get_id(name), base_val);
 }
-glm::mat4 Block::get_mat4(const std::string name, glm::mat4 base_val) const
+float4x4 Block::get_mat4(const std::string name, float4x4 base_val) const
 {
     return get_mat4(get_id(name), base_val);
 }
@@ -906,7 +906,7 @@ void save_value(std::string &str, Block::Value &v)
         {
             for (int j=0;j<4;j++)
             {
-                str += std::to_string(v.m4[j][i]);
+                str += std::to_string(v.m4(i,j));
                 if (i < 3 || j < 3)
                     str += ", ";
                 if (j == 3)
@@ -1003,49 +1003,49 @@ void Block::add_double(const std::string name, double base_val)
     val.d = base_val;
     add_value(name, val);
 }
-void Block::add_vec2(const std::string name, glm::vec2 base_val)
+void Block::add_vec2(const std::string name, float2 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC2;
     val.v2 = base_val;
     add_value(name, val);
 }
-void Block::add_vec3(const std::string name, glm::vec3 base_val)
+void Block::add_vec3(const std::string name, float3 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC3;
     val.v3 = base_val;
     add_value(name, val);
 }
-void Block::add_vec4(const std::string name, glm::vec4 base_val)
+void Block::add_vec4(const std::string name, float4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
     add_value(name, val);
 }
-void Block::add_ivec2(const std::string name, glm::ivec2 base_val)
+void Block::add_ivec2(const std::string name, int2 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC2;
     val.iv2 = base_val;
     add_value(name, val);
 }
-void Block::add_ivec3(const std::string name, glm::ivec3 base_val)
+void Block::add_ivec3(const std::string name, int3 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC3;
     val.iv3 = base_val;
     add_value(name, val);
 }
-void Block::add_ivec4(const std::string name, glm::ivec4 base_val)
+void Block::add_ivec4(const std::string name, int4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC4;
     val.iv4 = base_val;
     add_value(name, val);
 }
-void Block::add_mat4(const std::string name, glm::mat4 base_val)
+void Block::add_mat4(const std::string name, float4x4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::MAT4;
@@ -1202,49 +1202,49 @@ void Block::set_double(const std::string name, double base_val)
     val.d = base_val;
     set_value(name, val);
 }
-void Block::set_vec2(const std::string name, glm::vec2 base_val)
+void Block::set_vec2(const std::string name, float2 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC2;
     val.v2 = base_val;
     set_value(name, val);
 }
-void Block::set_vec3(const std::string name, glm::vec3 base_val)
+void Block::set_vec3(const std::string name, float3 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC3;
     val.v3 = base_val;
     set_value(name, val);
 }
-void Block::set_vec4(const std::string name, glm::vec4 base_val)
+void Block::set_vec4(const std::string name, float4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::VEC4;
     val.v4 = base_val;
     set_value(name, val);
 }
-void Block::set_ivec2(const std::string name, glm::ivec2 base_val)
+void Block::set_ivec2(const std::string name, int2 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC2;
     val.iv2 = base_val;
     set_value(name, val);
 }
-void Block::set_ivec3(const std::string name, glm::ivec3 base_val)
+void Block::set_ivec3(const std::string name, int3 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC3;
     val.iv3 = base_val;
     set_value(name, val);
 }
-void Block::set_ivec4(const std::string name, glm::ivec4 base_val)
+void Block::set_ivec4(const std::string name, int4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::IVEC4;
     val.iv4 = base_val;
     set_value(name, val);
 }
-void Block::set_mat4(const std::string name, glm::mat4 base_val)
+void Block::set_mat4(const std::string name, float4x4 base_val)
 {
     Block::Value val;
     val.type = Block::ValueType::MAT4;

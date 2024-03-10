@@ -10,7 +10,7 @@
 #include "hasing.h"
 
 ClusteringDebugInfo clusteringDebugInfo;
-using namespace glm;
+
 
 void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> branches, 
                         std::vector<ClusteringBase::ClusterStruct> &clusters,
@@ -18,8 +18,8 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
 {
     ctx->self_impostors_raw_atlas = new TextureAtlasRawData(ctx->self_impostors_data->atlas);
     int max_size = 0;
-    std::vector<std::pair<glm::ivec4, Billboard *>> icons;
-    std::vector<ivec4> cluster_frames;
+    std::vector<std::pair<int4, Billboard *>> icons;
+    std::vector<int4> cluster_frames;
     std::vector<int> cluster_nums;
     int tex_w = 0, tex_h = 0;
     for (auto &cs : clusters)
@@ -54,7 +54,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
             layer_h = 0;
             cur_w = 0;
         }
-        cluster_frames.push_back(glm::ivec4(cur_w, cur_h, cluster_w, cluster_h));
+        cluster_frames.push_back(int4(cur_w, cur_h, cluster_w, cluster_h));
         cluster_nums.push_back(n);
         for (int i = 0; i < icons_w; i++)
         {
@@ -63,8 +63,8 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
                 int n = i * icons_h + j;
                 if (n < child_clusters.size())
                 {
-                    glm::ivec4 bounds = glm::ivec4(cur_w + w * i, cur_h + h * j, w, h);
-                    icons.push_back(std::pair<glm::ivec4, Billboard *>(bounds, child_clusters[n]));
+                    int4 bounds = int4(cur_w + w * i, cur_h + h * j, w, h);
+                    icons.push_back(std::pair<int4, Billboard *>(bounds, child_clusters[n]));
                 }
             }
         }
@@ -96,11 +96,11 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         {
 
             auto &bill = *(p.second);
-            glm::vec3 tc_from = glm::vec3(0, 0, 0);
-            glm::vec3 tc_to = glm::vec3(1, 1, 0);
+            float3 tc_from = float3(0, 0, 0);
+            float3 tc_to = float3(1, 1, 0);
             ctx->self_impostors_data->atlas.process_tc(bill.id, tc_from);
             ctx->self_impostors_data->atlas.process_tc(bill.id, tc_to);
-            glm::vec4 transform = glm::vec4(tc_from.x, tc_from.y, tc_to.x - tc_from.x, tc_to.y - tc_from.y);
+            float4 transform = float4(tc_from.x, tc_from.y, tc_to.x - tc_from.x, tc_to.y - tc_from.y);
             copy.get_shader().uniform("tex_transform", transform);
             copy.get_shader().uniform("layer", tc_from.z);
             logerr("%f %f %f %f %f transform", transform.x, transform.y, transform.z, transform.w, tc_from.z);
@@ -112,7 +112,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
 
         frame.use();
         frame.get_shader().uniform("thickness", 0.06f);
-        frame.get_shader().uniform("color", glm::vec4(0, 0, 0, 1));
+        frame.get_shader().uniform("color", float4(0, 0, 0, 1));
         for (auto &p : icons)
         {
             glViewport(p.first.x, p.first.y, p.first.z, p.first.w);
@@ -121,7 +121,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
 
         frame.get_shader().uniform("thickness", 0.06f);
-        frame.get_shader().uniform("color", glm::vec4(1, 0, 0, 1));
+        frame.get_shader().uniform("color", float4(1, 0, 0, 1));
         for (auto &cl : cluster_frames)
         {
             glViewport(cl.x, cl.y, cl.z, cl.w);
@@ -144,7 +144,7 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
             continue;
         }
         auto &bill = *(p.second);
-        glm::ivec4 sizes = ctx->self_impostors_data->atlas.get_sizes();
+        int4 sizes = ctx->self_impostors_data->atlas.get_sizes();
         sizes.x /= sizes.z;
         sizes.y /= sizes.w;
         for (int i = 0; i < sizes.x; i++)
@@ -167,18 +167,18 @@ void visualize_clusters(Block &settings, std::vector<BranchClusteringData *> bra
         }
     }
     int thickness = 4;
-    glm::ivec4 base_color = glm::ivec4(255,150,150,255);
-    glm::ivec4 color = base_color;
-    std::vector<glm::vec3> colors =
+    int4 base_color = int4(255,150,150,255);
+    int4 color = base_color;
+    std::vector<float3> colors =
     {
-        glm::vec3(0,0,0), glm::vec3(0,0,1), glm::vec3(0,1,0), glm::vec3(0,1,1), 
-        glm::vec3(1,0,0), glm::vec3(1,0,1), glm::vec3(1,1,0), glm::vec3(0,0.5,0), 
-        glm::vec3(0,0,0.5)
+        float3(0,0,0), float3(0,0,1), float3(0,1,0), float3(0,1,1), 
+        float3(1,0,0), float3(1,0,1), float3(1,1,0), float3(0,0.5,0), 
+        float3(0,0,0.5)
     };
     for (int i=0;i<cluster_frames.size();i++)
     {
         auto &cl = cluster_frames[i];
-        color = i >= colors.size() ? base_color : glm::ivec4(255*colors[i].x,255*colors[i].y,255*colors[i].z,255);
+        color = i >= colors.size() ? base_color : int4(255*colors[i].x,255*colors[i].y,255*colors[i].z,255);
         #define FRAME(i,j) \
         data[4 * ((cl.y + j) * tex_w + (cl.x + i))] = color.x;\
         data[4 * ((cl.y + j) * tex_w + (cl.x + i))+1] = color.y;\
@@ -237,7 +237,7 @@ void save_csv_impostor(std::string &save_path, ClusteringContext *ctx, std::vect
     int sl = 0;
 
     //find largest branch to rescale dataset images properly
-    glm::vec3 max_sizes = glm::vec3(0, 0, 0);
+    float3 max_sizes = float3(0, 0, 0);
     for (int i = 0; i < packingLayers.size(); i++)
     {
         for (auto &c : packingLayers[i].clusters)
@@ -440,7 +440,7 @@ void prepare_dataset(std::string &save_path, ClusteringContext *ctx, std::vector
     std::string dir_path;
 
     //find largest branch to rescale dataset images properly
-    glm::vec3 max_sizes = glm::vec3(0,0,0);
+    float3 max_sizes = float3(0,0,0);
     for (int i = 0; i< packingLayers.size();i++)
     {
         for (auto &c : packingLayers[i].clusters)

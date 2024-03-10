@@ -23,8 +23,8 @@ struct AppContext
   int window_width = 1000;
   int windows_height = 1000;
 
-  glm::vec2 mousePos = glm::vec2(-1, -1);
-  glm::vec4 mouseWorldPosType = glm::vec4(0, 0, 0, -1); //-1 means that mouse is not on scene geometry
+  float2 mousePos = float2(-1, -1);
+  float4 mouseWorldPosType = float4(0, 0, 0, -1); //-1 means that mouse is not on scene geometry
   FpsCounter fpsCounter;
   Camera camera;
   bool free_camera = false;
@@ -39,7 +39,7 @@ struct AppContext
 
   std::string active_tree_type = "small_oak_simplified";
   std::string active_object_name = "farm_1";
-  glm::vec3 cur_obj_angles = glm::vec3(0,0,0);
+  float3 cur_obj_angles = float3(0,0,0);
   bool cur_object_on_terrain = false;
   float cur_obj_scale = 1;
 

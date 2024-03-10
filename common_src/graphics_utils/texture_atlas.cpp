@@ -133,38 +133,38 @@ void TextureAtlas::remove_tex(int pos)
     occupied.set(pos, false);
     curNum = MIN(curNum, pos);
 }
-glm::vec4 TextureAtlas::tc_transform(int num) const
+float4 TextureAtlas::tc_transform(int num) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
 
-    glm::vec2 tsc(1.0 / gridWN, 1.0 / gridHN);
-    glm::vec2 tsh(num % gridWN + l, num / gridWN);
+    float2 tsc(1.0 / gridWN, 1.0 / gridHN);
+    float2 tsh(num % gridWN + l, num / gridWN);
 
-    return glm::vec4(tsc.x,tsc.y,tsh.x,tsh.y);
+    return float4(tsc.x,tsc.y,tsh.x,tsh.y);
 }
-void TextureAtlas::process_tc(int num, glm::vec3 &tc) const
+void TextureAtlas::process_tc(int num, float3 &tc) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
 
-    glm::vec2 tsc(1.0 / gridWN, 1.0 / gridHN);
-    glm::vec2 tsh(num % gridWN, num / gridWN);
+    float2 tsc(1.0 / gridWN, 1.0 / gridHN);
+    float2 tsh(num % gridWN, num / gridWN);
     tc.x = tsc.x * (tc.x + tsh.x);
     tc.y = tsc.y * (tc.y + tsh.y);
     tc.z = l;
 }
-void TextureAtlas::pixel_offsets(int num, glm::ivec3 &pix_tc) const
+void TextureAtlas::pixel_offsets(int num, int3 &pix_tc) const
 {
-    glm::vec3 tc = glm::vec3(0,0,0);
+    float3 tc = float3(0,0,0);
     process_tc(num, tc);
-    pix_tc = glm::ivec3(width*tc.x, height*tc.y, tc.z);
+    pix_tc = int3(width*tc.x, height*tc.y, tc.z);
 }
-void TextureAtlas::pixel_offsets(int num, glm::uvec4 &pix_tc) const
+void TextureAtlas::pixel_offsets(int num, uint4 &pix_tc) const
 {
-    glm::vec3 tc = glm::vec3(0,0,0);
+    float3 tc = float3(0,0,0);
     process_tc(num, tc);
-    pix_tc = glm::uvec4(width*tc.x, height*tc.y, tc.z, 1);
+    pix_tc = uint4(width*tc.x, height*tc.y, tc.z, 1);
 }
 bool TextureAtlas::bind(int layer, int type)
 {
@@ -180,7 +180,7 @@ bool TextureAtlas::target(int num, int type)
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
 
-    glm::ivec2 tsh(num % gridWN, num / gridWN);
+    int2 tsh(num % gridWN, num / gridWN);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(l, type);
     glViewport(0, 0, width, height);
@@ -192,8 +192,8 @@ bool TextureAtlas::target_slice(int num, int type)
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
 
-    glm::ivec2 tsh(num % gridWN, num / gridWN);
-    glm::ivec2 sz(width/gridWN, height/gridHN);
+    int2 tsh(num % gridWN, num / gridWN);
+    int2 sz(width/gridWN, height/gridHN);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     bind(l, type);
     glViewport(tsh.x*sz.x, tsh.y*sz.y, sz.x, sz.y);
@@ -203,16 +203,16 @@ bool TextureAtlas::target_slice(int num, int type)
 bool TextureAtlas::clear()
 {
     target(0,0);
-    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
+    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
 
     target(0,1);
-    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.a);
+    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
 
     return true;
 }
-glm::mat4 TextureAtlas::tex_transform(int num) const
+float4x4 TextureAtlas::tex_transform(int num) const
 {
     int l = num / (gridHN*gridWN);
     num = num % (gridHN*gridWN);
@@ -223,8 +223,8 @@ glm::mat4 TextureAtlas::tex_transform(int num) const
     b /= gridHN;
     float h1 = 1.0f / gridWN;
     float h2 = 1.0f / gridHN;
-    glm::mat4 sc_mat = LiteMath::scale(glm::mat4(1.0f), glm::vec3(h1, h2, 1));
-    glm::mat4 tr_mat = LiteMath::translate(glm::mat4(1.0f), glm::vec3(a, b, 0));
+    float4x4 sc_mat = LiteMath::scale(float4x4(), float3(h1, h2, 1));
+    float4x4 tr_mat = LiteMath::translate(float4x4(), float3(a, b, 0));
     return tr_mat * sc_mat;
 }
 void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
@@ -284,7 +284,7 @@ void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)
                 bm.construct(_c_mip);
                 mipMapRenderer.use();
                 mipMapRenderer.texture("tex", ctex);
-                mipMapRenderer.uniform("screen_size", glm::vec4(w, h, 0, 0));
+                mipMapRenderer.uniform("screen_size", float4(w, h, 0, 0));
                 glDisable(GL_DEPTH_TEST);
                 bm.render(GL_TRIANGLES);
                 glEnable(GL_DEPTH_TEST);

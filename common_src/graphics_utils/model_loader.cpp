@@ -33,7 +33,7 @@ Model *create_model_by_name(std::string name, Texture &tex)
 
 Model *create_debug_box_model()
 {
-    Box b = Box(glm::vec3(0,0,0), glm::vec3(1,0,0), glm::vec3(0,1,0), glm::vec3(0,0,1));
+    Box b = Box(float3(0,0,0), float3(1,0,0), float3(0,1,0), float3(0,0,1));
     Model *m = new Model;
     visualizer::box_to_model(&b, m);
     return m;
@@ -57,15 +57,15 @@ Model *create_simple_grass_model()
 
 void transform_model_to_standart_form(Model *m)
 {
-    glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
-    glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+    float3 min_pos = float3(1e9,1e9,1e9);
+    float3 max_pos = float3(-1e9,-1e9,-1e9);
     for (int i=0;i<m->positions.size();i+=3)
     {
-        min_pos = min(min_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
-        max_pos = max(max_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        min_pos = min(min_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        max_pos = max(max_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
     }
 
-    glm::vec3 size = max_pos - min_pos;
+    float3 size = max_pos - min_pos;
     float sz = (MAX(size.x, MAX(size.y,size.z)));
     for (int i=0;i<m->positions.size();i+=3)
     {
@@ -77,16 +77,16 @@ void transform_model_to_standart_form(Model *m)
 
 void normalize_model(Model *m)
 {
-    glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
-    glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+    float3 min_pos = float3(1e9,1e9,1e9);
+    float3 max_pos = float3(-1e9,-1e9,-1e9);
     for (int i=0;i<m->positions.size();i+=3)
     {
-        min_pos = min(min_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
-        max_pos = max(max_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        min_pos = min(min_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        max_pos = max(max_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
     }
 
-    glm::vec3 size = max_pos - min_pos;
-    glm::vec3 center = 0.5f*(max_pos + min_pos);
+    float3 size = max_pos - min_pos;
+    float3 center = 0.5f*(max_pos + min_pos);
     float sz = (MAX(size.x, MAX(size.y,size.z)));
     for (int i=0;i<m->positions.size();i+=3)
     {
@@ -174,17 +174,17 @@ Model *load_model_from_obj(std::string name, Texture &tex)
 
 void transform_model_to_standart_form(ComplexModel &cm)
 {
-  glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
-  glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+  float3 min_pos = float3(1e9,1e9,1e9);
+  float3 max_pos = float3(-1e9,-1e9,-1e9);
   for (Model *m : cm.models)
   {
     for (int i=0;i<m->positions.size();i+=3)
     {
-        min_pos = min(min_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
-        max_pos = max(max_pos, glm::vec3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        min_pos = min(min_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
+        max_pos = max(max_pos, float3(m->positions[i], m->positions[i+1], m->positions[i+2]));
     }
   }
-  glm::vec3 size = max_pos - min_pos;
+  float3 size = max_pos - min_pos;
   float sz = (MAX(size.x, MAX(size.y,size.z)));
   for (Model *m : cm.models)
   {

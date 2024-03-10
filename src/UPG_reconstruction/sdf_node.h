@@ -169,7 +169,7 @@ namespace upg
     void set_parameters(std::span<const float> parameters);
     ParametersDescription desc;
 
-    float get_distance(const glm::vec3 &pos, std::vector<float> *ddist_dp = nullptr, 
+    float get_distance(const float3 &pos, std::vector<float> *ddist_dp = nullptr, 
                                std::vector<float> *ddist_dpos = nullptr) const;
     void get_distance_batch(unsigned     batch_size,
                             float *const positions,     //3*batch_size: p0.x, p0.y, p0.z, p1.x, ...

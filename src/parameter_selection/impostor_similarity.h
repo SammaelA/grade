@@ -16,8 +16,8 @@ enum TCIFeatureStatus
 struct TreeCompareInfo
 {
     int id = -1;
-    glm::vec2 BCyl_sizes = glm::vec2(0,0);//radius and height of bounding cylinder;
-    glm::vec2 real_sizes = glm::vec2(0,0);
+    float2 BCyl_sizes = float2(0,0);//radius and height of bounding cylinder;
+    float2 real_sizes = float2(0,0);
     float branches_density = 0;
     float leaves_density = 0;
     float branches_curvature = 0;//from 0 to 1, average dot(seg, seg_next) for all branches
@@ -37,7 +37,7 @@ struct TrunkInfo
 
 struct TreeImageInfo
 {
-    glm::vec4 tc_transform = glm::vec4(0,0,1,1);//shift and scale, tranform impostor to occupy the whole texture
+    float4 tc_transform = float4(0,0,1,1);//shift and scale, tranform impostor to occupy the whole texture
     float crown_start_level = 0;//as a share of tree size
     float trunk_thickness = 0;//as a share of tree size
     float crown_leaves_share = 0;
@@ -47,8 +47,8 @@ struct TreeImageInfo
 
 struct StripeInfo
 {
-    glm::vec4 crown_bord;//(x_start, dense crown x_start, dense crown x_end, x_end)
-    glm::vec2 crown_ymin_ymax;
+    float4 crown_bord;//(x_start, dense crown x_start, dense crown x_end, x_end)
+    float2 crown_ymin_ymax;
     float branches_share;
     float leaves_share;
 };
@@ -86,7 +86,7 @@ public:
     
     std::vector<std::vector<StripeInfo>> get_alternative_tree_image_info(TextureAtlas &images_atl, const std::vector<std::pair<int,int>> &slice_id_impostor_n, 
                                                                          TreeCompareInfo *impostors_info, ReferenceTree *reference = nullptr,
-                                                                         glm::vec4 *tc_transform = nullptr);
+                                                                         float4 *tc_transform = nullptr);
     void get_reference_tree_image_info_alt(ReferenceTree &reference, float clsh_mult = 0.85);
     void calc_similarity_alt(GrovePacked &grove, ReferenceTree &reference, std::vector<float> &sim_results,
                              Tree *original_trees, int original_trees_cnt, bool debug_print = false, bool image_debug = false);
@@ -100,10 +100,10 @@ private:
     bool use_top_slice = false;
     int max_impostors = 1024;
     float *results_data = nullptr;
-    glm::uvec4 *slices_info_data = nullptr;
+    uint4 *slices_info_data = nullptr;
     Shader similarity_shader, tree_info_shader;
     TreeCompareInfo *impostors_info_data = nullptr;
     TreeImageInfo *tree_image_info_data = nullptr;
     StripeInfo *stripes_data = nullptr;
-    glm::vec4 *shader_imp_data = nullptr;
+    float4 *shader_imp_data = nullptr;
 };

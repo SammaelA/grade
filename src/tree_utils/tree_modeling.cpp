@@ -3,7 +3,7 @@
 #include "tinyEngine/engine.h"
 
 #define PI 3.14159265f
-using namespace glm;
+
 namespace visualizer
 {
   void leaf_to_model(Leaf &l, Mesh *m, float scale)
@@ -12,15 +12,15 @@ namespace visualizer
     {
         return;
     }
-    glm::vec3 a = l.edges[0];
-    glm::vec3 b = l.edges[1];
-    glm::vec3 c = l.edges[2];
-    glm::vec3 n = glm::normalize(glm::cross(a - b, c - b));
+    float3 a = l.edges[0];
+    float3 b = l.edges[1];
+    float3 c = l.edges[2];
+    float3 n = normalize(cross(a - b, c - b));
     std::vector<float> tex_c{0, 0, 0, 1, 1, 1, 1, 0};
     int _b = m->positions.size() / 3;
     for (int i = 0; i < 4; i++)
     {
-        glm::vec3 v = scale*(l.edges[i] - l.edges[0]) + l.edges[0];
+        float3 v = scale*(l.edges[i] - l.edges[0]) + l.edges[0];
         m->positions.push_back(v.x);
         m->positions.push_back(v.y);
         m->positions.push_back(v.z);
@@ -40,7 +40,7 @@ namespace visualizer
     m->indices.push_back(_b + 3);
     m->indices.push_back(_b);
 }
-void packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, bool need_tangent)
+void packed_leaf_to_model(PackedLeaf &l, Mesh *m, float2 tc_zw, bool need_tangent)
 {
     if (l.edges.size() % 4 || l.edges.empty())
     {
@@ -48,16 +48,16 @@ void packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, bool need_tan
     }
     for (int start_n = 0;start_n < l.edges.size();start_n += 4)
     {
-        glm::vec3 a = l.edges[start_n + 0];
-        glm::vec3 b = l.edges[start_n + 1];
-        glm::vec3 c = l.edges[start_n + 2];
-        glm::vec3 n = glm::normalize(glm::cross(a - b, c - b));
-        glm::vec3 tangent = glm::normalize(a-b);
+        float3 a = l.edges[start_n + 0];
+        float3 b = l.edges[start_n + 1];
+        float3 c = l.edges[start_n + 2];
+        float3 n = normalize(cross(a - b, c - b));
+        float3 tangent = normalize(a-b);
         std::vector<float> tex_c{0, 0, 0, 1, 1, 1, 1, 0};
         int _b = m->positions.size() / 3;
         for (int i = 0; i < 4; i++)
         {
-            glm::vec3 v = l.edges[start_n + i];
+            float3 v = l.edges[start_n + i];
             m->positions.push_back(v.x);
             m->positions.push_back(v.y);
             m->positions.push_back(v.z);
@@ -84,27 +84,27 @@ void packed_leaf_to_model(PackedLeaf &l, Mesh *m, glm::vec2 tc_zw, bool need_tan
         m->indices.push_back(_b);
     }
 }
-void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
-                          float rel_ring_pos, std::vector<float> &mults, glm::vec3 p)
+void get_ring(float3 &start, float3 &dir, float radius, SegmentVertexes &sv, int ring_size, 
+                          float rel_ring_pos, std::vector<float> &mults, float3 p)
 {
     sv.ringsize = ring_size;
-    dir = glm::normalize(dir);
+    dir = normalize(dir);
     if (abs(dot(dir,p)) > 0.9999)
     {
-        p = glm::normalize(glm::vec3(1,0,0.001));
+        p = normalize(float3(1,0,0.001));
     }
-    glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, p)), 1.0);
+    float4 n = to_float4(normalize(cross(dir, p)), 1.0);
 
-    glm::mat4 r = LiteMath::rotate(glm::mat4(1.0), (float)(2 * PI / ring_size), dir);
+    float4x4 r = LiteMath::rotate(float4x4(), (float)(2 * PI / ring_size), dir);
 
     if (ring_size == 0)
         logerr("0 ringsize !!!");
     for (int i = 0; i < ring_size; i++)
     {
         VertexData vd;
-        vd.pos = start + radius*Branch::get_r_mult( i*2*PI/ring_size,mults) * glm::vec3(n.x, n.y, n.z);
-        vd.normal = n;
-        vd.tangent = glm::cross(dir, vd.normal);
+        vd.pos = start + radius*Branch::get_r_mult( i*2*PI/ring_size,mults) * float3(n.x, n.y, n.z);
+        vd.normal = to_float3(n);
+        vd.tangent = cross(dir, vd.normal);
         vd.tex_coord.x = ((float)i) / ring_size;
         vd.tex_coord.y = rel_ring_pos;
         sv.bigRing.push_back(vd);
@@ -114,23 +114,23 @@ void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &s
 void get_base_ring(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
-    glm::vec3 start = s.begin;
-    glm::vec3 end = s.end;
-    glm::vec3 dir = end - start;
+    float3 start = s.begin;
+    float3 end = s.end;
+    float3 dir = end - start;
     get_ring(start, dir, scale*s.rel_r_begin, sv, ring_size, rel_ring_pos,s.mults);
 }
 void get_last_seg_vertexes(Segment &s, SegmentVertexes &sv, int ring_size, float rel_ring_pos, float scale)
 {
     sv.s = s;
-    glm::vec3 start = s.begin;
-    glm::vec3 end = s.end;
-    glm::vec3 dir = end - start;
+    float3 start = s.begin;
+    float3 end = s.end;
+    float3 dir = end - start;
     std::vector<VertexData> data = sv.bigRing;
     get_ring(end, dir, scale*s.rel_r_end, sv, ring_size, rel_ring_pos,s.mults);
     sv.smallRing = sv.bigRing;
     sv.bigRing = data;
 }
-void seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, glm::vec2 tc_zw, bool need_tangents)
+void seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, float2 tc_zw, bool need_tangents)
 {
     Mesh *h = m;
     int _b = h->positions.size() / 3;
@@ -157,12 +157,12 @@ void seg_vertexes_to_model(SegmentVertexes &sv, Mesh *m, glm::vec2 tc_zw, bool n
         h->colors.push_back(tc_zw.y);
     }
     int shift = 0;
-    float best_match = glm::length(sv.bigRing.front().pos - sv.smallRing.front().pos);
+    float best_match = length(sv.bigRing.front().pos - sv.smallRing.front().pos);
     for (int i = 0;i<sv.bigRing.size();i++)
     {
-        if (glm::length(sv.bigRing[i].pos - sv.smallRing.front().pos) < best_match)
+        if (length(sv.bigRing[i].pos - sv.smallRing.front().pos) < best_match)
         {
-            best_match = glm::length(sv.bigRing[i].pos - sv.smallRing.front().pos);
+            best_match = length(sv.bigRing[i].pos - sv.smallRing.front().pos);
             shift = i;
         }
     }
@@ -224,7 +224,7 @@ void recursive_branch_to_model(Branch &b, Mesh *m, bool leaves, float scale, int
             for (auto &segment : b.segments)
             {
                 SegmentVertexes vt;
-                float dist = glm::length(segment.begin - b.segments.front().begin); 
+                float dist = length(segment.begin - b.segments.front().begin); 
                 get_base_ring(segment, vt, ringsize, dist/(PI*br), scale);
                 if (!vets.empty())
                     vets.back().smallRing = vt.bigRing;
@@ -234,7 +234,7 @@ void recursive_branch_to_model(Branch &b, Mesh *m, bool leaves, float scale, int
             }
             if (!vets.empty())
             {
-                float dist = glm::length(b.segments.back().end - b.segments.front().begin); 
+                float dist = length(b.segments.back().end - b.segments.front().begin); 
                 get_last_seg_vertexes(b.segments.back(), vets.back(), ringsize, dist/(PI*br), scale);
             }
 
@@ -301,20 +301,20 @@ void recursive_branch_to_model_fast_i(Branch &branch, Mesh *m, bool leaves, floa
             float base_r = 0.5f*(branch.segments.front().rel_r_begin + branch.segments.back().rel_r_end);
             for (auto &segment : branch.segments)
             {
-                vec3 &pos = segment.begin;
-                vec3 a = segment.end - segment.begin;
+                float3 &pos = segment.begin;
+                float3 a = segment.end - segment.begin;
                 float len = length(a);
                 a = a / len;
-                vec3 b = abs(a.y) > 1e-6 ? vec3(-a.y,a.x,0) : vec3(-a.z,0,a.x);
+                float3 b = abs(a.y) > 1e-6 ? float3(-a.y,a.x,0) : float3(-a.z,0,a.x);
                 b = normalize(b);
-                vec3 c = cross(a,b);
+                float3 c = cross(a,b);
 
                 int _b = m->positions.size()/3;
                 for (int i = 0; i < ringsize; i++)
                 {
                     float angle = (2*PI*i)/ringsize;
-                    vec3 n = b*cosf(angle) + c*sinf(angle);
-                    vec3 p = pos + segment.rel_r_begin*n;
+                    float3 n = b*cosf(angle) + c*sinf(angle);
+                    float3 p = pos + segment.rel_r_begin*n;
                     m->normals.push_back(n.x);
                     m->normals.push_back(n.y);
                     m->normals.push_back(n.z);
@@ -344,19 +344,19 @@ void recursive_branch_to_model_fast_i(Branch &branch, Mesh *m, bool leaves, floa
             {
             //last vertices
                 auto &segment = branch.segments.back();
-                            vec3 &pos = segment.end;
-                vec3 a = segment.end - segment.begin;
+                            float3 &pos = segment.end;
+                float3 a = segment.end - segment.begin;
                 float len = length(a);
                 a = a / len;
-                vec3 b = abs(a.y) > 1e-6 ? vec3(-a.y,a.x,0) : vec3(-a.z,0,a.x);
+                float3 b = abs(a.y) > 1e-6 ? float3(-a.y,a.x,0) : float3(-a.z,0,a.x);
                 b = normalize(b);
-                vec3 c = cross(a,b);
+                float3 c = cross(a,b);
 
                 for (int i = 0; i < ringsize; i++)
                 {
                     float angle = 2*PI*i/ringsize;
-                    vec3 n = b*cosf(angle) + c*sinf(angle);
-                    vec3 p = pos + segment.rel_r_end*n;
+                    float3 n = b*cosf(angle) + c*sinf(angle);
+                    float3 p = pos + segment.rel_r_end*n;
                     m->normals.push_back(n.x);
                     m->normals.push_back(n.y);
                     m->normals.push_back(n.z);
@@ -437,17 +437,17 @@ void branch_to_model(Branch &b, Mesh *m, bool leaves)
 void segment_to_model(Segment &s, Mesh *m, bool leaves)
 {
 
-    glm::vec3 start = s.begin;
-    glm::vec3 end = s.end;
-    glm::vec3 dir = end - start;
+    float3 start = s.begin;
+    float3 end = s.end;
+    float3 dir = end - start;
     int ringsize = 8;
     Mesh *h = m;
     //Get Some Normal Vector
-    glm::vec3 x = glm::normalize(dir + glm::vec3(1.0, 1.0, 1.0));
-    glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, x)), 1.0);
+    float3 x = normalize(dir + float3(1.0, 1.0, 1.0));
+    float4 n = to_float4(normalize(cross(dir, x)), 1.0f);
 
     //Add the Correct Number of Indices
-    glm::mat4 r = LiteMath::rotate(glm::mat4(1.0), (float)3.141 / ringsize, dir);
+    float4x4 r = LiteMath::rotate(float4x4(), (float)3.141 / ringsize, dir);
 
     //Index Buffer
     int _b = h->positions.size() / 3;
@@ -495,7 +495,7 @@ void add_branch_layer(Tree &t, int layer, Mesh *m)
         }
     }
 }
-void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precision, glm::vec2 tc_zw, bool need_tangents)
+void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precision, float2 tc_zw, bool need_tangents)
 {
     if (!leaves)
     {
@@ -509,7 +509,7 @@ void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precisi
         int tex_step = 4;
         if (ringsize % 2 == 1)
             ringsize++;
-        glm::vec3 dir = b.joints[1].pos - b.joints[0].pos;
+        float3 dir = b.joints[1].pos - b.joints[0].pos;
         float br = 0.5*(b.joints.front().r + b.joints.back().r);
         for (int i = 0; i < b.joints.size(); i++)
         {
@@ -517,8 +517,8 @@ void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precisi
                 dir = b.joints[i].pos - b.joints[i - 1].pos;
             SegmentVertexes vt;
             std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
-            float dist = glm::length(b.joints[i].pos - b.joints.front().pos); 
-            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, dist/(2*PI*br), mults, b.plane_coef);
+            float dist = length(b.joints[i].pos - b.joints.front().pos); 
+            get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, dist/(2*PI*br), mults, to_float3(b.plane_coef));
             if (!vets.empty())
                 vets.back().smallRing = vt.bigRing;
             vets.push_back(vt);
@@ -526,8 +526,8 @@ void packed_branch_to_model(PackedBranch &b, Mesh *m, bool leaves, float precisi
         SegmentVertexes vt;
         int i = b.joints.size() - 1;
         std::vector<float> &mults = b.r_mults.size() > i ? b.r_mults[i] : empty_mults;
-        float dist = glm::length(b.joints[i].pos - b.joints.front().pos); 
-        get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, dist/(2*PI*br), mults, b.plane_coef);
+        float dist = length(b.joints[i].pos - b.joints.front().pos); 
+        get_ring(b.joints[i].pos, dir, b.joints[i].r, vt, ringsize, dist/(2*PI*br), mults, to_float3(b.plane_coef));
         vets.back().smallRing = vt.bigRing;
 
         for (auto &vt : vets)

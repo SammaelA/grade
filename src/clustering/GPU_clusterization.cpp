@@ -35,8 +35,8 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<BranchWithData *> &_branch
     float rt = (2*PI)/params.bwd_rotations;
     for (int i=0;i<params.bwd_rotations;i++)
     {
-        glm::vec3 axis = glm::vec3(1,0,0);
-        rotates_transforms.push_back(LiteMath::rotate(glm::mat4(1.0f),i*rt,axis));
+        float3 axis = float3(1,0,0);
+        rotates_transforms.push_back(LiteMath::rotate(float4x4(),i*rt,axis));
     }
 
     positions.emplace_back();
@@ -53,13 +53,13 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<BranchWithData *> &_branch
     dist_data = safe_new<float>(2*branches_size*branches_size, "dist_data");
     if (voxels_needed)
     {
-        glm::ivec3 vsz = _branches.front()->leavesDensity.front()->get_vox_sizes();
+        int3 vsz = _branches.front()->leavesDensity.front()->get_vox_sizes();
         all_voxels_count = branches_size*_branches.front()->leavesDensity.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
         all_voxels = safe_new<float>(all_voxels_count + 1, "all_voxels");
     }
     if (voxelized_structure)
     {
-        glm::ivec3 vsz = _branches.front()->voxelizedStructures.front()->get_vox_sizes();
+        int3 vsz = _branches.front()->voxelizedStructures.front()->get_vox_sizes();
         all_structure_voxels_count = branches_size*_branches.front()->voxelizedStructures.size()*(2*vsz.x + 1)*(2*vsz.y + 1)*(2*vsz.z + 1);
         all_structure_voxels = safe_new<float>(all_structure_voxels_count + 1, "all_structure_voxels");
     }
@@ -70,7 +70,7 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<BranchWithData *> &_branch
     int m_pos = positions.size(),m_sti = sticks.size(),m_j = joint_rs.size();
     int m_vox = all_voxels_count + 1,m_bd = branches.size(),m_dd = 2*branches_size*branches_size;
     int m_struct_vox = all_structure_voxels_count + 1;
-    int bytes = m_pos*sizeof(glm::vec3) + m_sti*sizeof(gBranch) + m_j*sizeof(float) + m_vox*sizeof(float) +
+    int bytes = m_pos*sizeof(float3) + m_sti*sizeof(gBranch) + m_j*sizeof(float) + m_vox*sizeof(float) +
     m_bd*sizeof(gBranchWithData) + m_dd*sizeof(float) + m_struct_vox*sizeof(float);
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -117,7 +117,7 @@ void GPUClusterizationHelper::fill_branch_data(BranchWithData &branch, bool voxe
 
     if (voxelized_structure)
     {
-        glm::ivec3 sizes;
+        int3 sizes;
         float *ptr = nullptr;
         br.structure_voxels_offset = cur_structure_voxels_pointer;
         branch.voxelizedStructures.front()->get_data(&ptr,sizes);
@@ -142,7 +142,7 @@ void GPUClusterizationHelper::fill_branch_data(BranchWithData &branch, bool voxe
 
     if (voxels_needed)
     {
-        glm::ivec3 sizes;
+        int3 sizes;
         float *ptr = nullptr;
         br.voxels_offset = cur_voxels_pointer;
         branch.leavesDensity.front()->get_data(&ptr,sizes);
@@ -206,7 +206,7 @@ uint GPUClusterizationHelper::fill_branch_data(Branch *branch)
         joints[sticks[pos].joint_offset + i].r_id = joint_rs.size();
         for (int k = 0;k<params.bwd_rotations;k++)
         {
-            positions.push_back(glm::vec4(rotates_transforms[k]*glm::vec4(j.pos,1)));
+            positions.push_back(float4(rotates_transforms[k]*to_float4(j.pos,1.0f)));
         }
         for (int k = 0;k<params.r_samples;k++)
         {
@@ -354,9 +354,9 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
         branches.clear();
         joints.clear();
     }
-    #define uvec3 glm::uvec3
-    #define vec3 glm::vec3
-    #define vec2 glm::vec2
+    #define uvec3 uint3
+    #define vec3 float3
+    #define vec2 float2
     
     float GPUClusterizationHelper::calculate_dist_structure(int i, int j, int rot, float max_dist)
     {
@@ -435,12 +435,12 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
                 {
                     float min_dist = delta;
                     int min_pos = -1;
-                    vec3 pos1 = vec3(POS1(j1));
+                    vec3 pos1 = to_float3(POS1(j1));
                     for (int j2 = 0; j2 < j2_sz; j2++)
                     {
                         if (pair_found[j2])
                             continue;
-                        float l = length(pos1 - vec3(POS2(j2)));
+                        float l = length(pos1 - to_float3(POS2(j2)));
                         if (l < min_dist)
                         {
                             min_dist = l;
@@ -645,7 +645,7 @@ GPUClusterizationHelper::~GPUClusterizationHelper()
     {
         pos_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, pos_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*positions.size(), positions.data(), GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4)*positions.size(), positions.data(), GL_STATIC_DRAW);
     
         voxels_buf = create_buffer();
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, voxels_buf);

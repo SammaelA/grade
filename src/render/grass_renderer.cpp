@@ -26,7 +26,7 @@ GrassRenderer::GrassRenderer():
     m.construct(_c_mip);
 }
 
-void GrassRenderer::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+void GrassRenderer::render(float4x4 &projection, float4x4 &view, float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
                            HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow)
 {
     Shader &shader = to_shadow ? grassShadow : grass;
@@ -50,7 +50,7 @@ grass({"grass2.vs", "grass2.fs"}, {"in_Position","in_Normal", "in_Tex"}),
 grassShadow({"grass2.vs", "grass2_shadow.fs"}, {"in_Position","in_Normal", "in_Tex"}),
 grass_atlas(data.grass_textures)
 {
-    glm::vec4 tex_transform = glm::vec4(1,1,0,0);
+    float4 tex_transform = float4(1,1,0,0);
 
     int total_instances = 0;
     Texture null = engine::textureManager->empty();
@@ -71,21 +71,21 @@ grass_atlas(data.grass_textures)
         type_n++;
     }
 
-    glm::mat4 *matrices = new glm::mat4[total_instances];
+    float4x4 *matrices = new float4x4[total_instances];
     int i=0;
     for (auto &p : data.grass_instances)
     {
         for (const auto &in : p.second)
         {
             matrices[i] = LiteMath::scale(
-                          LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
-                                      in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
+                          LiteMath::rotate(LiteMath::translate(float4x4(),float3(in.pos)),
+                                      in.rot_y,float3(0,1,0)), float3(in.size));
             i++;
         }
     }
     instances_buffer = create_buffer();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, instances_buffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*total_instances, matrices, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4x4)*total_instances, matrices, GL_STATIC_DRAW);
 
     delete[] matrices;
 }
@@ -97,7 +97,7 @@ GrassRenderer2::~GrassRenderer2()
         delete m;
 }
 
-void GrassRenderer2::render(glm::mat4 &projection, glm::mat4 &view, glm::mat4 &shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
+void GrassRenderer2::render(float4x4 &projection, float4x4 &view, float4x4 &shadow_tr, GLuint shadow_tex, float3 camera_pos,
                             HeightmapTex &heightmap_tex, DirectedLight &light, bool to_shadow)
 {
   if (models.empty())

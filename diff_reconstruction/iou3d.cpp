@@ -86,7 +86,7 @@ double iou3d(const std::vector<float> &model1, const std::vector<float> &model2,
   int X = (x_e - x_s) / step + 1;
   int Y = (y_e - y_s) / step + 1;
   int Z = (z_e - z_s) / step + 1;
-  glm::vec4 *arr = new glm::vec4[X * Y * Z];
+  float4 *arr = new float4[X * Y * Z];
   int a = 0;
   for (double x = x_s; x <= x_e; x += step)
   {
@@ -127,16 +127,16 @@ double iou3d(const std::vector<float> &model1, const std::vector<float> &model2,
         if (prod1 && prod2)
         {
           intersect += 1;
-          arr[X * Y * c + X * b + a] = glm::vec4{1, 0, 0, 0.5};
+          arr[X * Y * c + X * b + a] = float4{1, 0, 0, 0.5};
         } else if (prod1 || prod2)
         {
-          arr[X * Y * c + X * b + a] = glm::vec4{0, 0, 1, 0.5};
+          arr[X * Y * c + X * b + a] = float4{0, 0, 1, 0.5};
         }
         else
         {
-          arr[X * Y * c + X * b + a] = glm::vec4{0, 0, 0, 0};
+          arr[X * Y * c + X * b + a] = float4{0, 0, 0, 0};
         }
-        //arr[X * Y * c + X * b + a] = glm::vec4{prod2, 0, 0, prod2 ? 1 : 0};
+        //arr[X * Y * c + X * b + a] = float4{prod2, 0, 0, prod2 ? 1 : 0};
         if (prod1 || prod2)
         {
           interconnect += 1;
@@ -147,10 +147,10 @@ double iou3d(const std::vector<float> &model1, const std::vector<float> &model2,
     }
     ++a;
   }
-  glm::vec3 p0 = {x_s, y_s, z_s};
-  glm::vec3 p1 = {x_e, y_e, z_e};
-  glm::ivec3 vox_count = {X, Y, Z};
-  VoxelArray <glm::vec4> vox(p0, p1, vox_count, {0, 0, 0, 0}, arr);
+  float3 p0 = {x_s, y_s, z_s};
+  float3 p1 = {x_e, y_e, z_e};
+  int3 vox_count = {X, Y, Z};
+  VoxelArray <float4> vox(p0, p1, vox_count, {0, 0, 0, 0}, arr);
   voxelization::render_test_3d(vox);
   if (interconnect == 0)
   {

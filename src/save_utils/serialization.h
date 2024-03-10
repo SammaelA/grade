@@ -40,38 +40,14 @@ namespace boost
   namespace serialization
   {
     template <class Archive>
-    void serialize(Archive &ar, glm::vec2 &v, const unsigned int version)
+    void serialize(Archive &ar, float2 &v, const unsigned int version)
     {
       ar &v.x;
       ar &v.y;
     }
 
     template <class Archive>
-    void serialize(Archive &ar, glm::vec3 &v, const unsigned int version)
-    {
-      ar &v.x;
-      ar &v.y;
-      ar &v.z;
-    }
-
-    template <class Archive>
-    void serialize(Archive &ar, glm::vec4 &v, const unsigned int version)
-    {
-      ar &v.x;
-      ar &v.y;
-      ar &v.z;
-      ar &v.w;
-    }
-
-    template <class Archive>
-    void serialize(Archive &ar, glm::ivec2 &v, const unsigned int version)
-    {
-      ar &v.x;
-      ar &v.y;
-    }
-
-    template <class Archive>
-    void serialize(Archive &ar, glm::ivec3 &v, const unsigned int version)
+    void serialize(Archive &ar, float3 &v, const unsigned int version)
     {
       ar &v.x;
       ar &v.y;
@@ -79,7 +55,7 @@ namespace boost
     }
 
     template <class Archive>
-    void serialize(Archive &ar, glm::ivec4 &v, const unsigned int version)
+    void serialize(Archive &ar, float4 &v, const unsigned int version)
     {
       ar &v.x;
       ar &v.y;
@@ -88,8 +64,33 @@ namespace boost
     }
 
     template <class Archive>
-    void serialize(Archive &ar, glm::mat4 &m, const unsigned int version)
+    void serialize(Archive &ar, int2 &v, const unsigned int version)
     {
+      ar &v.x;
+      ar &v.y;
+    }
+
+    template <class Archive>
+    void serialize(Archive &ar, int3 &v, const unsigned int version)
+    {
+      ar &v.x;
+      ar &v.y;
+      ar &v.z;
+    }
+
+    template <class Archive>
+    void serialize(Archive &ar, int4 &v, const unsigned int version)
+    {
+      ar &v.x;
+      ar &v.y;
+      ar &v.z;
+      ar &v.w;
+    }
+
+    template <class Archive>
+    void serialize(Archive &ar, float4x4 &m, const unsigned int version)
+    {
+      /*
       ar &m[0][0];
       ar &m[0][1];
       ar &m[0][2];
@@ -108,7 +109,7 @@ namespace boost
       ar &m[3][0];
       ar &m[3][1];
       ar &m[3][2];
-      ar &m[3][3];
+      ar &m[3][3];*/
     }
 
     template <class Archive>

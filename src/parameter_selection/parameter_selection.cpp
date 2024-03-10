@@ -16,9 +16,9 @@
 
 bool debug_stat = false;
 
-glm::vec4 tc_tr_mult(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
+float4 tc_tr_mult(float4 tc_tr_1, float4 tc_tr_2)
 {
-    return glm::vec4(tc_tr_2.x + tc_tr_1.x * tc_tr_2.z,
+    return float4(tc_tr_2.x + tc_tr_1.x * tc_tr_2.z,
                      tc_tr_2.y + tc_tr_1.y * tc_tr_2.w,
                      tc_tr_1.z * tc_tr_2.z,
                      tc_tr_1.w * tc_tr_2.w);
@@ -41,9 +41,9 @@ Texture load_reference(std::string name, int image_w, int image_h)
 
     ref_transform.use();
     ref_transform.get_shader().texture("tex", ref_raw);
-    ref_transform.get_shader().uniform("wood_color", glm::vec3(0.2, 0.2, 0.2));
-    ref_transform.get_shader().uniform("leaves_color", glm::vec3(0, 0.15, 0));
-    ref_transform.get_shader().uniform("background_color", glm::vec3(0, 0, 0));
+    ref_transform.get_shader().uniform("wood_color", float3(0.2, 0.2, 0.2));
+    ref_transform.get_shader().uniform("leaves_color", float3(0, 0.15, 0));
+    ref_transform.get_shader().uniform("background_color", float3(0, 0, 0));
     ref_transform.render();
 
     engine::textureManager->delete_tex(ref_raw);
@@ -51,7 +51,7 @@ Texture load_reference(std::string name, int image_w, int image_h)
     return ref;
 }
 
-void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::string name, TextureAtlas &ref_atl, glm::vec4 tc_tr)
+void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::string name, TextureAtlas &ref_atl, float4 tc_tr)
 {
     {
         TextureAtlas atl = TextureAtlas(imp.impostors.back().slices.size() * tex_w, tex_h, 1, 1);
@@ -61,10 +61,10 @@ void save_impostor_as_reference(ImpostorsData &imp, int tex_w, int tex_h, std::s
     PostFx copy = PostFx("copy_arr2.fs");
     for (int num_slice = 0; num_slice < imp.impostors.back().slices.size(); num_slice++)
     {
-        glm::vec4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
-        tex_transform = glm::vec4(tex_transform.z * tex_transform.x, tex_transform.w * tex_transform.y, tex_transform.x, tex_transform.y);
+        float4 tex_transform = imp.atlas.tc_transform(imp.impostors.back().slices[num_slice].id);
+        tex_transform = float4(tex_transform.z * tex_transform.x, tex_transform.w * tex_transform.y, tex_transform.x, tex_transform.y);
         tex_transform = tc_tr_mult(tc_tr, tex_transform);
-        glm::vec3 tex = glm::vec3(0, 0, 0);
+        float3 tex = float3(0, 0, 0);
         imp.atlas.process_tc(imp.impostors.back().slices[num_slice].id, tex);
         int layer = tex.z;
 
@@ -151,9 +151,9 @@ LightVoxelsCube *gen_voxels_for_selection(ReferenceTree &ref_tree)
 {
     int sz_x = 25 * ceil(1.5 * ref_tree.info.BCyl_sizes.x / 25);
     int sz_y = 25 * ceil(1.5 * ref_tree.info.BCyl_sizes.y / 25);
-    glm::vec3 ref_size = glm::vec3(sz_x, 0.5f * sz_y, sz_x);
+    float3 ref_size = float3(sz_x, 0.5f * sz_y, sz_x);
     // logerr("ref size %d %d", sz_x, sz_y);
-    return new LightVoxelsCube(glm::vec3(0, ref_size.y, 0), ref_size, 0.625f);
+    return new LightVoxelsCube(float3(0, ref_size.y, 0), ref_size, 0.625f);
 }
 
 std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params, ImpostorSimilarityCalc &imp_sim,
@@ -191,7 +191,7 @@ std::vector<float> generate_for_par_selection(std::vector<ParameterList> &params
         if (voxels_needed)
             thr_voxels[i] = gen_voxels_for_selection(ref_tree);
         else
-            thr_voxels[i] = new LightVoxelsCube(glm::vec3(0, 0, 0), glm::ivec3(1, 1, 1), 1.0f);
+            thr_voxels[i] = new LightVoxelsCube(float3(0, 0, 0), int3(1, 1, 1), 1.0f);
     }
     if (num_threads > 1)
     {
@@ -419,7 +419,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
         my_opt::get_test_function("alpine100", optF, parList_f);
         int tries = 16;
         int cnt = 10;
-        std::vector<glm::vec4> stat;
+        std::vector<float4> stat;
         for (int i = 0; i < cnt; i++)
         {
             float res = 0;
@@ -458,7 +458,7 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
                 delete optimizer;
             }
             logerr("av_res = %f", res / tries);
-            stat.push_back(glm::vec4(val, res / tries, mn, mx));
+            stat.push_back(float4(val, res / tries, mn, mx));
         }
         for (auto &v : stat)
         {
@@ -533,8 +533,8 @@ void ParameterSelector::parameter_selection_internal(Block &selection_settings, 
     results.best_res = best_metric;
 }
 
-void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color,
-                                          glm::vec4 &tc_transform, float &width_height, float &tr_thick_height)
+void prepare_to_transform_reference_image(Texture &t, float3 background_color,
+                                          float4 &tc_transform, float &width_height, float &tr_thick_height)
 {
     unsigned char *data = nullptr;
     int w, h;
@@ -569,18 +569,18 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
     }
     if (data)
     {
-        std::vector<glm::ivec2> min_max;
+        std::vector<int2> min_max;
         int min_x = w;
         int max_x = -1;
         int min_y = h;
         int max_y = -1;
         for (int y = 0; y < h; y++)
         {
-            min_max.push_back(glm::ivec2(-1, -1));
+            min_max.push_back(int2(-1, -1));
             for (int x = 0; x < w; x++)
             {
                 int pos = 4 * ((h - y - 1) * w + x);
-                glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
+                float3 color = (1.0f / 255) * float3(data[pos], data[pos + 1], data[pos + 2]);
                 if (length(color - background_color) > 0.01)
                 {
                     min_max.back().x = x;
@@ -592,7 +592,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
                 for (int x = w - 1; x >= 0; x--)
                 {
                     int pos = 4 * ((h - y - 1) * w + x);
-                    glm::vec3 color = (1.0f / 255) * glm::vec3(data[pos], data[pos + 1], data[pos + 2]);
+                    float3 color = (1.0f / 255) * float3(data[pos], data[pos + 1], data[pos + 2]);
                     if (length(color - background_color) > 0.01)
                     {
                         min_max.back().y = x;
@@ -624,7 +624,7 @@ void prepare_to_transform_reference_image(Texture &t, glm::vec3 background_color
         tc_transform.w = (float)(max_y - min_y) / h;
 
         float br = ReferenceTree::border_size;
-        glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
+        float4 tc_tr_2 = float4(-br, -br, 1, 1) / (1 - 2 * br);
         tc_transform = tc_tr_mult(tc_transform, tc_tr_2);
 
         width_height = 0.5 * (float)(max_x - min_x) / (max_y - min_y);
@@ -676,7 +676,7 @@ void get_reference_info(Block &reference_info, ReferenceTree &ref_tree, TreeComp
                         float original_tex_aspect_ratio, float original_tex_tr_thickness)
 {
     Block &ri = reference_info;
-    explicit_info.BCyl_sizes = glm::vec2(0.5 * ri.get_double("width", -1), ri.get_double("height", -1));
+    explicit_info.BCyl_sizes = float2(0.5 * ri.get_double("width", -1), ri.get_double("height", -1));
     explicit_info.BCyl_sizes /= (1 - 2 * ReferenceTree::border_size);
     explicit_info.branches_curvature = ri.get_double("branches_curvature", -1);
     explicit_info.branches_density = ri.get_double("branches_density", -1);
@@ -946,7 +946,7 @@ void get_reference_info(Block &reference_info, ReferenceTree &ref_tree, TreeComp
 ParameterSelector::Results ParameterSelector::parameter_selection(Block &reference_info, Block &selection_settings)
 {
     Scene scene;
-    scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+    scene.heightmap = new Heightmap(float3(0, 0, 0), float2(100, 100), 10);
     scene.heightmap->fill_const(0);
     float imp_size = selection_settings.get_int("impostor_size", 128);
     float original_tex_aspect_ratio = 1;
@@ -998,12 +998,12 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
             igp.leaf_opacity = 0.75;
             igp.leaf_scale = 2.5;
 
-            LightVoxelsCube *ref_voxels = new LightVoxelsCube(glm::vec3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
+            LightVoxelsCube *ref_voxels = new LightVoxelsCube(float3(0, 0, 0), 2.0f * reference_ttd.get_params()->get_tree_max_size(),
                                                               0.625f * reference_ttd.get_params()->get_scale_factor());
             logerr("AAAA %f %f %f", reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y,
                    reference_ttd.get_params()->get_tree_max_size().z);
             ReferenceTree ref_tree_init;
-            ref_tree_init.info.BCyl_sizes = glm::vec2(reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y);
+            ref_tree_init.info.BCyl_sizes = float2(reference_ttd.get_params()->get_tree_max_size().x, reference_ttd.get_params()->get_tree_max_size().y);
             ref_tree_init.info.joints_cnt = 100000;
             // create reference tree
             for (int i = 0; i < 10; i++)
@@ -1014,7 +1014,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
                 Tree single_tree;
-                gen->plant_tree(glm::vec3(0, 0, 0), &(reference_ttd));
+                gen->plant_tree(float3(0, 0, 0), &(reference_ttd));
                 while (gen->iterate(*ref_voxels))
                 {
                 }
@@ -1039,7 +1039,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 AbstractTreeGenerator *gen = get_generator(reference_ttd.generator_name);
                 ref_voxels->fill(0);
                 Tree single_tree;
-                gen->plant_tree(glm::vec3(0, 0, 0), &(reference_ttd));
+                gen->plant_tree(float3(0, 0, 0), &(reference_ttd));
                 while (gen->iterate(*ref_voxels))
                 {
                 }
@@ -1052,15 +1052,15 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 }
                 logerr("%d", single_tree.branchHeaps[0]->branches.size());
                 logerr("impostors %d", grove.impostors[1].impostors.size());
-                save_impostor_as_reference(grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, glm::vec4(0, 0, 1, 1));
+                save_impostor_as_reference(grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, float4(0, 0, 1, 1));
                 engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_01");
                 imp_sim.get_reference_tree_image_info(ref_tree, 1);
                 ImpostorSimilarityCalc::get_tree_compare_info(grove.impostors[1].impostors.back(), single_tree, ref_tree.info);
-                ref_tree.info.BCyl_sizes *= glm::vec2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
+                ref_tree.info.BCyl_sizes *= float2(ref_tree.image_info.tc_transform.z, ref_tree.image_info.tc_transform.w);
 
                 float br = ReferenceTree::border_size;
-                glm::vec4 tc_tr_2 = glm::vec4(-br, -br, 1, 1) / (1 - 2 * br);
-                glm::vec4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
+                float4 tc_tr_2 = float4(-br, -br, 1, 1) / (1 - 2 * br);
+                float4 tc_tr = tc_tr_mult(ref_tree.image_info.tc_transform, tc_tr_2);
                 save_impostor_as_reference(grove.impostors[1], imp_size, imp_size, "imp_ref", ref_tree.atlas, tc_tr);
                 engine::textureManager->save_png(ref_tree.atlas.tex(0), "reference_atlas_02");
             }
@@ -1093,24 +1093,24 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                 reference_name = name;
                 Texture ref_raw = engine::textureManager->load_unnamed_tex(image::base_img_path + name);
                 reference_aspect_ratio = ref_raw.get_H() / (float)ref_raw.get_W();
-                glm::vec4 ref_tc_transform;
+                float4 ref_tc_transform;
                 float aspect_ratio = -1;
                 float tr_thickness = -1;
-                prepare_to_transform_reference_image(ref_raw, ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)),
+                prepare_to_transform_reference_image(ref_raw, ref_image_blk->get_vec3("background_color", float3(0, 0, 0)),
                                                      ref_tc_transform, aspect_ratio, tr_thickness);
                 original_tex_aspect_ratio += aspect_ratio;
                 original_tex_tr_thickness += tr_thickness;
                 int slice_id = ref_tree.atlas.add_tex();
                 ref_tree.atlas.target_slice(slice_id, 0);
                 ref_transform.use();
-                ref_transform.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+                ref_transform.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
                 ref_transform.get_shader().texture("tex", ref_raw);
                 ref_transform.get_shader().uniform("wood_color",
-                                                   ref_image_blk->get_vec3("wood_color", glm::vec3(1, 0, 0)));
+                                                   ref_image_blk->get_vec3("wood_color", float3(1, 0, 0)));
                 ref_transform.get_shader().uniform("leaves_color",
-                                                   ref_image_blk->get_vec3("leaves_color", glm::vec3(0, 0.15, 0)));
+                                                   ref_image_blk->get_vec3("leaves_color", float3(0, 0.15, 0)));
                 ref_transform.get_shader().uniform("background_color",
-                                                   ref_image_blk->get_vec3("background_color", glm::vec3(0, 0, 0)));
+                                                   ref_image_blk->get_vec3("background_color", float3(0, 0, 0)));
                 ref_transform.get_shader().uniform("ref_tc_transform", ref_tc_transform);
                 ref_transform.render();
                 glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -1131,7 +1131,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
                     sel_stat_atl.target_slice(tex_id, 0);
                     copy_arr.use();
                     copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
-                    copy_arr.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
+                    copy_arr.get_shader().uniform("tex_transform", float4(0, 1, 1, -1));
                     copy_arr.render();
                     glMemoryBarrier(GL_ALL_BARRIER_BITS);
                     ref_stat_saved = true;
@@ -1153,7 +1153,7 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
         sel_stat_atl.target_slice(tex_id, 0);
         copy_arr.use();
         copy_arr.get_shader().texture("tex", ref_tree.atlas.tex(0));
-        copy_arr.get_shader().uniform("tex_transform", glm::vec4(0, 1, 1, -1));
+        copy_arr.get_shader().uniform("tex_transform", float4(0, 1, 1, -1));
         copy_arr.render();
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
@@ -1181,14 +1181,14 @@ ParameterSelector::Results ParameterSelector::parameter_selection(Block &referen
 
 void ParameterSelector::create_single_tree_scene(const TreeTypeData &tree_type, Scene &scene)
 {
-  scene.heightmap = new Heightmap(glm::vec3(0, 0, 0), glm::vec2(100, 100), 10);
+  scene.heightmap = new Heightmap(float3(0, 0, 0), float2(100, 100), 10);
   scene.heightmap->fill_const(0);
-  LightVoxelsCube *res_voxels = new LightVoxelsCube(glm::vec3(0, 50, 0), glm::vec3(50, 50, 50), 0.625f);
+  LightVoxelsCube *res_voxels = new LightVoxelsCube(float3(0, 50, 0), float3(50, 50, 50), 0.625f);
   Tree tree;
   AbstractTreeGenerator *gen = get_generator(tree_type.generator_name);
-  glm::vec3 pos = glm::vec3(0, 0, 0);
+  float3 pos = float3(0, 0, 0);
   res_voxels->fill(0);
-  res_voxels->relocate(glm::vec3(0, res_voxels->get_center().y, 0) + pos);
+  res_voxels->relocate(float3(0, res_voxels->get_center().y, 0) + pos);
 
   gen->plant_tree(pos, &tree_type);
   while (gen->iterate(*res_voxels))
@@ -1213,7 +1213,7 @@ void ParameterSelector::create_single_tree_scene(const TreeTypeData &tree_type, 
 }
 
 void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std::string &file_name,
-                                       int image_count, float distance, glm::ivec2 image_size, int rays_per_pixel,
+                                       int image_count, float distance, int2 image_size, int rays_per_pixel,
                                        bool render_terrain)
 {
   Scene scene;
@@ -1223,9 +1223,9 @@ void ParameterSelector::visualize_tree(const TreeTypeData &tree_type, const std:
   for (int i = 0; i < image_count; i++)
   {
     Block camera_blk;
-    camera_blk.add_vec3("camera_look_at", glm::vec3(0, 50, 0));
-    camera_blk.add_vec3("camera_pos", glm::vec3(distance * cos(2 * PI * i / ((float)image_count)), 50, distance * sin(2 * PI * i / ((float)image_count))));
-    camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
+    camera_blk.add_vec3("camera_look_at", float3(0, 50, 0));
+    camera_blk.add_vec3("camera_pos", float3(distance * cos(2 * PI * i / ((float)image_count)), 50, distance * sin(2 * PI * i / ((float)image_count))));
+    camera_blk.add_vec3("camera_up", float3(0, 1, 0));
     cameras.add_block("camera", &camera_blk);
   }
   Block export_settings;
@@ -1248,8 +1248,8 @@ void ParameterSelector::save_tree_to_obj(const TreeTypeData &tree_type, const st
   {
     for (auto &pb : pbv)
     {
-      visualizer::packed_branch_to_model(pb, &mesh, false, MAX(1, 3-pb.level), glm::vec2(0, 2));
-      visualizer::packed_branch_to_model(pb, &mesh, true, MAX(1, 3-pb.level), glm::vec2(2, 2));
+      visualizer::packed_branch_to_model(pb, &mesh, false, MAX(1, 3-pb.level), float2(0, 2));
+      visualizer::packed_branch_to_model(pb, &mesh, true, MAX(1, 3-pb.level), float2(2, 2));
     }
   }
 

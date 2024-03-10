@@ -25,7 +25,7 @@ namespace upg
                          std::vector<LogicNode> &nodes, 
                          std::vector<float> &parameters,
                          std::vector<SdfObject> &objects,
-                         glm::mat4 transform, float distance_mult, float distance_add)
+                         float4x4 transform, float distance_mult, float distance_add)
   {
     logerr("GTR %lu %d",(uint64_t)node, node->child_cnt());
     SdfNodeClass cl = get_sdf_node_properties(node->type).node_class;
@@ -41,10 +41,7 @@ namespace upg
       objects.back().distance_mult = distance_mult;
       objects.back().params_count = param_cnt;
       objects.back().params_offset = parameters.size();
-      objects.back().transform = LiteMath::float4x4(transform[0][0], transform[1][0], transform[2][0], transform[3][0],
-                                                    transform[0][1], transform[1][1], transform[2][1], transform[3][1],
-                                                    transform[0][2], transform[1][2], transform[2][2], transform[3][2],
-                                                    transform[0][3], transform[1][3], transform[2][3], transform[3][3]);
+      objects.back().transform = transform;
 
       parameters.insert(parameters.end(), node->p.begin(), node->p.end());
 
@@ -57,19 +54,19 @@ namespace upg
       switch (node->type)
       {
       case SdfNodeType::MOVE:
-        transform = LiteMath::translate(glm::mat4(1.0f), glm::vec3(-node->p[0], -node->p[1], -node->p[2]))*transform;
+        transform = LiteMath::translate(float4x4(), float3(-node->p[0], -node->p[1], -node->p[2]))*transform;
         break;
       case SdfNodeType::ROTATE:
         {
           float x = cosf(node->p[0]) * cosf(node->p[1]);
           float y = sinf(node->p[0]) * cosf(node->p[1]);
           float z = sinf(node->p[1]);
-          glm::vec3 axis = normalize(glm::vec3{x,y,z});
-          transform = LiteMath::rotate(glm::mat4(1.0f), -node->p[2], axis)*transform;
+          float3 axis = normalize(float3{x,y,z});
+          transform = LiteMath::rotate(float4x4(), -node->p[2], axis)*transform;
         }
         break;
       case SdfNodeType::SCALE:
-        transform = LiteMath::scale(glm::mat4(1.0f), glm::vec3(1.0f/node->p[0], 1.0f/node->p[0], 1.0f/node->p[0]))*transform;
+        transform = LiteMath::scale(float4x4(), float3(1.0f/node->p[0], 1.0f/node->p[0], 1.0f/node->p[0]))*transform;
         distance_mult *= node->p[0];
         break;
       case SdfNodeType::ROUND:
@@ -305,7 +302,7 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       //printf("idx %f %f %f\n",idx.x, idx.y, idx.z);
       LiteMath::float3 corner = itr*(idx*bbox.min_pos + (LiteMath::float3(1,1,1)-idx)*bbox.max_pos);
       //logerr("corner %f %f %f", corner.x, corner.y, corner.z);
-      //corner = itr*glm::vec4(1,1,1,1);
+      //corner = itr*float4(1,1,1,1);
       p_min = min(p_min, corner);
       p_max = max(p_max, corner);
     }
@@ -320,7 +317,7 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
     std::vector<LogicNode> nodes;
     std::vector<float> all_parameters;
     std::vector<SdfObject> basic_objects;
-    get_transform_rec(reference_sdf.root, nodes, all_parameters, basic_objects, glm::mat4(1.0f), 1.0f, 0.0f);
+    get_transform_rec(reference_sdf.root, nodes, all_parameters, basic_objects, float4x4(), 1.0f, 0.0f);
     int i=0;
     //for (auto &n : nodes)
     //  logerr("%d node t%u (%u %u) %d",i++, n.type, n.left_id, n.right_id, (int)n.literal_id);    

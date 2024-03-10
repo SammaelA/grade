@@ -11,7 +11,7 @@
 #include "experimental_hashing.h"
 #include "kmeans_custom.h"
 
-using namespace glm;
+
 int cur_cluster_id = 0;
 ClusteringSerializationHelper *cur_ser_helper = nullptr;
 ClusterData::ClusterData()
@@ -95,18 +95,18 @@ BranchClusteringData *Clusterizer2::convert_branch(Block &settings, Branch *base
     Branch &b = *(base);
     if (get_dedicated_bbox(base, bbox))
     {
-        mat4 transform = mat4(1.0f);
-        glm::vec3 cbb = canonical_bbox();
-        mat4 rot_inv(vec4(bbox.a, 0), vec4(bbox.b, 0), vec4(bbox.c, 0), vec4(0, 0, 0, 1));
-        mat4 rot = inverse(rot_inv);
-        vec3 sc_vert = vec3(MAX((1 / cbb.x) * bbox.sizes.x, MAX((1 / cbb.y) * bbox.sizes.y, (1 / cbb.z) * bbox.sizes.z)));
+        float4x4 transform = float4x4();
+        float3 cbb = canonical_bbox();
+        float4x4 rot_inv = to_float4x4(to_float4(bbox.a, 0), to_float4(bbox.b, 0), to_float4(bbox.c, 0), float4(0, 0, 0, 1));
+        float4x4 rot = inverse4x4(rot_inv);
+        float3 sc_vert = float3(MAX((1 / cbb.x) * bbox.sizes.x, MAX((1 / cbb.y) * bbox.sizes.y, (1 / cbb.z) * bbox.sizes.z)));
         float r_transform = 1 / sc_vert.x;
-        mat4 SC = scale(mat4(1.0f), sc_vert);
-        mat4 SC_inv = inverse(SC);
-        vec3 base_joint_pos = vec3(b.joints.front().pos);
-        mat4 transl = translate(mat4(1.0f), -1.0f * base_joint_pos);
+        float4x4 SC = scale(float4x4(), sc_vert);
+        float4x4 SC_inv = inverse4x4(SC);
+        float3 base_joint_pos = float3(b.joints.front().pos);
+        float4x4 transl = translate(float4x4(), -1.0f * base_joint_pos);
         rot = SC_inv * rot * transl;
-        transform = inverse(rot);
+        transform = inverse4x4(rot);
         bbcd.r_transform = r_transform;
         bbcd.transform = transform;
         bbcd.can_be_center = true;
@@ -139,7 +139,7 @@ void Clusterizer2::get_base_clusters(Block &settings, Tree &t, int layer, std::v
             base_clusters.back().IDA.tree_ids.push_back(t.id);
             base_clusters.back().IDA.centers_par.push_back(b.center_par);
             base_clusters.back().IDA.centers_self.push_back(b.center_self);
-            base_clusters.back().IDA.transforms.push_back(glm::mat4(1.0f));
+            base_clusters.back().IDA.transforms.push_back(float4x4());
             if (clustering_data_needed)
                 base_clusters.back().ACDA.clustering_data.push_back(convert_branch(settings, &b, ctx));
             else 
@@ -248,8 +248,8 @@ void Clusterizer2::clusterize(Block &settings, std::vector<ClusterData> &base_cl
         prepare_result(settings, base_clusters, clusters, branches, ctx, cluster_result);
         for (auto &cl : clusters)
         {
-            glm::vec4 pos;
-            glm::vec4 joint = glm::vec4(cl.base->center_self, 1);
+            float4 pos;
+            float4 joint = to_float4(cl.base->center_self, 1);
             debugl(3, "\n\ncenter center %f %f %f\n",joint.x, joint.y, joint.z);
             for (auto &tr : cl.IDA.transforms)
             {
@@ -319,11 +319,11 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
         }
         res_cluster.base = base_clusters[it->second].base;
         res_cluster.id = base_clusters[it->second].id;
-        glm::mat4 base_transform_inv = glm::inverse(center->transform);
+        float4x4 base_transform_inv = LiteMath::inverse4x4(center->transform);
         for (auto &p : str.members)
         {
             BranchClusteringData *base_bcd = branches[p.first];
-            glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), p.second.rot, glm::vec3(1, 0, 0));
+            float4x4 rot = LiteMath::rotate(float4x4(), p.second.rot, float3(1, 0, 0));
             //debugl(3, "base bcd first %d %d %d\n", base_bcd, center, p.first);
 
             it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);
@@ -335,7 +335,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
             ClusterData &base = base_clusters[it->second];
             if (cStrategy == ClusteringStrategy::Merge)
             {
-                glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
+                float4x4 tr = (base_bcd->transform) * rot * base_transform_inv;
                 if (base_bcd == center)
                 {
                     res_cluster.base_pos = ACDA.clustering_data.size() + base.base_pos;
@@ -360,7 +360,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
             }
             else if (cStrategy == ClusteringStrategy::Recreate)
             {
-                glm::mat4 tr = (base_bcd->transform) * rot * base_transform_inv;
+                float4x4 tr = (base_bcd->transform) * rot * base_transform_inv;
                 int i = base_bcd->id;
                 if (base_bcd == center)
                 {

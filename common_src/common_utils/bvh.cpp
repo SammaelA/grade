@@ -67,7 +67,7 @@ void BVH::iterate_over_intersected_bboxes(AABB bbox, std::function<void(const st
     }
 }
 
-bool BVH::contains(glm::vec3 point) const
+bool BVH::contains(float3 point) const
 {
     if (simple_list)
     {
@@ -114,8 +114,8 @@ int BVH::add_node_rec(std::vector<int> &boxes)
     }
     else
     {
-        glm::vec3 minp = glm::vec3(1e9,1e9,1e9);
-        glm::vec3 maxp = glm::vec3(-1e9,-1e9,-1e9);
+        float3 minp = float3(1e9,1e9,1e9);
+        float3 maxp = float3(-1e9,-1e9,-1e9);
         for (int box_id : boxes)
         {
             minp = min(minp, obj_bboxes[box_id].first.min_pos);
@@ -218,9 +218,9 @@ void BVH::rebuild()
 
 AABB triangle_bbox(const float *positions)
 {
-  glm::vec3 p0(positions[0], positions[1], positions[2]);
-  glm::vec3 p1(positions[3], positions[4], positions[5]);
-  glm::vec3 p2(positions[6], positions[7], positions[8]);
+  float3 p0(positions[0], positions[1], positions[2]);
+  float3 p1(positions[3], positions[4], positions[5]);
+  float3 p2(positions[6], positions[7], positions[8]);
   return AABB(min(p0, min(p1,p2)), max(p0, max(p1,p2)));
 }
 BVH::BVH(const std::vector<float> &positions, const std::vector<unsigned> &indices)
@@ -232,9 +232,9 @@ BVH::BVH(const std::vector<float> &positions, const std::vector<unsigned> &indic
   obj_bboxes.reserve(indices.size()/3);
   for (int i=0;i<indices.size();i+=3)
   {
-    glm::vec3 p0(positions[3*indices[i+0]+0], positions[3*indices[i+0]+1], positions[3*indices[i+0]+2]);
-    glm::vec3 p1(positions[3*indices[i+1]+0], positions[3*indices[i+1]+1], positions[3*indices[i+1]+2]);
-    glm::vec3 p2(positions[3*indices[i+2]+0], positions[3*indices[i+2]+1], positions[3*indices[i+2]+2]);
+    float3 p0(positions[3*indices[i+0]+0], positions[3*indices[i+0]+1], positions[3*indices[i+0]+2]);
+    float3 p1(positions[3*indices[i+1]+0], positions[3*indices[i+1]+1], positions[3*indices[i+1]+2]);
+    float3 p2(positions[3*indices[i+2]+0], positions[3*indices[i+2]+1], positions[3*indices[i+2]+2]);
     obj_bboxes.emplace_back(AABB(min(p0, min(p1,p2)), max(p0, max(p1,p2))), (uint64_t)(i/3 + 1));
   }
 

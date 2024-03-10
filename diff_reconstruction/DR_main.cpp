@@ -63,9 +63,9 @@ int main(int argc, char **argv)
   float h1 = 1.5;
   camera.fov_rad = 0.5;
   float h2 = h1 * tan((PI / 3) / 2) / tan(camera.fov_rad / 2);
-  camera.origin = glm::vec3(0, 0.5, h2);
-  camera.target = glm::vec3(0, 0.5, 0);
-  camera.up = glm::vec3(0, 1, 0);
+  camera.origin = float3(0, 0.5, h2);
+  camera.target = float3(0, 0.5, 0);
+  camera.up = float3(0, 1, 0);
 
   std::vector<float> default_scene_params = {0.133, 0.543, 0.238, 0.088, -0.353, 0.023, 0.000, 0.500, 10.000, 1.000, 100.000, 0.1};
   if (argc >= 4 && std::string(argv[2]) == "-sil_test")
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 
       Texture res = BilateralFilter::perform(comp, 4, 0.5);
       Texture sharped = UnsharpMasking::perform(res, 1, 0.2);
-      
+
 #if USE_OPEN_CV
       cv::Mat image, mask, image_inpainted;
       image = cv::imread("saves/cup_14/reconstructed_tex_complemented_1.png");
@@ -474,9 +474,9 @@ int main(int argc, char **argv)
       m->update();
 
       CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
-      glm::mat4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
-      glm::mat4 view = LiteMath::lookAt(rc.origin+glm::vec3(0,1,0), rc.target, rc.up);
-      glm::mat4 viewProj = projection * view;
+      float4x4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      float4x4 view = LiteMath::lookAtRH(rc.origin+float3(0,1,0), rc.target, rc.up);
+      float4x4 viewProj = projection * view;
       Texture res_tex = wr.render(*m, viewProj, 1024, 1024);
       textureManager.save_png(res_tex, "wireframe_building_"+std::to_string(i));
       delete m;
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
     if (false)
     {
       auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
-      visualizer::transform(model, LiteMath::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
+      visualizer::transform(model, LiteMath::rotate(float4x4(), PI / 2, float3(0, 1, 0)));
       auto bbox = visualizer::get_bbox(model);
       visualizer::normalize_model(model);
       Model *m2 = new Model();
@@ -495,9 +495,9 @@ int main(int argc, char **argv)
       CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
       rc.origin.y = 0;
       rc.target.y = 0;
-      glm::mat4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
-      glm::mat4 view = LiteMath::lookAt(rc.origin, rc.target, rc.up);
-      glm::mat4 viewProj = projection * view;
+      float4x4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      float4x4 view = LiteMath::lookAtRH(rc.origin, rc.target, rc.up);
+      float4x4 viewProj = projection * view;
       Texture res_tex_2 = wr.render(*m2, viewProj, 2048, 2048);
       textureManager.save_png(res_tex_2, "result_quaking_aspen_wireframe");
       //dgen::save_obj("saves/selection/reference_medium_oak_simplified_norm.obj", model);

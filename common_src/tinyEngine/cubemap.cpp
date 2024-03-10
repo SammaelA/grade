@@ -35,7 +35,7 @@ Cubemap::Cubemap(int w, int h) : cube_model(),
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.texture, 0);
 }
-void Cubemap::render(glm::mat4 &projection, glm::mat4 &view, Camera &camera)
+void Cubemap::render(float4x4 &projection, float4x4 &view, Camera &camera)
 {
   int prev_FBO = 0;
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_FBO);
@@ -44,7 +44,7 @@ void Cubemap::render(glm::mat4 &projection, glm::mat4 &view, Camera &camera)
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  view = glm::mat4(glm::mat3(view));
+  view.set_col(3, float4(0,0,0,1));
   glDepthMask(GL_FALSE);
   cube_shader.use();
   cube_shader.textureCube("skybox", cube.texture);

@@ -417,7 +417,7 @@ void GrovePacker::recalculate_nodes(ClusterData &cl)
             nit->second.clear();
             for (Joint &j : cl.base->joints)
             {
-                glm::vec3 pos = glm::vec3(cl.IDA.transforms[k] * glm::vec4(j.pos, 1));
+                float3 pos = to_float3(cl.IDA.transforms[k] * to_float4(j.pos, 1));
                 nit->second.push_back({pos});
             }
         }
@@ -426,12 +426,12 @@ void GrovePacker::recalculate_nodes(ClusterData &cl)
 
 void GrovePacker::transform_by_nodes(ClusterData &cl)
 {
-    glm::vec4 base_pos = glm::vec4(cl.base->joints.front().pos, 1);
+    float4 base_pos = to_float4(cl.base->joints.front().pos, 1);
     for (int i = 0; i < cl.IDA.transforms.size(); i++)
     {
-        glm::vec3 pos = glm::vec3(cl.IDA.transforms[i] * base_pos);
+        float3 pos = to_float3(cl.IDA.transforms[i] * base_pos);
         float min_dist = 1000;
-        glm::vec3 min_vec = glm::vec3(0, 0, 0);
+        float3 min_vec = float3(0, 0, 0);
         auto it = trees_nodes.find(cl.IDA.tree_ids[i]);
         if (it == trees_nodes.end())
         {
@@ -441,15 +441,15 @@ void GrovePacker::transform_by_nodes(ClusterData &cl)
         {
             for (auto &node : it->second)
             {
-                glm::vec3 dist = node - pos;
-                float d = glm::dot(dist, dist);
+                float3 dist = node - pos;
+                float d = dot(dist, dist);
                 if (d < min_dist)
                 {
                     min_dist = d;
                     min_vec = dist;
                 }
             }
-            cl.IDA.transforms[i] = LiteMath::translate(glm::mat4(1.0f), min_vec) * cl.IDA.transforms[i];
+            cl.IDA.transforms[i] = LiteMath::translate(float4x4(), min_vec) * cl.IDA.transforms[i];
         }
     }
 }
@@ -570,7 +570,7 @@ void GrovePacker::add_trees_to_grove_internal(const GrovePackingParams &params, 
 
     for (int i = 0; i < trees_count; i++)
     {
-        auto it = trees_nodes.emplace(trees_external[i].id,std::vector<glm::vec3>{});
+        auto it = trees_nodes.emplace(trees_external[i].id,std::vector<float3>{});
         for (Joint &j : trees_external[i].root->joints)
         {
             it.first->second.push_back(j.pos);
@@ -664,8 +664,8 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
 
   for (auto &t : grove.compressedTrees)
   {
-    glm::vec3 min_pos = glm::vec3(1e9,1e9,1e9);
-    glm::vec3 max_pos = glm::vec3(-1e9,-1e9,-1e9);
+    float3 min_pos = float3(1e9,1e9,1e9);
+    float3 max_pos = float3(-1e9,-1e9,-1e9);
     std::vector<CompressedTree::Node> nodes = t.LOD_roots;
     while (!nodes.empty())
     {
@@ -676,10 +676,10 @@ void GrovePacker::recreate_compressed_trees(GrovePacked &grove)
         {
           auto &bb = grove.instancedBranchesDirect[node.model_num]->bbox;
           auto &tr = grove.instancedBranchesDirect[node.model_num]->IDA.transforms[node.instance_num];
-          glm::mat4 rot_inv(glm::vec4(bb.a, 0), glm::vec4(bb.b, 0), glm::vec4(bb.c, 0), glm::vec4(0, 0, 0, 1));
-          glm::vec3 pos = rot_inv * glm::vec4(bb.position, 1.0f);
-          glm::vec3 p1 = tr * glm::vec4(pos,1);
-          glm::vec3 p2 = tr * glm::vec4(pos + bb.sizes.x*bb.a + bb.sizes.y*bb.b + bb.sizes.z*bb.c,1);
+          float4x4 rot_inv = to_float4x4(to_float4(bb.a, 0), to_float4(bb.b, 0), to_float4(bb.c, 0), float4(0, 0, 0, 1));
+          float3 pos = to_float3(rot_inv * to_float4(bb.position, 1.0f));
+          float3 p1 = to_float3(tr * to_float4(pos,1));
+          float3 p2 = to_float3(tr * to_float4(pos + bb.sizes.x*bb.a + bb.sizes.y*bb.b + bb.sizes.z*bb.c,1));
           min_pos = min(min_pos, p1);
           min_pos = min(min_pos, p2);
           max_pos = max(max_pos, p1);
@@ -860,9 +860,9 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
     cpls.push_back(&cpl);
   }
   //key is mesh id of first mesh of instanced branch
-  //ivec2 is <index of ClusterPackingLayer in cpls>,<index of cluster inside it>
+  //int2 is <index of ClusterPackingLayer in cpls>,<index of cluster inside it>
   //we don't modify these arrays until the very end, so it's safe to use that indexing 
-  std::map<int, glm::ivec2> cluster_by_packed_branch; 
+  std::map<int, int2> cluster_by_packed_branch; 
   int total_cl_cnt = 0;
   int br_cl_cnt = 0;
   for (int i=0;i<cpls.size();i++)
@@ -875,7 +875,7 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
       if (cpls[i]->additional_data[j].has_instanced_branch)
       {
         br_cl_cnt++;
-        if (!cluster_by_packed_branch.emplace(cpls[i]->additional_data[j].instanced_branch->branches[0], glm::ivec2(i,j)).second)
+        if (!cluster_by_packed_branch.emplace(cpls[i]->additional_data[j].instanced_branch->branches[0], int2(i,j)).second)
         {
           logerr("Clusted %d %d connected to the already existed branch",i,j);
         }
@@ -950,7 +950,7 @@ void GrovePacker::remove_trees(GrovePacked &grove, std::vector<int> &ids)
   auto it = grove.instancedBranches.begin();
   while (it != grove.instancedBranches.end())
   {
-    glm::ivec2 l_cl = cluster_by_packed_branch[it->branches[0]];
+    int2 l_cl = cluster_by_packed_branch[it->branches[0]];
     auto &ACDA = cpls[l_cl.x]->clusters[l_cl.y].ACDA;
     // we need to remove clustering data using right clusterizer
     //(because there is different data inside depends of clusterizer)

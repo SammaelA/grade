@@ -58,14 +58,14 @@ public:
     void generate(Tree *_trees, int count, LightVoxelsCube *voxels);
 private:
     void synt_tree_to_real(SyntheticTree &synt, Tree &t);
-    glm::mat4 get_transform(Branch *base, glm::vec3 pos, BranchStat &stat);
+    float4x4 get_transform(Branch *base, float3 pos, BranchStat &stat);
     void make_synt_tree(SyntheticTree &synt);
     BranchStat get_branch_stat(ClusterData &cd);
     DiscreteGeneral *get_child_branches_cluster_stat(ClusterData &cd);
     void get_existance_stat(ClusterData &cd, std::vector<DiscreteGeneral *> &branchExistanceStat);
     void get_mean_and_stddev(std::vector<float> &values, double &mean, double &stddev);
     void collect_statistics();
-    void add_shadow(Branch *b, glm::mat4 &transform);
+    void add_shadow(Branch *b, float4x4 &transform);
     void add_planar_shadow(Tree &t);
     Seeder &seeder;
     GroveGenerationData &ggd;

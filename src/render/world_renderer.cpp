@@ -7,15 +7,15 @@
 #define DEL_IT(a) if (a) {delete a;a = nullptr;}
 const int HALTON_COUNT = 8;
 const float JITTER_SCALE = 2.0;
-  glm::vec2 haltonSequence[HALTON_COUNT] = {
-    glm::vec2(1.0 / 2.0, 1.0 / 3.0),
-    glm::vec2(1.0 / 4.0, 2.0 / 3.0),
-    glm::vec2(3.0 / 4.0, 1.0 / 9.0),
-    glm::vec2(1.0 / 8.0, 4.0 / 9.0),
-    glm::vec2(5.0 / 8.0, 7.0 / 9.0),
-    glm::vec2(3.0 / 8.0, 2.0 / 9.0),
-    glm::vec2(7.0 / 8.0, 5.0 / 9.0),
-    glm::vec2(1.0 / 16.0, 8.0 / 9.0)};
+  float2 haltonSequence[HALTON_COUNT] = {
+    float2(1.0 / 2.0, 1.0 / 3.0),
+    float2(1.0 / 4.0, 2.0 / 3.0),
+    float2(3.0 / 4.0, 1.0 / 9.0),
+    float2(1.0 / 8.0, 4.0 / 9.0),
+    float2(5.0 / 8.0, 7.0 / 9.0),
+    float2(3.0 / 8.0, 2.0 / 9.0),
+    float2(7.0 / 8.0, 5.0 / 9.0),
+    float2(1.0 / 16.0, 8.0 / 9.0)};
 WorldRenderer::~WorldRenderer()
 {
   regenerate_shadows = true;
@@ -47,7 +47,7 @@ void WorldRenderer::set_resolution(int w, int h)
   
   defferedTarget = DefferedTarget();
   defferedTarget.create(render_settings.RT_overscale *w, render_settings.RT_overscale*h);
-  defferedTarget.set_clear_color(glm::vec4(0.0, 0.0, 0.0, 0.0));
+  defferedTarget.set_clear_color(float4(0.0, 0.0, 0.0, 0.0));
 }
 
 void WorldRenderer::init(int _h, int _w, Block &render_preset)
@@ -84,14 +84,14 @@ void WorldRenderer::init(int _h, int _w, Block &render_preset)
 
   set_resolution(w, h);
 
-  light.dir = glm::normalize(glm::vec3(-0.5, 0.5, -0.15));
-  light.color = glm::vec3(0.99, 0.9, 0.7);
+  light.dir = normalize(float3(-0.5, 0.5, -0.15));
+  light.color = float3(0.99, 0.9, 0.7);
   light.intensity = 2;
   light.ambient_q = 0.1;
   light.diffuse_q = 0.8;
   light.specular_q = 0.1;
   light.has_shadow_map = true;
-  light.shadow_map_size = render_settings.shadow_quality == RenderSettings::HIGH ? glm::vec2(4096, 4096) : glm::vec2(2048, 2048);
+  light.shadow_map_size = render_settings.shadow_quality == RenderSettings::HIGH ? float2(4096, 4096) : float2(2048, 2048);
 
   startScreenShader = new PostFx("simple_render.fs");
   shadowMap.create(light.shadow_map_size.x, light.shadow_map_size.y);
@@ -124,7 +124,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_preset)
     void WorldRenderer::set_heightmap(Heightmap &heightmap)
     {
         bool need_simple_grass = false;
-        glm::vec2 precision = glm::vec2(8, 8);
+        float2 precision = float2(8, 8);
         remove_heightmap();
         terrainRenderer = new TerrainRenderer(heightmap, heightmap.get_pos(), heightmap.get_size(), precision);
 
@@ -174,7 +174,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_preset)
     {
       models = _models;
       int offset = 0;
-      std::vector<glm::mat4> all_matrices;
+      std::vector<float4x4> all_matrices;
       for (auto &im : models)
       {
         inst_offsets.push_back(offset);
@@ -184,7 +184,7 @@ void WorldRenderer::init(int _h, int _w, Block &render_preset)
       }
       simple_instances_buffer = create_buffer();
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, simple_instances_buffer);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::mat4)*all_matrices.size(), all_matrices.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4x4)*all_matrices.size(), all_matrices.data(), GL_STATIC_DRAW);
       
       on_scene_changed();
     }
@@ -232,12 +232,12 @@ void WorldRenderer::render(float dt, Camera &camera)
   float deltaHeight = 1.0 / target_h;
   uint index = frame % HALTON_COUNT;
  
-  glm::vec2 jitter = glm::vec2(haltonSequence[index].x * deltaWidth, haltonSequence [index].y * deltaHeight);
+  float2 jitter = float2(haltonSequence[index].x * deltaWidth, haltonSequence [index].y * deltaHeight);
   
   projectionNoJitter = projection;
 
-  projection[3][0] += jitter.x * render_settings.RT_overscale;
-  projection[3][1] += jitter.y * render_settings.RT_overscale;
+  projection(0,3) += jitter.x * render_settings.RT_overscale;
+  projection(1,3) += jitter.y * render_settings.RT_overscale;
 
   // SHADOW PASS //
   checkGLErrors("render pre shadow", true);
@@ -245,7 +245,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   {
     regenerate_shadows = false;
     shadowMap.use(light);
-    glm::mat4 sh_viewproj = shadowMap.get_transform();
+    float4x4 sh_viewproj = shadowMap.get_transform();
     if (!models.empty())
     {
       simpleInstancingShaderShadow->use();
@@ -276,7 +276,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     {
       groveRenderer->render(groveRenderer->get_max_LOD(), shadowMap.get_projection(),
                                 shadowMap.get_view(), camera,
-                                glm::vec2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
+                                float2(shadowMap.SHADOW_WIDTH, shadowMap.SHADOW_HEIGHT),
                                 light, groveRendererDebugParams, sh_viewproj, 0, true);
     }
     if (grassRenderer2)
@@ -319,8 +319,8 @@ void WorldRenderer::render(float dt, Camera &camera)
       }
       terrainRenderer->render(projection, camera.camera(), shadowMap.get_transform(), 0,
                               camera.pos, light, false, debug_type,
-                              debugInfo.get_vec4("grid_params", glm::vec4(0,0,100,100)),
-                              debugInfo.get_vec4("debug_tex_scale", glm::vec4(0,0,0.01,0.01)),
+                              debugInfo.get_vec4("grid_params", float4(0,0,100,100)),
+                              debugInfo.get_vec4("debug_tex_scale", float4(0,0,0.01,0.01)),
                               debug_tex);
     }
   }
@@ -366,7 +366,7 @@ void WorldRenderer::render(float dt, Camera &camera)
     if (render_mode != 2 && groveRenderer)
     {
       groveRenderer->render(groveRenderer->get_max_LOD(), projection, camera.camera(), camera,
-                                 glm::vec2(engine::view->WIDTH, engine::view->HEIGHT), light,
+                                 float2(engine::view->WIDTH, engine::view->HEIGHT), light,
                                  groveRendererDebugParams, shadowMap.get_transform(), 0);
     }
     checkGLErrors("render trees", true);
@@ -376,7 +376,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   debugShader->uniform("view", camera.camera());
   for (int i=0;i<debug_models.size();i++)
   {
-    debugShader->uniform("model", glm::mat4(1.0f));
+    debugShader->uniform("model", float4x4());
     if (debug_models[i].apply_light)
       debugShader->uniform("type",(int)(RenderPixelTypes::PIXEL_TYPE_DEBUG_LIGHT));
     else
@@ -393,7 +393,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   if (readback_required && renderReadback)
   {
     RRD.valid = true;
-    glm::vec4 wp = renderReadback->get_world_pos(RRID.cursor_screen_pos*defferedTarget.size(), 
+    float4 wp = renderReadback->get_world_pos(RRID.cursor_screen_pos*defferedTarget.size(), 
                                                  defferedTarget.get_world_pos(), defferedTarget.get_color());
     RRD.cursor_world_pos_type = wp;
     RRD.cursor_on_geometry = wp.w > 0;
@@ -404,7 +404,7 @@ void WorldRenderer::render(float dt, Camera &camera)
 
   targets[current_target].target();
 
-  glm::vec3 ads = glm::vec3(light.ambient_q, light.diffuse_q, light.specular_q);
+  float3 ads = float3(light.ambient_q, light.diffuse_q, light.specular_q);
   defferedLight->use();
   defferedLight->get_shader().texture("colorTex", defferedTarget.get_color());
   defferedLight->get_shader().texture("normalsTex", defferedTarget.get_normals());
@@ -422,7 +422,7 @@ void WorldRenderer::render(float dt, Camera &camera)
   defferedLight->get_shader().uniform("sts_inv", 1.0f / light.shadow_map_size);
   defferedLight->render();
 
-  engine::view->target(glm::vec3(0.6, 0.7, 1));
+  engine::view->target(float3(0.6, 0.7, 1));
   
   taa->use();
   taa->get_shader().texture("target",targets[current_target].get_tex());

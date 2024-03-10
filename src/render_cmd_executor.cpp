@@ -71,11 +71,11 @@ void RenderCmdExecutor::execute(int max_cmd_count)
             worldRenderer.debugInfo.set_bool("render_grove_mask_debug", false);
             worldRenderer.debugInfo.set_bool("render_biome_mask_debug", false);
             worldRenderer.debugInfo.set_bool("render_bvh_debug", false);
-            worldRenderer.debugInfo.set_vec4("grid_params", glm::vec4(genCtx.start_pos, genCtx.cell_size));
-            glm::vec2 gm_st_ps = glm::vec2(genCtx.global_mask.get_borders().x, genCtx.global_mask.get_borders().y);
-            glm::vec2 gm_st_sz = glm::vec2((2*genCtx.global_mask.get_grid_size().x + 1) * genCtx.global_mask.get_cell_size(),
+            worldRenderer.debugInfo.set_vec4("grid_params", float4(genCtx.start_pos.x, genCtx.start_pos.y, genCtx.cell_size.x, genCtx.cell_size.y));
+            float2 gm_st_ps = float2(genCtx.global_mask.get_borders().x, genCtx.global_mask.get_borders().y);
+            float2 gm_st_sz = float2((2*genCtx.global_mask.get_grid_size().x + 1) * genCtx.global_mask.get_cell_size(),
                                            (2*genCtx.global_mask.get_grid_size().y + 1) * genCtx.global_mask.get_cell_size());
-            worldRenderer.debugInfo.set_vec4("debug_tex_scale", glm::vec4(gm_st_ps, 1.0f/gm_st_sz));
+            worldRenderer.debugInfo.set_vec4("debug_tex_scale", float4(gm_st_ps.x, gm_st_ps.y, 1.0f/gm_st_sz.x, 1.0f/gm_st_sz.y));
         }
             break;
         case RC_UPDATE_DEBUG_PARAMS:
@@ -202,16 +202,16 @@ void RenderCmdExecutor::execute(int max_cmd_count)
                 delete dm.m;
             }
             std::vector<AABB> boxes;
-            std::vector<glm::vec3> colors;
+            std::vector<float3> colors;
             int cnt = 0;
             auto func = [&](const std::pair<AABB, uint64_t> &p)
             {
               cnt = (cnt + 1)%27+1;
               boxes.push_back(p.first);
-              colors.push_back(glm::vec3(0.5*(cnt % 3), 0.5*(cnt / 3 % 3), 0.5*(cnt / 9 % 3)));
+              colors.push_back(float3(0.5*(cnt % 3), 0.5*(cnt / 3 % 3), 0.5*(cnt / 9 % 3)));
             };
-            genCtx.objects_bvh.iterate_over_intersected_bboxes(AABB(glm::vec3(-1e9, -1e9, -1e9),
-                                                                    glm::vec3(1e9, 1e9, 1e9)),
+            genCtx.objects_bvh.iterate_over_intersected_bboxes(AABB(float3(-1e9, -1e9, -1e9),
+                                                                    float3(1e9, 1e9, 1e9)),
                                                               func, false);
             worldRenderer.debug_models.emplace_back();
             worldRenderer.debug_models.back().apply_light = false;
@@ -269,7 +269,7 @@ void RenderCmdExecutor::render()
     worldRenderer.set_render_mode(appCtx.render_mode);
     RenderReadbackInputData rrid;
     RenderReadbackData rrd;
-    rrid.cursor_screen_pos =  glm::vec2(appCtx.mousePos.x/engine::view->WIDTH, 1-(appCtx.mousePos.y)/engine::view->HEIGHT);
+    rrid.cursor_screen_pos =  float2(appCtx.mousePos.x/engine::view->WIDTH, 1-(appCtx.mousePos.y)/engine::view->HEIGHT);
     worldRenderer.set_readback(rrid);
     worldRenderer.render(1, appCtx.camera);
     rrd = worldRenderer.get_readback();

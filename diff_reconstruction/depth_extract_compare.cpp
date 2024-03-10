@@ -35,8 +35,8 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color.texture, 0);
   glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = LiteMath::perspective(camera.fov_rad, (float)w/h, camera.z_near, camera.z_far);
-  glm::mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
+  float4x4 projection = LiteMath::perspective(camera.fov_rad, (float)w/h, camera.z_near, camera.z_far);
+  float4x4 view = LiteMath::lookAtRH(camera.origin, camera.target, camera.up);
   render_model.use();
 
   render_model.uniform("projection", projection);
@@ -51,7 +51,7 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   glViewport(0, 0, w, h);
   depth_postprocess.use();
   depth_postprocess.get_shader().texture("depth_tex", depth);
-  depth_postprocess.get_shader().uniform("tex_size", glm::vec2(w, h));
+  depth_postprocess.get_shader().uniform("tex_size", float2(w, h));
   depth_postprocess.get_shader().uniform("zNear", camera.z_near);
   depth_postprocess.get_shader().uniform("zFar", camera.z_far);
   depth_postprocess.render();

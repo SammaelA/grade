@@ -69,7 +69,7 @@ namespace hydra
     int image_count = in_settings.get_int("image_count", 1);
     float distance = in_settings.get_double("distance", 150);
     float height = in_settings.get_double("height", 50);
-    glm::ivec2 image_size = in_settings.get_ivec2("image_size", {512, 512});
+    int2 image_size = in_settings.get_ivec2("image_size", {512, 512});
     int rays_per_pixel = in_settings.get_int("rays_per_pixel", 64);
     bool render_terrain = in_settings.get_bool("render_terrain", true);
     
@@ -77,9 +77,9 @@ namespace hydra
     for (int i = 0; i < image_count; i++)
     {
       Block camera_blk;
-      camera_blk.add_vec3("camera_look_at", glm::vec3(0, height, 0));
-      camera_blk.add_vec3("camera_pos", glm::vec3(distance * cos(2 * PI * i / ((float)image_count)), height, distance * sin(2 * PI * i / ((float)image_count))));
-      camera_blk.add_vec3("camera_up", glm::vec3(0, 1, 0));
+      camera_blk.add_vec3("camera_look_at", float3(0, height, 0));
+      camera_blk.add_vec3("camera_pos", float3(distance * cos(2 * PI * i / ((float)image_count)), height, distance * sin(2 * PI * i / ((float)image_count))));
+      camera_blk.add_vec3("camera_up", float3(0, 1, 0));
       cameras.add_block("camera", &camera_blk);
     }
     export_settings.add_block("cameras", &cameras);

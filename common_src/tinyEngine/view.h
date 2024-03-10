@@ -14,7 +14,7 @@
 class View
 {
   public:
-    void target(glm::vec3 clearcolor);  //Target main window for drawing
+    void target(float3 clearcolor);  //Target main window for drawing
     bool init(std::string windowName, int width, int height);
     void quit();
     void next_frame();

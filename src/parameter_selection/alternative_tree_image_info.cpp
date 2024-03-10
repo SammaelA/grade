@@ -3,9 +3,9 @@
 #include "tinyEngine/postfx.h"
 #include "generation/grove_packer.h"
 
-glm::vec4 tc_tr_mult2(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
+float4 tc_tr_mult2(float4 tc_tr_1, float4 tc_tr_2)
 {
-    return glm::vec4(tc_tr_2.x + tc_tr_1.x*tc_tr_2.z,
+    return float4(tc_tr_2.x + tc_tr_1.x*tc_tr_2.z,
                     tc_tr_2.y + tc_tr_1.y*tc_tr_2.w,
                     tc_tr_1.z*tc_tr_2.z,
                     tc_tr_1.w*tc_tr_2.w);
@@ -13,7 +13,7 @@ glm::vec4 tc_tr_mult2(glm::vec4 tc_tr_1, glm::vec4 tc_tr_2)
 
 std::vector<std::vector<StripeInfo>> 
 ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl, const std::vector<std::pair<int, int>> &slice_id_impostor_n,
-                                                        TreeCompareInfo *impostors_info, ReferenceTree *reference, glm::vec4 *tc_transform)
+                                                        TreeCompareInfo *impostors_info, ReferenceTree *reference, float4 *tc_transform)
 {
     int image_debug = 0;
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -36,7 +36,7 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
 }
     //first step - calculate borders for every slice
 
-    glm::ivec2 slice_size = images_atl.get_slice_size();
+    int2 slice_size = images_atl.get_slice_size();
     int stripe_height = 16;
     int stripes_cnt = slice_size.y > stripe_height ? slice_size.y/stripe_height : 1;
     if (stripes_cnt*stripe_height != slice_size.y)
@@ -45,10 +45,10 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     }
     //bind buffers
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, slices_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, stripes_results_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*(2*slices_cnt + stripes_cnt*slices_cnt), nullptr, GL_STREAM_READ);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4)*(2*slices_cnt + stripes_cnt*slices_cnt), nullptr, GL_STREAM_READ);
 
     //shader to get borders
     constexpr int THREADS = 32;
@@ -72,10 +72,10 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
 
     glMemoryBarrier(GL_COMPUTE_SHADER_BIT);
 
-    glm::vec4 *borders_data = new glm::vec4[2*slices_cnt + stripes_cnt*slices_cnt];
+    float4 *borders_data = new float4[2*slices_cnt + stripes_cnt*slices_cnt];
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, stripes_results_buf);
     GLvoid* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-    memcpy(borders_data,ptr,sizeof(glm::vec4)*(2*slices_cnt + stripes_cnt*slices_cnt));
+    memcpy(borders_data,ptr,sizeof(float4)*(2*slices_cnt + stripes_cnt*slices_cnt));
 
 /*
     for (int i=0;i<slices_cnt;i++)
@@ -86,10 +86,10 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
 
     if (tc_transform)
     {
-        *tc_transform = glm::vec4(borders_data[0].x, borders_data[0].z, borders_data[0].y - borders_data[0].x, borders_data[0].w - borders_data[0].z);
+        *tc_transform = float4(borders_data[0].x, borders_data[0].z, borders_data[0].y - borders_data[0].x, borders_data[0].w - borders_data[0].z);
     }
     //transform slices in atlas
-    glm::ivec4 sizes = images_atl.get_sizes();
+    int4 sizes = images_atl.get_sizes();
     slice_size = images_atl.get_slice_size();
     TextureAtlas atl_tmp = TextureAtlas(slice_size.x*slice_id_impostor_n.size(), slice_size.y, images_atl.layers_count(), 1);
     atl_tmp.set_grid(slice_size.x, slice_size.y, false);
@@ -97,19 +97,19 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     int slice_n = 0;
     for (auto &id : slice_id_impostor_n)
     {
-        glm::vec3 tc = glm::vec3(0,0,0);
+        float3 tc = float3(0,0,0);
         images_atl.process_tc(id.first, tc);
-        glm::vec4 border = borders_data[2*slice_n];
-        glm::vec4 border_in_atl = glm::vec4(tc.x + border.x/sizes.z, tc.x + border.y/sizes.z, 
+        float4 border = borders_data[2*slice_n];
+        float4 border_in_atl = float4(tc.x + border.x/sizes.z, tc.x + border.y/sizes.z, 
                                             tc.y + border.z/sizes.w, tc.y + border.w/sizes.w);//(min_x,max_x,min_y,max_y)
         
-        glm::vec2 sz = glm::vec2(0.5,0.5);
+        float2 sz = float2(0.5,0.5);
         if (reference)
         {
             //scale to the size of reference tree
             float width = impostors_info[id.second].BCyl_sizes.x * (border.y - border.x);
             float height = impostors_info[id.second].BCyl_sizes.y * (border.w - border.z);
-            impostors_info[id.second].real_sizes = glm::vec2(width, height);
+            impostors_info[id.second].real_sizes = float2(width, height);
             sz.x *= width/reference->info.BCyl_sizes.x; 
             sz.y *= height/reference->info.BCyl_sizes.y; 
         }
@@ -117,16 +117,16 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
         {
             impostors_info[id.second].real_sizes = impostors_info[id.second].BCyl_sizes;
         }
-        glm::vec2 scale = 1.0f/sz;
+        float2 scale = 1.0f/sz;
         float root_x = borders_data[2*slice_n+1].x;
         float root_x_dst = 0.5;
         float x_shift =  root_x - scale.x*root_x_dst;
         float y_shift = border.z;
-        glm::vec4 in_slice_tr = glm::vec4(x_shift,y_shift,scale.x,scale.y);
-        glm::vec4 slice_tr = glm::vec4(tc.x, tc.y, 1.0/sizes.z,1.0/sizes.w);
+        float4 in_slice_tr = float4(x_shift,y_shift,scale.x,scale.y);
+        float4 slice_tr = float4(tc.x, tc.y, 1.0/sizes.z,1.0/sizes.w);
         //logerr("in slice tr %f %f %f %f",in_slice_tr.x, in_slice_tr.y, in_slice_tr.z, in_slice_tr.w);
         //logerr("slice tr %f %f %f %f",slice_tr.x, slice_tr.y, slice_tr.z, slice_tr.w);
-        glm::vec4 tex_transform = tc_tr_mult2(in_slice_tr, slice_tr);
+        float4 tex_transform = tc_tr_mult2(in_slice_tr, slice_tr);
         PostFx copy_arr("copy_arr_slice.fs");
         int tex_id = atl_tmp.add_tex();
         atl_tmp.target_slice(tex_id, 0);
@@ -151,10 +151,10 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
     if (image_debug)
     { 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, dbg_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_size.x*slice_size.y*sizeof(glm::uvec4), nullptr, GL_STREAM_READ);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_size.x*slice_size.y*sizeof(uint4), nullptr, GL_STREAM_READ);
     }
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, slices_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, stripes_info_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(StripeInfo)*(stripes_cnt*slices_cnt), nullptr, GL_STREAM_READ);
@@ -202,11 +202,11 @@ ImpostorSimilarityCalc::get_alternative_tree_image_info(TextureAtlas &images_atl
 
     if (image_debug)
     { 
-        glm::uvec4 *data = new glm::uvec4[4*slice_size.x*slice_size.y];
+        uint4 *data = new uint4[4*slice_size.x*slice_size.y];
         unsigned char *data_ch = new unsigned char[4*4*slice_size.x*slice_size.y];
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, dbg_buf);
         ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        memcpy(data,ptr,4*slice_size.x*slice_size.y*sizeof(glm::uvec4));
+        memcpy(data,ptr,4*slice_size.x*slice_size.y*sizeof(uint4));
         for (int i=0;i<4*slice_size.x*slice_size.y;i++)
         {
             data_ch[4*i] = data[i].x;
@@ -262,7 +262,7 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         else
         {
             auto &info = impostors_info_data[imp_n+1];
-            info.BCyl_sizes = glm::vec2(0,0);
+            info.BCyl_sizes = float2(0,0);
             info.branches_curvature = 0;
             info.branches_density = 0;
             info.joints_cnt = 0;
@@ -294,9 +294,9 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
         d_jcnt /= MAX(1, (impostors_info_data[i+1].joints_cnt + impostors_info_data[0].joints_cnt)); 
         float d_trop = CLAMP(abs(impostors_info_data[i+1].tropism - impostors_info_data[0].tropism)/2,-1,1);
         
-        glm::vec2 scale_fine;
-        glm::vec2 imp_real_size = max(glm::vec2(1e-6,1e-6),impostors_info_data[i+1].real_sizes);
-        glm::vec2 ref_real_size = max(glm::vec2(1e-6,1e-6),impostors_info_data[0].BCyl_sizes);
+        float2 scale_fine;
+        float2 imp_real_size = max(float2(1e-6,1e-6),impostors_info_data[i+1].real_sizes);
+        float2 ref_real_size = max(float2(1e-6,1e-6),impostors_info_data[0].BCyl_sizes);
 
         if (reference.width_status == TCIFeatureStatus::FROM_IMAGE && reference.height_status == TCIFeatureStatus::FROM_IMAGE)
         {
@@ -349,8 +349,8 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                 
                 for (int s = 0; s< stripes.size(); s++)
                 {
-                    glm::vec4 &b1 = reference.alternative_image_info[s].crown_bord;
-                    glm::vec4 &b2 = stripes[s].crown_bord;
+                    float4 &b1 = reference.alternative_image_info[s].crown_bord;
+                    float4 &b2 = stripes[s].crown_bord;
                     if (b1.x < 0 && b2.x < 0)
                         continue;
                     crown_stripes++;
@@ -364,8 +364,8 @@ void ImpostorSimilarityCalc::calc_similarity_alt(GrovePacked &grove, ReferenceTr
                     float refhigh_implow = MAX(0, MIN(b1.z, b2.y) - MAX(b1.y, b2.x)) + MAX(0, MIN(b1.z, b2.w) - MAX(b1.y, b2.z));
                     float refhigh_impemp = (b1.z - b1.y) - refhigh_imphigh - refhigh_implow;
 
-                    glm::vec2 y1 = reference.alternative_image_info[s].crown_ymin_ymax;
-                    glm::vec2 y2 = stripes[s].crown_ymin_ymax;
+                    float2 y1 = reference.alternative_image_info[s].crown_ymin_ymax;
+                    float2 y2 = stripes[s].crown_ymin_ymax;
                     float bs1 = reference.alternative_image_info[s].branches_share;
                     float bs2 = stripes[s].branches_share;
                     float ls1 = reference.alternative_image_info[s].leaves_share;

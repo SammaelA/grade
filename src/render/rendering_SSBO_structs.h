@@ -12,14 +12,14 @@ struct DrawElementsIndirectCommand
 };
 struct LodData
 {
-    glm::vec2 min_max;
-    glm::vec2 offset;
+    float2 min_max;
+    float2 offset;
 };
 struct InstanceData
 {
-    glm::vec4 center_self;//xyz is center_self, w is cell_id
-    glm::vec4 center_par;//xyz is center_par, w is texCoord.z in atlas
-    glm::mat4 projection_camera;
+    float4 center_self;//xyz is center_self, w is cell_id
+    float4 center_par;//xyz is center_par, w is texCoord.z in atlas
+    float4x4 projection_camera;
 };
 struct ModelData
 {
@@ -27,13 +27,13 @@ struct ModelData
     uint type;
     uint vertexes;
     uint first_index;
-    glm::uvec2 interval;
+    uint2 interval;
     uint culling;
     uint pad;
 
-    glm::vec4 x_s;
-    glm::vec4 y_s;
-    glm::vec4 z_s;
+    float4 x_s;
+    float4 y_s;
+    float4 z_s;
 };
 struct TypeData
 {
@@ -47,15 +47,15 @@ struct currentInstancesData
     float mn;
     float mx;
 };
-typedef glm::uvec4 currentModelsData;
-typedef glm::uvec4 currentTypesData;
+typedef uint4 currentModelsData;
+typedef uint4 currentTypesData;
 struct ImpostorData
 {
     int slice_offset;
     int slice_verts;
     int slice_count;
     int pad1;
-    glm::vec4 imp_center;
+    float4 imp_center;
 };
 struct CellInfo
 {

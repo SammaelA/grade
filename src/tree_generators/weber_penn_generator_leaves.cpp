@@ -1,12 +1,8 @@
 #include "weber_penn_generator.h"
 #include "turtle.h"
 
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
-
-void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies);
-void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies);
+void leaves(int n, std::vector<float3> &out_verts, std::vector<std::vector<int>> &out_indicies);
+void blossom(int n, std::vector<float3> &out_verts, std::vector<std::vector<int>> &out_indicies);
 
 void WeberPennGenerator::Leaf::get_shape(int leaf_type, float g_scale, float scale, float scale_x, BaseLeafMesh &blm)
 {
@@ -28,7 +24,7 @@ void WeberPennGenerator::Leaf::get_shape(int leaf_type, float g_scale, float sca
         vert.x *= scale_x;
     }
 }
-void WeberPennGenerator::Leaf::get_mesh(float bend, BaseLeafMesh &base_shape, int index, std::vector<glm::vec3> &out_verts, 
+void WeberPennGenerator::Leaf::get_mesh(float bend, BaseLeafMesh &base_shape, int index, std::vector<float3> &out_verts, 
                                         std::vector<std::vector<int>> &out_indicies)
 {
     auto trf = to_track_quat_ZY(direction);
@@ -61,16 +57,16 @@ void WeberPennGenerator::Leaf::get_mesh(float bend, BaseLeafMesh &base_shape, in
 }
 void WeberPennGenerator::Leaf::calc_bend_trf(float bend, LiteMath::quat &bend_trf_1, LiteMath::quat &bend_trf_2)
 {
-    glm::vec3 normal = glm::cross(direction, right);
+    float3 normal = cross(direction, right);
     float theta_pos = atan2(position.y, position.x);
     float theta_bend = theta_pos - atan2(normal.y, normal.x);
-    bend_trf_1 = LiteMath::angleAxis(theta_bend * bend, glm::vec3(0,0,1));
+    bend_trf_1 = LiteMath::angleAxis(theta_bend * bend, float3(0,0,1));
     //I think this is what the paper says but the second transform just looks stupid
     //so we just ignore it above
 
     direction = bend_trf_1*direction;
     right = bend_trf_1*right;
-    normal = glm::cross(direction, right);
+    normal = cross(direction, right);
 
     //not sure it is equal to phi_bend = normal.declination()
     float phi_bend = LiteMath::to_radians(declination(normal));
@@ -79,7 +75,7 @@ void WeberPennGenerator::Leaf::calc_bend_trf(float bend, LiteMath::quat &bend_tr
     bend_trf_2 = LiteMath::angleAxis(phi_bend * bend, right);
 }
 
-void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies)
+void leaves(int n, std::vector<float3> &out_verts, std::vector<std::vector<int>> &out_indicies)
 {
     //we cannot handle other shapers that square, so no need to create more vertices
     n = 8;
@@ -87,17 +83,17 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //1 = ovate
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.15, 0, 0.15),
-                glm::vec3(0.25, 0, 0.3),
-                glm::vec3(0.2, 0, 0.6),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.2, 0, 0.6),
-                glm::vec3(-0.25, 0, 0.3),
-                glm::vec3(-0.15, 0, 0.15),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.15, 0, 0.15),
+                float3(0.25, 0, 0.3),
+                float3(0.2, 0, 0.6),
+                float3(0, 0, 1),
+                float3(-0.2, 0, 0.6),
+                float3(-0.25, 0, 0.3),
+                float3(-0.15, 0, 0.15),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {{0, 1, 9, 10}, {1, 2, 3, 4}, {4, 5, 6}, {6, 7, 8, 9}, {4, 6, 9, 1}};    
     }
@@ -105,15 +101,15 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //2 = linear
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.1, 0, 0.15),
-                glm::vec3(0.1, 0, 0.95),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.1, 0, 0.95),
-                glm::vec3(-0.1, 0, 0.15),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.1, 0, 0.15),
+                float3(0.1, 0, 0.95),
+                float3(0, 0, 1),
+                float3(-0.1, 0, 0.95),
+                float3(-0.1, 0, 0.15),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {{0, 1, 7, 8}, {1, 2, 3}, {3, 4, 5}, {5, 6, 7}, {1, 3, 5, 7}};    
     }
@@ -121,19 +117,19 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //3 = cordate
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.01, 0, 0.2),
-                glm::vec3(0.2, 0, 0.1),
-                glm::vec3(0.35, 0, 0.35),
-                glm::vec3(0.25, 0, 0.6),
-                glm::vec3(0.1, 0, 0.8),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.1, 0, 0.8),
-                glm::vec3(-0.25, 0, 0.6),
-                glm::vec3(-0.35, 0, 0.35),
-                glm::vec3(-0.2, 0, 0.1),
-                glm::vec3(-0.01, 0, 0.2),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.01, 0, 0.2),
+                float3(0.2, 0, 0.1),
+                float3(0.35, 0, 0.35),
+                float3(0.25, 0, 0.6),
+                float3(0.1, 0, 0.8),
+                float3(0, 0, 1),
+                float3(-0.1, 0, 0.8),
+                float3(-0.25, 0, 0.6),
+                float3(-0.35, 0, 0.35),
+                float3(-0.2, 0, 0.1),
+                float3(-0.01, 0, 0.2),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {
                 {0, 1, 11, 12},
@@ -147,31 +143,31 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //4 = maple
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.25, 0, 0.07),
-                glm::vec3(0.2, 0, 0.18),
-                glm::vec3(0.5, 0, 0.37),
-                glm::vec3(0.43, 0, 0.4),
-                glm::vec3(0.45, 0, 0.58),
-                glm::vec3(0.3, 0, 0.57),
-                glm::vec3(0.27, 0, 0.67),
-                glm::vec3(0.11, 0, 0.52),
-                glm::vec3(0.2, 0, 0.82),
-                glm::vec3(0.08, 0, 0.77),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.08, 0, 0.77),
-                glm::vec3(-0.2, 0, 0.82),
-                glm::vec3(-0.11, 0, 0.52),
-                glm::vec3(-0.27, 0, 0.67),
-                glm::vec3(-0.3, 0, 0.57),
-                glm::vec3(-0.45, 0, 0.58),
-                glm::vec3(-0.43, 0, 0.4),
-                glm::vec3(-0.5, 0, 0.37),
-                glm::vec3(-0.2, 0, 0.18),
-                glm::vec3(-0.25, 0, 0.07),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.25, 0, 0.07),
+                float3(0.2, 0, 0.18),
+                float3(0.5, 0, 0.37),
+                float3(0.43, 0, 0.4),
+                float3(0.45, 0, 0.58),
+                float3(0.3, 0, 0.57),
+                float3(0.27, 0, 0.67),
+                float3(0.11, 0, 0.52),
+                float3(0.2, 0, 0.82),
+                float3(0.08, 0, 0.77),
+                float3(0, 0, 1),
+                float3(-0.08, 0, 0.77),
+                float3(-0.2, 0, 0.82),
+                float3(-0.11, 0, 0.52),
+                float3(-0.27, 0, 0.67),
+                float3(-0.3, 0, 0.57),
+                float3(-0.45, 0, 0.58),
+                float3(-0.43, 0, 0.4),
+                float3(-0.5, 0, 0.37),
+                float3(-0.2, 0, 0.18),
+                float3(-0.25, 0, 0.07),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {
                 {0, 1, 23, 24},
@@ -188,17 +184,17 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //5 = palmate
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.25, 0, 0.1),
-                glm::vec3(0.5, 0, 0.3),
-                glm::vec3(0.2, 0, 0.45),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.2, 0, 0.45),
-                glm::vec3(-0.5, 0, 0.3),
-                glm::vec3(-0.25, 0, 0.1),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.25, 0, 0.1),
+                float3(0.5, 0, 0.3),
+                float3(0.2, 0, 0.45),
+                float3(0, 0, 1),
+                float3(-0.2, 0, 0.45),
+                float3(-0.5, 0, 0.3),
+                float3(-0.25, 0, 0.1),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {{0, 1, 9, 10}, {1, 2, 3, 4}, {1, 4, 5, 6, 9}, {9, 8, 7, 6}};    
     }
@@ -206,31 +202,31 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //6 = spiky oak
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.16, 0, 0.17),
-                glm::vec3(0.11, 0, 0.2),
-                glm::vec3(0.23, 0, 0.33),
-                glm::vec3(0.15, 0, 0.34),
-                glm::vec3(0.32, 0, 0.55),
-                glm::vec3(0.16, 0, 0.5),
-                glm::vec3(0.27, 0, 0.75),
-                glm::vec3(0.11, 0, 0.7),
-                glm::vec3(0.18, 0, 0.9),
-                glm::vec3(0.07, 0, 0.86),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.07, 0, 0.86),
-                glm::vec3(-0.18, 0, 0.9),
-                glm::vec3(-0.11, 0, 0.7),
-                glm::vec3(-0.27, 0, 0.75),
-                glm::vec3(-0.16, 0, 0.5),
-                glm::vec3(-0.32, 0, 0.55),
-                glm::vec3(-0.15, 0, 0.34),
-                glm::vec3(-0.23, 0, 0.33),
-                glm::vec3(-0.11, 0, 0.2),
-                glm::vec3(-0.16, 0, 0.17),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.16, 0, 0.17),
+                float3(0.11, 0, 0.2),
+                float3(0.23, 0, 0.33),
+                float3(0.15, 0, 0.34),
+                float3(0.32, 0, 0.55),
+                float3(0.16, 0, 0.5),
+                float3(0.27, 0, 0.75),
+                float3(0.11, 0, 0.7),
+                float3(0.18, 0, 0.9),
+                float3(0.07, 0, 0.86),
+                float3(0, 0, 1),
+                float3(-0.07, 0, 0.86),
+                float3(-0.18, 0, 0.9),
+                float3(-0.11, 0, 0.7),
+                float3(-0.27, 0, 0.75),
+                float3(-0.16, 0, 0.5),
+                float3(-0.32, 0, 0.55),
+                float3(-0.15, 0, 0.34),
+                float3(-0.23, 0, 0.33),
+                float3(-0.11, 0, 0.2),
+                float3(-0.16, 0, 0.17),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {
                 {0, 1, 23, 24},
@@ -251,41 +247,41 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //7 = round oak
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.11, 0, 0.16),
-                glm::vec3(0.11, 0, 0.2),
-                glm::vec3(0.22, 0, 0.26),
-                glm::vec3(0.23, 0, 0.32),
-                glm::vec3(0.15, 0, 0.34),
-                glm::vec3(0.25, 0, 0.45),
-                glm::vec3(0.23, 0, 0.53),
-                glm::vec3(0.16, 0, 0.5),
-                glm::vec3(0.23, 0, 0.64),
-                glm::vec3(0.2, 0, 0.72),
-                glm::vec3(0.11, 0, 0.7),
-                glm::vec3(0.16, 0, 0.83),
-                glm::vec3(0.12, 0, 0.87),
-                glm::vec3(0.06, 0, 0.85),
-                glm::vec3(0.07, 0, 0.95),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.07, 0, 0.95),
-                glm::vec3(-0.06, 0, 0.85),
-                glm::vec3(-0.12, 0, 0.87),
-                glm::vec3(-0.16, 0, 0.83),
-                glm::vec3(-0.11, 0, 0.7),
-                glm::vec3(-0.2, 0, 0.72),
-                glm::vec3(-0.23, 0, 0.64),
-                glm::vec3(-0.16, 0, 0.5),
-                glm::vec3(-0.23, 0, 0.53),
-                glm::vec3(-0.25, 0, 0.45),
-                glm::vec3(-0.15, 0, 0.34),
-                glm::vec3(-0.23, 0, 0.32),
-                glm::vec3(-0.22, 0, 0.26),
-                glm::vec3(-0.11, 0, 0.2),
-                glm::vec3(-0.11, 0, 0.16),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.11, 0, 0.16),
+                float3(0.11, 0, 0.2),
+                float3(0.22, 0, 0.26),
+                float3(0.23, 0, 0.32),
+                float3(0.15, 0, 0.34),
+                float3(0.25, 0, 0.45),
+                float3(0.23, 0, 0.53),
+                float3(0.16, 0, 0.5),
+                float3(0.23, 0, 0.64),
+                float3(0.2, 0, 0.72),
+                float3(0.11, 0, 0.7),
+                float3(0.16, 0, 0.83),
+                float3(0.12, 0, 0.87),
+                float3(0.06, 0, 0.85),
+                float3(0.07, 0, 0.95),
+                float3(0, 0, 1),
+                float3(-0.07, 0, 0.95),
+                float3(-0.06, 0, 0.85),
+                float3(-0.12, 0, 0.87),
+                float3(-0.16, 0, 0.83),
+                float3(-0.11, 0, 0.7),
+                float3(-0.2, 0, 0.72),
+                float3(-0.23, 0, 0.64),
+                float3(-0.16, 0, 0.5),
+                float3(-0.23, 0, 0.53),
+                float3(-0.25, 0, 0.45),
+                float3(-0.15, 0, 0.34),
+                float3(-0.23, 0, 0.32),
+                float3(-0.22, 0, 0.26),
+                float3(-0.11, 0, 0.2),
+                float3(-0.11, 0, 0.16),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {
                 {0, 1, 33, 34},
@@ -308,17 +304,17 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //8 = elliptic (default)
         out_verts = {
-                glm::vec3(0.005, 0, 0),
-                glm::vec3(0.005, 0, 0.1),
-                glm::vec3(0.15, 0, 0.2),
-                glm::vec3(0.25, 0, 0.45),
-                glm::vec3(0.2, 0, 0.75),
-                glm::vec3(0, 0, 1),
-                glm::vec3(-0.2, 0, 0.75),
-                glm::vec3(-0.25, 0, 0.45),
-                glm::vec3(-0.15, 0, 0.2),
-                glm::vec3(-0.005, 0, 0.1),
-                glm::vec3(-0.005, 0, 0)
+                float3(0.005, 0, 0),
+                float3(0.005, 0, 0.1),
+                float3(0.15, 0, 0.2),
+                float3(0.25, 0, 0.45),
+                float3(0.2, 0, 0.75),
+                float3(0, 0, 1),
+                float3(-0.2, 0, 0.75),
+                float3(-0.25, 0, 0.45),
+                float3(-0.15, 0, 0.2),
+                float3(-0.005, 0, 0.1),
+                float3(-0.005, 0, 0)
             };
         out_indicies = {{0, 1, 9, 10}, {1, 2, 3, 4}, {4, 5, 6}, {6, 7, 8, 9}, {4, 6, 9, 1}};    
     }
@@ -326,10 +322,10 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
     {
         //9 = rectangle
         out_verts = {
-                glm::vec3(-0.5, 0, 0),
-                glm::vec3(-0.5, 0, 1),
-                glm::vec3(0.5, 0, 1),
-                glm::vec3(0.5, 0, 0)
+                float3(-0.5, 0, 0),
+                float3(-0.5, 0, 1),
+                float3(0.5, 0, 1),
+                float3(0.5, 0, 0)
             };
         out_indicies = {{0, 1, 2, 3}};    
     }
@@ -340,11 +336,11 @@ void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<in
             logerr("wrong leaf type %d", n);
         }
         //10 = triangle
-        out_verts = {glm::vec3(-0.5, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0.5, 0, 0)};
+        out_verts = {float3(-0.5, 0, 0), float3(0, 0, 1), float3(0.5, 0, 0)};
         out_indicies = {{0, 1, 2}};    
     }
 }
-void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies)
+void blossom(int n, std::vector<float3> &out_verts, std::vector<std::vector<int>> &out_indicies)
 {
     //we cannot handle other shapers that square, so no need to create more vertices
     n = 8;
@@ -354,27 +350,27 @@ void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<i
     {
         //1 = cherry
         out_verts = {
-                glm::vec3(0, 0, 0),
-                glm::vec3(0.33, 0.45, 0.45),
-                glm::vec3(0.25, 0.6, 0.6),
-                glm::vec3(0, 0.7, 0.7),
-                glm::vec3(-0.25, 0.6, 0.6),
-                glm::vec3(-0.33, 0.45, 0.45),
-                glm::vec3(0.49, 0.42, 0.6),
-                glm::vec3(0.67, 0.22, 0.7),
-                glm::vec3(0.65, -0.05, 0.6),
-                glm::vec3(0.53, -0.17, 0.45),
-                glm::vec3(0.55, -0.33, 0.6),
-                glm::vec3(0.41, -0.57, 0.7),
-                glm::vec3(0.15, -0.63, 0.6),
-                glm::vec3(0, -0.55, 0.45),
-                glm::vec3(-0.15, -0.63, 0.6),
-                glm::vec3(-0.41, -0.57, 0.7),
-                glm::vec3(-0.55, -0.33, 0.6),
-                glm::vec3(-0.53, -0.17, 0.45),
-                glm::vec3(-0.65, -0.05, 0.6),
-                glm::vec3(-0.67, 0.22, 0.7),
-                glm::vec3(-0.49, 0.42, 0.6)
+                float3(0, 0, 0),
+                float3(0.33, 0.45, 0.45),
+                float3(0.25, 0.6, 0.6),
+                float3(0, 0.7, 0.7),
+                float3(-0.25, 0.6, 0.6),
+                float3(-0.33, 0.45, 0.45),
+                float3(0.49, 0.42, 0.6),
+                float3(0.67, 0.22, 0.7),
+                float3(0.65, -0.05, 0.6),
+                float3(0.53, -0.17, 0.45),
+                float3(0.55, -0.33, 0.6),
+                float3(0.41, -0.57, 0.7),
+                float3(0.15, -0.63, 0.6),
+                float3(0, -0.55, 0.45),
+                float3(-0.15, -0.63, 0.6),
+                float3(-0.41, -0.57, 0.7),
+                float3(-0.55, -0.33, 0.6),
+                float3(-0.53, -0.17, 0.45),
+                float3(-0.65, -0.05, 0.6),
+                float3(-0.67, 0.22, 0.7),
+                float3(-0.49, 0.42, 0.6)
             };
         out_indicies = {
                 {0, 1, 2, 3},
@@ -393,36 +389,36 @@ void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<i
     {
         //2 = orange
         out_verts = {
-                glm::vec3(0, 0, 0),
-                glm::vec3(-0.055, 0.165, 0.11),
-                glm::vec3(-0.125, 0.56, 0.365),
-                glm::vec3(0, 0.7, 0.45),
-                glm::vec3(0.125, 0.56, 0.365),
-                glm::vec3(0.055, 0.165, 0.11),
-                glm::vec3(0.14, 0.10, 0.11),
-                glm::vec3(0.495, 0.29, 0.365),
-                glm::vec3(0.665, 0.215, 0.45),
-                glm::vec3(0.57, 0.055, 0.36),
-                glm::vec3(0.175, 0, 0.11),
-                glm::vec3(0.14, -0.1, 0.11),
-                glm::vec3(0.43, -0.38, 0.365),
-                glm::vec3(0.41, -0.565, 0.45),
-                glm::vec3(0.23, -0.53, 0.365),
-                glm::vec3(0.05, -0.165, 0.11),
-                glm::vec3(-0.14, -0.1, 0.11),
-                glm::vec3(-0.43, -0.38, 0.365),
-                glm::vec3(-0.41, -0.565, 0.45),
-                glm::vec3(-0.23, -0.53, 0.365),
-                glm::vec3(-0.05, -0.165, 0.11),
-                glm::vec3(-0.14, 0.10, 0.11),
-                glm::vec3(-0.495, 0.29, 0.365),
-                glm::vec3(-0.665, 0.215, 0.45),
-                glm::vec3(-0.57, 0.055, 0.36),
-                glm::vec3(-0.175, 0, 0.11),
-                glm::vec3(0.1, -0.1, 0.4),
-                glm::vec3(-0.1, -0.1, 0.4),
-                glm::vec3(-0.1, 0.1, 0.4),
-                glm::vec3(0.1, 0.1, 0.4)
+                float3(0, 0, 0),
+                float3(-0.055, 0.165, 0.11),
+                float3(-0.125, 0.56, 0.365),
+                float3(0, 0.7, 0.45),
+                float3(0.125, 0.56, 0.365),
+                float3(0.055, 0.165, 0.11),
+                float3(0.14, 0.10, 0.11),
+                float3(0.495, 0.29, 0.365),
+                float3(0.665, 0.215, 0.45),
+                float3(0.57, 0.055, 0.36),
+                float3(0.175, 0, 0.11),
+                float3(0.14, -0.1, 0.11),
+                float3(0.43, -0.38, 0.365),
+                float3(0.41, -0.565, 0.45),
+                float3(0.23, -0.53, 0.365),
+                float3(0.05, -0.165, 0.11),
+                float3(-0.14, -0.1, 0.11),
+                float3(-0.43, -0.38, 0.365),
+                float3(-0.41, -0.565, 0.45),
+                float3(-0.23, -0.53, 0.365),
+                float3(-0.05, -0.165, 0.11),
+                float3(-0.14, 0.10, 0.11),
+                float3(-0.495, 0.29, 0.365),
+                float3(-0.665, 0.215, 0.45),
+                float3(-0.57, 0.055, 0.36),
+                float3(-0.175, 0, 0.11),
+                float3(0.1, -0.1, 0.4),
+                float3(-0.1, -0.1, 0.4),
+                float3(-0.1, 0.1, 0.4),
+                float3(0.1, 0.1, 0.4)
             };
         out_indicies = {
                 {0, 1, 2, 3},
@@ -445,55 +441,55 @@ void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<i
     {
         //3 = magnolia
         out_verts = {
-                glm::vec3(0, 0, 0),
-                glm::vec3(0.19, -0.19, 0.06),
-                glm::vec3(0.19, -0.04, 0.06),
-                glm::vec3(0.34, -0.11, 0.35),
-                glm::vec3(0.3, -0.3, 0.6),
-                glm::vec3(0.11, -0.34, 0.35),
-                glm::vec3(0.04, -0.19, 0.06),
-                glm::vec3(0.19, 0.19, 0.06),
-                glm::vec3(0.19, 0.04, 0.06),
-                glm::vec3(0.34, 0.11, 0.35),
-                glm::vec3(0.3, 0.3, 0.6),
-                glm::vec3(0.11, 0.34, 0.35),
-                glm::vec3(0.04, 0.19, 0.06),
-                glm::vec3(-0.19, -0.19, 0.06),
-                glm::vec3(-0.19, -0.04, 0.06),
-                glm::vec3(-0.34, -0.11, 0.35),
-                glm::vec3(-0.3, -0.3, 0.6),
-                glm::vec3(-0.11, -0.34, 0.35),
-                glm::vec3(-0.04, -0.19, 0.06),
-                glm::vec3(-0.19, 0.19, 0.06),
-                glm::vec3(-0.19, 0.04, 0.06),
-                glm::vec3(-0.34, 0.11, 0.35),
-                glm::vec3(-0.3, 0.3, 0.6),
-                glm::vec3(-0.11, 0.34, 0.35),
-                glm::vec3(-0.04, 0.19, 0.06),
-                glm::vec3(0, -0.39, 0.065),
-                glm::vec3(0.15, -0.23, 0.065),
-                glm::vec3(0.23, -0.46, 0.39),
-                glm::vec3(0, -0.62, 0.65),
-                glm::vec3(-0.23, -0.46, 0.39),
-                glm::vec3(-0.15, -0.23, 0.065),
-                glm::vec3(0, 0.39, 0.065),
-                glm::vec3(0.15, 0.23, 0.065),
-                glm::vec3(0.23, 0.46, 0.39),
-                glm::vec3(0, 0.62, 0.65),
-                glm::vec3(-0.23, 0.46, 0.39),
-                glm::vec3(-0.15, 0.23, 0.065),
-                glm::vec3(-0.39, 0, 0.065),
-                glm::vec3(-0.23, 0.15, 0.065),
-                glm::vec3(-0.46, 0.23, 0.39),
-                glm::vec3(-0.62, 0, 0.65),
-                glm::vec3(-0.46, -0.23, 0.39),
-                glm::vec3(-0.23, -0.15, 0.065),
-                glm::vec3(0.39, 0, 0.065),
-                glm::vec3(0.23, 0.15, 0.065),
-                glm::vec3(0.46, 0.23, 0.39),
-                glm::vec3(0.62, 0, 0.65),
-                glm::vec3(0.46, -0.23, 0.39),
-                glm::vec3(0.23, -0.15, 0.065)
+                float3(0, 0, 0),
+                float3(0.19, -0.19, 0.06),
+                float3(0.19, -0.04, 0.06),
+                float3(0.34, -0.11, 0.35),
+                float3(0.3, -0.3, 0.6),
+                float3(0.11, -0.34, 0.35),
+                float3(0.04, -0.19, 0.06),
+                float3(0.19, 0.19, 0.06),
+                float3(0.19, 0.04, 0.06),
+                float3(0.34, 0.11, 0.35),
+                float3(0.3, 0.3, 0.6),
+                float3(0.11, 0.34, 0.35),
+                float3(0.04, 0.19, 0.06),
+                float3(-0.19, -0.19, 0.06),
+                float3(-0.19, -0.04, 0.06),
+                float3(-0.34, -0.11, 0.35),
+                float3(-0.3, -0.3, 0.6),
+                float3(-0.11, -0.34, 0.35),
+                float3(-0.04, -0.19, 0.06),
+                float3(-0.19, 0.19, 0.06),
+                float3(-0.19, 0.04, 0.06),
+                float3(-0.34, 0.11, 0.35),
+                float3(-0.3, 0.3, 0.6),
+                float3(-0.11, 0.34, 0.35),
+                float3(-0.04, 0.19, 0.06),
+                float3(0, -0.39, 0.065),
+                float3(0.15, -0.23, 0.065),
+                float3(0.23, -0.46, 0.39),
+                float3(0, -0.62, 0.65),
+                float3(-0.23, -0.46, 0.39),
+                float3(-0.15, -0.23, 0.065),
+                float3(0, 0.39, 0.065),
+                float3(0.15, 0.23, 0.065),
+                float3(0.23, 0.46, 0.39),
+                float3(0, 0.62, 0.65),
+                float3(-0.23, 0.46, 0.39),
+                float3(-0.15, 0.23, 0.065),
+                float3(-0.39, 0, 0.065),
+                float3(-0.23, 0.15, 0.065),
+                float3(-0.46, 0.23, 0.39),
+                float3(-0.62, 0, 0.65),
+                float3(-0.46, -0.23, 0.39),
+                float3(-0.23, -0.15, 0.065),
+                float3(0.39, 0, 0.065),
+                float3(0.23, 0.15, 0.065),
+                float3(0.46, 0.23, 0.39),
+                float3(0.62, 0, 0.65),
+                float3(0.46, -0.23, 0.39),
+                float3(0.23, -0.15, 0.065)
             };
         out_indicies = {
                 {0, 1, 2},

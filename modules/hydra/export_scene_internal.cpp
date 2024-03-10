@@ -47,11 +47,11 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
 
     uint ind_offset = model.indices.size();
     uint verts = model.colors.size();
-    glm::vec4 w_tc_trans = glm::vec4(1,1,0,0);
+    float4 w_tc_trans = float4(1,1,0,0);
     if (source->groveTexturesAtlas.maps_valid && source->groveTexturesAtlas.atlases_valid)
     {
       int tex_id = source->groveTexturesAtlas.wood_tex_map.at(type_id);
-      glm::vec4 tctr = source->groveTexturesAtlas.woodAtlas->tc_transform(tex_id);
+      float4 tctr = source->groveTexturesAtlas.woodAtlas->tc_transform(tex_id);
       w_tc_trans = tctr;
     }
     for (int id : branch.branches)
@@ -63,7 +63,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            visualizer::packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level), glm::vec2(1,0), false);
+            visualizer::packed_branch_to_model(b, &model, false, MAX(1, 3 - b.level), float2(1,0), false);
     }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -74,13 +74,13 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
     uint l_verts = model.colors.size();
 
     verts = l_verts;
-    w_tc_trans = glm::vec4(1,1,0,0);
+    w_tc_trans = float4(1,1,0,0);
     if (need_leaves)
     {
       if (source->groveTexturesAtlas.maps_valid && source->groveTexturesAtlas.atlases_valid)
       {
         int tex_id = source->groveTexturesAtlas.leaves_tex_map.at(type_id);
-        glm::vec4 tctr = source->groveTexturesAtlas.leavesAtlas->tc_transform(tex_id);
+        float4 tctr = source->groveTexturesAtlas.leavesAtlas->tc_transform(tex_id);
         //logerr("type %d leaves tctr %f %f %f %f", type_id, tctr.x, tctr.y, tctr.z, tctr.w);
         w_tc_trans = tctr;
       }
@@ -94,7 +94,7 @@ void packed_branch_to_mesh(Mesh &model, GrovePacked *source, InstancedBranch &br
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                visualizer::packed_branch_to_model(b, &model, true, 4, glm::vec2(1,0), false);
+                visualizer::packed_branch_to_model(b, &model, true, 4, float2(1,0), false);
         }
       for (int i=verts;i<model.colors.size();i+=4)
       {
@@ -290,7 +290,7 @@ HRMeshRef create_terrain_model(Heightmap *hmap, HRMaterialRef mat_land)
   if (hmap)
   {
     Model model;
-    visualizer::heightmap_to_model(*hmap, &model, glm::vec2(1000, 1000), glm::vec2(1000, 1000), 10, 0);
+    visualizer::heightmap_to_model(*hmap, &model, float2(1000, 1000), float2(1000, 1000), 10, 0);
     HrMesh_from_mesh(terrainModel, model, mat_land.id);
   }
   return terrainModel;
@@ -299,7 +299,7 @@ HRMeshRef create_terrain_model(Heightmap *hmap, HRMaterialRef mat_land)
 void create_instanced_models(/*const*/ std::vector<Scene::InstancedModel> &instanced_models,
                              const std::wstring base_dir_w,
                              /*out*/   std::vector<HRMeshRef> &instancedModels,
-                             /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+                             /*out*/   std::vector<std::vector<float4x4>> &instancedModelsTransforms)
 {
   std::vector<HRMaterialRef> instancedModelsMaterials;
   std::vector<HRTextureNodeRef> instancedModelsTextures;
@@ -346,9 +346,9 @@ void create_grass_models(/*const*/ GrassPacked &grass,
                          const std::string base_dir,
                          HRMaterialRef mat_grass,
                          /*out*/   std::vector<HRMeshRef> &instancedModels,
-                         /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+                         /*out*/   std::vector<std::vector<float4x4>> &instancedModelsTransforms)
 {
-    glm::vec4 tex_transform = glm::vec4(1,1,0,0);
+    float4 tex_transform = float4(1,1,0,0);
     Texture null = engine::textureManager->empty();
     std::string prev_base_dir = model_loader::base_path;
     model_loader::base_path = base_dir + prev_base_dir;
@@ -368,13 +368,13 @@ void create_grass_models(/*const*/ GrassPacked &grass,
         instancedModels.push_back(hrMeshCreate(name.c_str()));
         HrMesh_from_mesh(instancedModels.back(), *grass_model, mat_grass.id);
 
-        instancedModelsTransforms.push_back(std::vector<glm::mat4>(p.second.size(), glm::mat4(1.0f)));
+        instancedModelsTransforms.push_back(std::vector<float4x4>(p.second.size(), float4x4()));
         for (int j = 0; j<p.second.size(); j++)
         {
           auto &in = p.second[j];
           instancedModelsTransforms.back()[j] = LiteMath::scale(
-                                            LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
-                                                        in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
+                                            LiteMath::rotate(LiteMath::translate(float4x4(),float3(in.pos)),
+                                                        in.rot_y,float3(0,1,0)), float3(in.size));
         }
         type_n++;
     }
@@ -385,7 +385,7 @@ void create_trees_models(/*const*/ GrovePacked &grove,
                          HRMaterialRef mat_wood,
                          HRMaterialRef mat_leaf,
                          /*out*/   std::vector<HRMeshRef> &instancedModels,
-                         /*out*/   std::vector<std::vector<glm::mat4>> &instancedModelsTransforms)
+                         /*out*/   std::vector<std::vector<float4x4>> &instancedModelsTransforms)
 {
   int i = 0;
   for (auto &pb : grove.instancedBranches)
@@ -512,15 +512,15 @@ bool export_internal(std::string directory, Scene &scene, Block &export_settings
 
   //make hydra meshes and matrices for models in scene
   std::vector<HRMeshRef> instancedModels;
-  std::vector<std::vector<glm::mat4>> instancedModelsTransforms;
+  std::vector<std::vector<float4x4>> instancedModelsTransforms;
   create_instanced_models(scene.instanced_models, base_dir_w, instancedModels, instancedModelsTransforms);
   create_trees_models(scene.grove, mat_wood, mat_leaf, instancedModels, instancedModelsTransforms);
   create_grass_models(scene.grass, base_dir, mat_grass, instancedModels, instancedModelsTransforms);
 
   // camera
-  glm::vec3 camera_pos = export_settings.get_vec3("camera_pos",glm::vec3(0,200,200));
-  glm::vec3 camera_look_at = export_settings.get_vec3("camera_look_at",glm::vec3(0,0,0));
-  glm::vec3 camera_up = export_settings.get_vec3("camera_up", glm::vec3(0,1,0));
+  float3 camera_pos = export_settings.get_vec3("camera_pos",float3(0,200,200));
+  float3 camera_look_at = export_settings.get_vec3("camera_look_at",float3(0,0,0));
+  float3 camera_up = export_settings.get_vec3("camera_up", float3(0,1,0));
   float camera_fov = export_settings.get_double("camera_fov", PI/2);
   HRCameraRef camRef = hrCameraCreate(L"my camera");
   
@@ -650,9 +650,9 @@ bool export_internal(std::string directory, Scene &scene, Block &export_settings
 
 void get_default_settings(Block &b)
 {
-  b.set_vec3("camera_pos", glm::vec3(0,200,200));
-  b.set_vec3("camera_look_at",glm::vec3(0,0,0));
-  b.set_vec3("camera_up", glm::vec3(0,1,0));
+  b.set_vec3("camera_pos", float3(0,200,200));
+  b.set_vec3("camera_look_at",float3(0,0,0));
+  b.set_vec3("camera_up", float3(0,1,0));
   b.set_int("rays_per_pixel", 64);
   b.set_int("image_width", 512);
   b.set_int("image_height", 512);

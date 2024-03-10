@@ -28,7 +28,7 @@
         else /* x == 0.0 */
             return 0.0;
     }
-glm::vec3 Sun::sun_direction(EnvironmentParameters &params)
+float3 Sun::sun_direction(EnvironmentParameters &params)
 {
     //taken from here http://stjarnhimlen.se/comp/tutorial.html
 
@@ -79,5 +79,5 @@ glm::vec3 Sun::sun_direction(EnvironmentParameters &params)
     double yhor = y;
     double zhor = x * cosd(lat) + z * sind(lat);
     
-    return glm::normalize(glm::vec3(xhor,yhor,zhor));
+    return normalize(float3(xhor,yhor,zhor));
 }

@@ -22,7 +22,7 @@ namespace upg
     UPGStructure structure;
     std::shared_ptr<UniversalGenInstance> gen;
     ParametersDescription pd;
-    std::vector<glm::vec2> borders; //size equals total size of OptParams vector
+    std::vector<float2> borders; //size equals total size of OptParams vector
     Block local_opt_block;
 
     //GA state
@@ -80,7 +80,7 @@ namespace upg
           if (param_info.type != ParameterType::CONST)
           {
             logerr("added parameter %s", param_info.name.c_str());
-            borders.push_back(glm::vec2(param_info.min_val, param_info.max_val));
+            borders.push_back(float2(param_info.min_val, param_info.max_val));
           }
         }
       }

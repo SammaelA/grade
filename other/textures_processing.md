@@ -105,12 +105,12 @@ blur("gaussian_blur_precise.fs")
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   
   //SSBO always has padding of 16 bytes, so we should use vec4 for every float
-  std::vector<glm::vec4> kernel_pad;
+  std::vector<float4> kernel_pad;
   for (float &val : kernel)
-    kernel_pad.push_back(glm::vec4(val,0,0,0));
+    kernel_pad.push_back(float4(val,0,0,0));
   //fill SSBO and bind it
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, kernel_buf);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*kernel_pad.size(), kernel_pad.data(), GL_STATIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4)*kernel_pad.size(), kernel_pad.data(), GL_STATIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -184,16 +184,16 @@ out vec4 fragColor;
 void main(void) 
 {
     vec4 res = vec4(0, 0, 0, 0);
-    ivec2 pixel_coords = ivec2(tex_size*ex_Tex);
+    int2 pixel_coords = int2(tex_size*ex_Tex);
     if (pass == 0)
     {
       for (int i = -steps; i <= steps; i++)
-        res += texelFetch(tex, clamp(pixel_coords + ivec2(i, 0),ivec2(0,0),ivec2(tex_size)), 0) * kernel[abs(i)].x;
+        res += texelFetch(tex, clamp(pixel_coords + int2(i, 0),int2(0,0),int2(tex_size)), 0) * kernel[abs(i)].x;
     }
     else
     {
       for (int i = -steps; i <= steps; i++)
-        res += texelFetch(tex, clamp(pixel_coords + ivec2(0, i),ivec2(0,0),ivec2(tex_size)), 0) * kernel[abs(i)].x;
+        res += texelFetch(tex, clamp(pixel_coords + int2(0, i),int2(0,0),int2(tex_size)), 0) * kernel[abs(i)].x;
     }
     fragColor = res;
 }
@@ -210,7 +210,7 @@ use() и render(). Между ними надо установить все те
   blur.get_shader().texture("tex", t);
   blur.get_shader().uniform("pass",0);
   blur.get_shader().uniform("steps",(int)(kernel.size()-1));
-  blur.get_shader().uniform("tex_size",glm::vec2(t.get_W(), t.get_H()));
+  blur.get_shader().uniform("tex_size",float2(t.get_W(), t.get_H()));
 
   //call shader for a full-texture pass
   blur.render();
@@ -226,7 +226,7 @@ use() и render(). Между ними надо установить все те
   blur.get_shader().texture("tex", tmp_tex);
   blur.get_shader().uniform("pass",1);
   blur.get_shader().uniform("steps",(int)(kernel.size()-1));
-  blur.get_shader().uniform("tex_size",glm::vec2(t.get_W(), t.get_H()));
+  blur.get_shader().uniform("tex_size",float2(t.get_W(), t.get_H()));
   blur.render();
 
 ```

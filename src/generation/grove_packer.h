@@ -121,7 +121,7 @@ protected:
     ClusteringStrategy cStrategy = ClusteringStrategy::Merge;
     bool save_clusterizer = false;
     int clustering_base_level = 0;
-    std::map<int, std::vector<glm::vec3> > trees_nodes;//for each tree in grove it represents joints of current instance
+    std::map<int, std::vector<float3> > trees_nodes;//for each tree in grove it represents joints of current instance
                                                        //for this tree
     int ib_id_counter = 1;
 private:

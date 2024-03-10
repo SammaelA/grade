@@ -17,5 +17,5 @@ struct EnvironmentParameters
 class Sun
 {
 public:
-    static glm::vec3 sun_direction(EnvironmentParameters &params);
+    static float3 sun_direction(EnvironmentParameters &params);
 };

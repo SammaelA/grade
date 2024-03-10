@@ -5,9 +5,9 @@
 
 struct EdgeGPU
 {
-  glm::vec3 p0;
+  float3 p0;
   float local_pdf;
-  glm::vec3 p1;
+  float3 p1;
   float _pad;
 };
 
@@ -104,11 +104,11 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
   glViewport(0, 0, tex_w, tex_h);
 
   float tr_z = scene_params[2] * tan(0.5*0.25) / tan(0.5*cameras[0].fov_rad);
-  glm::mat4 transform = LiteMath::rotate(LiteMath::rotate(LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),
-                                       glm::vec3(scene_params[0], scene_params[1], tr_z)), 
-                                       scene_params[5], glm::vec3(0,0,1)), 
-                                       scene_params[4], glm::vec3(0,1,0)), 
-                                       scene_params[3], glm::vec3(1,0,0));
+  float4x4 transform = LiteMath::rotate(LiteMath::rotate(LiteMath::rotate(LiteMath::translate(float4x4(),
+                                       float3(scene_params[0], scene_params[1], tr_z)), 
+                                       scene_params[5], float3(0,0,1)), 
+                                       scene_params[4], float3(0,1,0)), 
+                                       scene_params[3], float3(1,0,0));
 
   auto t5 = std::chrono::steady_clock::now();
   float total_res = 0;
@@ -117,7 +117,7 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
   {
     //render model silhouette
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::mat4 viewProj = cameras[i].get_viewProj();
+    float4x4 viewProj = cameras[i].get_viewProj();
     render_silhouette.use();
     render_silhouette.uniform("viewProj", viewProj);
     m.render();
@@ -126,7 +126,7 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
     glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2.texture, 0);
     diff_loss.use();
-    diff_loss.get_shader().uniform("tex_size", glm::vec2(tex_w, tex_h));
+    diff_loss.get_shader().uniform("tex_size", float2(tex_w, tex_h));
     diff_loss.get_shader().texture("tex", tex1);
     diff_loss.get_shader().texture("tex_reference", reference_textures[i]);
     diff_loss.render();
@@ -145,7 +145,7 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
     //calculate MSE per tile
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     diff_loss_sum.use();
-    diff_loss_sum.uniform("tex_size", glm::vec2(tex_w, tex_h));
+    diff_loss_sum.uniform("tex_size", float2(tex_w, tex_h));
     diff_loss_sum.texture("tex_diff", tex2);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, results_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*NUM_TILES*NUM_TILES, nullptr, GL_STREAM_READ);
@@ -158,14 +158,14 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
     std::vector<EdgeGPU> edges(m.get_size());
     for (int j=0;j<edges.size(); j+=3)
     {
-      edges[j].p0 = glm::vec3(m.positions[3*j], m.positions[3*j+1], m.positions[3*j+2]);
-      edges[j].p1 = glm::vec3(m.positions[3*(j+1)], m.positions[3*(j+1)+1], m.positions[3*(j+1)+2]);
+      edges[j].p0 = float3(m.positions[3*j], m.positions[3*j+1], m.positions[3*j+2]);
+      edges[j].p1 = float3(m.positions[3*(j+1)], m.positions[3*(j+1)+1], m.positions[3*(j+1)+2]);
 
-      edges[j+1].p0 = glm::vec3(m.positions[3*(j+1)], m.positions[3*(j+1)+1], m.positions[3*(j+1)+2]);
-      edges[j+1].p1 = glm::vec3(m.positions[3*(j+2)], m.positions[3*(j+2)+1], m.positions[3*(j+2)+2]);
+      edges[j+1].p0 = float3(m.positions[3*(j+1)], m.positions[3*(j+1)+1], m.positions[3*(j+1)+2]);
+      edges[j+1].p1 = float3(m.positions[3*(j+2)], m.positions[3*(j+2)+1], m.positions[3*(j+2)+2]);
 
-      edges[j+2].p0 = glm::vec3(m.positions[3*j], m.positions[3*j+1], m.positions[3*j+2]);
-      edges[j+2].p1 = glm::vec3(m.positions[3*(j+2)], m.positions[3*(j+2)+1], m.positions[3*(j+2)+2]);
+      edges[j+2].p0 = float3(m.positions[3*j], m.positions[3*j+1], m.positions[3*j+2]);
+      edges[j+2].p1 = float3(m.positions[3*(j+2)], m.positions[3*(j+2)+1], m.positions[3*(j+2)+2]);
     }
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, edges_buf);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(EdgeGPU)*edges.size(), edges.data(), GL_STATIC_DRAW);

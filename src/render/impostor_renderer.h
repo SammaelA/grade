@@ -8,10 +8,10 @@ class ImpostorRenderer
     friend class GroveRenderer;
     ImpostorRenderer(ImpostorsData *data = nullptr);
     ~ImpostorRenderer();
-    void render(MultiDrawRendDesc &mdrd, glm::mat4 &projection, glm::mat4 &view, DirectedLight &light, 
-                glm::mat4 &shadow_tr, GLuint shadow_tex,
-                glm::vec3 camera_pos = glm::vec3(0,0,0),
-                glm::vec4 screen_size = glm::vec4(800,600,1/800,1/600), 
+    void render(MultiDrawRendDesc &mdrd, float4x4 &projection, float4x4 &view, DirectedLight &light, 
+                float4x4 &shadow_tr, GLuint shadow_tex,
+                float3 camera_pos = float3(0,0,0),
+                float4 screen_size = float4(800,600,1/800,1/600), 
                 bool to_shadow = false,
                 GroveRendererDebugParams dbgpar = GroveRendererDebugParams());
     private:

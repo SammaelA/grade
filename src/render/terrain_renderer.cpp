@@ -2,7 +2,7 @@
 #include "tinyEngine/engine.h"
 #include "tree_utils/tree_modeling.h"
 
-TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, glm::vec2 step):
+TerrainRenderer::TerrainRenderer(Heightmap &h, float3 pos, float2 size, float2 step):
         terrain_tex1(engine::textureManager->get("terrain1")),
         terrain_tex2(engine::textureManager->get("terrain2")),
         terrain_tex3(engine::textureManager->get("terrain3")),
@@ -11,7 +11,7 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
         terrainShadow({"terrain_render.vs", "depth.fs"}, {"in_Position", "in_Normal", "in_Tex"})
         {
             flat_terrain = new Model();
-            visualizer::heightmap_to_model(h, flat_terrain, size, glm::vec2(8192, 8192), MIN(step.x, step.y),0);
+            visualizer::heightmap_to_model(h, flat_terrain, size, float2(8192, 8192), MIN(step.x, step.y),0);
             flat_terrain->update();
             Texture *texs[3] = {&terrain_tex1, &terrain_tex2, &terrain_tex3};
             for (auto *tex : texs)
@@ -30,8 +30,8 @@ TerrainRenderer::TerrainRenderer(Heightmap &h, glm::vec3 pos, glm::vec2 size, gl
         if (flat_terrain)
             delete flat_terrain;
     }
-    void TerrainRenderer::render(glm::mat4 projection, glm::mat4 view, glm::mat4 shadow_tr, GLuint shadow_tex, glm::vec3 camera_pos,
-                                 DirectedLight &light, bool to_shadow, int debug_type, glm::vec4 grid_params, glm::vec4 debug_tex_scale,
+    void TerrainRenderer::render(float4x4 projection, float4x4 view, float4x4 shadow_tr, GLuint shadow_tex, float3 camera_pos,
+                                 DirectedLight &light, bool to_shadow, int debug_type, float4 grid_params, float4 debug_tex_scale,
                                  Texture *debug_tex_ptr)
     {
       Shader &shader = to_shadow ? terrainShadow : terrain;

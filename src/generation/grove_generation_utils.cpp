@@ -4,9 +4,9 @@
 #include "core/tree.h"
 #include "common_utils/body.h"
 
-void PlanarShadowsMap::set_occluder(glm::vec3 position, float base_val, float r, float _pow)
+void PlanarShadowsMap::set_occluder(float3 position, float base_val, float r, float _pow)
 {
-    glm::ivec2 rp = glm::vec2(position.x - pos.x, position.z - pos.z)/cell_size;
+    int2 rp = to_int2(float2(position.x - pos.x, position.z - pos.z)/cell_size);
 
     int n_cells = ceil(r/cell_size);
 
@@ -53,18 +53,18 @@ void PlanarShadowsMap::set(PlanarShadowsMap &src)
 }
 void HabitabilityMap::create(Heightmap &heightmap, GroveMask &mask)
 {
-    glm::vec2 minmax = heightmap.get_height_range();
+    float2 minmax = heightmap.get_height_range();
     float delta = 0.5*(minmax.y - minmax.x);
     float base = minmax.x + delta;
     const float grad_mult = 0.05;
 
-    fill_perlin(0,0,1,glm::ivec2(1/grad_mult,10*delta));
+    fill_perlin(0,0,1,int2(1/grad_mult,10*delta));
 
         for (int i = -w; i <= w; i++)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
+                float3 position = float3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
                 float noise = 0.3 + 0.7*get(i,j);
                 float grad = CLAMP(grad_mult*length(heightmap.get_grad_bilinear(position)),0,1);
                 float height = CLAMP(abs(heightmap.get_height(position) - delta)/delta,0.5,1);
@@ -85,7 +85,7 @@ void GroveMask::set_round(float r)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(cell_size*i, 0,cell_size*j);
+                float3 position = float3(cell_size*i, 0,cell_size*j);
                 if (length(position) < r) 
                     set(i,j,1);
                 else
@@ -100,7 +100,7 @@ void GroveMask::set_round_min(float r, float val)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(cell_size*i, 0,cell_size*j);
+                float3 position = float3(cell_size*i, 0,cell_size*j);
                 if (length(position) < r) 
                     set(i,j,MIN(val, get(i,j)));
                 //else
@@ -115,7 +115,7 @@ void GroveMask::set_square(float x, float z)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
+                float3 position = float3(pos.x + cell_size*i, 0, pos.z - cell_size*j);
                 if (abs(position.x) < x && abs(position.z) < z) 
                     set(i,j,1);
                 else
@@ -137,7 +137,7 @@ void DensityMap::create(HabitabilityMap &hm, PlanarShadowsMap &psm)
         {
             for (int j = -h; j <= h; j++)
             {
-                glm::vec3 position = glm::vec3(pos.x + cell_size*i, 0, pos.z + cell_size*j);
+                float3 position = float3(pos.x + cell_size*i, 0, pos.z + cell_size*j);
                 float sh = psm.get_bilinear(position);
                 float hab = hm.get_bilinear(position);
                 float res = hab*(1/(1 + MAX(sh,0)));
@@ -171,7 +171,7 @@ void DensityMap::choose_places_for_seeds(int count, std::vector<Seed> &seeds)
                 if (r >= rnd && seeds.size() < count)
                 {
                     Seed s;
-                    s.pos = glm::vec2(pos.x + cell_size*i, pos.z + cell_size*j);
+                    s.pos = float2(pos.x + cell_size*i, pos.z + cell_size*j);
                     s.roots_count = 1;
                     seeds.push_back(s);
                     rnd = -1;

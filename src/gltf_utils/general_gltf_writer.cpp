@@ -299,12 +299,12 @@ namespace gltf
                         int verts = models[i].m->positions.size()/3;
                         int ind_acc_n, pos_acc_n, norm_acc_n, tc_acc_n;
                         
-                        glm::vec3 max_bounds = glm::vec3(settings.max_bound);
-                        glm::vec3 min_bounds = glm::vec3(-settings.max_bound);
+                        float3 max_bounds = float3(settings.max_bound);
+                        float3 min_bounds = float3(-settings.max_bound);
                         if (settings.calc_exact_bbox && verts > 0)
                         {
-                            max_bounds = glm::vec3(-1e6);
-                            min_bounds = glm::vec3(1e6);
+                            max_bounds = float3(-1e6);
+                            min_bounds = float3(1e6);
 
                             for (int j = 0;j<models[i].m->positions.size(); j+=3)
                             {
@@ -401,8 +401,8 @@ namespace gltf
             else
             {
                 n.child_nodes = {};
-                n.transform = glm::mat4(1.0f);
-                n.scale = glm::vec3(1,1,1);
+                n.transform = float4x4();
+                n.scale = float3(1,1,1);
                 int nn = fullData.gltf_file.nodes.size() - 1;
                 for (auto &tr : t)
                 {

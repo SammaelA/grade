@@ -18,12 +18,12 @@ PointCloudRenderer::~PointCloudRenderer()
   delete_buffer(vbo);
 }
 
-Texture PointCloudRenderer::render(const std::vector<glm::vec3> &points, const glm::mat4 &viewProj, int w, int h,
-                                   glm::vec3 points_color, float points_base_size)
+Texture PointCloudRenderer::render(const std::vector<float3> &points, const float4x4 &viewProj, int w, int h,
+                                   float3 points_color, float points_base_size)
 {
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(glm::vec3), points.data(), GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(float3), points.data(), GL_DYNAMIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 

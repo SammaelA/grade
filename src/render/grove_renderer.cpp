@@ -229,18 +229,18 @@ types(_types)
     cellsInfo.y_cells = 32;
     cellsInfo.x_size = (scene_bbox.max_pos.x - scene_bbox.min_pos.x)/cellsInfo.x_cells;
     cellsInfo.y_size = (scene_bbox.max_pos.y - scene_bbox.min_pos.y)/cellsInfo.y_cells;
-    cellsInfo.start_pos = glm::vec3(scene_bbox.min_pos.x, 0, scene_bbox.min_pos.y);
+    cellsInfo.start_pos = float3(scene_bbox.min_pos.x, 0, scene_bbox.min_pos.y);
     for (int i=0;i<instances.size();i++)
     {
         int par_cell_id, self_cell_id;
         {
-        glm::vec3 ps = instances[i].center_self;
+        float3 ps = to_float3(instances[i].center_self);
         int xc = (ps.x - cellsInfo.start_pos.x)/cellsInfo.x_size;
         int yc = (ps.y - cellsInfo.start_pos.y)/cellsInfo.y_size;
         self_cell_id = xc*cellsInfo.y_cells + yc;
         }
         {
-        glm::vec3 ps = instances[i].center_par;
+        float3 ps = to_float3(instances[i].center_par);
         int xc = (ps.x - cellsInfo.start_pos.x)/cellsInfo.x_size;
         int yc = (ps.y - cellsInfo.start_pos.y)/cellsInfo.y_size;
         par_cell_id = xc*cellsInfo.y_cells + yc;
@@ -310,9 +310,9 @@ types(_types)
 }
 void GroveRenderer::pack_bb_to_model_data(ModelData &md, BBox &bb)
 {
-    md.x_s = glm::vec4(bb.position.x, bb.sizes.x * bb.a.x, bb.sizes.x * bb.b.x, bb.sizes.x * bb.c.x);
-    md.y_s = glm::vec4(bb.position.y, bb.sizes.y * bb.a.y, bb.sizes.y * bb.b.y, bb.sizes.y * bb.c.y);
-    md.z_s = glm::vec4(bb.position.z, bb.sizes.z * bb.a.z, bb.sizes.z * bb.b.z, bb.sizes.z * bb.c.z);
+    md.x_s = float4(bb.position.x, bb.sizes.x * bb.a.x, bb.sizes.x * bb.b.x, bb.sizes.x * bb.c.x);
+    md.y_s = float4(bb.position.y, bb.sizes.y * bb.a.y, bb.sizes.y * bb.b.y, bb.sizes.y * bb.c.y);
+    md.z_s = float4(bb.position.z, bb.sizes.z * bb.a.z, bb.sizes.z * bb.b.z, bb.sizes.z * bb.c.z);
     md.culling = 1;
 }
 DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
@@ -338,20 +338,20 @@ DrawElementsIndirectCommand GroveRenderer::model_to_base(Model *m, BBox &bb)
         base_container->colors.push_back(tex);
     }
 
-    glm::vec3 mx, mn;
-    mx = glm::vec3(-1e9);
-    mn = glm::vec3(1e9);
+    float3 mx, mn;
+    mx = float3(-1e9);
+    mn = float3(1e9);
     for (int i = 0; i<m->positions.size(); i+=3)
     {
-        mx = glm::max(mx,glm::vec3(m->positions[i],m->positions[i+1],m->positions[i+2]));
-        mn = glm::min(mn,glm::vec3(m->positions[i],m->positions[i+1],m->positions[i+2]));
+        mx = LiteMath::max(mx,float3(m->positions[i],m->positions[i+1],m->positions[i+2]));
+        mn = LiteMath::min(mn,float3(m->positions[i],m->positions[i+1],m->positions[i+2]));
     }
     BBox br_bbox;
     br_bbox.position = mn;
     br_bbox.sizes = mx - mn;
-    br_bbox.a = glm::vec3(1,0,0);
-    br_bbox.b = glm::vec3(0,1,0);
-    br_bbox.c = glm::vec3(0,0,1);
+    br_bbox.a = float3(1,0,0);
+    br_bbox.b = float3(0,1,0);
+    br_bbox.c = float3(0,0,1);
     bb = br_bbox;
     return cmd;
 }
@@ -371,11 +371,11 @@ void GroveRenderer::IDA_to_bufer(InstanceDataArrays &ida, std::vector<LodData> &
             type_slice = is_leaf ? types[ida.type_ids[i]].leaf_id : types[ida.type_ids[i]].wood_id;
         instances.push_back(InstanceData());
         instances.back().projection_camera = ida.transforms[i];
-        instances.back().center_par = glm::vec4(ida.centers_par[i], type_slice);
-        instances.back().center_self = glm::vec4(ida.centers_self[i],1);
+        instances.back().center_par = to_float4(ida.centers_par[i], type_slice);
+        instances.back().center_self = to_float4(ida.centers_self[i],1);
     }
     models.push_back(ModelData());
-    models.back().interval = glm::uvec2(st,instances.size());
+    models.back().interval = uint2(st,instances.size());
 
 }
 GroveRenderer::~GroveRenderer()
@@ -408,11 +408,11 @@ GroveRenderer::~GroveRenderer()
     source = nullptr;
 }
 
-void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &view, Camera &camera, glm::vec2 screen_size, 
-                           DirectedLight &light, GroveRendererDebugParams dbgpar, glm::mat4 &shadow_tr,
+void GroveRenderer::render(int explicit_lod, float4x4 &projection, float4x4 &view, Camera &camera, float2 screen_size, 
+                           DirectedLight &light, GroveRendererDebugParams dbgpar, float4x4 &shadow_tr,
                            GLuint shadow_tex, bool to_shadow)
 {
-    glm::vec3 camera_pos = camera.pos;
+    float3 camera_pos = camera.pos;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (LODs.size() == 0)
         return;
@@ -421,9 +421,9 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
 
     if (explicit_lod == -1)
     {
-        glm::vec2 center = 0.5f*(scene_bbox.max_pos + scene_bbox.min_pos);
-        float len = glm::length(center - glm::vec2(camera_pos.x, camera_pos.z));
-        glm::vec2 sz_2 = 0.5f*(scene_bbox.max_pos - scene_bbox.min_pos);
+        float2 center = 0.5f*(scene_bbox.max_pos + scene_bbox.min_pos);
+        float len = length(center - float2(camera_pos.x, camera_pos.z));
+        float2 sz_2 = 0.5f*(scene_bbox.max_pos - scene_bbox.min_pos);
         float sz = sqrt(sz_2.x*sz_2.x + sz_2.y*sz_2.y);
         for (int i = 0; i < LODs.size() - 1; i++)
         {
@@ -458,7 +458,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
         //ts.start("cellsCompute");
         cellsCompute.use();
         cellsCompute.uniform("count", (uint)types_descs.size());
-        cellsCompute.uniform("grid_sizes", glm::vec2(cellsInfo.x_size,cellsInfo.y_size));
+        cellsCompute.uniform("grid_sizes", float2(cellsInfo.x_size,cellsInfo.y_size));
         cellsCompute.uniform("grid_counts_x", (uint)cellsInfo.x_cells);
         cellsCompute.uniform("grid_counts_y", (uint)cellsInfo.y_cells);
         cellsCompute.uniform("pos", cellsInfo.start_pos);
@@ -511,7 +511,7 @@ void GroveRenderer::render(int explicit_lod, glm::mat4 &projection, glm::mat4 &v
     glBindBuffer(GL_PARAMETER_BUFFER_ARB, cur_types_buf);
     ////ts.end("bind");
     std::chrono::steady_clock::time_point tt2 = std::chrono::steady_clock::now();
-    glm::vec4 ss = glm::vec4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
+    float4 ss = float4(screen_size.x, screen_size.y, 1 / screen_size.x, 1 / screen_size.y);
 
 
     auto rend_lod = [&](TypeDescriptionForRender &type)
@@ -566,7 +566,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     //clusterization process guarantees that type of all branches in instance
     //will be the same
     uint type = source->instancedCatalogue.get(branch.branches.front()).type_id;
-    glm::vec3 pos = source->instancedCatalogue.get(branch.branches.front()).joints.front().pos;
+    float3 pos = source->instancedCatalogue.get(branch.branches.front()).joints.front().pos;
     uint ind_offset = base_container->indices.size();
     uint verts = base_container->positions.size();
     for (int id : branch.branches)
@@ -579,24 +579,24 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
         }
         PackedBranch &b = source->instancedCatalogue.get(id);
         if (b.level <= up_to_level && !b.joints.empty())
-            visualizer::packed_branch_to_model(b, base_container, false, 2, glm::vec2(type_slice, 0));
+            visualizer::packed_branch_to_model(b, base_container, false, 2, float2(type_slice, 0));
     }
     uint l_ind_offset = base_container->indices.size();
     uint l_verts = base_container->positions.size();
-    glm::vec3 mx, mn;
-    mx = glm::vec3(-1e9);
-    mn = glm::vec3(1e9);
+    float3 mx, mn;
+    mx = float3(-1e9);
+    mn = float3(1e9);
     for (int i = verts; i<l_verts; i+=3)
     {
-        mx = glm::max(mx,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
-        mn = glm::min(mn,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+        mx = LiteMath::max(mx,float3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+        mn = LiteMath::min(mn,float3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
     }
     BBox br_bbox;
     br_bbox.position = mn;
     br_bbox.sizes = mx - mn;
-    br_bbox.a = glm::vec3(1,0,0);
-    br_bbox.b = glm::vec3(0,1,0);
-    br_bbox.c = glm::vec3(0,0,1);
+    br_bbox.a = float3(1,0,0);
+    br_bbox.b = float3(0,1,0);
+    br_bbox.c = float3(0,0,1);
     verts = l_verts;
     if (need_leaves)
     {
@@ -610,7 +610,7 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
             }
             PackedBranch &b = source->instancedCatalogue.get(id);
             if (!b.joints.empty())
-                visualizer::packed_branch_to_model(b, base_container, true, 2, glm::vec2(type_slice, 0));
+                visualizer::packed_branch_to_model(b, base_container, true, 2, float2(type_slice, 0));
         }
     }
     uint l_end = base_container->indices.size();
@@ -620,19 +620,19 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     BBox l_bbox;
     if (need_leaves)
     {
-        mx = glm::vec3(-1e9);
-        mn = glm::vec3(1e9);
+        mx = float3(-1e9);
+        mn = float3(1e9);
         for (int i = verts; i<l_verts; i+=3)
         {
-            mx = glm::max(mx,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
-            mn = glm::min(mn,glm::vec3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+            mx = LiteMath::max(mx,float3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
+            mn = LiteMath::min(mn,float3(base_container->positions[i],base_container->positions[i+1],base_container->positions[i+2]));
         }
 
         l_bbox.position = mn;
         l_bbox.sizes = mx - mn;
-        l_bbox.a = glm::vec3(1,0,0);
-        l_bbox.b = glm::vec3(0,1,0);
-        l_bbox.c = glm::vec3(0,0,1);
+        l_bbox.a = float3(1,0,0);
+        l_bbox.b = float3(0,1,0);
+        l_bbox.c = float3(0,0,1);
     }
     if (branch.IDA.transforms.size() != branch.IDA.centers_par.size())
     {
@@ -640,17 +640,17 @@ void GroveRenderer::add_instance_model(LOD &lod, GrovePacked *source, InstancedB
     }
     for (int i=0;i<branch.IDA.transforms.size();i++)
     {
-        glm::vec4 center = glm::vec4(branch.IDA.centers_par[i],1);
+        float4 center = to_float4(branch.IDA.centers_par[i],1);
         if (branch.branches.size() == 1)
         {
             int level = source->instancedCatalogue.get(branch.branches.front()).level;
             if (level <= up_to_level)
-                center = glm::vec4(branch.IDA.centers_self[i],1);
+                center = to_float4(branch.IDA.centers_self[i],1);
         }
         if (up_to_level >= base_level)
-            center = glm::vec4(branch.IDA.centers_self[i],1);
+            center = to_float4(branch.IDA.centers_self[i],1);
         
-        branch.IDA.centers_par[i] = center;
+        branch.IDA.centers_par[i] = to_float3(center);
     }
     if (count > 0 && !branch.IDA.transforms.empty())
     {

@@ -1,5 +1,6 @@
 #pragma once
 #include "common_utils/LiteMath_ext.h"
+#include "common_utils/matrix_transform.h"
 
 namespace diff_render
 {
@@ -17,7 +18,7 @@ struct CamInfo
   height(h)
   {
     mProj = LiteMath::perspectiveMatrix(fov_rad/LiteMath::DEG_TO_RAD, width/height, zNear, zFar);
-    mWorldView = LiteMath::lookAt(origin, target, up);
+    mWorldView = LiteMath::lookAtRH(origin, target, up);
     commit();
   }
   float3 origin;

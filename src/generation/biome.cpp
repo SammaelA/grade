@@ -107,7 +107,7 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
     {
         return data[y*w + x];
     }
-    int BiomeMap::get(glm::vec2 pos) const
+    int BiomeMap::get(float2 pos) const
     {
         int x = (pos.x - bbox.min_pos.x)/pixel_size;
         int y = (pos.y - bbox.min_pos.y)/pixel_size;
@@ -116,9 +116,9 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
         else
             return get(x, y);
     }
-    int BiomeMap::get(glm::vec3 pos) const
+    int BiomeMap::get(float3 pos) const
     {
-        return get(glm::vec2(pos.x, pos.z));
+        return get(float2(pos.x, pos.z));
     }
     
     void BiomeMap::set_rect(AABB2D box, int id)
@@ -136,9 +136,9 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
             }
         }
     }
-    void BiomeMap::set_round(glm::vec2 pos, float inner_r, float outer_r, int id)
+    void BiomeMap::set_round(float2 pos, float inner_r, float outer_r, int id)
     {
-        AABB2D box = AABB2D(pos - outer_r*glm::vec2(1,1), pos + outer_r*glm::vec2(1,1));
+        AABB2D box = AABB2D(pos - outer_r*float2(1,1), pos + outer_r*float2(1,1));
         
         float ir2p = SQR(inner_r/pixel_size);
         float or2p = SQR(outer_r/pixel_size);
@@ -249,7 +249,7 @@ void BiomeMap::create(AABB2D _bbox, float _pixel_size)
 
     void BiomeMap::set_mask(GroveMask &mask, int biome_id)
     {
-        std::function<float(glm::vec2 &)> func = [&](glm::vec2 &p) -> float
+        std::function<float(float2 &)> func = [&](float2 &p) -> float
         {
             return (get(p) == biome_id) ? 1.0 : 0.0;
         };

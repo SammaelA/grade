@@ -12,9 +12,9 @@ tree_info_shader({"get_tree_info.comp"},{})
     slices_per_impostor = _slices_per_impostor;
     slices_stride = slices_per_impostor;
     results_data = new float[slices_per_impostor*max_impostors];
-    slices_info_data = new glm::uvec4[(slices_per_impostor  + 1)*max_impostors];
+    slices_info_data = new uint4[(slices_per_impostor  + 1)*max_impostors];
     impostors_info_data = new TreeCompareInfo[max_impostors + 1];
-    shader_imp_data = new glm::vec4[max_impostors + 1];
+    shader_imp_data = new float4[max_impostors + 1];
     tree_image_info_data = new TreeImageInfo[(slices_per_impostor + 1)*max_impostors];
 
     results_buf = create_buffer();
@@ -30,7 +30,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
 {
     if (!t.root || !t.valid)
     {
-        info.BCyl_sizes = glm::vec2(0,0);
+        info.BCyl_sizes = float2(0,0);
         info.branches_curvature = 0;
         info.branches_density = 0;
         info.joints_cnt = 0;
@@ -38,12 +38,12 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
         info.trunk_thickness = 0;
         return;
     }
-    info.BCyl_sizes = glm::vec2(imp.bcyl.r, 2*imp.bcyl.h_2);
+    info.BCyl_sizes = float2(imp.bcyl.r, 2*imp.bcyl.h_2);
     //logerr("imp size %f %f", info.BCyl_sizes.x, info.BCyl_sizes.y);
     info.trunk_thickness = t.root->segments.front().rel_r_begin;
     
-    glm::vec3 center = t.pos + imp.bcyl.h_2;
-    glm::vec3 sz = 1.25f*glm::vec3(imp.bcyl.r, imp.bcyl.h_2, imp.bcyl.r);
+    float3 center = t.pos + imp.bcyl.h_2;
+    float3 sz = 1.25f*float3(imp.bcyl.r, imp.bcyl.h_2, imp.bcyl.r);
     float v_sz = MAX(sz.x, MAX(sz.y, sz.z))/32;
     //logerr("creating voxels cube size %f %f %f sz %f", sz.x, sz.y, sz.z, v_sz);
     LightVoxelsCube branches_dens = LightVoxelsCube(center, sz, v_sz);
@@ -63,7 +63,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
             {
                 if (s.end.x == s.end.x)
                 {
-                    branches_dens.set_occluder_simple(s.end, glm::length(s.end - s.begin)*
+                    branches_dens.set_occluder_simple(s.end, length(s.end - s.begin)*
                     (SQR(s.rel_r_begin) + s.rel_r_begin*s.rel_r_end + SQR(s.rel_r_end)));
                     leaves_dens.set_occluder_simple(s.end, 0.001);
                 }
@@ -85,8 +85,8 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
                     {
                         float l1 = MAX(length(sit->end - sit->begin),1e-6);
                         float l2 = MAX(length(sit2->end - sit2->begin),1e-6);
-                        dots += glm::dot((sit->end - sit->begin)/l1, (sit2->end - sit2->begin)/l2);
-                        b_trop += dot((sit2->end - sit2->begin)/l2, glm::vec3(0,1,0)) - dot((sit->end - sit->begin)/l1, glm::vec3(0,1,0));
+                        dots += dot((sit->end - sit->begin)/l1, (sit2->end - sit2->begin)/l2);
+                        b_trop += dot((sit2->end - sit2->begin)/l2, float3(0,1,0)) - dot((sit->end - sit->begin)/l1, float3(0,1,0));
                     }
                     b_chb += jit->childBranches.size();
                     sit++;
@@ -120,7 +120,7 @@ void ImpostorSimilarityCalc::get_tree_compare_info(Impostor &imp, Tree &t, TreeC
             //logerr("l.edges %d",cnt);
             for (int i=0;i<cnt;i++)
             {
-                float occ = glm::length(l.edges[4*i] - l.edges[4*i+1])*glm::length(l.edges[4*i] - l.edges[4*i+2]);
+                float occ = length(l.edges[4*i] - l.edges[4*i+1])*length(l.edges[4*i] - l.edges[4*i+2]);
                 if (l.edges[4*i].x == l.edges[4*i].x)
                 {
                     leaves_dens.set_occluder_simple(l.edges[4*i], occ);
@@ -175,8 +175,8 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
                                                  bool image_debug)
 {
     //image_debug = true;
-    glm::ivec4 sizes = images_atl.get_sizes();
-    glm::ivec2 slice_size = images_atl.get_slice_size();
+    int4 sizes = images_atl.get_sizes();
+    int2 slice_size = images_atl.get_slice_size();
     TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, images_atl.layers_count(), 1);
     atl_tmp.set_grid(slice_size.x, slice_size.y, false);
     PostFx copy = PostFx("copy_arr2.fs");
@@ -186,7 +186,7 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
         atl_tmp.target(tex_id, 0);
         copy.use();
         copy.get_shader().texture("tex", images_atl.tex(0));
-        copy.get_shader().uniform("tex_transform", glm::vec4(0,0,1,1));
+        copy.get_shader().uniform("tex_transform", float4(0,0,1,1));
         copy.get_shader().uniform("layer", (float)i);
         copy.render();
     }
@@ -212,15 +212,15 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TreeImageInfo)*slices_cnt, nullptr, GL_STREAM_READ);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, slices_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
-    glm::ivec2 slice_sizes = images_atl.get_slice_size();
-    glm::ivec4 atlas_sizes = images_atl.get_sizes();
+    int2 slice_sizes = images_atl.get_slice_size();
+    int4 atlas_sizes = images_atl.get_sizes();
     
     if (image_debug)
     { 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, dbg_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4), nullptr, GL_STREAM_READ);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_sizes.x*slice_sizes.y*sizeof(uint4), nullptr, GL_STREAM_READ);
     }
 
     tree_info_shader.use();
@@ -247,14 +247,14 @@ void ImpostorSimilarityCalc::get_tree_image_info(TextureAtlas &images_atl, std::
             print_tree_image_info(tree_image_info_data[i]);
             logerr("line %f %f %f %f", tree_image_info_data[i].crown_start_level, tree_image_info_data[i].crown_branches_share, 
                                        tree_image_info_data[i].crown_leaves_share, tree_image_info_data[i].trunk_thickness);
-            glm::vec4 tc = tree_image_info_data[i].tc_transform;
+            float4 tc = tree_image_info_data[i].tc_transform;
             logerr("tc transform %f %f %f %f", tc.x, tc.y, tc.z, tc.w);
         }
-        glm::uvec4 *data = new glm::uvec4[4*slice_sizes.x*slice_sizes.y];
+        uint4 *data = new uint4[4*slice_sizes.x*slice_sizes.y];
         unsigned char *data_ch = new unsigned char[4*4*slice_sizes.x*slice_sizes.y];
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, dbg_buf);
         ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        memcpy(data,ptr,4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4));
+        memcpy(data,ptr,4*slice_sizes.x*slice_sizes.y*sizeof(uint4));
         for (int i=0;i<4*slice_sizes.x*slice_sizes.y;i++)
         {
             data_ch[4*i] = data[i].x;
@@ -328,7 +328,7 @@ void ImpostorSimilarityCalc::get_reference_tree_image_info(ReferenceTree &refere
         return;
     }
     TreeImageInfo av_info;
-    av_info.tc_transform = glm::vec4(0,0,0,0);
+    av_info.tc_transform = float4(0,0,0,0);
     for (int i=0;i<16;i++)
         av_info.trunk_info.thickness[i] = 0;
     for (auto &p : results)
@@ -402,7 +402,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         else
         {
             auto &info = impostors_info_data[imp_n+1];
-            info.BCyl_sizes = glm::vec2(0,0);
+            info.BCyl_sizes = float2(0,0);
             info.branches_curvature = 0;
             info.branches_density = 0;
             info.joints_cnt = 0;
@@ -411,7 +411,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         }
         int slices_cnt = 0;
         TreeImageInfo av_info;
-        av_info.tc_transform = glm::vec4(0,0,0,0);
+        av_info.tc_transform = float4(0,0,0,0);
         for (int i=0;i<16;i++)
             av_info.trunk_info.thickness[i] = 0;
         for (auto &slice : imp.slices)
@@ -459,7 +459,7 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     {
         if (i!=0)
         {
-        impostors_info_data[i].BCyl_sizes = glm::vec2(tree_image_info_data[i].tc_transform.z*impostors_info_data[i].BCyl_sizes.x,
+        impostors_info_data[i].BCyl_sizes = float2(tree_image_info_data[i].tc_transform.z*impostors_info_data[i].BCyl_sizes.x,
                                                       tree_image_info_data[i].tc_transform.w*impostors_info_data[i].BCyl_sizes.y);
         }
         shader_imp_data[i].x = impostors_info_data[i].BCyl_sizes.x;
@@ -475,18 +475,18 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*slices_cnt, nullptr, GL_STREAM_READ);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, slices_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::uvec4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint4)*slices_cnt, slices_info_data, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, impostors_info_buf);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4)*(impostors_cnt+1), shader_imp_data, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float4)*(impostors_cnt+1), shader_imp_data, GL_STATIC_DRAW);
 
-    glm::ivec2 slice_sizes = grove.impostors[1].atlas.get_slice_size();
-    glm::ivec4 atlas_sizes = reference.atlas.get_sizes();
+    int2 slice_sizes = grove.impostors[1].atlas.get_slice_size();
+    int4 atlas_sizes = reference.atlas.get_sizes();
     
     if (image_debug)
     { 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, dbg_buf);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4), nullptr, GL_STREAM_READ);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, 4*slice_sizes.x*slice_sizes.y*sizeof(uint4), nullptr, GL_STREAM_READ);
     }
 
     similarity_shader.use();
@@ -513,11 +513,11 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
     
     if (image_debug)
     { 
-        glm::uvec4 *data = new glm::uvec4 [4*slice_sizes.x*slice_sizes.y];
+        uint4 *data = new uint4 [4*slice_sizes.x*slice_sizes.y];
         unsigned char *data_ch = new unsigned char[4*4*slice_sizes.x*slice_sizes.y];
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, dbg_buf);
         ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        memcpy(data,ptr,4*slice_sizes.x*slice_sizes.y*sizeof(glm::uvec4));
+        memcpy(data,ptr,4*slice_sizes.x*slice_sizes.y*sizeof(uint4));
         for (int i=0;i<4*slice_sizes.x*slice_sizes.y;i++)
         {
             data_ch[4*i] = data[i].x;
@@ -570,10 +570,10 @@ void ImpostorSimilarityCalc::calc_similarity(GrovePacked &grove, ReferenceTree &
         }
         d_th /= MAX(v1,v2);
         //logerr("th %f %f", tree_image_info_data[i+1].trunk_thickness, tree_image_info_data[0].trunk_thickness);
-        glm::vec2 scale_fine;
-        glm::vec2 ref_real_size = (1-2*ReferenceTree::border_size)*
+        float2 scale_fine;
+        float2 ref_real_size = (1-2*ReferenceTree::border_size)*
                                    impostors_info_data[0].BCyl_sizes;//reference image has empty borders 
-        glm::vec2 imp_real_size = glm::vec2(tree_image_info_data[i+1].tc_transform.z*impostors_info_data[i+1].BCyl_sizes.x,
+        float2 imp_real_size = float2(tree_image_info_data[i+1].tc_transform.z*impostors_info_data[i+1].BCyl_sizes.x,
                                             tree_image_info_data[i+1].tc_transform.w*impostors_info_data[i+1].BCyl_sizes.y);
         imp_real_size = impostors_info_data[i+1].BCyl_sizes;
         ref_real_size = impostors_info_data[0].BCyl_sizes;
@@ -663,8 +663,8 @@ ImpostorSimilarityCalc::~ImpostorSimilarityCalc()
 void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
 {
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glm::ivec4 sizes = atl.get_sizes();
-    glm::ivec2 slice_size = atl.get_slice_size();
+    int4 sizes = atl.get_sizes();
+    int2 slice_size = atl.get_slice_size();
     TextureAtlas atl_tmp = TextureAtlas(sizes.x, sizes.y, atl.layers_count(), 1);
     atl_tmp.set_grid(slice_size.x, slice_size.y, false);
 
@@ -674,11 +674,11 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl_tmp.target(l, 0);
         gauss.use();
         gauss.get_shader().texture("tex", atl.tex(0));
-        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        gauss.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         gauss.get_shader().uniform("layer", (float)l);
         gauss.get_shader().uniform("pass", 0);
-        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.get_shader().uniform("tex_size_inv", float2(1.0f / sizes.x, 1.0f / sizes.y));
+        gauss.get_shader().uniform("slice_size", to_float2(slice_size));
         gauss.get_shader().uniform("blur_step", 0.33f);
         gauss.render();
     }
@@ -689,11 +689,11 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl.target(l, 0);
         gauss.use();
         gauss.get_shader().texture("tex", atl_tmp.tex(0));
-        gauss.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        gauss.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         gauss.get_shader().uniform("layer", l);
         gauss.get_shader().uniform("pass", 1);
-        gauss.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
-        gauss.get_shader().uniform("slice_size", slice_size);
+        gauss.get_shader().uniform("tex_size_inv", float2(1.0f / sizes.x, 1.0f / sizes.y));
+        gauss.get_shader().uniform("slice_size", to_float2(slice_size));
         gauss.get_shader().uniform("blur_step", 0.33f);
         gauss.render();
     }
@@ -706,13 +706,13 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl_tmp.target(l, 0);
         sil_fill.use();
         sil_fill.get_shader().texture("tex", atl.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
         sil_fill.get_shader().uniform("radius", 4);
         sil_fill.get_shader().uniform("dir_threshold", 4);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("tex_size_inv", float2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.get_shader().uniform("slice_size", to_float2(slice_size));
         sil_fill.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -721,13 +721,13 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl.target(l, 0);
         sil_fill.use();
         sil_fill.get_shader().texture("tex", atl_tmp.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
         sil_fill.get_shader().uniform("radius", 4);
         sil_fill.get_shader().uniform("dir_threshold", 4);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("tex_size_inv", float2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.get_shader().uniform("slice_size", to_float2(slice_size));
         sil_fill.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -736,13 +736,13 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl_tmp.target(l, 0);
         sil_fill.use();
         sil_fill.get_shader().texture("tex", atl.tex(0));
-        sil_fill.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_fill.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         sil_fill.get_shader().uniform("layer", (float)l);
         sil_fill.get_shader().uniform("radius", 8);
         sil_fill.get_shader().uniform("dir_threshold", 6);
-        sil_fill.get_shader().uniform("tex_size_inv", glm::vec2(1.0f / sizes.x, 1.0f / sizes.y));
+        sil_fill.get_shader().uniform("tex_size_inv", float2(1.0f / sizes.x, 1.0f / sizes.y));
         sil_fill.get_shader().uniform("threshold", 0.05f);
-        sil_fill.get_shader().uniform("slice_size", slice_size);
+        sil_fill.get_shader().uniform("slice_size", to_float2(slice_size));
         sil_fill.render();
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -754,7 +754,7 @@ void ImpostorSimilarityCalc::ref_atlas_transform(TextureAtlas &atl)
         atl.target(l, 0);
         sil_sharp.use();
         sil_sharp.get_shader().texture("tex", atl_tmp.tex(0));
-        sil_sharp.get_shader().uniform("tex_transform", glm::vec4(0, 0, 1, 1));
+        sil_sharp.get_shader().uniform("tex_transform", float4(0, 0, 1, 1));
         sil_sharp.get_shader().uniform("layer", (float)l);
         sil_sharp.get_shader().uniform("threshold", 0.05f);
         sil_sharp.render();

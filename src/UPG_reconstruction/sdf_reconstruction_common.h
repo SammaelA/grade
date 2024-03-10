@@ -9,10 +9,10 @@ namespace upg
 {
   struct PointCloudReference
   {
-    std::vector<glm::vec3> points;
-    std::vector<glm::vec3> outside_points;
+    std::vector<float3> points;
+    std::vector<float3> outside_points;
 
-    std::vector<glm::vec3> d_points;
+    std::vector<float3> d_points;
     std::vector<float> d_distances;
 
     bool is_synthetic = false;
@@ -26,17 +26,17 @@ namespace upg
   class FieldSdfLossConstructive : public UPGOptimizableFunction
   {
   public:
-    const std::vector<glm::vec3> &points;
+    const std::vector<float3> &points;
     const std::vector<float> &distances;
     //ReferencePointsGrid grid;
-    std::vector<glm::vec3> a_points;
+    std::vector<float3> a_points;
     std::vector<float> a_distances;
     int active_points_count = 0;
 
     std::vector<float> ddist_dparams, ddist_dpos;
     std::vector<double> ddist_dparams_sum;
     std::vector<float> distances_batch, a_distances_batch;
-    std::vector<glm::vec3> batch;
+    std::vector<float3> batch;
 
     float beta;
     float p;
@@ -50,7 +50,7 @@ namespace upg
   public:
     bool verbose = false;
 
-    FieldSdfLossConstructive(const std::vector<glm::vec3> &_points,
+    FieldSdfLossConstructive(const std::vector<float3> &_points,
                     const std::vector<float> &_distances,
                     unsigned grid_cells_count = 16*16*16,
                     unsigned max_parameters = 1024):
@@ -88,7 +88,7 @@ namespace upg
     void remove_inactive_points(ProceduralSdf &sdf, float threshold = 0.001f)
     {
       sdf.get_distance_batch(a_points.size(), (float*)a_points.data(), distances_batch.data(), nullptr, nullptr);
-      std::vector<glm::vec3> active_points;
+      std::vector<float3> active_points;
       active_points.reserve(a_points.size());
       std::vector<float> active_distances;
       active_distances.reserve(a_points.size());
@@ -144,7 +144,7 @@ namespace upg
       if constexpr (is_differentiable)
       {
         double dist_inv = 1 / MAX(abs(dist), 1e-12);
-        double dloss_ddist = abs(dist) >= beta ? (0.5 * beta_p * p * (dist_p_inv * dist_inv) * glm::sign(dist)) : (0.5 * beta_p_inv * (dist_p * dist_inv) * glm::sign(dist));
+        double dloss_ddist = abs(dist) >= beta ? (0.5 * beta_p * p * (dist_p_inv * dist_inv) * LiteMath::sign(dist)) : (0.5 * beta_p_inv * (dist_p * dist_inv) * LiteMath::sign(dist));
         for (int i = 0; i < ddist_dparams_sum.size(); i++)
           ddist_dparams_sum[i] += dloss_ddist * sample_ddist_dparams[i];
       }
@@ -155,7 +155,7 @@ namespace upg
     double reg_loss_func(float sdf_dist, float target_dist, float *sample_ddist_dparams)
     {
       float dist = sdf_dist - target_dist;
-      dist = glm::sign(dist)*MAX(0.05, abs(dist));
+      dist = LiteMath::sign(dist)*MAX(0.05, abs(dist));
       
       if (dist < 0)
       {
@@ -231,12 +231,12 @@ namespace upg
       double total_loss_r = 0;
 
       AABB bbox = sdf.root->get_bbox();
-      glm::vec3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
-      glm::vec3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
+      float3 center = 0.5f*(bbox.max_pos + bbox.min_pos);
+      float3 size = 0.5f*(bbox.max_pos - bbox.min_pos);
       AABB inflated_bbox = AABB(center - 1.5f*size, center + 1.5f*size);
       
-      glm::uvec3 reg_st = grid.get_cell_id(inflated_bbox.min_pos);
-      glm::uvec3 reg_end = min(grid.grid_size, grid.get_cell_id(inflated_bbox.max_pos) + glm::uvec3(1,1,1));
+      uint3 reg_st = grid.get_cell_id(inflated_bbox.min_pos);
+      uint3 reg_end = min(grid.grid_size, grid.get_cell_id(inflated_bbox.max_pos) + uint3(1,1,1));
       unsigned reg_size = (reg_end.x-reg_st.x)*(reg_end.y-reg_st.y)*(reg_end.z-reg_st.z);
 
       //if (verbose)

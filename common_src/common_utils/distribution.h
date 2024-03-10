@@ -74,7 +74,7 @@ double urand(double from = 0.0, double to = 1.0);
 double urandi(int from = 0, int to = 1);
 double srand(uint64_t seed, uint64_t &x, uint64_t&w, double from = 0.0, double to = 1.0);
 double srandi(uint64_t seed, uint64_t &x, uint64_t&w, int from = 0, int to = 1);
-glm::vec3 rand_dir();
+float3 rand_dir();
 
 template<class BidiIter >
 BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random) 

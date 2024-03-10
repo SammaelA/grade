@@ -30,7 +30,7 @@ void ImpostorHashClusteringHelper2::branch_conversion_flush(Block &settings, Clu
     TextureAtlas atl = TextureAtlas(isimParams.impostor_similarity_slices * isimParams.impostor_texture_size,
                                     isimParams.impostor_texture_size, 1);
     atl.set_grid(isimParams.impostor_texture_size, isimParams.impostor_texture_size);
-    atl.set_clear_color(glm::vec4(0, 0, 0, 0));
+    atl.set_clear_color(float4(0, 0, 0, 0));
     std::vector<Impostor> imp_iters;
 
     for (int br_n = 0; br_n < b_count; br_n++)
@@ -54,7 +54,7 @@ void ImpostorHashClusteringHelper2::branch_conversion_flush(Block &settings, Clu
     {
         debug("warning: impostor_hash_size = %d is not a divider of impostor size = %d", hash_size, (int)(isimParams.impostor_texture_size));
     }
-    glm::vec2 averige_sizes = glm::vec2(0,0);
+    float2 averige_sizes = float2(0,0);
     for (int i=0;i<b_count;i++)
     {
         averige_sizes.x += res_branches[i]->sizes.x;

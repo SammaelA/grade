@@ -13,18 +13,18 @@ public:
     void create(AABB _box);
     ~Octree(){clear();}
 
-    void insert(glm::vec3 &pos) {root.insert(pos);}
+    void insert(float3 &pos) {root.insert(pos);}
     void clear() {root.clear();}
-    void insert_vector(std::vector<glm::vec3> &positions);
-    void apply_to_neighbours_AABB(AABB &_box, std::function<void(glm::vec3 &)> func)
+    void insert_vector(std::vector<float3> &positions);
+    void apply_to_neighbours_AABB(AABB &_box, std::function<void(float3 &)> func)
     {
         root.apply_to_neighbours_AABB(_box, func);
     }
-    void apply_to_neighbours_sphere(AABB &_box, float r, glm::vec3 &center, std::function<void(glm::vec3 &)> func)
+    void apply_to_neighbours_sphere(AABB &_box, float r, float3 &center, std::function<void(float3 &)> func)
     {
         root.apply_to_neighbours_sphere(_box, r, center, func);
     }
-    void remove_in_sphere(AABB &_box, float r, glm::vec3 &center)
+    void remove_in_sphere(AABB &_box, float r, float3 &center)
     {
         root.remove_in_sphere(_box, r, center);
     }
@@ -33,7 +33,7 @@ private:
     struct Node
     {
         AABB box;
-        std::list<glm::vec3> points;
+        std::list<float3> points;
         Node *child_nodes[8];
         Node(AABB _box): box(_box) {for (int i=0;i<8;i++) child_nodes[i] = nullptr;}
         ~Node();
@@ -41,10 +41,10 @@ private:
         void clear();
         void subdivide_median();
         void subdivide_half();
-        bool insert(glm::vec3 &pos);
-        void apply_to_neighbours_AABB(AABB &_box, std::function<void(glm::vec3 &)> func);
-        void apply_to_neighbours_sphere(AABB &_box, float r, glm::vec3 &center, std::function<void(glm::vec3 &)> func);
-        void remove_in_sphere(AABB &_box, float r, glm::vec3 &center);
+        bool insert(float3 &pos);
+        void apply_to_neighbours_AABB(AABB &_box, std::function<void(float3 &)> func);
+        void apply_to_neighbours_sphere(AABB &_box, float r, float3 &center, std::function<void(float3 &)> func);
+        void remove_in_sphere(AABB &_box, float r, float3 &center);
     };
 
     static Node *new_node(AABB &_box);

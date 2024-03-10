@@ -82,11 +82,11 @@ public:
   void  uniform(std::string name, const double u){ //GLSL Intrinsically Single Precision
   glUniform1f(glGetUniformLocation(program, name.c_str()), (float)u); }
 
-  void  uniform(std::string name, const glm::vec2 u){
-  glUniform2fv(glGetUniformLocation(program, name.c_str()), 1, &u[0]); }
+  void  uniform(std::string name, const float2 u){
+  glUniform2fv(glGetUniformLocation(program, name.c_str()), 1, &u.M[0]); }
 
-  void  uniform(std::string name, const glm::vec3 u){
-  glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, &u[0]); }
+  void  uniform(std::string name, const float3 u){
+  glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, &u.M[0]); }
 
   void  uniform(std::string name, const float (&u)[3]){
   glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, &u[0]); }
@@ -94,15 +94,15 @@ public:
   void  uniform(std::string name, const float (&u)[4]){
   glUniform4fv(glGetUniformLocation(program, name.c_str()), 1, &u[0]); }
 
-  void  uniform(std::string name, const glm::vec4 u){
-  glUniform4fv(glGetUniformLocation(program, name.c_str()), 1, &u[0]); }
+  void  uniform(std::string name, const float4 u){
+  glUniform4fv(glGetUniformLocation(program, name.c_str()), 1, &u.M[0]); }
 
-  void  uniform(std::string name, const glm::mat3 u){
-  glUniformMatrix3fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, &u[0][0]); }
+ // void  uniform(std::string name, const float3x3 u){
+ // glUniformMatrix3fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, (float&u.row[0]); }
 
-  void  uniform(std::string name, const glm::mat4 u){
-  glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, &u[0][0]); }
+  void  uniform(std::string name, const float4x4 u){
+  glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, (float*)(&u.m_col[0])); }
 
-  void  uniform(std::string name, const std::vector<glm::mat4> u){
-  glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), u.size(), GL_FALSE, &u[0][0][0]); }
+  void  uniform(std::string name, const std::vector<float4x4> u){
+  glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), u.size(), GL_FALSE, (float*)(&u[0].m_col[0])); }
 };

@@ -141,8 +141,8 @@ namespace upg
 
   SceneDesc scene_bubbles(int cnt_x, int cnt_z)
   {
-    glm::vec3 p0(-2,1.2, 0.6);
-    glm::vec3 p1(1, 1, -0.6);
+    float3 p0(-2,1.2, 0.6);
+    float3 p1(1, 1, -0.6);
     
     float base_r = std::min(abs(p1.x-p0.x)/(cnt_x+1), abs(p1.z-p0.z)/(cnt_z+1));
 
@@ -153,7 +153,7 @@ namespace upg
     {
       for (int j=0;j<cnt_x;j++)
       {
-        glm::vec3 p = glm::vec3(p0.x + (j+1+urand(-0.5,0.5))*(p1.x-p0.x)/(cnt_x+1), 
+        float3 p = float3(p0.x + (j+1+urand(-0.5,0.5))*(p1.x-p0.x)/(cnt_x+1), 
                                 p1.y,
                                 p0.z + (i+1+urand(-0.5,0.5))*(p1.z-p0.z)/(cnt_z+1));
         float rnd = urand(0.5,1);
@@ -332,7 +332,7 @@ namespace upg
     SceneDesc scene = scene_4_boxes();
     ProceduralSdf sdf(scene.first);
     sdf.set_parameters(scene.second.p);
-    std::vector<glm::vec3> positions;
+    std::vector<float3> positions;
     std::vector<float> distances;
     sdf_to_point_cloud_with_dist(sdf, count, &positions, &distances);
     AABB bbox = sdf.root->get_bbox();
@@ -349,9 +349,9 @@ namespace upg
     network.train(positions_f, distances, 512, 5000);
   
     CameraSettings camera;
-    camera.origin = glm::vec3(0,0,3);
-    camera.target = glm::vec3(0,0,0);
-    camera.up = glm::vec3(0,1,0);
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
 
     Texture t = render_neural_sdf(network, bbox, camera, 256, 256, 9, true);
     engine::textureManager->save_png(t, "NN demo");
@@ -398,9 +398,9 @@ namespace upg
     std::vector<float> labels(2*models_count, 0.0f);
 
     CameraSettings camera;
-    camera.origin = glm::vec3(0,0,3);
-    camera.target = glm::vec3(0,0,0);
-    camera.up = glm::vec3(0,1,0);
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
 
     #pragma omp parallel for
     for (int mod=0;mod<models_count;mod++)
@@ -465,7 +465,7 @@ namespace upg
             voxels[mod*vox_size*vox_size*vox_size + i*vox_size*vox_size + j*vox_size + k] = 0;
             for (int s=0;s<samples;s++)
             {
-              glm::vec3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
+              float3 p = {(k+urand())/vox_size, (j+urand())/vox_size, (i+urand())/vox_size};
               p = 2.0f*p - 1.0f;
               float d = sdf.get_distance(p);
               if (d > 2.0/vox_size)
@@ -546,9 +546,9 @@ namespace upg
       float phi = urand(0, 2*PI);
       float psi = urand(-PI/2, PI/2);
       float d = 4;
-      cameras[i].origin = glm::vec3(d*cos(phi)*cos(psi), d*sin(psi), d*sin(phi)*cos(psi));
-      cameras[i].target = glm::vec3(0,0,0);
-      cameras[i].up = glm::vec3(-d*cos(phi)*sin(psi), d*cos(psi), -d*sin(phi)*sin(psi));
+      cameras[i].origin = float3(d*cos(phi)*cos(psi), d*sin(psi), d*sin(phi)*cos(psi));
+      cameras[i].target = float3(0,0,0);
+      cameras[i].up = float3(-d*cos(phi)*sin(psi), d*cos(psi), -d*sin(phi)*sin(psi));
       cameras[i].z_near = 1;
       cameras[i].z_far = 7;
       cameras[i].orthographic = true;
@@ -707,11 +707,11 @@ namespace upg
             float d = 0.0;
             for (int s=0;s<samples;s++)
             {
-              glm::vec3 p = {(k+0.5)/vox_size, (j+0.5)/vox_size, (i+0.5)/vox_size};
+              float3 p = {(k+0.5)/vox_size, (j+0.5)/vox_size, (i+0.5)/vox_size};
               p = bbox.size()*p + bbox.min_pos;
               d += sdf.get_distance(p);
             }
-            grid.set_voxel(glm::uvec3(k,j,i), d/samples);
+            grid.set_voxel(uint3(k,j,i), d/samples);
           }
         }
       }
@@ -743,7 +743,7 @@ namespace upg
           int x = i % vox_size;
           int y = i / vox_size % vox_size;
           int z = i / (vox_size*vox_size);
-          glm::vec3 p = {(x+urand())/vox_size, (y+urand())/vox_size, (z+urand())/vox_size};
+          float3 p = {(x+urand())/vox_size, (y+urand())/vox_size, (z+urand())/vox_size};
           p = bbox.size()*p + bbox.min_pos;
 
           std::fill_n(ddist_dp.begin(), ddist_dp.size(), 0.0);
@@ -776,9 +776,9 @@ namespace upg
     for (int i=0;i<steps;i++)
     {
       CameraSettings camera;
-      camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(g_sdf, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "dataset_image_grid_"+std::to_string(i));
     }
@@ -794,7 +794,7 @@ namespace upg
       {
         for (int k = 0; k < vox_size; k++)
         {
-          glm::vec3 p = {(k + 0.5) / vox_size, (j + 0.5) / vox_size, (i + 0.5) / vox_size};
+          float3 p = {(k + 0.5) / vox_size, (j + 0.5) / vox_size, (i + 0.5) / vox_size};
           p = bbox.size() * p + bbox.min_pos;
           float d = sdf.get_distance(p);
           grid[offset] = d;
@@ -811,8 +811,8 @@ namespace upg
     reference_sdf.set_parameters(scene.second.p);
     AABB bbox = reference_sdf.get_bbox();
     float max_s = 0.5f*MAX(bbox.size().x, MAX(bbox.size().y, bbox.size().z));
-    glm::vec3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
-    bbox = AABB(bbox_center - glm::vec3(max_s), bbox_center + glm::vec3(max_s)).expand(1.1f);
+    float3 bbox_center = 0.5f*(bbox.min_pos + bbox.max_pos);
+    bbox = AABB(bbox_center - float3(max_s), bbox_center + float3(max_s)).expand(1.1f);
     bbox = AABB({-1,-1,-1},{1,1,1});
 
     std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64, SdfNodeType::GRID_128};
@@ -822,7 +822,7 @@ namespace upg
                                       0,0.0,0, 0.5,0.07,0.5, 0,0.45,-0.45, 0.5,0.45,0.07,
                                       0.4,-0.3,0.4, 0.3,0.07,  -0.4,-0.3,0.4, 0.3,0.07,  
                                       0.4,-0.3,-0.4, 0.3,0.07,  -0.4,-0.3,-0.4, 0.3,0.07};
-    std::vector<glm::vec3> moves = {glm::vec3(-3,0,0), glm::vec3(-1.5,0,0), glm::vec3(0,0,0), glm::vec3(1.5,0,0)};
+    std::vector<float3> moves = {float3(-3,0,0), float3(-1.5,0,0), float3(0,0,0), float3(1.5,0,0)};
 
     for (int i=0;i<grid_types.size();i++)
     {
@@ -849,9 +849,9 @@ namespace upg
     for (int i=0;i<steps;i++)
     {
       CameraSettings camera;
-      camera.origin = glm::vec3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
-      camera.target = glm::vec3(0,0,0);
-      camera.up = glm::vec3(0,1,0);
+      camera.origin = float3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 2048, 2048, 9, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "Grid SDFs demo "+std::to_string(i));
     }
@@ -873,9 +873,9 @@ namespace upg
     scenes["Extrusion"] = scene_extrusion();
 
     CameraSettings camera;
-    camera.origin = glm::vec3(0,0,3);
-    camera.target = glm::vec3(0,0,0);
-    camera.up = glm::vec3(0,1,0);
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
 
     std::chrono::steady_clock::time_point t1, t2;
 
@@ -910,9 +910,9 @@ namespace upg
     load_sdf_scene(scene, "saves/test_scene.bin");
 
     CameraSettings camera;
-    camera.origin = glm::vec3(0,0,3);
-    camera.target = glm::vec3(0,0,0);
-    camera.up = glm::vec3(0,1,0);
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
 
     std::chrono::steady_clock::time_point t1, t2;
 
@@ -955,9 +955,9 @@ namespace upg
       for (int i=0;i<steps;i++)
       {
         CameraSettings camera;
-        camera.origin = glm::vec3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-        camera.target = glm::vec3(0,0,0);
-        camera.up = glm::vec3(0,1,0);
+        camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+        camera.target = float3(0,0,0);
+        camera.up = float3(0,1,0);
         Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
         engine::textureManager->save_png(t, "reconstructed_image_grid_"+std::to_string(i));
       }

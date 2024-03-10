@@ -33,11 +33,11 @@ namespace compare_utils
     return psnr;
   }
 
-  float loss_silhouette_psnr(const std::string &img1, const std::string &img2, glm::vec3 background_color)
+  float loss_silhouette_psnr(const std::string &img1, const std::string &img2, float3 background_color)
   {
-    unsigned char r0 = 255*background_color.r;
-    unsigned char g0 = 255*background_color.g;
-    unsigned char b0 = 255*background_color.b;
+    unsigned char r0 = 255*background_color.x;
+    unsigned char g0 = 255*background_color.y;
+    unsigned char b0 = 255*background_color.z;
 
     int w1=0,h1=0,c1=0;
     auto *t1 = stbi_load(img1.c_str(),&w1,&h1,&c1,0);
@@ -68,11 +68,11 @@ namespace compare_utils
     stbi_image_free(t2);
     return psnr;
   }
-  float loss_silhouette_iou(const std::string &img1, const std::string &img2, glm::vec3 background_color)
+  float loss_silhouette_iou(const std::string &img1, const std::string &img2, float3 background_color)
   {
-    unsigned char r0 = 255*background_color.r;
-    unsigned char g0 = 255*background_color.g;
-    unsigned char b0 = 255*background_color.b;
+    unsigned char r0 = 255*background_color.x;
+    unsigned char g0 = 255*background_color.y;
+    unsigned char b0 = 255*background_color.z;
 
     int w1=0,h1=0,c1=0;
     auto *t1 = stbi_load(img1.c_str(),&w1,&h1,&c1,0);
@@ -111,8 +111,8 @@ namespace compare_utils
       std::string img2(path);
 
       l1 += loss_psnr(img1, img2) / image_count;
-      l2 += loss_silhouette_psnr(img1, img2, glm::vec3(1,1,1)) / image_count;
-      l3 += loss_silhouette_iou(img1, img2, glm::vec3(1,1,1)) / image_count;
+      l2 += loss_silhouette_psnr(img1, img2, float3(1,1,1)) / image_count;
+      l3 += loss_silhouette_iou(img1, img2, float3(1,1,1)) / image_count;
     }
     printf("Turntable Loss for %d images\n", image_count);
     printf("Textured PSNR = %.2f\n", l1);

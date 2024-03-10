@@ -6,7 +6,7 @@ namespace ps_utils
     {
         AbstractTreeGenerator *gen = get_generator(type->generator_name);
         voxels.fill(0);
-        gen->plant_tree(glm::vec3(0, 0, 0), type);
+        gen->plant_tree(float3(0, 0, 0), type);
         while (gen->iterate(voxels))
         {
         }

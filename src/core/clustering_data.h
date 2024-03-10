@@ -7,7 +7,7 @@
 
 struct BaseBranchClusteringData
 {
-    glm::mat4 transform = glm::mat4(1.0f);
+    float4x4 transform = float4x4();
     float r_transform = 1;
     bool can_be_center = true;
 };
@@ -19,10 +19,10 @@ struct BranchClusteringData
     int base_cluster_id;
     int id;  
     unsigned short tree_type;
-    glm::mat4 transform;
+    float4x4 transform;
     float r_transform;
     bool can_be_center;
-    glm::vec3 sizes;
+    float3 sizes;
     virtual void clear() {};
     virtual ~BranchClusteringData() {clear();}
     void set_base(BaseBranchClusteringData &base)

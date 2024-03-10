@@ -91,27 +91,27 @@ void Branch::deep_copy(const Branch *b, BranchHeap &heap, LeafHeap *leaf_heap)
         joints.push_back(nj);
     }
 }
-void Branch::transform(glm::mat4 &trans_matrix, float r_transform)
+void Branch::transform(float4x4 &trans_matrix, float r_transform)
 {
     plane_coef.w = 0;
-    plane_coef = glm::normalize(trans_matrix * plane_coef);
-    plane_coef.w = -dot(glm::vec3(plane_coef),joints.front().pos);
+    plane_coef = normalize(trans_matrix * plane_coef);
+    plane_coef.w = -dot(to_float3(plane_coef),joints.front().pos);
     for (Segment &s : segments)
     {
-        s.begin = trans_matrix * glm::vec4(s.begin, 1.0f);
-        s.end = trans_matrix * glm::vec4(s.end, 1.0f);
+        s.begin = to_float3(trans_matrix * to_float4(s.begin, 1.0f));
+        s.end = to_float3(trans_matrix * to_float4(s.end, 1.0f));
         s.rel_r_begin = r_transform * s.rel_r_begin;
         s.rel_r_end = r_transform * s.rel_r_end;
     }
     for (Joint &j : joints)
     {
-        j.pos = trans_matrix * glm::vec4(j.pos, 1.0f);
+        j.pos = to_float3(trans_matrix * to_float4(j.pos, 1.0f));
         if (j.leaf)
         {
-            j.leaf->pos = trans_matrix * glm::vec4(j.leaf->pos, 1.0f);
-            for (glm::vec3 &vec : j.leaf->edges)
+            j.leaf->pos = to_float3(trans_matrix * to_float4(j.leaf->pos, 1.0f));
+            for (float3 &vec : j.leaf->edges)
             {
-                vec = trans_matrix * glm::vec4(vec, 1.0f);
+                vec = to_float3(trans_matrix * to_float4(vec, 1.0f));
             }
         }
         for (Branch *br : j.childBranches)

@@ -110,11 +110,11 @@ struct Node
 {
     int camera = -1;
     std::vector<int> child_nodes;
-    glm::mat4 transform = glm::mat4(1.0f);
+    float4x4 transform = float4x4();
     int mesh = -1;
-    glm::vec4 rotation = glm::vec4(0,0,0,1);
-    glm::vec3 scale = glm::vec3(0.1,0.1,0.1);
-    glm::vec3 translation = glm::vec3(0,0,0);
+    float4 rotation = float4(0,0,0,1);
+    float3 scale = float3(0.1,0.1,0.1);
+    float3 translation = float3(0,0,0);
 };
 struct Primitive
 {
@@ -182,7 +182,7 @@ struct TextureUsage
 };
 struct Material
 {
-    glm::vec3 emissive_factor = glm::vec3(0,0,0);
+    float3 emissive_factor = float3(0,0,0);
     float alpha_cutoff = 0.5;
     bool double_sided = false;
     materialAlphaMode alpha_mode = materialAlphaMode::MASK;

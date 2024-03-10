@@ -20,10 +20,10 @@ namespace upg
       m->normals.resize(mesh.pos.size());
       for (int i=0;i<mesh.pos.size(); i+=9)
       {
-        glm::vec3 p1(mesh.pos[i], mesh.pos[i+1], mesh.pos[i+2]);
-        glm::vec3 p2(mesh.pos[i+3], mesh.pos[i+4], mesh.pos[i+5]);
-        glm::vec3 p3(mesh.pos[i+6], mesh.pos[i+7], mesh.pos[i+8]);
-        glm::vec3 n = glm::normalize(glm::cross(p2 - p1, p3 - p1));
+        float3 p1(mesh.pos[i], mesh.pos[i+1], mesh.pos[i+2]);
+        float3 p2(mesh.pos[i+3], mesh.pos[i+4], mesh.pos[i+5]);
+        float3 p3(mesh.pos[i+6], mesh.pos[i+7], mesh.pos[i+8]);
+        float3 n = normalize(cross(p2 - p1, p3 - p1));
         for (int j=0;j<3;j++)
         {
           m->normals[i+3*j] = n.x;

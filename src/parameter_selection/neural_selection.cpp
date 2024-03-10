@@ -64,7 +64,7 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingPar
         int step = ceil(params.size() / (float)num_threads);
         LightVoxelsCube **thr_voxels = new LightVoxelsCube *[num_threads];
         bool voxels_needed = false;
-        glm::vec3 max_size = glm::vec3(100,100,100);
+        float3 max_size = float3(100,100,100);
         float min_base_size = 1000;
         for (auto &t : types)
         {
@@ -78,9 +78,9 @@ void NeuralEstimator::prepare_dataset(ParameterList &param_list, GrovePackingPar
         for (int i = 0; i < num_threads; i++)
         {
             if (voxels_needed)
-                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0), max_size, min_base_size);
+                thr_voxels[i] = new LightVoxelsCube(float3(0,0,0), max_size, min_base_size);
             else
-                thr_voxels[i] = new LightVoxelsCube(glm::vec3(0,0,0),glm::ivec3(1,1,1), 1.0f);
+                thr_voxels[i] = new LightVoxelsCube(float3(0,0,0),int3(1,1,1), 1.0f);
         }
         std::vector<std::thread> threads;
         for (int i = 0; i < num_threads; i++)

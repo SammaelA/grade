@@ -1,7 +1,7 @@
 #include "ambient_occlusion.h"
-static glm::vec2 calcFocalLen(float fovRad, float width, float height)
+static float2 calcFocalLen(float fovRad, float width, float height)
 {
-    glm::vec2 res;
+    float2 res;
     res.x = 1.f/tanf(0.5 * fovRad)*(height/width);
     res.y = 1.f/tanf(0.5 * fovRad);
     return res;

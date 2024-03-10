@@ -11,7 +11,7 @@ class AbstractTreeGenerator
 public:
     virtual ~AbstractTreeGenerator() {};
     virtual bool iterate(LightVoxelsCube &voxels) { return false;};//return true if everything is finished
-    virtual void plant_tree(glm::vec3 pos, const TreeTypeData *type) = 0;
+    virtual void plant_tree(float3 pos, const TreeTypeData *type) = 0;
     virtual void finalize_generation(::Tree *trees_external, LightVoxelsCube &voxels) = 0;
     virtual bool use_voxels_for_generation() {return false;}
     virtual void set_seed(int seed) {};

@@ -136,7 +136,7 @@ void View::quit()
   SDL_Quit();
 }
 
-void View::target(glm::vec3 clearcolor)
+void View::target(float3 clearcolor)
 {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, WIDTH, HEIGHT);

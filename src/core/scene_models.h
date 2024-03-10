@@ -5,10 +5,10 @@
 
 struct VertexData
 {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec3 tangent;
-    glm::vec2 tex_coord;
+    float3 pos;
+    float3 normal;
+    float3 tangent;
+    float2 tex_coord;
 };
 struct SegmentVertexes
 {

@@ -3,29 +3,29 @@
 class Body
 {
 public:
-    Body(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c);
+    Body(float3 _pos, float3 _a, float3 _b, float3 _c);
     virtual ~Body() {}
-    virtual bool in_body(glm::vec3 pos) = 0;
+    virtual bool in_body(float3 pos) = 0;
     BBox get_Bbox() {return bbox;}
-    glm::vec3 pos,a,b,c;
-    glm::mat4 transform;
+    float3 pos,a,b,c;
+    float4x4 transform;
     BBox bbox;
 };
 class Box: public Body
 {
 public:
-    Box(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c);
-    bool in_body(glm::vec3 pos);
+    Box(float3 _pos, float3 _a, float3 _b, float3 _c);
+    bool in_body(float3 pos);
 };
 class Ellipsoid: public Body
 {
 public:
-    Ellipsoid(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c);
-    bool in_body(glm::vec3 pos);
+    Ellipsoid(float3 _pos, float3 _a, float3 _b, float3 _c);
+    bool in_body(float3 pos);
 };
 class Cylinder: public Body
 {
 public:
-    Cylinder(glm::vec3 _pos, glm::vec3 _a, glm::vec3 _b, glm::vec3 _c);
-    bool in_body(glm::vec3 pos);
+    Cylinder(float3 _pos, float3 _a, float3 _b, float3 _c);
+    bool in_body(float3 pos);
 };

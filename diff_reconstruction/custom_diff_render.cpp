@@ -228,17 +228,17 @@ public:
 
     //TODO fix me. The same strange transform applied in Mitsuba!
     float tr_z = scene_params[2] * tan(0.5*0.25) / tan(0.5*cameras[0].fov_rad);
-    glm::mat4 transform = LiteMath::translate(glm::mat4(1.0f),glm::vec3(scene_params[0], scene_params[1], tr_z))*
-                          LiteMath::rotate(glm::mat4(1.0f), scene_params[5], glm::vec3(0,0,1))*
-                          LiteMath::rotate(glm::mat4(1.0f), scene_params[4], glm::vec3(0,1,0))*
-                          LiteMath::rotate(glm::mat4(1.0f), scene_params[3], glm::vec3(1,0,0));
+    float4x4 transform = LiteMath::translate(float4x4(),float3(scene_params[0], scene_params[1], tr_z))*
+                          LiteMath::rotate(float4x4(), scene_params[5], float3(0,0,1))*
+                          LiteMath::rotate(float4x4(), scene_params[4], float3(0,1,0))*
+                          LiteMath::rotate(float4x4(), scene_params[3], float3(1,0,0));
     float total_res = 0;
 
     for (int i=0;i<cameras.size();i++)
     {
       //render model silhouette
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glm::mat4 viewProj = cameras[i].get_viewProj();
+      float4x4 viewProj = cameras[i].get_viewProj();
       render_silhouette.use();
       render_silhouette.uniform("viewProj", viewProj);
       m.render();
@@ -247,7 +247,7 @@ public:
       glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2.texture, 0);
       diff_loss.use();
-      diff_loss.get_shader().uniform("tex_size", glm::vec2(tex_w, tex_h));
+      diff_loss.get_shader().uniform("tex_size", float2(tex_w, tex_h));
       diff_loss.get_shader().texture("tex", tex1);
       diff_loss.get_shader().texture("tex_reference", reference_textures[i]);
       diff_loss.render();
@@ -265,7 +265,7 @@ public:
       //calculate MSE per tile
       glMemoryBarrier(GL_ALL_BARRIER_BITS);
       diff_loss_sum.use();
-      diff_loss_sum.uniform("tex_size", glm::vec2(tex_w, tex_h));
+      diff_loss_sum.uniform("tex_size", float2(tex_w, tex_h));
       diff_loss_sum.texture("tex_diff", tex2);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, results_buf);
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*NUM_TILES*NUM_TILES, nullptr, GL_STREAM_READ);

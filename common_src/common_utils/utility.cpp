@@ -20,31 +20,31 @@ void debugnl()
 {
     debug("\n");
 }
-void debug(const char *__restrict __fmt, glm::vec2 vec)
+void debug(const char *__restrict __fmt, float2 vec)
 {
     debug("[%f %f] %s",vec.x,vec.y,__fmt);
 }
-void debugl(uint level, const char *__restrict __fmt, glm::vec2 vec)
+void debugl(uint level, const char *__restrict __fmt, float2 vec)
 {
     if (level && debug_level != level)
         return;
     debug(__fmt, vec);
 }
-void debug(const char *__restrict __fmt, glm::vec3 vec)
+void debug(const char *__restrict __fmt, float3 vec)
 {
     debug("[%f %f %f] %s",vec.x,vec.y,vec.z, __fmt);
 }
-void debugl(uint level, const char *__restrict __fmt, glm::vec3 vec)
+void debugl(uint level, const char *__restrict __fmt, float3 vec)
 {
     if (level && debug_level != level)
         return;
     debug(__fmt, vec);
 }
-void debug(const char *__restrict __fmt, glm::vec4 vec)
+void debug(const char *__restrict __fmt, float4 vec)
 {
     debug("[%f %f %f %f] %s",vec.x,vec.y,vec.z,vec.w, __fmt);
 }
-void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec)
+void debugl(uint level, const char *__restrict __fmt, float4 vec)
 {
     if (level && debug_level != level)
         return;
@@ -260,7 +260,7 @@ bool prepare_directory(const std::string &save_path)
 }
 float smoothstep3(float x) { return -2*x*x*x + 3*x*x; }
 float smoothstep5(float x) { return 6*x*x*x*x*x - 15*x*x*x*x + 10*x*x*x; }
-std::string print_mat4x4(glm::mat4 mat)
+std::string print_mat4x4(float4x4 mat)
 {
   std::string res = "[";
   for (int i=0;i<4;i++)
@@ -268,9 +268,9 @@ std::string print_mat4x4(glm::mat4 mat)
     res +="[";
     for (int j=0;j<4;j++)
     {
-      float x = mat[i][j];
+      float x = mat(j,i);
       if (x == x)
-        res += std::to_string(mat[i][j]);
+        res += std::to_string(mat(j,i));
       else 
         res += "NaN";
       if (j!=3)

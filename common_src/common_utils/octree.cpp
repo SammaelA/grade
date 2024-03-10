@@ -11,13 +11,13 @@ void Octree::delete_node(Node *n)
     if (n) delete n;
 }
 
-void Octree::insert_vector(std::vector<glm::vec3> &positions)
+void Octree::insert_vector(std::vector<float3> &positions)
 {
     for (auto &p : positions)
         root.insert(p);
 }
 
-Octree::Octree() : root(AABB(glm::vec3(0,0,0),glm::vec3(0,0,0))) {};
+Octree::Octree() : root(AABB(float3(0,0,0),float3(0,0,0))) {};
 Octree::Octree(AABB _box) : root(_box) {};
 void Octree::create(AABB _box)
 {
@@ -25,7 +25,7 @@ void Octree::create(AABB _box)
     root.box = _box;
 }
 
-bool Octree::Node::insert(glm::vec3 &pos)
+bool Octree::Node::insert(float3 &pos)
 {
     //logerr("insert (%f %f %f) in [%f %f %f]-[%f %f %f]", pos.x, pos.y, pos.z,
     //       box.min_pos.x,box.min_pos.y,box.min_pos.z,
@@ -75,8 +75,8 @@ void Octree::Node::subdivide_half()
         {
             for (int z = 0;z<=1;z++)
             {
-                glm::vec3 sizes = box.max_pos - box.min_pos;
-                glm::vec3 new_min = box.min_pos + glm::vec3(x*0.5f*sizes.x, y*0.5f*sizes.y, z*0.5f*sizes.z);
+                float3 sizes = box.max_pos - box.min_pos;
+                float3 new_min = box.min_pos + float3(x*0.5f*sizes.x, y*0.5f*sizes.y, z*0.5f*sizes.z);
                 AABB _box(new_min, new_min + 0.5f*sizes);
                 child_nodes[GetN(x,y,z)] = Octree::new_node(_box);
             }
@@ -93,7 +93,7 @@ void Octree::Node::subdivide_half()
     }
     points = {};
 }
-void Octree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(glm::vec3 &)> func)
+void Octree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(float3 &)> func)
 {
     if (!box.intersects(_box))
         return;
@@ -110,8 +110,8 @@ void Octree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(glm::
             func(p);
     }
 }
-void Octree::Node::apply_to_neighbours_sphere(AABB &_box, float r, glm::vec3 &center, 
-                                              std::function<void(glm::vec3 &)> func)
+void Octree::Node::apply_to_neighbours_sphere(AABB &_box, float r, float3 &center, 
+                                              std::function<void(float3 &)> func)
 {
     if (!box.intersects(_box))
         return;
@@ -130,12 +130,12 @@ void Octree::Node::apply_to_neighbours_sphere(AABB &_box, float r, glm::vec3 &ce
         float r_sq = r*r;
         for (auto &p : points)
         {
-            if (glm::dot(p - center, p - center) <= r_sq)
+            if (dot(p - center, p - center) <= r_sq)
                 func(p);
         }
     }
 }
-void Octree::Node::remove_in_sphere(AABB &_box, float r, glm::vec3 &center)
+void Octree::Node::remove_in_sphere(AABB &_box, float r, float3 &center)
 {
     if (!box.intersects(_box))
         return;
@@ -152,7 +152,7 @@ void Octree::Node::remove_in_sphere(AABB &_box, float r, glm::vec3 &center)
         auto it = points.begin();
         while (it != points.end())
         {
-            if (glm::dot(*it - center, *it - center) <= r_sq)
+            if (dot(*it - center, *it - center) <= r_sq)
                 it = points.erase(it);
             else 
                 it++;

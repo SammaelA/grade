@@ -44,43 +44,43 @@ struct GETreeParameters : public ParameterSet
     float leaves_angle_a = 0.3;
     float leaves_angle_b = 0.4;
     int root_type = 1;
-    glm::vec4 tropism_params = glm::vec4(1,1,1.0/15,1.5);
-    glm::vec2 tropism_min_max = glm::vec2(-5,5);
+    float4 tropism_params = float4(1,1,1.0/15,1.5);
+    float2 tropism_min_max = float2(-5,5);
     float branching_tropims_mult = 0.67;
     int tropism_level_base = 0;
     float res_decrease_step = 0.09;
     float res_decrease_min = 0.03;
-    glm::vec2 initial_trunk_scale = glm::vec2(1,1);//horizontal, vertical scale
+    float2 initial_trunk_scale = float2(1,1);//horizontal, vertical scale
     float trunk_bonus_radius = 0.1;
     float trunk_bonus_radius_mod = 1;
-    glm::vec2 distance_fine_start = glm::vec2(1000,1000);
-    glm::vec2 distance_fine_slope = glm::vec2(1000,1000);
+    float2 distance_fine_start = float2(1000,1000);
+    float2 distance_fine_slope = float2(1000,1000);
 
     //Beta test
     float L0 = 30;
     float R0 = 4;
     int B_cnt = 8;
     float dX = 1;
-    glm::vec4 iR = glm::vec4(0.67, 0.67, 0.67, 0.67);
-    glm::vec4 dR = glm::vec4(0.85, 0.85, 0.85, 0.85);
-    glm::vec4 Lt = glm::vec4(1,3,5,7);
-    glm::vec4 Lb = glm::vec4(5,10,15,20);
-    glm::vec4 phi = glm::vec4(0.0,0.5,1,1.5);// phi/(2*PI)
-    glm::vec4 psi = glm::vec4(0.1,0.3,0.5,0.7);//psi /(PI/2)
+    float4 iR = float4(0.67, 0.67, 0.67, 0.67);
+    float4 dR = float4(0.85, 0.85, 0.85, 0.85);
+    float4 Lt = float4(1,3,5,7);
+    float4 Lb = float4(5,10,15,20);
+    float4 phi = float4(0.0,0.5,1,1.5);// phi/(2*PI)
+    float4 psi = float4(0.1,0.3,0.5,0.7);//psi /(PI/2)
 
-    virtual glm::vec3 get_tree_max_size() override
+    virtual float3 get_tree_max_size() override
     {
         if (root_type == 0 || root_type == 2)
-            return ro*glm::vec3(1.5*Xm, Xm + 30, 1.5*Xm);
+            return ro*float3(1.5*Xm, Xm + 30, 1.5*Xm);
         else if (root_type == 1)
-            return ro*glm::vec3(0.6*Xm, 1.25*Xm + 0.4*Xm*initial_trunk_scale.y, 0.6*Xm);
+            return ro*float3(0.6*Xm, 1.25*Xm + 0.4*Xm*initial_trunk_scale.y, 0.6*Xm);
         else if (root_type == 3)
         {
             float max_y = MAX(0, L0) + B_cnt*MAX(MAX(Lt.x, Lt.y), MAX(Lt.z, Lt.w));
-            return ro*glm::vec3(0.6*Xm, 1.25*Xm + max_y*initial_trunk_scale.y, 0.6*Xm);
+            return ro*float3(0.6*Xm, 1.25*Xm + max_y*initial_trunk_scale.y, 0.6*Xm);
         }
         else 
-            return ro*glm::vec3(2.0f*Xm, 1.5f*Xm, 2.0f*Xm);
+            return ro*float3(2.0f*Xm, 1.5f*Xm, 2.0f*Xm);
     }
     virtual float get_scale_factor() override 
     {

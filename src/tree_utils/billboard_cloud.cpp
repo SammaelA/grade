@@ -9,7 +9,7 @@
 #include "tinyEngine/engine.h"
 #include "common_utils/distribution.h"
 
-using namespace glm;
+
 #define TEX_ATLAS_LAYERS 4
 BillboardCloudRaw::BillboardCloudRaw() :
 Countable(2),
@@ -74,7 +74,7 @@ bool BillboardCloudRaw::BPD_comp(BranchProjectionData &a, BranchProjectionData &
 {
     return a.projection_err > b.projection_err;
 }
-float BillboardCloudRaw::projection_error_rec(Branch *b, vec3 &n, float d)
+float BillboardCloudRaw::projection_error_rec(Branch *b, float3 &n, float d)
 {
     if (!b || b->joints.size() == 0)
         return 0;
@@ -116,17 +116,17 @@ void BillboardCloudRaw::create_billboard_model(const TreeTypeData &ttd, Branch *
         logerr("too many billboards = %d", billboard_count);
         return;
     }
-    mat4 transl = translate(mat4(1.0f), -1.0f * min_bbox.position);
-    mat4 SC = scale(mat4(1.0f), min_bbox.sizes);
-    mat4 SC_inv = inverse(SC);
-    mat4 rot_inv(vec4(min_bbox.a, 0), vec4(min_bbox.b, 0), vec4(min_bbox.c, 0), vec4(0, 0, 0, 1));
-    mat4 rot = inverse(rot_inv);
-    mat4 ort = ortho(-1, 1, -1, 1, 1, -1);
-    vec4 rb = transl * rot * vec4(branch->joints.front().pos,1);
-    mat4 tex_sh = scale(mat4(1), vec3(2, 2, 2));
-    mat4 tex_tr = translate(mat4(1), vec3(-1, -1, -1));
-    mat4 atlas_tr = atlas.tex_transform(num);
-    mat4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
+    float4x4 transl = translate(float4x4(), -1.0f * min_bbox.position);
+    float4x4 SC = scale(float4x4(), min_bbox.sizes);
+    float4x4 SC_inv = inverse4x4(SC);
+    float4x4 rot_inv = to_float4x4(to_float4(min_bbox.a, 0), to_float4(min_bbox.b, 0), to_float4(min_bbox.c, 0), float4(0, 0, 0, 1));
+    float4x4 rot = inverse4x4(rot_inv);
+    float4x4 ort = LiteMath::ortho(-1, 1, -1, 1, 1, -1);
+    float4 rb = transl * rot * to_float4(branch->joints.front().pos,1);
+    float4x4 tex_sh = scale(float4x4(), float3(2, 2, 2));
+    float4x4 tex_tr = translate(float4x4(), float3(-1, -1, -1));
+    float4x4 atlas_tr = atlas.tex_transform(num);
+    float4x4 result = ort * tex_tr * tex_sh * atlas_tr * SC_inv;
 
     int tex_count = params.normals_needed ? 1 : atlas.tex_count();
     for (int k = 0; k<tex_count;k++)
@@ -141,7 +141,7 @@ void BillboardCloudRaw::create_billboard_model(const TreeTypeData &ttd, Branch *
         rendererToTexture.uniform("state", params.monochrome ? -1 : k);
         rendererToTexture.uniform("projection_zero", rb.z);
         if (params.monochrome)
-            rendererToTexture.uniform("fixed_color",glm::vec4(1,0,0,1));
+            rendererToTexture.uniform("fixed_color",float4(1,0,0,1));
         br_m.render(GL_TRIANGLES);
         
         if (params.leaf_opacity > 0)
@@ -163,7 +163,7 @@ void BillboardCloudRaw::create_billboard_model(const TreeTypeData &ttd, Branch *
             rendererToTexture.uniform("projectionCamera", result);
             rendererToTexture.uniform("projection_zero", rb.z);
             if (params.monochrome)
-                rendererToTexture.uniform("fixed_color",glm::vec4(0,1,0,params.leaf_opacity));
+                rendererToTexture.uniform("fixed_color",float4(0,1,0,params.leaf_opacity));
             l_m.render(GL_TRIANGLES);
 
             glTexParameteri(leaf.type, GL_TEXTURE_BASE_LEVEL, 0);
@@ -192,11 +192,11 @@ void BillboardCloudRaw::create_billboard(const TreeTypeData &ttd, Branch *branch
 
     create_billboard(ttd, branch, min_bbox, num, bill, *atlas, bgp);
 }
-void center_of_mass(Branch *b,glm::vec3 &sum, double &mass)
+void center_of_mass(Branch *b,float3 &sum, double &mass)
 {
     for (Segment &s : b->segments)
     {
-        float v = glm::length(s.begin - s.end)*(s.rel_r_begin*s.rel_r_begin + s.rel_r_begin*s.rel_r_end + 
+        float v = length(s.begin - s.end)*(s.rel_r_begin*s.rel_r_begin + s.rel_r_begin*s.rel_r_end + 
                                                 s.rel_r_end*s.rel_r_end);
         sum += 0.5f*v*(s.begin + s.end);
         mass += v;
@@ -211,23 +211,23 @@ void center_of_mass(Branch *b,glm::vec3 &sum, double &mass)
 }
 BBox BillboardCloudRaw::get_minimal_bbox_fixed_dirs(Branch *branch)
 {
-    vec3 a(0, 0, 0);
-    vec3 b;
-    vec3 c;
+    float3 a(0, 0, 0);
+    float3 b;
+    float3 c;
     a = (branch->segments.back().end - branch->segments.front().begin);
     a = normalize(a); //average branch direction
     double sum = 1e-6;
-    vec3 v(0,0,0);
+    float3 v(0,0,0);
     center_of_mass(branch, v, sum);
     v = ((float)(1.0/sum))*v - branch->segments.front().begin;
 
     b = v - a*dot(a,v);
     if (dot(b,b) < 1e-6)
     {
-        if (abs(1 - dot(a,vec3(1,0,0))) > 1e-6)
-            b = vec3(1,0,0);
+        if (abs(1 - dot(a,float3(1,0,0))) > 1e-6)
+            b = float3(1,0,0);
         else
-            b = vec3(0,0,1); 
+            b = float3(0,0,1); 
     }
     b = normalize(b);
     c = cross(a, b);
@@ -237,9 +237,9 @@ BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
 {
     return get_minimal_bbox_fixed_dirs(branch);
     int iterations = 360;
-    vec3 a(0, 0, 0);
-    vec3 b;
-    vec3 c;
+    float3 a(0, 0, 0);
+    float3 b;
+    float3 c;
     a = (branch->segments.back().end - branch->segments.front().begin);
     a = normalize(a); //average branch direction
 
@@ -248,7 +248,7 @@ BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
     b.z = urand();
     b = normalize(b - a * dot(a, b));
     c = cross(a, b);
-    mat4 br = rotate(mat4(1.0), (float)(2 * PI / iterations), a);
+    float4x4 br = rotate(float4x4(), (float)(2 * PI / iterations), a);
     BBox min_bbox;
     float min_minside = 1e10;
     for (int i = 0; i < iterations; i++)
@@ -260,42 +260,42 @@ BBox BillboardCloudRaw::get_minimal_bbox(Branch *branch)
             min_bbox = box;
             min_minside = minside;
         }
-        b = vec3(br * vec4(b, 1));
+        b = to_float3(br * to_float4(b, 1));
         c = cross(a, b);
     }
     return min_bbox;
 }
-BBox BillboardCloudRaw::get_bbox(Branch *branch, glm::vec3 a, glm::vec3 b, glm::vec3 c)
+BBox BillboardCloudRaw::get_bbox(Branch *branch, float3 a, float3 b, float3 c)
 {
-    vec4 bias = vec4(1, 1, 1, 0);
-    mat4 rot_inv(vec4(a, 0), vec4(b, 0), vec4(c, 0), vec4(0, 0, 0, 1));
-    mat4 rot = inverse(rot_inv);
+    float4 bias = float4(1, 1, 1, 0);
+    float4x4 rot_inv = to_float4x4(to_float4(a, 0), to_float4(b, 0), to_float4(c, 0), float4(0, 0, 0, 1));
+    float4x4 rot = inverse4x4(rot_inv);
     //transform from model to bbox coordinates
-    vec4 mx(-1e10, -1e10, -1e10, 1);
-    vec4 mn(1e10, 1e10, 1e10, 1);
+    float4 mx(-1e10, -1e10, -1e10, 1);
+    float4 mn(1e10, 1e10, 1e10, 1);
     BBox box;
     update_bbox(branch, rot, mn, mx);
     mn -= bias;
     mx += bias;
-    box.sizes = vec3(mx - mn);
-    box.position = vec3(mn);
+    box.sizes = to_float3(mx - mn);
+    box.position = to_float3(mn);
     box.a = a;
     box.b = b;
     box.c = c;
     return box;
 }
-void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &mx)
+void BillboardCloudRaw::update_bbox(Branch *branch, float4x4 &rot, float4 &mn, float4 &mx)
 {
     for (Joint &j : branch->joints)
     {
-        vec4 pos = rot * vec4(j.pos, 1);
+        float4 pos = rot * to_float4(j.pos, 1);
         mn = min(mn, pos);
         mx = max(mx, pos);
         if (j.leaf)
         {
             for (auto &vert : j.leaf->edges)
             {
-                pos = rot * vec4(vert, 1);
+                pos = rot * to_float4(vert, 1);
                 mn = min(mn, pos);
                 mx = max(mx, pos);
             }
@@ -305,36 +305,36 @@ void BillboardCloudRaw::update_bbox(Branch *branch, mat4 &rot, vec4 &mn, vec4 &m
     }
 }
 
-std::vector<glm::vec3> Billboard::get_tc(const TextureAtlas &atlas)
+std::vector<float3> Billboard::get_tc(const TextureAtlas &atlas)
 {
     if (positions.size() == 4)
     {
-        std::vector<glm::vec3> tcs;
+        std::vector<float3> tcs;
         std::vector<float> tex_c{0,0, 1,0, 0,1, 1,1};
         for (int i = 0; i < 4; i++)
         {
-            tcs.push_back(vec3(tex_c[2 * i], tex_c[2 * i + 1],0));
+            tcs.push_back(float3(tex_c[2 * i], tex_c[2 * i + 1],0));
             atlas.process_tc(id, tcs.back());
         }
         return tcs;
     }
 
-    return std::vector<glm::vec3>{};
+    return std::vector<float3>{};
 }
 void Billboard::to_model(Model *m, const TextureAtlas &atlas)
 {
     if (positions.size() == 4)
     {
         int _b = m->positions.size() / 3;
-        glm::vec3 a = positions[0];
-        glm::vec3 b = positions[1];
-        glm::vec3 c = positions[2];
-        glm::vec3 n = glm::normalize(glm::cross(a - b, c - b));
+        float3 a = positions[0];
+        float3 b = positions[1];
+        float3 c = positions[2];
+        float3 n = normalize(cross(a - b, c - b));
         std::vector<float> tex_c{0, 0, 1, 0, 1, 1, 0, 1};
         for (int i = 0; i < 4; i++)
         {
-            glm::vec3 v = positions[i];
-            glm::vec3 tc = vec3(tex_c[2 * i], tex_c[2 * i + 1],0);
+            float3 v = positions[i];
+            float3 tc = float3(tex_c[2 * i], tex_c[2 * i + 1],0);
             atlas.process_tc(id, tc);
             m->positions.push_back(v.x);
             m->positions.push_back(v.y);
@@ -356,19 +356,19 @@ void Billboard::to_model(Model *m, const TextureAtlas &atlas)
         m->indices.push_back(_b + 3);
     }
 }
-Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3 base_joint, bool _instancing)
+Billboard::Billboard(const BBox &box, int id, int branch_id, int type, float3 base_joint, bool _instancing)
 {
     this->id = id;
     this->branch_id = branch_id;
     this->instancing = _instancing;
-    mat4 rot_inv(vec4(box.a, 0), vec4(box.b, 0), vec4(box.c, 0), vec4(0, 0, 0, 1));
-    mat4 rot = inverse(rot_inv);
-    vec3 base_joint_rel = vec3(rot * vec4(base_joint, 1.0f));
+    float4x4 rot_inv = to_float4x4(to_float4(box.a, 0), to_float4(box.b, 0), to_float4(box.c, 0), float4(0, 0, 0, 1));
+    float4x4 rot = inverse4x4(rot_inv);
+    float3 base_joint_rel = to_float3(rot * to_float4(base_joint, 1.0f));
     base_joint_rel -= box.position;
-    vec4 pos = rot_inv * vec4(box.position, 1.0f);
+    float4 pos = rot_inv * to_float4(box.position, 1.0f);
     if (type == 1 || type == 0)
     {
-        vec3 npos = vec3(pos.x, pos.y, pos.z);
+        float3 npos = float3(pos.x, pos.y, pos.z);
         if (type == 1)
             npos += base_joint_rel.z * box.c;
         positions.push_back(npos);
@@ -377,7 +377,7 @@ Billboard::Billboard(const BBox &box, int id, int branch_id, int type, glm::vec3
         positions.push_back(npos + box.sizes.y * box.b);
 
         float d = -dot(box.c, npos);
-        planeCoef = vec4(box.c.x, box.c.y, box.c.z, d);
+        planeCoef = float4(box.c.x, box.c.y, box.c.z, d);
     }
 }
 void BillboardCloudRaw::split_IDA_by_type(InstanceDataArrays &IDA, std::vector<InstanceDataArrays> &res)
@@ -689,7 +689,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
         if (branch.joints.empty())
             continue;
         BBox min_bbox = get_minimal_bbox(&branch);
-        vec3 base_joint = branch.joints.front().pos;
+        float3 base_joint = branch.joints.front().pos;
         billboard_boxes.push_back(BillboardBox(&branch, min_bbox, base_joint, -1));
     }
 
@@ -702,7 +702,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
         AtlasParams params = set_atlas_params(quality, billboard_boxes.size());
         atlas = new TextureAtlas(params.x,params.y,params.layers);
         atlas->set_grid(params.grid_x,params.grid_y);
-        atlas->set_clear_color(glm::vec4(0, 0, 0, 0));
+        atlas->set_clear_color(float4(0, 0, 0, 0));
         atlas->clear();
         logerr("new atlas %d",_atlas->is_valid() );
     }
@@ -717,9 +717,9 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
     int i = 0;
     for (auto &p : billboard_boxes)
     {
-        vec3 base_joint = p.b->joints.front().pos;
+        float3 base_joint = p.b->joints.front().pos;
         Billboard b(p.min_bbox, 0, 0, 1, base_joint);
-        vec3 plane_n = vec3(b.planeCoef.x, b.planeCoef.y, b.planeCoef.z);
+        float3 plane_n = float3(b.planeCoef.x, b.planeCoef.y, b.planeCoef.z);
         for (Joint &j : p.b->joints)
         {
             for (Branch *br : j.childBranches)
@@ -741,7 +741,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
         {
             proj.br->level = -1;
             BBox min_bbox = get_minimal_bbox(proj.br);
-            billboard_boxes.push_back(BillboardBox(proj.br, min_bbox, vec3(0, 0, 0), proj.parent_n));
+            billboard_boxes.push_back(BillboardBox(proj.br, min_bbox, float3(0, 0, 0), proj.parent_n));
         }
         else
         {
@@ -752,7 +752,7 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
     for (auto &p : billboard_boxes)
     {
         int num = atlas->add_tex();
-        vec3 base_joint = p.b->joints.front().pos;
+        float3 base_joint = p.b->joints.front().pos;
         Billboard b(p.min_bbox, num, p.b->mark_A, 1, base_joint);
         if (p.parent >= 0 && p.parent < billboards.size())
         {
@@ -760,8 +760,8 @@ void BillboardCloudRaw::prepare(int branch_level, std::vector<Branch> &old_branc
             //it should be attached to projection of base joint
             p.b->level = layer;
             Billboard parent_billboard = billboards[p.parent];
-            vec3 n = vec3(parent_billboard.planeCoef);
-            vec3 proj = p.base_joint - (dot(n, p.base_joint) + parent_billboard.planeCoef.w) * n;
+            float3 n = to_float3(parent_billboard.planeCoef);
+            float3 proj = p.base_joint - (dot(n, p.base_joint) + parent_billboard.planeCoef.w) * n;
             p.base_joint = proj;
             b.branch_id = parent_billboard.branch_id;
         }

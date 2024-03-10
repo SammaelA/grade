@@ -1,6 +1,6 @@
 #include "GE_generator_simplified.h"
 #include <algorithm>
-using namespace glm;
+
 
 bool GETreeGeneratorSimplified::iterate(LightVoxelsCube &voxels)
 {
@@ -71,7 +71,7 @@ void GETreeGeneratorSimplified::prepare_nodes_and_space_colonization(Tree &t, Br
         auto &j = *it;
         float max_r = params.ro * max_growth_per_node;
         int sp_cnt = MAX(params.sp_points_base * iter_frac, 2);
-        glm::vec3 pd = normalize(j.pos - b.joints.front().pos);
+        float3 pd = normalize(j.pos - b.joints.front().pos);
         float resource = params.resource_mult * j.resource;
         //if (b.level <= 1)
         //    resource *= 5;
@@ -98,14 +98,14 @@ void GETreeGeneratorSimplified::prepare_nodes_and_space_colonization(Tree &t, Br
     }
 }
 
-bool GETreeGeneratorSimplified::find_best_pos(LightVoxelsCube &voxels, float r, glm::vec3 pos,
-                                              glm::vec3 dir, float angle,
-                                              glm::vec3 &best_pos, float &best_occ)
+bool GETreeGeneratorSimplified::find_best_pos(LightVoxelsCube &voxels, float r, float3 pos,
+                                              float3 dir, float angle,
+                                              float3 &best_pos, float &best_occ)
 {
     best_occ = 1000;
     float cs = cos(angle);
 
-    std::function<void(glm::vec3 &)> func = [&](glm::vec3 &p)
+    std::function<void(float3 &)> func = [&](float3 &p)
     {
         if (dot(normalize(p - pos), dir) > cs)
         {
@@ -119,10 +119,10 @@ bool GETreeGeneratorSimplified::find_best_pos(LightVoxelsCube &voxels, float r, 
         }
     };
 
-    AABB box = AABB(pos - r * vec3(1, 1, 1), pos + r * vec3(1, 1, 1));
+    AABB box = AABB(pos - r * float3(1, 1, 1), pos + r * float3(1, 1, 1));
     for (int i=0;i<4;i++)
     {
-        glm::vec3 p = pos + r * glm::vec3(self_rand(-1,1), self_rand(-1,1), self_rand(-1,1));
+        float3 p = pos + r * float3(self_rand(-1,1), self_rand(-1,1), self_rand(-1,1));
         func(p);
     }
 

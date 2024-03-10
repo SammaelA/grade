@@ -44,11 +44,11 @@ private:
     {
       friend class boost::serialization::access;
 
-      glm::vec2 pos;
+      float2 pos;
       float size;
       int cell_id;
       GrassInstance() {}
-      GrassInstance(glm::vec2 _pos, float _size, int _cell_id)
+      GrassInstance(float2 _pos, float _size, int _cell_id)
       {
         pos = _pos;
         size = _size;

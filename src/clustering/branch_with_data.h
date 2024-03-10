@@ -35,7 +35,7 @@ struct ClassicStructureSimilarityParams
         std::vector<LightVoxelsCube *> voxelizedStructures;
 
         BranchWithData(ClassicStructureSimilarityParams &clusterizationParams, Branch *_original, int levels, int _id, 
-                       glm::mat4 _transform, float r_transform);
+                       float4x4 _transform, float r_transform);
         ~BranchWithData();
         virtual void clear() override;
 

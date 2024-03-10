@@ -16,7 +16,7 @@ public:
 private:
     Texture noise;
     PostFx shader;
-    glm::vec4 clear_color = glm::vec4(0,0,0,0);
+    float4 clear_color = float4(0,0,0,0);
     int width, height;
     GLuint frBuffer;
     Texture aoTex;

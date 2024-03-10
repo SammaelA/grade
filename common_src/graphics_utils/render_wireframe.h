@@ -9,7 +9,7 @@ class WireframeRenderer
 public:
   WireframeRenderer();
   ~WireframeRenderer();
-  Texture render(Model &m, const glm::mat4 &viewProj, int tex_w, int tex_h);
+  Texture render(Model &m, const float4x4 &viewProj, int tex_w, int tex_h);
 private:
   GLuint fbo;
   Shader wireframe_shader;
