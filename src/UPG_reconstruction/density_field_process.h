@@ -38,4 +38,5 @@ namespace df
     std::vector<float> create_sdf(const std::vector<float>& density, const VoxelGrid& grid);
     std::vector<float> pipeline(const std::vector<float>& model);
     glm::vec3 closest_point_triangle(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b, const glm::vec3& c);
+    float get_index(const size_t& dim_size, const size_t& i, const size_t& j, const size_t& k);
 };

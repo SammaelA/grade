@@ -15,6 +15,7 @@
 #include "optimization.h"
 #include "density_field_process.h"
 #include "sdf_scene_convert.h"
+#include "interpolation.h"
 
 namespace upg
 {
@@ -898,7 +899,7 @@ namespace upg
     //todo
     return {};
   }
-
+  
   void sdf_scene_test()
   {
     SceneDesc s = scene_CSG_1();

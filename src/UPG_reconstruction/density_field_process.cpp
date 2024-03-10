@@ -213,3 +213,9 @@ df::pipeline(const std::vector<float>& model)
 
     return sdf_model;
 }
+
+float 
+df::get_index(const size_t& dim_size, const size_t& i, const size_t& j, const size_t& k)
+{
+    return (k * dim_size + i) * dim_size + j;
+}
