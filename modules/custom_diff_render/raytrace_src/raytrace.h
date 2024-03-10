@@ -66,8 +66,8 @@ static inline float3 mul4x3(LiteMath::float4x4 m, float3 v)
 
 static inline void transform_ray3f(LiteMath::float4x4 a_mWorldViewInv, float3* ray_pos, float3* ray_dir) 
 {
-  float3 pos  = mul4x3(a_mWorldViewInv, (*ray_pos));
-  float3 pos2 = mul4x3(a_mWorldViewInv, ((*ray_pos) + 100.0f*(*ray_dir)));
+  float3 pos  = diff_render::mul4x3(a_mWorldViewInv, (*ray_pos));
+  float3 pos2 = diff_render::mul4x3(a_mWorldViewInv, ((*ray_pos) + 100.0f*(*ray_dir)));
 
   float3 diff = pos2 - pos;
 

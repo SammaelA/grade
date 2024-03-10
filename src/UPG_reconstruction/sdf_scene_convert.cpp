@@ -57,7 +57,7 @@ namespace upg
       switch (node->type)
       {
       case SdfNodeType::MOVE:
-        transform = glm::translate(glm::mat4(1.0f), glm::vec3(-node->p[0], -node->p[1], -node->p[2]))*transform;
+        transform = LiteMath::translate(glm::mat4(1.0f), glm::vec3(-node->p[0], -node->p[1], -node->p[2]))*transform;
         break;
       case SdfNodeType::ROTATE:
         {
@@ -65,11 +65,11 @@ namespace upg
           float y = sinf(node->p[0]) * cosf(node->p[1]);
           float z = sinf(node->p[1]);
           glm::vec3 axis = normalize(glm::vec3{x,y,z});
-          transform = glm::rotate(glm::mat4(1.0f), -node->p[2], axis)*transform;
+          transform = LiteMath::rotate(glm::mat4(1.0f), -node->p[2], axis)*transform;
         }
         break;
       case SdfNodeType::SCALE:
-        transform = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f/node->p[0], 1.0f/node->p[0], 1.0f/node->p[0]))*transform;
+        transform = LiteMath::scale(glm::mat4(1.0f), glm::vec3(1.0f/node->p[0], 1.0f/node->p[0], 1.0f/node->p[0]))*transform;
         distance_mult *= node->p[0];
         break;
       case SdfNodeType::ROUND:

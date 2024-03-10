@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <string>
 
 namespace dgen

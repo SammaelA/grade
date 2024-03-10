@@ -43,7 +43,7 @@ void WorldRenderer::set_resolution(int w, int h)
   screen_w = w;
   screen_h = h;
   
-  projection = glm::perspective(fov, (float)w / h, 1.0f, 3000.0f);
+  projection = LiteMath::perspective(fov, (float)w / h, 1.0f, 3000.0f);
   
   defferedTarget = DefferedTarget();
   defferedTarget.create(render_settings.RT_overscale *w, render_settings.RT_overscale*h);

@@ -1,8 +1,8 @@
 #pragma once
 #include "resources.h"
 #include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "common_utils/LiteMath_ext.h"
+#include "common_utils/matrix_transform.h"
 #include <functional>
 #include <iostream>
 #include <chrono>

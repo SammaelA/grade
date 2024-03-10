@@ -4,7 +4,7 @@
 #include <iosfwd>
 #include <fstream>
 #include <string>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <sstream>
 #include "common_utils/utility.h"
 void Shader::setup(slist _s){

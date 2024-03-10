@@ -2,8 +2,8 @@
 
 #include <vector>
 #include <list>
-#include <glm/glm.hpp>
-#include "glm/gtc/matrix_transform.hpp"
+#include "common_utils/LiteMath_ext.h"
+#include "common_utils/matrix_transform.h"
 #include <unordered_set>
 #include "graphics_utils/volumetric_occlusion.h"
 #include "tinyEngine/model.h"

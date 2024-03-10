@@ -181,7 +181,7 @@ df::create_sdf(const std::vector<float>& density, const VoxelGrid& grid)
 
                     for (const glm::vec3 &borderVoxelCenterCoord: voxel_border_center_coords)
                     {
-                        distance = glm::distance(voxelCenterCoord, borderVoxelCenterCoord);
+                        distance = glm::length(voxelCenterCoord - borderVoxelCenterCoord);
                         shortest_distance = (distance < shortest_distance) ? distance : shortest_distance;
                     }
 

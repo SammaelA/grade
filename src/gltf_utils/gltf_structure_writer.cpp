@@ -2,7 +2,7 @@
 #include "common_utils/utility.h"
 #include <iostream>
 #include <fstream>
-#include <glm/gtc/matrix_transform.hpp>
+#include "common_utils/matrix_transform.h"
 namespace gltf
 {
 int accessorComponentTypeSizes[6] = {1, 1, 2, 2, 4, 4};
@@ -107,8 +107,8 @@ bool GltfStructureWriter::write_to_json(FullData &fullData, std::string name)
             if (b.mesh >= 0 && b.transform != glm::mat4(1.0f))
             {
                 glm::mat4 tr = b.transform;
-                //tr *= glm::translate(tr, b.translation);
-                tr = glm::scale(glm::mat4(1.0f),b.scale)*tr;
+                //tr *= LiteMath::translate(tr, b.translation);
+                tr = LiteMath::scale(glm::mat4(1.0f),b.scale)*tr;
                 if (!first)
                 {
                     str +=",\n";

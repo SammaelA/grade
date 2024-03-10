@@ -6,7 +6,7 @@
 #include <random>  // for random gen 
 #include <cassert> 
 
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 #include "Image2d.h"
 #include "utils.h"
 #include "scene.h"

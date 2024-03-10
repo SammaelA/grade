@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include "graphics_utils/texture_atlas.h"
 #include "common_utils/blk.h"
 #include "save_utils/serialization.h"

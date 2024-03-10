@@ -8,7 +8,7 @@
 #include "hydra/hydra_scene_exporter.h"
 #include "graphics_utils/modeling.h"
 #include <random>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 namespace upg
 {

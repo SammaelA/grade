@@ -34,7 +34,7 @@ BranchWithData::BranchWithData(ClassicStructureSimilarityParams &clusterizationP
         calc_joints_count(b, joint_counts);
 
     glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-    glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2 * PI / clusterizationParams.bwd_rotations, axis);
+    glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), 2 * PI / clusterizationParams.bwd_rotations, axis);
 
     for (int i = 0; i < clusterizationParams.bwd_rotations; i++)
     {

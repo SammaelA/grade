@@ -1,10 +1,9 @@
 #pragma once
 #include "abstract_generator.h"
+#include "common_utils/quaternion.h"
 
 class CHTurtle;
 struct SetUpBranchRetStruct;
-template<typename T, typename Q>
-struct tquat;
 struct WeberPennParametersNative : public ParameterSet
 {
     int shape = 7;
@@ -100,7 +99,7 @@ public:
         static void get_shape(int leaf_type, float g_scale, float scale, float scale_x, BaseLeafMesh &blm);
         void get_mesh(float bend, BaseLeafMesh &base_shape, int index, std::vector<glm::vec3> &out_verts, 
                       std::vector<std::vector<int>> &out_indicies);
-        void calc_bend_trf(float bend, glm::quat &bend_trf_1, glm::quat &bend_trf_2);
+        void calc_bend_trf(float bend, LiteMath::quat &bend_trf_1, LiteMath::quat &bend_trf_2);
     };
     struct Point
     {
@@ -223,4 +222,4 @@ public:
 
 };
 float declination(glm::vec3 vec);
-glm::quat to_track_quat_ZY(glm::vec3 vec);
+LiteMath::quat to_track_quat_ZY(glm::vec3 vec);

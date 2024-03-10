@@ -372,8 +372,8 @@ void create_grass_models(/*const*/ GrassPacked &grass,
         for (int j = 0; j<p.second.size(); j++)
         {
           auto &in = p.second[j];
-          instancedModelsTransforms.back()[j] = glm::scale(
-                                            glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
+          instancedModelsTransforms.back()[j] = LiteMath::scale(
+                                            LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
                                                         in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
         }
         type_n++;

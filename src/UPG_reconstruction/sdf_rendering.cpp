@@ -523,7 +523,7 @@ namespace upg
       }
     }
     ///sdf_bbox = AABB({-5,-5,-5},{5,5,5});
-    glm::mat4 projInv = glm::inverse(glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
+    glm::mat4 projInv = glm::inverse(LiteMath::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far));
     glm::mat4 viewInv = glm::inverse(camera.get_view());
     //set light somewhere to the side 
     glm::vec3 light_dir = normalize(glm::vec3(1,1,1));

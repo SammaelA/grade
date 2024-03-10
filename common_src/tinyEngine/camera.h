@@ -1,6 +1,5 @@
 #pragma once
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/glm.hpp>
+#include "common_utils/matrix_transform.h"
 
 struct CameraSettings
 {
@@ -12,14 +11,14 @@ struct CameraSettings
   
   glm::mat4 get_view() const
   {
-    return glm::lookAt(origin, target, up);
+    return LiteMath::lookAt(origin, target, up);
   }
   glm::mat4 get_proj(bool use_y_swap = true) const
   {
     glm::mat4 y_swap = glm::mat4(glm::vec4(1,0,0,0), glm::vec4(0,-1,0,0), glm::vec4(0,0,1,0),glm::vec4(0,0,0,1));
     glm::mat4 projection = orthographic ?
-                           glm::ortho(-0.5f*(z_far-z_near), 0.5f*(z_far-z_near), -0.5f*(z_far-z_near), 0.5f*(z_far-z_near), z_near, z_far) :
-                           glm::perspective(fov_rad, 1.0f, z_near, z_far);
+                           LiteMath::ortho(-0.5f*(z_far-z_near), 0.5f*(z_far-z_near), -0.5f*(z_far-z_near), 0.5f*(z_far-z_near), z_near, z_far) :
+                           LiteMath::perspective(fov_rad, 1.0f, z_near, z_far);
     if (use_y_swap)
       return y_swap*projection;
     else
@@ -40,7 +39,7 @@ struct Camera
     float yaw = 0;
     float pitch = 0;
     float roll = 0;
-    glm::mat4 &camera() { camera_mat = glm::lookAt(pos, pos + front, up); return camera_mat;}
+    glm::mat4 &camera() { camera_mat = LiteMath::lookAt(pos, pos + front, up); return camera_mat;}
 };
 struct DirectedLight
 {

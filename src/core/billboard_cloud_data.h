@@ -3,7 +3,7 @@
 #include <vector>
 #include "tinyEngine/model.h"
 #include "graphics_utils/texture_atlas.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include "common_utils/bbox.h"
 #include "save_utils/serialization.h"
 

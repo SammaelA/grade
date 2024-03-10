@@ -1,5 +1,5 @@
 #include "load_tree_structure.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "common_utils/matrix_transform.h"
 
 std::string TreeLoaderBlk::trees_directory = "./original_trees";
 std::string TreeLoaderBlk::blks_base_name = "tree";
@@ -166,7 +166,7 @@ void load_tree(Block &blk, SavedTree &st)
     st.pos = blk.get_vec3("position", st.pos);
     st.on_heightmap = blk.get_bool("on_heightmap", st.on_heightmap);
     st.scale = blk.get_double("scale", st.scale);
-    glm::mat4 transform = glm::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
+    glm::mat4 transform = LiteMath::rotate(glm::mat4(st.scale),-PI/2,glm::vec3(1,0,0));
 
     Block *splines_bl = blk.get_block("splines");
     if (!splines_bl)

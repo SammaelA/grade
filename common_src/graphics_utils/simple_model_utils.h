@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include "common_utils/bbox.h"
 #include "common_utils/blk.h"
 #include "tinyEngine/camera.h"

@@ -2,7 +2,7 @@
 #include <vector>
 #include <memory>
 #include <stdarg.h>
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 #include "Image2d.h"
 namespace diff_render
 {

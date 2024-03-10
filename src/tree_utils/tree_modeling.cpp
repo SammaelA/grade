@@ -95,7 +95,7 @@ void get_ring(glm::vec3 &start, glm::vec3 &dir, float radius, SegmentVertexes &s
     }
     glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, p)), 1.0);
 
-    glm::mat4 r = glm::rotate(glm::mat4(1.0), (float)(2 * PI / ring_size), dir);
+    glm::mat4 r = LiteMath::rotate(glm::mat4(1.0), (float)(2 * PI / ring_size), dir);
 
     if (ring_size == 0)
         logerr("0 ringsize !!!");
@@ -447,7 +447,7 @@ void segment_to_model(Segment &s, Mesh *m, bool leaves)
     glm::vec4 n = glm::vec4(glm::normalize(glm::cross(dir, x)), 1.0);
 
     //Add the Correct Number of Indices
-    glm::mat4 r = glm::rotate(glm::mat4(1.0), (float)3.141 / ringsize, dir);
+    glm::mat4 r = LiteMath::rotate(glm::mat4(1.0), (float)3.141 / ringsize, dir);
 
     //Index Buffer
     int _b = h->positions.size() / 3;

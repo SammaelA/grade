@@ -323,7 +323,7 @@ void Clusterizer2::prepare_result(Block &settings, std::vector<ClusterData> &bas
         for (auto &p : str.members)
         {
             BranchClusteringData *base_bcd = branches[p.first];
-            glm::mat4 rot = glm::rotate(glm::mat4(1.0f), p.second.rot, glm::vec3(1, 0, 0));
+            glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), p.second.rot, glm::vec3(1, 0, 0));
             //debugl(3, "base bcd first %d %d %d\n", base_bcd, center, p.first);
 
             it = tmpData.pos_in_table_by_id.find(base_bcd->base_cluster_id);

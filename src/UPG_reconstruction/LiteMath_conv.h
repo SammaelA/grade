@@ -1,7 +1,7 @@
 #pragma once
 #include "sdfScene/LiteMath_ext.h"
 #include "common_utils/bbox.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 static glm::vec3 conv(const LiteMath::float3 &v)
 {

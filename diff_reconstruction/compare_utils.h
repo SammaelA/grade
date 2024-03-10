@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 namespace compare_utils
 {

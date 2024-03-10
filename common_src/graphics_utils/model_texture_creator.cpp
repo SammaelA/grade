@@ -4,7 +4,7 @@
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
 #include "resize_image.h"
-#include <glm/glm.hpp>
+#include "common_utils/matrix_transform.h"
 #include <vector>
 
 ModelTex::ModelTex():
@@ -69,8 +69,8 @@ Texture ModelTex::getTexbyUV(Texture mask, Model &m, Texture photo, const Camera
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
   glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = glm::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
-  glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+  glm::mat4 projection = LiteMath::perspective(camera.fov_rad, 1.0f, camera.z_near, camera.z_far);
+  glm::mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
 
   UV.use();
   UV.uniform("projection", projection);

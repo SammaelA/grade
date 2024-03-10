@@ -1,5 +1,5 @@
 #pragma once
-#include "glm/glm.hpp"
+#include "common_utils/LiteMath_ext.h"
 
 struct DrawElementsIndirectCommand
 {

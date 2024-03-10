@@ -77,8 +77,8 @@ grass_atlas(data.grass_textures)
     {
         for (const auto &in : p.second)
         {
-            matrices[i] = glm::scale(
-                          glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
+            matrices[i] = LiteMath::scale(
+                          LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),glm::vec3(in.pos)),
                                       in.rot_y,glm::vec3(0,1,0)), glm::vec3(in.size));
             i++;
         }

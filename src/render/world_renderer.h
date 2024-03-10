@@ -106,7 +106,7 @@ private:
     const int DEBUG_ONLY_RENDER_MODE = -1;
     const int ARRAY_TEX_DEBUG_RENDER_MODE = -3;
     const int MAX_RENDER_MODE = 2;
-    const float fov = glm::radians(90.0f);
+    const float fov = LiteMath::to_radians(90.0f);
     
     RenderReadbackInputData RRID;
     RenderReadbackData RRD;

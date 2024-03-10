@@ -6,8 +6,7 @@
 #include "diff_geometry_generation.h"
 #include <iostream>
 #include "common_utils/utility.h"
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/transform.hpp>
+#include "common_utils/matrix_transform.h"
 #include "tinyEngine/engine.h"
 
 #define DEL(X) if (X) {Py_DECREF(X);}

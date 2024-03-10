@@ -36,6 +36,7 @@
 #include "common_utils/blk.h"
 #include "graphics_utils/render_wireframe.h"
 #include "enzyme_test.h"
+#include "common_utils/matrix_transform.h"
 
 void defaultSignalHandler(int signum)
 {
@@ -470,8 +471,8 @@ int main(int argc, char **argv)
       m->update();
 
       CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
-      glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
-      glm::mat4 view = glm::lookAt(rc.origin+glm::vec3(0,1,0), rc.target, rc.up);
+      glm::mat4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      glm::mat4 view = LiteMath::lookAt(rc.origin+glm::vec3(0,1,0), rc.target, rc.up);
       glm::mat4 viewProj = projection * view;
       Texture res_tex = wr.render(*m, viewProj, 1024, 1024);
       textureManager.save_png(res_tex, "wireframe_building_"+std::to_string(i));
@@ -482,7 +483,7 @@ int main(int argc, char **argv)
     if (false)
     {
       auto model = dgen::load_obj("saves/selection/result_quaking_aspen.obj");
-      visualizer::transform(model, glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
+      visualizer::transform(model, LiteMath::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 1, 0)));
       auto bbox = visualizer::get_bbox(model);
       visualizer::normalize_model(model);
       Model *m2 = new Model();
@@ -491,8 +492,8 @@ int main(int argc, char **argv)
       CameraSettings rc = MitsubaInterface::get_camera_from_scene_params(scene_params);
       rc.origin.y = 0;
       rc.target.y = 0;
-      glm::mat4 projection = glm::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
-      glm::mat4 view = glm::lookAt(rc.origin, rc.target, rc.up);
+      glm::mat4 projection = LiteMath::perspective(rc.fov_rad, 1.0f, rc.z_near, rc.z_far);
+      glm::mat4 view = LiteMath::lookAt(rc.origin, rc.target, rc.up);
       glm::mat4 viewProj = projection * view;
       Texture res_tex_2 = wr.render(*m2, viewProj, 2048, 2048);
       textureManager.save_png(res_tex_2, "result_quaking_aspen_wireframe");

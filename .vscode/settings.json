@@ -99,7 +99,14 @@
       "expected": "cpp",
       "spanstream": "cpp",
       "stacktrace": "cpp",
-      "*.def": "cpp"
+      "*.def": "cpp",
+      "queue": "cpp",
+      "stack": "cpp",
+      "ios": "cpp",
+      "__nullptr": "cpp",
+      "__hash_table": "cpp",
+      "__tree": "cpp",
+      "orderingmethods": "cpp"
     },
     "editor.detectIndentation": false,
     "editor.tabSize": 2

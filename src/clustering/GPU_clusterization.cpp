@@ -36,7 +36,7 @@ void GPUClusterizationHelper::prepare_ddt(std::vector<BranchWithData *> &_branch
     for (int i=0;i<params.bwd_rotations;i++)
     {
         glm::vec3 axis = glm::vec3(1,0,0);
-        rotates_transforms.push_back(glm::rotate(glm::mat4(1.0f),i*rt,axis));
+        rotates_transforms.push_back(LiteMath::rotate(glm::mat4(1.0f),i*rt,axis));
     }
 
     positions.emplace_back();

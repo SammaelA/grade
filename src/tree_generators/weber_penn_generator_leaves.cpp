@@ -1,10 +1,10 @@
 #include "weber_penn_generator.h"
-#include "common_utils/turtle.h"
+#include "turtle.h"
 
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
-using glm::degrees;
+
 void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies);
 void blossom(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies);
 
@@ -38,8 +38,8 @@ void WeberPennGenerator::Leaf::get_mesh(float bend, BaseLeafMesh &base_shape, in
     {
         v = trf*v;
     }
-    glm::quat tr1 = glm::quat(1,0,0,0);
-    glm::quat tr2 = glm::quat(1,0,0,0);
+    LiteMath::quat tr1 = LiteMath::quat(1,0,0,0);
+    LiteMath::quat tr2 = LiteMath::quat(1,0,0,0);
     if (bend > 0)
     {
         calc_bend_trf(bend, tr1, tr2);
@@ -59,12 +59,12 @@ void WeberPennGenerator::Leaf::get_mesh(float bend, BaseLeafMesh &base_shape, in
             ind += index;
     }
 }
-void WeberPennGenerator::Leaf::calc_bend_trf(float bend, glm::quat &bend_trf_1, glm::quat &bend_trf_2)
+void WeberPennGenerator::Leaf::calc_bend_trf(float bend, LiteMath::quat &bend_trf_1, LiteMath::quat &bend_trf_2)
 {
     glm::vec3 normal = glm::cross(direction, right);
     float theta_pos = atan2(position.y, position.x);
     float theta_bend = theta_pos - atan2(normal.y, normal.x);
-    bend_trf_1 = glm::angleAxis(theta_bend * bend, glm::vec3(0,0,1));
+    bend_trf_1 = LiteMath::angleAxis(theta_bend * bend, glm::vec3(0,0,1));
     //I think this is what the paper says but the second transform just looks stupid
     //so we just ignore it above
 
@@ -73,10 +73,10 @@ void WeberPennGenerator::Leaf::calc_bend_trf(float bend, glm::quat &bend_trf_1, 
     normal = glm::cross(direction, right);
 
     //not sure it is equal to phi_bend = normal.declination()
-    float phi_bend = glm::radians(declination(normal));
+    float phi_bend = LiteMath::to_radians(declination(normal));
     if (phi_bend > PI / 2)
         phi_bend = phi_bend - PI;
-    bend_trf_2 = glm::angleAxis(phi_bend * bend, right);
+    bend_trf_2 = LiteMath::angleAxis(phi_bend * bend, right);
 }
 
 void leaves(int n, std::vector<glm::vec3> &out_verts, std::vector<std::vector<int>> &out_indicies)

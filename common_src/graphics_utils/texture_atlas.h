@@ -1,6 +1,6 @@
 #pragma once
 #include "tinyEngine/resources.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <vector>
 #include "tinyEngine/texture.h"
 #include "tinyEngine/shader.h"

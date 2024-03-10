@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <list>
 #include "common_utils/body.h"
 #include "graphics_utils/terrain.h"

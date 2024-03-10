@@ -50,7 +50,7 @@ void voxelize_original_branch(Branch *b, LightVoxelsCube *light, int level_to, f
             float phi = urand(0, 2*PI);
             float h = urand(0, 1);
             float r = R*sqrtf(urand(0, 1));
-            glm::vec3 nr = glm::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
+            glm::vec3 nr = LiteMath::rotate(glm::mat4(1),phi,dir)*glm::vec4(n,0);
             glm::vec3 sample = s.begin + h*dir + r*nr;
             light->set_occluder_trilinear(sample, 25/samples);
         } 

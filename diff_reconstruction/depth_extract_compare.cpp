@@ -1,7 +1,7 @@
 #include "depth_extract_compare.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include <glm/glm.hpp>
+#include "common_utils/matrix_transform.h"
 #include <vector>
 
 DepthLossCalculator::DepthLossCalculator():
@@ -35,8 +35,8 @@ Texture DepthLossCalculator::get_depth(Model &m, const CameraSettings &camera, i
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color.texture, 0);
   glViewport(0, 0, w, h);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glm::mat4 projection = glm::perspective(camera.fov_rad, (float)w/h, camera.z_near, camera.z_far);
-  glm::mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+  glm::mat4 projection = LiteMath::perspective(camera.fov_rad, (float)w/h, camera.z_near, camera.z_far);
+  glm::mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
   render_model.use();
 
   render_model.uniform("projection", projection);

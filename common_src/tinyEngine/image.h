@@ -2,7 +2,7 @@
 #include <string>
 #include <functional>
 #include <SDL2/SDL_surface.h>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 namespace image {
   extern std::string base_img_path;

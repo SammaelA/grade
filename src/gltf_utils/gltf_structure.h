@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <map>
 
 namespace gltf
@@ -154,7 +154,7 @@ struct Accessor
 };
 struct PerspectiveCamera
 {
-    float yfov = M_PI/2;
+    float yfov = LiteMath::M_PI/2;
     float znear = 0.1;
     float zfar = 10000;
 };

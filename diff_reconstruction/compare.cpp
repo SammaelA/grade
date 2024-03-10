@@ -99,7 +99,7 @@ void render_mygen_cup(MitsubaInterface &mi, CameraSettings &camera, std::vector<
 {
   dgen::DFModel res;
   dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-  visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+  visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
 
   auto bbox = visualizer::get_bbox(res.first);
   visualizer::normalize_model(res.first);
@@ -129,7 +129,7 @@ void render_mygen_cup_demo(MitsubaInterface &mi, CameraSettings &camera, std::ve
 {
   dgen::DFModel res;
   dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-  visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+  visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
 
   auto bbox = visualizer::get_bbox(res.first);
   visualizer::normalize_model(res.first);
@@ -153,7 +153,7 @@ void render_mygen_cup_not_diff(MitsubaInterface &mi, CameraSettings &camera, std
 {
   dgen::DFModel res;
   dgen::not_diff_gen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-  visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
+  visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0, 1, 0)));
 
   auto bbox = visualizer::get_bbox(res.first);
   visualizer::normalize_model(res.first);
@@ -277,7 +277,7 @@ void cup_1_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
       std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.074, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
       dgen::DFModel res;
       dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-      visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+      visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
       
       auto bbox = visualizer::get_bbox(res.first);
       visualizer::normalize_model(res.first);
@@ -294,7 +294,7 @@ void cup_1_multicam_render_mygen_turntable(MitsubaInterface &mi, CameraSettings 
       std::vector<float> params = {3.329, 3.515, 3.716, 3.740, 3.814, 3.858, 3.917, 3.961, 4.006, 0.654, 1.000, 0.059, 0.547, 0.258, 0.262, 0.302, 0.317, 0.318, 0.308, 0.294, 0.281, 0.268, 0.259, 0.252, 0.249, 0.249, 0.250, 0.253, 0.257, 0.264, 0.256, 0.264, 0.328, 1.543, 1.370, 1.123, 0.990, 0.943, 0.956, 0.947, 0.961, 0.952, 0.951, 0.936, 0.928, 0.939, 0.938, 0.971, 0.940, 0.998, 1.261, 1.720, 1.974, -0.138, 0.042, 0.020, -0.000, 3.119, 0.001, -9.294, 6.318, 662.677, 1.000, 79.108, 0.200, 0.250};
       dgen::DFModel res;
       dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-      visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+      visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
       
       auto bbox = visualizer::get_bbox(res.first);
       visualizer::normalize_model(res.first);
@@ -342,7 +342,7 @@ void cup_4_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &camera)
       std::vector<float> params = {2.681, 3.268, 3.711, 3.896, 4.045, 4.068, 4.218, 4.540, 4.965, 0.906, 1.000, 0.043, 0.519, 0.101, 0.141, 0.183, 0.257, 0.283, 0.280, 0.274, 0.263, 0.252, 0.240, 0.223, 0.200, 0.171, 0.162, 0.155, 0.157, 0.166, 0.179, 0.207, 0.291, 1.091, 0.578, 1.950, 0.871, 0.805, 0.640, 0.674, 0.688, 0.720, 0.783, 0.810, 0.791, 0.582, 0.700, 0.620, 0.500, 0.552, 0.783, 1.271, 1.629, 0.082, 0.572, 0.402, 0.162, -0.090, 0.003, 0.590, 12.159, 666.696, 1.000, 79.108, 0.200, 0.250};
       dgen::DFModel res;
       dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-      visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+      visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
       
       auto bbox = visualizer::get_bbox(res.first);
       visualizer::normalize_model(res.first);
@@ -397,7 +397,7 @@ void building_2_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
     std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
     dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 3));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     auto res_bbox = visualizer::get_bbox(res.first);
     visualizer::normalize_model(res.first);
     render_normalized(mi, res, "../mitsuba_data/meshes/building/tex2.png",
@@ -431,10 +431,10 @@ void building_6_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
     dgen::DFModel res, res_det;
     dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
     dgen::dgen_test("buildings_2", params, res_det, false, dgen::ModelQuality(false, 3));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     visualizer::normalize_model(res.first);
 
-    visualizer::transform(res_det.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    visualizer::transform(res_det.first, LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     visualizer::normalize_model(res_det.first);
     render_normalized(mi, res_det, "../../saves/building_6_res/reconstructed_tex_raw.png",
                       "saves/building_6_res/monochrome_turntable", 1024, 256, 64, 3, 0, camera, nullptr, &model_info);
@@ -454,7 +454,7 @@ void building_6_render_mygen_turntable(MitsubaInterface &mi, CameraSettings &cam
     std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
     dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     
     auto res_bbox = visualizer::get_bbox(res.first);
     logerr("model bbox 3 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
@@ -491,13 +491,13 @@ void test_3diou_1()
     std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.074, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
     dgen::DFModel res;
     dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
     visualizer::normalize_model(res.first);
 
     std::vector<float> params2 = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.07, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
     dgen::DFModel res2;
     dgen::dgen_test("dishes", params2, res2, false, dgen::ModelQuality(false, 2));
-    visualizer::transform(res2.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+    visualizer::transform(res2.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
     visualizer::normalize_model(res2.first);
 
     float iou = iou3d(res2.first, res.first, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 1.0/32);
@@ -509,7 +509,7 @@ void cup_1_iou()
     std::vector<float> params = {3.625, 3.821, 4.087, 4.098, 4.198, 4.241, 4.311, 4.343, 4.347, 0.748, 1.000, 0.2, 0.590, 0.214, 0.185, 0.226, 0.255, 0.278, 0.290, 0.293, 0.295, 0.290, 0.289, 0.282, 0.282, 0.284, 0.285, 0.289, 0.288, 0.295, 0.295, 0.275, 0.358, 1.155, 1.350, 0.969, 0.930, 0.799, 0.733, 0.710, 0.681, 0.672, 0.675, 0.672, 0.679, 0.687, 0.691, 0.717, 0.727, 0.768, 0.871, 1.537, 1.942, -0.152, 0.543, 0.239, -0.026, 2.957, 0.001, 15.396, 1.175, 667.281, 1.000, 79.108, 0.200, 0.250};
     dgen::DFModel res;
     dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
     visualizer::normalize_model(res.first);
 
     auto model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/cup_model_1/cup_1.obj");
@@ -524,7 +524,7 @@ void cup_4_iou()
     std::vector<float> params = {2.681, 3.268, 3.711, 3.896, 4.045, 4.068, 4.218, 4.540, 4.965, 0.906, 1.000, 0.043, 0.519, 0.101, 0.141, 0.183, 0.257, 0.283, 0.280, 0.274, 0.263, 0.252, 0.240, 0.223, 0.200, 0.171, 0.162, 0.155, 0.157, 0.166, 0.179, 0.207, 0.291, 1.091, 0.578, 1.950, 0.871, 0.805, 0.640, 0.674, 0.688, 0.720, 0.783, 0.810, 0.791, 0.582, 0.700, 0.620, 0.500, 0.552, 0.783, 1.271, 1.629, 0.082, 0.572, 0.402, 0.162, -0.090, 0.003, 0.590, 12.159, 666.696, 1.000, 79.108, 0.200, 0.250};
     dgen::DFModel res;
     dgen::dgen_test("dishes", params, res, false, dgen::ModelQuality(false, 2));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI, glm::vec3(0,1,0)));
     visualizer::normalize_model(res.first);
 
     auto model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/cup_model_4/cup_4.obj");
@@ -543,7 +543,7 @@ void building_2_iou()
     std::vector<float> params = {1.000, 1.853, 0.040, 0.322, 0.005, 2.000, 5.000, 1.000, 5.000, 650.000, 1.000, 5.000, 341.000, 1.000, 0.080, 0.080, 0.100, 0.008, 0.410, 0.000, 0.024, 0.315, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 2.174, 1.000, 3.000, 0.000, 0.600, 0.486, 0.600, 1.484, 0.400, 0.500, 0.015, 0.050, 1.000, 1.000, 2.000, 2.000, 0.600, 0.400, 0.600, 1.721, 0.064, 0.478, 0.737, 0.150, 0.100, 0.200, 0.416, 1.000, -0.160, -0.049, 0.954, 0.072, 0.523, 0.008, 0.000, 0.500, 10.000, 1.000, 100.000, 0.100, 0.300};
     dgen::DFModel res;
     dgen::dgen_test("buildings_2", params, res, false, dgen::ModelQuality(false, 0));
-    visualizer::transform(res.first, glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
+    visualizer::transform(res.first, LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,1,0)));
     auto res_bbox = visualizer::get_bbox(res.first);
     visualizer::normalize_model(res.first);
 
@@ -563,7 +563,7 @@ void render_NGP_turntable(MitsubaInterface &mi, CameraSettings &camera, std::str
     // dgen::shift(model, glm::vec3(0,0,0.5));
     auto bbox = visualizer::get_bbox(model4);
     auto ref_model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/ref.obj");
-    visualizer::transform(ref_model, glm::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
+    visualizer::transform(ref_model, LiteMath::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
     auto ref_bbox = visualizer::get_bbox(ref_model);
     logerr("model bbox 4 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
     logerr("ref   bbox 4 (%f %f %f)(%f %f %f)", ref_bbox.min_pos.x, ref_bbox.min_pos.y, ref_bbox.min_pos.z,
@@ -605,7 +605,7 @@ void calc_NGP_3D_IoU(MitsubaInterface &mi, CameraSettings &camera, std::string m
     // dgen::shift(model, glm::vec3(0,0,0.5));
     auto bbox = visualizer::get_bbox(model4);
     auto ref_model = dgen::load_obj("../grade_resources/prezentations/spring_23_medialab/" + mygen_name + "/NGP_meshes/ref.obj");
-    visualizer::transform(ref_model, glm::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
+    visualizer::transform(ref_model, LiteMath::rotate(glm::mat4(1.0f), -PI / 2, glm::vec3(0, 1, 0)));
     auto ref_bbox = visualizer::get_bbox(ref_model);
     logerr("model bbox 4 (%f %f %f)(%f %f %f)", bbox.min_pos.x, bbox.min_pos.y, bbox.min_pos.z, bbox.max_pos.x, bbox.max_pos.y, bbox.max_pos.z);
     logerr("ref   bbox 4 (%f %f %f)(%f %f %f)", ref_bbox.min_pos.x, ref_bbox.min_pos.y, ref_bbox.min_pos.z,

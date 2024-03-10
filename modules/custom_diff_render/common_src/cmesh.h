@@ -7,7 +7,7 @@
 #include <memory>
 #include <cassert>
 
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 //using namespace LiteMath;
 
 namespace mesh_utils

@@ -1,7 +1,7 @@
 #include "gpu_diff_render.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/modeling.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 struct EdgeGPU
 {
@@ -104,7 +104,7 @@ float DiffRenderGPU::render_and_compare(const dgen::DFModel &model, const std::v
   glViewport(0, 0, tex_w, tex_h);
 
   float tr_z = scene_params[2] * tan(0.5*0.25) / tan(0.5*cameras[0].fov_rad);
-  glm::mat4 transform = glm::rotate(glm::rotate(glm::rotate(glm::translate(glm::mat4(1.0f),
+  glm::mat4 transform = LiteMath::rotate(LiteMath::rotate(LiteMath::rotate(LiteMath::translate(glm::mat4(1.0f),
                                        glm::vec3(scene_params[0], scene_params[1], tr_z)), 
                                        scene_params[5], glm::vec3(0,0,1)), 
                                        scene_params[4], glm::vec3(0,1,0)), 

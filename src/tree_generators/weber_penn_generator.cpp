@@ -1,19 +1,18 @@
 #include "weber_penn_generator.h"
-#include "common_utils/turtle.h"
+#include "turtle.h"
 #include <atomic>
 #include <cmath>
 
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
-using glm::degrees;
 
 float declination(vec3 vec)
 {
-    return degrees(atan2(sqrt(SQR(vec.x) + SQR(vec.y)), vec.z));
+    return LiteMath::to_degrees(atan2(sqrt(SQR(vec.x) + SQR(vec.y)), vec.z));
 }
 
-void vec_to_quat(glm::quat &q, const vec3 vec, short axis, const short upflag)
+void vec_to_quat(LiteMath::quat &q, const vec3 vec, short axis, const short upflag)
 {
   //it is taken from blender/python/mathutils/mathutils_Vector.c with mathutils vecs
   //and quats replaced with glm ones
@@ -22,7 +21,7 @@ void vec_to_quat(glm::quat &q, const vec3 vec, short axis, const short upflag)
   float angle, si, co, len;
 
   /* first set the quat to unit */
-  q = glm::quat(1,0,0,0);
+  q = LiteMath::quat(1,0,0,0);
 
   len = length(vec);
 
@@ -80,13 +79,13 @@ void vec_to_quat(glm::quat &q, const vec3 vec, short axis, const short upflag)
 
   nor = normalize(nor);
 
-  q = glm::angleAxis(acosf(co), nor);
+  q = LiteMath::angleAxis(acosf(co), nor);
   
   if (axis != upflag) {
     glm::mat3x3 mat;
-    glm::quat q2;
+    LiteMath::quat q2;
     const vec3 &fp = mat[2];
-    mat = glm::mat3x3(q);
+    mat = LiteMath::to_mat3(q);
 
     if (axis == 0) {
       if (upflag == 1) {
@@ -115,14 +114,14 @@ void vec_to_quat(glm::quat &q, const vec3 vec, short axis, const short upflag)
 
     co = cosf(angle);
     si = sinf(angle) / len;
-    q2 = glm::quat(co, tvec[0] * si, tvec[1] * si, tvec[2] * si);
+    q2 = LiteMath::quat(co, tvec[0] * si, tvec[1] * si, tvec[2] * si);
     q = q2*q;
   }
 }
 
-glm::quat to_track_quat_ZY(glm::vec3 vec)
+LiteMath::quat to_track_quat_ZY(glm::vec3 vec)
 {
-    glm::quat q;
+    LiteMath::quat q;
     vec_to_quat(q, -vec, 2, 1);
     return q;
 }
@@ -174,7 +173,7 @@ void WeberPennGenerator::Tree::create_branches()
         {
             //position randomly at base and rotate to face out
             auto &point = points[ind];
-            turtle.roll_right(degrees(point.second) - 90);
+            turtle.roll_right(LiteMath::to_degrees(point.second) - 90);
             turtle.pos = point.first;
         }
         else
@@ -525,7 +524,7 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
 
     if (param.curve_v[depth] < 0)
     {
-        float tan_ang = tan(glm::radians(90 - abs(param.curve_v[depth])));
+        float tan_ang = tan(LiteMath::to_radians(90 - abs(param.curve_v[depth])));
         float hel_pitch = 2 * stem.length / curve_res * random_uniform(0.8, 1.2);
         float hel_radius = 3 * hel_pitch / (16 * tan_ang) * random_uniform(0.8, 1.2);
 
@@ -585,9 +584,9 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                 else
                 {
                     Point &prev_point = spline(stem).bezier_points[spline(stem).bezier_points.size() - 2];
-                    new_point->co = glm::angleAxis((seg_ind - 1) * PI, hel_axis) * hel_p_2;
+                    new_point->co = LiteMath::angleAxis((seg_ind - 1) * PI, hel_axis) * hel_p_2;
                     new_point->co += prev_point.co;
-                    glm::vec3 dif_p = glm::angleAxis((seg_ind - 1) * PI, hel_axis) * (hel_p_2 - hel_p_1);
+                    glm::vec3 dif_p = LiteMath::angleAxis((seg_ind - 1) * PI, hel_axis) * (hel_p_2 - hel_p_1);
                     new_point->handle_left = new_point->co - dif_p;
                     new_point->handle_right = 2.0f * new_point->co - new_point->handle_left;
                 }
@@ -774,9 +773,9 @@ void WeberPennGenerator::Tree::make_stem(CHTurtle &turtle, Stem &stem, int start
                             }
                             else
                             {
-                                turtle.dir = glm::angleAxis(glm::radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.dir;
+                                turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.dir;
                                 normalize(turtle.dir);
-                                turtle.right = glm::angleAxis(glm::radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.right;
+                                turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1))*turtle.right;
                                 normalize(turtle.right);
                             }
                         }
@@ -881,7 +880,7 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
 
     if (param.curve_v[depth] < 0)
     {
-        float tan_ang = tan(glm::radians(90 - abs(param.curve_v[depth])));
+        float tan_ang = tan(LiteMath::to_radians(90 - abs(param.curve_v[depth])));
         float hel_pitch = 2 * stem.length / curve_res * random_uniform(0.8, 1.2);
         float hel_radius = 3 * hel_pitch / (16 * tan_ang) * random_uniform(0.8, 1.2);
 
@@ -912,7 +911,7 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
                     turtle.pos = hel_p_2 + pos;
                 else
                 {
-                    hel_p_2 = glm::angleAxis((seg_ind - 1)*PI, hel_axis)*hel_p_2;
+                    hel_p_2 = LiteMath::angleAxis((seg_ind - 1)*PI, hel_axis)*hel_p_2;
                     turtle.pos = hel_p_2 + previous_helix_point;
                 }
             }
@@ -989,9 +988,9 @@ bool WeberPennGenerator::Tree::test_stem(CHTurtle &turtle, Stem &stem, int start
                         }
                         else
                         {
-                            turtle.dir = glm::angleAxis(glm::radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.dir;
+                            turtle.dir = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.dir;
                             normalize(turtle.dir);
-                            turtle.right = glm::angleAxis(glm::radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.right;
+                            turtle.right = LiteMath::angleAxis(LiteMath::to_radians(-spr_angle / 2), vec3(0, 0, 1)) * turtle.right;
                             normalize(turtle.right);
                         }
                     }
@@ -1061,8 +1060,8 @@ void WeberPennGenerator::Tree::apply_tropism(CHTurtle &turtle, glm::vec3 tropism
     float alpha = 10 * length(h_cross_t);
     normalize(h_cross_t);
     //rotate by angle about axis perpendicular to turtle direction and tropism vector
-    turtle.dir = glm::normalize(glm::angleAxis(glm::radians(alpha), h_cross_t) * turtle.dir);
-    turtle.right = glm::normalize(glm::angleAxis(glm::radians(alpha), h_cross_t) * turtle.right);
+    turtle.dir = glm::normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.dir);
+    turtle.right = glm::normalize(LiteMath::angleAxis(LiteMath::to_radians(alpha), h_cross_t) * turtle.right);
 }
 
 void WeberPennGenerator::Tree::calc_helix_points(CHTurtle &turtle, float rad, float pitch, 
@@ -1090,7 +1089,7 @@ void WeberPennGenerator::Tree::calc_helix_points(CHTurtle &turtle, float rad, fl
     // align helix points to turtle direction and randomize rotation around axis
     auto trf = to_track_quat_ZY(turtle.dir);
     float spin_ang = random_uniform(0, 2 * PI);
-    auto rot_quat = glm::angleAxis(glm::radians(spin_ang), vec3(0, 0, 1));
+    auto rot_quat = LiteMath::angleAxis(LiteMath::to_radians(spin_ang), vec3(0, 0, 1));
 
     for (auto &p :points)
     {
@@ -1327,7 +1326,7 @@ void WeberPennGenerator::Tree::make_clones(CHTurtle &turtle, int seg_ind, float 
 
         else
         {
-            auto quat = glm::angleAxis(glm::radians(eff_spr_angle), vec3(0, 0, 1));
+            auto quat = LiteMath::angleAxis(LiteMath::to_radians(eff_spr_angle), vec3(0, 0, 1));
 
             n_turtle.dir = glm::normalize(quat * n_turtle.dir);
             n_turtle.right = glm::normalize(quat * n_turtle.right);

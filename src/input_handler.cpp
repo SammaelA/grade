@@ -6,8 +6,7 @@
 #include "app.h"
 #include "cmd_executors.h"
 #include "generation/scene_generator_helper.h"
-#define GLM_ENABLE_EXPERIMENTAL 1
-#include <glm/gtx/euler_angles.hpp>
+#include "common_utils/matrix_transform.h"
 
 void InputHandler::handle_input(Event &event)
 {
@@ -49,9 +48,9 @@ void InputHandler::handle_input(Event &event)
     if (ctx.camera.pitch < -89.0f)
       ctx.camera.pitch = -89.0f;
     glm::vec3 front;
-    front.x = cos(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
-    front.y = sin(glm::radians(ctx.camera.pitch));
-    front.z = sin(glm::radians(ctx.camera.yaw)) * cos(glm::radians(ctx.camera.pitch));
+    front.x = cos(LiteMath::to_radians(ctx.camera.yaw)) * cos(LiteMath::to_radians(ctx.camera.pitch));
+    front.y = sin(LiteMath::to_radians(ctx.camera.pitch));
+    front.z = sin(LiteMath::to_radians(ctx.camera.yaw)) * cos(LiteMath::to_radians(ctx.camera.pitch));
     ctx.camera.front = glm::normalize(front);
   }
 
@@ -107,8 +106,8 @@ void InputHandler::handle_input(Event &event)
   if (event.active[SDLK_o])
   {
     Block b;
-    glm::mat4 transform = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(ctx.mouseWorldPosType)), glm::vec3(ctx.cur_obj_scale));
-    glm::mat4 transform2 = glm::eulerAngleXYZ(ctx.cur_obj_angles.x, ctx.cur_obj_angles.y, ctx.cur_obj_angles.z);
+    glm::mat4 transform = LiteMath::scale(LiteMath::translate(glm::mat4(1.0f), glm::vec3(ctx.mouseWorldPosType)), glm::vec3(ctx.cur_obj_scale));
+    glm::mat4 transform2 = LiteMath::eulerAngleXYZ(ctx.cur_obj_angles.x, ctx.cur_obj_angles.y, ctx.cur_obj_angles.z);
     transform = transform*transform2;
     b.set_string("name", ctx.active_object_name);
     b.set_bool("on_terrain", ctx.cur_object_on_terrain);

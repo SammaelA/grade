@@ -294,12 +294,12 @@ glm::mat4 SyntheticTreeGenerator::get_transform(Branch *base, glm::vec3 pos, Bra
         psi_s *= 0.2;
     }
     float self_rot = stat.transformStat.rot_angle->get();
-    glm::mat4 transf = glm::translate(
-        glm::rotate(
-            glm::rotate(
-                glm::rotate(
-                    glm::scale(
-                        glm::translate(glm::mat4(1.0f), pos),
+    glm::mat4 transf = LiteMath::translate(
+        LiteMath::rotate(
+            LiteMath::rotate(
+                LiteMath::rotate(
+                    LiteMath::scale(
+                        LiteMath::translate(glm::mat4(1.0f), pos),
                         glm::vec3(scale)),
                     self_rot, dir),
                 phi_s, glm::vec3(0, 1, 0)),

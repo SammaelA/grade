@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 
 enum BuildQuality
 {

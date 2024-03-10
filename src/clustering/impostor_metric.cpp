@@ -63,7 +63,7 @@ BranchClusteringData *ImpostorClusteringHelper::convert_branch(Block &settings, 
     LeafHeap lh;
     Branch *tmp_b = bh.new_branch();
     tmp_b->deep_copy(base, bh, &lh);
-    glm::mat4 tr = glm::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,0,1))*glm::inverse(data.transform);
+    glm::mat4 tr = LiteMath::rotate(glm::mat4(1.0f), PI/2, glm::vec3(0,0,1))*glm::inverse(data.transform);
     //when we render impostor we assume that the main axis is y,
     //while after glm::inverse(data.transform) the main axis is x
     tmp_b->transform(tr, 1);

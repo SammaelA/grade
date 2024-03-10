@@ -251,7 +251,7 @@ if (DIFF_RECONSTRUCTION)
     set(AUX_OMP_INC "/usr/lib/llvm-9/lib/clang/9.0.0/include/") # use 'locate omp.h'     on you system to find apropriate dir for clang
     set(AUX_OMP_LIB "/usr/lib/llvm-9/lib/")                     # use 'locate libomp.so' on you system to find apropriate dir for clang
 
-    include_directories("${DR_SRC}/src", "${DR_SRC}/LiteMath", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
+    include_directories("${DR_SRC}/src", "${DR_SRC}/raytrace_src", "${DR_SRC}/common_src", "${DR_SRC}/external/enzyme")
 
     add_definitions(-DUSE_EMBREE)
     add_definitions(-DUSE_CUSTOM_DIFF_RENDER)

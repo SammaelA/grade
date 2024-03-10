@@ -2,7 +2,7 @@
 #include "silhouette.h"
 #include "tinyEngine/resources.h"
 #include "tinyEngine/engine.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <vector>
 
 Texture ImgExp::ImgExpanding(Texture image, int res_size, float color_thr, float blur_sigma)

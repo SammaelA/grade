@@ -17,8 +17,8 @@
 #include <cstdio>
 #include <string>
 #include <chrono>
+#include "common_utils/matrix_transform.h"
 
-using glm::degrees;
 using glm::mat4;
 using glm::vec2;
 using glm::vec3;
@@ -168,8 +168,8 @@ namespace voxelization
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, UV_tex.texture, 0);
     glViewport(0, 0, w, h);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-    glm::mat4 view = glm::lookAt(0.15f*camera.origin, camera.target, -camera.up); //to save to file without inversion
+    glm::mat4 projection = LiteMath::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    glm::mat4 view = LiteMath::lookAt(0.15f*camera.origin, camera.target, -camera.up); //to save to file without inversion
 
     UV.use();
     UV.uniform("projection", projection);
@@ -190,8 +190,8 @@ namespace voxelization
   void render_reference_image(CameraSettings &camera, Image &out_image,
                               float image_w, float image_h)
   {
-    mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-    mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+    mat4 projection = LiteMath::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
     mat4 view_proj = projection * view;
     mat4 view_proj_inv = glm::inverse(view_proj);
 
@@ -242,8 +242,8 @@ namespace voxelization
   void render_reference_image_circle(CameraSettings &camera, Image &out_image,
                               float image_w, float image_h)
   {
-    mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-    mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+    mat4 projection = LiteMath::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
     mat4 view_proj = projection * view;
     mat4 view_proj_inv = glm::inverse(view_proj);
 
@@ -296,8 +296,8 @@ namespace voxelization
                        float image_w, float image_h, float max_distance, int max_steps,
                        int spp)
   {
-    mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-    mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+    mat4 projection = LiteMath::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+    mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
     mat4 view_proj = projection * view;
     mat4 view_proj_inv = glm::inverse(view_proj);
 
@@ -375,8 +375,8 @@ namespace voxelization
       auto &camera = cameras[ref_n];
       auto &reference = reference_images[ref_n];
 
-      mat4 projection = glm::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
-      mat4 view = glm::lookAt(camera.origin, camera.target, camera.up);
+      mat4 projection = LiteMath::perspective(camera.fov_rad, (float)image_w / image_h, camera.z_near, camera.z_far);
+      mat4 view = LiteMath::lookAt(camera.origin, camera.target, camera.up);
       mat4 view_proj = projection * view;
       mat4 view_proj_inv = glm::inverse(view_proj);
 

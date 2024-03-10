@@ -1,8 +1,7 @@
 #include <vector>
 #include <string>
 //#include "diff_geometry_generation.h"
-#define GLM_ENABLE_EXPERIMENTAL 1
-#include <glm/gtx/transform.hpp>
+#include "common_utils/matrix_transform.h"
 #include "simple_model_utils.h"
 #include "common_utils/blk.h"
 
@@ -22,7 +21,7 @@ namespace visualizer
 
   void scale(std::vector<float> &model, glm::vec3 scale)
   {
-    glm::mat4 scale_mat = glm::scale(glm::mat4(1.0f),scale); 
+    glm::mat4 scale_mat = LiteMath::scale(glm::mat4(1.0f),scale); 
     transform(model, scale_mat);
   }
 

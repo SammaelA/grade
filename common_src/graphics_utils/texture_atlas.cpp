@@ -1,6 +1,6 @@
 #include "texture_atlas.h"
 #include <iostream>
-#include <glm/gtc/matrix_transform.hpp>
+#include "common_utils/matrix_transform.h"
 #include "tinyEngine/model.h"
 #include "tinyEngine/engine.h"
 //long TextureAtlas::count = 0;
@@ -223,8 +223,8 @@ glm::mat4 TextureAtlas::tex_transform(int num) const
     b /= gridHN;
     float h1 = 1.0f / gridWN;
     float h2 = 1.0f / gridHN;
-    glm::mat4 sc_mat = glm::scale(glm::mat4(1.0f), glm::vec3(h1, h2, 1));
-    glm::mat4 tr_mat = glm::translate(glm::mat4(1.0f), glm::vec3(a, b, 0));
+    glm::mat4 sc_mat = LiteMath::scale(glm::mat4(1.0f), glm::vec3(h1, h2, 1));
+    glm::mat4 tr_mat = LiteMath::translate(glm::mat4(1.0f), glm::vec3(a, b, 0));
     return tr_mat * sc_mat;
 }
 void TextureAtlas::gen_mipmaps(std::string mipmap_shader_name)

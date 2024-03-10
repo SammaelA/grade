@@ -1,6 +1,6 @@
 #pragma once
 #include "generic_optimization_algorithm.h"
-#include "glm/glm.hpp"
+#include "common_utils/LiteMath_ext.h"
 #include "common_utils/blk.h"
 
 namespace my_opt

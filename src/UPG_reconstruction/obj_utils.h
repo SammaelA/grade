@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <string>
 
 #define FLOAT_PER_VERTEX (3+3+2)

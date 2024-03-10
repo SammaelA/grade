@@ -24,7 +24,7 @@ void HashBasedClusteringHelper::create_impostor_temp(Block &settings, Branch *ba
     LeafHeap lh;
     Branch *tmp_b = bh.new_branch();
     tmp_b->deep_copy(base, bh, &lh);
-    glm::mat4 tr = glm::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 0, 1)) * glm::inverse(data.transform);
+    glm::mat4 tr = LiteMath::rotate(glm::mat4(1.0f), PI / 2, glm::vec3(0, 0, 1)) * glm::inverse(data.transform);
     //when we render impostor we assume that the main axis is y,
     //while after glm::inverse(data.transform) the main axis is x
     tmp_b->transform(tr, 1);
@@ -173,7 +173,7 @@ void dct(float *values, float *dcts, int N, int M)
             {
                 for (int j=0;j<M;j++)
                 {
-                    dcts[u*M + v] += values[i*M + j]*cos(M_PI/((float)N)*(i+1./2.)*u)*cos(M_PI/((float)M)*(j+1./2.)*v);          
+                    dcts[u*M + v] += values[i*M + j]*cos(PI/((float)N)*(i+1./2.)*u)*cos(PI/((float)M)*(j+1./2.)*v);          
                 }
             }
         }

@@ -260,7 +260,7 @@ bool prepare_directory(const std::string &save_path)
 }
 float smoothstep3(float x) { return -2*x*x*x + 3*x*x; }
 float smoothstep5(float x) { return 6*x*x*x*x*x - 15*x*x*x*x + 10*x*x*x; }
-std::string print_mat4x4(glm::mat4x4 mat)
+std::string print_mat4x4(glm::mat4 mat)
 {
   std::string res = "[";
   for (int i=0;i<4;i++)

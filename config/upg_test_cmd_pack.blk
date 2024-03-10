@@ -5,19 +5,19 @@
     perform_tests_mesh_reconstruction:b = false
     tests_mesh_reconstruction:arr = {}
 
-    perform_tests_sdf_reconstruction:b = true
+    perform_tests_sdf_reconstruction:b = false
     tests_sdf_reconstruction:arr = {5}
 
-    perform_tests_tensor_processor:b = false
+    perform_tests_tensor_processor:b = true
     tests_tensor_processor:arr = {}
 
-    perform_tests_tensor_processor_GPU:b = false
+    perform_tests_tensor_processor_GPU:b = true
     tests_tensor_processor_GPU:arr = {}
 
     perform_tests_neural_networks:b = false
     tests_neural_networks:arr = {}
 
-    perform_tests_common:b = false
+    perform_tests_common:b = true
     tests_common:arr = {}
   }
   cmd {cmd_name:s = "IC_EXIT"}

@@ -52,7 +52,7 @@ BranchClusteringData *HashBasedClusteringHelper::convert_branch_eigin_vectors(Bl
     b->transform(tr, data.r_transform);
 
     glm::vec3 axis = b->joints.back().pos - b->joints.front().pos;
-    glm::mat4 rot = glm::rotate(glm::mat4(1.0f), 2 * PI / isParams.hash_count, axis);
+    glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f), 2 * PI / isParams.hash_count, axis);
 
     for (int i = 0; i < isParams.hash_count; i++)
     {

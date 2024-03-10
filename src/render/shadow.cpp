@@ -14,8 +14,8 @@
         shadow_camera.up = glm::vec3( 0.0f, 1.0f,  0.0f);
         view = shadow_camera.camera();
         float near_plane = 100, far_plane = 2000;
-        projection = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, near_plane, far_plane); 
-        //projection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
+        projection = LiteMath::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, near_plane, far_plane); 
+        //projection = LiteMath::perspective(LiteMath::to_radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, 1.0f, 3000.0f);
         viewproj = projection * view;
 
     }

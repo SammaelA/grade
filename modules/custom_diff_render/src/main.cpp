@@ -7,7 +7,7 @@
 #include <iomanip>
 #include "myomp.h"
 
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 
 #include <cassert>
 #include <iomanip>

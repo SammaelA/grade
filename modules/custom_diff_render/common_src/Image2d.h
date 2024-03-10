@@ -6,7 +6,7 @@
 #include <memory>
 #include <cassert>
 
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 
 namespace LiteImage 
 {

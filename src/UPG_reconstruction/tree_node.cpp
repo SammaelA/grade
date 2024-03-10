@@ -182,8 +182,8 @@ namespace upg
       int j = 0;
       for (float ang = 1; ang <= SPINS; ++ang)
       {
-        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
-        float angle = ang * 2.0 * M_PI / float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * PI / float(SPINS);
+        float angle = ang * 2.0 * PI / float(SPINS);
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 0] = cos(prev_angle) * in[i - 1];
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 1] = (y - 1)/8;
         out[(i - 1) * SPINS * 2 * 9 + j * 2 * 9 + 0 + 2] = sin(prev_angle) * in[i - 1];
@@ -362,8 +362,8 @@ namespace upg
       SpinNode_8_apply(data, mesh.pos.data());
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
-        float angle = ang * 2.0 * M_PI / float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * PI / float(SPINS);
+        float angle = ang * 2.0 * PI / float(SPINS);
         add_tri({0, 0, 0}, {cos(angle) * 7.0 / 16.0, 0, sin(angle) * 7.0 / 16.0}, {cos(prev_angle) * 7.0 / 16.0, 0, sin(prev_angle) * 7.0 / 16.0}, mesh);
       }
       if (out_jac)
@@ -399,14 +399,14 @@ namespace upg
       SpinNode_8_apply(data, mesh.pos.data());
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
-        float angle = ang * 2.0 * M_PI / float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * PI / float(SPINS);
+        float angle = ang * 2.0 * PI / float(SPINS);
         add_tri({0, 7.0 / 8.0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
       }
       for (int ang = 1; ang <= SPINS; ++ang)
       {
-        float prev_angle = (ang - 1) * 2.0 * M_PI / float(SPINS);
-        float angle = ang * 2.0 * M_PI / float(SPINS);
+        float prev_angle = (ang - 1) * 2.0 * PI / float(SPINS);
+        float angle = ang * 2.0 * PI / float(SPINS);
         add_tri({0, 0, 0}, {cos(angle) * 0.5, 0, sin(angle) * 0.5}, {cos(prev_angle) * 0.5, 0, sin(prev_angle) * 0.5}, mesh);
       }
       if (out_jac)

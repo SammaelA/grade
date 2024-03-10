@@ -3,7 +3,7 @@
 #include "tinyEngine/postfx.h"
 #include "tinyEngine/engine.h"
 #include "graphics_utils/modeling.h"
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <chrono>
 
 #ifdef USE_CUSTOM_DIFF_RENDER
@@ -228,10 +228,10 @@ public:
 
     //TODO fix me. The same strange transform applied in Mitsuba!
     float tr_z = scene_params[2] * tan(0.5*0.25) / tan(0.5*cameras[0].fov_rad);
-    glm::mat4 transform = glm::translate(glm::mat4(1.0f),glm::vec3(scene_params[0], scene_params[1], tr_z))*
-                          glm::rotate(glm::mat4(1.0f), scene_params[5], glm::vec3(0,0,1))*
-                          glm::rotate(glm::mat4(1.0f), scene_params[4], glm::vec3(0,1,0))*
-                          glm::rotate(glm::mat4(1.0f), scene_params[3], glm::vec3(1,0,0));
+    glm::mat4 transform = LiteMath::translate(glm::mat4(1.0f),glm::vec3(scene_params[0], scene_params[1], tr_z))*
+                          LiteMath::rotate(glm::mat4(1.0f), scene_params[5], glm::vec3(0,0,1))*
+                          LiteMath::rotate(glm::mat4(1.0f), scene_params[4], glm::vec3(0,1,0))*
+                          LiteMath::rotate(glm::mat4(1.0f), scene_params[3], glm::vec3(1,0,0));
     float total_res = 0;
 
     for (int i=0;i<cameras.size();i++)

@@ -1,6 +1,6 @@
 #pragma once
 #include <random>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 
 class DistributionGenerator;
 class DiscreteGeneral;

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "raytrace.h"
-#include "LiteMath.h"
+#include "common_utils/LiteMath_ext.h"
 #include "CrossRT.h"
 namespace diff_render
 {

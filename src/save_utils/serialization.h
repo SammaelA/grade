@@ -22,7 +22,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/export.hpp>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include "common_utils/bit_vector.h"
 #include "common_utils/bbox.h"
 #include "tinyEngine/model.h"

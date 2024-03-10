@@ -449,7 +449,7 @@ void GrovePacker::transform_by_nodes(ClusterData &cl)
                     min_vec = dist;
                 }
             }
-            cl.IDA.transforms[i] = glm::translate(glm::mat4(1.0f), min_vec) * cl.IDA.transforms[i];
+            cl.IDA.transforms[i] = LiteMath::translate(glm::mat4(1.0f), min_vec) * cl.IDA.transforms[i];
         }
     }
 }

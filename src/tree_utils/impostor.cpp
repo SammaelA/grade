@@ -140,8 +140,8 @@ void ImpostorBaker::make_impostor(Branch &br, const TreeTypeData &tree_type, Imp
     imp.bcyl.r = 0.5*sqrt(SQR(bbox.sizes.x) + SQR(bbox.sizes.z));
     imp.bcyl.h_2 = 0.5*bbox.sizes.y;
 
-    glm::mat4 rot = glm::rotate(glm::mat4(1.0f),2*PI/params.slices_n,glm::vec3(0,1,0));
-    glm::mat4 base_rot = glm::rotate(glm::mat4(1.0f),params.add_rotation_y,glm::vec3(0,1,0));
+    glm::mat4 rot = LiteMath::rotate(glm::mat4(1.0f),2*PI/params.slices_n,glm::vec3(0,1,0));
+    glm::mat4 base_rot = LiteMath::rotate(glm::mat4(1.0f),params.add_rotation_y,glm::vec3(0,1,0));
     glm::vec4 a = base_rot*glm::vec4(imp.bcyl.r,0,0,1);
     glm::vec3 b = glm::vec3(0,imp.bcyl.h_2,0);
     glm::vec4 c = base_rot*glm::vec4(0,0,imp.bcyl.r,1);

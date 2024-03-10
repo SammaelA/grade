@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdio>
-#include <glm/glm.hpp>
+#include "common_utils/LiteMath_ext.h"
 #include <stdarg.h>
 #include <string>
 #include <map>
@@ -45,7 +45,7 @@ void debugl(uint level, const char *__restrict __fmt, glm::vec4 vec);
 void debugl(uint level, const char *__restrict __fmt, ...);
 void debug(const char *__restrict __fmt, ...);
 void logerr(const char *__restrict __fmt, ...);
-std::string print_mat4x4(glm::mat4x4 mat);
+std::string print_mat4x4(glm::mat4 mat);
 struct AllocData
 {
     long active_allocs = 0;
