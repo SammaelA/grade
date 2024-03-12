@@ -4,14 +4,20 @@
 #include <functional>
 #include <vector>
 
-class Octree
+/*
+Octree built from a point cloud. It can be used to find 
+closest neighbours or iterate over all points in some region.
+It's implementation is very basic and not really efficient,
+but still better than brute force search.
+*/
+class PointCloudOctree
 {
 public:
-    static const int MAX_NODES = 8;
-    Octree();
-    Octree(AABB _box);
+    static const int MAX_NODES = 8; //maximum points in leaf
+    PointCloudOctree();
+    PointCloudOctree(AABB _box);
     void create(AABB _box);
-    ~Octree(){clear();}
+    ~PointCloudOctree(){clear();}
 
     void insert(float3 &pos) {root.insert(pos);}
     void clear() {root.clear();}

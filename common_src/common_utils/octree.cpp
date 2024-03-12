@@ -1,31 +1,31 @@
 #include "octree.h"
 #include "common_utils/utility.h"
 
-Octree::Node *Octree::new_node(AABB &_box) 
+PointCloudOctree::Node *PointCloudOctree::new_node(AABB &_box) 
 {
     return new Node(_box);
 }
 
-void Octree::delete_node(Node *n)
+void PointCloudOctree::delete_node(Node *n)
 {
     if (n) delete n;
 }
 
-void Octree::insert_vector(std::vector<float3> &positions)
+void PointCloudOctree::insert_vector(std::vector<float3> &positions)
 {
     for (auto &p : positions)
         root.insert(p);
 }
 
-Octree::Octree() : root(AABB(float3(0,0,0),float3(0,0,0))) {};
-Octree::Octree(AABB _box) : root(_box) {};
-void Octree::create(AABB _box)
+PointCloudOctree::PointCloudOctree() : root(AABB(float3(0,0,0),float3(0,0,0))) {};
+PointCloudOctree::PointCloudOctree(AABB _box) : root(_box) {};
+void PointCloudOctree::create(AABB _box)
 {
     root.clear();
     root.box = _box;
 }
 
-bool Octree::Node::insert(float3 &pos)
+bool PointCloudOctree::Node::insert(float3 &pos)
 {
     //logerr("insert (%f %f %f) in [%f %f %f]-[%f %f %f]", pos.x, pos.y, pos.z,
     //       box.min_pos.x,box.min_pos.y,box.min_pos.z,
@@ -50,7 +50,7 @@ bool Octree::Node::insert(float3 &pos)
         }*/
         return false;
     }
-    else if (points.size() < Octree::MAX_NODES)
+    else if (points.size() < PointCloudOctree::MAX_NODES)
     {
         points.push_back(pos);
         return true;
@@ -67,7 +67,7 @@ bool Octree::Node::insert(float3 &pos)
     }
     return false;
 }
-void Octree::Node::subdivide_half()
+void PointCloudOctree::Node::subdivide_half()
 {
     for (int x = 0;x<=1;x++)
     {
@@ -78,7 +78,7 @@ void Octree::Node::subdivide_half()
                 float3 sizes = box.max_pos - box.min_pos;
                 float3 new_min = box.min_pos + float3(x*0.5f*sizes.x, y*0.5f*sizes.y, z*0.5f*sizes.z);
                 AABB _box(new_min, new_min + 0.5f*sizes);
-                child_nodes[GetN(x,y,z)] = Octree::new_node(_box);
+                child_nodes[GetN(x,y,z)] = PointCloudOctree::new_node(_box);
             }
         } 
     }
@@ -93,7 +93,7 @@ void Octree::Node::subdivide_half()
     }
     points = {};
 }
-void Octree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(float3 &)> func)
+void PointCloudOctree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(float3 &)> func)
 {
     if (!box.intersects(_box))
         return;
@@ -110,7 +110,7 @@ void Octree::Node::apply_to_neighbours_AABB(AABB &_box, std::function<void(float
             func(p);
     }
 }
-void Octree::Node::apply_to_neighbours_sphere(AABB &_box, float r, float3 &center, 
+void PointCloudOctree::Node::apply_to_neighbours_sphere(AABB &_box, float r, float3 &center, 
                                               std::function<void(float3 &)> func)
 {
     if (!box.intersects(_box))
@@ -135,7 +135,7 @@ void Octree::Node::apply_to_neighbours_sphere(AABB &_box, float r, float3 &cente
         }
     }
 }
-void Octree::Node::remove_in_sphere(AABB &_box, float r, float3 &center)
+void PointCloudOctree::Node::remove_in_sphere(AABB &_box, float r, float3 &center)
 {
     if (!box.intersects(_box))
         return;
@@ -160,12 +160,12 @@ void Octree::Node::remove_in_sphere(AABB &_box, float r, float3 &center)
     }
 }
 
-Octree::Node::~Node()
+PointCloudOctree::Node::~Node()
 {
     clear();
 }
 
-void Octree::Node::clear()
+void PointCloudOctree::Node::clear()
 {
     points.clear();
     if (child_nodes[0])
@@ -173,7 +173,7 @@ void Octree::Node::clear()
         for (int i=0;i<8;i++)
         {
             child_nodes[i]->clear();
-            Octree::delete_node(child_nodes[i]);
+            PointCloudOctree::delete_node(child_nodes[i]);
             child_nodes[i] = nullptr;
         }
     }

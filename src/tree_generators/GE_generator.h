@@ -111,7 +111,7 @@ protected:
         void remove_close(float3 pos, float r);
 
         std::vector<float3> positions;
-        Octree octree;
+        PointCloudOctree octree;
         bool active = true;
     };
     
