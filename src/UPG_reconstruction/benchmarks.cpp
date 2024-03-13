@@ -16,6 +16,7 @@
 #include "density_field_process.h"
 #include "sdf_scene_convert.h"
 #include "interpolation.h"
+#include "sdf_octree.h"
 
 namespace upg
 {
@@ -85,7 +86,7 @@ namespace upg
   {
     SceneDesc desc;
     desc.first.s = {2,1};
-    desc.second.p = {0,0,0,1};
+    desc.second.p = {0,0,0,0.8};
     return desc;
   }
 
@@ -925,8 +926,37 @@ namespace upg
     engine::textureManager->save_png(t, "SDF Scene demo");
   }
 
+  void sdf_octree_test()
+  {
+    SceneDesc s = scene_1_sphere();
+    ProceduralSdf sdf(s.first);
+    sdf.set_parameters(s.second.p);
+    std::vector<float> data = {0};
+
+    int steps = 15;
+    ProceduralSdf g_sdf({{SdfNodeType::OCTREE}});
+    g_sdf.set_parameters(data);
+    dynamic_cast<OctreeSdfNode*>(g_sdf.root)->construct( [&sdf](const float3 &p) {
+      /*logerr("sample %f %f %f",p.x,p.y,p.z);*/ return sdf.get_distance(p); });
+    float d = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample(float3(0.1,0.1,-0.1));
+    float d2 = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample_closest(float3(0.1,0.1,-0.1));
+    printf("d= %f %f\n",d, d2);
+    //return;
+    for (int i=0;i<steps;i++)
+    {
+      CameraSettings camera;
+      camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      camera.target = float3(0,0,0);
+      camera.up = float3(0,1,0);
+      Texture t = render_sdf(g_sdf, camera, 512, 512, 1, SDFRenderMode::LAMBERT);
+      engine::textureManager->save_png(t, "octree_test_"+std::to_string(i));
+    }
+  }
+
   void perform_benchmarks(const Block &blk)
   {
+    //sdf_octree_test();
+    //return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);

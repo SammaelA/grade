@@ -5,6 +5,7 @@
 #include "autodiff/autodiff.h"
 #include "sdf_grid.h"
 #include "sdf_neural.h"
+#include "sdf_octree.h"
 
 float __enzyme_autodiff(...);
 
@@ -2524,6 +2525,7 @@ namespace upg
     {SdfNodeType::NEURAL_MEDIUM, "Neural Medium", SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 3, 64);}}},
     {SdfNodeType::NEURAL_LARGE , "Neural Large" , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 4, 80);}}},
     {SdfNodeType::NEURAL_HUGE  , "Neural Huge"  , SdfNodeClass::NEURAL     , VARIABLE_PARAM_COUNT, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new NeuralSdfNode(t, 5, 128);}}},
+    {SdfNodeType::OCTREE       , "Octree"       , SdfNodeClass::OTHER      , 1, 0, {[](SdfNodeType::Type t) -> SdfNode* {return new OctreeSdfNode(t, 1000);}}},
   };
 
   std::map<SdfNodeType::Type, UPGStructure> complex_nodes_structure = 

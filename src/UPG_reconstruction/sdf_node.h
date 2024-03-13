@@ -48,6 +48,7 @@ namespace upg
       NEURAL_MEDIUM,
       NEURAL_LARGE,
       NEURAL_HUGE,
+      OCTREE,
       NODE_TYPES_COUNT
     };
   };
