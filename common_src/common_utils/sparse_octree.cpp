@@ -38,37 +38,48 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
 {
   assert(nodes[node_idx].offset > 0);
   unsigned idx = nodes[node_idx].offset;
+  T n_distances[8];
+  for (unsigned cid = 0; cid < 8; cid++)
+    n_distances[cid] = nodes[idx + cid].value;
   for (unsigned cid = 0; cid < 8; cid++)
   {
     if (nodes[idx + cid].offset > 0) // go deeper
     {
       split_children(f, idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
     }
-    else if (abs(nodes[idx + cid].value) < sqrt(2)*(1/(pow(2, level)))) // child is leaf, check if we should split it
+    else if (abs(nodes[idx + cid].value) < sqrt(2)*(1/(pow(2, level-2)))) // child is leaf, check if we should split it
     {
       //printf("LOL %u %u %u\n",(cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
       float3 p1 = 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
+      float3 p2 = (p1+float3(0.5,0.5,0.5)) * (d/2);
+      float d1 = f(2.0f*p2-1.0f);
+      float d2 = sample_closest(2.0f*p2-1.0f);
+      if (abs(d1-d2)>1e-4)
+        printf("ERRRR %f %f %f --- %f %f\n",p2.x, p2.y, p2.z, d1,d2);
 
       bool need_split = false;
       unsigned samples = 128;
       float av_diff = 0;
       for (unsigned s=0;s<samples;s++)
       {
-        //float3 pos = (p1 + 0.5f*float3(0.5f + ((s & 4) >> 2), 0.5f + ((s & 2) >> 1), 0.5f + (s & 1))) * (d/2);
-        float3 pos = (p1 + float3(urand(), urand(), urand())) * (d/2);
+        float3 n_pos = 0.5f*float3(0.5f + ((s & 4) >> 2), 0.5f + ((s & 2) >> 1), 0.5f + (s & 1));
+        float3 pos = (p1 + n_pos) * (d/2);
+        pos = (p1 + float3(urand(), urand(), urand())) * (d/2);
         float d_ref = f(2.0f*pos-1.0f);
         float d_sample = sample(2.0f*pos-1.0f);
         float diff = abs(d_ref - d_sample);
         av_diff += diff;
+        //if (diff > threshold)
+        //  printf("%f %f %f %f %f %f diff = %f (%f %f)\n", p1.x, p1.y, p1.z, pos.x, pos.y, pos.z, diff, d_ref, d_sample);
       }
-      if (av_diff/samples > threshold)
+      av_diff /= samples;
+      if (av_diff > threshold)
       {
         printf("Performing split. Level %u size %d\n", level, (int)nodes.size());
-        //printf("%f %f %f %f %f %f diff = %f (%f %f)\n", p1.x, p1.y, p1.z, pos.x, pos.y, pos.z, diff, d_ref, d_sample);
         need_split = true;
       }
 
-      if (need_split)
+      if (need_split && level<6)
       {
         nodes[idx + cid].offset = nodes.size();
         
@@ -79,6 +90,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
           float3 pos = (p1 + 0.5f*float3(0.5f + ((gcid & 4) >> 2), 0.5f + ((gcid & 2) >> 1), 0.5f + (gcid & 1))) * (d/2);
           nodes[gc_idx + gcid].parent = idx + cid;
           nodes[gc_idx + gcid].value = f(2.0f*pos-1.0f);
+          //printf("%u putf %f %f %f -- %f\n",gc_idx + gcid, pos.x,pos.y,pos.z, nodes[gc_idx + gcid].value);
           //add_node_rec(f, idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
         }        
       }
@@ -91,6 +103,7 @@ void SparseOctree::construct(std::function<T(const float3 &)> f,
                              SparseOctreeSettings settings)
 {
   //DBG = true;
+  //DBG = false;
   nodes.clear();
   nodes.reserve(std::min(10000u, settings.max_nodes));
 
@@ -104,10 +117,16 @@ void SparseOctree::construct(std::function<T(const float3 &)> f,
   while (prev_size < nodes.size())
   {
     prev_size = nodes.size();
-    split_children(f, 0, 0.002, float3(0,0,0), 1, 1);
+    split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
   }
   
-  DBG = false;
+  //split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
+  //split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
+  //DBG = true;
+  //split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
+  //DBG = false;
+  
+  //DBG = true;
 }
 
 
@@ -181,6 +200,7 @@ SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level)
       if (prev_n_indices[p_index] > 0 &&                //p_index is a real node
           nodes[prev_n_indices[p_index]].offset > 0)    //p_index has children
       {
+        if (DBG) printf("child %u real\n", i);
         unsigned ch_index = nodes[prev_n_indices[p_index]].offset + 4*cur_chidx.x + 2*cur_chidx.y + cur_chidx.z;
         n_distances[i] = nodes[ch_index].value;
         n_indices[i] = ch_index;      
@@ -188,8 +208,10 @@ SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level)
       }
       else                                              //p_index is a leaf node
       {
+        assert(prev_n_indices[p_index] > 0);
+        if (DBG) printf("child %u fake\n", i);
         float3 smp_pos = 0.5f*float3(cur_pidx) + 0.25f*float3(cur_chidx);
-        n_distances[i] = sample_neighborhood_bilinear(clamp(2.0f*n_pos - float3(0.5, 0.5, 0.5), 0.0f, 1.0f), prev_n_distances);
+        n_distances[i] = sample_neighborhood_bilinear(smp_pos, prev_n_distances);
         n_indices[i] = 0;   
         //assert(false);
       }
@@ -238,14 +260,19 @@ SparseOctree::T SparseOctree::sample_closest(const float3 &position) const
   //  return 0.1;
   float3 pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);
   unsigned idx = 0;
+  float d = 1;
+  float3 p = float3(0,0,0);
   while (nodes[idx].offset != 0)
   {
-    float3 pindf = pos/nodes[idx].d - nodes[idx].pos;
+    float3 pindf = pos/d - p;
     unsigned ch_index = 4*(pindf.x >= 0.5) + 2*(pindf.y >= 0.5) + (pindf.z >= 0.5);
     //printf("%u pindf %f %f %f %u\n",idx, pindf.x, pindf.y, pindf.z, ch_index);
     idx = nodes[idx].offset + ch_index;
+    d = d/2;
+    p = 2*p + float3((ch_index & 4) >> 2, (ch_index & 2) >> 1, ch_index & 1);
   }
   //printf("\n");
+  //printf("%u last pindf \n",idx);
 
   return nodes[idx].value;
 }
