@@ -35,6 +35,8 @@ public:
 
   void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
+  T sample_2(const float3 &pos, unsigned max_level = 1000) const;
+  T sample_3(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
 protected:
