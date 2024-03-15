@@ -2,6 +2,11 @@
 #include "distribution.h"
 #include <cassert>
 
+bool is_border(float distance, unsigned level)
+{
+  return level < 2  ? true : abs(distance) < sqrt(2)*(1/(pow(2, level-2)));
+}
+
 void SparseOctree::add_node_rec(std::function<T(const float3 &)> f,
                                 unsigned node_idx,
                                 unsigned depth,
@@ -47,7 +52,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
     {
       split_children(f, idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
     }
-    else if (abs(nodes[idx + cid].value) < sqrt(2)*(1/(pow(2, level-2)))) // child is leaf, check if we should split it
+    else if (is_border(abs(nodes[idx + cid].value), level)) // child is leaf, check if we should split it
     {
       //printf("LOL %u %u %u\n",(cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
       float3 p1 = 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
@@ -64,7 +69,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
       {
         float3 n_pos = 0.5f*float3(0.5f + ((s & 4) >> 2), 0.5f + ((s & 2) >> 1), 0.5f + (s & 1));
         float3 pos = (p1 + n_pos) * (d/2);
-        //pos = (p1 + float3(urand(), urand(), urand())) * (d/2);
+        pos = (p1 + float3(urand(), urand(), urand())) * (d/2);
         float d_ref = f(2.0f*pos-1.0f);
         float d_sample = sample(2.0f*pos-1.0f);
         float diff = abs(d_ref - d_sample);
@@ -120,6 +125,12 @@ void SparseOctree::construct(std::function<T(const float3 &)> f,
     split_children(f, 0, 0.005, float3(0,0,0), 1, 1);
   }
   
+  print_stat();
+  for (int i=1;i<=10;i++)
+  {
+    auto p = estimate_quality(f, 0.002f*i);
+    printf("estimate_quality(%f): %f %f\n",0.002f*i, (float)p.first, (float)p.second);
+  }
   //split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
   //split_children(f, 0, 0.01, float3(0,0,0), 1, 1);
   //DBG = true;
@@ -381,4 +392,94 @@ SparseOctree::T SparseOctree::sample_closest(const float3 &position) const
   //printf("%u last pindf \n",idx);
 
   return nodes[idx].value;
+}
+
+struct SparseOctreeCounts
+{
+  std::vector<unsigned> count_all;
+  std::vector<unsigned> count_border;
+  std::vector<unsigned> count_leaf;
+  std::vector<unsigned> count_border_leaf;
+};
+
+void check_border_reappearance_rec(const std::vector<SparseOctree::Node> &nodes, unsigned idx, unsigned level)
+{
+  bool b = is_border(nodes[idx].value, level); 
+  if (nodes[idx].offset > 0)
+  {
+    for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
+    {
+      bool ch_b = is_border(nodes[nodes[idx].offset + ch_idx].value, level+1);
+      if (!b && ch_b)
+        printf("reappeared border (level %d-%d): %f %f\n", level,level+1, nodes[idx].value, nodes[nodes[idx].offset + ch_idx].value);
+      check_border_reappearance_rec(nodes, nodes[idx].offset + ch_idx, level+1);
+    }
+  }
+}
+
+void print_stat_rec(const std::vector<SparseOctree::Node> &nodes, SparseOctreeCounts &counts, unsigned idx, unsigned level)
+{
+  if (level == counts.count_all.size())
+  {
+    counts.count_all.push_back(0);
+    counts.count_border.push_back(0);
+    counts.count_leaf.push_back(0);
+    counts.count_border_leaf.push_back(0);
+  }
+  counts.count_all[level] += 1;
+  counts.count_border[level] += is_border(nodes[idx].value, level);
+  counts.count_leaf[level] += nodes[idx].offset==0;
+  counts.count_border_leaf[level] += is_border(nodes[idx].value, level) && nodes[idx].offset==0;
+  if (nodes[idx].offset > 0)
+  {
+    for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
+      print_stat_rec(nodes, counts, nodes[idx].offset + ch_idx, level+1);
+  }
+}
+
+void SparseOctree::print_stat() const
+{
+  check_border_reappearance_rec(nodes, 0, 0);
+
+  SparseOctreeCounts counts;
+  print_stat_rec(nodes, counts, 0, 0);
+  printf("SparseOctree::print_stat\n");
+  printf("Levels: %d\n", (int)counts.count_all.size());
+  float tmax = 1;
+  for (int i=0;i<counts.count_all.size();i++)
+  {
+    float m = 100.0f/counts.count_all[i];
+    printf("Level %2d: cnt %6u, b %5u (%5.1f%%), l %5u (%5.1f%%), bl %5u (%5.1f%%)  occ %5.1f%%\n", i, counts.count_all[i], 
+           counts.count_border[i], m*counts.count_border[i], 
+           counts.count_leaf[i], m*counts.count_leaf[i],
+           counts.count_border_leaf[i], m*counts.count_border_leaf[i],
+           100.0f*counts.count_all[i]/tmax);
+    tmax *= 8;
+  }
+}
+
+std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr, unsigned samples) const
+{
+  unsigned i = 0;
+  std::vector<float> differences(samples, 0);
+  while (i < samples)
+  {
+    float3 p = float3(urand(-1,1),urand(-1,1),urand(-1,1));
+    float ref_d = reference_f(p);
+    if (abs(ref_d) < dist_thr)
+    {
+      differences[i] = sample(p) - ref_d;
+      i++;
+    }
+  }
+
+  double av_diff = 0;
+  double max_diff = 0;
+  for (auto &d : differences)
+  {
+    av_diff += abs(d);
+    max_diff = std::max(max_diff, (double)d);
+  }
+  av_diff /= samples;
+  return {av_diff, max_diff};
 }

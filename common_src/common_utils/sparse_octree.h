@@ -39,6 +39,8 @@ public:
   T sample_3(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
+  void print_stat() const;
+  std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
 protected:
   void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,
                     unsigned max_depth, float3 p, float d);
