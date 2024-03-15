@@ -33,6 +33,8 @@ public:
     float d;
   };
 
+  static bool is_border(float distance, unsigned level);
+
   void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_2(const float3 &pos, unsigned max_level = 1000) const;
@@ -41,6 +43,8 @@ public:
 
   void print_stat() const;
   std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
+  const std::vector<Node> &get_nodes() const { return nodes; }
+  const Node &get_node(unsigned idx) const { return nodes[idx]; }
 protected:
   void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,
                     unsigned max_depth, float3 p, float d);

@@ -2,7 +2,7 @@
 #include "distribution.h"
 #include <cassert>
 
-bool is_border(float distance, unsigned level)
+bool SparseOctree::is_border(float distance, unsigned level)
 {
   return level < 2  ? true : abs(distance) < sqrt(2)*(1/(pow(2, level-2)));
 }
@@ -63,7 +63,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
         printf("ERRRR %f %f %f --- %f %f\n",p2.x, p2.y, p2.z, d1,d2);
 
       bool need_split = false;
-      unsigned samples = 8;
+      unsigned samples = 64;
       float av_diff = 0;
       for (unsigned s=0;s<samples;s++)
       {
@@ -404,12 +404,12 @@ struct SparseOctreeCounts
 
 void check_border_reappearance_rec(const std::vector<SparseOctree::Node> &nodes, unsigned idx, unsigned level)
 {
-  bool b = is_border(nodes[idx].value, level); 
+  bool b = SparseOctree::is_border(nodes[idx].value, level); 
   if (nodes[idx].offset > 0)
   {
     for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
     {
-      bool ch_b = is_border(nodes[nodes[idx].offset + ch_idx].value, level+1);
+      bool ch_b = SparseOctree::is_border(nodes[nodes[idx].offset + ch_idx].value, level+1);
       if (!b && ch_b)
         printf("reappeared border (level %d-%d): %f %f\n", level,level+1, nodes[idx].value, nodes[nodes[idx].offset + ch_idx].value);
       check_border_reappearance_rec(nodes, nodes[idx].offset + ch_idx, level+1);
@@ -427,9 +427,9 @@ void print_stat_rec(const std::vector<SparseOctree::Node> &nodes, SparseOctreeCo
     counts.count_border_leaf.push_back(0);
   }
   counts.count_all[level] += 1;
-  counts.count_border[level] += is_border(nodes[idx].value, level);
+  counts.count_border[level] += SparseOctree::is_border(nodes[idx].value, level);
   counts.count_leaf[level] += nodes[idx].offset==0;
-  counts.count_border_leaf[level] += is_border(nodes[idx].value, level) && nodes[idx].offset==0;
+  counts.count_border_leaf[level] += SparseOctree::is_border(nodes[idx].value, level) && nodes[idx].offset==0;
   if (nodes[idx].offset > 0)
   {
     for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
