@@ -28,9 +28,6 @@ public:
   {
     T value;
     index_t offset = 0; //offset for children (they are stored together). 0 offset means it's a leaf
-    index_t parent = 0; //offset for parent, root node has itself as a parent
-    float3 pos;
-    float d;
   };
 
   static bool is_border(float distance, unsigned level);

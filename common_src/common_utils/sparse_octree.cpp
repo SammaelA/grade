@@ -15,8 +15,6 @@ void SparseOctree::add_node_rec(std::function<T(const float3 &)> f,
                                 float d)
 {
   nodes[node_idx].value = f(2.0f * ((p + float3(0.5, 0.5, 0.5)) * d) - float3(1, 1, 1));
-  nodes[node_idx].pos = p;
-  nodes[node_idx].d = d;
 
   if (depth < max_depth)
   {
@@ -26,7 +24,6 @@ void SparseOctree::add_node_rec(std::function<T(const float3 &)> f,
     unsigned idx = nodes[node_idx].offset;
     for (unsigned cid = 0; cid < 8; cid++)
     {
-      nodes[idx + cid].parent = node_idx;
       add_node_rec(f, idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
     }
   }
@@ -93,7 +90,6 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
         for (unsigned gcid = 0; gcid < 8; gcid++)
         {
           float3 pos = (p1 + 0.5f*float3(0.5f + ((gcid & 4) >> 2), 0.5f + ((gcid & 2) >> 1), 0.5f + (gcid & 1))) * (d/2);
-          nodes[gc_idx + gcid].parent = idx + cid;
           nodes[gc_idx + gcid].value = f(2.0f*pos-1.0f);
           //printf("%u putf %f %f %f -- %f\n",gc_idx + gcid, pos.x,pos.y,pos.z, nodes[gc_idx + gcid].value);
           //add_node_rec(f, idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
