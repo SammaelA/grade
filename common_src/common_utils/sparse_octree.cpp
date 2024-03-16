@@ -100,8 +100,8 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
   //    add_node_rec(f, octree, idx+cid, depth+1, max_depth, 2*p + float3((cid&4)<<2,(cid&2)<<1,cid&1), d/2);
 }
 
-void SparseOctree::construct(std::function<T(const float3 &)> f,
-                             SparseOctreeSettings settings)
+void SparseOctree::construct_top_down(std::function<T(const float3 &)> f,
+                                      SparseOctreeSettings settings)
 {
   //DBG = true;
   //DBG = false;
@@ -138,6 +138,10 @@ void SparseOctree::construct(std::function<T(const float3 &)> f,
 
 SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level) const
 {
+  return sample_mip_skip_closest(position, max_level);
+}
+SparseOctree::T SparseOctree::sample_mip_skip_closest(const float3 &position, unsigned max_level) const
+{  
   if (DBG) printf("start pos %f %f %f\n", position.x, position.y, position.z);
   float3 n_pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);//position in current neighborhood
   float d = 1;//size of current neighborhood
@@ -213,12 +217,9 @@ SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level)
       }
       else                                              //p_index is a leaf node
       {
-        //assert(prev_n_indices[p_index] > 0);
         if (DBG) printf("child %u fake\n", i);
-        float3 smp_pos = 0.5f*float3(cur_pidx) + 0.25f*float3(cur_chidx);
         n_distances[i] = prev_n_distances[p_index];
         n_indices[i] = 0;   
-        //assert(false);
       }
     }
 
@@ -244,7 +245,7 @@ SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level)
 }
 
 
-SparseOctree::T SparseOctree::sample_2(const float3 &position, unsigned max_level) const
+SparseOctree::T SparseOctree::sample_mip_skip_2x2(const float3 &position, unsigned max_level) const
 {
   if (DBG) printf("start pos %f %f %f\n", position.x, position.y, position.z);
   float3 n_pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);//position in current neighborhood
@@ -478,4 +479,65 @@ std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const floa
   }
   av_diff /= samples;
   return {av_diff, max_diff};
+}
+
+constexpr unsigned INVALID_IDX = ~0u;
+
+void invalidate_node_rec(std::vector<SparseOctree::Node> &nodes, unsigned idx)
+{
+  unsigned ofs = nodes[idx].offset;
+  nodes[idx].offset = INVALID_IDX;
+  if (ofs > 0) 
+  {
+    for (int i=0;i<8;i++)
+      invalidate_node_rec(nodes, ofs + i);
+  }
+}
+
+void remove_non_border_rec(std::vector<SparseOctree::Node> &nodes, unsigned idx, unsigned level)
+{
+  if (nodes[idx].offset == 0) 
+    return;
+  
+  bool is_border = false;
+  for (int i=0;i<8;i++)
+  {
+    float dist = nodes[nodes[idx].offset + i].value;
+    if (abs(dist) < sqrt(2)*(1/(pow(2, level))))
+    {
+      is_border = true;
+      break;
+    }
+  }
+  
+  if (is_border)
+  {
+    for (int i=0;i<8;i++)
+      remove_non_border_rec(nodes, nodes[idx].offset + i, level+1);
+  }
+  else
+  {
+    unsigned min_idx = nodes[idx].offset + 0;
+    for (int i=0;i<8;i++)
+    {
+      invalidate_node_rec(nodes, nodes[idx].offset + i);
+      if (abs(nodes[nodes[idx].offset + i].value) < abs(nodes[min_idx].value))
+        min_idx = nodes[idx].offset + i;
+    }
+    nodes[idx].value = nodes[min_idx].value;
+    nodes[idx].offset = 0;
+  }
+}
+
+void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+{
+  nodes.clear();
+  nodes.reserve((8.0/7)*std::pow(8, settings.min_depth));
+
+  // create regular grid
+  nodes.emplace_back();
+  add_node_rec(f, 0, 0, settings.min_depth, float3(0, 0, 0), 1.0f);
+
+  //remove non-borders nodes
+  remove_non_border_rec(nodes, 0, 0);
 }

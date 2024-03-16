@@ -32,10 +32,11 @@ public:
 
   static bool is_border(float distance, unsigned level);
 
-  void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
-  T sample_2(const float3 &pos, unsigned max_level = 1000) const;
-  T sample_3(const float3 &pos, unsigned max_level = 1000) const;
+  T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
+  T sample_mip_skip_2x2(const float3 &pos, unsigned max_level = 1000) const; //not working now and anymore
   T sample_closest(const float3 &pos) const;
 
   void print_stat() const;
