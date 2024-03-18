@@ -37,11 +37,15 @@ public:
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_2x2(const float3 &pos, unsigned max_level = 1000) const; //not working now and anymore
+  T sample_mip_skip_3x3(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
   void print_stat() const;
   std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
+  std::vector<Node> &get_nodes() { return nodes; }
   const std::vector<Node> &get_nodes() const { return nodes; }
+
+  Node &get_node(unsigned idx) { return nodes[idx]; }
   const Node &get_node(unsigned idx) const { return nodes[idx]; }
 protected:
   void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,

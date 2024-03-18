@@ -955,9 +955,9 @@ namespace upg
     bool last_level = level >= level_from && (octree.get_node(idx).offset == 0 || level == level_to-1);
     
     if (last_level &&
-       (SparseOctree::is_border(octree.get_node(idx).value, level) || !border_only))
+       (octree.get_node(idx).value < 1e-6 || !border_only))
     {
-      printf("add level %d\n", level);
+      //printf("add level %d\n", level);
       float d = 1.0f/pow(2.0f, level);
       float3 pos = 2.0f*(p*d) - 1.0f;
       Box b = Box(pos, float3(2*d, 0, 0), float3(0, 2*d, 0), float3(0, 0, 2*d));
@@ -980,7 +980,7 @@ namespace upg
 
   void sdf_octree_test()
   {
-    SceneDesc s = scene_chair();
+    SceneDesc s = scene_complex_chair();
     ProceduralSdf sdf(s.first);
     sdf.set_parameters(s.second.p);
     std::vector<float> data = {0};
@@ -989,23 +989,26 @@ namespace upg
     g_sdf.set_parameters(data);
     dynamic_cast<OctreeSdfNode*>(g_sdf.root)->construct( [&sdf](const float3 &p) {
       /*logerr("sample %f %f %f",p.x,p.y,p.z);*/ return sdf.get_distance(p); });
-    for (int i=0;i<0;i++)
+    for (int i=0;i<100;i++)
     {
-      float3 p = float3(urand(-1,1), urand(-1,1), urand(-1,1));
+      float3 p = float3(urand(-1,1), 1, urand(-1,1));
       float d = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample(p);
       float d2 = sdf.get_distance(p);
-      if (d*d2<0)
-        printf("%f %f %f -- d= %f %f\n",p.x,p.y,p.z,d, d2);
+      float d3 = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample_mip_skip_3x3(p);
+      //if (d*d2<0)
+        printf("%f %f %f -- d= %f %f %f\n",p.x,p.y,p.z, d,d2,d3);
     }
+    //return;
 
     SparseOctree &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
-    for (int i=3;i<8;i++)
+    printf("Octree size %d\n", (int)(octree.get_nodes().size()));
+    for (int i=3;i<9;i++)
     {
       CameraSettings camera;
       camera.origin = float3(3,0,3);
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
-      Texture t = visualize_sdf_octree(octree, camera, 0, i+1);
+      Texture t = visualize_sdf_octree(octree, camera, 3, i+1);
       engine::textureManager->save_png(t, "octree_level_"+std::to_string(i));
     }
 
@@ -1018,7 +1021,7 @@ namespace upg
       camera.origin = float3(3,0,3);
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
-      Texture t = render_sdf(g_sdf, camera, 2048, 2048, 1, SDFRenderMode::LAMBERT);
+      Texture t = render_sdf(g_sdf, camera, 2048, 2048, 4, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "octree_test_"+std::to_string(i));
     }
   }

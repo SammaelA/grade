@@ -32,7 +32,7 @@ namespace upg
   void OctreeSdfNode::construct(std::function<float(const float3 &)> sdf)
   {
     SparseOctreeSettings settings;
-    settings.min_depth = 7;
+    settings.min_depth = 8;
     octree.construct_bottom_up(sdf, settings);
   }
 }
