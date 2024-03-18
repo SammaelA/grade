@@ -33,6 +33,9 @@ namespace upg
     virtual AABB get_bbox() const override { return AABB({-1,-1,-1},{1,1,1}); }
     void set_voxel(const float3 &pos, float distance);
     void set_voxel(const uint3 &vox, float distance);
+
+    void save(const std::string &path) const;
+    void load(const std::string &path);
   protected:
     float sample_bilinear(const float3 &pos, std::vector<float> *ddist_dp = nullptr, 
                           std::vector<float> *ddist_dpos = nullptr) const;

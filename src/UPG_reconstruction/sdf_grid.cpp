@@ -1,4 +1,5 @@
 #include "sdf_grid.h"
+#include <fstream>
 
 namespace upg
 {
@@ -89,5 +90,27 @@ namespace upg
     //bbox for grid is a unit cube
     uint3 vox = uint3(grid_size_f*LiteMath::min(LiteMath::max((pos-float3(-1,-1,-1))/bbox_size, 0.0f), 1.0f));
     *((float*)p.data() + vox.z*grid_size*grid_size + vox.y*grid_size + vox.x) = distance;
+  }
+  void GridSdfNode::save(const std::string &path) const
+  {
+    std::ofstream fs(path, std::ios::binary);
+    unsigned count = p.size();
+
+    fs.write((const char *)(&count), sizeof(unsigned));
+    fs.write((const char *)p.data(), count * sizeof(float));
+    fs.flush();
+    fs.close();
+  }
+  void GridSdfNode::load(const std::string &path)
+  {
+    std::ifstream fs(path, std::ios::binary);
+    unsigned count = 0;
+
+    fs.read((char *)(&count), sizeof(unsigned));
+
+    assert(count == p.size());
+
+    fs.read((char *)p.data(), count * sizeof(float));
+    fs.close();
   }
 }
