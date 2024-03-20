@@ -1,5 +1,6 @@
 #include "sparse_octree.h"
 #include "distribution.h"
+#include "stat_box.h"
 #include <cassert>
 
 bool SparseOctree::is_border(float distance, unsigned level)
@@ -249,18 +250,59 @@ static inline unsigned idx3x3(int3 c)
   return 9*c.x + 3*c.y + c.z;
 }
 
+enum Overshoot
+{
+  X_L = 1<<0,
+  X_H = 1<<1,
+  Y_L = 1<<2,
+  Y_H = 1<<3,
+  Z_L = 1<<4,
+  Z_H = 1<<5
+};
 struct Neighbor
 {
   SparseOctree::Node node;
-  bool overshoot;
+  unsigned char overshoot;
+};
+static std::vector<unsigned char> overshoot_array = {
+  X_L|Y_L|Z_L, X_L|Y_L| 0 , X_L|Y_L|Z_H,
+  X_L| 0 |Z_L, X_L| 0 | 0 , X_L| 0 |Z_H,
+  X_L|Y_H|Z_L, X_L|Y_H| 0 , X_L|Y_H|Z_H,
+
+   0 |Y_L|Z_L,  0 |Y_L| 0 ,  0 |Y_L|Z_H,
+   0 | 0 |Z_L,  0 | 0 | 0 ,  0 | 0 |Z_H,
+   0 |Y_H|Z_L,  0 |Y_H| 0 ,  0 |Y_H|Z_H,
+
+  X_H|Y_L|Z_L, X_H|Y_L| 0 , X_H|Y_L|Z_H,
+  X_H| 0 |Z_L, X_H| 0 | 0 , X_H| 0 |Z_H,
+  X_H|Y_H|Z_L, X_H|Y_H| 0 , X_H|Y_H|Z_H,
 };
 
 float sample_neighborhood(Neighbor *neighbors, float3 n_pos)
 {
-  //printf("sample %f %f %f\n",n_pos.x, n_pos.y, n_pos.z);
   float3 qx = clamp(float3(0.5-n_pos.x,std::min(0.5f + n_pos.x, 1.5f - n_pos.x),-0.5+n_pos.x),0.0f,1.0f);
   float3 qy = clamp(float3(0.5-n_pos.y,std::min(0.5f + n_pos.y, 1.5f - n_pos.y),-0.5+n_pos.y),0.0f,1.0f);
   float3 qz = clamp(float3(0.5-n_pos.z,std::min(0.5f + n_pos.z, 1.5f - n_pos.z),-0.5+n_pos.z),0.0f,1.0f);
+
+  if (DBG) 
+  {
+    printf("sample %f %f %f\n",n_pos.x, n_pos.y, n_pos.z);
+    printf("qx %f %f %f\nqy %f %f %f\nqz %f %f %f\n", qx.x,qx.y,qx.z, qy.x,qy.y,qy.z, qz.x,qz.y,qz.z);
+
+    for (int i=0;i<3;i++)
+    {
+      for (int j=0;j<3;j++)
+      {
+        for (int k=0;k<3;k++)
+        {
+          float v = neighbors[9*i + 3*j + k].node.value;
+          printf("%f ", v);
+        }
+        printf("\n");
+      }
+      printf("\n");
+    }
+  }
 
   float res = 0.0;
   for (int i=0;i<3;i++)
@@ -284,9 +326,9 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
   for (int i=0;i<27;i++)
   {
     neighbors[i].node = nodes[0];
-    neighbors[i].overshoot = true;
+    neighbors[i].overshoot = overshoot_array[i];
   }
-  neighbors[CENTER].overshoot = false;
+  neighbors[CENTER].overshoot = 0;
 
   while (neighbors[CENTER].node.offset > 0 && level < max_level)
   {
@@ -298,40 +340,57 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
       int3 p_idx = (n_offset + ch_shift + 1) / 2;
       int3 ch_idx = (n_offset + ch_shift + 1) - 2*p_idx;
       unsigned p_offset = idx3x3(p_idx);
-      //printf("level %u, npos (%f %f %f), ch_sift (%d %d %d), i %d p_idx (%d %d %d) ch_idx (%d %d %d)\n",
-      //      level, n_pos.x, n_pos.y, n_pos.z,  ch_shift.x, ch_shift.y, ch_shift.z,
-      //       i,  p_idx.x, p_idx.y, p_idx.z,  ch_idx.x, ch_idx.y, ch_idx.z);
+      if (DBG) printf("level %u, npos (%f %f %f), ch_sift (%d %d %d), i %d p_idx (%d %d %d) ch_idx (%d %d %d)\n",
+            level, n_pos.x, n_pos.y, n_pos.z,  ch_shift.x, ch_shift.y, ch_shift.z,
+             i,  p_idx.x, p_idx.y, p_idx.z,  ch_idx.x, ch_idx.y, ch_idx.z);
     
       if (neighbors[p_offset].node.offset == 0) //resample
       {
         float3 rs_pos = 0.5f*float3(2*p_idx + ch_idx) - 1.0f + 0.25f;//in [-1,2]^3
-        //printf("resample, rs_pos %f %f %f\n", rs_pos.x, rs_pos.y, rs_pos.z);
+        if (DBG) printf("resample, rs_pos %f %f %f\n", rs_pos.x, rs_pos.y, rs_pos.z);
         new_neighbors[i].node.value = sample_neighborhood(neighbors, rs_pos);
         new_neighbors[i].node.offset = 0;
-        new_neighbors[i].overshoot = false;
+        new_neighbors[i].overshoot = 0;
       }
-      else if (neighbors[p_offset].overshoot == false) //pick child node
+      else if (neighbors[p_offset].overshoot == 0) //pick child node
       {
-        //printf("base\n");
+        if (DBG) printf("base\n");
         unsigned ch_offset = 4*ch_idx.x + 2*ch_idx.y + ch_idx.z;
         unsigned off = neighbors[p_offset].node.offset;
         new_neighbors[i].node = nodes[off + ch_offset];
-        new_neighbors[i].overshoot = false;
+        new_neighbors[i].overshoot = 0;
+        if (DBG) printf("child[%d %d %d] = parent(%u)[%d %d %d][%d %d %d]\n", i/9,i/3%3,i%3, neighbors[p_offset].node.offset, 
+                        p_idx.x, p_idx.y, p_idx.z,
+                        ch_idx.x, ch_idx.y, ch_idx.z);
       }
       else //pick child node, but mind the overshoot
       {
         /**/
-        //printf("overshoot\n");
+        if (DBG) printf("overshoot\n");
         assert(p_offset != CENTER);
         int3 ch_idx_overshoot = ch_idx;
-        if (p_idx.x == 0) ch_idx_overshoot.x = 0; else if (p_idx.x == 2) ch_idx_overshoot.x = 1;
-        if (p_idx.y == 0) ch_idx_overshoot.y = 0; else if (p_idx.y == 2) ch_idx_overshoot.y = 1;
-        if (p_idx.z == 0) ch_idx_overshoot.z = 0; else if (p_idx.z == 2) ch_idx_overshoot.z = 1;
+        unsigned char osh = neighbors[p_offset].overshoot;
+        unsigned char new_osh = 0;
+        if ((osh&X_L) && p_idx.x == 0) 
+          {ch_idx_overshoot.x = 0; new_osh |= X_L; }
+        else if ((osh&X_H) && p_idx.x == 2) 
+          {ch_idx_overshoot.x = 1; new_osh |= X_H; }
+        if ((osh&Y_L) && p_idx.y == 0) 
+          {ch_idx_overshoot.y = 0; new_osh |= Y_L; }
+        else if ((osh&Y_H) && p_idx.y == 2) 
+          {ch_idx_overshoot.y = 1; new_osh |= Y_H; }
+        if ((osh&Z_L) && p_idx.z == 0) 
+          {ch_idx_overshoot.z = 0; new_osh |= Z_L; }
+        else if ((osh&Z_H) && p_idx.z == 2) 
+          {ch_idx_overshoot.z = 1; new_osh |= Z_H; }
 
         unsigned ch_offset = 4*ch_idx_overshoot.x + 2*ch_idx_overshoot.y + ch_idx_overshoot.z;
         unsigned off = neighbors[p_offset].node.offset;
         new_neighbors[i].node = nodes[off + ch_offset];
-        new_neighbors[i].overshoot = true;
+        new_neighbors[i].overshoot = new_osh;
+        if (DBG) printf("child[%d %d %d] = parent(%u)[%d %d %d][%d %d %d]\n", i/9,i/3%3,i%3, neighbors[p_offset].node.offset, 
+                        p_idx.x, p_idx.y, p_idx.z,
+                        ch_idx_overshoot.x, ch_idx_overshoot.y, ch_idx_overshoot.z);
       }
     }
 
@@ -558,6 +617,7 @@ void SparseOctree::print_stat() const
 
 std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr, unsigned samples) const
 {
+  stat::Bins<float> stat_box(0.0f, 0.1f);
   unsigned i = 0;
   std::vector<float> differences(samples, 0);
   while (i < samples)
@@ -567,6 +627,14 @@ std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const floa
     if (abs(ref_d) < dist_thr)
     {
       differences[i] = sample(p) - ref_d;
+      stat_box.add(abs(differences[i]));
+      //if (abs(differences[i]) > 0.005)
+      //{
+      //  printf("AAAA %f %f %f, d = %f %f\n", p.x, p.y, p.z, sample(p), ref_d);
+      //  DBG = true;
+      //  sample(p);
+      //  DBG = false;
+      //}
       i++;
     }
   }
@@ -579,6 +647,7 @@ std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const floa
     max_diff = std::max(max_diff, (double)d);
   }
   av_diff /= samples;
+  //stat_box.print_bins();
   return {av_diff, max_diff};
 }
 
@@ -613,7 +682,7 @@ void remove_non_border_rec(std::vector<SparseOctree::Node> &nodes, unsigned min_
   for (int i=0;i<8;i++)
   {
     float dist = nodes[nodes[idx].offset + i].value;
-    if (abs(dist) < sqrt(2)*(1/(pow(2, level))))
+    if (abs(dist) < sqrt(2)*(1/(pow(2, level-1))))
     {
       is_border = true;
       break;
@@ -674,6 +743,25 @@ void remove_linear_rec(SparseOctree &octree, float thr, unsigned min_level_to_re
   }
 }
 
+void check_validity_rec(std::function<SparseOctree::T(const float3 &)> f, const SparseOctree &octree, unsigned idx, float3 p, float d)
+{
+  unsigned offset = octree.get_nodes()[idx].offset;
+  if (offset == 0)
+  {
+    float3 pos = 2.0f*((p + float3(0.5,0.5,0.5))*d) - 1.0f;
+    float d1 = f(pos);
+    float d2 = octree.sample_mip_skip_closest(pos);
+    float d3 = octree.sample(pos);
+    if (abs(d1-d2) > 1e-6 || abs(d1-d3) > 1e-6)
+      printf("invalid sample in %f %f %f, d = %f %f %f\n",pos.x, pos.y, pos.z, d1,d2,d3);
+  }
+  else
+  {
+    for (int i=0;i<8;i++)
+      check_validity_rec(f, octree, offset+i, 2*p + float3((i & 4) >> 2, (i & 2) >> 1, i & 1), d/2);
+  }
+}
+
 void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
 {
   nodes.clear();
@@ -687,5 +775,9 @@ void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, Spars
   remove_non_border_rec(nodes, 4, 0, 0);
 
   //remove when a little is changed
-  remove_linear_rec(*this, 0.0005, 3, 0, 0, float3(0, 0, 0), 1.0f);
+  remove_linear_rec(*this, 0.0001, 3, 0, 0, float3(0, 0, 0), 1.0f);
+
+  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
+  auto p = estimate_quality(f, 10, 100000);
+  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 }
