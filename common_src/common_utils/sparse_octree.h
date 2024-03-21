@@ -19,21 +19,38 @@ struct SparseOctreeSettings
   float threshold = 0;
 };
 
+struct BlockedSparseOctreeSettings
+{
+  unsigned max_depth_blocks = 4;
+  unsigned min_remove_level = 4;
+  float remove_thr = 0.0001;
+};
+
 class SparseOctree
 {
 public:
   using T = float;
   using index_t = unsigned;
+  static constexpr unsigned BLOCK_SIZE_X = 8;
+  static constexpr unsigned BLOCK_SIZE_Y = 8;
+  static constexpr unsigned BLOCK_SIZE_Z = 4;
   struct Node
   {
     T value;
     index_t offset = 0; //offset for children (they are stored together). 0 offset means it's a leaf
+  };
+  struct BlockInfo
+  {
+    uint3 coords; //offset in blocks inside mip
+    unsigned mip;
+    unsigned data_offset;
   };
 
   static bool is_border(float distance, unsigned level);
 
   void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, std::vector<BlockInfo> &out_blocks);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_2x2(const float3 &pos, unsigned max_level = 1000) const; //not working now and anymore

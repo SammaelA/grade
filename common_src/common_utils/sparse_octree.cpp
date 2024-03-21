@@ -2,10 +2,17 @@
 #include "distribution.h"
 #include "stat_box.h"
 #include <cassert>
+#include <map>
 
 bool SparseOctree::is_border(float distance, unsigned level)
 {
   return level < 2  ? true : abs(distance) < sqrt(2)*(1/(pow(2, level-2)));
+}
+
+constexpr unsigned INVALID_IDX = 1u<<31u;
+bool is_leaf(unsigned offset)
+{
+  return (offset == 0) || (offset & INVALID_IDX);
 }
 
 void SparseOctree::add_node_rec(std::function<T(const float3 &)> f,
@@ -39,14 +46,14 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
                                   float d,
                                   unsigned level)
 {
-  assert(nodes[node_idx].offset > 0);
+  assert(!is_leaf(nodes[node_idx].offset));
   unsigned idx = nodes[node_idx].offset;
   T n_distances[8];
   for (unsigned cid = 0; cid < 8; cid++)
     n_distances[cid] = nodes[idx + cid].value;
   for (unsigned cid = 0; cid < 8; cid++)
   {
-    if (nodes[idx + cid].offset > 0) // go deeper
+    if (!is_leaf(nodes[idx + cid].offset)) // go deeper
     {
       split_children(f, idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
     }
@@ -159,7 +166,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_closest(const float3 &position, un
   {
     n_distances[i] = nodes[r_idx+i].value;
     n_indices[i] = r_idx+i;
-    non_leaf_nodes += (nodes[r_idx+i].offset > 0);
+    non_leaf_nodes += (!is_leaf(nodes[r_idx+i].offset));
   }
 
   int level = 1;
@@ -208,13 +215,13 @@ SparseOctree::T SparseOctree::sample_mip_skip_closest(const float3 &position, un
 
       unsigned p_index = 4*cur_pidx.x + 2*cur_pidx.y + cur_pidx.z;
       if (prev_n_indices[p_index] > 0 &&                //p_index is a real node
-          nodes[prev_n_indices[p_index]].offset > 0)    //p_index has children
+          !is_leaf(nodes[prev_n_indices[p_index]].offset))    //p_index has children
       {
         if (DBG) printf("child %u real\n", i);
         unsigned ch_index = nodes[prev_n_indices[p_index]].offset + 4*cur_chidx.x + 2*cur_chidx.y + cur_chidx.z;
         n_distances[i] = nodes[ch_index].value;
         n_indices[i] = ch_index;      
-        non_leaf_nodes += nodes[ch_index].offset > 0;
+        non_leaf_nodes += !is_leaf(nodes[ch_index].offset);
       }
       else                                              //p_index is a leaf node
       {
@@ -330,7 +337,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
   }
   neighbors[CENTER].overshoot = 0;
 
-  while (neighbors[CENTER].node.offset > 0 && level < max_level)
+  while (!is_leaf(neighbors[CENTER].node.offset) && level < max_level)
   {
     int3 ch_shift = int3(n_pos.x >= 0.5, n_pos.y >= 0.5, n_pos.z >= 0.5);
 
@@ -344,7 +351,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
             level, n_pos.x, n_pos.y, n_pos.z,  ch_shift.x, ch_shift.y, ch_shift.z,
              i,  p_idx.x, p_idx.y, p_idx.z,  ch_idx.x, ch_idx.y, ch_idx.z);
     
-      if (neighbors[p_offset].node.offset == 0) //resample
+      if (is_leaf(neighbors[p_offset].node.offset)) //resample
       {
         float3 rs_pos = 0.5f*float3(2*p_idx + ch_idx) - 1.0f + 0.25f;//in [-1,2]^3
         if (DBG) printf("resample, rs_pos %f %f %f\n", rs_pos.x, rs_pos.y, rs_pos.z);
@@ -352,7 +359,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
         new_neighbors[i].node.offset = 0;
         new_neighbors[i].overshoot = 0;
       }
-      else if (neighbors[p_offset].overshoot == 0) //pick child node
+      else if (is_leaf(neighbors[p_offset].overshoot)) //pick child node
       {
         if (DBG) printf("base\n");
         unsigned ch_offset = 4*ch_idx.x + 2*ch_idx.y + ch_idx.z;
@@ -423,7 +430,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_2x2(const float3 &position, unsign
   {
     n_distances[i] = nodes[r_idx+i].value;
     n_indices[i] = r_idx+i;
-    non_leaf_nodes += (nodes[r_idx+i].offset > 0);
+    non_leaf_nodes += (!is_leaf(nodes[r_idx+i].offset));
   }
 
   int level = 1;
@@ -471,14 +478,14 @@ SparseOctree::T SparseOctree::sample_mip_skip_2x2(const float3 &position, unsign
       uint3 cur_chidx = uint3(chidx[n_idx[0]][0], chidx[n_idx[1]][1], chidx[n_idx[2]][2]);
 
       unsigned p_index = 4*cur_pidx.x + 2*cur_pidx.y + cur_pidx.z;
-      if (prev_n_indices[p_index] > 0 &&                //p_index is a real node
-          nodes[prev_n_indices[p_index]].offset > 0)    //p_index has children
+      if (prev_n_indices[p_index] > 0 &&                    //p_index is a real node
+          !is_leaf(nodes[prev_n_indices[p_index]].offset))  //p_index has children
       {
         if (DBG) printf("child %u real\n", i);
         unsigned ch_index = nodes[prev_n_indices[p_index]].offset + 4*cur_chidx.x + 2*cur_chidx.y + cur_chidx.z;
         n_distances[i] = nodes[ch_index].value;
         n_indices[i] = ch_index;      
-        non_leaf_nodes += nodes[ch_index].offset > 0;
+        non_leaf_nodes += !is_leaf(nodes[ch_index].offset);
       }
       else                                              //p_index is a leaf node
       {
@@ -562,7 +569,7 @@ struct SparseOctreeCounts
 void check_border_reappearance_rec(const std::vector<SparseOctree::Node> &nodes, unsigned idx, unsigned level)
 {
   bool b = SparseOctree::is_border(nodes[idx].value, level); 
-  if (nodes[idx].offset > 0)
+  if (!is_leaf(nodes[idx].offset))
   {
     for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
     {
@@ -585,9 +592,9 @@ void print_stat_rec(const std::vector<SparseOctree::Node> &nodes, SparseOctreeCo
   }
   counts.count_all[level] += 1;
   counts.count_border[level] += SparseOctree::is_border(nodes[idx].value, level);
-  counts.count_leaf[level] += nodes[idx].offset==0;
-  counts.count_border_leaf[level] += SparseOctree::is_border(nodes[idx].value, level) && nodes[idx].offset==0;
-  if (nodes[idx].offset > 0)
+  counts.count_leaf[level] += is_leaf(nodes[idx].offset);
+  counts.count_border_leaf[level] += SparseOctree::is_border(nodes[idx].value, level) && is_leaf(nodes[idx].offset);
+  if (!is_leaf(nodes[idx].offset))
   {
     for (unsigned ch_idx=0; ch_idx<8; ch_idx++)
       print_stat_rec(nodes, counts, nodes[idx].offset + ch_idx, level+1);
@@ -651,12 +658,10 @@ std::pair<float,float> SparseOctree::estimate_quality(std::function<T(const floa
   return {av_diff, max_diff};
 }
 
-constexpr unsigned INVALID_IDX = ~0u;
-
 float2 invalidate_node_rec(std::vector<SparseOctree::Node> &nodes, unsigned idx)
 {
   unsigned ofs = nodes[idx].offset;
-  if (ofs > 0) 
+  if (!is_leaf(ofs)) 
   {
     float min_val = FLT_MAX;
     float avg_val = 0;
@@ -665,7 +670,7 @@ float2 invalidate_node_rec(std::vector<SparseOctree::Node> &nodes, unsigned idx)
       float2 min_avg = invalidate_node_rec(nodes, ofs + i);
       min_val = std::min(min_val, min_avg.x);
       avg_val += min_avg.y;
-      nodes[ofs + i].offset = INVALID_IDX;
+      nodes[ofs + i].offset |= INVALID_IDX;
     }
     return float2(min_val, avg_val/8);
   }
@@ -675,7 +680,7 @@ float2 invalidate_node_rec(std::vector<SparseOctree::Node> &nodes, unsigned idx)
 
 void remove_non_border_rec(std::vector<SparseOctree::Node> &nodes, unsigned min_level_to_remove, unsigned idx, unsigned level)
 {
-  if (nodes[idx].offset == 0) 
+  if (is_leaf(nodes[idx].offset)) 
     return;
   
   bool is_border = false;
@@ -697,14 +702,14 @@ void remove_non_border_rec(std::vector<SparseOctree::Node> &nodes, unsigned min_
   else
   {
     nodes[idx].value = invalidate_node_rec(nodes, idx).y;
-    nodes[idx].offset = 0;
+    nodes[idx].offset |= INVALID_IDX;
   }
 }
 
 void remove_linear_rec(SparseOctree &octree, float thr, unsigned min_level_to_remove, unsigned idx, unsigned level, float3 p, float d)
 {
   unsigned ofs = octree.get_nodes()[idx].offset;
-  if (ofs == 0) 
+  if (is_leaf(ofs)) 
     return;
   
   bool diff_less = true;
@@ -739,14 +744,14 @@ void remove_linear_rec(SparseOctree &octree, float thr, unsigned min_level_to_re
   else
   {
     octree.get_nodes()[idx].value = invalidate_node_rec(octree.get_nodes(), idx).y;
-    octree.get_nodes()[idx].offset = 0;
+    octree.get_nodes()[idx].offset |= INVALID_IDX;
   }
 }
 
 void check_validity_rec(std::function<SparseOctree::T(const float3 &)> f, const SparseOctree &octree, unsigned idx, float3 p, float d)
 {
   unsigned offset = octree.get_nodes()[idx].offset;
-  if (offset == 0)
+  if (is_leaf(offset))
   {
     float3 pos = 2.0f*((p + float3(0.5,0.5,0.5))*d) - 1.0f;
     float d1 = f(pos);
@@ -776,6 +781,164 @@ void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, Spars
 
   //remove when a little is changed
   remove_linear_rec(*this, 0.0001, 3, 0, 0, float3(0, 0, 0), 1.0f);
+
+  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
+  auto p = estimate_quality(f, 10, 100000);
+  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
+
+  for (auto &n : nodes)
+    if (is_leaf(n.offset))
+      n.offset = 0;
+}
+
+struct cmpUint3 {
+    bool operator()(const uint3& a, const uint3& b) const 
+    {
+      if (a.x < b.x)
+        return true;
+      else if (a.x > b.x)
+        return false;
+      if (a.y < b.y)
+        return true;
+      else if (a.y > b.y)
+        return false;
+      return a.z < b.z;
+      
+    }
+};
+
+void add_all_blocks_rec(std::vector<std::vector<SparseOctree::BlockInfo>> &all_blocks, std::vector<std::vector<bool>> &block_active, 
+                        std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n, unsigned mip, unsigned idx)
+{
+  if (all_blocks[mip][idx].mip > 0)
+  {
+    for (int i=0;i<8;i++)
+    {
+      uint3 off = uint3((i & 4) >> 2, (i & 2) >> 1, i & 1); 
+      uint3 pidx = 2*all_blocks[mip][idx].coords + off;
+      all_blocks[mip-1].push_back({pidx, mip-1, 0});
+      block_active[mip-1].push_back(false);
+      block_idx_to_block_n[mip-1][pidx] = all_blocks[mip-1].size()-1;
+      add_all_blocks_rec(all_blocks, block_active, block_idx_to_block_n, mip-1, all_blocks[mip-1].size()-1);
+    }
+  }
+}
+
+void find_active_blocks_rec(const SparseOctree &octree, std::vector<std::vector<bool>> &block_active, 
+                            std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n,
+                            unsigned min_depth, unsigned max_block_mip, 
+                            unsigned idx, unsigned level, uint3 pixel_idx)
+{
+  if ((octree.get_nodes()[idx].offset & INVALID_IDX) == 0)
+  {
+    if (level >= min_depth)
+    {
+      unsigned block_mip = max_block_mip - (level - min_depth);
+      uint3 block_idx = pixel_idx/uint3(SparseOctree::BLOCK_SIZE_X, SparseOctree::BLOCK_SIZE_Y, SparseOctree::BLOCK_SIZE_Z);
+      block_active[block_mip][block_idx_to_block_n[block_mip][block_idx]] = true;
+    }
+    if (!is_leaf(octree.get_nodes()[idx].offset))
+    {
+      for (int i=0;i<8;i++)
+      {
+        uint3 off = uint3((i & 4) >> 2, (i & 2) >> 1, i & 1); 
+        find_active_blocks_rec(octree, block_active, block_idx_to_block_n, min_depth, max_block_mip, octree.get_nodes()[idx].offset+i, level+1, 2*pixel_idx+off);
+      }
+    }
+  }
+}
+
+void restore_invalid_nodes_in_active_blocks_rec(SparseOctree &octree, std::vector<std::vector<bool>> &block_active, 
+                                                std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n,
+                                                unsigned min_depth, unsigned max_block_mip, 
+                                                unsigned idx, unsigned level, uint3 pixel_idx)
+{
+  unsigned real_offset = octree.get_nodes()[idx].offset & (~INVALID_IDX);
+  //printf("offset %u %u \n", octree.get_nodes()[idx].offset, real_offset);
+
+  if (level >= min_depth)
+  {
+    unsigned block_mip = max_block_mip - (level - min_depth);
+    uint3 block_idx = pixel_idx/uint3(SparseOctree::BLOCK_SIZE_X, SparseOctree::BLOCK_SIZE_Y, SparseOctree::BLOCK_SIZE_Z);
+
+    //invalid node in active block
+    if ((octree.get_nodes()[idx].offset & INVALID_IDX) != 0 && block_active[block_mip][block_idx_to_block_n[block_mip][block_idx]])
+    {
+      //printf("reactivated node %u in block %u %u %u\n", idx, block_idx.x, block_idx.y, block_idx.z);
+      octree.get_nodes()[idx].offset = real_offset;
+    }
+  }
+
+  if (real_offset != 0)
+  {
+    for (int i=0;i<8;i++)
+    {
+      uint3 off = uint3((i & 4) >> 2, (i & 2) >> 1, i & 1); 
+      restore_invalid_nodes_in_active_blocks_rec(octree, block_active, block_idx_to_block_n, min_depth, max_block_mip, real_offset+i, level+1, 2*pixel_idx+off);
+    }    
+  }
+}
+
+void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
+                                              std::vector<BlockInfo> &out_blocks)
+{
+  unsigned size = pow(2, settings.max_depth_blocks)*std::max(BLOCK_SIZE_X, std::max(BLOCK_SIZE_Y, BLOCK_SIZE_Z));
+  unsigned level = log2(size);
+  assert(size == (unsigned)(pow(2, level)));
+  assert(BLOCK_SIZE_X == BLOCK_SIZE_Y);
+  assert(BLOCK_SIZE_Z <= BLOCK_SIZE_X);
+  assert(BLOCK_SIZE_X % BLOCK_SIZE_Z == 0);
+
+  nodes.clear();
+  nodes.reserve((8.0/7)*std::pow(8, level)); 
+
+  // create regular grid
+  nodes.emplace_back();
+  add_node_rec(f, 0, 0, level, float3(0, 0, 0), 1.0f);
+
+  //remove non-borders nodes
+  remove_non_border_rec(nodes, settings.min_remove_level, 0, 0);
+
+  //remove if difference is lower that threshold
+  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);
+
+  std::vector<std::vector<bool>> block_active;
+  std::vector<std::vector<SparseOctree::BlockInfo>> all_blocks;
+  std::vector<std::map<uint3, unsigned, cmpUint3>> block_idx_to_block_n;
+  all_blocks.resize(settings.max_depth_blocks + 1);
+  block_active.resize(settings.max_depth_blocks + 1);
+  block_idx_to_block_n.resize(settings.max_depth_blocks + 1);
+
+  //create two root blocks and fill all_blocks with all possible blocks
+  unsigned z_off = 0;
+  while (z_off*BLOCK_SIZE_Z != BLOCK_SIZE_X)
+  {
+    all_blocks[settings.max_depth_blocks].push_back({uint3(0,0,z_off), settings.max_depth_blocks, 0}); 
+    block_active[settings.max_depth_blocks].push_back(false);
+    block_idx_to_block_n[settings.max_depth_blocks][uint3(0,0,z_off)] = z_off;
+    add_all_blocks_rec(all_blocks, block_active, block_idx_to_block_n, settings.max_depth_blocks, z_off);
+    z_off++;
+  }
+
+  //check all nodes by block to find active blocks
+  find_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
+
+  //restore invalid nodes in active blocks
+  restore_invalid_nodes_in_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
+
+  //collect all active 
+  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  {
+    for (int j=0;j<all_blocks[i].size();j++)
+    {
+      if (block_active[i][j])
+        out_blocks.push_back(all_blocks[i][j]);
+    }
+  }
+
+  for (auto &n : nodes)
+    if (is_leaf(n.offset))
+      n.offset = 0;
 
   //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
   auto p = estimate_quality(f, 10, 100000);
