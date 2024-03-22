@@ -807,8 +807,10 @@ struct cmpUint3 {
     }
 };
 
-void add_all_blocks_rec(std::vector<std::vector<SparseOctree::BlockInfo>> &all_blocks, std::vector<std::vector<bool>> &block_active, 
-                        std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n, unsigned mip, unsigned idx)
+void add_all_blocks_rec(std::vector<std::vector<BlockSparseOctree<float>::BlockInfo>> &all_blocks, 
+                        std::vector<std::vector<bool>> &block_active, 
+                        std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n, 
+                        unsigned mip, unsigned idx)
 {
   if (all_blocks[mip][idx].mip > 0)
   {
@@ -834,7 +836,7 @@ void find_active_blocks_rec(const SparseOctree &octree, std::vector<std::vector<
     if (level >= min_depth)
     {
       unsigned block_mip = max_block_mip - (level - min_depth);
-      uint3 block_idx = pixel_idx/uint3(SparseOctree::BLOCK_SIZE_X, SparseOctree::BLOCK_SIZE_Y, SparseOctree::BLOCK_SIZE_Z);
+      uint3 block_idx = pixel_idx/uint3(BlockSparseOctree<float>::BLOCK_SIZE_X, BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z);
       block_active[block_mip][block_idx_to_block_n[block_mip][block_idx]] = true;
     }
     if (!is_leaf(octree.get_nodes()[idx].offset))
@@ -859,7 +861,7 @@ void restore_invalid_nodes_in_active_blocks_rec(SparseOctree &octree, std::vecto
   if (level >= min_depth)
   {
     unsigned block_mip = max_block_mip - (level - min_depth);
-    uint3 block_idx = pixel_idx/uint3(SparseOctree::BLOCK_SIZE_X, SparseOctree::BLOCK_SIZE_Y, SparseOctree::BLOCK_SIZE_Z);
+    uint3 block_idx = pixel_idx/uint3(BlockSparseOctree<float>::BLOCK_SIZE_X, BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z);
 
     //invalid node in active block
     if ((octree.get_nodes()[idx].offset & INVALID_IDX) != 0 && block_active[block_mip][block_idx_to_block_n[block_mip][block_idx]])
@@ -879,15 +881,46 @@ void restore_invalid_nodes_in_active_blocks_rec(SparseOctree &octree, std::vecto
   }
 }
 
-void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
-                                              std::vector<BlockInfo> &out_blocks)
+void node_values_to_blocks_rec(SparseOctree &octree, std::vector<std::vector<bool>> &block_active, 
+                               std::vector<std::vector<BlockSparseOctree<float>::BlockInfo>> &all_blocks,
+                               std::vector<std::map<uint3, unsigned, cmpUint3>> &block_idx_to_block_n,
+                               std::vector<float> &blocks_data,
+                               unsigned min_depth, unsigned max_block_mip, 
+                               unsigned idx, unsigned level, uint3 pixel_idx)
 {
-  unsigned size = pow(2, settings.max_depth_blocks)*std::max(BLOCK_SIZE_X, std::max(BLOCK_SIZE_Y, BLOCK_SIZE_Z));
+  unsigned real_offset = octree.get_nodes()[idx].offset & (~INVALID_IDX);
+
+  if (level >= min_depth)
+  {
+    unsigned block_mip = max_block_mip - (level - min_depth);
+    uint3 block_idx = pixel_idx/uint3(BlockSparseOctree<float>::BLOCK_SIZE_X, BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z);
+    uint3 local_idx = pixel_idx % uint3(BlockSparseOctree<float>::BLOCK_SIZE_X, BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z);
+    unsigned local_offset = local_idx.z * BlockSparseOctree<float>::BLOCK_SIZE_X * BlockSparseOctree<float>::BLOCK_SIZE_Y +
+                            local_idx.y * BlockSparseOctree<float>::BLOCK_SIZE_X + 
+                            local_idx.x;
+
+    unsigned block_pos = block_idx_to_block_n[block_mip][block_idx];
+    if (block_active[block_mip][block_pos])
+      blocks_data[all_blocks[block_mip][block_pos].data_offset + local_offset] = octree.get_nodes()[idx].value;
+  }
+
+  if (real_offset != 0)
+  {
+    for (int i=0;i<8;i++)
+    {
+      uint3 off = uint3((i & 4) >> 2, (i & 2) >> 1, i & 1); 
+      node_values_to_blocks_rec(octree, block_active, all_blocks, block_idx_to_block_n, blocks_data, min_depth, max_block_mip, 
+                                real_offset+i, level+1, 2*pixel_idx+off);
+    }    
+  }
+}
+
+void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
+                                              BlockSparseOctree<T> &out_bso)
+{
+  unsigned size = pow(2, settings.max_depth_blocks)*std::max(BlockSparseOctree<float>::BLOCK_SIZE_X, std::max(BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z));
   unsigned level = log2(size);
   assert(size == (unsigned)(pow(2, level)));
-  assert(BLOCK_SIZE_X == BLOCK_SIZE_Y);
-  assert(BLOCK_SIZE_Z <= BLOCK_SIZE_X);
-  assert(BLOCK_SIZE_X % BLOCK_SIZE_Z == 0);
 
   nodes.clear();
   nodes.reserve((8.0/7)*std::pow(8, level)); 
@@ -903,15 +936,18 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
   remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);
 
   std::vector<std::vector<bool>> block_active;
-  std::vector<std::vector<SparseOctree::BlockInfo>> all_blocks;
+  std::vector<std::vector<BlockSparseOctree<float>::BlockInfo>> all_blocks;
   std::vector<std::map<uint3, unsigned, cmpUint3>> block_idx_to_block_n;
   all_blocks.resize(settings.max_depth_blocks + 1);
   block_active.resize(settings.max_depth_blocks + 1);
   block_idx_to_block_n.resize(settings.max_depth_blocks + 1);
 
+  //convert SparseOctree to BlockSparseOctree
+  out_bso.top_mip = settings.max_depth_blocks;
+
   //create two root blocks and fill all_blocks with all possible blocks
   unsigned z_off = 0;
-  while (z_off*BLOCK_SIZE_Z != BLOCK_SIZE_X)
+  while (z_off*BlockSparseOctree<float>::BLOCK_SIZE_Z != BlockSparseOctree<float>::BLOCK_SIZE_X)
   {
     all_blocks[settings.max_depth_blocks].push_back({uint3(0,0,z_off), settings.max_depth_blocks, 0}); 
     block_active[settings.max_depth_blocks].push_back(false);
@@ -921,10 +957,32 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
   }
 
   //check all nodes by block to find active blocks
-  find_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
+  find_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
 
   //restore invalid nodes in active blocks
-  restore_invalid_nodes_in_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
+  restore_invalid_nodes_in_active_blocks_rec(*this, block_active, block_idx_to_block_n, 
+                                             log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 
+                                             0, 0, uint3(0,0,0));
+
+  //calculate offsets for active blocks and allocate memory for it
+  unsigned offset = 0;
+  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  {
+    for (int j=0;j<all_blocks[i].size();j++)
+    {
+      if (block_active[i][j])
+      {
+        all_blocks[i][j].data_offset = offset;
+        offset += out_bso.block_size.x*out_bso.block_size.y*out_bso.block_size.z;
+      }
+    }
+  }
+  out_bso.data.resize(offset, T(FLT_MAX));
+
+  //fill buffer for data per block
+  node_values_to_blocks_rec(*this, block_active, all_blocks, block_idx_to_block_n, out_bso.data, 
+                            log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 
+                            0, 0, uint3(0,0,0));
 
   //collect all active 
   for (int i=0;i<settings.max_depth_blocks + 1; i++)
@@ -932,15 +990,46 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
     for (int j=0;j<all_blocks[i].size();j++)
     {
       if (block_active[i][j])
-        out_blocks.push_back(all_blocks[i][j]);
+        out_bso.blocks.push_back(all_blocks[i][j]);
     }
   }
+  
+  //DEBUG:  check is all the data for blocks is collected
+  /*
+  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  {
+    for (int j=0;j<all_blocks[i].size();j++)
+    {
+      if (block_active[i][j])
+      {
+        for (int z=0;z<16;z++)
+        {
+          for (int y=0;y<32;y++)
+          {
+            for (int x=0;x<32;x++)
+            {
+              unsigned off = all_blocks[i][j].data_offset + z*32*32 + y*32 + x;
+              float val = out_bso.data[off];
+              if (val > 1e9)
+              {
+                printf("block [%u %u %u] in lod %u missed value in (%d %d %d)\n",
+                       all_blocks[i][j].coords.x, all_blocks[i][j].coords.y, all_blocks[i][j].coords.z,
+                       all_blocks[i][j].mip, x,y,z);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  */
+
+  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
+  auto p = estimate_quality(f, 10, 100000);
+  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 
   for (auto &n : nodes)
     if (is_leaf(n.offset))
       n.offset = 0;
 
-  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
-  auto p = estimate_quality(f, 10, 100000);
-  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 }

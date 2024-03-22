@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <functional>
+#include <fstream>
 #include "LiteMath_ext.h"
 /*
 A class that is able to represent and arbitrary function f : R^3 -> T 
@@ -26,31 +27,95 @@ struct BlockedSparseOctreeSettings
   float remove_thr = 0.0001;
 };
 
+template <typename T>
+struct BlockSparseOctree
+{
+  //Page size in Vulkan sparse texture
+  static constexpr unsigned BLOCK_SIZE_X = 32;
+  static constexpr unsigned BLOCK_SIZE_Y = 32;
+  static constexpr unsigned BLOCK_SIZE_Z = 16;
+  struct BlockInfo
+  {
+    uint3 coords; //offset in blocks inside mip
+    unsigned mip;
+    unsigned data_offset; //offset in T array (not bytes!). All block data stored together starting with this offset
+  };
+
+  uint3 block_size = uint3(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z);
+  uint3 top_mip_size = uint3(1,1,2); //to create cube grid from 32*32*16 blocks
+  unsigned top_mip;
+
+  std::vector<BlockInfo> blocks;
+  std::vector<T> data; //for each block values is stored in z y x order to comply with Vulkan sparse texture
+};
+
+template <typename T>
+void save_block_sparse_octree(const std::string &path, const BlockSparseOctree<T> &bso)
+{
+  std::ofstream fs(path, std::ios::binary);
+  std::vector<unsigned> metadata(9);
+  metadata[0] = bso.block_size.x; 
+  metadata[1] = bso.block_size.y;
+  metadata[2] = bso.block_size.z;
+
+  metadata[3] = bso.top_mip_size.x; 
+  metadata[4] = bso.top_mip_size.y;
+  metadata[5] = bso.top_mip_size.z;  
+
+  metadata[6] = bso.top_mip; 
+  metadata[7] = bso.blocks.size();
+  metadata[8] = bso.data.size();
+
+  fs.write((const char *)metadata.data(), metadata.size()*sizeof(unsigned));
+  fs.write((const char *)bso.blocks.data(), bso.blocks.size() * sizeof(typename BlockSparseOctree<T>::BlockInfo));
+  fs.write((const char *)bso.data.data(), bso.data.size() * sizeof(T));
+  fs.flush();
+  fs.close();
+}
+
+template <typename T>
+void load_block_sparse_octree(const std::string &path, /*out*/BlockSparseOctree<T> &bso)
+{
+  std::ifstream fs(path, std::ios::binary);
+  std::vector<unsigned> metadata(9);
+
+  fs.read((char *)metadata.data(), metadata.size()*sizeof(unsigned));
+
+  bso.block_size.x = metadata[0];
+  bso.block_size.y = metadata[1];
+  bso.block_size.z = metadata[2];
+
+  bso.top_mip_size.x = metadata[3];
+  bso.top_mip_size.y = metadata[4];
+  bso.top_mip_size.z = metadata[5];
+
+  bso.top_mip = metadata[6];
+  bso.blocks.resize(metadata[7]);
+  bso.data.resize(metadata[8]);
+
+  fs.read((char *)bso.blocks.data(), bso.blocks.size() * sizeof(typename BlockSparseOctree<T>::BlockInfo));
+  fs.read((char *)bso.data.data(), bso.data.size() * sizeof(T));
+
+  fs.close();
+}
+
 class SparseOctree
 {
 public:
   using T = float;
   using index_t = unsigned;
-  static constexpr unsigned BLOCK_SIZE_X = 8;
-  static constexpr unsigned BLOCK_SIZE_Y = 8;
-  static constexpr unsigned BLOCK_SIZE_Z = 4;
   struct Node
   {
     T value;
     index_t offset = 0; //offset for children (they are stored together). 0 offset means it's a leaf
-  };
-  struct BlockInfo
-  {
-    uint3 coords; //offset in blocks inside mip
-    unsigned mip;
-    unsigned data_offset;
   };
 
   static bool is_border(float distance, unsigned level);
 
   void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
-  void construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, std::vector<BlockInfo> &out_blocks);
+  void construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
+                                  BlockSparseOctree<T> &out_bso);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_2x2(const float3 &pos, unsigned max_level = 1000) const; //not working now and anymore
