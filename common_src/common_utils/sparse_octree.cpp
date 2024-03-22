@@ -118,7 +118,7 @@ void SparseOctree::construct_top_down(std::function<T(const float3 &)> f,
 
   // adding initial nodes
   nodes.emplace_back();
-  add_node_rec(f, 0, 0, settings.min_depth, float3(0, 0, 0), 1.0f);
+  add_node_rec(f, 0, 0, 3, float3(0, 0, 0), 1.0f);
 
   // splitting octree threshold is reached
   //if (settings.threshold > 0)
@@ -767,28 +767,77 @@ void check_validity_rec(std::function<SparseOctree::T(const float3 &)> f, const 
   }
 }
 
-void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+void all_to_valid_nodes_remap_rec(const std::vector<SparseOctree::Node> &all_nodes, 
+                                  std::vector<int> &all_to_valid_remap,
+                                  unsigned *valid_counter,
+                                  unsigned idx)
 {
-  nodes.clear();
-  nodes.reserve((8.0/7)*std::pow(8, settings.min_depth));
+  unsigned ch_idx = all_nodes[idx].offset;
+  if (is_leaf(ch_idx))
+    return;
+  else
+  {
+    for (int i=0;i<8;i++)
+      all_to_valid_remap[ch_idx+i] = (*valid_counter) + i;
+    
+    (*valid_counter) += 8;
 
-  // create regular grid
-  nodes.emplace_back();
-  add_node_rec(f, 0, 0, settings.min_depth, float3(0, 0, 0), 1.0f);
+    for (int i=0;i<8;i++)
+      all_to_valid_nodes_remap_rec(all_nodes, all_to_valid_remap, valid_counter, ch_idx+i);
+  }
+}
 
-  //remove non-borders nodes
-  remove_non_border_rec(nodes, 4, 0, 0);
-
-  //remove when a little is changed
-  remove_linear_rec(*this, 0.0001, 3, 0, 0, float3(0, 0, 0), 1.0f);
-
+void SparseOctree::construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+{
   //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
   auto p = estimate_quality(f, 10, 100000);
   printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 
-  for (auto &n : nodes)
-    if (is_leaf(n.offset))
-      n.offset = 0;
+  std::vector<int> valid_remap(nodes.size(), -1);
+  unsigned valid_count = 1;
+
+  valid_remap[0] = 0; //root is always valid
+  all_to_valid_nodes_remap_rec(nodes, valid_remap, &valid_count, 0);
+
+  std::vector<Node> valid_nodes(valid_count);
+  for (int i=0;i<nodes.size();i++)
+  {
+    if (valid_remap[i] >= 0)
+    {
+      valid_nodes[valid_remap[i]] = nodes[i];
+      if (is_leaf(valid_nodes[valid_remap[i]].offset))
+        valid_nodes[valid_remap[i]].offset = 0;
+      else
+        valid_nodes[valid_remap[i]].offset = valid_remap[valid_nodes[valid_remap[i]].offset];
+    }
+  }
+  
+  nodes = valid_nodes;
+
+  printf("SDF octree created with %u (%2.f%%) nodes (dense one would have %u)\n", 
+         valid_count, 100.0f*valid_count/(unsigned)valid_remap.size(), (unsigned)valid_remap.size());
+}
+
+void SparseOctree::construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+{
+  nodes.clear();
+  nodes.reserve((8.0/7)*std::pow(8, settings.depth));
+
+  // create regular grid
+  nodes.emplace_back();
+  add_node_rec(f, 0, 0, settings.depth, float3(0, 0, 0), 1.0f);
+
+  //remove non-borders nodes
+  remove_non_border_rec(nodes, settings.min_remove_level, 0, 0);
+
+  //remove when a little is changed
+  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);  
+}
+
+void SparseOctree::construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+{
+  construct_bottom_up_base(f, settings);
+  construct_bottom_up_finish(f, settings);
 }
 
 struct cmpUint3 {
@@ -915,58 +964,48 @@ void node_values_to_blocks_rec(SparseOctree &octree, std::vector<std::vector<boo
   }
 }
 
-void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
+void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                               BlockSparseOctree<T> &out_bso)
 {
-  unsigned size = pow(2, settings.max_depth_blocks)*std::max(BlockSparseOctree<float>::BLOCK_SIZE_X, std::max(BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z));
-  unsigned level = log2(size);
-  assert(size == (unsigned)(pow(2, level)));
+  unsigned max_block_size = std::max(BlockSparseOctree<float>::BLOCK_SIZE_X, std::max(BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z));
+  unsigned max_depth_blocks = settings.depth - log2(max_block_size);
 
-  nodes.clear();
-  nodes.reserve((8.0/7)*std::pow(8, level)); 
+  //I - construct octree, leaving removed modes intact but with INVALID_IDX flad for their offsets
+  construct_bottom_up_base(f, settings);
 
-  // create regular grid
-  nodes.emplace_back();
-  add_node_rec(f, 0, 0, level, float3(0, 0, 0), 1.0f);
-
-  //remove non-borders nodes
-  remove_non_border_rec(nodes, settings.min_remove_level, 0, 0);
-
-  //remove if difference is lower that threshold
-  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);
-
+  //II - restore invalid nodes in active blocks
   std::vector<std::vector<bool>> block_active;
   std::vector<std::vector<BlockSparseOctree<float>::BlockInfo>> all_blocks;
   std::vector<std::map<uint3, unsigned, cmpUint3>> block_idx_to_block_n;
-  all_blocks.resize(settings.max_depth_blocks + 1);
-  block_active.resize(settings.max_depth_blocks + 1);
-  block_idx_to_block_n.resize(settings.max_depth_blocks + 1);
+  all_blocks.resize(max_depth_blocks + 1);
+  block_active.resize(max_depth_blocks + 1);
+  block_idx_to_block_n.resize(max_depth_blocks + 1);
 
   //convert SparseOctree to BlockSparseOctree
-  out_bso.top_mip = settings.max_depth_blocks;
+  out_bso.top_mip = max_depth_blocks;
 
   //create two root blocks and fill all_blocks with all possible blocks
   unsigned z_off = 0;
   while (z_off*BlockSparseOctree<float>::BLOCK_SIZE_Z != BlockSparseOctree<float>::BLOCK_SIZE_X)
   {
-    all_blocks[settings.max_depth_blocks].push_back({uint3(0,0,z_off), settings.max_depth_blocks, 0}); 
-    block_active[settings.max_depth_blocks].push_back(false);
-    block_idx_to_block_n[settings.max_depth_blocks][uint3(0,0,z_off)] = z_off;
-    add_all_blocks_rec(all_blocks, block_active, block_idx_to_block_n, settings.max_depth_blocks, z_off);
+    all_blocks[max_depth_blocks].push_back({uint3(0,0,z_off), max_depth_blocks, 0}); 
+    block_active[max_depth_blocks].push_back(false);
+    block_idx_to_block_n[max_depth_blocks][uint3(0,0,z_off)] = z_off;
+    add_all_blocks_rec(all_blocks, block_active, block_idx_to_block_n, max_depth_blocks, z_off);
     z_off++;
   }
 
   //check all nodes by block to find active blocks
-  find_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 0, 0, uint3(0,0,0));
+  find_active_blocks_rec(*this, block_active, block_idx_to_block_n, log2(BlockSparseOctree<float>::BLOCK_SIZE_X), max_depth_blocks, 0, 0, uint3(0,0,0));
 
   //restore invalid nodes in active blocks
   restore_invalid_nodes_in_active_blocks_rec(*this, block_active, block_idx_to_block_n, 
-                                             log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 
+                                             log2(BlockSparseOctree<float>::BLOCK_SIZE_X), max_depth_blocks, 
                                              0, 0, uint3(0,0,0));
 
   //calculate offsets for active blocks and allocate memory for it
   unsigned offset = 0;
-  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  for (int i=0;i<max_depth_blocks + 1; i++)
   {
     for (int j=0;j<all_blocks[i].size();j++)
     {
@@ -981,11 +1020,11 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
 
   //fill buffer for data per block
   node_values_to_blocks_rec(*this, block_active, all_blocks, block_idx_to_block_n, out_bso.data, 
-                            log2(BlockSparseOctree<float>::BLOCK_SIZE_X), settings.max_depth_blocks, 
+                            log2(BlockSparseOctree<float>::BLOCK_SIZE_X), max_depth_blocks, 
                             0, 0, uint3(0,0,0));
 
   //collect all active 
-  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  for (int i=0;i<max_depth_blocks + 1; i++)
   {
     for (int j=0;j<all_blocks[i].size();j++)
     {
@@ -996,7 +1035,7 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
   
   //DEBUG:  check is all the data for blocks is collected
   /*
-  for (int i=0;i<settings.max_depth_blocks + 1; i++)
+  for (int i=0;i<max_depth_blocks + 1; i++)
   {
     for (int j=0;j<all_blocks[i].size();j++)
     {
@@ -1024,12 +1063,6 @@ void SparseOctree::construct_bottom_up_blocks(std::function<T(const float3 &)> f
   }
   */
 
-  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
-  auto p = estimate_quality(f, 10, 100000);
-  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
-
-  for (auto &n : nodes)
-    if (is_leaf(n.offset))
-      n.offset = 0;
-
+  //III - finish building octree
+  construct_bottom_up_finish(f, settings);
 }

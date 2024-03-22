@@ -971,7 +971,6 @@ namespace upg
     Model *m = new Model();
     sdf_octree_to_model_rec(octree, m, level_from, level_to, true,  0, 0,float3(0,0,0));
     m->update();
-    printf("sszzz %d\n", m->get_size());
     WireframeRenderer wr;
     Texture t = wr.render(*m, cam.get_viewProj(false), 4096, 4096);
     delete m;
@@ -989,7 +988,7 @@ namespace upg
     g_sdf.set_parameters(data);
     dynamic_cast<OctreeSdfNode*>(g_sdf.root)->construct( [&sdf](const float3 &p) {
       /*logerr("sample %f %f %f",p.x,p.y,p.z);*/ return sdf.get_distance(p); });
-    for (int i=0;i<100;i++)
+    for (int i=0;i<0;i++)
     {
       float3 p = float3(urand(-1,1), 1, urand(-1,1));
       float d = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample(p);
@@ -1021,7 +1020,7 @@ namespace upg
       camera.origin = float3(3,0,3);
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
-      Texture t = render_sdf(g_sdf, camera, 2048, 2048, 4, SDFRenderMode::LAMBERT);
+      Texture t = render_sdf(g_sdf, camera, 1024, 1024, 1, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "octree_test_"+std::to_string(i));
     }
   }

@@ -15,14 +15,7 @@ Octree always represents unit cube [-1,1]^3
 struct SparseOctreeSettings
 {
   unsigned max_nodes = 1000000;
-  unsigned max_depth = 100;
-  unsigned min_depth = 1;
-  float threshold = 0;
-};
-
-struct BlockedSparseOctreeSettings
-{
-  unsigned max_depth_blocks = 4;
+  unsigned depth = 1;
   unsigned min_remove_level = 4;
   float remove_thr = 0.0001;
 };
@@ -112,9 +105,9 @@ public:
 
   static bool is_border(float distance, unsigned level);
 
-  void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings); //do not work!
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
-  void construct_bottom_up_blocks(std::function<T(const float3 &)> f, BlockedSparseOctreeSettings settings, 
+  void construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                   BlockSparseOctree<T> &out_bso);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
@@ -134,6 +127,9 @@ protected:
                     unsigned max_depth, float3 p, float d);
   void split_children(std::function<T(const float3 &)> f, unsigned node_idx,
                       float threshold, float3 p, float d, unsigned level);
+
+  void construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
 
   T sample_neighborhood_bilinear(const float3 &n_pos, T n_distances[8]) const;
 
