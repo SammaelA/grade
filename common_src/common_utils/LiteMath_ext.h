@@ -45,6 +45,14 @@ namespace LiteMath
   static inline int3 operator-(const int3 v) { return int3{-v.x, -v.y, -v.z}; }
   static inline int4 operator-(const int4 v) { return int4{-v.x, -v.y, -v.z, -v.w}; }
 
+  static inline int2 operator%(const int2 a, const int2 b) { return int2{a.x % b.x, a.y % b.y}; }
+  static inline int3 operator%(const int3 a, const int3 b) { return int3{a.x % b.x, a.y % b.y, a.z % b.z}; }
+  static inline int4 operator%(const int4 a, const int4 b) { return int4{a.x % b.x, a.y % b.y, a.z % b.z, a.w % b.w}; }
+
+  static inline uint2 operator%(const uint2 a, const uint2 b) { return uint2{a.x % b.x, a.y % b.y}; }
+  static inline uint3 operator%(const uint3 a, const uint3 b) { return uint3{a.x % b.x, a.y % b.y, a.z % b.z}; }
+  static inline uint4 operator%(const uint4 a, const uint4 b) { return uint4{a.x % b.x, a.y % b.y, a.z % b.z, a.w % b.w}; }
+
   static inline float4x4 to_float4x4(const float4 col0, const float4 col1, const float4 col2, const float4 col3)
   {
     float4x4 m;
