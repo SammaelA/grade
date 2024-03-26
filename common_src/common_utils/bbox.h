@@ -48,6 +48,11 @@ struct AABB
         min_pos = _min_pos;
         max_pos = _max_pos;
     }
+    AABB(float4 _min_pos, float4 _max_pos)
+    {
+        min_pos = to_float3(_min_pos);
+        max_pos = to_float3(_max_pos);
+    }
     inline float3 size() const
     {
       return max_pos - min_pos;

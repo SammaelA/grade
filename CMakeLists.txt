@@ -152,10 +152,8 @@ if (MODULE_VULKAN)
   set(SLICER_DIR "/home/sammael/kernel_slicer" CACHE STRING "Custom diff render location")
   
   find_package(Vulkan)
-  find_package(FreeImage REQUIRED)
 
   set(MODULES_INCLUDE_DIRS ${MODULES_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIR}
-                                                   ${FREEIMAGE_INCLUDE_DIRS}
                                                    ${SLICER_DIR}/apps/vkutils
                                                    ${SLICER_DIR}/apps/volk
                                                    ${SLICER_DIR}/apps/LiteMath
@@ -183,7 +181,7 @@ if (MODULE_VULKAN)
 
   set(MODULES_SRC ${MODULES_SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
 
-  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} ${FREEIMAGE_LIBRARIES} OpenMP::OpenMP_CXX volk dl)
+  set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} OpenMP::OpenMP_CXX volk dl)
 else()
   message("Module VULKAN               OFF")
 endif()

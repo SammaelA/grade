@@ -897,7 +897,7 @@ namespace upg
 
   }
 
-  std::vector<LiteMath::AABB> get_bbox_list(const SdfScene &sdf, const SdfObject &prim, int size)
+  std::vector<AABB> get_bbox_list(const SdfScene &sdf, const SdfObject &prim, int size)
   {
     //todo
     return {};
@@ -909,6 +909,7 @@ namespace upg
     {
       SdfScene scene = create_sdf_scene(s.first, s.second);
       save_sdf_scene(scene, "saves/test_scene.bin");
+      save_sdf_scene_hydra(scene, "../LiteRT/scenes/02_sdf_scenes", "csg_new");
     }
     SdfScene scene;
     load_sdf_scene(scene, "saves/test_scene.bin");
@@ -1027,6 +1028,8 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
+    sdf_scene_test();
+    return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");

@@ -1,6 +1,5 @@
 #include "sdf_scene_convert.h"
 #include "sdf_node.h"
-#include "LiteMath_conv.h"
 #include <map>
 
 namespace upg
@@ -14,11 +13,11 @@ namespace upg
     int literal_id = -1;
   };
 
-  static std::map<SdfNodeType::Type, SdfPrimitiveType> primitive_type_remap = 
+  static std::map<SdfNodeType::Type, unsigned> primitive_type_remap = 
   {
-    {SdfNodeType::SPHERE, SdfPrimitiveType::SPHERE},
-    {SdfNodeType::BOX, SdfPrimitiveType::BOX},
-    {SdfNodeType::CYLINDER, SdfPrimitiveType::CYLINDER},
+    {SdfNodeType::SPHERE, SDF_PRIM_SPHERE},
+    {SdfNodeType::BOX, SDF_PRIM_BOX},
+    {SdfNodeType::CYLINDER, SDF_PRIM_CYLINDER},
   };
 
   void get_transform_rec(const SdfNode *node, 
@@ -36,7 +35,8 @@ namespace upg
     {
       objects.emplace_back();
       objects.back().type = primitive_type_remap.at(node->type);
-      objects.back().bbox = conv(node->get_bbox());
+      objects.back().min_pos = to_float4(node->get_bbox().min_pos, 1);
+      objects.back().max_pos = to_float4(node->get_bbox().max_pos, 1);
       objects.back().distance_add = distance_add;
       objects.back().distance_mult = distance_mult;
       objects.back().params_count = param_cnt;
@@ -291,7 +291,7 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       assert(false);
   }
 
-  LiteMath::AABB transform_bbox(LiteMath::AABB bbox, LiteMath::float4x4 transform)
+  AABB transform_bbox(AABB bbox, LiteMath::float4x4 transform)
   {
     LiteMath::float4x4 itr = LiteMath::inverse4x4(transform);
     LiteMath::float3 p_min(1e9,1e9,1e9);
@@ -306,7 +306,7 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       p_min = min(p_min, corner);
       p_max = max(p_max, corner);
     }
-    return LiteMath::AABB(p_min, p_max);
+    return AABB(p_min, p_max);
   }
 
   SdfScene create_sdf_scene(const UPGStructure &structure, const UPGParametersRaw &params)
@@ -336,33 +336,36 @@ nodes[nodes[cur_id].right_id].type, nodes[cur_id].right_id, nodes[nodes[cur_id].
       logerr("Conjuction %u",id);
       std::vector<std::pair<unsigned, bool>> literal_node_ids;
       get_literal_nodes(nodes, literal_node_ids, id, false);
-      scene.conjunctions.push_back({(unsigned)scene.objects.size(), (unsigned)literal_node_ids.size(), LiteMath::AABB()});
+      scene.conjunctions.push_back({float4(), float4(), (unsigned)scene.objects.size(), (unsigned)literal_node_ids.size()});
 
-      LiteMath::AABB bbox({-1e6,-1e6,-1e6},{1e6,1e6,1e6});
+      AABB bbox({-1e6,-1e6,-1e6},{1e6,1e6,1e6});
       for (auto &p : literal_node_ids)
       {
         SdfObject &base_obj = basic_objects[nodes[p.first].literal_id];
+        AABB obj_bbox = transform_bbox(AABB(base_obj.min_pos, base_obj.max_pos), base_obj.transform);
         scene.objects.emplace_back();
         scene.objects.back().type = base_obj.type;
         scene.objects.back().params_offset = base_obj.params_offset;
         scene.objects.back().params_count = base_obj.params_count;
         scene.objects.back().distance_mult = base_obj.distance_mult;
         scene.objects.back().distance_add = base_obj.distance_add;
-        scene.objects.back().bbox = transform_bbox(base_obj.bbox, base_obj.transform);
+        scene.objects.back().min_pos = to_float4(obj_bbox.min_pos, 1);
+        scene.objects.back().max_pos = to_float4(obj_bbox.max_pos, 1);
         scene.objects.back().transform = base_obj.transform;
         scene.objects.back().complement = p.second;
 
         if (!p.second)
         {
-          bbox = bbox.intersect_bbox(scene.objects.back().bbox);
+          bbox = bbox.intersect_bbox(AABB(scene.objects.back().min_pos, scene.objects.back().max_pos));
         }
 
         logerr("%u (prim %d) %s", p.first, nodes[p.first].literal_id, p.second ? "COMPLEMENT" : "");
         logerr("transform (%f %f %f)(%f %f %f)", 
-               scene.objects.back().bbox.min_pos.x, scene.objects.back().bbox.min_pos.y, scene.objects.back().bbox.min_pos.z,
-               scene.objects.back().bbox.max_pos.x, scene.objects.back().bbox.max_pos.y, scene.objects.back().bbox.max_pos.z);
+               scene.objects.back().min_pos.x, scene.objects.back().min_pos.y, scene.objects.back().min_pos.z,
+               scene.objects.back().max_pos.x, scene.objects.back().max_pos.y, scene.objects.back().max_pos.z);
       }
-      scene.conjunctions.back().bbox = bbox;
+      scene.conjunctions.back().min_pos = to_float4(bbox.min_pos, 1);
+      scene.conjunctions.back().max_pos = to_float4(bbox.max_pos, 1);
       logerr("Conjuction %u END",id);
     }
 
