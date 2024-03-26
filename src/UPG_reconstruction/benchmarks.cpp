@@ -1028,8 +1028,6 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    sdf_scene_test();
-    return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");
