@@ -37,14 +37,6 @@ namespace LiteMath
     return degrees * 0.01745329251994329576923690768489;
   }
 
-  static inline float2 operator-(const float2 v) { return float2{-v.x, -v.y}; }
-  static inline float3 operator-(const float3 v) { return float3{-v.x, -v.y, -v.z}; }
-  static inline float4 operator-(const float4 v) { return float4{-v.x, -v.y, -v.z, -v.w}; }
-
-  static inline int2 operator-(const int2 v) { return int2{-v.x, -v.y}; }
-  static inline int3 operator-(const int3 v) { return int3{-v.x, -v.y, -v.z}; }
-  static inline int4 operator-(const int4 v) { return int4{-v.x, -v.y, -v.z, -v.w}; }
-
   static inline int2 operator%(const int2 a, const int2 b) { return int2{a.x % b.x, a.y % b.y}; }
   static inline int3 operator%(const int3 a, const int3 b) { return int3{a.x % b.x, a.y % b.y, a.z % b.z}; }
   static inline int4 operator%(const int4 a, const int4 b) { return int4{a.x % b.x, a.y % b.y, a.z % b.z, a.w % b.w}; }
