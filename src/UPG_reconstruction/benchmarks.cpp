@@ -897,7 +897,7 @@ namespace upg
 
   }
 
-  std::vector<AABB> get_bbox_list(const SdfScene &sdf, const SdfObject &prim, int size)
+  std::vector<AABB> get_bbox_list(std::function<float(const float3 &)> sdf, const AABB &sdf_bbox, int bbox_count)
   {
     //todo
     return {};
