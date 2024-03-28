@@ -31,6 +31,15 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenMP REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+  LiteMath
+  URL      https://github.com/msu-graphics-group/LiteMath/archive/refs/heads/main.zip
+  SOURCE_DIR dependencies/LiteMath
+)
+
+FetchContent_MakeAvailable(LiteMath)
+
 #common compiler settings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_THREAD_LIBS_INIT "-lpthread") 

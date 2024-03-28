@@ -91,3 +91,7 @@ modules/neuralCore/Makefile
 modules/neuralCore/nn_test
 
 *.spv
+
+_deps/*
+dependencies/*
+math_tests
