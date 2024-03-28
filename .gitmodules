@@ -1,6 +1,3 @@
-[submodule "modules/sdfScene"]
-	path = modules/sdfScene
-	url = https://github.com/SammaelA/sdfScene.git
 [submodule "modules/neuralCore"]
 	path = modules/neuralCore
 	url = https://github.com/SammaelA/NeuralCore.git
