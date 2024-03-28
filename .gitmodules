@@ -1,3 +1,6 @@
 [submodule "modules/neuralCore"]
 	path = modules/neuralCore
 	url = https://github.com/SammaelA/NeuralCore.git
+[submodule "modules/LiteRT"]
+	path = modules/LiteRT
+	url = https://github.com/msu-graphics-group/LiteRT.git

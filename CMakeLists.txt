@@ -19,7 +19,7 @@ option(MODULE_ENZYME "use Enzyme automatic differentiation tool" OFF)
 option(MODULE_DR "include Custom differentiable render in project" OFF)
 option(MODULE_NN "include neural networks module in project" ON)
 option(MODULE_VULKAN "include GPU support for neural networks" OFF)
-option(MODULE_SDF_SCENE "include SDF scene module in project" ON)
+option(MODULE_LITE_RT "include LiteRT module in project" ON)
 
 #common dependencies for all projects
 find_package(SDL2 REQUIRED)
@@ -204,9 +204,56 @@ endif()
 
 #####################################################################################################################################################
 
-#if (MODULE_SDF_SCENE)
-message("Module SDF_SCENE            ON")
-set(MODULES_SRC ${MODULES_SRC} modules/sdfScene/sdf_scene.cpp)
+#if (MODULE_LITE_RT)
+message("Module MODULE_LITE_RT       ON")
+
+FetchContent_Declare(
+  LiteScene
+  URL      https://github.com/msu-graphics-group/LiteScene/archive/refs/heads/main.zip
+  SOURCE_DIR dependencies/LiteScene
+)
+FetchContent_MakeAvailable(LiteScene)
+
+link_directories(${CMAKE_SOURCE_DIR}/modules/LiteRT/dependencies/embree/lib)
+include_directories(${CMAKE_SOURCE_DIR}/dependencies/LiteMath)
+include_directories(${CMAKE_SOURCE_DIR}/modules/LiteRT/dependencies/embree)
+
+set(SCENE_LOADER_SRC
+    ${CMAKE_SOURCE_DIR}/dependencies/LiteScene/pugixml.cpp
+    ${CMAKE_SOURCE_DIR}/dependencies/LiteScene/hydraxml.cpp
+    ${CMAKE_SOURCE_DIR}/dependencies/LiteScene/cmesh4.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/sdfScene/sdf_scene.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/sdfScene/gpuReady/sdf_scene.cpp
+    )
+
+set(CORE_SRC
+    ${CMAKE_SOURCE_DIR}/dependencies/LiteMath/Image2d.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/Timer.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BruteForceRT.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_host.cpp
+    )
+
+set(BUILDERS_SRC
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BVH/BVH2Common.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BVH/BVH2Common_host.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BVH/cbvh.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BVH/cbvh_fat.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/BVH/cbvh_embree2.cpp
+    )
+
+set(VULKAN_SRC "")
+
+if (MODULE_VULKAN)
+set(VULKAN_SRC 
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated.cpp 
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated_ds.cpp 
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated_init.cpp)
+endif()
+
+set(MODULES_SRC ${MODULES_SRC} ${SCENE_LOADER_SRC} ${CORE_SRC} ${BUILDERS_SRC} ${VULKAN_SRC})
+
+set(MODULES_LIBRARIES ${MODULES_LIBRARIES} embree3 embree_sse42 embree_avx embree_avx2 lexers simd sys tasking)
 #else()
 #endif()
 
@@ -282,7 +329,8 @@ if (DIFF_RECONSTRUCTION)
     set(DR_SOURCE_RT
     "${DR_SRC}/raytrace_src/raytrace3d_bf.cpp"
     "${DR_SRC}/raytrace_src/raytrace3d_embree.cpp"
-    "${DR_SRC}/raytrace_src/EmbreeRT.cpp")
+    "${DR_SRC}/raytrace_src/EmbreeRT.cpp"
+    "${CMAKE_SOURCE_DIR}/dependencies/LiteMath/Image2d.cpp")
 
     #set(OMP_LIBS "")
     #if(OpenMP_CXX_FOUND)

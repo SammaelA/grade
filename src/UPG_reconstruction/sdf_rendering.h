@@ -3,7 +3,7 @@
 #include "sdf_node.h"
 #include "tinyEngine/camera.h"
 #include "common_utils/bbox.h"
-#include "sdfScene/sdf_scene.h"
+#include "LiteRT/sdfScene/sdf_scene.h"
 
 namespace upg
 {

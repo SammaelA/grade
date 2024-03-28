@@ -3,7 +3,6 @@
 #include "tinyEngine/engine.h"
 #include "common_utils/distribution.h"
 #include "preprocessing.h"
-#include "sdfScene/sdf_scene.h"
 #include <chrono>
 #include <omp.h>
 #include <thread>
