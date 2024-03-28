@@ -150,6 +150,12 @@ endif()
                                  modules/neuralCore/nn_tests.cpp
                                  modules/neuralCore/nn_tests_performance.cpp
                                  modules/neuralCore/dataset.cpp)
+
+  if (MODULE_VULKAN)
+    set(MODULES_SRC ${MODULES_SRC} modules/neuralCore/tensor_processor_impl_gpu.cpp 
+                                   modules/neuralCore/tensor_processor_impl_gpu_ds.cpp
+                                   modules/neuralCore/tensor_processor_impl_gpu_init.cpp)
+  endif()
 #else()
 #endif()
 
@@ -158,38 +164,39 @@ endif()
 if (MODULE_VULKAN)
   message("Module VULKAN               ON")
   list(APPEND CMAKE_MODULE_PATH "modules/neuralCore/")
-  set(SLICER_DIR "/home/sammael/kernel_slicer" CACHE STRING "Custom diff render location")
-  
+
   find_package(Vulkan)
+  FetchContent_Declare(
+    volk
+    URL      https://github.com/zeux/volk/archive/refs/heads/master.zip
+    SOURCE_DIR dependencies/volk
+  )
+  FetchContent_Declare(
+    vkutils
+    URL      https://github.com/msu-graphics-group/vk-utils/archive/refs/heads/master.zip
+    SOURCE_DIR dependencies/vkutils
+  )
+  FetchContent_MakeAvailable(volk vkutils)
 
   set(MODULES_INCLUDE_DIRS ${MODULES_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIR}
-                                                   ${SLICER_DIR}/apps/vkutils
-                                                   ${SLICER_DIR}/apps/volk
-                                                   ${SLICER_DIR}/apps/LiteMath
-                                                   ${SLICER_DIR}/apps/utils)
+                                                   ${CMAKE_SOURCE_DIR}/dependencies/vkutils
+                                                   ${CMAKE_SOURCE_DIR}/dependencies/volk)
 
-  link_directories(${SLICER_DIR}/apps/volk)
+  link_directories(${CMAKE_SOURCE_DIR}/dependencies/volk)
 
   add_compile_definitions(USE_GPU)
   add_compile_definitions(USE_VOLK)
 
-  #if (MODULE_NN)
-    set(VKGEN_SOURCE modules/neuralCore/tensor_processor_impl_gpu.cpp 
-                     modules/neuralCore/tensor_processor_impl_gpu_ds.cpp
-                     modules/neuralCore/tensor_processor_impl_gpu_init.cpp)
-  #else()
-  #endif()
-  set(VKUTILS_SOURCE ${SLICER_DIR}/apps/vkutils/vk_utils.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_copy.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_buffers.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_images.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_context.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_alloc_simple.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_pipeline.cpp
-                     ${SLICER_DIR}/apps/vkutils/vk_descriptor_sets.cpp)   
+  set(VKUTILS_SOURCE ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_utils.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_copy.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_buffers.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_images.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_context.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_alloc_simple.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_pipeline.cpp
+                     ${CMAKE_SOURCE_DIR}/dependencies/vkutils/vk_descriptor_sets.cpp)   
 
-  set(MODULES_SRC ${MODULES_SRC} ${VKGEN_SOURCE} ${VKUTILS_SOURCE})
-
+  set(MODULES_SRC ${MODULES_SRC} ${VKUTILS_SOURCE})
   set(MODULES_LIBRARIES ${MODULES_LIBRARIES} ${Vulkan_LIBRARY} OpenMP::OpenMP_CXX volk dl)
 else()
   message("Module VULKAN               OFF")
