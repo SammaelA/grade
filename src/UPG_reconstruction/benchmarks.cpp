@@ -897,10 +897,41 @@ namespace upg
 
   }
 
-  std::vector<AABB> get_bbox_list(std::function<float(const float3 &)> sdf, const AABB &sdf_bbox, int bbox_count)
-  {
-    //todo
-    return {};
+  /*
+    the argument 'cuts_quant' in the 'get_bbox_list' (see below) function shows
+    how many time we want to cut each bbox in half along some axis
+  */
+  std::vector<AABB> get_bbox_list(std::function<float(const float3 &)> sdf,
+                                  const AABB &sdf_bbox, int bbox_count, int cuts_quant){
+    std::vector<AABB> bbox_list;
+    
+    int bbox_segment_quant = pow(2, cuts_quant);
+    float3 size_bbox = sdf_bbox.size();
+    float3 segment_bbox = size_bbox / bbox_segment_quant;
+
+    // Thanks to the point_xyz variable, we move between the "bboxes"
+    float3 point_xyz = segment_bbox / 2;
+    
+    int semidiag_len = sqrt(pow(point_xyz.x, 2) + pow(point_xyz.y, 2) +
+                            pow(point_xyz.z, 2));
+
+    for(unsigned int axis_x = 0; axis_x < bbox_segment_quant; axis_x += 1){
+      for(unsigned int axis_y = 0; axis_y < bbox_segment_quant; axis_y += 1){
+        for(unsigned int axis_z = 0; axis_z < bbox_segment_quant; axis_z += 1){
+          if (sdf(point_xyz) >= semidiag_len){
+            bbox_list.push_back(AABB(point_xyz - segment_bbox / 2, point_xyz +
+                                     segment_bbox / 2));
+          }
+          point_xyz.z += segment_bbox.z;
+        }
+        point_xyz.z = 0;
+        point_xyz.y += segment_bbox.y;
+      }
+      point_xyz.y = 0;
+      point_xyz.x += segment_bbox.x;
+    }
+
+    return bbox_list;
   }
   
   void sdf_scene_test()
