@@ -19,6 +19,8 @@
 #include "sdf_octree.h"
 #include "graphics_utils/modeling.h"
 #include "graphics_utils/render_wireframe.h"
+#include "LiteRT/IRenderer.h"
+#include "LiteMath/Image2d.h"
 
 namespace upg
 {
@@ -1055,6 +1057,42 @@ namespace upg
       Texture t = render_sdf(g_sdf, camera, 1024, 1024, 1, SDFRenderMode::LAMBERT);
       engine::textureManager->save_png(t, "octree_test_"+std::to_string(i));
     }
+  }
+
+  void liteRT_render_test()
+  {
+    SceneDesc s = scene_CSG_1();
+    SdfScene scene = create_sdf_scene(s.first, s.second);
+
+    CameraSettings camera;
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
+
+    unsigned W = 512, H = 512;
+    LiteImage::Image2D<uint32_t> image(W, H);
+
+    auto pRender = MakeEyeRayShooterRenderer("GPU");
+    pRender->SetAccelStruct(CreateSceneRT("BVH2Common", "cbvh_embree2", "SuperTreeletAlignedMerged4"));
+    pRender->SetViewport(0,0, W, H);
+    pRender->UpdateCamera(camera.get_view(), camera.get_proj(false));
+
+    pRender->GetAccelStruct()->ClearGeom();
+    pRender->GetAccelStruct()->AddGeom_Sdf(scene);
+    pRender->GetAccelStruct()->ClearScene();
+    pRender->GetAccelStruct()->AddInstance(0, LiteMath::float4x4());
+    pRender->GetAccelStruct()->AddInstance(0, LiteMath::translate4x4(float3(-100,-100,-100)));
+    pRender->GetAccelStruct()->CommitScene();
+    pRender->CommitDeviceData();
+
+    auto t1 = std::chrono::steady_clock::now();
+    pRender->Clear(W, H, "color");
+    pRender->Render(image.data(), W, H, "color"); 
+    auto t2 = std::chrono::steady_clock::now();
+    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF Scene", time_ms, (int)((512 * 512) / time_ms));
+
+    LiteImage::SaveImage<uint32_t>("saves/liteRT_render_test.bmp", image);
   }
 
   void perform_benchmarks(const Block &blk)
