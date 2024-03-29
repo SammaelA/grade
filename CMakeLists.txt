@@ -246,9 +246,9 @@ set(VULKAN_SRC "")
 
 if (MODULE_VULKAN)
 set(VULKAN_SRC 
-${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated.cpp 
-${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated_ds.cpp 
-${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_generated_init.cpp)
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu.cpp 
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu_ds.cpp 
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu_init.cpp)
 endif()
 
 set(MODULES_SRC ${MODULES_SRC} ${SCENE_LOADER_SRC} ${CORE_SRC} ${BUILDERS_SRC} ${VULKAN_SRC})
