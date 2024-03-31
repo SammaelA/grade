@@ -5,6 +5,8 @@
 #include "sdf_node.h"
 #include <memory>
 
+#include "interpolation.h"
+
 namespace upg
 {
   class GridSdfNode : public PrimitiveSdfNode
@@ -17,6 +19,10 @@ namespace upg
     }
     virtual ~GridSdfNode() = default;
 
+    // Implementation with trilinear interpolation by SVD
+    float get_distance_svd(const float3 &pos, std::span<float> ddist_dp, 
+                       std::span<float> ddist_dpos) const;
+    // basic implementation
     float get_distance(const float3 &pos, std::span<float> ddist_dp, 
                        std::span<float> ddist_dpos) const;
     virtual void get_distance_batch(unsigned     batch_size,

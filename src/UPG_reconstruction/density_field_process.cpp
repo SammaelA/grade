@@ -219,3 +219,48 @@ df::get_index(const size_t& dim_size, const size_t& i, const size_t& j, const si
 {
     return (k * dim_size + i) * dim_size + j;
 }
+
+void
+df::save_sdf(const std::vector<float> &sdf_model, const std::string &file_name)
+{
+    std::ofstream file;
+    file.open(file_name);
+    
+    //  Save grid params
+    file << 32 << std::endl;
+
+    for (const auto &el : sdf_model)
+    {
+        file << el << " ";
+    }
+    
+    file.close();
+}
+
+std::vector<float> 
+df::readFile(const std::string file_name)
+{
+    std::vector<float> model;
+    std::ifstream file;
+
+    int size = 0;
+
+    file.open(file_name);
+
+    if (file.is_open())
+    {
+        file >> size;
+
+        for (int i = 0; i < size * size * size; i++)
+        {
+            float element = 0;
+            
+            file >> element;
+            model.push_back(element);
+        }
+
+        file.close();
+    }
+
+    return model;
+}

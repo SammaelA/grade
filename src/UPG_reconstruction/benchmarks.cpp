@@ -15,7 +15,6 @@
 #include "optimization.h"
 #include "density_field_process.h"
 #include "sdf_scene_convert.h"
-#include "interpolation.h"
 #include "sdf_octree.h"
 #include "graphics_utils/modeling.h"
 #include "graphics_utils/render_wireframe.h"
@@ -1118,13 +1117,20 @@ namespace upg
     }
     else if (name == "density_field")
     {
-      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
-      auto model = dgen::load_obj(obj_path);
+      // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      // auto model = dgen::load_obj(obj_path);
       
-      std::vector<float> sdf_model = df::pipeline(model);
+      // std::vector<float> sdf_model = df::pipeline(model);
+
+      ////  Save sdf for next use
+      // df::save_sdf(sdf_model, "sphere.sdf");
+
+      auto sdf_model = df::readFile("sphere.sdf");
+
       int steps = 15;
       ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
       g_sdf.set_parameters(sdf_model);
+      
       for (int i=0;i<steps;i++)
       {
         CameraSettings camera;
@@ -1134,6 +1140,23 @@ namespace upg
         Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
         engine::textureManager->save_png(t, "reconstructed_image_grid_"+std::to_string(i));
       }
+    }
+    else if (name == "QR")
+    {
+      std::vector<float> M(64 * 64, 0);
+
+      for (int i = 0; i < 64 * 64; i++)
+      {
+        M[i] = (int)(1 + 10.f * rand() / (float)RAND_MAX);
+      }
+
+      std::vector<float> Q(64 * 64, 0), R(64 * 64, 0);
+
+      interpolation::QR(M, 64, Q, R);
+
+      std::vector<float> G = interpolation::mul_qr(Q, R, 64);
+
+      std::cout << std::endl << "Deviation of the resulting decomposition from the original matrix: " << interpolation::matrix_norm(M, G) << std::endl << std::endl;
     }
     else
       benchmark_sdf_complex_optimization();

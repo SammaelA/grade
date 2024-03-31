@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ctime>
 #include <vector>
+#include <fstream>
 
 namespace df
 {
@@ -39,4 +40,6 @@ namespace df
     std::vector<float> pipeline(const std::vector<float>& model);
     float3 closest_point_triangle(const float3& p, const float3& a, const float3& b, const float3& c);
     float get_index(const size_t& dim_size, const size_t& i, const size_t& j, const size_t& k);
+    void save_sdf(const std::vector<float>& sdf_model, const std::string &file_name);
+    std::vector<float> readFile(const std::string file_name); 
 };
