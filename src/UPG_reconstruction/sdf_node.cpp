@@ -2129,11 +2129,27 @@ namespace upg
       
       if (ddist_dparams)
       {
+        //calculate ddist/dscale
         for (int i=0;i<batch_size;i++)
-        {//why 3*i in ddist_dparams?
-          ddist_dparams[p_offset*batch_size + 3*i+0] = distances[i] - si*(positions[3*i+0]*ddist_dpos[3*i+0] + 
+        {
+          ddist_dparams[p_offset*batch_size + i] = distances[i] - si*(positions[3*i+0]*ddist_dpos[3*i+0] + 
             positions[3*i+1]*ddist_dpos[3*i+1] + positions[3*i+2]*ddist_dpos[3*i+2]);
         }
+
+        // recalculate ddist/dparams for child params
+        // new_dist = p[SCALE]*dist -> dnew_dist/dparams = p[SCALE]*ddist/dparams
+        for (auto *cn : child->subgraph)
+        {
+          for (int i=0;i<batch_size;i++)
+            for (int j=0;j<node_properties[cn->get_type()].param_count;j++)
+              ddist_dparams[batch_size*cn->p_offset + i*node_properties[cn->get_type()].param_count + j] *= p[SCALE];
+        }
+
+        // recalculate ddist/dpos
+        // new_dist = p[SCALE]*dist -> dnew_dist/dpos = p[SCALE]*ddist/dpos
+        for (int i=0;i<3*batch_size;i++)
+          ddist_dpos[i] *= p[SCALE];
+
       }
 
       for (int i=0;i<batch_size;i++)
