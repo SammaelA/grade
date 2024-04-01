@@ -86,19 +86,20 @@ namespace upg
 
     float res = 0.0;
     
-    // #define id(i,j,k) (vox_u.z + k)*grid_size*grid_size + (vox_u.y + j)*grid_size + (vox_u.x + i)
-    // #define C(i,j,k) {\
-    //   float qx = (1 - dp.x + i*(2*dp.x-1));\
-    //   float qy = (1 - dp.y + j*(2*dp.y-1));\
-    //   float qz = (1 - dp.z + k*(2*dp.z-1));\
-    //   res += p[id(i,j,k)]*qx*qy*qz;\
-    //   if (ddist_dp.data()){\
-    //     ddist_dp[id(i,j,k)] += qx*qy*qz;\
-    //     ddist_dpos[0] += p[id(i,j,k)]*qy*qz * (2*i-1);\
-    //     ddist_dpos[1] += p[id(i,j,k)]*qx*qz * (2*j-1);\
-    //     ddist_dpos[2] += p[id(i,j,k)]*qx*qy * (2*k-1);\
-    //   }\
-    // }
+    #define id(i,j,k) (vox_u.z + k)*grid_size*grid_size + (vox_u.y + j)*grid_size + (vox_u.x + i)
+    #define C(i,j,k) {\
+      float qx = (1 - dp.x + i*(2*dp.x-1));\
+      float qy = (1 - dp.y + j*(2*dp.y-1));\
+      float qz = (1 - dp.z + k*(2*dp.z-1));\
+      res += p[id(i,j,k)]*qx*qy*qz;\
+      if (ddist_dp.data()){\
+        ddist_dp[id(i,j,k)] += qx*qy*qz;\
+        ddist_dpos[0] += p[id(i,j,k)]*qy*qz * (2*i-1);\
+        ddist_dpos[1] += p[id(i,j,k)]*qx*qz * (2*j-1);\
+        ddist_dpos[2] += p[id(i,j,k)]*qx*qy * (2*k-1);\
+      }\
+    }
+
     // if (vox_u.x<grid_size-1 && vox_u.y<grid_size-1 && vox_u.z<grid_size-1)
     // {
     //   C(0,0,0);
@@ -121,6 +122,8 @@ namespace upg
     //   //(*ddist_dpos)[1] += 0;
     //   //(*ddist_dpos)[2] += 0;
     // }
+
+    // return res;
 
     //printf("dist %f\n",res);
 
@@ -193,20 +196,27 @@ namespace upg
       {
         for (int z = sample_bbox[4]; z <= sample_bbox[5]; z++)
         {
-          X.push_back(LiteMath::float3(x, y, z) * bbox_size / grid_size + LiteMath::float3(-1, -1, -1));
-          b.push_back(id(x, y, z));
+          int index = (z * grid_size + y) * grid_size + x;
+
+          X.push_back(LiteMath::float3(x, y, z) * bbox_size / grid_size_f + LiteMath::float3(-1, -1, -1));
+          b.push_back(p[index]);
         }
       }
     }
 
     auto A = interpolation::create_A(X);
     std::vector<float> Q(64 * 64, 0), R(64 * 64, 0);
-    interpolation::QR(A, 64, Q, R);
+    interpolation::householder_qr(A, 64, Q, R);
 
     std::vector<float> G = interpolation::mul_qr(Q, R, 64);
     std::vector<float> coefs = interpolation::calc_qr_coefs(Q, R, b);
 
-    return interpolation::perform_interpolation(coefs, pos);
+    res = interpolation::perform_interpolation(coefs, pos);
+
+    // std::cout << res << " " << p[id(0, 0, 0)] << std::endl;
+    // std::cout << interpolation::matrix_norm(A, interpolation::mul_qr(Q, R, 64)) << std::endl;
+
+    return res;
   }
 
   std::vector<ParametersDescription::Param> GridSdfNode::get_parameters_block(AABB scene_bbox) const

@@ -1254,16 +1254,59 @@ namespace upg
 
       for (int i = 0; i < 64 * 64; i++)
       {
-        M[i] = (int)(1 + 10.f * rand() / (float)RAND_MAX);
+        M[i] = (-1 + 2 * rand() / (float)RAND_MAX);
       }
 
       std::vector<float> Q(64 * 64, 0), R(64 * 64, 0);
 
-      interpolation::QR(M, 64, Q, R);
+      // interpolation::QR(M, 64, Q, R);
 
-      std::vector<float> G = interpolation::mul_qr(Q, R, 64);
+      // std::vector<float> G = interpolation::mul_qr(Q, R, 64);
 
-      std::cout << std::endl << "Deviation of the resulting decomposition from the original matrix: " << interpolation::matrix_norm(M, G) << std::endl << std::endl;
+      // std::cout << std::endl << "Deviation of the resulting decomposition from the original matrix: " << interpolation::matrix_norm(M, G) << std::endl << std::endl;
+
+      std::vector<float> b(64, 0);
+
+      for (auto &el : b)
+      {
+        el = -1 + 2.f * rand() / (float)RAND_MAX;
+      }
+
+      // auto coefs = interpolation::calc_qr_coefs(Q, R, b);
+
+      // for (int i = 0; i < 64; i++)
+      // {
+      //   float s = 0;
+
+      //   for (int j = 0; j < 64; j++)
+      //   {
+      //     s += M[64 * i + j] * coefs[j];
+      //   }
+
+      //   std::cout << b[i] << " " << s << std::endl;
+      // }
+
+      std::vector<LiteMath::float3> X;
+
+      for (int i = 0; i < 64; i++)
+      {
+        X.push_back(LiteMath::float3(-1 + 2.f * rand() / (float)RAND_MAX, -1 + 2.f * rand() / (float)RAND_MAX, -1 + 2.f * rand() / (float)RAND_MAX));
+        // std::cout << X[i].x << " " << X[i].y << " " << X[i].z << std::endl;
+      }
+
+      auto A = interpolation::create_A(X);
+
+      interpolation::householder_qr(A, 64, Q, R);
+      // interpolation::QR(A, 64, Q, R);
+      // auto coefs = interpolation::calc_qr_coefs(Q, R, b);
+
+      std::cout << interpolation::matrix_norm(A, interpolation::mul_qr(Q, R, 64)) << std::endl;
+      // for (int i = 0; i < 64; i++)
+      // {
+      //   std::cout << A[i] << " ";
+      // }
+
+      
     }
     else
       benchmark_sdf_complex_optimization();

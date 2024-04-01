@@ -18,6 +18,7 @@ namespace interpolation
     std::vector<float> calc_qr_coefs(const std::vector<float> &Q, const std::vector<float> &R, const std::vector<float> &b);
     std::vector<float> mul_qr(const std::vector<float> &Q, const std::vector<float> &R, size_t size);
     float perform_interpolation(const std::vector<float> &coefs, const LiteMath::float3 &pos);
+    void householder_qr(const std::vector<float>& M, const size_t &size, std::vector<float> &Q, std::vector<float> &R);
 
     const int interpolation_power = 4;
 };
