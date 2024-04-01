@@ -1060,7 +1060,7 @@ namespace upg
 
   void liteRT_render_test()
   {
-    SceneDesc s = scene_CSG_1();
+    SceneDesc s = scene_chair();
     SdfScene scene = create_sdf_scene(s.first, s.second);
 
     CameraSettings camera;
@@ -1101,7 +1101,7 @@ namespace upg
 
   void liteRT_grid_test()
   {
-    auto scene = scene_complex_chair();
+    auto scene = scene_chair();
     ProceduralSdf reference_sdf(scene.first);
     reference_sdf.set_parameters(scene.second.p);
     AABB bbox = AABB({-1,-1,-1},{1,1,1});
@@ -1118,7 +1118,7 @@ namespace upg
     unsigned W = 1024, H = 1024;
     LiteImage::Image2D<uint32_t> image(W, H);
 
-    auto pRender = MakeEyeRayShooterRenderer("CPU");
+    auto pRender = MakeEyeRayShooterRenderer("GPU");
     pRender->SetAccelStruct(CreateSceneRT("BVH2Common", "cbvh_embree2", "SuperTreeletAlignedMerged4"));
     pRender->SetViewport(0,0, W, H);
     pRender->UpdateCamera(camera.get_view(), camera.get_proj(false));
@@ -1148,7 +1148,7 @@ namespace upg
 
   void liteRT_octree_test()
   {
-    auto scene = scene_complex_chair();
+    auto scene = scene_chair();
     ProceduralSdf reference_sdf(scene.first);
     reference_sdf.set_parameters(scene.second.p);
     AABB bbox = AABB({-1,-1,-1},{1,1,1});
@@ -1200,6 +1200,7 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
+    //liteRT_render_test();
     //liteRT_grid_test();
     //liteRT_octree_test();
     //return;
