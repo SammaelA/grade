@@ -285,128 +285,50 @@ interpolation::householder_qr(const std::vector<float>& M, const size_t &size, s
         v.clear();
         u.clear();
     }
+
+    P.clear();
+    I.clear();
 }
 
-void partialvec_copy (double * x, double * y, int length, int index) {
-    int i, length5;
-
-    length5 = length % 5;
-
-    for(i = 0; i < length5; i++) {
-        y[i] = x[i + index];
-    }
-    for(; i < length; i += 5) {
-        y[i] = x[i + index];
-        y[i + 1] = x[i + index + 1];
-        y[i + 2] = x[i + index + 2];
-        y[i + 3] = x[i + index + 3];
-        y[i + 4] = x[i + index + 4];
-    }
-}
-
-void scalar_div (double * x, double r, int length, double * y) {
-    int i, length5;
-
-    length5 = length % 5;
-
-    for(i = 0; i < length5; i++) {
-        y[i] = x[i]/r;
-    }
-    for(; i < length; i += 5) {
-        y[i] = x[i]/r;
-        y[i + 1] = x[i + 1]/r;
-        y[i + 2] = x[i + 2]/r;
-        y[i + 3] = x[i + 3]/r;
-        y[i + 4] = x[i + 4]/r;
-    }
-}
-
-double partialdot_product (double * x, double * y, int length, int index) {
-    int i, length5;
-    double sum = 0;
-
-    length5 = length % 5;
-
-    for(i = index; i < length5; i++) {
-        sum += x[i] * y[i];
-    }
-    for(; i < length; i += 5) {
-        sum += x[i] * y[i] + x[i + 1] * y[i + 1] + x[i + 2] * y[i + 2]
-                           + x[i + 3] * y[i + 3] + x[i + 4] * y[i + 4];
-    }
-
-    return sum;
-}
-
-double subdot_product (double * x, double * y, int length, int index) {
-    int i, length5;
-    double sum = 0;
-
-    length5 = length % 5;
-
-    for(i = 0; i < length5; i++) {
-        sum += x[i + index] * y[i];
-    }
-    for(; i < length; i += 5) {
-        sum += x[i + index] * y[i] + x[i + index + 1] * y[i + 1] 
-                                   + x[i + index + 2] * y[i + 2]
-                                   + x[i + index + 3] * y[i + 3]
-                                   + x[i + index + 4] * y[i + 4];
-    }
-
-    return sum;
-}
-
-void partialscalar_sub (double * x, double r, int length, 
-                                              int index, double * y) 
+std::vector<float> 
+interpolation::calc_coefs(const std::vector<float> &b)
 {
-    int i, length5;
+    std::vector<float> new_b(64, 0), coefs(64, 0);
 
-    length5 = length % 5;
+    for (int i = 0; i < 64; i++)
+    {
+        new_b[i] = b[i % 8];
+    }
 
-    for(i = 0; i < length5; i++) {
-        y[i + index] -= r * x[i];
+    for (int i = 0; i < 64; i++)
+    {
+        for (int j = 0; j < 64; j++)
+        {
+            coefs[i] += A_v2[i][j] * new_b[j];
+        }
     }
-    for(; i < length; i += 5) {
-        y[i + index] -= r * x[i];
-        y[i + index + 1] -= r * x[i + 1];
-        y[i + index + 2] -= r * x[i + 2];
-        y[i + index + 3] -= r * x[i + 3];
-        y[i + index + 4] -= r * x[i + 4];
-    }
+
+    new_b.clear();
+
+    return coefs;
 }
 
-void householder (double ** a, double ** v, int m, int n) {
-    int i, j;
-    double vnorm, vTa, vpartdot;
+float 
+interpolation::calc_interpolation(const std::vector<float> &coefs, const LiteMath::float3 &Point)
+{
+    float res = 0;
+    int ind = 0;
 
-    for(i = 0; i < n; i++) {
-        /* set v[i] equal to subvector a[i][i : m] */
-        partialvec_copy(a[i], v[i], m - i, i);
-
-        /* vpartdot = ||v[i]||^2 - v[i][0] * v[i][0]; since vpartdot 
-           is unaffected by the change in v[i][0], storing this value 
-           prevents the need to recalculate the entire norm of v[i] 
-           after updating v[i][0] in the following step              */
-        vpartdot = partialdot_product(v[i], v[i], m - i, 1);
-
-        /* set v[i][0] = v[i][0] + sign(v[i][0]) * ||v[i]|| */
-        if(v[i][0] < 0) {
-            v[i][0] -= sqrt(v[i][0] * v[i][0] + vpartdot);
-        }
-        else {
-            v[i][0] += sqrt(v[i][0] * v[i][0] + vpartdot);
-        }
-
-        /* normalize v[i] */
-        vnorm = sqrt(v[i][0] * v[i][0] + vpartdot);
-        scalar_div(v[i], vnorm, m - i, v[i]);
-    
-        for(j = i; j < n; j++) {
-            /* set a[j][i:m] = a[j][i:m] - 2 * (v[i]^T a[j][i:m]) * v[i] */
-            vTa = subdot_product(a[j], v[i], m - i, i);
-            vTa *= 2;
-            partialscalar_sub(v[i], vTa, m - i, i, a[j]);
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                res += coefs[ind++] * std::pow(Point.x, i) * std::pow(Point.y, j) * std::pow(Point.z, k);
+            }
         }
     }
+
+    return res;
 }

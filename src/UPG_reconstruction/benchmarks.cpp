@@ -1246,7 +1246,7 @@ namespace upg
         camera.target = float3(0,0,0);
         camera.up = float3(0,1,0);
         Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
-        engine::textureManager->save_png(t, "reconstructed_image_grid_"+std::to_string(i));
+        engine::textureManager->save_png(t, "reconstructed_image_grid_bicubic"+std::to_string(i));
       }
     }
     else if (name == "QR")
