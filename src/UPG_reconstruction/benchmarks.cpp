@@ -945,7 +945,7 @@ namespace upg
     float4(1,0,1,1)        //6-magenta
   };
 
-  void sdf_octree_to_model_rec(const SparseOctree &octree, Mesh *m, unsigned level_from, unsigned level_to, bool border_only,
+  void sdf_octree_to_model_rec(const SparseOctreeBuilder &octree, Mesh *m, unsigned level_from, unsigned level_to, bool border_only,
                                unsigned idx, unsigned level, float3 p)
   {
     if (level == level_to)
@@ -972,7 +972,7 @@ namespace upg
     }
   }
 
-  Texture visualize_sdf_octree(const SparseOctree &octree, CameraSettings cam, unsigned level_from, unsigned level_to)
+  Texture visualize_sdf_octree(const SparseOctreeBuilder &octree, CameraSettings cam, unsigned level_from, unsigned level_to)
   {
     //Box b = Box(shift + float3(scale.x * x, scale.y * y, scale.z * z), float3(dot_size, 0, 0), float3(0, dot_size, 0), float3(0, 0, dot_size));
     Model *m = new Model();
@@ -1000,13 +1000,13 @@ namespace upg
       float3 p = float3(urand(-1,1), 1, urand(-1,1));
       float d = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample(p);
       float d2 = sdf.get_distance(p);
-      float d3 = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample_mip_skip_3x3(p);
+      float d3 = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample_mip_skip_closest(p);
       //if (d*d2<0)
         printf("%f %f %f -- d= %f %f %f\n",p.x,p.y,p.z, d,d2,d3);
     }
     //return;
 
-    SparseOctree &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
+    SparseOctreeBuilder &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
     printf("Octree size %d\n", (int)(octree.get_nodes().size()));
     for (int i=3;i<9;i++)
     {
@@ -1133,7 +1133,7 @@ namespace upg
     dynamic_cast<OctreeSdfNode*>(g_sdf.root)->construct( [&reference_sdf](const float3 &p) {
       /*logerr("sample %f %f %f",p.x,p.y,p.z);*/ return reference_sdf.get_distance(p); });
 
-    SparseOctree &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
+    SparseOctreeBuilder &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
 
     CameraSettings camera;
     camera.origin = float3(0,0,3);
@@ -1202,10 +1202,10 @@ namespace upg
   {
     //sdfScene_check();
     //return;
-    //liteRT_render_test();
-    //liteRT_grid_test();
-    //liteRT_octree_test();
-    //return;
+    liteRT_render_test();
+    liteRT_grid_test();
+    liteRT_octree_test();
+    return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");

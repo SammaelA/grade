@@ -2,7 +2,8 @@
 #include <vector>
 #include <functional>
 #include <fstream>
-#include "LiteMath_ext.h"
+#include "common_utils/LiteMath_ext.h"
+#include "LiteRT/sdfScene/sdf_scene.h"
 /*
 A class that is able to represent and arbitrary function f : R^3 -> T 
 as a sparse octree, where every leaf contains value of function in it's
@@ -92,36 +93,29 @@ void load_block_sparse_octree(const std::string &path, /*out*/BlockSparseOctree<
   fs.close();
 }
 
-class SparseOctree
+class SparseOctreeBuilder
 {
 public:
+  using Node = SdfOctreeNode;
   using T = float;
-  using index_t = unsigned;
-  struct Node
-  {
-    T value;
-    index_t offset = 0; //offset for children (they are stored together). 0 offset means it's a leaf
-  };
 
   static bool is_border(float distance, unsigned level);
 
-  void construct_top_down(std::function<T(const float3 &)> f, SparseOctreeSettings settings); //do not work!
+  SparseOctreeBuilder();
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                   BlockSparseOctree<T> &out_bso);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
-  T sample_mip_skip_2x2(const float3 &pos, unsigned max_level = 1000) const; //not working now and anymore
-  T sample_mip_skip_3x3(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
   void print_stat() const;
   std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
-  std::vector<Node> &get_nodes() { return m_nodes; }
-  const std::vector<Node> &get_nodes() const { return m_nodes; }
+  std::vector<Node> &get_nodes() { return octree_f->get_nodes(); }
+  const std::vector<Node> &get_nodes() const { return octree_f->get_nodes(); }
 
-  Node &get_node(unsigned idx) { return m_nodes[idx]; }
-  const Node &get_node(unsigned idx) const { return m_nodes[idx]; }
+  Node &get_node(unsigned idx) { return octree_f->get_nodes()[idx]; }
+  const Node &get_node(unsigned idx) const { return octree_f->get_nodes()[idx]; }
 protected:
   void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,
                     unsigned max_depth, float3 p, float d);
@@ -133,5 +127,5 @@ protected:
 
   T sample_neighborhood_bilinear(const float3 &n_pos, T n_distances[8]) const;
 
-  std::vector<Node> m_nodes; //0 node is root
+  std::shared_ptr<ISdfOctreeFunction> octree_f; //0 node is root
 };

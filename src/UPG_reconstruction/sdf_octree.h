@@ -2,7 +2,7 @@
 #include "upg.h"
 #include "generation_common.h"
 #include "common_utils/bbox.h"
-#include "common_utils/sparse_octree.h"
+#include "sparse_octree.h"
 #include "sdf_node.h"
 #include <memory>
 #include <functional>
@@ -38,6 +38,6 @@ namespace upg
     unsigned nodes_limit = 1;
     unsigned nodes_count = 1;
     float3 bbox_size = float3(2,2,2);
-    SparseOctree octree;
+    SparseOctreeBuilder octree;
   };
 }
