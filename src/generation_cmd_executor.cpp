@@ -591,7 +591,7 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       break;
     case GC_UPG_TESTS:
     {
-      std::vector<int> t1,t2,t3,t4,t5,t6;
+      std::vector<int> t1,t2,t3,t4,t5,t6,t7;
       bool a1 = cmd.args.get_bool("perform_tests_mesh_reconstruction");
       cmd.args.get_arr("tests_mesh_reconstruction", t1);
 
@@ -610,6 +610,9 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
       bool a6 = cmd.args.get_bool("perform_tests_common");
       cmd.args.get_arr("tests_common", t6);
 
+      bool a7 = cmd.args.get_bool("perform_tests_sdf_scene");
+      cmd.args.get_arr("tests_sdf_scene", t7);
+
       nn::base_path = "modules/neuralCore/";
 
       if (a1)
@@ -624,6 +627,8 @@ void GenerationCmdExecutor::execute(int max_cmd_count)
         nn::perform_tests_neural_networks(t5);  
       if (a6)
         perform_tests_common(t6);  
+      if (a7)
+        upg::perform_tests_sdf_scene(t7); 
     }
       break;
     case GC_UPG_BENCHMARK:

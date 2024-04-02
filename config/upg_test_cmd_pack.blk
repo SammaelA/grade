@@ -5,7 +5,7 @@
     perform_tests_mesh_reconstruction:b = false
     tests_mesh_reconstruction:arr = {}
 
-    perform_tests_sdf_reconstruction:b = true
+    perform_tests_sdf_reconstruction:b = false
     tests_sdf_reconstruction:arr = {}
 
     perform_tests_tensor_processor:b = false
@@ -19,6 +19,9 @@
 
     perform_tests_common:b = false
     tests_common:arr = {}
+    
+    perform_tests_sdf_scene:b = true
+    tests_sdf_scene:arr = {}
   }
   cmd {cmd_name:s = "IC_EXIT"}
 }
