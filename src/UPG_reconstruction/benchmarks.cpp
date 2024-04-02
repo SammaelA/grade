@@ -1172,12 +1172,40 @@ namespace upg
     LiteImage::SaveImage<uint32_t>("saves/liteRT_octree_test.bmp", image);
   }
 
+  void sdfScene_check()
+  {
+    SceneDesc s = scene_chair();
+
+    // SDF represented with tree of SdfNode
+    ProceduralSdf reference_sdf(s.first);
+    reference_sdf.set_parameters(s.second.p);
+
+    // SDF represented in CGS manner, optimized for render
+    SdfScene scene = create_sdf_scene(s.first, s.second);
+    auto scene_sdf = get_SdfSceneFunction(scene);
+
+    AABB box = reference_sdf.get_bbox();
+
+    unsigned tries = 10000;
+    for (int i=0;i<tries;i++)
+    {
+      float3 p = box.min_pos + box.size()*float3(urand(), urand(), urand());
+      float d1 = reference_sdf.get_distance(p);
+      float d2 = scene_sdf->eval_distance(p);
+      if (abs(d1 - d2) > 1e-6)
+        logerr("wrong distance in (%f %f %f): d1=%f d2=%f", p.x, p.y, p.z, d1, d2);
+    }
+    logerr("sdfScene_check PASSED\n");
+  }
+
   void perform_benchmarks(const Block &blk)
   {
-    liteRT_render_test();
-    liteRT_grid_test();
-    liteRT_octree_test();
-    return;
+    //sdfScene_check();
+    //return;
+    //liteRT_render_test();
+    //liteRT_grid_test();
+    //liteRT_octree_test();
+    //return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");
