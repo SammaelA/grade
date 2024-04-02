@@ -22,6 +22,7 @@ void SparseOctree::add_node_rec(std::function<T(const float3 &)> f,
                                 float3 p,
                                 float d)
 {
+  auto &nodes = get_nodes();
   nodes[node_idx].value = f(2.0f * ((p + float3(0.5, 0.5, 0.5)) * d) - float3(1, 1, 1));
 
   if (depth < max_depth)
@@ -46,6 +47,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
                                   float d,
                                   unsigned level)
 {
+  auto &nodes = get_nodes();
   assert(!is_leaf(nodes[node_idx].offset));
   unsigned idx = nodes[node_idx].offset;
   T n_distances[8];
@@ -111,6 +113,7 @@ void SparseOctree::split_children(std::function<T(const float3 &)> f,
 void SparseOctree::construct_top_down(std::function<T(const float3 &)> f,
                                       SparseOctreeSettings settings)
 {
+  auto &nodes = get_nodes();
   //DBG = true;
   //DBG = false;
   nodes.clear();
@@ -150,6 +153,7 @@ SparseOctree::T SparseOctree::sample(const float3 &position, unsigned max_level)
 }
 SparseOctree::T SparseOctree::sample_mip_skip_closest(const float3 &position, unsigned max_level) const
 {  
+  auto &nodes = get_nodes();
   if (DBG) printf("start pos %f %f %f\n", position.x, position.y, position.z);
   float3 n_pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);//position in current neighborhood
   float d = 1;//size of current neighborhood
@@ -321,6 +325,7 @@ float sample_neighborhood(Neighbor *neighbors, float3 n_pos)
 
 SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsigned max_level) const
 {
+  auto &nodes = get_nodes();
   constexpr unsigned CENTER = 9 + 3 + 1;
   constexpr float EPS = 1e-6;
   Neighbor neighbors[27];
@@ -414,6 +419,7 @@ SparseOctree::T SparseOctree::sample_mip_skip_3x3(const float3 &position, unsign
 
 SparseOctree::T SparseOctree::sample_mip_skip_2x2(const float3 &position, unsigned max_level) const
 {
+  auto &nodes = get_nodes();
   if (DBG) printf("start pos %f %f %f\n", position.x, position.y, position.z);
   float3 n_pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);//position in current neighborhood
   float d = 1;//size of current neighborhood
@@ -537,6 +543,7 @@ SparseOctree::T SparseOctree::sample_neighborhood_bilinear(const float3 &dp, T n
 
 SparseOctree::T SparseOctree::sample_closest(const float3 &position) const
 {
+  auto &nodes = get_nodes();
   //if (abs(position).x > 0.9 || abs(position).y > 0.9 || abs(position).z > 0.9)
   //  return 0.1;
   float3 pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);
@@ -603,6 +610,7 @@ void print_stat_rec(const std::vector<SparseOctree::Node> &nodes, SparseOctreeCo
 
 void SparseOctree::print_stat() const
 {
+  auto &nodes = get_nodes();
   check_border_reappearance_rec(nodes, 0, 0);
 
   SparseOctreeCounts counts;
@@ -789,6 +797,7 @@ void all_to_valid_nodes_remap_rec(const std::vector<SparseOctree::Node> &all_nod
 
 void SparseOctree::construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
 {
+  auto &nodes = get_nodes();
   //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
   auto p = estimate_quality(f, 10, 100000);
   printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
@@ -820,6 +829,7 @@ void SparseOctree::construct_bottom_up_finish(std::function<T(const float3 &)> f
 
 void SparseOctree::construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
 {
+  auto &nodes = get_nodes();
   nodes.clear();
   nodes.reserve((8.0/7)*std::pow(8, settings.depth));
 

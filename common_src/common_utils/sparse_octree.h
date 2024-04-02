@@ -117,11 +117,11 @@ public:
 
   void print_stat() const;
   std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
-  std::vector<Node> &get_nodes() { return nodes; }
-  const std::vector<Node> &get_nodes() const { return nodes; }
+  std::vector<Node> &get_nodes() { return m_nodes; }
+  const std::vector<Node> &get_nodes() const { return m_nodes; }
 
-  Node &get_node(unsigned idx) { return nodes[idx]; }
-  const Node &get_node(unsigned idx) const { return nodes[idx]; }
+  Node &get_node(unsigned idx) { return m_nodes[idx]; }
+  const Node &get_node(unsigned idx) const { return m_nodes[idx]; }
 protected:
   void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,
                     unsigned max_depth, float3 p, float d);
@@ -133,5 +133,5 @@ protected:
 
   T sample_neighborhood_bilinear(const float3 &n_pos, T n_distances[8]) const;
 
-  std::vector<Node> nodes; //0 node is root
+  std::vector<Node> m_nodes; //0 node is root
 };

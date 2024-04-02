@@ -934,32 +934,6 @@ namespace upg
 
     return bbox_list;
   }
-  
-  void sdf_scene_test()
-  {
-    SceneDesc s = scene_CSG_1();
-    {
-      SdfScene scene = create_sdf_scene(s.first, s.second);
-      save_sdf_scene(scene, "saves/test_scene.bin");
-      save_sdf_scene_hydra(scene, "../LiteRT/scenes/02_sdf_scenes", "csg_new");
-    }
-    SdfScene scene;
-    load_sdf_scene(scene, "saves/test_scene.bin");
-
-    CameraSettings camera;
-    camera.origin = float3(0,0,3);
-    camera.target = float3(0,0,0);
-    camera.up = float3(0,1,0);
-
-    std::chrono::steady_clock::time_point t1, t2;
-
-    t1 = std::chrono::steady_clock::now();
-    Texture t = render_sdf(scene, camera, 512, 512, 16, SDFRenderMode::LAMBERT);
-    t2 = std::chrono::steady_clock::now();
-    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    debug("%s rendered in %.1f s. %d kRays/s\n", "SDF Scene", 1e-3 * time_ms, (int)((512 * 512 * 16) / time_ms));
-    engine::textureManager->save_png(t, "SDF Scene demo");
-  }
 
   static std::vector<float4> octree_visualize_palette = {
     float4(0.5,0.5,0.5,1), //0-gray
@@ -1200,10 +1174,10 @@ namespace upg
 
   void perform_benchmarks(const Block &blk)
   {
-    //liteRT_render_test();
-    //liteRT_grid_test();
-    //liteRT_octree_test();
-    //return;
+    liteRT_render_test();
+    liteRT_grid_test();
+    liteRT_octree_test();
+    return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");
