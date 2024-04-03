@@ -21,6 +21,7 @@
 #include "LiteRT/IRenderer.h"
 #include "LiteMath/Image2d.h"
 #include "common_sdf_scenes.h"
+#include "LiteRT/Renderer/eye_ray.h"
 
 namespace upg
 {
@@ -847,28 +848,16 @@ namespace upg
 
     unsigned W = 1024, H = 1024;
     LiteImage::Image2D<uint32_t> image(W, H);
-
-    auto pRender = MakeEyeRayShooterRenderer("GPU");
-    pRender->SetAccelStruct(CreateSceneRT("BVH2Common", "cbvh_embree2", "SuperTreeletAlignedMerged4"));
-    pRender->SetViewport(0,0, W, H);
-    pRender->UpdateCamera(camera.get_view(), camera.get_proj(false));
-
-    pRender->GetAccelStruct()->ClearGeom();
-    pRender->GetAccelStruct()->AddGeom_SdfScene(scene);
-    pRender->GetAccelStruct()->ClearScene();
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::float4x4());
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::translate4x4(float3(-100,-100,-100)));
-    pRender->GetAccelStruct()->CommitScene();
-    pRender->CommitDeviceData();
-
-    auto t1 = std::chrono::steady_clock::now();
     float timings[4] = {0,0,0,0};
 
-    pRender->Clear(W, H, "color");
-    pRender->Render(image.data(), W, H, "color"); 
-    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetScene(scene);
 
-    auto t2 = std::chrono::steady_clock::now();
+auto t1 = std::chrono::steady_clock::now();
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
+    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+auto t2 = std::chrono::steady_clock::now();
+
     float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF Scene", time_ms, (int)((W * H) / time_ms));
     debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
@@ -894,28 +883,16 @@ namespace upg
 
     unsigned W = 1024, H = 1024;
     LiteImage::Image2D<uint32_t> image(W, H);
-
-    auto pRender = MakeEyeRayShooterRenderer("GPU");
-    pRender->SetAccelStruct(CreateSceneRT("BVH2Common", "cbvh_embree2", "SuperTreeletAlignedMerged4"));
-    pRender->SetViewport(0,0, W, H);
-    pRender->UpdateCamera(camera.get_view(), camera.get_proj(false));
-
-    pRender->GetAccelStruct()->ClearGeom();
-    pRender->GetAccelStruct()->AddGeom_SdfGrid({uint3(grid_size, grid_size, grid_size), grid_data.data()});
-    pRender->GetAccelStruct()->ClearScene();
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::float4x4());
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::translate4x4(float3(-100,-100,-100)));
-    pRender->GetAccelStruct()->CommitScene();
-    pRender->CommitDeviceData();
-
-    auto t1 = std::chrono::steady_clock::now();
     float timings[4] = {0,0,0,0};
 
-    pRender->Clear(W, H, "color");
-    pRender->Render(image.data(), W, H, "color"); 
-    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetScene({uint3(grid_size, grid_size, grid_size), grid_data.data()});
 
-    auto t2 = std::chrono::steady_clock::now();
+auto t1 = std::chrono::steady_clock::now();
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
+    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+auto t2 = std::chrono::steady_clock::now();
+
     float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF 64x64x64 Grid", time_ms, (int)((W * H) / time_ms));
     debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
@@ -945,29 +922,17 @@ namespace upg
 
     unsigned W = 1024, H = 1024;
     LiteImage::Image2D<uint32_t> image(W, H);
-
-    auto pRender = MakeEyeRayShooterRenderer("GPU");
-    pRender->SetAccelStruct(CreateSceneRT("BVH2Common", "cbvh_embree2", "SuperTreeletAlignedMerged4"));
-    pRender->SetViewport(0,0, W, H);
-    pRender->UpdateCamera(camera.get_view(), camera.get_proj(false));
-
-    pRender->GetAccelStruct()->ClearGeom();
-    pRender->GetAccelStruct()->AddGeom_SdfOctree({(unsigned)(octree.get_nodes().size()), 
-                                                  (const SdfOctreeNode *)octree.get_nodes().data()});
-    pRender->GetAccelStruct()->ClearScene();
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::float4x4());
-    pRender->GetAccelStruct()->AddInstance(0, LiteMath::translate4x4(float3(-100,-100,-100)));
-    pRender->GetAccelStruct()->CommitScene();
-    pRender->CommitDeviceData();
-
-    auto t1 = std::chrono::steady_clock::now();
     float timings[4] = {0,0,0,0};
 
-    pRender->Clear(W, H, "color");
-    pRender->Render(image.data(), W, H, "color"); 
-    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetScene({(unsigned)(octree.get_nodes().size()), 
+                      (const SdfOctreeNode *)octree.get_nodes().data()});
 
-    auto t2 = std::chrono::steady_clock::now();
+auto t1 = std::chrono::steady_clock::now();
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
+    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+auto t2 = std::chrono::steady_clock::now();
+
     float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF 64x64x64 Grid", time_ms, (int)((W * H) / time_ms));
     debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
@@ -1005,10 +970,10 @@ namespace upg
   {
     //sdfScene_check();
     //return;
-    //liteRT_render_test();
-    //liteRT_grid_test();
-    //liteRT_octree_test();
-    //return;
+    liteRT_render_test();
+    liteRT_grid_test();
+    liteRT_octree_test();
+    return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");
