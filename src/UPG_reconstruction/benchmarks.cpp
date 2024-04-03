@@ -1225,18 +1225,18 @@ namespace upg
     }
     else if (name == "density_field")
     {
-      // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
-      // auto model = dgen::load_obj(obj_path);
+      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      auto model = dgen::load_obj(obj_path);
       
-      // std::vector<float> sdf_model = df::pipeline(model);
+      std::vector<float> sdf_model = df::pipeline(model);
 
-      ////  Save sdf for next use
-      // df::save_sdf(sdf_model, "sphere.sdf");
+      // Save sdf for next use
+      df::save_sdf(sdf_model, "sphere.sdf");
 
-      auto sdf_model = df::readFile("sphere.sdf");
+      // auto sdf_model = df::readFile("sphere.sdf");
 
       int steps = 15;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
+      ProceduralSdf g_sdf({{SdfNodeType::GRID_64}});
       g_sdf.set_parameters(sdf_model);
       
       for (int i=0;i<steps;i++)

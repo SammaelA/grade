@@ -304,7 +304,7 @@ interpolation::calc_coefs(const std::vector<float> &b)
     {
         for (int j = 0; j < 64; j++)
         {
-            coefs[i] += A_v2[i][j] * new_b[j];
+            coefs[i] += (float)A_v2[i][j] * new_b[j];
         }
     }
 
@@ -325,7 +325,7 @@ interpolation::calc_interpolation(const std::vector<float> &coefs, const LiteMat
         {
             for (int k = 0; k < 4; k++)
             {
-                res += coefs[ind++] * std::pow(Point.x, i) * std::pow(Point.y, j) * std::pow(Point.z, k);
+                res += coefs[i + 4 * j + 16 * k] * std::pow(Point.x, i) * std::pow(Point.y, j) * std::pow(Point.z, k);
             }
         }
     }

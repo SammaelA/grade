@@ -143,19 +143,11 @@ namespace upg
 
       auto coefs = interpolation::calc_coefs(b);
       res = interpolation::calc_interpolation(coefs, dp);
-
-      // std::cout << res << " ";
-
-      // for (auto el : b)
-      // {
-      //   std::cout << el << " ";
-      // }
-
-      // std::cout << std::endl;
     }
     else
     {  
       res += p[id(0,0,0)];
+      // std::cout << vox_u.x << " " << vox_u.y << " " << vox_u.z << std::endl;
     }
 
     return res;
