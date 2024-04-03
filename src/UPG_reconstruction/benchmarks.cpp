@@ -612,26 +612,6 @@ namespace upg
     }
   }
 
-  void primitive_SDF_to_grid(ProceduralSdf &sdf, const AABB &bbox, float *grid, unsigned vox_size,
-                             unsigned samples)
-  {
-    int offset = 0;
-    for (int i = 0; i < vox_size; i++)
-    {
-      for (int j = 0; j < vox_size; j++)
-      {
-        for (int k = 0; k < vox_size; k++)
-        {
-          float3 p = {(k + 0.5) / vox_size, (j + 0.5) / vox_size, (i + 0.5) / vox_size};
-          p = bbox.size() * p + bbox.min_pos;
-          float d = sdf.get_distance(p);
-          grid[offset] = d;
-          offset++;
-        }
-      }
-    }
-  }
-
   void grid_demonstrate_different_sizes()
   {
     auto scene = scene_chair();
@@ -657,7 +637,7 @@ namespace upg
       UPGStructure structure = {{SdfNodeType::MOVE, SdfNodeType::SCALE, grid_types[i]}};
       std::vector<float> parameters(4 + grid_sizes[i]*grid_sizes[i]*grid_sizes[i], 0.0f);
 
-      primitive_SDF_to_grid(reference_sdf, bbox, parameters.data()+4, grid_sizes[i], 1);
+      GridSdfNode::primitive_SDF_to_grid(reference_sdf, bbox, parameters.data()+4, grid_sizes[i]);
 
       parameters[0] = moves[i].x;
       parameters[1] = moves[i].y;
@@ -905,7 +885,7 @@ namespace upg
 
     unsigned grid_size = 128;
     std::vector<float> grid_data(grid_size*grid_size*grid_size, 0);
-    primitive_SDF_to_grid(reference_sdf, bbox, grid_data.data(), grid_size, 1);
+    GridSdfNode::primitive_SDF_to_grid(reference_sdf, bbox, grid_data.data(), grid_size);
 
     CameraSettings camera;
     camera.origin = float3(0,0,3);

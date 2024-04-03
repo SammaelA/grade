@@ -257,4 +257,22 @@ namespace upg
     fs.read((char *)p.data(), count * sizeof(float));
     fs.close();
   }
+  void GridSdfNode::primitive_SDF_to_grid(ProceduralSdf &sdf, const AABB &bbox, float *grid, unsigned vox_size)
+  {
+    int offset = 0;
+    for (int i = 0; i < vox_size; i++)
+    {
+      for (int j = 0; j < vox_size; j++)
+      {
+        for (int k = 0; k < vox_size; k++)
+        {
+          float3 p = {(k + 0.5) / vox_size, (j + 0.5) / vox_size, (i + 0.5) / vox_size};
+          p = bbox.size() * p + bbox.min_pos;
+          float d = sdf.get_distance(p);
+          grid[offset] = d;
+          offset++;
+        }
+      }
+    }
+  }
 }

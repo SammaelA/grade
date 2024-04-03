@@ -12,6 +12,8 @@ namespace upg
   class GridSdfNode : public PrimitiveSdfNode
   {
   public:
+    static void primitive_SDF_to_grid(ProceduralSdf &sdf, const AABB &bbox, float *grid, unsigned vox_size);
+    
     GridSdfNode(const SdfNodeType::Type &_type, unsigned _grid_size) : PrimitiveSdfNode(_type)
     { 
       grid_size = _grid_size;
