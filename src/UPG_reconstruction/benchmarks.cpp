@@ -849,12 +849,13 @@ namespace upg
     unsigned W = 1024, H = 1024;
     LiteImage::Image2D<uint32_t> image(W, H);
     float timings[4] = {0,0,0,0};
+    MultiRenderPreset preset = getDefaultPreset();
 
     auto pRender = CreateMultiRenderer("GPU");
     pRender->SetScene(scene);
 
 auto t1 = std::chrono::steady_clock::now();
-    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
     pRender->GetExecutionTime("CastRaySingleBlock", timings);
 auto t2 = std::chrono::steady_clock::now();
 
@@ -940,40 +941,41 @@ auto t2 = std::chrono::steady_clock::now();
     LiteImage::SaveImage<uint32_t>("saves/liteRT_octree_test.bmp", image);
   }
 
-  void sdfScene_check()
+  void LiteRT_render_modes_test()
   {
-    SceneDesc s = scene_chair();
-
-    // SDF represented with tree of SdfNode
-    ProceduralSdf reference_sdf(s.first);
-    reference_sdf.set_parameters(s.second.p);
-
-    // SDF represented in CGS manner, optimized for render
+    SceneDesc s = scene_CSG_1();
     SdfScene scene = create_sdf_scene(s.first, s.second);
-    auto scene_sdf = get_SdfSceneFunction(scene);
 
-    AABB box = reference_sdf.get_bbox();
+    CameraSettings camera;
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
 
-    unsigned tries = 10000;
-    for (int i=0;i<tries;i++)
+    unsigned W = 1024, H = 1024;
+    LiteImage::Image2D<uint32_t> image(W, H);
+    float timings[4] = {0,0,0,0};
+    MultiRenderPreset preset = getDefaultPreset();
+
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetScene(scene);
+
+    for (int i=0;i<MULTI_RENDER_MODE_BARYCENTRIC;i++)
     {
-      float3 p = box.min_pos + box.size()*float3(urand(), urand(), urand());
-      float d1 = reference_sdf.get_distance(p);
-      float d2 = scene_sdf->eval_distance(p);
-      if (abs(d1 - d2) > 1e-6)
-        logerr("wrong distance in (%f %f %f): d1=%f d2=%f", p.x, p.y, p.z, d1, d2);
+      preset.mode = i;
+      pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
+      std::string name = "saves/liteRT_render_test_" + std::to_string(i) + ".bmp";
+      LiteImage::SaveImage<uint32_t>(name.c_str(), image);
     }
-    logerr("sdfScene_check PASSED\n");
   }
 
   void perform_benchmarks(const Block &blk)
   {
     //sdfScene_check();
     //return;
-    liteRT_render_test();
-    liteRT_grid_test();
-    liteRT_octree_test();
-    return;
+    //liteRT_render_test();
+    //liteRT_grid_test();
+    //liteRT_octree_test();
+    //return;
     //sdf_octree_test();
     //return;
     std::string name = blk.get_string("name", "rendering");
