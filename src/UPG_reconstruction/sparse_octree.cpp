@@ -120,126 +120,6 @@ SparseOctreeBuilder::T SparseOctreeBuilder::sample(const float3 &position, unsig
 {
   return octree_f->eval_distance_level(position, max_level);
 }
-SparseOctreeBuilder::T SparseOctreeBuilder::sample_mip_skip_closest(const float3 &position, unsigned max_level) const
-{  
-  auto &nodes = get_nodes();
-  if (DBG) printf("start pos %f %f %f\n", position.x, position.y, position.z);
-  float3 n_pos = LiteMath::clamp(0.5f*(position + 1.0f), 0.0f, 1.0f);//position in current neighborhood
-  float d = 1;//size of current neighborhood
-  T n_distances[8];
-  unsigned n_indices[8]; //0 index means that it is "virtual" node
-  unsigned non_leaf_nodes = 0; //how many nodes in neighborhood have children
-
-  T prev_n_distances[8];
-  unsigned prev_n_indices[8]; //0 index means that it is "virtual" node
-
-  //start with root's childer as a neighborhood
-  unsigned r_idx = nodes[0].offset;
-  for (int i=0;i<8;i++)
-  {
-    n_distances[i] = nodes[r_idx+i].value;
-    n_indices[i] = r_idx+i;
-    non_leaf_nodes += (!is_leaf(nodes[r_idx+i].offset));
-  }
-
-  int level = 1;
-  while (non_leaf_nodes > 0 && level <= max_level)
-  {
-    if (DBG) printf("level %d\n", level);
-    for (int i=0;i<8;i++)
-    {
-      prev_n_distances[i] = n_distances[i];
-      prev_n_indices[i] = n_indices[i];
-    }
-    //go 1 level deeper every iteration
-    non_leaf_nodes = 0;
-
-    uint3 idx8 = uint3(8.0f*fract(n_pos));
-    //if (idx8.x + idx8.y + idx8.z > 0)
-    //  printf("%u %u %u\n", idx8.x, idx8.y, idx8.z);
-    //assert(LiteMath::all_of(idx8 >= uint3(2u)) && LiteMath::all_of(idx8 < uint3(6u)));
-    if (DBG) printf("idx8 %u %u %u\n", idx8.x, idx8.y, idx8.z);
-    uint3 pidx[2], chidx[2];
-    float3 n_pos_sh;
-    for (int i=0;i<3;i++)
-    {
-      if (idx8[i] == 0)
-        { pidx[0][i] = 0; chidx[0][i] = 0; pidx[1][i] = 0; chidx[1][i] = 0; n_pos_sh[i] = 0;}
-      else if (idx8[i] <= 2)
-        { pidx[0][i] = 0; chidx[0][i] = 0; pidx[1][i] = 0; chidx[1][i] = 1; n_pos_sh[i] = 0;}
-      else if (idx8[i] <= 4)
-        { pidx[0][i] = 0; chidx[0][i] = 1; pidx[1][i] = 1; chidx[1][i] = 0; n_pos_sh[i] = 0.25;}
-      else if (idx8[i] <= 6)
-        { pidx[0][i] = 1; chidx[0][i] = 0; pidx[1][i] = 1; chidx[1][i] = 1; n_pos_sh[i] = 0.5;}
-      else //if (idx8[i] == 7)
-        { pidx[0][i] = 1; chidx[0][i] = 1; pidx[1][i] = 1; chidx[1][i] = 1; n_pos_sh[i] = 0.5;}
-    }
-
-    if (DBG) printf("pidx %u %u %u -- %u %u %u\n", pidx[0].x, pidx[0].y, pidx[0].z, pidx[1].x, pidx[1].y, pidx[1].z);
-    if (DBG) printf("chidx %u %u %u -- %u %u %u\n", chidx[0].x, chidx[0].y, chidx[0].z, chidx[1].x, chidx[1].y, chidx[1].z);
-    if (DBG) printf("npos %f %f %f\n",n_pos.x, n_pos.y, n_pos.z);
-    
-    //create new neighborhood
-    for (unsigned i=0;i<8;i++)
-    {
-      uint3 n_idx((i & 4) >> 2, (i & 2) >> 1, i & 1);
-      uint3 cur_pidx = uint3(pidx[n_idx[0]][0], pidx[n_idx[1]][1], pidx[n_idx[2]][2]);
-      uint3 cur_chidx = uint3(chidx[n_idx[0]][0], chidx[n_idx[1]][1], chidx[n_idx[2]][2]);
-
-      unsigned p_index = 4*cur_pidx.x + 2*cur_pidx.y + cur_pidx.z;
-      if (prev_n_indices[p_index] > 0 &&                //p_index is a real node
-          !is_leaf(nodes[prev_n_indices[p_index]].offset))    //p_index has children
-      {
-        if (DBG) printf("child %u real\n", i);
-        unsigned ch_index = nodes[prev_n_indices[p_index]].offset + 4*cur_chidx.x + 2*cur_chidx.y + cur_chidx.z;
-        n_distances[i] = nodes[ch_index].value;
-        n_indices[i] = ch_index;      
-        non_leaf_nodes += !is_leaf(nodes[ch_index].offset);
-      }
-      else                                              //p_index is a leaf node
-      {
-        if (DBG) printf("child %u fake\n", i);
-        n_distances[i] = prev_n_distances[p_index];
-        n_indices[i] = 0;   
-      }
-    }
-
-    n_pos = fract(2.0f*(n_pos - n_pos_sh));
-    d /= 2;
-
-    level++;
-  }
-
-  //float d1 = sample_closest(position);
-  //unsigned ch_index = 4*(n_pos.x >= 0.5) + 2*(n_pos.y >= 0.5) + (n_pos.z >= 0.5);
-  //float d2 = n_distances[ch_index];
-  //if (std::abs(d1 - d2) > 1e-5)
-  //  printf("AAAA %f %f %f\n", position.x, position.y, position.z);
-  if (DBG)
-  {
-    printf("%f %f  %f %f\n%f %f  %f %f\n", n_distances[2], n_distances[6], n_distances[3], n_distances[7],
-    n_distances[0],n_distances[4],n_distances[1],n_distances[5]);
-    printf("npos %f %f %f\n", n_pos.x, n_pos.y, n_pos.z);
-  }
-  //if (DBG) printf("D = %f\n",sample_neighborhood_bilinear(n_pos, n_distances));
-  return sample_neighborhood_bilinear(clamp(2.0f*n_pos - float3(0.5, 0.5, 0.5), 0.0f, 1.0f), n_distances);
-}
-
-SparseOctreeBuilder::T SparseOctreeBuilder::sample_neighborhood_bilinear(const float3 &dp, T n_distances[8]) const
-{
-  //unsigned ch_index = 4*(dp.x >= 0.5) + 2*(dp.y >= 0.5) + (dp.z >= 0.5);
-  //return n_distances[ch_index];
-  //float t = 0.620838*0.620838 + 0.323323*0.323323 + 0.627405*0.627405;
-    if (DBG) printf("sample %f %f %f\n", dp.x, dp.y, dp.z);
-  return (1-dp.x)*(1-dp.y)*(1-dp.z)*n_distances[0] + 
-         (1-dp.x)*(1-dp.y)*(  dp.z)*n_distances[1] + 
-         (1-dp.x)*(  dp.y)*(1-dp.z)*n_distances[2] + 
-         (1-dp.x)*(  dp.y)*(  dp.z)*n_distances[3] + 
-         (  dp.x)*(1-dp.y)*(1-dp.z)*n_distances[4] + 
-         (  dp.x)*(1-dp.y)*(  dp.z)*n_distances[5] + 
-         (  dp.x)*(  dp.y)*(1-dp.z)*n_distances[6] + 
-         (  dp.x)*(  dp.y)*(  dp.z)*n_distances[7];
-}
 
 SparseOctreeBuilder::T SparseOctreeBuilder::sample_closest(const float3 &position) const
 {
@@ -456,25 +336,6 @@ void remove_linear_rec(SparseOctreeBuilder &octree, float thr, unsigned min_leve
   }
 }
 
-void check_validity_rec(std::function<SparseOctreeBuilder::T(const float3 &)> f, const SparseOctreeBuilder &octree, unsigned idx, float3 p, float d)
-{
-  unsigned offset = octree.get_nodes()[idx].offset;
-  if (is_leaf(offset))
-  {
-    float3 pos = 2.0f*((p + float3(0.5,0.5,0.5))*d) - 1.0f;
-    float d1 = f(pos);
-    float d2 = octree.sample_mip_skip_closest(pos);
-    float d3 = octree.sample(pos);
-    if (abs(d1-d2) > 1e-6 || abs(d1-d3) > 1e-6)
-      printf("invalid sample in %f %f %f, d = %f %f %f\n",pos.x, pos.y, pos.z, d1,d2,d3);
-  }
-  else
-  {
-    for (int i=0;i<8;i++)
-      check_validity_rec(f, octree, offset+i, 2*p + float3((i & 4) >> 2, (i & 2) >> 1, i & 1), d/2);
-  }
-}
-
 void all_to_valid_nodes_remap_rec(const std::vector<SparseOctreeBuilder::Node> &all_nodes, 
                                   std::vector<int> &all_to_valid_remap,
                                   unsigned *valid_counter,
@@ -498,7 +359,6 @@ void all_to_valid_nodes_remap_rec(const std::vector<SparseOctreeBuilder::Node> &
 void SparseOctreeBuilder::construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
 {
   auto &nodes = get_nodes();
-  //check_validity_rec(f, *this, 0, float3(0,0,0), 1);
   auto p = estimate_quality(f, 10, 100000);
   printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 

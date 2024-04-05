@@ -804,9 +804,7 @@ namespace upg
       float3 p = float3(urand(-1,1), 1, urand(-1,1));
       float d = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample(p);
       float d2 = sdf.get_distance(p);
-      float d3 = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree.sample_mip_skip_closest(p);
-      //if (d*d2<0)
-        printf("%f %f %f -- d= %f %f %f\n",p.x,p.y,p.z, d,d2,d3);
+        printf("%f %f %f -- d= %f %f\n",p.x,p.y,p.z, d,d2);
     }
     //return;
 
@@ -929,8 +927,12 @@ auto t2 = std::chrono::steady_clock::now();
     pRender->SetScene({(unsigned)(octree.get_nodes().size()), 
                       (const SdfOctreeNode *)octree.get_nodes().data()});
 
+  MultiRenderPreset preset = getDefaultPreset();
+  preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
+  preset.mode = MULTI_RENDER_MODE_SPHERE_TRACE_ITERATIONS;
+
 auto t1 = std::chrono::steady_clock::now();
-    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
     pRender->GetExecutionTime("CastRaySingleBlock", timings);
 auto t2 = std::chrono::steady_clock::now();
 
@@ -959,7 +961,7 @@ auto t2 = std::chrono::steady_clock::now();
     auto pRender = CreateMultiRenderer("GPU");
     pRender->SetScene(scene);
 
-    for (int i=0;i<MULTI_RENDER_MODE_BARYCENTRIC;i++)
+    for (int i=0;i<=MULTI_RENDER_MODE_SPHERE_TRACE_ITERATIONS;i++)
     {
       preset.mode = i;
       pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
@@ -972,7 +974,7 @@ auto t2 = std::chrono::steady_clock::now();
   {
     //sdfScene_check();
     //return;
-    //liteRT_render_test();
+    //LiteRT_render_modes_test();
     //liteRT_grid_test();
     //liteRT_octree_test();
     //return;

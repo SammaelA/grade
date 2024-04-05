@@ -106,7 +106,6 @@ public:
   void construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                   BlockSparseOctree<T> &out_bso);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
-  T sample_mip_skip_closest(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
   void print_stat() const;
@@ -124,8 +123,6 @@ protected:
 
   void construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
-
-  T sample_neighborhood_bilinear(const float3 &n_pos, T n_distances[8]) const;
 
   std::shared_ptr<ISdfOctreeFunction> octree_f; //0 node is root
 };
