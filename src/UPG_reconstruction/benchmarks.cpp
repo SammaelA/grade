@@ -1032,18 +1032,18 @@ auto t2 = std::chrono::steady_clock::now();
     }
     else if (name == "density_field")
     {
-      // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
-      // auto model = dgen::load_obj(obj_path);
+      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      auto model = dgen::load_obj(obj_path);
       
-      // std::vector<float> sdf_model = df::pipeline(model);
+      std::vector<float> sdf_model = df::pipeline(model);
 
-      ////  Save sdf for next use
-      // df::save_sdf(sdf_model, "sphere.sdf");
+      // Save sdf for next use
+      df::save_sdf(sdf_model, "sphere.sdf");
 
-      auto sdf_model = df::readFile("sphere.sdf");
+      // auto sdf_model = df::readFile("sphere.sdf");
 
       int steps = 15;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
+      ProceduralSdf g_sdf({{SdfNodeType::GRID_64}});
       g_sdf.set_parameters(sdf_model);
       
       for (int i=0;i<steps;i++)
@@ -1053,7 +1053,7 @@ auto t2 = std::chrono::steady_clock::now();
         camera.target = float3(0,0,0);
         camera.up = float3(0,1,0);
         Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
-        engine::textureManager->save_png(t, "reconstructed_image_grid_"+std::to_string(i));
+        engine::textureManager->save_png(t, "reconstructed_image_grid_bicubic"+std::to_string(i));
       }
     }
     else if (name == "QR")

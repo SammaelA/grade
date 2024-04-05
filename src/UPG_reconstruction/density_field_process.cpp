@@ -201,7 +201,7 @@ df::pipeline(const std::vector<float>& model)
     std::vector<float> sdf_model;
     //  First step
     float3 bounds[2] = {float3(-1.2f,-1.2f,-1.2f), float3(1.2f, 1.2f, 1.2f)};
-    VoxelGrid grid(32, 5, bounds);
+    VoxelGrid grid(64, 5, bounds);
 
     std::vector<float> density = df::create_density_field(model, grid);
 
@@ -227,7 +227,7 @@ df::save_sdf(const std::vector<float> &sdf_model, const std::string &file_name)
     file.open(file_name);
     
     //  Save grid params
-    file << 32 << std::endl;
+    file << 64 << std::endl;
 
     for (const auto &el : sdf_model)
     {
