@@ -970,16 +970,49 @@ auto t2 = std::chrono::steady_clock::now();
     }
   }
 
+  void LiteRT_framed_octree_test()
+  {
+    SceneDesc s = scene_chair();
+    ProceduralSdf sdf(s.first);
+    sdf.set_parameters(s.second.p);
+    SparseOctreeBuilder builder;
+    SparseOctreeSettings settings{8, 4, 0.0001f};
+    std::vector<SdfFrameOctreeNode> frame_nodes;
+
+    builder.construct_bottom_up_frame([&sdf](const float3 &p) { return sdf.get_distance(p); }, 
+                                      settings, frame_nodes);
+    
+    CameraSettings camera;
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
+
+    unsigned W = 1024, H = 1024;
+    LiteImage::Image2D<uint32_t> image(W, H);
+    float timings[4] = {0,0,0,0};
+
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetScene({(unsigned)frame_nodes.size(), 
+                       frame_nodes.data()});
+
+  MultiRenderPreset preset = getDefaultPreset();
+  preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
+  preset.mode = MULTI_RENDER_MODE_LAMBERT;
+
+auto t1 = std::chrono::steady_clock::now();
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
+    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+auto t2 = std::chrono::steady_clock::now();
+
+    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF Framed Octree", time_ms, (int)((W * H) / time_ms));
+    debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
+
+    LiteImage::SaveImage<uint32_t>("saves/liteRT_framed_octree_test.bmp", image);    
+  }
+
   void perform_benchmarks(const Block &blk)
   {
-    //sdfScene_check();
-    //return;
-    //LiteRT_render_modes_test();
-    //liteRT_grid_test();
-    //liteRT_octree_test();
-    //return;
-    //sdf_octree_test();
-    //return;
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);
