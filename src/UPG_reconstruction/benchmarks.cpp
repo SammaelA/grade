@@ -853,12 +853,13 @@ namespace upg
     unsigned steps = 15;
     for (int i=0;i<steps;i++)
     {
+      std::cout << i << std::endl; 
       CameraSettings camera;
       camera.origin = float3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
-      Texture t = render_sdf(sdf, camera, 2048, 2048, 9, SDFRenderMode::LAMBERT);
-      engine::textureManager->save_png(t, "Grid SDFs demo "+std::to_string(i));
+      Texture t = render_sdf(sdf, camera, 512, 512, 9, SDFRenderMode::LAMBERT);
+      engine::textureManager->save_png(t, "new_matrix/Grid SDFs demo "+std::to_string(i));
     }
   }
 
@@ -1225,29 +1226,32 @@ namespace upg
     }
     else if (name == "density_field")
     {
-      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
-      auto model = dgen::load_obj(obj_path);
+      grid_demonstrate_different_sizes();
+
       
-      std::vector<float> sdf_model = df::pipeline(model);
-
-      // Save sdf for next use
-      df::save_sdf(sdf_model, "sphere.sdf");
-
-      // auto sdf_model = df::readFile("sphere.sdf");
-
-      int steps = 15;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID_64}});
-      g_sdf.set_parameters(sdf_model);
+      // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      // auto model = dgen::load_obj(obj_path);
       
-      for (int i=0;i<steps;i++)
-      {
-        CameraSettings camera;
-        camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-        camera.target = float3(0,0,0);
-        camera.up = float3(0,1,0);
-        Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
-        engine::textureManager->save_png(t, "reconstructed_image_grid_bicubic"+std::to_string(i));
-      }
+      // std::vector<float> sdf_model = df::pipeline(model);
+
+      // // Save sdf for next use
+      // df::save_sdf(sdf_model, "sphere32.sdf");
+
+      // // auto sdf_model = df::readFile("sphere.sdf");
+
+      // int steps = 15;
+      // ProceduralSdf g_sdf({{SdfNodeType::GRID_64}});
+      // g_sdf.set_parameters(sdf_model);
+      
+      // for (int i=0;i<steps;i++)
+      // {
+      //   CameraSettings camera;
+      //   camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      //   camera.target = float3(0,0,0);
+      //   camera.up = float3(0,1,0);
+      //   Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
+      //   engine::textureManager->save_png(t, "32reconstructed_image_grid_bicubic"+std::to_string(i));
+      // }
     }
     else if (name == "QR")
     {
