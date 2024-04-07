@@ -723,13 +723,16 @@ namespace upg
     int semidiag_len = sqrt(pow(point_xyz.x, 2) + pow(point_xyz.y, 2) +
                             pow(point_xyz.z, 2));
 
+
+    float3 min, max;
+
     for(unsigned int axis_x = 0; axis_x < bbox_segment_quant; axis_x += 1){
       for(unsigned int axis_y = 0; axis_y < bbox_segment_quant; axis_y += 1){
         int ind = 0;
         for(unsigned int axis_z = 0; axis_z < bbox_segment_quant; axis_z += 1){
           if (sdf(point_xyz) >= semidiag_len & ind == 0){
             ind++;
-            float3 min = point_xyz - segment_bbox / 2;
+            min = point_xyz - segment_bbox / 2;
 
             /*
                 This may be necessary:
@@ -742,7 +745,7 @@ namespace upg
 
           }
           else if (ind == 1){
-            float3 max = point_xyz + segment_bbox / 2;
+            max = point_xyz + segment_bbox / 2;
           }
           else if (ind != 0){
             bbox_list.push_back(AABB(min, max));
