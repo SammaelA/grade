@@ -997,7 +997,7 @@ auto t2 = std::chrono::steady_clock::now();
 
   MultiRenderPreset preset = getDefaultPreset();
   preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
-  preset.mode = MULTI_RENDER_MODE_LAMBERT;
+  preset.mode = MULTI_RENDER_MODE_SPHERE_TRACE_ITERATIONS;
 
 auto t1 = std::chrono::steady_clock::now();
     pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
