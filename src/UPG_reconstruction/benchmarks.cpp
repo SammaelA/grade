@@ -702,6 +702,8 @@ namespace upg
 
   }
 
+
+  std::vector<unsigned int> put_markers_on_bbox(std::vector<AABB> bbox_list, std::vector<float3> max_bbox);
   /*
     the argument 'cuts_quant' in the 'get_bbox_list' (see below) function shows
     how many time we want to cut each bbox in half along some axis
@@ -709,6 +711,7 @@ namespace upg
   std::vector<AABB> get_bbox_list(std::function<float(const float3 &)> sdf,
                                   const AABB &sdf_bbox, int bbox_count, int cuts_quant){
     std::vector<AABB> bbox_list;
+    std::vector<float3> max_bbox;
     
     int bbox_segment_quant = pow(2, cuts_quant);
     float3 size_bbox = sdf_bbox.size();
@@ -722,10 +725,28 @@ namespace upg
 
     for(unsigned int axis_x = 0; axis_x < bbox_segment_quant; axis_x += 1){
       for(unsigned int axis_y = 0; axis_y < bbox_segment_quant; axis_y += 1){
+        int ind = 0;
         for(unsigned int axis_z = 0; axis_z < bbox_segment_quant; axis_z += 1){
-          if (sdf(point_xyz) >= semidiag_len){
+          if (sdf(point_xyz) >= semidiag_len & ind == 0){
+            ind++;
+            float3 min = point_xyz - segment_bbox / 2;
+
+            /*
+                This may be necessary:
+
             bbox_list.push_back(AABB(point_xyz - segment_bbox / 2, point_xyz +
                                      segment_bbox / 2));
+            max_bbox.push_back(point_xyz + segment_bbox / 2);
+            */
+
+
+          }
+          else if (ind == 1){
+            float3 max = point_xyz + segment_bbox / 2;
+          }
+          else if (ind != 0){
+            bbox_list.push_back(AABB(min, max));
+            ind = 0;
           }
           point_xyz.z += segment_bbox.z;
         }
@@ -736,8 +757,306 @@ namespace upg
       point_xyz.x += segment_bbox.x;
     }
 
+    /*
+    std::vector<unsigned int> is_marked;
+    is_marked = put_markers_on_bbox(std::vector<AABB> bbox_list, std::vector<float3> max_bbox);
+
+    for(unsigned int i = 0; i < is_marked.size(); i++){
+      if(is_marked[i] == 3){
+
+      }
+    }
+    */
+
     return bbox_list;
   }
+
+  // This function is not finished !!!
+
+  std::vector<unsigned int> put_markers_on_bbox(std::vector<AABB> bbox_list,
+                                                std::vector<float3> max_bbox){
+    std::vector<unsigned int> is_marked(bbox_list.size());
+
+    /*
+      0 - unvisited bbox / the bbox isn't contact with other bboxes
+
+      3 - the bbox is in contact with three others
+      2 - the bbox is in contact with other two
+      1 - the bbox is in contact with another
+
+      4 - visited bbox
+    */
+
+    for(unsigned int bbox_in_question = 0; bbox_in_question < bbox_list.size();
+        bbox_in_question+=1)
+    {
+      for(unsigned int i = 0; i < bbox_list.size(); i+=1){
+        if(i == bbox_in_question)
+          continue;
+
+        std::vector<int>::iterator one_touch_search;
+        float3 one_touch = max_bbox[bbox_in_question];
+        one_touch.z = max_bbox[bbox_in_question].z / 2;
+        one_touch_search = std::find(max_bbox.begin(), max_bbox.end(), one_touch);
+
+        if(one_touch_search != max_bbox.end()){
+          std::vector<int>::iterator opposite_1st_one_search;
+          float3 opposite_1st_one = max_bbox[bbox_in_question];
+          opposite_1st_one.z = max_bbox[bbox_in_question].z * 2;
+          opposite_1st_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                              opposite_1st_one);
+
+          if(opposite_1st_one_search == max_bbox.end()){
+            std::vector<int>::iterator two_touch_search;
+            float3 two_touch = max_bbox[bbox_in_question];
+            two_touch.y = max_bbox[bbox_in_question].y / 2;
+            two_touch_search = std::find(max_bbox.begin(), max_bbox.end(), two_touch);
+
+            if(two_touch_search != max_bbox.end()){
+              std::vector<int>::iterator opposite_2nd_one_search;
+              float3 opposite_2nd_one = max_bbox[bbox_in_question];
+              opposite_2nd_one.z = max_bbox[bbox_in_question].y * 2;
+              opposite_2nd_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                  opposite_2nd_one);
+              
+              if(opposite_2nd_one_search == max_bbox.end()){
+                std::vector<int>::iterator three_touch_search;
+                float3 three_touch = max_bbox[bbox_in_question];
+                three_touch.y = max_bbox[bbox_in_question].x / 2;
+                three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                               three_touch);
+                
+                if(three_touch_search != max_bbox.end()){
+                  std::vector<int>::iterator opposite_3d_one_search;
+                  float3 opposite_3d_one = max_bbox[bbox_in_question];
+                  opposite_3d_one.x = max_bbox[bbox_in_question].x * 2;
+                  opposite_3d_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                      opposite_3d_one);
+                  
+                  if(opposite_3d_one_search == max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+                  else
+                    break;
+                }
+
+                else{
+                  std::vector<int>::iterator three_touch_search;
+                  float3 three_touch = max_bbox[bbox_in_question];
+                  three_touch.y = max_bbox[bbox_in_question].x * 2;
+                  three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                three_touch);
+                  
+                  if(three_touch_search != max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+
+                  else{
+                    is_marked[bbox_in_question] = 2;
+                    break;
+                  }
+                }
+              }
+              else
+                break;
+            }
+
+            ///// TWO ////////////////////// TWO ////////////////////////// TWO ///////////////////
+            else{
+              std::vector<int>::iterator two_touch_search;
+              float3 two_touch = max_bbox[bbox_in_question];
+              two_touch.y = max_bbox[bbox_in_question].y * 2;
+              two_touch_search = std::find(max_bbox.begin(), max_bbox.end(), two_touch);
+
+              if(two_touch_search != max_bbox.end()){
+                std::vector<int>::iterator three_touch_search;
+                float3 three_touch = max_bbox[bbox_in_question];
+                three_touch.y = max_bbox[bbox_in_question].x / 2;
+                three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                              three_touch);
+                
+                if(three_touch_search != max_bbox.end()){
+                  std::vector<int>::iterator opposite_3d_one_search;
+                  float3 opposite_3d_one = max_bbox[bbox_in_question];
+                  opposite_3d_one.z = max_bbox[bbox_in_question].x * 2;
+                  opposite_3d_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                      opposite_3d_one);
+                  
+                  if(opposite_3d_one_search == max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+                  else
+                    break;
+                }
+
+                else{
+                  std::vector<int>::iterator three_touch_search;
+                  float3 three_touch = max_bbox[bbox_in_question];
+                  three_touch.y = max_bbox[bbox_in_question].x * 2;
+                  three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                three_touch);
+                  
+                  if(three_touch_search != max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+
+                  else{
+                    is_marked[bbox_in_question] = 2;
+                    break;
+                  }
+                }
+                else
+                  break;
+              }
+              else{
+                is_marked[bbox_in_question] = 1;
+                break;
+              }
+
+            }
+            else
+              break;
+          }
+        }
+        ////// ONE ////////////////////// ONE ////////////////////////// ONE ///////////////////
+
+        else{
+          std::vector<int>::iterator one_touch_search;
+          float3 one_touch = max_bbox[bbox_in_question];
+          one_touch.z = max_bbox[bbox_in_question].z * 2;
+          one_touch_search = std::find(max_bbox.begin(), max_bbox.end(), one_touch);
+
+          if(one_touch_search != max_bbox.end()){
+            std::vector<int>::iterator two_touch_search;
+            float3 two_touch = max_bbox[bbox_in_question];
+            two_touch.y = max_bbox[bbox_in_question].y / 2;
+            two_touch_search = std::find(max_bbox.begin(), max_bbox.end(), two_touch);
+
+            if(two_touch_search != max_bbox.end()){
+              std::vector<int>::iterator opposite_2nd_one_search;
+              float3 opposite_2nd_one = max_bbox[bbox_in_question];
+              opposite_2nd_one.z = max_bbox[bbox_in_question].y * 2;
+              opposite_2nd_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                  opposite_2nd_one);
+              
+              if(opposite_2nd_one_search == max_bbox.end()){
+                std::vector<int>::iterator three_touch_search;
+                float3 three_touch = max_bbox[bbox_in_question];
+                three_touch.y = max_bbox[bbox_in_question].x / 2;
+                three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                               three_touch);
+                
+                if(three_touch_search != max_bbox.end()){
+                  std::vector<int>::iterator opposite_3d_one_search;
+                  float3 opposite_3d_one = max_bbox[bbox_in_question];
+                  opposite_3d_one.x = max_bbox[bbox_in_question].x * 2;
+                  opposite_3d_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                      opposite_3d_one);
+                  
+                  if(opposite_3d_one_search == max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+                  else
+                    break;
+                }
+
+                else{
+                  std::vector<int>::iterator three_touch_search;
+                  float3 three_touch = max_bbox[bbox_in_question];
+                  three_touch.y = max_bbox[bbox_in_question].x * 2;
+                  three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                three_touch);
+                  
+                  if(three_touch_search != max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+
+                  else{
+                    is_marked[bbox_in_question] = 2;
+                    break;
+                  }
+                }
+              }
+              else
+                break;
+            }
+
+            ///// TWO ////////////////////// TWO ////////////////////////// TWO ///////////////////
+            else{
+              std::vector<int>::iterator two_touch_search;
+              float3 two_touch = max_bbox[bbox_in_question];
+              two_touch.y = max_bbox[bbox_in_question].y * 2;
+              two_touch_search = std::find(max_bbox.begin(), max_bbox.end(), two_touch);
+
+              if(two_touch_search != max_bbox.end()){
+                std::vector<int>::iterator three_touch_search;
+                float3 three_touch = max_bbox[bbox_in_question];
+                three_touch.y = max_bbox[bbox_in_question].x / 2;
+                three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                              three_touch);
+                
+                if(three_touch_search != max_bbox.end()){
+                  std::vector<int>::iterator opposite_3d_one_search;
+                  float3 opposite_3d_one = max_bbox[bbox_in_question];
+                  opposite_3d_one.z = max_bbox[bbox_in_question].x * 2;
+                  opposite_3d_one_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                      opposite_3d_one);
+                  
+                  if(opposite_3d_one_search == max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+                  else
+                    break;
+                }
+
+                else{
+                  std::vector<int>::iterator three_touch_search;
+                  float3 three_touch = max_bbox[bbox_in_question];
+                  three_touch.y = max_bbox[bbox_in_question].x * 2;
+                  three_touch_search = std::find(max_bbox.begin(), max_bbox.end(),
+                                                three_touch);
+                  
+                  if(three_touch_search != max_bbox.end()){
+                    is_marked[bbox_in_question] = 3;
+                    break;
+                  }
+
+                  else{
+                    is_marked[bbox_in_question] = 2;
+                    break;
+                  }
+                }
+                else
+                  break;
+              }
+              else{
+                is_marked[bbox_in_question] = 1;
+                break;
+              }
+
+            }
+            else
+              break;
+          }
+        }
+
+        // Для того, чтобы найти остальные 2 и 1 прикосновение
+        std::vector<int>::iterator one_touch_search;
+        float3 one_touch = max_bbox[bbox_in_question];
+        one_touch.z = max_bbox[bbox_in_question].z / 2;
+        one_touch_search = std::find(max_bbox.begin(), max_bbox.end(), one_touch);
+      }
+    }
+    return is_marked;
+  }
+
 
   static std::vector<float4> octree_visualize_palette = {
     float4(0.5,0.5,0.5,1), //0-gray
