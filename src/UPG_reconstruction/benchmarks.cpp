@@ -991,13 +991,16 @@ auto t2 = std::chrono::steady_clock::now();
     LiteImage::Image2D<uint32_t> image(W, H);
     float timings[4] = {0,0,0,0};
 
+    MultiRenderPreset preset = getDefaultPreset();
+    preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
+    preset.mode = MULTI_RENDER_MODE_LAMBERT;
+    preset.sdf_frame_octree_blas = SDF_FRAME_OCTREE_BLAS_DEFAULT;
+    preset.sdf_frame_octree_intersect = SDF_FRAME_OCTREE_INTERSECT_ST;
+
     auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetPreset(preset);
     pRender->SetScene({(unsigned)frame_nodes.size(), 
                        frame_nodes.data()});
-
-  MultiRenderPreset preset = getDefaultPreset();
-  preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
-  preset.mode = MULTI_RENDER_MODE_SPHERE_TRACE_ITERATIONS;
 
 auto t1 = std::chrono::steady_clock::now();
     pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
