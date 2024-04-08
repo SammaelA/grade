@@ -636,3 +636,42 @@ void SparseOctreeBuilder::construct_bottom_up_blocks(std::function<T(const float
   //III - finish building octree
   construct_bottom_up_finish(f, settings);
 }
+
+void fill_octree_frame_rec(std::function<SparseOctreeBuilder::T(const float3 &)> f,   
+                           const std::vector<SdfOctreeNode> &nodes,
+                           std::vector<SdfFrameOctreeNode> &frame,
+                           unsigned idx, float3 p, float d)
+{
+  unsigned ofs = nodes[idx].offset;
+  frame[idx].offset = ofs;
+  if (is_leaf(ofs)) 
+  {
+    float3 pos = 2.0f*(d*p) - 1.0f;
+    for (int i = 0; i < 8; i++)
+    {
+      float3 ch_pos = pos + 2*d*float3((i & 4) >> 2, (i & 2) >> 1, i & 1);
+      frame[idx].values[i] = f(ch_pos);
+      //frame[idx].values[i] = nodes[idx].value;
+    }
+  }
+  else
+  {
+    for (int i = 0; i < 8; i++)
+    {
+      float ch_d = d / 2;
+      float3 ch_p = 2 * p + float3((i & 4) >> 2, (i & 2) >> 1, i & 1);
+      fill_octree_frame_rec(f, nodes, frame, ofs + i, ch_p, ch_d);
+    }
+  }
+}
+
+void SparseOctreeBuilder::construct_bottom_up_frame(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
+                                                    std::vector<SdfFrameOctreeNode> &out_frame)
+{
+  construct_bottom_up_base(f, settings);
+  construct_bottom_up_finish(f, settings);
+
+  auto &nodes = get_nodes();
+  out_frame.resize(nodes.size());
+  fill_octree_frame_rec(f, nodes, out_frame, 0, float3(0,0,0), 1);
+}

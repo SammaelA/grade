@@ -15,7 +15,6 @@ Octree always represents unit cube [-1,1]^3
 
 struct SparseOctreeSettings
 {
-  unsigned max_nodes = 1000000;
   unsigned depth = 1;
   unsigned min_remove_level = 4;
   float remove_thr = 0.0001;
@@ -105,6 +104,8 @@ public:
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                   BlockSparseOctree<T> &out_bso);
+  void construct_bottom_up_frame(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
+                                 std::vector<SdfFrameOctreeNode> &out_frame);
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 

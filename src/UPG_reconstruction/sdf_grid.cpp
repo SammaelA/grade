@@ -127,94 +127,28 @@ namespace upg
 
     //printf("dist %f\n",res);
 
-    
-    //  Calculate cube border to take points near pos to calculate interpolation result 
-    //  X_left, X_right, Y_left, Y_Right, Z_left, Z_right
-    
-    std::vector<uint32_t> sample_bbox {0, 0, 0, 0, 0, 0};
 
-    int sample_cube_size = 4;
-    
-    //  Axis X
-    if ((float)vox_u.x - (float)sample_cube_size / 2 < 0)
+    if (vox_u.x<grid_size-1 && vox_u.y<grid_size-1 && vox_u.z<grid_size-1)
     {
-      sample_bbox[0] = 0;
-      sample_bbox[1] = sample_cube_size - 1;
-    }
-    else if ((float)vox_u.x + (float)sample_cube_size / 2 > 31)
-    {
-      sample_bbox[1] = 31;
-      sample_bbox[0] = 31 - sample_cube_size + 1;
+      std::vector<float> b(8, 0);
+
+      b[0] = p[id(0, 0, 0)];
+      b[1] = p[id(0, 0, 1)];
+      b[2] = p[id(0, 1, 0)];
+      b[3] = p[id(0, 1, 1)];
+      b[4] = p[id(1, 0, 0)];
+      b[5] = p[id(1, 0, 1)];
+      b[6] = p[id(1, 1, 0)];
+      b[7] = p[id(1, 1, 1)];
+
+      auto coefs = interpolation::calc_coefs(b);
+      res = interpolation::calc_interpolation(coefs, dp);
     }
     else
-    {
-      sample_bbox[0] = (float)vox_u.x - (float)sample_cube_size / 2 + 1;
-      sample_bbox[1] = (float)vox_u.x + (float)sample_cube_size / 2;
+    {  
+      res += p[id(0,0,0)];
+      // std::cout << vox_u.x << " " << vox_u.y << " " << vox_u.z << std::endl;
     }
-
-    //  Axis Y
-    if ((float)vox_u.y - (float)sample_cube_size / 2 < 0)
-    {
-      sample_bbox[2] = 0;
-      sample_bbox[3] = sample_cube_size - 1;
-    }
-    else if ((float)vox_u.y + (float)sample_cube_size / 2 > 31)
-    {
-      sample_bbox[3] = 31;
-      sample_bbox[2] = 31 - sample_cube_size + 1;
-    }
-    else
-    {
-      sample_bbox[2] = (float)vox_u.y - (float)sample_cube_size / 2 + 1;
-      sample_bbox[3] = (float)vox_u.y + (float)sample_cube_size / 2;
-    }
-
-    //  Axis Z
-    if ((float)vox_u.z - (float)sample_cube_size / 2 < 0)
-    {
-      sample_bbox[4] = 0;
-      sample_bbox[5] = sample_cube_size - 1;
-    }
-    else if ((float)vox_u.z + (float)sample_cube_size / 2 > 31)
-    {
-      sample_bbox[5] = 31;
-      sample_bbox[4] = 31 - sample_cube_size + 1;
-    }
-    else
-    {
-      sample_bbox[4] = (float)vox_u.z - (float)sample_cube_size / 2 + 1;
-      sample_bbox[5] = (float)vox_u.z + (float)sample_cube_size / 2;
-    }
-
-    //  Save points to find interpolation coefs
-    std::vector<LiteMath::float3> X;
-    std::vector<float> b;
-
-    for (int x = sample_bbox[0]; x <= sample_bbox[1]; x++)
-    {
-      for (int y = sample_bbox[2]; y <= sample_bbox[3]; y++)
-      {
-        for (int z = sample_bbox[4]; z <= sample_bbox[5]; z++)
-        {
-          int index = (z * grid_size + y) * grid_size + x;
-
-          X.push_back(LiteMath::float3(x, y, z) * bbox_size / grid_size_f + LiteMath::float3(-1, -1, -1));
-          b.push_back(p[index]);
-        }
-      }
-    }
-
-    auto A = interpolation::create_A(X);
-    std::vector<float> Q(64 * 64, 0), R(64 * 64, 0);
-    interpolation::householder_qr(A, 64, Q, R);
-
-    std::vector<float> G = interpolation::mul_qr(Q, R, 64);
-    std::vector<float> coefs = interpolation::calc_qr_coefs(Q, R, b);
-
-    res = interpolation::perform_interpolation(coefs, pos);
-
-    // std::cout << res << " " << p[id(0, 0, 0)] << std::endl;
-    // std::cout << interpolation::matrix_norm(A, interpolation::mul_qr(Q, R, 64)) << std::endl;
 
     return res;
   }
