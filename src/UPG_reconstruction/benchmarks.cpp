@@ -513,7 +513,7 @@ namespace upg
 
   void sdf_grid_test()
   {
-    SceneDesc scene = scene_chair();
+    SceneDesc scene = scene_complex_chair();
     ProceduralSdf sdf(scene.first);
     sdf.set_parameters(scene.second.p);
 
@@ -524,7 +524,7 @@ namespace upg
     GridSdfNode grid(SdfNodeType::GRID_32, vox_size);
     grid.set_param_span(data, 0);
 
-    bool direct = false;
+    bool direct = true;
     if (direct)
     {
       for (int i=0;i<vox_size;i++)
