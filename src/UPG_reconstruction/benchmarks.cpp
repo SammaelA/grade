@@ -801,7 +801,7 @@ namespace upg
       bbox_list_2D.erase(bbox_list_2D.begin(), bbox_list_2D.end());
       max_bbox_2D.erase(max_bbox_2D.begin(), max_bbox_2D.end());
       min_bbox_2D.erase(min_bbox_2D.begin(), min_bbox_2D.end());
-      is_marked_2D.erase(is_marked_2D.begin(), is_marked_2D.end())
+      is_marked_2D.erase(is_marked_2D.begin(), is_marked_2D.end());
 
       point_xyz.y = 0;
       point_xyz.x += segment_bbox.x;
@@ -856,7 +856,7 @@ namespace upg
     bool ind; // 0 - it is possible to combine the boxes
               // 1 - it is not yet possible
     float max_i, max_j, max_k;
-    float max_size = max(is_marked_3D.size(), is_marked_3D[0].size(),
+    float max_size = max(max(is_marked_3D.size(), is_marked_3D[0].size()),
                          is_marked_3D[0][0].size());
     
     for(unsigned int i = 1; i < is_marked_3D.size() - 1; i++){
@@ -870,25 +870,25 @@ namespace upg
                 max_i = i + h;
               if(ind_j == 1)
                 max_j = j + h;
-              if(ind_k == 1;)
+              if(ind_k == 1)
                 max_k = k + h;
 
               if(ind == 1){
-                for(unsigned int hj = max_j, hj >= 0; hj--){
+                for(unsigned int hj = max_j; hj >= 0; hj--){
                   for(unsigned int hk = max_k; hk >= 0; hk--)
                     bbox_borders_search(0, hj, hk, max_i, max_j, max_k,
                                         ind_i, ind_j, ind_k, is_marked_3D);
                   if(ind == 0)
                     break;
                 }
-                for(unsigned int hi = max_i, hi >= 0; hi--){
+                for(unsigned int hi = max_i; hi >= 0; hi--){
                   for(unsigned int hk = max_k; hk >= 0; hk--)
                     bbox_borders_search(hi, 0, hk, max_i, max_j, max_k,
                                         ind_i, ind_j, ind_k, is_marked_3D);
                   if(ind == 0)
                     break;
                 }
-                for(unsigned int hi = max_i, hi >= 0; hi--){
+                for(unsigned int hi = max_i; hi >= 0; hi--){
                   for(unsigned int hj = max_k; hj >= 0; hj--)
                     bbox_borders_search(hi, hj, 0, max_i, max_j, max_k,
                                         ind_i, ind_j, ind_k, is_marked_3D);
@@ -1099,7 +1099,7 @@ namespace upg
                 }
                 else{
                   for(unsigned int hi = 0; hi < max_i; hi++)
-                    for(unsigned int hj = 0; hj < max_k; hk++)
+                    for(unsigned int hj = 0; hj < max_k; hj++)
                       is_marked_3D[hi][hj][k] = 5;
                 
                   bbox_list.push_back(AABB(min_bbox_3D[i - 1][j - 1][k - 1],
@@ -1131,7 +1131,7 @@ namespace upg
             }
 
             else if(is_marked_3D[i][j + 1][k] == 1){
-              is_marked_3D[i][j][k] == 5;
+              is_marked_3D[i][j][k] = 5;
               is_marked_3D[i][j + 1][k] = 5;
 
               bbox_list.push_back(AABB(min_bbox_3D[i - 1][j - 1][k - 1],
@@ -1149,7 +1149,7 @@ namespace upg
             }
 
             else if(is_marked_3D[i + 1][j][k] == 1){
-              is_marked_3D[i][j][k] == 5;
+              is_marked_3D[i][j][k] = 5;
               is_marked_3D[i + 1][j][k] = 5;
 
               bbox_list.push_back(AABB(min_bbox_3D[i - 1][j - 1][k - 1],
@@ -1481,6 +1481,9 @@ auto t2 = std::chrono::steady_clock::now();
 
   void perform_benchmarks(const Block &blk)
   {
+    LiteRT_framed_octree_test();
+    return;
+    
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);
