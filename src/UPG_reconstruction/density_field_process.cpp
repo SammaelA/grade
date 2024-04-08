@@ -201,12 +201,12 @@ df::pipeline(const std::vector<float>& model)
     std::vector<float> sdf_model;
     //  First step
     float3 bounds[2] = {float3(-1.2f,-1.2f,-1.2f), float3(1.2f, 1.2f, 1.2f)};
-    VoxelGrid grid(64, 5, bounds);
+    VoxelGrid grid(32, 5, bounds);
 
     std::vector<float> density = df::create_density_field(model, grid);
 
     //  Second
-    // df::erase(density, grid, 0.5);
+    df::erase(density, grid, 0.5);
 
     //  Third
     sdf_model = df::create_sdf(density, grid);

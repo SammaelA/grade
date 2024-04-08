@@ -330,5 +330,7 @@ interpolation::calc_interpolation(const std::vector<float> &coefs, const LiteMat
         }
     }
 
+    res /= 8.f;
+
     return res;
 }

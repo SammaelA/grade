@@ -128,9 +128,9 @@ namespace upg
     //printf("dist %f\n",res);
 
 
-    if (vox_u.x<grid_size-1 && vox_u.y<grid_size-1 && vox_u.z<grid_size-1)
+    if (vox_u.x<grid_size-2 && vox_u.y<grid_size-2 && vox_u.z<grid_size-2 && vox_u.x >= 1 && vox_u.y >= 1 && vox_u.z >= 1)
     {
-      std::vector<float> b(8, 0);
+      std::vector<float> b(64, 0);
 
       b[0] = p[id(0, 0, 0)];
       b[1] = p[id(1, 0, 0)];
@@ -144,32 +144,39 @@ namespace upg
       //  derrivatives
       // float dx[8], dy[8], dz[8];
 
-      // dx[0] = b[1] - b[0];
-      // dx[1] = -dx[0];
-      // dx[2] = b[3] - b[2];
-      // dx[3] = -dx[2];
-      // dx[4] = b[5] - b[4];
-      // dx[5] = -dx[4];
-      // dx[6] = b[7] - b[6];
-      // dx[7] = -dx[6];
+      // dx[0] = (b[1] - p[id(-1, 0, 0)]) / 2;
+      // dx[1] = (p[id(2, 0, 0)] - b[0]) / 2;
+      // dx[2] = (b[3] - p[id(-1, 1, 0)]) / 2;
+      // dx[3] = (p[id(2, 2, 0)] - b[2]) / 2;
+      // dx[4] = (b[5] - p[id(-1, 0, 1)]) / 2;
+      // dx[5] = (p[id(2, 1, 1)] - b[5]) / 2;
+      // dx[6] = (b[7] - p[id(-1, 1, 1)]) / 2;
+      // dx[7] = (p[id(2, 1, 1)] - b[6]) / 2;
 
-      // dy[0] = b[2] - b[0];
-      // dy[1] = b[3] - b[1];
-      // dy[2] = -dy[0];
-      // dy[3] = -dy[1];
-      // dy[4] = b[6] - b[4];
-      // dy[5] = b[7] - b[5];
-      // dy[6] = -dy[4];
-      // dy[7] = -dy[5];
+      // dy[0] = (b[2] - p[id(0, -1, 0)]) / 2;
+      // dy[1] = (b[3] - p[id(1, -1, 0)]) / 2;
+      // dy[2] = (p[id(0, 2, 0)] - b[0]) / 2;
+      // dy[3] = (p[id(1, 2, 0)] - b[1]) / 2;
+      // dy[4] = (b[6] - p[id(0, -1, 1)]) / 2;
+      // dy[5] = (b[7] - p[id(1, -1, 1)]) / 2;
+      // dy[6] = (p[id(0, 2, 1)] - b[4]) / 2;
+      // dy[7] = (p[id(1, 2, 1)] - b[5]) / 2;
 
-      // dz[0] = b[4] - b[0];
-      // dz[1] = b[5] - b[1];
-      // dz[2] = b[6] - b[2];
-      // dz[3] = b[7] - b[3];
-      // dz[4] = -dz[0];
-      // dz[5] = -dz[1];
-      // dz[6] = -dz[2];
-      // dz[7] = -dz[3];
+      // dz[0] = (b[4] - p[id(0, 0, -1)]) / 2;
+      // dz[1] = (b[5] - p[id(1, 0, -1)]) / 2;
+      // dz[2] = (b[6] - p[id(0, 1, -1)]) / 2;
+      // dz[3] = (b[7] - p[id(1, 1, -1)]) / 2;
+      // dz[4] = (p[id(0, 0, 2)] - b[0]) / 2;
+      // dz[5] = (p[id(1, 0, 2)] - b[1]) / 2;
+      // dz[6] = (p[id(0, 1, 2)] - b[2]) / 2;
+      // dz[7] = (p[id(1, 1, 2)] - b[3]) / 2;
+
+      // for (int i = 0; i < 8; i++)
+      // {
+      //   b[8 + i] = dx[i];
+      //   b[16 + i] = dy[i];
+      //   b[24 + i] = dz[i];
+      // }
 
       auto coefs = interpolation::calc_coefs(b);
       res = interpolation::calc_interpolation(coefs, dp);
