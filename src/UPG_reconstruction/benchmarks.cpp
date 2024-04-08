@@ -1483,7 +1483,7 @@ auto t2 = std::chrono::steady_clock::now();
 
   void mesh_bvh_test()
   {
-    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/bunny.vsgf");
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
 
     float3 mb1,mb2, ma1,ma2;
     cmesh4::get_bbox(mesh, &mb1, &mb2);
@@ -1497,18 +1497,18 @@ auto t2 = std::chrono::steady_clock::now();
     mesh_bvh.init(mesh);
 
     SparseOctreeBuilder builder;
-    SparseOctreeSettings settings{6, 4, 0.0001f};
+    SparseOctreeSettings settings{8, 4, 0.000f};
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
     builder.construct_bottom_up_frame([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, 
                                       settings, frame_nodes);
     
     CameraSettings camera;
-    camera.origin = float3(0,0,3);
+    camera.origin = float3(2,0,2);
     camera.target = float3(0,0,0);
     camera.up = float3(0,1,0);
 
-    unsigned W = 1024, H = 1024;
+    unsigned W = 2048, H = 2048;
     LiteImage::Image2D<uint32_t> image(W, H);
     float timings[4] = {0,0,0,0};
 
@@ -1518,7 +1518,7 @@ auto t2 = std::chrono::steady_clock::now();
     preset.sdf_frame_octree_blas = SDF_FRAME_OCTREE_BLAS_DEFAULT;
     preset.sdf_frame_octree_intersect = SDF_FRAME_OCTREE_INTERSECT_ST;
 
-    auto pRender = CreateMultiRenderer("GPU");
+    auto pRender = CreateMultiRenderer("CPU");
     pRender->SetPreset(preset);
     pRender->SetScene({(unsigned)frame_nodes.size(), 
                        frame_nodes.data()});

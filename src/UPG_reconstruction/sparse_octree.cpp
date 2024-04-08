@@ -383,7 +383,7 @@ void SparseOctreeBuilder::construct_bottom_up_finish(std::function<T(const float
   
   nodes = valid_nodes;
 
-  printf("SDF octree created with %u (%2.f%%) nodes (dense one would have %u)\n", 
+  printf("SDF octree created with %u (%5.1f%%) nodes (dense one would have %u)\n", 
          valid_count, 100.0f*valid_count/(unsigned)valid_remap.size(), (unsigned)valid_remap.size());
 }
 
@@ -665,13 +665,40 @@ void fill_octree_frame_rec(std::function<SparseOctreeBuilder::T(const float3 &)>
   }
 }
 
+void SparseOctreeBuilder::construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings,
+                                                   float3 p, float d)
+{
+
+}
+
+void SparseOctreeBuilder::construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+{
+
+}
+
+void SparseOctreeBuilder::convert_to_frame_octree(const std::vector<Node> &nodes,
+                                                  std::function<T(const float3 &)> f,
+                                                  std::vector<SdfFrameOctreeNode> &out_frame)
+{
+  out_frame.resize(nodes.size());
+  fill_octree_frame_rec(f, nodes, out_frame, 0, float3(0,0,0), 1);
+}
+
 void SparseOctreeBuilder::construct_bottom_up_frame(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                                     std::vector<SdfFrameOctreeNode> &out_frame)
 {
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   construct_bottom_up_base(f, settings);
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   construct_bottom_up_finish(f, settings);
+std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
 
-  auto &nodes = get_nodes();
-  out_frame.resize(nodes.size());
-  fill_octree_frame_rec(f, nodes, out_frame, 0, float3(0,0,0), 1);
+  convert_to_frame_octree(get_nodes(), f, out_frame);
+  
+std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+  
+  float time_1 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+  float time_2 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+  float time_3 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
+  printf("time spent (ms) %.1f %.1f %.1f\n", time_1, time_2, time_3);
 }

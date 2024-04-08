@@ -99,8 +99,12 @@ public:
   using T = float;
 
   static bool is_border(float distance, unsigned level);
+  static void convert_to_frame_octree(const std::vector<Node> &nodes,
+                                      std::function<T(const float3 &)> f,
+                                      std::vector<SdfFrameOctreeNode> &out_frame);
 
   SparseOctreeBuilder();
+  void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                   BlockSparseOctree<T> &out_bso);
@@ -124,6 +128,7 @@ protected:
 
   void construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
   void construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
+  void construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings, unsigned level, float3 p, float d);
 
   std::shared_ptr<ISdfOctreeFunction> octree_f; //0 node is root
 };
