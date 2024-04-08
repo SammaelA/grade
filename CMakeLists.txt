@@ -223,6 +223,8 @@ set(SCENE_LOADER_SRC
     ${CMAKE_SOURCE_DIR}/dependencies/LiteScene/hydraxml.cpp
     ${CMAKE_SOURCE_DIR}/dependencies/LiteScene/cmesh4.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/sdfScene/sdf_scene.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/mesh_bvh.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/mesh.cpp
     )
 
 set(CORE_SRC

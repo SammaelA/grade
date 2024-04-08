@@ -22,6 +22,8 @@
 #include "LiteMath/Image2d.h"
 #include "common_sdf_scenes.h"
 #include "LiteRT/Renderer/eye_ray.h"
+#include "LiteRT/utils/mesh_bvh.h"
+#include "LiteRT/utils/mesh.h"
 
 namespace upg
 {
@@ -1479,11 +1481,62 @@ auto t2 = std::chrono::steady_clock::now();
     LiteImage::SaveImage<uint32_t>("saves/liteRT_framed_octree_test.bmp", image);    
   }
 
-  void perform_benchmarks(const Block &blk)
+  void mesh_bvh_test()
   {
-    LiteRT_framed_octree_test();
-    return;
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/bunny.vsgf");
+
+    float3 mb1,mb2, ma1,ma2;
+    cmesh4::get_bbox(mesh, &mb1, &mb2);
+    cmesh4::rescale_mesh(mesh, float3(-0.9,-0.9,-0.9), float3(0.9,0.9,0.9));
+    cmesh4::get_bbox(mesh, &ma1, &ma2);
+
+    printf("total triangles %d\n", (int)mesh.TrianglesNum());
+    printf("bbox [(%f %f %f)-(%f %f %f)] to [(%f %f %f)-(%f %f %f)]\n",
+           mb1.x, mb1.y, mb1.z, mb2.x, mb2.y, mb2.z, ma1.x, ma1.y, ma1.z, ma2.x, ma2.y, ma2.z);
+    MeshBVH mesh_bvh;
+    mesh_bvh.init(mesh);
+
+    SparseOctreeBuilder builder;
+    SparseOctreeSettings settings{6, 4, 0.0001f};
+    std::vector<SdfFrameOctreeNode> frame_nodes;
+
+    builder.construct_bottom_up_frame([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, 
+                                      settings, frame_nodes);
     
+    CameraSettings camera;
+    camera.origin = float3(0,0,3);
+    camera.target = float3(0,0,0);
+    camera.up = float3(0,1,0);
+
+    unsigned W = 1024, H = 1024;
+    LiteImage::Image2D<uint32_t> image(W, H);
+    float timings[4] = {0,0,0,0};
+
+    MultiRenderPreset preset = getDefaultPreset();
+    preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
+    preset.mode = MULTI_RENDER_MODE_LAMBERT;
+    preset.sdf_frame_octree_blas = SDF_FRAME_OCTREE_BLAS_DEFAULT;
+    preset.sdf_frame_octree_intersect = SDF_FRAME_OCTREE_INTERSECT_ST;
+
+    auto pRender = CreateMultiRenderer("GPU");
+    pRender->SetPreset(preset);
+    pRender->SetScene({(unsigned)frame_nodes.size(), 
+                       frame_nodes.data()});
+
+auto t1 = std::chrono::steady_clock::now();
+    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
+    pRender->GetExecutionTime("CastRaySingleBlock", timings);
+auto t2 = std::chrono::steady_clock::now();
+
+    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF Framed Octree", time_ms, (int)((W * H) / time_ms));
+    debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
+
+    LiteImage::SaveImage<uint32_t>("saves/liteRT_mesh_sdf_test.bmp", image); 
+  }
+
+  void perform_benchmarks(const Block &blk)
+  {    
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);

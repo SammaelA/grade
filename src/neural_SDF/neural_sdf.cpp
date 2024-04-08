@@ -489,7 +489,7 @@ namespace nsdf
     out.close();
   }
 
-  float3 closest_point_triangle(const float3& p, const float3& a, const float3& b, const float3& c)
+  static float3 closest_point_triangle(const float3& p, const float3& a, const float3& b, const float3& c)
   {
     //implementation taken from Embree library
     const float3 ab = b - a;
